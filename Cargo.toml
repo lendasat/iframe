@@ -1,0 +1,3 @@
+[workspace]
+members = ["borrower", "the-boss"]
+resolver = "2"
