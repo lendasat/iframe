@@ -22,6 +22,7 @@ mod tests {
     use bdk::template::Bip84;
     use bdk::{KeychainKind, SignOptions, Wallet};
     use bitcoin::consensus::verify_script;
+    use bitcoin::Script;
     use std::collections::HashMap;
 
     #[test]
@@ -98,10 +99,10 @@ mod tests {
         assert!(finalized);
 
         // TODO: Check that we can spend the multisig output with 2 keys.
-        let script_buf = collateral_descriptor.script_pubkey();
-        let script1 = script_buf.as_script();
+        let collateral_descriptor_script = collateral_descriptor.script_pubkey();
+        let collateral_descriptor_script = collateral_descriptor_script.as_script();
         verify_script(
-            bitcoin_units::,
+            Script::from_bytes(collateral_descriptor_script.as_bytes()),
             0,
             bitcoin_units::Amount::from_sat(collateral_amount_sat),
             reclaim_collateral_tx_psbt.serialize().as_slice(),
