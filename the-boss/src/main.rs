@@ -10,12 +10,12 @@ mod tests {
     use bdk::bitcoin::key::Secp256k1;
     use bdk::bitcoin::psbt::Psbt;
     use bdk::bitcoin::secp256k1::rand::thread_rng;
+    use bdk::bitcoin::Amount;
     use bdk::bitcoin::ScriptBuf;
     use bdk::bitcoin::Transaction;
     use bdk::bitcoin::TxIn;
     use bdk::bitcoin::TxOut;
     use bdk::bitcoin::{absolute, OutPoint, Sequence, Witness};
-    use bdk::bitcoin::{ecdsa, Amount};
     use bdk::bitcoin::{Network, PublicKey};
     use bdk::database::MemoryDatabase;
     use bdk::miniscript::Descriptor;
@@ -23,7 +23,6 @@ mod tests {
     use bdk::{KeychainKind, SignOptions, Wallet};
     use bitcoin::consensus::verify_script;
     use bitcoin::Script;
-    use std::collections::HashMap;
 
     #[test]
     fn two_of_three_multisig() {
@@ -57,7 +56,6 @@ mod tests {
             output: vec![collateral_output],
         };
 
-        let script = collateral_descriptor.explicit_script().unwrap();
         let collateral_input = TxIn {
             previous_output: OutPoint {
                 txid: fund_tx.txid(),
@@ -81,9 +79,6 @@ mod tests {
             input: vec![collateral_input],
             output: vec![reclaim_collateral_output],
         };
-
-        // TODO: sign collateral input
-        let mut sigs = HashMap::<bitcoin::PublicKey, ecdsa::Signature>::new();
 
         let borrower_wallet = create_wallet(network, borrower_kp.secret_key().as_ref()).unwrap();
         let the_boss_wallet = create_wallet(network, the_boss_kp.secret_key().as_ref()).unwrap();
