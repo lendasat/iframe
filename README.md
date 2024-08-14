@@ -1,5 +1,20 @@
 # Loan POC
 
+## How to get started
+
+We need `npm`, `just`, `rust` first.
+
+For dev purposes we use [cargo-watch](https://crates.io/crates/cargo-watch).
+use `just deps`, to install it.
+
+### Dev run
+
+Start `the-boss` and builds the frontend in one go and watch for file changes.
+
+```bash
+just watch-all
+```
+
 ## Take loan protocol
 
 ```mermaid
