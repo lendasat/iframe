@@ -1,5 +1,11 @@
+use crate::logger::init_tracing;
+use tracing::level_filters::LevelFilter;
+
+mod logger;
+
 fn main() {
-    println!("Hello, world!");
+    init_tracing(LevelFilter::DEBUG, false, true).expect("to work");
+    tracing::info!("Hello World")
 }
 
 #[cfg(test)]
