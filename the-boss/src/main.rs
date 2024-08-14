@@ -22,6 +22,7 @@ async fn main() {
 
 #[cfg(test)]
 mod tests {
+    use crate::logger::init_tracing_for_test;
     use bdk_wallet::bitcoin::Network;
     use bdk_wallet::descriptor;
     use bdk_wallet::keys::DerivableKey;
@@ -64,6 +65,8 @@ mod tests {
 
     #[test]
     fn verify_that_we_can_spend_2_of_3() {
+        init_tracing_for_test();
+
         let network = Network::Testnet;
         let secp = Secp256k1::new();
 
