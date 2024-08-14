@@ -22,67 +22,95 @@ async fn main() {
 
 #[cfg(test)]
 mod tests {
-    use anyhow::Result;
-    use bdk::bitcoin::absolute;
-    use bdk::bitcoin::bip32::ExtendedPrivKey;
-    use bdk::bitcoin::key::KeyPair;
-    use bdk::bitcoin::key::Secp256k1;
-    use bdk::bitcoin::psbt::Psbt;
-    use bdk::bitcoin::secp256k1::rand::thread_rng;
-    use bdk::bitcoin::Amount;
-    use bdk::bitcoin::Network;
-    use bdk::bitcoin::OutPoint;
-    use bdk::bitcoin::PublicKey;
-    use bdk::bitcoin::ScriptBuf;
-    use bdk::bitcoin::Sequence;
-    use bdk::bitcoin::Transaction;
-    use bdk::bitcoin::TxIn;
-    use bdk::bitcoin::TxOut;
-    use bdk::bitcoin::Witness;
-    use bdk::database::MemoryDatabase;
-    use bdk::miniscript::Descriptor;
-    use bdk::template::Bip84;
-    use bdk::KeychainKind;
-    use bdk::SignOptions;
-    use bdk::Wallet;
-    use bitcoin::consensus::verify_script;
-    use bitcoin::Script;
+    use bdk_wallet::bitcoin::Network;
+    use bdk_wallet::descriptor;
+    use bdk_wallet::keys::DerivableKey;
+    use bdk_wallet::keys::DescriptorKey;
+    use bdk_wallet::keys::IntoDescriptorKey;
+    use bdk_wallet::keys::ValidNetworks;
+    use bdk_wallet::miniscript::descriptor::DescriptorPublicKey;
+    use bdk_wallet::miniscript::descriptor::KeyMap;
+    use bdk_wallet::miniscript::Descriptor;
+    use bdk_wallet::miniscript::Segwitv0;
+    use bdk_wallet::KeychainKind;
+    use bdk_wallet::SignOptions;
+    use bdk_wallet::Wallet;
+    use bitcoin::absolute;
+    use bitcoin::bip32;
+    use bitcoin::bip32::DerivationPath;
+    use bitcoin::bip32::Xpriv;
+    use bitcoin::bip32::Xpub;
+    use bitcoin::secp256k1::All;
+    use bitcoin::secp256k1::Secp256k1;
+    use bitcoin::secp256k1::SecretKey;
+    use bitcoin::transaction::Version;
+    use bitcoin::Amount;
+    use bitcoin::OutPoint;
+    use bitcoin::Psbt;
+    use bitcoin::ScriptBuf;
+    use bitcoin::Sequence;
+    use bitcoin::Transaction;
+    use bitcoin::TxIn;
+    use bitcoin::TxOut;
+    use bitcoin::Witness;
+    use std::str::FromStr;
+
+    const BOSS_SK: &str = "0000000000000000000000000000000000000000000000000000000000000001";
+    const BORROWER_SK: &str = "0000000000000000000000000000000000000000000000000000000000000002";
+    const FALLBACK_SK: &str = "0000000000000000000000000000000000000000000000000000000000000003";
+
+    const EXTERNAL_DERIVATION_PATH: &str = "m/84/1/0/0";
+    const INTERNAL_DERIVATION_PATH: &str = "m/84/1/0/1";
 
     #[test]
-    fn two_of_three_multisig() {
+    fn verify_that_we_can_spend_2_of_3() {
         let network = Network::Testnet;
         let secp = Secp256k1::new();
-        let mut rng = thread_rng();
 
-        let the_boss_kp = KeyPair::new(&secp, &mut rng);
-        let borrower_kp = KeyPair::new(&secp, &mut rng);
-        let fallback_kp = KeyPair::new(&secp, &mut rng);
+        // 1. Create keys and wallets
 
-        // Generated using this policy: `thresh(2,pk(the_boss),pk(borrower),pk(fallback))`.
-        let descriptor = format!(
-            "multi(2,{the_boss},{borrower},{fallback})",
-            the_boss = the_boss_kp.public_key(),
-            borrower = borrower_kp.public_key(),
-            fallback = fallback_kp.public_key()
+        let boss_sk = SecretKey::from_str(BOSS_SK).unwrap();
+        let borrower_sk = SecretKey::from_str(BORROWER_SK).unwrap();
+        let fallback_sk = SecretKey::from_str(FALLBACK_SK).unwrap();
+
+        let (boss_xprv, boss_xpub) = create_xprv_xpub(network, &secp, boss_sk);
+        let (borrower_xprv, borrower_xpub) = create_xprv_xpub(network, &secp, borrower_sk);
+        let (fallback_xprv, fallback_xpub) = create_xprv_xpub(network, &secp, fallback_sk);
+
+        let mut boss_wallet = create_wallet(boss_xprv, borrower_xpub, fallback_xpub, network);
+        let borrower_wallet = create_wallet(boss_xpub, borrower_xprv, fallback_xpub, network);
+        let fallback_wallet = create_wallet(boss_xpub, borrower_xpub, fallback_xprv, network);
+
+        let collateral_address_info = boss_wallet.reveal_next_address(KeychainKind::External);
+
+        println!("Collateral address: {}", collateral_address_info.address);
+        assert_eq!(
+            "tb1q90dn08cdsy0fnppc273n7n6w4np83397z9xf8pjlns2q6ar97l6srcjx92",
+            collateral_address_info.address.to_string()
         );
-        let collateral_descriptor: Descriptor<PublicKey> = descriptor.parse().unwrap();
 
-        let collateral_amount_sat = Amount::ONE_BTC.to_sat();
+        // 2. Build fund TX
+
+        let collateral_amount = Amount::ONE_BTC;
+        let collateral_spk = collateral_address_info.script_pubkey();
         let collateral_output = TxOut {
-            value: collateral_amount_sat,
-            script_pubkey: collateral_descriptor.script_pubkey(),
+            value: collateral_amount,
+            script_pubkey: collateral_spk.clone(),
         };
 
         let fund_tx = Transaction {
-            version: 2,
+            version: Version::TWO,
             lock_time: absolute::LockTime::ZERO,
-            input: Vec::new(), // TODO: Might need inputs?
+            // The inputs of the fund TX are irrelevant to this test.
+            input: Vec::new(),
             output: vec![collateral_output],
         };
 
+        // 3. Build reclaim-collateral TX
+
         let collateral_input = TxIn {
             previous_output: OutPoint {
-                txid: fund_tx.txid(),
+                txid: fund_tx.compute_txid(),
                 vout: 0,
             },
             script_sig: ScriptBuf::new(),
@@ -90,53 +118,144 @@ mod tests {
             witness: Witness::new(),
         };
 
-        let descriptor = format!("pk({borrower})", borrower = borrower_kp.public_key(),);
-        let descriptor: Descriptor<PublicKey> = descriptor.parse().unwrap();
         let fee = Amount::from_sat(1_000);
+        let reclaim_collateral_amount = collateral_amount - fee;
         let reclaim_collateral_output = TxOut {
-            value: Amount::ONE_BTC.to_sat() - fee.to_sat(),
-            script_pubkey: descriptor.script_pubkey(),
+            value: reclaim_collateral_amount,
+            script_pubkey: ScriptBuf::new(),
         };
-        let reclaim_collateral_tx = Transaction {
-            version: 2,
+
+        let unsigned_reclaim_collateral_tx = Transaction {
+            version: Version::TWO,
             lock_time: absolute::LockTime::ZERO,
             input: vec![collateral_input],
             output: vec![reclaim_collateral_output],
         };
 
-        let borrower_wallet = create_wallet(network, borrower_kp.secret_key().as_ref()).unwrap();
-        let the_boss_wallet = create_wallet(network, the_boss_kp.secret_key().as_ref()).unwrap();
+        // 4. Sign reclaim-collateral TX with 2 parties at a time.
 
-        let mut reclaim_collateral_tx_psbt = Psbt::from_unsigned_tx(reclaim_collateral_tx).unwrap();
+        sign_and_verify_spend_tx(
+            &boss_wallet,
+            &borrower_wallet,
+            fund_tx.clone(),
+            &collateral_spk,
+            collateral_amount,
+            unsigned_reclaim_collateral_tx.clone(),
+        );
 
-        let _ = borrower_wallet
-            .sign(&mut reclaim_collateral_tx_psbt, SignOptions::default())
-            .unwrap();
-        let finalized = the_boss_wallet
-            .sign(&mut reclaim_collateral_tx_psbt, SignOptions::default())
-            .unwrap();
-        assert!(finalized);
+        sign_and_verify_spend_tx(
+            &boss_wallet,
+            &fallback_wallet,
+            fund_tx.clone(),
+            &collateral_spk,
+            collateral_amount,
+            unsigned_reclaim_collateral_tx.clone(),
+        );
 
-        // TODO: Check that we can spend the multisig output with 2 keys.
-        let collateral_descriptor_script = collateral_descriptor.script_pubkey();
-        let collateral_descriptor_script = collateral_descriptor_script.as_script();
-        verify_script(
-            Script::from_bytes(collateral_descriptor_script.as_bytes()),
-            0,
-            bitcoin_units::Amount::from_sat(collateral_amount_sat),
-            reclaim_collateral_tx_psbt.serialize().as_slice(),
-        )
-        .unwrap();
+        sign_and_verify_spend_tx(
+            &fallback_wallet,
+            &borrower_wallet,
+            fund_tx.clone(),
+            &collateral_spk,
+            collateral_amount,
+            unsigned_reclaim_collateral_tx.clone(),
+        );
     }
 
-    fn create_wallet(network: Network, priv_key: &[u8]) -> Result<Wallet<MemoryDatabase>> {
-        let xprv = ExtendedPrivKey::new_master(network, priv_key)?;
-        let wallet = Wallet::new(
-            Bip84(xprv, KeychainKind::External),
-            Some(Bip84(xprv, KeychainKind::Internal)),
-            network,
-            MemoryDatabase::default(),
-        )?;
-        Ok(wallet)
+    fn sign_and_verify_spend_tx(
+        wallet_0: &Wallet,
+        wallet_1: &Wallet,
+        spent_tx: Transaction,
+        spent_output_spk: &ScriptBuf,
+        spent_output_amount: Amount,
+        unsigned_spend_tx: Transaction,
+    ) {
+        let mut spend_tx_psbt = Psbt::from_unsigned_tx(unsigned_spend_tx).unwrap();
+
+        spend_tx_psbt.inputs[0].non_witness_utxo = Some(spent_tx);
+
+        let finalized = wallet_0
+            .sign(&mut spend_tx_psbt, SignOptions::default())
+            .unwrap();
+
+        assert!(!finalized);
+
+        let finalized = wallet_1
+            .sign(&mut spend_tx_psbt, SignOptions::default())
+            .unwrap();
+
+        assert!(finalized);
+
+        let spend_tx = spend_tx_psbt
+            .extract_tx()
+            .expect("signed reclaim collateral TX");
+
+        spent_output_spk
+            .verify(
+                0, // Always zero since the spend TX only has one input.
+                spent_output_amount,
+                bitcoin::consensus::serialize(&spend_tx).as_slice(),
+            )
+            .expect("can spend collateral output");
+    }
+
+    fn create_wallet(
+        boss: impl DerivableKey<Segwitv0> + Copy,
+        borrower: impl DerivableKey<Segwitv0> + Copy,
+        fallback: impl DerivableKey<Segwitv0> + Copy,
+        network: Network,
+    ) -> Wallet {
+        let external_desc = {
+            let path = external_derivation_path();
+
+            let boss = (boss, path.clone()).into_descriptor_key().unwrap();
+            let borrower = (borrower, path.clone()).into_descriptor_key().unwrap();
+            let fallback = (fallback, path).into_descriptor_key().unwrap();
+
+            create_multisig_descriptor(boss, borrower, fallback)
+        };
+
+        // TODO: Do we need a _multisig_ change descriptor?
+        let internal_desc = {
+            let path = internal_derivation_path();
+
+            let boss = (boss, path.clone()).into_descriptor_key().unwrap();
+            let borrower = (borrower, path.clone()).into_descriptor_key().unwrap();
+            let fallback = (fallback, path).into_descriptor_key().unwrap();
+
+            create_multisig_descriptor(boss, borrower, fallback)
+        };
+
+        Wallet::create(external_desc, internal_desc)
+            .network(network)
+            .create_wallet_no_persist()
+            .expect("wallet")
+    }
+
+    fn create_multisig_descriptor(
+        boss: DescriptorKey<Segwitv0>,
+        borrower: DescriptorKey<Segwitv0>,
+        fallback: DescriptorKey<Segwitv0>,
+    ) -> (Descriptor<DescriptorPublicKey>, KeyMap, ValidNetworks) {
+        descriptor!(wsh(sortedmulti(2, boss, borrower, fallback))).unwrap()
+    }
+
+    fn external_derivation_path() -> DerivationPath {
+        bip32::DerivationPath::from_str(EXTERNAL_DERIVATION_PATH).unwrap()
+    }
+
+    fn internal_derivation_path() -> DerivationPath {
+        bip32::DerivationPath::from_str(INTERNAL_DERIVATION_PATH).unwrap()
+    }
+
+    fn create_xprv_xpub(
+        network: Network,
+        secp: &Secp256k1<All>,
+        secret_key: SecretKey,
+    ) -> (Xpriv, Xpub) {
+        let xprv = Xpriv::new_master(network, secret_key.as_ref()).unwrap();
+        let xpub = Xpub::from_priv(secp, &xprv);
+
+        (xprv, xpub)
     }
 }
