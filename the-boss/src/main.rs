@@ -1,11 +1,23 @@
 use crate::logger::init_tracing;
+use crate::routes::root;
+use axum::routing::get;
+use axum::Router;
 use tracing::level_filters::LevelFilter;
 
 mod logger;
+mod routes;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     init_tracing(LevelFilter::DEBUG, false, true).expect("to work");
-    tracing::info!("Hello World")
+    tracing::info!("Hello World");
+
+    let app = Router::new().route("/", get(root));
+
+    let address = "localhost:7337";
+    tracing::info!("start listening http://{}", address);
+    let listener = tokio::net::TcpListener::bind(address).await.unwrap();
+    axum::serve(listener, app).await.unwrap();
 }
 
 #[cfg(test)]
