@@ -22,59 +22,76 @@ async fn main() {
 
 #[cfg(test)]
 mod tests {
-    use anyhow::Result;
-    use bdk::bitcoin::absolute;
-    use bdk::bitcoin::bip32::ExtendedPrivKey;
-    use bdk::bitcoin::key::KeyPair;
-    use bdk::bitcoin::key::Secp256k1;
-    use bdk::bitcoin::psbt::Psbt;
-    use bdk::bitcoin::secp256k1::rand::thread_rng;
-    use bdk::bitcoin::Amount;
-    use bdk::bitcoin::Network;
-    use bdk::bitcoin::OutPoint;
-    use bdk::bitcoin::PublicKey;
-    use bdk::bitcoin::ScriptBuf;
-    use bdk::bitcoin::Sequence;
-    use bdk::bitcoin::Transaction;
-    use bdk::bitcoin::TxIn;
-    use bdk::bitcoin::TxOut;
-    use bdk::bitcoin::Witness;
-    use bdk::database::MemoryDatabase;
-    use bdk::miniscript::Descriptor;
-    use bdk::template::Bip84;
-    use bdk::KeychainKind;
-    use bdk::SignOptions;
-    use bdk::Wallet;
-    use bitcoin::consensus::verify_script;
-    use bitcoin::Script;
+
+    use bdk_wallet::keys::{DescriptorKey, IntoDescriptorKey, ValidNetworks};
+    use bdk_wallet::miniscript::descriptor::{DescriptorPublicKey, KeyMap};
+    use bdk_wallet::miniscript::{Descriptor, Segwitv0};
+    use bdk_wallet::{bitcoin::Network, descriptor, KeychainKind, SignOptions, Wallet};
+    use bitcoin::bip32::{DerivationPath, Xpriv, Xpub};
+    use bitcoin::secp256k1::{All, Secp256k1, SecretKey};
+    use bitcoin::transaction::Version;
+    use bitcoin::{
+        absolute, Amount, OutPoint, Psbt, ScriptBuf, Sequence, Transaction, TxIn, Witness,
+    };
+    use bitcoin::{bip32, TxOut};
+    use std::str::FromStr;
+
+    const THE_BOSS_SK: &'static str =
+        "0000000000000000000000000000000000000000000000000000000000000001";
+    const BORROWER_SK: &'static str =
+        "0000000000000000000000000000000000000000000000000000000000000002";
+    const FALLBACK_SK: &'static str =
+        "0000000000000000000000000000000000000000000000000000000000000003";
 
     #[test]
-    fn two_of_three_multisig() {
+    fn test_simple_multisig() {
         let network = Network::Testnet;
         let secp = Secp256k1::new();
-        let mut rng = thread_rng();
 
-        let the_boss_kp = KeyPair::new(&secp, &mut rng);
-        let borrower_kp = KeyPair::new(&secp, &mut rng);
-        let fallback_kp = KeyPair::new(&secp, &mut rng);
+        // 1. create keys
+        let the_boss_sk = SecretKey::from_str(THE_BOSS_SK).unwrap();
+        let borrower_sk = SecretKey::from_str(BORROWER_SK).unwrap();
+        let fallback_sk = SecretKey::from_str(FALLBACK_SK).unwrap();
 
-        // Generated using this policy: `thresh(2,pk(the_boss),pk(borrower),pk(fallback))`.
-        let descriptor = format!(
-            "multi(2,{the_boss},{borrower},{fallback})",
-            the_boss = the_boss_kp.public_key(),
-            borrower = borrower_kp.public_key(),
-            fallback = fallback_kp.public_key()
+        let (the_boss_xprv, _the_boss_xpub) = create_xpub_xprv(network, &secp, the_boss_sk);
+        let (_borrower_xprv, borrower_xpub) = create_xpub_xprv(network, &secp, borrower_sk);
+        let (_fallback_xprv, fallback_xpub) = create_xpub_xprv(network, &secp, fallback_sk);
+
+        let receive_path = bip32::DerivationPath::from_str("m/84/1/0/0").unwrap();
+        let receive_desc = create_multisig_descriptor(
+            the_boss_xprv,
+            borrower_xpub,
+            fallback_xpub,
+            receive_path.clone(),
         );
-        let collateral_descriptor: Descriptor<PublicKey> = descriptor.parse().unwrap();
 
-        let collateral_amount_sat = Amount::ONE_BTC.to_sat();
+        let change_path = bip32::DerivationPath::from_str("m/84/1/0/1").unwrap();
+        let change_desc =
+            create_multisig_descriptor(the_boss_xprv, borrower_xpub, fallback_xpub, change_path);
+
+        let network = Network::Testnet;
+        let mut wallet = Wallet::create(receive_desc, change_desc)
+            .network(network)
+            .create_wallet_no_persist()
+            .expect("wallet");
+
+        let address_info = wallet.reveal_next_address(KeychainKind::External);
+        println!("Receive address: {}", address_info.address);
+        assert_eq!(
+            "tb1q90dn08cdsy0fnppc273n7n6w4np83397z9xf8pjlns2q6ar97l6srcjx92",
+            address_info.address.to_string()
+        );
+
+        // setup funding tx
+
+        let collateral_amount = Amount::ONE_BTC;
         let collateral_output = TxOut {
-            value: collateral_amount_sat,
-            script_pubkey: collateral_descriptor.script_pubkey(),
+            value: collateral_amount,
+            script_pubkey: address_info.script_pubkey(),
         };
 
         let fund_tx = Transaction {
-            version: 2,
+            version: Version::TWO,
             lock_time: absolute::LockTime::ZERO,
             input: Vec::new(), // TODO: Might need inputs?
             output: vec![collateral_output],
@@ -82,7 +99,7 @@ mod tests {
 
         let collateral_input = TxIn {
             previous_output: OutPoint {
-                txid: fund_tx.txid(),
+                txid: fund_tx.compute_txid(),
                 vout: 0,
             },
             script_sig: ScriptBuf::new(),
@@ -90,53 +107,65 @@ mod tests {
             witness: Witness::new(),
         };
 
-        let descriptor = format!("pk({borrower})", borrower = borrower_kp.public_key(),);
-        let descriptor: Descriptor<PublicKey> = descriptor.parse().unwrap();
+        let _descriptor_key: DescriptorKey<Segwitv0> =
+            (borrower_xpub, receive_path).into_descriptor_key().unwrap();
+
         let fee = Amount::from_sat(1_000);
         let reclaim_collateral_output = TxOut {
-            value: Amount::ONE_BTC.to_sat() - fee.to_sat(),
-            script_pubkey: descriptor.script_pubkey(),
+            value: Amount::ONE_BTC - fee,
+            // TODO: fixme, use borrowers xpub to derive key
+            script_pubkey: ScriptBuf::new(),
         };
+
         let reclaim_collateral_tx = Transaction {
-            version: 2,
+            version: Version::TWO,
             lock_time: absolute::LockTime::ZERO,
             input: vec![collateral_input],
             output: vec![reclaim_collateral_output],
         };
 
-        let borrower_wallet = create_wallet(network, borrower_kp.secret_key().as_ref()).unwrap();
-        let the_boss_wallet = create_wallet(network, the_boss_kp.secret_key().as_ref()).unwrap();
-
         let mut reclaim_collateral_tx_psbt = Psbt::from_unsigned_tx(reclaim_collateral_tx).unwrap();
 
-        let _ = borrower_wallet
+        wallet
             .sign(&mut reclaim_collateral_tx_psbt, SignOptions::default())
             .unwrap();
-        let finalized = the_boss_wallet
-            .sign(&mut reclaim_collateral_tx_psbt, SignOptions::default())
-            .unwrap();
-        assert!(finalized);
-
-        // TODO: Check that we can spend the multisig output with 2 keys.
-        let collateral_descriptor_script = collateral_descriptor.script_pubkey();
-        let collateral_descriptor_script = collateral_descriptor_script.as_script();
-        verify_script(
-            Script::from_bytes(collateral_descriptor_script.as_bytes()),
-            0,
-            bitcoin_units::Amount::from_sat(collateral_amount_sat),
-            reclaim_collateral_tx_psbt.serialize().as_slice(),
-        )
-        .unwrap();
     }
 
-    fn create_wallet(network: Network, priv_key: &[u8]) -> Result<Wallet<MemoryDatabase>> {
-        let xprv = ExtendedPrivKey::new_master(network, priv_key)?;
-        let wallet = Wallet::new(
-            Bip84(xprv, KeychainKind::External),
-            Some(Bip84(xprv, KeychainKind::Internal)),
-            network,
-            MemoryDatabase::default(),
-        )?;
-        Ok(wallet)
+    fn create_multisig_descriptor(
+        the_boss_xprv: Xpriv,
+        borrower_xpub: Xpub,
+        fallback_xpub: Xpub,
+        derivation_path: DerivationPath,
+    ) -> (Descriptor<DescriptorPublicKey>, KeyMap, ValidNetworks) {
+        let receive_path = derivation_path;
+        let the_boss_receive_desc = (the_boss_xprv, receive_path.clone())
+            .into_descriptor_key()
+            .unwrap();
+        let borrower_receive_desc = (borrower_xpub, receive_path.clone())
+            .into_descriptor_key()
+            .unwrap();
+        let fallback_receive_desc = (fallback_xpub, receive_path.clone())
+            .into_descriptor_key()
+            .unwrap();
+
+        let receive_desc = descriptor!(wsh(sortedmulti(
+            2,
+            the_boss_receive_desc,
+            borrower_receive_desc,
+            fallback_receive_desc
+        )))
+        .unwrap();
+        receive_desc
+    }
+
+    fn create_xpub_xprv(
+        network: Network,
+        secp: &Secp256k1<All>,
+        secret_key: SecretKey,
+    ) -> (Xpriv, Xpub) {
+        let xprv = Xpriv::new_master(network, secret_key.as_ref()).unwrap();
+        let xpub = Xpub::from_priv(&secp, &xprv);
+
+        (xprv, xpub)
     }
 }

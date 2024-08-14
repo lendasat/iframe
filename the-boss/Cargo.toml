@@ -6,7 +6,8 @@ edition = "2021"
 [dependencies]
 anyhow = "1"
 axum = { version = "0.7.5" }
-bdk = { version = "0.29.0", features = ["compiler"] }
+bdk_file_store = "0.14.0"
+bdk_wallet = { version = "1.0.0-beta.1" }
 bitcoin = { version = "0.32.2", features = ["bitcoinconsensus"] }
 bitcoin-units = "0.1.2"
 include_dir = "0.7.4"
