@@ -42,7 +42,7 @@ jobs:
       - uses: extractions/setup-just@v2
       - name: Setup rust toolchain
         run: rustup show
-      - uses: Swatinem/rust-cache@v2.7.3
+      - uses: Swatinem/rust-cache@v2
       - run: cargo clippy --all-targets --all-features -- -D warnings
 
   unit-tests:
@@ -53,7 +53,7 @@ jobs:
       - uses: extractions/setup-just@v2
       - name: Setup rust toolchain
         run: rustup show
-      - uses: Swatinem/rust-cache@v2.7.03
+      - uses: Swatinem/rust-cache@v2
       - uses: actions/setup-node@v4
         with:
           node-version: 20.11.1
