@@ -1,6 +1,4 @@
 use crate::logger::init_tracing;
-use crate::routes::root;
-use axum::routing::get;
 use axum::Router;
 use tracing::level_filters::LevelFilter;
 
@@ -12,9 +10,11 @@ async fn main() {
     init_tracing(LevelFilter::DEBUG, false, true).expect("to work");
     tracing::info!("Hello World");
 
-    let app = Router::new().route("/", get(root));
+    let app = Router::new()
+        .merge(routes::health_check::router())
+        .merge(routes::frontend::router());
 
-    let address = "localhost:7337";
+    let address = "0.0.0.0:7337";
     tracing::info!("start listening http://{}", address);
     let listener = tokio::net::TcpListener::bind(address).await.unwrap();
     axum::serve(listener, app).await.unwrap();
@@ -23,22 +23,28 @@ async fn main() {
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
+    use bdk::bitcoin::absolute;
     use bdk::bitcoin::bip32::ExtendedPrivKey;
     use bdk::bitcoin::key::KeyPair;
     use bdk::bitcoin::key::Secp256k1;
     use bdk::bitcoin::psbt::Psbt;
     use bdk::bitcoin::secp256k1::rand::thread_rng;
     use bdk::bitcoin::Amount;
+    use bdk::bitcoin::Network;
+    use bdk::bitcoin::OutPoint;
+    use bdk::bitcoin::PublicKey;
     use bdk::bitcoin::ScriptBuf;
+    use bdk::bitcoin::Sequence;
     use bdk::bitcoin::Transaction;
     use bdk::bitcoin::TxIn;
     use bdk::bitcoin::TxOut;
-    use bdk::bitcoin::{absolute, OutPoint, Sequence, Witness};
-    use bdk::bitcoin::{Network, PublicKey};
+    use bdk::bitcoin::Witness;
     use bdk::database::MemoryDatabase;
     use bdk::miniscript::Descriptor;
     use bdk::template::Bip84;
-    use bdk::{KeychainKind, SignOptions, Wallet};
+    use bdk::KeychainKind;
+    use bdk::SignOptions;
+    use bdk::Wallet;
     use bitcoin::consensus::verify_script;
     use bitcoin::Script;
 

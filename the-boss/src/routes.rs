@@ -1,3 +1,2 @@
-pub async fn root() -> &'static str {
-    "Hello, World!"
-}
+pub(crate) mod frontend;
+pub(crate) mod health_check;
