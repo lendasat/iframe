@@ -1,4 +1,6 @@
 
+fmt:
+    dprint fmt
 
 react-test:
     cd frontend && npm test
