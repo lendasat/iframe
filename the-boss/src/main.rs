@@ -22,17 +22,37 @@ async fn main() {
 
 #[cfg(test)]
 mod tests {
-    use bdk_wallet::keys::{DerivableKey, DescriptorKey, IntoDescriptorKey, ValidNetworks};
-    use bdk_wallet::miniscript::descriptor::{DescriptorPublicKey, KeyMap};
-    use bdk_wallet::miniscript::{Descriptor, Segwitv0};
-    use bdk_wallet::{bitcoin::Network, descriptor, KeychainKind, SignOptions, Wallet};
-    use bitcoin::bip32::{DerivationPath, Xpriv, Xpub};
-    use bitcoin::secp256k1::{All, Secp256k1, SecretKey};
+    use bdk_wallet::bitcoin::Network;
+    use bdk_wallet::descriptor;
+    use bdk_wallet::keys::DerivableKey;
+    use bdk_wallet::keys::DescriptorKey;
+    use bdk_wallet::keys::IntoDescriptorKey;
+    use bdk_wallet::keys::ValidNetworks;
+    use bdk_wallet::miniscript::descriptor::DescriptorPublicKey;
+    use bdk_wallet::miniscript::descriptor::KeyMap;
+    use bdk_wallet::miniscript::Descriptor;
+    use bdk_wallet::miniscript::Segwitv0;
+    use bdk_wallet::KeychainKind;
+    use bdk_wallet::SignOptions;
+    use bdk_wallet::Wallet;
+    use bitcoin::absolute;
+    use bitcoin::bip32;
+    use bitcoin::bip32::DerivationPath;
+    use bitcoin::bip32::Xpriv;
+    use bitcoin::bip32::Xpub;
+    use bitcoin::secp256k1::All;
+    use bitcoin::secp256k1::Secp256k1;
+    use bitcoin::secp256k1::SecretKey;
     use bitcoin::transaction::Version;
-    use bitcoin::{
-        absolute, Amount, OutPoint, Psbt, ScriptBuf, Sequence, Transaction, TxIn, Witness,
-    };
-    use bitcoin::{bip32, TxOut};
+    use bitcoin::Amount;
+    use bitcoin::OutPoint;
+    use bitcoin::Psbt;
+    use bitcoin::ScriptBuf;
+    use bitcoin::Sequence;
+    use bitcoin::Transaction;
+    use bitcoin::TxIn;
+    use bitcoin::TxOut;
+    use bitcoin::Witness;
     use std::str::FromStr;
 
     const BOSS_SK: &str = "0000000000000000000000000000000000000000000000000000000000000001";
@@ -59,7 +79,7 @@ mod tests {
 
         let mut boss_wallet = create_wallet(boss_xprv, borrower_xpub, fallback_xpub, network);
         let borrower_wallet = create_wallet(boss_xpub, borrower_xprv, fallback_xpub, network);
-        let _fallback_wallet = create_wallet(boss_xpub, borrower_xpub, fallback_xprv, network);
+        let fallback_wallet = create_wallet(boss_xpub, borrower_xpub, fallback_xprv, network);
 
         let collateral_address_info = boss_wallet.reveal_next_address(KeychainKind::External);
 
@@ -86,7 +106,7 @@ mod tests {
             output: vec![collateral_output],
         };
 
-        // 3. Build reclaim collateral TX
+        // 3. Build reclaim-collateral TX
 
         let collateral_input = TxIn {
             previous_output: OutPoint {
@@ -112,34 +132,69 @@ mod tests {
             output: vec![reclaim_collateral_output],
         };
 
-        // 4. Sign reclaim collateral TX with 2 parties at a time.
+        // 4. Sign reclaim-collateral TX with 2 parties at a time.
 
-        let mut reclaim_collateral_tx_psbt =
-            Psbt::from_unsigned_tx(unsigned_reclaim_collateral_tx).unwrap();
+        sign_and_verify_spend_tx(
+            &boss_wallet,
+            &borrower_wallet,
+            fund_tx.clone(),
+            &collateral_spk,
+            collateral_amount,
+            unsigned_reclaim_collateral_tx.clone(),
+        );
 
-        reclaim_collateral_tx_psbt.inputs[0].non_witness_utxo = Some(fund_tx);
+        sign_and_verify_spend_tx(
+            &boss_wallet,
+            &fallback_wallet,
+            fund_tx.clone(),
+            &collateral_spk,
+            collateral_amount,
+            unsigned_reclaim_collateral_tx.clone(),
+        );
 
-        let finalized = boss_wallet
-            .sign(&mut reclaim_collateral_tx_psbt, SignOptions::default())
+        sign_and_verify_spend_tx(
+            &fallback_wallet,
+            &borrower_wallet,
+            fund_tx.clone(),
+            &collateral_spk,
+            collateral_amount,
+            unsigned_reclaim_collateral_tx.clone(),
+        );
+    }
+
+    fn sign_and_verify_spend_tx(
+        wallet_0: &Wallet,
+        wallet_1: &Wallet,
+        spent_tx: Transaction,
+        spent_output_spk: &ScriptBuf,
+        spent_output_amount: Amount,
+        unsigned_spend_tx: Transaction,
+    ) {
+        let mut spend_tx_psbt = Psbt::from_unsigned_tx(unsigned_spend_tx).unwrap();
+
+        spend_tx_psbt.inputs[0].non_witness_utxo = Some(spent_tx);
+
+        let finalized = wallet_0
+            .sign(&mut spend_tx_psbt, SignOptions::default())
             .unwrap();
 
         assert!(!finalized);
 
-        let finalized = borrower_wallet
-            .sign(&mut reclaim_collateral_tx_psbt, SignOptions::default())
+        let finalized = wallet_1
+            .sign(&mut spend_tx_psbt, SignOptions::default())
             .unwrap();
 
         assert!(finalized);
 
-        let reclaim_collateral_tx = reclaim_collateral_tx_psbt
+        let spend_tx = spend_tx_psbt
             .extract_tx()
             .expect("signed reclaim collateral TX");
 
-        collateral_spk
+        spent_output_spk
             .verify(
-                0,
-                collateral_amount,
-                bitcoin::consensus::serialize(&reclaim_collateral_tx).as_slice(),
+                0, // Always zero since the spend TX only has one input.
+                spent_output_amount,
+                bitcoin::consensus::serialize(&spend_tx).as_slice(),
             )
             .expect("can spend collateral output");
     }
