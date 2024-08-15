@@ -1,3 +1,4 @@
+set dotenv-load
 
 fmt:
     dprint fmt
@@ -15,6 +16,7 @@ test: react-test rust-test
 
 deps:
     cargo install cargo-watch
+    cargo install sqlx-cli --no-default-features --features rust-tls,postgres
 
 # rebuilds the frontend if a file in the frontend changes
 watch-frontend:
@@ -27,3 +29,14 @@ watch-backend:
 watch-all:
     just watch-frontend & just watch-backend
 
+db-prepare:
+    cargo sqlx prepare --workspace --database-url=$DB_URL
+
+db-add-migration args="":
+    sqlx migrate add -r {{args}}
+
+db-run-migration:
+    sqlx migrate run --database-url=$DB_URL
+
+db-revert-migration args="":
+    sqlx migrate revert --database-url=$DB_URL
