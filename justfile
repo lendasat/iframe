@@ -2,6 +2,9 @@
 fmt:
     dprint fmt
 
+clippy:
+    cargo clippy --all-targets --all-features -- -D warnings
+
 react-test:
     cd frontend && npm test
 
