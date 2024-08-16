@@ -84,6 +84,14 @@ impl Email {
 
         let transport = self.new_transport()?;
 
+        if self.config.smtp_disabled {
+            let verification_code = self.user.clone().verification_code.unwrap_or_default();
+            tracing::info!(
+                "Sending smtp is disabled. Verification code is: '{}'.",
+                verification_code
+            );
+            return Ok(());
+        }
         transport.send(email).await?;
         Ok(())
     }
