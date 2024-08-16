@@ -1,10 +1,26 @@
 import viteLogo from "/vite.svg";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import reactLogo from "./assets/react.svg";
 import "./App.css";
+import init, { greet } from "../../borrower-wallet/pkg/borrower_wallet.js";
 
 function App() {
   const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    async function initializeWasm() {
+      await init();
+    }
+
+    initializeWasm();
+  }, []); // Empty dependency array means this runs once on mount
+
+  const handleClick = () => {
+    setCount((count) => {
+      greet();
+      return count + 1;
+    });
+  };
 
   return (
     <>
@@ -18,7 +34,7 @@ function App() {
       </div>
       <h1>Vite + React</h1>
       <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
+        <button onClick={handleClick}>
           count is {count}
         </button>
         <p>
