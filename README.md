@@ -9,6 +9,8 @@ use `just deps`, to install it.
 
 ### Dev run
 
+Before you can run `the-boss`, you will need to make a copy of [./.env_sample](./.env_sample) and configure all variables.
+
 Start `the-boss` and builds the frontend in one go and watch for file changes.
 
 ```bash
@@ -22,6 +24,11 @@ After you made some changes to the database or sqlx queries, make sure to run th
 ```bash
 just db-prepare
 ```
+
+### Postman: For local API development
+
+For local API development we make use of [Postman](https://www.postman.com/downloads/).
+A [postman.json](./Lendasat Postman Collection.postman_collection.json) file has been provided.
 
 ## Take loan protocol
 

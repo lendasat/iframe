@@ -36,6 +36,9 @@ watch-backend:
                 -C "the-boss" \
                 -x "run"
 
+run-backend:
+    cargo run --bin the-boss
+
 watch-all:
     just watch-frontend & just watch-backend
 
@@ -48,5 +51,5 @@ db-add-migration args="":
 db-run-migration:
     sqlx migrate run --database-url=$DB_URL
 
-db-revert-migration args="":
+db-revert-migration:
     sqlx migrate revert --database-url=$DB_URL
