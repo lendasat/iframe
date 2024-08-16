@@ -1,14 +1,23 @@
+use crate::db::connect_to_db;
+use crate::db::run_migration;
+use crate::db::sample_query;
 use crate::logger::init_tracing;
+use anyhow::Result;
 use axum::Router;
 use tracing::level_filters::LevelFilter;
 
+mod db;
 mod logger;
 mod routes;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<()> {
     init_tracing(LevelFilter::DEBUG, false, true).expect("to work");
     tracing::info!("Hello World");
+
+    let pool = connect_to_db("the_boss", "supersecretpassword", "localhost:5555/the_boss").await?;
+    run_migration(&pool).await?;
+    sample_query(&pool).await?;
 
     let app = Router::new()
         .merge(routes::health_check::router())
@@ -18,6 +27,7 @@ async fn main() {
     tracing::info!("start listening http://{}", address);
     let listener = tokio::net::TcpListener::bind(address).await.unwrap();
     axum::serve(listener, app).await.unwrap();
+    Ok(())
 }
 
 #[cfg(test)]

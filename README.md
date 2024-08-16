@@ -15,6 +15,14 @@ Start `the-boss` and builds the frontend in one go and watch for file changes.
 just watch-all
 ```
 
+### DB changes
+
+After you made some changes to the database or sqlx queries, make sure to run the command below. Make sure the database is running.
+
+```bash
+just db-prepare
+```
+
 ## Take loan protocol
 
 ```mermaid
