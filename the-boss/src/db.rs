@@ -1,19 +1,20 @@
+pub(crate) mod user;
+
 use anyhow::Result;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::Pool;
 use sqlx::Postgres;
 
-pub async fn connect_to_db(username: &str, password: &str, host: &str) -> Result<Pool<Postgres>> {
-    let db_connection = format!("postgres://{username}:{password}@{host}");
+pub async fn connect_to_db(db_connection: &str) -> Result<Pool<Postgres>> {
     let pool = PgPoolOptions::new()
         .max_connections(5)
-        .connect(db_connection.as_str())
+        .connect(db_connection)
         .await?;
     Ok(pool)
 }
 
 pub async fn run_migration(pool: &Pool<Postgres>) -> Result<()> {
-    sqlx::migrate!("../migrations").run(pool).await?;
+    sqlx::migrate!("./migrations").run(pool).await?;
     Ok(())
 }
 
