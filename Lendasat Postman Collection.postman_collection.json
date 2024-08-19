@@ -16,7 +16,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"testing@philipp.ai\",\r\n    \"name\": \"username\",\r\n    \"password\": \"password123\",\r\n    \"passwordConfirm\": \"password123\"\r\n}",
+              "raw": "{\r\n    \"email\": \"testing@philipp.ai\",\r\n    \"name\": \"philipp\",\r\n    \"password\": \"password123\",\r\n    \"passwordConfirm\": \"password123\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -45,7 +45,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:7337/api/auth/verifyemail/0DXRozsCnhmyWsPU1Iub",
+              "raw": "http://localhost:7337/api/auth/verifyemail/PK3s6r10IdMAJwuD57dJ",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -55,28 +55,7 @@
                 "api",
                 "auth",
                 "verifyemail",
-                "0DXRozsCnhmyWsPU1Iub"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Refresh Token",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:7337/api/auth/refresh",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "7337",
-              "path": [
-                "api",
-                "auth",
-                "refresh"
+                "PK3s6r10IdMAJwuD57dJ"
               ]
             }
           },
@@ -127,7 +106,7 @@
               }
             },
             "url": {
-              "raw": "http://localhost:7337/api/auth/resetpassword/Nw2iukuXbA54oJGrJ3Ej",
+              "raw": "http://localhost:7337/api/auth/resetpassword/uivcY0YXuoNyhGrrTnB2",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -137,7 +116,7 @@
                 "api",
                 "auth",
                 "resetpassword",
-                "Nw2iukuXbA54oJGrJ3Ej"
+                "uivcY0YXuoNyhGrrTnB2"
               ]
             }
           },
@@ -184,7 +163,7 @@
               "host": [
                 "localhost"
               ],
-              "port": "8000",
+              "port": "7337",
               "path": [
                 "api",
                 "auth",
@@ -218,6 +197,91 @@
                 "api",
                 "users",
                 "me"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Sample flow",
+      "item": [
+        {
+          "name": "Login Lender",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"email\": \"alice_the_lender@lendasat.com\",\r\n    \"password\": \"123password\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:7337/api/auth/login",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7337",
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Loans",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:7337/api/loans",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7337",
+              "path": [
+                "api",
+                "loans"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login Borrower",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"email\": \"bob_the_borrower@lendasat.com\",\r\n    \"password\": \"password123\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:7337/api/auth/login",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7337",
+              "path": [
+                "api",
+                "auth",
+                "login"
               ]
             }
           },
