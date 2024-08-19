@@ -14,7 +14,7 @@ pub async fn connect_to_db(db_connection: &str) -> Result<Pool<Postgres>> {
 }
 
 pub async fn run_migration(pool: &Pool<Postgres>) -> Result<()> {
-    sqlx::migrate!("../migrations").run(pool).await?;
+    sqlx::migrate!("./migrations").run(pool).await?;
     Ok(())
 }
 

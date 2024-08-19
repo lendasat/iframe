@@ -43,13 +43,13 @@ watch-all:
     just watch-frontend & just watch-backend
 
 db-prepare:
-    cargo sqlx prepare --workspace --database-url=$DB_URL
+    cd the-boss && cargo sqlx prepare --workspace --database-url=$DB_URL
 
 db-add-migration args="":
-    sqlx migrate add -r {{args}}
+    sqlx migrate add --source ./the-boss/migrations -r {{args}}
 
 db-run-migration:
-    sqlx migrate run --database-url=$DB_URL
+    sqlx migrate run --source ./the-boss/migrations --database-url=$DB_URL
 
 db-revert-migration:
-    sqlx migrate revert --database-url=$DB_URL
+    sqlx migrate revert --source ./the-boss/migrations --database-url=$DB_URL
