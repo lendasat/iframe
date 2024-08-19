@@ -2,8 +2,6 @@
 pub struct Config {
     pub database_url: String,
     pub jwt_secret: String,
-    pub jwt_expires_in: String,
-    pub jwt_maxage: i32,
     pub smtp_host: String,
     pub smtp_port: u16,
     pub smtp_user: String,
@@ -18,8 +16,6 @@ impl Config {
     pub fn init() -> Config {
         let database_url = std::env::var("DB_URL").expect("DATABASE_URL must be set");
         let jwt_secret = std::env::var("JWT_SECRET").expect("JWT_SECRET must be set");
-        let jwt_expires_in = std::env::var("JWT_EXPIRED_IN").expect("JWT_EXPIRED_IN must be set");
-        let jwt_maxage = std::env::var("JWT_MAXAGE").expect("JWT_MAXAGE must be set");
 
         let smtp_host = std::env::var("SMTP_HOST").ok();
         let smtp_port = std::env::var("SMTP_PORT").ok();
@@ -40,8 +36,6 @@ impl Config {
         Config {
             database_url,
             jwt_secret,
-            jwt_expires_in,
-            jwt_maxage: jwt_maxage.parse::<i32>().unwrap(),
             smtp_host: smtp_host.unwrap_or_default(),
             smtp_pass: smtp_pass.unwrap_or_default(),
             smtp_user: smtp_user.unwrap_or_default(),
