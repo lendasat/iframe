@@ -9,9 +9,9 @@ use `just deps`, to install it.
 
 ### Dev run
 
-Before you can run `the-boss`, you will need to make a copy of [./.env_sample](./.env_sample) and configure all variables.
+Before you can run the `hub`, you will need to make a copy of [./.env_sample](./.env_sample) and configure all variables.
 
-Start `the-boss` and builds the frontend in one go and watch for file changes.
+Start the `hub` and builds the frontend in one go and watch for file changes.
 
 ```bash
 just watch-all
@@ -35,7 +35,7 @@ A [postman.json](./Lendasat Postman Collection.postman_collection.json) file has
 ```mermaid
 sequenceDiagram
     participant L as Lender
-    participant T as The Boss
+    participant T as Hub
     participant B as Borrower
 
     L->>T: I'm offering: $10k loan \nfor 1-3 months for 10%p.a.
@@ -54,7 +54,7 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant B as Borrower
-    participant T as The Boss
+    participant T as Hub
     participant L as Lender
 
     B->>Chain2: pay back principal \n\t+ interest to lender_address

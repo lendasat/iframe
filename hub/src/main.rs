@@ -84,7 +84,7 @@ mod tests {
     use bitcoin::Witness;
     use std::str::FromStr;
 
-    const BOSS_SK: &str = "0000000000000000000000000000000000000000000000000000000000000001";
+    const HUB_SK: &str = "0000000000000000000000000000000000000000000000000000000000000001";
     const BORROWER_SK: &str = "0000000000000000000000000000000000000000000000000000000000000002";
     const FALLBACK_SK: &str = "0000000000000000000000000000000000000000000000000000000000000003";
 
@@ -100,19 +100,19 @@ mod tests {
 
         // 1. Create keys and wallets
 
-        let boss_sk = SecretKey::from_str(BOSS_SK).unwrap();
+        let hub_sk = SecretKey::from_str(HUB_SK).unwrap();
         let borrower_sk = SecretKey::from_str(BORROWER_SK).unwrap();
         let fallback_sk = SecretKey::from_str(FALLBACK_SK).unwrap();
 
-        let (boss_xprv, boss_xpub) = create_xprv_xpub(network, &secp, boss_sk);
+        let (hub_xprv, hub_xpub) = create_xprv_xpub(network, &secp, hub_sk);
         let (borrower_xprv, borrower_xpub) = create_xprv_xpub(network, &secp, borrower_sk);
         let (fallback_xprv, fallback_xpub) = create_xprv_xpub(network, &secp, fallback_sk);
 
-        let mut boss_wallet = create_wallet(boss_xprv, borrower_xpub, fallback_xpub, network);
-        let borrower_wallet = create_wallet(boss_xpub, borrower_xprv, fallback_xpub, network);
-        let fallback_wallet = create_wallet(boss_xpub, borrower_xpub, fallback_xprv, network);
+        let mut hub_wallet = create_wallet(hub_xprv, borrower_xpub, fallback_xpub, network);
+        let borrower_wallet = create_wallet(hub_xpub, borrower_xprv, fallback_xpub, network);
+        let fallback_wallet = create_wallet(hub_xpub, borrower_xpub, fallback_xprv, network);
 
-        let collateral_address_info = boss_wallet.reveal_next_address(KeychainKind::External);
+        let collateral_address_info = hub_wallet.reveal_next_address(KeychainKind::External);
 
         println!("Collateral address: {}", collateral_address_info.address);
         assert_eq!(
@@ -166,7 +166,7 @@ mod tests {
         // 4. Sign reclaim-collateral TX with 2 parties at a time.
 
         sign_and_verify_spend_tx(
-            &boss_wallet,
+            &hub_wallet,
             &borrower_wallet,
             fund_tx.clone(),
             &collateral_spk,
@@ -175,7 +175,7 @@ mod tests {
         );
 
         sign_and_verify_spend_tx(
-            &boss_wallet,
+            &hub_wallet,
             &fallback_wallet,
             fund_tx.clone(),
             &collateral_spk,
@@ -231,7 +231,7 @@ mod tests {
     }
 
     fn create_wallet(
-        boss: impl DerivableKey<Segwitv0> + Copy,
+        hub: impl DerivableKey<Segwitv0> + Copy,
         borrower: impl DerivableKey<Segwitv0> + Copy,
         fallback: impl DerivableKey<Segwitv0> + Copy,
         network: Network,
@@ -239,22 +239,22 @@ mod tests {
         let external_desc = {
             let path = external_derivation_path();
 
-            let boss = (boss, path.clone()).into_descriptor_key().unwrap();
+            let hub = (hub, path.clone()).into_descriptor_key().unwrap();
             let borrower = (borrower, path.clone()).into_descriptor_key().unwrap();
             let fallback = (fallback, path).into_descriptor_key().unwrap();
 
-            create_multisig_descriptor(boss, borrower, fallback)
+            create_multisig_descriptor(hub, borrower, fallback)
         };
 
         // TODO: Do we need a _multisig_ change descriptor?
         let internal_desc = {
             let path = internal_derivation_path();
 
-            let boss = (boss, path.clone()).into_descriptor_key().unwrap();
+            let hub = (hub, path.clone()).into_descriptor_key().unwrap();
             let borrower = (borrower, path.clone()).into_descriptor_key().unwrap();
             let fallback = (fallback, path).into_descriptor_key().unwrap();
 
-            create_multisig_descriptor(boss, borrower, fallback)
+            create_multisig_descriptor(hub, borrower, fallback)
         };
 
         Wallet::create(external_desc, internal_desc)
@@ -264,11 +264,11 @@ mod tests {
     }
 
     fn create_multisig_descriptor(
-        boss: DescriptorKey<Segwitv0>,
+        hub: DescriptorKey<Segwitv0>,
         borrower: DescriptorKey<Segwitv0>,
         fallback: DescriptorKey<Segwitv0>,
     ) -> (Descriptor<DescriptorPublicKey>, KeyMap, ValidNetworks) {
-        descriptor!(wsh(sortedmulti(2, boss, borrower, fallback))).unwrap()
+        descriptor!(wsh(sortedmulti(2, hub, borrower, fallback))).unwrap()
     }
 
     fn external_derivation_path() -> DerivationPath {
