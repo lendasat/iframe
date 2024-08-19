@@ -3,7 +3,8 @@
     "_postman_id": "829b8df7-b076-4e44-8bae-2aa0fb031adb",
     "name": "Lendasat Postman Collection",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "4440022"
+    "_exporter_id": "4440022",
+    "_collection_link": "https://lendasat.postman.co/workspace/Lendasat-Workspace~be7eb804-d5e9-4045-8c17-5d5f362a34d5/collection/4440022-829b8df7-b076-4e44-8bae-2aa0fb031adb?action=share&source=collection_link&creator=4440022"
   },
   "item": [
     {
@@ -243,7 +244,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:7337/api/loans",
+              "raw": "http://localhost:7337/api/offers",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -251,7 +252,7 @@
               "port": "7337",
               "path": [
                 "api",
-                "loans"
+                "offers"
               ]
             }
           },
@@ -282,6 +283,26 @@
                 "api",
                 "auth",
                 "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Contracts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:7337/api/contracts",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7337",
+              "path": [
+                "api",
+                "contracts"
               ]
             }
           },
