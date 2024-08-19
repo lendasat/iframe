@@ -1,3 +1,7 @@
 [workspace]
-members = ["the-boss"]
+members = ["the-boss", "borrower-wallet"]
 resolver = "2"
+
+[profile.release]
+# Tell `rustc` to optimize for small code size.
+opt-level = "s"

@@ -18,13 +18,23 @@ deps:
     cargo install cargo-watch
     cargo install sqlx-cli --no-default-features --features rust-tls,postgres
 
+# build the borrower's WASM wallet
+build-wallet:
+    wasm-pack build borrower-wallet --target web
+
+# build frontend
+force-build-frontend:
+    cd frontend && npm run build --force
+
 # rebuilds the frontend if a file in the frontend changes
 watch-frontend:
     cd frontend && npm run watch
 
-# rebuilds the boss if "any" file changes
+# rebuilds the boss when related files change
 watch-backend:
-    cargo watch -x 'run --bin the-boss'
+    cargo watch -i "justfile" \
+                -C "the-boss" \
+                -x "run"
 
 watch-all:
     just watch-frontend & just watch-backend
