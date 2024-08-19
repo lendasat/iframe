@@ -1,5 +1,5 @@
 [workspace]
-members = ["the-boss", "borrower-wallet"]
+members = ["hub", "borrower-wallet"]
 resolver = "2"
 
 [profile.release]

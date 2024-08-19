@@ -1,5 +1,5 @@
 [package]
-name = "the-boss"
+name = "hub"
 version = "0.1.0"
 build = "build.rs"
 edition = "2021"

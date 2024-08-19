@@ -10,7 +10,7 @@ services:
       - "5555:5432"
     environment:
       POSTGRES_PASSWORD: supersecretpassword
-      POSTGRES_USER: the_boss
+      POSTGRES_USER: hub
 
 volumes:
   postgres:

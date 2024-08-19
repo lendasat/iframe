@@ -30,26 +30,26 @@ force-build-frontend:
 watch-frontend:
     cd frontend && npm run watch
 
-# rebuilds the boss when related files change
+# rebuilds the hub when related files change
 watch-backend:
     cargo watch -i "justfile" \
-                -C "the-boss" \
+                -C "hub" \
                 -x "run"
 
 run-backend:
-    cargo run --bin the-boss
+    cargo run --bin hub
 
 watch-all:
     just watch-frontend & just watch-backend
 
 db-prepare:
-    cd the-boss && cargo sqlx prepare --workspace --database-url=$DB_URL
+    cd hub && cargo sqlx prepare --workspace --database-url=$DB_URL
 
 db-add-migration args="":
-    sqlx migrate add --source ./the-boss/migrations -r {{args}}
+    sqlx migrate add --source ./hub/migrations -r {{args}}
 
 db-run-migration:
-    sqlx migrate run --source ./the-boss/migrations --database-url=$DB_URL
+    sqlx migrate run --source ./hub/migrations --database-url=$DB_URL
 
 db-revert-migration:
-    sqlx migrate revert --source ./the-boss/migrations --database-url=$DB_URL
+    sqlx migrate revert --source ./hub/migrations --database-url=$DB_URL
