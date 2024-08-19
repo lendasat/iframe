@@ -36,8 +36,10 @@ impl User {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TokenClaims {
     pub user_id: String,
-    pub instantiation: i64,
-    pub expiry: i64,
+    // Token creation timestamp. Needs to be called this way due to JWT
+    pub iat: i64,
+    // Token expiry timestamp. Needs to be called this way due to JWT
+    pub exp: i64,
 }
 
 #[derive(Debug, Deserialize)]
