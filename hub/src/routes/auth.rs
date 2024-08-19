@@ -117,7 +117,7 @@ pub async fn register_user_handler(
     let email = user.email.clone();
     let verification_url = format!(
         "{}/api/auth/verifyemail/{}",
-        data.config.frontend_origin.to_owned(),
+        data.config.borrower_frontend_origin.to_owned(),
         user.clone()
             .verification_code
             .expect("to have verification code for new user")
@@ -279,7 +279,7 @@ pub async fn forgot_password_handler(
 
     let password_reset_url = format!(
         "{}/api/auth/resetpassword/{}",
-        data.config.frontend_origin.to_owned(),
+        data.config.borrower_frontend_origin.to_owned(),
         password_reset_token
     );
 

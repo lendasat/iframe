@@ -28,8 +28,8 @@ async fn main() -> Result<()> {
     tracing::info!("Hello World");
 
     let config = Config::init();
-    let listen_address = config.listen_address.clone();
-    let frontend_origin = config.frontend_origin.clone();
+    let borrower_listen_address = config.borrower_listen_address.clone();
+    let borrower_frontend_origin = config.borrower_frontend_origin.clone();
 
     let pool = connect_to_db(config.database_url.as_str()).await?;
     run_migration(&pool).await?;
@@ -44,8 +44,13 @@ async fn main() -> Result<()> {
         .merge(routes::contracts::router(app_state.clone()))
         .merge(routes::frontend::router());
 
-    tracing::info!("start listening http://{}", frontend_origin);
-    let listener = tokio::net::TcpListener::bind(listen_address).await.unwrap();
+    tracing::info!(
+        "Starting to listen for borrowers on http://{}",
+        borrower_frontend_origin
+    );
+    let listener = tokio::net::TcpListener::bind(borrower_listen_address)
+        .await
+        .unwrap();
     axum::serve(listener, app).await.unwrap();
     Ok(())
 }
