@@ -1,10 +1,26 @@
 set dotenv-load
 
+## ------------------------
+## Install useful tools
+## ------------------------
+
+deps:
+    cargo install cargo-watch
+    cargo install sqlx-cli --no-default-features --features rust-tls,postgres
+
+## ------------------------
+## Code quality functions
+## ------------------------
+
 fmt:
     dprint fmt
 
 clippy:
     cargo clippy --all-targets --all-features -- -D warnings
+
+## ------------------------
+## Test functions
+## ------------------------
 
 react-test:
     cd frontend && npm test
@@ -14,9 +30,9 @@ rust-test:
 
 test: react-test rust-test
 
-deps:
-    cargo install cargo-watch
-    cargo install sqlx-cli --no-default-features --features rust-tls,postgres
+## ------------------------
+## Build frontend functions
+## ------------------------
 
 # build the borrower's WASM wallet
 build-wallet:
@@ -30,17 +46,23 @@ force-build-frontend:
 watch-frontend:
     cd frontend && npm run watch
 
+
+## ------------------------
+## Build backend functions
+## ------------------------
+
+run-backend:
+    cargo run --bin hub
+
 # rebuilds the hub when related files change
 watch-backend:
     cargo watch -i "justfile" \
                 -C "hub" \
                 -x "run"
 
-run-backend:
-    cargo run --bin hub
-
-watch-all:
-    just watch-frontend & just watch-backend
+## ------------------------
+## Database helper functions
+## ------------------------
 
 db-prepare:
     cd hub && cargo sqlx prepare --workspace --database-url=$DB_URL
@@ -53,3 +75,11 @@ db-run-migration:
 
 db-revert-migration:
     sqlx migrate revert --source ./hub/migrations --database-url=$DB_URL
+
+
+## ------------------------
+## Local dev setup help function
+## ------------------------
+
+watch-all:
+    just watch-frontend & just watch-backend
