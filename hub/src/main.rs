@@ -41,6 +41,7 @@ async fn main() -> Result<()> {
         .merge(routes::health_check::router())
         .merge(routes::auth::router(app_state.clone()))
         .merge(routes::loan_offers::router(app_state.clone()))
+        .merge(routes::contracts::router(app_state.clone()))
         .merge(routes::frontend::router());
 
     tracing::info!("start listening http://{}", frontend_origin);

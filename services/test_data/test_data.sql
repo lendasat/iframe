@@ -38,7 +38,7 @@ INSERT INTO loan_offers (id,
                    created_at,
                    updated_at)
 SELECT '456e7890-e12b-34d5-f678-901234567890',
-       '123e4567-e89b-12d3-a456-426614174000',
+       '20a7ab3c-8547-4a6b-9abe-1dc919225dfc',
        'Sample Loan',
        0.5,
        12.0,
@@ -54,3 +54,26 @@ SELECT '456e7890-e12b-34d5-f678-901234567890',
 WHERE NOT EXISTS (SELECT 1
                   FROM loan_offers
                   WHERE id = '456e7890-e12b-34d5-f678-901234567890');
+
+--- Insert a sample contract
+
+INSERT INTO contracts (id,
+                       lender_id,
+                       borrower_id,
+                       loan_id,
+                       initial_ltv,
+                       initial_collateral_sats,
+                       loan_amount,
+                       status,
+                       created_at,
+                       updated_at)
+VALUES ('620744ff-3130-456b-aa38-179b4776cf0a',
+        '20a7ab3c-8547-4a6b-9abe-1dc919225dfc',
+        '123e4567-e89b-12d3-a456-426614174000',
+        '456e7890-e12b-34d5-f678-901234567890',
+        0.5,
+        1000000,
+        750.00,
+        'Open',
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP);

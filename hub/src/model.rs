@@ -108,3 +108,26 @@ pub enum LoanOfferStatus {
     Unavailable,
     Deleted,
 }
+
+#[derive(Debug, FromRow, Serialize, Deserialize)]
+pub struct Contract {
+    pub id: String,
+    pub lender_id: String,
+    pub borrower_id: String,
+    pub loan_id: String,
+    pub initial_ltv: Decimal,
+    pub initial_collateral_sats: u64,
+    pub loan_amount: Decimal,
+    pub status: ContractStatus,
+    #[serde(with = "time::serde::rfc3339")]
+    pub created_at: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339")]
+    pub updated_at: OffsetDateTime,
+}
+
+#[derive(Debug, Deserialize, sqlx::Type, Serialize)]
+#[sqlx(type_name = "contract_status")]
+pub enum ContractStatus {
+    Open,
+    Closed,
+}

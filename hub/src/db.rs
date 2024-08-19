@@ -1,3 +1,4 @@
+pub(crate) mod contracts;
 pub(crate) mod loan_offers;
 pub(crate) mod user;
 
