@@ -10,6 +10,8 @@ pub struct Config {
     pub smtp_disabled: bool,
     pub borrower_frontend_origin: String,
     pub borrower_listen_address: String,
+    pub lender_frontend_origin: String,
+    pub lender_listen_address: String,
 }
 
 impl Config {
@@ -29,6 +31,11 @@ impl Config {
         let borrower_frontend_origin = std::env::var("BORROWER_FRONTEND_ORIGIN")
             .expect("BORROWER_FRONTEND_ORIGIN must be set");
 
+        let lender_listen_address =
+            std::env::var("LENDER_LISTEN_ADDRESS").expect("LENDER_LISTEN_ADDRESS must be set");
+        let lender_frontend_origin =
+            std::env::var("LENDER_FRONTEND_ORIGIN").expect("LENDER_FRONTEND_ORIGIN must be set");
+
         let any_smtp_not_configured = smtp_host.is_none()
             || smtp_port.is_none()
             || smtp_user.is_none()
@@ -46,6 +53,8 @@ impl Config {
             smtp_from: smtp_from.unwrap_or_default(),
             borrower_listen_address,
             borrower_frontend_origin,
+            lender_listen_address,
+            lender_frontend_origin,
             smtp_disabled: any_smtp_not_configured
                 || smtp_disabled
                     .map(|disabled| disabled.parse::<bool>().unwrap())

@@ -1,34 +1,32 @@
 use crate::db;
-use crate::model::User;
-use crate::routes::ErrorResponse;
-use crate::AppState;
+use crate::routes::borrower::auth;
+use crate::routes::borrower::AppState;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::middleware;
 use axum::response::IntoResponse;
 use axum::routing::get;
-use axum::Extension;
 use axum::Json;
 use axum::Router;
+use serde::Serialize;
 use std::sync::Arc;
 
 pub(crate) fn router(app_state: Arc<AppState>) -> Router {
     Router::new()
         .route(
-            "/api/contracts",
-            get(get_active_contracts).route_layer(middleware::from_fn_with_state(
+            "/api/offers",
+            get(get_all_available_loan_offers).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
-                crate::routes::auth::jwt_auth::auth,
+                auth::jwt_auth::auth,
             )),
         )
         .with_state(app_state)
 }
 
-pub async fn get_active_contracts(
+pub async fn get_all_available_loan_offers(
     State(data): State<Arc<AppState>>,
-    Extension(user): Extension<User>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let contracts = db::contracts::load_all_contracts_by_borrower_id(&data.db, user.id.as_str())
+    let loans = db::loan_offers::load_all_available_loan_offers(&data.db)
         .await
         .map_err(|error| {
             let error_response = ErrorResponse {
@@ -38,5 +36,10 @@ pub async fn get_active_contracts(
         })
         .unwrap();
 
-    Ok((StatusCode::OK, Json(contracts)))
+    Ok((StatusCode::OK, Json(loans)))
+}
+
+#[derive(Debug, Serialize)]
+pub struct ErrorResponse {
+    pub message: String,
 }

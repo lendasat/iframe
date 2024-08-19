@@ -3,11 +3,9 @@ use crate::db::connect_to_db;
 use crate::db::run_migration;
 use crate::db::sample_query;
 use crate::logger::init_tracing;
+use crate::routes::borrower::spawn_borrower_server;
+use crate::routes::lender::spawn_lender_server;
 use anyhow::Result;
-use axum::Router;
-use sqlx::Pool;
-use sqlx::Postgres;
-use std::sync::Arc;
 use tracing::level_filters::LevelFilter;
 
 mod config;
@@ -17,40 +15,24 @@ mod logger;
 mod model;
 mod routes;
 
-pub struct AppState {
-    db: Pool<Postgres>,
-    config: Config,
-}
-
 #[tokio::main]
 async fn main() -> Result<()> {
     init_tracing(LevelFilter::DEBUG, false, true).expect("to work");
     tracing::info!("Hello World");
 
     let config = Config::init();
-    let borrower_listen_address = config.borrower_listen_address.clone();
-    let borrower_frontend_origin = config.borrower_frontend_origin.clone();
 
-    let pool = connect_to_db(config.database_url.as_str()).await?;
-    run_migration(&pool).await?;
-    sample_query(&pool).await?;
+    let db = connect_to_db(config.database_url.as_str()).await?;
+    run_migration(&db).await?;
+    sample_query(&db).await?;
 
-    let app_state = Arc::new(AppState { db: pool, config });
+    let borrower_server = spawn_borrower_server(config.clone(), db.clone()).await;
 
-    let app = Router::new()
-        .merge(routes::health_check::router())
-        .merge(routes::auth::router(app_state.clone()))
-        .merge(routes::loan_offers::router(app_state.clone()))
-        .merge(routes::contracts::router(app_state.clone()))
-        .merge(routes::frontend::router());
+    let lender_server = spawn_lender_server(config, db).await;
 
-    tracing::info!(
-        "Starting to listen for borrowers on http://{}",
-        borrower_frontend_origin
-    );
-    let listener = tokio::net::TcpListener::bind(borrower_listen_address)
-        .await
-        .unwrap();
-    axum::serve(listener, app).await.unwrap();
+    let _ = tokio::join!(borrower_server, lender_server);
+
+    tracing::info!("Servers stopped");
+
     Ok(())
 }
