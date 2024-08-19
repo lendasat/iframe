@@ -13,8 +13,8 @@ use std::sync::Arc;
 pub(crate) fn router(app_state: Arc<AppState>) -> Router {
     Router::new()
         .route(
-            "/api/loans",
-            get(get_active_loans).route_layer(middleware::from_fn_with_state(
+            "/api/offers",
+            get(get_active_loan_offers).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
                 crate::routes::auth::jwt_auth::auth,
             )),
@@ -22,10 +22,10 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
         .with_state(app_state)
 }
 
-pub async fn get_active_loans(
+pub async fn get_active_loan_offers(
     State(data): State<Arc<AppState>>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let loans = db::loans::load_all_available_loans(&data.db)
+    let loans = db::loan_offers::load_all_available_loan_offers(&data.db)
         .await
         .map_err(|error| {
             let error_response = ErrorResponse {

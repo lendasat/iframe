@@ -1,4 +1,4 @@
-pub(crate) mod loans;
+pub(crate) mod loan_offers;
 pub(crate) mod user;
 
 use anyhow::Result;

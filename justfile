@@ -83,3 +83,26 @@ db-revert-migration:
 
 watch-all:
     just watch-frontend & just watch-backend
+
+## ------------------------
+## Insert some test data into our database
+## ------------------------
+
+db-test-data:
+    #!/usr/bin/env bash
+    just db-run-migration
+    set -euxo pipefail
+
+    CONTAINER_NAME="postgres"
+    DB_NAME="hub"
+    DB_USER="hub"
+
+    # Read SQL queries from the file
+    SQL_FILE="./services/test_data/test_data.sql"
+    SQL_QUERIES=$(cat "$SQL_FILE")
+
+    # Execute SQL queries
+    echo "$SQL_QUERIES" | docker exec -i "$CONTAINER_NAME" psql -U "$DB_USER" -d "$DB_NAME"
+
+
+    echo "Test data inserted successfully."

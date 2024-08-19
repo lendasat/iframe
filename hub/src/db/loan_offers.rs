@@ -1,14 +1,16 @@
-use crate::model::Loan;
 use crate::model::LoanAssetChain;
 use crate::model::LoanAssetType;
+use crate::model::LoanOffer;
 use crate::model::LoanOfferStatus;
 use anyhow::Result;
 use sqlx::Pool;
 use sqlx::Postgres;
 
-pub(crate) async fn load_all_available_loans(pool: &Pool<Postgres>) -> Result<Vec<Loan>> {
+pub(crate) async fn load_all_available_loan_offers(
+    pool: &Pool<Postgres>,
+) -> Result<Vec<LoanOffer>> {
     let loans = sqlx::query_as!(
-        Loan,
+        LoanOffer,
         r#"
         SELECT
             id,
@@ -23,7 +25,7 @@ pub(crate) async fn load_all_available_loans(pool: &Pool<Postgres>) -> Result<Ve
             status AS "status: LoanOfferStatus", 
             created_at,
             updated_at
-        FROM loans
+        FROM loan_offers
         WHERE status = 'Available'
         "#
     )

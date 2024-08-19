@@ -9,6 +9,23 @@ use `just deps`, to install it.
 
 ### Dev run
 
+### Postman: For local API development
+
+It's recommended to populate the database by running:
+
+```bash
+just db-test-data
+```
+
+There will be two test users added in the dev database
+
+- Bob the Lender:
+  - `username`: `bob_the_borrower@lendasat.com`
+  - `password`: `password123`
+- Alice the Borrower
+  - `username`: `alice_the_lender@lendasat.com`
+  - `password`: `123password`
+
 Before you can run the `hub`, you will need to make a copy of [./.env_sample](./.env_sample) and configure all variables.
 
 Start the `hub` and builds the frontend in one go and watch for file changes.

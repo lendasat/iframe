@@ -70,7 +70,7 @@ pub struct ResetPasswordSchema {
 }
 
 #[derive(Debug, FromRow, Serialize, Deserialize)]
-pub struct Loan {
+pub struct LoanOffer {
     pub id: String,
     pub lender_id: String,
     pub name: String,

@@ -9,7 +9,7 @@ CREATE TYPE loan_offer_status AS ENUM ('Available', 'Unavailable', 'Deleted');
 
 
 CREATE TABLE
-    IF NOT EXISTS "loans"
+    IF NOT EXISTS "loan_offers"
 (
     id                  CHAR(36) PRIMARY KEY     NOT NULL,
     lender_id           CHAR(36)                 NOT NULL,

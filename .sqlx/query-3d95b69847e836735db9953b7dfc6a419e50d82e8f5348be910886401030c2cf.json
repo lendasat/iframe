@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            id,\n            lender_id,\n            name,\n            min_ltv,\n            interest_rate,\n            loan_amount_min,\n            loan_amount_max,\n            loan_asset_type AS \"loan_asset_type: LoanAssetType\", \n            loan_asset_chain AS \"loan_asset_chain: LoanAssetChain\", \n            status AS \"status: LoanOfferStatus\", \n            created_at,\n            updated_at\n        FROM loans\n        WHERE status = 'Available'\n        ",
+  "query": "\n        SELECT\n            id,\n            lender_id,\n            name,\n            min_ltv,\n            interest_rate,\n            loan_amount_min,\n            loan_amount_max,\n            loan_asset_type AS \"loan_asset_type: LoanAssetType\", \n            loan_asset_chain AS \"loan_asset_chain: LoanAssetChain\", \n            status AS \"status: LoanOfferStatus\", \n            created_at,\n            updated_at\n        FROM loan_offers\n        WHERE status = 'Available'\n        ",
   "describe": {
     "columns": [
       {
@@ -113,5 +113,5 @@
       false
     ]
   },
-  "hash": "f191d1532beefd416f9efe9ce8436d7f85d964f116a9acc1e1a53f01b87a1381"
+  "hash": "3d95b69847e836735db9953b7dfc6a419e50d82e8f5348be910886401030c2cf"
 }
