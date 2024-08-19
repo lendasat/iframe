@@ -1,0 +1,117 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT\n            id,\n            lender_id,\n            name,\n            min_ltv,\n            interest_rate,\n            loan_amount_min,\n            loan_amount_max,\n            loan_asset_type AS \"loan_asset_type: LoanAssetType\", \n            loan_asset_chain AS \"loan_asset_chain: LoanAssetChain\", \n            status AS \"status: LoanOfferStatus\", \n            created_at,\n            updated_at\n        FROM loans\n        WHERE status = 'Available'\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "lender_id",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "min_ltv",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 4,
+        "name": "interest_rate",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 5,
+        "name": "loan_amount_min",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 6,
+        "name": "loan_amount_max",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 7,
+        "name": "loan_asset_type: LoanAssetType",
+        "type_info": {
+          "Custom": {
+            "name": "loan_asset_type",
+            "kind": {
+              "Enum": [
+                "Usdc",
+                "Usdt"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "loan_asset_chain: LoanAssetChain",
+        "type_info": {
+          "Custom": {
+            "name": "loan_asset_chain",
+            "kind": {
+              "Enum": [
+                "Ethereum",
+                "Starknet"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "status: LoanOfferStatus",
+        "type_info": {
+          "Custom": {
+            "name": "loan_offer_status",
+            "kind": {
+              "Enum": [
+                "Available",
+                "Unavailable",
+                "Deleted"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 11,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "f191d1532beefd416f9efe9ce8436d7f85d964f116a9acc1e1a53f01b87a1381"
+}

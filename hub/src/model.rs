@@ -1,8 +1,10 @@
 use argon2::Argon2;
 use argon2::PasswordHash;
 use argon2::PasswordVerifier;
+use rust_decimal::Decimal;
 use serde::Deserialize;
 use serde::Serialize;
+use sqlx::FromRow;
 use time::OffsetDateTime;
 
 #[derive(Debug, Deserialize, sqlx::FromRow, Serialize, Clone)]
@@ -65,4 +67,44 @@ pub struct ResetPasswordSchema {
     pub password: String,
     #[serde(rename = "passwordConfirm")]
     pub password_confirm: String,
+}
+
+#[derive(Debug, FromRow, Serialize, Deserialize)]
+pub struct Loan {
+    pub id: String,
+    pub lender_id: String,
+    pub name: String,
+    pub min_ltv: Decimal,
+    pub interest_rate: Decimal,
+    pub loan_amount_min: Decimal,
+    pub loan_amount_max: Decimal,
+    pub loan_asset_type: LoanAssetType,
+    pub loan_asset_chain: LoanAssetChain,
+    pub status: LoanOfferStatus,
+    #[serde(with = "time::serde::rfc3339")]
+    pub created_at: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339")]
+    pub updated_at: OffsetDateTime,
+}
+
+#[derive(Debug, Deserialize, sqlx::Type, Serialize)]
+#[sqlx(type_name = "loan_asset_type")]
+pub enum LoanAssetType {
+    Usdc,
+    Usdt,
+}
+
+#[derive(Debug, Deserialize, sqlx::Type, Serialize)]
+#[sqlx(type_name = "loan_asset_chain")]
+pub enum LoanAssetChain {
+    Ethereum,
+    Starknet,
+}
+
+#[derive(Debug, Deserialize, sqlx::Type, Serialize)]
+#[sqlx(type_name = "loan_offer_status")]
+pub enum LoanOfferStatus {
+    Available,
+    Unavailable,
+    Deleted,
 }

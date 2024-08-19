@@ -39,7 +39,7 @@ use serde_json::json;
 use std::sync::Arc;
 use time::OffsetDateTime;
 
-mod jwt_auth;
+pub(crate) mod jwt_auth;
 
 /// Expiry time of a session cookie
 const COOKIE_EXPIRY_HOURS: i64 = 1;
