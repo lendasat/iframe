@@ -69,6 +69,19 @@ pub struct ResetPasswordSchema {
     pub password_confirm: String,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct CreateLoanOfferSchema {
+    pub name: String,
+    pub min_ltv: Decimal,
+    pub interest_rate: Decimal,
+    pub loan_amount_min: Decimal,
+    pub loan_amount_max: Decimal,
+    pub duration_months_min: i32,
+    pub duration_months_max: i32,
+    pub loan_asset_type: LoanAssetType,
+    pub loan_asset_chain: LoanAssetChain,
+}
+
 #[derive(Debug, FromRow, Serialize, Deserialize)]
 pub struct LoanOffer {
     pub id: String,
@@ -78,6 +91,8 @@ pub struct LoanOffer {
     pub interest_rate: Decimal,
     pub loan_amount_min: Decimal,
     pub loan_amount_max: Decimal,
+    pub duration_months_min: i32,
+    pub duration_months_max: i32,
     pub loan_asset_type: LoanAssetType,
     pub loan_asset_chain: LoanAssetChain,
     pub status: LoanOfferStatus,
