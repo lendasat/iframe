@@ -1,11 +1,7 @@
 use serde::Serialize;
 
-pub(crate) mod frontend;
-pub(crate) mod health_check;
-
-pub(crate) mod auth;
-pub(crate) mod contracts;
-pub(crate) mod loan_offers;
+pub(crate) mod borrower;
+pub(crate) mod lender;
 
 #[derive(Debug, Serialize)]
 pub struct ErrorResponse {

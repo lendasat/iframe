@@ -1,8 +1,8 @@
 use crate::db::user::get_user_by_id;
 use crate::model::TokenClaims;
 use crate::model::User;
-use crate::routes::auth::ErrorResponse;
-use crate::AppState;
+use crate::routes::borrower::auth::ErrorResponse;
+use crate::routes::borrower::AppState;
 use axum::body::Body;
 use axum::extract::State;
 use axum::http::header;
