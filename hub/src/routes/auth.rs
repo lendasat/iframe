@@ -39,7 +39,7 @@ use serde_json::json;
 use std::sync::Arc;
 use time::OffsetDateTime;
 
-mod jwt_auth;
+pub(crate) mod jwt_auth;
 
 /// Expiry time of a session cookie
 const COOKIE_EXPIRY_HOURS: i64 = 1;
@@ -177,8 +177,8 @@ pub async fn login_user_handler(
     let exp = (now + time::Duration::minutes(VERIFICATION_TOKEN_EXPIRY_MINUTES)).unix_timestamp();
     let claims: TokenClaims = TokenClaims {
         user_id: user.id.to_string(),
-        expiry: exp,
-        instantiation: iat,
+        exp,
+        iat,
     };
 
     let token = encode(
