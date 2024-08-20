@@ -1,5 +1,3 @@
-mod jwt_auth;
-
 use crate::db::lenders::generate_random_string;
 use crate::db::lenders::get_user_by_email;
 use crate::db::lenders::get_user_by_rest_token;
@@ -40,6 +38,8 @@ use serde::Serialize;
 use serde_json::json;
 use std::sync::Arc;
 use time::OffsetDateTime;
+
+pub(crate) mod jwt_auth;
 
 /// Expiry time of a session cookie
 const COOKIE_EXPIRY_HOURS: i64 = 1;

@@ -1,3 +1,4 @@
+use crate::model::CreateLoanOfferSchema;
 use crate::model::LoanAssetChain;
 use crate::model::LoanAssetType;
 use crate::model::LoanOffer;
@@ -20,9 +21,11 @@ pub(crate) async fn load_all_available_loan_offers(
             interest_rate,
             loan_amount_min,
             loan_amount_max,
-            loan_asset_type AS "loan_asset_type: LoanAssetType", 
-            loan_asset_chain AS "loan_asset_chain: LoanAssetChain", 
-            status AS "status: LoanOfferStatus", 
+            duration_months_min,
+            duration_months_max,
+            loan_asset_type AS "loan_asset_type: crate::model::LoanAssetType",
+            loan_asset_chain AS "loan_asset_chain: crate::model::LoanAssetChain",
+            status AS "status: crate::model::LoanOfferStatus",
             created_at,
             updated_at
         FROM loan_offers
@@ -33,4 +36,98 @@ pub(crate) async fn load_all_available_loan_offers(
     .await?;
 
     Ok(loans)
+}
+
+pub(crate) async fn load_all_loan_offers_by_lender(
+    pool: &Pool<Postgres>,
+    lender_id: String,
+) -> Result<Vec<LoanOffer>> {
+    let loans = sqlx::query_as!(
+        LoanOffer,
+        r#"
+        SELECT
+            id,
+            lender_id,
+            name,
+            min_ltv,
+            interest_rate,
+            loan_amount_min,
+            loan_amount_max,
+            duration_months_min,
+            duration_months_max,
+            loan_asset_type AS "loan_asset_type: crate::model::LoanAssetType",
+            loan_asset_chain AS "loan_asset_chain: crate::model::LoanAssetChain",
+            status AS "status: crate::model::LoanOfferStatus",
+            created_at,
+            updated_at
+        FROM loan_offers
+        WHERE lender_id = $1
+        "#,
+        lender_id
+    )
+    .fetch_all(pool)
+    .await?;
+
+    Ok(loans)
+}
+
+pub(crate) async fn insert_loan_offer(
+    pool: &Pool<Postgres>,
+    offer: CreateLoanOfferSchema,
+    lender_id: String,
+) -> Result<LoanOffer> {
+    let id = uuid::Uuid::new_v4().to_string();
+    let status = crate::model::LoanOfferStatus::Available;
+
+    let loan = sqlx::query_as!(
+        LoanOffer,
+        r#"
+        INSERT INTO loan_offers (
+          id,
+          lender_id,
+          name,
+          min_ltv,
+          interest_rate,
+          loan_amount_min,
+          loan_amount_max,
+          duration_months_min,
+          duration_months_max,
+          loan_asset_type,
+          loan_asset_chain,
+          status
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        RETURNING
+          id,
+          lender_id,
+          name,
+          min_ltv,
+          interest_rate,
+          loan_amount_min,
+          loan_amount_max,
+          duration_months_min,
+          duration_months_max,
+          loan_asset_type AS "loan_asset_type: crate::model::LoanAssetType",
+          loan_asset_chain AS "loan_asset_chain: crate::model::LoanAssetChain",
+          status AS "status: crate::model::LoanOfferStatus",
+          created_at,
+          updated_at
+        "#,
+        id,
+        lender_id,
+        offer.name,
+        offer.min_ltv,
+        offer.interest_rate,
+        offer.loan_amount_min,
+        offer.loan_amount_max,
+        offer.duration_months_min,
+        offer.duration_months_max,
+        offer.loan_asset_type as LoanAssetType,
+        offer.loan_asset_chain as LoanAssetChain,
+        status as LoanOfferStatus,
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(loan)
 }

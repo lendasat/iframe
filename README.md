@@ -42,6 +42,18 @@ After you made some changes to the database or sqlx queries, make sure to run th
 just db-prepare
 ```
 
+If you get
+
+```
+warning: no queries found; please ensure that the `offline` feature is enabled in sqlx query data written to `sqlx-data.json` in the current directory; please check this into version control
+```
+
+you probably need to update `sqlx-cli`:
+
+```bash
+cargo install sqlx-cli
+```
+
 ### Postman: For local API development
 
 For local API development we make use of [Postman](https://www.postman.com/downloads/).

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            id,\n            lender_id,\n            name,\n            min_ltv,\n            interest_rate,\n            loan_amount_min,\n            loan_amount_max,\n            loan_asset_type AS \"loan_asset_type: LoanAssetType\", \n            loan_asset_chain AS \"loan_asset_chain: LoanAssetChain\", \n            status AS \"status: LoanOfferStatus\", \n            created_at,\n            updated_at\n        FROM loan_offers\n        WHERE status = 'Available'\n        ",
+  "query": "\n        SELECT\n            id,\n            lender_id,\n            name,\n            min_ltv,\n            interest_rate,\n            loan_amount_min,\n            loan_amount_max,\n            duration_months_min,\n            duration_months_max,\n            loan_asset_type AS \"loan_asset_type: crate::model::LoanAssetType\",\n            loan_asset_chain AS \"loan_asset_chain: crate::model::LoanAssetChain\",\n            status AS \"status: crate::model::LoanOfferStatus\",\n            created_at,\n            updated_at\n        FROM loan_offers\n        WHERE status = 'Available'\n        ",
   "describe": {
     "columns": [
       {
@@ -40,7 +40,17 @@
       },
       {
         "ordinal": 7,
-        "name": "loan_asset_type: LoanAssetType",
+        "name": "duration_months_min",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 8,
+        "name": "duration_months_max",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 9,
+        "name": "loan_asset_type: crate::model::LoanAssetType",
         "type_info": {
           "Custom": {
             "name": "loan_asset_type",
@@ -54,8 +64,8 @@
         }
       },
       {
-        "ordinal": 8,
-        "name": "loan_asset_chain: LoanAssetChain",
+        "ordinal": 10,
+        "name": "loan_asset_chain: crate::model::LoanAssetChain",
         "type_info": {
           "Custom": {
             "name": "loan_asset_chain",
@@ -69,8 +79,8 @@
         }
       },
       {
-        "ordinal": 9,
-        "name": "status: LoanOfferStatus",
+        "ordinal": 11,
+        "name": "status: crate::model::LoanOfferStatus",
         "type_info": {
           "Custom": {
             "name": "loan_offer_status",
@@ -85,12 +95,12 @@
         }
       },
       {
-        "ordinal": 10,
+        "ordinal": 12,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 11,
+        "ordinal": 13,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -110,8 +120,10 @@
       false,
       false,
       false,
+      false,
+      false,
       false
     ]
   },
-  "hash": "3d95b69847e836735db9953b7dfc6a419e50d82e8f5348be910886401030c2cf"
+  "hash": "5aa0d74f9a89ef33b35db1e3adc8440f0ba889c79cfc288515ac85500de55b6c"
 }
