@@ -1,7 +1,6 @@
 use crate::config::Config;
 use crate::db::connect_to_db;
 use crate::db::run_migration;
-use crate::db::sample_query;
 use crate::logger::init_tracing;
 use crate::routes::borrower::spawn_borrower_server;
 use crate::routes::lender::spawn_lender_server;
@@ -24,7 +23,6 @@ async fn main() -> Result<()> {
 
     let db = connect_to_db(config.database_url.as_str()).await?;
     run_migration(&db).await?;
-    sample_query(&db).await?;
 
     let borrower_server = spawn_borrower_server(config.clone(), db.clone()).await;
 

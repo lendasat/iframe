@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT *\n            FROM users\n            WHERE password_reset_token = $1\n          AND password_reset_at > $2",
+  "query": "SELECT * FROM lenders WHERE email = $1",
   "describe": {
     "columns": [
       {
@@ -56,8 +56,7 @@
     ],
     "parameters": {
       "Left": [
-        "Text",
-        "Timestamptz"
+        "Text"
       ]
     },
     "nullable": [
@@ -73,5 +72,5 @@
       false
     ]
   },
-  "hash": "8c247128b011947d9438930edc0a310457be68549385ed130ed5f2987f03eb17"
+  "hash": "cc9688d6ccafb3e88ddd66536dab867c3ffcc90f3bf54f03efa4890c02ea27f6"
 }

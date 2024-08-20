@@ -1,7 +1,12 @@
 -- Add down migration script here
+DROP TABLE IF EXISTS contracts;
+DROP TABLE IF EXISTS loan_offers;
 
-DROP TABLE IF EXISTS users;
+DROP TYPE IF EXISTS loan_asset_type;
+DROP TYPE IF EXISTS loan_asset_chain;
+DROP TYPE IF EXISTS loan_offer_status;
 
-DROP INDEX IF EXISTS idx_verification_code;
-DROP INDEX IF EXISTS idx_password_reset_token;
-DROP INDEX IF EXISTS idx_password_reset_at;
+DROP TYPE IF EXISTS contract_status;
+
+DROP TABLE IF EXISTS "lenders";
+DROP TABLE IF EXISTS "borrowers";

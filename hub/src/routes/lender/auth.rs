@@ -1,12 +1,14 @@
-use crate::db::borrowers::generate_random_string;
-use crate::db::borrowers::get_user_by_email;
-use crate::db::borrowers::get_user_by_rest_token;
-use crate::db::borrowers::get_user_by_verification_code;
-use crate::db::borrowers::register_user;
-use crate::db::borrowers::update_password_reset_token_for_user;
-use crate::db::borrowers::update_user_password;
-use crate::db::borrowers::user_exists;
-use crate::db::borrowers::verify_user;
+mod jwt_auth;
+
+use crate::db::lenders::generate_random_string;
+use crate::db::lenders::get_user_by_email;
+use crate::db::lenders::get_user_by_rest_token;
+use crate::db::lenders::get_user_by_verification_code;
+use crate::db::lenders::register_user;
+use crate::db::lenders::update_password_reset_token_for_user;
+use crate::db::lenders::update_user_password;
+use crate::db::lenders::user_exists;
+use crate::db::lenders::verify_user;
 use crate::email::Email;
 use crate::model::ForgotPasswordSchema;
 use crate::model::LoginUserSchema;
@@ -14,7 +16,7 @@ use crate::model::RegisterUserSchema;
 use crate::model::ResetPasswordSchema;
 use crate::model::TokenClaims;
 use crate::model::User;
-use crate::routes::borrower::auth::jwt_auth::auth;
+use crate::routes::lender::auth::jwt_auth::auth;
 use crate::routes::AppState;
 use axum::extract::Path;
 use axum::extract::State;
@@ -38,8 +40,6 @@ use serde::Serialize;
 use serde_json::json;
 use std::sync::Arc;
 use time::OffsetDateTime;
-
-pub(crate) mod jwt_auth;
 
 /// Expiry time of a session cookie
 const COOKIE_EXPIRY_HOURS: i64 = 1;
@@ -117,7 +117,7 @@ pub async fn register_user_handler(
     let email = user.email.clone();
     let verification_url = format!(
         "{}/api/auth/verifyemail/{}",
-        data.config.borrower_frontend_origin.to_owned(),
+        data.config.lender_frontend_origin.to_owned(),
         user.clone()
             .verification_code
             .expect("to have verification code for new user")
@@ -279,7 +279,7 @@ pub async fn forgot_password_handler(
 
     let password_reset_url = format!(
         "{}/api/auth/resetpassword/{}",
-        data.config.borrower_frontend_origin.to_owned(),
+        data.config.lender_frontend_origin.to_owned(),
         password_reset_token
     );
 

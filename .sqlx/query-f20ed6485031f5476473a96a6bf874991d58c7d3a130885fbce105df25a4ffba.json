@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE users SET verification_code = $1, verified = $2 WHERE verification_code = $3",
+  "query": "UPDATE borrowers SET verification_code = $1, verified = $2 WHERE verification_code = $3",
   "describe": {
     "columns": [],
     "parameters": {
@@ -12,5 +12,5 @@
     },
     "nullable": []
   },
-  "hash": "06d97cfcbed59a9d85348f3e6471a95a5fbd550fe3b75ad5393d277edd8309f8"
+  "hash": "f20ed6485031f5476473a96a6bf874991d58c7d3a130885fbce105df25a4ffba"
 }
