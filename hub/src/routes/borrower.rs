@@ -1,4 +1,5 @@
 use crate::config::Config;
+use crate::routes::AppState;
 use axum::Router;
 use sqlx::Pool;
 use sqlx::Postgres;
@@ -10,11 +11,6 @@ pub(crate) mod contracts;
 pub(crate) mod frontend;
 pub(crate) mod health_check;
 pub(crate) mod loan_offers;
-
-pub struct AppState {
-    db: Pool<Postgres>,
-    config: Config,
-}
 
 pub async fn spawn_borrower_server(config: Config, db: Pool<Postgres>) -> JoinHandle<()> {
     let app_state = Arc::new(AppState {

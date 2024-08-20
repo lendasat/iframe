@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT *\n            FROM users\n            WHERE password_reset_token = $1\n          AND password_reset_at > $2",
+  "query": "SELECT *\n            FROM borrowers\n            WHERE password_reset_token = $1\n          AND password_reset_at > $2",
   "describe": {
     "columns": [
       {
@@ -73,5 +73,5 @@
       false
     ]
   },
-  "hash": "8c247128b011947d9438930edc0a310457be68549385ed130ed5f2987f03eb17"
+  "hash": "e0fa837f154dab0589ec93b8a4ce0d50deef58a6c461d308937cd1f2b76554ec"
 }

@@ -1,4 +1,5 @@
 use crate::config::Config;
+use crate::routes::AppState;
 use axum::Router;
 use sqlx::Pool;
 use sqlx::Postgres;
@@ -7,15 +8,10 @@ use tokio::task::JoinHandle;
 
 pub(crate) mod health_check;
 
-pub struct AppState {
-    _db: Pool<Postgres>,
-    _config: Config,
-}
-
 pub async fn spawn_lender_server(config: Config, db: Pool<Postgres>) -> JoinHandle<()> {
     let _app_state = Arc::new(AppState {
-        _db: db,
-        _config: config.clone(),
+        db,
+        config: config.clone(),
     });
     let app = Router::new().merge(health_check::router());
 

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO users (id, name, email, password, verification_code)\n            VALUES ($1, $2, $3, $4, $5)\n            RETURNING *",
+  "query": "SELECT * FROM borrowers WHERE id = $1",
   "describe": {
     "columns": [
       {
@@ -56,11 +56,7 @@
     ],
     "parameters": {
       "Left": [
-        "Bpchar",
-        "Varchar",
-        "Varchar",
-        "Varchar",
-        "Varchar"
+        "Bpchar"
       ]
     },
     "nullable": [
@@ -76,5 +72,5 @@
       false
     ]
   },
-  "hash": "a7b2eb068af0f1e07762c63bdb234e5f98107ef41b430e53ce1125ec52180e8b"
+  "hash": "be4841a84b5c2c5d25644f1da58f9aebcf8997a957edfd05ba57c014eb6dd2bd"
 }

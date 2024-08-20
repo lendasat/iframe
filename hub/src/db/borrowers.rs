@@ -28,7 +28,7 @@ pub async fn register_user(
     let id = uuid::Uuid::new_v4().to_string();
     let user: User = sqlx::query_as!(
         User,
-        "INSERT INTO users (id, name, email, password, verification_code)
+        "INSERT INTO borrowers (id, name, email, password, verification_code)
             VALUES ($1, $2, $3, $4, $5)
             RETURNING *",
         id,
@@ -50,13 +50,13 @@ pub async fn user_exists(pool: &Pool<Postgres>, email: &str) -> Result<bool> {
 
 pub async fn get_user_by_email(pool: &Pool<Postgres>, email: &str) -> Result<Option<User>> {
     let email = email.to_ascii_lowercase();
-    let maybe_user = sqlx::query_as!(User, "SELECT * FROM users WHERE email = $1", email)
+    let maybe_user = sqlx::query_as!(User, "SELECT * FROM borrowers WHERE email = $1", email)
         .fetch_optional(pool)
         .await?;
     Ok(maybe_user)
 }
 pub async fn get_user_by_id(pool: &Pool<Postgres>, id: &str) -> Result<Option<User>> {
-    let maybe_user = sqlx::query_as!(User, "SELECT * FROM users WHERE id = $1", id)
+    let maybe_user = sqlx::query_as!(User, "SELECT * FROM borrowers WHERE id = $1", id)
         .fetch_optional(pool)
         .await?;
     Ok(maybe_user)
@@ -68,7 +68,7 @@ pub async fn get_user_by_verification_code(
 ) -> Result<Option<User>> {
     let maybe_user = sqlx::query_as!(
         User,
-        "SELECT * FROM users WHERE verification_code = $1",
+        "SELECT * FROM borrowers WHERE verification_code = $1",
         verification_code
     )
     .fetch_optional(pool)
@@ -78,7 +78,7 @@ pub async fn get_user_by_verification_code(
 
 pub async fn verify_user(pool: &Pool<Postgres>, verification_code: &str) -> Result<()> {
     sqlx::query!(
-        "UPDATE users SET verification_code = $1, verified = $2 WHERE verification_code = $3",
+        "UPDATE borrowers SET verification_code = $1, verified = $2 WHERE verification_code = $3",
         Option::<String>::None,
         true,
         verification_code,
@@ -95,7 +95,7 @@ pub async fn update_password_reset_token_for_user(
     email: &str,
 ) -> Result<()> {
     sqlx::query!(
-        "UPDATE users
+        "UPDATE borrowers
         SET password_reset_token = $1,
             password_reset_at    = $2
         WHERE email = $3",
@@ -118,7 +118,7 @@ pub async fn get_user_by_rest_token(
     let maybe_user = sqlx::query_as!(
         User,
         "SELECT *
-            FROM users
+            FROM borrowers
             WHERE password_reset_token = $1
           AND password_reset_at > $2",
         password_reset_token,
@@ -136,7 +136,7 @@ pub async fn update_user_password(
 ) -> Result<()> {
     let hashed_password = generate_hashed_password(password)?;
     sqlx::query!(
-        "UPDATE users
+        "UPDATE borrowers
                 SET password             = $1,
                     password_reset_token = $2,
                     password_reset_at    = $3

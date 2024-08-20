@@ -1,7 +1,7 @@
 use crate::db;
 use crate::model::User;
-use crate::routes::borrower::auth;
-use crate::routes::borrower::AppState;
+use crate::routes::borrower::auth::jwt_auth;
+use crate::routes::AppState;
 use crate::routes::ErrorResponse;
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -19,7 +19,7 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
             "/api/contracts",
             get(get_active_contracts).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
-                auth::jwt_auth::auth,
+                jwt_auth::auth,
             )),
         )
         .with_state(app_state)

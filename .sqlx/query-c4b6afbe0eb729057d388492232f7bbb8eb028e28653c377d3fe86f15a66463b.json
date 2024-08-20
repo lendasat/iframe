@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT * FROM users WHERE verification_code = $1",
+  "query": "SELECT * FROM borrowers WHERE email = $1",
   "describe": {
     "columns": [
       {
@@ -72,5 +72,5 @@
       false
     ]
   },
-  "hash": "bff26e77f589467286226621ac1f97398f7cd56a6d9edea90b68cc7486e86fae"
+  "hash": "c4b6afbe0eb729057d388492232f7bbb8eb028e28653c377d3fe86f15a66463b"
 }

@@ -1,5 +1,5 @@
 -- insert test users
-INSERT INTO users (id, name, email, password, verified, verification_code, created_at, updated_at)
+INSERT INTO borrowers (id, name, email, password, verified, verification_code, created_at, updated_at)
 SELECT '123e4567-e89b-12d3-a456-426614174000',
        'Bob the Borrower',
        'bob_the_borrower@lendasat.com',
@@ -8,9 +8,9 @@ SELECT '123e4567-e89b-12d3-a456-426614174000',
        'pDmXz0yyjW5yanNtLz6E',
        '2024-08-19 04:57:49.032793 +00:00',
        '2024-08-19 04:57:49.032793 +00:00'
-WHERE NOT EXISTS (SELECT 1 FROM users WHERE id = '123e4567-e89b-12d3-a456-426614174000');
+WHERE NOT EXISTS (SELECT 1 FROM borrowers WHERE id = '123e4567-e89b-12d3-a456-426614174000');
 
-INSERT INTO users (id, name, email, password, verified, verification_code, created_at, updated_at)
+INSERT INTO borrowers (id, name, email, password, verified, verification_code, created_at, updated_at)
 SELECT '20a7ab3c-8547-4a6b-9abe-1dc919225dfc',
        'Alice the Lender',
        'alice_the_lender@lendasat.com',
@@ -19,7 +19,7 @@ SELECT '20a7ab3c-8547-4a6b-9abe-1dc919225dfc',
        'SsZiL7cqUPZxRUmzRmxl',
        '2024-08-19 05:00:09.115318 +00:00',
        '2024-08-19 05:00:09.115318 +00:00'
-WHERE NOT EXISTS (SELECT 1 FROM users WHERE id = '20a7ab3c-8547-4a6b-9abe-1dc919225dfc');
+WHERE NOT EXISTS (SELECT 1 FROM borrowers WHERE id = '20a7ab3c-8547-4a6b-9abe-1dc919225dfc');
 
 
 -- Insert a sample loan

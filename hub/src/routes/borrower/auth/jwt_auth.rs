@@ -1,4 +1,4 @@
-use crate::db::user::get_user_by_id;
+use crate::db::borrowers::get_user_by_id;
 use crate::model::TokenClaims;
 use crate::model::User;
 use crate::routes::borrower::auth::ErrorResponse;

@@ -1,6 +1,6 @@
+pub(crate) mod borrowers;
 pub(crate) mod contracts;
 pub(crate) mod loan_offers;
-pub(crate) mod user;
 
 use anyhow::Result;
 use sqlx::postgres::PgPoolOptions;
