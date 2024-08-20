@@ -1,12 +1,18 @@
 use crate::config::Config;
 use crate::model::User;
+use anyhow::bail;
+use anyhow::Context;
 use handlebars::Handlebars;
+use include_dir::include_dir;
+use include_dir::Dir;
 use lettre::message::header::ContentType;
 use lettre::transport::smtp::authentication::Credentials;
 use lettre::AsyncSmtpTransport;
 use lettre::AsyncTransport;
 use lettre::Message;
 use lettre::Tokio1Executor;
+
+static TEMPLATES_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/../templates");
 
 pub struct Email {
     user: User,
@@ -45,13 +51,14 @@ impl Email {
         Ok(transport)
     }
 
-    fn render_template(&self, template_name: &str) -> Result<String, handlebars::RenderError> {
+    fn render_template(&self, template_name: &str) -> anyhow::Result<String> {
         let mut handlebars = Handlebars::new();
-        // TODO: embed these files
-        handlebars
-            .register_template_file(template_name, &format!("./templates/{}.hbs", template_name))?;
-        handlebars.register_template_file("styles", "./templates/partials/styles.hbs")?;
-        handlebars.register_template_file("base", "./templates/layouts/base.hbs")?;
+        let content = Self::get_template_content(&format!("{}.hbs", template_name))?;
+        handlebars.register_template_string(template_name, content)?;
+        let content = Self::get_template_content("partials/styles.hbs")?;
+        handlebars.register_template_string("styles", content)?;
+        let content = Self::get_template_content("layouts/base.hbs")?;
+        handlebars.register_template_string("base", content)?;
 
         let data = serde_json::json!({
             "first_name": &self.user.name.split_whitespace().next().unwrap(),
@@ -62,6 +69,22 @@ impl Email {
         let content_template = handlebars.render(template_name, &data)?;
 
         Ok(content_template)
+    }
+
+    fn get_template_content(file_name: &str) -> anyhow::Result<String> {
+        match TEMPLATES_DIR.get_file(file_name) {
+            None => {
+                bail!("Could not find file {file_name}");
+            }
+
+            Some(file) => {
+                let x = file
+                    .contents_utf8()
+                    .context("Could not parse file content")?;
+
+                Ok(x.to_string())
+            }
+        }
     }
 
     async fn send_email(
