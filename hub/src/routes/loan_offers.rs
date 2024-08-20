@@ -14,7 +14,7 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
     Router::new()
         .route(
             "/api/offers",
-            get(get_active_loan_offers).route_layer(middleware::from_fn_with_state(
+            get(get_all_available_loan_offers).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
                 crate::routes::auth::jwt_auth::auth,
             )),
@@ -22,7 +22,7 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
         .with_state(app_state)
 }
 
-pub async fn get_active_loan_offers(
+pub async fn get_all_available_loan_offers(
     State(data): State<Arc<AppState>>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     let loans = db::loan_offers::load_all_available_loan_offers(&data.db)
