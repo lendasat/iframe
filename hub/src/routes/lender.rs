@@ -6,14 +6,17 @@ use sqlx::Postgres;
 use std::sync::Arc;
 use tokio::task::JoinHandle;
 
+pub(crate) mod auth;
 pub(crate) mod health_check;
 
 pub async fn spawn_lender_server(config: Config, db: Pool<Postgres>) -> JoinHandle<()> {
-    let _app_state = Arc::new(AppState {
+    let app_state = Arc::new(AppState {
         db,
         config: config.clone(),
     });
-    let app = Router::new().merge(health_check::router());
+    let app = Router::new()
+        .merge(health_check::router())
+        .merge(auth::router(app_state.clone()));
 
     let listener = tokio::net::TcpListener::bind(&config.lender_listen_address)
         .await

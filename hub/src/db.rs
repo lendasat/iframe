@@ -1,5 +1,6 @@
 pub(crate) mod borrowers;
 pub(crate) mod contracts;
+pub(crate) mod lenders;
 pub(crate) mod loan_offers;
 
 use anyhow::Result;
