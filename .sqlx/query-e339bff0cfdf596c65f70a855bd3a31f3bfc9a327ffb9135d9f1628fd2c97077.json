@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            id,\n            lender_id,\n            name,\n            min_ltv,\n            interest_rate,\n            loan_amount_min,\n            loan_amount_max,\n            loan_asset_type AS \"loan_asset_type: LoanAssetType\", \n            loan_asset_chain AS \"loan_asset_chain: LoanAssetChain\", \n            status AS \"status: LoanOfferStatus\", \n            created_at,\n            updated_at\n        FROM loan_offers\n        WHERE status = 'Available'\n        ",
+  "query": "\n        SELECT\n            id,\n            lender_id,\n            name,\n            min_ltv,\n            interest_rate,\n            loan_amount_min,\n            loan_amount_max,\n            loan_asset_type AS \"loan_asset_type: crate::model::LoanAssetType\",\n            loan_asset_chain AS \"loan_asset_chain: crate::model::LoanAssetChain\",\n            status AS \"status: crate::model::LoanOfferStatus\",\n            created_at,\n            updated_at\n        FROM loan_offers\n        WHERE lender_id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -40,7 +40,7 @@
       },
       {
         "ordinal": 7,
-        "name": "loan_asset_type: LoanAssetType",
+        "name": "loan_asset_type: crate::model::LoanAssetType",
         "type_info": {
           "Custom": {
             "name": "loan_asset_type",
@@ -55,7 +55,7 @@
       },
       {
         "ordinal": 8,
-        "name": "loan_asset_chain: LoanAssetChain",
+        "name": "loan_asset_chain: crate::model::LoanAssetChain",
         "type_info": {
           "Custom": {
             "name": "loan_asset_chain",
@@ -70,7 +70,7 @@
       },
       {
         "ordinal": 9,
-        "name": "status: LoanOfferStatus",
+        "name": "status: crate::model::LoanOfferStatus",
         "type_info": {
           "Custom": {
             "name": "loan_offer_status",
@@ -96,7 +96,9 @@
       }
     ],
     "parameters": {
-      "Left": []
+      "Left": [
+        "Bpchar"
+      ]
     },
     "nullable": [
       false,
@@ -113,5 +115,5 @@
       false
     ]
   },
-  "hash": "3d95b69847e836735db9953b7dfc6a419e50d82e8f5348be910886401030c2cf"
+  "hash": "e339bff0cfdf596c65f70a855bd3a31f3bfc9a327ffb9135d9f1628fd2c97077"
 }
