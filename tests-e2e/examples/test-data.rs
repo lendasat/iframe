@@ -56,6 +56,12 @@ async fn insert_contract(
         10_000_000,
         dec!(1_000),
         12,
+        "bc1p5cyxnuxmeuwuvkwfem96lqzszd02n6xdcjrs20cac6yqjjwudpxqkedrcr"
+            .parse()
+            .unwrap(),
+        "032e58afe51f9ed8ad3cc7897f634d881fdbe49a81564629ded8156bebd2ffd1af"
+            .parse()
+            .unwrap(),
     )
     .await?;
     Ok(contract)

@@ -59,7 +59,7 @@ mod tests {
 
         assert!(res.status().is_success());
 
-        // 1. Lender creates loan offer http://localhost:7338/api/offers/create
+        // 1. Lender creates loan offer.
         let loan_offer = CreateLoanOfferSchema {
             name: "a fantastic loan".to_string(),
             min_ltv: dec!(0.5),
@@ -83,16 +83,24 @@ mod tests {
 
         let loan_offer: LoanOffer = res.json().await.unwrap();
 
-        // 2. Borrower takes loan offer, creates contract request Borrower includes:
-        //      - Payout address (external wallet).
-        //      - Public key for the multisig (deterministically derived from seed).
+        // 2. Borrower takes loan offer by creating a contract request.
+        borrower_wallet::wallet::new_wallet("borrower").unwrap();
+        let borrower_pk = borrower_wallet::wallet::get_pk(0).unwrap();
+
+        // This is a random address, since we don't care about payouts in this test.
+        let borrower_payout_address =
+            "bc1p5cyxnuxmeuwuvkwfem96lqzszd02n6xdcjrs20cac6yqjjwudpxqkedrcr"
+                .parse()
+                .unwrap();
 
         let contract_request = ContractRequestSchema {
             loan_id: loan_offer.id,
-            initial_ltv: dec!(0.25), // TODO: I think we should skip this field.
+            initial_ltv: dec!(0.25),
             loan_amount: dec!(20_000),
             initial_collateral_sats: 100_000_000,
             duration_months: 6,
+            borrower_payout_address,
+            borrower_pk,
         };
 
         let res = borrower
@@ -106,7 +114,7 @@ mod tests {
 
         let contract: Contract = res.json().await.unwrap();
 
-        // 3. Lender accepts contract request
+        // 3. Lender accepts contract request.
 
         let res = lender
             .put(format!(
@@ -119,9 +127,9 @@ mod tests {
 
         assert!(res.status().is_success());
 
-        // 4. Borrower pays to collateral address Lots of things (in the final protocol).
-        // 5. Hub sees collateral funding TX
-        // 6. Hub tells lender to send principal to borrower on Ethereum
-        // 7. Borrower confirms payment
+        // 4. Borrower pays to collateral address.
+        // 5. Hub sees collateral funding TX.
+        // 6. Hub tells lender to send principal to borrower on Ethereum.
+        // 7. Borrower confirms payment.
     }
 }

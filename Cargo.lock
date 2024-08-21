@@ -634,6 +634,7 @@ dependencies = [
  "anyhow",
  "bip32",
  "bip39",
+ "bitcoin",
  "console_error_panic_hook",
  "getrandom",
  "hex",

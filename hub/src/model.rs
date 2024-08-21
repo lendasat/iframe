@@ -1,10 +1,14 @@
 use argon2::Argon2;
 use argon2::PasswordHash;
 use argon2::PasswordVerifier;
+use bitcoin::address::NetworkUnchecked;
+use bitcoin::Address;
+use bitcoin::PublicKey;
 use rust_decimal::Decimal;
 use serde::Deserialize;
 use serde::Serialize;
 use sqlx::FromRow;
+use std::str::FromStr;
 use time::OffsetDateTime;
 
 #[derive(Debug, Deserialize, sqlx::FromRow, Serialize, Clone)]
@@ -89,6 +93,8 @@ pub struct ContractRequestSchema {
     pub loan_amount: Decimal,
     pub initial_collateral_sats: u64,
     pub duration_months: i32,
+    pub borrower_payout_address: Address<NetworkUnchecked>,
+    pub borrower_pk: PublicKey,
 }
 
 #[derive(Debug, FromRow, Serialize, Deserialize, Clone)]
@@ -133,7 +139,7 @@ pub enum LoanOfferStatus {
     Deleted,
 }
 
-#[derive(Debug, FromRow, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Contract {
     pub id: String,
     pub lender_id: String,
@@ -143,6 +149,8 @@ pub struct Contract {
     pub initial_collateral_sats: u64,
     pub loan_amount: Decimal,
     pub duration_months: i32,
+    pub borrower_payout_address: Address<NetworkUnchecked>,
+    pub borrower_pk: PublicKey,
     pub status: ContractStatus,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
@@ -150,11 +158,109 @@ pub struct Contract {
     pub updated_at: OffsetDateTime,
 }
 
-#[derive(Debug, Deserialize, sqlx::Type, Serialize)]
-#[sqlx(type_name = "contract_status")]
+#[derive(Debug, Deserialize, Serialize)]
 pub enum ContractStatus {
     Open,
     Closed,
     Requested,
     Rejected,
+}
+
+pub mod db {
+    use rust_decimal::Decimal;
+    use serde::Deserialize;
+    use serde::Serialize;
+    use sqlx::FromRow;
+    use time::OffsetDateTime;
+
+    #[derive(Debug, FromRow, Serialize, Deserialize)]
+    pub struct Contract {
+        pub id: String,
+        pub lender_id: String,
+        pub borrower_id: String,
+        pub loan_id: String,
+        pub initial_ltv: Decimal,
+        pub initial_collateral_sats: i64,
+        pub loan_amount: Decimal,
+        pub duration_months: i32,
+        pub borrower_payout_address: String,
+        pub borrower_pk: String,
+        pub status: ContractStatus,
+        #[serde(with = "time::serde::rfc3339")]
+        pub created_at: OffsetDateTime,
+        #[serde(with = "time::serde::rfc3339")]
+        pub updated_at: OffsetDateTime,
+    }
+
+    #[derive(Debug, Deserialize, sqlx::Type, Serialize)]
+    #[sqlx(type_name = "contract_status")]
+    pub enum ContractStatus {
+        Open,
+        Closed,
+        Requested,
+        Rejected,
+    }
+}
+
+impl From<db::Contract> for Contract {
+    fn from(value: db::Contract) -> Self {
+        Self {
+            id: value.id,
+            lender_id: value.lender_id,
+            borrower_id: value.borrower_id,
+            loan_id: value.loan_id,
+            initial_ltv: value.initial_ltv,
+            initial_collateral_sats: value.initial_collateral_sats as u64,
+            loan_amount: value.loan_amount,
+            duration_months: value.duration_months,
+            borrower_payout_address: Address::from_str(&value.borrower_payout_address)
+                .expect("valid address"),
+            borrower_pk: PublicKey::from_str(&value.borrower_pk).expect("valid pk"),
+            status: value.status.into(),
+            created_at: value.created_at,
+            updated_at: value.updated_at,
+        }
+    }
+}
+
+impl From<db::ContractStatus> for ContractStatus {
+    fn from(value: db::ContractStatus) -> Self {
+        match value {
+            db::ContractStatus::Open => Self::Open,
+            db::ContractStatus::Closed => Self::Closed,
+            db::ContractStatus::Requested => Self::Requested,
+            db::ContractStatus::Rejected => Self::Rejected,
+        }
+    }
+}
+
+impl From<Contract> for db::Contract {
+    fn from(value: Contract) -> Self {
+        Self {
+            id: value.id,
+            lender_id: value.lender_id,
+            borrower_id: value.borrower_id,
+            loan_id: value.loan_id,
+            initial_ltv: value.initial_ltv,
+            initial_collateral_sats: value.initial_collateral_sats as i64,
+            loan_amount: value.loan_amount,
+            duration_months: value.duration_months,
+            borrower_payout_address: value.borrower_payout_address.assume_checked().to_string(),
+            borrower_pk: value.borrower_pk.to_string(),
+            status: value.status.into(),
+            created_at: value.created_at,
+            updated_at: value.updated_at,
+        }
+    }
+}
+
+impl From<ContractStatus> for db::ContractStatus {
+    fn from(value: ContractStatus) -> Self {
+        match value {
+            ContractStatus::Open => Self::Open,
+            ContractStatus::Closed => Self::Closed,
+            ContractStatus::Requested => Self::Requested,
+            ContractStatus::Rejected => Self::Rejected,
+        }
+    }
 }

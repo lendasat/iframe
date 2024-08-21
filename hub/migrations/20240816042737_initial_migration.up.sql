@@ -70,6 +70,8 @@ CREATE TABLE
     initial_collateral_sats BIGINT                   NOT NULL,
     loan_amount             DECIMAL                  NOT NULL,
     duration_months         INT                      NOT NULL,
+    borrower_payout_address TEXT                     NOT NULL,
+    borrower_pk             CHAR(66)                 NOT NULL,
     status                  contract_status          NOT NULL,
     created_at              TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at              TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
