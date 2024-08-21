@@ -69,7 +69,7 @@ pub struct ResetPasswordSchema {
     pub password_confirm: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct CreateLoanOfferSchema {
     pub name: String,
     pub min_ltv: Decimal,

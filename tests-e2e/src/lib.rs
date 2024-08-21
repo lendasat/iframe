@@ -1,8 +1,13 @@
 #[cfg(test)]
 mod tests {
+    use hub::model::CreateLoanOfferSchema;
+    use hub::model::LoanAssetChain::Ethereum;
+    use hub::model::LoanAssetType;
+    use hub::model::LoanOffer;
     use hub::model::LoginUserSchema;
     use reqwest::cookie::Jar;
     use reqwest::Client;
+    use rust_decimal_macros::dec;
     use std::sync::Arc;
 
     #[tokio::test]
@@ -51,6 +56,36 @@ mod tests {
         assert!(res.status().is_success());
 
         // 1. Lender creates loan offer http://localhost:7338/api/offers/create
+        let loan_offer = CreateLoanOfferSchema {
+            name: "a fantastic loan".to_string(),
+            min_ltv: dec!(0.5),
+            interest_rate: dec!(10.0),
+            loan_amount_min: dec!(10000.0),
+            loan_amount_max: dec!(50000.0),
+            duration_months_min: 1,
+            duration_months_max: 12,
+            loan_asset_type: LoanAssetType::Usdc,
+            loan_asset_chain: Ethereum,
+        };
+
+        let res = lender
+            .post("http://localhost:7338/api/offers/create")
+            .json(&loan_offer)
+            .send()
+            .await
+            .unwrap();
+
+        assert!(res.status().is_success());
+
+        let res = lender
+            .get("http://localhost:7338/api/offers")
+            .send()
+            .await
+            .unwrap();
+
+        let loan_offers: Vec<LoanOffer> = res.json().await.unwrap();
+
+        dbg!(&loan_offers);
 
         // client.post("localhost:7338/api/offers/create").build();
 
