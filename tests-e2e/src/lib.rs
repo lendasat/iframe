@@ -2,6 +2,8 @@ pub mod logger;
 
 #[cfg(test)]
 mod tests {
+    use hub::model::Contract;
+    use hub::model::ContractRequestSchema;
     use hub::model::CreateLoanOfferSchema;
     use hub::model::LoanAssetChain::Ethereum;
     use hub::model::LoanAssetType;
@@ -61,9 +63,9 @@ mod tests {
         let loan_offer = CreateLoanOfferSchema {
             name: "a fantastic loan".to_string(),
             min_ltv: dec!(0.5),
-            interest_rate: dec!(10.0),
-            loan_amount_min: dec!(10000.0),
-            loan_amount_max: dec!(50000.0),
+            interest_rate: dec!(10),
+            loan_amount_min: dec!(10_000),
+            loan_amount_max: dec!(50_000),
             duration_months_min: 1,
             duration_months_max: 12,
             loan_asset_type: LoanAssetType::Usdc,
@@ -79,23 +81,44 @@ mod tests {
 
         assert!(res.status().is_success());
 
-        let res = lender
-            .get("http://localhost:7338/api/offers")
+        let loan_offer: LoanOffer = res.json().await.unwrap();
+
+        // 2. Borrower takes loan offer, creates contract request Borrower includes:
+        //      - Payout address (external wallet).
+        //      - Public key for the multisig (deterministically derived from seed).
+
+        let contract_request = ContractRequestSchema {
+            loan_id: loan_offer.id,
+            initial_ltv: dec!(0.25), // TODO: I think we should skip this field.
+            loan_amount: dec!(20_000),
+            initial_collateral_sats: 100_000_000,
+            duration_months: 6,
+        };
+
+        let res = borrower
+            .post("http://localhost:7337/api/contracts")
+            .json(&contract_request)
             .send()
             .await
             .unwrap();
 
-        let loan_offers: Vec<LoanOffer> = res.json().await.unwrap();
+        assert!(res.status().is_success());
 
-        dbg!(&loan_offers);
+        let contract: Contract = res.json().await.unwrap();
 
-        // client.post("localhost:7338/api/offers/create").build();
-
-        //    Lender must have provided repayment address.
-        // 2. Borrower takes loan offer, creates contract request Borrower includes:
-        //      - Payout address (external wallet).
-        //      - Public key for the multisig (deterministically derived from seed).
         // 3. Lender accepts contract request
+
+        let res = lender
+            .put(format!(
+                "http://localhost:7338/api/contracts/{}/approve",
+                contract.id
+            ))
+            .send()
+            .await
+            .unwrap();
+
+        assert!(res.status().is_success());
+
         // 4. Borrower pays to collateral address Lots of things (in the final protocol).
         // 5. Hub sees collateral funding TX
         // 6. Hub tells lender to send principal to borrower on Ethereum

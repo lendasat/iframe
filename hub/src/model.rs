@@ -82,7 +82,7 @@ pub struct CreateLoanOfferSchema {
     pub loan_asset_chain: LoanAssetChain,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct ContractRequestSchema {
     pub loan_id: String,
     pub initial_ltv: Decimal,
