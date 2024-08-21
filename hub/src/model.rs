@@ -82,6 +82,15 @@ pub struct CreateLoanOfferSchema {
     pub loan_asset_chain: LoanAssetChain,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct ContractRequestSchema {
+    pub loan_id: String,
+    pub initial_ltv: Decimal,
+    pub loan_amount: Decimal,
+    pub initial_collateral_sats: u64,
+    pub duration_months: i32,
+}
+
 #[derive(Debug, FromRow, Serialize, Deserialize)]
 pub struct LoanOffer {
     pub id: String,
@@ -133,6 +142,7 @@ pub struct Contract {
     pub initial_ltv: Decimal,
     pub initial_collateral_sats: u64,
     pub loan_amount: Decimal,
+    pub duration_months: i32,
     pub status: ContractStatus,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
@@ -145,4 +155,6 @@ pub struct Contract {
 pub enum ContractStatus {
     Open,
     Closed,
+    Requested,
+    Rejected,
 }

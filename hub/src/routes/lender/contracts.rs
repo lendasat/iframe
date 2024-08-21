@@ -1,15 +1,17 @@
 use crate::db;
-use crate::model::ContractRequestSchema;
+use crate::model::ContractStatus;
 use crate::model::User;
-use crate::routes::borrower::auth::jwt_auth;
+use crate::routes::lender::auth::jwt_auth;
 use crate::routes::AppState;
 use crate::routes::ErrorResponse;
+use axum::extract::Path;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::middleware;
 use axum::response::IntoResponse;
+use axum::routing::delete;
 use axum::routing::get;
-use axum::routing::post;
+use axum::routing::put;
 use axum::Extension;
 use axum::Json;
 use axum::Router;
@@ -25,8 +27,15 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
             )),
         )
         .route(
-            "/api/contracts",
-            post(post_contract_request).route_layer(middleware::from_fn_with_state(
+            "/api/contracts/:contract_id/approve",
+            put(put_approve_contract).route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                jwt_auth::auth,
+            )),
+        )
+        .route(
+            "/api/contracts/:contract_id/reject",
+            delete(delete_reject_contract).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
                 jwt_auth::auth,
             )),
@@ -38,7 +47,7 @@ pub async fn get_active_contracts(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<User>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let contracts = db::contracts::load_contracts_by_borrower_id(&data.db, user.id.as_str())
+    let contracts = db::contracts::load_contracts_by_lender_id(&data.db, user.id.as_str())
         .await
         .map_err(|error| {
             let error_response = ErrorResponse {
@@ -50,19 +59,16 @@ pub async fn get_active_contracts(
     Ok((StatusCode::OK, Json(contracts)))
 }
 
-pub async fn post_contract_request(
+pub async fn put_approve_contract(
     State(data): State<Arc<AppState>>,
+    Path(contract_id): Path<String>,
     Extension(user): Extension<User>,
-    Json(body): Json<ContractRequestSchema>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let contract = db::contracts::insert_contract_request(
+    db::contracts::update_contract_status(
         &data.db,
-        user.id,
-        body.loan_id,
-        body.initial_ltv,
-        body.initial_collateral_sats,
-        body.loan_amount,
-        body.duration_months,
+        user.id.as_str(),
+        contract_id.as_str(),
+        ContractStatus::Open,
     )
     .await
     .map_err(|error| {
@@ -71,5 +77,26 @@ pub async fn post_contract_request(
         };
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
     })?;
-    Ok((StatusCode::OK, Json(contract)))
+    Ok(())
+}
+
+pub async fn delete_reject_contract(
+    State(data): State<Arc<AppState>>,
+    Path(contract_id): Path<String>,
+    Extension(user): Extension<User>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    db::contracts::update_contract_status(
+        &data.db,
+        user.id.as_str(),
+        contract_id.as_str(),
+        ContractStatus::Rejected,
+    )
+    .await
+    .map_err(|error| {
+        let error_response = ErrorResponse {
+            message: format!("Database error: {}", error),
+        };
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+    })?;
+    Ok(())
 }

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT \n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            loan_amount,\n            status as \"status: ContractStatus\",\n            created_at,\n            updated_at\n        FROM contracts\n        where borrower_id = $1\n        ",
+  "query": "\n        SELECT \n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            loan_amount,\n            status as \"status: crate::model::ContractStatus\",\n            duration_months,\n            created_at,\n            updated_at\n        FROM contracts\n        where borrower_id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -31,7 +31,7 @@
       {
         "ordinal": 5,
         "name": "initial_collateral_sats",
-        "type_info": "Int4"
+        "type_info": "Int8"
       },
       {
         "ordinal": 6,
@@ -40,14 +40,16 @@
       },
       {
         "ordinal": 7,
-        "name": "status: ContractStatus",
+        "name": "status: crate::model::ContractStatus",
         "type_info": {
           "Custom": {
             "name": "contract_status",
             "kind": {
               "Enum": [
                 "Open",
-                "Closed"
+                "Closed",
+                "Requested",
+                "Rejected"
               ]
             }
           }
@@ -55,11 +57,16 @@
       },
       {
         "ordinal": 8,
+        "name": "duration_months",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 9,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 9,
+        "ordinal": 10,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -79,8 +86,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "bb4adef89930c84591fd6f85bdfc8f68ee75d82ccd38a6e913deca7b7810ce5c"
+  "hash": "5e77db0ad928b07a615bfa45d75007daf191ba5028b18ee5e912ee6855abdb9a"
 }
