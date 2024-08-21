@@ -57,7 +57,7 @@ CREATE TABLE
     FOREIGN KEY (lender_id) REFERENCES lenders (id)
 );
 
-CREATE TYPE contract_status AS ENUM ('Open', 'Closed');
+CREATE TYPE contract_status AS ENUM ('Open', 'Closed', 'Requested', 'Rejected');
 
 CREATE TABLE
     IF NOT EXISTS "contracts"
@@ -67,8 +67,9 @@ CREATE TABLE
     borrower_id             CHAR(36)                 NOT NULL,
     loan_id                 CHAR(36)                 NOT NULL,
     initial_ltv             DECIMAL                  NOT NULL,
-    initial_collateral_sats INT                      NOT NULL,
+    initial_collateral_sats BIGINT                   NOT NULL,
     loan_amount             DECIMAL                  NOT NULL,
+    duration_months         INT                      NOT NULL,
     status                  contract_status          NOT NULL,
     created_at              TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at              TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
