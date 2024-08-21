@@ -6,7 +6,7 @@ set dotenv-load
 
 deps:
     cargo install cargo-watch
-    cargo install sqlx-cli --no-default-features --features rust-tls,postgres
+    cargo install sqlx-cli --no-default-features --features rustls,postgres
 
 ## ------------------------
 ## Code quality functions
