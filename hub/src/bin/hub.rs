@@ -1,18 +1,11 @@
-use crate::config::Config;
-use crate::db::connect_to_db;
-use crate::db::run_migration;
-use crate::logger::init_tracing;
-use crate::routes::borrower::spawn_borrower_server;
-use crate::routes::lender::spawn_lender_server;
 use anyhow::Result;
+use hub::config::Config;
+use hub::db::connect_to_db;
+use hub::db::run_migration;
+use hub::logger::init_tracing;
+use hub::routes::borrower::spawn_borrower_server;
+use hub::routes::lender::spawn_lender_server;
 use tracing::level_filters::LevelFilter;
-
-mod config;
-mod db;
-mod email;
-mod logger;
-mod model;
-mod routes;
 
 #[tokio::main]
 async fn main() -> Result<()> {

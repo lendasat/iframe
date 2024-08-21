@@ -3,8 +3,8 @@ use serde::Serialize;
 use sqlx::Pool;
 use sqlx::Postgres;
 
-pub(crate) mod borrower;
-pub(crate) mod lender;
+pub mod borrower;
+pub mod lender;
 
 #[derive(Debug, Serialize)]
 pub struct ErrorResponse {
