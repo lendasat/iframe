@@ -3437,6 +3437,7 @@ dependencies = [
 name = "tests-e2e"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "borrower-wallet",
  "hub",
  "reqwest",
@@ -3444,7 +3445,11 @@ dependencies = [
  "rust_decimal_macros",
  "serde",
  "serde_json",
+ "sqlx",
+ "time",
  "tokio",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]

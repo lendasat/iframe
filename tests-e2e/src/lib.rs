@@ -1,3 +1,5 @@
+pub mod logger;
+
 #[cfg(test)]
 mod tests {
     use hub::model::CreateLoanOfferSchema;

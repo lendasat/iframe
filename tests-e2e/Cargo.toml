@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+anyhow = "1"
 borrower-wallet = { path = "../borrower-wallet" }
 hub = { path = "../hub" }
 reqwest = { version = "0.12.7", features = ["cookies", "json"] }
@@ -11,4 +12,11 @@ rust_decimal = "1.36.0"
 rust_decimal_macros = "1.35"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+sqlx = { version = "0.8", features = ["runtime-async-std", "tls-rustls", "postgres", "uuid", "time", "rust_decimal"] }
+time = { version = "0.3", features = ["macros", "serde", "serde-well-known"] }
 tokio = { version = "1", features = ["full", "tracing"] }
+tracing = "0.1.37"
+tracing-subscriber = { version = "0.3", default-features = false, features = ["fmt", "ansi", "env-filter", "time", "tracing-log", "json"] }
+
+[[example]]
+name = "test-data"

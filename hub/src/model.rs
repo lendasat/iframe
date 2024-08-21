@@ -91,7 +91,7 @@ pub struct ContractRequestSchema {
     pub duration_months: i32,
 }
 
-#[derive(Debug, FromRow, Serialize, Deserialize)]
+#[derive(Debug, FromRow, Serialize, Deserialize, Clone)]
 pub struct LoanOffer {
     pub id: String,
     pub lender_id: String,
@@ -111,21 +111,21 @@ pub struct LoanOffer {
     pub updated_at: OffsetDateTime,
 }
 
-#[derive(Debug, Deserialize, sqlx::Type, Serialize)]
+#[derive(Debug, Deserialize, sqlx::Type, Serialize, Clone)]
 #[sqlx(type_name = "loan_asset_type")]
 pub enum LoanAssetType {
     Usdc,
     Usdt,
 }
 
-#[derive(Debug, Deserialize, sqlx::Type, Serialize)]
+#[derive(Debug, Deserialize, sqlx::Type, Serialize, Clone)]
 #[sqlx(type_name = "loan_asset_chain")]
 pub enum LoanAssetChain {
     Ethereum,
     Starknet,
 }
 
-#[derive(Debug, Deserialize, sqlx::Type, Serialize)]
+#[derive(Debug, Deserialize, sqlx::Type, Serialize, Clone)]
 #[sqlx(type_name = "loan_offer_status")]
 pub enum LoanOfferStatus {
     Available,
