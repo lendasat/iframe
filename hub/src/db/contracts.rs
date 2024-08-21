@@ -1,8 +1,10 @@
 use crate::model::Contract;
+use anyhow::bail;
 use anyhow::Result;
 use rust_decimal::Decimal;
 use sqlx::Pool;
 use sqlx::Postgres;
+use time::OffsetDateTime;
 use uuid::Uuid;
 
 pub async fn load_contracts_by_borrower_id(
@@ -75,7 +77,7 @@ pub async fn load_contracts_by_lender_id(
         FROM contracts
         where lender_id = $1
         "#,
-        id
+        lender_id
     )
     .fetch_all(pool)
     .await?;
@@ -181,4 +183,32 @@ pub async fn insert_contract_request(
     };
 
     Ok(contract)
+}
+
+pub async fn update_contract_status(
+    pool: &Pool<Postgres>,
+    lender_id: &str,
+    contract_id: &str,
+    new_status: crate::model::ContractStatus,
+) -> Result<()> {
+    let result = sqlx::query!(
+        r#"
+        UPDATE contracts
+        SET status = $1, 
+            updated_at = $2
+        WHERE lender_id = $3
+          AND id = $4
+        "#,
+        new_status as crate::model::ContractStatus,
+        OffsetDateTime::now_utc(),
+        lender_id,
+        contract_id
+    )
+    .execute(pool)
+    .await?;
+
+    if result.rows_affected() == 0 {
+        bail!("Contract to update not found")
+    }
+    Ok(())
 }

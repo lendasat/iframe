@@ -7,6 +7,7 @@ use std::sync::Arc;
 use tokio::task::JoinHandle;
 
 pub(crate) mod auth;
+pub(crate) mod contracts;
 pub(crate) mod health_check;
 pub(crate) mod loan_offers;
 
@@ -18,7 +19,8 @@ pub async fn spawn_lender_server(config: Config, db: Pool<Postgres>) -> JoinHand
     let app = Router::new().merge(
         health_check::router()
             .merge(auth::router(app_state.clone()))
-            .merge(loan_offers::router(app_state.clone())),
+            .merge(loan_offers::router(app_state.clone()))
+            .merge(contracts::router(app_state.clone())),
     );
 
     let listener = tokio::net::TcpListener::bind(&config.lender_listen_address)

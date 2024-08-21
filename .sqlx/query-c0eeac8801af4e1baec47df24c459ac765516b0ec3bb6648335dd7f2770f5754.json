@@ -1,0 +1,94 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT \n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            loan_amount,\n            status as \"status: crate::model::ContractStatus\",\n            duration_months,\n            created_at,\n            updated_at\n        FROM contracts\n        where lender_id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "lender_id",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "borrower_id",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "loan_id",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "initial_ltv",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 5,
+        "name": "initial_collateral_sats",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 6,
+        "name": "loan_amount",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 7,
+        "name": "status: crate::model::ContractStatus",
+        "type_info": {
+          "Custom": {
+            "name": "contract_status",
+            "kind": {
+              "Enum": [
+                "Open",
+                "Closed",
+                "Requested",
+                "Rejected"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "duration_months",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 9,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 10,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bpchar"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "c0eeac8801af4e1baec47df24c459ac765516b0ec3bb6648335dd7f2770f5754"
+}
