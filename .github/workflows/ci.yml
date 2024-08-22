@@ -75,8 +75,10 @@ jobs:
           cache: 'npm'
           cache-dependency-path: "frontend-monorepo/package-lock.json"
 
-      - run: npm ci --legacy-peer-deps
-      - uses: nrwl/nx-set-shas@v4
+      - name: Derive appropriate SHAs for base and head for `nx affected` commands
+        uses: nrwl/nx-set-shas@v4
+
+      - run: npm ci
 
       # TODO: add linter which is currently broken
       - run: npx nx affected -t test build e2e-ci
