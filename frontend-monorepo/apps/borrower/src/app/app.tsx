@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
+import { Button } from "react-bootstrap";
 import { Link, Route, Routes } from "react-router-dom";
 import init, { get_mnemonic, load_wallet, new_wallet } from "../../../../../borrower-wallet/pkg/borrower_wallet.js";
 
@@ -62,9 +63,9 @@ function App() {
             onChange={(e) => setNewWalletInput(e.target.value)}
             placeholder="Passphrase"
           />
-          <button type="submit">
+          <Button type="submit">
             Create new wallet
-          </button>
+          </Button>
         </form>
       </div>
       <div className="card">
@@ -75,15 +76,15 @@ function App() {
             onChange={(e) => setLoadWalletInput(e.target.value)}
             placeholder="Passphrase"
           />
-          <button type="submit">
+          <Button type="submit">
             Load wallet
-          </button>
+          </Button>
         </form>
       </div>
       <div className="card">
-        <button onClick={getMnemonic}>
+        <Button onClick={getMnemonic}>
           Get mnemonic
-        </button>
+        </Button>
         {mnemonic && <p>{mnemonic}</p>}
       </div>
 
