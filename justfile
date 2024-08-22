@@ -26,8 +26,7 @@ frontend-test:
     #!/usr/bin/env bash
     set -euxo pipefail
     cd frontend-monorepo
-    npx nx test borrower
-    npx nx test lender
+    npx nx run-many --target=test --all
 
 rust-test:
     cargo test --workspace
@@ -38,8 +37,7 @@ e2e-tests-frontend:
     #!/usr/bin/env bash
     set -euxo pipefail
     cd frontend-monorepo
-    npx nx e2e borrower-e2e
-    npx nx e2e lender-e2e
+    npx nx run-many --target=e2e --all
 
 
 ## ------------------------
@@ -63,7 +61,7 @@ build-wallet:
 build-frontend:
     #!/usr/bin/env bash
     cd frontend-monorepo
-    npx nx run-many -t build -p borrower,lender
+    npx nx run-many --target=build --all
 
 # rebuilds the frontend if a file in the frontend changes
 watch-frontend:
