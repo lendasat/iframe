@@ -10,15 +10,8 @@ crate-type = ["cdylib", "rlib"]
 default = ["console_error_panic_hook"]
 
 [dependencies]
-wasm-bindgen = "0.2"
-
-# The `console_error_panic_hook` crate provides better debugging of panics by
-# logging them with `console.error`. This is great for development, but requires
-# all the `std::fmt` and `std::panicking` infrastructure, so isn't great for
-# code size when deploying.
 aes-gcm-siv = { version = "0.11", features = ["std"] }
 anyhow = "1"
-bip32 = { version = "0.5" }
 bip39 = { version = "2", features = ["rand_core"] }
 bitcoin = "0.32.2"
 console_error_panic_hook = { version = "0.1", optional = true }
@@ -28,6 +21,7 @@ hkdf = { version = "0.12", features = ["std"] }
 rand = "0.8"
 scrypt = "0.11"
 sha2 = "0.10"
+wasm-bindgen = "0.2"
 # TODO: Might not need all these features.
 web-sys = { version = "0.3", features = ["Window", "Storage", "Cache", "CacheStorage", "StorageEvent"] }
 

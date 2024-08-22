@@ -5,11 +5,11 @@ use anyhow::bail;
 use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Result;
-use bip32::secp256k1::SecretKey;
-use bip32::ChildNumber;
-use bip32::ExtendedPrivateKey;
 use bip39::Mnemonic;
+use bitcoin::bip32::ChildNumber;
+use bitcoin::bip32::Xpriv;
 use bitcoin::key::Secp256k1;
+use bitcoin::NetworkKind;
 use bitcoin::PublicKey;
 use hkdf::Hkdf;
 use rand::thread_rng;
@@ -28,12 +28,15 @@ use std::sync::Mutex;
 
 const SECRET_KEY_ENCRYPTION_NONCE: &[u8; 12] = b"SECRET_KEY!!";
 
+// TODO: Make this dynamic.
+const NETWORK_KIND: NetworkKind = NetworkKind::Test;
+
 static WALLET: LazyLock<Mutex<Option<Wallet>>> = LazyLock::new(|| Mutex::new(None));
 
 struct Wallet {
     /// We keep this so that we can display it to the user.
     mnemonic: Mnemonic,
-    xprv: ExtendedPrivateKey<SecretKey>,
+    xprv: Xpriv,
 }
 
 pub struct MnemonicCiphertext {
@@ -97,7 +100,7 @@ pub fn get_mnemonic() -> Result<String> {
     Ok(mnemonic.to_string())
 }
 
-pub fn get_pk(child_number: u32) -> Result<bitcoin::PublicKey> {
+pub fn get_pk(index: u32) -> Result<bitcoin::PublicKey> {
     let guard = WALLET.lock().expect("to get lock");
 
     let wallet = match *guard {
@@ -107,12 +110,26 @@ pub fn get_pk(child_number: u32) -> Result<bitcoin::PublicKey> {
         }
     };
 
-    let child_key = wallet.xprv.derive_child(ChildNumber(child_number))?;
+    let network_index = if wallet.xprv.network.is_mainnet() {
+        ChildNumber::from_hardened_idx(0).expect("infallible")
+    } else {
+        ChildNumber::from_hardened_idx(1).expect("infallible")
+    };
 
-    let sk = child_key.private_key();
-    let sk = sk.to_bytes().to_owned();
+    let path = [
+        // Random number copied from
+        // https://github.com/MutinyWallet/mutiny-node/blob/f71300680ff20381aae07e5e64d5fd6802d21a43/mutiny-core/src/dlc/mod.rs#L126.
+        ChildNumber::from_hardened_idx(586).expect("infallible"),
+        network_index,
+        ChildNumber::from_hardened_idx(index).unwrap(),
+    ];
 
-    let kp = bitcoin::key::Keypair::from_seckey_slice(&Secp256k1::new(), &sk)?;
+    let sk = wallet
+        .xprv
+        .derive_priv(&Secp256k1::new(), &path)?
+        .private_key;
+
+    let kp = bitcoin::key::Keypair::from_secret_key(&Secp256k1::new(), &sk);
     let pk = PublicKey::new(kp.public_key());
 
     Ok(pk)
@@ -160,7 +177,7 @@ impl Wallet {
 
         let xprv = {
             let seed = mnemonic.to_seed(passphrase);
-            ExtendedPrivateKey::<SecretKey>::new(seed)?
+            Xpriv::new_master(NETWORK_KIND, &seed)?
         };
 
         let mnemonic_ciphertext = {
@@ -185,7 +202,7 @@ impl Wallet {
 
         let xprv = {
             let seed = mnemonic.to_seed(passphrase);
-            ExtendedPrivateKey::<SecretKey>::new(seed)?
+            Xpriv::new_master(NetworkKind::Test, &seed)?
         };
 
         Ok(Self { mnemonic, xprv })
