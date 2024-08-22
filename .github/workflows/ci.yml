@@ -77,6 +77,9 @@ jobs:
           cache: 'npm'
           cache-dependency-path: "frontend-monorepo/package-lock.json"
 
+      - name: Start CI run
+        run: 'npx nx-cloud start-ci-run --distribute-on="8 linux-medium-js"'
+
       - name: Derive appropriate SHAs for base and head for `nx affected` commands
         uses: nrwl/nx-set-shas@v4
 
