@@ -19,7 +19,7 @@ const DEFAULT_FILES: [&str; 2] = ["index.html", "index.htm"];
 const NOT_FOUND: &str = "404.html";
 
 static FRONTEND_DIR: Dir<'_> =
-    include_dir!("$CARGO_MANIFEST_DIR/../frontend-monorepo/dist/apps/lender-frontend");
+    include_dir!("$CARGO_MANIFEST_DIR/../frontend-monorepo/dist/apps/lender");
 
 async fn serve_asset(path: Option<Path<String>>) -> impl IntoResponse {
     let serve_file =

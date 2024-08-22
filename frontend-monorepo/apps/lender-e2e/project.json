@@ -1,0 +1,9 @@
+{
+  "name": "lender-e2e",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/lender-e2e/src",
+  "implicitDependencies": ["lender"],
+  "// targets": "to see all targets run: nx show project lender-e2e --web",
+  "targets": {}
+}

@@ -24,8 +24,10 @@ clippy:
 
 frontend-test:
     #!/usr/bin/env bash
+    set -euxo pipefail
     cd frontend-monorepo
     npx nx test borrower
+    npx nx test lender
 
 rust-test:
     cargo test --workspace
@@ -34,8 +36,10 @@ test: frontend-test rust-test
 
 e2e-tests-frontend:
     #!/usr/bin/env bash
+    set -euxo pipefail
     cd frontend-monorepo
     npx nx e2e borrower-e2e
+    npx nx e2e lender-e2e
 
 
 ## ------------------------
@@ -59,13 +63,13 @@ build-wallet:
 build-frontend:
     #!/usr/bin/env bash
     cd frontend-monorepo
-    npx nx run-many -t build -p borrower
+    npx nx run-many -t build -p borrower,lender
 
 # rebuilds the frontend if a file in the frontend changes
 watch-frontend:
     #!/usr/bin/env bash
     cd frontend-monorepo
-    npx nx watch --projects=borrower -- npx nx run-many -t build -p borrower
+    npx nx watch --projects=borrower,lender -- npx nx run-many -t build -p borrower,lender
 
 ## ------------------------
 ## Build backend functions
