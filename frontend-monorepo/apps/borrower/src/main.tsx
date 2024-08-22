@@ -10,9 +10,12 @@ const root = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement,
 );
 const navItems = [
-  { href: "/home", label: "Home" },
-  { href: "/loans", label: "Loans" },
-  { href: "/logout", label: "Dashboard" },
+  { href: "/request-loan", label: "Request a Loan" },
+  { href: "/my-loans", label: "My Loans" },
+  { href: "/my-account", label: "My Account" },
+  { href: "/wallet", label: "Wallet" },
+  { href: "/help", label: "Help" },
+  { href: "/logout", label: "Logout" },
 ];
 
 root.render(
