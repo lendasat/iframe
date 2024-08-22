@@ -49,6 +49,11 @@ run-borrower-frontend:
     cd frontend-monorepo
     npx nx serve borrower
 
+run-lender-frontend:
+    #!/usr/bin/env bash
+    cd frontend-monorepo
+    npx nx serve lender
+
 ## ------------------------
 ## Build frontend functions
 ## ------------------------
