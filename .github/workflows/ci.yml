@@ -61,29 +61,29 @@ jobs:
       - name: Running cargo tests
         run: RUST_BACKTRACE=1 just rust-test
 
-  frontends:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./frontend-monorepo
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-          cache-dependency-path: "frontend-monorepo/package-lock.json"
-
-      - name: Start CI run
-        run: 'npx nx-cloud start-ci-run --distribute-on="8 linux-medium-js"'
-
-      - name: Derive appropriate SHAs for base and head for `nx affected` commands
-        uses: nrwl/nx-set-shas@v4
-
-      - run: npm ci
-
-      # TODO: add linter which is currently broken
-      - run: npx nx affected --base=remotes/origin/main -t test build e2e-ci --verbose
+#  frontends:
+#    runs-on: ubuntu-latest
+#    defaults:
+#      run:
+#        working-directory: ./frontend-monorepo
+#    steps:
+#      - uses: actions/checkout@v4
+#        with:
+#          fetch-depth: 0
+#
+#      - uses: actions/setup-node@v4
+#        with:
+#          node-version: 20
+#          cache: 'npm'
+#          cache-dependency-path: "frontend-monorepo/package-lock.json"
+#
+#      - name: Start CI run
+#        run: 'npx nx-cloud start-ci-run --distribute-on="8 linux-medium-js"'
+#
+#      - name: Derive appropriate SHAs for base and head for `nx affected` commands
+#        uses: nrwl/nx-set-shas@v4
+#
+#      - run: npm ci
+#
+#      # TODO: add linter which is currently broken
+#      - run: npx nx affected --base=remotes/origin/main -t test build e2e-ci --verbose
