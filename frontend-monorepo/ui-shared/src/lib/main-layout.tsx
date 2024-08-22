@@ -1,6 +1,6 @@
 import React from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { Button, Col, Container, Nav, Row } from "react-bootstrap";
+import { Col, Container, Nav, Row } from "react-bootstrap";
 import { ReactComponent as Logo } from "./lendasat_white_bg.svg";
 
 export function Layout({
@@ -17,8 +17,7 @@ export function Layout({
           <Col xs={2} id="sidebar-wrapper" className="vh-100 p-0">
             <Nav
               className="col-md-12 d-none d-md-block bg-light sidebar h-100"
-              activeKey="/home"
-              onSelect={selectedKey => alert(`selected ${selectedKey}`)}
+              activeKey="{selectedKey}"
             >
               <div className="sidebar-sticky"></div>
               <center>
