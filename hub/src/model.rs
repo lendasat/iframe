@@ -151,6 +151,8 @@ pub struct Contract {
     pub duration_months: i32,
     pub borrower_payout_address: Address<NetworkUnchecked>,
     pub borrower_pk: PublicKey,
+    pub contract_address: Option<Address<NetworkUnchecked>>,
+    pub contract_index: Option<u32>,
     pub status: ContractStatus,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
@@ -185,6 +187,8 @@ pub mod db {
         pub duration_months: i32,
         pub borrower_payout_address: String,
         pub borrower_pk: String,
+        pub contract_address: Option<String>,
+        pub contract_index: Option<i32>,
         pub status: ContractStatus,
         #[serde(with = "time::serde::rfc3339")]
         pub created_at: OffsetDateTime,
@@ -216,6 +220,10 @@ impl From<db::Contract> for Contract {
             borrower_payout_address: Address::from_str(&value.borrower_payout_address)
                 .expect("valid address"),
             borrower_pk: PublicKey::from_str(&value.borrower_pk).expect("valid pk"),
+            contract_address: value
+                .contract_address
+                .map(|addr| addr.parse().expect("valid address")),
+            contract_index: value.contract_index.map(|i| i as u32),
             status: value.status.into(),
             created_at: value.created_at,
             updated_at: value.updated_at,
@@ -247,6 +255,10 @@ impl From<Contract> for db::Contract {
             duration_months: value.duration_months,
             borrower_payout_address: value.borrower_payout_address.assume_checked().to_string(),
             borrower_pk: value.borrower_pk.to_string(),
+            contract_address: value
+                .contract_address
+                .map(|addr| addr.assume_checked().to_string()),
+            contract_index: value.contract_index.map(|i| i as i32),
             status: value.status.into(),
             created_at: value.created_at,
             updated_at: value.updated_at,

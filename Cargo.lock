@@ -1384,6 +1384,7 @@ dependencies = [
  "lettre",
  "mime",
  "mime_guess",
+ "miniscript",
  "rand",
  "rust_decimal",
  "rust_decimal_macros",
@@ -1716,6 +1717,17 @@ name = "memchr"
 version = "2.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "78ca9ab1a0babb1e7d5695e3530886289c18cf2f87ec19a575a0abdce112e3a3"
+
+[[package]]
+name = "mempool-mock"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "hex",
+ "rand",
+ "serde",
+ "tokio",
+]
 
 [[package]]
 name = "mime"
@@ -3298,6 +3310,7 @@ dependencies = [
  "anyhow",
  "borrower-wallet",
  "hub",
+ "mempool-mock",
  "reqwest",
  "rust_decimal",
  "rust_decimal_macros",

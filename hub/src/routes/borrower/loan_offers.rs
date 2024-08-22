@@ -10,6 +10,7 @@ use axum::Json;
 use axum::Router;
 use serde::Serialize;
 use std::sync::Arc;
+use tracing::instrument;
 
 pub(crate) fn router(app_state: Arc<AppState>) -> Router {
     Router::new()
@@ -23,6 +24,7 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
         .with_state(app_state)
 }
 
+#[instrument(skip_all, err(Debug))]
 pub async fn get_all_available_loan_offers(
     State(data): State<Arc<AppState>>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {

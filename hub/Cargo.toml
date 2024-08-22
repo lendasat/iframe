@@ -19,6 +19,7 @@ jsonwebtoken = "9.2.0"
 lettre = { version = "0.11.2", features = ["tokio1", "tokio1-native-tls"] }
 mime = "0.3.17"
 mime_guess = "2.0.5"
+miniscript = "12"
 rand = "0.8.5"
 rust_decimal = "1.35"
 rust_decimal_macros = "1.35"

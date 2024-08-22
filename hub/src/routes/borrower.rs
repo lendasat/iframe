@@ -1,5 +1,6 @@
 use crate::config::Config;
 use crate::routes::AppState;
+use crate::wallet::Wallet;
 use axum::http::header::ACCEPT;
 use axum::http::header::ACCESS_CONTROL_ALLOW_HEADERS;
 use axum::http::header::ACCESS_CONTROL_ALLOW_ORIGIN;
@@ -21,9 +22,14 @@ pub(crate) mod frontend;
 pub(crate) mod health_check;
 pub(crate) mod loan_offers;
 
-pub async fn spawn_borrower_server(config: Config, db: Pool<Postgres>) -> JoinHandle<()> {
+pub async fn spawn_borrower_server(
+    config: Config,
+    wallet: Arc<Wallet>,
+    db: Pool<Postgres>,
+) -> JoinHandle<()> {
     let app_state = Arc::new(AppState {
         db,
+        wallet,
         config: config.clone(),
     });
     let app = Router::new()

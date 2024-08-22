@@ -26,7 +26,7 @@ mod tests {
             .unwrap();
 
         let borrower_login = LoginUserSchema {
-            email: "bob_the_borrower@lendasat.com".to_string(),
+            email: "borrower@lendasat.com".to_string(),
             password: "password123".to_string(),
         };
 
@@ -46,8 +46,8 @@ mod tests {
             .unwrap();
 
         let lender_login = LoginUserSchema {
-            email: "alice_the_lender@lendasat.com".to_string(),
-            password: "123password".to_string(),
+            email: "lender@lendasat.com".to_string(),
+            password: "password123".to_string(),
         };
 
         let res = lender
@@ -128,6 +128,46 @@ mod tests {
         assert!(res.status().is_success());
 
         // 4. Borrower pays to collateral address.
+
+        let res = borrower
+            .get("http://localhost:7337/api/contracts")
+            .send()
+            .await
+            .unwrap();
+
+        assert!(res.status().is_success());
+
+        let contracts: Vec<Contract> = res.json().await.unwrap();
+        let contract = contracts.iter().find(|c| c.id == contract.id).unwrap();
+
+        // In production, the borrower would use an _external_ wallet to publish the transaction. As
+        // such, we can fake all this.
+        let mempool = reqwest::Client::new();
+        let res = mempool
+            .post("http://localhost:7339/tx")
+            .json(&mempool_mock::PostTransaction {
+                address: contract
+                    .contract_address
+                    .clone()
+                    .expect("contract address")
+                    .assume_checked()
+                    .to_string(),
+                amount: contract.initial_collateral_sats,
+            })
+            .send()
+            .await
+            .unwrap();
+
+        assert!(res.status().is_success());
+
+        let res = mempool
+            .post("http://localhost:7339/mine/6")
+            .send()
+            .await
+            .unwrap();
+
+        assert!(res.status().is_success());
+
         // 5. Hub sees collateral funding TX.
         // 6. Hub tells lender to send principal to borrower on Ethereum.
         // 7. Borrower confirms payment.

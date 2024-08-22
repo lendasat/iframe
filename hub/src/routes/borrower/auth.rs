@@ -38,6 +38,7 @@ use serde::Serialize;
 use serde_json::json;
 use std::sync::Arc;
 use time::OffsetDateTime;
+use tracing::instrument;
 
 pub(crate) mod jwt_auth;
 
@@ -75,6 +76,7 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
         .with_state(app_state)
 }
 
+#[instrument(skip_all, err(Debug))]
 pub async fn register_user_handler(
     State(data): State<Arc<AppState>>,
     Json(body): Json<RegisterUserSchema>,
@@ -137,6 +139,7 @@ pub async fn register_user_handler(
     Ok(Json(user_response))
 }
 
+#[instrument(skip_all, err(Debug))]
 pub async fn login_user_handler(
     State(data): State<Arc<AppState>>,
     Json(body): Json<LoginUserSchema>,
@@ -201,6 +204,7 @@ pub async fn login_user_handler(
     Ok(response)
 }
 
+#[instrument(skip_all, err(Debug))]
 pub async fn verify_email_handler(
     State(data): State<Arc<AppState>>,
     Path(verification_code): Path<String>,
@@ -244,6 +248,7 @@ pub async fn verify_email_handler(
     Ok(Json(response))
 }
 
+#[instrument(skip_all, err(Debug))]
 pub async fn forgot_password_handler(
     State(data): State<Arc<AppState>>,
     Json(body): Json<ForgotPasswordSchema>,
@@ -313,6 +318,7 @@ pub async fn forgot_password_handler(
     Ok((StatusCode::OK, Json(json!({"message": success_message}))))
 }
 
+#[instrument(skip_all, err(Debug))]
 pub async fn reset_password_handler(
     State(data): State<Arc<AppState>>,
     Path(password_reset_token): Path<String>,
@@ -363,6 +369,7 @@ pub async fn reset_password_handler(
     Ok(response)
 }
 
+#[instrument(skip_all, err(Debug))]
 pub async fn logout_handler() -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let cookie = Cookie::build(("token", ""))
         .path("/")
@@ -377,6 +384,7 @@ pub async fn logout_handler() -> Result<impl IntoResponse, (StatusCode, Json<ser
     Ok(response)
 }
 
+#[instrument(skip_all, err(Debug))]
 pub async fn get_me_handler(
     Extension(user): Extension<User>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {

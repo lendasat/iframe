@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        INSERT INTO contracts (\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            loan_amount,\n            duration_months,\n            status,\n            borrower_payout_address,\n            borrower_pk\n        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)\n        RETURNING\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            loan_amount,\n            borrower_payout_address,\n            borrower_pk,\n            status as \"status: crate::model::db::ContractStatus\",\n            duration_months,\n            created_at,\n            updated_at\n        ",
+  "query": "\n        SELECT\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            loan_amount,\n            borrower_payout_address,\n            borrower_pk,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            duration_months,\n            created_at,\n            updated_at\n        FROM contracts\n        where lender_id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -50,6 +50,16 @@
       },
       {
         "ordinal": 9,
+        "name": "contract_address",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 10,
+        "name": "contract_index",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 11,
         "name": "status: crate::model::db::ContractStatus",
         "type_info": {
           "Custom": {
@@ -66,45 +76,23 @@
         }
       },
       {
-        "ordinal": 10,
+        "ordinal": 12,
         "name": "duration_months",
         "type_info": "Int4"
       },
       {
-        "ordinal": 11,
+        "ordinal": 13,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 12,
+        "ordinal": 14,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
-        "Bpchar",
-        "Bpchar",
-        "Bpchar",
-        "Bpchar",
-        "Numeric",
-        "Int8",
-        "Numeric",
-        "Int4",
-        {
-          "Custom": {
-            "name": "contract_status",
-            "kind": {
-              "Enum": [
-                "Open",
-                "Closed",
-                "Requested",
-                "Rejected"
-              ]
-            }
-          }
-        },
-        "Text",
         "Bpchar"
       ]
     },
@@ -118,11 +106,13 @@
       false,
       false,
       false,
+      true,
+      true,
       false,
       false,
       false,
       false
     ]
   },
-  "hash": "8d391405d72694c0a96b5c64ef8deaa1ebea47a85613b7db82dd6c604ee1ea53"
+  "hash": "97dc4a6de8d8f2e64182ac93dcc0475973a16d228674b97f384504ffa7cb5c08"
 }

@@ -4,3 +4,4 @@ pub mod email;
 pub mod logger;
 pub mod model;
 pub mod routes;
+pub mod wallet;

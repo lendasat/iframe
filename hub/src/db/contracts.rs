@@ -1,6 +1,5 @@
 use crate::model::db;
 use crate::model::Contract;
-use anyhow::bail;
 use anyhow::Result;
 use bitcoin::address::NetworkUnchecked;
 use bitcoin::Address;
@@ -28,6 +27,8 @@ pub async fn load_contracts_by_borrower_id(
             loan_amount,
             borrower_payout_address,
             borrower_pk,
+            contract_address,
+            contract_index,
             status as "status: crate::model::db::ContractStatus",
             duration_months,
             created_at,
@@ -65,6 +66,8 @@ pub async fn load_contracts_by_lender_id(
             loan_amount,
             borrower_payout_address,
             borrower_pk,
+            contract_address,
+            contract_index,
             status as "status: crate::model::db::ContractStatus",
             duration_months,
             created_at,
@@ -83,6 +86,37 @@ pub async fn load_contracts_by_lender_id(
         .collect::<Vec<Contract>>();
 
     Ok(contracts)
+}
+
+pub async fn load_contract_by_id(pool: &Pool<Postgres>, id: &str) -> Result<Contract> {
+    let contract = sqlx::query_as!(
+        db::Contract,
+        r#"
+        SELECT
+            id,
+            lender_id,
+            borrower_id,
+            loan_id,
+            initial_ltv,
+            initial_collateral_sats,
+            loan_amount,
+            borrower_payout_address,
+            borrower_pk,
+            contract_address,
+            contract_index,
+            status as "status: crate::model::db::ContractStatus",
+            duration_months,
+            created_at,
+            updated_at
+        FROM contracts
+        where id = $1
+        "#,
+        id
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(contract.into())
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -127,8 +161,10 @@ pub async fn insert_contract_request(
             duration_months,
             status,
             borrower_payout_address,
-            borrower_pk
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+            borrower_pk,
+            contract_address,
+            contract_index
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
         RETURNING
             id,
             lender_id,
@@ -139,6 +175,8 @@ pub async fn insert_contract_request(
             loan_amount,
             borrower_payout_address,
             borrower_pk,
+            contract_address,
+            contract_index,
             status as "status: crate::model::db::ContractStatus",
             duration_months,
             created_at,
@@ -155,6 +193,8 @@ pub async fn insert_contract_request(
         crate::model::db::ContractStatus::Requested as crate::model::db::ContractStatus,
         borrower_payout_address.assume_checked().to_string(),
         borrower_pk.to_string(),
+        None as Option<String>,
+        None as Option<i32>,
     )
     .fetch_one(pool)
     .await?;
@@ -162,32 +202,90 @@ pub async fn insert_contract_request(
     Ok(contract.into())
 }
 
-pub async fn update_contract_status(
+pub async fn accept_contract_request(
     pool: &Pool<Postgres>,
     lender_id: &str,
     contract_id: &str,
-    new_status: crate::model::ContractStatus,
-) -> Result<()> {
-    let new_status = crate::model::db::ContractStatus::from(new_status);
+    contract_address: Address,
+    contract_index: u32,
+) -> Result<Contract> {
+    let contract = sqlx::query_as!(
+        db::Contract,
+        r#"
+        UPDATE contracts
+        SET status = $1,
+            updated_at = $2,
+            contract_address = $3,
+            contract_index = $4
+        WHERE lender_id = $5
+          AND id = $6
+        RETURNING
+            id,
+            lender_id,
+            borrower_id,
+            loan_id,
+            initial_ltv,
+            initial_collateral_sats,
+            loan_amount,
+            borrower_payout_address,
+            borrower_pk,
+            contract_address,
+            contract_index,
+            status as "status: crate::model::db::ContractStatus",
+            duration_months,
+            created_at,
+            updated_at
+        "#,
+        crate::model::db::ContractStatus::Open as crate::model::db::ContractStatus,
+        OffsetDateTime::now_utc(),
+        contract_address.to_string(),
+        contract_index as i32,
+        lender_id,
+        contract_id
+    )
+    .fetch_one(pool)
+    .await?;
 
-    let result = sqlx::query!(
+    Ok(contract.into())
+}
+
+pub async fn reject_contract_request(
+    pool: &Pool<Postgres>,
+    lender_id: &str,
+    contract_id: &str,
+) -> Result<Contract> {
+    let contract = sqlx::query_as!(
+        db::Contract,
         r#"
         UPDATE contracts
         SET status = $1,
             updated_at = $2
         WHERE lender_id = $3
           AND id = $4
+        RETURNING
+            id,
+            lender_id,
+            borrower_id,
+            loan_id,
+            initial_ltv,
+            initial_collateral_sats,
+            loan_amount,
+            borrower_payout_address,
+            borrower_pk,
+            contract_address,
+            contract_index,
+            status as "status: crate::model::db::ContractStatus",
+            duration_months,
+            created_at,
+            updated_at
         "#,
-        new_status as crate::model::db::ContractStatus,
+        crate::model::db::ContractStatus::Rejected as crate::model::db::ContractStatus,
         OffsetDateTime::now_utc(),
         lender_id,
         contract_id
     )
-    .execute(pool)
+    .fetch_one(pool)
     .await?;
 
-    if result.rows_affected() == 0 {
-        bail!("Contract to update not found")
-    }
-    Ok(())
+    Ok(contract.into())
 }
