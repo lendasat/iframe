@@ -431,7 +431,7 @@ export function NxWelcome({ title }: { title: string }) {
         <div className="container">
           <div id="welcome">
             <h1>
-              <span> Hello there, </span>
+              <span>Hello there,</span>
               Welcome {title} 👋
             </h1>
           </div>
@@ -454,7 +454,7 @@ export function NxWelcome({ title }: { title: string }) {
                 </svg>
                 <span>You&apos;re up and running</span>
               </h2>
-              <a href="#commands"> What&apos;s next? </a>
+              <a href="#commands">What&apos;s next?</a>
             </div>
             <div className="logo-container">
               <svg
@@ -493,7 +493,7 @@ export function NxWelcome({ title }: { title: string }) {
                   </svg>
                   <span>
                     Documentation
-                    <span> Everything is in there </span>
+                    <span>Everything is in there</span>
                   </span>
                   <svg
                     fill="none"
@@ -530,7 +530,7 @@ export function NxWelcome({ title }: { title: string }) {
                   </svg>
                   <span>
                     Blog
-                    <span> Changelog, features & events </span>
+                    <span>Changelog, features & events</span>
                   </span>
                   <svg
                     fill="none"
@@ -563,7 +563,7 @@ export function NxWelcome({ title }: { title: string }) {
                   </svg>
                   <span>
                     YouTube channel
-                    <span> Nx Show, talks & tutorials </span>
+                    <span>Nx Show, talks & tutorials</span>
                   </span>
                   <svg
                     fill="none"
@@ -600,7 +600,7 @@ export function NxWelcome({ title }: { title: string }) {
                   </svg>
                   <span>
                     Interactive tutorials
-                    <span> Create an app, step-by-step </span>
+                    <span>Create an app, step-by-step</span>
                   </span>
                   <svg
                     fill="none"
@@ -634,7 +634,7 @@ export function NxWelcome({ title }: { title: string }) {
                 </svg>
                 <span>
                   Nx is open source
-                  <span> Love Nx? Give us a star! </span>
+                  <span>Love Nx? Give us a star!</span>
                 </span>
               </a>
             </div>
