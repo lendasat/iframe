@@ -81,4 +81,4 @@ jobs:
       - run: npm ci
 
       # TODO: add linter which is currently broken
-      - run: npx nx affected -t test build e2e-ci
+      - run: npx nx affected --base=remotes/origin/main -t test build e2e-ci
