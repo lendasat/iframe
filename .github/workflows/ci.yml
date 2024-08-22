@@ -99,6 +99,9 @@ jobs:
       - name: Build frontend
         run: just build-frontend
 
+      - name: Lint frontend
+        run: just lint-frontend
+
       - name: Run tests
         run: just test-frontend
 

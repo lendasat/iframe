@@ -18,6 +18,14 @@ fmt:
 clippy:
     cargo clippy --all-targets --all-features -- -D warnings
 
+lint-frontend:
+    #!/usr/bin/env bash
+    set -euxo pipefail
+    cd frontend-monorepo
+    npx nx run-many --target=lint --all
+
+
+
 ## ------------------------
 ## Test functions
 ## ------------------------
