@@ -22,13 +22,37 @@ clippy:
 ## Test functions
 ## ------------------------
 
-react-test:
-    cd frontend && npm test
+frontend-test:
+    #!/usr/bin/env bash
+    set -euxo pipefail
+    cd frontend-monorepo
+    npx nx run-many --target=test --all
 
 rust-test:
     cargo test --workspace
 
-test: react-test rust-test
+test: frontend-test rust-test
+
+e2e-tests-frontend:
+    #!/usr/bin/env bash
+    set -euxo pipefail
+    cd frontend-monorepo
+    npx nx run-many --target=e2e --all
+
+
+## ------------------------
+## Serve frontend functions
+## ------------------------
+
+run-borrower-frontend:
+    #!/usr/bin/env bash
+    cd frontend-monorepo
+    npx nx serve borrower
+
+run-lender-frontend:
+    #!/usr/bin/env bash
+    cd frontend-monorepo
+    npx nx serve lender
 
 ## ------------------------
 ## Build frontend functions
@@ -39,13 +63,16 @@ build-wallet:
     wasm-pack build borrower-wallet --target web
 
 # build frontend
-force-build-frontend:
-    cd frontend && npm run build --force
+build-frontend:
+    #!/usr/bin/env bash
+    cd frontend-monorepo
+    npx nx run-many --target=build --all
 
 # rebuilds the frontend if a file in the frontend changes
 watch-frontend:
-    cd frontend && npm run watch
-
+    #!/usr/bin/env bash
+    cd frontend-monorepo
+    npx nx watch --projects=borrower,lender -- npx nx run-many -t build -p borrower,lender
 
 ## ------------------------
 ## Build backend functions
