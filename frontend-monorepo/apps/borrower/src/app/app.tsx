@@ -1,3 +1,4 @@
+import { HeaderComponent } from "@frontend-monorepo/ui-shared";
 import { FormEvent, useEffect, useState } from "react";
 import { Button } from "react-bootstrap";
 import { Link, Route, Routes } from "react-router-dom";
@@ -50,11 +51,11 @@ function App() {
 
   return (
     <>
+      <HeaderComponent title={"Welcome Borrower"} />
       <div className="status-container">
         <div className="circle" style={{ backgroundColor: isWalletLoaded ? "green" : "grey" }}></div>
         <span>Wallet status</span>
       </div>
-      <h1>Lendasat</h1>
       <div className="card">
         <form onSubmit={createWallet}>
           <input
