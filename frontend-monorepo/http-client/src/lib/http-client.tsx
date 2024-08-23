@@ -60,7 +60,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ baseUrl, children })
   const login = async (email: string, password: string) => {
     try {
       const response = await httpClient.post("/api/auth/login", { email: email, password: password });
-      let newToken = response.data.token;
+      const newToken = response.data.token;
       setToken(newToken);
       localStorage.setItem("authToken", newToken);
 
@@ -85,7 +85,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ baseUrl, children })
   const logout = async () => {
     try {
       const response = await httpClient.get("/api/auth/logout");
-      let data = response.data;
+      const data = response.data;
       console.log(data);
       console.log("Logout successful");
     } catch (error) {
@@ -103,7 +103,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ baseUrl, children })
     try {
       const response: AxiosResponse<User> = await httpClient.get("/api/users/me");
       return response.data;
-    } catch (error: any) {
+    } catch (error) {
       console.error(`Failed to fetch me: http: ${error.response?.status} and response: ${error.response?.data}`);
       return undefined;
     }
