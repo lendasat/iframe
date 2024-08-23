@@ -1,23 +1,21 @@
-// src/Logout.tsx
-
 import { useAuth } from "@frontend-monorepo/http-client";
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 const Logout = () => {
-  const { logout } = useAuth(); // Use your custom logout function
+  const { logout } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     const handleLogout = async () => {
-      logout(); // Call your logout function to clear session, etc.
-      navigate("/"); // Redirect to homepage
+      logout();
+      navigate("/");
     };
 
     handleLogout();
   }, [logout, navigate]);
 
-  return null; // No UI needed for this component
+  return null;
 };
 
 export default Logout;
