@@ -1,11 +1,12 @@
 import { AuthProvider, useAuth } from "@frontend-monorepo/http-client";
 import { Layout } from "@frontend-monorepo/ui-shared";
 import { useEffect, useState } from "react";
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 import Login from "./login";
 import Logout from "./logout";
 import MyAccount from "./my-account";
 import MyLoans from "./my-loans";
+import Registration from "./registration";
 import RequestLoan from "./request-loan";
 import Wallet from "./wallet";
 
@@ -27,13 +28,22 @@ function LoggedInComponents() {
         <Route path="/my-account" element={<MyAccount />} />
         <Route path="/wallet" element={<Wallet />} />
         <Route path="/logout" element={<Logout />} />
+        <Route path="/registration" element={<Registration />} />
+        <Route path="*" element={<Navigate to="/my-account" replace />} />
       </Routes>
     </Layout>
   );
 }
 
 function LoggedOutComponents() {
-  return <Login />;
+  return (
+    <Routes>
+      <Route path="/registration" element={<Registration />} />
+      <Route path="/logout" element={<Logout />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="*" element={<Navigate to="/login" replace />} />
+    </Routes>
+  );
 }
 
 function App() {

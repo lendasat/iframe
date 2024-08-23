@@ -1,20 +1,15 @@
 import { AuthProvider, useAuth } from "@frontend-monorepo/http-client";
 import React, { useState } from "react";
 import { Button, Col, Container, Form, Row } from "react-bootstrap";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ReactComponent as Logo } from "./lendasat_white_bg.svg";
 
 function Login() {
-  const { register, login, logout, token, me } = useAuth();
-  const navigate = useNavigate();
+  const { login } = useAuth();
 
   const [email, setEmail] = useState("bob_the_borrower@lendasat.com");
   const [password, setPassword] = useState("password123");
   const [error, setError] = useState("");
-
-  const handleRegister = async () => {
-    await register("user1", "password123");
-  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -25,15 +20,6 @@ function Login() {
       setError(`Login failed. ${err}`);
     }
   };
-
-  const handleLogout = () => {
-    logout();
-  };
-  const handleMe = async () => {
-    await me();
-  };
-
-  console.log(`Error: ${error}`);
 
   return (
     <Container className="d-flex flex-column justify-content-center align-items-center vh-100">
@@ -71,9 +57,10 @@ function Login() {
                 Login
               </Button>
             </Form>
-            <Button variant="link" className="w-100 mt-2">
-              Sign Up
-            </Button>
+
+            <Container className="d-flex justify-content-center w-100 mt-2">
+              <Link to="/registration">Sign Up</Link>
+            </Container>
           </div>
         </Col>
       </Row>

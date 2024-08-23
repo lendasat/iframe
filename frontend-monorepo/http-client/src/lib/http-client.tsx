@@ -5,7 +5,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 
 interface AuthContextProps {
   httpClient: AxiosInstance;
-  register: (email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   me: () => Promise<User | undefined>;
@@ -48,9 +48,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ baseUrl, children })
     },
   });
 
-  const register = async (username: string, password: string) => {
+  const register = async (name: string, email: string, password: string) => {
     try {
-      await httpClient.post("/register", { username, password });
+      await httpClient.post("/api/auth/register", { name, email, password });
       console.log("Registration successful");
     } catch (error) {
       console.error("Registration failed", error);
@@ -72,6 +72,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ baseUrl, children })
         const message = error.response.message;
 
         if (status === 400) {
+          // TODO: we should handle if a user is not verified differently
           throw new Error("Please check your credentials and try again.");
         } else {
           throw new Error(message);
