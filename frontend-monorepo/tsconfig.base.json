@@ -15,6 +15,7 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
+      "@frontend-monorepo/http-client": ["http-client/src/index.ts"],
       "@frontend-monorepo/ui-shared": ["ui-shared/src/index.ts"]
     }
   },

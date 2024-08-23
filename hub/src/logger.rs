@@ -16,7 +16,9 @@ pub fn init_tracing(level: LevelFilter, json_format: bool, is_console: bool) -> 
         return Ok(());
     }
 
-    let mut filter = EnvFilter::new("").add_directive(Directive::from(level));
+    let mut filter = EnvFilter::new("")
+        .add_directive("sqlx::query=warn".parse()?)
+        .add_directive(Directive::from(level));
 
     // Parse additional log directives from env variable
     let filter = match std::env::var_os(RUST_LOG_ENV).map(|s| s.into_string()) {
