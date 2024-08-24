@@ -7,7 +7,7 @@ import Logout from "./logout";
 import MyAccount from "./my-account";
 import MyLoans from "./my-loans";
 import Registration from "./registration";
-import RequestLoan from "./request-loan";
+import RequestLoan from "./request-loan/request-loan";
 import Wallet from "./wallet";
 
 const navItems = [
