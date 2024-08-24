@@ -1,7 +1,8 @@
-import { LoanOffer, LoanOfferComponent, StableCoin } from "./loan-offer";
+import { LoanOffer, StableCoin } from "./loan-offer";
+import LoanOffersComponent from "./loan-offers";
 
 function RequestLoan() {
-  const loanOffer: LoanOffer = {
+  const loanOffer1: LoanOffer = {
     lender: {
       name: "Lord Lendalot",
       rate: 100,
@@ -20,9 +21,28 @@ function RequestLoan() {
     coins: [StableCoin.USDT_SN, StableCoin.USDC_SN],
   };
 
+  const loanOffer2: LoanOffer = {
+    lender: {
+      name: "Lord Lendalot",
+      rate: 100,
+      loans: 240,
+    },
+    amount: {
+      min: 5000,
+      max: 50000,
+    },
+    duration: {
+      min: 6,
+      max: 12,
+    },
+    ltv: 50,
+    interest: 8,
+    coins: [StableCoin.USDT_ETH],
+  };
+
   return (
     <>
-      <LoanOfferComponent {...loanOffer}></LoanOfferComponent>
+      <LoanOffersComponent loanOffers={[loanOffer1, loanOffer2]} />
     </>
   );
 }
