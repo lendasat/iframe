@@ -64,6 +64,7 @@ export function LoanOfferComponent({ lender, amount, duration, ltv, interest, co
                 {coins.map((coin) => (
                   <span key={coin}>
                     <Badge bg="primary">{StableCoin.print(coin)}</Badge>
+                    {" "}
                   </span>
                 ))}
               </Col>
