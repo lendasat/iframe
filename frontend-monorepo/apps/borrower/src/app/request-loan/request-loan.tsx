@@ -2,9 +2,18 @@ import { LoanOffer, StableCoin } from "./loan-offer";
 import LoanOffersComponent from "./loan-offers";
 
 function RequestLoan() {
+  return (
+    <>
+      <LoanOffersComponent loanOffers={getMockData()} />
+    </>
+  );
+}
+
+// TODO: fetch from backend
+function getMockData(): LoanOffer[] {
   const loanOffer1: LoanOffer = {
     lender: {
-      name: "Lord Lendalot",
+      name: "Lord Lendalot 1",
       rate: 100,
       loans: 240,
     },
@@ -23,7 +32,7 @@ function RequestLoan() {
 
   const loanOffer2: LoanOffer = {
     lender: {
-      name: "Lord Lendalot",
+      name: "Lord Lendalot 2",
       rate: 100,
       loans: 240,
     },
@@ -40,11 +49,26 @@ function RequestLoan() {
     coins: [StableCoin.USDT_ETH],
   };
 
-  return (
-    <>
-      <LoanOffersComponent loanOffers={[loanOffer1, loanOffer2]} />
-    </>
-  );
+  const loanOffer3: LoanOffer = {
+    lender: {
+      name: "Lord Lendalot 3",
+      rate: 100,
+      loans: 240,
+    },
+    amount: {
+      min: 5000,
+      max: 50000,
+    },
+    duration: {
+      min: 3,
+      max: 6,
+    },
+    ltv: 40,
+    interest: 8,
+    coins: [StableCoin.USDT_ETH],
+  };
+
+  return [loanOffer1, loanOffer2, loanOffer3];
 }
 
 export default RequestLoan;
