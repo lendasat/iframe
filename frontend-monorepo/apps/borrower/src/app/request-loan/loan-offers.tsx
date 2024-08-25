@@ -10,8 +10,8 @@ enum Sort {
   DESC = "DESC",
 }
 
-namespace Sort {
-  export function getIcon(sort: Sort): IconDefinition {
+class SortHelper {
+  static getIcon(sort: Sort): IconDefinition {
     switch (sort) {
       case Sort.NONE:
         return faMinus;
@@ -22,7 +22,7 @@ namespace Sort {
     }
   }
 
-  export function getNextSort(sort: Sort): Sort {
+  static getNextSort(sort: Sort): Sort {
     switch (sort) {
       case Sort.NONE:
         return Sort.ASC;
@@ -33,7 +33,7 @@ namespace Sort {
     }
   }
 
-  export function sort(sort: Sort, a: number, b: number): number {
+  static sort(sort: Sort, a: number, b: number): number {
     switch (sort) {
       case Sort.NONE:
         return 0;
@@ -46,10 +46,10 @@ namespace Sort {
 }
 
 function LoanOffersComponent({ loanOffers }: { loanOffers: LoanOffer[] }) {
-  let [amountSort, setAmountSort] = useState<Sort>(Sort.NONE);
-  let [durationSort, setDurationSort] = useState<Sort>(Sort.NONE);
-  let [ltvSort, setLTVSort] = useState<Sort>(Sort.NONE);
-  let [interestSort, setInterestSort] = useState<Sort>(Sort.NONE);
+  const [amountSort, setAmountSort] = useState<Sort>(Sort.NONE);
+  const [durationSort, setDurationSort] = useState<Sort>(Sort.NONE);
+  const [ltvSort, setLTVSort] = useState<Sort>(Sort.NONE);
+  const [interestSort, setInterestSort] = useState<Sort>(Sort.NONE);
 
   return (
     <>
@@ -62,8 +62,8 @@ function LoanOffersComponent({ loanOffers }: { loanOffers: LoanOffer[] }) {
             <small>
               Amounts{" "}
               <FontAwesomeIcon
-                icon={Sort.getIcon(amountSort)}
-                onClick={() => setAmountSort(Sort.getNextSort(amountSort))}
+                icon={SortHelper.getIcon(amountSort)}
+                onClick={() => setAmountSort(SortHelper.getNextSort(amountSort))}
               />
             </small>
           </Col>
@@ -71,22 +71,26 @@ function LoanOffersComponent({ loanOffers }: { loanOffers: LoanOffer[] }) {
             <small>
               Duration{" "}
               <FontAwesomeIcon
-                icon={Sort.getIcon(durationSort)}
-                onClick={() => setDurationSort(Sort.getNextSort(durationSort))}
+                icon={SortHelper.getIcon(durationSort)}
+                onClick={() => setDurationSort(SortHelper.getNextSort(durationSort))}
               />
             </small>
           </Col>
           <Col md={1}>
             <small>
-              LTV <FontAwesomeIcon icon={Sort.getIcon(ltvSort)} onClick={() => setLTVSort(Sort.getNextSort(ltvSort))} />
+              LTV{" "}
+              <FontAwesomeIcon
+                icon={SortHelper.getIcon(ltvSort)}
+                onClick={() => setLTVSort(SortHelper.getNextSort(ltvSort))}
+              />
             </small>
           </Col>
           <Col md={1}>
             <small>
               Interest{" "}
               <FontAwesomeIcon
-                icon={Sort.getIcon(interestSort)}
-                onClick={() => setInterestSort(Sort.getNextSort(interestSort))}
+                icon={SortHelper.getIcon(interestSort)}
+                onClick={() => setInterestSort(SortHelper.getNextSort(interestSort))}
               />
             </small>
           </Col>
@@ -98,19 +102,19 @@ function LoanOffersComponent({ loanOffers }: { loanOffers: LoanOffer[] }) {
       </Container>
       {loanOffers.sort((a, b) => {
         // Compare by amount first
-        const amountComparison = Sort.sort(amountSort, a.amount.min, b.amount.min);
+        const amountComparison = SortHelper.sort(amountSort, a.amount.min, b.amount.min);
         if (amountComparison !== 0) return amountComparison;
 
         // Compare by duration if amount is the same
-        const durationComparison = Sort.sort(durationSort, a.duration.min, b.duration.min);
+        const durationComparison = SortHelper.sort(durationSort, a.duration.min, b.duration.min);
         if (durationComparison !== 0) return durationComparison;
 
         // Compare by LTV if amount and duration are the same
-        const ltvComparison = Sort.sort(ltvSort, a.ltv, b.ltv);
+        const ltvComparison = SortHelper.sort(ltvSort, a.ltv, b.ltv);
         if (ltvComparison !== 0) return ltvComparison;
 
         // Compare by interest if amount, duration, and LTV are the same
-        return Sort.sort(interestSort, a.interest, b.interest);
+        return SortHelper.sort(interestSort, a.interest, b.interest);
       }).map((loanOffer, index) => (
         <div key={index} className={"mb-3"}>
           <LoanOfferComponent key={index} {...loanOffer} />

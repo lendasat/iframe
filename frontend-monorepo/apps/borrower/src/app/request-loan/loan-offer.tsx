@@ -9,8 +9,8 @@ export enum StableCoin {
   USDC_ETH = "USDC_ETH",
 }
 
-namespace StableCoin {
-  export function print(coin: StableCoin): string {
+export class StableCoinHelper {
+  static print(coin: StableCoin): string {
     switch (coin) {
       case StableCoin.USDT_SN:
         return "USDT Starknet";
@@ -45,36 +45,34 @@ export interface LoanOffer {
 
 export function LoanOfferComponent({ lender, amount, duration, ltv, interest, coins }: LoanOffer) {
   return (
-    <>
-      <Card>
-        <Card.Body>
-          <Container className={"p-0 m-0"} fluid>
-            <Row>
-              <Col>
-                <Lender {...lender} />
-              </Col>
-              <Col md={2}>
-                <CurrencyFormatter value={amount.min} currency="USD" locale="en-US" /> -{" "}
-                <CurrencyFormatter value={amount.max} currency="USD" locale="en-US" />
-              </Col>
-              <Col md={1}>{duration.min} - {duration.max} months</Col>
-              <Col md={1}>{ltv}%</Col>
-              <Col md={1}>{interest}%</Col>
-              <Col md={3}>
-                {coins.map((coin) => (
-                  <span key={coin}>
-                    <Badge bg="primary">{StableCoin.print(coin)}</Badge>
-                    {" "}
-                  </span>
-                ))}
-              </Col>
-              <Col md={2} className={"text-end"}>
-                <Button variant="primary">Request Loan</Button>
-              </Col>
-            </Row>
-          </Container>
-        </Card.Body>
-      </Card>
-    </>
+    <Card>
+      <Card.Body>
+        <Container className={"p-0 m-0"} fluid>
+          <Row>
+            <Col>
+              <Lender {...lender} />
+            </Col>
+            <Col md={2}>
+              <CurrencyFormatter value={amount.min} currency="USD" locale="en-US" /> -{" "}
+              <CurrencyFormatter value={amount.max} currency="USD" locale="en-US" />
+            </Col>
+            <Col md={1}>{duration.min} - {duration.max} months</Col>
+            <Col md={1}>{ltv}%</Col>
+            <Col md={1}>{interest}%</Col>
+            <Col md={3}>
+              {coins.map((coin) => (
+                <span key={coin}>
+                  <Badge bg="primary">{StableCoinHelper.print(coin)}</Badge>
+                  {" "}
+                </span>
+              ))}
+            </Col>
+            <Col md={2} className={"text-end"}>
+              <Button variant="primary">Request Loan</Button>
+            </Col>
+          </Row>
+        </Container>
+      </Card.Body>
+    </Card>
   );
 }

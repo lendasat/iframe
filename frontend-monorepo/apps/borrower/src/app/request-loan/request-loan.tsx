@@ -2,11 +2,7 @@ import { LoanOffer, StableCoin } from "./loan-offer";
 import LoanOffersComponent from "./loan-offers";
 
 function RequestLoan() {
-  return (
-    <>
-      <LoanOffersComponent loanOffers={getMockData()} />
-    </>
-  );
+  return <LoanOffersComponent loanOffers={getMockData()} />;
 }
 
 // TODO: fetch from backend
