@@ -35,7 +35,6 @@ export function Layout({
             {/* Main content */}
             <div className="flex-grow-1">
               {/* Content area */}
-
               <div className="p-4">{children}</div>
             </div>
           </Col>

@@ -25,8 +25,6 @@ function App() {
       <AuthIsSignedIn>
         <Layout
           navItems={navItems}
-          description={"Sell at the price you deserve"}
-          title={"Welcome Borrower"}
           defaultActiveKey={"/my-account"}
         >
           <Routes>
