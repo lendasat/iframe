@@ -1,4 +1,4 @@
-import { useAuth, User } from "@frontend-monorepo/http-client";
+import { useAuth } from "@frontend-monorepo/http-client";
 
 function MyAccount() {
   const { user } = useAuth();

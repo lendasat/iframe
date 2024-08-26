@@ -1,7 +1,7 @@
 import React, { ReactNode } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { Col, Container, Nav, Row } from "react-bootstrap";
-import { Link, LinkProps } from "react-router-dom";
+import { Link  } from "react-router-dom";
 import { ReactComponent as Logo } from "./lendasat_white_bg.svg";
 
 interface NavItem {
