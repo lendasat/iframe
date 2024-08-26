@@ -231,3 +231,6 @@ rust-project.json
 # End of https://www.toptal.com/developers/gitignore/api/clion,intellij+all,rust,rust-analyzer,macos
 
 .env
+
+hub.log*
+mempool.log*

@@ -1,4 +1,5 @@
 use crate::config::Config;
+use crate::mempool;
 use crate::wallet::Wallet;
 use serde::Serialize;
 use sqlx::Pool;
@@ -17,4 +18,5 @@ pub struct AppState {
     db: Pool<Postgres>,
     wallet: Arc<Wallet>,
     config: Config,
+    mempool: xtra::Address<mempool::Actor>,
 }

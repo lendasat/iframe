@@ -66,9 +66,12 @@
             "name": "contract_status",
             "kind": {
               "Enum": [
-                "Open",
-                "Closed",
                 "Requested",
+                "Open",
+                "CollateralSeen",
+                "CollateralConfirmed",
+                "PrincipalGiven",
+                "Closed",
                 "Rejected"
               ]
             }
@@ -98,9 +101,12 @@
             "name": "contract_status",
             "kind": {
               "Enum": [
-                "Open",
-                "Closed",
                 "Requested",
+                "Open",
+                "CollateralSeen",
+                "CollateralConfirmed",
+                "PrincipalGiven",
+                "Closed",
                 "Rejected"
               ]
             }

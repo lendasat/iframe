@@ -1,4 +1,5 @@
 use crate::config::Config;
+use crate::mempool;
 use crate::routes::AppState;
 use crate::wallet::Wallet;
 use axum::Router;
@@ -17,11 +18,13 @@ pub async fn spawn_lender_server(
     config: Config,
     wallet: Arc<Wallet>,
     db: Pool<Postgres>,
+    mempool: xtra::Address<mempool::Actor>,
 ) -> JoinHandle<()> {
     let app_state = Arc::new(AppState {
         db,
         wallet,
         config: config.clone(),
+        mempool,
     });
     let app = Router::new().merge(
         health_check::router()

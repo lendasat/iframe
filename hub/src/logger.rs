@@ -11,7 +11,7 @@ use tracing_subscriber::Layer;
 
 const RUST_LOG_ENV: &str = "RUST_LOG";
 
-pub fn init_tracing(level: LevelFilter, json_format: bool, is_console: bool) -> Result<()> {
+pub fn init_tracing(level: LevelFilter, json_format: bool) -> Result<()> {
     if level == LevelFilter::OFF {
         return Ok(());
     }
@@ -35,9 +35,11 @@ pub fn init_tracing(level: LevelFilter, json_format: bool, is_console: bool) -> 
         _ => filter,
     };
 
+    let is_terminal = atty::is(atty::Stream::Stderr);
+
     let fmt_layer = tracing_subscriber::fmt::layer()
         .with_writer(std::io::stderr)
-        .with_ansi(is_console);
+        .with_ansi(is_terminal);
 
     let fmt_layer = if json_format {
         fmt_layer.json().with_timer(UtcTime::rfc_3339()).boxed()

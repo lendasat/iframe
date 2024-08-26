@@ -57,7 +57,7 @@ CREATE TABLE
     FOREIGN KEY (lender_id) REFERENCES lenders (id)
 );
 
-CREATE TYPE contract_status AS ENUM ('Open', 'Closed', 'Requested', 'Rejected');
+CREATE TYPE contract_status AS ENUM ('Requested', 'Open', 'CollateralSeen', 'CollateralConfirmed', 'PrincipalGiven', 'Closed', 'Rejected');
 
 CREATE TABLE
     IF NOT EXISTS "contracts"

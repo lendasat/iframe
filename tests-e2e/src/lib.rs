@@ -1,9 +1,9 @@
-pub mod logger;
-
 #[cfg(test)]
 mod tests {
+    use anyhow::Result;
     use hub::model::Contract;
     use hub::model::ContractRequestSchema;
+    use hub::model::ContractStatus;
     use hub::model::CreateLoanOfferSchema;
     use hub::model::LoanAssetChain::Ethereum;
     use hub::model::LoanAssetType;
@@ -13,10 +13,14 @@ mod tests {
     use reqwest::Client;
     use rust_decimal_macros::dec;
     use std::sync::Arc;
+    use std::sync::Once;
+    use std::time::Duration;
 
+    /// Run `just prepare-e2e` before this test.
+    #[ignore]
     #[tokio::test]
     async fn open_loan() {
-        // Assume the borrower and lender are already registered via `just register-test-subjects`
+        init_tracing();
 
         // 0. Log in borrower and lender.
         let borrower_cookie_jar = Arc::new(Jar::default());
@@ -169,7 +173,79 @@ mod tests {
         assert!(res.status().is_success());
 
         // 5. Hub sees collateral funding TX.
+
+        let res = borrower
+            .get("http://localhost:7337/api/contracts")
+            .send()
+            .await
+            .unwrap();
+
+        assert!(res.status().is_success());
+
+        let contracts: Vec<Contract> = res.json().await.unwrap();
+        let contract = contracts.iter().find(|c| c.id == contract.id).unwrap();
+
+        wait_until_contract_status(
+            &borrower,
+            "localhost:7337",
+            &contract.id,
+            ContractStatus::CollateralConfirmed,
+        )
+        .await
+        .unwrap();
+
         // 6. Hub tells lender to send principal to borrower on Ethereum.
         // 7. Borrower confirms payment.
+    }
+
+    async fn wait_until_contract_status(
+        client: &reqwest::Client,
+        url: &str,
+        contract_id: &str,
+        status: ContractStatus,
+    ) -> Result<()> {
+        tokio::time::timeout(Duration::from_secs(10), async {
+            loop {
+                let res = client
+                    .get(format!("http://{url}/api/contracts"))
+                    .send()
+                    .await
+                    .unwrap();
+
+                let contracts: Vec<Contract> = res.json().await.unwrap();
+                let current = match contracts.iter().find(|c| c.id == contract_id) {
+                    Some(contract) => {
+                        if contract.status == status {
+                            return;
+                        }
+
+                        Some(contract.status)
+                    }
+                    None => None,
+                };
+
+                tracing::debug!(
+                    "Waiting for contract {contract_id} to reach status {status:?}, current: {current:?}",
+                );
+
+                tokio::time::sleep(Duration::from_millis(500)).await;
+            }
+        }).await.map_err(anyhow::Error::new)
+    }
+
+    fn init_tracing() {
+        static TRACING_TEST_SUBSCRIBER: Once = Once::new();
+
+        TRACING_TEST_SUBSCRIBER.call_once(|| {
+            tracing_subscriber::fmt()
+                .with_env_filter(
+                    "debug,\
+                 hyper=warn,\
+                 reqwest=warn,\
+                 rustls=warn",
+                )
+                .with_test_writer()
+                .init()
+        })
     }
 }

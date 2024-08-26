@@ -119,6 +119,43 @@ pub async fn load_contract_by_id(pool: &Pool<Postgres>, id: &str) -> Result<Cont
     Ok(contract.into())
 }
 
+pub async fn load_contracts_pending_confirmation(pool: &Pool<Postgres>) -> Result<Vec<Contract>> {
+    let contracts = sqlx::query_as!(
+        db::Contract,
+        r#"
+        SELECT
+            id,
+            lender_id,
+            borrower_id,
+            loan_id,
+            initial_ltv,
+            initial_collateral_sats,
+            loan_amount,
+            borrower_payout_address,
+            borrower_pk,
+            contract_address,
+            contract_index,
+            status as "status: crate::model::db::ContractStatus",
+            duration_months,
+            created_at,
+            updated_at
+        FROM contracts
+        WHERE status IN ($1, $2)
+        "#,
+        crate::model::db::ContractStatus::Open as crate::model::db::ContractStatus,
+        crate::model::db::ContractStatus::CollateralSeen as crate::model::db::ContractStatus,
+    )
+    .fetch_all(pool)
+    .await?;
+
+    let contracts = contracts
+        .into_iter()
+        .map(Contract::from)
+        .collect::<Vec<Contract>>();
+
+    Ok(contracts)
+}
+
 #[allow(clippy::too_many_arguments)]
 pub async fn insert_contract_request(
     pool: &Pool<Postgres>,
@@ -242,6 +279,44 @@ pub async fn accept_contract_request(
         contract_index as i32,
         lender_id,
         contract_id
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(contract.into())
+}
+
+pub async fn mark_contract_as_confirmed(
+    pool: &Pool<Postgres>,
+    contract_id: &str,
+) -> Result<Contract> {
+    let contract = sqlx::query_as!(
+        db::Contract,
+        r#"
+        UPDATE contracts
+        SET status = $1,
+            updated_at = $2
+        WHERE id = $3
+        RETURNING
+            id,
+            lender_id,
+            borrower_id,
+            loan_id,
+            initial_ltv,
+            initial_collateral_sats,
+            loan_amount,
+            borrower_payout_address,
+            borrower_pk,
+            contract_address,
+            contract_index,
+            status as "status: crate::model::db::ContractStatus",
+            duration_months,
+            created_at,
+            updated_at
+        "#,
+        crate::model::db::ContractStatus::CollateralConfirmed as crate::model::db::ContractStatus,
+        OffsetDateTime::now_utc(),
+        contract_id,
     )
     .fetch_one(pool)
     .await?;

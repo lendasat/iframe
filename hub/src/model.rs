@@ -160,11 +160,21 @@ pub struct Contract {
     pub updated_at: OffsetDateTime,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
 pub enum ContractStatus {
-    Open,
-    Closed,
+    /// The borrower has sent a contract request based on a loan offer.
     Requested,
+    /// The lender has accepted the contract request.
+    Open,
+    /// The collateral contract has been seen on the blockchain.
+    CollateralSeen,
+    /// The collateral contract has received enough confirmations.
+    CollateralConfirmed,
+    /// The principal has been given to the borrower.
+    PrincipalGiven,
+    /// The loan has been repaid, somehow.
+    Closed,
+    /// The contract request was rejected by the lender.
     Rejected,
 }
 
@@ -199,9 +209,12 @@ pub mod db {
     #[derive(Debug, Deserialize, sqlx::Type, Serialize)]
     #[sqlx(type_name = "contract_status")]
     pub enum ContractStatus {
-        Open,
-        Closed,
         Requested,
+        Open,
+        CollateralSeen,
+        CollateralConfirmed,
+        PrincipalGiven,
+        Closed,
         Rejected,
     }
 }
@@ -234,9 +247,12 @@ impl From<db::Contract> for Contract {
 impl From<db::ContractStatus> for ContractStatus {
     fn from(value: db::ContractStatus) -> Self {
         match value {
-            db::ContractStatus::Open => Self::Open,
-            db::ContractStatus::Closed => Self::Closed,
             db::ContractStatus::Requested => Self::Requested,
+            db::ContractStatus::Open => Self::Open,
+            db::ContractStatus::CollateralSeen => Self::CollateralSeen,
+            db::ContractStatus::CollateralConfirmed => Self::CollateralConfirmed,
+            db::ContractStatus::PrincipalGiven => Self::PrincipalGiven,
+            db::ContractStatus::Closed => Self::Closed,
             db::ContractStatus::Rejected => Self::Rejected,
         }
     }
@@ -269,9 +285,12 @@ impl From<Contract> for db::Contract {
 impl From<ContractStatus> for db::ContractStatus {
     fn from(value: ContractStatus) -> Self {
         match value {
-            ContractStatus::Open => Self::Open,
-            ContractStatus::Closed => Self::Closed,
             ContractStatus::Requested => Self::Requested,
+            ContractStatus::Open => Self::Open,
+            ContractStatus::CollateralSeen => Self::CollateralSeen,
+            ContractStatus::CollateralConfirmed => Self::CollateralConfirmed,
+            ContractStatus::PrincipalGiven => Self::PrincipalGiven,
+            ContractStatus::Closed => Self::Closed,
             ContractStatus::Rejected => Self::Rejected,
         }
     }

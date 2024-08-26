@@ -11,14 +11,12 @@ use tracing_subscriber::Layer;
 
 const RUST_LOG_ENV: &str = "RUST_LOG";
 
-pub fn init_tracing(level: LevelFilter, json_format: bool, is_console: bool) -> Result<()> {
+pub fn init_tracing(level: LevelFilter) -> Result<()> {
     if level == LevelFilter::OFF {
         return Ok(());
     }
 
-    let mut filter = EnvFilter::new("")
-        .add_directive("sqlx::query=warn".parse()?)
-        .add_directive(Directive::from(level));
+    let mut filter = EnvFilter::new("").add_directive(Directive::from(level));
 
     // Parse additional log directives from env variable
     let filter = match std::env::var_os(RUST_LOG_ENV).map(|s| s.into_string()) {
@@ -35,19 +33,17 @@ pub fn init_tracing(level: LevelFilter, json_format: bool, is_console: bool) -> 
         _ => filter,
     };
 
+    let is_terminal = atty::is(atty::Stream::Stderr);
+
     let fmt_layer = tracing_subscriber::fmt::layer()
         .with_writer(std::io::stderr)
-        .with_ansi(is_console);
+        .with_ansi(is_terminal);
 
-    let fmt_layer = if json_format {
-        fmt_layer.json().with_timer(UtcTime::rfc_3339()).boxed()
-    } else {
-        fmt_layer
-            .with_timer(UtcTime::new(format_description!(
-                "[year]-[month]-[day] [hour]:[minute]:[second]"
-            )))
-            .boxed()
-    };
+    let fmt_layer = fmt_layer
+        .with_timer(UtcTime::new(format_description!(
+            "[year]-[month]-[day] [hour]:[minute]:[second]"
+        )))
+        .boxed();
 
     tracing_subscriber::registry()
         .with(filter)

@@ -5,3 +5,6 @@ resolver = "2"
 [profile.release]
 # Tell `rustc` to optimize for small code size.
 opt-level = "s"
+
+[patch.crates-io]
+xtra = { git = "https://github.com/Restioson/xtra/", rev = "3714ce8" }
