@@ -1,8 +1,79 @@
-import { LoanOffer, StableCoin } from "./loan-offer";
+import { useEffect, useState } from "react";
+import { Col, Container, Row } from "react-bootstrap";
+import { LoanOffer } from "./loan-offer";
 import LoanOffersComponent from "./loan-offers";
+import LoanOffersFilter, { LoanFilter, LoanFilterType } from "./loan-offers-filter";
+import { StableCoin } from "./stable-coin";
 
 function RequestLoan() {
-  return <LoanOffersComponent loanOffers={getMockData()} />;
+  const [loanOffers, setLoanOffers] = useState(getMockData());
+  const [loanFilters, setLoanFilters] = useState<LoanFilter[]>([]);
+
+  useEffect(() => {
+    setLoanOffers(
+      getMockData().filter(offer => {
+        for (const filter of loanFilters) {
+          switch (filter.type) {
+            case LoanFilterType.AMOUNT: {
+              if (filter.value === undefined || filter.value === "") {
+                continue;
+              }
+              if (offer.amount.min > filter.value || offer.amount.max < filter.value) {
+                return false;
+              }
+              break;
+            }
+            case LoanFilterType.STABLECOIN:
+              if (filter.value === undefined || filter.value === "") {
+                continue;
+              }
+              if (!(offer.coins.find((c) => c === filter.value))) {
+                return false;
+              }
+              break;
+            case LoanFilterType.LTV:
+              if (offer.ltv > filter.value) {
+                return false;
+              }
+              break;
+            case LoanFilterType.INTEREST:
+              if (offer.interest > filter.value) {
+                return false;
+              }
+              break;
+            case LoanFilterType.PERIOD:
+              if (offer.duration.min > filter.value) {
+                return false;
+              }
+              break;
+          }
+        }
+
+        return true;
+      }),
+    );
+  }, [loanFilters]);
+
+  return (
+    <Container className="vh-100" fluid>
+      <Row className="vh-100">
+        <Col md={"2"} className="border-end d-flex align-items-stretch">
+          <LoanOffersFilter
+            onChange={(loanFilter: LoanFilter) => {
+              // remove any existing filter of that type.
+
+              const filters = loanFilters.filter(filter => filter.type !== loanFilter.type);
+              filters.push(loanFilter);
+              setLoanFilters(filters);
+            }}
+          />
+        </Col>
+        <Col md={"10"} className="p-4">
+          <LoanOffersComponent loanOffers={loanOffers} />
+        </Col>
+      </Row>
+    </Container>
+  );
 }
 
 // TODO: fetch from backend
