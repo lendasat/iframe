@@ -61,7 +61,6 @@ function LoanOffersFilter({ onChange }) {
         <Form.Control
           onChange={(e) => {
             const value = e.target.value as number;
-            console.log(value);
             const filter: LoanFilter = { type: LoanFilterType.AMOUNT, value };
             onChange(filter);
           }}
