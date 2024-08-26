@@ -6,10 +6,12 @@ interface Price {
 }
 
 function DashBoard() {
-  return <>
-    Here comes everythings
-    <PriceTicker/>
-  </>;
+  return (
+    <>
+      Here comes everythings
+      <PriceTicker />
+    </>
+  );
 }
 
 export default DashBoard;
