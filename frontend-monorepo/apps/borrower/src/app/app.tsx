@@ -1,12 +1,12 @@
 import { AuthIsNotSignedIn, AuthIsSignedIn, AuthProvider, useAuth } from "@frontend-monorepo/http-client";
 import { Layout } from "@frontend-monorepo/ui-shared";
 import { Navigate, Route, Routes } from "react-router-dom";
-import DashBoard from "./DashBoard";
-import Login from "./login";
-import Logout from "./logout";
+import DashBoard from "./dash-board";
+import Login from "./auth/login";
+import Logout from "./auth/logout";
 import MyAccount from "./my-account";
 import MyLoans from "./my-loans";
-import Registration from "./registration";
+import Registration from "./auth/registration";
 import RequestLoan from "./request-loan/request-loan";
 import Wallet from "./wallet";
 
