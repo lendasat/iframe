@@ -1,14 +1,25 @@
-import React from "react";
+import React, { ReactNode } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { Col, Container, Nav, Row } from "react-bootstrap";
-import { Link } from "react-router-dom";
+import {Link, LinkProps} from "react-router-dom";
 import { ReactComponent as Logo } from "./lendasat_white_bg.svg";
+
+interface NavItem {
+  href: string;
+  label: string;
+}
+
+interface LayoutProps {
+  children: ReactNode;
+  defaultActiveKey?: string;
+  navItems: NavItem[];
+}
 
 export function Layout({
   children,
   defaultActiveKey,
-  navItems = [], // Array of nav items with properties { href, label }
-}) {
+  navItems = [],
+}: LayoutProps) {
   return (
     <div className="d-flex">
       {/* Sidebar */}
@@ -18,7 +29,7 @@ export function Layout({
             <Nav
               className="col-md-12 d-none d-md-block bg-light sidebar h-100"
               activeKey="{selectedKey}"
-              defaultActiveKey
+              defaultActiveKey={defaultActiveKey ?? 0}
             >
               <div className="sidebar-sticky"></div>
               <center>
