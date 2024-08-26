@@ -1,7 +1,7 @@
-import { AuthProvider, useAuth } from "@frontend-monorepo/http-client";
+import { AuthIsNotSignedIn, AuthIsSignedIn, AuthProvider, useAuth } from "@frontend-monorepo/http-client";
 import { Layout } from "@frontend-monorepo/ui-shared";
-import { useEffect, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
+import DashBoard from "./DashBoard";
 import Login from "./login";
 import Logout from "./logout";
 import MyAccount from "./my-account";
@@ -19,45 +19,37 @@ const navItems = [
   { href: "/logout", label: "Logout" },
 ];
 
-function LoggedInComponents() {
-  return (
-    <Layout navItems={navItems} description={"Sell at the price you deserve"} title={"Welcome Borrower"}>
-      <Routes>
-        <Route path="/request-loan" element={<RequestLoan />} />
-        <Route path="/my-loans" element={<MyLoans />} />
-        <Route path="/my-account" element={<MyAccount />} />
-        <Route path="/wallet" element={<Wallet />} />
-        <Route path="/logout" element={<Logout />} />
-        <Route path="/registration" element={<Registration />} />
-        <Route path="*" element={<Navigate to="/my-account" replace />} />
-      </Routes>
-    </Layout>
-  );
-}
-
-function LoggedOutComponents() {
-  return (
-    <Routes>
-      <Route path="/registration" element={<Registration />} />
-      <Route path="/logout" element={<Logout />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="*" element={<Navigate to="/login" replace />} />
-    </Routes>
-  );
-}
-
 function App() {
   return (
     <AuthProvider baseUrl="http://localhost:7337">
-      <AuthStatus />
+      <AuthIsSignedIn>
+        <Layout
+          navItems={navItems}
+          description={"Sell at the price you deserve"}
+          title={"Welcome Borrower"}
+          defaultActiveKey={"/my-account"}
+        >
+          <Routes>
+            <Route index element={<DashBoard />} />
+            <Route path="/request-loan" element={<RequestLoan />} />
+            <Route path="/my-loans" element={<MyLoans />} />
+            <Route path="/my-account" element={<MyAccount />} />
+            <Route path="/wallet" element={<Wallet />} />
+            <Route path="/logout" element={<Logout />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Layout>
+      </AuthIsSignedIn>
+      <AuthIsNotSignedIn>
+        <Routes>
+          <Route path="/registration" element={<Registration />} />
+          <Route path="/logout" element={<Logout />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </AuthIsNotSignedIn>
     </AuthProvider>
   );
 }
-
-const AuthStatus = () => {
-  const { token } = useAuth();
-
-  return token ? <LoggedInComponents /> : <LoggedOutComponents />;
-};
 
 export default App;

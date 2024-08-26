@@ -9,7 +9,7 @@ interface AuthContextProps {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   me: () => Promise<User | undefined>;
-  token: string | null;
+  user: User | null;
 }
 
 interface AuthProviderProps {
@@ -25,18 +25,36 @@ export interface User {
   created_at: Date;
 }
 
+type Props = {
+  children?: React.ReactNode;
+};
+
+export const AuthIsSignedIn = ({ children }: Props) => {
+  const { user } = useContext(AuthContext);
+  return <>{user !== null ? children : null}</>;
+};
+
+export const AuthIsNotSignedIn = ({ children }: Props) => {
+  const { user } = useContext(AuthContext);
+  return <>{user === null ? children : null}</>;
+};
+
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ baseUrl, children }) => {
-  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    // Retrieve token from localStorage on initial load
-    const storedToken = localStorage.getItem("authToken");
-    if (storedToken) {
-      setToken(storedToken);
-    }
-  }, []);
+    me().then((user) => {
+      if (user) {
+        setUser(user);
+      } else {
+        setUser(null);
+      }
+    }).catch((err) => {
+      console.error("Failed");
+    });
+  }, [setUser]);
 
   // Create an Axios instance with the provided base URL
   const httpClient = axios.create({
@@ -59,12 +77,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ baseUrl, children })
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await httpClient.post("/api/auth/login", { email: email, password: password });
-      const newToken = response.data.token;
-      setToken(newToken);
-      localStorage.setItem("authToken", newToken);
-
-      console.log(`Login successful ${newToken}`);
+      await httpClient.post("/api/auth/login", { email: email, password: password });
+      await me();
+      console.log(`Login successful`);
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         console.log(error.response);
@@ -96,22 +111,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ baseUrl, children })
         console.error(`Failed logging out: http: ${error.response.status} and response: ${error.response.data}`);
       }
     }
-    setToken(null);
-    localStorage.removeItem("authToken");
+    setUser(null);
   };
 
   const me = async (): Promise<User | undefined> => {
     try {
       const response: AxiosResponse<User> = await httpClient.get("/api/users/me");
-      return response.data;
+      const user = response.data;
+      if (user) {
+        setUser(user);
+      } else {
+        setUser(null);
+      }
+      return user;
     } catch (error) {
-      console.error(`Failed to fetch me: http: ${error.response?.status} and response: ${error.response?.data}`);
+      if (error.response.status === 401) {
+        setUser(null);
+      } else {
+        console.error(`Failed to fetch me: http: ${error.response?.status} and response: ${error.response?.data}`);
+      }
       return undefined;
     }
   };
 
   return (
-    <AuthContext.Provider value={{ httpClient, register, login, logout, token, me }}>
+    <AuthContext.Provider value={{ httpClient, register, login, logout, user, me }}>
       {children}
     </AuthContext.Provider>
   );
