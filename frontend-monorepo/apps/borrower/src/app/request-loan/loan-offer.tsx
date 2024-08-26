@@ -1,3 +1,4 @@
+import React from "react";
 import { Badge, Button, Card, Col, Container, Row } from "react-bootstrap";
 import CurrencyFormatter from "../usd";
 import { Lender, LenderProfile } from "./lender";
@@ -22,7 +23,10 @@ export interface LoanOffer {
   coins: StableCoin[];
 }
 
-export function LoanOfferComponent({ lender, amount, duration, ltv, interest, coins }: LoanOffer) {
+export function LoanOfferComponent(props) {
+  const { loanOffer, onRequest } = props;
+  const { lender, amount, duration, ltv, interest, coins } = loanOffer;
+
   return (
     <Card>
       <Card.Body>
@@ -47,7 +51,7 @@ export function LoanOfferComponent({ lender, amount, duration, ltv, interest, co
               ))}
             </Col>
             <Col md={2} className={"text-end"}>
-              <Button variant="primary">Request Loan</Button>
+              <Button variant="primary" onClick={() => onRequest(loanOffer)}>Request Loan</Button>
             </Col>
           </Row>
         </Container>

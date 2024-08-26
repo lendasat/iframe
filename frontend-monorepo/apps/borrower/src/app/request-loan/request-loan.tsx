@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Col, Container, Row } from "react-bootstrap";
+import { useNavigate } from "react-router-dom";
 import { LoanOffer } from "./loan-offer";
 import LoanOffersComponent from "./loan-offers";
 import LoanOffersFilter, { LoanFilter, LoanFilterType } from "./loan-offers-filter";
@@ -54,25 +55,32 @@ function RequestLoan() {
     );
   }, [loanFilters]);
 
+  const navigate = useNavigate();
   return (
     <Container className="vh-100" fluid>
-      <Row className="vh-100">
-        <Col md={"2"} className="border-end d-flex align-items-stretch">
-          <LoanOffersFilter
-            onChange={(loanFilter: LoanFilter) => {
-              // remove any existing filter of that type.
-
-              const filters = loanFilters.filter(filter => filter.type !== loanFilter.type);
-              filters.push(loanFilter);
-              setLoanFilters(filters);
-            }}
-          />
-        </Col>
-        <Col md={"10"} className="p-4">
-          <LoanOffersComponent loanOffers={loanOffers} />
-        </Col>
-      </Row>
-    </Container>
+        <Row className="vh-100">
+          <Col md={"2"} className="border-end d-flex align-items-stretch">
+            <LoanOffersFilter
+              onChange={(loanFilter: LoanFilter) => {
+                // Remove any existing filter of that type.
+                const filters = loanFilters.filter(
+                  (filter) => filter.type !== loanFilter.type,
+                );
+                filters.push(loanFilter);
+                setLoanFilters(filters);
+              }}
+            />
+          </Col>
+          <Col md={"10"} className="p-4">
+            <LoanOffersComponent
+              loanOffers={loanOffers}
+              onRequest={(loanOffer) => {
+                navigate("/request-loan/123", { state: { loanOffer: loanOffer, loanFilters: loanFilters } });
+              }}
+            />
+          </Col>
+        </Row>
+      </Container>
   );
 }
 

@@ -9,6 +9,7 @@ import MyAccount from "./my-account";
 import MyLoans from "./my-loans";
 import Profile from "./profile";
 import RequestLoan from "./request-loan/request-loan";
+import { RequestLoanSummary } from "./request-loan/request-loan-summary";
 import Wallet from "./wallet";
 
 const navItems = [
@@ -36,6 +37,7 @@ function App() {
             <Route path="/wallet" element={<Wallet />} />
             <Route path="/logout" element={<Logout />} />
             <Route path="/profile/:id" element={<Profile />} />
+            <Route path="/request-loan/:id" element={<RequestLoanSummary />} />
           </Routes>
         </Layout>
       </AuthIsSignedIn>

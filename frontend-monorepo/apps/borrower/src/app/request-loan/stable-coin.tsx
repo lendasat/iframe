@@ -22,30 +22,57 @@ export class StableCoinHelper {
         return "USDC Ethereum";
     }
   }
+
+  static all(): StableCoin[] {
+    return [
+      StableCoin.USDT_SN,
+      StableCoin.USDC_SN,
+      StableCoin.USDT_ETH,
+      StableCoin.USDC_ETH,
+    ];
+  }
 }
 
 // Dropdown Component
-export function StableCoinDropdown({ onSelect }) {
-  const [selectedCoin, setSelectedCoin] = useState<StableCoin>(StableCoin.USDT_SN);
+export function StableCoinDropdown({
+  onSelect,
+  coins,
+  filter,
+  defaultCoin,
+}: {
+  onSelect: (coin: StableCoin) => void;
+  coins: StableCoin[];
+  defaultCoin?: StableCoin; // Optional prop for default selected coin
+}) {
+  // Initialize selectedCoin with defaultCoin if provided, otherwise fall back to StableCoin.USDT_SN
+  const [selectedCoin, setSelectedCoin] = useState<StableCoin>(
+    defaultCoin || "",
+  );
 
-  const handleChange = (coin: StableCoin) => {
-    setSelectedCoin(coin);
-    onSelect(coin);
+  const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedValue = event.target.value as StableCoin;
+    setSelectedCoin(selectedValue);
+    onSelect(selectedValue);
   };
 
-  return (
-    <Form.Select
-      value={StableCoinHelper.print(selectedCoin)}
-      onChange={handleChange}
-    >
-      <option value="">
-        -- Filter a coin --
-      </option>
-      {Object.values(StableCoin).map((coin: StableCoin) => (
-        <option key={coin} value={coin}>
-          {StableCoinHelper.print(coin)}
+  if (coins.length === 1) {
+    return (
+      <Form.Select value={selectedCoin} onChange={handleChange}>
+        <option key={coins[0]} value={coins[0]}>
+          {StableCoinHelper.print(coins[0])}
         </option>
-      ))}
-    </Form.Select>
-  );
+      </Form.Select>
+    );
+  } else {
+    return (
+      <Form.Select value={selectedCoin} onChange={handleChange}>
+        <option value="" disabled={!filter}>-- Filter a coin --</option>
+        {coins.map((coin: StableCoin) => (
+          <option key={coin} value={coin}>
+            {StableCoinHelper.print(coin)}
+          </option>
+        ))}
+      </Form.Select>
+    );
+  }
 }
