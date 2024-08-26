@@ -1,12 +1,13 @@
 import { AuthIsNotSignedIn, AuthIsSignedIn, AuthProvider, useAuth } from "@frontend-monorepo/http-client";
 import { Layout } from "@frontend-monorepo/ui-shared";
 import { Navigate, Route, Routes } from "react-router-dom";
-import DashBoard from "./dash-board";
 import Login from "./auth/login";
 import Logout from "./auth/logout";
+import Registration from "./auth/registration";
+import DashBoard from "./dash-board";
 import MyAccount from "./my-account";
 import MyLoans from "./my-loans";
-import Registration from "./auth/registration";
+import Profile from "./profile";
 import RequestLoan from "./request-loan/request-loan";
 import Wallet from "./wallet";
 
@@ -34,6 +35,7 @@ function App() {
             <Route path="/my-account" element={<MyAccount />} />
             <Route path="/wallet" element={<Wallet />} />
             <Route path="/logout" element={<Logout />} />
+            <Route path="/profile/:id" element={<Profile />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Layout>
