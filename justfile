@@ -22,7 +22,7 @@ lint-frontend:
     #!/usr/bin/env bash
     set -euxo pipefail
     cd frontend-monorepo
-    npx nx run-many --target=lint --all
+    npx nx run-many --target=lint --all --skipNxCache
 
 
 
@@ -34,7 +34,7 @@ test-frontend:
     #!/usr/bin/env bash
     set -euxo pipefail
     cd frontend-monorepo
-    npx nx run-many --target=test --all
+    npx nx run-many --target=test --all --skipNxCache
 
 test-rust:
     cargo test --workspace
@@ -45,7 +45,7 @@ e2e-tests-frontend:
     #!/usr/bin/env bash
     set -euxo pipefail
     cd frontend-monorepo
-    npx nx run-many --target=e2e --all
+    npx nx run-many --target=e2e --all --skipNxCache
 
 
 ## ------------------------
@@ -74,7 +74,7 @@ build-wallet:
 build-frontend:
     #!/usr/bin/env bash
     cd frontend-monorepo
-    npx nx run-many --target=build --all
+    npx nx run-many --target=build --all --skipNxCache
 
 # rebuilds the frontend if a file in the frontend changes
 watch-frontend:
