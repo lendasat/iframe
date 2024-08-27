@@ -9,7 +9,7 @@ interface LoginFormProps {
 }
 
 export function LoginForm({ handleLogin, registrationLink }: LoginFormProps) {
-  const [email, setEmail] = useState("bob_the_borrower@lendasat.com");
+  const [email, setEmail] = useState("borrower@lendasat.com");
   const [password, setPassword] = useState("password123");
   const [error, setError] = useState("");
 
