@@ -12,9 +12,6 @@ use std::str::FromStr;
 use std::sync::LazyLock;
 use std::sync::Mutex;
 
-// TODO: Make this dynamic.
-const NETWORK: Network = Network::Regtest;
-
 // FIXME: Persist this.
 static KEY_INDEX: LazyLock<Mutex<u32>> = LazyLock::new(|| Mutex::new(0));
 
@@ -30,9 +27,7 @@ pub struct Wallet {
 }
 
 impl Wallet {
-    pub fn new(hub_seed: Vec<u8>, fallback_xpub: &str) -> Result<Self> {
-        let network = NETWORK;
-
+    pub fn new(hub_seed: Vec<u8>, fallback_xpub: &str, network: Network) -> Result<Self> {
         let hub_xpriv = Xpriv::new_master(NetworkKind::from(network), &hub_seed)?;
         let fallback_xpub = Xpub::from_str(fallback_xpub)?;
 

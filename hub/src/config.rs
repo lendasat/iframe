@@ -2,6 +2,7 @@
 pub struct Config {
     pub database_url: String,
     pub mempool_url: String,
+    pub network: String,
     pub seed_file: String,
     pub fallback_xpub: String,
     pub jwt_secret: String,
@@ -21,6 +22,8 @@ impl Config {
     pub fn init() -> Config {
         let database_url = std::env::var("DB_URL").expect("DATABASE_URL must be set");
         let mempool_url = std::env::var("MEMPOOL_URL").expect("MEMPOOL_URL must be set");
+
+        let network = std::env::var("NETWORK").expect("NETWORK must be set");
 
         let seed_file = std::env::var("SEED_FILE").expect("SEED_FILE must be set");
         let fallback_xpub = std::env::var("FALLBACK_XPUB").expect("FALLBACK_XPUB must be set");
@@ -52,6 +55,7 @@ impl Config {
         Config {
             database_url,
             mempool_url,
+            network,
             seed_file,
             fallback_xpub,
             jwt_secret,

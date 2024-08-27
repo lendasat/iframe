@@ -1,3 +1,4 @@
+use anyhow::Context;
 use anyhow::Result;
 use hub::config::Config;
 use hub::db::connect_to_db;
@@ -20,8 +21,11 @@ async fn main() -> Result<()> {
     let db = connect_to_db(config.database_url.as_str()).await?;
     run_migration(&db).await?;
 
+    let network = config.network.parse().context("Invalid network")?;
+    tracing::info!("Running hub on {network}");
+
     let hub_seed = seed_from_file(&config.seed_file)?;
-    let wallet = Wallet::new(hub_seed, &config.fallback_xpub)?;
+    let wallet = Wallet::new(hub_seed, &config.fallback_xpub, network)?;
     let wallet = Arc::new(wallet);
 
     let (mempool_addr, mempool_mailbox) = xtra::Mailbox::unbounded();
