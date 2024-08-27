@@ -61,7 +61,7 @@ impl Email {
         handlebars.register_template_string("base", content)?;
 
         let data = serde_json::json!({
-            "first_name": &self.user.name.split_whitespace().next().unwrap(),
+            "first_name": &self.user.name.split_whitespace().next().expect("to be able to split"),
             "subject": &template_name,
             "url": &self.url
         });
@@ -94,13 +94,9 @@ impl Email {
     ) -> Result<(), Box<dyn std::error::Error>> {
         let html_template = self.render_template(template_name)?;
         let email = Message::builder()
-            .to(
-                format!("{} <{}>", self.user.name.as_str(), self.user.email.as_str())
-                    .parse()
-                    .unwrap(),
-            )
-            .reply_to(self.from.as_str().parse().unwrap())
-            .from(self.from.as_str().parse().unwrap())
+            .to(format!("{} <{}>", self.user.name.as_str(), self.user.email.as_str()).parse()?)
+            .reply_to(self.from.as_str().parse()?)
+            .from(self.from.as_str().parse()?)
             .subject(subject)
             .header(ContentType::TEXT_HTML)
             .body(html_template)?;

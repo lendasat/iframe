@@ -99,9 +99,8 @@ impl xtra::Actor for Actor {
         let msg = serde_json::to_string(&WsRequest::Action {
             action: Action::Want,
             data: vec![Data::Blocks],
-        })
-        .unwrap();
-        sink.send(Message::Text(msg)).await.unwrap();
+        })?;
+        sink.send(Message::Text(msg)).await?;
 
         self.ws_sink = Some(sink);
 

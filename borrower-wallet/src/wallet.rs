@@ -100,7 +100,7 @@ pub fn get_mnemonic() -> Result<String> {
     Ok(mnemonic.to_string())
 }
 
-pub fn get_pk(index: u32) -> Result<bitcoin::PublicKey> {
+pub fn get_pk(index: u32) -> Result<PublicKey> {
     let guard = WALLET.lock().expect("to get lock");
 
     let wallet = match *guard {
@@ -121,7 +121,7 @@ pub fn get_pk(index: u32) -> Result<bitcoin::PublicKey> {
         // https://github.com/MutinyWallet/mutiny-node/blob/f71300680ff20381aae07e5e64d5fd6802d21a43/mutiny-core/src/dlc/mod.rs#L126.
         ChildNumber::from_hardened_idx(586).expect("infallible"),
         network_index,
-        ChildNumber::from_hardened_idx(index).unwrap(),
+        ChildNumber::from_hardened_idx(index).expect("infallible"),
     ];
 
     let sk = wallet
@@ -144,6 +144,7 @@ where
     Ok(mnemonic)
 }
 
+#[allow(clippy::print_stdout)]
 fn hash_passphrase<R>(rng: &mut R, passphrase: &str) -> Result<PasswordHashString>
 where
     R: Rng + CryptoRng,

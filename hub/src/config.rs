@@ -59,7 +59,7 @@ impl Config {
             smtp_pass: smtp_pass.unwrap_or_default(),
             smtp_user: smtp_user.unwrap_or_default(),
             smtp_port: smtp_port
-                .map(|port| port.parse::<u16>().unwrap())
+                .map(|port| port.parse::<u16>().expect("to be able to parse"))
                 .unwrap_or_default(),
             smtp_from: smtp_from.unwrap_or_default(),
             borrower_listen_address,
@@ -68,7 +68,7 @@ impl Config {
             lender_frontend_origin,
             smtp_disabled: any_smtp_not_configured
                 || smtp_disabled
-                    .map(|disabled| disabled.parse::<bool>().unwrap())
+                    .map(|disabled| disabled.parse::<bool>().expect("to be able to parse"))
                     .unwrap_or_default(),
         }
     }

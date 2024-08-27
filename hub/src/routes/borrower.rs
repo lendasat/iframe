@@ -2,6 +2,7 @@ use crate::config::Config;
 use crate::mempool;
 use crate::routes::AppState;
 use crate::wallet::Wallet;
+use anyhow::Result;
 use axum::http::header::ACCEPT;
 use axum::http::header::ACCESS_CONTROL_ALLOW_HEADERS;
 use axum::http::header::ACCESS_CONTROL_ALLOW_ORIGIN;
@@ -28,7 +29,7 @@ pub async fn spawn_borrower_server(
     wallet: Arc<Wallet>,
     db: Pool<Postgres>,
     mempool: xtra::Address<mempool::Actor>,
-) -> JoinHandle<()> {
+) -> Result<JoinHandle<()>> {
     let app_state = Arc::new(AppState {
         db,
         wallet,
@@ -54,22 +55,22 @@ pub async fn spawn_borrower_server(
             ACCESS_CONTROL_ALLOW_ORIGIN,
             CONTENT_TYPE,
         ])
-        .allow_origin(["http://localhost:4200".parse::<HeaderValue>().unwrap()]);
+        .allow_origin(["http://localhost:4200".parse::<HeaderValue>()?]);
 
     let app = app.layer(cors);
 
-    let listener = tokio::net::TcpListener::bind(&config.borrower_listen_address)
-        .await
-        .unwrap();
+    let listener = tokio::net::TcpListener::bind(&config.borrower_listen_address).await?;
 
-    tokio::task::spawn(async move {
+    Ok(tokio::task::spawn(async move {
         tracing::info!(
             "Starting to listen for borrowers on {}",
             config.borrower_frontend_origin
         );
 
-        axum::serve(listener, app).await.unwrap();
+        axum::serve(listener, app)
+            .await
+            .expect("to be able to listen");
 
         tracing::error!("Borrower server stopped");
-    })
+    }))
 }

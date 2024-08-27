@@ -1,3 +1,5 @@
+#![allow(clippy::unwrap_used)]
+
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
@@ -146,7 +148,7 @@ mod tests {
 
         // In production, the borrower would use an _external_ wallet to publish the transaction. As
         // such, we can fake all this.
-        let mempool = reqwest::Client::new();
+        let mempool = Client::new();
         let res = mempool
             .post("http://localhost:7339/tx")
             .json(&mempool_mock::PostTransaction {
@@ -199,7 +201,7 @@ mod tests {
     }
 
     async fn wait_until_contract_status(
-        client: &reqwest::Client,
+        client: &Client,
         url: &str,
         contract_id: &str,
         status: ContractStatus,

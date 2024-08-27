@@ -142,8 +142,8 @@ pub async fn load_contracts_pending_confirmation(pool: &Pool<Postgres>) -> Resul
         FROM contracts
         WHERE status IN ($1, $2)
         "#,
-        crate::model::db::ContractStatus::Open as crate::model::db::ContractStatus,
-        crate::model::db::ContractStatus::CollateralSeen as crate::model::db::ContractStatus,
+        db::ContractStatus::Open as db::ContractStatus,
+        db::ContractStatus::CollateralSeen as db::ContractStatus,
     )
     .fetch_all(pool)
     .await?;
@@ -227,7 +227,7 @@ pub async fn insert_contract_request(
         initial_collateral_sats,
         loan_amount,
         duration_months,
-        crate::model::db::ContractStatus::Requested as crate::model::db::ContractStatus,
+        db::ContractStatus::Requested as db::ContractStatus,
         borrower_payout_address.assume_checked().to_string(),
         borrower_pk.to_string(),
         None as Option<String>,
@@ -273,7 +273,7 @@ pub async fn accept_contract_request(
             created_at,
             updated_at
         "#,
-        crate::model::db::ContractStatus::Open as crate::model::db::ContractStatus,
+        db::ContractStatus::Open as db::ContractStatus,
         OffsetDateTime::now_utc(),
         contract_address.to_string(),
         contract_index as i32,
@@ -314,7 +314,7 @@ pub async fn mark_contract_as_confirmed(
             created_at,
             updated_at
         "#,
-        crate::model::db::ContractStatus::CollateralConfirmed as crate::model::db::ContractStatus,
+        db::ContractStatus::CollateralConfirmed as db::ContractStatus,
         OffsetDateTime::now_utc(),
         contract_id,
     )
@@ -354,7 +354,7 @@ pub async fn reject_contract_request(
             created_at,
             updated_at
         "#,
-        crate::model::db::ContractStatus::Rejected as crate::model::db::ContractStatus,
+        db::ContractStatus::Rejected as db::ContractStatus,
         OffsetDateTime::now_utc(),
         lender_id,
         contract_id

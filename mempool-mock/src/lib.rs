@@ -1,3 +1,5 @@
+#![allow(clippy::unwrap_used)]
+
 use axum::extract::ws::Message;
 use axum::extract::ws::WebSocket;
 use axum::extract::Path;
@@ -276,7 +278,7 @@ pub async fn handle_ws(socket: WebSocket, blockchain: Arc<RwLock<Blockchain>>) {
         }
     });
 
-    while let Some(Ok(msg)) = futures::StreamExt::next(&mut ws_stream).await {
+    while let Some(Ok(msg)) = StreamExt::next(&mut ws_stream).await {
         if let Message::Text(text) = msg {
             if let Ok(msg) = serde_json::from_str::<WsRequest>(&text) {
                 match msg {

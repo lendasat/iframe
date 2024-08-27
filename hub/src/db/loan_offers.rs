@@ -77,7 +77,7 @@ pub async fn insert_loan_offer(
     lender_id: String,
 ) -> Result<LoanOffer> {
     let id = uuid::Uuid::new_v4().to_string();
-    let status = crate::model::LoanOfferStatus::Available;
+    let status = LoanOfferStatus::Available;
 
     let loan = sqlx::query_as!(
         LoanOffer,

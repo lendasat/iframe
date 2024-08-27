@@ -37,11 +37,15 @@ async fn main() {
         .with_state(blockchain);
 
     let listen_address = "0.0.0.0:7339";
-    let listener = tokio::net::TcpListener::bind(listen_address).await.unwrap();
+    let listener = tokio::net::TcpListener::bind(listen_address)
+        .await
+        .expect("to be able to bind");
 
-    tracing::info!("Starting to listen on {listen_address}",);
+    tracing::info!("Starting to listen on {listen_address}");
 
-    axum::serve(listener, app).await.unwrap();
+    axum::serve(listener, app)
+        .await
+        .expect("to be able to serve");
 
     tracing::info!("Mempool mock server stopped");
 }

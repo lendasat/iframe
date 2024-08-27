@@ -41,9 +41,9 @@ async fn main() -> Result<()> {
         db.clone(),
         mempool_addr.clone(),
     )
-    .await;
+    .await?;
 
-    let lender_server = spawn_lender_server(config, wallet, db, mempool_addr).await;
+    let lender_server = spawn_lender_server(config, wallet, db, mempool_addr).await?;
 
     let _ = tokio::join!(borrower_server, lender_server);
 

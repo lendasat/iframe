@@ -2,6 +2,7 @@ use crate::config::Config;
 use crate::mempool;
 use crate::routes::AppState;
 use crate::wallet::Wallet;
+use anyhow::Result;
 use axum::Router;
 use sqlx::Pool;
 use sqlx::Postgres;
@@ -19,7 +20,7 @@ pub async fn spawn_lender_server(
     wallet: Arc<Wallet>,
     db: Pool<Postgres>,
     mempool: xtra::Address<mempool::Actor>,
-) -> JoinHandle<()> {
+) -> Result<JoinHandle<()>> {
     let app_state = Arc::new(AppState {
         db,
         wallet,
@@ -34,16 +35,17 @@ pub async fn spawn_lender_server(
             .merge(frontend::router()),
     );
 
-    let listener = tokio::net::TcpListener::bind(&config.lender_listen_address)
-        .await
-        .unwrap();
+    let listener = tokio::net::TcpListener::bind(&config.lender_listen_address).await?;
 
-    tokio::task::spawn(async move {
+    let handle = tokio::task::spawn(async move {
         tracing::info!(
             "Starting to listen for lenders on {}",
             config.lender_frontend_origin
         );
 
-        axum::serve(listener, app).await.unwrap();
-    })
+        axum::serve(listener, app)
+            .await
+            .expect("to be able to listen");
+    });
+    Ok(handle)
 }

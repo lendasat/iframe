@@ -88,7 +88,7 @@ impl Wallet {
             let path = [
                 ChildNumber::from_hardened_idx(586).expect("infallible"),
                 network_harderned_index,
-                ChildNumber::from_hardened_idx(index).unwrap(),
+                ChildNumber::from_hardened_idx(index).expect("infallible"),
             ];
 
             let child_xpriv = self.hub_xpriv.derive_priv(&secp, &path)?;
@@ -99,7 +99,7 @@ impl Wallet {
             let path = [
                 ChildNumber::from_normal_idx(586).expect("infallible"),
                 network_normal_index,
-                ChildNumber::from_normal_idx(index).unwrap(),
+                ChildNumber::from_normal_idx(index).expect("infallible"),
             ];
 
             let child_xpub = self.fallback_xpub.derive_pub(&secp, &path)?;

@@ -189,7 +189,12 @@ pub async fn login_user_handler(
         &claims,
         &EncodingKey::from_secret(data.config.jwt_secret.as_ref()),
     )
-    .unwrap();
+    .map_err(|error| {
+        let error_response = ErrorResponse {
+            message: format!("Failed parsing token: {}", error),
+        };
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+    })?;
 
     let cookie = Cookie::build(("token", token.to_owned()))
         .path("/")
@@ -198,9 +203,15 @@ pub async fn login_user_handler(
         .http_only(true);
 
     let mut response = Response::new(json!({"token": token}).to_string());
-    response
-        .headers_mut()
-        .insert(header::SET_COOKIE, cookie.to_string().parse().unwrap());
+    response.headers_mut().insert(
+        header::SET_COOKIE,
+        cookie.to_string().parse().map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Failed parsing cookie: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?,
+    );
     Ok(response)
 }
 
@@ -363,14 +374,20 @@ pub async fn reset_password_handler(
 
     let mut response =
         Response::new(json!({"message": "Password data updated successfully"}).to_string());
-    response
-        .headers_mut()
-        .insert(header::SET_COOKIE, cookie.to_string().parse().unwrap());
+    response.headers_mut().insert(
+        header::SET_COOKIE,
+        cookie.to_string().parse().map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Failed parsing cookie: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?,
+    );
     Ok(response)
 }
 
 #[instrument(skip_all, err(Debug))]
-pub async fn logout_handler() -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+pub async fn logout_handler() -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     let cookie = Cookie::build(("token", ""))
         .path("/")
         .max_age(time::Duration::hours(-1))
@@ -378,9 +395,15 @@ pub async fn logout_handler() -> Result<impl IntoResponse, (StatusCode, Json<ser
         .http_only(true);
 
     let mut response = Response::new(json!({"message": "Successfully logged out"}).to_string());
-    response
-        .headers_mut()
-        .insert(header::SET_COOKIE, cookie.to_string().parse().unwrap());
+    response.headers_mut().insert(
+        header::SET_COOKIE,
+        cookie.to_string().parse().map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Failed parsing cookie: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?,
+    );
     Ok(response)
 }
 

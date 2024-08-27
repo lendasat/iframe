@@ -68,10 +68,10 @@ async fn insert_contract(
         12,
         "bcrt1q39c0vrwpgfjkhasu5mfke9wnym45nydfwaeems"
             .parse()
-            .unwrap(),
+            .expect("to be valid"),
         "032e58afe51f9ed8ad3cc7897f634d881fdbe49a81564629ded8156bebd2ffd1af"
             .parse()
-            .unwrap(),
+            .expect("to be valid"),
     )
     .await?;
     Ok(contract)

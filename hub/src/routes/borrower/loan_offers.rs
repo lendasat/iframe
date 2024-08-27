@@ -35,8 +35,7 @@ pub async fn get_all_available_loan_offers(
                 message: format!("Database error: {}", error),
             };
             (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })
-        .unwrap();
+        })?;
 
     Ok((StatusCode::OK, Json(loans)))
 }

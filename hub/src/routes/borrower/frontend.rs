@@ -1,3 +1,4 @@
+use crate::routes::borrower::auth::ErrorResponse;
 use axum::body::Body;
 use axum::extract::Path;
 use axum::http::header;
@@ -5,6 +6,7 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::response::Response;
 use axum::routing::get;
+use axum::Json;
 use axum::Router;
 use include_dir::include_dir;
 use include_dir::Dir;
@@ -21,10 +23,12 @@ const NOT_FOUND: &str = "404.html";
 static FRONTEND_DIR: Dir<'_> =
     include_dir!("$CARGO_MANIFEST_DIR/../frontend-monorepo/dist/apps/borrower");
 
-async fn serve_asset(path: Option<Path<String>>) -> impl IntoResponse {
+async fn serve_asset(
+    path: Option<Path<String>>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     let serve_file =
         |file: &File, mime_type: Option<Mime>, cache: Duration, code: Option<StatusCode>| {
-            Response::builder()
+            let response = Response::builder()
                 .status(code.unwrap_or(StatusCode::OK))
                 .header(
                     header::CONTENT_TYPE,
@@ -35,15 +39,26 @@ async fn serve_asset(path: Option<Path<String>>) -> impl IntoResponse {
                     format!("max-age={}", cache.as_seconds_f32()),
                 )
                 .body(Body::from(file.contents().to_owned()))
-                .unwrap()
+                .map_err(|error| {
+                    let error_response = ErrorResponse {
+                        message: format!("Failed finding file: {}", error),
+                    };
+                    (StatusCode::NOT_FOUND, Json(error_response))
+                })?;
+            Ok(response)
         };
 
     let serve_not_found = || match FRONTEND_DIR.get_file(NOT_FOUND) {
-        Some(file) => serve_file(file, None, Duration::ZERO, Some(StatusCode::NOT_FOUND)),
-        None => Response::builder()
-            .status(StatusCode::NOT_FOUND)
-            .body(Body::from("File Not Found"))
-            .unwrap(),
+        Some(file) => {
+            let response = serve_file(file, None, Duration::ZERO, Some(StatusCode::NOT_FOUND))?;
+            Ok(response)
+        }
+        None => {
+            let error_response = ErrorResponse {
+                message: "File Not Found".to_string(),
+            };
+            Err((StatusCode::NOT_FOUND, Json(error_response)))
+        }
     };
 
     let serve_default = |path: &str| {
@@ -51,16 +66,20 @@ async fn serve_asset(path: Option<Path<String>>) -> impl IntoResponse {
             let default_file_path = PathBuf::from(path).join(default_file);
 
             if FRONTEND_DIR.get_file(default_file_path.clone()).is_some() {
-                return serve_file(
-                    FRONTEND_DIR.get_file(default_file_path).unwrap(),
+                let response = serve_file(
+                    FRONTEND_DIR
+                        .get_file(default_file_path)
+                        .expect("to find file"),
                     None,
                     Duration::ZERO,
                     None,
-                );
+                )?;
+                return Ok(response);
             }
         }
 
-        serve_not_found()
+        let response = serve_not_found()?;
+        Ok(response)
     };
 
     match path {
