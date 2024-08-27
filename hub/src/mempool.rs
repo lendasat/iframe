@@ -149,8 +149,16 @@ impl xtra::Actor for Actor {
                                         let _ = actor.send(NewBlockHeight(height)).await;
                                     }
                                     // Subsequent blocks.
-                                    WsResponse::Block { block } => {
+                                    WsResponse::Block {
+                                        block,
+                                        block_transactions,
+                                    } => {
                                         let _ = actor.send(NewBlockHeight(block.height)).await;
+
+                                        if let Some(transactions) = block_transactions {
+                                            let _ =
+                                                actor.send(ContractUpdate { transactions }).await;
+                                        }
                                     }
                                     WsResponse::AddressTransactions(AddressTransactions {
                                         address_transactions: transactions,
@@ -521,8 +529,14 @@ pub enum WsRequest {
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(untagged)]
 pub enum WsResponse {
-    Blocks { blocks: Vec<Block> },
-    Block { block: Block },
+    Blocks {
+        blocks: Vec<Block>,
+    },
+    Block {
+        block: Block,
+        #[serde(rename = "block-transactions")]
+        block_transactions: Option<Vec<Transaction>>,
+    },
     AddressTransactions(AddressTransactions),
     BlockTransactions(BlockTransactions),
 }
