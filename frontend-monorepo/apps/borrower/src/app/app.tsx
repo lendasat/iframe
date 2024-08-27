@@ -6,7 +6,7 @@ import Logout from "./auth/logout";
 import Registration from "./auth/registration";
 import DashBoard from "./dash-board";
 import MyAccount from "./my-account";
-import MyLoans from "./my-loans";
+import MyLoans from "./my-loans/my-loans";
 import Profile from "./profile";
 import RequestLoan from "./request-loan/request-loan";
 import { RequestLoanSummary } from "./request-loan/request-loan-summary";
