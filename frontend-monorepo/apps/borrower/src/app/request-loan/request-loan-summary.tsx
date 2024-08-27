@@ -192,7 +192,7 @@ export function RequestLoanSummary() {
           </Container>
         </Col>
       </Row>
-      <Row>
+      <Row className={"mt-3"}>
         <Col className={"text-end"}>
           <Link to="/request-loan">
             <Button className={"btn-secondary"}>Cancel</Button>
