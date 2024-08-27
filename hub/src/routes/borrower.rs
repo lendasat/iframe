@@ -17,10 +17,11 @@ use sqlx::Postgres;
 use std::sync::Arc;
 use tokio::task::JoinHandle;
 use tower_http::cors::CorsLayer;
+use tower_http::services::ServeDir;
+use tower_http::services::ServeFile;
 
 pub(crate) mod auth;
 pub(crate) mod contracts;
-pub(crate) mod frontend;
 pub(crate) mod health_check;
 pub(crate) mod loan_offers;
 
@@ -36,12 +37,22 @@ pub async fn spawn_borrower_server(
         config: config.clone(),
         mempool,
     });
+
     let app = Router::new()
         .merge(health_check::router())
         .merge(auth::router(app_state.clone()))
         .merge(loan_offers::router(app_state.clone()))
         .merge(contracts::router(app_state.clone()))
-        .merge(frontend::router());
+        // This is a relative path on the filesystem, which means, when deploying `hub` we will need
+        // to have the frontend in this directory. Ideally we would bundle the frontend with
+        // the binary, but so far we failed at handling requests which are meant to be handled by
+        // the frontend and not by the backend, e.g. `/wallet` should not look up a file/asset on
+        // the backend, but be only handled on the client side.
+        .fallback_service(
+            ServeDir::new("./frontend-monorepo/dist/apps/borrower").fallback(ServeFile::new(
+                "./frontend-monorepo/dist/apps/borrower/index.html",
+            )),
+        );
 
     // todo: make this a dev-only setting
     let cors = CorsLayer::new()

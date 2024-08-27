@@ -8,10 +8,11 @@ use sqlx::Pool;
 use sqlx::Postgres;
 use std::sync::Arc;
 use tokio::task::JoinHandle;
+use tower_http::services::ServeDir;
+use tower_http::services::ServeFile;
 
 pub(crate) mod auth;
 pub(crate) mod contracts;
-pub(crate) mod frontend;
 pub(crate) mod health_check;
 pub(crate) mod loan_offers;
 
@@ -32,7 +33,11 @@ pub async fn spawn_lender_server(
             .merge(auth::router(app_state.clone()))
             .merge(loan_offers::router(app_state.clone()))
             .merge(contracts::router(app_state.clone()))
-            .merge(frontend::router()),
+            .fallback_service(
+                ServeDir::new("./frontend-monorepo/dist/apps/lender").fallback(ServeFile::new(
+                    "./frontend-monorepo/dist/apps/lender/index.html",
+                )),
+            ),
     );
 
     let listener = tokio::net::TcpListener::bind(&config.lender_listen_address).await?;
