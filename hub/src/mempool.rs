@@ -25,7 +25,7 @@ use tokio_tungstenite::WebSocketStream;
 use tracing::instrument;
 use xtra::Mailbox;
 
-const MIN_CONFIRMATIONS: u64 = 6;
+const MIN_CONFIRMATIONS: u64 = 2;
 
 pub struct Actor {
     tracked_contracts: HashMap<Address, TrackedContract>,
