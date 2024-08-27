@@ -10,7 +10,7 @@ export function PriceTicker() {
   const [latestPrice, setLatestPrice] = useState<number | undefined>();
 
   useEffect(() => {
-    const socket = new WebSocket("wss://ws.coincap.io/prices?assets=bitcoin"); // Replace with your WebSocket URL
+    const socket = new WebSocket("wss://ws.coincap.io/prices?assets=bitcoin");
 
     socket.onmessage = (event) => {
       const data: Price = JSON.parse(event.data);
