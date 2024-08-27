@@ -29,7 +29,11 @@ async fn main() -> Result<()> {
     let wallet = Arc::new(wallet);
 
     let (mempool_addr, mempool_mailbox) = xtra::Mailbox::unbounded();
-    let mempool = mempool::Actor::new(config.mempool_url.clone(), db.clone());
+    let mempool = mempool::Actor::new(
+        config.mempool_rest_url.clone(),
+        config.mempool_ws_url.clone(),
+        db.clone(),
+    );
 
     tokio::spawn(async {
         let e = xtra::run(mempool_mailbox, mempool).await;
