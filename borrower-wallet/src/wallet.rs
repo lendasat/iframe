@@ -9,6 +9,7 @@ use bip39::Mnemonic;
 use bitcoin::bip32::ChildNumber;
 use bitcoin::bip32::Xpriv;
 use bitcoin::key::Secp256k1;
+use bitcoin::Network;
 use bitcoin::NetworkKind;
 use bitcoin::PublicKey;
 use hkdf::Hkdf;
@@ -28,15 +29,13 @@ use std::sync::Mutex;
 
 const SECRET_KEY_ENCRYPTION_NONCE: &[u8; 12] = b"SECRET_KEY!!";
 
-// TODO: Make this dynamic.
-const NETWORK_KIND: NetworkKind = NetworkKind::Test;
-
 static WALLET: LazyLock<Mutex<Option<Wallet>>> = LazyLock::new(|| Mutex::new(None));
 
 struct Wallet {
     /// We keep this so that we can display it to the user.
     mnemonic: Mnemonic,
     xprv: Xpriv,
+    network: Network,
 }
 
 pub struct MnemonicCiphertext {
@@ -44,7 +43,10 @@ pub struct MnemonicCiphertext {
     inner: Vec<u8>,
 }
 
-pub fn new_wallet(passphrase: &str) -> Result<(PasswordHashString, MnemonicCiphertext)> {
+pub fn new_wallet(
+    passphrase: &str,
+    network: &str,
+) -> Result<(PasswordHashString, MnemonicCiphertext, Network)> {
     let mut guard = WALLET.lock().expect("to get lock");
 
     ensure!(guard.is_none(), "Wallet already loaded");
@@ -53,19 +55,21 @@ pub fn new_wallet(passphrase: &str) -> Result<(PasswordHashString, MnemonicCiphe
 
     let mnemonic = generate_mnemonic(&mut rng)?;
 
-    let (wallet, mnemonic_ciphertext) = Wallet::new(&mut rng, mnemonic, passphrase)?;
+    let (wallet, mnemonic_ciphertext) = Wallet::new(&mut rng, mnemonic, passphrase, network)?;
+    let network = wallet.network;
 
     let passphrase_hash = hash_passphrase(&mut rng, passphrase)?;
 
     guard.replace(wallet);
 
-    Ok((passphrase_hash, mnemonic_ciphertext))
+    Ok((passphrase_hash, mnemonic_ciphertext, network))
 }
 
 pub fn load_wallet(
     passphrase: &str,
     passphrase_hash: &str,
     mnemonic_ciphertext: &str,
+    network: &str,
 ) -> Result<()> {
     let mut guard = WALLET.lock().expect("to get lock");
 
@@ -80,7 +84,7 @@ pub fn load_wallet(
     let mnemonic_ciphertext = MnemonicCiphertext::from_str(mnemonic_ciphertext)
         .context("Failed to deserialize mnemonic ciphertext")?;
 
-    let wallet = Wallet::from_ciphertext(mnemonic_ciphertext, passphrase)?;
+    let wallet = Wallet::from_ciphertext(mnemonic_ciphertext, passphrase, network)?;
 
     guard.replace(wallet);
 
@@ -169,16 +173,19 @@ impl Wallet {
         rng: &mut R,
         mnemonic: Mnemonic,
         passphrase: &str,
+        network: &str,
     ) -> Result<(Self, MnemonicCiphertext)>
     where
         R: Rng,
     {
+        let network = Network::from_str(network).context("Invalid network")?;
+
         let salt = rng.gen::<[u8; 32]>();
         let encryption_key = derive_encryption_key(passphrase, &salt)?;
 
         let xprv = {
             let seed = mnemonic.to_seed(passphrase);
-            Xpriv::new_master(NETWORK_KIND, &seed)?
+            Xpriv::new_master(network, &seed)?
         };
 
         let mnemonic_ciphertext = {
@@ -190,13 +197,23 @@ impl Wallet {
             }
         };
 
-        let wallet = Self { mnemonic, xprv };
+        let wallet = Self {
+            mnemonic,
+            xprv,
+            network,
+        };
 
         Ok((wallet, mnemonic_ciphertext))
     }
 
-    /// Create a [`Wallet`] from a [`MnemonicCiphertext`] and a `passphrase`.
-    fn from_ciphertext(mnemonic_ciphertext: MnemonicCiphertext, passphrase: &str) -> Result<Self> {
+    /// Create a [`Wallet`] from a [`MnemonicCiphertext`], a `passphrase` and a [`Network`].
+    fn from_ciphertext(
+        mnemonic_ciphertext: MnemonicCiphertext,
+        passphrase: &str,
+        network: &str,
+    ) -> Result<Self> {
+        let network = Network::from_str(network).context("Invalid network")?;
+
         let encryption_key = derive_encryption_key(passphrase, &mnemonic_ciphertext.salt)?;
 
         let mnemonic = decrypt_mnemonic(mnemonic_ciphertext.inner, encryption_key)?;
@@ -206,7 +223,11 @@ impl Wallet {
             Xpriv::new_master(NetworkKind::Test, &seed)?
         };
 
-        Ok(Self { mnemonic, xprv })
+        Ok(Self {
+            mnemonic,
+            xprv,
+            network,
+        })
     }
 
     fn mnemonic(&self) -> &Mnemonic {

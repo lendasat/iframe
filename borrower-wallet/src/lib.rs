@@ -8,8 +8,8 @@ mod storage;
 pub mod wallet;
 
 #[wasm_bindgen]
-pub fn new_wallet(passphrase: String) -> Result<(), JsValue> {
-    map_err_to_js!(browser_wallet::new(passphrase))
+pub fn new_wallet(passphrase: String, network: String) -> Result<(), JsValue> {
+    map_err_to_js!(browser_wallet::new(passphrase, network))
 }
 
 #[wasm_bindgen]

@@ -90,7 +90,7 @@ mod tests {
         let loan_offer: LoanOffer = res.json().await.unwrap();
 
         // 2. Borrower takes loan offer by creating a contract request.
-        borrower_wallet::wallet::new_wallet("borrower").unwrap();
+        borrower_wallet::wallet::new_wallet("borrower", "regtest").unwrap();
         let borrower_pk = borrower_wallet::wallet::get_pk(0).unwrap();
 
         // This is a random address, since we don't care about payouts in this test.

@@ -8,20 +8,24 @@ use anyhow::Result;
 
 const PASSPHRASE_STORAGE_KEY: &str = "wallet.passphrase";
 const SEED_STORAGE_KEY: &str = "wallet.seed";
+const NETWORK_KEY: &str = "wallet.network";
 const NEXT_PK_INDEX_KEY: &str = "wallet.next_pk_index";
 
-pub fn new(passphrase: String) -> Result<()> {
+pub fn new(passphrase: String, network: String) -> Result<()> {
     let storage = local_storage()?;
 
     if does_wallet_exist()? {
         bail!("Can't create new wallet if it already exists in local storage");
     }
 
-    let (passphrase_hash, mnemonic_ciphertext) = wallet::new_wallet(&passphrase)?;
+    let (passphrase_hash, mnemonic_ciphertext, network) =
+        wallet::new_wallet(&passphrase, &network)?;
 
     storage.set_item(PASSPHRASE_STORAGE_KEY, passphrase_hash)?;
 
     storage.set_item(SEED_STORAGE_KEY, mnemonic_ciphertext.serialize())?;
+
+    storage.set_item(NETWORK_KEY, network.to_string())?;
 
     Ok(())
 }
@@ -37,7 +41,11 @@ pub fn load(passphrase: &str) -> Result<()> {
         .get_item::<String>(SEED_STORAGE_KEY)?
         .context("No mnemonic stored for wallet")?;
 
-    wallet::load_wallet(passphrase, &passphrase_hash, &mnemonic_ciphertext)?;
+    let network = storage
+        .get_item::<String>(NETWORK_KEY)?
+        .context("No network stored for wallet")?;
+
+    wallet::load_wallet(passphrase, &passphrase_hash, &mnemonic_ciphertext, &network)?;
 
     Ok(())
 }
