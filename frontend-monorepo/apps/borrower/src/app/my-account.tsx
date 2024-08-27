@@ -1,5 +1,4 @@
 import { useAuth, User } from "@frontend-monorepo/http-client";
-import { useEffect, useState } from "react";
 
 function MyAccount() {
   const { user } = useAuth();

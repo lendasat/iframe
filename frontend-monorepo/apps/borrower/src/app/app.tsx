@@ -1,4 +1,4 @@
-import { AuthIsNotSignedIn, AuthIsSignedIn, AuthProvider, useAuth } from "@frontend-monorepo/http-client";
+import { AuthIsNotSignedIn, AuthIsSignedIn, AuthProvider } from "@frontend-monorepo/http-client";
 import { Layout } from "@frontend-monorepo/ui-shared";
 import { Navigate, Route, Routes } from "react-router-dom";
 import Login from "./auth/login";
