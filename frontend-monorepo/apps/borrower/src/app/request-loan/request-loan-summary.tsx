@@ -2,8 +2,9 @@ import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React, { useEffect, useState } from "react";
 import { Alert, Badge, Button, Col, Container, Form, Row } from "react-bootstrap";
-import {Link, useLocation} from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { formatCurrency } from "../usd";
+import { Lender } from "./lender";
 import { LoanFilterType } from "./loan-offers-filter";
 import { Slider, SliderProps } from "./slider";
 import { StableCoin, StableCoinDropdown, StableCoinHelper } from "./stable-coin";
@@ -105,8 +106,8 @@ export function RequestLoanSummary() {
           Collateral Contract <Badge bg="primary">Draft</Badge>
         </h3>
       </Row>
-      <Row className={"mt-3"}>
-        <Col>
+      <Row className="mt-3">
+        <Col xs={12} md={6}>
           <Form>
             <Form.Group className="mb-2" controlId="loan-amount">
               <Form.Label>
@@ -153,25 +154,31 @@ export function RequestLoanSummary() {
             </Form.Group>
           </Form>
         </Col>
-        <Col>
+        <Col xs={12} md={6}>
           <Container fluid>
-            <Row className={"justified-content-between border-b"}>
+            <Row className="justify-content-between border-b mt-2">
+              <Col>Lender</Col>
+              <Col className="text-end mb-2">
+                <Lender {...loanOffer.lender} />
+              </Col>
+            </Row>
+            <Row className="justify-content-between border-b mt-2">
               <Col>Collateral</Col>
-              <Col className={"text-end mb-2"}>{collateral.toFixed(4)} BTC</Col>
+              <Col className="text-end mb-2">{collateral.toFixed(4)} BTC</Col>
             </Row>
-            <Row className={"justified-content-between border-b mt-2"}>
+            <Row className="justify-content-between border-b mt-2">
               <Col>LTV ratio</Col>
-              <Col className={"text-end mb-2"}>{loanOffer.ltv.toFixed(0)}%</Col>
+              <Col className="text-end mb-2">{loanOffer.ltv.toFixed(0)}%</Col>
             </Row>
-            <Row className={"justified-content-between border-b mt-2"}>
+            <Row className="justify-content-between border-b mt-2">
               <Col>Interest rate p.a.</Col>
-              <Col className={"text-end mb-2"}>{loanOffer.interest}%</Col>
+              <Col className="text-end mb-2">{loanOffer.interest}%</Col>
             </Row>
-            <Row className={"justified-content-between mt-2"}>
+            <Row className="justify-content-between mt-2">
               <Col>Originator fee 1%</Col>
-              <Col className={"text-end"}>
-                <Container className={"p-0"} fluid>
-                  <Row className={"text-end"}>
+              <Col className="text-end">
+                <Container className="p-0" fluid>
+                  <Row className="text-end">
                     <Col>{(collateral * originatorFee).toFixed(4)} BTC</Col>
                   </Row>
                   <Row>
@@ -182,9 +189,6 @@ export function RequestLoanSummary() {
                 </Container>
               </Col>
             </Row>
-          </Container>
-          <Container>
-            <Row></Row>
           </Container>
         </Col>
       </Row>

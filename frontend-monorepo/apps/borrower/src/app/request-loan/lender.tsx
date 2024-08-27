@@ -9,7 +9,7 @@ export interface LenderProfile {
 
 export function Lender({ name, rate, loans }: LenderProfile) {
   return (
-    <Container className={"p-0"}>
+    <Container className={"p-0"} fluid>
       <Row>
         <Link className="link-primary" to={`/profile/${name}`}>{name}</Link>
       </Row>
