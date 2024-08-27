@@ -2,7 +2,7 @@ import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React, { useEffect, useState } from "react";
 import { Alert, Badge, Button, Col, Container, Form, Row } from "react-bootstrap";
-import { useLocation } from "react-router-dom";
+import {Link, useLocation} from "react-router-dom";
 import { formatCurrency } from "../usd";
 import { LoanFilterType } from "./loan-offers-filter";
 import { Slider, SliderProps } from "./slider";
@@ -100,98 +100,103 @@ export function RequestLoanSummary() {
 
   return (
     <Container className={"p-4"} fluid>
-        <Row>
-          <h3>
-            Collateral Contract <Badge bg="primary">Pending</Badge>
-          </h3>
-        </Row>
-        <Row className={"mt-3"}>
-          <Col>
-            <Form>
-              <Form.Group className="mb-2" controlId="loan-amount">
-                <Form.Label>
-                  <small>Loan Amount</small>
-                </Form.Label>
-                <Form.Control
-                  type="number"
-                  value={loanAmount !== undefined ? loanAmount : ""}
-                  onChange={handleLoanAmountChange}
-                  isInvalid={!!amountError}
-                />
-                {amountError && <Form.Text className="text-danger">{amountError}</Form.Text>}
-              </Form.Group>
-              <Form.Group className="mb-3" controlId="interest-slider">
-                <Form.Label>
-                  <small>Period</small>
-                </Form.Label>
-                <Slider {...periodSliderProps} />
-              </Form.Group>
-              <Form.Group className="mb-3" controlId="stable-coin">
-                <Form.Label>
-                  <small>Stable coin</small>
-                </Form.Label>
-                <StableCoinDropdown
-                  coins={loanOffer.coins}
-                  filter={false}
-                  defaultCoin={initCoin}
-                  onSelect={handleCoinSelect}
-                />
-              </Form.Group>
-              <Alert className="mb-2" key="info" variant="info">
-                <FontAwesomeIcon icon={faInfoCircle} />{" "}
-                Provide a valid address on the target network. Providing an incorrect address here will lead to a loss
-                of funds.
-              </Alert>
-              <Form.Group className="mb-3" controlId="stablecoin-address">
-                <Form.Label>
-                  <small>{StableCoinHelper.print(selectedCoin)} Address</small>
-                </Form.Label>
-                <Form.Control
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                />
-              </Form.Group>
-            </Form>
-          </Col>
-          <Col>
-            <Container fluid>
-              <Row className={"justified-content-between border-b"}>
-                <Col>Collateral</Col>
-                <Col className={"text-end mb-2"}>{collateral.toFixed(4)} BTC</Col>
-              </Row>
-              <Row className={"justified-content-between border-b mt-2"}>
-                <Col>LTV ratio</Col>
-                <Col className={"text-end mb-2"}>{loanOffer.ltv.toFixed(0)}%</Col>
-              </Row>
-              <Row className={"justified-content-between border-b mt-2"}>
-                <Col>Interest rate p.a.</Col>
-                <Col className={"text-end mb-2"}>{loanOffer.interest}%</Col>
-              </Row>
-              <Row className={"justified-content-between mt-2"}>
-                <Col>Originator fee 1%</Col>
-                <Col className={"text-end"}>
-                  <Container className={"p-0"} fluid>
-                    <Row className={"text-end"}>
-                      <Col>{(collateral * originatorFee).toFixed(4)} BTC</Col>
-                    </Row>
-                    <Row>
-                      <Col>
-                        <small>~{formatCurrency(loanAmount * originatorFee)}</small>
-                      </Col>
-                    </Row>
-                  </Container>
-                </Col>
-              </Row>
-            </Container>
-          </Col>
-        </Row>
-        <Row>
-          <Col className={"text-end"}>
+      <Row>
+        <h3>
+          Collateral Contract <Badge bg="primary">Draft</Badge>
+        </h3>
+      </Row>
+      <Row className={"mt-3"}>
+        <Col>
+          <Form>
+            <Form.Group className="mb-2" controlId="loan-amount">
+              <Form.Label>
+                <small>Loan Amount</small>
+              </Form.Label>
+              <Form.Control
+                type="number"
+                value={loanAmount !== undefined ? loanAmount : ""}
+                onChange={handleLoanAmountChange}
+                isInvalid={!!amountError}
+              />
+              {amountError && <Form.Text className="text-danger">{amountError}</Form.Text>}
+            </Form.Group>
+            <Form.Group className="mb-3" controlId="interest-slider">
+              <Form.Label>
+                <small>Period</small>
+              </Form.Label>
+              <Slider {...periodSliderProps} />
+            </Form.Group>
+            <Form.Group className="mb-3" controlId="stable-coin">
+              <Form.Label>
+                <small>Stable coin</small>
+              </Form.Label>
+              <StableCoinDropdown
+                coins={loanOffer.coins}
+                filter={false}
+                defaultCoin={initCoin}
+                onSelect={handleCoinSelect}
+              />
+            </Form.Group>
+            <Alert className="mb-2" key="info" variant="info">
+              <FontAwesomeIcon icon={faInfoCircle} />{" "}
+              Provide a valid address on the target network. Providing an incorrect address here will lead to a loss of
+              funds.
+            </Alert>
+            <Form.Group className="mb-3" controlId="stablecoin-address">
+              <Form.Label>
+                <small>{StableCoinHelper.print(selectedCoin)} Address</small>
+              </Form.Label>
+              <Form.Control
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+              />
+            </Form.Group>
+          </Form>
+        </Col>
+        <Col>
+          <Container fluid>
+            <Row className={"justified-content-between border-b"}>
+              <Col>Collateral</Col>
+              <Col className={"text-end mb-2"}>{collateral.toFixed(4)} BTC</Col>
+            </Row>
+            <Row className={"justified-content-between border-b mt-2"}>
+              <Col>LTV ratio</Col>
+              <Col className={"text-end mb-2"}>{loanOffer.ltv.toFixed(0)}%</Col>
+            </Row>
+            <Row className={"justified-content-between border-b mt-2"}>
+              <Col>Interest rate p.a.</Col>
+              <Col className={"text-end mb-2"}>{loanOffer.interest}%</Col>
+            </Row>
+            <Row className={"justified-content-between mt-2"}>
+              <Col>Originator fee 1%</Col>
+              <Col className={"text-end"}>
+                <Container className={"p-0"} fluid>
+                  <Row className={"text-end"}>
+                    <Col>{(collateral * originatorFee).toFixed(4)} BTC</Col>
+                  </Row>
+                  <Row>
+                    <Col>
+                      <small>~{formatCurrency(loanAmount * originatorFee)}</small>
+                    </Col>
+                  </Row>
+                </Container>
+              </Col>
+            </Row>
+          </Container>
+          <Container>
+            <Row></Row>
+          </Container>
+        </Col>
+      </Row>
+      <Row>
+        <Col className={"text-end"}>
+          <Link to="/request-loan">
             <Button className={"btn-secondary"}>Cancel</Button>
-            <span>{" "}</span>
-            <Button disabled={isButtonDisabled}>Request</Button>
-          </Col>
-        </Row>
-      </Container>
+          </Link>
+          <span>{" "}</span>
+          <Button disabled={isButtonDisabled}>Request</Button>
+        </Col>
+      </Row>
+    </Container>
   );
 }
