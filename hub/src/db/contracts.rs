@@ -1,6 +1,9 @@
+use crate::model::db;
 use crate::model::Contract;
-use anyhow::bail;
 use anyhow::Result;
+use bitcoin::address::NetworkUnchecked;
+use bitcoin::Address;
+use bitcoin::PublicKey;
 use rust_decimal::Decimal;
 use sqlx::Pool;
 use sqlx::Postgres;
@@ -11,10 +14,10 @@ pub async fn load_contracts_by_borrower_id(
     pool: &Pool<Postgres>,
     id: &str,
 ) -> Result<Vec<Contract>> {
-    // we can't use query_as! here because postgres does not support u64
-    let rows = sqlx::query!(
+    let contracts = sqlx::query_as!(
+        db::Contract,
         r#"
-        SELECT 
+        SELECT
             id,
             lender_id,
             borrower_id,
@@ -22,7 +25,11 @@ pub async fn load_contracts_by_borrower_id(
             initial_ltv,
             initial_collateral_sats,
             loan_amount,
-            status as "status: crate::model::ContractStatus",
+            borrower_payout_address,
+            borrower_pk,
+            contract_address,
+            contract_index,
+            status as "status: crate::model::db::ContractStatus",
             duration_months,
             created_at,
             updated_at
@@ -34,22 +41,9 @@ pub async fn load_contracts_by_borrower_id(
     .fetch_all(pool)
     .await?;
 
-    let contracts = rows
+    let contracts = contracts
         .into_iter()
-        .map(|row| Contract {
-            id: row.id,
-            lender_id: row.lender_id,
-            borrower_id: row.borrower_id,
-            loan_id: row.loan_id,
-            initial_ltv: row.initial_ltv,
-            initial_collateral_sats: u64::try_from(row.initial_collateral_sats)
-                .expect("initial_collateral_sats value should not be negative"),
-            loan_amount: row.loan_amount,
-            duration_months: row.duration_months,
-            status: row.status,
-            created_at: row.created_at,
-            updated_at: row.updated_at,
-        })
+        .map(Contract::from)
         .collect::<Vec<Contract>>();
 
     Ok(contracts)
@@ -59,10 +53,10 @@ pub async fn load_contracts_by_lender_id(
     pool: &Pool<Postgres>,
     lender_id: &str,
 ) -> Result<Vec<Contract>> {
-    // we can't use query_as! here because postgres does not support u64
-    let rows = sqlx::query!(
+    let contracts = sqlx::query_as!(
+        db::Contract,
         r#"
-        SELECT 
+        SELECT
             id,
             lender_id,
             borrower_id,
@@ -70,7 +64,11 @@ pub async fn load_contracts_by_lender_id(
             initial_ltv,
             initial_collateral_sats,
             loan_amount,
-            status as "status: crate::model::ContractStatus",
+            borrower_payout_address,
+            borrower_pk,
+            contract_address,
+            contract_index,
+            status as "status: crate::model::db::ContractStatus",
             duration_months,
             created_at,
             updated_at
@@ -82,27 +80,83 @@ pub async fn load_contracts_by_lender_id(
     .fetch_all(pool)
     .await?;
 
-    let contracts = rows
+    let contracts = contracts
         .into_iter()
-        .map(|row| Contract {
-            id: row.id,
-            lender_id: row.lender_id,
-            borrower_id: row.borrower_id,
-            loan_id: row.loan_id,
-            initial_ltv: row.initial_ltv,
-            initial_collateral_sats: u64::try_from(row.initial_collateral_sats)
-                .expect("initial_collateral_sats value should not be negative"),
-            loan_amount: row.loan_amount,
-            duration_months: row.duration_months,
-            status: row.status,
-            created_at: row.created_at,
-            updated_at: row.updated_at,
-        })
+        .map(Contract::from)
         .collect::<Vec<Contract>>();
 
     Ok(contracts)
 }
 
+pub async fn load_contract_by_id(pool: &Pool<Postgres>, id: &str) -> Result<Contract> {
+    let contract = sqlx::query_as!(
+        db::Contract,
+        r#"
+        SELECT
+            id,
+            lender_id,
+            borrower_id,
+            loan_id,
+            initial_ltv,
+            initial_collateral_sats,
+            loan_amount,
+            borrower_payout_address,
+            borrower_pk,
+            contract_address,
+            contract_index,
+            status as "status: crate::model::db::ContractStatus",
+            duration_months,
+            created_at,
+            updated_at
+        FROM contracts
+        where id = $1
+        "#,
+        id
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(contract.into())
+}
+
+pub async fn load_contracts_pending_confirmation(pool: &Pool<Postgres>) -> Result<Vec<Contract>> {
+    let contracts = sqlx::query_as!(
+        db::Contract,
+        r#"
+        SELECT
+            id,
+            lender_id,
+            borrower_id,
+            loan_id,
+            initial_ltv,
+            initial_collateral_sats,
+            loan_amount,
+            borrower_payout_address,
+            borrower_pk,
+            contract_address,
+            contract_index,
+            status as "status: crate::model::db::ContractStatus",
+            duration_months,
+            created_at,
+            updated_at
+        FROM contracts
+        WHERE status IN ($1, $2)
+        "#,
+        db::ContractStatus::Open as db::ContractStatus,
+        db::ContractStatus::CollateralSeen as db::ContractStatus,
+    )
+    .fetch_all(pool)
+    .await?;
+
+    let contracts = contracts
+        .into_iter()
+        .map(Contract::from)
+        .collect::<Vec<Contract>>();
+
+    Ok(contracts)
+}
+
+#[allow(clippy::too_many_arguments)]
 pub async fn insert_contract_request(
     pool: &Pool<Postgres>,
     borrower_id: String,
@@ -111,6 +165,8 @@ pub async fn insert_contract_request(
     initial_collateral_sats: u64,
     loan_amount: Decimal,
     duration_months: i32,
+    borrower_payout_address: Address<NetworkUnchecked>,
+    borrower_pk: PublicKey,
 ) -> Result<Contract> {
     let id = Uuid::new_v4().to_string();
     let initial_collateral_sats = initial_collateral_sats as i64;
@@ -128,7 +184,8 @@ pub async fn insert_contract_request(
 
     let lender_id = lender_id_row.lender_id;
 
-    let row = sqlx::query!(
+    let contract = sqlx::query_as!(
+        db::Contract,
         r#"
         INSERT INTO contracts (
             id,
@@ -139,17 +196,25 @@ pub async fn insert_contract_request(
             initial_collateral_sats,
             loan_amount,
             duration_months,
-            status
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-        RETURNING 
+            status,
+            borrower_payout_address,
+            borrower_pk,
+            contract_address,
+            contract_index
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        RETURNING
             id,
             lender_id,
             borrower_id,
             loan_id,
             initial_ltv,
-            initial_collateral_sats as "initial_collateral_sats!: i64",
+            initial_collateral_sats,
             loan_amount,
-            status as "status: crate::model::ContractStatus",
+            borrower_payout_address,
+            borrower_pk,
+            contract_address,
+            contract_index,
+            status as "status: crate::model::db::ContractStatus",
             duration_months,
             created_at,
             updated_at
@@ -162,53 +227,140 @@ pub async fn insert_contract_request(
         initial_collateral_sats,
         loan_amount,
         duration_months,
-        crate::model::ContractStatus::Requested as crate::model::ContractStatus
+        db::ContractStatus::Requested as db::ContractStatus,
+        borrower_payout_address.assume_checked().to_string(),
+        borrower_pk.to_string(),
+        None as Option<String>,
+        None as Option<i32>,
     )
     .fetch_one(pool)
     .await?;
 
-    let contract = Contract {
-        id: row.id,
-        lender_id: row.lender_id,
-        borrower_id: row.borrower_id,
-        loan_id: row.loan_id,
-        initial_ltv: row.initial_ltv,
-        initial_collateral_sats: u64::try_from(row.initial_collateral_sats)
-            .expect("initial_collateral_sats value should not be negative"),
-        loan_amount: row.loan_amount,
-        duration_months: row.duration_months,
-        status: row.status,
-        created_at: row.created_at,
-        updated_at: row.updated_at,
-    };
-
-    Ok(contract)
+    Ok(contract.into())
 }
 
-pub async fn update_contract_status(
+pub async fn accept_contract_request(
     pool: &Pool<Postgres>,
     lender_id: &str,
     contract_id: &str,
-    new_status: crate::model::ContractStatus,
-) -> Result<()> {
-    let result = sqlx::query!(
+    contract_address: Address,
+    contract_index: u32,
+) -> Result<Contract> {
+    let contract = sqlx::query_as!(
+        db::Contract,
         r#"
         UPDATE contracts
-        SET status = $1, 
+        SET status = $1,
+            updated_at = $2,
+            contract_address = $3,
+            contract_index = $4
+        WHERE lender_id = $5
+          AND id = $6
+        RETURNING
+            id,
+            lender_id,
+            borrower_id,
+            loan_id,
+            initial_ltv,
+            initial_collateral_sats,
+            loan_amount,
+            borrower_payout_address,
+            borrower_pk,
+            contract_address,
+            contract_index,
+            status as "status: crate::model::db::ContractStatus",
+            duration_months,
+            created_at,
+            updated_at
+        "#,
+        db::ContractStatus::Open as db::ContractStatus,
+        OffsetDateTime::now_utc(),
+        contract_address.to_string(),
+        contract_index as i32,
+        lender_id,
+        contract_id
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(contract.into())
+}
+
+pub async fn mark_contract_as_confirmed(
+    pool: &Pool<Postgres>,
+    contract_id: &str,
+) -> Result<Contract> {
+    let contract = sqlx::query_as!(
+        db::Contract,
+        r#"
+        UPDATE contracts
+        SET status = $1,
+            updated_at = $2
+        WHERE id = $3
+        RETURNING
+            id,
+            lender_id,
+            borrower_id,
+            loan_id,
+            initial_ltv,
+            initial_collateral_sats,
+            loan_amount,
+            borrower_payout_address,
+            borrower_pk,
+            contract_address,
+            contract_index,
+            status as "status: crate::model::db::ContractStatus",
+            duration_months,
+            created_at,
+            updated_at
+        "#,
+        db::ContractStatus::CollateralConfirmed as db::ContractStatus,
+        OffsetDateTime::now_utc(),
+        contract_id,
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(contract.into())
+}
+
+pub async fn reject_contract_request(
+    pool: &Pool<Postgres>,
+    lender_id: &str,
+    contract_id: &str,
+) -> Result<Contract> {
+    let contract = sqlx::query_as!(
+        db::Contract,
+        r#"
+        UPDATE contracts
+        SET status = $1,
             updated_at = $2
         WHERE lender_id = $3
           AND id = $4
+        RETURNING
+            id,
+            lender_id,
+            borrower_id,
+            loan_id,
+            initial_ltv,
+            initial_collateral_sats,
+            loan_amount,
+            borrower_payout_address,
+            borrower_pk,
+            contract_address,
+            contract_index,
+            status as "status: crate::model::db::ContractStatus",
+            duration_months,
+            created_at,
+            updated_at
         "#,
-        new_status as crate::model::ContractStatus,
+        db::ContractStatus::Rejected as db::ContractStatus,
         OffsetDateTime::now_utc(),
         lender_id,
         contract_id
     )
-    .execute(pool)
+    .fetch_one(pool)
     .await?;
 
-    if result.rows_affected() == 0 {
-        bail!("Contract to update not found")
-    }
-    Ok(())
+    Ok(contract.into())
 }

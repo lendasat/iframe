@@ -1,0 +1,21 @@
+[package]
+name = "mempool-mock"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1"
+atty = "0.2.14"
+axum = { version = "0.7", features = ["ws"] }
+bitcoin = "0.32.2"
+futures = "0.3"
+hex = "0.4.3"
+hub = { path = "../hub" }
+rand = "0.8.5"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1.0.125"
+time = { version = "0.3", features = ["macros", "serde", "serde-well-known"] }
+tokio = { version = "1", features = ["full", "tracing"] }
+tokio-stream = { version = "0.1.15", features = ["sync"] }
+tracing = "0.1.37"
+tracing-subscriber = { version = "0.3", default-features = false, features = ["fmt", "ansi", "env-filter", "time", "tracing-log", "json"] }

@@ -20,7 +20,8 @@ function Wallet() {
     e.preventDefault();
 
     try {
-      new_wallet(newWalletInput);
+      // TODO: The network should be read from an environment variable.
+      new_wallet(newWalletInput, "regtest");
       setIsWalletLoaded(true);
     } catch (e) {
       alert(e);

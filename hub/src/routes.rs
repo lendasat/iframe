@@ -1,10 +1,13 @@
 use crate::config::Config;
+use crate::mempool;
+use crate::wallet::Wallet;
 use serde::Serialize;
 use sqlx::Pool;
 use sqlx::Postgres;
+use std::sync::Arc;
 
-pub(crate) mod borrower;
-pub(crate) mod lender;
+pub mod borrower;
+pub mod lender;
 
 #[derive(Debug, Serialize)]
 pub struct ErrorResponse {
@@ -13,5 +16,7 @@ pub struct ErrorResponse {
 
 pub struct AppState {
     db: Pool<Postgres>,
+    wallet: Arc<Wallet>,
     config: Config,
+    mempool: xtra::Address<mempool::Actor>,
 }

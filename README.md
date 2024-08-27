@@ -59,6 +59,38 @@ cargo install sqlx-cli
 For local API development we make use of [Postman](https://www.postman.com/downloads/).
 A [postman.json](./Lendasat Postman Collection.postman_collection.json) file has been provided.
 
+## MacOS wasm problems
+
+If you are on a Mac (M1 or intel) you might run into compilation errors when building the wallet for the borrower.
+
+```bash
+[...]
+  cargo:warning=error: unable to create target: 'No available targets are compatible with triple "wasm32-unknown-unknown"'
+  cargo:warning=1 error generated.
+  cargo:warning=error: unable to create target: 'No available targets are compatible with triple "wasm32-unknown-unknown"'
+  cargo:warning=1 error generated.
+
+  --- stderr
+
+  error occurred: Command "clang" "-Os" "-ffunction-sections" "-fdata-sections" "-fPIC" "-fno-exceptions" "--target=wasm32-unknown-unknown" "-I" "depend/secp256k1/" "-I" "depend/secp256k1/include" "-I" "depend/secp256k1/src" "-I" "wasm/wasm-sysroot" "-I" "wasm/wasm-sysroot" "-Wall" "-Wextra" "-DSECP256K1_API=" "-DENABLE_MODULE_ECDH=1" "-DENABLE_MODULE_SCHNORRSIG=1" "-DENABLE_MODULE_EXTRAKEYS=1" "-DENABLE_MODULE_ELLSWIFT=1" "-Dprintf(...)=" "-DECMULT_GEN_PREC_BITS=4" "-DECMULT_WINDOW_SIZE=15" "-DUSE_EXTERNAL_DEFAULT_CALLBACKS=1" "-DENABLE_MODULE_RECOVERY=1" "-o" "/Users/bonomat/src/github/lendasat/loan-poc/target/wasm32-unknown-unknown/release/build/secp256k1-sys-f2e0c968804a3087/out/3fec8a5f3c4f77fb-wasm.o" "-c" "wasm/wasm.c" with args clang did not execute successfully (status code exit status: 1).
+```
+
+On OSX the default clang compiler provided by Apple does not contain the necessary support to target wasm32-unknown-unknown.
+
+You can install a version from homebrew instead that has the support for it:
+
+```bash
+brew install llvm
+```
+
+Make sure to add these variables to your `.env` file.
+
+```.dotenv
+PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+LDFLAGS="-L/opt/homebrew/opt/llvm/lib"
+CPPFLAGS="-I/opt/homebrew/opt/llvm/include"
+```
+
 ## Take loan protocol
 
 ```mermaid

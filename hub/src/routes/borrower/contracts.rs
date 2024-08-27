@@ -14,6 +14,7 @@ use axum::Extension;
 use axum::Json;
 use axum::Router;
 use std::sync::Arc;
+use tracing::instrument;
 
 pub(crate) fn router(app_state: Arc<AppState>) -> Router {
     Router::new()
@@ -50,6 +51,7 @@ pub async fn get_active_contracts(
     Ok((StatusCode::OK, Json(contracts)))
 }
 
+#[instrument(skip_all, err(Debug))]
 pub async fn post_contract_request(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<User>,
@@ -63,6 +65,8 @@ pub async fn post_contract_request(
         body.initial_collateral_sats,
         body.loan_amount,
         body.duration_months,
+        body.borrower_payout_address,
+        body.borrower_pk,
     )
     .await
     .map_err(|error| {

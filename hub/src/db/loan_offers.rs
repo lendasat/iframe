@@ -38,7 +38,7 @@ pub(crate) async fn load_all_available_loan_offers(
     Ok(loans)
 }
 
-pub(crate) async fn load_all_loan_offers_by_lender(
+pub async fn load_all_loan_offers_by_lender(
     pool: &Pool<Postgres>,
     lender_id: String,
 ) -> Result<Vec<LoanOffer>> {
@@ -71,13 +71,13 @@ pub(crate) async fn load_all_loan_offers_by_lender(
     Ok(loans)
 }
 
-pub(crate) async fn insert_loan_offer(
+pub async fn insert_loan_offer(
     pool: &Pool<Postgres>,
     offer: CreateLoanOfferSchema,
     lender_id: String,
 ) -> Result<LoanOffer> {
     let id = uuid::Uuid::new_v4().to_string();
-    let status = crate::model::LoanOfferStatus::Available;
+    let status = LoanOfferStatus::Available;
 
     let loan = sqlx::query_as!(
         LoanOffer,

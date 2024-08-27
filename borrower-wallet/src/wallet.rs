@@ -1,4 +1,3 @@
-use crate::storage::local_storage;
 use aes_gcm_siv::aead::Aead;
 use aes_gcm_siv::Aes256GcmSiv;
 use aes_gcm_siv::KeyInit;
@@ -6,9 +5,13 @@ use anyhow::bail;
 use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Result;
-use bip32::secp256k1::SecretKey;
-use bip32::ExtendedPrivateKey;
 use bip39::Mnemonic;
+use bitcoin::bip32::ChildNumber;
+use bitcoin::bip32::Xpriv;
+use bitcoin::key::Secp256k1;
+use bitcoin::Network;
+use bitcoin::NetworkKind;
+use bitcoin::PublicKey;
 use hkdf::Hkdf;
 use rand::thread_rng;
 use rand::CryptoRng;
@@ -26,84 +29,62 @@ use std::sync::Mutex;
 
 const SECRET_KEY_ENCRYPTION_NONCE: &[u8; 12] = b"SECRET_KEY!!";
 
-const PASSPHRASE_STORAGE_KEY: &str = "wallet.passphrase";
-const SEED_STORAGE_KEY: &str = "wallet.seed";
-
 static WALLET: LazyLock<Mutex<Option<Wallet>>> = LazyLock::new(|| Mutex::new(None));
 
 struct Wallet {
     /// We keep this so that we can display it to the user.
     mnemonic: Mnemonic,
-    _xprv: ExtendedPrivateKey<SecretKey>,
+    xprv: Xpriv,
+    network: Network,
 }
 
-struct MnemonicCiphertext {
+pub struct MnemonicCiphertext {
     salt: [u8; 32],
     inner: Vec<u8>,
 }
 
-/// Check if the browser's local storage already has the encrypted wallet data.
-fn does_wallet_exist() -> Result<bool> {
-    let storage = local_storage()?;
-
-    let passphrase = storage.get_item::<String>(PASSPHRASE_STORAGE_KEY)?;
-    let mnemonic = storage.get_item::<String>(SEED_STORAGE_KEY)?;
-
-    Ok(passphrase.is_some() || mnemonic.is_some())
-}
-
-pub fn new_wallet(passphrase: &str) -> Result<()> {
-    if does_wallet_exist()? {
-        bail!("Can't create new wallet if it already exists in local storage");
-    }
-
+pub fn new_wallet(
+    passphrase: &str,
+    network: &str,
+) -> Result<(PasswordHashString, MnemonicCiphertext, Network)> {
     let mut guard = WALLET.lock().expect("to get lock");
 
     ensure!(guard.is_none(), "Wallet already loaded");
 
-    let storage = local_storage()?;
     let mut rng = thread_rng();
 
     let mnemonic = generate_mnemonic(&mut rng)?;
 
-    let (wallet, mnemonic_ciphertext) = Wallet::new(&mut rng, mnemonic, passphrase)?;
+    let (wallet, mnemonic_ciphertext) = Wallet::new(&mut rng, mnemonic, passphrase, network)?;
+    let network = wallet.network;
 
     let passphrase_hash = hash_passphrase(&mut rng, passphrase)?;
 
-    storage.set_item(PASSPHRASE_STORAGE_KEY, passphrase_hash)?;
-
-    storage.set_item(SEED_STORAGE_KEY, mnemonic_ciphertext.serialize())?;
-
     guard.replace(wallet);
 
-    Ok(())
+    Ok((passphrase_hash, mnemonic_ciphertext, network))
 }
 
-pub fn load_wallet(passphrase: &str) -> Result<()> {
+pub fn load_wallet(
+    passphrase: &str,
+    passphrase_hash: &str,
+    mnemonic_ciphertext: &str,
+    network: &str,
+) -> Result<()> {
     let mut guard = WALLET.lock().expect("to get lock");
 
     ensure!(guard.is_none(), "Wallet already loaded");
 
-    let storage = local_storage()?;
-
-    let passphrase_hash = storage
-        .get_item::<String>(PASSPHRASE_STORAGE_KEY)?
-        .context("No passphrase stored for wallet")?;
-
-    let passphrase_hash = PasswordHash::new(&passphrase_hash)?;
+    let passphrase_hash = PasswordHash::new(passphrase_hash)?;
 
     Scrypt
         .verify_password(passphrase.as_bytes(), &passphrase_hash)
         .context("Incorrect passphrase")?;
 
-    let mnemonic_ciphertext = storage
-        .get_item::<String>(SEED_STORAGE_KEY)?
-        .context("No mnemonic stored for wallet")?;
-
-    let mnemonic_ciphertext = MnemonicCiphertext::from_str(&mnemonic_ciphertext)
+    let mnemonic_ciphertext = MnemonicCiphertext::from_str(mnemonic_ciphertext)
         .context("Failed to deserialize mnemonic ciphertext")?;
 
-    let wallet = Wallet::from_ciphertext(mnemonic_ciphertext, passphrase)?;
+    let wallet = Wallet::from_ciphertext(mnemonic_ciphertext, passphrase, network)?;
 
     guard.replace(wallet);
 
@@ -123,6 +104,41 @@ pub fn get_mnemonic() -> Result<String> {
     Ok(mnemonic.to_string())
 }
 
+pub fn get_pk(index: u32) -> Result<PublicKey> {
+    let guard = WALLET.lock().expect("to get lock");
+
+    let wallet = match *guard {
+        Some(ref wallet) => wallet,
+        None => {
+            bail!("Can't get next public key if wallet is not loaded");
+        }
+    };
+
+    let network_index = if wallet.xprv.network.is_mainnet() {
+        ChildNumber::from_hardened_idx(0).expect("infallible")
+    } else {
+        ChildNumber::from_hardened_idx(1).expect("infallible")
+    };
+
+    let path = [
+        // Random number copied from
+        // https://github.com/MutinyWallet/mutiny-node/blob/f71300680ff20381aae07e5e64d5fd6802d21a43/mutiny-core/src/dlc/mod.rs#L126.
+        ChildNumber::from_hardened_idx(586).expect("infallible"),
+        network_index,
+        ChildNumber::from_hardened_idx(index).expect("infallible"),
+    ];
+
+    let sk = wallet
+        .xprv
+        .derive_priv(&Secp256k1::new(), &path)?
+        .private_key;
+
+    let kp = bitcoin::key::Keypair::from_secret_key(&Secp256k1::new(), &sk);
+    let pk = PublicKey::new(kp.public_key());
+
+    Ok(pk)
+}
+
 fn generate_mnemonic<R>(rng: &mut R) -> Result<Mnemonic>
 where
     R: Rng + CryptoRng,
@@ -132,6 +148,7 @@ where
     Ok(mnemonic)
 }
 
+#[allow(clippy::print_stdout)]
 fn hash_passphrase<R>(rng: &mut R, passphrase: &str) -> Result<PasswordHashString>
 where
     R: Rng + CryptoRng,
@@ -139,7 +156,7 @@ where
     let params = if cfg!(debug_assertions) {
         // Use weak parameters in debug mode, to speed things up.
         println!("Using extremely weak scrypt parameters for password hashing");
-        scrypt::Params::new(1, 1, 1, 9)?
+        scrypt::Params::new(1, 1, 1, 10)?
     } else {
         scrypt::Params::recommended()
     };
@@ -156,16 +173,19 @@ impl Wallet {
         rng: &mut R,
         mnemonic: Mnemonic,
         passphrase: &str,
+        network: &str,
     ) -> Result<(Self, MnemonicCiphertext)>
     where
         R: Rng,
     {
+        let network = Network::from_str(network).context("Invalid network")?;
+
         let salt = rng.gen::<[u8; 32]>();
         let encryption_key = derive_encryption_key(passphrase, &salt)?;
 
         let xprv = {
             let seed = mnemonic.to_seed(passphrase);
-            ExtendedPrivateKey::<SecretKey>::new(seed)?
+            Xpriv::new_master(network, &seed)?
         };
 
         let mnemonic_ciphertext = {
@@ -179,26 +199,34 @@ impl Wallet {
 
         let wallet = Self {
             mnemonic,
-            _xprv: xprv,
+            xprv,
+            network,
         };
 
         Ok((wallet, mnemonic_ciphertext))
     }
 
-    /// Create a [`Wallet`] from a [`MnemonicCiphertext`] and a `passphrase`.
-    fn from_ciphertext(mnemonic_ciphertext: MnemonicCiphertext, passphrase: &str) -> Result<Self> {
+    /// Create a [`Wallet`] from a [`MnemonicCiphertext`], a `passphrase` and a [`Network`].
+    fn from_ciphertext(
+        mnemonic_ciphertext: MnemonicCiphertext,
+        passphrase: &str,
+        network: &str,
+    ) -> Result<Self> {
+        let network = Network::from_str(network).context("Invalid network")?;
+
         let encryption_key = derive_encryption_key(passphrase, &mnemonic_ciphertext.salt)?;
 
         let mnemonic = decrypt_mnemonic(mnemonic_ciphertext.inner, encryption_key)?;
 
         let xprv = {
             let seed = mnemonic.to_seed(passphrase);
-            ExtendedPrivateKey::<SecretKey>::new(seed)?
+            Xpriv::new_master(NetworkKind::Test, &seed)?
         };
 
         Ok(Self {
             mnemonic,
-            _xprv: xprv,
+            xprv,
+            network,
         })
     }
 
@@ -209,7 +237,7 @@ impl Wallet {
 
 impl MnemonicCiphertext {
     /// Serialize a [`MnemonicCiphertext`] for storage.
-    fn serialize(&self) -> String {
+    pub fn serialize(&self) -> String {
         format!("{}${}", hex::encode(self.salt), hex::encode(&self.inner))
     }
 

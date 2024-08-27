@@ -1,6 +1,10 @@
 #[derive(Debug, Clone)]
 pub struct Config {
     pub database_url: String,
+    pub mempool_url: String,
+    pub network: String,
+    pub seed_file: String,
+    pub fallback_xpub: String,
     pub jwt_secret: String,
     pub smtp_host: String,
     pub smtp_port: u16,
@@ -17,6 +21,13 @@ pub struct Config {
 impl Config {
     pub fn init() -> Config {
         let database_url = std::env::var("DB_URL").expect("DATABASE_URL must be set");
+        let mempool_url = std::env::var("MEMPOOL_URL").expect("MEMPOOL_URL must be set");
+
+        let network = std::env::var("NETWORK").expect("NETWORK must be set");
+
+        let seed_file = std::env::var("SEED_FILE").expect("SEED_FILE must be set");
+        let fallback_xpub = std::env::var("FALLBACK_XPUB").expect("FALLBACK_XPUB must be set");
+
         let jwt_secret = std::env::var("JWT_SECRET").expect("JWT_SECRET must be set");
 
         let smtp_host = std::env::var("SMTP_HOST").ok();
@@ -43,12 +54,16 @@ impl Config {
             || smtp_from.is_none();
         Config {
             database_url,
+            mempool_url,
+            network,
+            seed_file,
+            fallback_xpub,
             jwt_secret,
             smtp_host: smtp_host.unwrap_or_default(),
             smtp_pass: smtp_pass.unwrap_or_default(),
             smtp_user: smtp_user.unwrap_or_default(),
             smtp_port: smtp_port
-                .map(|port| port.parse::<u16>().unwrap())
+                .map(|port| port.parse::<u16>().expect("to be able to parse"))
                 .unwrap_or_default(),
             smtp_from: smtp_from.unwrap_or_default(),
             borrower_listen_address,
@@ -57,7 +72,7 @@ impl Config {
             lender_frontend_origin,
             smtp_disabled: any_smtp_not_configured
                 || smtp_disabled
-                    .map(|disabled| disabled.parse::<bool>().unwrap())
+                    .map(|disabled| disabled.parse::<bool>().expect("to be able to parse"))
                     .unwrap_or_default(),
         }
     }

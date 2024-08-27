@@ -1,9 +1,10 @@
 use crate::db;
-use crate::model::ContractStatus;
+use crate::mempool::TrackContract;
 use crate::model::User;
 use crate::routes::lender::auth::jwt_auth;
 use crate::routes::AppState;
 use crate::routes::ErrorResponse;
+use anyhow::Context;
 use axum::extract::Path;
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -16,6 +17,7 @@ use axum::Extension;
 use axum::Json;
 use axum::Router;
 use std::sync::Arc;
+use tracing::instrument;
 
 pub(crate) fn router(app_state: Arc<AppState>) -> Router {
     Router::new()
@@ -43,6 +45,7 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
         .with_state(app_state)
 }
 
+#[instrument(skip_all, err(Debug))]
 pub async fn get_active_contracts(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<User>,
@@ -59,44 +62,64 @@ pub async fn get_active_contracts(
     Ok((StatusCode::OK, Json(contracts)))
 }
 
+#[instrument(skip_all, err(Debug))]
 pub async fn put_approve_contract(
     State(data): State<Arc<AppState>>,
     Path(contract_id): Path<String>,
     Extension(user): Extension<User>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    db::contracts::update_contract_status(
-        &data.db,
-        user.id.as_str(),
-        contract_id.as_str(),
-        ContractStatus::Open,
-    )
+    async {
+        let contract = db::contracts::load_contract_by_id(&data.db, contract_id.as_str())
+            .await
+            .context("Failed to load contract request")?;
+
+        let (contract_address, contract_index) =
+            data.wallet.contract_address(contract.borrower_pk)?;
+
+        db::contracts::accept_contract_request(
+            &data.db,
+            user.id.as_str(),
+            contract_id.as_str(),
+            contract_address.clone(),
+            contract_index,
+        )
+        .await
+        .context("Failed to accept contract request")?;
+
+        data.mempool
+            .send(TrackContract {
+                contract_id,
+                contract_address,
+                initial_collateral_sats: contract.initial_collateral_sats,
+            })
+            .await?
+            .context("Failed to track accepted contract")?;
+
+        anyhow::Ok(())
+    }
     .await
-    .map_err(|error| {
+    .map_err(|e| {
         let error_response = ErrorResponse {
-            message: format!("Database error: {}", error),
+            message: format!("Database error: {e:#}"),
         };
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
     })?;
     Ok(())
 }
 
+#[instrument(skip_all, err(Debug))]
 pub async fn delete_reject_contract(
     State(data): State<Arc<AppState>>,
     Path(contract_id): Path<String>,
     Extension(user): Extension<User>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    db::contracts::update_contract_status(
-        &data.db,
-        user.id.as_str(),
-        contract_id.as_str(),
-        ContractStatus::Rejected,
-    )
-    .await
-    .map_err(|error| {
-        let error_response = ErrorResponse {
-            message: format!("Database error: {}", error),
-        };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?;
+    db::contracts::reject_contract_request(&data.db, user.id.as_str(), contract_id.as_str())
+        .await
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Database error: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
     Ok(())
 }

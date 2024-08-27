@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT \n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            loan_amount,\n            status as \"status: crate::model::ContractStatus\",\n            duration_months,\n            created_at,\n            updated_at\n        FROM contracts\n        where lender_id = $1\n        ",
+  "query": "\n        SELECT\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            loan_amount,\n            borrower_payout_address,\n            borrower_pk,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            duration_months,\n            created_at,\n            updated_at\n        FROM contracts\n        where lender_id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -40,15 +40,38 @@
       },
       {
         "ordinal": 7,
-        "name": "status: crate::model::ContractStatus",
+        "name": "borrower_payout_address",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "borrower_pk",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 9,
+        "name": "contract_address",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 10,
+        "name": "contract_index",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 11,
+        "name": "status: crate::model::db::ContractStatus",
         "type_info": {
           "Custom": {
             "name": "contract_status",
             "kind": {
               "Enum": [
-                "Open",
-                "Closed",
                 "Requested",
+                "Open",
+                "CollateralSeen",
+                "CollateralConfirmed",
+                "PrincipalGiven",
+                "Closed",
                 "Rejected"
               ]
             }
@@ -56,17 +79,17 @@
         }
       },
       {
-        "ordinal": 8,
+        "ordinal": 12,
         "name": "duration_months",
         "type_info": "Int4"
       },
       {
-        "ordinal": 9,
+        "ordinal": 13,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 10,
+        "ordinal": 14,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -86,9 +109,13 @@
       false,
       false,
       false,
+      true,
+      true,
+      false,
+      false,
       false,
       false
     ]
   },
-  "hash": "c0eeac8801af4e1baec47df24c459ac765516b0ec3bb6648335dd7f2770f5754"
+  "hash": "97dc4a6de8d8f2e64182ac93dcc0475973a16d228674b97f384504ffa7cb5c08"
 }

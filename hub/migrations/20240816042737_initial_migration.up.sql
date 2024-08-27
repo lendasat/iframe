@@ -1,4 +1,4 @@
--- Add up migration script here
+ -- Add up migration script here
 
 CREATE TABLE
     IF NOT EXISTS "borrowers"
@@ -57,7 +57,7 @@ CREATE TABLE
     FOREIGN KEY (lender_id) REFERENCES lenders (id)
 );
 
-CREATE TYPE contract_status AS ENUM ('Open', 'Closed', 'Requested', 'Rejected');
+CREATE TYPE contract_status AS ENUM ('Requested', 'Open', 'CollateralSeen', 'CollateralConfirmed', 'PrincipalGiven', 'Closed', 'Rejected');
 
 CREATE TABLE
     IF NOT EXISTS "contracts"
@@ -70,7 +70,11 @@ CREATE TABLE
     initial_collateral_sats BIGINT                   NOT NULL,
     loan_amount             DECIMAL                  NOT NULL,
     duration_months         INT                      NOT NULL,
+    borrower_payout_address TEXT                     NOT NULL,
+    borrower_pk             CHAR(66)                 NOT NULL,
     status                  contract_status          NOT NULL,
+    contract_address        TEXT,
+    contract_index          INT,
     created_at              TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at              TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (lender_id) REFERENCES lenders (id),

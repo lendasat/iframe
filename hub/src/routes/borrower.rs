@@ -1,5 +1,8 @@
 use crate::config::Config;
+use crate::mempool;
 use crate::routes::AppState;
+use crate::wallet::Wallet;
+use anyhow::Result;
 use axum::http::header::ACCEPT;
 use axum::http::header::ACCESS_CONTROL_ALLOW_HEADERS;
 use axum::http::header::ACCESS_CONTROL_ALLOW_ORIGIN;
@@ -14,24 +17,42 @@ use sqlx::Postgres;
 use std::sync::Arc;
 use tokio::task::JoinHandle;
 use tower_http::cors::CorsLayer;
+use tower_http::services::ServeDir;
+use tower_http::services::ServeFile;
 
 pub(crate) mod auth;
 pub(crate) mod contracts;
-pub(crate) mod frontend;
 pub(crate) mod health_check;
 pub(crate) mod loan_offers;
 
-pub async fn spawn_borrower_server(config: Config, db: Pool<Postgres>) -> JoinHandle<()> {
+pub async fn spawn_borrower_server(
+    config: Config,
+    wallet: Arc<Wallet>,
+    db: Pool<Postgres>,
+    mempool: xtra::Address<mempool::Actor>,
+) -> Result<JoinHandle<()>> {
     let app_state = Arc::new(AppState {
         db,
+        wallet,
         config: config.clone(),
+        mempool,
     });
+
     let app = Router::new()
         .merge(health_check::router())
         .merge(auth::router(app_state.clone()))
         .merge(loan_offers::router(app_state.clone()))
         .merge(contracts::router(app_state.clone()))
-        .merge(frontend::router());
+        // This is a relative path on the filesystem, which means, when deploying `hub` we will need
+        // to have the frontend in this directory. Ideally we would bundle the frontend with
+        // the binary, but so far we failed at handling requests which are meant to be handled by
+        // the frontend and not by the backend, e.g. `/wallet` should not look up a file/asset on
+        // the backend, but be only handled on the client side.
+        .fallback_service(
+            ServeDir::new("./frontend-monorepo/dist/apps/borrower").fallback(ServeFile::new(
+                "./frontend-monorepo/dist/apps/borrower/index.html",
+            )),
+        );
 
     // todo: make this a dev-only setting
     let cors = CorsLayer::new()
@@ -45,22 +66,22 @@ pub async fn spawn_borrower_server(config: Config, db: Pool<Postgres>) -> JoinHa
             ACCESS_CONTROL_ALLOW_ORIGIN,
             CONTENT_TYPE,
         ])
-        .allow_origin(["http://localhost:4200".parse::<HeaderValue>().unwrap()]);
+        .allow_origin(["http://localhost:4200".parse::<HeaderValue>()?]);
 
     let app = app.layer(cors);
 
-    let listener = tokio::net::TcpListener::bind(&config.borrower_listen_address)
-        .await
-        .unwrap();
+    let listener = tokio::net::TcpListener::bind(&config.borrower_listen_address).await?;
 
-    tokio::task::spawn(async move {
+    Ok(tokio::task::spawn(async move {
         tracing::info!(
             "Starting to listen for borrowers on {}",
             config.borrower_frontend_origin
         );
 
-        axum::serve(listener, app).await.unwrap();
+        axum::serve(listener, app)
+            .await
+            .expect("to be able to listen");
 
         tracing::error!("Borrower server stopped");
-    })
+    }))
 }

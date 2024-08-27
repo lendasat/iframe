@@ -1,5 +1,8 @@
 set dotenv-load
 
+hub_logs := "$PWD/hub.log"
+mempool_logs := "$PWD/mempool.log"
+
 ## ------------------------
 ## Install useful tools
 ## ------------------------
@@ -47,6 +50,49 @@ e2e-tests-frontend:
     cd frontend-monorepo
     npx nx run-many --target=e2e --all --skipNxCache
 
+prepare-e2e:
+    # Start hub DB
+    docker compose up -d
+
+    just wait-for-db
+    # Fill hub DB with test data
+    just db-test-data
+    # Start mempool mock server in the background
+    just mempool-d
+    # Start hub in the background
+    just hub-d
+
+wait-for-db:
+    #!/usr/bin/env bash
+    until docker exec postgres pg_isready -U hub; do
+      echo "Waiting for PostgreSQL to be ready..."
+      sleep 2
+    done
+
+    echo "PostgreSQL is ready!"
+
+e2e:
+    cargo test -p tests-e2e -- --ignored
+
+# Start mock mempool server
+mempool:
+    cargo run -p mempool-mock
+
+# Start mock mempool server in the background
+mempool-d:
+    #!/usr/bin/env bash
+    set -euxo pipefail
+
+    echo "Building mempool-mock first"
+    cargo build --bin mempool-mock
+
+    echo "Starting mock mempool server"
+
+    (exec -a mempool-mock just mempool &> {{mempool_logs}}) &
+
+    # TODO: We might need to wait longer here.
+
+    echo "Mempool mock server started. Find the logs in {{mempool_logs}}"
 
 ## ------------------------
 ## Serve frontend functions
@@ -83,14 +129,30 @@ watch-frontend:
     npx nx watch --projects=borrower,lender -- npx nx run-many -t build -p borrower,lender
 
 ## ------------------------
-## Build backend functions
+## Build hub functions
 ## ------------------------
 
-run-backend:
+hub:
     cargo run --bin hub
 
+# Start hub in the background
+hub-d:
+    #!/usr/bin/env bash
+    set -euxo pipefail
+
+    echo "Building hub first"
+    cargo build --bin hub
+
+    echo "Starting hub"
+
+    just hub &> {{hub_logs}} &
+
+    # TODO: We might need to wait longer here.
+
+    echo "Hub started. Find the logs in {{hub_logs}}"
+
 # rebuilds the hub when related files change
-watch-backend:
+watch-hub:
     cargo watch -i "justfile" \
                 -C "hub" \
                 -x "run"
@@ -111,33 +173,37 @@ db-run-migration:
 db-revert-migration:
     sqlx migrate revert --source ./hub/migrations --database-url=$DB_URL
 
+## ------------------------
+## Clean dev setup
+## ------------------------
+
+# Wipe all dev setup dependencies
+wipe: wipe-docker wipe-hub wipe-mempool
+
+# Wipe docker setup, including volumes
+wipe-docker:
+    docker compose down -v
+
+# Wipe dev hub
+wipe-hub:
+    pkill -9 hub && echo "Stopped hub" || echo "Hub not running, skipped"
+    [ ! -e "{{hub_logs}}" ] || mv -f {{hub_logs}} {{hub_logs}}.old
+
+# Wipe mock mempool server
+wipe-mempool:
+    pkill -9 mempool-mock && echo "Stopped mock mempool server" || echo "Mock mempool server not running, skipped"
+    [ ! -e "{{mempool_logs}}" ] || mv -f {{mempool_logs}} {{mempool_logs}}.old
 
 ## ------------------------
-## Local dev setup help function
+## Local dev setup help functions
 ## ------------------------
 
 watch-all:
-    just watch-frontend & just watch-backend
+    just watch-frontend & just watch-hub
 
 ## ------------------------
 ## Insert some test data into our database
 ## ------------------------
 
 db-test-data:
-    #!/usr/bin/env bash
-    just db-run-migration
-    set -euxo pipefail
-
-    CONTAINER_NAME="postgres"
-    DB_NAME="hub"
-    DB_USER="hub"
-
-    # Read SQL queries from the file
-    SQL_FILE="./services/test_data/test_data.sql"
-    SQL_QUERIES=$(cat "$SQL_FILE")
-
-    # Execute SQL queries
-    echo "$SQL_QUERIES" | docker exec -i "$CONTAINER_NAME" psql -U "$DB_USER" -d "$DB_NAME"
-
-
-    echo "Test data inserted successfully."
+    cargo run --example  test-data
