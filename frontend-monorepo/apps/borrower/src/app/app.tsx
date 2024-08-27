@@ -7,6 +7,7 @@ import Registration from "./auth/registration";
 import DashBoard from "./dash-board";
 import MyAccount from "./my-account";
 import MyLoans from "./my-loans/my-loans";
+import { PriceProvider } from "./price-context";
 import Profile from "./profile";
 import RequestLoan from "./request-loan/request-loan";
 import { RequestLoanSummary } from "./request-loan/request-loan-summary";
@@ -25,21 +26,23 @@ function App() {
   return (
     <AuthProvider baseUrl="http://localhost:7337">
       <AuthIsSignedIn>
-        <Layout
-          navItems={navItems}
-          defaultActiveKey={"/my-account"}
-        >
-          <Routes>
-            <Route index element={<DashBoard />} />
-            <Route path="/request-loan" element={<RequestLoan />} />
-            <Route path="/my-loans" element={<MyLoans />} />
-            <Route path="/my-account" element={<MyAccount />} />
-            <Route path="/wallet" element={<Wallet />} />
-            <Route path="/logout" element={<Logout />} />
-            <Route path="/profile/:id" element={<Profile />} />
-            <Route path="/request-loan/:id" element={<RequestLoanSummary />} />
-          </Routes>
-        </Layout>
+        <PriceProvider>
+          <Layout
+            navItems={navItems}
+            defaultActiveKey={"/my-account"}
+          >
+            <Routes>
+              <Route index element={<DashBoard />} />
+              <Route path="/request-loan" element={<RequestLoan />} />
+              <Route path="/my-loans" element={<MyLoans />} />
+              <Route path="/my-account" element={<MyAccount />} />
+              <Route path="/wallet" element={<Wallet />} />
+              <Route path="/logout" element={<Logout />} />
+              <Route path="/profile/:id" element={<Profile />} />
+              <Route path="/request-loan/:id" element={<RequestLoanSummary />} />
+            </Routes>
+          </Layout>
+        </PriceProvider>
       </AuthIsSignedIn>
       <AuthIsNotSignedIn>
         <Routes>
