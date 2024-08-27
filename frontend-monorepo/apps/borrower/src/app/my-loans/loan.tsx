@@ -1,5 +1,6 @@
 import React from "react";
 import { Badge, Button, Card, Col, Container, Row } from "react-bootstrap";
+import { usePrice } from "../price-context";
 import { LenderProfile } from "../request-loan/lender";
 import CurrencyFormatter from "../usd";
 import LTVProgressBar from "./ltv-progress-bar";
@@ -17,7 +18,6 @@ export interface Loan {
   opened: Date;
   repaid: Date;
   expiry: Date;
-  ltv: number;
   interest: number;
   collateral: number;
   status: LoanStatus;
@@ -26,8 +26,14 @@ export interface Loan {
 
 export function LoanComponent(props) {
   const { loan, onRepay } = props;
+  const { latestPrice } = usePrice();
 
-  const { amount, expiry, ltv, interest, collateral, status } = loan;
+  const { amount, expiry, interest, collateral, status } = loan;
+
+  // reversing the current ltv ratio to better illustrate the health of the ltv. A lower number means that the health is
+  // bad, while a higher number means the ltv is good. The ltv ratio would work the other way around as a higher ltv ratio
+  // means the collateral is moving closer to the actual loan principal.
+  const reversedCurrentLTV = ((1 - (amount / (collateral * latestPrice))) * 100).toFixed(2);
 
   return (
     <Card>
@@ -39,7 +45,7 @@ export function LoanComponent(props) {
             </Col>
             <Col md={1}>{expiry.toLocaleDateString("en-US")}</Col>
             <Col md={2}>
-              <LTVProgressBar ltv={ltv} />
+              <LTVProgressBar ltv={reversedCurrentLTV} />
             </Col>
             <Col md={1}>{interest}%</Col>
             <Col md={2}>{collateral} BTC</Col>
