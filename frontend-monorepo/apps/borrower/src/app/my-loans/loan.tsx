@@ -30,9 +30,6 @@ export function LoanComponent(props) {
 
   const { amount, expiry, interest, collateral, status } = loan;
 
-  // reversing the current ltv ratio to better illustrate the health of the ltv. A lower number means that the health is
-  // bad, while a higher number means the ltv is good. The ltv ratio would work the other way around as a higher ltv ratio
-  // means the collateral is moving closer to the actual loan principal.
   const ltvRatio = (amount / (collateral * latestPrice)) * 100;
 
   return (
