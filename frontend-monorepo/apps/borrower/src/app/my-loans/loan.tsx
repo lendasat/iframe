@@ -24,15 +24,16 @@ export interface Loan {
   lender: LenderProfile;
 }
 
-export function LoanComponent(props) {
-  const { loan, onRepay } = props;
+interface LoanComponentProps {
+  loan: Loan;
+  onRepay: (loan: string) => void;
+}
+
+export function LoanComponent({ loan, onRepay }: LoanComponentProps) {
   const { latestPrice } = usePrice();
 
   const { amount, expiry, interest, collateral, status } = loan;
 
-  // reversing the current ltv ratio to better illustrate the health of the ltv. A lower number means that the health is
-  // bad, while a higher number means the ltv is good. The ltv ratio would work the other way around as a higher ltv ratio
-  // means the collateral is moving closer to the actual loan principal.
   const ltvRatio = (amount / (collateral * latestPrice)) * 100;
 
   return (
@@ -57,7 +58,7 @@ export function LoanComponent(props) {
                 <>
                   <Button variant="primary">Add Collateral</Button>
                   <span>{" "}</span>
-                  <Button variant="primary" onClick={() => onRepay(loan)}>Repay Loan</Button>
+                  <Button variant="primary" onClick={() => onRepay(loan.id)}>Repay Loan</Button>
                 </>
               )}
             </Col>

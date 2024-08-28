@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import CollapsibleComponent from "../collapsible";
 import { Loan, LoanStatus } from "./loan";
 import LoansComponent from "./loans";
@@ -5,12 +6,15 @@ import LoansHistoryComponent from "./loans-history";
 
 function MyLoans() {
   const loans = getMockData();
+  const navigate = useNavigate();
   return (
     <>
       <div className="p-4">
         <LoansComponent
           loans={loans.filter((loan) => loan.status !== LoanStatus.CLOSED)}
-          onRepay={() => console.log("!")}
+          onRepay={(loan_id) => {
+            navigate(loan_id);
+          }}
         />
       </div>
       <div className="px-4">

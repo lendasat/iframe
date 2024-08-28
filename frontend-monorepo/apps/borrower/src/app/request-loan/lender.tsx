@@ -1,11 +1,6 @@
+import { LenderProfile } from "@frontend-monorepo/http-client";
 import { Container, Row } from "react-bootstrap";
 import { Link } from "react-router-dom";
-
-export interface LenderProfile {
-  name: string;
-  rate: number;
-  loans: number;
-}
 
 export function Lender({ name, rate, loans }: LenderProfile) {
   return (
