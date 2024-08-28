@@ -6,7 +6,7 @@ interface LoansComponentProps {
   onRepay: (loan: string) => void;
 }
 
-function LoansComponent({ loans, onRepay }: LoansComponentProps) {
+function LoansComponent({ loans, onRepay, onCollateralize }: LoansComponentProps) {
   if (loans.length === 0) {
     return <p>You don't have any loans yet.</p>;
   }
@@ -38,7 +38,7 @@ function LoansComponent({ loans, onRepay }: LoansComponentProps) {
       </Container>
       {loans.map((loan, index) => (
         <div key={index} className={"mb-3"}>
-          <LoanComponent key={index} loan={loan} onRepay={onRepay} />
+          <LoanComponent key={index} loan={loan} onRepay={onRepay} onCollateralize={onCollateralize} />
         </div>
       ))}
     </>

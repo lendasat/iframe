@@ -7,6 +7,7 @@ import CurrencyFormatter from "../usd";
 
 export enum LoanStatus {
   REQUESTED = "REQUESTED",
+  ACCEPTED = "ACCEPTED",
   OPEN = "OPEN",
   CLOSING = "CLOSING",
   CLOSED = "CLOSED",
@@ -29,7 +30,7 @@ interface LoanComponentProps {
   onRepay: (loan: string) => void;
 }
 
-export function LoanComponent({ loan, onRepay }: LoanComponentProps) {
+export function LoanComponent({ loan, onRepay, onCollateralize }: LoanComponentProps) {
   const { latestPrice } = usePrice();
 
   const { amount, expiry, interest, collateral, status } = loan;
@@ -54,13 +55,26 @@ export function LoanComponent({ loan, onRepay }: LoanComponentProps) {
               <Badge bg="primary">{status}</Badge>
             </Col>
             <Col className={"text-end"}>
-              {loan.status === LoanStatus.OPEN && (
-                <>
-                  <Button variant="primary">Add Collateral</Button>
-                  <span>{" "}</span>
-                  <Button variant="primary" onClick={() => onRepay(loan.id)}>Repay Loan</Button>
-                </>
-              )}
+              {(() => {
+                switch (loan.status) {
+                  case LoanStatus.ACCEPTED:
+                    return (
+                      <Button variant="primary" onClick={() => onCollateralize(loan.id)}>Collateralize Loan</Button>
+                    );
+                  case LoanStatus.REQUESTED:
+                  case LoanStatus.CLOSING:
+                  case LoanStatus.CLOSED:
+                    return <div></div>;
+                  case LoanStatus.OPEN:
+                    return (
+                      <>
+                        <Button variant="primary">Add Collateral</Button>
+                        <span>{" "}</span>
+                        <Button variant="primary" onClick={() => onRepay(loan.id)}>Repay Loan</Button>
+                      </>
+                    );
+                }
+              })()}
             </Col>
           </Row>
         </Container>
