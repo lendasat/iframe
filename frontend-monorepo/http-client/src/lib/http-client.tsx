@@ -10,6 +10,7 @@ interface AuthContextProps {
   logout: () => void;
   me: () => Promise<User | undefined>;
   contract: (id: string) => Promise<Contract | undefined>;
+  getLoanOffers: () => Promise<LoanOffer[] | undefined>;
   user: User | null;
 }
 
@@ -52,6 +53,19 @@ export interface Contract {
   originatorFee: number;
   refundAddress: string;
   repaymentAddress: string;
+}
+
+export interface LoanOffer {
+  id: string;
+  lender_id: string;
+  min_ltv: number;
+  interest_rate: number;
+  loan_amount_min: number;
+  loan_amount_max: number;
+  duration_months_min: number;
+  duration_months_max: number;
+  loan_asset_type: string;
+  loan_asset_chain: string;
 }
 
 type Props = {
@@ -184,8 +198,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ baseUrl, children })
     };
   };
 
+  const getLoanOffers = async (): Promise<LoanOffer[] | undefined> => {
+    try {
+      const response: AxiosResponse<LoanOffer[]> = await httpClient.get("/api/offers");
+      const offers = response.data;
+
+      return offers;
+    } catch (error) {
+      console.error(
+        `Failed to fetch loan offers: http: ${error.response?.status} and response: ${error.response?.data}`,
+      );
+      return undefined;
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ httpClient, register, login, logout, user, me, contract }}>
+    <AuthContext.Provider value={{ httpClient, register, login, logout, user, me, contract, getLoanOffers }}>
       {children}
     </AuthContext.Provider>
   );

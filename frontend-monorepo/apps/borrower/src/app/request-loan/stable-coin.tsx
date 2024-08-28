@@ -31,6 +31,23 @@ export class StableCoinHelper {
       StableCoin.USDC_ETH,
     ];
   }
+
+  static mapFromBackend(chain: string, asset: string): StableCoin | undefined {
+    if (chain === "Ethereum") {
+      if (asset === "Usdc") {
+        return StableCoin.USDC_ETH;
+      } else if (asset === "Usdt") {
+        return StableCoin.USDT_ETH;
+      }
+    } else if (chain === "Starknet") {
+      if (asset === "Usdc") {
+        return StableCoin.USDC_SN;
+      } else if (asset === "Usdt") {
+        return StableCoin.USDT_SN;
+      }
+    }
+    return undefined;
+  }
 }
 
 // Dropdown Component
