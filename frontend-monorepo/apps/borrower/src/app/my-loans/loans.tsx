@@ -19,7 +19,7 @@ function LoansComponent(props) {
             <small>Expiry</small>
           </Col>
           <Col md={2}>
-            <small>LTV Health</small>
+            <small>LTV</small>
           </Col>
           <Col md={1}>
             <small>Interest</small>
