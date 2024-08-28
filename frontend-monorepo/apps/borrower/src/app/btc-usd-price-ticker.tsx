@@ -1,31 +1,16 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Container } from "react-bootstrap";
+import { usePrice } from "./price-context";
 import CurrencyFormatter from "./usd";
 
-interface Price {
-  bitcoin: number;
-}
-
 export function PriceTicker() {
-  const [latestPrice, setLatestPrice] = useState<number | undefined>();
-
-  useEffect(() => {
-    const socket = new WebSocket("wss://ws.coincap.io/prices?assets=bitcoin");
-
-    socket.onmessage = (event) => {
-      const data: Price = JSON.parse(event.data);
-      setLatestPrice(data.bitcoin);
-    };
-
-    // Clean up on component unmount
-    return () => {
-      socket.close();
-    };
-  }, []);
+  const { latestPrice } = usePrice();
 
   return (
     <Container>
-      {latestPrice ? <CurrencyFormatter value={latestPrice} currency="USD" locale="en-US" /> : "Loading..."}
+      {latestPrice ? <CurrencyFormatter value={latestPrice} currency="USD" locale="en-US" /> : (
+        "Loading..."
+      )}
     </Container>
   );
 }

@@ -1,8 +1,9 @@
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Alert, Badge, Button, Col, Container, Form, Row } from "react-bootstrap";
 import { Link, useLocation } from "react-router-dom";
+import { usePrice } from "../price-context";
 import { formatCurrency } from "../usd";
 import { Lender } from "./lender";
 import { LoanFilterType } from "./loan-offers-filter";
@@ -14,6 +15,8 @@ export function RequestLoanSummary() {
   const { loanOffer, loanFilters } = location.state || {};
 
   const originatorFee = 0.01;
+
+  const { latestPrice } = usePrice();
 
   // Initialize filters
   const periodFilter = loanFilters.find((filter) => filter.type === LoanFilterType.PERIOD);
@@ -38,28 +41,7 @@ export function RequestLoanSummary() {
   const [amountError, setAmountError] = useState<string | null>(null);
   const [loanDuration, setLoanDuration] = useState<number>(initMonths);
 
-  useEffect(() => {
-    async function fetchBTCPrice() {
-      try {
-        const response = await fetch("https://api.coincap.io/v2/assets/bitcoin/");
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        const priceUsd = data.data.priceUsd;
-
-        setCollateral(loanAmount / (loanOffer.ltv / 100) / priceUsd);
-      } catch (error) {
-        console.error("Failed to fetch BTC price:", error);
-      }
-    }
-
-    fetchBTCPrice();
-  }, [loanAmount, loanOffer.ltv]);
-
-  const [collateral, setCollateral] = useState<number>(0);
+  const [collateral] = useState<number>(loanAmount / (loanOffer.ltv / 100) / latestPrice);
 
   const handleLoanAmountChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseFloat(event.target.value);
