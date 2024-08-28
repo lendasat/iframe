@@ -15,6 +15,7 @@ export interface LoanAmount {
 }
 
 export interface LoanOffer {
+  id: string;
   lender: LenderProfile;
   amount: LoanAmount;
   duration: LoanDuration;
@@ -23,7 +24,12 @@ export interface LoanOffer {
   coins: StableCoin[];
 }
 
-export function LoanOfferComponent(props) {
+interface LoanOfferProps {
+  loanOffer: LoanOffer;
+  onRequest: (loanOffer: LoanOffer) => void;
+}
+
+export function LoanOfferComponent(props: LoanOfferProps) {
   const { loanOffer, onRequest } = props;
   const { lender, amount, duration, ltv, interest, coins } = loanOffer;
 
