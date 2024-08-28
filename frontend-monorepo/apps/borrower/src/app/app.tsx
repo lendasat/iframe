@@ -6,6 +6,7 @@ import Logout from "./auth/logout";
 import Registration from "./auth/registration";
 import DashBoard from "./dash-board";
 import MyAccount from "./my-account";
+import { CollateralizeLoan } from "./my-loans/collateralize-loan";
 import MyLoans from "./my-loans/my-loans";
 import { RepayLoan } from "./my-loans/repay-loan";
 import { PriceProvider } from "./price-context";
@@ -44,7 +45,8 @@ function App() {
                 <Route path="/request-loan" element={<RequestLoan />} />
                 <Route path="/my-contracts">
                   <Route index element={<MyLoans />} />
-                  <Route path={":id"} element={<RepayLoan />} />
+                  <Route path={"repay/:id"} element={<RepayLoan />} />
+                  <Route path={"collateralize/:id"} element={<CollateralizeLoan />} />
                 </Route>
                 <Route path="/my-account" element={<MyAccount />} />
                 <Route path="/wallet" element={<Wallet />} />

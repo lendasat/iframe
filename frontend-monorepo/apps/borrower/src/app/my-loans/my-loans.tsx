@@ -13,7 +13,10 @@ function MyLoans() {
         <LoansComponent
           loans={loans.filter((loan) => loan.status !== LoanStatus.CLOSED)}
           onRepay={(loan_id) => {
-            navigate(loan_id);
+            navigate(`repay/${loan_id}`);
+          }}
+          onCollateralize={(loan_id) => {
+            navigate(`collateralize/${loan_id}`);
           }}
         />
       </div>
@@ -39,7 +42,7 @@ function getMockData(): Loan[] {
     expiry: new Date(),
     interest: 8,
     collateral: 0.253,
-    status: LoanStatus.REQUESTED,
+    status: LoanStatus.ACCEPTED,
     lender: {
       name: "Lord Lendalot 1",
       rate: 100,

@@ -52,6 +52,8 @@ export interface Contract {
   originatorFee: number;
   refundAddress: string;
   repaymentAddress: string;
+  collateralAddress: string;
+  loanAddress: string;
 }
 
 type Props = {
@@ -179,8 +181,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ baseUrl, children })
         loans: 345,
       },
       originatorFee: 0,
+      collateralAddress: "bc1qnrq90k7us7lpnq6xwf76vyuhrsf3wxaz3cmtc2",
       refundAddress: "bc1qnrq90k7us7lpnq6xwf76vyuhrsf3wxaz3cmtc2",
-      repaymentAddress: "bc1qnrq90k7us7lpnq6xwf76vyuhrsf3wxaz3cmtc2",
+      repaymentAddress: "0x12314014910249012940129410240124",
+      loanAddress: "0x124124j12j4oh12o4h12h4og12o4p1h24oih124",
     };
   };
 

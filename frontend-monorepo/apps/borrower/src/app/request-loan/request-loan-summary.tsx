@@ -14,8 +14,7 @@ export function RequestLoanSummary() {
   const location = useLocation();
   const { loanOffer, loanFilters } = location.state || {};
 
-  const originatorFee = 0.01;
-
+  const ORIGINATOR_FEE = 0.01;
   const { latestPrice } = usePrice();
 
   // Initialize filters
@@ -42,6 +41,8 @@ export function RequestLoanSummary() {
   const [loanDuration, setLoanDuration] = useState<number>(initMonths);
 
   const [collateral] = useState<number>(loanAmount / (loanOffer.ltv / 100) / latestPrice);
+
+  const loanOriginatorFee = (loanAmount / latestPrice) * ORIGINATOR_FEE;
 
   const handleLoanAmountChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseFloat(event.target.value);
@@ -161,11 +162,11 @@ export function RequestLoanSummary() {
               <Col className="text-end">
                 <Container className="p-0" fluid>
                   <Row className="text-end">
-                    <Col>{(collateral * originatorFee).toFixed(4)} BTC</Col>
+                    <Col>{loanOriginatorFee.toFixed(4)} BTC</Col>
                   </Row>
                   <Row>
                     <Col>
-                      <small>~{formatCurrency(loanAmount * originatorFee)}</small>
+                      <small>~{formatCurrency(loanAmount * ORIGINATOR_FEE)}</small>
                     </Col>
                   </Row>
                 </Container>
