@@ -14,6 +14,7 @@ mod tests {
     use reqwest::cookie::Jar;
     use reqwest::Client;
     use rust_decimal_macros::dec;
+    use serde_json::json;
     use std::sync::Arc;
     use std::sync::Once;
     use std::time::Duration;
@@ -22,6 +23,12 @@ mod tests {
     #[ignore]
     #[tokio::test]
     async fn open_loan() {
+        let env_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
+        let env_path = format!("{env_dir}/../.env");
+        dotenv::from_filename(env_path).ok();
+
+        let network = std::env::var("NETWORK").unwrap_or("regtest".to_string());
+
         init_tracing();
 
         // 0. Log in borrower and lender.
@@ -103,7 +110,7 @@ mod tests {
             loan_id: loan_offer.id,
             initial_ltv: dec!(0.25),
             loan_amount: dec!(20_000),
-            initial_collateral_sats: 100_000_000,
+            initial_collateral_sats: 100_000,
             duration_months: 6,
             borrower_payout_address,
             borrower_pk,
@@ -146,33 +153,60 @@ mod tests {
         let contracts: Vec<Contract> = res.json().await.unwrap();
         let contract = contracts.iter().find(|c| c.id == contract.id).unwrap();
 
-        // In production, the borrower would use an _external_ wallet to publish the transaction. As
-        // such, we can fake all this.
-        let mempool = Client::new();
-        let res = mempool
-            .post("http://localhost:7339/tx")
-            .json(&mempool_mock::PostTransaction {
-                address: contract
-                    .contract_address
-                    .clone()
-                    .expect("contract address")
-                    .assume_checked()
-                    .to_string(),
-                amount: contract.initial_collateral_sats,
-            })
-            .send()
-            .await
-            .unwrap();
+        if network == "regtest" {
+            tracing::info!("Running on regtest");
 
-        assert!(res.status().is_success());
+            // In production, the borrower would use an _external_ wallet to publish the
+            // transaction. As such, we can fake all this.
+            let mempool = Client::new();
+            let res = mempool
+                .post("http://localhost:7339/tx")
+                .json(&mempool_mock::PostTransaction {
+                    address: contract
+                        .contract_address
+                        .clone()
+                        .expect("contract address")
+                        .assume_checked()
+                        .to_string(),
+                    amount: contract.initial_collateral_sats,
+                })
+                .send()
+                .await
+                .unwrap();
 
-        let res = mempool
-            .post("http://localhost:7339/mine/6")
-            .send()
-            .await
-            .unwrap();
+            assert!(res.status().is_success());
 
-        assert!(res.status().is_success());
+            let res = mempool
+                .post("http://localhost:7339/mine/6")
+                .send()
+                .await
+                .unwrap();
+
+            assert!(res.status().is_success());
+        } else {
+            tracing::info!("Running on signet");
+
+            let faucet = Client::new();
+
+            let contract_address = contract
+                .contract_address
+                .clone()
+                .expect("contract address")
+                .assume_checked()
+                .to_string();
+
+            let res = faucet
+                .post("https://faucet.mutinynet.com/api/onchain")
+                .json(&json!({
+                    "sats": contract.initial_collateral_sats,
+                    "address": contract_address
+                }))
+                .send()
+                .await
+                .unwrap();
+
+            assert!(res.status().is_success());
+        }
 
         // 5. Hub sees collateral funding TX.
 
@@ -192,6 +226,7 @@ mod tests {
             "localhost:7337",
             &contract.id,
             ContractStatus::CollateralConfirmed,
+            &network,
         )
         .await
         .unwrap();
@@ -205,8 +240,15 @@ mod tests {
         url: &str,
         contract_id: &str,
         status: ContractStatus,
+        network: &str,
     ) -> Result<()> {
-        tokio::time::timeout(Duration::from_secs(10), async {
+        let timeout = if network == "regtest" {
+            Duration::from_secs(10)
+        } else {
+            Duration::from_secs(120)
+        };
+
+        tokio::time::timeout(timeout, async {
             loop {
                 let res = client
                     .get(format!("http://{url}/api/contracts"))

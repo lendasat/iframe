@@ -1,7 +1,8 @@
 #[derive(Debug, Clone)]
 pub struct Config {
     pub database_url: String,
-    pub mempool_url: String,
+    pub mempool_rest_url: String,
+    pub mempool_ws_url: String,
     pub network: String,
     pub seed_file: String,
     pub fallback_xpub: String,
@@ -21,7 +22,9 @@ pub struct Config {
 impl Config {
     pub fn init() -> Config {
         let database_url = std::env::var("DB_URL").expect("DATABASE_URL must be set");
-        let mempool_url = std::env::var("MEMPOOL_URL").expect("MEMPOOL_URL must be set");
+        let mempool_rest_url =
+            std::env::var("MEMPOOL_REST_URL").expect("MEMPOOL_REST_URL must be set");
+        let mempool_ws_url = std::env::var("MEMPOOL_WS_URL").expect("MEMPOOL_WS_URL must be set");
 
         let network = std::env::var("NETWORK").expect("NETWORK must be set");
 
@@ -54,7 +57,8 @@ impl Config {
             || smtp_from.is_none();
         Config {
             database_url,
-            mempool_url,
+            mempool_rest_url,
+            mempool_ws_url,
             network,
             seed_file,
             fallback_xpub,

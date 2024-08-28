@@ -25,13 +25,14 @@ use tokio_tungstenite::WebSocketStream;
 use tracing::instrument;
 use xtra::Mailbox;
 
-const MIN_CONFIRMATIONS: u64 = 6;
+const MIN_CONFIRMATIONS: u64 = 2;
 
 pub struct Actor {
     tracked_contracts: HashMap<Address, TrackedContract>,
     block_height: u64,
     db: Pool<Postgres>,
     rest_client: MempoolRestClient,
+    ws_url: String,
     ws_sink: Option<SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>>,
 }
 
@@ -54,14 +55,15 @@ enum ContractStatus {
 }
 
 impl Actor {
-    pub fn new(url: String, db: Pool<Postgres>) -> Self {
-        let rest_client = MempoolRestClient::new(url);
+    pub fn new(rest_url: String, ws_url: String, db: Pool<Postgres>) -> Self {
+        let rest_client = MempoolRestClient::new(rest_url);
 
         Self {
             tracked_contracts: HashMap::default(),
             block_height: 0,
             db,
             rest_client,
+            ws_url,
             ws_sink: None,
         }
     }
@@ -89,7 +91,7 @@ impl xtra::Actor for Actor {
 
         self.block_height = starting_block_height;
 
-        let (ws_stream, _) = connect_async(format!("ws://{}/ws", self.rest_client.url))
+        let (ws_stream, _) = connect_async(format!("{}/ws", self.ws_url))
             .await
             .context("Failed to establish WS connection")?;
 
@@ -147,8 +149,16 @@ impl xtra::Actor for Actor {
                                         let _ = actor.send(NewBlockHeight(height)).await;
                                     }
                                     // Subsequent blocks.
-                                    WsResponse::Block { block } => {
+                                    WsResponse::Block {
+                                        block,
+                                        block_transactions,
+                                    } => {
                                         let _ = actor.send(NewBlockHeight(block.height)).await;
+
+                                        if let Some(transactions) = block_transactions {
+                                            let _ =
+                                                actor.send(ContractUpdate { transactions }).await;
+                                        }
                                     }
                                     WsResponse::AddressTransactions(AddressTransactions {
                                         address_transactions: transactions,
@@ -444,8 +454,7 @@ impl MempoolRestClient {
     async fn get_address_transactions(&self, address: &Address) -> Result<Vec<Transaction>> {
         let res = self
             .client
-            // FIXME: Consider https!
-            .get(format!("http://{}/api/address/{address}/txs", self.url))
+            .get(format!("{}/api/address/{address}/txs", self.url))
             .send()
             .await?;
 
@@ -459,7 +468,7 @@ impl MempoolRestClient {
     async fn get_block_tip_height(&self) -> Result<u64> {
         let res = self
             .client
-            .get(format!("http://{}/api/blocks/tip/height", self.url))
+            .get(format!("{}/api/blocks/tip/height", self.url))
             .send()
             .await?;
 
@@ -520,8 +529,14 @@ pub enum WsRequest {
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(untagged)]
 pub enum WsResponse {
-    Blocks { blocks: Vec<Block> },
-    Block { block: Block },
+    Blocks {
+        blocks: Vec<Block>,
+    },
+    Block {
+        block: Block,
+        #[serde(rename = "block-transactions")]
+        block_transactions: Option<Vec<Transaction>>,
+    },
     AddressTransactions(AddressTransactions),
     BlockTransactions(BlockTransactions),
 }

@@ -112,6 +112,8 @@ impl Blockchain {
         for height in (self.height + 1)..=new_height {
             let _ = self.events_tx.send(WsResponse::Block {
                 block: Block { height },
+                // We don't like this pattern, so we don't use it.
+                block_transactions: None,
             });
         }
 
