@@ -2,7 +2,7 @@ import { faChevronDown, faChevronUp, faMinus, IconDefinition } from "@fortawesom
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useState } from "react";
 import { Col, Container, Row } from "react-bootstrap";
-import { LoanOffer, LoanOfferComponent } from "./loan-offer";
+import { LoanOfferComponent } from "./loan-offer";
 
 enum Sort {
   NONE = "NONE",
@@ -45,11 +45,13 @@ class SortHelper {
   }
 }
 
-function LoanOffersComponent({ loanOffers }: { loanOffers: LoanOffer[] }) {
+function LoanOffersComponent(props) {
   const [amountSort, setAmountSort] = useState<Sort>(Sort.NONE);
   const [durationSort, setDurationSort] = useState<Sort>(Sort.NONE);
   const [ltvSort, setLTVSort] = useState<Sort>(Sort.NONE);
   const [interestSort, setInterestSort] = useState<Sort>(Sort.NONE);
+
+  const { loanOffers, onRequest } = props;
 
   return (
     <>
@@ -117,7 +119,7 @@ function LoanOffersComponent({ loanOffers }: { loanOffers: LoanOffer[] }) {
         return SortHelper.sort(interestSort, a.interest, b.interest);
       }).map((loanOffer, index) => (
         <div key={index} className={"mb-3"}>
-          <LoanOfferComponent key={index} {...loanOffer} />
+          <LoanOfferComponent key={index} loanOffer={loanOffer} onRequest={onRequest} />
         </div>
       ))}
     </>

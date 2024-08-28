@@ -1,7 +1,7 @@
 import React from "react";
 import { Form } from "react-bootstrap";
 import { Slider, SliderProps } from "./slider";
-import { StableCoin, StableCoinDropdown } from "./stable-coin";
+import { StableCoin, StableCoinDropdown, StableCoinHelper } from "./stable-coin";
 
 export enum LoanFilterType {
   AMOUNT = "AMOUNT",
@@ -71,8 +71,9 @@ function LoanOffersFilter({ onChange }) {
           <small>Stable coin</small>
         </Form.Label>
         <StableCoinDropdown
-          onSelect={(e) => {
-            const value = e.target.value as StableCoin;
+          coins={StableCoinHelper.all()}
+          filter={true}
+          onSelect={(value) => {
             const filter: LoanFilter = { type: LoanFilterType.STABLECOIN, value };
             onChange(filter);
           }}

@@ -1,7 +1,7 @@
 import React from "react";
 import PriceTicker from "./btc-usd-price-ticker";
 
-interface Price {
+export interface Price {
   bitcoin: number;
 }
 

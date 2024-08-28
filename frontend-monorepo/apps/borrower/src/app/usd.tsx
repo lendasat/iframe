@@ -1,6 +1,6 @@
 import { FC } from "react";
 
-const formatCurrency = (value: number) => {
+export const formatCurrency = (value: number) => {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
