@@ -1,9 +1,9 @@
+import { LtvProgressBar } from "@frontend-monorepo/ui-shared";
 import React from "react";
 import { Badge, Button, Card, Col, Container, Row } from "react-bootstrap";
 import { usePrice } from "../price-context";
 import { LenderProfile } from "../request-loan/lender";
 import CurrencyFormatter from "../usd";
-import LTVProgressBar from "./ltv-progress-bar";
 
 export enum LoanStatus {
   REQUESTED = "REQUESTED",
@@ -33,7 +33,7 @@ export function LoanComponent(props) {
   // reversing the current ltv ratio to better illustrate the health of the ltv. A lower number means that the health is
   // bad, while a higher number means the ltv is good. The ltv ratio would work the other way around as a higher ltv ratio
   // means the collateral is moving closer to the actual loan principal.
-  const reversedCurrentLTV = ((1 - (amount / (collateral * latestPrice))) * 100).toFixed(2);
+  const ltvRatio = (amount / (collateral * latestPrice)) * 100;
 
   return (
     <Card>
@@ -45,7 +45,7 @@ export function LoanComponent(props) {
             </Col>
             <Col md={1}>{expiry.toLocaleDateString("en-US")}</Col>
             <Col md={2}>
-              <LTVProgressBar ltv={reversedCurrentLTV} />
+              <LtvProgressBar value={ltvRatio} />
             </Col>
             <Col md={1}>{interest}%</Col>
             <Col md={2}>{collateral} BTC</Col>
