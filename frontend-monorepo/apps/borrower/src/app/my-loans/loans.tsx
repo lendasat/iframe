@@ -1,9 +1,12 @@
 import { Col, Container, Row } from "react-bootstrap";
-import { LoanComponent } from "./loan";
+import { Loan, LoanComponent } from "./loan";
 
-function LoansComponent(props) {
-  const { loans, onRepay } = props;
+interface LoansComponentProps {
+  loans: Loan[];
+  onRepay: (loan: string) => void;
+}
 
+function LoansComponent({ loans, onRepay }: LoansComponentProps) {
   if (loans.length === 0) {
     return <p>You don't have any loans yet.</p>;
   }

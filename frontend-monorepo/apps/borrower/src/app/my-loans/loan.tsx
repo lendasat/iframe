@@ -24,8 +24,12 @@ export interface Loan {
   lender: LenderProfile;
 }
 
-export function LoanComponent(props) {
-  const { loan, onRepay } = props;
+interface LoanComponentProps {
+  loan: Loan;
+  onRepay: (loan: string) => void;
+}
+
+export function LoanComponent({ loan, onRepay }: LoanComponentProps) {
   const { latestPrice } = usePrice();
 
   const { amount, expiry, interest, collateral, status } = loan;
@@ -54,7 +58,7 @@ export function LoanComponent(props) {
                 <>
                   <Button variant="primary">Add Collateral</Button>
                   <span>{" "}</span>
-                  <Button variant="primary" onClick={() => onRepay(loan)}>Repay Loan</Button>
+                  <Button variant="primary" onClick={() => onRepay(loan.id)}>Repay Loan</Button>
                 </>
               )}
             </Col>

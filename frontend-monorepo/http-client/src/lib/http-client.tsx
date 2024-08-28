@@ -9,6 +9,7 @@ interface AuthContextProps {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   me: () => Promise<User | undefined>;
+  contract: (id: string) => Promise<Contract | undefined>;
   user: User | null;
 }
 
@@ -17,12 +18,40 @@ interface AuthProviderProps {
   children: React.ReactNode;
 }
 
-export interface User {
+export class User {
   id: number;
   name: string;
   email: string;
   verified: boolean;
   created_at: Date;
+}
+
+export enum ContractStatus {
+  REQUESTED = "REQUESTED",
+  OPEN = "OPEN",
+  CLOSING = "CLOSING",
+  CLOSED = "CLOSED",
+}
+
+export interface LenderProfile {
+  name: string;
+  rate: number;
+  loans: number;
+}
+
+export interface Contract {
+  id: string;
+  amount: number;
+  opened: Date;
+  repaid: Date;
+  expiry: Date;
+  interest: number;
+  collateral: number;
+  status: ContractStatus;
+  lender: LenderProfile;
+  originatorFee: number;
+  refundAddress: string;
+  repaymentAddress: string;
 }
 
 type Props = {
@@ -134,8 +163,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ baseUrl, children })
     }
   };
 
+  const contract = async (id: string): Promise<Contract> => {
+    return {
+      id: "06a98ef2-3f4b-4c78-8fd1-9e8f7329da78",
+      amount: 14000,
+      opened: new Date(),
+      repaid: new Date(),
+      expiry: new Date(),
+      interest: 11,
+      collateral: 0.465,
+      status: ContractStatus.OPEN,
+      lender: {
+        name: "Lord Lendalot 2",
+        rate: 99,
+        loans: 345,
+      },
+      originatorFee: 0,
+      refundAddress: "bc1qnrq90k7us7lpnq6xwf76vyuhrsf3wxaz3cmtc2",
+      repaymentAddress: "bc1qnrq90k7us7lpnq6xwf76vyuhrsf3wxaz3cmtc2",
+    };
+  };
+
   return (
-    <AuthContext.Provider value={{ httpClient, register, login, logout, user, me }}>
+    <AuthContext.Provider value={{ httpClient, register, login, logout, user, me, contract }}>
       {children}
     </AuthContext.Provider>
   );
