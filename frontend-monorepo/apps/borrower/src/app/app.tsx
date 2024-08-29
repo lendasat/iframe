@@ -5,6 +5,7 @@ import ForgotPassword from "./auth/forgot-password";
 import Login from "./auth/login";
 import Logout from "./auth/logout";
 import Registration from "./auth/registration";
+import ResetPassword from "./auth/reset-password";
 import DashBoard from "./dash-board";
 import MyAccount from "./my-account";
 import { CollateralizeLoan } from "./my-loans/collateralize-loan";
@@ -64,6 +65,7 @@ function App() {
           <Route index element={<Login />} />
           <Route path="/registration" element={<Registration />} />
           <Route path="/forgotpassword" element={<ForgotPassword />} />
+          <Route path="/resetpassword/:token" element={<ResetPassword />} />
           <Route path="/logout" element={<Logout />} />
           <Route path="/login" element={<Login />} />
         </Routes>

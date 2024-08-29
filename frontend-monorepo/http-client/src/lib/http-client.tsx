@@ -2,6 +2,8 @@
 
 import axios, { AxiosInstance, AxiosResponse } from "axios";
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { types } from "sass";
+import Error = types.Error;
 
 interface AuthContextProps {
   httpClient: AxiosInstance;
@@ -12,6 +14,7 @@ interface AuthContextProps {
   contract: (id: string) => Promise<Contract | undefined>;
   getLoanOffers: () => Promise<LoanOffer[] | undefined>;
   forgotPassword: (email: string) => Promise<string>;
+  resetPassword: (password: string, password_confirm: string, resetPasswordToken: string) => Promise<string>;
   user: User | null;
 }
 
@@ -77,12 +80,12 @@ type Props = {
 
 export const AuthIsSignedIn = ({ children }: Props) => {
   const { user } = useContext(AuthContext);
-  return <>{user !== null ? children : null}</>;
+  return <>{user !== null ? children : ""}</>;
 };
 
 export const AuthIsNotSignedIn = ({ children }: Props) => {
   const { user } = useContext(AuthContext);
-  return <>{user === null ? children : null}</>;
+  return <>{user === null ? children : ""}</>;
 };
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
@@ -220,17 +223,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ baseUrl, children })
       const response = await httpClient.post("/api/auth/forgotpassword", { email: email });
       return response.data.message;
     } catch (error) {
-      let msg = `Failed to reset password: http: ${error.response?.status} and response: ${error.response?.data}`;
-      console.error(
-        msg,
-      );
+      const msg = `Failed to reset password: http: ${error.response?.status} and response: ${error.response?.data}`;
+      console.error(msg);
       return msg;
+    }
+  };
+
+  const resetPassword = async (
+    password: string,
+    passwordConfirm: string,
+    passwordResetToken: string,
+  ): Promise<string> => {
+    try {
+      const response = await httpClient.put(`/api/auth/resetpassword/${passwordResetToken}`, {
+        password,
+        passwordConfirm,
+      });
+      return response.data.message;
+    } catch (error) {
+      const msg =
+        `Failed to reset password: http: ${error.response?.status} and response: ${error.response?.data.message}`;
+      console.error(msg);
+      throw new Error(`HTTP-${error.response?.status}. ${error.response?.data.message}`);
     }
   };
 
   return (
     <AuthContext.Provider
-      value={{ httpClient, register, login, logout, user, me, contract, getLoanOffers, forgotPassword }}
+      value={{ httpClient, register, login, logout, user, me, contract, getLoanOffers, forgotPassword, resetPassword }}
     >
       {children}
     </AuthContext.Provider>

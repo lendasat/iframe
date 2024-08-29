@@ -16,7 +16,7 @@ export function ForgotPasswordForm({ handleSubmit }: ForgotPasswordProps) {
     e.preventDefault();
     setLoading(true);
     try {
-      let success = await handleSubmit(email);
+      const success = await handleSubmit(email);
       setSuccess(success);
     } catch (err) {
       console.error("Failed resetting password: ", err);
@@ -32,6 +32,13 @@ export function ForgotPasswordForm({ handleSubmit }: ForgotPasswordProps) {
           <div className="p-4 rounded border border-primary" style={{ backgroundColor: "#f8f9fa" }}>
             <Logo height={80} width={400} className="mb-4 d-block mx-auto" />
 
+            {(!error && !success)
+              ? <div className="alert alert-info">Please enter your email to reset your password.</div>
+              : ""}
+
+            {error && <div className="alert alert-danger">{error}</div>}
+            {success && <div className="alert alert-success">{success}</div>}
+
             <Form onSubmit={onSubmit}>
               <Form.Group controlId="formBasicEmail" className="mb-3">
                 <Form.Control
@@ -43,9 +50,6 @@ export function ForgotPasswordForm({ handleSubmit }: ForgotPasswordProps) {
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </Form.Group>
-
-              {error && <div className="alert alert-danger">{error}</div>}
-              {success && <div className="alert alert-success">{success}</div>}
 
               <Button variant="primary" type="submit" className="w-100 p-2" disabled={isLoading}>
                 {isLoading ? "Loading…" : "Submit"}

@@ -295,7 +295,7 @@ pub async fn forgot_password_handler(
         OffsetDateTime::now_utc() + time::Duration::minutes(PASSWORD_TOKEN_EXPIRES_IN_MINUTES);
 
     let password_reset_url = format!(
-        "{}/api/auth/resetpassword/{}",
+        "{}/resetpassword/{}",
         data.config.borrower_frontend_origin.to_owned(),
         password_reset_token
     );
@@ -373,8 +373,9 @@ pub async fn reset_password_handler(
         .same_site(SameSite::Lax)
         .http_only(true);
 
-    let mut response =
-        Response::new(json!({"message": "Password data updated successfully"}).to_string());
+    let mut response = Response::new(
+        json!({"message": "Password changed successfully. Please continue to login."}).to_string(),
+    );
     response.headers_mut().insert(
         header::SET_COOKIE,
         cookie.to_string().parse().map_err(|error| {
