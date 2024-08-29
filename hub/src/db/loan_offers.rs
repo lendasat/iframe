@@ -131,3 +131,36 @@ pub async fn insert_loan_offer(
 
     Ok(loan)
 }
+
+pub(crate) async fn loan_by_id(
+    pool: &Pool<Postgres>,
+    loan_id: String,
+) -> Result<Option<LoanOffer>> {
+    let loan = sqlx::query_as!(
+        LoanOffer,
+        r#"
+        SELECT
+            id,
+            lender_id,
+            name,
+            min_ltv,
+            interest_rate,
+            loan_amount_min,
+            loan_amount_max,
+            duration_months_min,
+            duration_months_max,
+            loan_asset_type AS "loan_asset_type: crate::model::LoanAssetType",
+            loan_asset_chain AS "loan_asset_chain: crate::model::LoanAssetChain",
+            status AS "status: crate::model::LoanOfferStatus",
+            created_at,
+            updated_at
+        FROM loan_offers
+        WHERE id = $1
+        "#,
+        loan_id
+    )
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(loan)
+}
