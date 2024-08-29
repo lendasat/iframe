@@ -42,7 +42,7 @@ function RequestLoan() {
         for (const filter of loanFilters) {
           switch (filter.type) {
             case LoanFilterType.AMOUNT: {
-              if (filter.value === undefined) {
+              if (filter.value === undefined || filter.value === "") {
                 continue;
               }
               if (offer.amount.min > filter.value || offer.amount.max < filter.value) {
