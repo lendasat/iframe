@@ -13,7 +13,7 @@ function MyAccount() {
   const handleResetPassword = async () => {
     setLoading(true);
     try {
-      let successMsg = await forgotPassword(user?.email ?? "");
+      const successMsg = await forgotPassword(user?.email ?? "");
       setSuccess(successMsg);
     } catch (err) {
       console.error("Failed resetting password: ", err);

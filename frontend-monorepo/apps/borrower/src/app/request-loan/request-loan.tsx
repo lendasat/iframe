@@ -1,11 +1,10 @@
-import { LoanOffer, useAuth } from "@frontend-monorepo/http-client";
+import { useAuth } from "@frontend-monorepo/http-client";
 import { useEffect, useState } from "react";
 import { Col, Container, Row } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
-import { v4 as uuidv4 } from "uuid";
 import LoanOffersComponent from "./loan-offers";
 import LoanOffersFilter, { LoanFilter, LoanFilterType } from "./loan-offers-filter";
-import { StableCoin, StableCoinHelper } from "./stable-coin";
+import { StableCoinHelper } from "./stable-coin";
 
 function RequestLoan() {
   const { getLoanOffers } = useAuth();
@@ -85,7 +84,7 @@ function RequestLoan() {
     };
 
     fetchLoans();
-  }, [loanFilters]);
+  }, [loanFilters, getLoanOffers]);
 
   const navigate = useNavigate();
   return (

@@ -1,5 +1,5 @@
 import { useAuth } from "@frontend-monorepo/http-client";
-import { ForgotPasswordForm, ResetPasswordForm } from "@frontend-monorepo/ui-shared";
+import { ResetPasswordForm } from "@frontend-monorepo/ui-shared";
 import React from "react";
 import { useParams } from "react-router-dom";
 
