@@ -264,8 +264,7 @@ pub async fn forgot_password_handler(
     State(data): State<Arc<AppState>>,
     Json(body): Json<ForgotPasswordSchema>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let success_message =
-        "You will receive a password reset email if a user with that email exists.";
+    let success_message = "You will receive a password reset link via email.";
     let email_address = body.email.to_owned().to_ascii_lowercase();
 
     let user: User = get_user_by_email(&data.db, body.email.as_str())
