@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            id,\n            lender_id,\n            name,\n            min_ltv,\n            interest_rate,\n            loan_amount_min,\n            loan_amount_max,\n            duration_months_min,\n            duration_months_max,\n            loan_asset_type AS \"loan_asset_type: crate::model::LoanAssetType\",\n            loan_asset_chain AS \"loan_asset_chain: crate::model::LoanAssetChain\",\n            status AS \"status: crate::model::LoanOfferStatus\",\n            created_at,\n            updated_at\n        FROM loan_offers\n        WHERE lender_id = $1\n        ",
+  "query": "\n        SELECT\n            id,\n            lender_id,\n            name,\n            min_ltv,\n            interest_rate,\n            loan_amount_min,\n            loan_amount_max,\n            duration_months_min,\n            duration_months_max,\n            loan_asset_type AS \"loan_asset_type: crate::model::LoanAssetType\",\n            loan_asset_chain AS \"loan_asset_chain: crate::model::LoanAssetChain\",\n            status AS \"status: crate::model::LoanOfferStatus\",\n            loan_repayment_address,\n            created_at,\n            updated_at\n        FROM loan_offers\n        WHERE status = 'Available'\n        ",
   "describe": {
     "columns": [
       {
@@ -96,21 +96,25 @@
       },
       {
         "ordinal": 12,
+        "name": "loan_repayment_address",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 13,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 13,
+        "ordinal": 14,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
-      "Left": [
-        "Bpchar"
-      ]
+      "Left": []
     },
     "nullable": [
+      false,
       false,
       false,
       false,
@@ -127,5 +131,5 @@
       false
     ]
   },
-  "hash": "5831a201845e19a52fcb34932f82b814ac2f80b0246d0d8f6da35fd41467d945"
+  "hash": "e526fa7c0bcba78202c0a0d97f9755cd4a98e10170c3c272bd6b584118cbdd3a"
 }

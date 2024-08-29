@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            id,\n            lender_id,\n            name,\n            min_ltv,\n            interest_rate,\n            loan_amount_min,\n            loan_amount_max,\n            duration_months_min,\n            duration_months_max,\n            loan_asset_type AS \"loan_asset_type: crate::model::LoanAssetType\",\n            loan_asset_chain AS \"loan_asset_chain: crate::model::LoanAssetChain\",\n            status AS \"status: crate::model::LoanOfferStatus\",\n            created_at,\n            updated_at\n        FROM loan_offers\n        WHERE id = $1\n        ",
+  "query": "\n        INSERT INTO loan_offers (\n          id,\n          lender_id,\n          name,\n          min_ltv,\n          interest_rate,\n          loan_amount_min,\n          loan_amount_max,\n          duration_months_min,\n          duration_months_max,\n          loan_asset_type,\n          loan_asset_chain,\n          status,\n          loan_repayment_address\n        )\n        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)\n        RETURNING\n          id,\n          lender_id,\n          name,\n          min_ltv,\n          interest_rate,\n          loan_amount_min,\n          loan_amount_max,\n          duration_months_min,\n          duration_months_max,\n          loan_asset_type AS \"loan_asset_type: crate::model::LoanAssetType\",\n          loan_asset_chain AS \"loan_asset_chain: crate::model::LoanAssetChain\",\n          status AS \"status: crate::model::LoanOfferStatus\",\n          loan_repayment_address,\n          created_at,\n          updated_at\n        ",
   "describe": {
     "columns": [
       {
@@ -96,18 +96,66 @@
       },
       {
         "ordinal": 12,
+        "name": "loan_repayment_address",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 13,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 13,
+        "ordinal": 14,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
-        "Bpchar"
+        "Bpchar",
+        "Bpchar",
+        "Varchar",
+        "Numeric",
+        "Numeric",
+        "Numeric",
+        "Numeric",
+        "Int4",
+        "Int4",
+        {
+          "Custom": {
+            "name": "loan_asset_type",
+            "kind": {
+              "Enum": [
+                "Usdc",
+                "Usdt"
+              ]
+            }
+          }
+        },
+        {
+          "Custom": {
+            "name": "loan_asset_chain",
+            "kind": {
+              "Enum": [
+                "Ethereum",
+                "Starknet"
+              ]
+            }
+          }
+        },
+        {
+          "Custom": {
+            "name": "loan_offer_status",
+            "kind": {
+              "Enum": [
+                "Available",
+                "Unavailable",
+                "Deleted"
+              ]
+            }
+          }
+        },
+        "Varchar"
       ]
     },
     "nullable": [
@@ -124,8 +172,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "2e0e1f23c640559fcbeb57df89b75e6e4b3ee0d6a26604b46e1d64af42effbaf"
+  "hash": "94cae09a515f1cdc6f9b091ef81a33174123fe57297521eaf78e516813d0d524"
 }

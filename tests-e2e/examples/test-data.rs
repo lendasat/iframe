@@ -99,6 +99,7 @@ async fn insert_loan_offer(pool: &Pool<Postgres>, lender: User) -> Result<LoanOf
             duration_months_max: 12,
             loan_asset_type: LoanAssetType::Usdc,
             loan_asset_chain: LoanAssetChain::Ethereum,
+            loan_repayment_address: "0x4B0897b0513fdc7C541B6d9D7E929C4e5364D2dB".to_string(),
         },
         lender.id,
     )

@@ -84,6 +84,7 @@ pub struct CreateLoanOfferSchema {
     pub duration_months_max: i32,
     pub loan_asset_type: LoanAssetType,
     pub loan_asset_chain: LoanAssetChain,
+    pub loan_repayment_address: String,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -111,6 +112,7 @@ pub struct LoanOffer {
     pub loan_asset_type: LoanAssetType,
     pub loan_asset_chain: LoanAssetChain,
     pub status: LoanOfferStatus,
+    pub loan_repayment_address: String,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
     #[serde(with = "time::serde::rfc3339")]
