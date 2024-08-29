@@ -1,12 +1,14 @@
+import { Contract } from "@frontend-monorepo/http-client";
 import { Col, Container, Row } from "react-bootstrap";
-import { Loan, LoanComponent } from "./loan";
+import { LoanComponent } from "./loan";
 
 interface LoansComponentProps {
-  loans: Loan[];
+  loans: Contract[];
   onRepay: (loan: string) => void;
+  onCollateralize: (loan: string) => void;
 }
 
-function LoansComponent({ loans, onRepay, onCollateralize }: LoansComponentProps) {
+function ContractsComponent({ loans, onRepay, onCollateralize }: LoansComponentProps) {
   if (loans.length === 0) {
     return <p>You don't have any loans yet.</p>;
   }
@@ -45,4 +47,4 @@ function LoansComponent({ loans, onRepay, onCollateralize }: LoansComponentProps
   );
 }
 
-export default LoansComponent;
+export default ContractsComponent;

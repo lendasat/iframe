@@ -94,8 +94,9 @@ pub struct ContractRequestSchema {
     pub loan_amount: Decimal,
     pub initial_collateral_sats: u64,
     pub duration_months: i32,
-    pub borrower_payout_address: Address<NetworkUnchecked>,
+    pub borrower_btc_address: Address<NetworkUnchecked>,
     pub borrower_pk: PublicKey,
+    pub borrower_loan_address: String,
 }
 
 #[derive(Debug, FromRow, Serialize, Deserialize, Clone)]
@@ -148,11 +149,13 @@ pub struct Contract {
     pub borrower_id: String,
     pub loan_id: String,
     pub initial_ltv: Decimal,
+    // TODO: Should probably rename since borrower can add collateral.
     pub initial_collateral_sats: u64,
     pub loan_amount: Decimal,
     pub duration_months: i32,
-    pub borrower_payout_address: Address<NetworkUnchecked>,
+    pub borrower_btc_address: Address<NetworkUnchecked>,
     pub borrower_pk: PublicKey,
+    pub borrower_loan_address: String,
     pub contract_address: Option<Address<NetworkUnchecked>>,
     pub contract_index: Option<u32>,
     pub status: ContractStatus,
@@ -197,8 +200,9 @@ pub mod db {
         pub initial_collateral_sats: i64,
         pub loan_amount: Decimal,
         pub duration_months: i32,
-        pub borrower_payout_address: String,
+        pub borrower_btc_address: String,
         pub borrower_pk: String,
+        pub borrower_loan_address: String,
         pub contract_address: Option<String>,
         pub contract_index: Option<i32>,
         pub status: ContractStatus,
@@ -232,9 +236,10 @@ impl From<db::Contract> for Contract {
             initial_collateral_sats: value.initial_collateral_sats as u64,
             loan_amount: value.loan_amount,
             duration_months: value.duration_months,
-            borrower_payout_address: Address::from_str(&value.borrower_payout_address)
+            borrower_btc_address: Address::from_str(&value.borrower_btc_address)
                 .expect("valid address"),
             borrower_pk: PublicKey::from_str(&value.borrower_pk).expect("valid pk"),
+            borrower_loan_address: value.borrower_loan_address,
             contract_address: value
                 .contract_address
                 .map(|addr| addr.parse().expect("valid address")),
@@ -271,8 +276,9 @@ impl From<Contract> for db::Contract {
             initial_collateral_sats: value.initial_collateral_sats as i64,
             loan_amount: value.loan_amount,
             duration_months: value.duration_months,
-            borrower_payout_address: value.borrower_payout_address.assume_checked().to_string(),
+            borrower_btc_address: value.borrower_btc_address.assume_checked().to_string(),
             borrower_pk: value.borrower_pk.to_string(),
+            borrower_loan_address: value.borrower_loan_address,
             contract_address: value
                 .contract_address
                 .map(|addr| addr.assume_checked().to_string()),

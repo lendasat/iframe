@@ -1,9 +1,13 @@
+import { Contract } from "@frontend-monorepo/http-client";
 import React from "react";
 import { Card, Col, Container, Row } from "react-bootstrap";
 import { Lender } from "../request-loan/lender";
 import CurrencyFormatter from "../usd";
 
-export function LoanHistoryComponent(props) {
+interface LoansHistoryComponentProps {
+  loan: Contract;
+}
+export function LoanHistoryComponent(props: LoansHistoryComponentProps) {
   const { loan } = props;
 
   const { amount, lender, interest, collateral, opened, repaid } = loan;

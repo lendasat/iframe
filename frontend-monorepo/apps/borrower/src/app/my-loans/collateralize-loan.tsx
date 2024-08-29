@@ -38,7 +38,7 @@ function CollateralizeLoanComponent({ contract }: CollateralizeLoanComponentProp
   const loanAmount = contract.amount;
   const loanAddress = contract.loanAddress;
   const collateralAddress = contract.collateralAddress;
-  const interestRate = contract.interest;
+  const interestRate = contract.interest_rate;
 
   const loanOriginatorFee = (loanAmount / latestPrice) * ORIGINATOR_FEE;
   const totalCollateral = collateral + loanOriginatorFee;

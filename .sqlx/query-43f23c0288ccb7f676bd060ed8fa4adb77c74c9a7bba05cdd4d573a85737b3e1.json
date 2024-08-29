@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        UPDATE contracts\n        SET status = $1,\n            updated_at = $2\n        WHERE id = $3\n        RETURNING\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            loan_amount,\n            borrower_payout_address,\n            borrower_pk,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            duration_months,\n            created_at,\n            updated_at\n        ",
+  "query": "\n        UPDATE contracts\n        SET status = $1,\n            updated_at = $2\n        WHERE id = $3\n        RETURNING\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            duration_months,\n            created_at,\n            updated_at\n        ",
   "describe": {
     "columns": [
       {
@@ -40,7 +40,7 @@
       },
       {
         "ordinal": 7,
-        "name": "borrower_payout_address",
+        "name": "borrower_btc_address",
         "type_info": "Text"
       },
       {
@@ -50,16 +50,21 @@
       },
       {
         "ordinal": 9,
-        "name": "contract_address",
+        "name": "borrower_loan_address",
         "type_info": "Text"
       },
       {
         "ordinal": 10,
+        "name": "contract_address",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 11,
         "name": "contract_index",
         "type_info": "Int4"
       },
       {
-        "ordinal": 11,
+        "ordinal": 12,
         "name": "status: crate::model::db::ContractStatus",
         "type_info": {
           "Custom": {
@@ -79,17 +84,17 @@
         }
       },
       {
-        "ordinal": 12,
+        "ordinal": 13,
         "name": "duration_months",
         "type_info": "Int4"
       },
       {
-        "ordinal": 13,
+        "ordinal": 14,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 14,
+        "ordinal": 15,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -126,6 +131,7 @@
       false,
       false,
       false,
+      false,
       true,
       true,
       false,
@@ -134,5 +140,5 @@
       false
     ]
   },
-  "hash": "d436f884e9b2a378083b8d994f434251cfd64e3d6fcda6e10ad80b34c2d7be77"
+  "hash": "43f23c0288ccb7f676bd060ed8fa4adb77c74c9a7bba05cdd4d573a85737b3e1"
 }

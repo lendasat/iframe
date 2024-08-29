@@ -9,7 +9,7 @@ import { StableCoinHelper } from "./stable-coin";
 function RequestLoan() {
   const { getLoanOffers } = useAuth();
 
-  const [loanOffers, setLoanOffers] = useState([]);
+  const [loanOffers, setLoanOffers] = useState<LoanOffer[]>([]);
   const [loanFilters, setLoanFilters] = useState<LoanFilter[]>([]);
 
   useEffect(() => {
@@ -105,7 +105,7 @@ function RequestLoan() {
         <Col md={"10"} className="p-4">
           <LoanOffersComponent
             loanOffers={loanOffers}
-            onRequest={(loanOffer) => {
+            onRequest={(loanOffer: LoanOffer) => {
               navigate(`/request-loan/${loanOffer.id}`, { state: { loanOffer: loanOffer, loanFilters: loanFilters } });
             }}
           />

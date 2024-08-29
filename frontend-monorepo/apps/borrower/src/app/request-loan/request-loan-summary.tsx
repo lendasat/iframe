@@ -1,8 +1,10 @@
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { LoanOffer, useAuth } from "@frontend-monorepo/http-client";
 import React, { useState } from "react";
 import { Alert, Badge, Button, Col, Container, Form, Row } from "react-bootstrap";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import init, { get_next_pk } from "../../../../../../borrower-wallet/pkg/borrower_wallet.js";
 import { usePrice } from "../price-context";
 import { formatCurrency } from "../usd";
 import { Lender } from "./lender";
@@ -10,12 +12,19 @@ import { LoanFilterType } from "./loan-offers-filter";
 import { Slider, SliderProps } from "./slider";
 import { StableCoin, StableCoinDropdown, StableCoinHelper } from "./stable-coin";
 
+type LocationState = {
+  loanOffer: LoanOffer;
+  loanFilters?: any;
+};
+
 export function RequestLoanSummary() {
   const location = useLocation();
-  const { loanOffer, loanFilters } = location.state || {};
+  const { loanOffer, loanFilters } = location.state as LocationState || {};
 
   const ORIGINATOR_FEE = 0.01;
   const { latestPrice } = usePrice();
+
+  const { postContractRequest } = useAuth();
 
   // Initialize filters
   const periodFilter = loanFilters.find((filter) => filter.type === LoanFilterType.PERIOD);
@@ -36,7 +45,8 @@ export function RequestLoanSummary() {
   const [loanAmount, setLoanAmount] = useState<number | undefined>(initAmount);
   const [selectedCoin, setSelectedCoin] = useState<StableCoin | undefined>(initCoin);
 
-  const [address, setAddress] = useState("");
+  const [loanAddress, setLoanAddress] = useState("");
+  const [btcAddress, setBtcAddress] = useState("");
   const [amountError, setAmountError] = useState<string | null>(null);
   const [loanDuration, setLoanDuration] = useState<number>(initMonths);
 
@@ -60,6 +70,37 @@ export function RequestLoanSummary() {
     }
   };
 
+  const navigate = useNavigate();
+  const handleRequestLoan = async () => {
+    // TODO: Is this necessary?
+    await init();
+
+    // TODO: This only works if the wallet is already loaded!
+    const borrowerPk = get_next_pk();
+
+    const collateralFloat = parseFloat(collateral!.toFixed(8));
+    const collateralSats = parseInt((collateralFloat * 100000000).toFixed(0));
+
+    const initial_ltv = loanOffer.ltv / 100;
+
+    const res = await postContractRequest({
+      loan_id: loanOffer.id,
+      initial_ltv: initial_ltv,
+      loan_amount: loanAmount!,
+      initial_collateral_sats: collateralSats,
+      duration_months: loanDuration,
+      borrower_btc_address: btcAddress,
+      borrower_pk: borrowerPk,
+      borrower_loan_address: loanAddress,
+    });
+
+    if (res != undefined) {
+      navigate("/my-contracts");
+    } else {
+      // Handle error if needed
+    }
+  };
+
   const handleCoinSelect = (coin: StableCoin) => {
     setSelectedCoin(coin);
   };
@@ -80,7 +121,7 @@ export function RequestLoanSummary() {
     || loanAmount > loanOffer.amount.max
     || amountError != null
     || !selectedCoin
-    || !address.trim();
+    || !loanAddress.trim();
 
   return (
     <Container className={"p-4"} fluid>
@@ -126,13 +167,22 @@ export function RequestLoanSummary() {
               Provide a valid address on the target network. Providing an incorrect address here will lead to a loss of
               funds.
             </Alert>
+            <Form.Group className="mb-3" controlId="btc-address">
+              <Form.Label>
+                <small>Bitcoin Address</small>
+              </Form.Label>
+              <Form.Control
+                value={btcAddress}
+                onChange={(e) => setBtcAddress(e.target.value)}
+              />
+            </Form.Group>
             <Form.Group className="mb-3" controlId="stablecoin-address">
               <Form.Label>
                 <small>{StableCoinHelper.print(selectedCoin)} Address</small>
               </Form.Label>
               <Form.Control
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
+                value={loanAddress}
+                onChange={(e) => setLoanAddress(e.target.value)}
               />
             </Form.Group>
           </Form>
@@ -181,7 +231,7 @@ export function RequestLoanSummary() {
             <Button className={"btn-secondary"}>Cancel</Button>
           </Link>
           <span>{" "}</span>
-          <Button disabled={isButtonDisabled}>Request</Button>
+          <Button onClick={handleRequestLoan} disabled={isButtonDisabled}>Request</Button>
         </Col>
       </Row>
     </Container>

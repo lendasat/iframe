@@ -1,7 +1,12 @@
+import { Contract } from "@frontend-monorepo/http-client";
 import { Col, Container, Row } from "react-bootstrap";
 import { LoanHistoryComponent } from "./loan-history";
 
-function LoansHistoryComponent(props) {
+interface LoansHistoryComponentsProps {
+  loan: Contract[];
+}
+
+function LoansHistoryComponent(props: LoansHistoryComponentsProps) {
   const { loans } = props;
 
   if (loans.length === 0) {

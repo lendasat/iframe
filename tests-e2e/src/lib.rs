@@ -3,7 +3,6 @@
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
-    use hub::model::Contract;
     use hub::model::ContractRequestSchema;
     use hub::model::ContractStatus;
     use hub::model::CreateLoanOfferSchema;
@@ -11,6 +10,7 @@ mod tests {
     use hub::model::LoanAssetType;
     use hub::model::LoanOffer;
     use hub::model::LoginUserSchema;
+    use hub::routes::borrower::Contract;
     use reqwest::cookie::Jar;
     use reqwest::Client;
     use rust_decimal_macros::dec;
@@ -83,6 +83,8 @@ mod tests {
             duration_months_max: 12,
             loan_asset_type: LoanAssetType::Usdc,
             loan_asset_chain: Ethereum,
+            loan_repayment_address:
+                "0x055098f73c89ca554f98c0298ce900235d2e1b4205a7ca629ae017518521c2c3".to_string(),
         };
 
         let res = lender
@@ -101,10 +103,9 @@ mod tests {
         let borrower_pk = borrower_wallet::wallet::get_pk(0).unwrap();
 
         // This is a random address, since we don't care about payouts in this test.
-        let borrower_payout_address =
-            "bc1p5cyxnuxmeuwuvkwfem96lqzszd02n6xdcjrs20cac6yqjjwudpxqkedrcr"
-                .parse()
-                .unwrap();
+        let borrower_btc_address = "bc1p5cyxnuxmeuwuvkwfem96lqzszd02n6xdcjrs20cac6yqjjwudpxqkedrcr"
+            .parse()
+            .unwrap();
 
         let contract_request = ContractRequestSchema {
             loan_id: loan_offer.id,
@@ -112,8 +113,10 @@ mod tests {
             loan_amount: dec!(20_000),
             initial_collateral_sats: 100_000,
             duration_months: 6,
-            borrower_payout_address,
+            borrower_btc_address,
             borrower_pk,
+            borrower_loan_address:
+                "0x055098f73c89ca554f98c0298ce900235d2e1b4205a7ca629ae017518521c2c3".to_string(),
         };
 
         let res = borrower
@@ -166,9 +169,8 @@ mod tests {
                         .contract_address
                         .clone()
                         .expect("contract address")
-                        .assume_checked()
                         .to_string(),
-                    amount: contract.initial_collateral_sats,
+                    amount: contract.collateral_sats,
                 })
                 .send()
                 .await
@@ -188,17 +190,12 @@ mod tests {
 
             let faucet = Client::new();
 
-            let contract_address = contract
-                .contract_address
-                .clone()
-                .expect("contract address")
-                .assume_checked()
-                .to_string();
+            let contract_address = contract.contract_address.clone().expect("contract address");
 
             let res = faucet
                 .post("https://faucet.mutinynet.com/api/onchain")
                 .json(&json!({
-                    "sats": contract.initial_collateral_sats,
+                    "sats": contract.collateral_sats,
                     "address": contract_address
                 }))
                 .send()

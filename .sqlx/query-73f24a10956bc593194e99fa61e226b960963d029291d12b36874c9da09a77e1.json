@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        INSERT INTO contracts (\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            loan_amount,\n            duration_months,\n            status,\n            borrower_payout_address,\n            borrower_pk,\n            contract_address,\n            contract_index\n        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)\n        RETURNING\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            loan_amount,\n            borrower_payout_address,\n            borrower_pk,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            duration_months,\n            created_at,\n            updated_at\n        ",
+  "query": "\n        SELECT\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            duration_months,\n            created_at,\n            updated_at\n        FROM contracts\n        where lender_id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -40,7 +40,7 @@
       },
       {
         "ordinal": 7,
-        "name": "borrower_payout_address",
+        "name": "borrower_btc_address",
         "type_info": "Text"
       },
       {
@@ -50,16 +50,21 @@
       },
       {
         "ordinal": 9,
-        "name": "contract_address",
+        "name": "borrower_loan_address",
         "type_info": "Text"
       },
       {
         "ordinal": 10,
+        "name": "contract_address",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 11,
         "name": "contract_index",
         "type_info": "Int4"
       },
       {
-        "ordinal": 11,
+        "ordinal": 12,
         "name": "status: crate::model::db::ContractStatus",
         "type_info": {
           "Custom": {
@@ -79,54 +84,28 @@
         }
       },
       {
-        "ordinal": 12,
+        "ordinal": 13,
         "name": "duration_months",
         "type_info": "Int4"
       },
       {
-        "ordinal": 13,
+        "ordinal": 14,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 14,
+        "ordinal": 15,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
-        "Bpchar",
-        "Bpchar",
-        "Bpchar",
-        "Bpchar",
-        "Numeric",
-        "Int8",
-        "Numeric",
-        "Int4",
-        {
-          "Custom": {
-            "name": "contract_status",
-            "kind": {
-              "Enum": [
-                "Requested",
-                "Open",
-                "CollateralSeen",
-                "CollateralConfirmed",
-                "PrincipalGiven",
-                "Closed",
-                "Rejected"
-              ]
-            }
-          }
-        },
-        "Text",
-        "Bpchar",
-        "Text",
-        "Int4"
+        "Bpchar"
       ]
     },
     "nullable": [
+      false,
       false,
       false,
       false,
@@ -144,5 +123,5 @@
       false
     ]
   },
-  "hash": "b1127dce61f0828e4da19d3488bcdb5742641fb165be3f11f63003ab36070ca3"
+  "hash": "73f24a10956bc593194e99fa61e226b960963d029291d12b36874c9da09a77e1"
 }

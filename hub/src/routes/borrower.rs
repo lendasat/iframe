@@ -25,6 +25,8 @@ pub(crate) mod contracts;
 pub(crate) mod health_check;
 pub(crate) mod loan_offers;
 
+pub use contracts::Contract;
+
 pub async fn spawn_borrower_server(
     config: Config,
     wallet: Arc<Wallet>,
