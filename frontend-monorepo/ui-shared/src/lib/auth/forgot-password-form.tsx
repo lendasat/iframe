@@ -1,27 +1,28 @@
 import React, { useState } from "react";
 import { Button, Col, Container, Form, Row } from "react-bootstrap";
-import { Link } from "react-router-dom";
 import { ReactComponent as Logo } from "../lendasat_white_bg.svg";
 
-interface LoginFormProps {
-  handleLogin: (email: string, password: string) => Promise<void>;
-  registrationLink: string;
-  forgotPasswordLink: string;
+interface ForgotPasswordProps {
+  handleSubmit: (email: string) => Promise<string>;
 }
 
-export function LoginForm({ handleLogin, registrationLink, forgotPasswordLink }: LoginFormProps) {
+export function ForgotPasswordForm({ handleSubmit }: ForgotPasswordProps) {
   const [email, setEmail] = useState("borrower@lendasat.com");
-  const [password, setPassword] = useState("password123");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [isLoading, setLoading] = useState(false);
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setLoading(true);
     try {
-      await handleLogin(email, password);
+      let success = await handleSubmit(email);
+      setSuccess(success);
     } catch (err) {
-      console.error("Login failed: ", err);
-      setError(`Login failed. ${err}`);
+      console.error("Failed resetting password: ", err);
+      setError(`Failed resetting password. ${err}`);
     }
+    setLoading(false);
   };
 
   return (
@@ -43,32 +44,13 @@ export function LoginForm({ handleLogin, registrationLink, forgotPasswordLink }:
                 />
               </Form.Group>
 
-              <Form.Group controlId="formBasicPassword" className="mb-3">
-                <Form.Control
-                  type="password"
-                  placeholder="Password"
-                  className="p-3"
-                  style={{ width: "100%" }}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </Form.Group>
-
               {error && <div className="alert alert-danger">{error}</div>}
+              {success && <div className="alert alert-success">{success}</div>}
 
-              <Button variant="primary" type="submit" className="w-100 p-2">
-                Login
+              <Button variant="primary" type="submit" className="w-100 p-2" disabled={isLoading}>
+                {isLoading ? "Loading…" : "Submit"}
               </Button>
             </Form>
-
-            <Container className="d-flex justify-content-center w-100 mt-2">
-              <Row className={"d-flex justify-content-center"}>
-                <Col>
-                  <Link to={registrationLink} className={"me-3"}>Sign Up</Link>
-                  <Link to={forgotPasswordLink}>Forgot Password</Link>
-                </Col>
-              </Row>
-            </Container>
           </div>
         </Col>
       </Row>
@@ -76,4 +58,4 @@ export function LoginForm({ handleLogin, registrationLink, forgotPasswordLink }:
   );
 }
 
-export default LoginForm;
+export default ForgotPasswordForm;

@@ -11,6 +11,7 @@ interface AuthContextProps {
   me: () => Promise<User | undefined>;
   contract: (id: string) => Promise<Contract | undefined>;
   getLoanOffers: () => Promise<LoanOffer[] | undefined>;
+  forgotPassword: (email: string) => Promise<string>;
   user: User | null;
 }
 
@@ -205,9 +206,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ baseUrl, children })
   const getLoanOffers = async (): Promise<LoanOffer[] | undefined> => {
     try {
       const response: AxiosResponse<LoanOffer[]> = await httpClient.get("/api/offers");
-      const offers = response.data;
-
-      return offers;
+      return response.data;
     } catch (error) {
       console.error(
         `Failed to fetch loan offers: http: ${error.response?.status} and response: ${error.response?.data}`,
@@ -216,8 +215,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ baseUrl, children })
     }
   };
 
+  const forgotPassword = async (email: string): Promise<string> => {
+    try {
+      const response = await httpClient.post("/api/auth/forgotpassword", { email: email });
+      return response.data.message;
+    } catch (error) {
+      let msg = `Failed to reset password: http: ${error.response?.status} and response: ${error.response?.data}`;
+      console.error(
+        msg,
+      );
+      return msg;
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ httpClient, register, login, logout, user, me, contract, getLoanOffers }}>
+    <AuthContext.Provider
+      value={{ httpClient, register, login, logout, user, me, contract, getLoanOffers, forgotPassword }}
+    >
       {children}
     </AuthContext.Provider>
   );

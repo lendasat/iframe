@@ -1,6 +1,7 @@
 import { AuthIsNotSignedIn, AuthIsSignedIn, AuthProvider } from "@frontend-monorepo/http-client";
 import { Layout } from "@frontend-monorepo/ui-shared";
 import { Outlet, Route, Routes } from "react-router-dom";
+import ForgotPassword from "./auth/forgot-password";
 import Login from "./auth/login";
 import Logout from "./auth/logout";
 import Registration from "./auth/registration";
@@ -62,6 +63,7 @@ function App() {
         <Routes>
           <Route index element={<Login />} />
           <Route path="/registration" element={<Registration />} />
+          <Route path="/forgotpassword" element={<ForgotPassword />} />
           <Route path="/logout" element={<Logout />} />
           <Route path="/login" element={<Login />} />
         </Routes>
