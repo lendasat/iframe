@@ -44,8 +44,8 @@ function CollateralizeLoanComponent({ contract }: CollateralizeLoanComponentProp
   const totalCollateral = collateral + loanOriginatorFee;
 
   const [isCollateralizedConfirmed, setIsCollateralizedConfirmed] = useState(false);
-  const isCollateralized = contract.status == ContractStatus.CollateralConfirmed
-    || contract.status == ContractStatus.CollateralSeen;
+  const isCollateralized = contract.status === ContractStatus.CollateralConfirmed
+    || contract.status === ContractStatus.CollateralSeen;
 
   return (
     <Container className={"p-4"} fluid>

@@ -12,7 +12,9 @@ function Login() {
     navigate("/");
   };
 
-  return <LoginForm handleLogin={handleLogin} registrationLink={"/registration"} forgotPasswordLink={"/forgotpassword"} />
+  return (
+    <LoginForm handleLogin={handleLogin} registrationLink={"/registration"} forgotPasswordLink={"/forgotpassword"} />
+  );
 }
 
 export default Login;
