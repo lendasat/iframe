@@ -209,4 +209,4 @@ watch-all:
 ## ------------------------
 
 db-test-data:
-    cargo run --example  test-data
+    cargo run --example test-data
