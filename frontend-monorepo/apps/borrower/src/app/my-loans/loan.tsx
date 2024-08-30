@@ -39,15 +39,15 @@ export function LoanComponent({ loan, onRepay, onCollateralize }: LoanComponentP
             <Col className={"text-end"}>
               {(() => {
                 switch (loan.status) {
-                  case ContractStatus.OPEN:
+                  case ContractStatus.Approved:
                     return (
                       <Button variant="primary" onClick={() => onCollateralize(loan.id)}>Collateralize Loan</Button>
                     );
-                  case ContractStatus.REQUESTED:
-                  case ContractStatus.CLOSING:
-                  case ContractStatus.CLOSED:
+                  case ContractStatus.Requested:
+                  case ContractStatus.Closing:
+                  case ContractStatus.Closed:
                     return <div></div>;
-                  case ContractStatus.COLLATERAL_CONFIRMED:
+                  case ContractStatus.CollateralConfirmed:
                     return (
                       <>
                         <Button variant="primary">Add Collateral</Button>

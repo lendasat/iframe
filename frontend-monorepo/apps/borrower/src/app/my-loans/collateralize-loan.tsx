@@ -1,9 +1,9 @@
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Contract, useAuth } from "@frontend-monorepo/http-client";
+import { Contract, ContractStatus, useAuth } from "@frontend-monorepo/http-client";
 import QRCode from "qrcode.react";
 import React, { Suspense, useState } from "react";
-import { Alert, Button, Col, Container, Form, InputGroup, Row } from "react-bootstrap";
+import { Alert, Badge, Button, Col, Container, Form, InputGroup, Row } from "react-bootstrap";
 import { Await, useParams } from "react-router-dom";
 import { usePrice } from "../price-context";
 import { Lender } from "../request-loan/lender";
@@ -34,8 +34,8 @@ function CollateralizeLoanComponent({ contract }: CollateralizeLoanComponentProp
   const ORIGINATOR_FEE = 0.01;
 
   const latestPrice = usePrice().latestPrice;
-  const collateral = contract.collateral;
-  const loanAmount = contract.amount;
+  const collateral = contract.collateral_sats;
+  const loanAmount = contract.loan_amount;
   const loanAddress = contract.loanAddress;
   const collateralAddress = contract.collateralAddress;
   const interestRate = contract.interest_rate;
@@ -43,7 +43,9 @@ function CollateralizeLoanComponent({ contract }: CollateralizeLoanComponentProp
   const loanOriginatorFee = (loanAmount / latestPrice) * ORIGINATOR_FEE;
   const totalCollateral = collateral + loanOriginatorFee;
 
-  const [isCollateralized, setIsCollateralized] = useState(false);
+  const [isCollateralizedConfirmed, setIsCollateralizedConfirmed] = useState(false);
+  const isCollateralized = contract.status == ContractStatus.CollateralConfirmed
+    || contract.status == ContractStatus.CollateralSeen;
 
   return (
     <Container className={"p-4"} fluid>
@@ -57,6 +59,12 @@ function CollateralizeLoanComponent({ contract }: CollateralizeLoanComponentProp
               <Col>Lender</Col>
               <Col className="text-end mb-2">
                 <Lender {...contract.lender} />
+              </Col>
+            </Row>
+            <Row className="justify-content-between border-b mt-2">
+              <Col>Contract Status</Col>
+              <Col className="text-end mb-2">
+                <Badge bg="primary">{contract.status}</Badge>
               </Col>
             </Row>
             <Row className="justify-content-between mt-4">
@@ -123,7 +131,7 @@ function CollateralizeLoanComponent({ contract }: CollateralizeLoanComponentProp
                         variant="primary"
                         onClick={() => {
                           alert("Here goes everything");
-                          setIsCollateralized(false);
+                          setIsCollateralizedConfirmed(false);
                         }}
                       >
                         Claim loan principal
@@ -136,12 +144,12 @@ function CollateralizeLoanComponent({ contract }: CollateralizeLoanComponentProp
           </Container>
         </Col>
         <Col xs={12} md={6}>
-          {!isCollateralized
+          {(!isCollateralizedConfirmed && !isCollateralized)
             ? (
               <CollateralContractDetails
                 collateral={collateral}
                 collateralAddress={collateralAddress}
-                onCollateralize={bool => setIsCollateralized(bool)}
+                onCollateralize={bool => setIsCollateralizedConfirmed(bool)}
               />
             )
             : ""}
@@ -152,9 +160,9 @@ function CollateralizeLoanComponent({ contract }: CollateralizeLoanComponentProp
 }
 
 interface CollateralContractDetailsProps {
-  totalRepaymentAmount: number;
-  repaymentAddress: string;
-  onRepay: (bool) => void;
+  collateral: number;
+  collateralAddress: string;
+  onCollateralize: (collateralized: boolean) => void;
 }
 
 export function CollateralContractDetails({

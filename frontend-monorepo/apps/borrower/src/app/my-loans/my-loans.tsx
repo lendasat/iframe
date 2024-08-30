@@ -19,7 +19,7 @@ function MyLoans() {
             <div>
               <div className="p-4">
                 <ContractsComponent
-                  loans={contracts.filter((loan) => loan.status !== ContractStatus.CLOSED)}
+                  loans={contracts.filter((loan) => loan.status !== ContractStatus.Closed)}
                   onRepay={(loan_id) => {
                     navigate(`repay/${loan_id}`);
                   }}
@@ -32,7 +32,7 @@ function MyLoans() {
                 <CollapsibleComponent
                   title={"History"}
                   children={
-                    <LoansHistoryComponent loans={contracts.filter((loan) => loan.status === ContractStatus.CLOSED)} />
+                    <LoansHistoryComponent loans={contracts.filter((loan) => loan.status === ContractStatus.Closed)} />
                   }
                 />
               </div>

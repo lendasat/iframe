@@ -32,14 +32,14 @@ export class User {
 }
 
 export enum ContractStatus {
-  REQUESTED = "REQUESTED",
-  OPEN = "OPEN",
-  COLLATERAL_SEEN = "COLLATERAL_SEEN",
-  COLLATERAL_CONFIRMED = "COLLATERAL_CONFIRMED",
-  PRINCIPAL_GIVEN = "PRINCIPAL_GIVEN",
-  CLOSING = "CLOSING",
-  CLOSED = "CLOSED",
-  REJECTED = "REJECTED",
+  Requested = "Requested",
+  Approved = "Approved",
+  CollateralSeen = "CollateralSeen",
+  CollateralConfirmed = "CollateralConfirmed",
+  PrincipalGiven = "PrincipalGiven",
+  Closing = "Closing",
+  Closed = "Closed",
+  Rejected = "Rejected",
 }
 
 export interface LenderProfile {
@@ -212,7 +212,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ baseUrl, children })
       expiry: new Date(),
       interest_rate: 11,
       collateral_sats: 0.465,
-      status: ContractStatus.OPEN,
+      status: ContractStatus.Approved,
       lender: {
         name: "Lord Lendalot 2",
         rate: 99,
