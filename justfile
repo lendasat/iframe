@@ -98,12 +98,12 @@ mempool-d:
 ## Serve frontend functions
 ## ------------------------
 
-run-borrower-frontend:
+borrower:
     #!/usr/bin/env bash
     cd frontend-monorepo
     npx nx serve borrower
 
-run-lender-frontend:
+lender:
     #!/usr/bin/env bash
     cd frontend-monorepo
     npx nx serve lender
