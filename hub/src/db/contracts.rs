@@ -146,7 +146,7 @@ pub async fn load_contracts_pending_confirmation(pool: &Pool<Postgres>) -> Resul
         FROM contracts
         WHERE status IN ($1, $2)
         "#,
-        db::ContractStatus::Open as db::ContractStatus,
+        db::ContractStatus::Approved as db::ContractStatus,
         db::ContractStatus::CollateralSeen as db::ContractStatus,
     )
     .fetch_all(pool)
@@ -282,7 +282,7 @@ pub async fn accept_contract_request(
             created_at,
             updated_at
         "#,
-        db::ContractStatus::Open as db::ContractStatus,
+        db::ContractStatus::Approved as db::ContractStatus,
         OffsetDateTime::now_utc(),
         contract_address.to_string(),
         contract_index as i32,

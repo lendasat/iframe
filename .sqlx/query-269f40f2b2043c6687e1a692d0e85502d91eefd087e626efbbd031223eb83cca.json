@@ -72,7 +72,7 @@
             "kind": {
               "Enum": [
                 "Requested",
-                "Open",
+                "Approved",
                 "CollateralSeen",
                 "CollateralConfirmed",
                 "PrincipalGiven",
@@ -107,7 +107,7 @@
             "kind": {
               "Enum": [
                 "Requested",
-                "Open",
+                "Approved",
                 "CollateralSeen",
                 "CollateralConfirmed",
                 "PrincipalGiven",

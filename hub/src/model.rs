@@ -170,7 +170,7 @@ pub enum ContractStatus {
     /// The borrower has sent a contract request based on a loan offer.
     Requested,
     /// The lender has accepted the contract request.
-    Open,
+    Approved,
     /// The collateral contract has been seen on the blockchain.
     CollateralSeen,
     /// The collateral contract has received enough confirmations.
@@ -216,7 +216,7 @@ pub mod db {
     #[sqlx(type_name = "contract_status")]
     pub enum ContractStatus {
         Requested,
-        Open,
+        Approved,
         CollateralSeen,
         CollateralConfirmed,
         PrincipalGiven,
@@ -255,7 +255,7 @@ impl From<db::ContractStatus> for ContractStatus {
     fn from(value: db::ContractStatus) -> Self {
         match value {
             db::ContractStatus::Requested => Self::Requested,
-            db::ContractStatus::Open => Self::Open,
+            db::ContractStatus::Approved => Self::Approved,
             db::ContractStatus::CollateralSeen => Self::CollateralSeen,
             db::ContractStatus::CollateralConfirmed => Self::CollateralConfirmed,
             db::ContractStatus::PrincipalGiven => Self::PrincipalGiven,
@@ -294,7 +294,7 @@ impl From<ContractStatus> for db::ContractStatus {
     fn from(value: ContractStatus) -> Self {
         match value {
             ContractStatus::Requested => Self::Requested,
-            ContractStatus::Open => Self::Open,
+            ContractStatus::Approved => Self::Approved,
             ContractStatus::CollateralSeen => Self::CollateralSeen,
             ContractStatus::CollateralConfirmed => Self::CollateralConfirmed,
             ContractStatus::PrincipalGiven => Self::PrincipalGiven,
