@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1"
+bitcoin = "0.32.2"
 borrower-wallet = { path = "../borrower-wallet" }
 dotenv = "0.15.0"
 hub = { path = "../hub" }

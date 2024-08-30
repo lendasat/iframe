@@ -26,6 +26,7 @@ pub(crate) async fn load_all_available_loan_offers(
             loan_asset_type AS "loan_asset_type: crate::model::LoanAssetType",
             loan_asset_chain AS "loan_asset_chain: crate::model::LoanAssetChain",
             status AS "status: crate::model::LoanOfferStatus",
+            loan_repayment_address,
             created_at,
             updated_at
         FROM loan_offers
@@ -58,6 +59,7 @@ pub async fn load_all_loan_offers_by_lender(
             loan_asset_type AS "loan_asset_type: crate::model::LoanAssetType",
             loan_asset_chain AS "loan_asset_chain: crate::model::LoanAssetChain",
             status AS "status: crate::model::LoanOfferStatus",
+            loan_repayment_address,
             created_at,
             updated_at
         FROM loan_offers
@@ -94,9 +96,10 @@ pub async fn insert_loan_offer(
           duration_months_max,
           loan_asset_type,
           loan_asset_chain,
-          status
+          status,
+          loan_repayment_address
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
         RETURNING
           id,
           lender_id,
@@ -110,6 +113,7 @@ pub async fn insert_loan_offer(
           loan_asset_type AS "loan_asset_type: crate::model::LoanAssetType",
           loan_asset_chain AS "loan_asset_chain: crate::model::LoanAssetChain",
           status AS "status: crate::model::LoanOfferStatus",
+          loan_repayment_address,
           created_at,
           updated_at
         "#,
@@ -125,8 +129,43 @@ pub async fn insert_loan_offer(
         offer.loan_asset_type as LoanAssetType,
         offer.loan_asset_chain as LoanAssetChain,
         status as LoanOfferStatus,
+        offer.loan_repayment_address
     )
     .fetch_one(pool)
+    .await?;
+
+    Ok(loan)
+}
+
+pub(crate) async fn loan_by_id(
+    pool: &Pool<Postgres>,
+    loan_id: String,
+) -> Result<Option<LoanOffer>> {
+    let loan = sqlx::query_as!(
+        LoanOffer,
+        r#"
+        SELECT
+            id,
+            lender_id,
+            name,
+            min_ltv,
+            interest_rate,
+            loan_amount_min,
+            loan_amount_max,
+            duration_months_min,
+            duration_months_max,
+            loan_asset_type AS "loan_asset_type: crate::model::LoanAssetType",
+            loan_asset_chain AS "loan_asset_chain: crate::model::LoanAssetChain",
+            status AS "status: crate::model::LoanOfferStatus",
+            loan_repayment_address,
+            created_at,
+            updated_at
+        FROM loan_offers
+        WHERE id = $1
+        "#,
+        loan_id
+    )
+    .fetch_optional(pool)
     .await?;
 
     Ok(loan)

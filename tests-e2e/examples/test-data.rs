@@ -1,8 +1,10 @@
 use anyhow::Context;
 use anyhow::Result;
+use bitcoin::Address;
 use hub::config::Config;
 use hub::db;
 use hub::model::Contract;
+use hub::model::ContractStatus;
 use hub::model::CreateLoanOfferSchema;
 use hub::model::LoanAssetChain;
 use hub::model::LoanAssetType;
@@ -12,6 +14,7 @@ use rust_decimal_macros::dec;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::Pool;
 use sqlx::Postgres;
+use std::str::FromStr;
 use time::macros::format_description;
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::filter::Directive;
@@ -37,34 +40,64 @@ async fn main() -> Result<()> {
     tracing::debug!(id = borrower.id, email = borrower.email, "Borrower created");
 
     let loan_offer = insert_loan_offer(&pool, lender.clone()).await?;
-    insert_contract(&pool, lender, borrower, loan_offer).await?;
+    insert_contract(&pool, &lender, &borrower, &loan_offer).await?;
+    let contract = insert_contract(&pool, &lender, &borrower, &loan_offer).await?;
+
+    approve_contract(&pool, &lender, contract).await?;
 
     Ok(())
 }
 
+async fn approve_contract(
+    pool: &Pool<Postgres>,
+    lender: &User,
+    contract: Contract,
+) -> Result<Contract> {
+    let contract = db::contracts::accept_contract_request(
+        pool,
+        lender.id.as_str(),
+        contract.id.as_str(),
+        Address::from_str("bcrt1q39c0vrwpgfjkhasu5mfke9wnym45nydfwaeems")
+            .expect("to be valid address")
+            .assume_checked(),
+        42,
+    )
+    .await?;
+    Ok(contract)
+}
+
 async fn insert_contract(
     pool: &Pool<Postgres>,
-    lender: User,
-    borrower: User,
-    loan_offer: LoanOffer,
+    lender: &User,
+    borrower: &User,
+    loan_offer: &LoanOffer,
 ) -> Result<Contract> {
     let lender_loans = db::contracts::load_contracts_by_lender_id(pool, lender.id.as_str()).await?;
     if lender_loans
         .iter()
-        .any(|contract| contract.borrower_id == borrower.id)
+        .filter(|contract| contract.borrower_id == borrower.id)
+        .count()
+        >= 2
     {
         tracing::debug!(
             "DB already contains contract for test lender and test borrower, not inserting more"
         );
+        let x = lender_loans
+            .into_iter()
+            .find(|contract| {
+                contract.borrower_id == borrower.id && contract.status == ContractStatus::Requested
+            })
+            .expect("to have at least one");
+        return Ok(x);
     }
 
     let contract = db::contracts::insert_contract_request(
         pool,
-        borrower.id,
-        loan_offer.id,
+        borrower.id.clone(),
+        loan_offer.id.clone(),
         loan_offer.min_ltv,
-        10_000_000,
-        dec!(1_000),
+        100_000_000,
+        dec!(25_000),
         12,
         "bcrt1q39c0vrwpgfjkhasu5mfke9wnym45nydfwaeems"
             .parse()
@@ -72,6 +105,7 @@ async fn insert_contract(
         "032e58afe51f9ed8ad3cc7897f634d881fdbe49a81564629ded8156bebd2ffd1af"
             .parse()
             .expect("to be valid"),
+        "0x055098f73c89ca554f98c0298ce900235d2e1b4205a7ca629ae017518521c2c3".to_string(),
     )
     .await?;
     Ok(contract)
@@ -99,6 +133,7 @@ async fn insert_loan_offer(pool: &Pool<Postgres>, lender: User) -> Result<LoanOf
             duration_months_max: 12,
             loan_asset_type: LoanAssetType::Usdc,
             loan_asset_chain: LoanAssetChain::Ethereum,
+            loan_repayment_address: "0x4B0897b0513fdc7C541B6d9D7E929C4e5364D2dB".to_string(),
         },
         lender.id,
     )

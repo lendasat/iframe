@@ -1,4 +1,4 @@
- -- Add up migration script here
+-- Add up migration script here
 
 CREATE TABLE
     IF NOT EXISTS "borrowers"
@@ -40,24 +40,25 @@ CREATE TYPE loan_offer_status AS ENUM ('Available', 'Unavailable', 'Deleted');
 CREATE TABLE
     IF NOT EXISTS "loan_offers"
 (
-    id                  CHAR(36) PRIMARY KEY     NOT NULL,
-    lender_id           CHAR(36)                 NOT NULL,
-    name                VARCHAR(100)             NOT NULL,
-    min_ltv             DECIMAL                  NOT NULL,
-    interest_rate       DECIMAL                  NOT NULL,
-    loan_amount_min     DECIMAL                  NOT NULL,
-    loan_amount_max     DECIMAL                  NOT NULL,
-    duration_months_min INT                      NOT NULL,
-    duration_months_max INT                      NOT NULL,
-    loan_asset_type     loan_asset_type          NOT NULL,
-    loan_asset_chain    loan_asset_chain         NOT NULL,
-    status              loan_offer_status        NOT NULL,
-    created_at          TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at          TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    id                     CHAR(36) PRIMARY KEY     NOT NULL,
+    lender_id              CHAR(36)                 NOT NULL,
+    name                   VARCHAR(100)             NOT NULL,
+    min_ltv                DECIMAL                  NOT NULL,
+    interest_rate          DECIMAL                  NOT NULL,
+    loan_amount_min        DECIMAL                  NOT NULL,
+    loan_amount_max        DECIMAL                  NOT NULL,
+    duration_months_min    INT                      NOT NULL,
+    duration_months_max    INT                      NOT NULL,
+    loan_asset_type        loan_asset_type          NOT NULL,
+    loan_asset_chain       loan_asset_chain         NOT NULL,
+    status                 loan_offer_status        NOT NULL,
+    loan_repayment_address VARCHAR                  NOT NULL,
+    created_at             TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at             TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (lender_id) REFERENCES lenders (id)
 );
 
-CREATE TYPE contract_status AS ENUM ('Requested', 'Open', 'CollateralSeen', 'CollateralConfirmed', 'PrincipalGiven', 'Closed', 'Rejected');
+CREATE TYPE contract_status AS ENUM ('Requested', 'Approved', 'CollateralSeen', 'CollateralConfirmed', 'PrincipalGiven', 'Closed', 'Rejected');
 
 CREATE TABLE
     IF NOT EXISTS "contracts"
@@ -70,8 +71,9 @@ CREATE TABLE
     initial_collateral_sats BIGINT                   NOT NULL,
     loan_amount             DECIMAL                  NOT NULL,
     duration_months         INT                      NOT NULL,
-    borrower_payout_address TEXT                     NOT NULL,
+    borrower_btc_address    TEXT                     NOT NULL,
     borrower_pk             CHAR(66)                 NOT NULL,
+    borrower_loan_address   TEXT                     NOT NULL,
     status                  contract_status          NOT NULL,
     contract_address        TEXT,
     contract_index          INT,

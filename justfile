@@ -161,6 +161,9 @@ watch-hub:
 ## Database helper functions
 ## ------------------------
 
+docker:
+    docker compose up -d
+
 db-prepare:
     cd hub && cargo sqlx prepare --workspace --database-url=$DB_URL
 

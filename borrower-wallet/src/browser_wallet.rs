@@ -27,6 +27,8 @@ pub fn new(passphrase: String, network: String) -> Result<()> {
 
     storage.set_item(NETWORK_KEY, network.to_string())?;
 
+    storage.set_item(NEXT_PK_INDEX_KEY, 0)?;
+
     Ok(())
 }
 
@@ -55,7 +57,7 @@ pub fn get_next_pk() -> Result<String> {
 
     let pk_index = storage
         .get_item::<u32>(NEXT_PK_INDEX_KEY)?
-        .context("No passphrase stored for wallet")?;
+        .context("No index stored for wallet")?;
 
     let pk = wallet::get_pk(pk_index)?;
 

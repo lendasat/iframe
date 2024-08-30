@@ -1,0 +1,180 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO loan_offers (\n          id,\n          lender_id,\n          name,\n          min_ltv,\n          interest_rate,\n          loan_amount_min,\n          loan_amount_max,\n          duration_months_min,\n          duration_months_max,\n          loan_asset_type,\n          loan_asset_chain,\n          status,\n          loan_repayment_address\n        )\n        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)\n        RETURNING\n          id,\n          lender_id,\n          name,\n          min_ltv,\n          interest_rate,\n          loan_amount_min,\n          loan_amount_max,\n          duration_months_min,\n          duration_months_max,\n          loan_asset_type AS \"loan_asset_type: crate::model::LoanAssetType\",\n          loan_asset_chain AS \"loan_asset_chain: crate::model::LoanAssetChain\",\n          status AS \"status: crate::model::LoanOfferStatus\",\n          loan_repayment_address,\n          created_at,\n          updated_at\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "lender_id",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "min_ltv",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 4,
+        "name": "interest_rate",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 5,
+        "name": "loan_amount_min",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 6,
+        "name": "loan_amount_max",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 7,
+        "name": "duration_months_min",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 8,
+        "name": "duration_months_max",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 9,
+        "name": "loan_asset_type: crate::model::LoanAssetType",
+        "type_info": {
+          "Custom": {
+            "name": "loan_asset_type",
+            "kind": {
+              "Enum": [
+                "Usdc",
+                "Usdt"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "loan_asset_chain: crate::model::LoanAssetChain",
+        "type_info": {
+          "Custom": {
+            "name": "loan_asset_chain",
+            "kind": {
+              "Enum": [
+                "Ethereum",
+                "Starknet"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "status: crate::model::LoanOfferStatus",
+        "type_info": {
+          "Custom": {
+            "name": "loan_offer_status",
+            "kind": {
+              "Enum": [
+                "Available",
+                "Unavailable",
+                "Deleted"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "loan_repayment_address",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 13,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 14,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bpchar",
+        "Bpchar",
+        "Varchar",
+        "Numeric",
+        "Numeric",
+        "Numeric",
+        "Numeric",
+        "Int4",
+        "Int4",
+        {
+          "Custom": {
+            "name": "loan_asset_type",
+            "kind": {
+              "Enum": [
+                "Usdc",
+                "Usdt"
+              ]
+            }
+          }
+        },
+        {
+          "Custom": {
+            "name": "loan_asset_chain",
+            "kind": {
+              "Enum": [
+                "Ethereum",
+                "Starknet"
+              ]
+            }
+          }
+        },
+        {
+          "Custom": {
+            "name": "loan_offer_status",
+            "kind": {
+              "Enum": [
+                "Available",
+                "Unavailable",
+                "Deleted"
+              ]
+            }
+          }
+        },
+        "Varchar"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "94cae09a515f1cdc6f9b091ef81a33174123fe57297521eaf78e516813d0d524"
+}

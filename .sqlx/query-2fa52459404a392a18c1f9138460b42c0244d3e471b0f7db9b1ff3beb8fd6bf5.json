@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        UPDATE contracts\n        SET status = $1,\n            updated_at = $2\n        WHERE lender_id = $3\n          AND id = $4\n        RETURNING\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            loan_amount,\n            borrower_payout_address,\n            borrower_pk,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            duration_months,\n            created_at,\n            updated_at\n        ",
+  "query": "\n        INSERT INTO contracts (\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            loan_amount,\n            duration_months,\n            status,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            contract_address,\n            contract_index\n        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)\n        RETURNING\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            duration_months,\n            created_at,\n            updated_at\n        ",
   "describe": {
     "columns": [
       {
@@ -40,7 +40,7 @@
       },
       {
         "ordinal": 7,
-        "name": "borrower_payout_address",
+        "name": "borrower_btc_address",
         "type_info": "Text"
       },
       {
@@ -50,16 +50,21 @@
       },
       {
         "ordinal": 9,
-        "name": "contract_address",
+        "name": "borrower_loan_address",
         "type_info": "Text"
       },
       {
         "ordinal": 10,
+        "name": "contract_address",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 11,
         "name": "contract_index",
         "type_info": "Int4"
       },
       {
-        "ordinal": 11,
+        "ordinal": 12,
         "name": "status: crate::model::db::ContractStatus",
         "type_info": {
           "Custom": {
@@ -67,7 +72,7 @@
             "kind": {
               "Enum": [
                 "Requested",
-                "Open",
+                "Approved",
                 "CollateralSeen",
                 "CollateralConfirmed",
                 "PrincipalGiven",
@@ -79,30 +84,38 @@
         }
       },
       {
-        "ordinal": 12,
+        "ordinal": 13,
         "name": "duration_months",
         "type_info": "Int4"
       },
       {
-        "ordinal": 13,
+        "ordinal": 14,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 14,
+        "ordinal": 15,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
+        "Bpchar",
+        "Bpchar",
+        "Bpchar",
+        "Bpchar",
+        "Numeric",
+        "Int8",
+        "Numeric",
+        "Int4",
         {
           "Custom": {
             "name": "contract_status",
             "kind": {
               "Enum": [
                 "Requested",
-                "Open",
+                "Approved",
                 "CollateralSeen",
                 "CollateralConfirmed",
                 "PrincipalGiven",
@@ -112,12 +125,15 @@
             }
           }
         },
-        "Timestamptz",
+        "Text",
         "Bpchar",
-        "Bpchar"
+        "Text",
+        "Text",
+        "Int4"
       ]
     },
     "nullable": [
+      false,
       false,
       false,
       false,
@@ -135,5 +151,5 @@
       false
     ]
   },
-  "hash": "59e0dd0b2fe4baca21bfb31af766dfea3c92e4e29b7d9ebc99a61d44622cbbc3"
+  "hash": "2fa52459404a392a18c1f9138460b42c0244d3e471b0f7db9b1ff3beb8fd6bf5"
 }

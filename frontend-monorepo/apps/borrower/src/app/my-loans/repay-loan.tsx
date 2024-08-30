@@ -36,11 +36,11 @@ interface RepayLoanComponentProps {
 function RepayLoanComponent({ contract }: RepayLoanComponentProps) {
   const collateral = contract.collateral;
   const loanAmount = contract.amount;
-  const accruedInterest = (contract.amount * contract.interest) / 100;
+  const accruedInterest = (contract.amount * contract.interest_rate) / 100;
   const refundAddress = contract.refundAddress;
   const totalRepaymentAmount = accruedInterest + loanAmount;
   const repaymentAddress = contract.repaymentAddress;
-  const interestRate = contract.interest;
+  const interestRate = contract.interest_rate;
 
   const [isRepaid, setIsRepaid] = useState(false);
 
