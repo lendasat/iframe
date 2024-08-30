@@ -1,9 +1,11 @@
 import { AuthIsNotSignedIn, AuthIsSignedIn, AuthProvider } from "@frontend-monorepo/http-client";
 import { Layout } from "@frontend-monorepo/ui-shared";
 import { Outlet, Route, Routes } from "react-router-dom";
+import ForgotPassword from "./auth/forgot-password";
 import Login from "./auth/login";
 import Logout from "./auth/logout";
 import Registration from "./auth/registration";
+import ResetPassword from "./auth/reset-password";
 import DashBoard from "./dash-board";
 import MyAccount from "./my-account";
 import { CollateralizeLoan } from "./my-loans/collateralize-loan";
@@ -62,6 +64,8 @@ function App() {
         <Routes>
           <Route index element={<Login />} />
           <Route path="/registration" element={<Registration />} />
+          <Route path="/forgotpassword" element={<ForgotPassword />} />
+          <Route path="/resetpassword/:token" element={<ResetPassword />} />
           <Route path="/logout" element={<Logout />} />
           <Route path="/login" element={<Login />} />
         </Routes>

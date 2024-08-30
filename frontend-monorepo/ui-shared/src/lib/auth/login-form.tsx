@@ -6,9 +6,10 @@ import { ReactComponent as Logo } from "../lendasat_white_bg.svg";
 interface LoginFormProps {
   handleLogin: (email: string, password: string) => Promise<void>;
   registrationLink: string;
+  forgotPasswordLink: string;
 }
 
-export function LoginForm({ handleLogin, registrationLink }: LoginFormProps) {
+export function LoginForm({ handleLogin, registrationLink, forgotPasswordLink }: LoginFormProps) {
   const [email, setEmail] = useState("borrower@lendasat.com");
   const [password, setPassword] = useState("password123");
   const [error, setError] = useState("");
@@ -61,7 +62,12 @@ export function LoginForm({ handleLogin, registrationLink }: LoginFormProps) {
             </Form>
 
             <Container className="d-flex justify-content-center w-100 mt-2">
-              <Link to={registrationLink}>Sign Up</Link>
+              <Row className={"d-flex justify-content-center"}>
+                <Col>
+                  <Link to={registrationLink} className={"me-3"}>Sign Up</Link>
+                  <Link to={forgotPasswordLink}>Forgot Password</Link>
+                </Col>
+              </Row>
             </Container>
           </div>
         </Col>
