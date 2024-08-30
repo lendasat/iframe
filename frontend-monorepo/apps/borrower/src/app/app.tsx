@@ -28,7 +28,7 @@ const navItems = [
 
 function App() {
   return (
-    <AuthProvider baseUrl="http://localhost:7337">
+    <AuthProvider baseUrl={import.meta.env.VITE_BORROWER_BASE_URL || "/"}>
       <AuthIsSignedIn>
         <PriceProvider>
           <Layout
