@@ -3349,6 +3349,7 @@ name = "tests-e2e"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bitcoin",
  "borrower-wallet",
  "dotenv",
  "hub",
