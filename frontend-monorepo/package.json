@@ -14,7 +14,10 @@
     "tslib": "^2.3.0",
     "uuid": "^10.0.0",
     "qrcode.react": "3.1.0",
-    "date-fns": "3.6.0"
+    "date-fns": "3.6.0",
+    "@emotion/react": "^11.10.5",
+    "@emotion/styled": "^11.10.5",
+    "react-pro-sidebar": "^1.1.0"
   },
   "devDependencies": {
     "@babel/core": "^7.14.5",

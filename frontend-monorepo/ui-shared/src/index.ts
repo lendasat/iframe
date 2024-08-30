@@ -1,3 +1,4 @@
+export * from './lib/full-logo-white-bg';
 export * from './lib/ltv-progress-bar/ltv-progress-bar';
 export * from './lib/auth/registration-form';
 export * from './lib/auth/login-form';

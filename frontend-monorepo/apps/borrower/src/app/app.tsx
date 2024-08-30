@@ -1,3 +1,11 @@
+import {
+  faMoneyBillTransfer,
+  faMoneyCheckDollar,
+  faQuestionCircle,
+  faRightFromBracket,
+  faUserCircle,
+  faWallet,
+} from "@fortawesome/free-solid-svg-icons";
 import { AuthIsNotSignedIn, AuthIsSignedIn, AuthProvider } from "@frontend-monorepo/http-client";
 import { Layout } from "@frontend-monorepo/ui-shared";
 import { Outlet, Route, Routes } from "react-router-dom";
@@ -15,6 +23,7 @@ import { PriceProvider } from "./price-context";
 import Profile from "./profile";
 import RequestLoan from "./request-loan/request-loan";
 import { RequestLoanSummary } from "./request-loan/request-loan-summary";
+import { SideBar } from "./SideBar";
 import Wallet from "./wallet";
 
 const navItems = [
@@ -26,14 +35,23 @@ const navItems = [
   { href: "/logout", label: "Logout" },
 ];
 
+const menuItems = [
+  { label: "Request a Loan", icon: faMoneyBillTransfer, path: "/request-loan" },
+  { label: "My loans", icon: faMoneyCheckDollar, path: "/my-contracts" },
+  { label: "My account", icon: faUserCircle, path: "/my-account" },
+  { label: "Wallet", icon: faWallet, path: "/wallet" },
+  { label: "Help", icon: faQuestionCircle, path: "/help" },
+  { label: "Logout", icon: faRightFromBracket, path: "/logout" },
+];
+
 function App() {
   return (
     <AuthProvider baseUrl="http://localhost:7337">
       <AuthIsSignedIn>
         <PriceProvider>
           <Layout
-            navItems={navItems}
-            defaultActiveKey={"/my-account"}
+            menuItems={menuItems}
+            theme={"light"}
           >
             <Routes>
               <Route
