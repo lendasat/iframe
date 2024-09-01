@@ -1,10 +1,8 @@
 import { Contract, ContractStatus } from "@frontend-monorepo/http-client";
 import { LtvProgressBar } from "@frontend-monorepo/ui-shared";
-import { parseISO } from "date-fns";
 import React from "react";
 import { Badge, Button, Card, Col, Container, Row } from "react-bootstrap";
 import { usePrice } from "../price-context";
-import { LenderProfile } from "../request-loan/lender";
 import CurrencyFormatter from "../usd";
 
 interface LoanComponentProps {

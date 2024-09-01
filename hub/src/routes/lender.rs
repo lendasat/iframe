@@ -3,11 +3,20 @@ use crate::mempool;
 use crate::routes::AppState;
 use crate::wallet::Wallet;
 use anyhow::Result;
+use axum::http::header::ACCEPT;
+use axum::http::header::ACCESS_CONTROL_ALLOW_HEADERS;
+use axum::http::header::ACCESS_CONTROL_ALLOW_ORIGIN;
+use axum::http::header::AUTHORIZATION;
+use axum::http::header::CONTENT_TYPE;
+use axum::http::header::ORIGIN;
+use axum::http::HeaderValue;
+use axum::http::Method;
 use axum::Router;
 use sqlx::Pool;
 use sqlx::Postgres;
 use std::sync::Arc;
 use tokio::task::JoinHandle;
+use tower_http::cors::CorsLayer;
 use tower_http::services::ServeDir;
 use tower_http::services::ServeFile;
 
@@ -39,6 +48,22 @@ pub async fn spawn_lender_server(
                 )),
             ),
     );
+
+    // todo: make this a dev-only setting
+    let cors = CorsLayer::new()
+        .allow_credentials(true)
+        .allow_methods(vec![Method::GET, Method::POST, Method::PUT, Method::DELETE])
+        .allow_headers(vec![
+            ORIGIN,
+            AUTHORIZATION,
+            ACCEPT,
+            ACCESS_CONTROL_ALLOW_HEADERS,
+            ACCESS_CONTROL_ALLOW_ORIGIN,
+            CONTENT_TYPE,
+        ])
+        .allow_origin(["http://localhost:4201".parse::<HeaderValue>()?]);
+
+    let app = app.layer(cors);
 
     let listener = tokio::net::TcpListener::bind(&config.lender_listen_address).await?;
 

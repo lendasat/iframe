@@ -8,13 +8,13 @@ import init, { get_next_pk } from "../../../../../../borrower-wallet/pkg/borrowe
 import { usePrice } from "../price-context";
 import { formatCurrency } from "../usd";
 import { Lender } from "./lender";
-import { LoanFilterType } from "./loan-offers-filter";
+import { LoanFilter, LoanFilterType } from "./loan-offers-filter";
 import { Slider, SliderProps } from "./slider";
 import { StableCoin, StableCoinDropdown, StableCoinHelper } from "./stable-coin";
 
 type LocationState = {
   loanOffer: LoanOffer;
-  loanFilters?: any;
+  loanFilters?: LoanFilter[];
 };
 
 export function RequestLoanSummary() {
@@ -78,7 +78,7 @@ export function RequestLoanSummary() {
     // TODO: This only works if the wallet is already loaded!
     const borrowerPk = get_next_pk();
 
-    const collateralFloat = parseFloat(collateral!.toFixed(8));
+    const collateralFloat = parseFloat(collateral.toFixed(8));
     const collateralSats = parseInt((collateralFloat * 100000000).toFixed(0));
 
     const initial_ltv = loanOffer.ltv / 100;
@@ -86,7 +86,7 @@ export function RequestLoanSummary() {
     const res = await postContractRequest({
       loan_id: loanOffer.id,
       initial_ltv: initial_ltv,
-      loan_amount: loanAmount!,
+      loan_amount: loanAmount || 0,
       initial_collateral_sats: collateralSats,
       duration_months: loanDuration,
       borrower_btc_address: btcAddress,
@@ -94,7 +94,7 @@ export function RequestLoanSummary() {
       borrower_loan_address: loanAddress,
     });
 
-    if (res != undefined) {
+    if (res !== undefined) {
       navigate("/my-contracts");
     } else {
       // Handle error if needed

@@ -1,48 +1,54 @@
-import NxWelcome from "./nx-welcome";
+import { faMoneyBillTransfer, faMoneyCheckDollar, faRightFromBracket } from "@fortawesome/free-solid-svg-icons";
+import { AuthIsNotSignedIn, AuthIsSignedIn, AuthProvider } from "@frontend-monorepo/http-client";
+import { Layout } from "@frontend-monorepo/ui-shared";
+import { Outlet, Route, Routes } from "react-router-dom";
+import ForgotPassword from "./auth/forgot-password";
+import Login from "./auth/login";
+import Logout from "./auth/logout";
+import Registration from "./auth/registration";
+import ResetPassword from "./auth/reset-password";
+import CreateLoanOffer from "./create-loan-offer";
+import MyLoans from "./my-loans";
 
-import { Link, Route, Routes } from "react-router-dom";
+const menuItems = [
+  { label: "Create Loan Offer", icon: faMoneyBillTransfer, path: "/create-loan-offer" },
+  { label: "My Loans", icon: faMoneyCheckDollar, path: "/my-contracts" },
+  { label: "Logout", icon: faRightFromBracket, path: "/logout" },
+];
 
-export function App() {
+function App() {
   return (
-    <div>
-      <NxWelcome title="lender" />
-
-      {/* START: routes */}
-      {/* These routes and navigation have been generated for you */}
-      {/* Feel free to move and update them to fit your needs */}
-      <br />
-      <hr />
-      <br />
-      <div role="navigation">
-        <ul>
-          <li>
-            <Link to="/">Home</Link>
-          </li>
-          <li>
-            <Link to="/page-2">Page 2</Link>
-          </li>
-        </ul>
-      </div>
-      <Routes>
-        <Route
-          path="/"
-          element={
-            <div>
-              This is the generated root route. <Link to="/page-2">Click here for page 2.</Link>
-            </div>
-          }
-        />
-        <Route
-          path="/page-2"
-          element={
-            <div>
-              <Link to="/">Click here to go back to root page.</Link>
-            </div>
-          }
-        />
-      </Routes>
-      {/* END: routes */}
-    </div>
+    <AuthProvider baseUrl={import.meta.env.VITE_LENDER_BASE_URL || "/"}>
+      <AuthIsSignedIn>
+        <Layout menuItems={menuItems} theme={"light"}>
+          <Routes>
+            <Route
+              element={
+                <div>
+                  <Outlet />
+                </div>
+              }
+            >
+              <Route path="/create-loan-offer" element={<CreateLoanOffer />} />
+              <Route path="/my-contracts">
+                <Route index element={<MyLoans />} />
+              </Route>
+            </Route>
+            <Route path="/logout" element={<Logout />} />
+          </Routes>
+        </Layout>
+      </AuthIsSignedIn>
+      <AuthIsNotSignedIn>
+        <Routes>
+          <Route index element={<Login />} />
+          <Route path="/registration" element={<Registration />} />
+          <Route path="/forgotpassword" element={<ForgotPassword />} />
+          <Route path="/resetpassword/:token" element={<ResetPassword />} />
+          <Route path="/logout" element={<Logout />} />
+          <Route path="/login" element={<Login />} />
+        </Routes>
+      </AuthIsNotSignedIn>
+    </AuthProvider>
   );
 }
 

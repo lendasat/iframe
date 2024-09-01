@@ -23,17 +23,7 @@ import { PriceProvider } from "./price-context";
 import Profile from "./profile";
 import RequestLoan from "./request-loan/request-loan";
 import { RequestLoanSummary } from "./request-loan/request-loan-summary";
-import { SideBar } from "./SideBar";
 import Wallet from "./wallet";
-
-const navItems = [
-  { href: "/request-loan", label: "Request a Loan" },
-  { href: "/my-contracts", label: "My Loans" },
-  { href: "/my-account", label: "My Account" },
-  { href: "/wallet", label: "Wallet" },
-  { href: "/help", label: "Help" },
-  { href: "/logout", label: "Logout" },
-];
 
 const menuItems = [
   { label: "Request a Loan", icon: faMoneyBillTransfer, path: "/request-loan" },
