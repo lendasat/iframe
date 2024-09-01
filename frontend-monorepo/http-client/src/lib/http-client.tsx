@@ -15,6 +15,7 @@ interface AuthContextProps {
   resetPassword: (password: string, password_confirm: string, resetPasswordToken: string) => Promise<string>;
   postContractRequest: (request: ContractRequest) => Promise<Contract>;
   getContracts: () => Promise<Contract[]>;
+  verifyEmail: (token: string) => Promise<string>;
   user: User | null;
 }
 
@@ -279,6 +280,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ baseUrl, children })
     }
   };
 
+  const verifyEmail = async (token: string): Promise<string> => {
+    try {
+      const response = await httpClient.get(`/api/auth/verifyemail/${token}`);
+      return response.data.message;
+    } catch (error) {
+      const msg = `http: ${error.response?.status} and response: ${error.response?.data.message}`;
+      console.error(msg);
+      throw new Error(msg);
+    }
+  };
+
   const resetPassword = async (
     password: string,
     passwordConfirm: string,
@@ -313,6 +325,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ baseUrl, children })
         getContracts,
         forgotPassword,
         resetPassword,
+        verifyEmail,
       }}
     >
       {children}

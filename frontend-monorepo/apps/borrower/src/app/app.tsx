@@ -9,6 +9,7 @@ import {
 import { AuthIsNotSignedIn, AuthIsSignedIn, AuthProvider } from "@frontend-monorepo/http-client";
 import { Layout } from "@frontend-monorepo/ui-shared";
 import { Outlet, Route, Routes } from "react-router-dom";
+import EmailVerification from "./auth/email-verification";
 import ForgotPassword from "./auth/forgot-password";
 import Login from "./auth/login";
 import Logout from "./auth/logout";
@@ -23,17 +24,7 @@ import { PriceProvider } from "./price-context";
 import Profile from "./profile";
 import RequestLoan from "./request-loan/request-loan";
 import { RequestLoanSummary } from "./request-loan/request-loan-summary";
-import { SideBar } from "./SideBar";
 import Wallet from "./wallet";
-
-const navItems = [
-  { href: "/request-loan", label: "Request a Loan" },
-  { href: "/my-contracts", label: "My Loans" },
-  { href: "/my-account", label: "My Account" },
-  { href: "/wallet", label: "Wallet" },
-  { href: "/help", label: "Help" },
-  { href: "/logout", label: "Logout" },
-];
 
 const menuItems = [
   { label: "Request a Loan", icon: faMoneyBillTransfer, path: "/request-loan" },
@@ -84,6 +75,7 @@ function App() {
           <Route path="/registration" element={<Registration />} />
           <Route path="/forgotpassword" element={<ForgotPassword />} />
           <Route path="/resetpassword/:token" element={<ResetPassword />} />
+          <Route path="/verifyemail/:token" element={<EmailVerification />} />
           <Route path="/logout" element={<Logout />} />
           <Route path="/login" element={<Login />} />
         </Routes>
