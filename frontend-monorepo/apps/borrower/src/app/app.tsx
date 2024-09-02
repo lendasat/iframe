@@ -9,6 +9,7 @@ import {
 import { AuthIsNotSignedIn, AuthIsSignedIn, AuthProvider } from "@frontend-monorepo/http-client";
 import { Layout } from "@frontend-monorepo/ui-shared";
 import { Outlet, Route, Routes } from "react-router-dom";
+import EmailVerification from "./auth/email-verification";
 import ForgotPassword from "./auth/forgot-password";
 import Login from "./auth/login";
 import Logout from "./auth/logout";
@@ -74,6 +75,7 @@ function App() {
           <Route path="/registration" element={<Registration />} />
           <Route path="/forgotpassword" element={<ForgotPassword />} />
           <Route path="/resetpassword/:token" element={<ResetPassword />} />
+          <Route path="/verifyemail/:token" element={<EmailVerification />} />
           <Route path="/logout" element={<Logout />} />
           <Route path="/login" element={<Login />} />
         </Routes>
