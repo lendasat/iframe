@@ -65,7 +65,7 @@ pub fn get_next_pk() -> Result<String> {
 }
 
 /// Check if the browser's local storage already has the encrypted wallet data.
-fn does_wallet_exist() -> Result<bool> {
+pub fn does_wallet_exist() -> Result<bool> {
     let storage = local_storage()?;
 
     let passphrase = storage.get_item::<String>(PASSPHRASE_STORAGE_KEY)?;

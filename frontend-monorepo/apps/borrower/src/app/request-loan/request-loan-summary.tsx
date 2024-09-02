@@ -1,12 +1,18 @@
-import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+import { faInfoCircle, faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { LoanOffer, useAuth } from "@frontend-monorepo/http-client";
 import React, { useState } from "react";
 import { Alert, Badge, Button, Col, Container, Form, Row } from "react-bootstrap";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import init, { get_next_pk } from "../../../../../../borrower-wallet/pkg/borrower_wallet.js";
+import init, {
+  does_wallet_exist,
+  get_next_pk,
+  is_wallet_loaded,
+} from "../../../../../../borrower-wallet/pkg/borrower_wallet.js";
 import { usePrice } from "../price-context";
 import { formatCurrency } from "../usd";
+import { CreateWalletModal } from "../wallet/create-wallet-modal";
+import { UnlockWalletModal } from "../wallet/unlock-wallet-modal";
 import { Lender } from "./lender";
 import { LoanFilter, LoanFilterType } from "./loan-offers-filter";
 import { Slider, SliderProps } from "./slider";
@@ -20,6 +26,7 @@ type LocationState = {
 export function RequestLoanSummary() {
   const location = useLocation();
   const { loanOffer, loanFilters } = location.state as LocationState || {};
+  const [error, setError] = useState("");
 
   const ORIGINATOR_FEE = 0.01;
   const { latestPrice } = usePrice();
@@ -46,9 +53,11 @@ export function RequestLoanSummary() {
   const [selectedCoin, setSelectedCoin] = useState<StableCoin | undefined>(initCoin);
 
   const [loanAddress, setLoanAddress] = useState("");
-  const [btcAddress, setBtcAddress] = useState("");
+  const [btcAddress, setBtcAddress] = useState("bcrt1qqpf790lnsavxe9ree00tp8dd550ddw76pluxyr02tn2rssj6dtnstxmagd");
   const [amountError, setAmountError] = useState<string | null>(null);
   const [loanDuration, setLoanDuration] = useState<number>(initMonths);
+  const [showCreateWalletModal, setShowCreateWalletModal] = useState(false);
+  const [showUnlockWalletModal, setShowUnlockWalletModal] = useState(false);
 
   const [collateral] = useState<number>(loanAmount / (loanOffer.ltv / 100) / latestPrice);
 
@@ -70,34 +79,56 @@ export function RequestLoanSummary() {
     }
   };
 
+  const handleCloseCreateWalletModal = () => setShowCreateWalletModal(false);
+  const handleOpenCreateWalletModal = () => setShowCreateWalletModal(true);
+
+  const handleCloseUnlockWalletModal = () => setShowUnlockWalletModal(false);
+  const handleOpenUnlockWalletModal = () => setShowUnlockWalletModal(true);
+
   const navigate = useNavigate();
   const handleRequestLoan = async () => {
-    // TODO: Is this necessary?
-    await init();
+    try {
+      // TODO: Is this necessary?
+      await init();
 
-    // TODO: This only works if the wallet is already loaded!
-    const borrowerPk = get_next_pk();
+      const walletExists = await does_wallet_exist();
+      const isLoaded = await is_wallet_loaded();
+      if (!walletExists) {
+        handleOpenCreateWalletModal();
+        return;
+      }
+      if (!isLoaded) {
+        handleOpenUnlockWalletModal();
+        return;
+      }
 
-    const collateralFloat = parseFloat(collateral.toFixed(8));
-    const collateralSats = parseInt((collateralFloat * 100000000).toFixed(0));
+      // TODO: This only works if the wallet is already loaded!
+      const borrowerPk = get_next_pk();
 
-    const initial_ltv = loanOffer.ltv / 100;
+      const collateralFloat = parseFloat(collateral.toFixed(8));
+      const collateralSats = parseInt((collateralFloat * 100000000).toFixed(0));
 
-    const res = await postContractRequest({
-      loan_id: loanOffer.id,
-      initial_ltv: initial_ltv,
-      loan_amount: loanAmount || 0,
-      initial_collateral_sats: collateralSats,
-      duration_months: loanDuration,
-      borrower_btc_address: btcAddress,
-      borrower_pk: borrowerPk,
-      borrower_loan_address: loanAddress,
-    });
+      const initial_ltv = loanOffer.ltv / 100;
 
-    if (res !== undefined) {
-      navigate("/my-contracts");
-    } else {
-      // Handle error if needed
+      const res = await postContractRequest({
+        loan_id: loanOffer.id,
+        initial_ltv: initial_ltv,
+        loan_amount: loanAmount || 0,
+        initial_collateral_sats: collateralSats,
+        duration_months: loanDuration,
+        borrower_btc_address: btcAddress,
+        borrower_pk: borrowerPk,
+        borrower_loan_address: loanAddress,
+      });
+
+      if (res !== undefined) {
+        navigate("/my-contracts");
+      } else {
+        // Handle error if needed
+      }
+    } catch (error) {
+      console.log(`Unexpected error happened ${error}`);
+      setError(error);
     }
   };
 
@@ -124,8 +155,26 @@ export function RequestLoanSummary() {
     || !loanAddress.trim();
 
   const addressLabel = selectedCoin ? `${StableCoinHelper.print(selectedCoin)} Address` : "Address";
+
+  const handleSubmitCreateWalletModal = () => {
+    handleCloseCreateWalletModal();
+  };
+  const handleSubmitUnlockWalletModal = () => {
+    handleCloseUnlockWalletModal();
+  };
+
   return (
     <Container className={"p-4"} fluid>
+      <CreateWalletModal
+        show={showCreateWalletModal}
+        handleClose={handleCloseCreateWalletModal}
+        handleSubmit={handleSubmitCreateWalletModal}
+      />
+      <UnlockWalletModal
+        show={showUnlockWalletModal}
+        handleClose={handleCloseUnlockWalletModal}
+        handleSubmit={handleSubmitUnlockWalletModal}
+      />
       <Row>
         <h3>
           Collateral Contract <Badge bg="primary">Draft</Badge>
@@ -235,6 +284,15 @@ export function RequestLoanSummary() {
           <Button onClick={handleRequestLoan} disabled={isButtonDisabled}>Request</Button>
         </Col>
       </Row>
+      {error
+        ? (
+          <Row>
+            <Alert className="mb-2" key="info" variant="danger">
+              <FontAwesomeIcon icon={faWarning} /> {error}
+            </Alert>
+          </Row>
+        )
+        : ""}
     </Container>
   );
 }
