@@ -29,6 +29,7 @@ pub struct Contract {
     pub loan_amount: Decimal,
     pub collateral_sats: u64,
     pub interest_rate: Decimal,
+    pub initial_ltv: Decimal,
     pub status: ContractStatus,
     // TODO: We should persist this first.
     pub borrower_btc_address: String,
@@ -135,6 +136,7 @@ pub async fn get_contracts(
             loan_amount: contract.loan_amount,
             collateral_sats: contract.initial_collateral_sats,
             interest_rate: offer.interest_rate,
+            initial_ltv: contract.initial_ltv,
             status: contract.status,
             borrower_btc_address: contract.borrower_btc_address.assume_checked().to_string(),
             borrower_loan_address: contract.borrower_loan_address,
@@ -217,6 +219,7 @@ pub async fn get_contract(
             loan_amount: contract.loan_amount,
             collateral_sats: contract.initial_collateral_sats,
             interest_rate: offer.interest_rate,
+            initial_ltv: contract.initial_ltv,
             status: contract.status,
             borrower_btc_address: contract.borrower_btc_address.assume_checked().to_string(),
             borrower_loan_address: contract.borrower_loan_address,

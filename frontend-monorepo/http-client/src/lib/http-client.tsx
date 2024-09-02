@@ -68,12 +68,13 @@ export interface Contract {
   expiry: Date;
   interest_rate: number;
   collateral_sats: number;
+  initial_ltv: number;
   status: ContractStatus;
   lender: LenderProfile;
-  refundAddress: string;
-  repaymentAddress: string;
-  collateralAddress: string;
-  loanAddress: string;
+  borrower_btc_address: string;
+  loan_repayment_address: string;
+  contract_address?: string;
+  borrower_loan_address: string;
 }
 
 // Interface for the raw data received from the API

@@ -1,28 +1,9 @@
+import { LoanOffer } from "@frontend-monorepo/http-client";
 import React from "react";
 import { Badge, Button, Card, Col, Container, Row } from "react-bootstrap";
 import CurrencyFormatter from "../usd";
-import { Lender, LenderProfile } from "./lender";
-import { StableCoin, StableCoinHelper } from "./stable-coin";
-
-export interface LoanDuration {
-  min: number;
-  max: number;
-}
-
-export interface LoanAmount {
-  min: number;
-  max: number;
-}
-
-export interface LoanOffer {
-  id: string;
-  lender: LenderProfile;
-  amount: LoanAmount;
-  duration: LoanDuration;
-  ltv: number;
-  interest: number;
-  coins: StableCoin[];
-}
+import { Lender } from "./lender";
+import { StableCoinHelper } from "./stable-coin";
 
 interface LoanOfferProps {
   loanOffer: LoanOffer;
