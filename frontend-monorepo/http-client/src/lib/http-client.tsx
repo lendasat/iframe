@@ -9,12 +9,12 @@ interface AuthContextProps {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   me: () => Promise<User | undefined>;
-  contract: (id: string) => Promise<Contract | undefined>;
   getLoanOffers: () => Promise<LoanOffer[] | undefined>;
   forgotPassword: (email: string) => Promise<string>;
   resetPassword: (password: string, password_confirm: string, resetPasswordToken: string) => Promise<string>;
   postContractRequest: (request: ContractRequest) => Promise<Contract>;
   getContracts: () => Promise<Contract[]>;
+  getContract: (id: string) => Promise<Contract>;
   verifyEmail: (token: string) => Promise<string>;
   user: User | null;
 }
@@ -204,28 +204,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ baseUrl, children })
     }
   };
 
-  const contract = async (id: string): Promise<Contract> => {
-    return {
-      id: "06a98ef2-3f4b-4c78-8fd1-9e8f7329da78",
-      loan_amount: 14000,
-      created_at: new Date(),
-      repaid_at: new Date(),
-      expiry: new Date(),
-      interest_rate: 11,
-      collateral_sats: 0.465,
-      status: ContractStatus.Approved,
-      lender: {
-        name: "Lord Lendalot 2",
-        rate: 99,
-        loans: 345,
-      },
-      collateralAddress: "bc1qnrq90k7us7lpnq6xwf76vyuhrsf3wxaz3cmtc2",
-      refundAddress: "bc1qnrq90k7us7lpnq6xwf76vyuhrsf3wxaz3cmtc2",
-      repaymentAddress: "0x12314014910249012940129410240124",
-      loanAddress: "0x124124j12j4oh12o4h12h4og12o4p1h24oih124",
-    };
-  };
-
   const getLoanOffers = async (): Promise<LoanOffer[] | undefined> => {
     try {
       const response: AxiosResponse<LoanOffer[]> = await httpClient.get("/api/offers");
@@ -264,6 +242,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ baseUrl, children })
     } catch (error) {
       console.error(
         `Failed to fetch contracts: http: ${error.response?.status} and response: ${error.response?.data}`,
+      );
+      throw error;
+    }
+  };
+
+  const getContract = async (id: string): Promise<Contract> => {
+    try {
+      const contractResponse: AxiosResponse<RawContract> = await httpClient.get(`/api/contracts/${id}`);
+      const contract = contractResponse.data;
+      return {
+        ...contract,
+        created_at: parseRFC3339Date(contract.created_at)!,
+        repaid_at: parseRFC3339Date(contract.repaid_at),
+        expiry: parseRFC3339Date(contract.expiry)!,
+      };
+    } catch (error) {
+      console.error(
+        `Failed to fetch contract: http: ${error.response?.status} and response: ${error.response?.data}`,
       );
       throw error;
     }
@@ -319,12 +315,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ baseUrl, children })
         logout,
         user,
         me,
-        contract,
         getLoanOffers,
         postContractRequest,
         getContracts,
         forgotPassword,
         resetPassword,
+        getContract,
         verifyEmail,
       }}
     >

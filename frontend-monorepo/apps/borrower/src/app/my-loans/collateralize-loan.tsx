@@ -10,14 +10,14 @@ import { Lender } from "../request-loan/lender";
 import Usd from "../usd";
 
 export function CollateralizeLoan() {
-  const { contract } = useAuth();
+  const { getContract } = useAuth();
   const { id } = useParams();
 
   return (
     <div>
       <Suspense>
         <Await
-          resolve={contract(id)}
+          resolve={getContract(id)}
           errorElement={<div>Could not load contract</div>}
           children={(resolvedContract: Awaited<Contract>) => <CollateralizeLoanComponent contract={resolvedContract} />}
         />

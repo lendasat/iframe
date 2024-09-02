@@ -7,11 +7,15 @@ interface LoginFormProps {
   handleLogin: (email: string, password: string) => Promise<void>;
   registrationLink: string;
   forgotPasswordLink: string;
+  initialUserEmail: string;
+  initialUserPassword: string;
 }
 
-export function LoginForm({ handleLogin, registrationLink, forgotPasswordLink }: LoginFormProps) {
-  const [email, setEmail] = useState("lender@lendasat.com");
-  const [password, setPassword] = useState("password123");
+export function LoginForm(
+  { handleLogin, registrationLink, forgotPasswordLink, initialUserEmail, initialUserPassword }: LoginFormProps,
+) {
+  const [email, setEmail] = useState(initialUserEmail);
+  const [password, setPassword] = useState(initialUserPassword);
   const [error, setError] = useState("");
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
