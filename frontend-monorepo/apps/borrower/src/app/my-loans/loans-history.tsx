@@ -3,7 +3,7 @@ import { Col, Container, Row } from "react-bootstrap";
 import { LoanHistoryComponent } from "./loan-history";
 
 interface LoansHistoryComponentsProps {
-  loan: Contract[];
+  loans: Contract[];
 }
 
 function LoansHistoryComponent(props: LoansHistoryComponentsProps) {

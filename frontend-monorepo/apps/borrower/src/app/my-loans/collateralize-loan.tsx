@@ -5,19 +5,18 @@ import QRCode from "qrcode.react";
 import React, { Suspense, useState } from "react";
 import { Alert, Badge, Button, Col, Container, Form, InputGroup, Row } from "react-bootstrap";
 import { Await, useParams } from "react-router-dom";
-import { usePrice } from "../price-context";
 import { Lender } from "../request-loan/lender";
 import Usd from "../usd";
 
 export function CollateralizeLoan() {
-  const { contract } = useAuth();
+  const { getContract } = useAuth();
   const { id } = useParams();
 
   return (
     <div>
       <Suspense>
         <Await
-          resolve={contract(id)}
+          resolve={getContract(id)}
           errorElement={<div>Could not load contract</div>}
           children={(resolvedContract: Awaited<Contract>) => <CollateralizeLoanComponent contract={resolvedContract} />}
         />
@@ -33,14 +32,17 @@ interface CollateralizeLoanComponentProps {
 function CollateralizeLoanComponent({ contract }: CollateralizeLoanComponentProps) {
   const ORIGINATOR_FEE = 0.01;
 
-  const latestPrice = usePrice().latestPrice;
-  const collateral = contract.collateral_sats;
+  const collateral_sats = contract.collateral_sats;
+  const collateral = collateral_sats / 100000000;
   const loanAmount = contract.loan_amount;
-  const loanAddress = contract.loanAddress;
-  const collateralAddress = contract.collateralAddress;
+  const loanAddress = contract.borrower_loan_address;
+  const contractAddress = contract.contract_address;
   const interestRate = contract.interest_rate;
 
-  const loanOriginatorFee = (loanAmount / latestPrice) * ORIGINATOR_FEE;
+  const initialLtv = contract.initial_ltv;
+  const initial_price = loanAmount / (collateral * initialLtv);
+
+  const loanOriginatorFee = (loanAmount / initial_price) * ORIGINATOR_FEE;
   const totalCollateral = collateral + loanOriginatorFee;
 
   const [isCollateralizedConfirmed, setIsCollateralizedConfirmed] = useState(false);
@@ -75,7 +77,7 @@ function CollateralizeLoanComponent({ contract }: CollateralizeLoanComponentProp
             </Row>
             <Row className="justify-content-between border-b mt-2">
               <Col>Collateral</Col>
-              <Col className="text-end mb-2">{collateral.toFixed(4)} BTC</Col>
+              <Col className="text-end mb-2">{collateral.toFixed(8)} BTC</Col>
             </Row>
             <Row className="justify-content-between border-b mt-2">
               <Col>Interest rate</Col>
@@ -87,13 +89,13 @@ function CollateralizeLoanComponent({ contract }: CollateralizeLoanComponentProp
             <Row className="justify-content-between mt-4">
               <Col md={6}>Collateral</Col>
               <Col md={6} className="text-end">
-                {collateral.toFixed(4)} BTC
+                {collateral.toFixed(8)} BTC
               </Col>
             </Row>
             <Row className="justify-content-between mt-2">
               <Col md={6}>Originator Fee 1%</Col>
               <Col md={6} className="text-end">
-                {loanOriginatorFee.toFixed(4)} BTC
+                {loanOriginatorFee.toFixed(8)} BTC
               </Col>
             </Row>
             <Row className="mt-2 border-top pt-2">
@@ -102,7 +104,7 @@ function CollateralizeLoanComponent({ contract }: CollateralizeLoanComponentProp
               </Col>
               <Col md={6} className="text-end">
                 <strong>
-                  {totalCollateral.toFixed(4)} BTC
+                  {totalCollateral.toFixed(8)} BTC
                 </strong>
               </Col>
             </Row>
@@ -148,7 +150,7 @@ function CollateralizeLoanComponent({ contract }: CollateralizeLoanComponentProp
             ? (
               <CollateralContractDetails
                 collateral={collateral}
-                collateralAddress={collateralAddress}
+                collateralAddress={contractAddress!}
                 onCollateralize={bool => setIsCollateralizedConfirmed(bool)}
               />
             )

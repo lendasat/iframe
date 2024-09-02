@@ -62,9 +62,7 @@ export function StableCoinDropdown({
   defaultCoin?: StableCoin; // Optional prop for default selected coin
 }) {
   // Initialize selectedCoin with defaultCoin if provided, otherwise fall back to StableCoin.USDT_SN
-  const [selectedCoin, setSelectedCoin] = useState<StableCoin>(
-    defaultCoin || "",
-  );
+  const [selectedCoin, setSelectedCoin] = useState<StableCoin>(defaultCoin | "");
 
   const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedValue = event.target.value as StableCoin;

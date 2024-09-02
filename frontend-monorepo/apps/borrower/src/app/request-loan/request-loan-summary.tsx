@@ -123,6 +123,7 @@ export function RequestLoanSummary() {
     || !selectedCoin
     || !loanAddress.trim();
 
+  const addressLabel = selectedCoin ? `${StableCoinHelper.print(selectedCoin)} Address` : "Address";
   return (
     <Container className={"p-4"} fluid>
       <Row>
@@ -143,7 +144,7 @@ export function RequestLoanSummary() {
                 onChange={handleLoanAmountChange}
                 isInvalid={!!amountError}
               />
-              {amountError && <Form.Text className="text-danger">{amountError}</Form.Text>}
+              {amountError ? <Form.Text className="text-danger">{amountError}</Form.Text> : ""}
             </Form.Group>
             <Form.Group className="mb-3" controlId="interest-slider">
               <Form.Label>
@@ -178,7 +179,7 @@ export function RequestLoanSummary() {
             </Form.Group>
             <Form.Group className="mb-3" controlId="stablecoin-address">
               <Form.Label>
-                <small>{StableCoinHelper.print(selectedCoin)} Address</small>
+                <small>{addressLabel}</small>
               </Form.Label>
               <Form.Control
                 value={loanAddress}

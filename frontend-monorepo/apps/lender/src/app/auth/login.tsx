@@ -13,7 +13,13 @@ function Login() {
   };
 
   return (
-    <LoginForm handleLogin={handleLogin} registrationLink={"/registration"} forgotPasswordLink={"/forgotpassword"} />
+    <LoginForm
+      handleLogin={handleLogin}
+      registrationLink={"/registration"}
+      forgotPasswordLink={"/forgotpassword"}
+      initialUserEmail={"lender@lendasat.com"}
+      initialUserPassword={"password123"}
+    />
   );
 }
 
