@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            duration_months,\n            created_at,\n            updated_at\n        FROM contracts\n        WHERE status IN ($1, $2)\n        ",
+  "query": "\n        UPDATE contracts\n        SET status = $1,\n            updated_at = $2\n        WHERE lender_id = $3\n          AND id = $4\n        RETURNING\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            contract_address,\n            contract_index,\n            collateral_txid,\n            collateral_vout,\n            status as \"status: crate::model::db::ContractStatus\",\n            duration_months,\n            created_at,\n            updated_at\n        ",
   "describe": {
     "columns": [
       {
@@ -65,6 +65,16 @@
       },
       {
         "ordinal": 12,
+        "name": "collateral_txid",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 13,
+        "name": "collateral_vout",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 14,
         "name": "status: crate::model::db::ContractStatus",
         "type_info": {
           "Custom": {
@@ -84,17 +94,17 @@
         }
       },
       {
-        "ordinal": 13,
+        "ordinal": 15,
         "name": "duration_months",
         "type_info": "Int4"
       },
       {
-        "ordinal": 14,
+        "ordinal": 16,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 15,
+        "ordinal": 17,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -117,22 +127,9 @@
             }
           }
         },
-        {
-          "Custom": {
-            "name": "contract_status",
-            "kind": {
-              "Enum": [
-                "Requested",
-                "Approved",
-                "CollateralSeen",
-                "CollateralConfirmed",
-                "PrincipalGiven",
-                "Closed",
-                "Rejected"
-              ]
-            }
-          }
-        }
+        "Timestamptz",
+        "Bpchar",
+        "Bpchar"
       ]
     },
     "nullable": [
@@ -148,11 +145,13 @@
       false,
       true,
       true,
+      true,
+      true,
       false,
       false,
       false,
       false
     ]
   },
-  "hash": "6fb7867ee73ff55675a23948176869a699aa0e40fc587bbec210a05ea582d0f8"
+  "hash": "7761003046db7a19668e2781fea4439f04f837351f07d0cb7e4ff47500626b04"
 }

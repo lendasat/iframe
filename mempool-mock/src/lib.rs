@@ -8,6 +8,7 @@ use axum::extract::WebSocketUpgrade;
 use axum::response::IntoResponse;
 use axum::Json;
 use bitcoin::Address;
+use bitcoin::Txid;
 use futures::SinkExt;
 use futures::StreamExt;
 use futures::TryStreamExt;
@@ -60,6 +61,7 @@ impl Blockchain {
     pub fn add_tx(&mut self, address: String, amount: u64) {
         let txid: [u8; 32] = thread_rng().gen();
         let txid = hex::encode(txid);
+        let txid = Txid::from_str(&txid).unwrap();
 
         let tx = Transaction {
             txid,

@@ -9,6 +9,8 @@ use anyhow::Context;
 use anyhow::Result;
 use bitcoin::address::NetworkUnchecked;
 use bitcoin::Address;
+use bitcoin::OutPoint;
+use bitcoin::Txid;
 use futures::stream::SplitSink;
 use futures::SinkExt;
 use futures::StreamExt;
@@ -44,14 +46,17 @@ struct TrackedContract {
     status: ContractStatus,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 enum ContractStatus {
     /// Contract not seen.
     Pending,
     /// Contract found in mempool.
-    Seen,
+    Seen(OutPoint),
     /// Contract confirmed.
-    Confirmed { block_height: u64 },
+    Confirmed {
+        outpoint: OutPoint,
+        block_height: u64,
+    },
 }
 
 impl Actor {
@@ -213,7 +218,7 @@ impl xtra::Handler<ContractUpdate> for Actor {
 
         let mut contracts_to_remove = Vec::<Address>::new();
         for tx in msg.transactions {
-            for vout in tx.vout.iter() {
+            for (index, vout) in tx.vout.iter().enumerate() {
                 let contract = match self
                     .tracked_contracts
                     .get_mut(vout.scriptpubkey_address.assume_checked_ref())
@@ -228,21 +233,46 @@ impl xtra::Handler<ContractUpdate> for Actor {
                     continue;
                 }
 
+                let outpoint = OutPoint {
+                    txid: tx.txid,
+                    vout: index as u32,
+                };
+
                 let status = if !tx.status.confirmed {
-                    ContractStatus::Pending
+                    ContractStatus::Seen(outpoint)
                 } else {
                     match tx.status.block_height {
                         Some(tx_block_height) => ContractStatus::Confirmed {
+                            outpoint,
                             block_height: tx_block_height,
                         },
-                        None => ContractStatus::Pending,
+                        None => ContractStatus::Seen(outpoint),
                     }
                 };
+
+                // Update the contract status in the DB to `Seen` if the collateral was just spotted
+                // in mempool.
+                if let ContractStatus::Seen(outpoint) = status {
+                    if contract.status == ContractStatus::Pending {
+                        // TODO!!! Consider other spot(s).
+                        if let Err(e) = db::contracts::mark_contract_as_seen(
+                            &self.db,
+                            &contract.contract_id,
+                            outpoint,
+                        )
+                        .await
+                        {
+                            tracing::error!(?contract, "Failed to mark contract as seen: {e:#}");
+                            continue;
+                        }
+                    }
+                }
 
                 contract.status = status;
 
                 // Check if the contract is already sufficiently confirmed.
                 if let ContractStatus::Confirmed {
+                    outpoint,
                     block_height: tx_block_height,
                 } = contract.status
                 {
@@ -256,8 +286,12 @@ impl xtra::Handler<ContractUpdate> for Actor {
                             "Contract reached necessary number of confirmations"
                         );
 
-                        if let Err(e) =
-                            db::contracts::mark_contract_as_confirmed(&self.db, contract_id).await
+                        if let Err(e) = db::contracts::mark_contract_as_confirmed(
+                            &self.db,
+                            contract_id,
+                            outpoint,
+                        )
+                        .await
                         {
                             tracing::error!(
                                 ?contract,
@@ -308,27 +342,52 @@ impl xtra::Handler<TrackContract> for Actor {
                 .await
                 .context("Failed to get confirmations")?;
 
-        // Check if the contract is already sufficiently confirmed.
-        if let ContractStatus::Confirmed {
-            block_height: tx_block_height,
-        } = contract_status
-        {
-            let confirmations = calculate_confirmations(self.block_height, tx_block_height);
-            if confirmations >= MIN_CONFIRMATIONS {
-                let contract_id = &msg.contract_id;
+        let contract_id = &msg.contract_id;
 
+        // Check if the contract is already sufficiently confirmed.
+        match contract_status {
+            ContractStatus::Pending => {}
+            ContractStatus::Seen(outpoint) => {
                 tracing::info!(
                     contract_id,
-                    "Contract reached necessary number of confirmations"
+                    confirmations = 0,
+                    "Contract not yet sufficiently confirmed"
                 );
 
-                db::contracts::mark_contract_as_confirmed(&self.db, contract_id)
+                db::contracts::mark_contract_as_seen(&self.db, contract_id, outpoint)
                     .await
                     .context("Failed to mark contract as confirmed")?;
-
-                return Ok(());
             }
-        }
+            ContractStatus::Confirmed {
+                outpoint,
+                block_height: tx_block_height,
+            } => {
+                let confirmations = calculate_confirmations(self.block_height, tx_block_height);
+
+                if confirmations >= MIN_CONFIRMATIONS {
+                    tracing::info!(
+                        contract_id,
+                        "Contract reached necessary number of confirmations"
+                    );
+
+                    db::contracts::mark_contract_as_confirmed(&self.db, contract_id, outpoint)
+                        .await
+                        .context("Failed to mark contract as confirmed")?;
+
+                    return Ok(());
+                } else {
+                    tracing::info!(
+                        contract_id,
+                        confirmations,
+                        "Contract not yet sufficiently confirmed"
+                    );
+
+                    db::contracts::mark_contract_as_seen(&self.db, contract_id, outpoint)
+                        .await
+                        .context("Failed to mark contract as confirmed")?;
+                }
+            }
+        };
 
         self.tracked_contracts.insert(
             msg.contract_address.clone(),
@@ -370,6 +429,7 @@ impl xtra::Handler<NewBlockHeight> for Actor {
             // We only consider transactions with at least 1 confirmation for simplicity. We know
             // that unconfirmed transactions are handled via the `track-address` WS subscription.
             if let ContractStatus::Confirmed {
+                outpoint,
                 block_height: tx_block_height,
             } = contract.status
             {
@@ -383,7 +443,8 @@ impl xtra::Handler<NewBlockHeight> for Actor {
                     );
 
                     if let Err(e) =
-                        db::contracts::mark_contract_as_confirmed(&self.db, contract_id).await
+                        db::contracts::mark_contract_as_confirmed(&self.db, contract_id, outpoint)
+                            .await
                     {
                         tracing::error!(?contract, "Failed to mark contract as confirmed: {e:#}");
                         continue;
@@ -415,25 +476,32 @@ async fn derive_contract_status(
         .first()
         .context("No transactions to derive contract status from")?;
 
-    let vout = tx
+    let (index, vout) = tx
         .vout
         .iter()
-        .find(|vout| vout.scriptpubkey_address.clone().assume_checked() == *address)
+        .enumerate()
+        .find(|(_, vout)| vout.scriptpubkey_address.clone().assume_checked() == *address)
         .context("No collateral contract in address transactions")?;
 
     if vout.value < amount {
         bail!("Insufficient collateral amount for {address} in {tx:?}, expected {amount} sats");
     }
 
+    let outpoint = OutPoint {
+        txid: tx.txid,
+        vout: index as u32,
+    };
+
     if !tx.status.confirmed {
-        return Ok(ContractStatus::Seen);
+        return Ok(ContractStatus::Seen(outpoint));
     }
 
     let status = match tx.status.block_height {
         Some(tx_block_height) => ContractStatus::Confirmed {
+            outpoint,
             block_height: tx_block_height,
         },
-        None => ContractStatus::Seen,
+        None => ContractStatus::Seen(outpoint),
     };
 
     Ok(status)
@@ -489,7 +557,7 @@ pub struct AddressTransactions {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Transaction {
-    pub txid: String,
+    pub txid: Txid,
     pub vout: Vec<Vout>,
     pub status: TransactionStatus,
 }

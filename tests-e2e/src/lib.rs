@@ -3,6 +3,7 @@
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
+    use bitcoin::Psbt;
     use hub::model::ContractRequestSchema;
     use hub::model::ContractStatus;
     use hub::model::CreateLoanOfferSchema;
@@ -228,8 +229,29 @@ mod tests {
         .await
         .unwrap();
 
-        // 6. Hub tells lender to send principal to borrower on Ethereum.
-        // 7. Borrower confirms payment.
+        // TODO: 6. Hub tells lender to send principal to borrower on Ethereum.
+        // TODO: 7. Borrower confirms payment.
+        // TODO: 8. Repay loan on loan blockchain.
+
+        // 9. Claim collateral on Bitcoin.
+        // With DLCs, we will need to construct a spend transaction using the loan secret.
+
+        let res = borrower
+            .get(format!(
+                "http://localhost:7337/api/contracts/{}/claim",
+                contract.id
+            ))
+            .send()
+            .await
+            .unwrap();
+
+        assert!(res.status().is_success());
+
+        // TODO: Perhaps we want to serialize as hex instead;
+        let _claim_psbt: Psbt = res.json().await.unwrap();
+
+        // TODO: 9.1 Sign PSBT, finalize into signed TX and publish.
+        // TODO: 9.2 Transition hub state to `Closed` after collateral spend TX is confirmed.
     }
 
     async fn wait_until_contract_status(
