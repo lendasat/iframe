@@ -150,7 +150,7 @@ function CollateralizeLoanComponent({ contract }: CollateralizeLoanComponentProp
             ? (
               <CollateralContractDetails
                 collateral={collateral}
-                collateralAddress={contractAddress!}
+                collateralAddress={contractAddress || ""}
                 onCollateralize={bool => setIsCollateralizedConfirmed(bool)}
               />
             )

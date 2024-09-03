@@ -19,6 +19,7 @@ const EmailVerification = () => {
       try {
         setIsLoading(true);
         const response = await verifyEmail(token);
+        console.log(response);
         setIsVerified(true);
       } catch (error) {
         console.error("Error:", error);
@@ -30,7 +31,7 @@ const EmailVerification = () => {
     };
 
     callVerify();
-  }, []);
+  }, [token, verifyEmail]);
 
   return (
     <Container className="d-flex align-items-center justify-content-center min-vh-100">
