@@ -165,20 +165,24 @@ pub async fn get_contracts(
     Ok((StatusCode::OK, Json(contracts_2)))
 }
 
-#[instrument(skip(data, _user), err(Debug))]
+#[instrument(skip(data, user), err(Debug))]
 pub async fn get_contract(
     State(data): State<Arc<AppState>>,
-    Extension(_user): Extension<User>,
+    Extension(user): Extension<User>,
     Path(contract_id): Path<String>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let contract = db::contracts::load_contract_by_id(&data.db, contract_id.as_str())
-        .await
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
+    let contract = db::contracts::load_contract_by_contract_id_and_borrower_id(
+        &data.db,
+        contract_id.as_str(),
+        &user.id,
+    )
+    .await
+    .map_err(|error| {
+        let error_response = ErrorResponse {
+            message: format!("Database error: {}", error),
+        };
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+    })?;
 
     let offer = db::loan_offers::loan_by_id(&data.db, contract.loan_id)
         .await
@@ -269,5 +273,6 @@ pub async fn post_contract_request(
         };
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
     })?;
+
     Ok((StatusCode::OK, Json(contract)))
 }

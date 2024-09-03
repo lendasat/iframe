@@ -90,7 +90,11 @@ pub async fn load_contracts_by_lender_id(
     Ok(contracts)
 }
 
-pub async fn load_contract_by_id(pool: &Pool<Postgres>, id: &str) -> Result<Contract> {
+pub async fn load_contract_by_contract_id_and_borrower_id(
+    pool: &Pool<Postgres>,
+    contract_id: &str,
+    borrower_id: &str,
+) -> Result<Contract> {
     let contract = sqlx::query_as!(
         db::Contract,
         r#"
@@ -112,9 +116,49 @@ pub async fn load_contract_by_id(pool: &Pool<Postgres>, id: &str) -> Result<Cont
             created_at,
             updated_at
         FROM contracts
-        where id = $1
+        where id = $1 AND
+        borrower_id = $2
         "#,
-        id
+        contract_id,
+        borrower_id,
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(contract.into())
+}
+
+pub async fn load_contract_by_contract_id_and_lender_id(
+    pool: &Pool<Postgres>,
+    contract_id: &str,
+    lender_id: &str,
+) -> Result<Contract> {
+    let contract = sqlx::query_as!(
+        db::Contract,
+        r#"
+        SELECT
+            id,
+            lender_id,
+            borrower_id,
+            loan_id,
+            initial_ltv,
+            initial_collateral_sats,
+            loan_amount,
+            borrower_btc_address,
+            borrower_pk,
+            borrower_loan_address,
+            contract_address,
+            contract_index,
+            status as "status: crate::model::db::ContractStatus",
+            duration_months,
+            created_at,
+            updated_at
+        FROM contracts
+        where id = $1 AND
+        lender_id = $2
+        "#,
+        contract_id,
+        lender_id
     )
     .fetch_one(pool)
     .await?;

@@ -69,9 +69,13 @@ pub async fn put_approve_contract(
     Extension(user): Extension<User>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     async {
-        let contract = db::contracts::load_contract_by_id(&data.db, contract_id.as_str())
-            .await
-            .context("Failed to load contract request")?;
+        let contract = db::contracts::load_contract_by_contract_id_and_lender_id(
+            &data.db,
+            contract_id.as_str(),
+            &user.id,
+        )
+        .await
+        .context("Failed to load contract request")?;
 
         let (contract_address, contract_index) =
             data.wallet.contract_address(contract.borrower_pk)?;
