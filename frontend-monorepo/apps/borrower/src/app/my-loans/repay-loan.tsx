@@ -9,14 +9,14 @@ import { Lender } from "../request-loan/lender";
 import Usd, { formatCurrency } from "../usd";
 
 export function RepayLoan() {
-  const { contract } = useAuth();
+  const { getContract } = useAuth();
   const { id } = useParams();
 
   return (
     <div>
       <Suspense>
         <Await
-          resolve={contract(id)}
+          resolve={getContract(id)}
           errorElement={<div>Could not load contract</div>}
           children={(resolvedContract: Awaited<Contract>) => (
             <RepayLoanComponent
@@ -34,12 +34,12 @@ interface RepayLoanComponentProps {
 }
 
 function RepayLoanComponent({ contract }: RepayLoanComponentProps) {
-  const collateral = contract.collateral;
-  const loanAmount = contract.amount;
-  const accruedInterest = (contract.amount * contract.interest_rate) / 100;
-  const refundAddress = contract.refundAddress;
+  const collateral = contract.collateral_sats / 10000000;
+  const loanAmount = contract.loan_amount;
+  const accruedInterest = contract.loan_amount * (contract.interest_rate / 100);
+  const refundAddress = contract.borrower_loan_address;
   const totalRepaymentAmount = accruedInterest + loanAmount;
-  const repaymentAddress = contract.repaymentAddress;
+  const repaymentAddress = contract.loan_repayment_address;
   const interestRate = contract.interest_rate;
 
   const [isRepaid, setIsRepaid] = useState(false);
