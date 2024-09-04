@@ -15,7 +15,7 @@ export function LoanComponent({ loan, onRepay, onCollateralize }: LoanComponentP
 
   const { loan_amount, expiry, interest_rate, collateral_sats, status } = loan;
   const collateral_btc = collateral_sats / 100000000;
-  const ltvRatio = (loan_amount / (collateral_btc * latestPrice)) * 100;
+  const ltvRatio = (loan_amount / (collateral_btc * latestPrice));
 
   return (
     <Card>
