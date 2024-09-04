@@ -10,6 +10,7 @@ interface AuthContextProps {
   logout: () => void;
   me: () => Promise<User | undefined>;
   getLoanOffers: () => Promise<LoanOffer[] | undefined>;
+  postLoanOffer: (offer: LoanOffer) => Promise<LoanOffer | undefined>;
   forgotPassword: (email: string) => Promise<string>;
   resetPassword: (password: string, password_confirm: string, resetPasswordToken: string) => Promise<string>;
   postContractRequest: (request: ContractRequest) => Promise<Contract>;
@@ -82,6 +83,29 @@ interface RawContract extends Omit<Contract, "created_at" | "repaid_at" | "expir
   created_at: string;
   repaid_at: string;
   expiry: string;
+}
+
+export enum LoanAssetType {
+  Usdc = "Usdc",
+  Usdt = "Usdt",
+}
+
+export enum LoanAssetChain {
+  Ethereum = "Ethereum",
+  Starknet = "Starknet",
+}
+
+export interface CreateLoanOfferRequest {
+  name: string;
+  min_ltv: number;
+  interest_rate: number;
+  loan_amount_min: number;
+  loan_amount_max: number;
+  duration_months_min: number;
+  duration_months_max: number;
+  loan_asset_type: LoanAssetType;
+  loan_asset_chain: LoanAssetChain;
+  loan_repayment_address: string;
 }
 
 export interface LoanOffer {
@@ -217,17 +241,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ baseUrl, children })
     }
   };
 
+  const postLoanOffer = async (offer: LoanOffer): Promise<LoanOffer | undefined> => {
+    try {
+      const response: AxiosResponse<LoanOffer> = await httpClient.post("/api/offers/create", offer);
+      return response.data;
+    } catch (error) {
+      console.error(
+        `Failed to post loan offer: http: ${error.response?.status} and response: ${error.response?.data}`,
+      );
+      throw error;
+    }
+  };
+
   const postContractRequest = async (request: ContractRequest): Promise<Contract | undefined> => {
     try {
       const response: AxiosResponse<Contract> = await httpClient.post("/api/contracts", request);
-      const contract = response.data;
-
-      return contract;
+      return response.data;
     } catch (error) {
       console.error(
         `Failed to post contract request: http: ${error.response?.status} and response: ${error.response?.data}`,
       );
-      return undefined;
+      throw error;
     }
   };
 
@@ -318,6 +352,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ baseUrl, children })
         me,
         getLoanOffers,
         postContractRequest,
+        postLoanOffer,
         getContracts,
         forgotPassword,
         resetPassword,

@@ -1,5 +1,6 @@
 import styled from "@emotion/styled";
 import React from "react";
+import { Link } from "react-router-dom";
 import FullLogoWhiteBg from "../full-logo-white-bg";
 
 interface SidebarHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -23,7 +24,9 @@ export const SidebarHeader: React.FC<SidebarHeaderProps> = ({ children, ...rest 
   return (
     <StyledSidebarHeader {...rest}>
       <div style={{ display: "flex", alignItems: "center" }}>
-        <FullLogoWhiteBg />
+        <Link to="/">
+          <FullLogoWhiteBg />
+        </Link>
       </div>
     </StyledSidebarHeader>
   );
