@@ -1,6 +1,7 @@
 use aes_gcm_siv::aead::Aead;
 use aes_gcm_siv::Aes256GcmSiv;
 use aes_gcm_siv::KeyInit;
+use anyhow::anyhow;
 use anyhow::bail;
 use anyhow::ensure;
 use anyhow::Context;
@@ -8,11 +9,18 @@ use anyhow::Result;
 use bip39::Mnemonic;
 use bitcoin::bip32::ChildNumber;
 use bitcoin::bip32::Xpriv;
+use bitcoin::key::Keypair;
 use bitcoin::key::Secp256k1;
+use bitcoin::sighash::SighashCache;
+use bitcoin::EcdsaSighashType;
 use bitcoin::Network;
 use bitcoin::NetworkKind;
+use bitcoin::Psbt;
 use bitcoin::PublicKey;
+use bitcoin::Transaction;
 use hkdf::Hkdf;
+use miniscript::psbt::PsbtExt;
+use miniscript::Descriptor;
 use rand::thread_rng;
 use rand::CryptoRng;
 use rand::Rng;
@@ -26,6 +34,7 @@ use sha2::Sha256;
 use std::str::FromStr;
 use std::sync::LazyLock;
 use std::sync::Mutex;
+use std::sync::MutexGuard;
 
 const SECRET_KEY_ENCRYPTION_NONCE: &[u8; 12] = b"SECRET_KEY!!";
 
@@ -112,10 +121,17 @@ pub fn get_mnemonic() -> Result<String> {
 pub fn get_pk(index: u32) -> Result<PublicKey> {
     let guard = WALLET.lock().expect("to get lock");
 
+    let kp = get_kp(guard, index)?;
+    let pk = PublicKey::new(kp.public_key());
+
+    Ok(pk)
+}
+
+fn get_kp(guard: MutexGuard<Option<Wallet>>, index: u32) -> Result<Keypair> {
     let wallet = match *guard {
         Some(ref wallet) => wallet,
         None => {
-            bail!("Can't get next public key if wallet is not loaded");
+            bail!("Can't get keypair if wallet is not loaded");
         }
     };
 
@@ -138,10 +154,69 @@ pub fn get_pk(index: u32) -> Result<PublicKey> {
         .derive_priv(&Secp256k1::new(), &path)?
         .private_key;
 
-    let kp = bitcoin::key::Keypair::from_secret_key(&Secp256k1::new(), &sk);
+    let kp = Keypair::from_secret_key(&Secp256k1::new(), &sk);
+
+    Ok(kp)
+}
+
+pub fn sign_claim_psbt(
+    mut psbt: Psbt,
+    collateral_descriptor: Descriptor<PublicKey>,
+    index: u32,
+) -> Result<Transaction> {
+    // We just got a PSBT with a signature from the hub.
+    // The borrower has to sign the PSBT now.
+    // 1. Verify that the transaction pays to the borrower (might happen outside of this component,
+    //    since the address will be external).
+    // 2. Figure out which key to use! We originally derived a key and gave the hub the
+    //    corresponding public key.
+
+    let guard = WALLET.lock().expect("to get lock");
+
+    // This did nothing.
+    // psbt.sign(&wallet.xprv, &Secp256k1::new())
+    //     .map_err(|e| anyhow!("Could not sign claim PSBT: {e:?}"))?;
+
+    let kp = get_kp(guard, index).context("No kp for index")?;
+    let sk = kp.secret_key();
     let pk = PublicKey::new(kp.public_key());
 
-    Ok(pk)
+    let collateral_amount = psbt.inputs[0]
+        .clone()
+        .witness_utxo
+        .context("No witness UTXO")?
+        .value;
+
+    let sighash = SighashCache::new(&psbt.unsigned_tx)
+        .p2wsh_signature_hash(
+            0,
+            &collateral_descriptor
+                .script_code()
+                .context("No script code")?,
+            collateral_amount,
+            EcdsaSighashType::All,
+        )
+        .context("Can't produce sighash cache")?;
+
+    let secp = Secp256k1::new();
+
+    let sig = secp.sign_ecdsa(&sighash.into(), &sk);
+
+    psbt.inputs[0].partial_sigs.insert(
+        pk,
+        bitcoin::ecdsa::Signature {
+            signature: sig,
+            sighash_type: EcdsaSighashType::All,
+        },
+    );
+
+    let psbt = psbt
+        .finalize(&secp)
+        .map_err(|e| anyhow!("Failed to finalize PSBT: {e:?}"))?;
+
+    let tx = psbt.extract(&secp).context("Could not extract signed TX")?;
+
+    Ok(tx)
 }
 
 fn generate_mnemonic<R>(rng: &mut R) -> Result<Mnemonic>

@@ -6,7 +6,9 @@ use bitcoin::bip32::Xpriv;
 use bitcoin::bip32::Xpub;
 use bitcoin::key::Keypair;
 use bitcoin::key::Secp256k1;
+use bitcoin::psbt;
 use bitcoin::psbt::Psbt;
+use bitcoin::psbt::PsbtSighashType;
 use bitcoin::sighash::SighashCache;
 use bitcoin::transaction::Version;
 use bitcoin::Address;
@@ -76,11 +78,11 @@ impl Wallet {
         // collateral is locked up.
         origination_fee: u64,
         borrower_btc_address: Address,
-    ) -> Result<Psbt> {
+    ) -> Result<(Psbt, Descriptor<PublicKey>)> {
         let (hub_kp, fallback_pk) = self.get_keys_for_index(contract_index)?;
 
         let hub_pk = PublicKey::new(hub_kp.public_key());
-        let descriptor: Descriptor<PublicKey> =
+        let collateral_descriptor: Descriptor<PublicKey> =
             format!("wsh(multi(2,{borrower_pk},{hub_pk},{fallback_pk}))").parse()?;
 
         let collateral_input = TxIn {
@@ -118,20 +120,31 @@ impl Wallet {
             output: vec![claim_output, origination_fee_output],
         };
 
+        let witness_script = collateral_descriptor.script_code()?;
         let sighash = SighashCache::new(&unsigned_claim_tx).p2wsh_signature_hash(
             0,
-            &descriptor.script_code()?,
+            &witness_script,
             Amount::from_sat(collateral_amount),
             EcdsaSighashType::All,
         )?;
 
         let mut claim_psbt = Psbt::from_unsigned_tx(unsigned_claim_tx)?;
 
+        let mut input = psbt::Input {
+            witness_utxo: Some(TxOut {
+                value: Amount::from_sat(collateral_amount),
+                script_pubkey: collateral_descriptor.script_pubkey(),
+            }),
+            sighash_type: Some(PsbtSighashType::from_str("SIGHASH_ALL").expect("valid")),
+            witness_script: Some(witness_script),
+            ..Default::default()
+        };
+
         let secp = Secp256k1::new();
         let hub_sk = hub_kp.secret_key();
         let sig = secp.sign_ecdsa(&sighash.into(), &hub_sk);
 
-        claim_psbt.inputs[0].partial_sigs.insert(
+        input.partial_sigs.insert(
             hub_pk,
             bitcoin::ecdsa::Signature {
                 signature: sig,
@@ -139,7 +152,9 @@ impl Wallet {
             },
         );
 
-        Ok(claim_psbt)
+        claim_psbt.inputs = vec![input];
+
+        Ok((claim_psbt, collateral_descriptor))
     }
 
     fn get_keys_for_index(&self, index: u32) -> Result<(Keypair, PublicKey)> {

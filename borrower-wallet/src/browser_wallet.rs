@@ -61,6 +61,8 @@ pub fn get_next_pk() -> Result<String> {
 
     let pk = wallet::get_pk(pk_index)?;
 
+    storage.set_item(&pk.to_string(), pk_index)?;
+
     Ok(pk.to_string())
 }
 

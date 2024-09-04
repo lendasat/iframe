@@ -581,6 +581,7 @@ dependencies = [
  "getrandom",
  "hex",
  "hkdf",
+ "miniscript",
  "rand",
  "scrypt",
  "sha2",
@@ -1812,6 +1813,7 @@ checksum = "add2d4aee30e4291ce5cffa3a322e441ff4d4bc57b38c8d9bf0e94faa50ab626"
 dependencies = [
  "bech32",
  "bitcoin",
+ "serde",
 ]
 
 [[package]]

@@ -17,6 +17,9 @@ use axum::Extension;
 use axum::Json;
 use axum::Router;
 use bitcoin::Amount;
+use bitcoin::Psbt;
+use bitcoin::PublicKey;
+use miniscript::Descriptor;
 use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
 use serde::Deserialize;
@@ -59,6 +62,12 @@ pub struct LenderProfile {
     name: String,
     rating: Decimal,
     loans: u64,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ClaimCollateralPsbt {
+    pub psbt: Psbt,
+    pub collateral_descriptor: Descriptor<PublicKey>,
 }
 
 pub(crate) fn router(app_state: Arc<AppState>) -> Router {
@@ -359,10 +368,11 @@ pub async fn get_claim_collateral_psbt(
 
         let origination_fee = (contract.loan_amount / initial_price)
             * Decimal::try_from(ORIGINATION_FEE_RATE).expect("to fit");
+        let origination_fee = origination_fee.round_dp(8);
         let origination_fee =
             Amount::from_btc(origination_fee.to_f64().expect("to fit")).expect("to fit");
 
-        let psbt = data.wallet.create_claim_collateral_psbt(
+        let (psbt, collateral_descriptor) = data.wallet.create_claim_collateral_psbt(
             contract.borrower_pk,
             contract_index,
             collateral_output,
@@ -371,7 +381,12 @@ pub async fn get_claim_collateral_psbt(
             contract.borrower_btc_address.assume_checked(),
         )?;
 
-        anyhow::Ok(psbt)
+        let res = ClaimCollateralPsbt {
+            psbt,
+            collateral_descriptor,
+        };
+
+        anyhow::Ok(res)
     }
     .await
     .map_err(|error| {
