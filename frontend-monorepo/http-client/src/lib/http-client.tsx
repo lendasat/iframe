@@ -10,7 +10,7 @@ interface AuthContextProps {
   logout: () => void;
   me: () => Promise<User | undefined>;
   getLoanOffers: () => Promise<LoanOffer[] | undefined>;
-  postLoanOffer: (offer: CreateLoanOfferRequest) => Promise<LoanOffer | undefined>;
+  postLoanOffer: (offer: LoanOffer) => Promise<LoanOffer | undefined>;
   forgotPassword: (email: string) => Promise<string>;
   resetPassword: (password: string, password_confirm: string, resetPasswordToken: string) => Promise<string>;
   postContractRequest: (request: ContractRequest) => Promise<Contract>;
@@ -105,7 +105,7 @@ export interface CreateLoanOfferRequest {
   duration_months_max: number;
   loan_asset_type: LoanAssetType;
   loan_asset_chain: LoanAssetChain;
-  loan_repayment_address: String;
+  loan_repayment_address: string;
 }
 
 export interface LoanOffer {
@@ -244,28 +244,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ baseUrl, children })
   const postLoanOffer = async (offer: LoanOffer): Promise<LoanOffer | undefined> => {
     try {
       const response: AxiosResponse<LoanOffer> = await httpClient.post("/api/offers/create", offer);
-      const loanOffer = response.data;
-
-      return loanOffer;
+      return response.data;
     } catch (error) {
       console.error(
         `Failed to post loan offer: http: ${error.response?.status} and response: ${error.response?.data}`,
       );
-      return undefined;
+      throw error;
     }
   };
 
   const postContractRequest = async (request: ContractRequest): Promise<Contract | undefined> => {
     try {
       const response: AxiosResponse<Contract> = await httpClient.post("/api/contracts", request);
-      const contract = response.data;
-
-      return contract;
+      return response.data;
     } catch (error) {
       console.error(
         `Failed to post contract request: http: ${error.response?.status} and response: ${error.response?.data}`,
       );
-      return undefined;
+      throw error;
     }
   };
 
