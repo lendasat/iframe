@@ -1,5 +1,7 @@
+import { faEdit } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React, { useState } from "react";
-import { Button, Col, Container, Form, Row } from "react-bootstrap";
+import { Button, Col, Container, Form, Row, Spinner } from "react-bootstrap";
 import { ReactComponent as Logo } from "../lendasat_white_bg.svg";
 
 interface RegistrationFormProps {
@@ -12,11 +14,14 @@ export function RegistrationForm({ handleRegister }: RegistrationFormProps) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsLoading(true);
     if (password !== confirmPassword) {
       setError("Passwords do not match");
+      setIsLoading(false);
       return;
     }
     setError("");
@@ -26,6 +31,7 @@ export function RegistrationForm({ handleRegister }: RegistrationFormProps) {
       console.error("Failed registering user:", err);
       setError(err instanceof Error ? err.message : "Registration failed.");
     }
+    setIsLoading(false);
   };
 
   return (
@@ -82,8 +88,20 @@ export function RegistrationForm({ handleRegister }: RegistrationFormProps) {
 
               {error && <div className="alert alert-danger">{error}</div>}
 
-              <Button variant="primary" type="submit" className="w-100 p-2">
-                Register
+              <Button
+                variant="primary"
+                className="w-100 p-2"
+                type={"submit"}
+                disabled={isLoading}
+                title="Change Password"
+              >
+                {isLoading
+                  ? (
+                    <Spinner animation="border" role="status" variant="light" size="sm">
+                      <span className="visually-hidden">Loading...</span>
+                    </Spinner>
+                  )
+                  : "Register"}
               </Button>
             </Form>
           </div>
@@ -92,5 +110,3 @@ export function RegistrationForm({ handleRegister }: RegistrationFormProps) {
     </Container>
   );
 }
-
-export default RegistrationForm;

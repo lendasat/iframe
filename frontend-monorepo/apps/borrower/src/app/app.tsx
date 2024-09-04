@@ -24,14 +24,11 @@ import { PriceProvider } from "./price-context";
 import Profile from "./profile";
 import RequestLoan from "./request-loan/request-loan";
 import { RequestLoanSummary } from "./request-loan/request-loan-summary";
-import Wallet from "./wallet";
 
 const menuItems = [
   { label: "Request a Loan", icon: faMoneyBillTransfer, path: "/request-loan" },
   { label: "My loans", icon: faMoneyCheckDollar, path: "/my-contracts" },
   { label: "My account", icon: faUserCircle, path: "/my-account" },
-  { label: "Wallet", icon: faWallet, path: "/wallet" },
-  { label: "Help", icon: faQuestionCircle, path: "/help" },
   { label: "Logout", icon: faRightFromBracket, path: "/logout" },
 ];
 
@@ -60,7 +57,6 @@ function App() {
                   <Route path={"collateralize/:id"} element={<CollateralizeLoan />} />
                 </Route>
                 <Route path="/my-account" element={<MyAccount />} />
-                <Route path="/wallet" element={<Wallet />} />
                 <Route path="/logout" element={<Logout />} />
                 <Route path="/profile/:id" element={<Profile />} />
                 <Route path="/request-loan/:id" element={<RequestLoanSummary />} />
