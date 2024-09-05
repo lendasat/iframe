@@ -2,7 +2,6 @@ import { faTools } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 export function Profile() {
-
   return (
     <div>
       <div className="d-flex flex-column justify-content-start align-items-center py-4">
