@@ -27,7 +27,7 @@ export function LoanComponent({ loan, onRepay, onCollateralize }: LoanComponentP
             </Col>
             <Col md={1}>{expiry.toLocaleDateString()}</Col>
             <Col md={2}>
-              <LtvProgressBar value={ltvRatio} />
+              <LtvProgressBar value={latestPrice ? ltvRatio : undefined} />
             </Col>
             <Col md={1}>{interest_rate}%</Col>
             <Col md={2}>{collateral_btc} BTC</Col>

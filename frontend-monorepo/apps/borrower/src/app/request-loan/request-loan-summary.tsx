@@ -55,7 +55,7 @@ export function RequestLoanSummary() {
   const [loanAddress, setLoanAddress] = useState("");
 
   // Only for local testing
-  let defaultBtcAddress = ""
+  let defaultBtcAddress = "";
   if (import.meta.env.VITE_BITCOIN_NETWORK === "regtest") {
     defaultBtcAddress = "bcrt1qqpf790lnsavxe9ree00tp8dd550ddw76pluxyr02tn2rssj6dtnstxmagd";
   }
@@ -295,7 +295,9 @@ export function RequestLoanSummary() {
             <Button className={"btn-secondary"}>Cancel</Button>
           </Link>
           <span>{" "}</span>
-          <Button onClick={handleRequestLoan} disabled={isButtonDisabled}>{isWalletLoaded ? "Request" : "Unlock Wallet"}</Button>
+          <Button onClick={handleRequestLoan} disabled={isButtonDisabled}>
+            {isWalletLoaded ? "Request" : "Unlock Wallet"}
+          </Button>
         </Col>
       </Row>
       {error
