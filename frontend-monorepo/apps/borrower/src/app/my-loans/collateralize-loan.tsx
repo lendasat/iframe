@@ -137,7 +137,7 @@ function CollateralizeLoanComponent({ contract }: CollateralizeLoanComponentProp
                       <Button
                         variant="primary"
                         onClick={() => {
-                          alert("Here goes everything");
+                          alert("Your loan collateral will be paid out to you");
                         }}
                       >
                         Claim loan principal

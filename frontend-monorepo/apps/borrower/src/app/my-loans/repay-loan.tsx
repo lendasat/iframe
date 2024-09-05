@@ -115,7 +115,7 @@ function RepayLoanComponent({ contract }: RepayLoanComponentProps) {
                       <Button
                         variant="primary"
                         onClick={() => {
-                          alert("Here goes everything");
+                          alert("Your loan collateral will be paid back to you");
                           setIsRepaid(false);
                         }}
                       >
