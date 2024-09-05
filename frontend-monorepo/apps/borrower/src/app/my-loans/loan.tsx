@@ -45,6 +45,7 @@ export function LoanComponent({ loan, onRepay, onCollateralize }: LoanComponentP
                   case ContractStatus.Closing:
                   case ContractStatus.Closed:
                     return <div></div>;
+                  // TODO: this is the wrong state for allowing the user to repay the loan. We should only repay once the principal has been given
                   case ContractStatus.CollateralConfirmed:
                     return (
                       <>
