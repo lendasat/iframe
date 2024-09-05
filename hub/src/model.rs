@@ -148,9 +148,11 @@ pub struct Contract {
     pub lender_id: String,
     pub borrower_id: String,
     pub loan_id: String,
+    #[serde(with = "rust_decimal::serde::float")]
     pub initial_ltv: Decimal,
     // TODO: Should probably rename since borrower can add collateral.
     pub initial_collateral_sats: u64,
+    #[serde(with = "rust_decimal::serde::float")]
     pub loan_amount: Decimal,
     pub duration_months: i32,
     pub borrower_btc_address: Address<NetworkUnchecked>,
