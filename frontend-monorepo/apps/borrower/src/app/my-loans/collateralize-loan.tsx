@@ -2,7 +2,7 @@ import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Contract, ContractStatus, useAuth } from "@frontend-monorepo/http-client";
 import QRCode from "qrcode.react";
-import React, { Suspense, useState } from "react";
+import React, { Suspense } from "react";
 import { Alert, Badge, Button, Col, Container, Form, InputGroup, Row } from "react-bootstrap";
 import { Await, useParams } from "react-router-dom";
 import { Lender } from "../request-loan/lender";
@@ -45,7 +45,6 @@ function CollateralizeLoanComponent({ contract }: CollateralizeLoanComponentProp
   const loanOriginatorFee = (loanAmount / initial_price) * ORIGINATOR_FEE;
   const totalCollateral = collateral + loanOriginatorFee;
 
-  const [isCollateralizedConfirmed, setIsCollateralizedConfirmed] = useState(false);
   const isCollateralized = contract.status === ContractStatus.CollateralConfirmed
     || contract.status === ContractStatus.CollateralSeen;
 
@@ -133,7 +132,6 @@ function CollateralizeLoanComponent({ contract }: CollateralizeLoanComponentProp
                         variant="primary"
                         onClick={() => {
                           alert("Here goes everything");
-                          setIsCollateralizedConfirmed(false);
                         }}
                       >
                         Claim loan principal
@@ -146,12 +144,11 @@ function CollateralizeLoanComponent({ contract }: CollateralizeLoanComponentProp
           </Container>
         </Col>
         <Col xs={12} md={6}>
-          {(!isCollateralizedConfirmed && !isCollateralized)
+          {(!isCollateralized)
             ? (
               <CollateralContractDetails
                 collateral={collateral}
                 collateralAddress={contractAddress || ""}
-                onCollateralize={bool => setIsCollateralizedConfirmed(bool)}
               />
             )
             : ""}
@@ -164,17 +161,12 @@ function CollateralizeLoanComponent({ contract }: CollateralizeLoanComponentProp
 interface CollateralContractDetailsProps {
   collateral: number;
   collateralAddress: string;
-  onCollateralize: (collateralized: boolean) => void;
 }
 
 export function CollateralContractDetails({
   collateral,
   collateralAddress,
-  onCollateralize,
 }: CollateralContractDetailsProps) {
-  const handleConfirmRepayment = () => {
-    onCollateralize(true);
-  };
 
   return (
     <Container fluid>
@@ -190,13 +182,6 @@ export function CollateralContractDetails({
               Please send {collateral} BTC to {collateralAddress}
             </p>
           </div>
-        </Col>
-      </Row>
-      <Row className="mt-1">
-        <Col className="d-grid">
-          <Button variant="primary" onClick={handleConfirmRepayment}>
-            Confirm Collateralization
-          </Button>
         </Col>
       </Row>
     </Container>
