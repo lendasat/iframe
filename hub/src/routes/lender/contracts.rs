@@ -1,5 +1,5 @@
 use crate::db;
-use crate::mempool::TrackContract;
+use crate::mempool::TrackContractFunding;
 use crate::model::User;
 use crate::routes::lender::auth::jwt_auth;
 use crate::routes::AppState;
@@ -91,7 +91,7 @@ pub async fn put_approve_contract(
         .context("Failed to accept contract request")?;
 
         data.mempool
-            .send(TrackContract {
+            .send(TrackContractFunding {
                 contract_id,
                 contract_address,
                 initial_collateral_sats: contract.initial_collateral_sats,

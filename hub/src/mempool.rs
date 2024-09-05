@@ -14,6 +14,7 @@ use bitcoin::Txid;
 use futures::stream::SplitSink;
 use futures::SinkExt;
 use futures::StreamExt;
+use reqwest::StatusCode;
 use serde::Deserialize;
 use serde::Serialize;
 use sqlx::Pool;
@@ -31,6 +32,7 @@ const MIN_CONFIRMATIONS: u64 = 1;
 
 pub struct Actor {
     tracked_contracts: HashMap<Address, TrackedContract>,
+    tracked_claim_txs: HashMap<Txid, TrackedClaimTx>,
     block_height: u64,
     db: Pool<Postgres>,
     rest_client: MempoolRestClient,
@@ -59,18 +61,73 @@ enum ContractStatus {
     },
 }
 
+#[derive(Debug, Clone)]
+struct TrackedClaimTx {
+    contract_id: String,
+    txid: Txid,
+}
+
 impl Actor {
     pub fn new(rest_url: String, ws_url: String, db: Pool<Postgres>) -> Self {
         let rest_client = MempoolRestClient::new(rest_url);
 
         Self {
             tracked_contracts: HashMap::default(),
+            tracked_claim_txs: HashMap::default(),
             block_height: 0,
             db,
             rest_client,
             ws_url,
             ws_sink: None,
         }
+    }
+
+    async fn update_claim_txs_status(&mut self) {
+        for TrackedClaimTx {
+            contract_id,
+            txid: claim_txid,
+        } in self.tracked_claim_txs.clone().values()
+        {
+            if let Err(e) = self.update_claim_tx_status(contract_id, claim_txid).await {
+                tracing::error!(
+                    contract_id,
+                    %claim_txid,
+                    "Failed to mark contract as closed: {e:#}"
+                );
+
+                continue;
+            }
+        }
+    }
+
+    async fn update_claim_tx_status(&mut self, contract_id: &str, claim_txid: &Txid) -> Result<()> {
+        let tx = self
+            .rest_client
+            .get_tx(claim_txid)
+            .await
+            .context("Failed to get claim TX")?;
+
+        if let Some(Transaction {
+            status: TransactionStatus {
+                confirmed: true, ..
+            },
+            ..
+        }) = tx
+        {
+            tracing::info!(
+                contract_id,
+                %claim_txid,
+                "Claim TX confirmed"
+            );
+
+            db::contracts::mark_contract_as_closed(&self.db, contract_id, claim_txid)
+                .await
+                .context("Failed to mark contract as closed")?;
+
+            self.tracked_claim_txs.remove(claim_txid);
+        }
+
+        Ok(())
     }
 }
 
@@ -91,6 +148,9 @@ impl xtra::Actor for Actor {
 
     async fn started(&mut self, mailbox: &Mailbox<Self>) -> Result<()> {
         let contracts = db::contracts::load_contracts_pending_confirmation(&self.db).await?;
+
+        // TODO: Load contracts with a claim TXID which are _not_ `Closed`. Without this, we lose
+        // track of claim transactions which are not confirmed before a restart.
 
         let starting_block_height = self.rest_client.get_block_tip_height().await?;
 
@@ -127,7 +187,7 @@ impl xtra::Actor for Actor {
                     };
 
                     if let Err(e) = actor
-                        .send(TrackContract {
+                        .send(TrackContractFunding {
                             contract_id: contract.id.clone(),
                             contract_address: contract_address.clone().assume_checked(),
                             initial_collateral_sats: contract.initial_collateral_sats,
@@ -202,7 +262,7 @@ impl xtra::Actor for Actor {
     }
 }
 
-/// Internal message to tell the [`Actor`] actor to update the state of a tracked contract.
+/// Internal message to tell the [`Actor`] to update the state of a tracked contract.
 #[derive(Debug)]
 struct ContractUpdate {
     /// Set of transactions which may provide an update on the state of one or several of our
@@ -312,18 +372,22 @@ impl xtra::Handler<ContractUpdate> for Actor {
     }
 }
 
-/// Message to tell the [`Actor`] actor to start tracking a collateral contract.
+/// Message to tell the [`Actor`] to start tracking a collateral contract until it is funded.
 #[derive(Debug)]
-pub struct TrackContract {
+pub struct TrackContractFunding {
     pub contract_id: String,
     pub contract_address: Address,
     pub initial_collateral_sats: u64,
 }
 
-impl xtra::Handler<TrackContract> for Actor {
+impl xtra::Handler<TrackContractFunding> for Actor {
     type Return = Result<()>;
 
-    async fn handle(&mut self, msg: TrackContract, _: &mut xtra::Context<Self>) -> Self::Return {
+    async fn handle(
+        &mut self,
+        msg: TrackContractFunding,
+        _: &mut xtra::Context<Self>,
+    ) -> Self::Return {
         tracing::debug!(?msg, "Instructed to track contract");
 
         ensure!(
@@ -414,7 +478,44 @@ impl xtra::Handler<TrackContract> for Actor {
     }
 }
 
-/// Internal message to update the [`Actor`] actor block height.
+/// Message to tell the [`Actor`] to track the status of a collateral-claim transaction.
+#[derive(Debug)]
+pub struct TrackCollateralClaim {
+    pub contract_id: String,
+    pub claim_txid: Txid,
+}
+
+impl xtra::Handler<TrackCollateralClaim> for Actor {
+    type Return = Result<()>;
+
+    async fn handle(
+        &mut self,
+        msg: TrackCollateralClaim,
+        _: &mut xtra::Context<Self>,
+    ) -> Self::Return {
+        tracing::debug!(?msg, "Instructed to track claim TX");
+
+        ensure!(
+            !self.tracked_claim_txs.contains_key(&msg.claim_txid),
+            "Already tracking a claim TX with the same TXID"
+        );
+
+        self.tracked_claim_txs.insert(
+            msg.claim_txid,
+            TrackedClaimTx {
+                contract_id: msg.contract_id.clone(),
+                txid: msg.claim_txid,
+            },
+        );
+
+        self.update_claim_tx_status(&msg.contract_id, &msg.claim_txid)
+            .await?;
+
+        Ok(())
+    }
+}
+
+/// Internal message to update the [`Actor`]'s block height.
 #[derive(Debug)]
 struct NewBlockHeight(u64);
 
@@ -458,6 +559,22 @@ impl xtra::Handler<NewBlockHeight> for Actor {
         for address in contracts_to_remove {
             self.tracked_contracts.remove(&address);
         }
+
+        self.update_claim_txs_status().await;
+    }
+}
+
+/// Internal message to update the [`Actor`]'s block height.
+#[derive(Debug)]
+pub struct PostTx(pub String);
+
+impl xtra::Handler<PostTx> for Actor {
+    type Return = Result<()>;
+
+    async fn handle(&mut self, msg: PostTx, _: &mut xtra::Context<Self>) -> Self::Return {
+        self.rest_client.post_tx(msg.0).await?;
+
+        Ok(())
     }
 }
 
@@ -472,16 +589,22 @@ async fn derive_contract_status(
     }
 
     // TODO: Handle the possibility that the address is reused.
-    let tx = txs
-        .first()
-        .context("No transactions to derive contract status from")?;
+    let tx = match txs.first() {
+        Some(tx) => tx,
+        None => return Ok(ContractStatus::Pending),
+    };
 
-    let (index, vout) = tx
+    let (index, vout) = match tx
         .vout
         .iter()
         .enumerate()
         .find(|(_, vout)| vout.scriptpubkey_address.clone().assume_checked() == *address)
-        .context("No collateral contract in address transactions")?;
+    {
+        Some(vout) => vout,
+        None => {
+            return Ok(ContractStatus::Pending);
+        }
+    };
 
     if vout.value < amount {
         bail!("Insufficient collateral amount for {address} in {tx:?}, expected {amount} sats");
@@ -528,9 +651,40 @@ impl MempoolRestClient {
 
         let res = res.error_for_status()?;
 
-        let txs: Vec<Transaction> = res.json().await?;
+        let txs = res.json().await?;
 
         Ok(txs)
+    }
+
+    async fn get_tx(&self, txid: &Txid) -> Result<Option<Transaction>> {
+        let res = self
+            .client
+            .get(format!("{}/api/tx/{txid}", self.url))
+            .send()
+            .await?;
+
+        if let StatusCode::NOT_FOUND = res.status() {
+            return Ok(None);
+        }
+
+        let res = res.error_for_status()?;
+
+        let tx = res.json().await?;
+
+        Ok(Some(tx))
+    }
+
+    async fn post_tx(&self, tx: String) -> Result<()> {
+        let res = self
+            .client
+            .post(format!("{}/api/tx", self.url))
+            .body(tx)
+            .send()
+            .await?;
+
+        res.error_for_status()?;
+
+        Ok(())
     }
 
     async fn get_block_tip_height(&self) -> Result<u64> {

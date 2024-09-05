@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            contract_address,\n            contract_index,\n            collateral_txid,\n            collateral_vout,\n            status as \"status: crate::model::db::ContractStatus\",\n            duration_months,\n            created_at,\n            updated_at\n        FROM contracts\n        where id = $1 AND\n        borrower_id = $2\n        ",
+  "query": "\n        SELECT\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            contract_address,\n            contract_index,\n            collateral_txid,\n            collateral_vout,\n            claim_txid,\n            status as \"status: crate::model::db::ContractStatus\",\n            duration_months,\n            created_at,\n            updated_at\n        FROM contracts\n        where borrower_id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -75,6 +75,11 @@
       },
       {
         "ordinal": 14,
+        "name": "claim_txid",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 15,
         "name": "status: crate::model::db::ContractStatus",
         "type_info": {
           "Custom": {
@@ -94,24 +99,23 @@
         }
       },
       {
-        "ordinal": 15,
+        "ordinal": 16,
         "name": "duration_months",
         "type_info": "Int4"
       },
       {
-        "ordinal": 16,
+        "ordinal": 17,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 17,
+        "ordinal": 18,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
-        "Bpchar",
         "Bpchar"
       ]
     },
@@ -130,11 +134,12 @@
       true,
       true,
       true,
+      true,
       false,
       false,
       false,
       false
     ]
   },
-  "hash": "67ccd89fff13e59f651eefd2eefcb0fd88b5fb7880da7f1ea2b8e7d9de291b66"
+  "hash": "ca95c3da47783e6923ddd7522017352fb64557c2f34bfc69eda631ac29427b06"
 }

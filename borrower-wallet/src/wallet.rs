@@ -164,18 +164,7 @@ pub fn sign_claim_psbt(
     collateral_descriptor: Descriptor<PublicKey>,
     index: u32,
 ) -> Result<Transaction> {
-    // We just got a PSBT with a signature from the hub.
-    // The borrower has to sign the PSBT now.
-    // 1. Verify that the transaction pays to the borrower (might happen outside of this component,
-    //    since the address will be external).
-    // 2. Figure out which key to use! We originally derived a key and gave the hub the
-    //    corresponding public key.
-
     let guard = WALLET.lock().expect("to get lock");
-
-    // This did nothing.
-    // psbt.sign(&wallet.xprv, &Secp256k1::new())
-    //     .map_err(|e| anyhow!("Could not sign claim PSBT: {e:?}"))?;
 
     let kp = get_kp(guard, index).context("No kp for index")?;
     let sk = kp.secret_key();

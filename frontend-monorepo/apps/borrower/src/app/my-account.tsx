@@ -123,8 +123,8 @@ const MnemonicDisplay = () => {
   const onEyeButtonClick = async () => {
     await init();
 
-    const walletExists = await does_wallet_exist();
-    const isLoaded = await is_wallet_loaded();
+    const walletExists = does_wallet_exist();
+    const isLoaded = is_wallet_loaded();
     if (!walletExists) {
       handleOpenCreateWalletModal();
       return;
@@ -140,7 +140,7 @@ const MnemonicDisplay = () => {
     setIsVisible(!isVisible);
   };
 
-  const handleGetMnemonic = () => {
+  const handleGetMnemonic = async () => {
     try {
       const isLoaded = is_wallet_loaded();
       if (isLoaded) {

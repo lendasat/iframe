@@ -3,6 +3,7 @@
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
+    use bitcoin::Psbt;
     use hub::model::ContractRequestSchema;
     use hub::model::ContractStatus;
     use hub::model::CreateLoanOfferSchema;
@@ -253,6 +254,9 @@ mod tests {
             psbt: claim_psbt,
             collateral_descriptor,
         } = res.json().await.unwrap();
+
+        let claim_psbt = hex::decode(claim_psbt).unwrap();
+        let claim_psbt = Psbt::deserialize(&claim_psbt).unwrap();
 
         let tx = borrower_wallet::wallet::sign_claim_psbt(
             claim_psbt,

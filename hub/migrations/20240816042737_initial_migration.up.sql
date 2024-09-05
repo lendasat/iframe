@@ -79,6 +79,7 @@ CREATE TABLE
     contract_index          INT,
     collateral_txid         TEXT,
     collateral_vout         INT,
+    claim_txid              TEXT,
     created_at              TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at              TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (lender_id) REFERENCES lenders (id),

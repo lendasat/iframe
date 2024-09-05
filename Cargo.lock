@@ -3354,6 +3354,7 @@ dependencies = [
  "bitcoin",
  "borrower-wallet",
  "dotenv",
+ "hex",
  "hub",
  "mempool-mock",
  "reqwest",

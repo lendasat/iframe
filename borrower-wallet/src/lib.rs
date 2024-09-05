@@ -37,6 +37,19 @@ pub fn get_next_pk() -> Result<String, JsValue> {
     map_err_to_js!(browser_wallet::get_next_pk())
 }
 
+#[wasm_bindgen]
+pub fn sign_claim_psbt(
+    psbt: String,
+    collateral_descriptor: String,
+    pk: String,
+) -> Result<String, JsValue> {
+    map_err_to_js!(browser_wallet::sign_claim_psbt(
+        &psbt,
+        &collateral_descriptor,
+        &pk
+    ))
+}
+
 #[macro_export]
 macro_rules! map_err_to_js {
     ($e:expr) => {

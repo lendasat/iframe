@@ -31,11 +31,10 @@ export function UnlockWalletModal({ show, handleClose, handleSubmit }: WalletMod
   const onOkClick = async () => {
     setLoading(true);
     try {
-      // TODO: Is this necessary?
       await init();
 
-      const walletExists = await does_wallet_exist();
-      const isLoaded = await is_wallet_loaded();
+      const walletExists = does_wallet_exist();
+      const isLoaded = is_wallet_loaded();
       if (!walletExists) {
         setError("Wallet does not exist");
         return;

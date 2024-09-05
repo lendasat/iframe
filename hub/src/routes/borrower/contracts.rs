@@ -1,4 +1,5 @@
 use crate::db;
+use crate::mempool;
 use crate::model::ContractRequestSchema;
 use crate::model::ContractStatus;
 use crate::model::User;
@@ -17,8 +18,8 @@ use axum::Extension;
 use axum::Json;
 use axum::Router;
 use bitcoin::Amount;
-use bitcoin::Psbt;
 use bitcoin::PublicKey;
+use bitcoin::Transaction;
 use miniscript::Descriptor;
 use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
@@ -41,6 +42,7 @@ pub struct Contract {
     #[serde(with = "rust_decimal::serde::float")]
     pub initial_ltv: Decimal,
     pub status: ContractStatus,
+    pub borrower_pk: PublicKey,
     // TODO: We should persist this first.
     pub borrower_btc_address: String,
     pub borrower_loan_address: String,
@@ -66,8 +68,13 @@ pub struct LenderProfile {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ClaimCollateralPsbt {
-    pub psbt: Psbt,
+    pub psbt: String,
     pub collateral_descriptor: Descriptor<PublicKey>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ClaimTx {
+    pub tx: String,
 }
 
 pub(crate) fn router(app_state: Arc<AppState>) -> Router {
@@ -82,6 +89,13 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
         .route(
             "/api/contracts/:id",
             get(get_contract).route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                jwt_auth::auth,
+            )),
+        )
+        .route(
+            "/api/contracts/:id",
+            post(post_claim_tx).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
                 jwt_auth::auth,
             )),
@@ -161,6 +175,7 @@ pub async fn get_contracts(
             interest_rate: offer.interest_rate,
             initial_ltv: contract.initial_ltv,
             status: contract.status,
+            borrower_pk: contract.borrower_pk,
             borrower_btc_address: contract.borrower_btc_address.assume_checked().to_string(),
             borrower_loan_address: contract.borrower_loan_address,
             contract_address: contract
@@ -248,6 +263,7 @@ pub async fn get_contract(
             interest_rate: offer.interest_rate,
             initial_ltv: contract.initial_ltv,
             status: contract.status,
+            borrower_pk: contract.borrower_pk,
             borrower_btc_address: contract.borrower_btc_address.assume_checked().to_string(),
             borrower_loan_address: contract.borrower_loan_address,
             contract_address: contract
@@ -308,6 +324,7 @@ pub async fn post_contract_request(
             interest_rate: offer.interest_rate,
             initial_ltv: contract.initial_ltv,
             status: contract.status,
+            borrower_pk: contract.borrower_pk,
             borrower_btc_address: contract.borrower_btc_address.assume_checked().to_string(),
             borrower_loan_address: contract.borrower_loan_address,
             contract_address: contract
@@ -381,6 +398,8 @@ pub async fn get_claim_collateral_psbt(
             contract.borrower_btc_address.assume_checked(),
         )?;
 
+        let psbt = psbt.serialize_hex();
+
         let res = ClaimCollateralPsbt {
             psbt,
             collateral_descriptor,
@@ -397,4 +416,43 @@ pub async fn get_claim_collateral_psbt(
     })?;
 
     Ok((StatusCode::OK, Json(psbt)))
+}
+
+// We don't need the borrower to publish the claim TX through the hub, but it is convenient to be
+// able to move the contract state forward. Eventually we could remove this and publish from the
+// borrower client.
+#[instrument(skip_all, err(Debug), ret)]
+pub async fn post_claim_tx(
+    State(data): State<Arc<AppState>>,
+    // TODO: Make sure that the claim TX is issued by the _right_ user.
+    Extension(_user): Extension<User>,
+    Path(contract_id): Path<String>,
+    Json(body): Json<ClaimTx>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    let txid = async {
+        let tx: Transaction = bitcoin::consensus::encode::deserialize_hex(&body.tx)?;
+        let claim_txid = tx.compute_txid();
+
+        db::contracts::insert_claim_txid(&data.db, contract_id.as_str(), &claim_txid).await?;
+
+        data.mempool
+            .send(mempool::TrackCollateralClaim {
+                contract_id,
+                claim_txid,
+            })
+            .await??;
+
+        data.mempool.send(mempool::PostTx(body.tx)).await??;
+
+        anyhow::Ok(claim_txid)
+    }
+    .await
+    .map_err(|error| {
+        let error_response = ErrorResponse {
+            message: format!("Database error: {}", error),
+        };
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+    })?;
+
+    Ok((StatusCode::OK, txid.to_string()))
 }

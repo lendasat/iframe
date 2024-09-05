@@ -5,6 +5,7 @@ use bitcoin::address::NetworkUnchecked;
 use bitcoin::Address;
 use bitcoin::OutPoint;
 use bitcoin::PublicKey;
+use bitcoin::Txid;
 use rust_decimal::Decimal;
 use serde::Deserialize;
 use serde::Serialize;
@@ -162,6 +163,7 @@ pub struct Contract {
     pub contract_address: Option<Address<NetworkUnchecked>>,
     pub contract_index: Option<u32>,
     pub collateral_output: Option<OutPoint>,
+    pub claim_txid: Option<Txid>,
     pub status: ContractStatus,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
@@ -211,6 +213,7 @@ pub mod db {
         pub contract_index: Option<i32>,
         pub collateral_txid: Option<String>,
         pub collateral_vout: Option<i32>,
+        pub claim_txid: Option<String>,
         pub status: ContractStatus,
         #[serde(with = "time::serde::rfc3339")]
         pub created_at: OffsetDateTime,
@@ -256,6 +259,7 @@ impl From<db::Contract> for Contract {
                     vout: vout as u32,
                 })
             }),
+            claim_txid: value.claim_txid.map(|t| t.parse().expect("valid txid")),
             status: value.status.into(),
             created_at: value.created_at,
             updated_at: value.updated_at,
@@ -297,6 +301,7 @@ impl From<Contract> for db::Contract {
             contract_index: value.contract_index.map(|i| i as i32),
             collateral_txid: value.collateral_output.map(|o| o.txid.to_string()),
             collateral_vout: value.collateral_output.map(|o| o.vout as i32),
+            claim_txid: value.claim_txid.map(|t| t.to_string()),
             status: value.status.into(),
             created_at: value.created_at,
             updated_at: value.updated_at,
