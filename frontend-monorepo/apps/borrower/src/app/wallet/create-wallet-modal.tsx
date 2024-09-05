@@ -46,7 +46,7 @@ export function CreateWalletModal({ show, handleClose, handleSubmit }: WalletMod
         const walletExists = await does_wallet_exist();
         if (!walletExists) {
           // TODO: use env variable here for the network
-          new_wallet(password, "regtest");
+          new_wallet(password, import.meta.env.VITE_BITCOIN_NETWORK ?? "signet");
           console.log("Created new wallet");
         } else {
           setError("Wallet already exists, please unlock instead");

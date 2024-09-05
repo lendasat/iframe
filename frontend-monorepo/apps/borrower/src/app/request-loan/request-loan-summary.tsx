@@ -53,13 +53,22 @@ export function RequestLoanSummary() {
   const [selectedCoin, setSelectedCoin] = useState<StableCoin | undefined>(initCoin);
 
   const [loanAddress, setLoanAddress] = useState("");
-  const [btcAddress, setBtcAddress] = useState("bcrt1qqpf790lnsavxe9ree00tp8dd550ddw76pluxyr02tn2rssj6dtnstxmagd");
+
+  // Only for local testing
+  let defaultBtcAddress = ""
+  if (import.meta.env.VITE_BITCOIN_NETWORK === "regtest") {
+    defaultBtcAddress = "bcrt1qqpf790lnsavxe9ree00tp8dd550ddw76pluxyr02tn2rssj6dtnstxmagd";
+  }
+
+  const [btcAddress, setBtcAddress] = useState(defaultBtcAddress);
   const [amountError, setAmountError] = useState<string | null>(null);
   const [loanDuration, setLoanDuration] = useState<number>(initMonths);
   const [showCreateWalletModal, setShowCreateWalletModal] = useState(false);
   const [showUnlockWalletModal, setShowUnlockWalletModal] = useState(false);
 
   const [collateral] = useState<number>(loanAmount / (loanOffer.ltv / 100) / latestPrice);
+
+  const [isWalletLoaded, setIsWalletLoaded] = useState();
 
   const loanOriginatorFee = (loanAmount / latestPrice) * ORIGINATOR_FEE;
 
@@ -93,6 +102,7 @@ export function RequestLoanSummary() {
 
       const walletExists = await does_wallet_exist();
       const isLoaded = await is_wallet_loaded();
+      setIsWalletLoaded(isLoaded);
       if (!walletExists) {
         handleOpenCreateWalletModal();
         return;
@@ -156,10 +166,14 @@ export function RequestLoanSummary() {
 
   const addressLabel = selectedCoin ? `${StableCoinHelper.print(selectedCoin)} Address` : "Address";
 
-  const handleSubmitCreateWalletModal = () => {
+  const handleSubmitCreateWalletModal = async () => {
+    const isLoaded = await is_wallet_loaded();
+    setIsWalletLoaded(isLoaded);
     handleCloseCreateWalletModal();
   };
-  const handleSubmitUnlockWalletModal = () => {
+  const handleSubmitUnlockWalletModal = async () => {
+    const isLoaded = await is_wallet_loaded();
+    setIsWalletLoaded(isLoaded);
     handleCloseUnlockWalletModal();
   };
 
@@ -212,20 +226,20 @@ export function RequestLoanSummary() {
                 onSelect={handleCoinSelect}
               />
             </Form.Group>
-            <Alert className="mb-2" key="info" variant="info">
-              <FontAwesomeIcon icon={faInfoCircle} />{" "}
-              Provide a valid address on the target network. Providing an incorrect address here will lead to a loss of
-              funds.
-            </Alert>
             <Form.Group className="mb-3" controlId="btc-address">
               <Form.Label>
-                <small>Bitcoin Address</small>
+                <small>Bitcoin Refund Address</small>
               </Form.Label>
               <Form.Control
                 value={btcAddress}
                 onChange={(e) => setBtcAddress(e.target.value)}
               />
             </Form.Group>
+            <Alert className="mb-2" key="info" variant="warning">
+              <FontAwesomeIcon icon={faInfoCircle} />{" "}
+              Provide a valid address on the target network. Providing an incorrect address here will lead to a loss of
+              funds.
+            </Alert>
             <Form.Group className="mb-3" controlId="stablecoin-address">
               <Form.Label>
                 <small>{addressLabel}</small>
@@ -281,7 +295,7 @@ export function RequestLoanSummary() {
             <Button className={"btn-secondary"}>Cancel</Button>
           </Link>
           <span>{" "}</span>
-          <Button onClick={handleRequestLoan} disabled={isButtonDisabled}>Request</Button>
+          <Button onClick={handleRequestLoan} disabled={isButtonDisabled}>{isWalletLoaded ? "Request" : "Unlock Wallet"}</Button>
         </Col>
       </Row>
       {error

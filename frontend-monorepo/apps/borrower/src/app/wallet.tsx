@@ -21,7 +21,7 @@ function Wallet() {
 
     try {
       // TODO: The network should be read from an environment variable.
-      new_wallet(newWalletInput, "regtest");
+      new_wallet(newWalletInput, import.meta.env.VITE_BITCOIN_NETWORK ?? "signet");
       setIsWalletLoaded(true);
     } catch (e) {
       alert(e);
