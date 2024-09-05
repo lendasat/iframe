@@ -41,9 +41,11 @@ function CollateralizeLoanComponent({ contract }: CollateralizeLoanComponentProp
 
   const initialLtv = contract.initial_ltv;
   const initial_price = loanAmount / (collateral * initialLtv);
+  const initialLtvFormatted = (initialLtv * 100).toFixed(0);
 
   const loanOriginatorFee = (loanAmount / initial_price) * ORIGINATOR_FEE;
   const totalCollateral = collateral + loanOriginatorFee;
+  const loanOriginatorFeeUsd = (loanOriginatorFee * initial_price).toFixed(0);
 
   const isCollateralized = contract.status === ContractStatus.CollateralConfirmed
     || contract.status === ContractStatus.CollateralSeen;
@@ -68,7 +70,7 @@ function CollateralizeLoanComponent({ contract }: CollateralizeLoanComponentProp
                 <Badge bg="primary">{contract.status}</Badge>
               </Col>
             </Row>
-            <Row className="justify-content-between mt-4">
+            <Row className="justify-content-between border-b mt-4">
               <Col md={6}>Loan Amount</Col>
               <Col md={6} className="text-end">
                 <Usd value={loanAmount} />
@@ -79,7 +81,11 @@ function CollateralizeLoanComponent({ contract }: CollateralizeLoanComponentProp
               <Col className="text-end mb-2">{collateral.toFixed(8)} BTC</Col>
             </Row>
             <Row className="justify-content-between border-b mt-2">
-              <Col>Interest rate</Col>
+              <Col>LTV Ratio</Col>
+              <Col className="text-end mb-2">{initialLtvFormatted}%</Col>
+            </Row>
+            <Row className="justify-content-between border-b mt-2">
+              <Col>Interest rate p.a.</Col>
               <Col className="text-end mb-2">
                 {interestRate}%
               </Col>
@@ -94,7 +100,7 @@ function CollateralizeLoanComponent({ contract }: CollateralizeLoanComponentProp
             <Row className="justify-content-between mt-2">
               <Col md={6}>Originator Fee 1%</Col>
               <Col md={6} className="text-end">
-                {loanOriginatorFee.toFixed(8)} BTC
+                {loanOriginatorFee.toFixed(8)} BTC <small>(${loanOriginatorFeeUsd})</small>
               </Col>
             </Row>
             <Row className="mt-2 border-top pt-2">
@@ -167,7 +173,6 @@ export function CollateralContractDetails({
   collateral,
   collateralAddress,
 }: CollateralContractDetailsProps) {
-
   return (
     <Container fluid>
       <Row>
