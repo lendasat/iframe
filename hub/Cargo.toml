@@ -22,7 +22,7 @@ mime_guess = "2.0.5"
 miniscript = "12"
 rand = "0.8.5"
 reqwest = { version = "0.12.7", features = ["json"] }
-rust_decimal = "1.35"
+rust_decimal = { version = "1.35", features = ["serde-with-float"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sqlx = { version = "0.8", features = ["runtime-async-std", "tls-rustls", "postgres", "uuid", "time", "rust_decimal"] }

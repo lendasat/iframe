@@ -2,7 +2,7 @@ import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Contract, ContractStatus, useAuth } from "@frontend-monorepo/http-client";
 import QRCode from "qrcode.react";
-import React, { Suspense, useState } from "react";
+import React, { Suspense } from "react";
 import { Alert, Badge, Button, Col, Container, Form, InputGroup, Row } from "react-bootstrap";
 import { Await, useParams } from "react-router-dom";
 import { Lender } from "../request-loan/lender";
@@ -41,11 +41,12 @@ function CollateralizeLoanComponent({ contract }: CollateralizeLoanComponentProp
 
   const initialLtv = contract.initial_ltv;
   const initial_price = loanAmount / (collateral * initialLtv);
+  const initialLtvFormatted = (initialLtv * 100).toFixed(0);
 
   const loanOriginatorFee = (loanAmount / initial_price) * ORIGINATOR_FEE;
   const totalCollateral = collateral + loanOriginatorFee;
+  const loanOriginatorFeeUsd = (loanOriginatorFee * initial_price).toFixed(0);
 
-  const [isCollateralizedConfirmed, setIsCollateralizedConfirmed] = useState(false);
   const isCollateralized = contract.status === ContractStatus.CollateralConfirmed
     || contract.status === ContractStatus.CollateralSeen;
 
@@ -69,7 +70,7 @@ function CollateralizeLoanComponent({ contract }: CollateralizeLoanComponentProp
                 <Badge bg="primary">{contract.status}</Badge>
               </Col>
             </Row>
-            <Row className="justify-content-between mt-4">
+            <Row className="justify-content-between border-b mt-4">
               <Col md={6}>Loan Amount</Col>
               <Col md={6} className="text-end">
                 <Usd value={loanAmount} />
@@ -80,7 +81,11 @@ function CollateralizeLoanComponent({ contract }: CollateralizeLoanComponentProp
               <Col className="text-end mb-2">{collateral.toFixed(8)} BTC</Col>
             </Row>
             <Row className="justify-content-between border-b mt-2">
-              <Col>Interest rate</Col>
+              <Col>LTV Ratio</Col>
+              <Col className="text-end mb-2">{initialLtvFormatted}%</Col>
+            </Row>
+            <Row className="justify-content-between border-b mt-2">
+              <Col>Interest rate p.a.</Col>
               <Col className="text-end mb-2">
                 {interestRate}%
               </Col>
@@ -95,7 +100,7 @@ function CollateralizeLoanComponent({ contract }: CollateralizeLoanComponentProp
             <Row className="justify-content-between mt-2">
               <Col md={6}>Originator Fee 1%</Col>
               <Col md={6} className="text-end">
-                {loanOriginatorFee.toFixed(8)} BTC
+                {loanOriginatorFee.toFixed(8)} BTC <small>(${loanOriginatorFeeUsd})</small>
               </Col>
             </Row>
             <Row className="mt-2 border-top pt-2">
@@ -132,8 +137,7 @@ function CollateralizeLoanComponent({ contract }: CollateralizeLoanComponentProp
                       <Button
                         variant="primary"
                         onClick={() => {
-                          alert("Here goes everything");
-                          setIsCollateralizedConfirmed(false);
+                          alert("Your loan collateral will be paid out to you");
                         }}
                       >
                         Claim loan principal
@@ -146,12 +150,11 @@ function CollateralizeLoanComponent({ contract }: CollateralizeLoanComponentProp
           </Container>
         </Col>
         <Col xs={12} md={6}>
-          {(!isCollateralizedConfirmed && !isCollateralized)
+          {(!isCollateralized)
             ? (
               <CollateralContractDetails
                 collateral={collateral}
                 collateralAddress={contractAddress || ""}
-                onCollateralize={bool => setIsCollateralizedConfirmed(bool)}
               />
             )
             : ""}
@@ -164,18 +167,12 @@ function CollateralizeLoanComponent({ contract }: CollateralizeLoanComponentProp
 interface CollateralContractDetailsProps {
   collateral: number;
   collateralAddress: string;
-  onCollateralize: (collateralized: boolean) => void;
 }
 
 export function CollateralContractDetails({
   collateral,
   collateralAddress,
-  onCollateralize,
 }: CollateralContractDetailsProps) {
-  const handleConfirmRepayment = () => {
-    onCollateralize(true);
-  };
-
   return (
     <Container fluid>
       <Row>
@@ -190,13 +187,6 @@ export function CollateralContractDetails({
               Please send {collateral} BTC to {collateralAddress}
             </p>
           </div>
-        </Col>
-      </Row>
-      <Row className="mt-1">
-        <Col className="d-grid">
-          <Button variant="primary" onClick={handleConfirmRepayment}>
-            Confirm Collateralization
-          </Button>
         </Col>
       </Row>
     </Container>

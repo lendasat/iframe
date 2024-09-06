@@ -26,9 +26,12 @@ use tracing::instrument;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Contract {
     pub id: String,
+    #[serde(with = "rust_decimal::serde::float")]
     pub loan_amount: Decimal,
     pub collateral_sats: u64,
+    #[serde(with = "rust_decimal::serde::float")]
     pub interest_rate: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
     pub initial_ltv: Decimal,
     pub status: ContractStatus,
     // TODO: We should persist this first.

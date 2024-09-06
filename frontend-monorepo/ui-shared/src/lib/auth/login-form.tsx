@@ -1,3 +1,5 @@
+import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React, { useState } from "react";
 import { Button, Col, Container, Form, Row } from "react-bootstrap";
 import { Link } from "react-router-dom";
@@ -9,10 +11,12 @@ interface LoginFormProps {
   forgotPasswordLink: string;
   initialUserEmail: string;
   initialUserPassword: string;
+  infoMessage?: string;
 }
 
 export function LoginForm(
-  { handleLogin, registrationLink, forgotPasswordLink, initialUserEmail, initialUserPassword }: LoginFormProps,
+  { handleLogin, registrationLink, forgotPasswordLink, initialUserEmail, initialUserPassword, infoMessage }:
+    LoginFormProps,
 ) {
   const [email, setEmail] = useState(initialUserEmail);
   const [password, setPassword] = useState(initialUserPassword);
@@ -34,6 +38,13 @@ export function LoginForm(
         <Col className="d-flex justify-content-center">
           <div className="p-4 rounded border border-primary" style={{ backgroundColor: "#f8f9fa" }}>
             <Logo height={80} width={400} className="mb-4 d-block mx-auto" />
+
+            {infoMessage
+              && (
+                <div className="alert alert-info">
+                  <FontAwesomeIcon icon={faInfoCircle} color={"primary"} />{"  "}{infoMessage}.
+                </div>
+              )}
 
             <Form onSubmit={onSubmit}>
               <Form.Group controlId="formBasicEmail" className="mb-3">

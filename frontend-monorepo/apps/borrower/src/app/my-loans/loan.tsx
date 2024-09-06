@@ -27,7 +27,7 @@ export function LoanComponent({ loan, onRepay, onCollateralize }: LoanComponentP
             </Col>
             <Col md={1}>{expiry.toLocaleDateString()}</Col>
             <Col md={2}>
-              <LtvProgressBar value={ltvRatio} />
+              <LtvProgressBar value={latestPrice ? ltvRatio : undefined} />
             </Col>
             <Col md={1}>{interest_rate}%</Col>
             <Col md={2}>{collateral_btc} BTC</Col>
@@ -45,6 +45,7 @@ export function LoanComponent({ loan, onRepay, onCollateralize }: LoanComponentP
                   case ContractStatus.Closing:
                   case ContractStatus.Closed:
                     return <div></div>;
+                  // TODO: this is the wrong state for allowing the user to repay the loan. We should only repay once the principal has been given
                   case ContractStatus.CollateralConfirmed:
                     return (
                       <>

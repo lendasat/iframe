@@ -14,7 +14,11 @@ export const PriceProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      setLatestPrice(data.bitcoin);
+      let price = undefined;
+      if (data.bitcoin) {
+        price = parseFloat(data.bitcoin);
+      }
+      setLatestPrice(price);
     };
 
     return () => {
