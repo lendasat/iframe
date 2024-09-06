@@ -225,7 +225,7 @@ pub async fn load_contracts_pending_confirmation(pool: &Pool<Postgres>) -> Resul
 pub async fn insert_contract_request(
     pool: &Pool<Postgres>,
     borrower_id: String,
-    loan_id: String,
+    loan_id: &str,
     initial_ltv: Decimal,
     initial_collateral_sats: u64,
     loan_amount: Decimal,

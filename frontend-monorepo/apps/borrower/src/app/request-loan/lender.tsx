@@ -9,7 +9,7 @@ export function Lender({ name, rate, loans }: LenderProfile) {
         <Link className="link-primary" to={`/profile/${name}`}>{name}</Link>
       </Row>
       <Row>
-        <small>{rate ? <>{rate} rating,</> : ""} {loans} loans</small>
+        <small>{rate ? <>{rate}%,</> : ""} {loans} loans</small>
       </Row>
     </Container>
   );

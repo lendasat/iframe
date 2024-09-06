@@ -64,6 +64,8 @@ pub fn get_next_pk() -> Result<String> {
 
     storage.set_item(&pk.to_string(), pk_index)?;
 
+    storage.set_item(NEXT_PK_INDEX_KEY, pk_index + 1)?;
+
     Ok(pk.to_string())
 }
 

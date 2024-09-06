@@ -124,7 +124,7 @@ impl Wallet {
         let sighash = SighashCache::new(&unsigned_claim_tx).p2wsh_signature_hash(
             0,
             &witness_script,
-            Amount::from_sat(collateral_amount),
+            Amount::from_sat(collateral_amount + origination_fee),
             EcdsaSighashType::All,
         )?;
 
@@ -132,7 +132,7 @@ impl Wallet {
 
         let mut input = psbt::Input {
             witness_utxo: Some(TxOut {
-                value: Amount::from_sat(collateral_amount),
+                value: Amount::from_sat(collateral_amount + origination_fee),
                 script_pubkey: collateral_descriptor.script_pubkey(),
             }),
             sighash_type: Some(PsbtSighashType::from_str("SIGHASH_ALL").expect("valid")),

@@ -137,10 +137,7 @@ pub async fn insert_loan_offer(
     Ok(loan)
 }
 
-pub(crate) async fn loan_by_id(
-    pool: &Pool<Postgres>,
-    loan_id: String,
-) -> Result<Option<LoanOffer>> {
+pub(crate) async fn loan_by_id(pool: &Pool<Postgres>, loan_id: &str) -> Result<Option<LoanOffer>> {
     let loan = sqlx::query_as!(
         LoanOffer,
         r#"

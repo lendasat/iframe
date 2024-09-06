@@ -54,9 +54,7 @@ export interface LenderProfile {
 
 export interface ContractRequest {
   loan_id: string;
-  initial_ltv: number;
   loan_amount: number;
-  initial_collateral_sats: number;
   duration_months: number;
   borrower_btc_address: string;
   borrower_pk: string;

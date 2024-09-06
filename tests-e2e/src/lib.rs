@@ -112,9 +112,7 @@ mod tests {
 
         let contract_request = ContractRequestSchema {
             loan_id: loan_offer.id,
-            initial_ltv: dec!(0.25),
             loan_amount: dec!(20_000),
-            initial_collateral_sats: 9_500_000,
             duration_months: 6,
             borrower_btc_address,
             borrower_pk,

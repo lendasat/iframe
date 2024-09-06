@@ -7,6 +7,7 @@ use crate::routes::borrower::auth::jwt_auth;
 use crate::routes::AppState;
 use crate::routes::ErrorResponse;
 use anyhow::Context;
+use anyhow::Result;
 use axum::extract::Path;
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -23,9 +24,12 @@ use bitcoin::Transaction;
 use miniscript::Descriptor;
 use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
+use rust_decimal_macros::dec;
 use serde::Deserialize;
 use serde::Serialize;
 use std::sync::Arc;
+use time::ext::NumericalDuration;
+use time::format_description;
 use time::OffsetDateTime;
 use tracing::instrument;
 
@@ -62,7 +66,7 @@ pub struct Contract {
 pub struct LenderProfile {
     id: String,
     name: String,
-    rating: Decimal,
+    rate: Decimal,
     loans: u64,
 }
 
@@ -132,7 +136,7 @@ pub async fn get_contracts(
 
     let mut contracts_2 = Vec::new();
     for contract in contracts {
-        let offer = db::loan_offers::loan_by_id(&data.db, contract.loan_id)
+        let offer = db::loan_offers::loan_by_id(&data.db, &contract.loan_id)
             .await
             .map_err(|error| {
                 let error_response = ErrorResponse {
@@ -186,8 +190,8 @@ pub async fn get_contracts(
                 id: contract.lender_id,
                 name: lender.name,
                 // TODO: Use real data.
-                rating: Decimal::ONE_HUNDRED,
-                loans: 1_000,
+                rate: dec!(99.7),
+                loans: 194,
             },
             created_at: contract.created_at,
             repaid_at: None,
@@ -219,7 +223,7 @@ pub async fn get_contract(
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
     })?;
 
-    let offer = db::loan_offers::loan_by_id(&data.db, contract.loan_id)
+    let offer = db::loan_offers::loan_by_id(&data.db, &contract.loan_id)
         .await
         .map_err(|error| {
             let error_response = ErrorResponse {
@@ -274,8 +278,8 @@ pub async fn get_contract(
                 id: contract.lender_id,
                 name: lender.name,
                 // TODO: Use real data.
-                rating: Decimal::ONE_HUNDRED,
-                loans: 1_000,
+                rate: dec!(99.7),
+                loans: 194,
             },
             created_at: contract.created_at,
             repaid_at: None,
@@ -291,12 +295,24 @@ pub async fn post_contract_request(
     Json(body): Json<ContractRequestSchema>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     let contract = async {
+        let offer = db::loan_offers::loan_by_id(&data.db, &body.loan_id)
+            .await?
+            .context("No loan offer for contract")?;
+
+        let price = get_bitmex_index_price(OffsetDateTime::now_utc()).await?;
+        let ltv = offer.min_ltv;
+
+        let collateral_btc = (body.loan_amount / ltv) / price;
+        let collateral_btc = collateral_btc.round_dp(8);
+        let collateral_btc = collateral_btc.to_f64().context("Invalid conversion")?;
+        let collateral = Amount::from_btc(collateral_btc)?;
+
         let contract = db::contracts::insert_contract_request(
             &data.db,
             user.id,
-            body.loan_id,
-            body.initial_ltv,
-            body.initial_collateral_sats,
+            &body.loan_id,
+            offer.min_ltv,
+            collateral.to_sat(),
             body.loan_amount,
             body.duration_months,
             body.borrower_btc_address,
@@ -304,10 +320,6 @@ pub async fn post_contract_request(
             body.borrower_loan_address,
         )
         .await?;
-
-        let offer = db::loan_offers::loan_by_id(&data.db, contract.loan_id)
-            .await?
-            .context("No loan offer for contract")?;
 
         let lender = db::lenders::get_user_by_id(&data.db, &contract.lender_id)
             .await?
@@ -335,8 +347,8 @@ pub async fn post_contract_request(
                 id: contract.lender_id,
                 name: lender.name,
                 // TODO: Use real data.
-                rating: Decimal::ONE_HUNDRED,
-                loans: 1_000,
+                rate: dec!(99.7),
+                loans: 194,
             },
             created_at: contract.created_at,
             repaid_at: None,
@@ -455,4 +467,47 @@ pub async fn post_claim_tx(
     })?;
 
     Ok((StatusCode::OK, txid.to_string()))
+}
+
+#[derive(serde::Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+struct Index {
+    #[serde(with = "time::serde::rfc3339")]
+    #[serde(rename = "timestamp")]
+    _timestamp: OffsetDateTime,
+    last_price: f64,
+    #[serde(rename = "reference")]
+    _reference: String,
+}
+
+async fn get_bitmex_index_price(timestamp: OffsetDateTime) -> Result<Decimal> {
+    let time_format = format_description::parse("[year]-[month]-[day] [hour]:[minute]")?;
+
+    // Ideally we get the price indicated by `timestamp`, but if it is not available we are happy to
+    // take a price up to 1 minute in the past.
+    let start_time = (timestamp - 1.minutes()).format(&time_format)?;
+    let end_time = timestamp.format(&time_format)?;
+
+    let mut url = reqwest::Url::parse("https://www.bitmex.com/api/v1/instrument/compositeIndex")?;
+    // TODO: Are we using the right symbol?
+    url.query_pairs_mut()
+        .append_pair("symbol", ".BXBT")
+        .append_pair(
+            "filter",
+            // The `reference` is set to `BMI` to get the _composite_ index.
+
+            &format!("{{\"symbol\": \".BXBT\", \"startTime\": \"{start_time}\", \"endTime\": \"{end_time}\", \"reference\": \"BMI\"}}"),
+        )
+        .append_pair("columns", "lastPrice,timestamp,reference")
+        // Reversed to get the latest one.
+        .append_pair("reverse", "true")
+        // Only need one index.
+        .append_pair("count", "1");
+
+    let indices = reqwest::get(url).await?.json::<Vec<Index>>().await?;
+    let index = &indices[0];
+
+    let index_price = Decimal::try_from(index.last_price)?;
+
+    Ok(index_price)
 }
