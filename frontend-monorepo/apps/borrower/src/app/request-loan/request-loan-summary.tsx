@@ -2,7 +2,7 @@ import { faInfoCircle, faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { LoanOffer, useAuth } from "@frontend-monorepo/http-client";
 import React, { useState } from "react";
-import { Alert, Badge, Button, Col, Container, Form, Row } from "react-bootstrap";
+import { Alert, Badge, Button, Col, Container, Form, InputGroup, Row } from "react-bootstrap";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import init, {
   does_wallet_exist,
@@ -66,8 +66,7 @@ export function RequestLoanSummary() {
   const [showCreateWalletModal, setShowCreateWalletModal] = useState(false);
   const [showUnlockWalletModal, setShowUnlockWalletModal] = useState(false);
 
-  const [collateral] = useState<number>(loanAmount / (loanOffer.ltv / 100) / latestPrice);
-  console.log(collateral);
+  const collateral = loanAmount / (loanOffer.ltv / 100) / latestPrice;
 
   const [isWalletLoaded, setIsWalletLoaded] = useState();
 
@@ -118,13 +117,9 @@ export function RequestLoanSummary() {
       const collateralFloat = parseFloat(collateral.toFixed(8));
       const collateralSats = parseInt((collateralFloat * 100000000).toFixed(0));
 
-      const initial_ltv = loanOffer.ltv / 100;
-
       const res = await postContractRequest({
         loan_id: loanOffer.id,
-        initial_ltv: initial_ltv,
         loan_amount: loanAmount || 0,
-        initial_collateral_sats: collateralSats,
         duration_months: loanDuration,
         borrower_btc_address: btcAddress,
         borrower_pk: borrowerPk,
@@ -164,7 +159,7 @@ export function RequestLoanSummary() {
     || !selectedCoin
     || !loanAddress.trim();
 
-  const addressLabel = selectedCoin ? `${StableCoinHelper.print(selectedCoin)} Address` : "Address";
+  const addressLabel = selectedCoin ? `${StableCoinHelper.print(selectedCoin)} address` : "Address";
 
   const handleSubmitCreateWalletModal = async () => {
     const isLoaded = await is_wallet_loaded();
@@ -191,7 +186,7 @@ export function RequestLoanSummary() {
       />
       <Row>
         <h3>
-          Collateral Contract <Badge bg="primary">Draft</Badge>
+          Loan Parameters <Badge bg="primary">Draft</Badge>
         </h3>
       </Row>
       <Row className="mt-3">
@@ -199,14 +194,17 @@ export function RequestLoanSummary() {
           <Form>
             <Form.Group className="mb-2" controlId="loan-amount">
               <Form.Label>
-                <small>Loan Amount</small>
+                <small>Loan amount</small>
               </Form.Label>
-              <Form.Control
-                type="number"
-                value={loanAmount !== undefined ? loanAmount : ""}
-                onChange={handleLoanAmountChange}
-                isInvalid={!!amountError}
-              />
+              <InputGroup>
+                <Form.Control
+                  type="number"
+                  value={loanAmount !== undefined ? loanAmount : ""}
+                  onChange={handleLoanAmountChange}
+                  isInvalid={!!amountError}
+                />
+                <InputGroup.Text>$</InputGroup.Text>
+              </InputGroup>
               {amountError ? <Form.Text className="text-danger">{amountError}</Form.Text> : ""}
             </Form.Group>
             <Form.Group className="mb-3" controlId="interest-slider">
@@ -228,7 +226,7 @@ export function RequestLoanSummary() {
             </Form.Group>
             <Form.Group className="mb-3" controlId="btc-address">
               <Form.Label>
-                <small>Bitcoin Refund Address</small>
+                <small>Bitcoin refund address</small>
               </Form.Label>
               <Form.Control
                 value={btcAddress}
@@ -237,7 +235,7 @@ export function RequestLoanSummary() {
             </Form.Group>
             <Alert className="mb-2" key="info" variant="warning">
               <FontAwesomeIcon icon={faInfoCircle} />{" "}
-              Provide a valid address on the target network. Providing an incorrect address here will lead to a loss of
+              Provide a valid address on the target network. Providing an incorrect address here will lead to loss of
               funds.
             </Alert>
             <Form.Group className="mb-3" controlId="stablecoin-address">

@@ -22,8 +22,8 @@ function RequestLoan() {
           // TODO: Do not hard-code lender profile.
           lender: {
             name: "Lord Lendalot 1",
-            rate: 100,
-            loans: 240,
+            rate: 99.7,
+            loans: 194,
           },
           amount: {
             min: o.loan_amount_min,

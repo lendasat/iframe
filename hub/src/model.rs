@@ -92,9 +92,7 @@ pub struct CreateLoanOfferSchema {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ContractRequestSchema {
     pub loan_id: String,
-    pub initial_ltv: Decimal,
     pub loan_amount: Decimal,
-    pub initial_collateral_sats: u64,
     pub duration_months: i32,
     pub borrower_btc_address: Address<NetworkUnchecked>,
     pub borrower_pk: PublicKey,

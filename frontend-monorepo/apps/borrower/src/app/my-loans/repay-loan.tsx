@@ -40,7 +40,7 @@ function RepayLoanComponent({ contract }: RepayLoanComponentProps) {
   const collateral = contract.collateral_sats / 100000000;
   const loanAmount = contract.loan_amount;
   const accruedInterest = contract.loan_amount * (contract.interest_rate / 100);
-  const refundAddress = contract.borrower_loan_address;
+  const refundAddress = contract.borrower_btc_address;
   const totalRepaymentAmount = accruedInterest + loanAmount;
   const repaymentAddress = contract.loan_repayment_address;
   const interestRate = contract.interest_rate;
@@ -221,7 +221,7 @@ export function RepaymentDetails({
         <Col>
           <Alert variant="info">
             <FontAwesomeIcon icon={faInfoCircle} />{" "}
-            Info: Once the lender confirms he received the funds, you will be able to withdraw the collateral from the
+            Once the lender confirms they received the funds, you will be able to withdraw the collateral from the
             contract.
           </Alert>
         </Col>

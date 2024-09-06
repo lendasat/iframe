@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Contract, ContractStatus, useAuth } from "@frontend-monorepo/http-client";
 import QRCode from "qrcode.react";
 import React, { Suspense } from "react";
-import { Alert, Badge, Button, Col, Container, Form, InputGroup, Row } from "react-bootstrap";
+import { Alert, Badge, Button, Col, Container, Form, InputGroup, OverlayTrigger, Row, Tooltip } from "react-bootstrap";
 import { Await, useParams } from "react-router-dom";
 import { Lender } from "../request-loan/lender";
 import Usd from "../usd";
@@ -44,7 +44,7 @@ function CollateralizeLoanComponent({ contract }: CollateralizeLoanComponentProp
   const initialLtvFormatted = (initialLtv * 100).toFixed(0);
 
   const loanOriginatorFee = (loanAmount / initial_price) * ORIGINATOR_FEE;
-  const totalCollateral = collateral + loanOriginatorFee;
+  const totalCollateral = (collateral + loanOriginatorFee).toFixed(8);
   const loanOriginatorFeeUsd = (loanOriginatorFee * initial_price).toFixed(0);
 
   const isCollateralized = contract.status === ContractStatus.CollateralConfirmed
@@ -65,23 +65,19 @@ function CollateralizeLoanComponent({ contract }: CollateralizeLoanComponentProp
               </Col>
             </Row>
             <Row className="justify-content-between border-b mt-2">
-              <Col>Contract Status</Col>
+              <Col>Contract status</Col>
               <Col className="text-end mb-2">
                 <Badge bg="primary">{contract.status}</Badge>
               </Col>
             </Row>
-            <Row className="justify-content-between border-b mt-4">
-              <Col md={6}>Loan Amount</Col>
-              <Col md={6} className="text-end">
+            <Row className="justify-content-between border-b mt-2">
+              <Col md={6}>Loan amount</Col>
+              <Col md={6} className="text-end mb-2">
                 <Usd value={loanAmount} />
               </Col>
             </Row>
             <Row className="justify-content-between border-b mt-2">
-              <Col>Collateral</Col>
-              <Col className="text-end mb-2">{collateral.toFixed(8)} BTC</Col>
-            </Row>
-            <Row className="justify-content-between border-b mt-2">
-              <Col>LTV Ratio</Col>
+              <Col>LTV ratio</Col>
               <Col className="text-end mb-2">{initialLtvFormatted}%</Col>
             </Row>
             <Row className="justify-content-between border-b mt-2">
@@ -91,25 +87,30 @@ function CollateralizeLoanComponent({ contract }: CollateralizeLoanComponentProp
               </Col>
             </Row>
 
-            <Row className="justify-content-between mt-4">
+            <Row className="justify-content-between mt-2">
               <Col md={6}>Collateral</Col>
               <Col md={6} className="text-end">
                 {collateral.toFixed(8)} BTC
               </Col>
             </Row>
             <Row className="justify-content-between mt-2">
-              <Col md={6}>Originator Fee 1%</Col>
+              <Col md={6}>Origination fee (1%)</Col>
               <Col md={6} className="text-end">
-                {loanOriginatorFee.toFixed(8)} BTC <small>(${loanOriginatorFeeUsd})</small>
+                <OverlayTrigger
+                  placement="top"
+                  overlay={<Tooltip>${loanOriginatorFeeUsd}</Tooltip>}
+                >
+                  <span>{loanOriginatorFee.toFixed(8)} BTC</span>
+                </OverlayTrigger>
               </Col>
             </Row>
             <Row className="mt-2 border-top pt-2">
               <Col md={6}>
-                <strong>Total collateral to be paid:</strong>
+                <strong>Total:</strong>
               </Col>
               <Col md={6} className="text-end">
                 <strong>
-                  {totalCollateral.toFixed(8)} BTC
+                  {totalCollateral} BTC
                 </strong>
               </Col>
             </Row>
@@ -153,7 +154,7 @@ function CollateralizeLoanComponent({ contract }: CollateralizeLoanComponentProp
           {(!isCollateralized)
             ? (
               <CollateralContractDetails
-                collateral={collateral}
+                collateral={totalCollateral}
                 collateralAddress={contractAddress || ""}
               />
             )
@@ -165,7 +166,7 @@ function CollateralizeLoanComponent({ contract }: CollateralizeLoanComponentProp
 }
 
 interface CollateralContractDetailsProps {
-  collateral: number;
+  collateral: string;
   collateralAddress: string;
 }
 
@@ -176,7 +177,7 @@ export function CollateralContractDetails({
   return (
     <Container fluid>
       <Row>
-        <h4>Collateral Contract Details</h4>
+        <h4>Fund Collateral Contract</h4>
       </Row>
 
       <Row className="mt-4">
@@ -184,7 +185,12 @@ export function CollateralContractDetails({
           <div className="d-flex justify-content-center align-items-center flex-column">
             <QRCode value={collateralAddress} size={200} />
             <p className="mt-2 text-break">
-              Please send {collateral} BTC to {collateralAddress}
+              Send <strong>{collateral} BTC</strong> to <strong>{collateralAddress}</strong>.
+            </p>
+            <p className="text-break">
+              <em>
+                Make sure you pay the amount <strong>in full</strong>
+              </em>.
             </p>
           </div>
         </Col>

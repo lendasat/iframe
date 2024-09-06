@@ -495,10 +495,10 @@ impl xtra::Handler<TrackCollateralClaim> for Actor {
     ) -> Self::Return {
         tracing::debug!(?msg, "Instructed to track claim TX");
 
-        ensure!(
-            !self.tracked_claim_txs.contains_key(&msg.claim_txid),
-            "Already tracking a claim TX with the same TXID"
-        );
+        if self.tracked_claim_txs.contains_key(&msg.claim_txid) {
+            tracing::warn!(?msg, "Already tracking a claim TX with the same TXID");
+            return Ok(());
+        }
 
         self.tracked_claim_txs.insert(
             msg.claim_txid,
