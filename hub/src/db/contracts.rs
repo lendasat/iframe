@@ -3,7 +3,9 @@ use crate::model::Contract;
 use anyhow::Result;
 use bitcoin::address::NetworkUnchecked;
 use bitcoin::Address;
+use bitcoin::OutPoint;
 use bitcoin::PublicKey;
+use bitcoin::Txid;
 use rust_decimal::Decimal;
 use sqlx::Pool;
 use sqlx::Postgres;
@@ -30,6 +32,9 @@ pub async fn load_contracts_by_borrower_id(
             borrower_loan_address,
             contract_address,
             contract_index,
+            collateral_txid,
+            collateral_vout,
+            claim_txid,
             status as "status: crate::model::db::ContractStatus",
             duration_months,
             created_at,
@@ -70,6 +75,9 @@ pub async fn load_contracts_by_lender_id(
             borrower_loan_address,
             contract_address,
             contract_index,
+            collateral_txid,
+            collateral_vout,
+            claim_txid,
             status as "status: crate::model::db::ContractStatus",
             duration_months,
             created_at,
@@ -90,7 +98,11 @@ pub async fn load_contracts_by_lender_id(
     Ok(contracts)
 }
 
-pub async fn load_contract_by_id(pool: &Pool<Postgres>, id: &str) -> Result<Contract> {
+pub async fn load_contract_by_contract_id_and_borrower_id(
+    pool: &Pool<Postgres>,
+    contract_id: &str,
+    borrower_id: &str,
+) -> Result<Contract> {
     let contract = sqlx::query_as!(
         db::Contract,
         r#"
@@ -107,14 +119,60 @@ pub async fn load_contract_by_id(pool: &Pool<Postgres>, id: &str) -> Result<Cont
             borrower_loan_address,
             contract_address,
             contract_index,
+            collateral_txid,
+            collateral_vout,
+            claim_txid,
             status as "status: crate::model::db::ContractStatus",
             duration_months,
             created_at,
             updated_at
         FROM contracts
-        where id = $1
+        where id = $1 AND
+        borrower_id = $2
         "#,
-        id
+        contract_id,
+        borrower_id,
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(contract.into())
+}
+
+pub async fn load_contract_by_contract_id_and_lender_id(
+    pool: &Pool<Postgres>,
+    contract_id: &str,
+    lender_id: &str,
+) -> Result<Contract> {
+    let contract = sqlx::query_as!(
+        db::Contract,
+        r#"
+        SELECT
+            id,
+            lender_id,
+            borrower_id,
+            loan_id,
+            initial_ltv,
+            initial_collateral_sats,
+            loan_amount,
+            borrower_btc_address,
+            borrower_pk,
+            borrower_loan_address,
+            contract_address,
+            contract_index,
+            collateral_txid,
+            collateral_vout,
+            claim_txid,
+            status as "status: crate::model::db::ContractStatus",
+            duration_months,
+            created_at,
+            updated_at
+        FROM contracts
+        where id = $1 AND
+        lender_id = $2
+        "#,
+        contract_id,
+        lender_id
     )
     .fetch_one(pool)
     .await?;
@@ -139,6 +197,9 @@ pub async fn load_contracts_pending_confirmation(pool: &Pool<Postgres>) -> Resul
             borrower_loan_address,
             contract_address,
             contract_index,
+            collateral_txid,
+            collateral_vout,
+            claim_txid,
             status as "status: crate::model::db::ContractStatus",
             duration_months,
             created_at,
@@ -221,6 +282,9 @@ pub async fn insert_contract_request(
             borrower_loan_address,
             contract_address,
             contract_index,
+            collateral_txid,
+            collateral_vout,
+            claim_txid,
             status as "status: crate::model::db::ContractStatus",
             duration_months,
             created_at,
@@ -277,6 +341,9 @@ pub async fn accept_contract_request(
             borrower_loan_address,
             contract_address,
             contract_index,
+            collateral_txid,
+            collateral_vout,
+            claim_txid,
             status as "status: crate::model::db::ContractStatus",
             duration_months,
             created_at,
@@ -295,15 +362,113 @@ pub async fn accept_contract_request(
     Ok(contract.into())
 }
 
-pub async fn mark_contract_as_confirmed(
+pub async fn mark_contract_as_seen(
     pool: &Pool<Postgres>,
     contract_id: &str,
+    outpoint: OutPoint,
 ) -> Result<Contract> {
     let contract = sqlx::query_as!(
         db::Contract,
         r#"
         UPDATE contracts
-        SET status = $1,
+        SET
+            collateral_txid = $1,
+            collateral_vout = $2,
+            status = $3,
+            updated_at = $4
+        WHERE id = $5
+        RETURNING
+            id,
+            lender_id,
+            borrower_id,
+            loan_id,
+            initial_ltv,
+            initial_collateral_sats,
+            loan_amount,
+            borrower_btc_address,
+            borrower_pk,
+            borrower_loan_address,
+            contract_address,
+            contract_index,
+            collateral_txid,
+            collateral_vout,
+            claim_txid,
+            status as "status: crate::model::db::ContractStatus",
+            duration_months,
+            created_at,
+            updated_at
+        "#,
+        outpoint.txid.to_string(),
+        outpoint.vout as i32,
+        db::ContractStatus::CollateralSeen as db::ContractStatus,
+        OffsetDateTime::now_utc(),
+        contract_id,
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(contract.into())
+}
+
+pub async fn mark_contract_as_confirmed(
+    pool: &Pool<Postgres>,
+    contract_id: &str,
+    outpoint: OutPoint,
+) -> Result<Contract> {
+    let contract = sqlx::query_as!(
+        db::Contract,
+        r#"
+        UPDATE contracts
+        SET
+            collateral_txid = $1,
+            collateral_vout = $2,
+            status = $3,
+            updated_at = $4
+        WHERE id = $5
+        RETURNING
+            id,
+            lender_id,
+            borrower_id,
+            loan_id,
+            initial_ltv,
+            initial_collateral_sats,
+            loan_amount,
+            borrower_btc_address,
+            borrower_pk,
+            borrower_loan_address,
+            contract_address,
+            contract_index,
+            collateral_txid,
+            collateral_vout,
+            claim_txid,
+            status as "status: crate::model::db::ContractStatus",
+            duration_months,
+            created_at,
+            updated_at
+        "#,
+        outpoint.txid.to_string(),
+        outpoint.vout as i32,
+        db::ContractStatus::CollateralConfirmed as db::ContractStatus,
+        OffsetDateTime::now_utc(),
+        contract_id,
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(contract.into())
+}
+
+pub async fn insert_claim_txid(
+    pool: &Pool<Postgres>,
+    contract_id: &str,
+    claim_txid: &Txid,
+) -> Result<Contract> {
+    let contract = sqlx::query_as!(
+        db::Contract,
+        r#"
+        UPDATE contracts
+        SET
+            claim_txid = $1,
             updated_at = $2
         WHERE id = $3
         RETURNING
@@ -319,12 +484,61 @@ pub async fn mark_contract_as_confirmed(
             borrower_loan_address,
             contract_address,
             contract_index,
+            collateral_txid,
+            collateral_vout,
+            claim_txid,
             status as "status: crate::model::db::ContractStatus",
             duration_months,
             created_at,
             updated_at
         "#,
-        db::ContractStatus::CollateralConfirmed as db::ContractStatus,
+        claim_txid.to_string(),
+        OffsetDateTime::now_utc(),
+        contract_id,
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(contract.into())
+}
+
+pub async fn mark_contract_as_closed(
+    pool: &Pool<Postgres>,
+    contract_id: &str,
+    claim_txid: &Txid,
+) -> Result<Contract> {
+    let contract = sqlx::query_as!(
+        db::Contract,
+        r#"
+        UPDATE contracts
+        SET
+            claim_txid = $1,
+            status = $2,
+            updated_at = $3
+        WHERE id = $4
+        RETURNING
+            id,
+            lender_id,
+            borrower_id,
+            loan_id,
+            initial_ltv,
+            initial_collateral_sats,
+            loan_amount,
+            borrower_btc_address,
+            borrower_pk,
+            borrower_loan_address,
+            contract_address,
+            contract_index,
+            collateral_txid,
+            collateral_vout,
+            claim_txid,
+            status as "status: crate::model::db::ContractStatus",
+            duration_months,
+            created_at,
+            updated_at
+        "#,
+        claim_txid.to_string(),
+        db::ContractStatus::Closed as db::ContractStatus,
         OffsetDateTime::now_utc(),
         contract_id,
     )
@@ -360,6 +574,9 @@ pub async fn reject_contract_request(
             borrower_loan_address,
             contract_address,
             contract_index,
+            collateral_txid,
+            collateral_vout,
+            claim_txid,
             status as "status: crate::model::db::ContractStatus",
             duration_months,
             created_at,

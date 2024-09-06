@@ -5,6 +5,7 @@ use crate::wallet;
 use anyhow::bail;
 use anyhow::Context;
 use anyhow::Result;
+use bitcoin::Psbt;
 
 const PASSPHRASE_STORAGE_KEY: &str = "wallet.passphrase";
 const SEED_STORAGE_KEY: &str = "wallet.seed";
@@ -61,7 +62,27 @@ pub fn get_next_pk() -> Result<String> {
 
     let pk = wallet::get_pk(pk_index)?;
 
+    storage.set_item(&pk.to_string(), pk_index)?;
+
     Ok(pk.to_string())
+}
+
+pub fn sign_claim_psbt(psbt: &str, collateral_descriptor: &str, pk: &str) -> Result<String> {
+    let storage = local_storage()?;
+
+    let pk_index = storage
+        .get_item::<u32>(pk)?
+        .with_context(|| format!("No pk index for pk {pk}"))?;
+
+    let psbt = hex::decode(psbt)?;
+    let psbt = Psbt::deserialize(&psbt)?;
+
+    let collateral_descriptor = collateral_descriptor.parse()?;
+
+    let tx = wallet::sign_claim_psbt(psbt, collateral_descriptor, pk_index)?;
+    let tx = bitcoin::consensus::encode::serialize_hex(&tx);
+
+    Ok(tx)
 }
 
 /// Check if the browser's local storage already has the encrypted wallet data.

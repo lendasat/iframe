@@ -1,5 +1,5 @@
 use crate::db;
-use crate::mempool::TrackContract;
+use crate::mempool::TrackContractFunding;
 use crate::model::User;
 use crate::routes::lender::auth::jwt_auth;
 use crate::routes::AppState;
@@ -69,9 +69,13 @@ pub async fn put_approve_contract(
     Extension(user): Extension<User>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     async {
-        let contract = db::contracts::load_contract_by_id(&data.db, contract_id.as_str())
-            .await
-            .context("Failed to load contract request")?;
+        let contract = db::contracts::load_contract_by_contract_id_and_lender_id(
+            &data.db,
+            contract_id.as_str(),
+            &user.id,
+        )
+        .await
+        .context("Failed to load contract request")?;
 
         let (contract_address, contract_index) =
             data.wallet.contract_address(contract.borrower_pk)?;
@@ -87,7 +91,7 @@ pub async fn put_approve_contract(
         .context("Failed to accept contract request")?;
 
         data.mempool
-            .send(TrackContract {
+            .send(TrackContractFunding {
                 contract_id,
                 contract_address,
                 initial_collateral_sats: contract.initial_collateral_sats,

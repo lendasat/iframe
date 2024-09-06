@@ -17,6 +17,8 @@ interface AuthContextProps {
   getContracts: () => Promise<Contract[]>;
   getContract: (id: string) => Promise<Contract>;
   verifyEmail: (token: string) => Promise<string>;
+  getClaimCollateralPsbt: (id: string) => Promise<ClaimCollateralPsbtResponse>;
+  postClaimTx: (contract_id: string, tx: string) => Promise<string>;
   user: User | null;
 }
 
@@ -72,6 +74,7 @@ export interface Contract {
   initial_ltv: number;
   status: ContractStatus;
   lender: LenderProfile;
+  borrower_pk: string;
   borrower_btc_address: string;
   loan_repayment_address: string;
   contract_address?: string;
@@ -106,6 +109,11 @@ export interface CreateLoanOfferRequest {
   loan_asset_type: LoanAssetType;
   loan_asset_chain: LoanAssetChain;
   loan_repayment_address: string;
+}
+
+export interface ClaimCollateralPsbtResponse {
+  psbt: string;
+  collateral_descriptor: string;
 }
 
 export interface LoanOffer {
@@ -300,6 +308,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ baseUrl, children })
     }
   };
 
+  const getClaimCollateralPsbt = async (id: string): Promise<ClaimCollateralPsbtResponse> => {
+    try {
+      const res: AxiosResponse<ClaimCollateralPsbtResponse> = await httpClient.get(`/api/contracts/${id}/claim`);
+      const data = res.data;
+      return data;
+    } catch (error) {
+      console.error(
+        `Failed to fetch claim-collateral PSBT: http: ${error.response?.status} and response: ${error.response?.data}`,
+      );
+      throw error;
+    }
+  };
+
+  const postClaimTx = async (contract_id: string, tx: string): Promise<string> => {
+    try {
+      const response: AxiosResponse<string> = await httpClient.post(`/api/contracts/${contract_id}`, { tx: tx });
+      return response.data;
+    } catch (error) {
+      console.error(
+        `Failed to post claim TX: http: ${error.response?.status} and response: ${error.response?.data}`,
+      );
+      throw error;
+    }
+  };
+
   const forgotPassword = async (email: string): Promise<string> => {
     try {
       const response = await httpClient.post("/api/auth/forgotpassword", { email: email });
@@ -358,6 +391,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ baseUrl, children })
         resetPassword,
         getContract,
         verifyEmail,
+        getClaimCollateralPsbt,
+        postClaimTx,
       }}
     >
       {children}

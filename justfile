@@ -112,6 +112,12 @@ lender:
 ## Build frontend functions
 ## ------------------------
 
+# install dependencies
+deps-frontend:
+    #!/usr/bin/env bash
+    cd frontend-monorepo
+    npm install
+
 # build the borrower's WASM wallet
 build-wallet:
     wasm-pack build borrower-wallet --target web

@@ -43,7 +43,7 @@ export function CreateWalletModal({ show, handleClose, handleSubmit }: WalletMod
       try {
         await init();
 
-        const walletExists = await does_wallet_exist();
+        const walletExists = does_wallet_exist();
         if (!walletExists) {
           // TODO: use env variable here for the network
           new_wallet(password, import.meta.env.VITE_BITCOIN_NETWORK ?? "signet");

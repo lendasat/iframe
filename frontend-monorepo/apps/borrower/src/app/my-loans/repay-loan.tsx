@@ -2,11 +2,14 @@ import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Contract, useAuth } from "@frontend-monorepo/http-client";
 import QRCode from "qrcode.react";
-import React, { Suspense, useState } from "react";
+import { Suspense, useState } from "react";
 import { Alert, Button, Col, Container, Form, InputGroup, Row } from "react-bootstrap";
+import { useNavigate } from "react-router-dom";
 import { Await, useParams } from "react-router-dom";
+import init, { is_wallet_loaded, sign_claim_psbt } from "../../../../../../borrower-wallet/pkg/borrower_wallet.js";
 import { Lender } from "../request-loan/lender";
 import Usd, { formatCurrency } from "../usd";
+import { UnlockWalletModal } from "../wallet/unlock-wallet-modal";
 
 export function RepayLoan() {
   const { getContract } = useAuth();
@@ -34,7 +37,7 @@ interface RepayLoanComponentProps {
 }
 
 function RepayLoanComponent({ contract }: RepayLoanComponentProps) {
-  const collateral = contract.collateral_sats / 10000000;
+  const collateral = contract.collateral_sats / 100000000;
   const loanAmount = contract.loan_amount;
   const accruedInterest = contract.loan_amount * (contract.interest_rate / 100);
   const refundAddress = contract.borrower_loan_address;
@@ -44,8 +47,48 @@ function RepayLoanComponent({ contract }: RepayLoanComponentProps) {
 
   const [isRepaid, setIsRepaid] = useState(false);
 
+  const [showUnlockWalletModal, setShowUnlockWalletModal] = useState(false);
+  const handleCloseUnlockWalletModal = () => setShowUnlockWalletModal(false);
+  const handleOpenUnlockWalletModal = () => setShowUnlockWalletModal(true);
+
+  const navigate = useNavigate();
+
+  const handleSubmitUnlockWalletModal = () => {
+    handleCloseUnlockWalletModal();
+  };
+
+  const { getClaimCollateralPsbt, postClaimTx } = useAuth();
+  const claimCollateral = async (contract: Contract) => {
+    try {
+      const res = await getClaimCollateralPsbt(contract.id);
+
+      await init();
+
+      const isLoaded = is_wallet_loaded();
+      if (!isLoaded) {
+        handleOpenUnlockWalletModal();
+        return;
+      }
+
+      const claimTx = sign_claim_psbt(res.psbt, res.collateral_descriptor, contract.borrower_pk);
+
+      const txid = await postClaimTx(contract.id, claimTx);
+
+      alert(`Transaction ${txid} was published!`);
+
+      navigate("/my-contracts");
+    } catch (err) {
+      console.error("Failed to claim collateral", err);
+    }
+  };
+
   return (
     <Container className={"p-4"} fluid>
+      <UnlockWalletModal
+        show={showUnlockWalletModal}
+        handleClose={handleCloseUnlockWalletModal}
+        handleSubmit={handleSubmitUnlockWalletModal}
+      />
       <Row className="mt-3">
         <Col xs={12} md={6}>
           <Container fluid>
@@ -115,8 +158,7 @@ function RepayLoanComponent({ contract }: RepayLoanComponentProps) {
                       <Button
                         variant="primary"
                         onClick={() => {
-                          alert("Your loan collateral will be paid back to you");
-                          setIsRepaid(false);
+                          claimCollateral(contract);
                         }}
                       >
                         Withdraw funds

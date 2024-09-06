@@ -3,6 +3,7 @@
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
+    use bitcoin::Psbt;
     use hub::model::ContractRequestSchema;
     use hub::model::ContractStatus;
     use hub::model::CreateLoanOfferSchema;
@@ -10,6 +11,7 @@ mod tests {
     use hub::model::LoanAssetType;
     use hub::model::LoanOffer;
     use hub::model::LoginUserSchema;
+    use hub::routes::borrower::ClaimCollateralPsbt;
     use hub::routes::borrower::Contract;
     use reqwest::cookie::Jar;
     use reqwest::Client;
@@ -100,10 +102,11 @@ mod tests {
 
         // 2. Borrower takes loan offer by creating a contract request.
         borrower_wallet::wallet::new_wallet("borrower", "regtest").unwrap();
-        let borrower_pk = borrower_wallet::wallet::get_pk(0).unwrap();
 
-        // This is a random address, since we don't care about payouts in this test.
-        let borrower_btc_address = "bc1p5cyxnuxmeuwuvkwfem96lqzszd02n6xdcjrs20cac6yqjjwudpxqkedrcr"
+        let borrower_wallet_index = 0;
+        let borrower_pk = borrower_wallet::wallet::get_pk(borrower_wallet_index).unwrap();
+
+        let borrower_btc_address = "tb1quw75h0w26rcrdfar6knvkfazpwyzq4z8vqmt37"
             .parse()
             .unwrap();
 
@@ -111,7 +114,7 @@ mod tests {
             loan_id: loan_offer.id,
             initial_ltv: dec!(0.25),
             loan_amount: dec!(20_000),
-            initial_collateral_sats: 100_000,
+            initial_collateral_sats: 9_500_000,
             duration_months: 6,
             borrower_btc_address,
             borrower_pk,
@@ -228,8 +231,53 @@ mod tests {
         .await
         .unwrap();
 
-        // 6. Hub tells lender to send principal to borrower on Ethereum.
-        // 7. Borrower confirms payment.
+        // TODO: 6. Hub tells lender to send principal to borrower on Ethereum.
+        // TODO: 7. Borrower confirms payment.
+        // TODO: 8. Repay loan on loan blockchain.
+
+        // 9. Claim collateral on Bitcoin.
+        // With DLCs, we will need to construct a spend transaction using the loan secret.
+
+        let res = borrower
+            .get(format!(
+                "http://localhost:7337/api/contracts/{}/claim",
+                contract.id
+            ))
+            .send()
+            .await
+            .unwrap();
+
+        assert!(res.status().is_success());
+
+        // TODO: Perhaps we want to serialize as hex instead;
+        let ClaimCollateralPsbt {
+            psbt: claim_psbt,
+            collateral_descriptor,
+        } = res.json().await.unwrap();
+
+        let claim_psbt = hex::decode(claim_psbt).unwrap();
+        let claim_psbt = Psbt::deserialize(&claim_psbt).unwrap();
+
+        let tx = borrower_wallet::wallet::sign_claim_psbt(
+            claim_psbt,
+            collateral_descriptor,
+            borrower_wallet_index,
+        )
+        .unwrap();
+
+        let tx_hex = bitcoin::consensus::encode::serialize_hex(&tx);
+
+        let faucet = Client::new();
+        let res = faucet
+            .post("https://mutinynet.com/api/tx")
+            .body(tx_hex)
+            .send()
+            .await
+            .unwrap();
+
+        assert!(res.status().is_success());
+
+        // TODO: 9.2 Transition hub state to `Closed` after collateral spend TX is confirmed.
     }
 
     async fn wait_until_contract_status(

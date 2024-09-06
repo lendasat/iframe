@@ -67,6 +67,7 @@ export function RequestLoanSummary() {
   const [showUnlockWalletModal, setShowUnlockWalletModal] = useState(false);
 
   const [collateral] = useState<number>(loanAmount / (loanOffer.ltv / 100) / latestPrice);
+  console.log(collateral);
 
   const [isWalletLoaded, setIsWalletLoaded] = useState();
 
@@ -97,12 +98,12 @@ export function RequestLoanSummary() {
   const navigate = useNavigate();
   const handleRequestLoan = async () => {
     try {
-      // TODO: Is this necessary?
       await init();
 
-      const walletExists = await does_wallet_exist();
-      const isLoaded = await is_wallet_loaded();
+      const walletExists = does_wallet_exist();
+      const isLoaded = is_wallet_loaded();
       setIsWalletLoaded(isLoaded);
+
       if (!walletExists) {
         handleOpenCreateWalletModal();
         return;
@@ -112,7 +113,6 @@ export function RequestLoanSummary() {
         return;
       }
 
-      // TODO: This only works if the wallet is already loaded!
       const borrowerPk = get_next_pk();
 
       const collateralFloat = parseFloat(collateral.toFixed(8));
