@@ -6,7 +6,7 @@ import init, {
   load_wallet,
 } from "../../../../../../borrower-wallet/pkg/borrower_wallet.js";
 
-import { faCheckCircle, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 interface WalletModalProps {

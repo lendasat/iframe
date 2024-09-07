@@ -1,8 +1,7 @@
-import { LoanOffer, useAuth } from "@frontend-monorepo/http-client";
+import { useAuth } from "@frontend-monorepo/http-client";
 import { LoginForm } from "@frontend-monorepo/ui-shared";
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { LoanFilter } from "../request-loan/loan-offers-filter";
 
 type LoginState = {
   registered: boolean;
