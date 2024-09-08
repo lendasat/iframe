@@ -42,6 +42,13 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
                 jwt_auth::auth,
             )),
         )
+        .route(
+            "/api/contracts/:contract_id/repaid",
+            put(put_repaid_contract).route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                jwt_auth::auth,
+            )),
+        )
         .with_state(app_state)
 }
 
@@ -125,5 +132,36 @@ pub async fn delete_reject_contract(
             };
             (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
         })?;
+    Ok(())
+}
+
+#[instrument(skip_all, err(Debug))]
+pub async fn put_repaid_contract(
+    State(data): State<Arc<AppState>>,
+    Path(contract_id): Path<String>,
+    Extension(user): Extension<User>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    async {
+        let contract = db::contracts::load_contract_by_contract_id_and_lender_id(
+            &data.db,
+            contract_id.as_str(),
+            &user.id,
+        )
+        .await
+        .context("Failed to load contract request")?;
+
+        db::contracts::mark_contract_as_principal_given(&data.db, contract.id.as_str())
+            .await
+            .context("Failed to accept contract request")?;
+
+        anyhow::Ok(())
+    }
+    .await
+    .map_err(|e| {
+        let error_response = ErrorResponse {
+            message: format!("Database error: {e:#}"),
+        };
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+    })?;
     Ok(())
 }
