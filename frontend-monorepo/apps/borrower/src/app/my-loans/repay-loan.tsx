@@ -1,15 +1,14 @@
-import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Contract, useAuth } from "@frontend-monorepo/http-client";
+import {faInfoCircle} from "@fortawesome/free-solid-svg-icons";
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import {Contract, ContractStatus, useAuth} from "@frontend-monorepo/http-client";
 import QRCode from "qrcode.react";
-import { Suspense, useState } from "react";
-import { Alert, Button, Col, Container, Form, InputGroup, Row } from "react-bootstrap";
-import { useNavigate } from "react-router-dom";
-import { Await, useParams } from "react-router-dom";
-import init, { is_wallet_loaded, sign_claim_psbt } from "../../../../../../borrower-wallet/pkg/borrower_wallet.js";
-import { Lender } from "../request-loan/lender";
-import Usd, { formatCurrency } from "../usd";
-import { UnlockWalletModal } from "../wallet/unlock-wallet-modal";
+import {Suspense, useState} from "react";
+import {Alert, Button, Col, Container, Form, InputGroup, Row} from "react-bootstrap";
+import {Await, useNavigate, useParams} from "react-router-dom";
+import init, {is_wallet_loaded, sign_claim_psbt} from "../../../../../../borrower-wallet/pkg/borrower_wallet.js";
+import {Lender} from "../request-loan/lender";
+import Usd, {formatCurrency} from "../usd";
+import {UnlockWalletModal} from "../wallet/unlock-wallet-modal";
 
 export function RepayLoan() {
   const { getContract } = useAuth();
@@ -45,7 +44,7 @@ function RepayLoanComponent({ contract }: RepayLoanComponentProps) {
   const repaymentAddress = contract.loan_repayment_address;
   const interestRate = contract.interest_rate;
 
-  const [isRepaid, setIsRepaid] = useState(false);
+  const isRepaid = contract.status == ContractStatus.PrincipalGiven;
 
   const [showUnlockWalletModal, setShowUnlockWalletModal] = useState(false);
   const handleCloseUnlockWalletModal = () => setShowUnlockWalletModal(false);
@@ -180,7 +179,6 @@ function RepayLoanComponent({ contract }: RepayLoanComponentProps) {
               <RepaymentDetails
                 totalRepaymentAmount={totalRepaymentAmount}
                 repaymentAddress={repaymentAddress}
-                onRepay={bool => setIsRepaid(bool)}
               />
             )
             : ""}
@@ -193,18 +191,12 @@ function RepayLoanComponent({ contract }: RepayLoanComponentProps) {
 interface RepaymentDetailsProps {
   totalRepaymentAmount: number;
   repaymentAddress: string;
-  onRepay: (bool) => void;
 }
 
 export function RepaymentDetails({
   totalRepaymentAmount,
   repaymentAddress,
-  onRepay,
 }: RepaymentDetailsProps) {
-  const handleConfirmRepayment = () => {
-    onRepay(true);
-  };
-
   return (
     <Container fluid>
       <Row>
@@ -228,13 +220,6 @@ export function RepaymentDetails({
             Once the lender confirms they received the funds, you will be able to withdraw the collateral from the
             contract.
           </Alert>
-        </Col>
-      </Row>
-      <Row className="mt-1">
-        <Col className="d-grid">
-          <Button variant="primary" onClick={handleConfirmRepayment}>
-            Confirm Repayment
-          </Button>
         </Col>
       </Row>
     </Container>
