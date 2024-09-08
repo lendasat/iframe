@@ -53,15 +53,14 @@ function RepayLoanComponent({ contract }: RepayLoanComponentProps) {
 
   const navigate = useNavigate();
 
-  const handleSubmitUnlockWalletModal = () => {
+  const handleSubmitUnlockWalletModal = async () => {
     handleCloseUnlockWalletModal();
+    await claimCollateralRequest();
   };
 
   const { getClaimCollateralPsbt, postClaimTx } = useAuth();
   const claimCollateral = async (contract: Contract) => {
     try {
-      const res = await getClaimCollateralPsbt(contract.id);
-
       await init();
 
       const isLoaded = is_wallet_loaded();
@@ -70,17 +69,22 @@ function RepayLoanComponent({ contract }: RepayLoanComponentProps) {
         return;
       }
 
-      const claimTx = sign_claim_psbt(res.psbt, res.collateral_descriptor, contract.borrower_pk);
-
-      const txid = await postClaimTx(contract.id, claimTx);
-
-      alert(`Transaction ${txid} was published!`);
-
-      navigate("/my-contracts");
+      await claimCollateralRequest();
     } catch (err) {
       console.error("Failed to claim collateral", err);
     }
   };
+
+  const claimCollateralRequest = async () => {
+    const res = await getClaimCollateralPsbt(contract.id);
+    const claimTx = sign_claim_psbt(res.psbt, res.collateral_descriptor, contract.borrower_pk);
+
+    const txid = await postClaimTx(contract.id, claimTx);
+
+    alert(`Transaction ${txid} was published!`);
+
+    navigate("/my-contracts");
+  }
 
   return (
     <Container className={"p-4"} fluid>
@@ -157,8 +161,8 @@ function RepayLoanComponent({ contract }: RepayLoanComponentProps) {
                     <Col className="d-grid">
                       <Button
                         variant="primary"
-                        onClick={() => {
-                          claimCollateral(contract);
+                        onClick={async () => {
+                          await claimCollateral(contract);
                         }}
                       >
                         Withdraw funds
