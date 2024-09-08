@@ -68,8 +68,6 @@ export function RequestLoanSummary() {
 
   const collateral = loanAmount / (loanOffer.ltv / 100) / latestPrice;
 
-  const [isWalletLoaded, setIsWalletLoaded] = useState();
-
   const loanOriginatorFee = (loanAmount / latestPrice) * ORIGINATOR_FEE;
 
   const handleLoanAmountChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -101,7 +99,6 @@ export function RequestLoanSummary() {
 
       const walletExists = does_wallet_exist();
       const isLoaded = is_wallet_loaded();
-      setIsWalletLoaded(isLoaded);
 
       if (!walletExists) {
         handleOpenCreateWalletModal();
@@ -112,28 +109,29 @@ export function RequestLoanSummary() {
         return;
       }
 
-      const borrowerPk = get_next_pk();
-
-      const collateralFloat = parseFloat(collateral.toFixed(8));
-      const collateralSats = parseInt((collateralFloat * 100000000).toFixed(0));
-
-      const res = await postContractRequest({
-        loan_id: loanOffer.id,
-        loan_amount: loanAmount || 0,
-        duration_months: loanDuration,
-        borrower_btc_address: btcAddress,
-        borrower_pk: borrowerPk,
-        borrower_loan_address: loanAddress,
-      });
-
-      if (res !== undefined) {
-        navigate("/my-contracts");
-      } else {
-        // Handle error if needed
-      }
+      await requestLoan();
     } catch (error) {
       console.log(`Unexpected error happened ${error}`);
       setError(error);
+    }
+  };
+
+  const requestLoan = async () => {
+    const borrowerPk = get_next_pk();
+
+    const res = await postContractRequest({
+      loan_id: loanOffer.id,
+      loan_amount: loanAmount || 0,
+      duration_months: loanDuration,
+      borrower_btc_address: btcAddress,
+      borrower_pk: borrowerPk,
+      borrower_loan_address: loanAddress,
+    });
+
+    if (res !== undefined) {
+      navigate("/my-contracts");
+    } else {
+      // Handle error if needed
     }
   };
 
@@ -162,14 +160,12 @@ export function RequestLoanSummary() {
   const addressLabel = selectedCoin ? `${StableCoinHelper.print(selectedCoin)} address` : "Address";
 
   const handleSubmitCreateWalletModal = async () => {
-    const isLoaded = await is_wallet_loaded();
-    setIsWalletLoaded(isLoaded);
     handleCloseCreateWalletModal();
+    await requestLoan();
   };
   const handleSubmitUnlockWalletModal = async () => {
-    const isLoaded = await is_wallet_loaded();
-    setIsWalletLoaded(isLoaded);
     handleCloseUnlockWalletModal();
+    await requestLoan();
   };
 
   return (
@@ -294,7 +290,7 @@ export function RequestLoanSummary() {
           </Link>
           <span>{" "}</span>
           <Button onClick={handleRequestLoan} disabled={isButtonDisabled}>
-            {isWalletLoaded ? "Request" : "Unlock Wallet"}
+            Request
           </Button>
         </Col>
       </Row>

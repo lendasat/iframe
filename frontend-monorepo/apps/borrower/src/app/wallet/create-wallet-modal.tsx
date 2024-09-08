@@ -1,13 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Button, Form, Modal } from "react-bootstrap";
 
-import { faCheckCircle, faInfoCircle, faWarning } from "@fortawesome/free-solid-svg-icons";
+import { faInfoCircle, faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import init, {
-  does_wallet_exist,
-  is_wallet_loaded,
-  new_wallet,
-} from "../../../../../../borrower-wallet/pkg/borrower_wallet.js";
+import init, { does_wallet_exist, new_wallet } from "../../../../../../borrower-wallet/pkg/borrower_wallet.js";
 
 interface WalletModalProps {
   show: boolean;
