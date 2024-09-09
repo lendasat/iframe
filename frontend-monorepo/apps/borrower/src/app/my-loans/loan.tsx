@@ -42,6 +42,7 @@ export function LoanComponent({ loan, onRepay, onCollateralize }: LoanComponentP
                       <Button variant="primary" onClick={() => onCollateralize(loan.id)}>Collateralize Loan</Button>
                     );
                   case ContractStatus.Requested:
+                  case ContractStatus.PrincipalGiven:
                   case ContractStatus.Closing:
                   case ContractStatus.Closed:
                     return <div></div>;
@@ -54,6 +55,8 @@ export function LoanComponent({ loan, onRepay, onCollateralize }: LoanComponentP
                         <Button variant="primary" onClick={() => onRepay(loan.id)}>Repay Loan</Button>
                       </>
                     );
+                  case ContractStatus.Repaid:
+                    return <Button variant="primary" onClick={() => onRepay(loan.id)}>Withdraw Collateral</Button>;
                 }
               })()}
             </Col>

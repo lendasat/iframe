@@ -42,6 +42,7 @@ export enum ContractStatus {
   CollateralConfirmed = "CollateralConfirmed",
   PrincipalGiven = "PrincipalGiven",
   Closing = "Closing",
+  Repaid = "Repaid",
   Closed = "Closed",
   Rejected = "Rejected",
 }

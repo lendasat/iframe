@@ -458,6 +458,46 @@ pub async fn mark_contract_as_confirmed(
     Ok(contract.into())
 }
 
+pub async fn mark_contract_as_repaid(pool: &Pool<Postgres>, contract_id: &str) -> Result<Contract> {
+    let contract = sqlx::query_as!(
+        db::Contract,
+        r#"
+        UPDATE contracts
+        SET
+            status = $1,
+            updated_at = $2
+        WHERE id = $3
+        RETURNING
+            id,
+            lender_id,
+            borrower_id,
+            loan_id,
+            initial_ltv,
+            initial_collateral_sats,
+            loan_amount,
+            borrower_btc_address,
+            borrower_pk,
+            borrower_loan_address,
+            contract_address,
+            contract_index,
+            collateral_txid,
+            collateral_vout,
+            claim_txid,
+            status as "status: crate::model::db::ContractStatus",
+            duration_months,
+            created_at,
+            updated_at
+        "#,
+        db::ContractStatus::Repaid as db::ContractStatus,
+        OffsetDateTime::now_utc(),
+        contract_id,
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(contract.into())
+}
+
 pub async fn insert_claim_txid(
     pool: &Pool<Postgres>,
     contract_id: &str,

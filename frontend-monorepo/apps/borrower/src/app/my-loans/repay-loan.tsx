@@ -1,11 +1,10 @@
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Contract, useAuth } from "@frontend-monorepo/http-client";
+import { Contract, ContractStatus, useAuth } from "@frontend-monorepo/http-client";
 import QRCode from "qrcode.react";
 import { Suspense, useState } from "react";
 import { Alert, Button, Col, Container, Form, InputGroup, Row } from "react-bootstrap";
-import { useNavigate } from "react-router-dom";
-import { Await, useParams } from "react-router-dom";
+import { Await, useNavigate, useParams } from "react-router-dom";
 import init, { is_wallet_loaded, sign_claim_psbt } from "../../../../../../borrower-wallet/pkg/borrower_wallet.js";
 import { Lender } from "../request-loan/lender";
 import Usd, { formatCurrency } from "../usd";
@@ -45,7 +44,7 @@ function RepayLoanComponent({ contract }: RepayLoanComponentProps) {
   const repaymentAddress = contract.loan_repayment_address;
   const interestRate = contract.interest_rate;
 
-  const [isRepaid, setIsRepaid] = useState(false);
+  const isRepaid = contract.status === ContractStatus.Repaid;
 
   const [showUnlockWalletModal, setShowUnlockWalletModal] = useState(false);
   const handleCloseUnlockWalletModal = () => setShowUnlockWalletModal(false);
@@ -53,15 +52,14 @@ function RepayLoanComponent({ contract }: RepayLoanComponentProps) {
 
   const navigate = useNavigate();
 
-  const handleSubmitUnlockWalletModal = () => {
+  const handleSubmitUnlockWalletModal = async () => {
     handleCloseUnlockWalletModal();
+    await claimCollateralRequest();
   };
 
   const { getClaimCollateralPsbt, postClaimTx } = useAuth();
   const claimCollateral = async (contract: Contract) => {
     try {
-      const res = await getClaimCollateralPsbt(contract.id);
-
       await init();
 
       const isLoaded = is_wallet_loaded();
@@ -70,16 +68,21 @@ function RepayLoanComponent({ contract }: RepayLoanComponentProps) {
         return;
       }
 
-      const claimTx = sign_claim_psbt(res.psbt, res.collateral_descriptor, contract.borrower_pk);
-
-      const txid = await postClaimTx(contract.id, claimTx);
-
-      alert(`Transaction ${txid} was published!`);
-
-      navigate("/my-contracts");
+      await claimCollateralRequest();
     } catch (err) {
       console.error("Failed to claim collateral", err);
     }
+  };
+
+  const claimCollateralRequest = async () => {
+    const res = await getClaimCollateralPsbt(contract.id);
+    const claimTx = sign_claim_psbt(res.psbt, res.collateral_descriptor, contract.borrower_pk);
+
+    const txid = await postClaimTx(contract.id, claimTx);
+
+    alert(`Transaction ${txid} was published!`);
+
+    navigate("/my-contracts");
   };
 
   return (
@@ -157,8 +160,8 @@ function RepayLoanComponent({ contract }: RepayLoanComponentProps) {
                     <Col className="d-grid">
                       <Button
                         variant="primary"
-                        onClick={() => {
-                          claimCollateral(contract);
+                        onClick={async () => {
+                          await claimCollateral(contract);
                         }}
                       >
                         Withdraw funds
@@ -176,7 +179,6 @@ function RepayLoanComponent({ contract }: RepayLoanComponentProps) {
               <RepaymentDetails
                 totalRepaymentAmount={totalRepaymentAmount}
                 repaymentAddress={repaymentAddress}
-                onRepay={bool => setIsRepaid(bool)}
               />
             )
             : ""}
@@ -189,18 +191,12 @@ function RepayLoanComponent({ contract }: RepayLoanComponentProps) {
 interface RepaymentDetailsProps {
   totalRepaymentAmount: number;
   repaymentAddress: string;
-  onRepay: (bool) => void;
 }
 
 export function RepaymentDetails({
   totalRepaymentAmount,
   repaymentAddress,
-  onRepay,
 }: RepaymentDetailsProps) {
-  const handleConfirmRepayment = () => {
-    onRepay(true);
-  };
-
   return (
     <Container fluid>
       <Row>
@@ -224,13 +220,6 @@ export function RepaymentDetails({
             Once the lender confirms they received the funds, you will be able to withdraw the collateral from the
             contract.
           </Alert>
-        </Col>
-      </Row>
-      <Row className="mt-1">
-        <Col className="d-grid">
-          <Button variant="primary" onClick={handleConfirmRepayment}>
-            Confirm Repayment
-          </Button>
         </Col>
       </Row>
     </Container>
