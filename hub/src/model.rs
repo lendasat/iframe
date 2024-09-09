@@ -183,6 +183,8 @@ pub enum ContractStatus {
     PrincipalGiven,
     /// The principal + interest has been repaid to the lender.
     Repaid,
+    /// The collateral claim tx has been broadcasted but not confirmed yet.
+    Closing,
     /// The loan has been repaid, somehow.
     Closed,
     /// The contract request was rejected by the lender.
@@ -230,6 +232,7 @@ pub mod db {
         CollateralConfirmed,
         PrincipalGiven,
         Repaid,
+        Closing,
         Closed,
         Rejected,
     }
@@ -277,6 +280,7 @@ impl From<db::ContractStatus> for ContractStatus {
             db::ContractStatus::CollateralConfirmed => Self::CollateralConfirmed,
             db::ContractStatus::PrincipalGiven => Self::PrincipalGiven,
             db::ContractStatus::Repaid => Self::Repaid,
+            db::ContractStatus::Closing => Self::Closing,
             db::ContractStatus::Closed => Self::Closed,
             db::ContractStatus::Rejected => Self::Rejected,
         }
@@ -320,6 +324,7 @@ impl From<ContractStatus> for db::ContractStatus {
             ContractStatus::CollateralConfirmed => Self::CollateralConfirmed,
             ContractStatus::PrincipalGiven => Self::PrincipalGiven,
             ContractStatus::Repaid => Self::Repaid,
+            ContractStatus::Closing => Self::Closing,
             ContractStatus::Closed => Self::Closed,
             ContractStatus::Rejected => Self::Rejected,
         }

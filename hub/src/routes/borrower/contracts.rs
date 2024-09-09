@@ -449,12 +449,14 @@ pub async fn post_claim_tx(
 
         data.mempool
             .send(mempool::TrackCollateralClaim {
-                contract_id,
+                contract_id: contract_id.clone(),
                 claim_txid,
             })
             .await??;
 
         data.mempool.send(mempool::PostTx(body.tx)).await??;
+
+        db::contracts::mark_contract_as_closing(&data.db, contract_id.as_str()).await?;
 
         anyhow::Ok(claim_txid)
     }
