@@ -9,6 +9,7 @@ use anyhow::Context;
 use anyhow::Result;
 use bitcoin::address::NetworkUnchecked;
 use bitcoin::Address;
+use bitcoin::Network;
 use bitcoin::OutPoint;
 use bitcoin::Txid;
 use futures::stream::SplitSink;
@@ -21,8 +22,9 @@ use sqlx::Pool;
 use sqlx::Postgres;
 use std::collections::HashMap;
 use tokio::net::TcpStream;
-use tokio_tungstenite::connect_async;
+use tokio_tungstenite::connect_async_tls_with_config;
 use tokio_tungstenite::tungstenite::Message;
+use tokio_tungstenite::Connector;
 use tokio_tungstenite::MaybeTlsStream;
 use tokio_tungstenite::WebSocketStream;
 use tracing::instrument;
@@ -38,6 +40,7 @@ pub struct Actor {
     rest_client: MempoolRestClient,
     ws_url: String,
     ws_sink: Option<SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>>,
+    is_test_network: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -68,8 +71,9 @@ struct TrackedClaimTx {
 }
 
 impl Actor {
-    pub fn new(rest_url: String, ws_url: String, db: Pool<Postgres>) -> Self {
-        let rest_client = MempoolRestClient::new(rest_url);
+    pub fn new(rest_url: String, ws_url: String, db: Pool<Postgres>, network: Network) -> Self {
+        let is_test_network = !matches!(network, Network::Bitcoin);
+        let rest_client = MempoolRestClient::new(rest_url, is_test_network);
 
         Self {
             tracked_contracts: HashMap::default(),
@@ -79,6 +83,7 @@ impl Actor {
             rest_client,
             ws_url,
             ws_sink: None,
+            is_test_network,
         }
     }
 
@@ -156,9 +161,20 @@ impl xtra::Actor for Actor {
 
         self.block_height = starting_block_height;
 
-        let (ws_stream, _) = connect_async(format!("{}/ws", self.ws_url))
-            .await
-            .context("Failed to establish WS connection")?;
+        let connector = if self.is_test_network {
+            let connector = native_tls::TlsConnector::builder()
+                .danger_accept_invalid_certs(true)
+                .build()?;
+
+            Some(Connector::NativeTls(connector))
+        } else {
+            None
+        };
+
+        let (ws_stream, _) =
+            connect_async_tls_with_config(format!("{}/ws", self.ws_url), None, false, connector)
+                .await
+                .context("Failed to establish WS connection")?;
 
         let (mut sink, mut stream) = ws_stream.split();
 
@@ -636,8 +652,11 @@ struct MempoolRestClient {
 }
 
 impl MempoolRestClient {
-    fn new(url: String) -> Self {
-        let client = reqwest::Client::new();
+    fn new(url: String, is_test_network: bool) -> Self {
+        let client = reqwest::Client::builder()
+            .danger_accept_invalid_certs(is_test_network)
+            .build()
+            .expect("valid build");
 
         Self { client, url }
     }

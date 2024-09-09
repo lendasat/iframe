@@ -43,6 +43,7 @@ function CollateralizeLoanComponent({ contract }: CollateralizeLoanComponentProp
   const initial_price = loanAmount / (collateral * initialLtv);
   const initialLtvFormatted = (initialLtv * 100).toFixed(0);
 
+  // FIXME: Let's do this once, in the backend.
   const loanOriginatorFee = (loanAmount / initial_price) * ORIGINATOR_FEE;
   const totalCollateral = (collateral + loanOriginatorFee).toFixed(8);
   const loanOriginatorFeeUsd = (loanOriginatorFee * initial_price).toFixed(0);

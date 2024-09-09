@@ -33,6 +33,7 @@ async fn main() -> Result<()> {
         config.mempool_rest_url.clone(),
         config.mempool_ws_url.clone(),
         db.clone(),
+        network,
     );
 
     tokio::spawn(async {
