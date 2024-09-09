@@ -3,6 +3,7 @@
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
+    use bitcoin::Amount;
     use bitcoin::Psbt;
     use hub::model::ContractRequestSchema;
     use hub::model::ContractStatus;
@@ -12,19 +13,24 @@ mod tests {
     use hub::model::LoanOffer;
     use hub::model::LoginUserSchema;
     use hub::routes::borrower::ClaimCollateralPsbt;
+    use hub::routes::borrower::ClaimTx;
     use hub::routes::borrower::Contract;
     use reqwest::cookie::Jar;
     use reqwest::Client;
+    use rust_decimal::prelude::ToPrimitive;
+    use rust_decimal::Decimal;
     use rust_decimal_macros::dec;
     use serde_json::json;
     use std::sync::Arc;
     use std::sync::Once;
     use std::time::Duration;
 
+    const ORIGINATION_FEE_RATE: f32 = 0.01;
+
     /// Run `just prepare-e2e` before this test.
     #[ignore]
     #[tokio::test]
-    async fn open_loan() {
+    async fn open_and_repay_loan() {
         let env_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
         let env_path = format!("{env_dir}/../.env");
         dotenv::from_filename(env_path).ok();
@@ -79,7 +85,7 @@ mod tests {
             name: "a fantastic loan".to_string(),
             min_ltv: dec!(0.5),
             interest_rate: dec!(10),
-            loan_amount_min: dec!(10_000),
+            loan_amount_min: dec!(1_000),
             loan_amount_max: dec!(50_000),
             duration_months_min: 1,
             duration_months_max: 12,
@@ -112,7 +118,10 @@ mod tests {
 
         let contract_request = ContractRequestSchema {
             loan_id: loan_offer.id,
-            loan_amount: dec!(20_000),
+            // TODO: This loan amount can cause the collateral to be over the Mutinynet faucet limit
+            // if the real price of Bitcoin changes enough. We should mock the price in
+            // the `hub` for the e2e tests.
+            loan_amount: dec!(2_000),
             duration_months: 6,
             borrower_btc_address,
             borrower_pk,
@@ -157,6 +166,21 @@ mod tests {
         let contracts: Vec<Contract> = res.json().await.unwrap();
         let contract = contracts.iter().find(|c| c.id == contract.id).unwrap();
 
+        // TODO: Ensure that we don't need to calculate this again in the client (and in the tests).
+        let total_collateral = {
+            let initial_price = contract.loan_amount
+                / (contract.initial_ltv
+                    * Decimal::try_from(Amount::from_sat(contract.collateral_sats).to_btc())
+                        .unwrap());
+
+            let origination_fee = (contract.loan_amount / initial_price)
+                * Decimal::try_from(ORIGINATION_FEE_RATE).unwrap();
+            let origination_fee =
+                Amount::from_btc(origination_fee.round_dp(8).to_f64().unwrap()).unwrap();
+
+            contract.collateral_sats + origination_fee.to_sat()
+        };
+
         if network == "regtest" {
             tracing::info!("Running on regtest");
 
@@ -164,14 +188,14 @@ mod tests {
             // transaction. As such, we can fake all this.
             let mempool = Client::new();
             let res = mempool
-                .post("http://localhost:7339/tx")
-                .json(&mempool_mock::PostTransaction {
+                .post("http://localhost:7339/sendtoaddress")
+                .json(&mempool_mock::SendToAddress {
                     address: contract
                         .contract_address
                         .clone()
                         .expect("contract address")
                         .to_string(),
-                    amount: contract.collateral_sats,
+                    amount: total_collateral,
                 })
                 .send()
                 .await
@@ -189,21 +213,26 @@ mod tests {
         } else {
             tracing::info!("Running on signet");
 
-            let faucet = Client::new();
+            let faucet = Client::builder()
+                .danger_accept_invalid_certs(true)
+                .build()
+                .expect("valid build");
 
             let contract_address = contract.contract_address.clone().expect("contract address");
 
             let res = faucet
                 .post("https://faucet.mutinynet.com/api/onchain")
                 .json(&json!({
-                    "sats": contract.collateral_sats,
+                    "sats": total_collateral,
                     "address": contract_address
                 }))
                 .send()
                 .await
                 .unwrap();
 
-            assert!(res.status().is_success());
+            let status = res.status();
+
+            assert!(status.is_success());
         }
 
         // 5. Hub sees collateral funding TX.
@@ -247,7 +276,6 @@ mod tests {
 
         assert!(res.status().is_success());
 
-        // TODO: Perhaps we want to serialize as hex instead;
         let ClaimCollateralPsbt {
             psbt: claim_psbt,
             collateral_descriptor,
@@ -265,17 +293,38 @@ mod tests {
 
         let tx_hex = bitcoin::consensus::encode::serialize_hex(&tx);
 
-        let faucet = Client::new();
-        let res = faucet
-            .post("https://mutinynet.com/api/tx")
-            .body(tx_hex)
+        let res = borrower
+            .post(format!(
+                "http://localhost:7337/api/contracts/{}",
+                contract.id
+            ))
+            .json(&ClaimTx { tx: tx_hex })
             .send()
             .await
             .unwrap();
 
         assert!(res.status().is_success());
 
-        // TODO: 9.2 Transition hub state to `Closed` after collateral spend TX is confirmed.
+        if network == "regtest" {
+            let mempool = Client::new();
+            let res = mempool
+                .post("http://localhost:7339/mine/2")
+                .send()
+                .await
+                .unwrap();
+
+            assert!(res.status().is_success());
+        }
+
+        wait_until_contract_status(
+            &borrower,
+            "localhost:7337",
+            &contract.id,
+            ContractStatus::Closed,
+            &network,
+        )
+        .await
+        .unwrap();
     }
 
     async fn wait_until_contract_status(

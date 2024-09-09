@@ -26,6 +26,7 @@ pub(crate) mod health_check;
 pub(crate) mod loan_offers;
 
 pub use contracts::ClaimCollateralPsbt;
+pub use contracts::ClaimTx;
 pub use contracts::Contract;
 
 pub async fn spawn_borrower_server(

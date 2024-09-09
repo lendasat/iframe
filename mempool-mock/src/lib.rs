@@ -58,7 +58,13 @@ impl Blockchain {
             .collect::<Vec<_>>()
     }
 
-    pub fn add_tx(&mut self, address: String, amount: u64) {
+    pub fn get_by_txid(&self, txid: &str) -> Option<Transaction> {
+        let txid = Txid::from_str(txid).unwrap();
+
+        self.txs.iter().find(|tx| tx.txid == txid).cloned()
+    }
+
+    pub fn send_to_address(&mut self, address: String, amount: u64) {
         let txid: [u8; 32] = thread_rng().gen();
         let txid = hex::encode(txid);
         let txid = Txid::from_str(&txid).unwrap();
@@ -84,6 +90,40 @@ impl Blockchain {
         tracing::debug!(?tx, "Transaction found in mempool");
 
         self.txs.push(tx);
+    }
+
+    pub fn add_tx(&mut self, tx: String) -> Txid {
+        let tx: bitcoin::Transaction = bitcoin::consensus::encode::deserialize_hex(&tx).unwrap();
+
+        let txid = tx.compute_txid();
+
+        let tx = Transaction {
+            txid,
+            vout: tx
+                .output
+                .iter()
+                .map(|o| Vout {
+                    scriptpubkey_address: Address::from_script(
+                        &o.script_pubkey,
+                        bitcoin::params::REGTEST.clone(),
+                    )
+                    .unwrap()
+                    .as_unchecked()
+                    .clone(),
+                    value: o.value.to_sat(),
+                })
+                .collect(),
+            status: TransactionStatus {
+                confirmed: false,
+                block_height: None,
+            },
+        };
+
+        tracing::debug!(?tx, "Transaction found in mempool");
+
+        self.txs.push(tx);
+
+        txid
     }
 
     pub fn mine_blocks(&mut self, n: u64) {
@@ -150,17 +190,51 @@ pub async fn get_address_transactions(
     Json(txs).into_response()
 }
 
+/// Mock of https://mempool.space/docs/api/rest#post-transaction.
+#[instrument(skip(blockchain), ret)]
+pub async fn post_tx(
+    State(blockchain): State<Arc<RwLock<Blockchain>>>,
+    tx: String,
+) -> impl IntoResponse {
+    let mut blockchain = blockchain.write().unwrap();
+
+    let txid = blockchain.add_tx(tx);
+
+    (axum::http::StatusCode::OK, txid.to_string())
+}
+
+/// Mock of https://mempool.space/docs/api/rest#get-transaction.
+#[instrument(skip(blockchain), ret)]
+pub async fn get_tx(
+    State(blockchain): State<Arc<RwLock<Blockchain>>>,
+    Path(txid): Path<String>,
+) -> Result<impl IntoResponse, (axum::http::StatusCode, String)> {
+    let blockchain = blockchain.read().unwrap();
+
+    let tx = match blockchain.get_by_txid(&txid) {
+        Some(tx) => tx,
+        None => {
+            return Err((
+                axum::http::StatusCode::NOT_FOUND,
+                "Transaction not found".to_string(),
+            ))
+        }
+    };
+
+    Ok(Json(tx).into_response())
+}
+
 /// Internal API to add a transaction to the blockchain.
 ///
 /// This does not attempt to mock a `mempool.space` API.
 #[instrument(skip(blockchain))]
-pub async fn post_tx(
+pub async fn send_to_address(
     State(blockchain): State<Arc<RwLock<Blockchain>>>,
-    Json(body): Json<PostTransaction>,
+    Json(body): Json<SendToAddress>,
 ) -> impl IntoResponse {
     let mut blockchain = blockchain.write().unwrap();
 
-    blockchain.add_tx(body.address, body.amount);
+    blockchain.send_to_address(body.address, body.amount);
 
     axum::http::StatusCode::OK
 }
@@ -181,7 +255,7 @@ pub async fn mine_blocks(
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct PostTransaction {
+pub struct SendToAddress {
     pub address: String,
     pub amount: u64,
 }

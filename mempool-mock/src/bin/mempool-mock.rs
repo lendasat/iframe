@@ -4,10 +4,12 @@ use axum::Router;
 use hub::mempool::WsResponse;
 use mempool_mock::get_address_transactions;
 use mempool_mock::get_block_tip_height;
+use mempool_mock::get_tx;
 use mempool_mock::handle_ws_upgrade;
 use mempool_mock::logger::init_tracing;
 use mempool_mock::mine_blocks;
 use mempool_mock::post_tx;
+use mempool_mock::send_to_address;
 use mempool_mock::Blockchain;
 use std::sync::Arc;
 use std::sync::RwLock;
@@ -30,10 +32,12 @@ async fn main() {
 
     let app = Router::new()
         .route("/ws", get(handle_ws_upgrade))
-        .route("/tx", post(post_tx))
+        .route("/sendtoaddress", post(send_to_address))
         .route("/mine/:blocks", post(mine_blocks))
         .route("/api/address/:address/txs", get(get_address_transactions))
         .route("/api/blocks/tip/height", get(get_block_tip_height))
+        .route("/api/tx/:txid", get(get_tx))
+        .route("/api/tx", post(post_tx))
         .with_state(blockchain);
 
     let listen_address = "0.0.0.0:7339";
