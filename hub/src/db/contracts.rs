@@ -458,10 +458,7 @@ pub async fn mark_contract_as_confirmed(
     Ok(contract.into())
 }
 
-pub async fn mark_contract_as_principal_given(
-    pool: &Pool<Postgres>,
-    contract_id: &str,
-) -> Result<Contract> {
+pub async fn mark_contract_as_repaid(pool: &Pool<Postgres>, contract_id: &str) -> Result<Contract> {
     let contract = sqlx::query_as!(
         db::Contract,
         r#"
@@ -491,7 +488,7 @@ pub async fn mark_contract_as_principal_given(
             created_at,
             updated_at
         "#,
-        db::ContractStatus::PrincipalGiven as db::ContractStatus,
+        db::ContractStatus::Repaid as db::ContractStatus,
         OffsetDateTime::now_utc(),
         contract_id,
     )

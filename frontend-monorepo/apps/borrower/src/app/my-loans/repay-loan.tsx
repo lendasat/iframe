@@ -1,14 +1,14 @@
-import {faInfoCircle} from "@fortawesome/free-solid-svg-icons";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {Contract, ContractStatus, useAuth} from "@frontend-monorepo/http-client";
+import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { Contract, ContractStatus, useAuth } from "@frontend-monorepo/http-client";
 import QRCode from "qrcode.react";
-import {Suspense, useState} from "react";
-import {Alert, Button, Col, Container, Form, InputGroup, Row} from "react-bootstrap";
-import {Await, useNavigate, useParams} from "react-router-dom";
-import init, {is_wallet_loaded, sign_claim_psbt} from "../../../../../../borrower-wallet/pkg/borrower_wallet.js";
-import {Lender} from "../request-loan/lender";
-import Usd, {formatCurrency} from "../usd";
-import {UnlockWalletModal} from "../wallet/unlock-wallet-modal";
+import { Suspense, useState } from "react";
+import { Alert, Button, Col, Container, Form, InputGroup, Row } from "react-bootstrap";
+import { Await, useNavigate, useParams } from "react-router-dom";
+import init, { is_wallet_loaded, sign_claim_psbt } from "../../../../../../borrower-wallet/pkg/borrower_wallet.js";
+import { Lender } from "../request-loan/lender";
+import Usd, { formatCurrency } from "../usd";
+import { UnlockWalletModal } from "../wallet/unlock-wallet-modal";
 
 export function RepayLoan() {
   const { getContract } = useAuth();
@@ -44,7 +44,7 @@ function RepayLoanComponent({ contract }: RepayLoanComponentProps) {
   const repaymentAddress = contract.loan_repayment_address;
   const interestRate = contract.interest_rate;
 
-  const isRepaid = contract.status == ContractStatus.PrincipalGiven;
+  const isRepaid = contract.status === ContractStatus.Repaid;
 
   const [showUnlockWalletModal, setShowUnlockWalletModal] = useState(false);
   const handleCloseUnlockWalletModal = () => setShowUnlockWalletModal(false);
@@ -83,7 +83,7 @@ function RepayLoanComponent({ contract }: RepayLoanComponentProps) {
     alert(`Transaction ${txid} was published!`);
 
     navigate("/my-contracts");
-  }
+  };
 
   return (
     <Container className={"p-4"} fluid>

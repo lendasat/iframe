@@ -150,9 +150,9 @@ pub async fn put_repaid_contract(
         .await
         .context("Failed to load contract request")?;
 
-        db::contracts::mark_contract_as_principal_given(&data.db, contract.id.as_str())
+        db::contracts::mark_contract_as_repaid(&data.db, contract.id.as_str())
             .await
-            .context("Failed to accept contract request")?;
+            .context("Failed to mark contract as repaid")?;
 
         anyhow::Ok(())
     }

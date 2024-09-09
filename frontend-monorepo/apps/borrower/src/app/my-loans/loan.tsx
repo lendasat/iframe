@@ -1,8 +1,8 @@
-import {Contract, ContractStatus} from "@frontend-monorepo/http-client";
-import {LtvProgressBar} from "@frontend-monorepo/ui-shared";
+import { Contract, ContractStatus } from "@frontend-monorepo/http-client";
+import { LtvProgressBar } from "@frontend-monorepo/ui-shared";
 import React from "react";
-import {Badge, Button, Card, Col, Container, Row} from "react-bootstrap";
-import {usePrice} from "../price-context";
+import { Badge, Button, Card, Col, Container, Row } from "react-bootstrap";
+import { usePrice } from "../price-context";
 import CurrencyFormatter from "../usd";
 
 interface LoanComponentProps {
@@ -42,6 +42,7 @@ export function LoanComponent({ loan, onRepay, onCollateralize }: LoanComponentP
                       <Button variant="primary" onClick={() => onCollateralize(loan.id)}>Collateralize Loan</Button>
                     );
                   case ContractStatus.Requested:
+                  case ContractStatus.PrincipalGiven:
                   case ContractStatus.Closing:
                   case ContractStatus.Closed:
                     return <div></div>;
@@ -54,10 +55,8 @@ export function LoanComponent({ loan, onRepay, onCollateralize }: LoanComponentP
                         <Button variant="primary" onClick={() => onRepay(loan.id)}>Repay Loan</Button>
                       </>
                     );
-                  case ContractStatus.PrincipalGiven:
-                    return (
-                        <Button variant="primary" onClick={() => onRepay(loan.id)}>Withdraw Collateral</Button>
-                    );
+                  case ContractStatus.Repaid:
+                    return <Button variant="primary" onClick={() => onRepay(loan.id)}>Withdraw Collateral</Button>;
                 }
               })()}
             </Col>
