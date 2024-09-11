@@ -180,7 +180,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ baseUrl, children })
         setUser(null);
       }
     }).catch((err) => {
-      console.error("Failed");
+      console.error(`Failed getting the user ${JSON.stringify(err)}`);
     });
   }, [setUser]);
 
@@ -228,8 +228,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ baseUrl, children })
 
   const logout = async () => {
     try {
-      const response = await httpClient.get("/api/auth/logout");
-      const data = response.data;
+      await httpClient.get("/api/auth/logout");
       console.log("Logout successful");
     } catch (error) {
       if (error.response.status === 401) {
@@ -335,8 +334,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ baseUrl, children })
   const getClaimCollateralPsbt = async (id: string): Promise<ClaimCollateralPsbtResponse> => {
     try {
       const res: AxiosResponse<ClaimCollateralPsbtResponse> = await httpClient.get(`/api/contracts/${id}/claim`);
-      const data = res.data;
-      return data;
+      return res.data;
     } catch (error) {
       console.error(
         `Failed to fetch claim-collateral PSBT: http: ${error.response?.status} and response: ${
