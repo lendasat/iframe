@@ -54,7 +54,7 @@ export function contractStatusToLabelString(status: ContractStatus): string {
     case ContractStatus.Approved:
       return "Contract Approved";
     case ContractStatus.CollateralSeen:
-      return "Collateral Reviewed";
+      return "Collateral Seen";
     case ContractStatus.CollateralConfirmed:
       return "Collateral Confirmed";
     case ContractStatus.PrincipalGiven:
@@ -339,7 +339,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ baseUrl, children })
       return data;
     } catch (error) {
       console.error(
-        `Failed to fetch claim-collateral PSBT: http: ${error.response?.status} and response: ${error.response?.data}`,
+        `Failed to fetch claim-collateral PSBT: http: ${error.response?.status} and response: ${
+          JSON.stringify(error.response?.data)
+        }`,
       );
       throw error;
     }

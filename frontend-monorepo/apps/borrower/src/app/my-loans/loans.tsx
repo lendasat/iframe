@@ -88,11 +88,11 @@ function ContractsComponent({ loans, onRepay, onCollateralize }: LoansComponentP
                 </Col>
                 <Col xs={12} md={ltv_col.md} className="mb-2 mb-md-0">
                   <div className="d-md-none font-weight-bold">LTV:</div>
-                  <LtvProgressBar ltvRatio={latestPrice ? ltvRatio : undefined} />
+                  <LtvProgressBar ltvRatio={latestPrice ? ltvRatio * 100 : undefined} />
                 </Col>
                 <Col xs={12} md={interest_col.md} className="mb-2 mb-md-0">
                   <div className="d-md-none font-weight-bold">Interest:</div>
-                  {interest_rate}%
+                  {interest_rate * 100}%
                 </Col>
                 <Col xs={12} md={collateral_col.md} className="mb-2 mb-md-0">
                   <div className="d-md-none font-weight-bold">Collateral:</div>

@@ -56,6 +56,9 @@ function Details({ contract }: DetailsProps) {
   const accruedInterest = contract.loan_amount * (contract.interest_rate / 100);
   const totalRepaymentAmount = accruedInterest + loanAmount;
 
+  // FIXME: Let's do this once, in the backend.
+  const loanOriginatorFeeUsd = (loanOriginatorFee * initial_price).toFixed(0);
+
   return (
     <Row className="mt-3">
       <Col xs={12} md={6}>
@@ -67,6 +70,8 @@ function Details({ contract }: DetailsProps) {
           contractAddress={contractAddress || ""}
           totalCollateral={totalCollateral}
           totalRepaymentAmount={totalRepaymentAmount}
+          loanOriginatorFee={loanOriginatorFee}
+          loanOriginatorFeeUsd={loanOriginatorFeeUsd}
         />
       </Col>
     </Row>
@@ -76,6 +81,7 @@ function Details({ contract }: DetailsProps) {
 interface DetailsProps {
   contract: Contract;
 }
+
 function ContractDetails({ contract }: DetailsProps) {
   const ORIGINATOR_FEE = 0.01;
 
@@ -86,11 +92,11 @@ function ContractDetails({ contract }: DetailsProps) {
 
   const initialLtv = contract.initial_ltv;
   const initial_price = loanAmount / (collateral * initialLtv);
-  const initialLtvFormatted = initialLtv.toFixed(0);
+
+  const initialLtvFormatted = (initialLtv * 100).toFixed(0);
 
   // FIXME: Let's do this once, in the backend.
   const loanOriginatorFee = (loanAmount / initial_price) * ORIGINATOR_FEE;
-  const totalCollateral = (collateral + loanOriginatorFee).toFixed(8);
   const loanOriginatorFeeUsd = (loanOriginatorFee * initial_price).toFixed(0);
 
   return (
@@ -117,25 +123,14 @@ function ContractDetails({ contract }: DetailsProps) {
         </Col>
       </Row>
       <Row className="justify-content-between border-b mt-2">
-        <Col>LTV ratio</Col>
-        <Col className="text-end mb-2">{initialLtvFormatted}%</Col>
-      </Row>
-      <Row className="justify-content-between border-b mt-2">
-        <Col>Interest rate p.a.</Col>
-        <Col className="text-end mb-2">
-          {interestRate}%
-        </Col>
-      </Row>
-
-      <Row className="justify-content-between border-b mt-2">
         <Col>Collateral</Col>
         <Col className="text-end mb-2">
           {collateral.toFixed(8)} BTC
         </Col>
       </Row>
-      <Row className="justify-content-between mt-2">
+      <Row className="justify-content-between border-b mt-2">
         <Col md={6}>Origination fee (1%)</Col>
-        <Col md={6} className="text-end">
+        <Col md={6} className="text-end mb-2">
           <OverlayTrigger
             placement="top"
             overlay={<Tooltip>${loanOriginatorFeeUsd}</Tooltip>}
@@ -144,29 +139,137 @@ function ContractDetails({ contract }: DetailsProps) {
           </OverlayTrigger>
         </Col>
       </Row>
-      <Row className="mt-2 border-top pt-2">
-        <Col md={6}>
-          <strong>Total:</strong>
+      <Row className="justify-content-between border-b mt-2">
+        <Col>LTV ratio</Col>
+        <Col className="text-end mb-2">{initialLtvFormatted}%</Col>
+      </Row>
+      <Row className="justify-content-between mt-2">
+        <Col>Interest rate p.a.</Col>
+        <Col className="text-end mb-2">
+          {interestRate * 100}%
         </Col>
-        <Col md={6} className="text-end">
-          <strong>
-            {totalCollateral} BTC
-          </strong>
-        </Col>
+      </Row>
+      <Row className="justify-content-between mt-5">
+        <AdditionalDetail contract={contract} />
       </Row>
     </Container>
   );
 }
+
+interface AdditionalDetailsProps {
+  contract: Contract;
+}
+
+const AdditionalDetail = ({ contract }: AdditionalDetailsProps) => {
+  switch (contract.status) {
+    case ContractStatus.Requested:
+      break;
+    case ContractStatus.Approved:
+      break;
+    case ContractStatus.CollateralSeen:
+    case ContractStatus.CollateralConfirmed:
+      return (
+        <Row className="justify-content-between border-b mt-2">
+          <Col>Funding transaction</Col>
+          <Col className="text-end mb-2">
+            TODO!
+          </Col>
+        </Row>
+      );
+    case ContractStatus.PrincipalGiven:
+      return (
+        <>
+          <Row className="justify-content-between border-b mt-2">
+            <Col>Funding transaction</Col>
+            <Col className="text-end mb-2">
+              TODO!
+            </Col>
+          </Row>
+          <Row className="justify-content-between border-b mt-2">
+            <Col>Principal transaction</Col>
+            <Col className="text-end mb-2">
+              TODO!
+            </Col>
+          </Row>
+        </>
+      );
+    case ContractStatus.Repaid:
+      return (
+        <>
+          <Row className="justify-content-between border-b mt-2">
+            <Col>Funding transaction</Col>
+            <Col className="text-end mb-2">
+              TODO!
+            </Col>
+          </Row>
+          <Row className="justify-content-between border-b mt-2">
+            <Col>Principal transaction</Col>
+            <Col className="text-end mb-2">
+              TODO!
+            </Col>
+          </Row>
+          <Row className="justify-content-between border-b mt-2">
+            <Col>Principal repayment transaction</Col>
+            <Col className="text-end mb-2">
+              TODO!
+            </Col>
+          </Row>
+        </>
+      );
+    case ContractStatus.Closing:
+    case ContractStatus.Closed:
+      return (
+        <>
+          <Row className="justify-content-between border-b mt-2">
+            <Col>Funding transaction</Col>
+            <Col className="text-end mb-2">
+              TODO!
+            </Col>
+          </Row>
+          <Row className="justify-content-between border-b mt-2">
+            <Col>Principal transaction</Col>
+            <Col className="text-end mb-2">
+              TODO!
+            </Col>
+          </Row>
+          <Row className="justify-content-between border-b mt-2">
+            <Col>Principal repayment transaction</Col>
+            <Col className="text-end mb-2">
+              TODO!
+            </Col>
+          </Row>
+          <Row className="justify-content-between mt-2">
+            <Col>Collateral claim transaction</Col>
+            <Col className="text-end mb-2">
+              TODO!
+            </Col>
+          </Row>
+        </>
+      );
+    case ContractStatus.Rejected:
+      // TODO
+      return "";
+  }
+};
 
 interface ContractStatusDetailsProps {
   contract: Contract;
   totalCollateral: string;
   contractAddress: string;
   totalRepaymentAmount: number;
+  loanOriginatorFee: number;
+  loanOriginatorFeeUsd: string;
 }
 
 const ContractStatusDetails = (
-  { contract, totalCollateral, contractAddress, totalRepaymentAmount }: ContractStatusDetailsProps,
+  {
+    contract,
+    totalCollateral,
+    contractAddress,
+    totalRepaymentAmount,
+    loanOriginatorFee,
+    loanOriginatorFeeUsd,
+  }: ContractStatusDetailsProps,
 ) => {
   switch (contract.status) {
     case ContractStatus.Requested:
@@ -174,8 +277,11 @@ const ContractStatusDetails = (
     case ContractStatus.Approved:
       return (
         <CollateralContractDetails
-          collateral={totalCollateral}
+          totalCollateral={totalCollateral}
           collateralAddress={contractAddress}
+          collateral_btc={contract.collateral_sats / 100000000}
+          loanOriginatorFeeUsd={loanOriginatorFeeUsd}
+          loanOriginatorFee={loanOriginatorFee}
         />
       );
     case ContractStatus.CollateralSeen:
