@@ -80,7 +80,7 @@ function ContractsComponent({ loans, onRepay, onCollateralize }: LoansComponentP
               <Row className="align-items-center">
                 <Col xs={12} md={amount_col.md} className="mb-2 mb-md-0">
                   <div className="d-md-none">Amount:</div>
-                  <CurrencyFormatter value={loan_amount} currency="USD" locale="en-US" />
+                  <CurrencyFormatter value={loan_amount} />
                 </Col>
                 <Col xs={12} md={expiry_col.md} className="mb-2 mb-md-0">
                   <div className="d-md-none font-weight-bold">Expiry:</div>
