@@ -21,12 +21,14 @@ export enum StableCoin {
 }
 
 const CreateLoanOffer: React.FC = () => {
-  const [loanAmount, setLoanAmount] = useState<LoanAmount>({ min: 0, max: 0 });
-  const [loanDuration, setLoanDuration] = useState<LoanDuration>({ min: 0, max: 0 });
-  const [ltv, setLtv] = useState<number>(0);
-  const [interest, setInterest] = useState<number>(0);
-  const [coins, setCoins] = useState<StableCoin[]>([]);
-  const [loanRepaymentAddress, setLoanRepaymentAddress] = useState<string>("");
+  const [loanAmount, setLoanAmount] = useState<LoanAmount>({ min: 1000, max: 100000 });
+  const [loanDuration, setLoanDuration] = useState<LoanDuration>({ min: 1, max: 12 });
+  const [ltv, setLtv] = useState<number>(50);
+  const [interest, setInterest] = useState<number>(12);
+  const [coins, setCoins] = useState<StableCoin[]>([StableCoin.USDT_ETH, StableCoin.USDT_SN]);
+  const [loanRepaymentAddress, setLoanRepaymentAddress] = useState<string>(
+    "0xA0C68B2C3cC21F9376eB514c9f1bF80A4939e4A6",
+  );
 
   const handleStableCoinChange = (coin: StableCoin) => {
     if (coins.includes(coin)) {
