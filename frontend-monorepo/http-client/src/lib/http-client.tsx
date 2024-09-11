@@ -47,6 +47,31 @@ export enum ContractStatus {
   Rejected = "Rejected",
 }
 
+export function contractStatusToLabelString(status: ContractStatus): string {
+  switch (status) {
+    case ContractStatus.Requested:
+      return "Contract Requested";
+    case ContractStatus.Approved:
+      return "Contract Approved";
+    case ContractStatus.CollateralSeen:
+      return "Collateral Reviewed";
+    case ContractStatus.CollateralConfirmed:
+      return "Collateral Confirmed";
+    case ContractStatus.PrincipalGiven:
+      return "Principal Disbursed";
+    case ContractStatus.Closing:
+      return "Contract Closing";
+    case ContractStatus.Repaid:
+      return "Loan Repaid";
+    case ContractStatus.Closed:
+      return "Contract Closed";
+    case ContractStatus.Rejected:
+      return "Contract Rejected";
+    default:
+      return "Unknown Status";
+  }
+}
+
 export interface LenderProfile {
   name: string;
   rate: number;

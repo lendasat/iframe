@@ -1,12 +1,13 @@
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Contract, ContractStatus, useAuth } from "@frontend-monorepo/http-client";
+import { Contract, ContractStatus, contractStatusToLabelString, useAuth } from "@frontend-monorepo/http-client";
 import React, { Suspense } from "react";
 import { Alert, Badge, Col, Container, Form, InputGroup, OverlayTrigger, Row, Tooltip } from "react-bootstrap";
 import { Await, useParams } from "react-router-dom";
 import { Lender } from "../request-loan/lender";
 import Usd from "../usd";
 import { CollateralContractDetails } from "./collateralize-contract";
+import { CollateralSeenOrConfirmed } from "./contract-collateral-seen-or-confirmed";
 import { ContractRequested } from "./contract-requested";
 
 function ContractDetailsOverview() {
@@ -35,6 +36,7 @@ interface DetailsProps {
 }
 
 function Details({ contract }: DetailsProps) {
+  // TODO: this should come from the backend
   const ORIGINATOR_FEE = 0.01;
 
   const collateral_sats = contract.collateral_sats;
@@ -74,7 +76,6 @@ function ContractDetails({ contract }: DetailsProps) {
   const collateral_sats = contract.collateral_sats;
   const collateral = collateral_sats / 100000000;
   const loanAmount = contract.loan_amount;
-  const loanAddress = contract.borrower_loan_address;
   const interestRate = contract.interest_rate;
 
   const initialLtv = contract.initial_ltv;
@@ -100,7 +101,7 @@ function ContractDetails({ contract }: DetailsProps) {
       <Row className="justify-content-between border-b mt-2">
         <Col>Contract status</Col>
         <Col className="text-end mb-2">
-          <Badge bg="primary">{contract.status}</Badge>
+          <Badge bg="primary">{contractStatusToLabelString(contract.status)}</Badge>
         </Col>
       </Row>
       <Row className="justify-content-between border-b mt-2">
@@ -147,21 +148,6 @@ function ContractDetails({ contract }: DetailsProps) {
           </strong>
         </Col>
       </Row>
-
-      <Row className="justify-content-between mt-4">
-        <Alert className="mb-2" key="info" variant="success">
-          <FontAwesomeIcon icon={faInfoCircle} /> Your loan principal will be sent to this address.
-          <InputGroup className="mt-2">
-            <Form.Control
-              type="text"
-              value={loanAddress}
-              disabled
-              readOnly
-              className="bg-white"
-            />
-          </InputGroup>
-        </Alert>
-      </Row>
     </Container>
   );
 }
@@ -172,7 +158,9 @@ interface ContractStatusDetailsProps {
   contractAddress: string;
 }
 
-const ContractStatusDetails = ({ contract, totalCollateral, contractAddress }: ContractStatusDetailsProps) => {
+const ContractStatusDetails = (
+  { contract, totalCollateral, contractAddress }: ContractStatusDetailsProps,
+) => {
   switch (contract.status) {
     case ContractStatus.Requested:
       return <ContractRequested createdAt={contract.created_at} />;
@@ -185,6 +173,13 @@ const ContractStatusDetails = ({ contract, totalCollateral, contractAddress }: C
       );
     case ContractStatus.CollateralSeen:
     case ContractStatus.CollateralConfirmed:
+      return (
+        <CollateralSeenOrConfirmed
+          collateral={totalCollateral}
+          collateralAddress={contractAddress}
+          contract={contract}
+        />
+      );
     case ContractStatus.PrincipalGiven:
     case ContractStatus.Closing:
     case ContractStatus.Repaid:
