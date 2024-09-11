@@ -9,6 +9,7 @@ import Usd from "../usd";
 import { CollateralContractDetails } from "./collateralize-contract";
 import { CollateralSeenOrConfirmed } from "./contract-collateral-seen-or-confirmed";
 import { ContractPrincipalGiven } from "./contract-principal-given";
+import { ContractRepaid } from "./contract-repaid";
 import { ContractRequested } from "./contract-requested";
 
 function ContractDetailsOverview() {
@@ -193,12 +194,11 @@ const ContractStatusDetails = (
           totalRepaymentAmount={totalRepaymentAmount}
         />
       );
-    case ContractStatus.Closing:
     case ContractStatus.Repaid:
+      return <ContractRepaid contract={contract} />;
     case ContractStatus.Closed:
+    case ContractStatus.Closing:
     case ContractStatus.Rejected:
-      // You might want to render something for these states as well
-      return "";
     default:
       return "";
   }
