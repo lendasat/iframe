@@ -47,6 +47,31 @@ export enum ContractStatus {
   Rejected = "Rejected",
 }
 
+export function contractStatusToLabelString(status: ContractStatus): string {
+  switch (status) {
+    case ContractStatus.Requested:
+      return "Contract Requested";
+    case ContractStatus.Approved:
+      return "Contract Approved";
+    case ContractStatus.CollateralSeen:
+      return "Collateral Seen";
+    case ContractStatus.CollateralConfirmed:
+      return "Collateral Confirmed";
+    case ContractStatus.PrincipalGiven:
+      return "Principal Disbursed";
+    case ContractStatus.Closing:
+      return "Contract Closing";
+    case ContractStatus.Repaid:
+      return "Loan Repaid";
+    case ContractStatus.Closed:
+      return "Contract Closed";
+    case ContractStatus.Rejected:
+      return "Contract Rejected";
+    default:
+      return "Unknown Status";
+  }
+}
+
 export interface LenderProfile {
   name: string;
   rate: number;
@@ -256,7 +281,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ baseUrl, children })
       console.error(
         `Failed to post loan offer: http: ${error.response?.status} and response: ${error.response?.data}`,
       );
-      throw error;
+      throw error.response?.data;
     }
   };
 
@@ -314,7 +339,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ baseUrl, children })
       return data;
     } catch (error) {
       console.error(
-        `Failed to fetch claim-collateral PSBT: http: ${error.response?.status} and response: ${error.response?.data}`,
+        `Failed to fetch claim-collateral PSBT: http: ${error.response?.status} and response: ${
+          JSON.stringify(error.response?.data)
+        }`,
       );
       throw error;
     }

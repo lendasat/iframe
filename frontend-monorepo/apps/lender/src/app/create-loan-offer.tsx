@@ -21,12 +21,15 @@ export enum StableCoin {
 }
 
 const CreateLoanOffer: React.FC = () => {
-  const [loanAmount, setLoanAmount] = useState<LoanAmount>({ min: 0, max: 0 });
-  const [loanDuration, setLoanDuration] = useState<LoanDuration>({ min: 0, max: 0 });
-  const [ltv, setLtv] = useState<number>(0);
-  const [interest, setInterest] = useState<number>(0);
-  const [coins, setCoins] = useState<StableCoin[]>([]);
-  const [loanRepaymentAddress, setLoanRepaymentAddress] = useState<string>("");
+  const [loanAmount, setLoanAmount] = useState<LoanAmount>({ min: 1000, max: 100000 });
+  const [loanDuration, setLoanDuration] = useState<LoanDuration>({ min: 1, max: 12 });
+  const [ltv, setLtv] = useState<number>(0.5);
+  const [interest, setInterest] = useState<number>(0.12);
+  const [coins, setCoins] = useState<StableCoin[]>([StableCoin.USDT_ETH, StableCoin.USDT_SN]);
+  const [loanRepaymentAddress, setLoanRepaymentAddress] = useState<string>(
+    "0xA0C68B2C3cC21F9376eB514c9f1bF80A4939e4A6",
+  );
+  const [error, setError] = useState("");
 
   const handleStableCoinChange = (coin: StableCoin) => {
     if (coins.includes(coin)) {
@@ -92,6 +95,7 @@ const CreateLoanOffer: React.FC = () => {
       }
     } catch (e) {
       console.error(e);
+      setError(`Failed creating offer ${JSON.stringify(e)}`);
     }
   };
 
@@ -138,24 +142,30 @@ const CreateLoanOffer: React.FC = () => {
       </Form.Group>
 
       <Form.Group as={Row} controlId="formLtv">
-        <Form.Label column sm="2">Loan-to-Value (LTV) Ratio</Form.Label>
+        <Form.Label column sm="2">Loan-to-Value (LTV) (0.0-0.9)</Form.Label>
         <Col sm="10">
           <Form.Control
             type="number"
-            placeholder="LTV"
+            placeholder="LTV (0-1)"
             value={ltv}
+            min={0}
+            max={0.9}
+            step={0.1}
             onChange={(e) => setLtv(Number(e.target.value))}
           />
         </Col>
       </Form.Group>
 
       <Form.Group as={Row} controlId="formInterest">
-        <Form.Label column sm="2">Interest Rate (%)</Form.Label>
+        <Form.Label column sm="2">Interest Rate (0.0-1.0)</Form.Label>
         <Col sm="10">
           <Form.Control
             type="number"
             placeholder="Interest Rate"
             value={interest}
+            min={0}
+            max={1}
+            step={0.01}
             onChange={(e) => setInterest(Number(e.target.value))}
           />
         </Col>
@@ -192,6 +202,14 @@ const CreateLoanOffer: React.FC = () => {
       <Button variant="primary" type="submit">
         Submit
       </Button>
+      {error && (
+        <div
+          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mt-4"
+          role="alert"
+        >
+          {error}
+        </div>
+      )}
     </Form>
   );
 };
