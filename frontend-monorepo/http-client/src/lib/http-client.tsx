@@ -281,7 +281,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ baseUrl, children })
       console.error(
         `Failed to post loan offer: http: ${error.response?.status} and response: ${error.response?.data}`,
       );
-      throw error;
+      throw error.response?.data;
     }
   };
 

@@ -12,6 +12,9 @@ use axum::routing::post;
 use axum::Extension;
 use axum::Json;
 use axum::Router;
+use rust_decimal::prelude::Zero;
+use rust_decimal::Decimal;
+use rust_decimal_macros::dec;
 use serde::Serialize;
 use std::sync::Arc;
 use tracing::instrument;
@@ -41,6 +44,26 @@ pub async fn create_loan_offer(
     Extension(user): Extension<User>,
     Json(body): Json<CreateLoanOfferSchema>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    if body.min_ltv > dec!(1.0) || body.min_ltv < Decimal::zero() {
+        let error_response = ErrorResponse {
+            message: format!(
+                "LTV needs to be between 0.00 and 1.00 but was {}",
+                body.min_ltv
+            ),
+        };
+        return Err((StatusCode::BAD_REQUEST, Json(error_response)));
+    }
+
+    if body.interest_rate > dec!(1.0) || body.interest_rate < Decimal::zero() {
+        let error_response = ErrorResponse {
+            message: format!(
+                "Interest rate needs to be between 0.00 and 1.00 but was {}",
+                body.interest_rate
+            ),
+        };
+        return Err((StatusCode::BAD_REQUEST, Json(error_response)));
+    }
+
     let loan = db::loan_offers::insert_loan_offer(&data.db, body, user.id)
         .await
         .map_err(|error| {

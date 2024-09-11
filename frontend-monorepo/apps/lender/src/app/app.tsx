@@ -46,6 +46,7 @@ function App() {
           <Route path="/resetpassword/:token" element={<ResetPassword />} />
           <Route path="/logout" element={<Logout />} />
           <Route path="/login" element={<Login />} />
+          <Route path="*" element={<Login />} />
         </Routes>
       </AuthIsNotSignedIn>
     </AuthProvider>
