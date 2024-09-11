@@ -14,7 +14,7 @@ interface CollateralSeenOrConfirmedProps {
 export function CollateralSeenOrConfirmed({
   collateral,
   collateralAddress,
-                                            contract,
+  contract,
 }: CollateralSeenOrConfirmedProps) {
   return (
     <Container fluid>
@@ -34,7 +34,8 @@ export function CollateralSeenOrConfirmed({
       </Row>
       <Row className="justify-content-between mt-4">
         <Alert className="mb-2" key="info" variant="success">
-          <FontAwesomeIcon icon={faInfoCircle} /> Your loan amount of {formatCurrency(contract.loan_amount)} will be sent to this address.
+          <FontAwesomeIcon icon={faInfoCircle} /> Your loan amount of {formatCurrency(contract.loan_amount)}{" "}
+          will be sent to this address.
           <InputGroup className="mt-2">
             <Form.Control
               type="text"

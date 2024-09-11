@@ -8,6 +8,7 @@ import { Lender } from "../request-loan/lender";
 import Usd from "../usd";
 import { CollateralContractDetails } from "./collateralize-contract";
 import { CollateralSeenOrConfirmed } from "./contract-collateral-seen-or-confirmed";
+import { ContractPrincipalGiven } from "./contract-principal-given";
 import { ContractRequested } from "./contract-requested";
 
 function ContractDetailsOverview() {
@@ -51,6 +52,9 @@ function Details({ contract }: DetailsProps) {
   const loanOriginatorFee = (loanAmount / initial_price) * ORIGINATOR_FEE;
   const totalCollateral = (collateral + loanOriginatorFee).toFixed(8);
 
+  const accruedInterest = contract.loan_amount * (contract.interest_rate / 100);
+  const totalRepaymentAmount = accruedInterest + loanAmount;
+
   return (
     <Row className="mt-3">
       <Col xs={12} md={6}>
@@ -61,6 +65,7 @@ function Details({ contract }: DetailsProps) {
           contract={contract}
           contractAddress={contractAddress || ""}
           totalCollateral={totalCollateral}
+          totalRepaymentAmount={totalRepaymentAmount}
         />
       </Col>
     </Row>
@@ -156,10 +161,11 @@ interface ContractStatusDetailsProps {
   contract: Contract;
   totalCollateral: string;
   contractAddress: string;
+  totalRepaymentAmount: number;
 }
 
 const ContractStatusDetails = (
-  { contract, totalCollateral, contractAddress }: ContractStatusDetailsProps,
+  { contract, totalCollateral, contractAddress, totalRepaymentAmount }: ContractStatusDetailsProps,
 ) => {
   switch (contract.status) {
     case ContractStatus.Requested:
@@ -181,6 +187,12 @@ const ContractStatusDetails = (
         />
       );
     case ContractStatus.PrincipalGiven:
+      return (
+        <ContractPrincipalGiven
+          repaymentAddress={contract.loan_repayment_address}
+          totalRepaymentAmount={totalRepaymentAmount}
+        />
+      );
     case ContractStatus.Closing:
     case ContractStatus.Repaid:
     case ContractStatus.Closed:
