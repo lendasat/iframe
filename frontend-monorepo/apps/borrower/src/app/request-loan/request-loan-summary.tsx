@@ -263,7 +263,7 @@ export function RequestLoanSummary() {
             </Row>
             <Row className="justify-content-between border-b mt-2">
               <Col>Interest rate p.a.</Col>
-              <Col className="text-end mb-2">{loanOffer.interest}%</Col>
+              <Col className="text-end mb-2">{loanOffer.interest * 100}%</Col>
             </Row>
             <Row className="justify-content-between mt-2">
               <Col>Originator fee 1%</Col>

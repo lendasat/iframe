@@ -28,7 +28,7 @@ export function LoanOfferComponent(props: LoanOfferProps) {
             </Col>
             <Col md={1}>{duration.min} - {duration.max} months</Col>
             <Col md={1}>{ltv}%</Col>
-            <Col md={1}>{interest}%</Col>
+            <Col md={1}>{interest * 100}%</Col>
             <Col md={3}>
               {coins.map((coin) => (
                 <span key={coin}>
