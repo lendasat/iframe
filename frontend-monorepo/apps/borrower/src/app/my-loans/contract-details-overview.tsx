@@ -127,9 +127,9 @@ function ContractDetails({ contract }: DetailsProps) {
         </Col>
       </Row>
 
-      <Row className="justify-content-between mt-2">
-        <Col md={6}>Collateral</Col>
-        <Col md={6} className="text-end">
+      <Row className="justify-content-between border-b mt-2">
+        <Col>Collateral</Col>
+        <Col className="text-end mb-2">
           {collateral.toFixed(8)} BTC
         </Col>
       </Row>
