@@ -2,13 +2,12 @@ import React from "react";
 import { Spinner } from "react-bootstrap";
 
 interface LtvProgressBarProps {
-  value?: number;
+  ltvRation?: number;
 }
 
-export const LtvProgressBar: React.FC<LtvProgressBarProps> = ({ value }) => {
+export const LtvProgressBar: React.FC<LtvProgressBarProps> = ({ ltvRation }) => {
   let barColor = "";
 
-  const ltvRation = value ? value * 100 : undefined;
   const isNan = ltvRation == undefined || isNaN(ltvRation);
 
   const formattedValue = isNan ? "Loading" : ltvRation!.toFixed(0);
