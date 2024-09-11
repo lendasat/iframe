@@ -2,21 +2,21 @@ import React from "react";
 import { Spinner } from "react-bootstrap";
 
 interface LtvProgressBarProps {
-  ltvRation?: number;
+  ltvRatio?: number;
 }
 
-export const LtvProgressBar: React.FC<LtvProgressBarProps> = ({ ltvRation }) => {
+export const LtvProgressBar: React.FC<LtvProgressBarProps> = ({ ltvRatio }) => {
   let barColor = "";
 
-  const isNan = ltvRation == undefined || isNaN(ltvRation);
+  const isNan = ltvRatio == undefined || isNaN(ltvRatio);
 
-  const formattedValue = isNan ? "Loading" : ltvRation!.toFixed(0);
+  const formattedValue = isNan ? "Loading" : ltvRatio!.toFixed(0);
 
   if (isNan) {
     barColor = "bg-secondary";
-  } else if (ltvRation < 70) {
+  } else if (ltvRatio < 70) {
     barColor = "bg-success";
-  } else if (ltvRation < 90) {
+  } else if (ltvRatio < 90) {
     barColor = "bg-warning";
   } else {
     barColor = "bg-danger";
@@ -28,8 +28,8 @@ export const LtvProgressBar: React.FC<LtvProgressBarProps> = ({ ltvRation }) => 
         <div
           className={`progress-bar ${barColor} d-flex justify-content-center align-items-center`}
           role="progressbar"
-          style={{ width: `${ltvRation ? ltvRation : 50}%` }}
-          aria-valuenow={ltvRation ? ltvRation : 50}
+          style={{ width: `${ltvRatio ? ltvRatio : 50}%` }}
+          aria-valuenow={ltvRatio ? ltvRatio : 50}
           aria-valuemin="0"
           aria-valuemax="100"
         >
