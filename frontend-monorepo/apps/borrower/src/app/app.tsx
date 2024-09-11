@@ -16,10 +16,8 @@ import ResetPassword from "./auth/reset-password";
 import DashBoard from "./dash-board";
 import ErrorBoundary from "./ErrorBoundary";
 import MyAccount from "./my-account";
-import { CollateralizeLoan } from "./my-loans/collateralize-loan";
 import ContractDetailsOverview from "./my-loans/contract-details-overview";
 import MyLoans from "./my-loans/my-loans";
-import { RepayLoan } from "./my-loans/repay-loan";
 import { PriceProvider } from "./price-context";
 import Profile from "./profile";
 import RequestLoan from "./request-loan/request-loan";
@@ -55,8 +53,6 @@ function App() {
                 <Route path="/my-contracts">
                   <Route index element={<MyLoans />} />
                   <Route path={":id"} element={<ContractDetailsOverview />} />
-                  <Route path={"repay/:id"} element={<RepayLoan />} />
-                  <Route path={"collateralize/:id"} element={<CollateralizeLoan />} />
                 </Route>
                 <Route path="/my-account" element={<MyAccount />} />
                 <Route path="/logout" element={<Logout />} />
