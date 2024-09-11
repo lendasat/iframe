@@ -1,7 +1,8 @@
-import { Contract, ContractStatus } from "@frontend-monorepo/http-client";
+import { Contract } from "@frontend-monorepo/http-client";
 import { LtvProgressBar } from "@frontend-monorepo/ui-shared";
 import React from "react";
 import { Badge, Button, Card, Col, Container, Row } from "react-bootstrap";
+import { useNavigate } from "react-router-dom";
 import { usePrice } from "../price-context";
 import CurrencyFormatter from "../usd";
 
@@ -13,6 +14,7 @@ interface LoansComponentProps {
 
 function ContractsComponent({ loans, onRepay, onCollateralize }: LoansComponentProps) {
   const { latestPrice } = usePrice();
+  const navigate = useNavigate();
 
   if (loans.length === 0) {
     return <p>You don't have any loans yet.</p>;
@@ -100,10 +102,8 @@ function ContractsComponent({ loans, onRepay, onCollateralize }: LoansComponentP
                   <div className="d-md-none font-weight-bold">Status:</div>
                   <Badge bg="primary">{status}</Badge>
                 </Col>
-                <Col xs={12} md={empty_col.md}>
-                  <Row>
-                    {renderActionButton(status, id, onCollateralize, onRepay)}
-                  </Row>
+                <Col xs={12} md={empty_col.md} className="mb-2 mb-md-0">
+                  <Button onClick={() => navigate(`${id}`)} variant={"primary"}>Details</Button>
                 </Col>
               </Row>
             </Card.Body>
@@ -113,23 +113,5 @@ function ContractsComponent({ loans, onRepay, onCollateralize }: LoansComponentP
     </Container>
   );
 }
-
-const renderActionButton = (status, loanId, onCollateralize, onRepay) => {
-  switch (status) {
-    case ContractStatus.Approved:
-      return <Button variant="primary" onClick={() => onCollateralize(loanId)}>Collateralize Loan</Button>;
-    case ContractStatus.CollateralConfirmed:
-      return (
-        <div className="d-flex gap-1">
-          <Button variant="primary" style={{ whiteSpace: "nowrap" }}>Add Collateral</Button>
-          <Button variant="primary" style={{ whiteSpace: "nowrap" }} onClick={() => onRepay(loanId)}>Repay Loan</Button>
-        </div>
-      );
-    case ContractStatus.Repaid:
-      return <Button variant="primary" onClick={() => onRepay(loanId)}>Withdraw Collateral</Button>;
-    default:
-      return "";
-  }
-};
 
 export default ContractsComponent;
