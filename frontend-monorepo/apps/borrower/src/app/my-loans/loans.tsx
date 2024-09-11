@@ -18,93 +18,118 @@ function ContractsComponent({ loans, onRepay, onCollateralize }: LoansComponentP
     return <p>You don't have any loans yet.</p>;
   }
 
+  const amount_col = {
+    label: "Amount",
+    md: 1,
+    className: "text-center",
+  };
+
+  const expiry_col = {
+    label: "Expiry",
+    md: 2,
+    className: "text-center",
+  };
+
+  const ltv_col = {
+    label: "LTV",
+    md: 2,
+    className: "text-center",
+  };
+  const interest_col = {
+    label: "Interest",
+    md: 1,
+    className: "text-center",
+  };
+  const collateral_col = {
+    label: "Collateral",
+    md: 2,
+    className: "text-center",
+  };
+  const status_col = {
+    label: "Status",
+    md: 2,
+    className: "",
+  };
+  const empty_col = {
+    label: "",
+    md: 2,
+    className: "text-center",
+  };
+
+  const headers = [amount_col, expiry_col, ltv_col, interest_col, collateral_col, status_col, empty_col];
+
   return (
-    <>
-      <Container className={"mb-2"} fluid>
-        <Row>
-          <Col md={1}>
-            <small>Amount</small>
+    <Container fluid>
+      <Row className="d-none d-md-flex mb-3">
+        {headers.map((header, index) => (
+          <Col key={index} md={header.md} className={header.className}>
+            <small className="text-muted">{header.label}</small>
           </Col>
-          <Col md={1}>
-            <small>Expiry</small>
-          </Col>
-          <Col md={2}>
-            <small>LTV</small>
-          </Col>
-          <Col md={1}>
-            <small>Interest</small>
-          </Col>
-          <Col md={2} xs={1}>
-            <small>Collateral</small>
-          </Col>
-          <Col md={1}>
-            <small>Status</small>
-          </Col>
-          <Col></Col>
-        </Row>
-      </Container>
+        ))}
+      </Row>
       {loans.map((loan, index) => {
-        const { loan_amount, expiry, interest_rate, collateral_sats, status } = loan;
+        const { id, loan_amount, expiry, interest_rate, collateral_sats, status } = loan;
         const collateral_btc = collateral_sats / 100000000;
         const ltvRatio = loan_amount / (collateral_btc * latestPrice);
 
         return (
-          <Card key={index}>
+          <Card key={index} className="mb-3">
             <Card.Body>
-              <Container className={"p-0 m-0"} fluid>
-                <Row>
-                  <Col md={1}>
-                    <CurrencyFormatter value={loan_amount} currency="USD" locale="en-US" />
-                  </Col>
-                  <Col md={1}>{expiry.toLocaleDateString()}</Col>
-                  <Col md={2}>
-                    <LtvProgressBar ltvRation={latestPrice ? ltvRatio : undefined} />
-                  </Col>
-                  <Col md={1}>{interest_rate}%</Col>
-                  <Col md={2}>{collateral_btc} BTC</Col>
-                  <Col md={2}>
-                    <Badge bg="primary">{status}</Badge>
-                  </Col>
-                  <Col className={"text-end"}>
-                    {(() => {
-                      switch (loan.status) {
-                        case ContractStatus.Approved:
-                          return (
-                            <Button variant="primary" onClick={() => onCollateralize(loan.id)}>
-                              Collateralize Loan
-                            </Button>
-                          );
-                        case ContractStatus.Requested:
-                        case ContractStatus.PrincipalGiven:
-                        case ContractStatus.Closing:
-                        case ContractStatus.Closed:
-                          return <div></div>;
-                        // TODO: this is the wrong state for allowing the user to repay the loan. We should only repay once the principal has been given
-                        case ContractStatus.CollateralConfirmed:
-                          return (
-                            <>
-                              <Button variant="primary">Add Collateral</Button>
-                              <span>{" "}</span>
-                              <Button variant="primary" onClick={() => onRepay(loan.id)}>Repay Loan</Button>
-                            </>
-                          );
-                        case ContractStatus.Repaid:
-                          return (
-                            <Button variant="primary" onClick={() => onRepay(loan.id)}>
-                              Withdraw Collateral
-                            </Button>
-                          );
-                      }
-                    })()}
-                  </Col>
-                </Row>
-              </Container>
+              <Row className="align-items-center">
+                <Col xs={12} md={amount_col.md} className="mb-2 mb-md-0">
+                  <div className="d-md-none">Amount:</div>
+                  <CurrencyFormatter value={loan_amount} currency="USD" locale="en-US" />
+                </Col>
+                <Col xs={12} md={expiry_col.md} className="mb-2 mb-md-0">
+                  <div className="d-md-none font-weight-bold">Expiry:</div>
+                  {expiry.toLocaleDateString()}
+                </Col>
+                <Col xs={12} md={ltv_col.md} className="mb-2 mb-md-0">
+                  <div className="d-md-none font-weight-bold">LTV:</div>
+                  <LtvProgressBar ltvRatio={latestPrice ? ltvRatio : undefined} />
+                </Col>
+                <Col xs={12} md={interest_col.md} className="mb-2 mb-md-0">
+                  <div className="d-md-none font-weight-bold">Interest:</div>
+                  {interest_rate}%
+                </Col>
+                <Col xs={12} md={collateral_col.md} className="mb-2 mb-md-0">
+                  <div className="d-md-none font-weight-bold">Collateral:</div>
+                  {collateral_btc} BTC
+                </Col>
+                <Col xs={12} md={status_col.md} className="mb-2 mb-md-0">
+                  <div className="d-md-none font-weight-bold">Status:</div>
+                  <Badge bg="primary">{status}</Badge>
+                </Col>
+                <Col xs={12} md={empty_col.md}>
+                  <Row>
+                    {renderActionButton(status, id, onCollateralize, onRepay)}
+                  </Row>
+                </Col>
+              </Row>
             </Card.Body>
           </Card>
         );
       })}
-    </>
+    </Container>
   );
 }
+
+const renderActionButton = (status, loanId, onCollateralize, onRepay) => {
+  switch (status) {
+    case ContractStatus.Approved:
+      return <Button variant="primary" onClick={() => onCollateralize(loanId)}>Collateralize Loan</Button>;
+    case ContractStatus.CollateralConfirmed:
+      return (
+        <div className="d-flex gap-1">
+          <Button variant="primary" style={{ whiteSpace: "nowrap" }}>Add Collateral</Button>
+          <Button variant="primary" style={{ whiteSpace: "nowrap" }} onClick={() => onRepay(loanId)}>Repay Loan</Button>
+        </div>
+      );
+    case ContractStatus.Repaid:
+      return <Button variant="primary" onClick={() => onRepay(loanId)}>Withdraw Collateral</Button>;
+    default:
+      return "";
+  }
+};
 
 export default ContractsComponent;
