@@ -1,8 +1,8 @@
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Contract,  useAuth } from "@frontend-monorepo/http-client";
+import { Contract, useAuth } from "@frontend-monorepo/http-client";
 import React, { useState } from "react";
-import { Alert, Button, Col, Container,  Row } from "react-bootstrap";
+import { Alert, Button, Col, Container, Row } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import init, { is_wallet_loaded, sign_claim_psbt } from "../../../../../../borrower-wallet/pkg/borrower_wallet.js";
 import { UnlockWalletModal } from "../wallet/unlock-wallet-modal";
