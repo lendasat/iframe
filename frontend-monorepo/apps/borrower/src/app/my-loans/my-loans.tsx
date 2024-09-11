@@ -1,6 +1,6 @@
 import { Contract, ContractStatus, useAuth } from "@frontend-monorepo/http-client";
 import { Suspense } from "react";
-import { Await, useNavigate } from "react-router-dom";
+import { Await } from "react-router-dom";
 import CollapsibleComponent from "../collapsible";
 import ContractsComponent from "./loans";
 import LoansHistoryComponent from "./loans-history";
@@ -8,7 +8,6 @@ import LoansHistoryComponent from "./loans-history";
 function MyLoans() {
   const { getContracts } = useAuth();
 
-  const navigate = useNavigate();
   return (
     <Suspense>
       <Await
@@ -19,12 +18,6 @@ function MyLoans() {
             <div className="p-4">
               <ContractsComponent
                 loans={contracts.filter((loan) => loan.status !== ContractStatus.Closed)}
-                onRepay={(loan_id) => {
-                  navigate(`repay/${loan_id}`);
-                }}
-                onCollateralize={(loan_id) => {
-                  navigate(`collateralize/${loan_id}`);
-                }}
               />
             </div>
             <div className="px-4">

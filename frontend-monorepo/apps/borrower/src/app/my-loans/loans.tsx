@@ -8,11 +8,9 @@ import CurrencyFormatter from "../usd";
 
 interface LoansComponentProps {
   loans: Contract[];
-  onRepay: (loan: string) => void;
-  onCollateralize: (loan: string) => void;
 }
 
-function ContractsComponent({ loans, onRepay, onCollateralize }: LoansComponentProps) {
+function ContractsComponent({ loans }: LoansComponentProps) {
   const { latestPrice } = usePrice();
   const navigate = useNavigate();
 
