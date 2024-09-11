@@ -1,2 +1,2 @@
-export * from './lib/http-client';
+export * from './lib/auth-provider';
 export * from './lib/models';

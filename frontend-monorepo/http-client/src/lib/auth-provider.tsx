@@ -1,4 +1,3 @@
-// src/HttpClient.tsx
 
 import axios, { AxiosInstance, AxiosResponse } from "axios";
 import React, { createContext, useContext, useEffect, useState } from "react";
@@ -67,7 +66,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ baseUrl, children })
       "Accept": "application/json",
       "Content-Type": "application/json",
     },
-  });
+  })
 
   const register = async (name: string, email: string, password: string) => {
     try {
