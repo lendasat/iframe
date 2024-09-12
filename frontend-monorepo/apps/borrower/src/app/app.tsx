@@ -4,7 +4,7 @@ import {
   faRightFromBracket,
   faUserCircle,
 } from "@fortawesome/free-solid-svg-icons";
-import { AuthIsNotSignedIn, AuthIsSignedIn, AuthProviderBorrower } from "@frontend-monorepo/http-client";
+import { AuthIsNotSignedIn, AuthIsSignedIn, AuthProviderBorrower } from "@frontend-monorepo/http-client-borrower";
 import { Layout, PriceProvider } from "@frontend-monorepo/ui-shared";
 import { Outlet, Route, Routes } from "react-router-dom";
 import EmailVerification from "./auth/email-verification";

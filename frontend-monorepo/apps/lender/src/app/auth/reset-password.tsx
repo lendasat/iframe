@@ -1,4 +1,4 @@
-import { useLenderHttpClient } from "@frontend-monorepo/http-client";
+import { useLenderHttpClient } from "@frontend-monorepo/http-client-borrower";
 import { ResetPasswordForm } from "@frontend-monorepo/ui-shared";
 import React from "react";
 import { useParams } from "react-router-dom";

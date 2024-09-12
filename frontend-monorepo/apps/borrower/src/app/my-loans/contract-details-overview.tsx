@@ -3,7 +3,7 @@ import {
   ContractStatus,
   contractStatusToLabelString,
   useBorrowerHttpClient,
-} from "@frontend-monorepo/http-client";
+} from "@frontend-monorepo/http-client-borrower";
 import { CurrencyFormatter } from "@frontend-monorepo/ui-shared";
 import React, { Suspense } from "react";
 import { Alert, Badge, Col, Container, OverlayTrigger, Row, Tooltip } from "react-bootstrap";

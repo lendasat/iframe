@@ -1,4 +1,4 @@
-import { LenderProfile } from "@frontend-monorepo/http-client";
+import { LenderProfile } from "@frontend-monorepo/http-client-borrower";
 import { Container, Row } from "react-bootstrap";
 import { Link } from "react-router-dom";
 

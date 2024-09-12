@@ -1,4 +1,4 @@
-import { Contract, ContractStatus, useBorrowerHttpClient } from "@frontend-monorepo/http-client";
+import { Contract, ContractStatus, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import { Suspense } from "react";
 import { Await } from "react-router-dom";
 import CollapsibleComponent from "../collapsible";

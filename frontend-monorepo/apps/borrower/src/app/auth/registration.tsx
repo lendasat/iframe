@@ -1,4 +1,4 @@
-import { useBaseHttpClient } from "@frontend-monorepo/http-client";
+import { useBaseHttpClient } from "@frontend-monorepo/http-client-borrower";
 import { RegistrationForm } from "@frontend-monorepo/ui-shared";
 import React from "react";
 import { useNavigate } from "react-router-dom";

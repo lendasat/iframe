@@ -1,6 +1,5 @@
 import axios, { AxiosInstance, AxiosResponse } from "axios";
 import { createContext, useContext } from "react";
-import { HttpClientBorrower } from "./http-client-borrower";
 import { User } from "./models";
 
 export class HttpClient {

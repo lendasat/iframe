@@ -1,6 +1,6 @@
 import { faEdit } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { useAuth, useBaseHttpClient, useBorrowerHttpClient } from "@frontend-monorepo/http-client";
+import { useAuth, useBaseHttpClient } from "@frontend-monorepo/http-client-borrower";
 import React, { useEffect, useState } from "react";
 import { Button, Spinner, Table } from "react-bootstrap";
 import { FaEye } from "react-icons/fa";

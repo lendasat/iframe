@@ -3,7 +3,7 @@ import {
   LoanAssetChain,
   LoanAssetType,
   useLenderHttpClient,
-} from "@frontend-monorepo/http-client";
+} from "@frontend-monorepo/http-client-borrower";
 import React, { useState } from "react";
 import { Button, Col, Form, Row } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";

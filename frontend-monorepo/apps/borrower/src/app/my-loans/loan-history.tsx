@@ -1,4 +1,4 @@
-import { Contract } from "@frontend-monorepo/http-client";
+import { Contract } from "@frontend-monorepo/http-client-borrower";
 import { CurrencyFormatter } from "@frontend-monorepo/ui-shared";
 import React from "react";
 import { Card, Col, Container, Row } from "react-bootstrap";

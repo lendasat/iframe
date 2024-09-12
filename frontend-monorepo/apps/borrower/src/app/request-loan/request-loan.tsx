@@ -1,4 +1,4 @@
-import { LoanOffer, useBorrowerHttpClient } from "@frontend-monorepo/http-client";
+import { LoanOffer, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import { useEffect, useState } from "react";
 import { Col, Container, Row } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
