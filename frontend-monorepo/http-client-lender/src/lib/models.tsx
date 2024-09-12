@@ -29,7 +29,7 @@ export interface Contract {
   collateral_output: string;
   claim_txid: string;
   created_at: Date;
-  updated_at: Date;
+  updated_at: Date | undefined;
 }
 
 export enum LoanAssetType {
@@ -66,4 +66,29 @@ export interface LoanOffer {
   duration_months_max: number;
   loan_asset_type: string;
   loan_asset_chain: string;
+}
+
+export function contractStatusToLabelString(status: ContractStatus): string {
+  switch (status) {
+    case ContractStatus.Requested:
+      return "Contract Requested";
+    case ContractStatus.Approved:
+      return "Contract Approved";
+    case ContractStatus.CollateralSeen:
+      return "Collateral Seen";
+    case ContractStatus.CollateralConfirmed:
+      return "Collateral Confirmed";
+    case ContractStatus.PrincipalGiven:
+      return "Principal Disbursed";
+    case ContractStatus.Closing:
+      return "Contract Closing";
+    case ContractStatus.Repaid:
+      return "Loan Repaid";
+    case ContractStatus.Closed:
+      return "Contract Closed";
+    case ContractStatus.Rejected:
+      return "Contract Rejected";
+    default:
+      return "Unknown Status";
+  }
 }

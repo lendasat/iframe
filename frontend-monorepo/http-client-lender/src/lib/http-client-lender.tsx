@@ -5,10 +5,9 @@ import { Contract, LoanOffer } from "./models";
 import { parseRFC3339Date } from "./utils";
 
 // Interface for the raw data received from the API
-interface RawContract extends Omit<Contract, "created_at" | "repaid_at" | "expiry"> {
+interface RawContract extends Omit<Contract, "created_at" | "updated_at"> {
   created_at: string;
-  repaid_at: string;
-  expiry: string;
+  updated_at: string;
 }
 
 export class HttpClientLender extends BaseHttpClient {
@@ -29,12 +28,61 @@ export class HttpClientLender extends BaseHttpClient {
       return response.data.map(contract => ({
         ...contract,
         created_at: parseRFC3339Date(contract.created_at)!,
-        repaid_at: parseRFC3339Date(contract.repaid_at),
-        expiry: parseRFC3339Date(contract.expiry)!,
+        updated_at: parseRFC3339Date(contract.updated_at),
       }));
     } catch (error) {
       console.error(
         `Failed to fetch contracts: http: ${error.response?.status} and response: ${error.response?.data}`,
+      );
+      throw error;
+    }
+  }
+
+  async getContract(id: string): Promise<Contract> {
+    try {
+      const contractResponse: AxiosResponse<RawContract> = await this.httpClient.get(`/api/contracts/${id}`);
+      const contract = contractResponse.data;
+      return {
+        ...contract,
+        created_at: parseRFC3339Date(contract.created_at)!,
+        updated_at: parseRFC3339Date(contract.updated_at),
+      };
+    } catch (error) {
+      console.error(
+        `Failed to fetch contract: http: ${error.response?.status} and response: ${error.response?.data}`,
+      );
+      throw error;
+    }
+  }
+
+  async approveContract(id: string): Promise<void> {
+    try {
+      await this.httpClient.put(`/api/contracts/${id}/approve`);
+    } catch (error) {
+      console.error(
+        `Failed to fetch contract: http: ${error.response?.status} and response: ${error.response?.data}`,
+      );
+      throw error;
+    }
+  }
+
+  async principalGiven(id: string): Promise<void> {
+    try {
+      await this.httpClient.put(`/api/contracts/${id}/principalgiven`);
+    } catch (error) {
+      console.error(
+        `Failed to fetch contract: http: ${error.response?.status} and response: ${error.response?.data}`,
+      );
+      throw error;
+    }
+  }
+
+  async markAsRepaid(id: string): Promise<void> {
+    try {
+      await this.httpClient.put(`/api/contracts/${id}/repaid`);
+    } catch (error) {
+      console.error(
+        `Failed to fetch contract: http: ${error.response?.status} and response: ${error.response?.data}`,
       );
       throw error;
     }
@@ -45,6 +93,10 @@ type LenderHttpClientContextType = Pick<
   HttpClientLender,
   | "postLoanOffer"
   | "getContracts"
+  | "getContract"
+  | "approveContract"
+  | "principalGiven"
+  | "markAsRepaid"
 >;
 
 export const LenderHttpClientContext = createContext<LenderHttpClientContextType | undefined>(undefined);
@@ -79,6 +131,10 @@ export const HttpClientLenderProvider: React.FC<HttpClientProviderProps> = ({ ch
   const lenderClientFunctions: LenderHttpClientContextType = {
     postLoanOffer: httpClient.postLoanOffer.bind(httpClient),
     getContracts: httpClient.getContracts.bind(httpClient),
+    getContract: httpClient.getContract.bind(httpClient),
+    approveContract: httpClient.approveContract.bind(httpClient),
+    principalGiven: httpClient.principalGiven.bind(httpClient),
+    markAsRepaid: httpClient.markAsRepaid.bind(httpClient),
   };
 
   return (

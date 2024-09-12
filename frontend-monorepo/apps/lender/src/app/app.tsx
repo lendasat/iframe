@@ -7,6 +7,7 @@ import Login from "./auth/login";
 import Logout from "./auth/logout";
 import Registration from "./auth/registration";
 import ResetPassword from "./auth/reset-password";
+import ContractDetailsOverview from "./contracts/contract-details-overview";
 import MyContracts from "./contracts/my-contracts";
 import CreateLoanOffer from "./create-loan-offer";
 
@@ -33,6 +34,7 @@ function App() {
                 <Route path="/create-loan-offer" element={<CreateLoanOffer />} />
                 <Route path="/my-contracts">
                   <Route index element={<MyContracts />} />
+                  <Route path={":id"} element={<ContractDetailsOverview />} />
                 </Route>
               </Route>
               <Route path="/logout" element={<Logout />} />

@@ -91,6 +91,8 @@
                 "CollateralSeen",
                 "CollateralConfirmed",
                 "PrincipalGiven",
+                "Repaid",
+                "Closing",
                 "Closed",
                 "Rejected"
               ]
@@ -128,6 +130,8 @@
                 "CollateralSeen",
                 "CollateralConfirmed",
                 "PrincipalGiven",
+                "Repaid",
+                "Closing",
                 "Closed",
                 "Rejected"
               ]
