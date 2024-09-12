@@ -10,62 +10,26 @@ export enum ContractStatus {
   Rejected = "Rejected",
 }
 
-export function contractStatusToLabelString(status: ContractStatus): string {
-  switch (status) {
-    case ContractStatus.Requested:
-      return "Contract Requested";
-    case ContractStatus.Approved:
-      return "Contract Approved";
-    case ContractStatus.CollateralSeen:
-      return "Collateral Seen";
-    case ContractStatus.CollateralConfirmed:
-      return "Collateral Confirmed";
-    case ContractStatus.PrincipalGiven:
-      return "Principal Disbursed";
-    case ContractStatus.Closing:
-      return "Contract Closing";
-    case ContractStatus.Repaid:
-      return "Loan Repaid";
-    case ContractStatus.Closed:
-      return "Contract Closed";
-    case ContractStatus.Rejected:
-      return "Contract Rejected";
-    default:
-      return "Unknown Status";
-  }
-}
-
-export interface LenderProfile {
-  name: string;
-  rate: number;
-  loans: number;
-}
-
-export interface ContractRequest {
+export interface Contract {
+  id: string;
+  lender_id: string;
+  borrower_id: string;
   loan_id: string;
+  initial_ltv: number;
+  initial_collateral_sats: number;
   loan_amount: number;
   duration_months: number;
   borrower_btc_address: string;
   borrower_pk: string;
-  borrower_loan_address: string;
-}
-
-export interface Contract {
-  id: string;
-  loan_amount: number;
-  created_at: Date;
-  repaid_at: Date | undefined;
-  expiry: Date;
-  interest_rate: number;
-  collateral_sats: number;
-  initial_ltv: number;
-  status: ContractStatus;
-  lender: LenderProfile;
-  borrower_pk: string;
-  borrower_btc_address: string;
   loan_repayment_address: string;
   contract_address?: string;
   borrower_loan_address: string;
+  status: ContractStatus;
+  contract_index: number;
+  collateral_output: string;
+  claim_txid: string;
+  created_at: Date;
+  updated_at: Date;
 }
 
 export enum LoanAssetType {
@@ -89,11 +53,6 @@ export interface CreateLoanOfferRequest {
   loan_asset_type: LoanAssetType;
   loan_asset_chain: LoanAssetChain;
   loan_repayment_address: string;
-}
-
-export interface ClaimCollateralPsbtResponse {
-  psbt: string;
-  collateral_descriptor: string;
 }
 
 export interface LoanOffer {

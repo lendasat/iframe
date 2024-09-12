@@ -2,6 +2,7 @@ import { BaseHttpClient, BaseHttpClientContext, BaseHttpClientContextType } from
 import { AxiosResponse } from "axios";
 import { createContext, useContext } from "react";
 import { Contract, LoanOffer } from "./models";
+import { parseRFC3339Date } from "./utils";
 
 // Interface for the raw data received from the API
 interface RawContract extends Omit<Contract, "created_at" | "repaid_at" | "expiry"> {
@@ -22,11 +23,28 @@ export class HttpClientLender extends BaseHttpClient {
       throw error.response?.data;
     }
   }
+  async getContracts(): Promise<Contract[]> {
+    try {
+      const response: AxiosResponse<RawContract[]> = await this.httpClient.get("/api/contracts");
+      return response.data.map(contract => ({
+        ...contract,
+        created_at: parseRFC3339Date(contract.created_at)!,
+        repaid_at: parseRFC3339Date(contract.repaid_at),
+        expiry: parseRFC3339Date(contract.expiry)!,
+      }));
+    } catch (error) {
+      console.error(
+        `Failed to fetch contracts: http: ${error.response?.status} and response: ${error.response?.data}`,
+      );
+      throw error;
+    }
+  }
 }
 
 type LenderHttpClientContextType = Pick<
   HttpClientLender,
-  "postLoanOffer"
+  | "postLoanOffer"
+  | "getContracts"
 >;
 
 export const LenderHttpClientContext = createContext<LenderHttpClientContextType | undefined>(undefined);
@@ -60,6 +78,7 @@ export const HttpClientLenderProvider: React.FC<HttpClientProviderProps> = ({ ch
 
   const lenderClientFunctions: LenderHttpClientContextType = {
     postLoanOffer: httpClient.postLoanOffer.bind(httpClient),
+    getContracts: httpClient.getContracts.bind(httpClient),
   };
 
   return (
