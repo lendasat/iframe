@@ -2,7 +2,7 @@ import axios, { AxiosInstance, AxiosResponse } from "axios";
 import { createContext, useContext } from "react";
 import { User } from "./models";
 
-export class HttpClient {
+export class BaseHttpClient {
   public httpClient: AxiosInstance;
   private user: User | null = null;
 
@@ -114,13 +114,12 @@ export class HttpClient {
 
 // Define types for the contexts
 export type BaseHttpClientContextType = Pick<
-  HttpClient,
+  BaseHttpClient,
   "register" | "login" | "logout" | "me" | "forgotPassword" | "verifyEmail" | "resetPassword"
 >;
 
 // Create the contexts
 export const BaseHttpClientContext = createContext<BaseHttpClientContextType | undefined>(undefined);
-// Create custom hooks for using the contexts
 
 export const useBaseHttpClient = () => {
   const context = useContext(BaseHttpClientContext);
@@ -137,7 +136,7 @@ interface HttpClientProviderProps {
 }
 
 export const HttpClientProvider: React.FC<HttpClientProviderProps> = ({ children, baseUrl }) => {
-  const httpClient = new HttpClient(baseUrl);
+  const httpClient = new BaseHttpClient(baseUrl);
 
   const baseClientFunctions: BaseHttpClientContextType = {
     register: httpClient.register.bind(httpClient),

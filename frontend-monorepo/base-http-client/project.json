@@ -1,0 +1,9 @@
+{
+  "name": "base-http-client",
+  "$schema": "../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "base-http-client/src",
+  "projectType": "library",
+  "tags": [],
+  "// targets": "to see all targets run: nx show project base-http-client --web",
+  "targets": {}
+}

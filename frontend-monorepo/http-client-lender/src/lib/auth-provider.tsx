@@ -1,7 +1,6 @@
+import { useBaseHttpClient, User } from "@frontend-monorepo/base-http-client";
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { useBaseHttpClient } from "./http-client";
 import { HttpClientLenderProvider } from "./http-client-lender";
-import { User } from "./models";
 
 interface AuthContextType {
   user: User | null;

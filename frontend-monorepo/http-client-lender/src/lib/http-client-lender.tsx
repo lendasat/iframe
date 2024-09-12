@@ -1,8 +1,7 @@
+import { BaseHttpClient, BaseHttpClientContext, BaseHttpClientContextType } from "@frontend-monorepo/base-http-client";
 import { AxiosResponse } from "axios";
 import { createContext, useContext } from "react";
-import { BaseHttpClientContext, BaseHttpClientContextType, HttpClient } from "./http-client";
-import { ClaimCollateralPsbtResponse, Contract, ContractRequest, LoanOffer } from "./models";
-import { parseRFC3339Date } from "./utils";
+import { Contract, LoanOffer } from "./models";
 
 // Interface for the raw data received from the API
 interface RawContract extends Omit<Contract, "created_at" | "repaid_at" | "expiry"> {
@@ -11,7 +10,7 @@ interface RawContract extends Omit<Contract, "created_at" | "repaid_at" | "expir
   expiry: string;
 }
 
-export class HttpClientLender extends HttpClient {
+export class HttpClientLender extends BaseHttpClient {
   async postLoanOffer(offer: LoanOffer): Promise<LoanOffer | undefined> {
     try {
       const response: AxiosResponse<LoanOffer> = await this.httpClient.post("/api/offers/create", offer);

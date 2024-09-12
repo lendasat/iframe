@@ -1,6 +1,6 @@
+import { BaseHttpClient, BaseHttpClientContext, BaseHttpClientContextType } from "@frontend-monorepo/base-http-client";
 import { AxiosResponse } from "axios";
 import { createContext, useContext } from "react";
-import { BaseHttpClientContext, BaseHttpClientContextType, HttpClient } from "./http-client";
 import { ClaimCollateralPsbtResponse, Contract, ContractRequest, LoanOffer } from "./models";
 import { parseRFC3339Date } from "./utils";
 
@@ -11,7 +11,7 @@ interface RawContract extends Omit<Contract, "created_at" | "repaid_at" | "expir
   expiry: string;
 }
 
-export class HttpClientBorrower extends HttpClient {
+export class HttpClientBorrower extends BaseHttpClient {
   async getLoanOffers(): Promise<LoanOffer[] | undefined> {
     try {
       const response: AxiosResponse<LoanOffer[]> = await this.httpClient.get("/api/offers");
