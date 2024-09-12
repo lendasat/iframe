@@ -8,3 +8,4 @@ export * from './lib/main-layout';
 export * from './lib/header-component';
 export * from './lib/ui-shared';
 export * from './lib/usd';
+export * from './lib/price-context';

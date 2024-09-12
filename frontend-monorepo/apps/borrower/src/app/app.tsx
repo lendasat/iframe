@@ -5,7 +5,7 @@ import {
   faUserCircle,
 } from "@fortawesome/free-solid-svg-icons";
 import { AuthIsNotSignedIn, AuthIsSignedIn, AuthProviderBorrower } from "@frontend-monorepo/http-client";
-import { Layout } from "@frontend-monorepo/ui-shared";
+import { Layout, PriceProvider } from "@frontend-monorepo/ui-shared";
 import { Outlet, Route, Routes } from "react-router-dom";
 import EmailVerification from "./auth/email-verification";
 import ForgotPassword from "./auth/forgot-password";
@@ -18,7 +18,6 @@ import ErrorBoundary from "./ErrorBoundary";
 import MyAccount from "./my-account";
 import ContractDetailsOverview from "./my-loans/contract-details-overview";
 import MyLoans from "./my-loans/my-loans";
-import { PriceProvider } from "./price-context";
 import Profile from "./profile";
 import RequestLoan from "./request-loan/request-loan";
 import { RequestLoanSummary } from "./request-loan/request-loan-summary";

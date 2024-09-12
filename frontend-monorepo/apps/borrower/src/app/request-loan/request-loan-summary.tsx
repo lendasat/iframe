@@ -1,7 +1,7 @@
 import { faInfoCircle, faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { LoanOffer, useBorrowerHttpClient } from "@frontend-monorepo/http-client";
-import { formatCurrency } from "@frontend-monorepo/ui-shared";
+import { formatCurrency, usePrice } from "@frontend-monorepo/ui-shared";
 import React, { useState } from "react";
 import { Alert, Badge, Button, Col, Container, Form, InputGroup, Row } from "react-bootstrap";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -10,7 +10,6 @@ import init, {
   get_next_pk,
   is_wallet_loaded,
 } from "../../../../../../borrower-wallet/pkg/borrower_wallet.js";
-import { usePrice } from "../price-context";
 import { CreateWalletModal } from "../wallet/create-wallet-modal";
 import { UnlockWalletModal } from "../wallet/unlock-wallet-modal";
 import { Lender } from "./lender";
