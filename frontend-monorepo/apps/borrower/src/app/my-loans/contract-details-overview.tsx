@@ -53,7 +53,7 @@ function Details({ contract }: DetailsProps) {
   const loanOriginatorFee = (loanAmount / initial_price) * ORIGINATOR_FEE;
   const totalCollateral = (collateral + loanOriginatorFee).toFixed(8);
 
-  const accruedInterest = contract.loan_amount * (contract.interest_rate / 100);
+  const accruedInterest = contract.loan_amount * contract.interest_rate;
   const totalRepaymentAmount = accruedInterest + loanAmount;
 
   // FIXME: Let's do this once, in the backend.
