@@ -1,4 +1,4 @@
-import { useAuth } from "@frontend-monorepo/http-client-borrower";
+import { useAuth } from "@frontend-monorepo/http-client-lender";
 import { LoginForm } from "@frontend-monorepo/ui-shared";
 import React from "react";
 import { useNavigate } from "react-router-dom";

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useBaseHttpClient } from "./http-client";
-import { HttpClientBorrowerProvider } from "./http-client-borrower";
+import { HttpClientLenderProvider } from "./http-client-lender";
 import { User } from "./models";
 
 interface AuthContextType {
@@ -49,17 +49,17 @@ interface AuthProviderProps {
   baseUrl: string;
 }
 
-export const AuthProviderBorrower: React.FC<AuthProviderProps> = ({ children, baseUrl }) => {
+export const AuthProviderLender: React.FC<AuthProviderProps> = ({ children, baseUrl }) => {
   return (
-    <HttpClientBorrowerProvider baseUrl={baseUrl}>
-      <BorrowerAuthProviderInner>
+    <HttpClientLenderProvider baseUrl={baseUrl}>
+      <LenderAuthProviderInner>
         {children}
-      </BorrowerAuthProviderInner>
-    </HttpClientBorrowerProvider>
+      </LenderAuthProviderInner>
+    </HttpClientLenderProvider>
   );
 };
 
-const BorrowerAuthProviderInner: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const LenderAuthProviderInner: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const { me, login: baseLogin, logout: baseLogout } = useBaseHttpClient();
