@@ -10,7 +10,7 @@ const EmailVerification = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isVerified, setIsVerified] = useState(false);
   const [error, setError] = useState("");
-  const { verifyEmail } = useAuth();
+  const { verifyEmail } = useBorrowerHttpClient();
   const { token } = useParams();
   const navigate = useNavigate();
 

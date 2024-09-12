@@ -1,4 +1,9 @@
-import { CreateLoanOfferRequest, LoanAssetChain, LoanAssetType, useAuth } from "@frontend-monorepo/http-client";
+import {
+  CreateLoanOfferRequest,
+  LoanAssetChain,
+  LoanAssetType,
+  useBorrowerHttpClient,
+} from "@frontend-monorepo/http-client";
 import React, { useState } from "react";
 import { Button, Col, Form, Row } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
@@ -79,7 +84,7 @@ const CreateLoanOffer: React.FC = () => {
     };
   };
   const navigate = useNavigate();
-  const { postLoanOffer } = useAuth();
+  const { postLoanOffer } = useBorrowerHttpClient();
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 

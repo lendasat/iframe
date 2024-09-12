@@ -4,7 +4,7 @@ import {
   faRightFromBracket,
   faUserCircle,
 } from "@fortawesome/free-solid-svg-icons";
-import { AuthIsNotSignedIn, AuthIsSignedIn, AuthProvider } from "@frontend-monorepo/http-client";
+import { AuthIsNotSignedIn, AuthIsSignedIn, AuthProviderBorrower } from "@frontend-monorepo/http-client";
 import { Layout } from "@frontend-monorepo/ui-shared";
 import { Outlet, Route, Routes } from "react-router-dom";
 import EmailVerification from "./auth/email-verification";
@@ -32,7 +32,7 @@ const menuItems = [
 
 function App() {
   return (
-    <AuthProvider baseUrl={import.meta.env.VITE_BORROWER_BASE_URL || "/"}>
+    <AuthProviderBorrower baseUrl={import.meta.env.VITE_BORROWER_BASE_URL || "/"}>
       <AuthIsSignedIn>
         <PriceProvider>
           <Layout
@@ -86,7 +86,7 @@ function App() {
           </Route>
         </Routes>
       </AuthIsNotSignedIn>
-    </AuthProvider>
+    </AuthProviderBorrower>
   );
 }
 

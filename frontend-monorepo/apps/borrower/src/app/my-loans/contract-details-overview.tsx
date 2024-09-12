@@ -1,8 +1,11 @@
-import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Contract, ContractStatus, contractStatusToLabelString, useAuth } from "@frontend-monorepo/http-client";
+import {
+  Contract,
+  ContractStatus,
+  contractStatusToLabelString,
+  useBorrowerHttpClient,
+} from "@frontend-monorepo/http-client";
 import React, { Suspense } from "react";
-import { Alert, Badge, Col, Container, Form, InputGroup, OverlayTrigger, Row, Tooltip } from "react-bootstrap";
+import { Alert, Badge, Col, Container, OverlayTrigger, Row, Tooltip } from "react-bootstrap";
 import { Await, useParams } from "react-router-dom";
 import { Lender } from "../request-loan/lender";
 import Usd from "../usd";
@@ -13,7 +16,7 @@ import { ContractRepaid } from "./contract-repaid";
 import { ContractRequested } from "./contract-requested";
 
 function ContractDetailsOverview() {
-  const { getContract } = useAuth();
+  const { getContract } = useBorrowerHttpClient();
   const { id } = useParams();
 
   return (

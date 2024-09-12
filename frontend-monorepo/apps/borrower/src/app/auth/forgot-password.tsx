@@ -3,7 +3,7 @@ import { ForgotPasswordForm } from "@frontend-monorepo/ui-shared";
 import React from "react";
 
 function ForgotPassword() {
-  const { forgotPassword } = useAuth();
+  const { forgotPassword } = useBorrowerHttpClient();
 
   const handleLogin = async (email: string) => {
     return await forgotPassword(email);

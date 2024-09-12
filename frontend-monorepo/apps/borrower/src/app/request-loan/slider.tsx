@@ -45,5 +45,3 @@ export const Slider = ({ min, max, init, step, suffix, onChange }: SliderProps) 
     </div>
   );
 };
-
-export default Slider;

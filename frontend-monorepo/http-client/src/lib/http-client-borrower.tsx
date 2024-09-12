@@ -1,0 +1,172 @@
+import { AxiosResponse } from "axios";
+import { createContext, useContext } from "react";
+import { BaseHttpClientContext, BaseHttpClientContextType, HttpClient } from "./http-client";
+import { ClaimCollateralPsbtResponse, Contract, ContractRequest, LoanOffer } from "./models";
+import { parseRFC3339Date } from "./utils";
+
+// Interface for the raw data received from the API
+interface RawContract extends Omit<Contract, "created_at" | "repaid_at" | "expiry"> {
+  created_at: string;
+  repaid_at: string;
+  expiry: string;
+}
+
+export class HttpClientBorrower extends HttpClient {
+  async getLoanOffers(): Promise<LoanOffer[] | undefined> {
+    try {
+      const response: AxiosResponse<LoanOffer[]> = await this.httpClient.get("/api/offers");
+      return response.data;
+    } catch (error) {
+      console.error(
+        `Failed to fetch loan offers: http: ${error.response?.status} and response: ${
+          JSON.stringify(error.response?.data)
+        }`,
+      );
+      return undefined;
+    }
+  }
+
+  async postLoanOffer(offer: LoanOffer): Promise<LoanOffer | undefined> {
+    try {
+      const response: AxiosResponse<LoanOffer> = await this.httpClient.post("/api/offers/create", offer);
+      return response.data;
+    } catch (error) {
+      console.error(
+        `Failed to post loan offer: http: ${error.response?.status} and response: ${error.response?.data}`,
+      );
+      throw error.response?.data;
+    }
+  }
+
+  async postContractRequest(request: ContractRequest): Promise<Contract | undefined> {
+    try {
+      const response: AxiosResponse<Contract> = await this.httpClient.post("/api/contracts", request);
+      return response.data;
+    } catch (error) {
+      console.error(
+        `Failed to post contract request: http: ${error.response?.status} and response: ${error.response?.data}`,
+      );
+      throw error;
+    }
+  }
+
+  async getContracts(): Promise<Contract[]> {
+    try {
+      const response: AxiosResponse<RawContract[]> = await this.httpClient.get("/api/contracts");
+      return response.data.map(contract => ({
+        ...contract,
+        created_at: parseRFC3339Date(contract.created_at)!,
+        repaid_at: parseRFC3339Date(contract.repaid_at),
+        expiry: parseRFC3339Date(contract.expiry)!,
+      }));
+    } catch (error) {
+      console.error(
+        `Failed to fetch contracts: http: ${error.response?.status} and response: ${error.response?.data}`,
+      );
+      throw error;
+    }
+  }
+
+  async getContract(id: string): Promise<Contract> {
+    try {
+      const contractResponse: AxiosResponse<RawContract> = await this.httpClient.get(`/api/contracts/${id}`);
+      const contract = contractResponse.data;
+      return {
+        ...contract,
+        created_at: parseRFC3339Date(contract.created_at)!,
+        repaid_at: parseRFC3339Date(contract.repaid_at),
+        expiry: parseRFC3339Date(contract.expiry)!,
+      };
+    } catch (error) {
+      console.error(
+        `Failed to fetch contract: http: ${error.response?.status} and response: ${error.response?.data}`,
+      );
+      throw error;
+    }
+  }
+
+  async getClaimCollateralPsbt(id: string): Promise<ClaimCollateralPsbtResponse> {
+    try {
+      const res: AxiosResponse<ClaimCollateralPsbtResponse> = await this.httpClient.get(`/api/contracts/${id}/claim`);
+      return res.data;
+    } catch (error) {
+      console.error(
+        `Failed to fetch claim-collateral PSBT: http: ${error.response?.status} and response: ${
+          JSON.stringify(error.response?.data)
+        }`,
+      );
+      throw error;
+    }
+  }
+
+  async postClaimTx(contract_id: string, tx: string): Promise<string> {
+    try {
+      const response: AxiosResponse<string> = await this.httpClient.post(`/api/contracts/${contract_id}`, { tx: tx });
+      return response.data;
+    } catch (error) {
+      console.error(
+        `Failed to post claim TX: http: ${error.response?.status} and response: ${error.response?.data}`,
+      );
+      throw error;
+    }
+  }
+}
+
+type BorrowerHttpClientContextType = Pick<
+  HttpClientBorrower,
+  | "getLoanOffers"
+  | "postLoanOffer"
+  | "postContractRequest"
+  | "getContracts"
+  | "getContract"
+  | "getClaimCollateralPsbt"
+  | "postClaimTx"
+>;
+
+export const BorrowerHttpClientContext = createContext<BorrowerHttpClientContextType | undefined>(undefined);
+
+export const useBorrowerHttpClient = () => {
+  const context = useContext(BorrowerHttpClientContext);
+  if (context === undefined) {
+    throw new Error("useBorrowerHttpClient must be used within a BorrowerHttpClientProvider");
+  }
+  return context;
+};
+
+// Create a provider component that will wrap your app
+interface HttpClientProviderProps {
+  children: React.ReactNode;
+  baseUrl: string;
+}
+
+export const HttpClientBorrowerProvider: React.FC<HttpClientProviderProps> = ({ children, baseUrl }) => {
+  const httpClient = new HttpClientBorrower(baseUrl);
+
+  const baseClientFunctions: BaseHttpClientContextType = {
+    register: httpClient.register.bind(httpClient),
+    login: httpClient.login.bind(httpClient),
+    logout: httpClient.logout.bind(httpClient),
+    me: httpClient.me.bind(httpClient),
+    forgotPassword: httpClient.forgotPassword.bind(httpClient),
+    verifyEmail: httpClient.verifyEmail.bind(httpClient),
+    resetPassword: httpClient.resetPassword.bind(httpClient),
+  };
+
+  const borrowerClientFunctions: BorrowerHttpClientContextType = {
+    getLoanOffers: httpClient.getLoanOffers.bind(httpClient),
+    postLoanOffer: httpClient.postLoanOffer.bind(httpClient),
+    postContractRequest: httpClient.postContractRequest.bind(httpClient),
+    getContracts: httpClient.getContracts.bind(httpClient),
+    getContract: httpClient.getContract.bind(httpClient),
+    getClaimCollateralPsbt: httpClient.getClaimCollateralPsbt.bind(httpClient),
+    postClaimTx: httpClient.postClaimTx.bind(httpClient),
+  };
+
+  return (
+    <BaseHttpClientContext.Provider value={baseClientFunctions}>
+      <BorrowerHttpClientContext.Provider value={borrowerClientFunctions}>
+        {children}
+      </BorrowerHttpClientContext.Provider>
+    </BaseHttpClientContext.Provider>
+  );
+};

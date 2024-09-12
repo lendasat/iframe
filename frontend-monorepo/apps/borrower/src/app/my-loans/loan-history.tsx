@@ -29,7 +29,7 @@ export function LoanHistoryComponent(props: LoansHistoryComponentProps) {
             <Col md={2}>{collateral_btc} BTC</Col>
             <Col></Col>
             <Col md={1}>{created_at.toLocaleDateString("en-US")}</Col>
-            {repaid_at ? <Col md={1}>{repaid_at.toLocaleDateString("en-US")}</Col> : null}
+            {repaid_at ? <Col md={1}>{repaid_at.toLocaleDateString("en-US")}</Col> : ""}
           </Row>
         </Container>
       </Card.Body>

@@ -1,4 +1,4 @@
-import { LoanOffer, useAuth } from "@frontend-monorepo/http-client";
+import { LoanOffer, useBorrowerHttpClient } from "@frontend-monorepo/http-client";
 import { useEffect, useState } from "react";
 import { Col, Container, Row } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
@@ -7,7 +7,7 @@ import LoanOffersFilter, { LoanFilter, LoanFilterType } from "./loan-offers-filt
 import { StableCoinHelper } from "./stable-coin";
 
 function RequestLoan() {
-  const { getLoanOffers } = useAuth();
+  const { getLoanOffers } = useBorrowerHttpClient();
 
   const [loanOffers, setLoanOffers] = useState<LoanOffer[]>([]);
   const [loanFilters, setLoanFilters] = useState<LoanFilter[]>([]);

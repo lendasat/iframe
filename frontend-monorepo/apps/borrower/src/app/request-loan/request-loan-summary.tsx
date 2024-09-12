@@ -1,6 +1,6 @@
 import { faInfoCircle, faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { LoanOffer, useAuth } from "@frontend-monorepo/http-client";
+import { LoanOffer, useBorrowerHttpClient } from "@frontend-monorepo/http-client";
 import React, { useState } from "react";
 import { Alert, Badge, Button, Col, Container, Form, InputGroup, Row } from "react-bootstrap";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -31,7 +31,7 @@ export function RequestLoanSummary() {
   const ORIGINATOR_FEE = 0.01;
   const { latestPrice } = usePrice();
 
-  const { postContractRequest } = useAuth();
+  const { postContractRequest } = useBorrowerHttpClient();
 
   // Initialize filters
   const periodFilter = loanFilters.find((filter) => filter.type === LoanFilterType.PERIOD);

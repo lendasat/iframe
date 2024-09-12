@@ -1,4 +1,4 @@
-import { Contract, ContractStatus, useAuth } from "@frontend-monorepo/http-client";
+import { Contract, ContractStatus, useBorrowerHttpClient } from "@frontend-monorepo/http-client";
 import { Suspense } from "react";
 import { Await } from "react-router-dom";
 import CollapsibleComponent from "../collapsible";
@@ -6,7 +6,7 @@ import ContractsComponent from "./loans";
 import LoansHistoryComponent from "./loans-history";
 
 function MyLoans() {
-  const { getContracts } = useAuth();
+  const { getContracts } = useBorrowerHttpClient();
 
   return (
     <Suspense>
