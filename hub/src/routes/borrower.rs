@@ -24,6 +24,7 @@ pub(crate) mod auth;
 pub(crate) mod contracts;
 pub(crate) mod health_check;
 pub(crate) mod loan_offers;
+pub(crate) mod version;
 
 pub use contracts::ClaimCollateralPsbt;
 pub use contracts::ClaimTx;
@@ -45,6 +46,7 @@ pub async fn spawn_borrower_server(
     let app = Router::new()
         .merge(health_check::router())
         .merge(auth::router(app_state.clone()))
+        .merge(version::router(app_state.clone()))
         .merge(loan_offers::router(app_state.clone()))
         .merge(contracts::router(app_state.clone()))
         // This is a relative path on the filesystem, which means, when deploying `hub` we will need
