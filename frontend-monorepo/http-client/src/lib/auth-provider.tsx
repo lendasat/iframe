@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { HttpClientProvider, useBaseHttpClient } from "./http-client";
 import { HttpClientBorrowerProvider } from "./http-client-borrower";
+import { HttpClientLenderProvider } from "./http-client-lender";
 import { User } from "./models";
 
 interface AuthContextType {
@@ -52,14 +53,86 @@ interface AuthProviderProps {
 export const AuthProviderBorrower: React.FC<AuthProviderProps> = ({ children, baseUrl }) => {
   return (
     <HttpClientBorrowerProvider baseUrl={baseUrl}>
-      <AuthProviderInner>
+      <BorrowerAuthProviderInner>
         {children}
-      </AuthProviderInner>
+      </BorrowerAuthProviderInner>
     </HttpClientBorrowerProvider>
   );
 };
 
-const AuthProviderInner: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const BorrowerAuthProviderInner: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const { me, login: baseLogin, logout: baseLogout } = useBaseHttpClient();
+
+  useEffect(() => {
+    const initializeAuth = async () => {
+      try {
+        const currentUser = await me();
+        if (currentUser) {
+          setUser(currentUser);
+        } else {
+          setUser(null);
+        }
+      } catch (error) {
+        console.error("Failed to initialize auth:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeAuth();
+  }, [me]);
+
+  const login = async (email: string, password: string) => {
+    setLoading(true);
+    try {
+      await baseLogin(email, password);
+      const currentUser = await me();
+      if (currentUser) {
+        setUser(currentUser);
+      } else {
+        setUser(null);
+      }
+    } catch (error) {
+      console.error("Login failed:", error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const logout = async () => {
+    setLoading(true);
+    try {
+      await baseLogout();
+    } catch (error) {
+      console.error("Logout failed:", error);
+      throw error;
+    } finally {
+      setLoading(false);
+      setUser(null);
+    }
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, loading, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const AuthProviderLender: React.FC<AuthProviderProps> = ({ children, baseUrl }) => {
+  return (
+    <HttpClientLenderProvider baseUrl={baseUrl}>
+      <LenderAuthProviderInner>
+        {children}
+      </LenderAuthProviderInner>
+    </HttpClientLenderProvider>
+  );
+};
+
+const LenderAuthProviderInner: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const { me, login: baseLogin, logout: baseLogout } = useBaseHttpClient();

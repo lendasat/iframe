@@ -2,7 +2,7 @@ import {
   CreateLoanOfferRequest,
   LoanAssetChain,
   LoanAssetType,
-  useBorrowerHttpClient,
+  useLenderHttpClient,
 } from "@frontend-monorepo/http-client";
 import React, { useState } from "react";
 import { Button, Col, Form, Row } from "react-bootstrap";
@@ -84,7 +84,7 @@ const CreateLoanOffer: React.FC = () => {
     };
   };
   const navigate = useNavigate();
-  const { postLoanOffer } = useBorrowerHttpClient();
+  const { postLoanOffer } = useLenderHttpClient();
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 

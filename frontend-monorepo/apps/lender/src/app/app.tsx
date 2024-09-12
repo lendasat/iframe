@@ -1,5 +1,5 @@
 import { faMoneyBillTransfer, faMoneyCheckDollar, faRightFromBracket } from "@fortawesome/free-solid-svg-icons";
-import { AuthIsNotSignedIn, AuthIsSignedIn, AuthProviderBorrower } from "@frontend-monorepo/http-client";
+import { AuthIsNotSignedIn, AuthIsSignedIn, AuthProviderLender } from "@frontend-monorepo/http-client";
 import { Layout } from "@frontend-monorepo/ui-shared";
 import { Outlet, Route, Routes } from "react-router-dom";
 import ForgotPassword from "./auth/forgot-password";
@@ -18,7 +18,7 @@ const menuItems = [
 
 function App() {
   return (
-    <AuthProviderBorrower baseUrl={import.meta.env.VITE_LENDER_BASE_URL || "/"}>
+    <AuthProviderLender baseUrl={import.meta.env.VITE_LENDER_BASE_URL || "/"}>
       <AuthIsSignedIn>
         <Layout menuItems={menuItems} theme={"light"}>
           <Routes>
@@ -49,7 +49,7 @@ function App() {
           <Route path="*" element={<Login />} />
         </Routes>
       </AuthIsNotSignedIn>
-    </AuthProviderBorrower>
+    </AuthProviderLender>
   );
 }
 
