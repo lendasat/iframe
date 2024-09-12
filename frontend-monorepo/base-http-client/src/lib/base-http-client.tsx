@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, AxiosResponse } from "axios";
 import { createContext, useContext } from "react";
-import { User } from "./models";
+import { User, Version } from "./models";
 
 export class BaseHttpClient {
   public httpClient: AxiosInstance;
@@ -11,6 +11,23 @@ export class BaseHttpClient {
       baseURL: baseUrl,
       withCredentials: true,
     });
+  }
+
+  async getVersion(): Promise<Version> {
+    try {
+      const response: AxiosResponse<Version> = await this.httpClient.get("/api/version");
+      console.log("I did another request");
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        console.log(error.response);
+        const message = error.response.data.message;
+
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not fetch version ${JSON.stringify(error)}`);
+      }
+    }
   }
 
   async register(name: string, email: string, password: string): Promise<void> {
@@ -115,7 +132,14 @@ export class BaseHttpClient {
 // Define types for the contexts
 export type BaseHttpClientContextType = Pick<
   BaseHttpClient,
-  "register" | "login" | "logout" | "me" | "forgotPassword" | "verifyEmail" | "resetPassword"
+  | "register"
+  | "login"
+  | "logout"
+  | "me"
+  | "forgotPassword"
+  | "resetPassword"
+  | "verifyEmail"
+  | "getVersion"
 >;
 
 // Create the contexts
@@ -146,6 +170,7 @@ export const HttpClientProvider: React.FC<HttpClientProviderProps> = ({ children
     forgotPassword: httpClient.forgotPassword.bind(httpClient),
     verifyEmail: httpClient.verifyEmail.bind(httpClient),
     resetPassword: httpClient.resetPassword.bind(httpClient),
+    getVersion: httpClient.getVersion.bind(httpClient),
   };
 
   return (
