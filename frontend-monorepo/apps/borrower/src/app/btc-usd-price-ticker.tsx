@@ -1,14 +1,14 @@
+import { CurrencyFormatter } from "@frontend-monorepo/ui-shared";
 import React from "react";
 import { Container } from "react-bootstrap";
 import { usePrice } from "./price-context";
-import CurrencyFormatter from "./usd";
 
 export function PriceTicker() {
   const { latestPrice } = usePrice();
 
   return (
     <Container>
-      {latestPrice ? <CurrencyFormatter value={latestPrice} currency="USD" locale="en-US" /> : (
+      {latestPrice ? <CurrencyFormatter value={latestPrice} /> : (
         "Loading..."
       )}
     </Container>

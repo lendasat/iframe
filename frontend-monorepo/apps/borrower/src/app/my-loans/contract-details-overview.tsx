@@ -4,11 +4,11 @@ import {
   contractStatusToLabelString,
   useBorrowerHttpClient,
 } from "@frontend-monorepo/http-client";
+import { CurrencyFormatter } from "@frontend-monorepo/ui-shared";
 import React, { Suspense } from "react";
 import { Alert, Badge, Col, Container, OverlayTrigger, Row, Tooltip } from "react-bootstrap";
 import { Await, useParams } from "react-router-dom";
 import { Lender } from "../request-loan/lender";
-import Usd from "../usd";
 import { CollateralContractDetails } from "./collateralize-contract";
 import { CollateralSeenOrConfirmed } from "./contract-collateral-seen-or-confirmed";
 import { ContractPrincipalGiven } from "./contract-principal-given";
@@ -122,7 +122,7 @@ function ContractDetails({ contract }: DetailsProps) {
       <Row className="justify-content-between border-b mt-2">
         <Col md={6}>Loan amount</Col>
         <Col md={6} className="text-end mb-2">
-          <Usd value={loanAmount} />
+          <CurrencyFormatter value={loanAmount} />
         </Col>
       </Row>
       <Row className="justify-content-between border-b mt-2">

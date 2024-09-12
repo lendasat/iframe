@@ -1,8 +1,8 @@
 import { Contract } from "@frontend-monorepo/http-client";
+import { CurrencyFormatter } from "@frontend-monorepo/ui-shared";
 import React from "react";
 import { Card, Col, Container, Row } from "react-bootstrap";
 import { Lender } from "../request-loan/lender";
-import CurrencyFormatter from "../usd";
 
 interface LoansHistoryComponentProps {
   loan: Contract;
@@ -20,7 +20,7 @@ export function LoanHistoryComponent(props: LoansHistoryComponentProps) {
         <Container className={"p-0 m-0"} fluid>
           <Row>
             <Col md={1}>
-              <CurrencyFormatter value={loan_amount} currency="USD" locale="en-US" />
+              <CurrencyFormatter value={loan_amount} />
             </Col>
             <Col md={2}>
               <Lender {...lender} />

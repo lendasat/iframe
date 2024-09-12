@@ -13,7 +13,7 @@ interface CurrencyFormatterProps {
   value: number;
 }
 
-const CurrencyFormatter: FC<CurrencyFormatterProps> = ({ value }) => {
+export const CurrencyFormatter: FC<CurrencyFormatterProps> = ({ value }) => {
   return <span>{formatCurrency(value)}</span>;
 };
 

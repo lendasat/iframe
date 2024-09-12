@@ -1,9 +1,9 @@
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Contract, contractStatusToLabelString } from "@frontend-monorepo/http-client";
+import { formatCurrency } from "@frontend-monorepo/ui-shared";
 import React from "react";
 import { Alert, Col, Container, Form, InputGroup, Row } from "react-bootstrap";
-import { formatCurrency } from "../usd";
 
 interface CollateralSeenOrConfirmedProps {
   collateral: string;
