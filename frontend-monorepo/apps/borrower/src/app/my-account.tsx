@@ -1,6 +1,7 @@
 import { faEdit } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { useAuth } from "@frontend-monorepo/http-client";
+import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
+import { useAuth } from "@frontend-monorepo/http-client-borrower";
 import React, { useEffect, useState } from "react";
 import { Button, Spinner, Table } from "react-bootstrap";
 import { FaEye } from "react-icons/fa";
@@ -14,7 +15,8 @@ import { CreateWalletModal } from "./wallet/create-wallet-modal";
 import { UnlockWalletModal } from "./wallet/unlock-wallet-modal";
 
 function MyAccount() {
-  const { user, forgotPassword } = useAuth();
+  const { user } = useAuth();
+  const { forgotPassword } = useBaseHttpClient();
   const [isLoading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");

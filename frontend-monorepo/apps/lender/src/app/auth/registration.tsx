@@ -1,10 +1,10 @@
-import { useAuth } from "@frontend-monorepo/http-client";
+import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
 import { RegistrationForm } from "@frontend-monorepo/ui-shared";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 
 function Registration() {
-  const { register } = useAuth();
+  const { register } = useBaseHttpClient();
   const navigate = useNavigate();
 
   const handleRegister = async (name: string, email: string, password: string) => {

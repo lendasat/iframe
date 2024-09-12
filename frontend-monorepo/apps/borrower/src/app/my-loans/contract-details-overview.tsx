@@ -1,11 +1,14 @@
-import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Contract, ContractStatus, contractStatusToLabelString, useAuth } from "@frontend-monorepo/http-client";
+import {
+  Contract,
+  ContractStatus,
+  contractStatusToLabelString,
+  useBorrowerHttpClient,
+} from "@frontend-monorepo/http-client-borrower";
+import { CurrencyFormatter } from "@frontend-monorepo/ui-shared";
 import React, { Suspense } from "react";
-import { Alert, Badge, Col, Container, Form, InputGroup, OverlayTrigger, Row, Tooltip } from "react-bootstrap";
+import { Alert, Badge, Col, Container, OverlayTrigger, Row, Tooltip } from "react-bootstrap";
 import { Await, useParams } from "react-router-dom";
 import { Lender } from "../request-loan/lender";
-import Usd from "../usd";
 import { CollateralContractDetails } from "./collateralize-contract";
 import { CollateralSeenOrConfirmed } from "./contract-collateral-seen-or-confirmed";
 import { ContractPrincipalGiven } from "./contract-principal-given";
@@ -13,7 +16,7 @@ import { ContractRepaid } from "./contract-repaid";
 import { ContractRequested } from "./contract-requested";
 
 function ContractDetailsOverview() {
-  const { getContract } = useAuth();
+  const { getContract } = useBorrowerHttpClient();
   const { id } = useParams();
 
   return (
@@ -53,7 +56,7 @@ function Details({ contract }: DetailsProps) {
   const loanOriginatorFee = (loanAmount / initial_price) * ORIGINATOR_FEE;
   const totalCollateral = (collateral + loanOriginatorFee).toFixed(8);
 
-  const accruedInterest = contract.loan_amount * (contract.interest_rate / 100);
+  const accruedInterest = contract.loan_amount * contract.interest_rate;
   const totalRepaymentAmount = accruedInterest + loanAmount;
 
   // FIXME: Let's do this once, in the backend.
@@ -119,7 +122,7 @@ function ContractDetails({ contract }: DetailsProps) {
       <Row className="justify-content-between border-b mt-2">
         <Col md={6}>Loan amount</Col>
         <Col md={6} className="text-end mb-2">
-          <Usd value={loanAmount} />
+          <CurrencyFormatter value={loanAmount} />
         </Col>
       </Row>
       <Row className="justify-content-between border-b mt-2">

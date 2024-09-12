@@ -1,7 +1,7 @@
-import { LoanOffer } from "@frontend-monorepo/http-client";
+import { LoanOffer } from "@frontend-monorepo/http-client-borrower";
+import { CurrencyFormatter } from "@frontend-monorepo/ui-shared";
 import React from "react";
 import { Badge, Button, Card, Col, Container, Row } from "react-bootstrap";
-import CurrencyFormatter from "../usd";
 import { Lender } from "./lender";
 import { StableCoinHelper } from "./stable-coin";
 
@@ -23,12 +23,11 @@ export function LoanOfferComponent(props: LoanOfferProps) {
               <Lender {...lender} />
             </Col>
             <Col md={2}>
-              <CurrencyFormatter value={amount.min} currency="USD" locale="en-US" /> -{" "}
-              <CurrencyFormatter value={amount.max} currency="USD" locale="en-US" />
+              <CurrencyFormatter value={amount.min} /> - <CurrencyFormatter value={amount.max} />
             </Col>
             <Col md={1}>{duration.min} - {duration.max} months</Col>
             <Col md={1}>{ltv}%</Col>
-            <Col md={1}>{interest}%</Col>
+            <Col md={1}>{interest * 100}%</Col>
             <Col md={3}>
               {coins.map((coin) => (
                 <span key={coin}>

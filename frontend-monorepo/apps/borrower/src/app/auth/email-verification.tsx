@@ -1,6 +1,6 @@
 import { faCheckCircle, faExclamationCircle, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { useAuth } from "@frontend-monorepo/http-client";
+import { useAuth } from "@frontend-monorepo/http-client-borrower";
 import { FullLogoWhiteBg } from "@frontend-monorepo/ui-shared";
 import React, { useEffect, useState } from "react";
 import { Alert, Button, Card, Col, Container, Row } from "react-bootstrap";
@@ -10,7 +10,7 @@ const EmailVerification = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isVerified, setIsVerified] = useState(false);
   const [error, setError] = useState("");
-  const { verifyEmail } = useAuth();
+  const { verifyEmail } = useBorrowerHttpClient();
   const { token } = useParams();
   const navigate = useNavigate();
 

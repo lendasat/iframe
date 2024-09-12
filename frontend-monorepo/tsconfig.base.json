@@ -15,7 +15,13 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@frontend-monorepo/http-client": ["http-client/src/index.ts"],
+      "@frontend-monorepo/base-http-client": ["base-http-client/src/index.ts"],
+      "@frontend-monorepo/http-client-borrower": [
+        "http-client-borrower/src/index.ts"
+      ],
+      "@frontend-monorepo/http-client-lender": [
+        "http-client-lender/src/index.ts"
+      ],
       "@frontend-monorepo/ui-shared": ["ui-shared/src/index.ts"]
     }
   },

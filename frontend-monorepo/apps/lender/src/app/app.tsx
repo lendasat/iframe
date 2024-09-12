@@ -1,14 +1,15 @@
 import { faMoneyBillTransfer, faMoneyCheckDollar, faRightFromBracket } from "@fortawesome/free-solid-svg-icons";
-import { AuthIsNotSignedIn, AuthIsSignedIn, AuthProvider } from "@frontend-monorepo/http-client";
-import { Layout } from "@frontend-monorepo/ui-shared";
+import { AuthIsNotSignedIn, AuthIsSignedIn, AuthProviderLender } from "@frontend-monorepo/http-client-lender";
+import { Layout, PriceProvider } from "@frontend-monorepo/ui-shared";
 import { Outlet, Route, Routes } from "react-router-dom";
 import ForgotPassword from "./auth/forgot-password";
 import Login from "./auth/login";
 import Logout from "./auth/logout";
 import Registration from "./auth/registration";
 import ResetPassword from "./auth/reset-password";
+import ContractDetailsOverview from "./contracts/contract-details-overview";
+import MyContracts from "./contracts/my-contracts";
 import CreateLoanOffer from "./create-loan-offer";
-import MyLoans from "./my-loans";
 
 const menuItems = [
   { label: "Create Loan Offer", icon: faMoneyBillTransfer, path: "/create-loan-offer" },
@@ -18,38 +19,41 @@ const menuItems = [
 
 function App() {
   return (
-    <AuthProvider baseUrl={import.meta.env.VITE_LENDER_BASE_URL || "/"}>
-      <AuthIsSignedIn>
-        <Layout menuItems={menuItems} theme={"light"}>
-          <Routes>
-            <Route
-              element={
-                <div>
-                  <Outlet />
-                </div>
-              }
-            >
-              <Route path="/create-loan-offer" element={<CreateLoanOffer />} />
-              <Route path="/my-contracts">
-                <Route index element={<MyLoans />} />
+    <PriceProvider>
+      <AuthProviderLender baseUrl={import.meta.env.VITE_LENDER_BASE_URL || "/"}>
+        <AuthIsSignedIn>
+          <Layout menuItems={menuItems} theme={"light"}>
+            <Routes>
+              <Route
+                element={
+                  <div>
+                    <Outlet />
+                  </div>
+                }
+              >
+                <Route path="/create-loan-offer" element={<CreateLoanOffer />} />
+                <Route path="/my-contracts">
+                  <Route index element={<MyContracts />} />
+                  <Route path={":id"} element={<ContractDetailsOverview />} />
+                </Route>
               </Route>
-            </Route>
+              <Route path="/logout" element={<Logout />} />
+            </Routes>
+          </Layout>
+        </AuthIsSignedIn>
+        <AuthIsNotSignedIn>
+          <Routes>
+            <Route index element={<Login />} />
+            <Route path="/registration" element={<Registration />} />
+            <Route path="/forgotpassword" element={<ForgotPassword />} />
+            <Route path="/resetpassword/:token" element={<ResetPassword />} />
             <Route path="/logout" element={<Logout />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="*" element={<Login />} />
           </Routes>
-        </Layout>
-      </AuthIsSignedIn>
-      <AuthIsNotSignedIn>
-        <Routes>
-          <Route index element={<Login />} />
-          <Route path="/registration" element={<Registration />} />
-          <Route path="/forgotpassword" element={<ForgotPassword />} />
-          <Route path="/resetpassword/:token" element={<ResetPassword />} />
-          <Route path="/logout" element={<Logout />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="*" element={<Login />} />
-        </Routes>
-      </AuthIsNotSignedIn>
-    </AuthProvider>
+        </AuthIsNotSignedIn>
+      </AuthProviderLender>
+    </PriceProvider>
   );
 }
 

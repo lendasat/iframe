@@ -1,10 +1,10 @@
-import { useAuth } from "@frontend-monorepo/http-client";
+import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
 import { ResetPasswordForm } from "@frontend-monorepo/ui-shared";
 import React from "react";
 import { useParams } from "react-router-dom";
 
 function ForgotPassword() {
-  const { resetPassword } = useAuth();
+  const { resetPassword } = useBaseHttpClient();
   const { token } = useParams();
 
   const handleSubmit = async (password: string, confirmPassword: string) => {

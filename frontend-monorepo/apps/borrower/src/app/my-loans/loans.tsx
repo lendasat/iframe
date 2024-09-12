@@ -1,18 +1,14 @@
-import { Contract } from "@frontend-monorepo/http-client";
-import { LtvProgressBar } from "@frontend-monorepo/ui-shared";
+import { Contract } from "@frontend-monorepo/http-client-borrower";
+import { CurrencyFormatter, LtvProgressBar, usePrice } from "@frontend-monorepo/ui-shared";
 import React from "react";
 import { Badge, Button, Card, Col, Container, Row } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
-import { usePrice } from "../price-context";
-import CurrencyFormatter from "../usd";
 
 interface LoansComponentProps {
   loans: Contract[];
-  onRepay: (loan: string) => void;
-  onCollateralize: (loan: string) => void;
 }
 
-function ContractsComponent({ loans, onRepay, onCollateralize }: LoansComponentProps) {
+function ContractsComponent({ loans }: LoansComponentProps) {
   const { latestPrice } = usePrice();
   const navigate = useNavigate();
 

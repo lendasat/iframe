@@ -1,6 +1,7 @@
 import { faInfoCircle, faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { LoanOffer, useAuth } from "@frontend-monorepo/http-client";
+import { LoanOffer, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
+import { formatCurrency, usePrice } from "@frontend-monorepo/ui-shared";
 import React, { useState } from "react";
 import { Alert, Badge, Button, Col, Container, Form, InputGroup, Row } from "react-bootstrap";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -9,8 +10,6 @@ import init, {
   get_next_pk,
   is_wallet_loaded,
 } from "../../../../../../borrower-wallet/pkg/borrower_wallet.js";
-import { usePrice } from "../price-context";
-import { formatCurrency } from "../usd";
 import { CreateWalletModal } from "../wallet/create-wallet-modal";
 import { UnlockWalletModal } from "../wallet/unlock-wallet-modal";
 import { Lender } from "./lender";
@@ -31,7 +30,7 @@ export function RequestLoanSummary() {
   const ORIGINATOR_FEE = 0.01;
   const { latestPrice } = usePrice();
 
-  const { postContractRequest } = useAuth();
+  const { postContractRequest } = useBorrowerHttpClient();
 
   // Initialize filters
   const periodFilter = loanFilters.find((filter) => filter.type === LoanFilterType.PERIOD);
@@ -263,7 +262,7 @@ export function RequestLoanSummary() {
             </Row>
             <Row className="justify-content-between border-b mt-2">
               <Col>Interest rate p.a.</Col>
-              <Col className="text-end mb-2">{loanOffer.interest}%</Col>
+              <Col className="text-end mb-2">{loanOffer.interest * 100}%</Col>
             </Row>
             <Row className="justify-content-between mt-2">
               <Col>Originator fee 1%</Col>

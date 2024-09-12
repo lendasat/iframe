@@ -1,6 +1,6 @@
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Contract, useAuth } from "@frontend-monorepo/http-client";
+import { Contract, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import React, { useState } from "react";
 import { Alert, Button, Col, Container, Row } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
@@ -17,7 +17,7 @@ export function ContractRepaid({
   const collateralAmountBtc = contract.collateral_sats / 100000000;
   const refundAddress = contract.borrower_btc_address;
 
-  const { getClaimCollateralPsbt, postClaimTx } = useAuth();
+  const { getClaimCollateralPsbt, postClaimTx } = useBorrowerHttpClient();
   const navigate = useNavigate();
 
   const [showUnlockWalletModal, setShowUnlockWalletModal] = useState(false);

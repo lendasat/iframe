@@ -1,10 +1,9 @@
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Contract, ContractStatus, contractStatusToLabelString } from "@frontend-monorepo/http-client";
+import { formatCurrency } from "@frontend-monorepo/ui-shared";
 import QRCode from "qrcode.react";
 import React from "react";
-import { Alert, Col, Container, Form, InputGroup, Row } from "react-bootstrap";
-import { formatCurrency } from "../usd";
+import { Alert, Col, Container, Row } from "react-bootstrap";
 
 interface ContractPrincipalGivenProps {
   totalRepaymentAmount: number;
