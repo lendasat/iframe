@@ -1,5 +1,5 @@
 import { BaseHttpClient, BaseHttpClientContext, BaseHttpClientContextType } from "@frontend-monorepo/base-http-client";
-import { AxiosResponse } from "axios";
+import axios, { AxiosResponse } from "axios";
 import { createContext, useContext } from "react";
 import { Contract, LoanOffer } from "./models";
 import { parseRFC3339Date } from "./utils";
@@ -48,10 +48,17 @@ export class HttpClientLender extends BaseHttpClient {
         updated_at: parseRFC3339Date(contract.updated_at),
       };
     } catch (error) {
-      console.error(
-        `Failed to fetch contract: http: ${error.response?.status} and response: ${error.response?.data}`,
-      );
-      throw error;
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to fetch contract: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not fetch contract ${JSON.stringify(error)}`);
+      }
     }
   }
 
@@ -59,10 +66,17 @@ export class HttpClientLender extends BaseHttpClient {
     try {
       await this.httpClient.put(`/api/contracts/${id}/approve`);
     } catch (error) {
-      console.error(
-        `Failed to fetch contract: http: ${error.response?.status} and response: ${error.response?.data}`,
-      );
-      throw error;
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to approve contract: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not approve contract ${JSON.stringify(error)}`);
+      }
     }
   }
 

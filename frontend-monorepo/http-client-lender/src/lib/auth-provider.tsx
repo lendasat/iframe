@@ -1,4 +1,5 @@
 import { useBaseHttpClient, User, Version } from "@frontend-monorepo/base-http-client";
+import axios from "axios";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { HttpClientLenderProvider } from "./http-client-lender";
 
@@ -30,12 +31,12 @@ type Props = {
 };
 
 export const AuthIsSignedIn = ({ children }: Props) => {
-  const { user } = useContext(AuthContext);
+  const { user } = useContext(AuthContext)!;
   return <>{user !== null ? children : ""}</>;
 };
 
 export const AuthIsNotSignedIn = ({ children }: Props) => {
-  const { user } = useContext(AuthContext);
+  const { user } = useContext(AuthContext)!;
   return <>{user === null ? children : ""}</>;
 };
 
@@ -62,7 +63,7 @@ export const AuthProviderLender: React.FC<AuthProviderProps> = ({ children, base
 const LenderAuthProviderInner: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [backendVersion, setBackendVersion] = useState(undefined);
+  const [backendVersion, setBackendVersion] = useState<Version | undefined>(undefined);
   const { me, login: baseLogin, logout: baseLogout, getVersion } = useBaseHttpClient();
 
   useEffect(() => {
@@ -79,7 +80,13 @@ const LenderAuthProviderInner: React.FC<{ children: React.ReactNode }> = ({ chil
           setBackendVersion(version);
         }
       } catch (error) {
-        console.error("Failed to initialize auth:", error);
+        if (axios.isAxiosError(error) && error.response) {
+          console.log(error.response);
+          const message = error.response.data.message;
+          console.error(message);
+        } else {
+          throw new Error(`Could not check if user is logged in ${JSON.stringify(error)}`);
+        }
       } finally {
         setLoading(false);
       }
