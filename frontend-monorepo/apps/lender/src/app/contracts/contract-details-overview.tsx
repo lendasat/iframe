@@ -14,7 +14,7 @@ function ContractDetailsOverview() {
   return (
     <Suspense>
       <Await
-        resolve={getContract(id)}
+        resolve={getContract(id!)}
         errorElement={<div>Could not load contracts</div>}
         children={(contract: Awaited<Contract>) => (
           <Container className={"p-4"} fluid>

@@ -32,7 +32,7 @@ function DashBoard() {
                 <FaGithub size={"30"} color={"black"} />
               </a>
               <a
-                href="https://discord.com/channels/1273987960219504640/1273987960219504644"
+                href="https://discord.gg/kyxqWFKMCF"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mx-3"
