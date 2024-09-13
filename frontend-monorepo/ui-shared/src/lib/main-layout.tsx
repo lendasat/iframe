@@ -1,9 +1,10 @@
 import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { faBars } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { useBaseHttpClient, Version } from "@frontend-monorepo/base-http-client";
 import React, { ReactNode } from "react";
 import { Menu, menuClasses, MenuItem, MenuItemStyles, Sidebar } from "react-pro-sidebar";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { SidebarFooter } from "./components/SidebarFooter";
 import { SidebarHeader } from "./components/SidebarHeader";
 
@@ -64,12 +65,12 @@ interface LayoutProps {
   children: ReactNode;
   menuItems: MenuItem[];
   theme?: Theme;
+  backendVersion: Version;
 }
 
-export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme = "light" }) => {
+export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme = "light", backendVersion }) => {
   const [toggled, setToggled] = React.useState(false);
   const [broken, setBroken] = React.useState(false);
-  const navigate = useNavigate();
 
   const menuItemStyles: MenuItemStyles = {
     root: {
@@ -130,7 +131,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme = "li
               ))}
             </Menu>
           </div>
-          <SidebarFooter />
+          <SidebarFooter backendVersion={backendVersion} />
         </div>
       </Sidebar>
 

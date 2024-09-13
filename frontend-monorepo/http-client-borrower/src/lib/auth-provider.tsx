@@ -1,4 +1,4 @@
-import { useBaseHttpClient, User } from "@frontend-monorepo/base-http-client";
+import { useBaseHttpClient, User, Version } from "@frontend-monorepo/base-http-client";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { HttpClientBorrowerProvider } from "./http-client-borrower";
 
@@ -7,6 +7,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  backendVersion?: Version;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -60,8 +61,9 @@ export const AuthProviderBorrower: React.FC<AuthProviderProps> = ({ children, ba
 
 const BorrowerAuthProviderInner: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [backendVersion, setBackendVersion] = useState(undefined);
   const [loading, setLoading] = useState(true);
-  const { me, login: baseLogin, logout: baseLogout } = useBaseHttpClient();
+  const { me, login: baseLogin, logout: baseLogout, getVersion } = useBaseHttpClient();
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -71,6 +73,10 @@ const BorrowerAuthProviderInner: React.FC<{ children: React.ReactNode }> = ({ ch
           setUser(currentUser);
         } else {
           setUser(null);
+        }
+        if (!backendVersion) {
+          const version = await getVersion();
+          setBackendVersion(version);
         }
       } catch (error) {
         console.error("Failed to initialize auth:", error);
@@ -91,6 +97,10 @@ const BorrowerAuthProviderInner: React.FC<{ children: React.ReactNode }> = ({ ch
         setUser(currentUser);
       } else {
         setUser(null);
+      }
+      if (!backendVersion) {
+        const version = await getVersion();
+        setBackendVersion(version);
       }
     } catch (error) {
       console.error("Login failed:", error);
@@ -114,7 +124,7 @@ const BorrowerAuthProviderInner: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, backendVersion }}>
       {children}
     </AuthContext.Provider>
   );

@@ -4,9 +4,15 @@ import {
   faRightFromBracket,
   faUserCircle,
 } from "@fortawesome/free-solid-svg-icons";
-import { AuthIsNotSignedIn, AuthIsSignedIn, AuthProviderBorrower } from "@frontend-monorepo/http-client-borrower";
+import {
+  AuthIsNotSignedIn,
+  AuthIsSignedIn,
+  AuthProviderBorrower,
+  useAuth,
+} from "@frontend-monorepo/http-client-borrower";
 import { Layout, PriceProvider } from "@frontend-monorepo/ui-shared";
 import { Outlet, Route, Routes } from "react-router-dom";
+import { SemVer } from "semver";
 import EmailVerification from "./auth/email-verification";
 import ForgotPassword from "./auth/forgot-password";
 import Login from "./auth/login";
@@ -29,38 +35,51 @@ const menuItems = [
   { label: "Logout", icon: faRightFromBracket, path: "/logout" },
 ];
 
+function MainLayoutComponents() {
+  const { backendVersion } = useAuth();
+  const version = backendVersion ?? {
+    version: new SemVer("0.0.0"),
+    commit_hash: "unknown",
+  };
+
+  return (
+    <Layout
+      menuItems={menuItems}
+      theme={"light"}
+      backendVersion={version}
+    >
+      <Routes>
+        <Route
+          element={
+            <div>
+              <Outlet />
+            </div>
+          }
+          errorElement={<ErrorBoundary />}
+        >
+          <Route index element={<DashBoard />} />
+          <Route path="/request-loan" element={<RequestLoan />} />
+          <Route path="/my-contracts">
+            <Route index element={<MyLoans />} />
+            <Route path={":id"} element={<ContractDetailsOverview />} />
+          </Route>
+          <Route path="/my-account" element={<MyAccount />} />
+          <Route path="/logout" element={<Logout />} />
+          <Route path="/profile/:id" element={<Profile />} />
+          <Route path="/request-loan/:id" element={<RequestLoanSummary />} />
+          <Route path="/error" element={<ErrorBoundary />} />
+        </Route>
+      </Routes>
+    </Layout>
+  );
+}
+
 function App() {
   return (
     <AuthProviderBorrower baseUrl={import.meta.env.VITE_BORROWER_BASE_URL || "/"}>
       <AuthIsSignedIn>
         <PriceProvider>
-          <Layout
-            menuItems={menuItems}
-            theme={"light"}
-          >
-            <Routes>
-              <Route
-                element={
-                  <div>
-                    <Outlet />
-                  </div>
-                }
-                errorElement={<ErrorBoundary />}
-              >
-                <Route index element={<DashBoard />} />
-                <Route path="/request-loan" element={<RequestLoan />} />
-                <Route path="/my-contracts">
-                  <Route index element={<MyLoans />} />
-                  <Route path={":id"} element={<ContractDetailsOverview />} />
-                </Route>
-                <Route path="/my-account" element={<MyAccount />} />
-                <Route path="/logout" element={<Logout />} />
-                <Route path="/profile/:id" element={<Profile />} />
-                <Route path="/request-loan/:id" element={<RequestLoanSummary />} />
-                <Route path="/error" element={<ErrorBoundary />} />
-              </Route>
-            </Routes>
-          </Layout>
+          <MainLayoutComponents />
         </PriceProvider>
       </AuthIsSignedIn>
       <AuthIsNotSignedIn>

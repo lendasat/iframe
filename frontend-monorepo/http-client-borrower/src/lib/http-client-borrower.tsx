@@ -1,5 +1,5 @@
 import { BaseHttpClient, BaseHttpClientContext, BaseHttpClientContextType } from "@frontend-monorepo/base-http-client";
-import { AxiosResponse } from "axios";
+import axios, { AxiosResponse } from "axios";
 import { createContext, useContext } from "react";
 import { ClaimCollateralPsbtResponse, Contract, ContractRequest, LoanOffer } from "./models";
 import { parseRFC3339Date } from "./utils";
@@ -17,12 +17,18 @@ export class HttpClientBorrower extends BaseHttpClient {
       const response: AxiosResponse<LoanOffer[]> = await this.httpClient.get("/api/offers");
       return response.data;
     } catch (error) {
-      console.error(
-        `Failed to fetch loan offers: http: ${error.response?.status} and response: ${
-          JSON.stringify(error.response?.data)
-        }`,
-      );
-      return undefined;
+      if (axios.isAxiosError(error) && error.response) {
+        console.log(error.response);
+        const message = error.response.data.message;
+        console.error(
+          `Failed to fetch loan offers: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not fetch version ${JSON.stringify(error)}`);
+      }
     }
   }
 
@@ -150,6 +156,7 @@ export const HttpClientBorrowerProvider: React.FC<HttpClientProviderProps> = ({ 
     forgotPassword: httpClient.forgotPassword.bind(httpClient),
     verifyEmail: httpClient.verifyEmail.bind(httpClient),
     resetPassword: httpClient.resetPassword.bind(httpClient),
+    getVersion: httpClient.getVersion.bind(httpClient),
   };
 
   const borrowerClientFunctions: BorrowerHttpClientContextType = {

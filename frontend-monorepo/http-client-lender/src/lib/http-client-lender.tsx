@@ -126,6 +126,7 @@ export const HttpClientLenderProvider: React.FC<HttpClientProviderProps> = ({ ch
     forgotPassword: httpClient.forgotPassword.bind(httpClient),
     verifyEmail: httpClient.verifyEmail.bind(httpClient),
     resetPassword: httpClient.resetPassword.bind(httpClient),
+    getVersion: httpClient.getVersion.bind(httpClient),
   };
 
   const lenderClientFunctions: LenderHttpClientContextType = {
