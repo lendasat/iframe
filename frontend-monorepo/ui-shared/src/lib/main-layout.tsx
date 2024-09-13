@@ -59,6 +59,7 @@ interface MenuItem {
   label: string;
   icon: IconDefinition;
   path: string;
+  target?: string;
 }
 
 interface LayoutProps {
@@ -123,7 +124,9 @@ export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme = "li
               {menuItems.map((item, index) => (
                 <MenuItem
                   key={index}
-                  component={<Link to={item.path} />}
+                  component={
+                    <Link to={item.path} target={item.target ? item.target : "_self"} rel="noopener noreferrer" />
+                  }
                   icon={<FontAwesomeIcon icon={item.icon} />}
                 >
                   {item.label}

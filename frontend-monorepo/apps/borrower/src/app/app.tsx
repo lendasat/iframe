@@ -1,6 +1,7 @@
 import {
   faMoneyBillTransfer,
   faMoneyCheckDollar,
+  faQuestionCircle,
   faRightFromBracket,
   faUserCircle,
 } from "@fortawesome/free-solid-svg-icons";
@@ -32,6 +33,7 @@ const menuItems = [
   { label: "Request a Loan", icon: faMoneyBillTransfer, path: "/request-loan" },
   { label: "My loans", icon: faMoneyCheckDollar, path: "/my-contracts" },
   { label: "My account", icon: faUserCircle, path: "/my-account" },
+  { label: "Help", icon: faQuestionCircle, path: "https://lendasat.notion.site", target: "_blank" },
   { label: "Logout", icon: faRightFromBracket, path: "/logout" },
 ];
 
