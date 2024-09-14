@@ -63,7 +63,7 @@ function RequestLoan() {
               }
               break;
             case LoanFilterType.INTEREST:
-              if (offer.interest > Number(filter.value)) {
+              if (offer.interest > Number(filter.value) / 100) {
                 return false;
               }
               break;
