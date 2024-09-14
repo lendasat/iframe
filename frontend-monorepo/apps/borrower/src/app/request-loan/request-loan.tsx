@@ -44,7 +44,7 @@ function RequestLoan() {
               if (filter.value === undefined || filter.value === "") {
                 continue;
               }
-              if (offer.amount.min > filter.value || offer.amount.max < filter.value) {
+              if (offer.amount.min > Number(filter.value) || offer.amount.max < Number(filter.value)) {
                 return false;
               }
               break;
@@ -58,17 +58,17 @@ function RequestLoan() {
               }
               break;
             case LoanFilterType.LTV:
-              if (offer.ltv > filter.value) {
+              if (offer.ltv > Number(filter.value)) {
                 return false;
               }
               break;
             case LoanFilterType.INTEREST:
-              if (offer.interest > filter.value) {
+              if (offer.interest > Number(filter.value)) {
                 return false;
               }
               break;
             case LoanFilterType.PERIOD:
-              if (offer.duration.min > filter.value) {
+              if (offer.duration.min > Number(filter.value)) {
                 return false;
               }
               break;
