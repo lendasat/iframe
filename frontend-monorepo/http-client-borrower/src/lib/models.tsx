@@ -53,6 +53,7 @@ export interface ContractRequest {
 export interface Contract {
   id: string;
   loan_amount: number;
+  duration_months: number;
   created_at: Date;
   repaid_at: Date | undefined;
   expiry: Date;

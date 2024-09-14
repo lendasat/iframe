@@ -96,8 +96,7 @@ function ContractDetails({ contract }: DetailsProps) {
   const collateral = collateral_sats / 100000000;
   const loanAmount = contract.loan_amount;
 
-  // TODO: add interest rate to contract
-  const interestRate = 0.12; // contract.interest_rate;
+  const interestRate = contract.interest_rate;
 
   const initialLtv = contract.initial_ltv;
   const initial_price = loanAmount / (collateral * initialLtv);
