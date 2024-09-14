@@ -79,19 +79,6 @@ export enum LoanAssetChain {
   Starknet = "Starknet",
 }
 
-export interface CreateLoanOfferRequest {
-  name: string;
-  min_ltv: number;
-  interest_rate: number;
-  loan_amount_min: number;
-  loan_amount_max: number;
-  duration_months_min: number;
-  duration_months_max: number;
-  loan_asset_type: LoanAssetType;
-  loan_asset_chain: LoanAssetChain;
-  loan_repayment_address: string;
-}
-
 export interface ClaimCollateralPsbtResponse {
   psbt: string;
   collateral_descriptor: string;

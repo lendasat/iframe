@@ -1,6 +1,5 @@
 import { faCheckCircle, faExclamationCircle, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { useAuth } from "@frontend-monorepo/http-client-borrower";
 import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import { FullLogoWhiteBg } from "@frontend-monorepo/ui-shared";
 import React, { useEffect, useState } from "react";

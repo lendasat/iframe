@@ -1,4 +1,3 @@
-import { useAuth } from "@frontend-monorepo/http-client-borrower";
 import { ForgotPasswordForm } from "@frontend-monorepo/ui-shared";
 import React from "react";
 

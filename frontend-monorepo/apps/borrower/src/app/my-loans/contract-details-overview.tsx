@@ -6,7 +6,7 @@ import {
 } from "@frontend-monorepo/http-client-borrower";
 import { CurrencyFormatter } from "@frontend-monorepo/ui-shared";
 import React, { Suspense } from "react";
-import { Alert, Badge, Col, Container, OverlayTrigger, Row, Tooltip } from "react-bootstrap";
+import { Badge, Col, Container, OverlayTrigger, Row, Tooltip } from "react-bootstrap";
 import { Await, useParams } from "react-router-dom";
 import { Lender } from "../request-loan/lender";
 import { CollateralContractDetails } from "./collateralize-contract";
