@@ -6,8 +6,8 @@ on:
       version:
         description: 'Version to be released (e.g., 1.0.0)'
         required: true
-      push_main:
-        description: 'if true, changes will be pushed to main (e.g. true, false)'
+      pr_main:
+        description: 'if true, a pr to merge into main will be created (e.g. true, false)'
         required: false
         default: 'true'
 
@@ -81,8 +81,10 @@ jobs:
           git push origin release-branch/${{ github.event.inputs.version }}
 
       - name: Create Pull Request to merge into main
+        if: ${{ github.event.inputs.pr_main == 'true' }}
         uses: peter-evans/create-pull-request@v7
         with:
+          base: main
           title: Merge back release changes from ${{ github.event.inputs.version }}
           body: |
             Changes in this PR have already been released. See https://github.com/lendasat/lendasat/releases
