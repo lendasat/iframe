@@ -55,8 +55,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git commit -am "Release version ${{ github.event.inputs.version }}"
-          git checkout -b release-branch/${{ github.event.inputs.version }}
-          git push origin release-branch/${{ github.event.inputs.version }}
 
       - name: Release wallet
         run: just release-wallet
@@ -79,14 +77,19 @@ jobs:
       - name: Push version changes to main
         if: ${{ github.event.inputs.push_main == 'true' }}
         run: |
-          git push origin HEAD
+          git push origin main
+
+      - name: Push version changes to separate branch
+        run: |
+          git checkout -b release-branch/${{ github.event.inputs.version }}
+          git push origin release-branch/${{ github.event.inputs.version }}
 
       - name: Create GitHub Release
         id: create_release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.version }}
-          release_name: ${{ github.event.inputs.version }}
+          name: ${{ github.event.inputs.version }}
           draft: false
           prerelease: false
           fail_on_unmatched_files: true
