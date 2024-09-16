@@ -1,0 +1,96 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to be released (e.g., 1.0.0)'
+        required: true
+      push_main:
+        description: 'if true, changes will be pushed to main (e.g. true, false)'
+        required: false
+        default: 'true'
+
+env:
+  CARGO_INCREMENTAL: 0
+  CARGO_TERM_COLOR: always
+
+permissions:
+  actions: write
+  contents: write
+
+jobs:
+
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: extractions/setup-just@v2
+
+      - name: Install cargo edit
+        uses: stellar/binaries@v30
+        with:
+          name: cargo-edit
+          version: 0.12.3
+
+      - name: Setup rust toolchain
+        run: rustup show
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Bump hub version
+        id: set-hub-version
+        continue-on-error: true
+        run: |
+          cargo set-version --package hub ${{ github.event.inputs.version }}
+
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+      - name: Commit version changes to tmp release branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -am "Release version ${{ github.event.inputs.version }}"
+          git checkout -b release-branch/${{ github.event.inputs.version }}
+          git push origin release-branch/${{ github.event.inputs.version }}
+
+      - name: Release wallet
+        run: just release-wallet
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: "frontend-monorepo/package-lock.json"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: just release-frontend
+
+      - name: Build the hub
+        run: just release-hub
+
+      - name: Push version changes to main
+        if: ${{ github.event.inputs.push_main == 'true' }}
+        run: |
+          git push origin HEAD
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.version }}
+          release_name: ${{ github.event.inputs.version }}
+          draft: false
+          prerelease: false
+          fail_on_unmatched_files: true
+          files: |
+              target/release/hub
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
