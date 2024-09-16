@@ -6,7 +6,7 @@ import {
 } from "@frontend-monorepo/http-client-borrower";
 import { CurrencyFormatter } from "@frontend-monorepo/ui-shared";
 import React, { Suspense } from "react";
-import { Alert, Badge, Col, Container, OverlayTrigger, Row, Tooltip } from "react-bootstrap";
+import { Badge, Col, Container, OverlayTrigger, Row, Tooltip } from "react-bootstrap";
 import { Await, useParams } from "react-router-dom";
 import { Lender } from "../request-loan/lender";
 import { CollateralContractDetails } from "./collateralize-contract";
@@ -56,7 +56,7 @@ function Details({ contract }: DetailsProps) {
   const loanOriginatorFee = (loanAmount / initial_price) * ORIGINATOR_FEE;
   const totalCollateral = (collateral + loanOriginatorFee).toFixed(8);
 
-  const accruedInterest = contract.loan_amount * contract.interest_rate;
+  const accruedInterest = contract.loan_amount * ((contract.interest_rate / 12) * contract.duration_months);
   const totalRepaymentAmount = accruedInterest + loanAmount;
 
   // FIXME: Let's do this once, in the backend.

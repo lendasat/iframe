@@ -40,6 +40,7 @@ pub struct Contract {
     pub id: String,
     #[serde(with = "rust_decimal::serde::float")]
     pub loan_amount: Decimal,
+    pub duration_months: i32,
     pub collateral_sats: u64,
     #[serde(with = "rust_decimal::serde::float")]
     pub interest_rate: Decimal,
@@ -175,6 +176,7 @@ pub async fn get_contracts(
         let contract = Contract {
             id: contract.id,
             loan_amount: contract.loan_amount,
+            duration_months: contract.duration_months,
             collateral_sats: contract.initial_collateral_sats,
             interest_rate: offer.interest_rate,
             initial_ltv: contract.initial_ltv,
@@ -263,6 +265,7 @@ pub async fn get_contract(
         Json(Contract {
             id: contract.id,
             loan_amount: contract.loan_amount,
+            duration_months: contract.duration_months,
             collateral_sats: contract.initial_collateral_sats,
             interest_rate: offer.interest_rate,
             initial_ltv: contract.initial_ltv,
@@ -332,6 +335,7 @@ pub async fn post_contract_request(
         let contract = Contract {
             id: contract.id,
             loan_amount: contract.loan_amount,
+            duration_months: contract.duration_months,
             collateral_sats: contract.initial_collateral_sats,
             interest_rate: offer.interest_rate,
             initial_ltv: contract.initial_ltv,

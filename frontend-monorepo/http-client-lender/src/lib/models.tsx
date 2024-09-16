@@ -18,6 +18,7 @@ export interface Contract {
   initial_ltv: number;
   initial_collateral_sats: number;
   loan_amount: number;
+  interest_rate: number;
   duration_months: number;
   borrower_btc_address: string;
   borrower_pk: string;

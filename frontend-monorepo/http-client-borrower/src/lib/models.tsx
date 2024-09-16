@@ -53,6 +53,7 @@ export interface ContractRequest {
 export interface Contract {
   id: string;
   loan_amount: number;
+  duration_months: number;
   created_at: Date;
   repaid_at: Date | undefined;
   expiry: Date;
@@ -76,19 +77,6 @@ export enum LoanAssetType {
 export enum LoanAssetChain {
   Ethereum = "Ethereum",
   Starknet = "Starknet",
-}
-
-export interface CreateLoanOfferRequest {
-  name: string;
-  min_ltv: number;
-  interest_rate: number;
-  loan_amount_min: number;
-  loan_amount_max: number;
-  duration_months_min: number;
-  duration_months_max: number;
-  loan_asset_type: LoanAssetType;
-  loan_asset_chain: LoanAssetChain;
-  loan_repayment_address: string;
 }
 
 export interface ClaimCollateralPsbtResponse {

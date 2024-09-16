@@ -14,7 +14,7 @@ function ContractDetailsOverview() {
   return (
     <Suspense>
       <Await
-        resolve={getContract(id!)}
+        resolve={getContract(id)}
         errorElement={<div>Could not load contracts</div>}
         children={(contract: Awaited<Contract>) => (
           <Container className={"p-4"} fluid>
@@ -33,29 +33,6 @@ interface DetailsProps {
 }
 
 function Details({ contract }: DetailsProps) {
-  // TODO: this should come from the backend
-  const ORIGINATOR_FEE = 0.01;
-
-  const collateral_sats = contract.initial_collateral_sats;
-  const collateral = collateral_sats / 100000000;
-  const loanAmount = contract.loan_amount;
-  const contractAddress = contract.contract_address;
-
-  const initialLtv = contract.initial_ltv;
-  const initial_price = loanAmount / (collateral * initialLtv);
-
-  // FIXME: Let's do this once, in the backend.
-  const loanOriginatorFee = (loanAmount / initial_price) * ORIGINATOR_FEE;
-  const totalCollateral = (collateral + loanOriginatorFee).toFixed(8);
-
-  // TODO: add interest rate to contract
-  const interestRate = 0.12; // contract.interest_rate;
-  const accruedInterest = contract.loan_amount * interestRate;
-  const totalRepaymentAmount = accruedInterest + loanAmount;
-
-  // FIXME: Let's do this once, in the backend.
-  const loanOriginatorFeeUsd = (loanOriginatorFee * initial_price).toFixed(0);
-
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
@@ -96,8 +73,7 @@ function ContractDetails({ contract }: DetailsProps) {
   const collateral = collateral_sats / 100000000;
   const loanAmount = contract.loan_amount;
 
-  // TODO: add interest rate to contract
-  const interestRate = 0.12; // contract.interest_rate;
+  const interestRate = contract.interest_rate;
 
   const initialLtv = contract.initial_ltv;
   const initial_price = loanAmount / (collateral * initialLtv);
