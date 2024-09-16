@@ -216,3 +216,19 @@ watch-all:
 
 db-test-data:
     cargo run --example test-data
+
+
+## ------------------------
+## Release functions
+## ------------------------
+
+release-wallet:
+    wasm-pack build borrower-wallet --target web --release
+
+# just a convenience function
+release-frontend:
+    #!/usr/bin/env bash
+    just build-frontend
+
+release-hub:
+    cargo build --bin hub --release
