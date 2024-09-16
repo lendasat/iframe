@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT * FROM borrowers WHERE verification_code = $1",
+  "query": "SELECT \n            id,\n            name,\n            email,\n            password,\n            verified,\n            verification_code,\n            invite_code,\n            password_reset_token,\n            password_reset_at,\n            created_at,\n            updated_at\n        FROM borrowers \n            WHERE verification_code = $1",
   "describe": {
     "columns": [
       {
@@ -35,21 +35,26 @@
       },
       {
         "ordinal": 6,
+        "name": "invite_code",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 7,
         "name": "password_reset_token",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 7,
+        "ordinal": 8,
         "name": "password_reset_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 8,
+        "ordinal": 9,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 9,
+        "ordinal": 10,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -68,9 +73,10 @@
       true,
       true,
       true,
+      true,
       false,
       false
     ]
   },
-  "hash": "bd8e452415e2def9222f4e10e8faf73992e28158944bac984f2252c58e6825b4"
+  "hash": "1af6e7713bf406f5e839776cbdca7730bf6d0ca6dbb04ffb441351eae3d4a612"
 }

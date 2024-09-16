@@ -1,3 +1,4 @@
+use crate::model::InviteCode;
 use crate::model::User;
 use anyhow::anyhow;
 use anyhow::Result;
@@ -21,21 +22,24 @@ pub async fn register_user(
     name: &str,
     email: &str,
     password: &str,
+    invite_code: Option<InviteCode>,
 ) -> Result<User> {
     let hashed_password = generate_hashed_password(password)?;
     let verification_code = generate_random_string(VERIFICATION_CODE_LENGTH);
+    let invite_code = invite_code.map(|code| code.id);
 
     let id = uuid::Uuid::new_v4().to_string();
     let user: User = sqlx::query_as!(
         User,
-        "INSERT INTO lenders (id, name, email, password, verification_code)
-            VALUES ($1, $2, $3, $4, $5)
+        "INSERT INTO lenders (id, name, email, password, verification_code, invite_code)
+            VALUES ($1, $2, $3, $4, $5, $6)
             RETURNING *",
         id,
         name,
         email.to_ascii_lowercase(),
         hashed_password,
         verification_code,
+        invite_code,
     )
     .fetch_one(pool)
     .await?;
@@ -117,8 +121,19 @@ pub async fn get_user_by_rest_token(
 ) -> Result<Option<User>> {
     let maybe_user = sqlx::query_as!(
         User,
-        "SELECT *
-            FROM lenders
+        "SELECT 
+            id,
+            name,
+            email,
+            password,
+            verified,
+            verification_code,
+            invite_code,
+            password_reset_token,
+            password_reset_at,
+            created_at,
+            updated_at 
+        FROM lenders
             WHERE password_reset_token = $1
           AND password_reset_at > $2",
         password_reset_token,

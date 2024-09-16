@@ -1,3 +1,4 @@
+use crate::db;
 use crate::db::lenders::generate_random_string;
 use crate::db::lenders::get_user_by_email;
 use crate::db::lenders::get_user_by_rest_token;
@@ -101,11 +102,45 @@ pub async fn register_user_handler(
         ));
     }
 
+    let invite_code = match body.invite_code {
+        None => {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                Json(ErrorResponse {
+                    message: "An invite code is required at this time".to_string(),
+                }),
+            ));
+        }
+        Some(code) => db::invite_code::load_invite_code(&data.db, code.as_str()).await,
+    };
+
+    let invite_code = match invite_code {
+        Ok(Some(code)) => code,
+        Ok(None) | Err(_) => {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                Json(ErrorResponse {
+                    message: "Provided invite code does not exist".to_string(),
+                }),
+            ));
+        }
+    };
+
+    if !invite_code.active {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ErrorResponse {
+                message: "Provided invite code is expired".to_string(),
+            }),
+        ));
+    }
+
     let user: User = register_user(
         &data.db,
         body.name.as_str(),
         body.email.as_str(),
         body.password.as_str(),
+        Some(invite_code),
     )
     .await
     .map_err(|e| {

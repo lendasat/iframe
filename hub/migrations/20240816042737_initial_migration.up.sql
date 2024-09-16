@@ -1,5 +1,15 @@
 -- Add up migration script here
 
+CREATE TABLE INVITE_CODES
+(
+    id     SERIAL PRIMARY KEY,
+    code   VARCHAR(100) NOT NULL,
+    active BOOLEAN NOT NULL
+);
+
+
+INSERT INTO INVITE_CODES (code, active) VALUES ('IMONFIRE2024', true);
+
 CREATE TABLE
     IF NOT EXISTS "borrowers"
 (
@@ -11,6 +21,7 @@ CREATE TABLE
     verification_code    VARCHAR(255),
     password_reset_token VARCHAR(50),
     password_reset_at    TIMESTAMP WITH TIME ZONE          DEFAULT CURRENT_TIMESTAMP,
+    invite_code          INT REFERENCES INVITE_CODES(id),
     created_at           TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at           TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -26,6 +37,7 @@ CREATE TABLE
     verification_code    VARCHAR(255),
     password_reset_token VARCHAR(50),
     password_reset_at    TIMESTAMP WITH TIME ZONE          DEFAULT CURRENT_TIMESTAMP,
+    invite_code          INT REFERENCES INVITE_CODES (id),
     created_at           TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at           TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

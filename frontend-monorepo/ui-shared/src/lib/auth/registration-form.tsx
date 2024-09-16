@@ -5,12 +5,18 @@ import { Button, Col, Container, Form, Row, Spinner } from "react-bootstrap";
 import { ReactComponent as Logo } from "../lendasat_white_bg.svg";
 
 interface RegistrationFormProps {
-  handleRegister: (name: string, email: string, password: string) => Promise<void>;
+  handleRegister: (name: string, email: string, password: string, inviteCode?: string) => Promise<void>;
 }
 
 export function RegistrationForm({ handleRegister }: RegistrationFormProps) {
+  let defaultInviteCode = "";
+  if (import.meta.env.VITE_BITCOIN_NETWORK === "regtest" || import.meta.env.VITE_BITCOIN_NETWORK === "signet") {
+    defaultInviteCode = "IMONFIRE2024";
+  }
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [inviteCode, setInviteCode] = useState<string>(defaultInviteCode);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string>("");
@@ -26,7 +32,7 @@ export function RegistrationForm({ handleRegister }: RegistrationFormProps) {
     }
     setError("");
     try {
-      await handleRegister(name, email, password);
+      await handleRegister(name, email, password, inviteCode);
     } catch (err) {
       console.error("Failed registering user:", err);
       setError(err instanceof Error ? err.message : "Registration failed.");
@@ -83,6 +89,17 @@ export function RegistrationForm({ handleRegister }: RegistrationFormProps) {
                   className="p-3"
                   style={{ width: "100%" }}
                   onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+              </Form.Group>
+
+              <Form.Group controlId="formBasicInviteCode" className="mb-3">
+                <Form.Control
+                  type="text"
+                  placeholder="Invite Code"
+                  value={inviteCode}
+                  className="p-3"
+                  style={{ width: "100%" }}
+                  onChange={(e) => setInviteCode(e.target.value)}
                 />
               </Form.Group>
 

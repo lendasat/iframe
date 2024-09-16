@@ -8,10 +8,18 @@ use bitcoin::PublicKey;
 use bitcoin::Txid;
 use rust_decimal::Decimal;
 use serde::Deserialize;
+use serde::Deserializer;
 use serde::Serialize;
 use sqlx::FromRow;
 use std::str::FromStr;
 use time::OffsetDateTime;
+
+#[derive(Debug, sqlx::FromRow)]
+pub struct InviteCode {
+    pub id: i32,
+    pub code: String,
+    pub active: bool,
+}
 
 #[derive(Debug, Deserialize, sqlx::FromRow, Serialize, Clone)]
 pub struct User {
@@ -21,6 +29,7 @@ pub struct User {
     pub password: String,
     pub verified: bool,
     pub verification_code: Option<String>,
+    pub invite_code: Option<i32>,
     pub password_reset_token: Option<String>,
     #[serde(with = "time::serde::rfc3339::option")]
     pub password_reset_at: Option<OffsetDateTime>,
@@ -55,6 +64,8 @@ pub struct RegisterUserSchema {
     pub name: String,
     pub email: String,
     pub password: String,
+    #[serde(deserialize_with = "empty_string_is_none")]
+    pub invite_code: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -328,5 +339,17 @@ impl From<ContractStatus> for db::ContractStatus {
             ContractStatus::Closed => Self::Closed,
             ContractStatus::Rejected => Self::Rejected,
         }
+    }
+}
+
+fn empty_string_is_none<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s = String::deserialize(deserializer)?;
+    if s.is_empty() {
+        Ok(None)
+    } else {
+        Ok(Some(s))
     }
 }

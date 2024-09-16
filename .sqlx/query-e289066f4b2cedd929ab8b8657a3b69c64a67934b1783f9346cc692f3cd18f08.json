@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO lenders (id, name, email, password, verification_code)\n            VALUES ($1, $2, $3, $4, $5)\n            RETURNING *",
+  "query": "SELECT \n            id,\n            name,\n            email,\n            password,\n            verified,\n            verification_code,\n            invite_code,\n            password_reset_token,\n            password_reset_at,\n            created_at,\n            updated_at \n        FROM lenders\n            WHERE password_reset_token = $1\n          AND password_reset_at > $2",
   "describe": {
     "columns": [
       {
@@ -35,32 +35,34 @@
       },
       {
         "ordinal": 6,
+        "name": "invite_code",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 7,
         "name": "password_reset_token",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 7,
+        "ordinal": 8,
         "name": "password_reset_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 8,
+        "ordinal": 9,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 9,
+        "ordinal": 10,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
-        "Bpchar",
-        "Varchar",
-        "Varchar",
-        "Varchar",
-        "Varchar"
+        "Text",
+        "Timestamptz"
       ]
     },
     "nullable": [
@@ -72,9 +74,10 @@
       true,
       true,
       true,
+      true,
       false,
       false
     ]
   },
-  "hash": "d8691e5d0ee35d2d93e30b4573d49e18485a279cbc114ec0c60b7749848f12e6"
+  "hash": "e289066f4b2cedd929ab8b8657a3b69c64a67934b1783f9346cc692f3cd18f08"
 }

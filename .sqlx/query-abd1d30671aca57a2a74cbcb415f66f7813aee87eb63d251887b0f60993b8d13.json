@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO borrowers (id, name, email, password, verification_code)\n            VALUES ($1, $2, $3, $4, $5)\n            RETURNING *",
+  "query": "INSERT INTO borrowers (id, name, email, password, verification_code, invite_code)\n            VALUES ($1, $2, $3, $4, $5, $6)\n            RETURNING *",
   "describe": {
     "columns": [
       {
@@ -45,11 +45,16 @@
       },
       {
         "ordinal": 8,
+        "name": "invite_code",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 9,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 9,
+        "ordinal": 10,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -60,7 +65,8 @@
         "Varchar",
         "Varchar",
         "Varchar",
-        "Varchar"
+        "Varchar",
+        "Int4"
       ]
     },
     "nullable": [
@@ -72,9 +78,10 @@
       true,
       true,
       true,
+      true,
       false,
       false
     ]
   },
-  "hash": "301723d3de1870d7e43a972113f475c473077d28ca05f82c56ef0200582b3f4c"
+  "hash": "abd1d30671aca57a2a74cbcb415f66f7813aee87eb63d251887b0f60993b8d13"
 }
