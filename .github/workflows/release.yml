@@ -75,15 +75,19 @@ jobs:
       - name: Build the hub
         run: just release-hub
 
-      - name: Push version changes to main
-        if: ${{ github.event.inputs.push_main == 'true' }}
-        run: |
-          git push origin main
-
       - name: Push version changes to separate branch
         run: |
           git checkout -b release-branch/${{ github.event.inputs.version }}
           git push origin release-branch/${{ github.event.inputs.version }}
+
+      - name: Create Pull Request to merge into main
+        uses: peter-evans/create-pull-request@v7
+        with:
+          title: Merge back release changes from ${{ github.event.inputs.version }}
+          body: |
+            Changes in this PR have already been released. See https://github.com/lendasat/lendasat/releases
+          labels: |
+            automated pr
 
       - name: Create GitHub Release
         id: create_release
