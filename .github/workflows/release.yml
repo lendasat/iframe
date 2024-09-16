@@ -66,6 +66,7 @@ jobs:
           cache-dependency-path: "frontend-monorepo/package-lock.json"
 
       - name: Install dependencies
+        working-directory: ./frontend-monorepo
         run: npm ci
 
       - name: Build frontend
