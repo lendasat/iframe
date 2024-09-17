@@ -7,9 +7,9 @@ function Registration() {
   const { register } = useBaseHttpClient();
   const navigate = useNavigate();
 
-  const handleRegister = async (name: string, email: string, password: string) => {
-    await register(name, email, password);
-    navigate("/"); // Redirect to login after successful registration
+  const handleRegister = async (name: string, email: string, password: string, inviteCode?: string) => {
+    await register(name, email, password, inviteCode);
+    navigate("/", { state: { registered: true } }); // Redirect to login after successful registration
   };
 
   return <RegistrationForm handleRegister={handleRegister} />;

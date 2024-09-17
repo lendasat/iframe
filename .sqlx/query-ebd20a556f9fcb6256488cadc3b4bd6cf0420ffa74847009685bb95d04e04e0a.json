@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT *\n            FROM lenders\n            WHERE password_reset_token = $1\n          AND password_reset_at > $2",
+  "query": "INSERT INTO lenders (id, name, email, password, verification_code, invite_code)\n            VALUES ($1, $2, $3, $4, $5, $6)\n            RETURNING *",
   "describe": {
     "columns": [
       {
@@ -45,19 +45,28 @@
       },
       {
         "ordinal": 8,
+        "name": "invite_code",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 9,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 9,
+        "ordinal": 10,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
-        "Text",
-        "Timestamptz"
+        "Bpchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Int4"
       ]
     },
     "nullable": [
@@ -69,9 +78,10 @@
       true,
       true,
       true,
+      true,
       false,
       false
     ]
   },
-  "hash": "bca84f6a8ab6f6a7721cb722cbdae2415b307bb11283cbbf1a3a97778de61725"
+  "hash": "ebd20a556f9fcb6256488cadc3b4bd6cf0420ffa74847009685bb95d04e04e0a"
 }

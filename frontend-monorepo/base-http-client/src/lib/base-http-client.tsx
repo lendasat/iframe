@@ -30,13 +30,20 @@ export class BaseHttpClient {
     }
   }
 
-  async register(name: string, email: string, password: string): Promise<void> {
+  async register(name: string, email: string, password: string, inviteCode?: string): Promise<void> {
     try {
-      await this.httpClient.post("/api/auth/register", { name, email, password });
+      await this.httpClient.post("/api/auth/register", { name, email, password, invite_code: inviteCode });
       console.log("Registration successful");
     } catch (error) {
-      console.error("Registration failed", error);
-      throw error;
+      if (axios.isAxiosError(error) && error.response) {
+        console.log(error.response);
+        const status = error.response.status;
+        const message = error.response.data.message;
+
+        throw new Error(message);
+      } else {
+        throw new Error(error);
+      }
     }
   }
 

@@ -43,7 +43,8 @@ async fn insert_lender(pool: &Pool<Postgres>) -> Result<User> {
             .expect("expect to have user");
         return Ok(maybe_user);
     }
-    let user = db::lenders::register_user(pool, "alice the lender", email, "password123").await?;
+    let user =
+        db::lenders::register_user(pool, "alice the lender", email, "password123", None).await?;
     let verification_code = user.verification_code.clone().expect("to exist");
     db::lenders::verify_user(pool, verification_code.as_str()).await?;
 
@@ -60,7 +61,8 @@ async fn insert_borrower(pool: &Pool<Postgres>) -> Result<User> {
             .expect("expect to have user");
         return Ok(maybe_user);
     }
-    let user = db::borrowers::register_user(pool, "bob the borrower", email, "password123").await?;
+    let user =
+        db::borrowers::register_user(pool, "bob the borrower", email, "password123", None).await?;
     let verification_code = user.verification_code.clone().expect("to exist");
     db::borrowers::verify_user(pool, verification_code.as_str()).await?;
 

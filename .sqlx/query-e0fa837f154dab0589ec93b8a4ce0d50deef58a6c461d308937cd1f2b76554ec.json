@@ -45,11 +45,16 @@
       },
       {
         "ordinal": 8,
+        "name": "invite_code",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 9,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 9,
+        "ordinal": 10,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -66,6 +71,7 @@
       false,
       false,
       false,
+      true,
       true,
       true,
       true,

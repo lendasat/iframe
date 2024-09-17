@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, active, code FROM INVITE_CODES WHERE code = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "active",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 2,
+        "name": "code",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "7090cdf8b5fd01345320fc9a2ebfda3b106454ea9ce075009daf79e4d24e08c6"
+}

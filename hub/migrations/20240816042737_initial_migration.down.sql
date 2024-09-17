@@ -8,5 +8,7 @@ DROP TYPE IF EXISTS loan_offer_status;
 
 DROP TYPE IF EXISTS contract_status;
 
+DROP TABLE IF EXISTS "INVITE_CODES";
+
 DROP TABLE IF EXISTS "lenders";
 DROP TABLE IF EXISTS "borrowers";
