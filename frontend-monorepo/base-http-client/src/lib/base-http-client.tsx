@@ -16,7 +16,6 @@ export class BaseHttpClient {
   async getVersion(): Promise<Version> {
     try {
       const response: AxiosResponse<Version> = await this.httpClient.get("/api/version");
-      console.log("I did another request");
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {

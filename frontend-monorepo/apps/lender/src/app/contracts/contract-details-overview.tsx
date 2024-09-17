@@ -4,7 +4,18 @@ import { Contract, ContractStatus, contractStatusToLabelString } from "@frontend
 import { useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
 import { CurrencyFormatter } from "@frontend-monorepo/ui-shared";
 import React, { Suspense, useState } from "react";
-import { Alert, Badge, Button, Col, Container, OverlayTrigger, Row, Spinner, Tooltip } from "react-bootstrap";
+import {
+  Alert,
+  Badge,
+  Button,
+  ButtonGroup,
+  Col,
+  Container,
+  OverlayTrigger,
+  Row,
+  Spinner,
+  Tooltip,
+} from "react-bootstrap";
 import { Await, useNavigate, useParams } from "react-router-dom";
 
 function ContractDetailsOverview() {
@@ -256,13 +267,24 @@ const ContractStatusDetails = (
     onSuccess,
   }: ContractStatusDetailsProps,
 ) => {
-  const { approveContract, principalGiven, markAsRepaid } = useLenderHttpClient();
+  const { approveContract, rejectContract, principalGiven, markAsRepaid } = useLenderHttpClient();
   const [isLoading, setIsLoading] = useState(false);
 
   const onContractApprove = async () => {
     try {
       setIsLoading(true);
       await approveContract(contract.id);
+      onSuccess();
+    } catch (error) {
+      onError(error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  const onContractReject = async () => {
+    try {
+      setIsLoading(true);
+      await rejectContract(contract.id);
       onSuccess();
     } catch (error) {
       onError(error);
@@ -297,15 +319,26 @@ const ContractStatusDetails = (
     case ContractStatus.Requested:
       // TODO:
       return (
-        <Button onClick={onContractApprove} disabled={isLoading}>
-          {isLoading
-            ? (
-              <Spinner animation="border" role="status" variant="light" size="sm">
-                <span className="visually-hidden">Loading...</span>
-              </Spinner>
-            )
-            : "Approve"}
-        </Button>
+        <div className="d-flex gap-2">
+          <Button onClick={onContractApprove} disabled={isLoading}>
+            {isLoading
+              ? (
+                <Spinner animation="border" role="status" variant="light" size="sm">
+                  <span className="visually-hidden">Loading...</span>
+                </Spinner>
+              )
+              : "Approve"}
+          </Button>
+          <Button onClick={onContractReject} disabled={isLoading}>
+            {isLoading
+              ? (
+                <Spinner animation="border" role="status" variant="light" size="sm">
+                  <span className="visually-hidden">Loading...</span>
+                </Spinner>
+              )
+              : "Reject"}
+          </Button>
+        </div>
       );
     case ContractStatus.Approved:
       return (
