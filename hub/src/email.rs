@@ -21,6 +21,8 @@ pub struct Email {
     config: Config,
 }
 
+const DISPUTE_ADMIN_EMAIL: &str = "dispute-center@lendasat.com";
+
 impl Email {
     pub fn new(user: User, url: String, config: Config) -> Self {
         let from = format!("Lendasat <{}>", config.smtp_from.to_owned());
@@ -144,5 +146,50 @@ impl Email {
             format!("Dispute started {} ", dispute_id).as_str(),
         )
         .await
+    }
+    pub async fn send_notify_admin_about_dispute(
+        &self,
+        dispute_id: &str,
+        lender_id: &str,
+        borrower_id: &str,
+        contract_id: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let template_name = "notify_admin_dispute";
+
+        let mut handlebars = Handlebars::new();
+        let content = Self::get_template_content(&format!("{}.hbs", template_name))?;
+        handlebars.register_template_string(template_name, content)?;
+        let content = Self::get_template_content("partials/styles.hbs")?;
+        handlebars.register_template_string("styles", content)?;
+        let content = Self::get_template_content("layouts/base.hbs")?;
+        handlebars.register_template_string("base", content)?;
+
+        let data = serde_json::json!({
+            "first_name": &self.user.name.split_whitespace().next().expect("to be able to split"),
+            "subject": &template_name,
+            "lender_id": lender_id,
+            "borrower_id": borrower_id,
+            "contract_id": contract_id,
+            "dispute_id": dispute_id,
+        });
+
+        let html_template = handlebars.render(template_name, &data)?;
+
+        let email = Message::builder()
+            .to(format!("{} <{}>", self.user.name.as_str(), DISPUTE_ADMIN_EMAIL).parse()?)
+            .reply_to(self.from.as_str().parse()?)
+            .from(self.from.as_str().parse()?)
+            .subject(format!("Dispute started {} ", dispute_id).as_str())
+            .header(ContentType::TEXT_HTML)
+            .body(html_template)?;
+
+        let transport = self.new_transport()?;
+
+        if self.config.smtp_disabled {
+            tracing::info!("Sending smtp is disabled.",);
+            return Ok(());
+        }
+        transport.send(email).await?;
+        Ok(())
     }
 }
