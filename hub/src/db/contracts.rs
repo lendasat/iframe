@@ -718,3 +718,47 @@ pub async fn reject_contract_request(
 
     Ok(contract.into())
 }
+
+pub(crate) async fn mark_contract_as(
+    transaction: &mut sqlx::Transaction<'_, Postgres>,
+    contract_id: &str,
+    status: db::ContractStatus,
+) -> Result<Contract> {
+    let contract = sqlx::query_as!(
+        db::Contract,
+        r#"
+        UPDATE contracts
+        SET
+            status = $1,
+            updated_at = $2
+        WHERE id = $3
+        RETURNING
+            id,
+            lender_id,
+            borrower_id,
+            loan_id,
+            initial_ltv,
+            initial_collateral_sats,
+            loan_amount,
+            borrower_btc_address,
+            borrower_pk,
+            borrower_loan_address,
+            contract_address,
+            contract_index,
+            collateral_txid,
+            collateral_vout,
+            claim_txid,
+            status as "status: crate::model::db::ContractStatus",
+            duration_months,
+            created_at,
+            updated_at
+        "#,
+        status as db::ContractStatus,
+        OffsetDateTime::now_utc(),
+        contract_id,
+    )
+    .fetch_one(&mut **transaction)
+    .await?;
+
+    Ok(contract.into())
+}

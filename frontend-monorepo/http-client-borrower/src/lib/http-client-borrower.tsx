@@ -1,7 +1,8 @@
 import { BaseHttpClient, BaseHttpClientContext, BaseHttpClientContextType } from "@frontend-monorepo/base-http-client";
+import { data } from "autoprefixer";
 import axios, { AxiosResponse } from "axios";
 import { createContext, useContext } from "react";
-import { ClaimCollateralPsbtResponse, Contract, ContractRequest, LoanOffer } from "./models";
+import { ClaimCollateralPsbtResponse, Contract, ContractRequest, Dispute, LoanOffer } from "./models";
 import { parseRFC3339Date } from "./utils";
 
 // Interface for the raw data received from the API
@@ -126,6 +127,30 @@ export class HttpClientBorrower extends BaseHttpClient {
       throw error;
     }
   }
+
+  async startDispute(contract_id: string, reason: string, comment: string): Promise<Dispute> {
+    try {
+      console.log(`Starting dispute ${contract_id}`);
+      const response: AxiosResponse<Dispute> = await this.httpClient.post(`/api/disputes`, {
+        contract_id,
+        reason,
+        comment,
+      });
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to create dispute: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not start dispute ${JSON.stringify(error)}`);
+      }
+    }
+  }
 }
 
 type BorrowerHttpClientContextType = Pick<
@@ -137,6 +162,7 @@ type BorrowerHttpClientContextType = Pick<
   | "getContract"
   | "getClaimCollateralPsbt"
   | "postClaimTx"
+  | "startDispute"
 >;
 
 export const BorrowerHttpClientContext = createContext<BorrowerHttpClientContextType | undefined>(undefined);
@@ -177,6 +203,7 @@ export const HttpClientBorrowerProvider: React.FC<HttpClientProviderProps> = ({ 
     getContract: httpClient.getContract.bind(httpClient),
     getClaimCollateralPsbt: httpClient.getClaimCollateralPsbt.bind(httpClient),
     postClaimTx: httpClient.postClaimTx.bind(httpClient),
+    startDispute: httpClient.startDispute.bind(httpClient),
   };
 
   return (

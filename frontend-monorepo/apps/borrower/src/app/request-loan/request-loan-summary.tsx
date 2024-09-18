@@ -58,6 +58,9 @@ export function RequestLoanSummary() {
   if (import.meta.env.VITE_BITCOIN_NETWORK === "regtest") {
     defaultBtcAddress = "bcrt1qqpf790lnsavxe9ree00tp8dd550ddw76pluxyr02tn2rssj6dtnstxmagd";
   }
+  if (import.meta.env.VITE_BITCOIN_NETWORK === "signet") {
+    defaultBtcAddress = "tb1q54wsjqzdm0fmqzezuzq00x9tramznhfa7zw6y0";
+  }
 
   const [btcAddress, setBtcAddress] = useState(defaultBtcAddress);
   const [amountError, setAmountError] = useState<string | null>(null);

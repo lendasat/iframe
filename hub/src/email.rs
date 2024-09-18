@@ -134,4 +134,15 @@ impl Email {
         )
         .await
     }
+
+    pub async fn send_start_dispute(
+        &self,
+        dispute_id: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        self.send_email(
+            "start_dispute",
+            format!("Dispute started {} ", dispute_id).as_str(),
+        )
+        .await
+    }
 }

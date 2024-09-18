@@ -200,6 +200,14 @@ pub enum ContractStatus {
     Closed,
     /// The contract request was rejected by the lender.
     Rejected,
+    /// A dispute has been started by the borrower
+    DisputeBorrowerStarted,
+    /// A dispute has been started by the lender
+    DisputeLenderStarted,
+    /// The dispute has been resolved by the borrower
+    DisputeBorrowerResolved,
+    /// The dispute has been resolved by the lender
+    DisputeLenderResolved,
 }
 
 pub mod db {
@@ -246,6 +254,10 @@ pub mod db {
         Closing,
         Closed,
         Rejected,
+        DisputeBorrowerStarted,
+        DisputeLenderStarted,
+        DisputeBorrowerResolved,
+        DisputeLenderResolved,
     }
 }
 
@@ -294,6 +306,10 @@ impl From<db::ContractStatus> for ContractStatus {
             db::ContractStatus::Closing => Self::Closing,
             db::ContractStatus::Closed => Self::Closed,
             db::ContractStatus::Rejected => Self::Rejected,
+            db::ContractStatus::DisputeBorrowerStarted => Self::DisputeBorrowerStarted,
+            db::ContractStatus::DisputeLenderStarted => Self::DisputeLenderStarted,
+            db::ContractStatus::DisputeBorrowerResolved => Self::DisputeBorrowerResolved,
+            db::ContractStatus::DisputeLenderResolved => Self::DisputeLenderResolved,
         }
     }
 }
@@ -338,6 +354,10 @@ impl From<ContractStatus> for db::ContractStatus {
             ContractStatus::Closing => Self::Closing,
             ContractStatus::Closed => Self::Closed,
             ContractStatus::Rejected => Self::Rejected,
+            ContractStatus::DisputeBorrowerStarted => Self::DisputeBorrowerStarted,
+            ContractStatus::DisputeLenderStarted => Self::DisputeLenderStarted,
+            ContractStatus::DisputeBorrowerResolved => Self::DisputeBorrowerResolved,
+            ContractStatus::DisputeLenderResolved => Self::DisputeLenderResolved,
         }
     }
 }
@@ -352,4 +372,36 @@ where
     } else {
         Ok(Some(s))
     }
+}
+
+#[derive(sqlx::Type, Serialize, Debug)]
+#[sqlx(type_name = "dispute_status")]
+pub enum DisputeStatus {
+    StartedBorrower,
+    StartedLender,
+    ResolvedBorrower,
+    ResolvedLender,
+}
+
+#[derive(sqlx::Type, Serialize, Debug)]
+pub struct Dispute {
+    pub id: String,
+    pub contract_id: String,
+    pub borrower_id: String,
+    pub lender_id: String,
+    pub lender_payout_sats: Option<i64>,
+    pub borrower_payout_sats: Option<i64>,
+    pub comment: String,
+    pub status: DisputeStatus,
+    #[serde(with = "time::serde::rfc3339")]
+    pub created_at: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339")]
+    pub updated_at: OffsetDateTime,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct DisputeRequestBodySchema {
+    pub contract_id: String,
+    pub reason: String,
+    pub comment: String,
 }

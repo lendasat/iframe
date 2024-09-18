@@ -70,7 +70,21 @@ CREATE TABLE
     FOREIGN KEY (lender_id) REFERENCES lenders (id)
 );
 
-CREATE TYPE contract_status AS ENUM ('Requested', 'Approved', 'CollateralSeen', 'CollateralConfirmed', 'PrincipalGiven', 'Repaid', 'Closing', 'Closed', 'Rejected');
+CREATE TYPE contract_status AS ENUM (
+    'Requested',
+    'Approved',
+    'CollateralSeen',
+    'CollateralConfirmed',
+    'PrincipalGiven',
+    'Repaid',
+    'Closing',
+    'Closed',
+    'Rejected',
+    'DisputeBorrowerStarted',
+    'DisputeLenderStarted',
+    'DisputeBorrowerResolved',
+    'DisputeLenderResolved'
+    );
 
 CREATE TABLE
     IF NOT EXISTS "contracts"
@@ -97,4 +111,29 @@ CREATE TABLE
     FOREIGN KEY (lender_id) REFERENCES lenders (id),
     FOREIGN KEY (borrower_id) REFERENCES borrowers (id),
     FOREIGN KEY (loan_id) REFERENCES loan_offers (id)
+);
+
+
+CREATE TYPE dispute_status AS ENUM (
+    'StartedBorrower',
+    'StartedLender',
+    'ResolvedBorrower',
+    'ResolvedLender'
+    );
+
+CREATE TABLE DISPUTES
+(
+    id                   CHAR(36) PRIMARY KEY     NOT NULL,
+    contract_id          CHAR(36)                 NOT NULL,
+    borrower_id          CHAR(36)                 NOT NULL,
+    lender_id            CHAR(36)                 NOT NULL,
+    lender_payout_sats   BIGINT,
+    borrower_payout_sats BIGINT,
+    comment              VARCHAR(255)             NOT NULL DEFAULT '',
+    status               dispute_status           NOT NULL,
+    created_at           TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at           TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (lender_id) REFERENCES lenders (id),
+    FOREIGN KEY (borrower_id) REFERENCES borrowers (id),
+    FOREIGN KEY (contract_id) REFERENCES contracts (id)
 );

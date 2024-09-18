@@ -35,6 +35,46 @@ use tracing::instrument;
 
 const ORIGINATION_FEE_RATE: f32 = 0.01;
 
+pub(crate) fn router(app_state: Arc<AppState>) -> Router {
+    Router::new()
+        .route(
+            "/api/contracts",
+            get(get_contracts).route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                jwt_auth::auth,
+            )),
+        )
+        .route(
+            "/api/contracts/:id",
+            get(get_contract).route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                jwt_auth::auth,
+            )),
+        )
+        .route(
+            "/api/contracts/:id",
+            post(post_claim_tx).route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                jwt_auth::auth,
+            )),
+        )
+        .route(
+            "/api/contracts",
+            post(post_contract_request).route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                jwt_auth::auth,
+            )),
+        )
+        .route(
+            "/api/contracts/:id/claim",
+            get(get_claim_collateral_psbt).route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                jwt_auth::auth,
+            )),
+        )
+        .with_state(app_state)
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Contract {
     pub id: String,
@@ -80,46 +120,6 @@ pub struct ClaimCollateralPsbt {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ClaimTx {
     pub tx: String,
-}
-
-pub(crate) fn router(app_state: Arc<AppState>) -> Router {
-    Router::new()
-        .route(
-            "/api/contracts",
-            get(get_contracts).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_auth::auth,
-            )),
-        )
-        .route(
-            "/api/contracts/:id",
-            get(get_contract).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_auth::auth,
-            )),
-        )
-        .route(
-            "/api/contracts/:id",
-            post(post_claim_tx).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_auth::auth,
-            )),
-        )
-        .route(
-            "/api/contracts",
-            post(post_contract_request).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_auth::auth,
-            )),
-        )
-        .route(
-            "/api/contracts/:id/claim",
-            get(get_claim_collateral_psbt).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_auth::auth,
-            )),
-        )
-        .with_state(app_state)
 }
 
 pub async fn get_contracts(
