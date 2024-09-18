@@ -1,8 +1,9 @@
+import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
 import { ForgotPasswordForm } from "@frontend-monorepo/ui-shared";
 import React from "react";
 
 function ForgotPassword() {
-  const { forgotPassword } = useBorrowerHttpClient();
+  const { forgotPassword } = useBaseHttpClient();
 
   const handleLogin = async (email: string) => {
     return await forgotPassword(email);
