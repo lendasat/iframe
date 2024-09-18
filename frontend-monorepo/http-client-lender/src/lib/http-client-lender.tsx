@@ -80,6 +80,24 @@ export class HttpClientLender extends BaseHttpClient {
     }
   }
 
+  async rejectContract(id: string): Promise<void> {
+    try {
+      await this.httpClient.delete(`/api/contracts/${id}/reject`);
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to reject contract: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not reject contract ${JSON.stringify(error)}`);
+      }
+    }
+  }
+
   async principalGiven(id: string): Promise<void> {
     try {
       await this.httpClient.put(`/api/contracts/${id}/principalgiven`);
@@ -109,6 +127,7 @@ type LenderHttpClientContextType = Pick<
   | "getContracts"
   | "getContract"
   | "approveContract"
+  | "rejectContract"
   | "principalGiven"
   | "markAsRepaid"
 >;
@@ -148,6 +167,7 @@ export const HttpClientLenderProvider: React.FC<HttpClientProviderProps> = ({ ch
     getContracts: httpClient.getContracts.bind(httpClient),
     getContract: httpClient.getContract.bind(httpClient),
     approveContract: httpClient.approveContract.bind(httpClient),
+    rejectContract: httpClient.rejectContract.bind(httpClient),
     principalGiven: httpClient.principalGiven.bind(httpClient),
     markAsRepaid: httpClient.markAsRepaid.bind(httpClient),
   };

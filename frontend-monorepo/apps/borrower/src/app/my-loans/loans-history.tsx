@@ -36,7 +36,7 @@ function LoansHistoryComponent(props: LoansHistoryComponentsProps) {
           <Col>
           </Col>
           <Col md={1}>Opened</Col>
-          <Col md={1}>Repaid</Col>
+          <Col md={1}>Closed</Col>
         </Row>
       </Container>
       {loans.map((loan, index) => (

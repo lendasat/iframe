@@ -17,14 +17,20 @@ function MyLoans() {
           <div>
             <div className="p-4">
               <ContractsComponent
-                loans={contracts.filter((loan) => loan.status !== ContractStatus.Closed)}
+                loans={contracts.filter((
+                  loan,
+                ) => (loan.status !== ContractStatus.Closed && loan.status !== ContractStatus.Rejected))}
               />
             </div>
             <div className="px-4">
               <CollapsibleComponent
                 title={"History"}
                 children={
-                  <LoansHistoryComponent loans={contracts.filter((loan) => loan.status === ContractStatus.Closed)} />
+                  <LoansHistoryComponent
+                    loans={contracts.filter((
+                      loan,
+                    ) => (loan.status === ContractStatus.Closed || loan.status === ContractStatus.Rejected))}
+                  />
                 }
               />
             </div>
