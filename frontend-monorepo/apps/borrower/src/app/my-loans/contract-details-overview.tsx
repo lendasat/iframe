@@ -108,7 +108,7 @@ function ContractDetails({ contract }: DetailsProps) {
   const loanOriginatorFee = (loanAmount / initial_price) * ORIGINATOR_FEE;
   const loanOriginatorFeeUsd = (loanOriginatorFee * initial_price).toFixed(0);
 
-  let disputeInProgress = contract.status === ContractStatus.DisputeBorrowerResolved
+  const disputeInProgress = contract.status === ContractStatus.DisputeBorrowerResolved
     || contract.status === ContractStatus.DisputeLenderResolved
     || contract.status === ContractStatus.DisputeBorrowerStarted
     || contract.status === ContractStatus.DisputeLenderStarted;

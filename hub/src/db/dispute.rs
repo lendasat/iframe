@@ -100,6 +100,39 @@ async fn insert_new_dispute(
     Ok(dispute)
 }
 
+pub(crate) async fn load_disputes_by_borrower_and_dispute_id(
+    pool: &Pool<Postgres>,
+    borrower_id: &str,
+    dispute_id: &str,
+) -> Result<Option<Dispute>, Error> {
+    let disputes = sqlx::query_as!(
+        Dispute,
+        r#"
+        SELECT 
+            id,
+            contract_id,
+            borrower_id,
+            lender_id,
+            lender_payout_sats,
+            borrower_payout_sats,
+            comment,
+            status as "status: crate::model::DisputeStatus",
+            created_at,
+            updated_at
+        FROM 
+            DISPUTES
+        WHERE 
+            id = $1 and borrower_id = $2
+        "#,
+        dispute_id,
+        borrower_id
+    )
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(disputes)
+}
+
 pub(crate) async fn load_disputes_by_borrower_and_contract_id(
     pool: &Pool<Postgres>,
     borrower_id: &str,
@@ -125,6 +158,37 @@ pub(crate) async fn load_disputes_by_borrower_and_contract_id(
             contract_id = $1 and borrower_id = $2
         "#,
         contract_id,
+        borrower_id
+    )
+    .fetch_all(pool)
+    .await?;
+
+    Ok(disputes)
+}
+
+pub(crate) async fn load_disputes_by_borrower(
+    pool: &Pool<Postgres>,
+    borrower_id: &str,
+) -> Result<Vec<Dispute>, Error> {
+    let disputes = sqlx::query_as!(
+        Dispute,
+        r#"
+        SELECT 
+            id,
+            contract_id,
+            borrower_id,
+            lender_id,
+            lender_payout_sats,
+            borrower_payout_sats,
+            comment,
+            status as "status: crate::model::DisputeStatus",
+            created_at,
+            updated_at
+        FROM 
+            DISPUTES
+        WHERE 
+            borrower_id = $1
+        "#,
         borrower_id
     )
     .fetch_all(pool)

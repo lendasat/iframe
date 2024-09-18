@@ -21,8 +21,15 @@ use time::OffsetDateTime;
 pub(crate) fn router(app_state: Arc<AppState>) -> Router {
     Router::new()
         .route(
-            "/api/disputes/:contract_id",
-            get(get_all_disputes_by_contract).route_layer(middleware::from_fn_with_state(
+            "/api/disputes",
+            get(get_all_disputes).route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                jwt_auth::auth,
+            )),
+        )
+        .route(
+            "/api/disputes/:dispute_id",
+            get(get_disputes_by_id).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
                 jwt_auth::auth,
             )),
@@ -37,15 +44,30 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
         .with_state(app_state)
 }
 
-pub async fn get_all_disputes_by_contract(
+pub async fn get_all_disputes(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<User>,
-    Path(contract_id): Path<String>,
 ) -> anyhow::Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let disputes = db::dispute::load_disputes_by_borrower_and_contract_id(
+    let disputes = db::dispute::load_disputes_by_borrower(&data.db, user.id.as_str())
+        .await
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Database error: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
+    Ok((StatusCode::OK, Json(disputes)))
+}
+
+pub async fn get_disputes_by_id(
+    State(data): State<Arc<AppState>>,
+    Extension(user): Extension<User>,
+    Path(dispute_id): Path<String>,
+) -> anyhow::Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    let dispute = db::dispute::load_disputes_by_borrower_and_dispute_id(
         &data.db,
         user.id.as_str(),
-        contract_id.as_str(),
+        dispute_id.as_str(),
     )
     .await
     .map_err(|error| {
@@ -54,14 +76,14 @@ pub async fn get_all_disputes_by_contract(
         };
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
     })?;
-    if disputes.is_empty() {
+    if dispute.is_none() {
         let error_response = ErrorResponse {
             message: "Dispute not found".to_string(),
         };
 
         return Err((StatusCode::NOT_FOUND, Json(error_response)));
     }
-    Ok((StatusCode::OK, Json(disputes)))
+    Ok((StatusCode::OK, Json(dispute)))
 }
 
 pub(crate) async fn create_dispute(

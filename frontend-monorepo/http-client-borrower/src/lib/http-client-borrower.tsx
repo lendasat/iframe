@@ -1,5 +1,4 @@
 import { BaseHttpClient, BaseHttpClientContext, BaseHttpClientContextType } from "@frontend-monorepo/base-http-client";
-import { data } from "autoprefixer";
 import axios, { AxiosResponse } from "axios";
 import { createContext, useContext } from "react";
 import { ClaimCollateralPsbtResponse, Contract, ContractRequest, Dispute, LoanOffer } from "./models";
@@ -10,6 +9,10 @@ interface RawContract extends Omit<Contract, "created_at" | "repaid_at" | "expir
   created_at: string;
   repaid_at: string;
   expiry: string;
+}
+interface RawDispute extends Omit<Dispute, "created_at" | "updated_at"> {
+  created_at: string;
+  updated_at: string;
 }
 
 export class HttpClientBorrower extends BaseHttpClient {
@@ -151,6 +154,30 @@ export class HttpClientBorrower extends BaseHttpClient {
       }
     }
   }
+
+  async getDispute(disputeId: string): Promise<Dispute> {
+    try {
+      const response: AxiosResponse<RawDispute> = await this.httpClient.get(`/api/disputes/${disputeId}`);
+      const dispute = response.data;
+      return {
+        ...dispute,
+        created_at: parseRFC3339Date(dispute.created_at)!,
+        updated_at: parseRFC3339Date(dispute.updated_at)!,
+      };
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to fetch dispute: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not fetch dispute ${JSON.stringify(error)}`);
+      }
+    }
+  }
 }
 
 type BorrowerHttpClientContextType = Pick<
@@ -163,6 +190,7 @@ type BorrowerHttpClientContextType = Pick<
   | "getClaimCollateralPsbt"
   | "postClaimTx"
   | "startDispute"
+  | "getDispute"
 >;
 
 export const BorrowerHttpClientContext = createContext<BorrowerHttpClientContextType | undefined>(undefined);
@@ -204,6 +232,7 @@ export const HttpClientBorrowerProvider: React.FC<HttpClientProviderProps> = ({ 
     getClaimCollateralPsbt: httpClient.getClaimCollateralPsbt.bind(httpClient),
     postClaimTx: httpClient.postClaimTx.bind(httpClient),
     startDispute: httpClient.startDispute.bind(httpClient),
+    getDispute: httpClient.getDispute.bind(httpClient),
   };
 
   return (
