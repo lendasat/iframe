@@ -18,7 +18,6 @@ export class HttpClientBorrower extends BaseHttpClient {
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
-        console.log(error.response);
         const message = error.response.data.message;
         console.error(
           `Failed to fetch loan offers: http: ${error.response?.status} and response: ${
@@ -49,10 +48,21 @@ export class HttpClientBorrower extends BaseHttpClient {
       const response: AxiosResponse<Contract> = await this.httpClient.post("/api/contracts", request);
       return response.data;
     } catch (error) {
-      console.error(
-        `Failed to post contract request: http: ${error.response?.status} and response: ${error.response?.data}`,
-      );
-      throw error;
+      if (axios.isAxiosError(error) && error.response) {
+        if (error.response.status == 422) {
+          throw new Error(`Invalid request: ${JSON.stringify(error.response.data)}`);
+        }
+
+        const message = error.response.data.message;
+        console.error(
+          `Failed to post contract request: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not fetch version ${JSON.stringify(error)}`);
+      }
     }
   }
 

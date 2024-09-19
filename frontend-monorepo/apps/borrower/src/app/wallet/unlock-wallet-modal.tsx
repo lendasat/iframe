@@ -25,14 +25,17 @@ export function UnlockWalletModal({ show, handleClose, handleSubmit }: WalletMod
       // Reset all states when the modal is shown
       setPassword("");
       setError("");
+      init()
+        .then(() => {
+          console.log("WASM module initialized");
+        })
+        .catch(err => console.error("Failed to initialize WASM module:", err));
     }
   }, [show]); // This effect runs every time 'show' changes
 
-  const onOkClick = async () => {
+  const onOkClick = () => {
     setLoading(true);
     try {
-      await init();
-
       const walletExists = does_wallet_exist();
       const isLoaded = is_wallet_loaded();
       if (!walletExists) {
@@ -47,7 +50,7 @@ export function UnlockWalletModal({ show, handleClose, handleSubmit }: WalletMod
         return;
       }
     } catch (error) {
-      setError(error);
+      setError(`${error}`);
       return;
     } finally {
       setLoading(false);

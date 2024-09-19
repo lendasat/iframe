@@ -111,26 +111,31 @@ export function RequestLoanSummary() {
       await requestLoan();
     } catch (error) {
       console.log(`Unexpected error happened ${error}`);
-      setError(error);
+      setError(`${error}`);
     }
   };
 
   const requestLoan = async () => {
-    const borrowerPk = get_next_pk();
+    try {
+      const borrowerPk = get_next_pk();
 
-    const res = await postContractRequest({
-      loan_id: loanOffer.id,
-      loan_amount: loanAmount || 0,
-      duration_months: loanDuration,
-      borrower_btc_address: btcAddress,
-      borrower_pk: borrowerPk,
-      borrower_loan_address: loanAddress,
-    });
+      const res = await postContractRequest({
+        loan_id: loanOffer.id,
+        loan_amount: loanAmount || 0,
+        duration_months: loanDuration,
+        borrower_btc_address: btcAddress,
+        borrower_pk: borrowerPk,
+        borrower_loan_address: loanAddress,
+      });
 
-    if (res !== undefined) {
-      navigate("/my-contracts");
-    } else {
-      // Handle error if needed
+      if (res !== undefined) {
+        navigate("/my-contracts");
+      } else {
+        // Handle error if needed
+      }
+    } catch (error) {
+      console.log(`Unexpected error happened ${error}`);
+      setError(`${error}`);
     }
   };
 
@@ -160,6 +165,7 @@ export function RequestLoanSummary() {
 
   const handleSubmitCreateWalletModal = async () => {
     handleCloseCreateWalletModal();
+
     await requestLoan();
   };
   const handleSubmitUnlockWalletModal = async () => {

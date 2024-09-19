@@ -22,6 +22,11 @@ export function CreateWalletModal({ show, handleClose, handleSubmit }: WalletMod
       setPassword("");
       setConfirmPassword("");
       setError("");
+      init()
+        .then(() => {
+          console.log("WASM module initialized");
+        })
+        .catch(err => console.error("Failed to initialize WASM module:", err));
     }
   }, [show]); // This effect runs every time 'show' changes
 
@@ -34,11 +39,9 @@ export function CreateWalletModal({ show, handleClose, handleSubmit }: WalletMod
     return true;
   };
 
-  const onOkClick = async () => {
+  const onOkClick = () => {
     if (validatePasswords()) {
       try {
-        await init();
-
         const walletExists = does_wallet_exist();
         if (!walletExists) {
           // TODO: use env variable here for the network
