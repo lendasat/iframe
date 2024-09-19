@@ -115,7 +115,8 @@ export enum DisputeStatus {
 }
 
 export interface Dispute {
-  loan_id: string;
+  id: string;
+  contract_id: string;
   borrower_id: string;
   lender_id: string;
   lender_payout_sats?: number;

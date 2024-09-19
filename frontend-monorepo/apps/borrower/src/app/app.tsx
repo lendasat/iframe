@@ -70,7 +70,7 @@ function MainLayoutComponents() {
           <Route path="/logout" element={<Logout />} />
           <Route path="/profile/:id" element={<Profile />} />
           <Route path="/request-loan/:id" element={<RequestLoanSummary />} />
-          <Route path="/dispute/:id" element={<ResolveDispute />} />
+          <Route path="/disputes/:id" element={<ResolveDispute />} />
           <Route path="/error" element={<ErrorBoundary />} />
         </Route>
       </Routes>

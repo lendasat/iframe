@@ -113,7 +113,10 @@ export const ExpandableDisputeCard = (
               <Row>
                 <Col xs={12}>
                   <Button
-                    onClick={() => onStartDispute(selectedReason, otherReason)}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      onStartDispute(selectedReason, otherReason);
+                    }}
                     disabled={startingDisputeLoading || !selectedReason || !isOtherReasonValid}
                     className="w-100 mt-3"
                   >

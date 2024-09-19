@@ -374,7 +374,7 @@ where
     }
 }
 
-#[derive(sqlx::Type, Serialize, Debug)]
+#[derive(sqlx::Type, Serialize, Debug, Eq, PartialEq)]
 #[sqlx(type_name = "dispute_status")]
 pub enum DisputeStatus {
     StartedBorrower,
