@@ -4,6 +4,7 @@ import { Button, Form, Modal } from "react-bootstrap";
 import { faInfoCircle, faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import init, { does_wallet_exist, new_wallet } from "../../../../../../borrower-wallet/pkg/borrower_wallet.js";
+import { delay } from "./unlock-wallet-modal";
 
 interface WalletModalProps {
   show: boolean;
@@ -15,6 +16,7 @@ export function CreateWalletModal({ show, handleClose, handleSubmit }: WalletMod
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (show) {
@@ -39,7 +41,9 @@ export function CreateWalletModal({ show, handleClose, handleSubmit }: WalletMod
     return true;
   };
 
-  const onOkClick = () => {
+  const onOkClick = async () => {
+    setLoading(true);
+    await delay(100);
     if (validatePasswords()) {
       try {
         const walletExists = does_wallet_exist();
@@ -54,6 +58,8 @@ export function CreateWalletModal({ show, handleClose, handleSubmit }: WalletMod
       } catch (error) {
         setError(error);
         return;
+      } finally {
+        setLoading(false);
       }
 
       handleSubmit(password);
@@ -104,8 +110,8 @@ export function CreateWalletModal({ show, handleClose, handleSubmit }: WalletMod
         <Button variant="secondary" onClick={handleClose}>
           Cancel
         </Button>
-        <Button variant="primary" onClick={onOkClick}>
-          OK
+        <Button variant="primary" onClick={onOkClick} disabled={loading}>
+          {loading ? "Loading…" : "Submit"}
         </Button>
       </Modal.Footer>
     </Modal>

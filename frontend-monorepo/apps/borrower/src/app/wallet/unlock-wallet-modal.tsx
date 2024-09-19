@@ -33,8 +33,9 @@ export function UnlockWalletModal({ show, handleClose, handleSubmit }: WalletMod
     }
   }, [show]); // This effect runs every time 'show' changes
 
-  const onOkClick = () => {
+  const onOkClick = async () => {
     setLoading(true);
+    await delay(100);
     try {
       const walletExists = does_wallet_exist();
       const isLoaded = is_wallet_loaded();
@@ -96,4 +97,8 @@ export function UnlockWalletModal({ show, handleClose, handleSubmit }: WalletMod
       </Modal.Footer>
     </Modal>
   );
+}
+
+export function delay(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
