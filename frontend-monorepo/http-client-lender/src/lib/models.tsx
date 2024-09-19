@@ -8,6 +8,10 @@ export enum ContractStatus {
   Repaid = "Repaid",
   Closed = "Closed",
   Rejected = "Rejected",
+  DisputeBorrowerStarted = "DisputeBorrowerStarted",
+  DisputeLenderStarted = "DisputeLenderStarted",
+  DisputeBorrowerResolved = "DisputeBorrowerResolved",
+  DisputeLenderResolved = "DisputeLenderResolved",
 }
 
 export interface Contract {
@@ -89,7 +93,33 @@ export function contractStatusToLabelString(status: ContractStatus): string {
       return "Contract Closed";
     case ContractStatus.Rejected:
       return "Contract Rejected";
+    case ContractStatus.DisputeBorrowerStarted:
+    case ContractStatus.DisputeLenderStarted:
+      return "Dispute in progress";
+    case ContractStatus.DisputeBorrowerResolved:
+    case ContractStatus.DisputeLenderResolved:
+      return "Dispute Resolved";
     default:
       return "Unknown Status";
   }
+}
+
+export enum DisputeStatus {
+  StartedBorrower = "StartedBorrower",
+  StartedLender = "StartedLender",
+  ResolvedBorrower = "ResolvedBorrower",
+  ResolvedLender = "ResolvedLender",
+}
+
+export interface Dispute {
+  id: string;
+  contract_id: string;
+  borrower_id: string;
+  lender_id: string;
+  lender_payout_sats?: number;
+  borrower_payout_sats?: number;
+  comment: string;
+  status: DisputeStatus;
+  created_at: Date;
+  updated_at: Date;
 }

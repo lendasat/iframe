@@ -1,4 +1,5 @@
 import { BaseHttpClient, BaseHttpClientContext, BaseHttpClientContextType } from "@frontend-monorepo/base-http-client";
+import { Dispute } from "@frontend-monorepo/http-client-borrower";
 import axios, { AxiosResponse } from "axios";
 import { createContext, useContext } from "react";
 import { Contract, LoanOffer } from "./models";
@@ -6,6 +7,11 @@ import { parseRFC3339Date } from "./utils";
 
 // Interface for the raw data received from the API
 interface RawContract extends Omit<Contract, "created_at" | "updated_at"> {
+  created_at: string;
+  updated_at: string;
+}
+
+interface RawDispute extends Omit<Dispute, "created_at" | "updated_at"> {
   created_at: string;
   updated_at: string;
 }
@@ -119,6 +125,53 @@ export class HttpClientLender extends BaseHttpClient {
       throw error;
     }
   }
+
+  async startDispute(contract_id: string, reason: string, comment: string): Promise<Dispute> {
+    try {
+      const response: AxiosResponse<Dispute> = await this.httpClient.post(`/api/disputes`, {
+        contract_id,
+        reason,
+        comment,
+      });
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to create dispute: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not start dispute ${JSON.stringify(error)}`);
+      }
+    }
+  }
+
+  async getDispute(disputeId: string): Promise<Dispute> {
+    try {
+      const response: AxiosResponse<RawDispute> = await this.httpClient.get(`/api/disputes/${disputeId}`);
+      const dispute = response.data;
+      return {
+        ...dispute,
+        created_at: parseRFC3339Date(dispute.created_at)!,
+        updated_at: parseRFC3339Date(dispute.updated_at)!,
+      };
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to fetch dispute: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not fetch dispute ${JSON.stringify(error)}`);
+      }
+    }
+  }
 }
 
 type LenderHttpClientContextType = Pick<
@@ -130,6 +183,8 @@ type LenderHttpClientContextType = Pick<
   | "rejectContract"
   | "principalGiven"
   | "markAsRepaid"
+  | "startDispute"
+  | "getDispute"
 >;
 
 export const LenderHttpClientContext = createContext<LenderHttpClientContextType | undefined>(undefined);
@@ -170,6 +225,8 @@ export const HttpClientLenderProvider: React.FC<HttpClientProviderProps> = ({ ch
     rejectContract: httpClient.rejectContract.bind(httpClient),
     principalGiven: httpClient.principalGiven.bind(httpClient),
     markAsRepaid: httpClient.markAsRepaid.bind(httpClient),
+    startDispute: httpClient.startDispute.bind(httpClient),
+    getDispute: httpClient.getDispute.bind(httpClient),
   };
 
   return (

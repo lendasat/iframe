@@ -63,7 +63,7 @@ impl Email {
         handlebars.register_template_string("base", content)?;
 
         let data = serde_json::json!({
-            "first_name": &self.user.name.split_whitespace().next().expect("to be able to split"),
+            "first_name": &self.user.name,
             "subject": &template_name,
             "url": &self.url
         });
@@ -147,6 +147,7 @@ impl Email {
         )
         .await
     }
+
     pub async fn send_notify_admin_about_dispute(
         &self,
         dispute_id: &str,
@@ -165,7 +166,7 @@ impl Email {
         handlebars.register_template_string("base", content)?;
 
         let data = serde_json::json!({
-            "first_name": &self.user.name.split_whitespace().next().expect("to be able to split"),
+            "first_name": &self.user.name,
             "subject": &template_name,
             "lender_id": lender_id,
             "borrower_id": borrower_id,

@@ -2,7 +2,7 @@ use crate::db;
 use crate::email::Email;
 use crate::model::DisputeRequestBodySchema;
 use crate::model::User;
-use crate::routes::borrower::auth::jwt_auth;
+use crate::routes::lender::auth::jwt_auth;
 use crate::routes::AppState;
 use crate::routes::ErrorResponse;
 use axum::extract::Path;
@@ -20,8 +20,15 @@ use std::sync::Arc;
 pub(crate) fn router(app_state: Arc<AppState>) -> Router {
     Router::new()
         .route(
-            "/api/disputes/:contract_id",
-            get(get_all_disputes_by_contract).route_layer(middleware::from_fn_with_state(
+            "/api/disputes",
+            get(get_all_disputes).route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                jwt_auth::auth,
+            )),
+        )
+        .route(
+            "/api/disputes/:dispute_id",
+            get(get_disputes_by_id).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
                 jwt_auth::auth,
             )),
@@ -36,15 +43,30 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
         .with_state(app_state)
 }
 
-pub async fn get_all_disputes_by_contract(
+pub async fn get_all_disputes(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<User>,
-    Path(contract_id): Path<String>,
 ) -> anyhow::Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let disputes = db::dispute::load_disputes_by_lender_and_contract_id(
+    let disputes = db::dispute::load_disputes_by_lender(&data.db, user.id.as_str())
+        .await
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Database error: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
+    Ok((StatusCode::OK, Json(disputes)))
+}
+
+pub async fn get_disputes_by_id(
+    State(data): State<Arc<AppState>>,
+    Extension(user): Extension<User>,
+    Path(dispute_id): Path<String>,
+) -> anyhow::Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    let disputes = db::dispute::load_disputes_by_lender_and_dispute_id(
         &data.db,
         user.id.as_str(),
-        contract_id.as_str(),
+        dispute_id.as_str(),
     )
     .await
     .map_err(|error| {
@@ -53,7 +75,7 @@ pub async fn get_all_disputes_by_contract(
         };
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
     })?;
-    if disputes.is_empty() {
+    if disputes.is_none() {
         let error_response = ErrorResponse {
             message: "Dispute not found".to_string(),
         };
@@ -68,7 +90,7 @@ pub(crate) async fn create_dispute(
     Extension(user): Extension<User>,
     Json(body): Json<DisputeRequestBodySchema>,
 ) -> anyhow::Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let contract = db::contracts::load_contract_by_contract_id_and_borrower_id(
+    let contract = db::contracts::load_contract_by_contract_id_and_lender_id(
         &data.db,
         body.contract_id.as_str(),
         user.id.as_str(),
@@ -104,11 +126,11 @@ pub(crate) async fn create_dispute(
     }
 
     let comment = format!("{}. {}", body.reason, body.comment);
-    let dispute = db::dispute::start_new_dispute_borrower(
+    let dispute = db::dispute::start_new_dispute_lender(
         &data.db,
         body.contract_id.as_str(),
+        contract.borrower_id.as_str(),
         user.id.as_str(),
-        contract.lender_id.as_str(),
         comment.as_str(),
         dispute_already_started,
     )
@@ -122,7 +144,7 @@ pub(crate) async fn create_dispute(
 
     let dispute_details_url = format!(
         "{}/disputes/{}",
-        data.config.borrower_frontend_origin.to_owned(),
+        data.config.lender_frontend_origin.to_owned(),
         dispute.id
     );
 

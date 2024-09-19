@@ -154,7 +154,6 @@ export class HttpClientBorrower extends BaseHttpClient {
 
   async startDispute(contract_id: string, reason: string, comment: string): Promise<Dispute> {
     try {
-      console.log(`Starting dispute ${contract_id}`);
       const response: AxiosResponse<Dispute> = await this.httpClient.post(`/api/disputes`, {
         contract_id,
         reason,
