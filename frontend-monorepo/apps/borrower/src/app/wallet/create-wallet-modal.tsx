@@ -4,6 +4,7 @@ import { Button, Form, Modal } from "react-bootstrap";
 import { faInfoCircle, faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import init, { does_wallet_exist, new_wallet } from "../../../../../../borrower-wallet/pkg/borrower_wallet.js";
+import { delay } from "./unlock-wallet-modal";
 
 interface WalletModalProps {
   show: boolean;
@@ -15,6 +16,7 @@ export function CreateWalletModal({ show, handleClose, handleSubmit }: WalletMod
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (show) {
@@ -22,6 +24,11 @@ export function CreateWalletModal({ show, handleClose, handleSubmit }: WalletMod
       setPassword("");
       setConfirmPassword("");
       setError("");
+      init()
+        .then(() => {
+          console.log("WASM module initialized");
+        })
+        .catch(err => console.error("Failed to initialize WASM module:", err));
     }
   }, [show]); // This effect runs every time 'show' changes
 
@@ -35,10 +42,10 @@ export function CreateWalletModal({ show, handleClose, handleSubmit }: WalletMod
   };
 
   const onOkClick = async () => {
+    setLoading(true);
+    await delay(100);
     if (validatePasswords()) {
       try {
-        await init();
-
         const walletExists = does_wallet_exist();
         if (!walletExists) {
           // TODO: use env variable here for the network
@@ -51,6 +58,8 @@ export function CreateWalletModal({ show, handleClose, handleSubmit }: WalletMod
       } catch (error) {
         setError(error);
         return;
+      } finally {
+        setLoading(false);
       }
 
       handleSubmit(password);
@@ -101,8 +110,8 @@ export function CreateWalletModal({ show, handleClose, handleSubmit }: WalletMod
         <Button variant="secondary" onClick={handleClose}>
           Cancel
         </Button>
-        <Button variant="primary" onClick={onOkClick}>
-          OK
+        <Button variant="primary" onClick={onOkClick} disabled={loading}>
+          {loading ? "Loading…" : "Submit"}
         </Button>
       </Modal.Footer>
     </Modal>
