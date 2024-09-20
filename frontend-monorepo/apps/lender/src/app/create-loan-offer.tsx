@@ -25,49 +25,54 @@ export enum StableCoin {
   USDC_ETH = "USDC_ETH",
 }
 
+function parseStableCoin(value: string): StableCoin | undefined {
+  const normalizedValue = value.toUpperCase();
+
+  for (const key in StableCoin) {
+    if (StableCoin[key as keyof typeof StableCoin] === normalizedValue) {
+      return StableCoin[key as keyof typeof StableCoin];
+    }
+  }
+
+  return undefined;
+}
+
 const CreateLoanOffer: React.FC = () => {
   const [loanAmount, setLoanAmount] = useState<LoanAmount>({ min: 1000, max: 100000 });
   const [loanDuration, setLoanDuration] = useState<LoanDuration>({ min: 1, max: 12 });
   const [ltv, setLtv] = useState<number>(0.5);
   const [interest, setInterest] = useState<number>(0.12);
-  const [coins, setCoins] = useState<StableCoin[]>([StableCoin.USDT_ETH, StableCoin.USDT_SN]);
+  const [selectedCoin, setSelectedCoin] = useState<StableCoin | undefined>(StableCoin.USDT_ETH);
   const [loanRepaymentAddress, setLoanRepaymentAddress] = useState<string>(
     "0xA0C68B2C3cC21F9376eB514c9f1bF80A4939e4A6",
   );
   const [error, setError] = useState("");
 
-  const handleStableCoinChange = (coin: StableCoin) => {
-    if (coins.includes(coin)) {
-      setCoins(coins.filter((c) => c !== coin));
-    } else {
-      setCoins([...coins, coin]);
-    }
+  const handleStableCoinChange = (coinString: string) => {
+    const coin = parseStableCoin(coinString);
+    setSelectedCoin(coin);
   };
 
   const mapToCreateLoanOfferSchema = (): CreateLoanOfferRequest => {
     let assetType = LoanAssetType.Usdt;
     let assetChain = LoanAssetChain.Starknet;
-    if (coins.length > 0) {
-      // TODO: Adapt model to handle multiple stablecoins.
-      const coin = coins[0];
-      switch (coin) {
-        case StableCoin.USDT_SN:
-          assetType = LoanAssetType.Usdt;
-          assetChain = LoanAssetChain.Starknet;
-          break;
-        case StableCoin.USDC_SN:
-          assetType = LoanAssetType.Usdc;
-          assetChain = LoanAssetChain.Starknet;
-          break;
-        case StableCoin.USDT_ETH:
-          assetType = LoanAssetType.Usdt;
-          assetChain = LoanAssetChain.Ethereum;
-          break;
-        case StableCoin.USDC_ETH:
-          assetType = LoanAssetType.Usdc;
-          assetChain = LoanAssetChain.Ethereum;
-          break;
-      }
+    switch (selectedCoin) {
+      case StableCoin.USDT_SN:
+        assetType = LoanAssetType.Usdt;
+        assetChain = LoanAssetChain.Starknet;
+        break;
+      case StableCoin.USDC_SN:
+        assetType = LoanAssetType.Usdc;
+        assetChain = LoanAssetChain.Starknet;
+        break;
+      case StableCoin.USDT_ETH:
+        assetType = LoanAssetType.Usdt;
+        assetChain = LoanAssetChain.Ethereum;
+        break;
+      case StableCoin.USDC_ETH:
+        assetType = LoanAssetType.Usdc;
+        assetChain = LoanAssetChain.Ethereum;
+        break;
     }
 
     return {
@@ -127,7 +132,7 @@ const CreateLoanOffer: React.FC = () => {
       </Form.Group>
 
       <Form.Group as={Row} controlId="formLoanDuration">
-        <Form.Label column sm="2">Loan Duration (Months)</Form.Label>
+        <Form.Label column={true} sm="2">Loan Duration (Months)</Form.Label>
         <Col sm="5">
           <Form.Control
             type="number"
@@ -147,7 +152,7 @@ const CreateLoanOffer: React.FC = () => {
       </Form.Group>
 
       <Form.Group as={Row} controlId="formLtv">
-        <Form.Label column sm="2">Loan-to-Value (LTV) (0.0-0.9)</Form.Label>
+        <Form.Label column={true} sm="2">Loan-to-Value (LTV) (0.0-0.9)</Form.Label>
         <Col sm="10">
           <Form.Control
             type="number"
@@ -162,7 +167,7 @@ const CreateLoanOffer: React.FC = () => {
       </Form.Group>
 
       <Form.Group as={Row} controlId="formInterest">
-        <Form.Label column sm="2">Interest Rate (0.0-1.0)</Form.Label>
+        <Form.Label column={true} sm="2">Interest Rate (0.0-1.0)</Form.Label>
         <Col sm="10">
           <Form.Control
             type="number"
@@ -177,23 +182,24 @@ const CreateLoanOffer: React.FC = () => {
       </Form.Group>
 
       <Form.Group as={Row} controlId="formStableCoins">
-        <Form.Label column sm="2">Stable Coins</Form.Label>
+        <Form.Label column={true} sm="2">Stable Coins</Form.Label>
         <Col sm="10">
           {Object.keys(StableCoin).map((coin) => (
             <Form.Check
               inline
               key={coin}
               label={coin}
-              type="checkbox"
-              checked={coins.includes(StableCoin[coin as keyof typeof StableCoin])}
-              onChange={() => handleStableCoinChange(StableCoin[coin as keyof typeof StableCoin])}
+              type="radio"
+              value={coin}
+              checked={selectedCoin === coin}
+              onChange={(e) => handleStableCoinChange(e.target.value)}
             />
           ))}
         </Col>
       </Form.Group>
 
       <Form.Group as={Row} controlId="formLoanRepaymentAddress">
-        <Form.Label column sm="2">Loan Repayment Address</Form.Label>
+        <Form.Label column={true} sm="2">Loan Repayment Address</Form.Label>
         <Col sm="10">
           <Form.Control
             type="text"

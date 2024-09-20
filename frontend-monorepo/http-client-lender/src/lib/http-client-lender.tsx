@@ -2,7 +2,7 @@ import { BaseHttpClient, BaseHttpClientContext, BaseHttpClientContextType } from
 import { Dispute } from "@frontend-monorepo/http-client-borrower";
 import axios, { AxiosResponse } from "axios";
 import { createContext, useContext } from "react";
-import { Contract, LoanOffer } from "./models";
+import { Contract, CreateLoanOfferRequest, LoanOffer } from "./models";
 import { parseRFC3339Date } from "./utils";
 
 // Interface for the raw data received from the API
@@ -17,7 +17,7 @@ interface RawDispute extends Omit<Dispute, "created_at" | "updated_at"> {
 }
 
 export class HttpClientLender extends BaseHttpClient {
-  async postLoanOffer(offer: LoanOffer): Promise<LoanOffer | undefined> {
+  async postLoanOffer(offer: CreateLoanOfferRequest): Promise<LoanOffer | undefined> {
     try {
       const response: AxiosResponse<LoanOffer> = await this.httpClient.post("/api/offers/create", offer);
       return response.data;
