@@ -1,13 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Button, Form, Modal } from "react-bootstrap";
-import init, {
-  does_wallet_exist,
-  is_wallet_loaded,
-  load_wallet,
-} from "../../../../../../borrower-wallet/pkg/borrower_wallet.js";
 
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { useWallet } from "@frontend-monorepo/borrower-wallet";
 
 interface WalletModalProps {
   show: boolean;
@@ -20,16 +16,13 @@ export function UnlockWalletModal({ show, handleClose, handleSubmit }: WalletMod
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const { loadWallet, isWalletLoaded, doesWalletExist } = useWallet();
+
   useEffect(() => {
     if (show) {
       // Reset all states when the modal is shown
       setPassword("");
       setError("");
-      init()
-        .then(() => {
-          console.log("WASM module initialized");
-        })
-        .catch(err => console.error("Failed to initialize WASM module:", err));
     }
   }, [show]); // This effect runs every time 'show' changes
 
@@ -37,14 +30,12 @@ export function UnlockWalletModal({ show, handleClose, handleSubmit }: WalletMod
     setLoading(true);
     await delay(100);
     try {
-      const walletExists = does_wallet_exist();
-      const isLoaded = is_wallet_loaded();
-      if (!walletExists) {
+      if (!doesWalletExist) {
         setError("Wallet does not exist");
         return;
       }
-      if (!isLoaded) {
-        load_wallet(password);
+      if (!isWalletLoaded) {
+        loadWallet(password);
         console.log("Wallet loaded successfully");
       } else {
         console.log("Wallet already loaded");
@@ -58,7 +49,6 @@ export function UnlockWalletModal({ show, handleClose, handleSubmit }: WalletMod
     }
 
     handleSubmit();
-    handleClose();
   };
 
   return (

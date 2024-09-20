@@ -1,10 +1,10 @@
 import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { useWallet } from "@frontend-monorepo/borrower-wallet";
 import { Dispute, DisputeStatus, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import React, { Suspense, useState } from "react";
 import { Alert, Button } from "react-bootstrap";
 import { Await, useParams } from "react-router-dom";
-import init, { is_wallet_loaded, sign_claim_psbt } from "../../../../../../borrower-wallet/pkg/borrower_wallet.js";
 import { UnlockWalletModal } from "../wallet/unlock-wallet-modal";
 
 function ResolveDispute() {
@@ -17,12 +17,11 @@ function ResolveDispute() {
   const handleCloseUnlockWalletModal = () => setShowUnlockWalletModal(false);
   const handleOpenUnlockWalletModal = () => setShowUnlockWalletModal(true);
 
+  const { isWalletLoaded, signClaimPsbt } = useWallet();
+
   const onWithdrawAction = async (dispute: Dispute) => {
     try {
-      await init();
-
-      const isLoaded = is_wallet_loaded();
-      if (!isLoaded) {
+      if (!isWalletLoaded) {
         handleOpenUnlockWalletModal();
         return;
       }
@@ -38,7 +37,7 @@ function ResolveDispute() {
       const contract = await getContract(dispute.contract_id);
       const res = await getClaimDisputeCollateralPsbt(dispute.id);
       console.log(`${JSON.stringify(res)}`);
-      const claimTx = sign_claim_psbt(res.psbt, res.collateral_descriptor, contract.borrower_pk);
+      const claimTx = signClaimPsbt(res.psbt, res.collateral_descriptor, contract.borrower_pk);
       const txid = await postClaimTx(contract.id, claimTx);
       alert(`Transaction ${txid} was published!`);
     } catch (error) {
@@ -55,7 +54,7 @@ function ResolveDispute() {
   return (
     <Suspense>
       <Await
-        resolve={getDispute(id)}
+        resolve={getDispute(id!)}
         errorElement={<div>Could not load dispute</div>}
         children={(dispute: Awaited<Dispute>) => (
           <div>

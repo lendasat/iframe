@@ -1,10 +1,10 @@
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { useWallet } from "@frontend-monorepo/borrower-wallet";
 import { Contract, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import React, { useState } from "react";
 import { Alert, Button, Col, Container, Row } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
-import init, { is_wallet_loaded, sign_claim_psbt } from "../../../../../../borrower-wallet/pkg/borrower_wallet.js";
 import { UnlockWalletModal } from "../wallet/unlock-wallet-modal";
 
 interface ContractRepaidProps {
@@ -24,12 +24,11 @@ export function ContractRepaid({
   const handleCloseUnlockWalletModal = () => setShowUnlockWalletModal(false);
   const handleOpenUnlockWalletModal = () => setShowUnlockWalletModal(true);
 
+  const { isWalletLoaded, signClaimPsbt } = useWallet();
+
   const claimCollateral = async () => {
     try {
-      await init();
-
-      const isLoaded = is_wallet_loaded();
-      if (!isLoaded) {
+      if (!isWalletLoaded) {
         handleOpenUnlockWalletModal();
         return;
       }
@@ -42,7 +41,7 @@ export function ContractRepaid({
 
   const claimCollateralRequest = async () => {
     const res = await getClaimCollateralPsbt(contract.id);
-    const claimTx = sign_claim_psbt(res.psbt, res.collateral_descriptor, contract.borrower_pk);
+    const claimTx = signClaimPsbt(res.psbt, res.collateral_descriptor, contract.borrower_pk);
 
     const txid = await postClaimTx(contract.id, claimTx);
 

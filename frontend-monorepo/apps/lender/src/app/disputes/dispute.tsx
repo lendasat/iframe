@@ -4,7 +4,6 @@ import { Dispute, DisputeStatus, useLenderHttpClient } from "@frontend-monorepo/
 import React, { Suspense, useState } from "react";
 import { Alert, Button } from "react-bootstrap";
 import { Await, useParams } from "react-router-dom";
-import init, { is_wallet_loaded, sign_claim_psbt } from "../../../../../../borrower-wallet/pkg/borrower_wallet.js";
 
 function ResolveDispute() {
   const { id } = useParams();

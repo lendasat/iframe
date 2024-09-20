@@ -1,15 +1,11 @@
 import { faInfoCircle, faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { useWallet } from "@frontend-monorepo/borrower-wallet";
 import { LoanOffer, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import { formatCurrency, usePrice } from "@frontend-monorepo/ui-shared";
 import React, { useState } from "react";
 import { Alert, Badge, Button, Col, Container, Form, InputGroup, Row } from "react-bootstrap";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import init, {
-  does_wallet_exist,
-  get_next_pk,
-  is_wallet_loaded,
-} from "../../../../../../borrower-wallet/pkg/borrower_wallet.js";
 import { CreateWalletModal } from "../wallet/create-wallet-modal";
 import { UnlockWalletModal } from "../wallet/unlock-wallet-modal";
 import { Lender } from "./lender";
@@ -95,18 +91,16 @@ export function RequestLoanSummary() {
   const handleOpenUnlockWalletModal = () => setShowUnlockWalletModal(true);
 
   const navigate = useNavigate();
+
+  const { doesWalletExist, isWalletLoaded, getNextPublicKey } = useWallet();
+
   const handleRequestLoan = async () => {
     try {
-      await init();
-
-      const walletExists = does_wallet_exist();
-      const isLoaded = is_wallet_loaded();
-
-      if (!walletExists) {
+      if (!doesWalletExist) {
         handleOpenCreateWalletModal();
         return;
       }
-      if (!isLoaded) {
+      if (!isWalletLoaded) {
         handleOpenUnlockWalletModal();
         return;
       }
@@ -120,7 +114,7 @@ export function RequestLoanSummary() {
 
   const requestLoan = async () => {
     try {
-      const borrowerPk = get_next_pk();
+      const borrowerPk = getNextPublicKey();
 
       const res = await postContractRequest({
         loan_id: loanOffer.id,
@@ -168,12 +162,9 @@ export function RequestLoanSummary() {
 
   const handleSubmitCreateWalletModal = async () => {
     handleCloseCreateWalletModal();
-
-    await requestLoan();
   };
   const handleSubmitUnlockWalletModal = async () => {
     handleCloseUnlockWalletModal();
-    await requestLoan();
   };
 
   return (
@@ -298,7 +289,9 @@ export function RequestLoanSummary() {
           </Link>
           <span>{" "}</span>
           <Button onClick={handleRequestLoan} disabled={isButtonDisabled}>
-            Request
+            {doesWalletExist
+              ? isWalletLoaded ? "Request" : "Load Wallet"
+              : "Create Wallet"}
           </Button>
         </Col>
       </Row>
