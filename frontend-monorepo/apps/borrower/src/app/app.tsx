@@ -63,7 +63,6 @@ function MainLayoutComponents() {
             errorElement={<ErrorBoundary />}
           >
             <Route index element={<DashBoard />} />
-            <Route path="/request-loan" element={<RequestLoan />} />
             <Route path="/my-contracts">
               <Route index element={<MyLoans />} />
               <Route path={":id"} element={<ContractDetailsOverview />} />
@@ -71,6 +70,7 @@ function MainLayoutComponents() {
             <Route path="/my-account" element={<MyAccount />} />
             <Route path="/logout" element={<Logout />} />
             <Route path="/profile/:id" element={<Profile />} />
+            <Route path="/request-loan" element={<RequestLoan />} />
             <Route path="/request-loan/:id" element={<RequestLoanSummary />} />
             <Route path="/disputes/:id" element={<ResolveDispute />} />
             <Route path="/error" element={<ErrorBoundary />} />

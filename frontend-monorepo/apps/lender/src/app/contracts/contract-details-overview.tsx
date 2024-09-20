@@ -26,7 +26,7 @@ function ContractDetailsOverview() {
   return (
     <Suspense>
       <Await
-        resolve={getContract(id)}
+        resolve={getContract(id!)}
         errorElement={<div>Could not load contracts</div>}
         children={(contract: Awaited<Contract>) => (
           <Container className={"p-4"} fluid>
@@ -90,6 +90,7 @@ function ContractDetails({ contract }: DetailsProps) {
   const collateral_sats = contract.initial_collateral_sats;
   const collateral = collateral_sats / 100000000;
   const loanAmount = contract.loan_amount;
+  const durationMonths = contract.duration_months;
 
   const interestRate = contract.interest_rate;
 
@@ -148,6 +149,12 @@ function ContractDetails({ contract }: DetailsProps) {
         <Col md={6}>Loan amount</Col>
         <Col md={6} className="text-end mb-2">
           <CurrencyFormatter value={loanAmount} />
+        </Col>
+      </Row>
+      <Row className="justify-content-between border-b mt-2">
+        <Col md={6}>Duration</Col>
+        <Col md={6} className="text-end mb-2">
+          {durationMonths} months
         </Col>
       </Row>
       <Row className="justify-content-between border-b mt-2">
@@ -311,7 +318,7 @@ const ContractStatusDetails = (
       await approveContract(contract.id);
       onSuccess();
     } catch (error) {
-      onError(error);
+      onError(`${error}`);
     } finally {
       setIsLoading(false);
     }
@@ -322,7 +329,7 @@ const ContractStatusDetails = (
       await rejectContract(contract.id);
       onSuccess();
     } catch (error) {
-      onError(error);
+      onError(`${error}`);
     } finally {
       setIsLoading(false);
     }
@@ -333,7 +340,7 @@ const ContractStatusDetails = (
       await principalGiven(contract.id);
       onSuccess();
     } catch (error) {
-      onError(error);
+      onError(`${error}`);
     } finally {
       setIsLoading(false);
     }
@@ -344,7 +351,7 @@ const ContractStatusDetails = (
       await markAsRepaid(contract.id);
       onSuccess();
     } catch (error) {
-      onError(error);
+      onError(`${error}`);
     } finally {
       setIsLoading(false);
     }

@@ -107,7 +107,7 @@ const CreateLoanOffer: React.FC = () => {
   return (
     <Form onSubmit={handleSubmit}>
       <Form.Group as={Row} controlId="formLoanAmount">
-        <Form.Label column sm="2">Loan Amount</Form.Label>
+        <Form.Label column={true} sm="2">Loan Amount</Form.Label>
         <Col sm="5">
           <Form.Control
             type="number"

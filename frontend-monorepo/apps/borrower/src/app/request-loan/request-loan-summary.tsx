@@ -9,18 +9,18 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { CreateWalletModal } from "../wallet/create-wallet-modal";
 import { UnlockWalletModal } from "../wallet/unlock-wallet-modal";
 import { Lender } from "./lender";
-import { LoanFilter, LoanFilterType } from "./loan-offers-filter";
+import { LoanFilter } from "./loan-offers-filter";
 import { Slider, SliderProps } from "./slider";
 import { StableCoin, StableCoinDropdown, StableCoinHelper } from "./stable-coin";
 
 type LocationState = {
   loanOffer: LoanOffer;
-  loanFilters?: LoanFilter[];
+  loanFilter: LoanFilter;
 };
 
 export function RequestLoanSummary() {
   const location = useLocation();
-  const { loanOffer, loanFilters } = location.state as LocationState || {};
+  const { loanOffer, loanFilter } = location.state as LocationState;
   const [error, setError] = useState("");
 
   const ORIGINATOR_FEE = 0.01;
@@ -29,23 +29,21 @@ export function RequestLoanSummary() {
   const { postContractRequest } = useBorrowerHttpClient();
 
   // Initialize filters
-  const periodFilter = loanFilters.find((filter) => filter.type === LoanFilterType.PERIOD);
-  const initMonths = periodFilter
-    ? periodFilter.value > loanOffer?.duration.max ? loanOffer?.duration.max || 0 : periodFilter.value
-    : loanOffer?.duration.max || 0;
+  let initMonths = loanFilter.period || loanOffer.duration_months_min;
+  if (initMonths > loanOffer.duration_months_max) {
+    initMonths = loanOffer.duration_months_max;
+  }
+  console.log(`Period: ${loanFilter.period} ${loanOffer.duration_months_min}`);
 
-  const amountFilter = loanFilters.find((filter) => filter.type === LoanFilterType.AMOUNT);
-  const initAmount = amountFilter ? (amountFilter.value as number) : loanOffer?.amount.min || 0;
+  let initAmount = loanFilter.amount || loanOffer.loan_amount_min;
+  if (initAmount > loanOffer.loan_amount_max) {
+    initAmount = loanOffer.loan_amount_max;
+  }
 
-  const coinFilter = loanFilters.find((filter) => filter.type === LoanFilterType.STABLECOIN);
-  const initCoin = coinFilter
-    ? (coinFilter.value as StableCoin)
-    : loanOffer.coins.length === 1
-    ? loanOffer.coins[0]
-    : undefined;
+  const initCoin = StableCoinHelper.mapFromBackend(loanOffer.loan_asset_chain, loanOffer.loan_asset_type);
 
-  const [loanAmount, setLoanAmount] = useState<number | undefined>(initAmount);
-  const [selectedCoin, setSelectedCoin] = useState<StableCoin | undefined>(initCoin);
+  const [loanAmount, setLoanAmount] = useState<number>(initAmount);
+  const [selectedCoin, setSelectedCoin] = useState<StableCoin>(initCoin!);
 
   const [loanAddress, setLoanAddress] = useState("");
 
@@ -64,9 +62,9 @@ export function RequestLoanSummary() {
   const [showCreateWalletModal, setShowCreateWalletModal] = useState(false);
   const [showUnlockWalletModal, setShowUnlockWalletModal] = useState(false);
 
-  const collateral = loanAmount / (loanOffer.ltv / 100) / latestPrice;
+  const collateral = latestPrice ? (loanAmount / (loanOffer.min_ltv / 100) / latestPrice) : undefined;
 
-  const loanOriginatorFee = (loanAmount / latestPrice) * ORIGINATOR_FEE;
+  const loanOriginatorFee = latestPrice ? ((loanAmount / latestPrice) * ORIGINATOR_FEE) : undefined;
 
   const handleLoanAmountChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseFloat(event.target.value);
@@ -75,9 +73,11 @@ export function RequestLoanSummary() {
     // Validation
     if (isNaN(value)) {
       setAmountError("Amount is required");
-    } else if (value < loanOffer.amount.min || value > loanOffer.amount.max) {
+    } else if (value < loanOffer.loan_amount_min || value > loanOffer.loan_amount_max) {
       setAmountError(
-        `Amount must be between ${formatCurrency(loanOffer.amount.min)} and ${formatCurrency(loanOffer.amount.max)}`,
+        `Amount must be between ${formatCurrency(loanOffer.loan_amount_min)} and ${
+          formatCurrency(loanOffer.loan_amount_max)
+        }`,
       );
     } else {
       setAmountError(null);
@@ -141,8 +141,8 @@ export function RequestLoanSummary() {
   };
 
   const periodSliderProps: SliderProps = {
-    min: loanOffer.duration.min,
-    max: loanOffer.duration.max,
+    min: loanOffer.duration_months_min,
+    max: loanOffer.duration_months_max,
     step: 1,
     init: loanDuration,
     suffix: " months",
@@ -152,8 +152,8 @@ export function RequestLoanSummary() {
   };
 
   const isButtonDisabled = loanAmount === undefined
-    || loanAmount < loanOffer.amount.min
-    || loanAmount > loanOffer.amount.max
+    || loanAmount < loanOffer.loan_amount_min
+    || loanAmount > loanOffer.loan_amount_max
     || amountError != null
     || !selectedCoin
     || !loanAddress.trim();
@@ -166,6 +166,10 @@ export function RequestLoanSummary() {
   const handleSubmitUnlockWalletModal = async () => {
     handleCloseUnlockWalletModal();
   };
+
+  console.log(`loanOffer.min_ltv ${loanOffer.min_ltv}`);
+
+  const minLtv = loanOffer.min_ltv * 100;
 
   return (
     <Container className={"p-4"} fluid>
@@ -188,7 +192,7 @@ export function RequestLoanSummary() {
         <Col xs={12} md={6}>
           <Form>
             <Form.Group className="mb-2" controlId="loan-amount">
-              <Form.Label>
+              <Form.Label column={true}>
                 <small>Loan amount</small>
               </Form.Label>
               <InputGroup>
@@ -203,24 +207,25 @@ export function RequestLoanSummary() {
               {amountError ? <Form.Text className="text-danger">{amountError}</Form.Text> : ""}
             </Form.Group>
             <Form.Group className="mb-3" controlId="interest-slider">
-              <Form.Label>
+              <Form.Label column={true}>
                 <small>Period</small>
               </Form.Label>
               <Slider {...periodSliderProps} />
             </Form.Group>
             <Form.Group className="mb-3" controlId="stable-coin">
-              <Form.Label>
+              <Form.Label column={true}>
                 <small>Stable coin</small>
               </Form.Label>
+              {/*TODO: this is not a dropdown*/}
               <StableCoinDropdown
-                coins={loanOffer.coins}
+                coins={initCoin ? [initCoin] : []}
                 filter={false}
                 defaultCoin={initCoin}
                 onSelect={handleCoinSelect}
               />
             </Form.Group>
             <Form.Group className="mb-3" controlId="btc-address">
-              <Form.Label>
+              <Form.Label column={true}>
                 <small>Bitcoin refund address</small>
               </Form.Label>
               <Form.Control
@@ -234,7 +239,7 @@ export function RequestLoanSummary() {
               funds.
             </Alert>
             <Form.Group className="mb-3" controlId="stablecoin-address">
-              <Form.Label>
+              <Form.Label column={true}>
                 <small>{addressLabel}</small>
               </Form.Label>
               <Form.Control
@@ -249,27 +254,28 @@ export function RequestLoanSummary() {
             <Row className="justify-content-between border-b mt-2">
               <Col>Lender</Col>
               <Col className="text-end mb-2">
-                <Lender {...loanOffer.lender} />
+                {/*FIXME: fetch lender profile*/}
+                {/*<Lender {...loanOffer.lender} />*/}
               </Col>
             </Row>
             <Row className="justify-content-between border-b mt-2">
               <Col>Collateral</Col>
-              <Col className="text-end mb-2">{collateral.toFixed(4)} BTC</Col>
+              <Col className="text-end mb-2">{collateral?.toFixed(4)} BTC</Col>
             </Row>
             <Row className="justify-content-between border-b mt-2">
               <Col>LTV ratio</Col>
-              <Col className="text-end mb-2">{loanOffer.ltv.toFixed(0)}%</Col>
+              <Col className="text-end mb-2">{minLtv.toFixed(0)}%</Col>
             </Row>
             <Row className="justify-content-between border-b mt-2">
               <Col>Interest rate p.a.</Col>
-              <Col className="text-end mb-2">{loanOffer.interest * 100}%</Col>
+              <Col className="text-end mb-2">{loanOffer.interest_rate * 100}%</Col>
             </Row>
             <Row className="justify-content-between mt-2">
               <Col>Originator fee 1%</Col>
               <Col className="text-end">
                 <Container className="p-0" fluid>
                   <Row className="text-end">
-                    <Col>{loanOriginatorFee.toFixed(4)} BTC</Col>
+                    <Col>{loanOriginatorFee?.toFixed(4)} BTC</Col>
                   </Row>
                   <Row>
                     <Col>
