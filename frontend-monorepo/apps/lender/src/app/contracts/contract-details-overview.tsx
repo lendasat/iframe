@@ -17,6 +17,7 @@ import {
   Tooltip,
 } from "react-bootstrap";
 import { Await, useNavigate, useParams } from "react-router-dom";
+import { ExpandableDisputeCard } from "../disputes/dispute-card";
 
 function ContractDetailsOverview() {
   const { getContract } = useLenderHttpClient();
@@ -78,6 +79,12 @@ interface DetailsProps {
 }
 
 function ContractDetails({ contract }: DetailsProps) {
+  const { startDispute } = useLenderHttpClient();
+
+  const [info, setInfo] = useState("");
+  const [error, setError] = useState("");
+  const [startingDisputeLoading, setStartingDisputeLoading] = useState(false);
+
   const ORIGINATOR_FEE = 0.01;
 
   const collateral_sats = contract.initial_collateral_sats;
@@ -91,9 +98,28 @@ function ContractDetails({ contract }: DetailsProps) {
 
   const initialLtvFormatted = (initialLtv * 100).toFixed(0);
 
+  const disputeInProgress = contract.status === ContractStatus.DisputeBorrowerResolved
+    || contract.status === ContractStatus.DisputeLenderResolved
+    || contract.status === ContractStatus.DisputeBorrowerStarted
+    || contract.status === ContractStatus.DisputeLenderStarted;
+
   // FIXME: Let's do this once, in the backend.
   const loanOriginatorFee = (loanAmount / initial_price) * ORIGINATOR_FEE;
   const loanOriginatorFeeUsd = (loanOriginatorFee * initial_price).toFixed(0);
+
+  const onStartDispute = async (reason: string, comment: string) => {
+    setStartingDisputeLoading(true);
+    try {
+      await startDispute(contract.id, reason, comment);
+      setInfo("A new dispute was started, please check your email");
+      setError("");
+    } catch (error) {
+      setInfo("");
+      setError(`${error}`);
+    } finally {
+      setStartingDisputeLoading(false);
+    }
+  };
 
   return (
     <Container fluid>
@@ -153,6 +179,15 @@ function ContractDetails({ contract }: DetailsProps) {
       </Row>
       <Row className="justify-content-between mt-5">
         <AdditionalDetail contract={contract} />
+      </Row>
+      <Row>
+        <ExpandableDisputeCard
+          info={info}
+          onStartDispute={onStartDispute}
+          startingDisputeLoading={startingDisputeLoading}
+          error={error}
+          disputeInProgress={disputeInProgress}
+        />
       </Row>
     </Container>
   );

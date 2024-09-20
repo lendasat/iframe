@@ -5,7 +5,7 @@ import {
   useBorrowerHttpClient,
 } from "@frontend-monorepo/http-client-borrower";
 import { CurrencyFormatter } from "@frontend-monorepo/ui-shared";
-import React, { Suspense } from "react";
+import React, { Suspense, useState } from "react";
 import { Badge, Col, Container, OverlayTrigger, Row, Tooltip } from "react-bootstrap";
 import { Await, useParams } from "react-router-dom";
 import { Lender } from "../request-loan/lender";
@@ -14,6 +14,7 @@ import { CollateralSeenOrConfirmed } from "./contract-collateral-seen-or-confirm
 import { ContractPrincipalGiven } from "./contract-principal-given";
 import { ContractRepaid } from "./contract-repaid";
 import { ContractRequested } from "./contract-requested";
+import { ExpandableDisputeCard } from "./dispute-card";
 
 function ContractDetailsOverview() {
   const { getContract } = useBorrowerHttpClient();
@@ -86,6 +87,11 @@ interface DetailsProps {
 }
 
 function ContractDetails({ contract }: DetailsProps) {
+  const [startingDisputeLoading, setStartingDisputeLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const { startDispute } = useBorrowerHttpClient();
+
   const ORIGINATOR_FEE = 0.01;
 
   const collateral_sats = contract.collateral_sats;
@@ -101,6 +107,27 @@ function ContractDetails({ contract }: DetailsProps) {
   // FIXME: Let's do this once, in the backend.
   const loanOriginatorFee = (loanAmount / initial_price) * ORIGINATOR_FEE;
   const loanOriginatorFeeUsd = (loanOriginatorFee * initial_price).toFixed(0);
+
+  const disputeInProgress = contract.status === ContractStatus.DisputeBorrowerResolved
+    || contract.status === ContractStatus.DisputeLenderResolved
+    || contract.status === ContractStatus.DisputeBorrowerStarted
+    || contract.status === ContractStatus.DisputeLenderStarted;
+
+  const [info, setInfo] = useState("");
+
+  const onStartDispute = async (reason: string, comment: string) => {
+    setStartingDisputeLoading(true);
+    try {
+      await startDispute(contract.id, reason, comment);
+      setInfo("A new dispute was started, please check your email");
+      setError("");
+    } catch (error) {
+      setInfo("");
+      setError(`${error}`);
+    } finally {
+      setStartingDisputeLoading(false);
+    }
+  };
 
   return (
     <Container fluid>
@@ -155,6 +182,14 @@ function ContractDetails({ contract }: DetailsProps) {
       <Row className="justify-content-between mt-5">
         <AdditionalDetail contract={contract} />
       </Row>
+
+      <ExpandableDisputeCard
+        info={info}
+        onStartDispute={onStartDispute}
+        startingDisputeLoading={startingDisputeLoading}
+        error={error}
+        disputeInProgress={disputeInProgress}
+      />
     </Container>
   );
 }

@@ -1,5 +1,6 @@
 pub mod borrowers;
 pub mod contracts;
+pub mod dispute;
 pub mod invite_code;
 pub mod lenders;
 pub mod loan_offers;

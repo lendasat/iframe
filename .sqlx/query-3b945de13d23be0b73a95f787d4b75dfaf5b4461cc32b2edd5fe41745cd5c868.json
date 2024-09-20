@@ -94,7 +94,11 @@
                 "Repaid",
                 "Closing",
                 "Closed",
-                "Rejected"
+                "Rejected",
+                "DisputeBorrowerStarted",
+                "DisputeLenderStarted",
+                "DisputeBorrowerResolved",
+                "DisputeLenderResolved"
               ]
             }
           }
@@ -133,7 +137,11 @@
                 "Repaid",
                 "Closing",
                 "Closed",
-                "Rejected"
+                "Rejected",
+                "DisputeBorrowerStarted",
+                "DisputeLenderStarted",
+                "DisputeBorrowerResolved",
+                "DisputeLenderResolved"
               ]
             }
           }

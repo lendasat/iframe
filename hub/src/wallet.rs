@@ -1,6 +1,7 @@
 use anyhow::Context;
 use anyhow::Result;
 use bitcoin::absolute::LockTime;
+use bitcoin::address::NetworkUnchecked;
 use bitcoin::bip32::ChildNumber;
 use bitcoin::bip32::Xpriv;
 use bitcoin::bip32::Xpub;
@@ -31,6 +32,12 @@ static KEY_INDEX: LazyLock<Mutex<u32>> = LazyLock::new(|| Mutex::new(0));
 
 // FIXME: Pass another xpub in to receive fee payments?
 const HUB_FEE_ADDRESS: &str = "tb1quw75h0w26rcrdfar6knvkfazpwyzq4z8vqmt37";
+// FIXME: This is the address we receive the funds on for the lender in case of a dispute resolution
+// or a liquidation
+pub const LIQUIDATOR_ADDRESS: &str = "tb1q54wsjqzdm0fmqzezuzq00x9tramznhfa7zw6y0";
+
+/// Everything below this value is counted as dust. At the time of writing, this is ~$58
+const MIN_TX_OUTPUT_SIZE: u64 = 100_000;
 
 pub struct Wallet {
     hub_xpriv: Xpriv,
@@ -66,6 +73,125 @@ impl Wallet {
         let address = descriptor.address(self.network)?;
 
         Ok((address, index))
+    }
+
+    pub fn create_dispute_claim_collateral_psbt(
+        &self,
+        borrower_pk: PublicKey,
+        contract_index: u32,
+        collateral_output: OutPoint,
+        collateral_amount: u64,
+        outputs: [(Address<NetworkUnchecked>, u64); 2],
+        // In the DLC-based protocol, we will probably charge the origination fee when the
+        // collateral is locked up.
+        origination_fee: u64,
+    ) -> Result<(Psbt, Descriptor<PublicKey>)> {
+        let (hub_kp, fallback_pk) = self.get_keys_for_index(contract_index)?;
+
+        let hub_pk = PublicKey::new(hub_kp.public_key());
+        let collateral_descriptor: Descriptor<PublicKey> =
+            format!("wsh(multi(2,{borrower_pk},{hub_pk},{fallback_pk}))").parse()?;
+
+        let collateral_input = TxIn {
+            previous_output: collateral_output,
+            ..Default::default()
+        };
+
+        // FIXME: Incorrect arbitrary value!
+        let tx_weight_vb = 250;
+        // FIXME: Choose a sensible fee rate.
+        let fee_rate_spvb = 1;
+
+        let tx_fee = tx_weight_vb * fee_rate_spvb;
+
+        // Filter out small outputs
+        let outputs = outputs
+            .into_iter()
+            .filter(|(_, amount)| amount >= &MIN_TX_OUTPUT_SIZE)
+            .collect::<Vec<_>>();
+
+        let tx_fee_per_output = tx_fee / outputs.len() as u64;
+
+        let mut outputs = outputs
+            .into_iter()
+            .filter_map(|(address, amount)| {
+                if tx_fee_per_output > amount {
+                    // Tx fee is too high, ignoring output
+                    tracing::warn!(
+                        address = address.assume_checked().to_string(),
+                        amount,
+                        tx_fee_per_output,
+                        "Ignoring output as tx fee would render output too small"
+                    );
+                    None
+                } else if amount - tx_fee_per_output < MIN_TX_OUTPUT_SIZE {
+                    tracing::warn!(
+                        address = address.assume_checked().to_string(),
+                        amount,
+                        tx_fee_per_output,
+                        "Ignoring output as tx fee would render output too small"
+                    );
+                    None
+                } else {
+                    Some(TxOut {
+                        value: Amount::from_sat(amount - tx_fee_per_output),
+                        script_pubkey: address.assume_checked().script_pubkey(),
+                    })
+                }
+            })
+            .collect::<Vec<_>>();
+
+        let address = Address::from_str(HUB_FEE_ADDRESS).expect("valid address");
+
+        let origination_fee_output = TxOut {
+            value: Amount::from_sat(origination_fee),
+            script_pubkey: address.assume_checked().script_pubkey(),
+        };
+
+        outputs.push(origination_fee_output);
+
+        let unsigned_claim_tx = Transaction {
+            version: Version::TWO,
+            lock_time: LockTime::ZERO,
+            input: vec![collateral_input],
+            output: outputs,
+        };
+
+        let witness_script = collateral_descriptor.script_code()?;
+        let sighash = SighashCache::new(&unsigned_claim_tx).p2wsh_signature_hash(
+            0,
+            &witness_script,
+            Amount::from_sat(collateral_amount + origination_fee),
+            EcdsaSighashType::All,
+        )?;
+
+        let mut claim_psbt = Psbt::from_unsigned_tx(unsigned_claim_tx)?;
+
+        let mut input = psbt::Input {
+            witness_utxo: Some(TxOut {
+                value: Amount::from_sat(collateral_amount + origination_fee),
+                script_pubkey: collateral_descriptor.script_pubkey(),
+            }),
+            sighash_type: Some(PsbtSighashType::from_str("SIGHASH_ALL").expect("valid")),
+            witness_script: Some(witness_script),
+            ..Default::default()
+        };
+
+        let secp = Secp256k1::new();
+        let hub_sk = hub_kp.secret_key();
+        let sig = secp.sign_ecdsa(&sighash.into(), &hub_sk);
+
+        input.partial_sigs.insert(
+            hub_pk,
+            bitcoin::ecdsa::Signature {
+                signature: sig,
+                sighash_type: EcdsaSighashType::All,
+            },
+        );
+
+        claim_psbt.inputs = vec![input];
+
+        Ok((claim_psbt, collateral_descriptor))
     }
 
     pub fn create_claim_collateral_psbt(

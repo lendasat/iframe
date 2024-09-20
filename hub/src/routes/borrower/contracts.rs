@@ -33,7 +33,47 @@ use time::format_description;
 use time::OffsetDateTime;
 use tracing::instrument;
 
-const ORIGINATION_FEE_RATE: f32 = 0.01;
+pub(crate) const ORIGINATION_FEE_RATE: f32 = 0.01;
+
+pub(crate) fn router(app_state: Arc<AppState>) -> Router {
+    Router::new()
+        .route(
+            "/api/contracts",
+            get(get_contracts).route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                jwt_auth::auth,
+            )),
+        )
+        .route(
+            "/api/contracts/:id",
+            get(get_contract).route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                jwt_auth::auth,
+            )),
+        )
+        .route(
+            "/api/contracts/:id",
+            post(post_claim_tx).route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                jwt_auth::auth,
+            )),
+        )
+        .route(
+            "/api/contracts",
+            post(post_contract_request).route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                jwt_auth::auth,
+            )),
+        )
+        .route(
+            "/api/contracts/:id/claim",
+            get(get_claim_collateral_psbt).route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                jwt_auth::auth,
+            )),
+        )
+        .with_state(app_state)
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Contract {
@@ -80,46 +120,6 @@ pub struct ClaimCollateralPsbt {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ClaimTx {
     pub tx: String,
-}
-
-pub(crate) fn router(app_state: Arc<AppState>) -> Router {
-    Router::new()
-        .route(
-            "/api/contracts",
-            get(get_contracts).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_auth::auth,
-            )),
-        )
-        .route(
-            "/api/contracts/:id",
-            get(get_contract).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_auth::auth,
-            )),
-        )
-        .route(
-            "/api/contracts/:id",
-            post(post_claim_tx).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_auth::auth,
-            )),
-        )
-        .route(
-            "/api/contracts",
-            post(post_contract_request).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_auth::auth,
-            )),
-        )
-        .route(
-            "/api/contracts/:id/claim",
-            get(get_claim_collateral_psbt).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_auth::auth,
-            )),
-        )
-        .with_state(app_state)
 }
 
 pub async fn get_contracts(
@@ -380,14 +380,27 @@ pub async fn get_claim_collateral_psbt(
     Extension(user): Extension<User>,
     Path(contract_id): Path<String>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let psbt = async {
-        let contract = db::contracts::load_contract_by_contract_id_and_borrower_id(
-            &data.db,
-            contract_id.as_str(),
-            &user.id,
-        )
-        .await?;
+    let contract = db::contracts::load_contract_by_contract_id_and_borrower_id(
+        &data.db,
+        contract_id.as_str(),
+        &user.id,
+    )
+    .await
+    .map_err(|error| {
+        let error_response = ErrorResponse {
+            message: format!("Contract not found: {}", error),
+        };
+        (StatusCode::BAD_REQUEST, Json(error_response))
+    })?;
 
+    if contract.status != ContractStatus::Repaid {
+        let error_response = ErrorResponse {
+            message: "Contract is not yet repaid".to_string(),
+        };
+        return Err((StatusCode::BAD_REQUEST, Json(error_response)));
+    }
+
+    let psbt = async {
         let contract_index = contract
             .contract_index
             .context("Can't generate claim PSBT without contract index")?;
@@ -399,6 +412,7 @@ pub async fn get_claim_collateral_psbt(
         let collateral_btc = Decimal::try_from(collateral_sats.to_btc()).expect("to fit");
         let initial_price = contract.loan_amount / (collateral_btc * contract.initial_ltv);
 
+        // TODO: we should store this in the database to not have to calculate it again.
         let origination_fee = (contract.loan_amount / initial_price)
             * Decimal::try_from(ORIGINATION_FEE_RATE).expect("to fit");
         let origination_fee = origination_fee.round_dp(8);

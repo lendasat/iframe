@@ -12,6 +12,7 @@ import ResetPassword from "./auth/reset-password";
 import ContractDetailsOverview from "./contracts/contract-details-overview";
 import MyContracts from "./contracts/my-contracts";
 import CreateLoanOffer from "./create-loan-offer";
+import ResolveDispute from "./disputes/dispute";
 
 const menuItems = [
   { label: "Create Loan Offer", icon: faMoneyBillTransfer, path: "/create-loan-offer" },
@@ -40,6 +41,7 @@ function MainLayoutComponents() {
             <Route index element={<MyContracts />} />
             <Route path={":id"} element={<ContractDetailsOverview />} />
           </Route>
+          <Route path="/disputes/:id" element={<ResolveDispute />} />
         </Route>
         <Route path="/logout" element={<Logout />} />
       </Routes>

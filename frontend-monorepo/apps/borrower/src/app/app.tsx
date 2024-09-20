@@ -21,6 +21,7 @@ import Logout from "./auth/logout";
 import Registration from "./auth/registration";
 import ResetPassword from "./auth/reset-password";
 import DashBoard from "./dash-board";
+import ResolveDispute from "./disputes/dispute";
 import ErrorBoundary from "./ErrorBoundary";
 import MyAccount from "./my-account";
 import ContractDetailsOverview from "./my-loans/contract-details-overview";
@@ -69,6 +70,7 @@ function MainLayoutComponents() {
           <Route path="/logout" element={<Logout />} />
           <Route path="/profile/:id" element={<Profile />} />
           <Route path="/request-loan/:id" element={<RequestLoanSummary />} />
+          <Route path="/disputes/:id" element={<ResolveDispute />} />
           <Route path="/error" element={<ErrorBoundary />} />
         </Route>
       </Routes>

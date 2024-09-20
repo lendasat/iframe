@@ -9,7 +9,6 @@ use bitcoin::Txid;
 use rust_decimal::Decimal;
 use sqlx::Pool;
 use sqlx::Postgres;
-use time::OffsetDateTime;
 use uuid::Uuid;
 
 pub async fn load_contracts_by_borrower_id(
@@ -350,7 +349,7 @@ pub async fn accept_contract_request(
             updated_at
         "#,
         db::ContractStatus::Approved as db::ContractStatus,
-        OffsetDateTime::now_utc(),
+        time::OffsetDateTime::now_utc(),
         contract_address.to_string(),
         contract_index as i32,
         lender_id,
@@ -401,7 +400,7 @@ pub async fn mark_contract_as_seen(
         outpoint.txid.to_string(),
         outpoint.vout as i32,
         db::ContractStatus::CollateralSeen as db::ContractStatus,
-        OffsetDateTime::now_utc(),
+        time::OffsetDateTime::now_utc(),
         contract_id,
     )
     .fetch_one(pool)
@@ -444,7 +443,7 @@ pub async fn mark_contract_as_principal_given(
             updated_at
         "#,
         db::ContractStatus::PrincipalGiven as db::ContractStatus,
-        OffsetDateTime::now_utc(),
+        time::OffsetDateTime::now_utc(),
         contract_id,
     )
     .fetch_one(pool)
@@ -492,7 +491,7 @@ pub async fn mark_contract_as_confirmed(
         outpoint.txid.to_string(),
         outpoint.vout as i32,
         db::ContractStatus::CollateralConfirmed as db::ContractStatus,
-        OffsetDateTime::now_utc(),
+        time::OffsetDateTime::now_utc(),
         contract_id,
     )
     .fetch_one(pool)
@@ -532,7 +531,7 @@ pub async fn mark_contract_as_repaid(pool: &Pool<Postgres>, contract_id: &str) -
             updated_at
         "#,
         db::ContractStatus::Repaid as db::ContractStatus,
-        OffsetDateTime::now_utc(),
+        time::OffsetDateTime::now_utc(),
         contract_id,
     )
     .fetch_one(pool)
@@ -576,7 +575,7 @@ pub async fn insert_claim_txid(
             updated_at
         "#,
         claim_txid.to_string(),
-        OffsetDateTime::now_utc(),
+        time::OffsetDateTime::now_utc(),
         contract_id,
     )
     .fetch_one(pool)
@@ -622,7 +621,7 @@ pub async fn mark_contract_as_closed(
         "#,
         claim_txid.to_string(),
         db::ContractStatus::Closed as db::ContractStatus,
-        OffsetDateTime::now_utc(),
+        time::OffsetDateTime::now_utc(),
         contract_id,
     )
     .fetch_one(pool)
@@ -665,7 +664,7 @@ pub async fn mark_contract_as_closing(
             updated_at
         "#,
         db::ContractStatus::Closing as db::ContractStatus,
-        OffsetDateTime::now_utc(),
+        time::OffsetDateTime::now_utc(),
         contract_id,
     )
     .fetch_one(pool)
@@ -709,11 +708,55 @@ pub async fn reject_contract_request(
             updated_at
         "#,
         db::ContractStatus::Rejected as db::ContractStatus,
-        OffsetDateTime::now_utc(),
+        time::OffsetDateTime::now_utc(),
         lender_id,
         contract_id
     )
     .fetch_one(pool)
+    .await?;
+
+    Ok(contract.into())
+}
+
+pub(crate) async fn mark_contract_as(
+    transaction: &mut sqlx::Transaction<'_, Postgres>,
+    contract_id: &str,
+    status: db::ContractStatus,
+) -> Result<Contract> {
+    let contract = sqlx::query_as!(
+        db::Contract,
+        r#"
+        UPDATE contracts
+        SET
+            status = $1,
+            updated_at = $2
+        WHERE id = $3
+        RETURNING
+            id,
+            lender_id,
+            borrower_id,
+            loan_id,
+            initial_ltv,
+            initial_collateral_sats,
+            loan_amount,
+            borrower_btc_address,
+            borrower_pk,
+            borrower_loan_address,
+            contract_address,
+            contract_index,
+            collateral_txid,
+            collateral_vout,
+            claim_txid,
+            status as "status: crate::model::db::ContractStatus",
+            duration_months,
+            created_at,
+            updated_at
+        "#,
+        status as db::ContractStatus,
+        time::OffsetDateTime::now_utc(),
+        contract_id,
+    )
+    .fetch_one(&mut **transaction)
     .await?;
 
     Ok(contract.into())
