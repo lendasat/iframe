@@ -23,7 +23,7 @@ function ContractDetailsOverview() {
   return (
     <Suspense>
       <Await
-        resolve={getContract(id)}
+        resolve={getContract(id!)}
         errorElement={<div>Could not load contracts</div>}
         children={(contract: Awaited<Contract>) => (
           <Container className={"p-4"} fluid>
@@ -98,6 +98,7 @@ function ContractDetails({ contract }: DetailsProps) {
   const collateral = collateral_sats / 100000000;
   const loanAmount = contract.loan_amount;
   const interestRate = contract.interest_rate;
+  const durationMonths = contract.duration_months;
 
   const initialLtv = contract.initial_ltv;
   const initial_price = loanAmount / (collateral * initialLtv);
@@ -150,6 +151,12 @@ function ContractDetails({ contract }: DetailsProps) {
         <Col md={6}>Loan amount</Col>
         <Col md={6} className="text-end mb-2">
           <CurrencyFormatter value={loanAmount} />
+        </Col>
+      </Row>
+      <Row className="justify-content-between border-b mt-2">
+        <Col md={6}>Loan duration</Col>
+        <Col md={6} className="text-end mb-2">
+          {durationMonths} months
         </Col>
       </Row>
       <Row className="justify-content-between border-b mt-2">

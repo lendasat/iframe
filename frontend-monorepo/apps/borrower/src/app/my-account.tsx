@@ -1,16 +1,12 @@
 import { faEdit } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
+import { useWallet } from "@frontend-monorepo/borrower-wallet";
 import { useAuth } from "@frontend-monorepo/http-client-borrower";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Button, Spinner, Table } from "react-bootstrap";
 import { FaEye } from "react-icons/fa";
 import { FaEyeSlash } from "react-icons/fa6";
-import init, {
-  does_wallet_exist,
-  get_mnemonic,
-  is_wallet_loaded,
-} from "../../../../../borrower-wallet/pkg/borrower_wallet.js";
 import { CreateWalletModal } from "./wallet/create-wallet-modal";
 import { UnlockWalletModal } from "./wallet/unlock-wallet-modal";
 
@@ -20,14 +16,6 @@ function MyAccount() {
   const [isLoading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-
-  useEffect(() => {
-    async function initializeWasm() {
-      await init();
-    }
-
-    initializeWasm();
-  }, []); // Empty dependency array means this runs once on mount
 
   const handleResetPassword = async () => {
     setLoading(true);
@@ -114,29 +102,19 @@ const MnemonicDisplay = () => {
   const [showUnlockWalletModal, setShowUnlockWalletModal] = useState(false);
   const [mnemonic, setMnemonic] = useState("");
 
-  useEffect(() => {
-    async function initializeWasm() {
-      await init();
-    }
-
-    initializeWasm();
-  }, []);
+  const { doesWalletExist, isWalletLoaded, getMnemonic } = useWallet();
 
   const onEyeButtonClick = async () => {
-    await init();
-
-    const walletExists = does_wallet_exist();
-    const isLoaded = is_wallet_loaded();
-    if (!walletExists) {
+    if (!doesWalletExist) {
       handleOpenCreateWalletModal();
       return;
     }
-    if (!isLoaded) {
+    if (!isWalletLoaded) {
       handleOpenUnlockWalletModal();
       return;
     }
 
-    if (isLoaded && !isVisible) {
+    if (isWalletLoaded && !isVisible) {
       await handleGetMnemonic();
     }
     setIsVisible(!isVisible);
@@ -144,9 +122,8 @@ const MnemonicDisplay = () => {
 
   const handleGetMnemonic = async () => {
     try {
-      const isLoaded = is_wallet_loaded();
-      if (isLoaded) {
-        const mnemonicValue = get_mnemonic();
+      if (isWalletLoaded) {
+        const mnemonicValue = getMnemonic();
         setMnemonic(mnemonicValue);
       }
     } catch (e) {

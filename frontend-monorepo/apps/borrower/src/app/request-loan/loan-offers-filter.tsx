@@ -3,28 +3,28 @@ import { Form } from "react-bootstrap";
 import { Slider, SliderProps } from "./slider";
 import { StableCoin, StableCoinDropdown, StableCoinHelper } from "./stable-coin";
 
-export enum LoanFilterType {
-  AMOUNT = "AMOUNT",
-  STABLECOIN = "STABLECOIN",
-  LTV = "LTV",
-  INTEREST = "INTEREST",
-  PERIOD = "PERIOD",
+export interface LoanFilter {
+  amount?: number;
+  stableCoin?: StableCoin;
+  ltv?: number;
+  interest?: number;
+  period?: number;
 }
 
-export class LoanFilter {
-  type: LoanFilterType;
-  value: number | StableCoin;
+interface LoanOffersFilterProps {
+  loanFilter: LoanFilter;
+  onChange: (filter: LoanFilter) => void;
 }
 
-function LoanOffersFilter({ onChange }) {
+function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
   const ltvSliderProps: SliderProps = {
     min: 30,
     max: 100,
     step: 1,
-    init: 100,
+    init: 30,
     suffix: "%",
     onChange: (value) => {
-      const filter: LoanFilter = { type: LoanFilterType.LTV, value };
+      const filter: LoanFilter = { ...loanFilter, ltv: value };
       onChange(filter);
     },
   };
@@ -35,7 +35,7 @@ function LoanOffersFilter({ onChange }) {
     init: 30,
     suffix: "%",
     onChange: (value) => {
-      const filter: LoanFilter = { type: LoanFilterType.INTEREST, value };
+      const filter: LoanFilter = { ...loanFilter, interest: value };
       onChange(filter);
     },
   };
@@ -47,52 +47,56 @@ function LoanOffersFilter({ onChange }) {
     init: 12,
     suffix: " months",
     onChange: (value) => {
-      const filter: LoanFilter = { type: LoanFilterType.PERIOD, value };
+      const filter: LoanFilter = { ...loanFilter, period: value };
       onChange(filter);
     },
   };
 
+  function onStableCoinSelect(value: StableCoin) {
+    const filter: LoanFilter = { ...loanFilter, stableCoin: value };
+    onChange(filter);
+  }
+
+  function onAmountChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
+    const value = e.target.value ? Number(e.target.value) : undefined;
+    const filter: LoanFilter = { ...loanFilter, amount: value };
+    onChange(filter);
+  }
+
   return (
     <Form className={"py-4"}>
       <Form.Group className="mb-3" controlId="loan-amount">
-        <Form.Label>
+        <Form.Label column={true}>
           <small>Loan Amount</small>
         </Form.Label>
         <Form.Control
-          onChange={(e) => {
-            const value = e.target.value as number;
-            const filter: LoanFilter = { type: LoanFilterType.AMOUNT, value };
-            onChange(filter);
-          }}
+          onChange={onAmountChange}
         />
       </Form.Group>
       <Form.Group className="mb-3" controlId="stable-coin">
-        <Form.Label>
+        <Form.Label column={true}>
           <small>Stable coin</small>
         </Form.Label>
         <StableCoinDropdown
           coins={StableCoinHelper.all()}
           filter={true}
-          onSelect={(value) => {
-            const filter: LoanFilter = { type: LoanFilterType.STABLECOIN, value };
-            onChange(filter);
-          }}
+          onSelect={onStableCoinSelect}
         />
       </Form.Group>
       <Form.Group className="mb-3" controlId="ltv-slider">
-        <Form.Label>
+        <Form.Label column={true}>
           <small>LTV ratio</small>
         </Form.Label>
         <Slider {...ltvSliderProps} />
       </Form.Group>
       <Form.Group className="mb-3" controlId="interest-slider">
-        <Form.Label>
+        <Form.Label column={true}>
           <small>Interest rate p.a.</small>
         </Form.Label>
         <Slider {...interestSliderProps} />
       </Form.Group>
       <Form.Group className="mb-3" controlId="interest-slider">
-        <Form.Label>
+        <Form.Label column={true}>
           <small>Period</small>
         </Form.Label>
         <Slider {...periodSliderProps} />

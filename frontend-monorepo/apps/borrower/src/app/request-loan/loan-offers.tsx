@@ -1,5 +1,6 @@
 import { faChevronDown, faChevronUp, faMinus, IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { LoanOffer } from "@frontend-monorepo/http-client-lender";
 import { useState } from "react";
 import { Col, Container, Row } from "react-bootstrap";
 import { LoanOfferComponent } from "./loan-offer";
@@ -45,13 +46,16 @@ class SortHelper {
   }
 }
 
-function LoanOffersComponent(props) {
+interface LoanOffersComponentProps {
+  loanOffers: LoanOffer[];
+  onRequest: (loanOffer: LoanOffer) => void;
+}
+
+function LoanOffersComponent({ loanOffers, onRequest }: LoanOffersComponentProps) {
   const [amountSort, setAmountSort] = useState<Sort>(Sort.NONE);
   const [durationSort, setDurationSort] = useState<Sort>(Sort.NONE);
   const [ltvSort, setLTVSort] = useState<Sort>(Sort.NONE);
   const [interestSort, setInterestSort] = useState<Sort>(Sort.NONE);
-
-  const { loanOffers, onRequest } = props;
 
   return (
     <>
@@ -104,19 +108,19 @@ function LoanOffersComponent(props) {
       </Container>
       {loanOffers.sort((a, b) => {
         // Compare by amount first
-        const amountComparison = SortHelper.sort(amountSort, a.amount.min, b.amount.min);
+        const amountComparison = SortHelper.sort(amountSort, a.loan_amount_max, b.loan_amount_min);
         if (amountComparison !== 0) return amountComparison;
 
         // Compare by duration if amount is the same
-        const durationComparison = SortHelper.sort(durationSort, a.duration.min, b.duration.min);
+        const durationComparison = SortHelper.sort(durationSort, a.duration_months_min, b.duration_months_min);
         if (durationComparison !== 0) return durationComparison;
 
         // Compare by LTV if amount and duration are the same
-        const ltvComparison = SortHelper.sort(ltvSort, a.ltv, b.ltv);
+        const ltvComparison = SortHelper.sort(ltvSort, a.min_ltv, b.min_ltv);
         if (ltvComparison !== 0) return ltvComparison;
 
         // Compare by interest if amount, duration, and LTV are the same
-        return SortHelper.sort(interestSort, a.interest, b.interest);
+        return SortHelper.sort(interestSort, a.interest_rate, b.interest_rate);
       }).map((loanOffer, index) => (
         <div key={index} className={"mb-3"}>
           <LoanOfferComponent key={index} loanOffer={loanOffer} onRequest={onRequest} />

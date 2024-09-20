@@ -3,7 +3,7 @@ import { Button, Form, Modal } from "react-bootstrap";
 
 import { faInfoCircle, faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import init, { does_wallet_exist, new_wallet } from "../../../../../../borrower-wallet/pkg/borrower_wallet.js";
+import { useWallet } from "@frontend-monorepo/borrower-wallet";
 import { delay } from "./unlock-wallet-modal";
 
 interface WalletModalProps {
@@ -18,17 +18,14 @@ export function CreateWalletModal({ show, handleClose, handleSubmit }: WalletMod
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const { doesWalletExist, createWallet } = useWallet();
+
   useEffect(() => {
     if (show) {
       // Reset all states when the modal is shown
       setPassword("");
       setConfirmPassword("");
       setError("");
-      init()
-        .then(() => {
-          console.log("WASM module initialized");
-        })
-        .catch(err => console.error("Failed to initialize WASM module:", err));
     }
   }, [show]); // This effect runs every time 'show' changes
 
@@ -46,17 +43,16 @@ export function CreateWalletModal({ show, handleClose, handleSubmit }: WalletMod
     await delay(100);
     if (validatePasswords()) {
       try {
-        const walletExists = does_wallet_exist();
-        if (!walletExists) {
+        if (!doesWalletExist) {
           // TODO: use env variable here for the network
-          new_wallet(password, import.meta.env.VITE_BITCOIN_NETWORK ?? "signet");
+          createWallet(password, import.meta.env.VITE_BITCOIN_NETWORK ?? "signet");
           console.log("Created new wallet");
         } else {
           setError("Wallet already exists, please unlock instead");
           return;
         }
       } catch (error) {
-        setError(error);
+        setError(`${JSON.stringify(error)}`);
         return;
       } finally {
         setLoading(false);

@@ -1,0 +1,9 @@
+{
+  "name": "borrower-wallet",
+  "$schema": "../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "borrower-wallet/src",
+  "projectType": "library",
+  "tags": [],
+  "// targets": "to see all targets run: nx show project borrower-wallet --web",
+  "targets": {}
+}

@@ -1,47 +1,39 @@
-import { FormEvent, useEffect, useState } from "react";
+import { useWallet } from "@frontend-monorepo/borrower-wallet";
+import { FormEvent, useState } from "react";
 import { Button } from "react-bootstrap";
-import init, { get_mnemonic, load_wallet, new_wallet } from "../../../../../borrower-wallet/pkg/borrower_wallet.js";
 
 function Wallet() {
   const [mnemonic, setMnemonic] = useState<string>("");
   const [newWalletInput, setNewWalletInput] = useState<string>("");
   const [loadWalletInput, setLoadWalletInput] = useState<string>("");
-  const [isWalletLoaded, setIsWalletLoaded] = useState<boolean>(false);
 
-  useEffect(() => {
-    async function initializeWasm() {
-      await init();
-    }
+  const { loadWallet, isWalletLoaded, createWallet, getMnemonic } = useWallet();
 
-    initializeWasm();
-  }, []); // Empty dependency array means this runs once on mount
-
-  const createWallet = (e: FormEvent) => {
+  const onCreateWallet = (e: FormEvent) => {
     e.preventDefault();
 
     try {
-      // TODO: The network should be read from an environment variable.
-      new_wallet(newWalletInput, import.meta.env.VITE_BITCOIN_NETWORK ?? "signet");
-      setIsWalletLoaded(true);
+      createWallet(newWalletInput, import.meta.env.VITE_BITCOIN_NETWORK ?? "signet");
     } catch (e) {
       alert(e);
     }
   };
 
-  const loadWallet = (e: FormEvent) => {
+  const onLoadWallet = (e: FormEvent) => {
     e.preventDefault();
 
     try {
-      load_wallet(loadWalletInput);
-      setIsWalletLoaded(true);
+      loadWallet(loadWalletInput);
     } catch (e) {
       alert(e);
     }
   };
 
-  const getMnemonic = () => {
+  const onGetMnemonic = (e: FormEvent) => {
+    e.preventDefault();
+
     try {
-      const mnemonicValue = get_mnemonic();
+      const mnemonicValue = getMnemonic();
       setMnemonic(mnemonicValue);
     } catch (e) {
       alert(e);
@@ -55,7 +47,7 @@ function Wallet() {
         <span>Wallet status</span>
       </div>
       <div className="card">
-        <form onSubmit={createWallet}>
+        <form onSubmit={onCreateWallet}>
           <input
             type="text"
             value={newWalletInput}
@@ -68,7 +60,7 @@ function Wallet() {
         </form>
       </div>
       <div className="card">
-        <form onSubmit={loadWallet}>
+        <form onSubmit={onLoadWallet}>
           <input
             type="text"
             value={loadWalletInput}
@@ -81,7 +73,7 @@ function Wallet() {
         </form>
       </div>
       <div className="card">
-        <Button onClick={getMnemonic}>
+        <Button onClick={onGetMnemonic}>
           Get mnemonic
         </Button>
         {mnemonic && <p>{mnemonic}</p>}

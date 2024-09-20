@@ -5,6 +5,7 @@ import {
   faRightFromBracket,
   faUserCircle,
 } from "@fortawesome/free-solid-svg-icons";
+import { WalletProvider } from "@frontend-monorepo/borrower-wallet";
 import {
   AuthIsNotSignedIn,
   AuthIsSignedIn,
@@ -46,35 +47,37 @@ function MainLayoutComponents() {
   };
 
   return (
-    <Layout
-      menuItems={menuItems}
-      theme={"light"}
-      backendVersion={version}
-    >
-      <Routes>
-        <Route
-          element={
-            <div>
-              <Outlet />
-            </div>
-          }
-          errorElement={<ErrorBoundary />}
-        >
-          <Route index element={<DashBoard />} />
-          <Route path="/request-loan" element={<RequestLoan />} />
-          <Route path="/my-contracts">
-            <Route index element={<MyLoans />} />
-            <Route path={":id"} element={<ContractDetailsOverview />} />
+    <WalletProvider>
+      <Layout
+        menuItems={menuItems}
+        theme={"light"}
+        backendVersion={version}
+      >
+        <Routes>
+          <Route
+            element={
+              <div>
+                <Outlet />
+              </div>
+            }
+            errorElement={<ErrorBoundary />}
+          >
+            <Route index element={<DashBoard />} />
+            <Route path="/my-contracts">
+              <Route index element={<MyLoans />} />
+              <Route path={":id"} element={<ContractDetailsOverview />} />
+            </Route>
+            <Route path="/my-account" element={<MyAccount />} />
+            <Route path="/logout" element={<Logout />} />
+            <Route path="/profile/:id" element={<Profile />} />
+            <Route path="/request-loan" element={<RequestLoan />} />
+            <Route path="/request-loan/:id" element={<RequestLoanSummary />} />
+            <Route path="/disputes/:id" element={<ResolveDispute />} />
+            <Route path="/error" element={<ErrorBoundary />} />
           </Route>
-          <Route path="/my-account" element={<MyAccount />} />
-          <Route path="/logout" element={<Logout />} />
-          <Route path="/profile/:id" element={<Profile />} />
-          <Route path="/request-loan/:id" element={<RequestLoanSummary />} />
-          <Route path="/disputes/:id" element={<ResolveDispute />} />
-          <Route path="/error" element={<ErrorBoundary />} />
-        </Route>
-      </Routes>
-    </Layout>
+        </Routes>
+      </Layout>
+    </WalletProvider>
   );
 }
 
