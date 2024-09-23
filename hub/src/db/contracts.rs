@@ -223,7 +223,7 @@ pub async fn load_contracts_pending_confirmation(pool: &Pool<Postgres>) -> Resul
 #[allow(clippy::too_many_arguments)]
 pub async fn insert_contract_request(
     pool: &Pool<Postgres>,
-    borrower_id: String,
+    borrower_id: &str,
     loan_id: &str,
     initial_ltv: Decimal,
     initial_collateral_sats: u64,
@@ -231,7 +231,7 @@ pub async fn insert_contract_request(
     duration_months: i32,
     borrower_btc_address: Address<NetworkUnchecked>,
     borrower_pk: PublicKey,
-    borrower_loan_address: String,
+    borrower_loan_address: &str,
 ) -> Result<Contract> {
     let id = Uuid::new_v4().to_string();
     let initial_collateral_sats = initial_collateral_sats as i64;

@@ -64,7 +64,7 @@ pub async fn create_loan_offer(
         return Err((StatusCode::BAD_REQUEST, Json(error_response)));
     }
 
-    let loan = db::loan_offers::insert_loan_offer(&data.db, body, user.id)
+    let loan = db::loan_offers::insert_loan_offer(&data.db, body, user.id.as_str())
         .await
         .map_err(|error| {
             let error_response = ErrorResponse {
@@ -81,7 +81,7 @@ pub async fn get_loan_offers_by_lender(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<User>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let loans = db::loan_offers::load_all_loan_offers_by_lender(&data.db, user.id)
+    let loans = db::loan_offers::load_all_loan_offers_by_lender(&data.db, user.id.as_str())
         .await
         .map_err(|error| {
             let error_response = ErrorResponse {

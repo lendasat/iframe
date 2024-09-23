@@ -312,7 +312,7 @@ pub async fn post_contract_request(
 
         let contract = db::contracts::insert_contract_request(
             &data.db,
-            user.id,
+            user.id.as_str(),
             &body.loan_id,
             offer.min_ltv,
             collateral.to_sat(),
@@ -320,7 +320,7 @@ pub async fn post_contract_request(
             body.duration_months,
             body.borrower_btc_address,
             body.borrower_pk,
-            body.borrower_loan_address,
+            body.borrower_loan_address.as_str(),
         )
         .await?;
 
