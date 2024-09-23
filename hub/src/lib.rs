@@ -1,3 +1,5 @@
+pub mod bitmex_index_pricefeed;
+pub mod bitmex_ws_client;
 pub mod config;
 pub mod db;
 pub mod email;

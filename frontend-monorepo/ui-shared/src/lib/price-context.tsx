@@ -1,24 +1,26 @@
 import React, { createContext, ReactNode, useContext, useEffect, useState } from "react";
 
 interface PriceContextProps {
-  latestPrice: number | undefined;
+  latestPrice: number;
+}
+
+interface RawPriceUpdate {
+  market_price: number;
 }
 
 const PriceContext = createContext<PriceContextProps | undefined>(undefined);
 
-export const PriceProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const PriceProvider: React.FC<{ url: string; children: ReactNode }> = ({ children, url }) => {
   const [latestPrice, setLatestPrice] = useState<number | undefined>();
 
   useEffect(() => {
-    const socket = new WebSocket("wss://ws.coincap.io/prices?assets=bitcoin");
+    const socket = new WebSocket(`${url}/api/pricefeed`);
 
     socket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      let price = undefined;
-      if (data.bitcoin) {
-        price = parseFloat(data.bitcoin);
+      const data: RawPriceUpdate = JSON.parse(event.data);
+      if (data.market_price) {
+        setLatestPrice(data.market_price);
       }
-      setLatestPrice(price);
     };
 
     return () => {
