@@ -24,7 +24,6 @@ use bitcoin::Transaction;
 use miniscript::Descriptor;
 use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
-use rust_decimal_macros::dec;
 use serde::Deserialize;
 use serde::Serialize;
 use std::sync::Arc;
@@ -103,12 +102,10 @@ pub struct Contract {
     pub expiry: OffsetDateTime,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct LenderProfile {
-    id: String,
-    name: String,
-    rate: Decimal,
-    loans: u64,
+    pub(crate) id: String,
+    pub(crate) name: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -191,9 +188,6 @@ pub async fn get_contracts(
             lender: LenderProfile {
                 id: contract.lender_id,
                 name: lender.name,
-                // TODO: Use real data.
-                rate: dec!(99.7),
-                loans: 194,
             },
             created_at: contract.created_at,
             repaid_at: None,
@@ -280,9 +274,6 @@ pub async fn get_contract(
             lender: LenderProfile {
                 id: contract.lender_id,
                 name: lender.name,
-                // TODO: Use real data.
-                rate: dec!(99.7),
-                loans: 194,
             },
             created_at: contract.created_at,
             repaid_at: None,
@@ -350,9 +341,6 @@ pub async fn post_contract_request(
             lender: LenderProfile {
                 id: contract.lender_id,
                 name: lender.name,
-                // TODO: Use real data.
-                rate: dec!(99.7),
-                loans: 194,
             },
             created_at: contract.created_at,
             repaid_at: None,

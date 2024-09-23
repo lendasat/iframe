@@ -19,8 +19,7 @@ export function LoanOfferComponent({ loanOffer, onRequest }: LoanOfferProps) {
         <Container className={"p-0 m-0"} fluid>
           <Row>
             <Col>
-              {/*FIXME: fetch lender*/}
-              {/*<Lender {...lender} />*/}
+              <Lender {...loanOffer.lender} />
             </Col>
             <Col md={2}>
               <CurrencyFormatter value={loanOffer.loan_amount_min} /> -{" "}
