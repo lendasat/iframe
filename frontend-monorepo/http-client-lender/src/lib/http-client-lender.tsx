@@ -1,5 +1,5 @@
 import { BaseHttpClient, BaseHttpClientContext, BaseHttpClientContextType } from "@frontend-monorepo/base-http-client";
-import { Dispute } from "@frontend-monorepo/http-client-borrower";
+import { Dispute, LenderProfile } from "@frontend-monorepo/http-client-borrower";
 import axios, { AxiosResponse } from "axios";
 import { createContext, useContext } from "react";
 import { Contract, CreateLoanOfferRequest, LoanOffer } from "./models";
@@ -172,6 +172,44 @@ export class HttpClientLender extends BaseHttpClient {
       }
     }
   }
+
+  async getLenderProfile(id: string): Promise<LenderProfile> {
+    try {
+      const [response] = await Promise.all([this.httpClient.get(`/api/lenders/${id}`)]);
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to fetch lender profile: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not fetch lender ${JSON.stringify(error)}`);
+      }
+    }
+  }
+
+  async getBorrowerProfile(id: string): Promise<LenderProfile> {
+    try {
+      const [response] = await Promise.all([this.httpClient.get(`/api/borrowers/${id}`)]);
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to fetch borrower profile: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not fetch borrower ${JSON.stringify(error)}`);
+      }
+    }
+  }
 }
 
 type LenderHttpClientContextType = Pick<
@@ -185,6 +223,8 @@ type LenderHttpClientContextType = Pick<
   | "markAsRepaid"
   | "startDispute"
   | "getDispute"
+  | "getLenderProfile"
+  | "getBorrowerProfile"
 >;
 
 export const LenderHttpClientContext = createContext<LenderHttpClientContextType | undefined>(undefined);
@@ -227,6 +267,8 @@ export const HttpClientLenderProvider: React.FC<HttpClientProviderProps> = ({ ch
     markAsRepaid: httpClient.markAsRepaid.bind(httpClient),
     startDispute: httpClient.startDispute.bind(httpClient),
     getDispute: httpClient.getDispute.bind(httpClient),
+    getLenderProfile: httpClient.getLenderProfile.bind(httpClient),
+    getBorrowerProfile: httpClient.getBorrowerProfile.bind(httpClient),
   };
 
   return (

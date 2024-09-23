@@ -123,3 +123,13 @@ export interface Dispute {
   created_at: Date;
   updated_at: Date;
 }
+
+export interface LenderProfile {
+  id: string;
+  name: string;
+}
+
+export interface BorrowerProfile {
+  id: string;
+  name: string;
+}

@@ -46,9 +46,13 @@ export function contractStatusToLabelString(status: ContractStatus): string {
 }
 
 export interface LenderProfile {
+  id: string;
   name: string;
-  rate: number;
-  loans: number;
+}
+
+export interface BorrowerProfile {
+  id: string;
+  name: string;
 }
 
 export interface ContractRequest {
@@ -96,7 +100,7 @@ export interface ClaimCollateralPsbtResponse {
 
 export interface LoanOffer {
   id: string;
-  lender_id: string;
+  lender: LenderProfile;
   min_ltv: number;
   interest_rate: number;
   loan_amount_min: number;

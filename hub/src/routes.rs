@@ -12,6 +12,7 @@ use tokio::sync::Mutex;
 pub mod borrower;
 pub mod lender;
 pub mod price_feed_ws;
+pub(crate) mod profiles;
 
 #[derive(Debug, Serialize)]
 pub struct ErrorResponse {

@@ -1,6 +1,7 @@
 use crate::config::Config;
 use crate::mempool;
 use crate::routes::price_feed_ws;
+use crate::routes::profiles;
 use crate::routes::AppState;
 use crate::wallet::Wallet;
 use anyhow::Result;
@@ -52,7 +53,8 @@ pub async fn spawn_lender_server(
             .merge(loan_offers::router(app_state.clone()))
             .merge(contracts::router(app_state.clone()))
             .merge(dispute::router(app_state.clone()))
-            .merge(price_feed_ws::router(app_state))
+            .merge(price_feed_ws::router(app_state.clone()))
+            .merge(profiles::router(app_state))
             .fallback_service(
                 ServeDir::new("./frontend-monorepo/dist/apps/lender").fallback(ServeFile::new(
                     "./frontend-monorepo/dist/apps/lender/index.html",
