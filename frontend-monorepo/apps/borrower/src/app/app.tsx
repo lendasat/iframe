@@ -85,7 +85,7 @@ function App() {
   return (
     <AuthProviderBorrower baseUrl={import.meta.env.VITE_BORROWER_BASE_URL || "/"}>
       <AuthIsSignedIn>
-        <PriceProvider>
+        <PriceProvider url={import.meta.env.VITE_BORROWER_BASE_URL || "/"}>
           <MainLayoutComponents />
         </PriceProvider>
       </AuthIsSignedIn>

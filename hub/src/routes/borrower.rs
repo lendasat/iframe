@@ -1,8 +1,10 @@
 use crate::config::Config;
 use crate::mempool;
+use crate::routes::price_feed_ws;
 use crate::routes::AppState;
 use crate::wallet::Wallet;
 use anyhow::Result;
+use axum::extract::ws::Message;
 use axum::http::header::ACCEPT;
 use axum::http::header::ACCESS_CONTROL_ALLOW_HEADERS;
 use axum::http::header::ACCESS_CONTROL_ALLOW_ORIGIN;
@@ -15,6 +17,8 @@ use axum::Router;
 use sqlx::Pool;
 use sqlx::Postgres;
 use std::sync::Arc;
+use tokio::sync::mpsc;
+use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
 use tower_http::cors::CorsLayer;
 use tower_http::services::ServeDir;
@@ -36,12 +40,14 @@ pub async fn spawn_borrower_server(
     wallet: Arc<Wallet>,
     db: Pool<Postgres>,
     mempool: xtra::Address<mempool::Actor>,
+    connections: Arc<Mutex<Vec<mpsc::UnboundedSender<Message>>>>,
 ) -> Result<JoinHandle<()>> {
     let app_state = Arc::new(AppState {
         db,
         wallet,
         config: config.clone(),
         mempool,
+        connections,
     });
 
     let app = Router::new()
@@ -51,6 +57,7 @@ pub async fn spawn_borrower_server(
         .merge(loan_offers::router(app_state.clone()))
         .merge(contracts::router(app_state.clone()))
         .merge(dispute::router(app_state.clone()))
+        .merge(price_feed_ws::router(app_state))
         // This is a relative path on the filesystem, which means, when deploying `hub` we will need
         // to have the frontend in this directory. Ideally we would bundle the frontend with
         // the binary, but so far we failed at handling requests which are meant to be handled by

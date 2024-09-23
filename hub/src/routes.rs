@@ -1,13 +1,17 @@
 use crate::config::Config;
 use crate::mempool;
 use crate::wallet::Wallet;
+use axum::extract::ws::Message;
 use serde::Serialize;
 use sqlx::Pool;
 use sqlx::Postgres;
 use std::sync::Arc;
+use tokio::sync::mpsc;
+use tokio::sync::Mutex;
 
 pub mod borrower;
 pub mod lender;
+pub mod price_feed_ws;
 
 #[derive(Debug, Serialize)]
 pub struct ErrorResponse {
@@ -19,4 +23,5 @@ pub struct AppState {
     wallet: Arc<Wallet>,
     config: Config,
     mempool: xtra::Address<mempool::Actor>,
+    connections: Arc<Mutex<Vec<mpsc::UnboundedSender<Message>>>>,
 }

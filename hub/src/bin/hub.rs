@@ -1,5 +1,7 @@
 use anyhow::Context;
 use anyhow::Result;
+use axum::extract::ws::Message;
+use hub::bitmex_index_pricefeed::subscribe_index_price;
 use hub::config::Config;
 use hub::db::connect_to_db;
 use hub::db::run_migration;
@@ -9,6 +11,8 @@ use hub::routes::borrower::spawn_borrower_server;
 use hub::routes::lender::spawn_lender_server;
 use hub::wallet::Wallet;
 use std::sync::Arc;
+use tokio::sync::mpsc;
+use tokio::sync::Mutex;
 use tracing::level_filters::LevelFilter;
 
 #[tokio::main]
@@ -44,15 +48,45 @@ async fn main() -> Result<()> {
         panic!("Dying because we can't continue without mempool actor");
     });
 
+    // Create a channel with a buffer size of 100
+    let (bitmex_tx, mut bitmex_rx) = mpsc::channel(100);
+
+    // Start the subscription in a separate task
+    tokio::spawn(subscribe_index_price(bitmex_tx));
+
+    // Spawn a task to handle BitMEX events and broadcast to WebSocket clients
+    let broadcast_state = Arc::new(Mutex::new(Vec::new()));
+    tokio::spawn({
+        let broadcast_state = broadcast_state.clone();
+        async move {
+            while let Some(event) = bitmex_rx.recv().await {
+                match serde_json::to_string(&event) {
+                    Ok(message) => {
+                        hub::routes::price_feed_ws::broadcast_message(
+                            broadcast_state.clone(),
+                            Message::Text(message),
+                        )
+                        .await
+                    }
+                    Err(error) => {
+                        tracing::error!("Could not serialize event {error:#}");
+                    }
+                }
+            }
+        }
+    });
+
     let borrower_server = spawn_borrower_server(
         config.clone(),
         wallet.clone(),
         db.clone(),
         mempool_addr.clone(),
+        broadcast_state.clone(),
     )
     .await?;
 
-    let lender_server = spawn_lender_server(config, wallet, db, mempool_addr).await?;
+    let lender_server =
+        spawn_lender_server(config, wallet, db, mempool_addr, broadcast_state).await?;
 
     let _ = tokio::join!(borrower_server, lender_server);
 
