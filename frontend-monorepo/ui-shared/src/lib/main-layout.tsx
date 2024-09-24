@@ -2,14 +2,14 @@ import { faBars } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useBaseHttpClient, Version } from "@frontend-monorepo/base-http-client";
 import React, { ReactNode } from "react";
+import { IconType } from "react-icons";
+import { IoNotifications } from "react-icons/io5";
+import { RiCustomerService2Fill, RiUser6Fill } from "react-icons/ri";
+import { TbLogout } from "react-icons/tb";
 import { Menu, menuClasses, MenuItem, MenuItemStyles, Sidebar } from "react-pro-sidebar";
 import { Link, NavLink } from "react-router-dom";
 import { SidebarFooter } from "./components/SidebarFooter";
 import { SidebarHeader } from "./components/SidebarHeader";
-import { IconType } from "react-icons";
-import { TbLogout } from "react-icons/tb";
-import { IoNotifications } from "react-icons/io5";
-import { RiCustomerService2Fill, RiUser6Fill } from "react-icons/ri";
 
 type Theme = "light" | "dark";
 
@@ -109,7 +109,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme = "li
   return (
     <div
       className="bg-dashboard h-screen overflow-hidden"
-      style={{ display: "flex", height: "100%" }}>
+      style={{ display: "flex", height: "100%" }}
+    >
       <Sidebar
         toggled={toggled}
         onBackdropClick={() => setToggled(false)}
@@ -122,17 +123,11 @@ export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme = "li
           height: "100vh !important",
         }}
       >
-        <div
-          className="flex flex-col h-full px-3 pt-10 pb-2 items-center bg-dashboard"
-        >
-          <SidebarHeader style={{ margin: 'auto' }} />
-          <div
-            className="flex-1 w-full"
-          >
-            <Menu
-              // menuItemStyles={menuItemStyles} 
-              className="mt-12"
-            >
+        <div className="flex flex-col h-full px-3 pt-10 pb-2 items-center bg-dashboard">
+          <SidebarHeader style={{ margin: "auto" }} />
+          <div className="flex-1 w-full">
+            <Menu // menuItemStyles={menuItemStyles}
+             className="mt-12">
               {menuItems.map((item, index) => (
                 <MenuItem
                   key={index}
@@ -140,10 +135,11 @@ export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme = "li
                   id="navLink"
                   component={
                     <NavLink
-                      className='px-1 h-auto text-font text-base rounded-xl font-medium py-1.5 aria-[current=page]:bg-active-nav mb-1'
+                      className="px-1 h-auto text-font text-base rounded-xl font-medium py-1.5 aria-[current=page]:bg-active-nav mb-1"
                       to={item.path}
                       target={item.target ? item.target : "_self"}
-                      rel="noopener noreferrer" />
+                      rel="noopener noreferrer"
+                    />
                   }
                   icon={<item.icon className="text-lg -mr-4" />}
                 >
@@ -154,8 +150,9 @@ export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme = "li
           </div>
 
           <Link
-            className='flex items-center gap-2 px-1 h-auto text-font text-base rounded-lg font-medium py-1.5 no-underline'
-            to={'/logout'}>
+            className="flex items-center gap-2 px-1 h-auto text-font text-base rounded-lg font-medium py-1.5 no-underline"
+            to={"/logout"}
+          >
             <TbLogout />
             <span>Log Out</span>
           </Link>
@@ -166,22 +163,28 @@ export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme = "li
       <main className="w-full h-screen">
         <div
           className="h-screen w-full bg-active-nav/5 overflow-hidden relative"
-          style={{ color: "#44596e" }}>
+          style={{ color: "#44596e" }}
+        >
           <div
-            style={{ marginBottom: "16px" }}>
+            style={{ marginBottom: "16px" }}
+          >
             {broken && (
               <div className="w-full py-3 flex items-center justify-between md:px-10 px-4">
                 <button className="sb-button" onClick={() => setToggled(!toggled)}>
                   <FontAwesomeIcon icon={faBars} />
                 </button>
                 <div className="flex items-center gap-3">
-                  <Link to={'/history'} className="h-10 w-10 border flex items-center justify-center rounded">
+                  <Link to={"/history"} className="h-10 w-10 border flex items-center justify-center rounded">
                     <IoNotifications className="text-xl text-font" />
                   </Link>
-                  <Link to={'https://lendasat.notion.site'} className="h-10 w-10 border flex items-center justify-center rounded" target="_blank">
+                  <Link
+                    to={"https://lendasat.notion.site"}
+                    className="h-10 w-10 border flex items-center justify-center rounded"
+                    target="_blank"
+                  >
                     <RiCustomerService2Fill className="text-xl text-font" />
                   </Link>
-                  <Link to={'/my-account'} className="no-underline">
+                  <Link to={"/my-account"} className="no-underline">
                     <div className="h-10 w-10 md:border-0 border flex items-center justify-center rounded text-font">
                       <RiUser6Fill />
                     </div>

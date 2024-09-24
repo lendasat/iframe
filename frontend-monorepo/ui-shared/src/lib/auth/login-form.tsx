@@ -4,8 +4,7 @@ import React, { useState } from "react";
 import { Button, Col, Container, Form, Row } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import { ReactComponent as Logo } from "./../assets/lendasat_svg_logo.svg";
-import Vector from './../assets/vector.png';
-
+import Vector from "./../assets/vector.png";
 
 interface LoginFormProps {
   handleLogin: (email: string, password: string) => Promise<void>;
@@ -37,19 +36,19 @@ export function LoginForm(
   return (
     <section className="max-w-screen-2xl grid md:grid-cols-5 min-h-screen w-screen overflow-hidden">
       <div className="md:col-span-2 bg-[#623AB0] px-8 md:px-20 py-12 flex flex-col items-left space-y-10 text-white w-full">
-        <Logo height={20} width={'auto'} className="w-fit" />
+        <Logo height={20} width={"auto"} className="w-fit" />
         <div>
-          <h1 className="text-5xl font-medium leading-[1.2] max-w-sm">You've hodled enough. <br /> Start living, pay later.</h1>
+          <h1 className="text-5xl font-medium leading-[1.2] max-w-sm">
+            You've hodled enough. <br /> Start living, pay later.
+          </h1>
           {/* <p className="max-w-sm text-xl opacity-80 leading-[1.7]">Lendasat lets you take instant loans to pay Lightning invoices. No need to sell your Bitcoin.</p> */}
 
           <img src={Vector} alt="Vector" className="mr-auto" />
         </div>
       </div>
       <div className="flex items-center justify-center md:col-span-3">
-
         <div className="d-flex justify-content-center">
           <div className="p-4 rounded border border-primary" style={{ backgroundColor: "#f8f9fa" }}>
-
             {infoMessage
               && (
                 <div className="alert alert-info">
@@ -97,7 +96,6 @@ export function LoginForm(
             </Container>
           </div>
         </div>
-
       </div>
     </section>
   );
@@ -105,7 +103,8 @@ export function LoginForm(
 
 export default LoginForm;
 
-{/* <Container className="d-flex bg-black flex-column justify-content-center align-items-center vh-100">
+{
+  /* <Container className="d-flex bg-black flex-column justify-content-center align-items-center vh-100">
 <Row className="w-100">
   <Col className="d-flex justify-content-center">
     <div className="p-4 rounded border border-primary" style={{ backgroundColor: "#f8f9fa" }}>
@@ -159,4 +158,5 @@ export default LoginForm;
     </div>
   </Col>
 </Row>
-</Container> */}
+</Container> */
+}

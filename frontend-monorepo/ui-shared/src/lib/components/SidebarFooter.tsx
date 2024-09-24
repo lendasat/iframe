@@ -37,7 +37,8 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = ({ children, collapse
     >
       {!collapsed && (
         <StyledSidebarFooter {...rest}>
-          {/* <Row className="mb-3">
+          {
+            /* <Row className="mb-3">
             <Col md={6} className="d-flex justify-content-around">
               <a href="https://x.com/lendasat" target="_blank" rel="noopener noreferrer" className="mx-3 text-[#606669] hover:text-black">
                 <FaXTwitter size={"20"} />
@@ -57,11 +58,13 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = ({ children, collapse
                 <FaDiscord size={"20"} />
               </a>
             </Col>
-          </Row> */}
+          </Row> */
+          }
           <Typography
             className="text-xs font-medium"
             variant="caption"
-            style={{ letterSpacing: 1, opacity: 0.7 }}>
+            style={{ letterSpacing: 1, opacity: 0.7 }}
+          >
             {versionString}
           </Typography>
         </StyledSidebarFooter>

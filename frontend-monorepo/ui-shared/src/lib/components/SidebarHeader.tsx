@@ -1,8 +1,8 @@
 import styled from "@emotion/styled";
 import React from "react";
 import { Link } from "react-router-dom";
+import Lendasat from "./../assets/lendasat.png";
 import FullLogoWhiteBg from "../full-logo-white-bg";
-import Lendasat from './../assets/lendasat.png';
 
 interface SidebarHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
   children?: React.ReactNode;

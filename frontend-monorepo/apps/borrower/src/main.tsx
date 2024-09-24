@@ -1,10 +1,10 @@
 import { StrictMode } from "react";
 import * as ReactDOM from "react-dom/client";
 import "bootstrap/dist/css/bootstrap.min.css";
-import '@radix-ui/themes/styles.css';
+import "@radix-ui/themes/styles.css";
+import { Theme } from "@radix-ui/themes";
 import { createBrowserRouter, createRoutesFromElements, Route, RouterProvider } from "react-router-dom";
 import App from "./app/app";
-import { Theme } from "@radix-ui/themes";
 
 const router = createBrowserRouter(
   createRoutesFromElements(

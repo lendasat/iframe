@@ -19,7 +19,6 @@ function MyLoans() {
               ) => (loan.status !== ContractStatus.Closed && loan.status !== ContractStatus.Rejected))}
             />
           </div>
-
         )}
       />
     </Suspense>

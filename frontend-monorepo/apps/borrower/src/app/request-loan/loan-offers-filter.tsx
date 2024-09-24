@@ -102,7 +102,7 @@ function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
         </Form.Label>
         <Slider {...periodSliderProps} />
       </Form.Group>
-    </Form >
+    </Form>
   );
 }
 

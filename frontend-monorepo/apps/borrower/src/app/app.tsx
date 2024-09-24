@@ -13,6 +13,12 @@ import {
   useAuth,
 } from "@frontend-monorepo/http-client-borrower";
 import { Layout, PriceProvider } from "@frontend-monorepo/ui-shared";
+import { BsPiggyBank } from "react-icons/bs";
+import { GiPayMoney } from "react-icons/gi";
+import { HiUsers } from "react-icons/hi2";
+import { IoMdHelpCircle } from "react-icons/io";
+import { TbLayoutDashboardFilled } from "react-icons/tb";
+import { TbHistory } from "react-icons/tb";
 import { Outlet, Route, Routes } from "react-router-dom";
 import { SemVer } from "semver";
 import EmailVerification from "./auth/email-verification";
@@ -24,53 +30,46 @@ import ResetPassword from "./auth/reset-password";
 import DashBoard from "./dash-board";
 import ResolveDispute from "./disputes/dispute";
 import ErrorBoundary from "./ErrorBoundary";
+import History from "./History";
 import MyAccount from "./my-account";
 import ContractDetailsOverview from "./my-loans/contract-details-overview";
 import MyLoans from "./my-loans/my-loans";
 import Profile from "./profile";
-import History from "./History";
 import RequestLoan from "./request-loan/request-loan";
 import { RequestLoanSummary } from "./request-loan/request-loan-summary";
-import { TbLayoutDashboardFilled } from "react-icons/tb";
-import { GiPayMoney } from "react-icons/gi";
-import { BsPiggyBank } from "react-icons/bs";
-import { IoMdHelpCircle } from "react-icons/io";
-import { TbHistory } from "react-icons/tb";
-import { HiUsers } from "react-icons/hi2";
-import './../styles.css'
-
+import "./../styles.css";
 
 const menuItems = [
   {
-    label: 'Dashboad',
+    label: "Dashboad",
     icon: TbLayoutDashboardFilled,
-    path: '/'
+    path: "/",
   },
   {
     label: "Loan offers",
     icon: GiPayMoney,
-    path: "/request-loan"
+    path: "/request-loan",
   },
   {
     label: "My loans",
     icon: BsPiggyBank,
-    path: "/my-contracts"
+    path: "/my-contracts",
   },
   {
     label: "History",
     icon: TbHistory,
-    path: "/history"
+    path: "/history",
   },
   {
     label: "My account",
     icon: HiUsers,
-    path: "/my-account"
+    path: "/my-account",
   },
   {
     label: "Help center",
     icon: IoMdHelpCircle,
     path: "https://lendasat.notion.site",
-    target: "_blank"
+    target: "_blank",
   },
 ];
 

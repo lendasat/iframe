@@ -66,38 +66,42 @@ function LoanOffersComponent({ loanOffers, onRequest }: LoanOffersComponentProps
           </Col>
           <Col md={2}>
             <small className="text-sm text-font font-medium">
-              Amounts{" "}
-              {/* <FontAwesomeIcon
+              Amounts {
+                /* <FontAwesomeIcon
                 icon={SortHelper.getIcon(amountSort)}
                 onClick={() => setAmountSort(SortHelper.getNextSort(amountSort))}
-              /> */}
+              /> */
+              }
             </small>
           </Col>
           <Col sm={1}>
             <small className="text-sm text-font font-medium">
-              Duration{" "}
-              {/* <FontAwesomeIcon
+              Duration {
+                /* <FontAwesomeIcon
                 icon={SortHelper.getIcon(durationSort)}
                 onClick={() => setDurationSort(SortHelper.getNextSort(durationSort))}
-              /> */}
+              /> */
+              }
             </small>
           </Col>
           <Col md={1}>
             <small className="text-sm text-font font-medium">
-              LTV{" "}
-              {/* <FontAwesomeIcon
+              LTV {
+                /* <FontAwesomeIcon
                 icon={SortHelper.getIcon(ltvSort)}
                 onClick={() => setLTVSort(SortHelper.getNextSort(ltvSort))}
-              /> */}
+              /> */
+              }
             </small>
           </Col>
           <Col md={1}>
             <small className="text-sm text-font font-medium">
-              Interest{" "}
-              {/* <FontAwesomeIcon
+              Interest {
+                /* <FontAwesomeIcon
                 icon={SortHelper.getIcon(interestSort)}
                 onClick={() => setInterestSort(SortHelper.getNextSort(interestSort))}
-              /> */}
+              /> */
+              }
             </small>
           </Col>
           <Col md={2}>

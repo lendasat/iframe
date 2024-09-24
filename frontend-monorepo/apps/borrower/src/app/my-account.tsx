@@ -3,14 +3,14 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
 import { useWallet } from "@frontend-monorepo/borrower-wallet";
 import { useAuth } from "@frontend-monorepo/http-client-borrower";
+import { Box, Tabs, Text } from "@radix-ui/themes";
 import React, { useState } from "react";
 import { Button, Spinner, Table } from "react-bootstrap";
 import { FaEye } from "react-icons/fa";
 import { FaEyeSlash } from "react-icons/fa6";
+import DashHeader from "./components/DashHeader";
 import { CreateWalletModal } from "./wallet/create-wallet-modal";
 import { UnlockWalletModal } from "./wallet/unlock-wallet-modal";
-import { Box, Tabs, Text } from "@radix-ui/themes";
-import DashHeader from "./components/DashHeader";
 
 function MyAccount() {
   const { user } = useAuth();
@@ -41,13 +41,13 @@ function MyAccount() {
               <Tabs.Trigger className="md:justify-start" value="account">
                 Account
               </Tabs.Trigger>
-              <Tabs.Trigger className="md:justify-start"
-                value="documents">
+              <Tabs.Trigger className="md:justify-start" value="documents">
                 Seed Phrase
               </Tabs.Trigger>
               <Tabs.Trigger
                 className="md:justify-start"
-                value="settings">
+                value="settings"
+              >
                 Delete Account
               </Tabs.Trigger>
             </Tabs.List>
@@ -120,7 +120,7 @@ function MyAccount() {
               <Text size="2">Edit your profile or update contact information.</Text>
             </Tabs.Content>
           </Box>
-        </Tabs.Root >
+        </Tabs.Root>
       </div>
     </div>
   );

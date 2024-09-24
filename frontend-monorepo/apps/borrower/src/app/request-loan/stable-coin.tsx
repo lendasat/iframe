@@ -82,10 +82,11 @@ export function StableCoinDropdown({
       //   </option>
       // </Form.Select>
       <Select.Root
-        value={selectedCoin} onValueChange={handleChange}
+        value={selectedCoin}
+        onValueChange={handleChange}
       >
         <Select.Trigger
-          variant={'ghost'}
+          variant={"ghost"}
           className="shadow-none focus-visible:outline-none outline-none h-8 font-medium w-auto border rounded "
         />
         <Select.Content highContrast color="purple" className="font-medium">
@@ -108,14 +109,14 @@ export function StableCoinDropdown({
       //       {StableCoinHelper.print(coin)}
       //     </option>
       //   ))}
-      // </Form.Select> 
+      // </Form.Select>
       <Select.Root
         value={selectedCoin}
         onValueChange={handleChange}
         defaultValue="select"
       >
         <Select.Trigger
-          variant={'surface'}
+          variant={"surface"}
           className="shadow-none focus-visible:outline-none outline-none h-10 font-medium border rounded "
         />
 
