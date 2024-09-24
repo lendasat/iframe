@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            contract_address,\n            contract_index,\n            collateral_txid,\n            collateral_vout,\n            claim_txid,\n            status as \"status: crate::model::db::ContractStatus\",\n            duration_months,\n            created_at,\n            updated_at\n        FROM contracts\n        WHERE status IN ($1, $2)\n        ",
+  "query": "\n        SELECT\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            contract_address,\n            contract_index,\n            collateral_txid,\n            collateral_vout,\n            claim_txid,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            created_at,\n            updated_at\n        FROM contracts\n        where id = $1 AND\n        borrower_id = $2\n        ",
   "describe": {
     "columns": [
       {
@@ -106,66 +106,41 @@
       },
       {
         "ordinal": 16,
+        "name": "liquidation_status: crate::model::db::LiquidationStatus",
+        "type_info": {
+          "Custom": {
+            "name": "liquidation_status",
+            "kind": {
+              "Enum": [
+                "Healthy",
+                "FirstMarginCall",
+                "SecondMarginCall",
+                "Liquidated"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 17,
         "name": "duration_months",
         "type_info": "Int4"
       },
       {
-        "ordinal": 17,
+        "ordinal": 18,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 18,
+        "ordinal": 19,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
-        {
-          "Custom": {
-            "name": "contract_status",
-            "kind": {
-              "Enum": [
-                "Requested",
-                "Approved",
-                "CollateralSeen",
-                "CollateralConfirmed",
-                "PrincipalGiven",
-                "Repaid",
-                "Closing",
-                "Closed",
-                "Rejected",
-                "DisputeBorrowerStarted",
-                "DisputeLenderStarted",
-                "DisputeBorrowerResolved",
-                "DisputeLenderResolved"
-              ]
-            }
-          }
-        },
-        {
-          "Custom": {
-            "name": "contract_status",
-            "kind": {
-              "Enum": [
-                "Requested",
-                "Approved",
-                "CollateralSeen",
-                "CollateralConfirmed",
-                "PrincipalGiven",
-                "Repaid",
-                "Closing",
-                "Closed",
-                "Rejected",
-                "DisputeBorrowerStarted",
-                "DisputeLenderStarted",
-                "DisputeBorrowerResolved",
-                "DisputeLenderResolved"
-              ]
-            }
-          }
-        }
+        "Bpchar",
+        "Bpchar"
       ]
     },
     "nullable": [
@@ -187,8 +162,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "a40d0bf9b1bdb7ca10347f5c3b1088b5f4302c94476e4e8045234dc5764b744c"
+  "hash": "e2a76c05a8e4ef8971026846f3c3b5236d708d06d195d8ceb6c0f6c250250024"
 }

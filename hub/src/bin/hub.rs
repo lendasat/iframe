@@ -5,6 +5,7 @@ use hub::bitmex_index_pricefeed::subscribe_index_price;
 use hub::config::Config;
 use hub::db::connect_to_db;
 use hub::db::run_migration;
+use hub::liquidation_engine::monitor_positions;
 use hub::logger::init_tracing;
 use hub::mempool;
 use hub::routes::borrower::spawn_borrower_server;
@@ -50,9 +51,11 @@ async fn main() -> Result<()> {
 
     // Create a channel with a buffer size of 100
     let (bitmex_tx, mut bitmex_rx) = mpsc::channel(100);
+    let (liquidation_tx, liquidation_rx) = mpsc::channel(100);
 
     // Start the subscription in a separate task
-    tokio::spawn(subscribe_index_price(bitmex_tx));
+    tokio::spawn(subscribe_index_price([bitmex_tx, liquidation_tx]));
+    monitor_positions(db.clone(), liquidation_rx, config.clone()).await?;
 
     // Spawn a task to handle BitMEX events and broadcast to WebSocket clients
     let broadcast_state = Arc::new(Mutex::new(Vec::new()));

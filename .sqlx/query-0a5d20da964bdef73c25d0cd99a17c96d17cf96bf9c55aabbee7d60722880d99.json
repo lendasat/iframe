@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            contract_address,\n            contract_index,\n            collateral_txid,\n            collateral_vout,\n            claim_txid,\n            status as \"status: crate::model::db::ContractStatus\",\n            duration_months,\n            created_at,\n            updated_at\n        FROM contracts\n        where id = $1 AND\n        borrower_id = $2\n        ",
+  "query": "\n        SELECT\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            contract_address,\n            contract_index,\n            collateral_txid,\n            collateral_vout,\n            claim_txid,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            created_at,\n            updated_at\n        FROM contracts\n        where id = $1 AND\n        lender_id = $2\n        ",
   "describe": {
     "columns": [
       {
@@ -106,16 +106,33 @@
       },
       {
         "ordinal": 16,
+        "name": "liquidation_status: crate::model::db::LiquidationStatus",
+        "type_info": {
+          "Custom": {
+            "name": "liquidation_status",
+            "kind": {
+              "Enum": [
+                "Healthy",
+                "FirstMarginCall",
+                "SecondMarginCall",
+                "Liquidated"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 17,
         "name": "duration_months",
         "type_info": "Int4"
       },
       {
-        "ordinal": 17,
+        "ordinal": 18,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 18,
+        "ordinal": 19,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -145,8 +162,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "4e24e239d703235473fe69645be893ecc1066c6393ad828f07117a4e679a9829"
+  "hash": "0a5d20da964bdef73c25d0cd99a17c96d17cf96bf9c55aabbee7d60722880d99"
 }

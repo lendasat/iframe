@@ -86,6 +86,13 @@ CREATE TYPE contract_status AS ENUM (
     'DisputeLenderResolved'
     );
 
+CREATE TYPE liquidation_status AS ENUM (
+    'Healthy',
+    'FirstMarginCall',
+    'SecondMarginCall',
+    'Liquidated'
+    );
+
 CREATE TABLE
     IF NOT EXISTS "contracts"
 (
@@ -101,6 +108,7 @@ CREATE TABLE
     borrower_pk             CHAR(66)                 NOT NULL,
     borrower_loan_address   TEXT                     NOT NULL,
     status                  contract_status          NOT NULL,
+    liquidation_status      liquidation_status       NOT NULL,
     contract_address        TEXT,
     contract_index          INT,
     collateral_txid         TEXT,
