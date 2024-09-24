@@ -14,10 +14,18 @@ use anyhow::bail;
 use anyhow::Context;
 use anyhow::Result;
 use rust_decimal::prelude::FromPrimitive;
+use rust_decimal::prelude::Zero;
 use rust_decimal::Decimal;
 use sqlx::Pool;
 use sqlx::Postgres;
+use time::Duration;
+use time::OffsetDateTime;
 use tokio::sync::mpsc::Receiver;
+
+/// We don't want to check on every price update as this would be too often. Instead, we collect
+/// all price updates in this interval and calculate the average. Meaning, only if the price was
+/// below the liquidation/margin call threshold/ for this time, we do something.
+const TIME_BETWEEN_PRICE_CHECKS: i64 = 5;
 
 pub async fn monitor_positions(
     db: Pool<Postgres>,
@@ -27,9 +35,28 @@ pub async fn monitor_positions(
     tokio::spawn({
         let config = config.clone();
         async move {
+            let mut last_update = OffsetDateTime::now_utc();
+            let mut last_prices = vec![];
             while let Some(price) = bitmex_rx.recv().await {
-                let config = config.clone();
-                check_margin_call_or_liquidation(&db, price.market_price, config.clone()).await;
+                tracing::trace!(price = price.market_price.to_string(), "Received new price");
+                last_prices.push(price.market_price);
+
+                if price.timestamp - last_update > Duration::minutes(TIME_BETWEEN_PRICE_CHECKS) {
+                    let config = config.clone();
+                    let total_updates = last_prices.len();
+                    let average_price_in_last_five_minutes =
+                        last_prices.iter().fold(Decimal::zero(), |acc, e| acc + e)
+                            / Decimal::from_usize(total_updates).expect("to fit");
+
+                    check_margin_call_or_liquidation(
+                        &db,
+                        average_price_in_last_five_minutes,
+                        config.clone(),
+                    )
+                    .await;
+                    last_prices.clear();
+                    last_update = price.timestamp;
+                }
             }
         }
     });
