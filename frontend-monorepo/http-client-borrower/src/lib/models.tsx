@@ -45,6 +45,13 @@ export function contractStatusToLabelString(status: ContractStatus): string {
   }
 }
 
+export enum LiquidationStatus {
+  Healthy = "Healthy",
+  Liquidated = "Liquidated",
+  SecondMarginCall = "SecondMarginCall",
+  FirstMarginCall = "FirstMarginCall",
+}
+
 export interface LenderProfile {
   id: string;
   name: string;
@@ -75,6 +82,7 @@ export interface Contract {
   collateral_sats: number;
   initial_ltv: number;
   status: ContractStatus;
+  liquidation_status: LiquidationStatus;
   lender: LenderProfile;
   borrower_pk: string;
   borrower_btc_address: string;

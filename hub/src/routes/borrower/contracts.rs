@@ -2,6 +2,7 @@ use crate::db;
 use crate::mempool;
 use crate::model::ContractRequestSchema;
 use crate::model::ContractStatus;
+use crate::model::LiquidationStatus;
 use crate::model::User;
 use crate::routes::borrower::auth::jwt_auth;
 use crate::routes::AppState;
@@ -100,6 +101,7 @@ pub struct Contract {
     pub repaid_at: Option<OffsetDateTime>,
     #[serde(with = "time::serde::rfc3339")]
     pub expiry: OffsetDateTime,
+    pub liquidation_status: LiquidationStatus,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -178,6 +180,7 @@ pub async fn get_contracts(
             interest_rate: offer.interest_rate,
             initial_ltv: contract.initial_ltv,
             status: contract.status,
+            liquidation_status: contract.liquidation_status,
             borrower_pk: contract.borrower_pk,
             borrower_btc_address: contract.borrower_btc_address.assume_checked().to_string(),
             borrower_loan_address: contract.borrower_loan_address,
@@ -264,6 +267,7 @@ pub async fn get_contract(
             interest_rate: offer.interest_rate,
             initial_ltv: contract.initial_ltv,
             status: contract.status,
+            liquidation_status: contract.liquidation_status,
             borrower_pk: contract.borrower_pk,
             borrower_btc_address: contract.borrower_btc_address.assume_checked().to_string(),
             borrower_loan_address: contract.borrower_loan_address,
@@ -331,6 +335,7 @@ pub async fn post_contract_request(
             interest_rate: offer.interest_rate,
             initial_ltv: contract.initial_ltv,
             status: contract.status,
+            liquidation_status: contract.liquidation_status,
             borrower_pk: contract.borrower_pk,
             borrower_btc_address: contract.borrower_btc_address.assume_checked().to_string(),
             borrower_loan_address: contract.borrower_loan_address,

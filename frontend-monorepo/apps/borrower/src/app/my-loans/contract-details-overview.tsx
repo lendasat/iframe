@@ -2,6 +2,7 @@ import {
   Contract,
   ContractStatus,
   contractStatusToLabelString,
+  LiquidationStatus,
   useBorrowerHttpClient,
 } from "@frontend-monorepo/http-client-borrower";
 import { CurrencyFormatter } from "@frontend-monorepo/ui-shared";
@@ -130,6 +131,21 @@ function ContractDetails({ contract }: DetailsProps) {
     }
   };
 
+  const firstMarginCall = contract.liquidation_status == LiquidationStatus.FirstMarginCall;
+  const secondMarginCall = contract.liquidation_status == LiquidationStatus.SecondMarginCall;
+  const liquidated = contract.liquidation_status == LiquidationStatus.Liquidated;
+
+  let contractStatusLabel = contractStatusToLabelString(contract.status);
+  if (firstMarginCall) {
+    contractStatusLabel = "First Margin Call";
+  }
+  if (secondMarginCall) {
+    contractStatusLabel = "Second Margin Call";
+  }
+  if (liquidated) {
+    contractStatusLabel = "Liquidated";
+  }
+
   return (
     <Container fluid>
       <Row>
@@ -144,7 +160,7 @@ function ContractDetails({ contract }: DetailsProps) {
       <Row className="justify-content-between border-b mt-2">
         <Col>Contract status</Col>
         <Col className="text-end mb-2">
-          <Badge bg="primary">{contractStatusToLabelString(contract.status)}</Badge>
+          <Badge bg="primary">{contractStatusLabel}</Badge>
         </Col>
       </Row>
       <Row className="justify-content-between border-b mt-2">
