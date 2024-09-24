@@ -64,18 +64,19 @@ function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
   }
 
   return (
-    <Form className={"py-4"}>
-      <Form.Group className="mb-3" controlId="loan-amount">
+    <Form className={"space-y-1 pb-3"}>
+      <Form.Group controlId="loan-amount">
         <Form.Label column={true}>
-          <small>Loan Amount</small>
+          <small className="text-xs font-medium">Loan Amount</small>
         </Form.Label>
         <Form.Control
+          className="shadow-none focus:border-font/10 w-full"
           onChange={onAmountChange}
         />
       </Form.Group>
-      <Form.Group className="mb-3" controlId="stable-coin">
+      <Form.Group className="flex flex-col" controlId="stable-coin">
         <Form.Label column={true}>
-          <small>Stable coin</small>
+          <small className="text-xs font-medium">Stable coin</small>
         </Form.Label>
         <StableCoinDropdown
           coins={StableCoinHelper.all()}
@@ -83,25 +84,25 @@ function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
           onSelect={onStableCoinSelect}
         />
       </Form.Group>
-      <Form.Group className="mb-3" controlId="ltv-slider">
+      <Form.Group controlId="ltv-slider">
         <Form.Label column={true}>
-          <small>LTV ratio</small>
+          <small className="text-xs font-medium">LTV ratio</small>
         </Form.Label>
         <Slider {...ltvSliderProps} />
       </Form.Group>
-      <Form.Group className="mb-3" controlId="interest-slider">
+      <Form.Group controlId="interest-slider">
         <Form.Label column={true}>
-          <small>Interest rate p.a.</small>
+          <small className="text-xs font-medium">Interest rate p.a.</small>
         </Form.Label>
         <Slider {...interestSliderProps} />
       </Form.Group>
-      <Form.Group className="mb-3" controlId="interest-slider">
+      <Form.Group controlId="interest-slider">
         <Form.Label column={true}>
-          <small>Period</small>
+          <small className="text-xs font-medium">Period</small>
         </Form.Label>
         <Slider {...periodSliderProps} />
       </Form.Group>
-    </Form>
+    </Form >
   );
 }
 

@@ -59,51 +59,50 @@ function LoanOffersComponent({ loanOffers, onRequest }: LoanOffersComponentProps
 
   return (
     <>
-      <Container className={"mb-2"} fluid>
+      <Container className={"mb-2 bg-active-nav/30 py-1 rounded-lg"} fluid>
         <Row>
-          <Col>
-            <small>Lender</small>
+          <Col sm={5}>
+            <small className="text-sm text-font font-medium">Lender</small>
           </Col>
           <Col md={2}>
-            <small>
+            <small className="text-sm text-font font-medium">
               Amounts{" "}
-              <FontAwesomeIcon
+              {/* <FontAwesomeIcon
                 icon={SortHelper.getIcon(amountSort)}
                 onClick={() => setAmountSort(SortHelper.getNextSort(amountSort))}
-              />
+              /> */}
             </small>
           </Col>
-          <Col md={1}>
-            <small>
+          <Col sm={1}>
+            <small className="text-sm text-font font-medium">
               Duration{" "}
-              <FontAwesomeIcon
+              {/* <FontAwesomeIcon
                 icon={SortHelper.getIcon(durationSort)}
                 onClick={() => setDurationSort(SortHelper.getNextSort(durationSort))}
-              />
+              /> */}
             </small>
           </Col>
           <Col md={1}>
-            <small>
+            <small className="text-sm text-font font-medium">
               LTV{" "}
-              <FontAwesomeIcon
+              {/* <FontAwesomeIcon
                 icon={SortHelper.getIcon(ltvSort)}
                 onClick={() => setLTVSort(SortHelper.getNextSort(ltvSort))}
-              />
+              /> */}
             </small>
           </Col>
           <Col md={1}>
-            <small>
+            <small className="text-sm text-font font-medium">
               Interest{" "}
-              <FontAwesomeIcon
+              {/* <FontAwesomeIcon
                 icon={SortHelper.getIcon(interestSort)}
                 onClick={() => setInterestSort(SortHelper.getNextSort(interestSort))}
-              />
+              /> */}
             </small>
           </Col>
-          <Col md={3}>
-            <small>Stable coins</small>
+          <Col md={2}>
+            <small className="text-sm text-font font-medium">Stable coins</small>
           </Col>
-          <Col md={2}></Col>
         </Row>
       </Container>
       {loanOffers.sort((a, b) => {

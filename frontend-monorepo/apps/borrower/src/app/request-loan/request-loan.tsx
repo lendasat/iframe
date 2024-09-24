@@ -1,10 +1,11 @@
 import { LoanOffer, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import { useEffect, useState } from "react";
-import { Col, Container, Row } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import LoanOffersComponent from "./loan-offers";
 import LoanOffersFilter, { LoanFilter } from "./loan-offers-filter";
 import { StableCoinHelper } from "./stable-coin";
+import DashHeader from "../components/DashHeader";
+import OffersNav from "../components/OffersNav";
 
 function RequestLoan() {
   const { getLoanOffers } = useBorrowerHttpClient();
@@ -64,24 +65,23 @@ function RequestLoan() {
   }
 
   return (
-    <Container className="vh-100" fluid>
-      <Row className="vh-100">
-        <Col md={"2"} className="border-end d-flex align-items-stretch">
-          <LoanOffersFilter
-            onChange={onLoanOfferFilterChange}
-            loanFilter={loanFilter}
-          />
-        </Col>
-        <Col md={"10"} className="p-4">
+    <div className="h-screen pb-48">
+      <DashHeader label="Loans" />
+      <div className="pt-3 h-full">
+        <OffersNav
+          loanFilter={loanFilter}
+          onChange={onLoanOfferFilterChange}
+        />
+        <div className="h-full mt-3 py-2 rounded-xl overflow-y-scroll">
           <LoanOffersComponent
             loanOffers={loanOffers}
             onRequest={(loanOffer: LoanOffer) => {
               navigate(`/request-loan/${loanOffer.id}`, { state: { loanOffer: loanOffer, loanFilter: loanFilter } });
             }}
           />
-        </Col>
-      </Row>
-    </Container>
+        </div>
+      </div>
+    </div>
   );
 }
 

@@ -28,15 +28,50 @@ import MyAccount from "./my-account";
 import ContractDetailsOverview from "./my-loans/contract-details-overview";
 import MyLoans from "./my-loans/my-loans";
 import Profile from "./profile";
+import History from "./History";
 import RequestLoan from "./request-loan/request-loan";
 import { RequestLoanSummary } from "./request-loan/request-loan-summary";
+import { TbLayoutDashboardFilled } from "react-icons/tb";
+import { GiPayMoney } from "react-icons/gi";
+import { BsPiggyBank } from "react-icons/bs";
+import { IoMdHelpCircle } from "react-icons/io";
+import { TbHistory } from "react-icons/tb";
+import { HiUsers } from "react-icons/hi2";
+import './../styles.css'
+
 
 const menuItems = [
-  { label: "Request a Loan", icon: faMoneyBillTransfer, path: "/request-loan" },
-  { label: "My loans", icon: faMoneyCheckDollar, path: "/my-contracts" },
-  { label: "My account", icon: faUserCircle, path: "/my-account" },
-  { label: "Help", icon: faQuestionCircle, path: "https://lendasat.notion.site", target: "_blank" },
-  { label: "Logout", icon: faRightFromBracket, path: "/logout" },
+  {
+    label: 'Dashboad',
+    icon: TbLayoutDashboardFilled,
+    path: '/'
+  },
+  {
+    label: "Loan offers",
+    icon: GiPayMoney,
+    path: "/request-loan"
+  },
+  {
+    label: "My loans",
+    icon: BsPiggyBank,
+    path: "/my-contracts"
+  },
+  {
+    label: "History",
+    icon: TbHistory,
+    path: "/history"
+  },
+  {
+    label: "My account",
+    icon: HiUsers,
+    path: "/my-account"
+  },
+  {
+    label: "Help center",
+    icon: IoMdHelpCircle,
+    path: "https://lendasat.notion.site",
+    target: "_blank"
+  },
 ];
 
 function MainLayoutComponents() {
@@ -67,6 +102,7 @@ function MainLayoutComponents() {
               <Route index element={<MyLoans />} />
               <Route path={":id"} element={<ContractDetailsOverview />} />
             </Route>
+            <Route path="/history" element={<History />} />
             <Route path="/my-account" element={<MyAccount />} />
             <Route path="/logout" element={<Logout />} />
             <Route path="/profile/:id" element={<Profile />} />
