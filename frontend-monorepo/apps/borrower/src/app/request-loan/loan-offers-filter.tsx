@@ -11,6 +11,21 @@ export interface LoanFilter {
   period?: number;
 }
 
+export enum TableSortBy {
+  Lender = "Lender",
+  Amount = "Amount",
+  Duration = "Duration",
+  Ltv = "Ltv",
+  Interest = "Interest",
+}
+
+export function parseTableSortBy(value: string): TableSortBy | undefined {
+  if (Object.values(TableSortBy).includes(value as TableSortBy)) {
+    return value as TableSortBy;
+  }
+  return undefined;
+}
+
 interface LoanOffersFilterProps {
   loanFilter: LoanFilter;
   onChange: (filter: LoanFilter) => void;
