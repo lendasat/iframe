@@ -55,7 +55,7 @@
               jq
               rustfmt
               rustAnalyzer
-              nodejs
+              nodejs_22
               yarn # Cannot easily use npm.
               openssl # TODO: Needed?
               pkg-config
