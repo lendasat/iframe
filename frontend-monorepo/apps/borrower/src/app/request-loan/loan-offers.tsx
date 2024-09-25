@@ -220,7 +220,7 @@ function LoanOffersComponent({ loanOffers, onRequest }: LoanOffersComponentProps
         // Compare by interest if amount, duration, and LTV are the same
         return SortHelper.sort(interestSort, a.interest_rate, b.interest_rate);
       }).map((loanOffer, index) => (
-        <div key={index} className={"overflow-y-scroll h-full"}>
+        <div key={index} className={"overflow-y-scroll"}>
           <LoanOfferComponent key={index} loanOffer={loanOffer} onRequest={onRequest} />
         </div>
       ))}
