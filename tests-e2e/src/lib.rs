@@ -84,7 +84,7 @@ mod tests {
         let loan_offer = CreateLoanOfferSchema {
             name: "a fantastic loan".to_string(),
             min_ltv: dec!(0.5),
-            interest_rate: dec!(10),
+            interest_rate: dec!(0.10),
             loan_amount_min: dec!(1_000),
             loan_amount_max: dec!(50_000),
             duration_months_min: 1,
@@ -260,7 +260,18 @@ mod tests {
 
         // TODO: 6. Hub tells lender to send principal to borrower on Ethereum.
         // TODO: 7. Borrower confirms payment.
-        // TODO: 8. Repay loan on loan blockchain.
+
+        // 8. Repay loan on loan blockchain.
+        let res = lender
+            .put(format!(
+                "http://localhost:7338/api/contracts/{}/repaid",
+                contract.id
+            ))
+            .send()
+            .await
+            .unwrap();
+
+        assert!(res.status().is_success());
 
         // 9. Claim collateral on Bitcoin.
         // With DLCs, we will need to construct a spend transaction using the loan secret.
