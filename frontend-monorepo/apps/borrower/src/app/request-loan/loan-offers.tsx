@@ -206,7 +206,7 @@ function LoanOffersComponent({ loanOffers, onRequest }: LoanOffersComponentProps
       </Box>
       {loanOffers.sort((a, b) => {
         // Compare by amount first
-        const amountComparison = SortHelper.sort(amountSort, a.loan_amount_max, b.loan_amount_min);
+        const amountComparison = SortHelper.sort(amountSort, a.loan_amount_min, b.loan_amount_min);
         if (amountComparison !== 0) return amountComparison;
 
         // Compare by duration if amount is the same
