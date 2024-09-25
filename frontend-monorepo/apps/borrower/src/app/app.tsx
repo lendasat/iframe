@@ -1,10 +1,3 @@
-import {
-  faMoneyBillTransfer,
-  faMoneyCheckDollar,
-  faQuestionCircle,
-  faRightFromBracket,
-  faUserCircle,
-} from "@fortawesome/free-solid-svg-icons";
 import { WalletProvider } from "@frontend-monorepo/borrower-wallet";
 import {
   AuthIsNotSignedIn,
