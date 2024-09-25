@@ -17,7 +17,7 @@ export function LoanOfferComponent({ loanOffer, onRequest }: LoanOfferProps) {
       <Card.Body>
         <Container className={"p-0 m-0"} fluid>
           <Row>
-            <Col>
+            <Col sm={2}>
               <Lender {...loanOffer.lender} />
             </Col>
             <Col md={2}>

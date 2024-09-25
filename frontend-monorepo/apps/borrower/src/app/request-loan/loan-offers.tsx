@@ -60,7 +60,7 @@ function LoanOffersComponent({ loanOffers, onRequest }: LoanOffersComponentProps
     <>
       <Container className={"mb-2 bg-active-nav/30 py-1 rounded-lg"} fluid>
         <Row>
-          <Col sm={5}>
+          <Col sm={2}>
             <small className="text-sm text-font font-medium">Lender</small>
           </Col>
           <Col md={2}>
