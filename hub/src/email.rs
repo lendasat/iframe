@@ -1,7 +1,7 @@
-use crate::calculate_liquidation_price;
 use crate::config::Config;
 use crate::model::Contract;
 use crate::model::User;
+use crate::utils::calculate_liquidation_price;
 use anyhow::bail;
 use anyhow::Context;
 use handlebars::Handlebars;

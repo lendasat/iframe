@@ -1,5 +1,4 @@
 use crate::bitmex_index_pricefeed::BitmexIndexPrice;
-use crate::calculate_ltv;
 use crate::config::Config;
 use crate::db;
 use crate::email::Email;
@@ -7,6 +6,7 @@ use crate::model;
 use crate::model::db::LiquidationStatus;
 use crate::model::Contract;
 use crate::model::User;
+use crate::utils::calculate_ltv;
 use crate::LTV_THRESHOLD_LIQUIDATION;
 use crate::LTV_THRESHOLD_MARGIN_CALL_1;
 use crate::LTV_THRESHOLD_MARGIN_CALL_2;
