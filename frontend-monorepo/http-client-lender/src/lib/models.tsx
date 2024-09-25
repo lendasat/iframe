@@ -30,6 +30,7 @@ export interface Contract {
   contract_address?: string;
   borrower_loan_address: string;
   status: ContractStatus;
+  liquidation_status: LiquidationStatus;
   contract_index: number;
   collateral_output: string;
   claim_txid: string;
@@ -102,6 +103,13 @@ export function contractStatusToLabelString(status: ContractStatus): string {
     default:
       return "Unknown Status";
   }
+}
+
+export enum LiquidationStatus {
+  Healthy = "Healthy",
+  Liquidated = "Liquidated",
+  SecondMarginCall = "SecondMarginCall",
+  FirstMarginCall = "FirstMarginCall",
 }
 
 export enum DisputeStatus {

@@ -153,7 +153,7 @@ pub enum LoanOfferStatus {
     Deleted,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Contract {
     pub id: String,
     pub lender_id: String,
@@ -174,6 +174,7 @@ pub struct Contract {
     pub collateral_output: Option<OutPoint>,
     pub claim_txid: Option<Txid>,
     pub status: ContractStatus,
+    pub liquidation_status: LiquidationStatus,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
     #[serde(with = "time::serde::rfc3339")]
@@ -210,6 +211,19 @@ pub enum ContractStatus {
     DisputeLenderResolved,
 }
 
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
+pub enum LiquidationStatus {
+    /// Contract is in a healthy state
+    Healthy,
+    /// Contract got liquidated
+    Liquidated,
+    /// Second margin call: the user still has time to add more collateral before getting
+    /// liquidated
+    SecondMarginCall,
+    /// First margin call: the user still has time to add more collateral before getting liquidated
+    FirstMarginCall,
+}
+
 pub mod db {
     use rust_decimal::Decimal;
     use serde::Deserialize;
@@ -236,6 +250,7 @@ pub mod db {
         pub collateral_vout: Option<i32>,
         pub claim_txid: Option<String>,
         pub status: ContractStatus,
+        pub liquidation_status: LiquidationStatus,
         #[serde(with = "time::serde::rfc3339")]
         pub created_at: OffsetDateTime,
         #[serde(with = "time::serde::rfc3339")]
@@ -258,6 +273,15 @@ pub mod db {
         DisputeLenderStarted,
         DisputeBorrowerResolved,
         DisputeLenderResolved,
+    }
+
+    #[derive(Debug, Deserialize, sqlx::Type, Serialize)]
+    #[sqlx(type_name = "liquidation_status")]
+    pub enum LiquidationStatus {
+        Healthy,
+        FirstMarginCall,
+        SecondMarginCall,
+        Liquidated,
     }
 }
 
@@ -288,6 +312,7 @@ impl From<db::Contract> for Contract {
             }),
             claim_txid: value.claim_txid.map(|t| t.parse().expect("valid txid")),
             status: value.status.into(),
+            liquidation_status: value.liquidation_status.into(),
             created_at: value.created_at,
             updated_at: value.updated_at,
         }
@@ -314,6 +339,17 @@ impl From<db::ContractStatus> for ContractStatus {
     }
 }
 
+impl From<db::LiquidationStatus> for LiquidationStatus {
+    fn from(value: db::LiquidationStatus) -> Self {
+        match value {
+            db::LiquidationStatus::Healthy => Self::Healthy,
+            db::LiquidationStatus::FirstMarginCall => Self::FirstMarginCall,
+            db::LiquidationStatus::SecondMarginCall => Self::SecondMarginCall,
+            db::LiquidationStatus::Liquidated => Self::Liquidated,
+        }
+    }
+}
+
 impl From<Contract> for db::Contract {
     fn from(value: Contract) -> Self {
         Self {
@@ -336,6 +372,7 @@ impl From<Contract> for db::Contract {
             collateral_vout: value.collateral_output.map(|o| o.vout as i32),
             claim_txid: value.claim_txid.map(|t| t.to_string()),
             status: value.status.into(),
+            liquidation_status: value.liquidation_status.into(),
             created_at: value.created_at,
             updated_at: value.updated_at,
         }
@@ -358,6 +395,17 @@ impl From<ContractStatus> for db::ContractStatus {
             ContractStatus::DisputeLenderStarted => Self::DisputeLenderStarted,
             ContractStatus::DisputeBorrowerResolved => Self::DisputeBorrowerResolved,
             ContractStatus::DisputeLenderResolved => Self::DisputeLenderResolved,
+        }
+    }
+}
+
+impl From<LiquidationStatus> for db::LiquidationStatus {
+    fn from(value: LiquidationStatus) -> Self {
+        match value {
+            LiquidationStatus::Healthy => Self::Healthy,
+            LiquidationStatus::Liquidated => Self::Liquidated,
+            LiquidationStatus::SecondMarginCall => Self::SecondMarginCall,
+            LiquidationStatus::FirstMarginCall => Self::FirstMarginCall,
         }
     }
 }
