@@ -3,7 +3,6 @@ import { CurrencyFormatter } from "@frontend-monorepo/ui-shared";
 import React from "react";
 import { Badge, Button, Card, Col, Container, Row } from "react-bootstrap";
 import { Lender } from "./lender";
-import loanOffers from "./loan-offers";
 import { StableCoinHelper } from "./stable-coin";
 
 interface LoanOfferProps {

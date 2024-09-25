@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import DashHeader from "../components/DashHeader";
 import OffersNav from "../components/OffersNav";
 import LoanOffersComponent from "./loan-offers";
-import LoanOffersFilter, { LoanFilter } from "./loan-offers-filter";
+import { LoanFilter } from "./loan-offers-filter";
 import { StableCoinHelper } from "./stable-coin";
 
 function RequestLoan() {

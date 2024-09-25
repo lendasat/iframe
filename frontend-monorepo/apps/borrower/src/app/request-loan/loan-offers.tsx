@@ -66,42 +66,22 @@ function LoanOffersComponent({ loanOffers, onRequest }: LoanOffersComponentProps
           </Col>
           <Col md={2}>
             <small className="text-sm text-font font-medium">
-              Amounts {
-                /* <FontAwesomeIcon
-                icon={SortHelper.getIcon(amountSort)}
-                onClick={() => setAmountSort(SortHelper.getNextSort(amountSort))}
-              /> */
-              }
+              Amounts
             </small>
           </Col>
           <Col sm={1}>
             <small className="text-sm text-font font-medium">
-              Duration {
-                /* <FontAwesomeIcon
-                icon={SortHelper.getIcon(durationSort)}
-                onClick={() => setDurationSort(SortHelper.getNextSort(durationSort))}
-              /> */
-              }
+              Duration
             </small>
           </Col>
           <Col md={1}>
             <small className="text-sm text-font font-medium">
-              LTV {
-                /* <FontAwesomeIcon
-                icon={SortHelper.getIcon(ltvSort)}
-                onClick={() => setLTVSort(SortHelper.getNextSort(ltvSort))}
-              /> */
-              }
+              LTV
             </small>
           </Col>
           <Col md={1}>
             <small className="text-sm text-font font-medium">
-              Interest {
-                /* <FontAwesomeIcon
-                icon={SortHelper.getIcon(interestSort)}
-                onClick={() => setInterestSort(SortHelper.getNextSort(interestSort))}
-              /> */
-              }
+              Interest
             </small>
           </Col>
           <Col md={2}>
