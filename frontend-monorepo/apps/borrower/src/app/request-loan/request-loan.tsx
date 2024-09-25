@@ -20,7 +20,6 @@ function RequestLoan() {
 
       const offers = res.filter(offer => {
         if (loanFilter.amount) {
-          console.log(`Loan filter amount ${loanFilter.amount}`);
           if (offer.loan_amount_min > loanFilter.amount || offer.loan_amount_max < loanFilter.amount) {
             return false;
           }

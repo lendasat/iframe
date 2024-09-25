@@ -33,7 +33,6 @@ export function RequestLoanSummary() {
   if (initMonths > loanOffer.duration_months_max) {
     initMonths = loanOffer.duration_months_max;
   }
-  console.log(`Period: ${loanFilter.period} ${loanOffer.duration_months_min}`);
 
   let initAmount = loanFilter.amount || loanOffer.loan_amount_min;
   if (initAmount > loanOffer.loan_amount_max) {
@@ -166,8 +165,6 @@ export function RequestLoanSummary() {
   const handleSubmitUnlockWalletModal = async () => {
     handleCloseUnlockWalletModal();
   };
-
-  console.log(`loanOffer.min_ltv ${loanOffer.min_ltv}`);
 
   const minLtv = loanOffer.min_ltv * 100;
 
