@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        INSERT INTO contracts (\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            loan_amount,\n            duration_months,\n            status,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            contract_address,\n            contract_index\n        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)\n        RETURNING\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            contract_address,\n            contract_index,\n            collateral_txid,\n            collateral_vout,\n            claim_txid,\n            status as \"status: crate::model::db::ContractStatus\",\n            duration_months,\n            created_at,\n            updated_at\n        ",
+  "query": "\n        UPDATE contracts\n        SET\n            claim_txid = $1,\n            status = $2,\n            updated_at = $3\n        WHERE id = $4\n        RETURNING\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            contract_address,\n            contract_index,\n            collateral_txid,\n            collateral_vout,\n            claim_txid,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            created_at,\n            updated_at\n        ",
   "describe": {
     "columns": [
       {
@@ -106,30 +106,40 @@
       },
       {
         "ordinal": 16,
+        "name": "liquidation_status: crate::model::db::LiquidationStatus",
+        "type_info": {
+          "Custom": {
+            "name": "liquidation_status",
+            "kind": {
+              "Enum": [
+                "Healthy",
+                "FirstMarginCall",
+                "SecondMarginCall",
+                "Liquidated"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 17,
         "name": "duration_months",
         "type_info": "Int4"
       },
       {
-        "ordinal": 17,
+        "ordinal": 18,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 18,
+        "ordinal": 19,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
-        "Bpchar",
-        "Bpchar",
-        "Bpchar",
-        "Bpchar",
-        "Numeric",
-        "Int8",
-        "Numeric",
-        "Int4",
+        "Text",
         {
           "Custom": {
             "name": "contract_status",
@@ -152,11 +162,8 @@
             }
           }
         },
-        "Text",
-        "Bpchar",
-        "Text",
-        "Text",
-        "Int4"
+        "Timestamptz",
+        "Bpchar"
       ]
     },
     "nullable": [
@@ -178,8 +185,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "b5ac9c709d203a5883deb83ba171702acab4045699c2791898a57e3ef67bb7c7"
+  "hash": "771ef92f5dbef4cfae156ed7f7bf8b24cabab66f10d2fc83f4ec650ef005b1ca"
 }

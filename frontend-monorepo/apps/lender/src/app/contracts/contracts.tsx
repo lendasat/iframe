@@ -1,4 +1,4 @@
-import { Contract } from "@frontend-monorepo/http-client-lender";
+import { Contract, contractStatusToLabelString, LiquidationStatus } from "@frontend-monorepo/http-client-lender";
 import { CurrencyFormatter, LtvProgressBar, usePrice } from "@frontend-monorepo/ui-shared";
 import React from "react";
 import { Badge, Button, Card, Col, Container, Row } from "react-bootstrap";
@@ -69,6 +69,21 @@ function ContractsComponent({ loans }: LoansComponentProps) {
         const collateral_btc = contract.initial_collateral_sats / 100000000;
         const ltvRatio = contract.loan_amount / (collateral_btc * latestPrice);
 
+        let contractStatus = contractStatusToLabelString(contract.status);
+        const firstMarginCall = contract.liquidation_status == LiquidationStatus.FirstMarginCall;
+        const secondMarginCall = contract.liquidation_status == LiquidationStatus.SecondMarginCall;
+        const liquidated = contract.liquidation_status == LiquidationStatus.Liquidated;
+
+        if (firstMarginCall) {
+          contractStatus = "First Margin Call";
+        }
+        if (secondMarginCall) {
+          contractStatus = "Second Margin Call";
+        }
+        if (liquidated) {
+          contractStatus = "Liquidated";
+        }
+
         return (
           <Card key={index} className="mb-3">
             <Card.Body>
@@ -95,7 +110,7 @@ function ContractsComponent({ loans }: LoansComponentProps) {
                 </Col>
                 <Col xs={12} md={status_col.md} className="mb-2 mb-md-0">
                   <div className="d-md-none font-weight-bold">Status:</div>
-                  <Badge bg="primary">{contract.status}</Badge>
+                  <Badge bg="primary">{contractStatus}</Badge>
                 </Col>
                 <Col xs={12} md={empty_col.md} className="mb-2 mb-md-0">
                   <Button onClick={() => navigate(`${contract.id}`)} variant={"primary"}>Details</Button>

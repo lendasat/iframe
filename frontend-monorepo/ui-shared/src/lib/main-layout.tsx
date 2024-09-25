@@ -113,7 +113,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme = "li
               </div>
             )}
           </div>
-          <div className="h-full lg:px-12 md:px-8 px-4 ">
+          <div className="h-full">
             {children}
           </div>
         </div>

@@ -1,5 +1,7 @@
 use crate::config::Config;
+use crate::model::Contract;
 use crate::model::User;
+use crate::utils::calculate_liquidation_price;
 use anyhow::bail;
 use anyhow::Context;
 use handlebars::Handlebars;
@@ -11,6 +13,11 @@ use lettre::AsyncSmtpTransport;
 use lettre::AsyncTransport;
 use lettre::Message;
 use lettre::Tokio1Executor;
+use rust_decimal::prelude::FromPrimitive;
+use rust_decimal::Decimal;
+use rust_decimal_macros::dec;
+use time::format_description;
+use time::Duration;
 
 static TEMPLATES_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/../templates");
 
@@ -181,6 +188,127 @@ impl Email {
             .reply_to(self.from.as_str().parse()?)
             .from(self.from.as_str().parse()?)
             .subject(format!("Dispute started {} ", dispute_id).as_str())
+            .header(ContentType::TEXT_HTML)
+            .body(html_template)?;
+
+        let transport = self.new_transport()?;
+
+        if self.config.smtp_disabled {
+            tracing::info!("Sending smtp is disabled.",);
+            return Ok(());
+        }
+        transport.send(email).await?;
+        Ok(())
+    }
+
+    pub async fn send_user_about_margin_call(
+        &self,
+        contract: Contract,
+        price: Decimal,
+        current_ltv: Decimal,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let template_name = "margin_call";
+
+        let mut handlebars = Handlebars::new();
+        let content = Self::get_template_content(&format!("{}.hbs", template_name))?;
+        handlebars.register_template_string(template_name, content)?;
+        let content = Self::get_template_content("partials/styles.hbs")?;
+        handlebars.register_template_string("styles", content)?;
+        let content = Self::get_template_content("layouts/base.hbs")?;
+        handlebars.register_template_string("base", content)?;
+
+        let expiry =
+            contract.created_at + Duration::days((365 / 12 * contract.duration_months) as i64);
+        let collateral_value_usd = (Decimal::from_u64(contract.initial_collateral_sats)
+            .expect("to fit into u64")
+            / dec!(100_000_000))
+            * price;
+        let collateral_value_usd = collateral_value_usd.round_dp(2).to_string();
+
+        let format = format_description::parse(
+            "[year]-[month]-[day] [hour]:[minute]:[second] [offset_hour \
+         sign:mandatory]:[offset_minute]:[offset_second]",
+        )
+        .expect("to be valid");
+
+        let expiry = expiry.format(&format).expect("to be valid");
+
+        let current_ltv = (current_ltv * dec!(100)).round_dp(2).to_string();
+
+        let liquidation_price = calculate_liquidation_price(
+            contract.loan_amount,
+            Decimal::from_u64(contract.initial_collateral_sats).expect("to fit"),
+        );
+        let liquidation_price = liquidation_price.round_dp(2).to_string();
+
+        let data = serde_json::json!({
+            "first_name": &self.user.name,
+            "contract_id": contract.id,
+            "loan_amount": contract.loan_amount,
+            "expiry": expiry,
+            "collateral_sats": contract.initial_collateral_sats,
+            "collateral_value_usd": collateral_value_usd,
+            "current_ltv": current_ltv,
+            "liquidation_price": liquidation_price,
+
+        });
+
+        let html_template = handlebars.render(template_name, &data)?;
+
+        let email = Message::builder()
+            .to(format!("{} <{}>", self.user.name.as_str(), self.user.email.as_str()).parse()?)
+            .reply_to(self.from.as_str().parse()?)
+            .from(self.from.as_str().parse()?)
+            .subject(format!("Margin call {}", contract.id).as_str())
+            .header(ContentType::TEXT_HTML)
+            .body(html_template)?;
+
+        let transport = self.new_transport()?;
+
+        if self.config.smtp_disabled {
+            tracing::info!("Sending smtp is disabled.",);
+            return Ok(());
+        }
+        transport.send(email).await?;
+        Ok(())
+    }
+
+    pub async fn send_user_about_liquidation_notice(
+        &self,
+        contract: Contract,
+        price: Decimal,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let template_name = "liquidated";
+
+        let mut handlebars = Handlebars::new();
+        let content = Self::get_template_content(&format!("{}.hbs", template_name))?;
+        handlebars.register_template_string(template_name, content)?;
+        let content = Self::get_template_content("partials/styles.hbs")?;
+        handlebars.register_template_string("styles", content)?;
+        let content = Self::get_template_content("layouts/base.hbs")?;
+        handlebars.register_template_string("base", content)?;
+
+        let liquidation_price = calculate_liquidation_price(
+            contract.loan_amount,
+            Decimal::from_u64(contract.initial_collateral_sats).expect("to fit"),
+        );
+        let liquidation_price = liquidation_price.round_dp(2).to_string();
+        let price = price.round_dp(2).to_string();
+
+        let data = serde_json::json!({
+            "first_name": &self.user.name,
+            "contract_id": contract.id,
+            "latest_price": price,
+            "liquidation_price": liquidation_price,
+        });
+
+        let html_template = handlebars.render(template_name, &data)?;
+
+        let email = Message::builder()
+            .to(format!("{} <{}>", self.user.name.as_str(), self.user.email.as_str()).parse()?)
+            .reply_to(self.from.as_str().parse()?)
+            .from(self.from.as_str().parse()?)
+            .subject("Liquidation Notice: Your position has been liquidated")
             .header(ContentType::TEXT_HTML)
             .body(html_template)?;
 

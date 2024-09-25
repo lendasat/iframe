@@ -2,6 +2,7 @@ import { faExclamationCircle, faInfoCircle } from "@fortawesome/free-solid-svg-i
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Contract, ContractStatus, contractStatusToLabelString } from "@frontend-monorepo/http-client-lender";
 import { useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
+import { LiquidationStatus } from "@frontend-monorepo/http-client-lender";
 import { CurrencyFormatter } from "@frontend-monorepo/ui-shared";
 import React, { Suspense, useState } from "react";
 import {
@@ -122,6 +123,21 @@ function ContractDetails({ contract }: DetailsProps) {
     }
   };
 
+  let contractStatusLabel = contractStatusToLabelString(contract.status);
+  const firstMarginCall = contract.liquidation_status == LiquidationStatus.FirstMarginCall;
+  const secondMarginCall = contract.liquidation_status == LiquidationStatus.SecondMarginCall;
+  const liquidated = contract.liquidation_status == LiquidationStatus.Liquidated;
+
+  if (firstMarginCall) {
+    contractStatusLabel = "First Margin Call";
+  }
+  if (secondMarginCall) {
+    contractStatusLabel = "Second Margin Call";
+  }
+  if (liquidated) {
+    contractStatusLabel = "Liquidated";
+  }
+
   return (
     <Container fluid>
       <Row>
@@ -142,7 +158,7 @@ function ContractDetails({ contract }: DetailsProps) {
       <Row className="justify-content-between border-b mt-2">
         <Col>Contract status</Col>
         <Col className="text-end mb-2">
-          <Badge bg="primary">{contractStatusToLabelString(contract.status)}</Badge>
+          <Badge bg="primary">{contractStatusLabel}</Badge>
         </Col>
       </Row>
       <Row className="justify-content-between border-b mt-2">

@@ -72,7 +72,7 @@ function RequestLoan() {
   }
 
   return (
-    <div className="h-screen pb-48">
+    <div className="h-screen">
       <DashHeader label="Loans" />
       <div className="pt-3 h-full">
         <OffersNav
@@ -81,7 +81,7 @@ function RequestLoan() {
           tableSorting={tableSorting}
           onTableSortingChange={onTableSortingChange}
         />
-        <div className="h-full mt-3 py-2 rounded-xl overflow-y-scroll">
+        <div className="h-full mt-3 overflow-hidden">
           <LoanOffersComponent
             loanOffers={loanOffers}
             onRequest={(loanOffer: LoanOffer) => {

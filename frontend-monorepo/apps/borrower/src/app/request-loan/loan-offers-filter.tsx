@@ -2,6 +2,7 @@ import React from "react";
 import { Form } from "react-bootstrap";
 import { Slider, SliderProps } from "./slider";
 import { parseStableCoin, StableCoin, StableCoinDropdown, StableCoinHelper } from "./stable-coin";
+import { Box, Button, Flex, Separator, Text, TextField } from "@radix-ui/themes";
 
 export interface LoanFilter {
   amount?: number;
@@ -32,6 +33,11 @@ interface LoanOffersFilterProps {
 }
 
 function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
+  const resetAmount = React.useRef<HTMLInputElement>(null)
+  const [resetCoin, setResetcoin] = React.useState(true)
+
+
+
   const ltvSliderProps: SliderProps = {
     min: 30,
     max: 90,
@@ -79,48 +85,154 @@ function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
     onChange(filter);
   }
 
+  // Individual Clearing Options
+
+  const clearAmount = () => {
+    const filter: LoanFilter = { ...loanFilter, amount: undefined }
+    if (resetAmount.current) {
+      resetAmount.current.value = '';
+      onChange(filter)
+    }
+
+  }
+
+  const clearCoin = () => {
+    const filter: LoanFilter = { ...loanFilter, stableCoin: undefined };
+    onChange(filter)
+    if (resetCoin) {
+      setResetcoin(false)
+      setTimeout(() => {
+        setResetcoin(true)
+      }, 2000)
+    }
+  }
+
+  const clearRatio = () => {
+    const filter: LoanFilter = { ...loanFilter, ltv: undefined };
+    onChange(filter);
+  }
+
+  // Reset filter action
+  function onRestAll() {
+    clearAmount()
+    clearCoin()
+  }
+
   return (
-    <Form className={"space-y-1 pb-3"}>
-      <Form.Group controlId="loan-amount">
-        <Form.Label column={true}>
-          <small className="text-xs font-medium">Loan Amount</small>
-        </Form.Label>
-        <Form.Control
-          className="shadow-none focus:border-font/10 w-full"
-          value={loanFilter.amount}
-          onChange={onAmountChange}
-        />
-      </Form.Group>
-      <Form.Group className="flex flex-col" controlId="stable-coin">
-        <Form.Label column={true}>
-          <small className="text-xs font-medium">Stable coin</small>
-        </Form.Label>
-        <StableCoinDropdown
-          coins={StableCoinHelper.all()}
-          defaultCoin={loanFilter.stableCoin}
-          filter={true}
-          onSelect={onStableCoinSelect}
-        />
-      </Form.Group>
-      <Form.Group controlId="ltv-slider">
-        <Form.Label column={true}>
-          <small className="text-xs font-medium">LTV ratio</small>
-        </Form.Label>
-        <Slider {...ltvSliderProps} />
-      </Form.Group>
-      <Form.Group controlId="interest-slider">
-        <Form.Label column={true}>
-          <small className="text-xs font-medium">Interest rate p.a.</small>
-        </Form.Label>
-        <Slider {...interestSliderProps} />
-      </Form.Group>
-      <Form.Group controlId="interest-slider">
-        <Form.Label column={true}>
-          <small className="text-xs font-medium">Period</small>
-        </Form.Label>
-        <Slider {...periodSliderProps} />
-      </Form.Group>
-    </Form>
+    <Flex className="flex-col h-full justify-between">
+      <Box>
+        <Box className={'p-4 w-full'}>
+          <Flex className={'flex items-center justify-between mb-2'}>
+            <Text as="label" className='text-sm font-medium text-font'>
+              Amount
+            </Text>
+            <Button
+              onClick={clearAmount}
+              size={'1'} variant="ghost" className="hover:bg-transparent">
+              <Text className={'text-xs font-medium text-purple-700'}>
+                Reset
+              </Text>
+            </Button>
+          </Flex>
+          <TextField.Root
+            type="number"
+            ref={resetAmount}
+            className="text-sm focus:border-purple-800/50 p-3 rounded-lg"
+            placeholder="Input an amount…"
+            value={loanFilter.amount}
+            onChange={onAmountChange}
+          />
+        </Box>
+        <Separator size="4" />
+        <Box className={'p-4 w-full'}>
+          <Flex className={'flex items-center justify-between mb-2'}>
+            <Text as="label" className='text-sm font-medium text-font'>
+              Coin type
+            </Text>
+            <Button
+              onClick={clearCoin}
+              size={'1'} variant="ghost" className="hover:bg-transparent">
+              <Text className={'text-xs font-medium text-purple-700'}>
+                Reset
+              </Text>
+            </Button>
+          </Flex>
+          <StableCoinDropdown
+            coins={StableCoinHelper.all()}
+            defaultCoin={loanFilter.stableCoin}
+            filter={resetCoin}
+            onSelect={onStableCoinSelect}
+          />
+        </Box>
+
+        <Separator size="4" />
+        <Box className={'p-4 w-full'}>
+          <Flex className={'flex items-center justify-between mb-2'}>
+            <Text as="label" className='text-sm font-medium text-font'>
+              LTV ratio
+            </Text>
+            <Button
+              onClick={clearRatio}
+              size={'1'} variant="ghost" className="hover:bg-transparent">
+              <Text className={'text-xs font-medium text-purple-700'}>
+                Reset
+              </Text>
+            </Button>
+          </Flex>
+          <Slider {...ltvSliderProps} />
+        </Box>
+
+
+        <Separator size="4" />
+        <Box className={'p-4 w-full'}>
+          <Flex className={'flex items-center justify-between mb-2'}>
+            <Text as="label" className='text-sm font-medium text-font'>
+              Interest rate p.a.
+            </Text>
+            <Button
+              onClick={undefined}
+              size={'1'} variant="ghost" className="hover:bg-transparent">
+              <Text className={'text-xs font-medium text-purple-700'}>
+                Reset
+              </Text>
+            </Button>
+          </Flex>
+          <Slider {...interestSliderProps} />
+        </Box>
+
+
+
+        <Separator size="4" />
+        <Box className={'p-4 w-full'}>
+          <Flex className={'flex items-center justify-between mb-2'}>
+            <Text as="label" className='text-sm font-medium text-font'>
+              Period
+            </Text>
+            <Button
+              onClick={undefined}
+              size={'1'} variant="ghost" className="hover:bg-transparent">
+              <Text className={'text-xs font-medium text-purple-700'}>
+                Reset
+              </Text>
+            </Button>
+          </Flex>
+          <Slider  {...periodSliderProps} />
+        </Box>
+      </Box>
+
+      <Box>
+        <Separator size="4" className="mt-auto" />
+        <Box className={'p-4 w-full'}>
+          <Button
+            onClick={onRestAll}
+            variant="outline" color="gray" className="p-3 rounded-lg w-full active:scale-90 transition-transform duration-200 ease-in-out">
+            <Text className='text-sm font-medium text-font' weight={'medium'}>
+              Reset all
+            </Text>
+          </Button>
+        </Box>
+      </Box>
+    </Flex >
   );
 }
 

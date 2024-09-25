@@ -1,14 +1,27 @@
 import { LenderProfile } from "@frontend-monorepo/http-client-borrower";
-import React from "react";
+import { Avatar, Box, Flex, Heading, Text } from "@radix-ui/themes";
 import { Container, Row } from "react-bootstrap";
 import { Link } from "react-router-dom";
 
 export function Lender({ name, id }: LenderProfile) {
   return (
-    <Container className={"p-0"} fluid>
-      <Row>
-        <Link className="link-primary" to={`/profile/${id}`}>{name}</Link>
-      </Row>
-    </Container>
+    <Box asChild>
+      <Link to={`/profile/${id}`}>
+        <Flex direction={'row'} align={'center'} gap={'3'}>
+          <Avatar
+            radius="full"
+            color="purple"
+            fallback={name.substring(0, 1)}
+          />
+          <Heading
+            as="h6"
+            weight={'medium'}
+            size={'3'}
+            className="capitalize hidden xl:block" >
+            {name}
+          </Heading>
+        </Flex>
+      </Link>
+    </Box>
   );
 }
