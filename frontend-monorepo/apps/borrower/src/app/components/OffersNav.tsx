@@ -1,10 +1,11 @@
-import { Box, Button, Container, Flex, Separator, Text } from "@radix-ui/themes";
+import { Box, Button, Container, Flex, Select, Separator, Text } from "@radix-ui/themes";
 import React from "react";
 import { IoAddOutline } from "react-icons/io5";
 import { RiFilter2Line } from "react-icons/ri";
 import LoanOffersFilter, { LoanFilter, parseTableSortBy, TableSortBy } from "../request-loan/loan-offers-filter";
 import Offcanvas from 'react-bootstrap/Offcanvas';
 import { LiaTimesSolid } from "react-icons/lia";
+import { BsSortUp } from "react-icons/bs";
 
 interface FilterOption {
   onLoanFilterChange: (filter: LoanFilter) => void;
@@ -25,14 +26,26 @@ export default function OffersNav(props: FilterOption) {
 
       <Flex align={'center'} justify={'between'}>
         <Box>
-          <Flex direction={'row'} gap={'3'}>
-            <Button
-              className="flex items-center gap-1 rounded bg-purple-800/10 transition-colors ease-out duration-300 group/request">
-              <IoAddOutline className="text-xl group-hover/request:rotate-180 transition-transform ease-linear text-base duration-300" />
-              <Text size={'1'} className="text-purple-800 font-semibold">
-                Customize a Request
-              </Text>
-            </Button>
+          <Flex direction={'row'} gap={'3'} align={'center'}>
+            <Select.Root
+              value={props.tableSorting}
+              onValueChange={updateSorting}
+            >
+              <Select.Trigger
+                variant={"ghost"}
+                className="shadow-none focus-visible:outline-none outline-none py-1 font-medium hidden md:flex"
+              >
+                <Flex align={"center"} gap={"2"}>
+                  <BsSortUp /> {props.tableSorting}
+                </Flex>
+              </Select.Trigger>
+              <Select.Content highContrast color="purple" className="font-medium">
+                <Select.Item value={TableSortBy.Amount}>Amount</Select.Item>
+                <Select.Item value={TableSortBy.Duration}>Duration</Select.Item>
+                <Select.Item value={TableSortBy.Ltv}>LTV Ratio</Select.Item>
+                <Select.Item value={TableSortBy.Interest}>Interest</Select.Item>
+              </Select.Content>
+            </Select.Root>
 
             <Button
               variant="outline"
@@ -48,6 +61,7 @@ export default function OffersNav(props: FilterOption) {
             <Offcanvas
               show={offCanvas}
               onHide={() => setOffCanvas(false)}
+              scroll={true}
               placement="end"
               backdrop={false}
               className='max-w-80 pt-5 z-30'
@@ -66,6 +80,15 @@ export default function OffersNav(props: FilterOption) {
             </Offcanvas>
 
           </Flex>
+        </Box>
+        <Box>
+          <Button
+            className="flex items-center gap-1 rounded bg-purple-800/10 transition-colors ease-out duration-300 group/request">
+            <IoAddOutline className="text-xl group-hover/request:rotate-180 transition-transform ease-linear text-base duration-300" />
+            <Text size={'1'} className="text-purple-800 font-semibold">
+              Customize a Request
+            </Text>
+          </Button>
         </Box>
       </Flex>
     </Container >

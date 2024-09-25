@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 export default function HeaderNav() {
   const { user } = useAuth();
   return (
-    <div className="items-center gap-3 hidden lg:flex">
+    <div className="items-center gap-3 flex">
       <Link
         to={"/history"}
         className="h-10 w-10 border hover:border-font-dark hover:text-black flex items-center justify-center rounded transition-colors ease-in duration-300"

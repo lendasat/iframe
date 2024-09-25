@@ -60,7 +60,7 @@ function LoanOffersComponent({ loanOffers, onRequest }: LoanOffersComponentProps
 
   return (
     <>
-      <div className="bg-active-nav/15 py-1 px-6 md:px-8 flex items-center">
+      <Box className="bg-active-nav/15 py-1 px-6 md:px-8 flex items-center">
         <Grid
           className="grid-cols-4 md:grid-cols-6 xl:grid-cols-8 items-center grow">
           <Box
@@ -136,7 +136,7 @@ function LoanOffersComponent({ loanOffers, onRequest }: LoanOffersComponentProps
                   color='gray'
                   className={SortHelper.getIcon(ltvSort) === faChevronUp || SortHelper.getIcon(ltvSort) === faChevronDown ? 'text-black' : 'text-black/40'}
                 >
-                  LTV(%)
+                  LTV
                 </Text>
                 <Box>
                   <IoCaretUp
@@ -183,14 +183,14 @@ function LoanOffersComponent({ loanOffers, onRequest }: LoanOffersComponentProps
               weight={'medium'}
               className="text-black/50"
             >
-              Stable Coins
+              Coin
             </Text>
           </Box>
           <Box className="mb-1 hidden xl:block" />
         </Grid>
 
         <PiWarningOctagon className="opacity-40 text-black xl:hidden" />
-      </div>
+      </Box>
       {loanOffers.sort((a, b) => {
         // Compare by amount first
         const amountComparison = SortHelper.sort(amountSort, a.loan_amount_max, b.loan_amount_min);

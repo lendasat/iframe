@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Form } from "react-bootstrap";
 
 export interface SliderProps {
@@ -7,12 +7,18 @@ export interface SliderProps {
   init: number;
   step: number;
   suffix: string;
+  reset?: boolean
   onChange: (value: number) => void;
 }
 
-export const Slider = ({ min, max, init, step, suffix, onChange }: SliderProps) => {
+export const Slider = ({ min, max, init, step, suffix, reset, onChange }: SliderProps) => {
   const [value, setValue] = useState(init);
 
+  useEffect(() => {
+    if (!reset) {
+      setValue(init)
+    }
+  })
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = parseFloat(e.target.value); // Convert string to number
     setValue(newValue);

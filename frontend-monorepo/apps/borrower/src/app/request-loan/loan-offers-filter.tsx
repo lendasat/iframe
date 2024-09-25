@@ -35,7 +35,9 @@ interface LoanOffersFilterProps {
 function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
   const resetAmount = React.useRef<HTMLInputElement>(null)
   const [resetCoin, setResetcoin] = React.useState(true)
-
+  const [resetRatio, setResetRatio] = React.useState(true)
+  const [resetDuration, setResetDuration] = React.useState(true)
+  const [resetInterest, setResetInterest] = React.useState(true)
 
 
   const ltvSliderProps: SliderProps = {
@@ -44,6 +46,7 @@ function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
     step: 1,
     init: loanFilter.ltv ?? 30,
     suffix: "%",
+    reset: resetRatio,
     onChange: (value) => {
       const filter: LoanFilter = { ...loanFilter, ltv: value };
       onChange(filter);
@@ -55,6 +58,7 @@ function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
     step: 1,
     init: loanFilter.interest ?? 100,
     suffix: "%",
+    reset: resetInterest,
     onChange: (value) => {
       const filter: LoanFilter = { ...loanFilter, interest: value };
       onChange(filter);
@@ -67,6 +71,7 @@ function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
     step: 1,
     init: loanFilter.period ?? 12,
     suffix: " months",
+    reset: resetDuration,
     onChange: (value) => {
       const filter: LoanFilter = { ...loanFilter, period: value };
       onChange(filter);
@@ -110,12 +115,54 @@ function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
   const clearRatio = () => {
     const filter: LoanFilter = { ...loanFilter, ltv: undefined };
     onChange(filter);
+    if (resetRatio) {
+      setResetRatio(false)
+      setTimeout(() => {
+        setResetRatio(true)
+      }, 2000)
+    }
+  }
+
+  const clearInterest = () => {
+    const filter: LoanFilter = { ...loanFilter, interest: undefined };
+    onChange(filter);
+    if (resetInterest) {
+      setResetInterest(false)
+      setTimeout(() => {
+        setResetInterest(true)
+      }, 2000)
+    }
+  }
+  const clearDuration = () => {
+    const filter: LoanFilter = { ...loanFilter, period: undefined };
+    onChange(filter);
+    if (resetDuration) {
+      setResetDuration(false)
+      setTimeout(() => {
+        setResetDuration(true)
+      }, 2000)
+    }
   }
 
   // Reset filter action
   function onRestAll() {
-    clearAmount()
-    clearCoin()
+    if (resetAmount.current) {
+      resetAmount.current.value = '';
+    }
+    if (resetCoin || resetRatio || resetInterest || resetDuration) {
+      setResetcoin(false)
+      setResetRatio(false)
+      setResetInterest(false)
+      setResetDuration(false)
+      setTimeout(() => {
+        setResetcoin(true)
+        setResetRatio(true)
+        setResetInterest(true)
+        setResetDuration(true)
+      }, 2000)
+    }
+    const filter: LoanFilter = {};
+    onChange(filter);
   }
 
   return (
@@ -190,7 +237,7 @@ function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
               Interest rate p.a.
             </Text>
             <Button
-              onClick={undefined}
+              onClick={clearInterest}
               size={'1'} variant="ghost" className="hover:bg-transparent">
               <Text className={'text-xs font-medium text-purple-700'}>
                 Reset
@@ -209,7 +256,7 @@ function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
               Period
             </Text>
             <Button
-              onClick={undefined}
+              onClick={clearDuration}
               size={'1'} variant="ghost" className="hover:bg-transparent">
               <Text className={'text-xs font-medium text-purple-700'}>
                 Reset

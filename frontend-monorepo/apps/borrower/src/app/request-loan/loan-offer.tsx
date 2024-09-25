@@ -3,7 +3,7 @@ import { CurrencyFormatter } from "@frontend-monorepo/ui-shared";
 import React from "react";
 import { Lender } from "./lender";
 import { StableCoinHelper } from "./stable-coin";
-import { Badge, Box, Button, Flex, Grid, Text } from "@radix-ui/themes";
+import { Badge, Box, Button, DropdownMenu, Flex, Grid, Heading, Text } from "@radix-ui/themes";
 import { BsThreeDotsVertical } from "react-icons/bs";
 
 interface LoanOfferProps {
@@ -15,7 +15,7 @@ export function LoanOfferComponent({ loanOffer, onRequest }: LoanOfferProps) {
   const coin = StableCoinHelper.mapFromBackend(loanOffer.loan_asset_chain, loanOffer.loan_asset_type)!;
   const [loadingState, setLoadingState] = React.useState<boolean>(false)
   return (
-    <div className="pl-5 pr-6 md:pl-7 md:pr-8 py-3 border-b border-black/5 flex md:gap-2 items-center">
+    <Box className="pl-5 pr-6 md:pl-7 md:pr-8 py-3 border-b border-black/5 flex md:gap-2 items-center">
       <Grid
         className="grid-cols-4 md:grid-cols-6 xl:grid-cols-8 items-center grow text-font">
         <Box
@@ -75,7 +75,107 @@ export function LoanOfferComponent({ loanOffer, onRequest }: LoanOfferProps) {
           </Button>
         </Box>
       </Grid>
-      <BsThreeDotsVertical className="xl:hidden" />
-    </div>
+
+      <DropdownMenu.Root>
+        <DropdownMenu.Trigger>
+          <Button variant="ghost" className="xl:hidden text-font hover:bg-transparent">
+            <BsThreeDotsVertical />
+          </Button>
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Content>
+          <Box width={'100%'} minWidth={'300px'} p={'3'}>
+            <Heading as="h6" weight={'medium'}>
+              More Information
+            </Heading>
+          </Box>
+          <DropdownMenu.Separator />
+          <Box width={'100%'} minWidth={'300px'} p={'3'}>
+            <Flex direction={'column'} gap={'4'} align={'start'}>
+              <Box>
+                <Flex align={'center'} gap={'3'}>
+                  <Text size={'3'} weight={'medium'}>
+                    From:
+                  </Text>
+                  <Text className="capitalize" size={'3'}>
+                    {loanOffer.lender.name}
+                  </Text>
+                </Flex>
+              </Box>
+              <Box>
+                <Flex align={'center'} gap={'3'}>
+                  <Text size={'3'} weight={'medium'}>
+                    Amount:
+                  </Text>
+                  <Text className="capitalize" size={'3'}>
+                    <CurrencyFormatter value={loanOffer.loan_amount_min} /> -{" "}
+                    <CurrencyFormatter value={loanOffer.loan_amount_max} />
+                  </Text>
+                </Flex>
+              </Box>
+              <Box>
+                <Flex align={'center'} gap={'3'}>
+                  <Text size={'3'} weight={'medium'}>
+                    Duration:
+                  </Text>
+                  <Text className="capitalize" size={'3'}>
+                    {loanOffer.duration_months_min} - {loanOffer.duration_months_max} months
+                  </Text>
+                </Flex>
+              </Box>
+              <Box>
+                <Flex align={'center'} gap={'3'}>
+                  <Text size={'3'} weight={'medium'}>
+                    LTV rate:
+                  </Text>
+                  <Text className="capitalize" size={'3'}>
+                    {loanOffer.min_ltv * 100}%
+                  </Text>
+                </Flex>
+              </Box>
+              <Box>
+                <Flex align={'center'} gap={'3'}>
+                  <Text size={'3'} weight={'medium'}>
+                    Interest:
+                  </Text>
+                  <Text className="capitalize" size={'3'}>
+                    {loanOffer.interest_rate * 100}%
+                  </Text>
+                </Flex>
+              </Box>
+              <Box>
+                <Flex align={'center'} gap={'3'}>
+                  <Text size={'3'} weight={'medium'}>
+                    Coin:
+                  </Text>
+                  <Text className="capitalize" size={'3'}>
+                    <Badge color="purple" size={'2'}>{StableCoinHelper.print(coin)}</Badge>
+                  </Text>
+                </Flex>
+              </Box>
+              <Button
+                size={'3'}
+                loading={loadingState}
+                variant="solid"
+                className="bg-btn text-white w-full active:scale-90"
+                onClick={() => {
+                  setLoadingState(true)
+                  setTimeout(() => {
+                    setLoadingState(false)
+                    onRequest(loanOffer)
+                  }, 1000)
+                }}
+              >
+                <Text
+                  size={'2'}
+                  className="font-semibold">
+                  Request Loan
+                </Text>
+              </Button>
+
+            </Flex>
+          </Box>
+        </DropdownMenu.Content>
+      </DropdownMenu.Root>
+    </Box>
   );
 }
