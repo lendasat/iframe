@@ -1,6 +1,5 @@
 import { faChevronDown, faChevronUp, faMinus, IconDefinition } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { LoanOffer } from "@frontend-monorepo/http-client-lender";
+import { LoanOffer } from "@frontend-monorepo/http-client-borrower";
 import { useState } from "react";
 import { Col, Container, Row } from "react-bootstrap";
 import { LoanOfferComponent } from "./loan-offer";
