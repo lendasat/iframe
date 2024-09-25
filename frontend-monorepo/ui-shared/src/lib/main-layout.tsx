@@ -1,6 +1,7 @@
 import { faBars } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Version } from "@frontend-monorepo/base-http-client";
+import { Container, Heading } from "@radix-ui/themes";
 import React, { ReactNode } from "react";
 import { IconType } from "react-icons";
 import { IoNotifications } from "react-icons/io5";
@@ -85,35 +86,15 @@ export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme = "li
           className="h-screen w-full bg-active-nav/5 overflow-hidden relative"
           style={{ color: "#44596e" }}
         >
-          <div
-            style={{ marginBottom: "16px" }}
-          >
-            {broken && (
-              <div className="w-full py-3 flex items-center justify-between md:px-10 px-4">
-                <button className="sb-button" onClick={() => setToggled(!toggled)}>
-                  <FontAwesomeIcon icon={faBars} />
-                </button>
-                <div className="flex items-center gap-3">
-                  <Link to={"/history"} className="h-10 w-10 border flex items-center justify-center rounded">
-                    <IoNotifications className="text-xl text-font" />
-                  </Link>
-                  <Link
-                    to={"https://lendasat.notion.site"}
-                    className="h-10 w-10 border flex items-center justify-center rounded"
-                    target="_blank"
-                  >
-                    <RiCustomerService2Fill className="text-xl text-font" />
-                  </Link>
-                  <Link to={"/my-account"} className="no-underline">
-                    <div className="h-10 w-10 md:border-0 border flex items-center justify-center rounded text-font">
-                      <RiUser6Fill />
-                    </div>
-                  </Link>
-                </div>
-              </div>
-            )}
-          </div>
-          <div className="h-full lg:px-12 md:px-8 px-4 ">
+          {broken && (
+            <div className="w-full   flex items-center justify-between md:px-10 px-4">
+              <button className="sb-button" onClick={() => setToggled(!toggled)}>
+                <FontAwesomeIcon icon={faBars} />
+              </button>
+            </div>
+          )}
+
+          <div className="h-full">
             {children}
           </div>
         </div>

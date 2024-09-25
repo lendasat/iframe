@@ -1,3 +1,4 @@
+import { Box, Flex, Heading, Separator } from "@radix-ui/themes";
 import HeaderNav from "./HeaderNav";
 
 interface DashInterface {
@@ -6,9 +7,16 @@ interface DashInterface {
 
 export default function DashHeader(props: DashInterface) {
   return (
-    <div className="flex justify-between items-center md:py-3">
-      <h3 className="lg:text-4xl md:text-3xl text-2xl text-font-dark capitalize font-semibold">{props.label}</h3>
-      <HeaderNav />
-    </div>
+    <Box>
+      <Box className="px-6 md:px-8" py={"4"}>
+        <Flex justify={"between"}>
+          <Heading as="h2" weight={"medium"}>
+            {props.label}
+          </Heading>
+          <HeaderNav />
+        </Flex>
+      </Box>
+      <Separator size={"4"} />
+    </Box>
   );
 }

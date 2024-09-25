@@ -72,6 +72,13 @@ export function StableCoinDropdown({
   // Initialize selectedCoin with defaultCoin if provided, otherwise fall back to StableCoin.USDT_SN
   const [selectedCoin, setSelectedCoin] = useState<StableCoin | undefined>(defaultCoin);
 
+  // Reseting choosen coin
+  React.useEffect(() => {
+    if (!filter) {
+      setSelectedCoin(defaultCoin);
+    }
+  });
+
   const handleChange = (value: string) => {
     const selectedValue = value as StableCoin;
     setSelectedCoin(selectedValue);
@@ -85,10 +92,10 @@ export function StableCoinDropdown({
         onValueChange={handleChange}
       >
         <Select.Trigger
-          variant={"ghost"}
-          className="shadow-none focus-visible:outline-none outline-none h-8 font-medium w-auto border rounded "
+          variant={"surface"}
+          className="shadow-none focus-visible:outline-none p-3 outline-none h-8 font-normal text-sm w-auto border z-50 rounded-lg"
         />
-        <Select.Content highContrast color="purple" className="font-medium">
+        <Select.Content highContrast color="purple" className="font-normal text-sm">
           <Select.Item key={coins[0]} value={coins[0]}>
             {StableCoinHelper.print(coins[0])}
           </Select.Item>
@@ -98,17 +105,17 @@ export function StableCoinDropdown({
   } else {
     return (
       <Select.Root
-        value={selectedCoin}
+        value={selectedCoin == undefined ? "disabled" : selectedCoin}
         onValueChange={handleChange}
-        defaultValue="select"
+        defaultValue={"disabled"}
       >
         <Select.Trigger
           variant={"surface"}
-          className="shadow-none focus-visible:outline-none outline-none h-10 font-medium border rounded "
+          className="shadow-none focus-visible:outline-none p-3 outline-none h-10 font-normal text-sm border rounded-lg w-full"
         />
 
-        <Select.Content highContrast color="purple" className="font-medium">
-          <Select.Item value="select">-- Select a coin --</Select.Item>
+        <Select.Content highContrast color="purple" className="font-normal text-sm z-50">
+          <Select.Item value="disabled" disabled>-- Select a coin --</Select.Item>
           {coins.map((coin: StableCoin) => (
             <Select.Item key={coin} value={coin}>
               {StableCoinHelper.print(coin)}

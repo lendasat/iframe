@@ -1,7 +1,9 @@
 import { faChevronDown, faChevronUp, faMinus, IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import { LoanOffer } from "@frontend-monorepo/http-client-borrower";
+import { Box, Button, Flex, Grid, Text } from "@radix-ui/themes";
 import { useState } from "react";
-import { Col, Container, Row } from "react-bootstrap";
+import { IoCaretDownOutline, IoCaretUp } from "react-icons/io5";
+import { PiWarningOctagon } from "react-icons/pi";
 import { LoanOfferComponent } from "./loan-offer";
 
 enum Sort {
@@ -58,39 +60,153 @@ function LoanOffersComponent({ loanOffers, onRequest }: LoanOffersComponentProps
 
   return (
     <>
-      <Container className={"mb-2 bg-active-nav/30 py-1 rounded-lg"} fluid>
-        <Row>
-          <Col sm={2}>
-            <small className="text-sm text-font font-medium">Lender</small>
-          </Col>
-          <Col md={2}>
-            <small className="text-sm text-font font-medium">
-              Amounts
-            </small>
-          </Col>
-          <Col sm={1}>
-            <small className="text-sm text-font font-medium">
-              Duration
-            </small>
-          </Col>
-          <Col md={1}>
-            <small className="text-sm text-font font-medium">
-              LTV
-            </small>
-          </Col>
-          <Col md={1}>
-            <small className="text-sm text-font font-medium">
-              Interest
-            </small>
-          </Col>
-          <Col md={2}>
-            <small className="text-sm text-font font-medium">Stable coins</small>
-          </Col>
-        </Row>
-      </Container>
+      <Box className="bg-active-nav/15 py-1 px-6 md:px-8 flex items-center">
+        <Grid className="grid-cols-4 md:grid-cols-6 xl:grid-cols-8 items-center grow">
+          <Box className="mb-1 col-span-1 xl:col-span-2">
+            <Text
+              size={"1"}
+              weight={"medium"}
+              className="text-black/50"
+            >
+              Lender
+            </Text>
+          </Box>
+          <Box className="flex justify-center col-span-2 md:col-span-1">
+            <Button
+              onClick={() => setAmountSort(SortHelper.getNextSort(amountSort))}
+              className="bg-transparent px-0"
+            >
+              <Flex gap={"1"} align={"center"}>
+                <Text
+                  size={"1"}
+                  weight={"medium"}
+                  className={SortHelper.getIcon(amountSort) === faChevronUp
+                      || SortHelper.getIcon(amountSort) === faChevronDown
+                    ? "text-black"
+                    : "text-black/40"}
+                >
+                  Amount
+                </Text>
+                <Box>
+                  <IoCaretUp
+                    className={`text-[10px] -mb-1
+                    ${SortHelper.getIcon(amountSort) === faChevronUp ? "text-black" : "text-black/40"}`}
+                  />
+                  <IoCaretDownOutline
+                    className={`text-[10px] -mt-1
+                      ${SortHelper.getIcon(amountSort) === faChevronDown ? "text-black" : "text-black/40"}`}
+                  />
+                </Box>
+              </Flex>
+            </Button>
+          </Box>
+          <Box className="hidden md:flex justify-center">
+            <Button
+              onClick={() => setDurationSort(SortHelper.getNextSort(durationSort))}
+              className="bg-transparent px-0"
+            >
+              <Flex gap={"1"}>
+                <Text
+                  size={"1"}
+                  weight={"medium"}
+                  color="gray"
+                  className={SortHelper.getIcon(durationSort) === faChevronUp
+                      || SortHelper.getIcon(durationSort) === faChevronDown
+                    ? "text-black"
+                    : "text-black/40"}
+                >
+                  Duration
+                </Text>
+                <Box>
+                  <IoCaretUp
+                    className={`text-[10px] -mb-1
+                    ${SortHelper.getIcon(durationSort) === faChevronUp ? "text-black" : "text-black/40"}`}
+                  />
+                  <IoCaretDownOutline
+                    className={`text-[10px] -mt-1
+                      ${SortHelper.getIcon(durationSort) === faChevronDown ? "text-black" : "text-black/40"}`}
+                  />
+                </Box>
+              </Flex>
+            </Button>
+          </Box>
+          <Box className="hidden md:flex justify-center">
+            <Button
+              onClick={() => setLTVSort(SortHelper.getNextSort(ltvSort))}
+              className="bg-transparent px-0"
+            >
+              <Flex gap={"1"}>
+                <Text
+                  size={"1"}
+                  weight={"medium"}
+                  color="gray"
+                  className={SortHelper.getIcon(ltvSort) === faChevronUp
+                      || SortHelper.getIcon(ltvSort) === faChevronDown
+                    ? "text-black"
+                    : "text-black/40"}
+                >
+                  LTV
+                </Text>
+                <Box>
+                  <IoCaretUp
+                    className={`text-[10px] -mb-1
+                    ${SortHelper.getIcon(ltvSort) === faChevronUp ? "text-black" : "text-black/40"}`}
+                  />
+                  <IoCaretDownOutline
+                    className={`text-[10px] -mt-1
+                      ${SortHelper.getIcon(ltvSort) === faChevronDown ? "text-black" : "text-black/40"}`}
+                  />
+                </Box>
+              </Flex>
+            </Button>
+          </Box>
+          <Box className="flex justify-center">
+            <Button
+              onClick={() => setInterestSort(SortHelper.getNextSort(interestSort))}
+              className="bg-transparent px-0"
+            >
+              <Flex gap={"1"}>
+                <Text
+                  size={"1"}
+                  weight={"medium"}
+                  color="gray"
+                  className={SortHelper.getIcon(interestSort) === faChevronUp
+                      || SortHelper.getIcon(interestSort) === faChevronDown
+                    ? "text-black"
+                    : "text-black/40"}
+                >
+                  Interest
+                </Text>
+                <Box>
+                  <IoCaretUp
+                    className={`text-[10px] -mb-1
+                    ${SortHelper.getIcon(interestSort) === faChevronUp ? "text-black" : "text-black/40"}`}
+                  />
+                  <IoCaretDownOutline
+                    className={`text-[10px] -mt-1
+                      ${SortHelper.getIcon(interestSort) === faChevronDown ? "text-black" : "text-black/40"}`}
+                  />
+                </Box>
+              </Flex>
+            </Button>
+          </Box>
+          <Box className="mb-1 hidden md:flex justify-center">
+            <Text
+              size={"1"}
+              weight={"medium"}
+              className="text-black/50"
+            >
+              Coin
+            </Text>
+          </Box>
+          <Box className="mb-1 hidden xl:block" />
+        </Grid>
+
+        <PiWarningOctagon className="opacity-40 text-black xl:hidden" />
+      </Box>
       {loanOffers.sort((a, b) => {
         // Compare by amount first
-        const amountComparison = SortHelper.sort(amountSort, a.loan_amount_max, b.loan_amount_min);
+        const amountComparison = SortHelper.sort(amountSort, a.loan_amount_min, b.loan_amount_min);
         if (amountComparison !== 0) return amountComparison;
 
         // Compare by duration if amount is the same
@@ -104,7 +220,7 @@ function LoanOffersComponent({ loanOffers, onRequest }: LoanOffersComponentProps
         // Compare by interest if amount, duration, and LTV are the same
         return SortHelper.sort(interestSort, a.interest_rate, b.interest_rate);
       }).map((loanOffer, index) => (
-        <div key={index} className={"mb-3"}>
+        <div key={index} className={"overflow-y-scroll"}>
           <LoanOfferComponent key={index} loanOffer={loanOffer} onRequest={onRequest} />
         </div>
       ))}

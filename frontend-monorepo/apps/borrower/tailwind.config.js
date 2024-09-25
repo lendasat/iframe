@@ -17,7 +17,7 @@ module.exports = {
         base: '#623AB0',
         font: '#393E3A',
         'font-dark': '#191E1A',
-        dashboard: '#fafafa',
+        dashboard: '#fff',
         'active-nav': '#CDC3FF',
         btn: '#21212F',
       },
