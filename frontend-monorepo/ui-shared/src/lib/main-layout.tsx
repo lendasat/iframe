@@ -13,51 +13,6 @@ import { SidebarHeader } from "./components/SidebarHeader";
 
 type Theme = "light" | "dark";
 
-// const themes = {
-//   light: {
-//     sidebar: {
-//       backgroundColor: "#ffffff",
-//       color: "#607489",
-//     },
-//     menu: {
-//       menuContent: "#fbfcfd",
-//       icon: "#6D49EB",
-//       hover: {
-//         backgroundColor: "#c5e4ff",
-//         color: "#44596e",
-//       },
-//       disabled: {
-//         color: "#9fb6cf",
-//       },
-//     },
-//   },
-//   dark: {
-//     sidebar: {
-//       backgroundColor: "#0b2948",
-//       color: "#8ba1b7",
-//     },
-//     menu: {
-//       menuContent: "#082440",
-//       icon: "#59d0ff",
-//       hover: {
-//         backgroundColor: "#00458b",
-//         color: "#b6c8d9",
-//       },
-//       disabled: {
-//         color: "#3e5e7e",
-//       },
-//     },
-//   },
-// };
-
-// const hexToRgba = (hex: string, alpha: number) => {
-//   const r = parseInt(hex.slice(1, 3), 16);
-//   const g = parseInt(hex.slice(3, 5), 16);
-//   const b = parseInt(hex.slice(5, 7), 16);
-
-//   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-// };
-
 interface MenuItem {
   label: string;
   icon: IconType;
@@ -75,37 +30,6 @@ interface LayoutProps {
 export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme = "light", backendVersion }) => {
   const [toggled, setToggled] = React.useState(false);
   const [broken, setBroken] = React.useState(false);
-
-  // const menuItemStyles: MenuItemStyles = {
-  //   root: {
-  //     fontSize: "18px",
-  //     fontWeight: 400,
-  //   },
-  //   icon: {
-  //     color: themes[theme].menu.icon,
-  //     [`&.${menuClasses.disabled}`]: {
-  //       color: themes[theme].menu.disabled.color,
-  //     },
-  //   },
-  //   SubMenuExpandIcon: {
-  //     color: "#b6b7b9",
-  //   },
-  //   subMenuContent: ({ level }) => ({
-  //     backgroundColor: level === 0
-  //       ? hexToRgba(themes[theme].menu.menuContent, 1)
-  //       : "transparent",
-  //   }),
-  //   button: {
-  //     [`&.${menuClasses.disabled}`]: {
-  //       color: themes[theme].menu.disabled.color,
-  //     },
-  //     "&:hover": {
-  //       backgroundColor: hexToRgba(themes[theme].menu.hover.backgroundColor, 1),
-  //       color: themes[theme].menu.hover.color,
-  //     },
-  //   },
-  // };
-
   return (
     <div
       className="bg-dashboard h-screen overflow-hidden"
@@ -116,17 +40,14 @@ export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme = "li
         onBackdropClick={() => setToggled(false)}
         onBreakPoint={setBroken}
         breakPoint="lg"
-        // image="/lendasat_white_bg.svg"
-        // backgroundColor={hexToRgba(themes[theme].sidebar.backgroundColor, 1)}
         rootStyles={{
-          // color: themes[theme].sidebar.color,
           height: "100vh !important",
         }}
       >
         <div className="flex flex-col h-full px-3 pt-10 pb-2 items-center bg-dashboard">
           <SidebarHeader style={{ margin: "auto" }} />
           <div className="flex-1 w-full">
-            <Menu // menuItemStyles={menuItemStyles}
+            <Menu
              className="mt-12">
               {menuItems.map((item, index) => (
                 <MenuItem
