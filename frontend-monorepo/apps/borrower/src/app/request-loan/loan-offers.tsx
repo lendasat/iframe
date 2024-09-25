@@ -1,10 +1,10 @@
 import { faChevronDown, faChevronUp, faMinus, IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import { LoanOffer } from "@frontend-monorepo/http-client-borrower";
-import { useState } from "react";
-import { LoanOfferComponent } from "./loan-offer";
 import { Box, Button, Flex, Grid, Text } from "@radix-ui/themes";
+import { useState } from "react";
 import { IoCaretDownOutline, IoCaretUp } from "react-icons/io5";
 import { PiWarningOctagon } from "react-icons/pi";
+import { LoanOfferComponent } from "./loan-offer";
 
 enum Sort {
   NONE = "NONE",
@@ -61,39 +61,40 @@ function LoanOffersComponent({ loanOffers, onRequest }: LoanOffersComponentProps
   return (
     <>
       <Box className="bg-active-nav/15 py-1 px-6 md:px-8 flex items-center">
-        <Grid
-          className="grid-cols-4 md:grid-cols-6 xl:grid-cols-8 items-center grow">
-          <Box
-            className="mb-1 col-span-1 xl:col-span-2">
+        <Grid className="grid-cols-4 md:grid-cols-6 xl:grid-cols-8 items-center grow">
+          <Box className="mb-1 col-span-1 xl:col-span-2">
             <Text
-              size={'1'}
-              weight={'medium'}
+              size={"1"}
+              weight={"medium"}
               className="text-black/50"
             >
               Lender
             </Text>
           </Box>
-          <Box
-            className="flex justify-center col-span-2 md:col-span-1">
+          <Box className="flex justify-center col-span-2 md:col-span-1">
             <Button
               onClick={() => setAmountSort(SortHelper.getNextSort(amountSort))}
-              className="bg-transparent px-0">
-              <Flex gap={'1'} align={'center'}>
+              className="bg-transparent px-0"
+            >
+              <Flex gap={"1"} align={"center"}>
                 <Text
-                  size={'1'}
-                  weight={'medium'}
-                  className={SortHelper.getIcon(amountSort) === faChevronUp || SortHelper.getIcon(amountSort) === faChevronDown ? 'text-black' : 'text-black/40'}
+                  size={"1"}
+                  weight={"medium"}
+                  className={SortHelper.getIcon(amountSort) === faChevronUp
+                      || SortHelper.getIcon(amountSort) === faChevronDown
+                    ? "text-black"
+                    : "text-black/40"}
                 >
                   Amount
                 </Text>
                 <Box>
                   <IoCaretUp
                     className={`text-[10px] -mb-1
-                    ${SortHelper.getIcon(amountSort) === faChevronUp ? 'text-black' : 'text-black/40'}`}
+                    ${SortHelper.getIcon(amountSort) === faChevronUp ? "text-black" : "text-black/40"}`}
                   />
                   <IoCaretDownOutline
                     className={`text-[10px] -mt-1
-                      ${SortHelper.getIcon(amountSort) === faChevronDown ? 'text-black' : 'text-black/40'}`}
+                      ${SortHelper.getIcon(amountSort) === faChevronDown ? "text-black" : "text-black/40"}`}
                   />
                 </Box>
               </Flex>
@@ -102,24 +103,28 @@ function LoanOffersComponent({ loanOffers, onRequest }: LoanOffersComponentProps
           <Box className="hidden md:flex justify-center">
             <Button
               onClick={() => setDurationSort(SortHelper.getNextSort(durationSort))}
-              className="bg-transparent px-0">
-              <Flex gap={'1'}>
+              className="bg-transparent px-0"
+            >
+              <Flex gap={"1"}>
                 <Text
-                  size={'1'}
-                  weight={'medium'}
-                  color='gray'
-                  className={SortHelper.getIcon(durationSort) === faChevronUp || SortHelper.getIcon(durationSort) === faChevronDown ? 'text-black' : 'text-black/40'}
+                  size={"1"}
+                  weight={"medium"}
+                  color="gray"
+                  className={SortHelper.getIcon(durationSort) === faChevronUp
+                      || SortHelper.getIcon(durationSort) === faChevronDown
+                    ? "text-black"
+                    : "text-black/40"}
                 >
                   Duration
                 </Text>
                 <Box>
                   <IoCaretUp
                     className={`text-[10px] -mb-1
-                    ${SortHelper.getIcon(durationSort) === faChevronUp ? 'text-black' : 'text-black/40'}`}
+                    ${SortHelper.getIcon(durationSort) === faChevronUp ? "text-black" : "text-black/40"}`}
                   />
                   <IoCaretDownOutline
                     className={`text-[10px] -mt-1
-                      ${SortHelper.getIcon(durationSort) === faChevronDown ? 'text-black' : 'text-black/40'}`}
+                      ${SortHelper.getIcon(durationSort) === faChevronDown ? "text-black" : "text-black/40"}`}
                   />
                 </Box>
               </Flex>
@@ -128,24 +133,28 @@ function LoanOffersComponent({ loanOffers, onRequest }: LoanOffersComponentProps
           <Box className="hidden md:flex justify-center">
             <Button
               onClick={() => setLTVSort(SortHelper.getNextSort(ltvSort))}
-              className="bg-transparent px-0">
-              <Flex gap={'1'}>
+              className="bg-transparent px-0"
+            >
+              <Flex gap={"1"}>
                 <Text
-                  size={'1'}
-                  weight={'medium'}
-                  color='gray'
-                  className={SortHelper.getIcon(ltvSort) === faChevronUp || SortHelper.getIcon(ltvSort) === faChevronDown ? 'text-black' : 'text-black/40'}
+                  size={"1"}
+                  weight={"medium"}
+                  color="gray"
+                  className={SortHelper.getIcon(ltvSort) === faChevronUp
+                      || SortHelper.getIcon(ltvSort) === faChevronDown
+                    ? "text-black"
+                    : "text-black/40"}
                 >
                   LTV
                 </Text>
                 <Box>
                   <IoCaretUp
                     className={`text-[10px] -mb-1
-                    ${SortHelper.getIcon(ltvSort) === faChevronUp ? 'text-black' : 'text-black/40'}`}
+                    ${SortHelper.getIcon(ltvSort) === faChevronUp ? "text-black" : "text-black/40"}`}
                   />
                   <IoCaretDownOutline
                     className={`text-[10px] -mt-1
-                      ${SortHelper.getIcon(ltvSort) === faChevronDown ? 'text-black' : 'text-black/40'}`}
+                      ${SortHelper.getIcon(ltvSort) === faChevronDown ? "text-black" : "text-black/40"}`}
                   />
                 </Box>
               </Flex>
@@ -154,24 +163,28 @@ function LoanOffersComponent({ loanOffers, onRequest }: LoanOffersComponentProps
           <Box className="flex justify-center">
             <Button
               onClick={() => setInterestSort(SortHelper.getNextSort(interestSort))}
-              className="bg-transparent px-0">
-              <Flex gap={'1'}>
+              className="bg-transparent px-0"
+            >
+              <Flex gap={"1"}>
                 <Text
-                  size={'1'}
-                  weight={'medium'}
-                  color='gray'
-                  className={SortHelper.getIcon(interestSort) === faChevronUp || SortHelper.getIcon(interestSort) === faChevronDown ? 'text-black' : 'text-black/40'}
+                  size={"1"}
+                  weight={"medium"}
+                  color="gray"
+                  className={SortHelper.getIcon(interestSort) === faChevronUp
+                      || SortHelper.getIcon(interestSort) === faChevronDown
+                    ? "text-black"
+                    : "text-black/40"}
                 >
                   Interest
                 </Text>
                 <Box>
                   <IoCaretUp
                     className={`text-[10px] -mb-1
-                    ${SortHelper.getIcon(interestSort) === faChevronUp ? 'text-black' : 'text-black/40'}`}
+                    ${SortHelper.getIcon(interestSort) === faChevronUp ? "text-black" : "text-black/40"}`}
                   />
                   <IoCaretDownOutline
                     className={`text-[10px] -mt-1
-                      ${SortHelper.getIcon(interestSort) === faChevronDown ? 'text-black' : 'text-black/40'}`}
+                      ${SortHelper.getIcon(interestSort) === faChevronDown ? "text-black" : "text-black/40"}`}
                   />
                 </Box>
               </Flex>
@@ -179,8 +192,8 @@ function LoanOffersComponent({ loanOffers, onRequest }: LoanOffersComponentProps
           </Box>
           <Box className="mb-1 hidden md:flex justify-center">
             <Text
-              size={'1'}
-              weight={'medium'}
+              size={"1"}
+              weight={"medium"}
               className="text-black/50"
             >
               Coin
@@ -211,7 +224,6 @@ function LoanOffersComponent({ loanOffers, onRequest }: LoanOffersComponentProps
           <LoanOfferComponent key={index} loanOffer={loanOffer} onRequest={onRequest} />
         </div>
       ))}
-
     </>
   );
 }

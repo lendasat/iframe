@@ -1,6 +1,7 @@
 import { faBars } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Version } from "@frontend-monorepo/base-http-client";
+import { Container, Heading } from "@radix-ui/themes";
 import React, { ReactNode } from "react";
 import { IconType } from "react-icons";
 import { IoNotifications } from "react-icons/io5";
@@ -10,7 +11,6 @@ import { Menu, MenuItem, Sidebar } from "react-pro-sidebar";
 import { Link, NavLink } from "react-router-dom";
 import { SidebarFooter } from "./components/SidebarFooter";
 import { SidebarHeader } from "./components/SidebarHeader";
-import { Container, Heading } from "@radix-ui/themes";
 
 type Theme = "light" | "dark";
 
@@ -86,7 +86,6 @@ export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme = "li
           className="h-screen w-full bg-active-nav/5 overflow-hidden relative"
           style={{ color: "#44596e" }}
         >
-
           {broken && (
             <div className="w-full   flex items-center justify-between md:px-10 px-4">
               <button className="sb-button" onClick={() => setToggled(!toggled)}>

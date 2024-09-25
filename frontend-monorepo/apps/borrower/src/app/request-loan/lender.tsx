@@ -7,7 +7,7 @@ export function Lender({ name, id }: LenderProfile) {
   return (
     <Box asChild>
       <Link to={`/profile/${id}`}>
-        <Flex direction={'row'} align={'center'} gap={'3'}>
+        <Flex direction={"row"} align={"center"} gap={"3"}>
           <Avatar
             // radius="full"
             color="purple"
@@ -15,9 +15,10 @@ export function Lender({ name, id }: LenderProfile) {
           />
           <Heading
             as="h6"
-            weight={'medium'}
-            size={'3'}
-            className="capitalize hidden xl:block" >
+            weight={"medium"}
+            size={"3"}
+            className="capitalize hidden xl:block"
+          >
             {name}
           </Heading>
         </Flex>

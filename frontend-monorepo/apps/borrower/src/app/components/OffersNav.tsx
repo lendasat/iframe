@@ -1,11 +1,11 @@
 import { Box, Button, Container, Flex, Select, Separator, Text } from "@radix-ui/themes";
 import React from "react";
+import Offcanvas from "react-bootstrap/Offcanvas";
+import { BsSortUp } from "react-icons/bs";
 import { IoAddOutline } from "react-icons/io5";
+import { LiaTimesSolid } from "react-icons/lia";
 import { RiFilter2Line } from "react-icons/ri";
 import LoanOffersFilter, { LoanFilter, parseTableSortBy, TableSortBy } from "../request-loan/loan-offers-filter";
-import Offcanvas from 'react-bootstrap/Offcanvas';
-import { LiaTimesSolid } from "react-icons/lia";
-import { BsSortUp } from "react-icons/bs";
 
 interface FilterOption {
   onLoanFilterChange: (filter: LoanFilter) => void;
@@ -15,7 +15,7 @@ interface FilterOption {
 }
 
 export default function OffersNav(props: FilterOption) {
-  const [offCanvas, setOffCanvas] = React.useState<boolean>(false)
+  const [offCanvas, setOffCanvas] = React.useState<boolean>(false);
   const updateSorting = (sortBy: string) => {
     const tableSorting = parseTableSortBy(sortBy);
     props.onTableSortingChange(tableSorting ?? TableSortBy.Amount);
@@ -23,10 +23,9 @@ export default function OffersNav(props: FilterOption) {
 
   return (
     <Container className="px-6 md:px-8">
-
-      <Flex align={'center'} justify={'between'}>
+      <Flex align={"center"} justify={"between"}>
         <Box>
-          <Flex direction={'row'} gap={'3'} align={'center'}>
+          <Flex direction={"row"} gap={"3"} align={"center"}>
             <Select.Root
               value={props.tableSorting}
               onValueChange={updateSorting}
@@ -53,7 +52,7 @@ export default function OffersNav(props: FilterOption) {
               className="flex items-center gap-1 rounded border text-font-dark justify-center font-medium hover:bg-purple-800/5 transition-colors ease-linear duration-200 shadow-none"
             >
               <RiFilter2Line className="text-sm" />
-              <Text size={'1'} className="text-black font-semibold">
+              <Text size={"1"} className="text-black font-semibold">
                 Filter
               </Text>
             </Button>
@@ -64,7 +63,7 @@ export default function OffersNav(props: FilterOption) {
               scroll={true}
               placement="end"
               backdrop={false}
-              className='max-w-80 pt-5 z-30'
+              className="max-w-80 pt-5 z-30"
             >
               <Box className="px-4 pb-4 flex items-center justify-between">
                 <Text className="text-lg font-semibold">
@@ -78,19 +77,17 @@ export default function OffersNav(props: FilterOption) {
                 loanFilter={props.loanFilter}
               />
             </Offcanvas>
-
           </Flex>
         </Box>
         <Box>
-          <Button
-            className="flex items-center gap-1 rounded bg-purple-800/10 transition-colors ease-out duration-300 group/request">
+          <Button className="flex items-center gap-1 rounded bg-purple-800/10 transition-colors ease-out duration-300 group/request">
             <IoAddOutline className="text-xl group-hover/request:rotate-180 transition-transform ease-linear text-base duration-300" />
-            <Text size={'1'} className="text-purple-800 font-semibold">
+            <Text size={"1"} className="text-purple-800 font-semibold">
               Customize a Request
             </Text>
           </Button>
         </Box>
       </Flex>
-    </Container >
+    </Container>
   );
 }

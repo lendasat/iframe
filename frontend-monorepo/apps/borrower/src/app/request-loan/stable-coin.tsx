@@ -67,7 +67,7 @@ export function StableCoinDropdown({
   onSelect: (coin: StableCoin) => void;
   coins: StableCoin[];
   filter: boolean;
-  defaultCoin?: StableCoin; // Optional prop for default selected coin 
+  defaultCoin?: StableCoin; // Optional prop for default selected coin
 }) {
   // Initialize selectedCoin with defaultCoin if provided, otherwise fall back to StableCoin.USDT_SN
   const [selectedCoin, setSelectedCoin] = useState<StableCoin | undefined>(defaultCoin);
@@ -75,9 +75,9 @@ export function StableCoinDropdown({
   // Reseting choosen coin
   React.useEffect(() => {
     if (!filter) {
-      setSelectedCoin(defaultCoin)
+      setSelectedCoin(defaultCoin);
     }
-  })
+  });
 
   const handleChange = (value: string) => {
     const selectedValue = value as StableCoin;
@@ -105,7 +105,7 @@ export function StableCoinDropdown({
   } else {
     return (
       <Select.Root
-        value={selectedCoin == undefined ? 'disabled' : selectedCoin}
+        value={selectedCoin == undefined ? "disabled" : selectedCoin}
         onValueChange={handleChange}
         defaultValue={"disabled"}
       >

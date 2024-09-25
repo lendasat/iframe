@@ -7,7 +7,7 @@ export interface SliderProps {
   init: number;
   step: number;
   suffix: string;
-  reset?: boolean
+  reset?: boolean;
   onChange: (value: number) => void;
 }
 
@@ -16,9 +16,9 @@ export const Slider = ({ min, max, init, step, suffix, reset, onChange }: Slider
 
   useEffect(() => {
     if (!reset) {
-      setValue(init)
+      setValue(init);
     }
-  })
+  });
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = parseFloat(e.target.value); // Convert string to number
     setValue(newValue);
