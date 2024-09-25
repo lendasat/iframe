@@ -19,9 +19,9 @@ interface LoanOffersFilterProps {
 function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
   const ltvSliderProps: SliderProps = {
     min: 30,
-    max: 100,
+    max: 90,
     step: 1,
-    init: 30,
+    init: loanFilter.ltv ?? 30,
     suffix: "%",
     onChange: (value) => {
       const filter: LoanFilter = { ...loanFilter, ltv: value };
@@ -30,9 +30,9 @@ function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
   };
   const interestSliderProps: SliderProps = {
     min: 1,
-    max: 30,
+    max: 100,
     step: 1,
-    init: 30,
+    init: loanFilter.interest ?? 100,
     suffix: "%",
     onChange: (value) => {
       const filter: LoanFilter = { ...loanFilter, interest: value };
@@ -44,7 +44,7 @@ function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
     min: 1,
     max: 12,
     step: 1,
-    init: 12,
+    init: loanFilter.period ?? 12,
     suffix: " months",
     onChange: (value) => {
       const filter: LoanFilter = { ...loanFilter, period: value };
@@ -71,6 +71,7 @@ function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
         </Form.Label>
         <Form.Control
           className="shadow-none focus:border-font/10 w-full"
+          value={loanFilter.amount}
           onChange={onAmountChange}
         />
       </Form.Group>
@@ -80,6 +81,7 @@ function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
         </Form.Label>
         <StableCoinDropdown
           coins={StableCoinHelper.all()}
+          defaultCoin={loanFilter.stableCoin}
           filter={true}
           onSelect={onStableCoinSelect}
         />
