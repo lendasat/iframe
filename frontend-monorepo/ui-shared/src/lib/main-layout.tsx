@@ -1,12 +1,12 @@
 import { faBars } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { useBaseHttpClient, Version } from "@frontend-monorepo/base-http-client";
+import { Version } from "@frontend-monorepo/base-http-client";
 import React, { ReactNode } from "react";
 import { IconType } from "react-icons";
 import { IoNotifications } from "react-icons/io5";
 import { RiCustomerService2Fill, RiUser6Fill } from "react-icons/ri";
 import { TbLogout } from "react-icons/tb";
-import { Menu, menuClasses, MenuItem, MenuItemStyles, Sidebar } from "react-pro-sidebar";
+import { Menu, MenuItem, Sidebar } from "react-pro-sidebar";
 import { Link, NavLink } from "react-router-dom";
 import { SidebarFooter } from "./components/SidebarFooter";
 import { SidebarHeader } from "./components/SidebarHeader";
@@ -47,8 +47,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme = "li
         <div className="flex flex-col h-full px-3 pt-10 pb-2 items-center bg-dashboard">
           <SidebarHeader style={{ margin: "auto" }} />
           <div className="flex-1 w-full">
-            <Menu
-             className="mt-12">
+            <Menu className="mt-12">
               {menuItems.map((item, index) => (
                 <MenuItem
                   key={index}
