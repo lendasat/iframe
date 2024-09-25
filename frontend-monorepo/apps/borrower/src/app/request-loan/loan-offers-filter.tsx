@@ -1,7 +1,7 @@
 import React from "react";
 import { Form } from "react-bootstrap";
 import { Slider, SliderProps } from "./slider";
-import { StableCoin, StableCoinDropdown, StableCoinHelper } from "./stable-coin";
+import { parseStableCoin, StableCoin, StableCoinDropdown, StableCoinHelper } from "./stable-coin";
 
 export interface LoanFilter {
   amount?: number;
@@ -52,8 +52,9 @@ function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
     },
   };
 
-  function onStableCoinSelect(value: StableCoin) {
-    const filter: LoanFilter = { ...loanFilter, stableCoin: value };
+  function onStableCoinSelect(value: string) {
+    const filter: LoanFilter = { ...loanFilter, stableCoin: parseStableCoin(value) };
+
     onChange(filter);
   }
 

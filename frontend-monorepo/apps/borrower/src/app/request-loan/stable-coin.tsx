@@ -1,6 +1,5 @@
 import { Select } from "@radix-ui/themes";
 import React, { useState } from "react";
-import { Form } from "react-bootstrap";
 
 // Enum and Helper Class
 export enum StableCoin {
@@ -8,6 +7,13 @@ export enum StableCoin {
   USDC_SN = "USDC_SN",
   USDT_ETH = "USDT_ETH",
   USDC_ETH = "USDC_ETH",
+}
+
+export function parseStableCoin(value: string): StableCoin | undefined {
+  if (Object.values(StableCoin).includes(value as StableCoin)) {
+    return value as StableCoin;
+  }
+  return undefined;
 }
 
 export class StableCoinHelper {
