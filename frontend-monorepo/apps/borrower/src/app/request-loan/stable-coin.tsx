@@ -80,13 +80,6 @@ export function StableCoinDropdown({
 
   if (coins.length === 1) {
     return (
-      // <Form.Select
-      //   className="outline-none focus:shadow-none focus:border-font text-sm font-medium"
-      //   value={selectedCoin} onValueChange={handleChange}>
-      //   <option key={coins[0]} value={coins[0]}>
-      //     {StableCoinHelper.print(coins[0])}
-      //   </option>
-      // </Form.Select>
       <Select.Root
         value={selectedCoin}
         onValueChange={handleChange}
@@ -104,18 +97,6 @@ export function StableCoinDropdown({
     );
   } else {
     return (
-      // <Form.Select
-      //   className="outline-none focus:shadow-none focus:border-font text-sm font-medium"
-      //   value={selectedCoin} onChange={handleChange}>
-      //   <option value="" disabled={!filter}>-- Select a coin --</option>
-      //   {coins.map((coin: StableCoin) => (
-      //     <option
-
-      //       key={coin} value={coin}>
-      //       {StableCoinHelper.print(coin)}
-      //     </option>
-      //   ))}
-      // </Form.Select>
       <Select.Root
         value={selectedCoin}
         onValueChange={handleChange}
