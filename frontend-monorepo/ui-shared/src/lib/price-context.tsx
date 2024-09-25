@@ -12,9 +12,15 @@ const PriceContext = createContext<PriceContextProps | undefined>(undefined);
 
 export const PriceProvider: React.FC<{ url: string; children: ReactNode }> = ({ children, url }) => {
   const [latestPrice, setLatestPrice] = useState<number | undefined>();
-
   useEffect(() => {
-    const socket = new WebSocket(`${url}/api/pricefeed`);
+    let websocketUrl;
+    if (url.endsWith("/")) {
+      websocketUrl = `${url}api/pricefeed`;
+    } else {
+      websocketUrl = `${url}/api/pricefeed`;
+    }
+
+    const socket = new WebSocket(websocketUrl);
 
     socket.onmessage = (event) => {
       const data: RawPriceUpdate = JSON.parse(event.data);
