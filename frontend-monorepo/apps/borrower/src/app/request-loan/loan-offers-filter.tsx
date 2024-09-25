@@ -1,7 +1,7 @@
 import React from "react";
 import { Form } from "react-bootstrap";
 import { Slider, SliderProps } from "./slider";
-import { StableCoin, StableCoinDropdown, StableCoinHelper } from "./stable-coin";
+import { parseStableCoin, StableCoin, StableCoinDropdown, StableCoinHelper } from "./stable-coin";
 
 export interface LoanFilter {
   amount?: number;
@@ -9,6 +9,21 @@ export interface LoanFilter {
   ltv?: number;
   interest?: number;
   period?: number;
+}
+
+export enum TableSortBy {
+  Lender = "Lender",
+  Amount = "Amount",
+  Duration = "Duration",
+  Ltv = "Ltv",
+  Interest = "Interest",
+}
+
+export function parseTableSortBy(value: string): TableSortBy | undefined {
+  if (Object.values(TableSortBy).includes(value as TableSortBy)) {
+    return value as TableSortBy;
+  }
+  return undefined;
 }
 
 interface LoanOffersFilterProps {
@@ -19,9 +34,9 @@ interface LoanOffersFilterProps {
 function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
   const ltvSliderProps: SliderProps = {
     min: 30,
-    max: 100,
+    max: 90,
     step: 1,
-    init: 30,
+    init: loanFilter.ltv ?? 30,
     suffix: "%",
     onChange: (value) => {
       const filter: LoanFilter = { ...loanFilter, ltv: value };
@@ -30,9 +45,9 @@ function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
   };
   const interestSliderProps: SliderProps = {
     min: 1,
-    max: 30,
+    max: 100,
     step: 1,
-    init: 30,
+    init: loanFilter.interest ?? 100,
     suffix: "%",
     onChange: (value) => {
       const filter: LoanFilter = { ...loanFilter, interest: value };
@@ -44,7 +59,7 @@ function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
     min: 1,
     max: 12,
     step: 1,
-    init: 12,
+    init: loanFilter.period ?? 12,
     suffix: " months",
     onChange: (value) => {
       const filter: LoanFilter = { ...loanFilter, period: value };
@@ -52,8 +67,9 @@ function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
     },
   };
 
-  function onStableCoinSelect(value: StableCoin) {
-    const filter: LoanFilter = { ...loanFilter, stableCoin: value };
+  function onStableCoinSelect(value: string) {
+    const filter: LoanFilter = { ...loanFilter, stableCoin: parseStableCoin(value) };
+
     onChange(filter);
   }
 
@@ -64,40 +80,43 @@ function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
   }
 
   return (
-    <Form className={"py-4"}>
-      <Form.Group className="mb-3" controlId="loan-amount">
+    <Form className={"space-y-1 pb-3"}>
+      <Form.Group controlId="loan-amount">
         <Form.Label column={true}>
-          <small>Loan Amount</small>
+          <small className="text-xs font-medium">Loan Amount</small>
         </Form.Label>
         <Form.Control
+          className="shadow-none focus:border-font/10 w-full"
+          value={loanFilter.amount}
           onChange={onAmountChange}
         />
       </Form.Group>
-      <Form.Group className="mb-3" controlId="stable-coin">
+      <Form.Group className="flex flex-col" controlId="stable-coin">
         <Form.Label column={true}>
-          <small>Stable coin</small>
+          <small className="text-xs font-medium">Stable coin</small>
         </Form.Label>
         <StableCoinDropdown
           coins={StableCoinHelper.all()}
+          defaultCoin={loanFilter.stableCoin}
           filter={true}
           onSelect={onStableCoinSelect}
         />
       </Form.Group>
-      <Form.Group className="mb-3" controlId="ltv-slider">
+      <Form.Group controlId="ltv-slider">
         <Form.Label column={true}>
-          <small>LTV ratio</small>
+          <small className="text-xs font-medium">LTV ratio</small>
         </Form.Label>
         <Slider {...ltvSliderProps} />
       </Form.Group>
-      <Form.Group className="mb-3" controlId="interest-slider">
+      <Form.Group controlId="interest-slider">
         <Form.Label column={true}>
-          <small>Interest rate p.a.</small>
+          <small className="text-xs font-medium">Interest rate p.a.</small>
         </Form.Label>
         <Slider {...interestSliderProps} />
       </Form.Group>
-      <Form.Group className="mb-3" controlId="interest-slider">
+      <Form.Group controlId="interest-slider">
         <Form.Label column={true}>
-          <small>Period</small>
+          <small className="text-xs font-medium">Period</small>
         </Form.Label>
         <Slider {...periodSliderProps} />
       </Form.Group>

@@ -37,30 +37,36 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = ({ children, collapse
     >
       {!collapsed && (
         <StyledSidebarFooter {...rest}>
-          <Typography variant="caption" style={{ letterSpacing: 1, opacity: 0.7 }}>
-            {versionString}
-          </Typography>
-          <Row className="justify-content-center mt-3">
+          {
+            /* <Row className="mb-3">
             <Col md={6} className="d-flex justify-content-around">
-              <a href="https://x.com/lendasat" target="_blank" rel="noopener noreferrer" className="mx-3">
-                <FaXTwitter size={"20"} color={"black"} />
+              <a href="https://x.com/lendasat" target="_blank" rel="noopener noreferrer" className="mx-3 text-[#606669] hover:text-black">
+                <FaXTwitter size={"20"} />
               </a>
-              <a href="https://lendasat.com" target="_blank" rel="noopener noreferrer" className="mx-3">
-                <FaGlobe size={"20"} color={"black"} />
+              <a href="https://lendasat.com" target="_blank" rel="noopener noreferrer" className="mx-3 text-[#606669] hover:text-black">
+                <FaGlobe size={"20"} />
               </a>
-              <a href="https://github.com/lendasat" target="_blank" rel="noopener noreferrer" className="mx-3">
-                <FaGithub size={"20"} color={"black"} />
+              <a href="https://github.com/lendasat" target="_blank" rel="noopener noreferrer" className="mx-3 text-[#606669] hover:text-black">
+                <FaGithub size={"20"} />
               </a>
               <a
                 href="https://discord.gg/kyxqWFKMCF"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mx-3"
+                className="mx-3 text-[#606669] hover:text-black"
               >
-                <FaDiscord size={"20"} color={"black"} />
+                <FaDiscord size={"20"} />
               </a>
             </Col>
-          </Row>
+          </Row> */
+          }
+          <Typography
+            className="text-xs font-medium"
+            variant="caption"
+            style={{ letterSpacing: 1, opacity: 0.7 }}
+          >
+            {versionString}
+          </Typography>
         </StyledSidebarFooter>
       )}
     </div>

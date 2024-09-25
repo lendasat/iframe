@@ -1,5 +1,5 @@
+import { Select } from "@radix-ui/themes";
 import React, { useState } from "react";
-import { Form } from "react-bootstrap";
 
 // Enum and Helper Class
 export enum StableCoin {
@@ -7,6 +7,13 @@ export enum StableCoin {
   USDC_SN = "USDC_SN",
   USDT_ETH = "USDT_ETH",
   USDC_ETH = "USDC_ETH",
+}
+
+export function parseStableCoin(value: string): StableCoin | undefined {
+  if (Object.values(StableCoin).includes(value as StableCoin)) {
+    return value as StableCoin;
+  }
+  return undefined;
 }
 
 export class StableCoinHelper {
@@ -65,30 +72,50 @@ export function StableCoinDropdown({
   // Initialize selectedCoin with defaultCoin if provided, otherwise fall back to StableCoin.USDT_SN
   const [selectedCoin, setSelectedCoin] = useState<StableCoin | undefined>(defaultCoin);
 
-  const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedValue = event.target.value as StableCoin;
+  const handleChange = (value: string) => {
+    const selectedValue = value as StableCoin;
     setSelectedCoin(selectedValue);
     onSelect(selectedValue);
   };
 
   if (coins.length === 1) {
     return (
-      <Form.Select value={selectedCoin} onChange={handleChange}>
-        <option key={coins[0]} value={coins[0]}>
-          {StableCoinHelper.print(coins[0])}
-        </option>
-      </Form.Select>
+      <Select.Root
+        value={selectedCoin}
+        onValueChange={handleChange}
+      >
+        <Select.Trigger
+          variant={"ghost"}
+          className="shadow-none focus-visible:outline-none outline-none h-8 font-medium w-auto border rounded "
+        />
+        <Select.Content highContrast color="purple" className="font-medium">
+          <Select.Item key={coins[0]} value={coins[0]}>
+            {StableCoinHelper.print(coins[0])}
+          </Select.Item>
+        </Select.Content>
+      </Select.Root>
     );
   } else {
     return (
-      <Form.Select value={selectedCoin} onChange={handleChange}>
-        <option value="" disabled={!filter}>-- Filter a coin --</option>
-        {coins.map((coin: StableCoin) => (
-          <option key={coin} value={coin}>
-            {StableCoinHelper.print(coin)}
-          </option>
-        ))}
-      </Form.Select>
+      <Select.Root
+        value={selectedCoin}
+        onValueChange={handleChange}
+        defaultValue="select"
+      >
+        <Select.Trigger
+          variant={"surface"}
+          className="shadow-none focus-visible:outline-none outline-none h-10 font-medium border rounded "
+        />
+
+        <Select.Content highContrast color="purple" className="font-medium">
+          <Select.Item value="select">-- Select a coin --</Select.Item>
+          {coins.map((coin: StableCoin) => (
+            <Select.Item key={coin} value={coin}>
+              {StableCoinHelper.print(coin)}
+            </Select.Item>
+          ))}
+        </Select.Content>
+      </Select.Root>
     );
   }
 }

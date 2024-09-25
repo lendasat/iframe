@@ -21,11 +21,6 @@ export const Slider = ({ min, max, init, step, suffix, onChange }: SliderProps) 
 
   return (
     <div>
-      <div className="text-center">
-        <span>
-          <small>{value}{suffix}</small>
-        </span>
-      </div>
       <Form.Range
         min={min}
         max={max}
@@ -36,10 +31,13 @@ export const Slider = ({ min, max, init, step, suffix, onChange }: SliderProps) 
       />
       <div className="d-flex justify-content-between">
         <span>
-          <small>{min}{suffix}</small>
+          <small className="text-xs font-medium">min: {min}</small>
         </span>
         <span>
-          <small>{max}{suffix}</small>
+          <small className="text-sm font-medium">{value}{suffix}</small>
+        </span>
+        <span>
+          <small className="text-xs font-medium">max: {max}</small>
         </span>
       </div>
     </div>

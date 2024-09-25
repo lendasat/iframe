@@ -3,12 +3,14 @@ import React from "react";
 import { Button, Col, Container, Row } from "react-bootstrap";
 import { FaDiscord, FaGithub, FaGlobe } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
+import DashHeader from "./components/DashHeader";
 
 function DashBoard() {
   return (
-    <Container className="text-center my-5">
+    <Container className="">
       <Row className="justify-content-center">
-        <Col md={6} className="d-flex flex-column align-items-center">
+        {
+          /* <Col md={6} className="d-flex flex-column align-items-center">
           <FullLogoWhiteBg />
           <h1 className="mt-4">Welcome to Lendasat</h1>
           <p className="lead mt-3">
@@ -41,8 +43,10 @@ function DashBoard() {
               </a>
             </Col>
           </Row>
-        </Col>
+        </Col> */
+        }
       </Row>
+      <DashHeader label={"Dashboard"} />
     </Container>
   );
 }

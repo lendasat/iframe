@@ -1,9 +1,10 @@
 import { LoanOffer, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import { useEffect, useState } from "react";
-import { Col, Container, Row } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
+import DashHeader from "../components/DashHeader";
+import OffersNav from "../components/OffersNav";
 import LoanOffersComponent from "./loan-offers";
-import LoanOffersFilter, { LoanFilter } from "./loan-offers-filter";
+import { LoanFilter, TableSortBy } from "./loan-offers-filter";
 import { StableCoinHelper } from "./stable-coin";
 
 function RequestLoan() {
@@ -11,6 +12,7 @@ function RequestLoan() {
 
   const [loanOffers, setLoanOffers] = useState<LoanOffer[]>([]);
   const [loanFilter, setLoanFilter] = useState<LoanFilter>({});
+  const [tableSorting, setTableSorting] = useState<TableSortBy>(TableSortBy.Amount);
 
   useEffect(() => {
     const fetchLoans = async () => {
@@ -49,13 +51,15 @@ function RequestLoan() {
         return true;
       });
 
+      const sortedOffers = sortOffers(offers, tableSorting);
+
       setLoanOffers(
-        offers,
+        sortedOffers,
       );
     };
 
     fetchLoans();
-  }, [loanFilter, getLoanOffers]);
+  }, [loanFilter, getLoanOffers, tableSorting]);
 
   const navigate = useNavigate();
 
@@ -63,26 +67,55 @@ function RequestLoan() {
     setLoanFilter(loanFilter);
   }
 
+  function onTableSortingChange(tableSorting: TableSortBy) {
+    setTableSorting(tableSorting);
+  }
+
   return (
-    <Container className="vh-100" fluid>
-      <Row className="vh-100">
-        <Col md={"2"} className="border-end d-flex align-items-stretch">
-          <LoanOffersFilter
-            onChange={onLoanOfferFilterChange}
-            loanFilter={loanFilter}
-          />
-        </Col>
-        <Col md={"10"} className="p-4">
+    <div className="h-screen pb-48">
+      <DashHeader label="Loans" />
+      <div className="pt-3 h-full">
+        <OffersNav
+          loanFilter={loanFilter}
+          onLoanFilterChange={onLoanOfferFilterChange}
+          tableSorting={tableSorting}
+          onTableSortingChange={onTableSortingChange}
+        />
+        <div className="h-full mt-3 py-2 rounded-xl overflow-y-scroll">
           <LoanOffersComponent
             loanOffers={loanOffers}
             onRequest={(loanOffer: LoanOffer) => {
               navigate(`/request-loan/${loanOffer.id}`, { state: { loanOffer: loanOffer, loanFilter: loanFilter } });
             }}
           />
-        </Col>
-      </Row>
-    </Container>
+        </div>
+      </div>
+    </div>
   );
+}
+
+function sortOffers(offers: LoanOffer[], sortBy: TableSortBy): LoanOffer[] {
+  return offers.sort((a, b) => {
+    switch (sortBy) {
+      case TableSortBy.Amount:
+        return a.loan_amount_min - b.loan_amount_min;
+
+      case TableSortBy.Ltv:
+        return a.min_ltv - b.min_ltv;
+
+      case TableSortBy.Duration:
+        return a.duration_months_min - b.duration_months_min;
+
+      case TableSortBy.Interest:
+        return a.interest_rate - b.interest_rate;
+
+      case TableSortBy.Lender:
+        return a.lender.name.localeCompare(b.lender.name);
+
+      default:
+        return 0;
+    }
+  });
 }
 
 export default RequestLoan;

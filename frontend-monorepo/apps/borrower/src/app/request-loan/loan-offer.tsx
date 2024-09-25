@@ -3,7 +3,6 @@ import { CurrencyFormatter } from "@frontend-monorepo/ui-shared";
 import React from "react";
 import { Badge, Button, Card, Col, Container, Row } from "react-bootstrap";
 import { Lender } from "./lender";
-import loanOffers from "./loan-offers";
 import { StableCoinHelper } from "./stable-coin";
 
 interface LoanOfferProps {
@@ -18,7 +17,7 @@ export function LoanOfferComponent({ loanOffer, onRequest }: LoanOfferProps) {
       <Card.Body>
         <Container className={"p-0 m-0"} fluid>
           <Row>
-            <Col>
+            <Col sm={2}>
               <Lender {...loanOffer.lender} />
             </Col>
             <Col md={2}>

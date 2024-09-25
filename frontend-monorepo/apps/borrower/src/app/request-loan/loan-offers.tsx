@@ -1,6 +1,5 @@
 import { faChevronDown, faChevronUp, faMinus, IconDefinition } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { LoanOffer } from "@frontend-monorepo/http-client-lender";
+import { LoanOffer } from "@frontend-monorepo/http-client-borrower";
 import { useState } from "react";
 import { Col, Container, Row } from "react-bootstrap";
 import { LoanOfferComponent } from "./loan-offer";
@@ -59,51 +58,34 @@ function LoanOffersComponent({ loanOffers, onRequest }: LoanOffersComponentProps
 
   return (
     <>
-      <Container className={"mb-2"} fluid>
+      <Container className={"mb-2 bg-active-nav/30 py-1 rounded-lg"} fluid>
         <Row>
-          <Col>
-            <small>Lender</small>
+          <Col sm={2}>
+            <small className="text-sm text-font font-medium">Lender</small>
           </Col>
           <Col md={2}>
-            <small>
-              Amounts{" "}
-              <FontAwesomeIcon
-                icon={SortHelper.getIcon(amountSort)}
-                onClick={() => setAmountSort(SortHelper.getNextSort(amountSort))}
-              />
+            <small className="text-sm text-font font-medium">
+              Amounts
+            </small>
+          </Col>
+          <Col sm={1}>
+            <small className="text-sm text-font font-medium">
+              Duration
             </small>
           </Col>
           <Col md={1}>
-            <small>
-              Duration{" "}
-              <FontAwesomeIcon
-                icon={SortHelper.getIcon(durationSort)}
-                onClick={() => setDurationSort(SortHelper.getNextSort(durationSort))}
-              />
+            <small className="text-sm text-font font-medium">
+              LTV
             </small>
           </Col>
           <Col md={1}>
-            <small>
-              LTV{" "}
-              <FontAwesomeIcon
-                icon={SortHelper.getIcon(ltvSort)}
-                onClick={() => setLTVSort(SortHelper.getNextSort(ltvSort))}
-              />
+            <small className="text-sm text-font font-medium">
+              Interest
             </small>
           </Col>
-          <Col md={1}>
-            <small>
-              Interest{" "}
-              <FontAwesomeIcon
-                icon={SortHelper.getIcon(interestSort)}
-                onClick={() => setInterestSort(SortHelper.getNextSort(interestSort))}
-              />
-            </small>
+          <Col md={2}>
+            <small className="text-sm text-font font-medium">Stable coins</small>
           </Col>
-          <Col md={3}>
-            <small>Stable coins</small>
-          </Col>
-          <Col md={2}></Col>
         </Row>
       </Container>
       {loanOffers.sort((a, b) => {

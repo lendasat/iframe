@@ -1,7 +1,8 @@
-import { faMoneyBillTransfer, faMoneyCheckDollar, faRightFromBracket } from "@fortawesome/free-solid-svg-icons";
 import { AuthIsNotSignedIn, AuthIsSignedIn, AuthProviderLender } from "@frontend-monorepo/http-client-lender";
 import { useAuth } from "@frontend-monorepo/http-client-lender";
 import { Layout, PriceProvider } from "@frontend-monorepo/ui-shared";
+import { BsPiggyBank } from "react-icons/bs";
+import { GiPayMoney } from "react-icons/gi";
 import { Outlet, Route, Routes } from "react-router-dom";
 import { SemVer } from "semver";
 import ForgotPassword from "./auth/forgot-password";
@@ -13,11 +14,11 @@ import ContractDetailsOverview from "./contracts/contract-details-overview";
 import MyContracts from "./contracts/my-contracts";
 import CreateLoanOffer from "./create-loan-offer";
 import ResolveDispute from "./disputes/dispute";
+import "./../styles.css";
 
 const menuItems = [
-  { label: "Create Loan Offer", icon: faMoneyBillTransfer, path: "/create-loan-offer" },
-  { label: "My Loans", icon: faMoneyCheckDollar, path: "/my-contracts" },
-  { label: "Logout", icon: faRightFromBracket, path: "/logout" },
+  { label: "Create Loan Offer", icon: GiPayMoney, path: "/create-loan-offer" },
+  { label: "My Loans", icon: BsPiggyBank, path: "/my-contracts" },
 ];
 
 function MainLayoutComponents() {
@@ -51,7 +52,7 @@ function MainLayoutComponents() {
 
 function App() {
   return (
-    <PriceProvider>
+    <PriceProvider url={import.meta.env.VITE_LENDER_BASE_URL || "/"}>
       <AuthProviderLender baseUrl={import.meta.env.VITE_LENDER_BASE_URL || "/"}>
         <AuthIsSignedIn>
           <MainLayoutComponents />

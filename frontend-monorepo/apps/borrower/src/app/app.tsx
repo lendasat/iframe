@@ -1,10 +1,3 @@
-import {
-  faMoneyBillTransfer,
-  faMoneyCheckDollar,
-  faQuestionCircle,
-  faRightFromBracket,
-  faUserCircle,
-} from "@fortawesome/free-solid-svg-icons";
 import { WalletProvider } from "@frontend-monorepo/borrower-wallet";
 import {
   AuthIsNotSignedIn,
@@ -13,6 +6,12 @@ import {
   useAuth,
 } from "@frontend-monorepo/http-client-borrower";
 import { Layout, PriceProvider } from "@frontend-monorepo/ui-shared";
+import { BsPiggyBank } from "react-icons/bs";
+import { GiPayMoney } from "react-icons/gi";
+import { HiUsers } from "react-icons/hi2";
+import { IoMdHelpCircle } from "react-icons/io";
+import { TbLayoutDashboardFilled } from "react-icons/tb";
+import { TbHistory } from "react-icons/tb";
 import { Outlet, Route, Routes } from "react-router-dom";
 import { SemVer } from "semver";
 import EmailVerification from "./auth/email-verification";
@@ -24,19 +23,47 @@ import ResetPassword from "./auth/reset-password";
 import DashBoard from "./dash-board";
 import ResolveDispute from "./disputes/dispute";
 import ErrorBoundary from "./ErrorBoundary";
+import History from "./History";
 import MyAccount from "./my-account";
 import ContractDetailsOverview from "./my-loans/contract-details-overview";
 import MyLoans from "./my-loans/my-loans";
 import Profile from "./profile";
 import RequestLoan from "./request-loan/request-loan";
 import { RequestLoanSummary } from "./request-loan/request-loan-summary";
+import "./../styles.css";
 
 const menuItems = [
-  { label: "Request a Loan", icon: faMoneyBillTransfer, path: "/request-loan" },
-  { label: "My loans", icon: faMoneyCheckDollar, path: "/my-contracts" },
-  { label: "My account", icon: faUserCircle, path: "/my-account" },
-  { label: "Help", icon: faQuestionCircle, path: "https://lendasat.notion.site", target: "_blank" },
-  { label: "Logout", icon: faRightFromBracket, path: "/logout" },
+  {
+    label: "Dashboad",
+    icon: TbLayoutDashboardFilled,
+    path: "/",
+  },
+  {
+    label: "Loan offers",
+    icon: GiPayMoney,
+    path: "/request-loan",
+  },
+  {
+    label: "My loans",
+    icon: BsPiggyBank,
+    path: "/my-contracts",
+  },
+  {
+    label: "History",
+    icon: TbHistory,
+    path: "/history",
+  },
+  {
+    label: "My account",
+    icon: HiUsers,
+    path: "/my-account",
+  },
+  {
+    label: "Help center",
+    icon: IoMdHelpCircle,
+    path: "https://lendasat.notion.site",
+    target: "_blank",
+  },
 ];
 
 function MainLayoutComponents() {
@@ -67,6 +94,7 @@ function MainLayoutComponents() {
               <Route index element={<MyLoans />} />
               <Route path={":id"} element={<ContractDetailsOverview />} />
             </Route>
+            <Route path="/history" element={<History />} />
             <Route path="/my-account" element={<MyAccount />} />
             <Route path="/logout" element={<Logout />} />
             <Route path="/profile/:id" element={<Profile />} />
