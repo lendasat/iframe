@@ -50,6 +50,8 @@
           devShells.default = with pkgs; mkShell {
             # TODO: Trim these.
             buildInputs = [
+              llvmPackages_latest.bintools
+              worker-build
               fwi
               gcc
               jq
@@ -61,8 +63,11 @@
               pkg-config
               postgresql
               rustToolchainWithWasm
+              sqlx-cli
               wabt
               wasm-pack # Does not produce a valid `borrower-wallet` output.
+              binaryen
+              wasm-bindgen-cli
             ];
 
             # TODO: rust-analyzer dies when we jump to the standard library and this does not fix it.
