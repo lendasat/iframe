@@ -1,6 +1,7 @@
 import { useBaseHttpClient, User, Version } from "@frontend-monorepo/base-http-client";
 import axios from "axios";
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { SemVer } from "semver";
 import { HttpClientBorrowerProvider } from "./http-client-borrower";
 
 interface AuthContextType {
@@ -8,7 +9,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  backendVersion?: Version;
+  backendVersion: Version;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -62,7 +63,11 @@ export const AuthProviderBorrower: React.FC<AuthProviderProps> = ({ children, ba
 
 const BorrowerAuthProviderInner: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [backendVersion, setBackendVersion] = useState<Version | undefined>();
+  const [backendVersionFetched, setBackendVersionFetched] = useState(false);
+  const [backendVersion, setBackendVersion] = useState<Version>({
+    version: new SemVer("0.0.0"),
+    commit_hash: "unknown",
+  });
   const [loading, setLoading] = useState(true);
   const { me, login: baseLogin, logout: baseLogout, getVersion } = useBaseHttpClient();
 
@@ -75,9 +80,10 @@ const BorrowerAuthProviderInner: React.FC<{ children: React.ReactNode }> = ({ ch
         } else {
           setUser(null);
         }
-        if (!backendVersion) {
+        if (!backendVersionFetched) {
           const version = await getVersion();
           setBackendVersion(version);
+          setBackendVersionFetched(true);
         }
       } catch (error) {
         if (axios.isAxiosError(error) && error.response) {

@@ -13,7 +13,6 @@ import { IoMdHelpCircle } from "react-icons/io";
 import { TbLayoutDashboardFilled } from "react-icons/tb";
 import { TbHistory } from "react-icons/tb";
 import { Outlet, Route, Routes } from "react-router-dom";
-import { SemVer } from "semver";
 import EmailVerification from "./auth/email-verification";
 import ForgotPassword from "./auth/forgot-password";
 import Login from "./auth/login";
@@ -68,17 +67,15 @@ const menuItems = [
 
 function MainLayoutComponents() {
   const { backendVersion, user } = useAuth();
-  const version = backendVersion ?? {
-    version: new SemVer("0.0.0"),
-    commit_hash: "unknown",
-  };
 
   return (
-    <WalletProvider username={user!.name}>
+    <WalletProvider
+      username={user!.name}
+    >
       <Layout
         menuItems={menuItems}
         theme={"light"}
-        backendVersion={version}
+        backendVersion={backendVersion}
       >
         <Routes>
           <Route
