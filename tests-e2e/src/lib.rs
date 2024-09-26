@@ -170,15 +170,17 @@ mod tests {
         let total_collateral = {
             let initial_price = contract.loan_amount
                 / (contract.initial_ltv
-                    * Decimal::try_from(Amount::from_sat(contract.collateral_sats).to_btc())
-                        .unwrap());
+                    * Decimal::try_from(
+                        Amount::from_sat(contract.initial_collateral_sats).to_btc(),
+                    )
+                    .unwrap());
 
             let origination_fee = (contract.loan_amount / initial_price)
                 * Decimal::try_from(ORIGINATION_FEE_RATE).unwrap();
             let origination_fee =
                 Amount::from_btc(origination_fee.round_dp(8).to_f64().unwrap()).unwrap();
 
-            contract.collateral_sats + origination_fee.to_sat()
+            contract.initial_collateral_sats + origination_fee.to_sat()
         };
 
         if network == "regtest" {
@@ -220,19 +222,25 @@ mod tests {
 
             let contract_address = contract.contract_address.clone().expect("contract address");
 
-            let res = faucet
-                .post("https://faucet.mutinynet.com/api/onchain")
-                .json(&json!({
-                    "sats": total_collateral,
-                    "address": contract_address
-                }))
-                .send()
-                .await
-                .unwrap();
+            // Testing the ability to fund the collateral with two outputs.
 
-            let status = res.status();
+            // We add 1 to ensure that we don't round down.
+            let half = (total_collateral + 1) / 2;
+            for _ in 0..=1 {
+                let res = faucet
+                    .post("https://faucet.mutinynet.com/api/onchain")
+                    .json(&json!({
+                        "sats": half,
+                        "address": contract_address
+                    }))
+                    .send()
+                    .await
+                    .unwrap();
 
-            assert!(status.is_success());
+                let status = res.status();
+
+                assert!(status.is_success());
+            }
         }
 
         // 5. Hub sees collateral funding TX.

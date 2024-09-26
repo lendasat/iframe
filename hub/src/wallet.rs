@@ -198,32 +198,33 @@ impl Wallet {
         &self,
         borrower_pk: PublicKey,
         contract_index: u32,
-        collateral_output: OutPoint,
-        collateral_amount: u64,
-        // In the DLC-based protocol, we will probably charge the origination fee when the
+        collateral_outputs: Vec<(OutPoint, u64)>,
+        // NOTE: In the DLC-based protocol, we will probably charge the origination fee when the
         // collateral is locked up.
         origination_fee: u64,
         borrower_btc_address: Address,
     ) -> Result<(Psbt, Descriptor<PublicKey>)> {
         let (hub_kp, fallback_pk) = self.get_keys_for_index(contract_index)?;
 
-        let hub_pk = PublicKey::new(hub_kp.public_key());
-        let collateral_descriptor: Descriptor<PublicKey> =
-            format!("wsh(multi(2,{borrower_pk},{hub_pk},{fallback_pk}))").parse()?;
+        let mut inputs = Vec::new();
+        for (outpoint, _) in collateral_outputs.iter() {
+            let input = TxIn {
+                previous_output: *outpoint,
+                ..Default::default()
+            };
 
-        let collateral_input = TxIn {
-            previous_output: collateral_output,
-            ..Default::default()
-        };
+            inputs.push(input)
+        }
 
         // FIXME: Incorrect arbitrary value!
-        let tx_weight_vb = 250;
+        let tx_weight_vb = 200 + (collateral_outputs.len() as u64) * 50;
         // FIXME: Choose a sensible fee rate.
         let fee_rate_spvb = 1;
 
         let tx_fee = tx_weight_vb * fee_rate_spvb;
 
-        let claim_amount = collateral_amount
+        let total_collateral_amount = collateral_outputs.iter().fold(0, |acc, (_, a)| acc + a);
+        let claim_amount = total_collateral_amount
             .checked_sub(origination_fee + tx_fee)
             .context("Negative claim amount")?;
 
@@ -242,43 +243,58 @@ impl Wallet {
         let unsigned_claim_tx = Transaction {
             version: Version::TWO,
             lock_time: LockTime::ZERO,
-            input: vec![collateral_input],
+            input: inputs,
             output: vec![claim_output, origination_fee_output],
         };
 
+        // All collateral outputs share the same script.
+        let hub_pk = PublicKey::new(hub_kp.public_key());
+        let collateral_descriptor: Descriptor<PublicKey> =
+            format!("wsh(multi(2,{borrower_pk},{hub_pk},{fallback_pk}))").parse()?;
         let witness_script = collateral_descriptor.script_code()?;
-        let sighash = SighashCache::new(&unsigned_claim_tx).p2wsh_signature_hash(
-            0,
-            &witness_script,
-            Amount::from_sat(collateral_amount + origination_fee),
-            EcdsaSighashType::All,
-        )?;
+
+        let mut inputs = Vec::new();
+
+        // The order is important.
+        for (i, (_, amount_sats)) in collateral_outputs.iter().enumerate() {
+            let witness_script = witness_script.clone();
+            let amount_sats = Amount::from_sat(*amount_sats);
+
+            let sighash = SighashCache::new(&unsigned_claim_tx).p2wsh_signature_hash(
+                i,
+                &witness_script,
+                amount_sats,
+                EcdsaSighashType::All,
+            )?;
+
+            let mut input = psbt::Input {
+                witness_utxo: Some(TxOut {
+                    value: amount_sats,
+                    script_pubkey: collateral_descriptor.script_pubkey(),
+                }),
+                sighash_type: Some(PsbtSighashType::from_str("SIGHASH_ALL").expect("valid")),
+                witness_script: Some(witness_script),
+                ..Default::default()
+            };
+
+            let secp = Secp256k1::new();
+            let hub_sk = hub_kp.secret_key();
+            let sig = secp.sign_ecdsa(&sighash.into(), &hub_sk);
+
+            input.partial_sigs.insert(
+                hub_pk,
+                bitcoin::ecdsa::Signature {
+                    signature: sig,
+                    sighash_type: EcdsaSighashType::All,
+                },
+            );
+
+            inputs.push(input);
+        }
 
         let mut claim_psbt = Psbt::from_unsigned_tx(unsigned_claim_tx)?;
 
-        let mut input = psbt::Input {
-            witness_utxo: Some(TxOut {
-                value: Amount::from_sat(collateral_amount + origination_fee),
-                script_pubkey: collateral_descriptor.script_pubkey(),
-            }),
-            sighash_type: Some(PsbtSighashType::from_str("SIGHASH_ALL").expect("valid")),
-            witness_script: Some(witness_script),
-            ..Default::default()
-        };
-
-        let secp = Secp256k1::new();
-        let hub_sk = hub_kp.secret_key();
-        let sig = secp.sign_ecdsa(&sighash.into(), &hub_sk);
-
-        input.partial_sigs.insert(
-            hub_pk,
-            bitcoin::ecdsa::Signature {
-                signature: sig,
-                sighash_type: EcdsaSighashType::All,
-            },
-        );
-
-        claim_psbt.inputs = vec![input];
+        claim_psbt.inputs = inputs;
 
         Ok((claim_psbt, collateral_descriptor))
     }

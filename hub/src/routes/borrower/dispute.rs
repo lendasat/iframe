@@ -261,9 +261,12 @@ pub async fn get_claim_collateral_psbt(
         let contract_index = contract
             .contract_index
             .context("Can't generate claim PSBT without contract index")?;
-        let collateral_output = contract
-            .collateral_output
-            .context("Can't generate claim PSBT without collateral output")?;
+
+        // FIXME: We can't spend the collateral like this, as it may come from more than one output.
+        // We must persist all collateral outputs separately (including value), so that we can spend
+        // them here.
+
+        let collateral_output = todo!();
 
         let collateral_sats = Amount::from_sat(contract.initial_collateral_sats);
         let collateral_btc = Decimal::try_from(collateral_sats.to_btc()).expect("to fit");

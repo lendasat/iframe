@@ -1,14 +1,16 @@
 use crate::model::db;
 use crate::model::Contract;
+use crate::model::ContractStatus;
+use anyhow::bail;
 use anyhow::Result;
 use bitcoin::address::NetworkUnchecked;
 use bitcoin::Address;
-use bitcoin::OutPoint;
 use bitcoin::PublicKey;
 use bitcoin::Txid;
 use rust_decimal::Decimal;
 use sqlx::Pool;
 use sqlx::Postgres;
+use std::cmp::Ordering;
 use uuid::Uuid;
 
 pub async fn load_contracts_by_borrower_id(
@@ -25,14 +27,13 @@ pub async fn load_contracts_by_borrower_id(
             loan_id,
             initial_ltv,
             initial_collateral_sats,
+            collateral_sats,
             loan_amount,
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
             contract_address,
             contract_index,
-            collateral_txid,
-            collateral_vout,
             claim_txid,
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
@@ -69,14 +70,13 @@ pub async fn load_contracts_by_lender_id(
             loan_id,
             initial_ltv,
             initial_collateral_sats,
+            collateral_sats,
             loan_amount,
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
             contract_address,
             contract_index,
-            collateral_txid,
-            collateral_vout,
             claim_txid,
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
@@ -99,6 +99,41 @@ pub async fn load_contracts_by_lender_id(
     Ok(contracts)
 }
 
+async fn load_contract(pool: &Pool<Postgres>, contract_id: &str) -> Result<Contract> {
+    let contract = sqlx::query_as!(
+        db::Contract,
+        r#"
+        SELECT
+            id,
+            lender_id,
+            borrower_id,
+            loan_id,
+            initial_ltv,
+            initial_collateral_sats,
+            collateral_sats,
+            loan_amount,
+            borrower_btc_address,
+            borrower_pk,
+            borrower_loan_address,
+            contract_address,
+            contract_index,
+            claim_txid,
+            status as "status: crate::model::db::ContractStatus",
+            liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
+            duration_months,
+            created_at,
+            updated_at
+        FROM contracts
+        where id = $1
+        "#,
+        contract_id,
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(contract.into())
+}
+
 pub async fn load_contract_by_contract_id_and_borrower_id(
     pool: &Pool<Postgres>,
     contract_id: &str,
@@ -114,14 +149,13 @@ pub async fn load_contract_by_contract_id_and_borrower_id(
             loan_id,
             initial_ltv,
             initial_collateral_sats,
+            collateral_sats,
             loan_amount,
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
             contract_address,
             contract_index,
-            collateral_txid,
-            collateral_vout,
             claim_txid,
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
@@ -156,14 +190,13 @@ pub async fn load_contract_by_contract_id_and_lender_id(
             loan_id,
             initial_ltv,
             initial_collateral_sats,
+            collateral_sats,
             loan_amount,
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
             contract_address,
             contract_index,
-            collateral_txid,
-            collateral_vout,
             claim_txid,
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
@@ -183,7 +216,7 @@ pub async fn load_contract_by_contract_id_and_lender_id(
     Ok(contract.into())
 }
 
-pub async fn load_contracts_pending_confirmation(pool: &Pool<Postgres>) -> Result<Vec<Contract>> {
+pub async fn load_open_contracts(pool: &Pool<Postgres>) -> Result<Vec<Contract>> {
     let contracts = sqlx::query_as!(
         db::Contract,
         r#"
@@ -194,14 +227,13 @@ pub async fn load_contracts_pending_confirmation(pool: &Pool<Postgres>) -> Resul
             loan_id,
             initial_ltv,
             initial_collateral_sats,
+            collateral_sats,
             loan_amount,
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
             contract_address,
             contract_index,
-            collateral_txid,
-            collateral_vout,
             claim_txid,
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
@@ -209,10 +241,11 @@ pub async fn load_contracts_pending_confirmation(pool: &Pool<Postgres>) -> Resul
             created_at,
             updated_at
         FROM contracts
-        WHERE status IN ($1, $2)
+        WHERE status NOT IN ($1, $2, $3)
         "#,
-        db::ContractStatus::Approved as db::ContractStatus,
-        db::ContractStatus::CollateralSeen as db::ContractStatus,
+        db::ContractStatus::Requested as db::ContractStatus,
+        db::ContractStatus::Closed as db::ContractStatus,
+        db::ContractStatus::Rejected as db::ContractStatus,
     )
     .fetch_all(pool)
     .await?;
@@ -240,6 +273,7 @@ pub async fn insert_contract_request(
 ) -> Result<Contract> {
     let id = Uuid::new_v4().to_string();
     let initial_collateral_sats = initial_collateral_sats as i64;
+    let collateral_sats = 0;
 
     let lender_id_row = sqlx::query!(
         r#"
@@ -264,6 +298,7 @@ pub async fn insert_contract_request(
             loan_id,
             initial_ltv,
             initial_collateral_sats,
+            collateral_sats,
             loan_amount,
             duration_months,
             status,
@@ -273,7 +308,7 @@ pub async fn insert_contract_request(
             borrower_loan_address,
             contract_address,
             contract_index
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
         RETURNING
             id,
             lender_id,
@@ -281,14 +316,13 @@ pub async fn insert_contract_request(
             loan_id,
             initial_ltv,
             initial_collateral_sats,
+            collateral_sats,
             loan_amount,
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
             contract_address,
             contract_index,
-            collateral_txid,
-            collateral_vout,
             claim_txid,
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
@@ -302,6 +336,7 @@ pub async fn insert_contract_request(
         loan_id,
         initial_ltv,
         initial_collateral_sats,
+        collateral_sats,
         loan_amount,
         duration_months,
         db::ContractStatus::Requested as db::ContractStatus,
@@ -342,14 +377,13 @@ pub async fn accept_contract_request(
             loan_id,
             initial_ltv,
             initial_collateral_sats,
+            collateral_sats,
             loan_amount,
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
             contract_address,
             contract_index,
-            collateral_txid,
-            collateral_vout,
             claim_txid,
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
@@ -363,55 +397,6 @@ pub async fn accept_contract_request(
         contract_index as i32,
         lender_id,
         contract_id
-    )
-    .fetch_one(pool)
-    .await?;
-
-    Ok(contract.into())
-}
-
-pub async fn mark_contract_as_seen(
-    pool: &Pool<Postgres>,
-    contract_id: &str,
-    outpoint: OutPoint,
-) -> Result<Contract> {
-    let contract = sqlx::query_as!(
-        db::Contract,
-        r#"
-        UPDATE contracts
-        SET
-            collateral_txid = $1,
-            collateral_vout = $2,
-            status = $3,
-            updated_at = $4
-        WHERE id = $5
-        RETURNING
-            id,
-            lender_id,
-            borrower_id,
-            loan_id,
-            initial_ltv,
-            initial_collateral_sats,
-            loan_amount,
-            borrower_btc_address,
-            borrower_pk,
-            borrower_loan_address,
-            contract_address,
-            contract_index,
-            collateral_txid,
-            collateral_vout,
-            claim_txid,
-            status as "status: crate::model::db::ContractStatus",
-            liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
-            duration_months,
-            created_at,
-            updated_at
-        "#,
-        outpoint.txid.to_string(),
-        outpoint.vout as i32,
-        db::ContractStatus::CollateralSeen as db::ContractStatus,
-        time::OffsetDateTime::now_utc(),
-        contract_id,
     )
     .fetch_one(pool)
     .await?;
@@ -438,14 +423,13 @@ pub async fn mark_contract_as_principal_given(
             loan_id,
             initial_ltv,
             initial_collateral_sats,
+            collateral_sats,
             loan_amount,
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
             contract_address,
             contract_index,
-            collateral_txid,
-            collateral_vout,
             claim_txid,
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
@@ -454,55 +438,6 @@ pub async fn mark_contract_as_principal_given(
             updated_at
         "#,
         db::ContractStatus::PrincipalGiven as db::ContractStatus,
-        time::OffsetDateTime::now_utc(),
-        contract_id,
-    )
-    .fetch_one(pool)
-    .await?;
-
-    Ok(contract.into())
-}
-
-pub async fn mark_contract_as_confirmed(
-    pool: &Pool<Postgres>,
-    contract_id: &str,
-    outpoint: OutPoint,
-) -> Result<Contract> {
-    let contract = sqlx::query_as!(
-        db::Contract,
-        r#"
-        UPDATE contracts
-        SET
-            collateral_txid = $1,
-            collateral_vout = $2,
-            status = $3,
-            updated_at = $4
-        WHERE id = $5
-        RETURNING
-            id,
-            lender_id,
-            borrower_id,
-            loan_id,
-            initial_ltv,
-            initial_collateral_sats,
-            loan_amount,
-            borrower_btc_address,
-            borrower_pk,
-            borrower_loan_address,
-            contract_address,
-            contract_index,
-            collateral_txid,
-            collateral_vout,
-            claim_txid,
-            status as "status: crate::model::db::ContractStatus",
-            liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
-            duration_months,
-            created_at,
-            updated_at
-        "#,
-        outpoint.txid.to_string(),
-        outpoint.vout as i32,
-        db::ContractStatus::CollateralConfirmed as db::ContractStatus,
         time::OffsetDateTime::now_utc(),
         contract_id,
     )
@@ -528,14 +463,13 @@ pub async fn mark_contract_as_repaid(pool: &Pool<Postgres>, contract_id: &str) -
             loan_id,
             initial_ltv,
             initial_collateral_sats,
+            collateral_sats,
             loan_amount,
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
             contract_address,
             contract_index,
-            collateral_txid,
-            collateral_vout,
             claim_txid,
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
@@ -573,14 +507,13 @@ pub async fn insert_claim_txid(
             loan_id,
             initial_ltv,
             initial_collateral_sats,
+            collateral_sats,
             loan_amount,
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
             contract_address,
             contract_index,
-            collateral_txid,
-            collateral_vout,
             claim_txid,
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
@@ -619,14 +552,13 @@ pub async fn mark_contract_as_closed(
             loan_id,
             initial_ltv,
             initial_collateral_sats,
+            collateral_sats,
             loan_amount,
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
             contract_address,
             contract_index,
-            collateral_txid,
-            collateral_vout,
             claim_txid,
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
@@ -664,14 +596,13 @@ pub async fn mark_contract_as_closing(
             loan_id,
             initial_ltv,
             initial_collateral_sats,
+            collateral_sats,
             loan_amount,
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
             contract_address,
             contract_index,
-            collateral_txid,
-            collateral_vout,
             claim_txid,
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
@@ -709,14 +640,13 @@ pub async fn reject_contract_request(
             loan_id,
             initial_ltv,
             initial_collateral_sats,
+            collateral_sats,
             loan_amount,
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
             contract_address,
             contract_index,
-            collateral_txid,
-            collateral_vout,
             claim_txid,
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
@@ -755,14 +685,13 @@ pub(crate) async fn mark_liquidation_state_as(
             loan_id,
             initial_ltv,
             initial_collateral_sats,
+            collateral_sats,
             loan_amount,
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
             contract_address,
             contract_index,
-            collateral_txid,
-            collateral_vout,
             claim_txid,
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
@@ -800,14 +729,13 @@ pub(crate) async fn mark_contract_as(
             loan_id,
             initial_ltv,
             initial_collateral_sats,
+            collateral_sats,
             loan_amount,
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
             contract_address,
             contract_index,
-            collateral_txid,
-            collateral_vout,
             claim_txid,
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
@@ -838,14 +766,13 @@ pub(crate) async fn load_open_not_liquidated_contracts(
             loan_id,
             initial_ltv,
             initial_collateral_sats,
+            collateral_sats,
             loan_amount,
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
             contract_address,
             contract_index,
-            collateral_txid,
-            collateral_vout,
             claim_txid,
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
@@ -853,8 +780,10 @@ pub(crate) async fn load_open_not_liquidated_contracts(
             created_at,
             updated_at
         FROM contracts
-        WHERE status NOT IN ($1, $2, $3) and liquidation_status NOT in ($4)
+        WHERE status NOT IN ($1, $2, $3, $4, $5) and liquidation_status NOT in ($6)
         "#,
+        db::ContractStatus::Requested as db::ContractStatus,
+        db::ContractStatus::Approved as db::ContractStatus,
         db::ContractStatus::Closing as db::ContractStatus,
         db::ContractStatus::Closed as db::ContractStatus,
         db::ContractStatus::Rejected as db::ContractStatus,
@@ -869,4 +798,142 @@ pub(crate) async fn load_open_not_liquidated_contracts(
         .collect::<Vec<Contract>>();
 
     Ok(contracts)
+}
+
+// This function is the cost we have to pay for not modelling things properly.
+pub async fn update_collateral(
+    pool: &Pool<Postgres>,
+    contract_id: &str,
+    updated_collateral_sats: u64,
+) -> Result<Contract> {
+    let contract = load_contract(pool, contract_id).await?;
+
+    let min_collateral = contract.initial_collateral_sats;
+    let current_collateral_sats = contract.collateral_sats;
+
+    // The status does not always change, but it's simpler to always write to the database if the
+    // collateral changes.
+    let new_status = match updated_collateral_sats.cmp(&current_collateral_sats) {
+        Ordering::Greater => {
+            tracing::debug!(
+                contract_id,
+                before = current_collateral_sats,
+                after = updated_collateral_sats,
+                "Collateral increased"
+            );
+
+            match contract.status {
+                ContractStatus::Requested => {
+                    bail!("Should not be able to add collateral to a Requested loan");
+                }
+                ContractStatus::Approved | ContractStatus::CollateralSeen => {
+                    match updated_collateral_sats > min_collateral {
+                        true => {
+                            tracing::debug!(
+                                contract_id,
+                                collateral_sats = updated_collateral_sats,
+                                "Collateral confirmed"
+                            );
+
+                            ContractStatus::CollateralConfirmed
+                        }
+                        false => contract.status,
+                    }
+                }
+                ContractStatus::CollateralConfirmed
+                | ContractStatus::PrincipalGiven
+                | ContractStatus::Repaid
+                | ContractStatus::Closing
+                | ContractStatus::Closed
+                | ContractStatus::Rejected
+                | ContractStatus::DisputeBorrowerStarted
+                | ContractStatus::DisputeLenderStarted
+                | ContractStatus::DisputeBorrowerResolved
+                | ContractStatus::DisputeLenderResolved => contract.status,
+            }
+        }
+        Ordering::Less => {
+            // Currently, we are only tracking adding funds to a collateral output. If the
+            // collateral amount decreases, it's probably because an output was reorged
+            // away, which is rare.
+            tracing::warn!(
+                contract_id,
+                before = current_collateral_sats,
+                after = updated_collateral_sats,
+                "Collateral decreased. This is weird"
+            );
+
+            // This is where the limitations of our state machine come into play. Here we're only
+            // considering the possibility that `CollateralConfirmed` can go back to to `Approved`
+            // after a reorg, but it could happen for other states too. In any case,
+            // this is all unlikely.
+            match contract.status {
+                ContractStatus::CollateralConfirmed => {
+                    match updated_collateral_sats < min_collateral {
+                        true => {
+                            tracing::warn!(
+                                contract_id,
+                                collateral_sats = updated_collateral_sats,
+                                "Moving contract from CollateralConfirmed back to Approved"
+                            );
+
+                            ContractStatus::Approved
+                        }
+                        false => contract.status,
+                    }
+                }
+                _ => contract.status,
+            }
+        }
+        Ordering::Equal => {
+            tracing::trace!(
+                contract_id,
+                collateral_sats = current_collateral_sats,
+                "Collateral has not changed"
+            );
+
+            return Ok(contract);
+        }
+    };
+    let new_status = db::ContractStatus::from(new_status);
+
+    let contract = sqlx::query_as!(
+        db::Contract,
+        r#"
+        UPDATE contracts
+        SET
+            collateral_sats = $1,
+            status = $2,
+            updated_at = $3
+        WHERE id = $4
+        RETURNING
+            id,
+            lender_id,
+            borrower_id,
+            loan_id,
+            initial_ltv,
+            initial_collateral_sats,
+            collateral_sats,
+            loan_amount,
+            borrower_btc_address,
+            borrower_pk,
+            borrower_loan_address,
+            contract_address,
+            contract_index,
+            claim_txid,
+            status as "status: crate::model::db::ContractStatus",
+            liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
+            duration_months,
+            created_at,
+            updated_at
+        "#,
+        updated_collateral_sats as i64,
+        new_status as db::ContractStatus,
+        time::OffsetDateTime::now_utc(),
+        contract_id,
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(contract.into())
 }

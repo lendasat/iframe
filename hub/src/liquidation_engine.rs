@@ -76,10 +76,7 @@ async fn check_margin_call_or_liquidation(
                 match calculate_ltv(
                     latest_price,
                     contract.loan_amount,
-                    Decimal::from_u64(contract.initial_collateral_sats).expect(
-                        "to fit into
-                u64",
-                    ),
+                    Decimal::from_u64(contract.collateral_sats).expect("to fit into u64"),
                 ) {
                     Ok(current_ltv) => {
                         tracing::trace!(
