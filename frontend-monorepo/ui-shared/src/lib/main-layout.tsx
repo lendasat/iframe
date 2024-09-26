@@ -33,7 +33,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme = "li
   const [broken, setBroken] = React.useState(false);
   return (
     <div
-      className="bg-dashboard h-screen overflow-hidden"
+      className="bg-gradient-to-br from-white from-40% via-70% via-purple/900/5 to-100% to-[#1a56e30b] h-screen overflow-hidden"
       style={{ display: "flex", height: "100%" }}
     >
       <Sidebar

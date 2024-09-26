@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Form } from "react-bootstrap";
+import '../components/Slider.css'
 
 export interface SliderProps {
   min: number;
@@ -12,7 +13,7 @@ export interface SliderProps {
 }
 
 export const Slider = ({ min, max, init, step, suffix, reset, onChange }: SliderProps) => {
-  const [value, setValue] = useState(init);
+  const [value, setValue] = useState<number>(init);
 
   useEffect(() => {
     if (!reset) {
@@ -25,16 +26,21 @@ export const Slider = ({ min, max, init, step, suffix, reset, onChange }: Slider
     onChange(newValue);
   };
 
+  // const handleValueChange = (newValue: number[]) => {
+  //   setValue(newValue); // Update the state with the new slider value
+  // };
+
   return (
-    <div>
+    <div className="w-full">
       <Form.Range
         min={min}
         max={max}
         step={step}
         value={value}
         onChange={handleChange}
-        className="mb-0"
+        className="mb-0 custom-slider"
       />
+
       <div className="d-flex justify-content-between">
         <span>
           <small className="text-xs font-medium">min: {min}</small>
@@ -49,3 +55,6 @@ export const Slider = ({ min, max, init, step, suffix, reset, onChange }: Slider
     </div>
   );
 };
+
+
+

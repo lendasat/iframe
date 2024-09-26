@@ -7,24 +7,24 @@
 
 /* Change the color of the thumb */
 .custom-slider::-webkit-slider-thumb {
-  @apply bg-purple-800/80; /* Thumb color */
-  box-shadow: 0px 0px 2px rgb(107 33 168 / 0.5) !important; /* Add shadow for better visibility */
+  @apply bg-black/80; /* Thumb color */
+  box-shadow: 0px 0px 2px rgb(107 33 168 / 0) !important; /* Add shadow for better visibility */
   transition: background 0.3s ease;
 }
 
 .custom-slider::-moz-range-thumb {
-  @apply bg-purple-800/80; /* Thumb color */
-  box-shadow: 0px 0px 2px rgb(107 33 168 / 0.5) !important;
+  @apply bg-black/80; /* Thumb color */
+  box-shadow: 0px 0px 2px rgb(107 33 168 / 0) !important;
 }
 
 .custom-slider::-ms-thumb {
-  @apply bg-purple-800/80;
-  box-shadow: 0px 0px 2px rgb(107 33 168 / 0.5) !important;
+  @apply bg-black/80;
+  box-shadow: 0px 0px 2px rgb(107 33 168 / 0) !important;
 }
 
 /* Change the track color when dragging */
 .custom-slider:active::-webkit-slider-thumb {
-  @apply bg-purple-800; /* Darker color when active */
+  @apply bg-black; /* Darker color when active */
 }
 
 .custom-slider:focus::-webkit-slider-runnable-track {
