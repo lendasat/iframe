@@ -19,17 +19,15 @@ import {
   Tooltip,
 } from "@radix-ui/themes";
 import React, { useState } from "react";
-import { Alert, Col, Form, InputGroup, Row } from "react-bootstrap";
 import { BiError, BiSolidCopy } from "react-icons/bi";
 import { IoIosArrowRoundBack } from "react-icons/io";
 import { MdSecurity } from "react-icons/md";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { CreateWalletModal } from "../wallet/create-wallet-modal";
 import { UnlockWalletModal } from "../wallet/unlock-wallet-modal";
-import { Lender } from "./lender";
 import { LoanFilter } from "./loan-offers-filter";
 import { Slider, SliderProps } from "./slider";
-import { StableCoin, StableCoinDropdown, StableCoinHelper } from "./stable-coin";
+import { StableCoin, StableCoinHelper } from "./stable-coin";
 
 type LocationState = {
   loanOffer: LoanOffer;
@@ -246,21 +244,10 @@ export function RequestLoanSummary() {
                   size={"3"}
                   color="gray"
                   type="text"
-                  readOnly
                   value={btcAddress}
                   onChange={(e) => setBtcAddress(e.target.value)}
                 >
                   <TextField.Slot className="p-1.5" />
-                  <TextField.Slot>
-                    <Tooltip content={"Copy to clipboard"} className="font-medium">
-                      <IconButton
-                        variant="ghost"
-                        onClick={() => navigator.clipboard.writeText(btcAddress)}
-                      >
-                        <BiSolidCopy />
-                      </IconButton>
-                    </Tooltip>
-                  </TextField.Slot>
                 </TextField.Root>
               </Flex>
               <Separator size={"4"} />
