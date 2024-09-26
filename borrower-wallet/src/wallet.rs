@@ -6,6 +6,12 @@ use anyhow::bail;
 use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Result;
+use argon2::password_hash::PasswordHashString;
+use argon2::password_hash::SaltString;
+use argon2::Argon2;
+use argon2::PasswordHash;
+use argon2::PasswordHasher;
+use argon2::PasswordVerifier;
 use bip39::Mnemonic;
 use bitcoin::bip32::ChildNumber;
 use bitcoin::bip32::Xpriv;
@@ -24,12 +30,6 @@ use miniscript::Descriptor;
 use rand::thread_rng;
 use rand::CryptoRng;
 use rand::Rng;
-use scrypt::password_hash::PasswordHash;
-use scrypt::password_hash::PasswordHashString;
-use scrypt::password_hash::PasswordHasher;
-use scrypt::password_hash::PasswordVerifier;
-use scrypt::password_hash::SaltString;
-use scrypt::Scrypt;
 use sha2::Sha256;
 use std::str::FromStr;
 use std::sync::LazyLock;
@@ -84,11 +84,11 @@ pub fn load_wallet(
 
     ensure!(guard.is_none(), "Wallet already loaded");
 
-    let passphrase_hash = PasswordHash::new(passphrase_hash)?;
+    let passphrase_hash = PasswordHash::new(passphrase_hash).map_err(|error| anyhow!(error))?;
 
-    Scrypt
+    Argon2::default()
         .verify_password(passphrase.as_bytes(), &passphrase_hash)
-        .context("Incorrect passphrase")?;
+        .map_err(|error| anyhow!(error))?;
 
     let mnemonic_ciphertext = MnemonicCiphertext::from_str(mnemonic_ciphertext)
         .context("Failed to deserialize mnemonic ciphertext")?;
@@ -222,16 +222,13 @@ fn hash_passphrase<R>(rng: &mut R, passphrase: &str) -> Result<PasswordHashStrin
 where
     R: Rng + CryptoRng,
 {
-    let params = if cfg!(debug_assertions) {
-        // Use weak parameters in debug mode, to speed things up.
-        println!("Using extremely weak scrypt parameters for password hashing");
-        scrypt::Params::new(1, 1, 1, 10)?
-    } else {
-        scrypt::Params::recommended()
-    };
     let salt = SaltString::generate(rng);
-    let password_hash =
-        Scrypt.hash_password_customized(passphrase.as_bytes(), None, None, params, &salt)?;
+
+    let argon2 = Argon2::default();
+
+    let password_hash = argon2
+        .hash_password(passphrase.as_bytes(), &salt)
+        .map_err(|error| anyhow!(error))?;
 
     Ok(password_hash.into())
 }
