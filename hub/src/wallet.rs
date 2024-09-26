@@ -75,6 +75,7 @@ impl Wallet {
         Ok((address, index))
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn create_dispute_claim_collateral_psbt(
         &self,
         borrower_pk: PublicKey,
@@ -84,6 +85,7 @@ impl Wallet {
         // In the DLC-based protocol, we will probably charge the origination fee when the
         // collateral is locked up.
         origination_fee: u64,
+        fee_rate_spvb: u64,
     ) -> Result<(Psbt, Descriptor<PublicKey>)> {
         let (hub_kp, fallback_pk) = self.get_keys_for_index(contract_index)?;
 
@@ -101,8 +103,6 @@ impl Wallet {
 
         // FIXME: Incorrect arbitrary value!
         let tx_weight_vb = 200 + (collateral_outputs.len() as u64) * 50;
-        // FIXME: Choose a sensible fee rate.
-        let fee_rate_spvb = 1;
 
         let tx_fee = tx_weight_vb * fee_rate_spvb;
 
@@ -212,6 +212,7 @@ impl Wallet {
         Ok((claim_psbt, collateral_descriptor))
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn create_claim_collateral_psbt(
         &self,
         borrower_pk: PublicKey,
@@ -221,6 +222,7 @@ impl Wallet {
         // collateral is locked up.
         origination_fee: u64,
         borrower_btc_address: Address,
+        fee_rate_spvb: u64,
     ) -> Result<(Psbt, Descriptor<PublicKey>)> {
         let (hub_kp, fallback_pk) = self.get_keys_for_index(contract_index)?;
 
@@ -236,8 +238,6 @@ impl Wallet {
 
         // FIXME: Incorrect arbitrary value!
         let tx_weight_vb = 200 + (collateral_outputs.len() as u64) * 50;
-        // FIXME: Choose a sensible fee rate.
-        let fee_rate_spvb = 1;
 
         let tx_fee = tx_weight_vb * fee_rate_spvb;
 

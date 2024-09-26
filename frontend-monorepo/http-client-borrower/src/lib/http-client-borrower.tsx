@@ -105,9 +105,11 @@ export class HttpClientBorrower extends BaseHttpClient {
     }
   }
 
-  async getClaimCollateralPsbt(id: string): Promise<ClaimCollateralPsbtResponse> {
+  async getClaimCollateralPsbt(id: string, feeRate: number): Promise<ClaimCollateralPsbtResponse> {
     try {
-      const res: AxiosResponse<ClaimCollateralPsbtResponse> = await this.httpClient.get(`/api/contracts/${id}/claim`);
+      const res: AxiosResponse<ClaimCollateralPsbtResponse> = await this.httpClient.get(
+        `/api/contracts/${id}/claim?fee_rate=${feeRate}`,
+      );
       return res.data;
     } catch (error) {
       console.error(
@@ -118,10 +120,10 @@ export class HttpClientBorrower extends BaseHttpClient {
       throw error;
     }
   }
-  async getClaimDisputeCollateralPsbt(disputeId: string): Promise<ClaimCollateralPsbtResponse> {
+  async getClaimDisputeCollateralPsbt(disputeId: string, feeRate: number): Promise<ClaimCollateralPsbtResponse> {
     try {
       const res: AxiosResponse<ClaimCollateralPsbtResponse> = await this.httpClient.get(
-        `/api/disputes/${disputeId}/claim`,
+        `/api/disputes/${disputeId}/claim?fee_rate=${feeRate}`,
       );
       return res.data;
     } catch (error) {

@@ -458,3 +458,9 @@ pub struct DisputeRequestBodySchema {
     pub reason: String,
     pub comment: String,
 }
+
+#[derive(Deserialize)]
+pub struct PsbtQueryParams {
+    // fee rate in sats/vbyte
+    pub fee_rate: u64,
+}

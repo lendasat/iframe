@@ -1,15 +1,19 @@
+use crate::db;
 use crate::email::Email;
+use crate::mempool;
 use crate::model::DisputeRequestBodySchema;
 use crate::model::DisputeStatus;
+use crate::model::PsbtQueryParams;
 use crate::model::User;
 use crate::routes::borrower::auth::jwt_auth;
 use crate::routes::borrower::ClaimCollateralPsbt;
 use crate::routes::AppState;
 use crate::routes::ErrorResponse;
 use crate::wallet::LIQUIDATOR_ADDRESS;
-use crate::{db, mempool};
-use anyhow::{bail, Context};
+use anyhow::bail;
+use anyhow::Context;
 use axum::extract::Path;
+use axum::extract::Query;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::middleware;
@@ -214,6 +218,7 @@ pub async fn get_claim_collateral_psbt(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<User>,
     Path(dispute_id): Path<String>,
+    query_params: Query<PsbtQueryParams>,
 ) -> anyhow::Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     let dispute = db::dispute::load_disputes_by_borrower_and_dispute_id(
         &data.db,
@@ -287,6 +292,7 @@ pub async fn get_claim_collateral_psbt(
                     ),
                 ],
                 contract.origination_fee_sats,
+                query_params.fee_rate,
             )?;
 
             let psbt = psbt.serialize_hex();

@@ -3,6 +3,7 @@ use crate::mempool;
 use crate::model::ContractRequestSchema;
 use crate::model::ContractStatus;
 use crate::model::LiquidationStatus;
+use crate::model::PsbtQueryParams;
 use crate::model::User;
 use crate::routes::borrower::auth::jwt_auth;
 use crate::routes::AppState;
@@ -11,6 +12,7 @@ use anyhow::bail;
 use anyhow::Context;
 use anyhow::Result;
 use axum::extract::Path;
+use axum::extract::Query;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::middleware;
@@ -386,6 +388,7 @@ pub async fn get_claim_collateral_psbt(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<User>,
     Path(contract_id): Path<String>,
+    query_params: Query<PsbtQueryParams>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     let contract = db::contracts::load_contract_by_contract_id_and_borrower_id(
         &data.db,
@@ -432,6 +435,7 @@ pub async fn get_claim_collateral_psbt(
             collateral_outputs,
             origination_fee.to_sat(),
             contract.borrower_btc_address.assume_checked(),
+            query_params.fee_rate,
         )?;
 
         let psbt = psbt.serialize_hex();

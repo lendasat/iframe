@@ -2,6 +2,7 @@ import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useWallet } from "@frontend-monorepo/borrower-wallet";
 import { Contract, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
+import { FeeSelector } from "@frontend-monorepo/mempool";
 import React, { useState } from "react";
 import { Alert, Button, Col, Container, Row } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
@@ -20,7 +21,9 @@ export function ContractRepaid({
   const { getClaimCollateralPsbt, postClaimTx } = useBorrowerHttpClient();
   const navigate = useNavigate();
 
+  const [selectedFee, setSelectedFee] = useState(1);
   const [showUnlockWalletModal, setShowUnlockWalletModal] = useState(false);
+
   const handleCloseUnlockWalletModal = () => setShowUnlockWalletModal(false);
   const handleOpenUnlockWalletModal = () => setShowUnlockWalletModal(true);
 
@@ -31,16 +34,27 @@ export function ContractRepaid({
       if (!isWalletLoaded) {
         handleOpenUnlockWalletModal();
         return;
+      } else {
+        await claimCollateralRequest();
       }
-
-      await claimCollateralRequest();
     } catch (err) {
       console.error("Failed to claim collateral", err);
     }
   };
 
+  const unlockWallet = async () => {
+    try {
+      if (!isWalletLoaded) {
+        handleOpenUnlockWalletModal();
+        return;
+      }
+    } catch (err) {
+      console.error("Failed unlocking wallet", err);
+    }
+  };
+
   const claimCollateralRequest = async () => {
-    const res = await getClaimCollateralPsbt(contract.id);
+    const res = await getClaimCollateralPsbt(contract.id, selectedFee);
     const claimTx = signClaimPsbt(res.psbt, res.collateral_descriptor, contract.borrower_pk);
 
     const txid = await postClaimTx(contract.id, claimTx);
@@ -52,7 +66,6 @@ export function ContractRepaid({
 
   const handleSubmitUnlockWalletModal = async () => {
     handleCloseUnlockWalletModal();
-    await claimCollateralRequest();
   };
 
   return (
@@ -84,16 +97,22 @@ export function ContractRepaid({
             </Alert>
           </Col>
         </Row>
+        <FeeSelector onSelectFee={setSelectedFee}></FeeSelector>
+
         <Row className="justify-content-between mt-4">
           <Row className="mt-1">
             <Col className="d-grid">
               <Button
                 variant="primary"
                 onClick={async () => {
-                  await claimCollateral();
+                  if (isWalletLoaded) {
+                    await claimCollateral();
+                  } else {
+                    await unlockWallet();
+                  }
                 }}
               >
-                Withdraw funds
+                {isWalletLoaded ? "Withdraw funds" : "Unlock Wallet"}
               </Button>
             </Col>
           </Row>
