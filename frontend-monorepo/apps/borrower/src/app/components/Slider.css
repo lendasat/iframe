@@ -1,0 +1,32 @@
+/* Change the track color */
+.custom-slider {
+  height: 6px;
+  background-color: #ebebeb; /* Track color */
+  transition: background 0.3s ease-in-out;
+}
+
+/* Change the color of the thumb */
+.custom-slider::-webkit-slider-thumb {
+  @apply bg-purple-800/80; /* Thumb color */
+  box-shadow: 0px 0px 2px rgb(107 33 168 / 0.5) !important; /* Add shadow for better visibility */
+  transition: background 0.3s ease;
+}
+
+.custom-slider::-moz-range-thumb {
+  @apply bg-purple-800/80; /* Thumb color */
+  box-shadow: 0px 0px 2px rgb(107 33 168 / 0.5) !important;
+}
+
+.custom-slider::-ms-thumb {
+  @apply bg-purple-800/80;
+  box-shadow: 0px 0px 2px rgb(107 33 168 / 0.5) !important;
+}
+
+/* Change the track color when dragging */
+.custom-slider:active::-webkit-slider-thumb {
+  @apply bg-purple-800; /* Darker color when active */
+}
+
+.custom-slider:focus::-webkit-slider-runnable-track {
+  background-color: #ebebeb; /* Track color when focused */
+}
