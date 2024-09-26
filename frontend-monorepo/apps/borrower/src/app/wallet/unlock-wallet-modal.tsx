@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
-import { Alert, Modal } from "react-bootstrap";
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useWallet } from "@frontend-monorepo/borrower-wallet";
 import { Box, Button, Flex, Heading, IconButton, Text, TextField } from "@radix-ui/themes";
+import { useEffect, useState } from "react";
+import { Alert, Modal } from "react-bootstrap";
 import { MdOutlineVisibility, MdOutlineVisibilityOff } from "react-icons/md";
 
 interface WalletModalProps {
@@ -14,7 +14,7 @@ interface WalletModalProps {
 
 export function UnlockWalletModal({ show, handleClose, handleSubmit }: WalletModalProps) {
   const [password, setPassword] = useState("");
-  const [passVisibility, setPassVisibility] = useState<boolean>(false)
+  const [passVisibility, setPassVisibility] = useState<boolean>(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -57,13 +57,15 @@ export function UnlockWalletModal({ show, handleClose, handleSubmit }: WalletMod
     <Modal show={show} onHide={handleClose} centered>
       <Box className="px-4 pt-7">
         <Box>
-          <Heading as="h2" className="text-xl md:text-2xl lg:text-4xl font-semibold text-center text-font-dark mb-7">Input Contract Password</Heading>
+          <Heading as="h2" className="text-xl md:text-2xl lg:text-4xl font-semibold text-center text-font-dark mb-7">
+            Input Contract Password
+          </Heading>
         </Box>
         <Box className="mb-3">
           <Flex className="flex flex-col gap-3">
             {(!error)
               ? (
-                <Alert variant={'info'} className="flex items-baseline gap-2">
+                <Alert variant={"info"} className="flex items-baseline gap-2">
                   <Box>
                     <FontAwesomeIcon icon={faInfoCircle} />
                   </Box>
@@ -71,35 +73,32 @@ export function UnlockWalletModal({ show, handleClose, handleSubmit }: WalletMod
                 </Alert>
               )
               : ""}
-            {error &&
-              <Alert variant={'danger'} className="flex items-start gap-2">
-                <Box>
-                  <FontAwesomeIcon icon={faInfoCircle} />
-                </Box>
-                <Text>{error}</Text>
-              </Alert>
-            }
+            {error
+              && (
+                <Alert variant={"danger"} className="flex items-start gap-2">
+                  <Box>
+                    <FontAwesomeIcon icon={faInfoCircle} />
+                  </Box>
+                  <Text>{error}</Text>
+                </Alert>
+              )}
           </Flex>
         </Box>
-        <Box >
+        <Box>
           <TextField.Root
             variant="soft"
             className="py-3 px-4 rounded-lg border border-font/10"
             placeholder="Enter Secret Pin"
-            type={passVisibility ? 'text' : 'password'}
+            type={passVisibility ? "text" : "password"}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           >
             <TextField.Slot />
             <TextField.Slot>
               <IconButton variant="ghost" onClick={() => setPassVisibility(!passVisibility)}>
-                {
-                  passVisibility ? (
-                    <MdOutlineVisibilityOff size={24} className="text-font/50" />
-                  ) : (
-                    <MdOutlineVisibility size={24} className="text-font/50" />
-                  )
-                }
+                {passVisibility
+                  ? <MdOutlineVisibilityOff size={24} className="text-font/50" />
+                  : <MdOutlineVisibility size={24} className="text-font/50" />}
               </IconButton>
             </TextField.Slot>
           </TextField.Root>
@@ -108,9 +107,10 @@ export function UnlockWalletModal({ show, handleClose, handleSubmit }: WalletMod
       <Box className="mt-4 px-4 pb-5">
         <Button
           variant="solid"
-          className={`w-full h-12 ${loading ? 'bg-btn/5' : 'bg-btn text-white'} rounded-lg `}
+          className={`w-full h-12 ${loading ? "bg-btn/5" : "bg-btn text-white"} rounded-lg `}
           onClick={onOkClick}
-          disabled={loading}>
+          disabled={loading}
+        >
           {loading ? "Loading…" : "Submit"}
         </Button>
       </Box>

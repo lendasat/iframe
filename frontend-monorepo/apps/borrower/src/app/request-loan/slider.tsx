@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Form } from "react-bootstrap";
-import '../components/Slider.css'
+import "../components/Slider.css";
 
 export interface SliderProps {
   min: number;
@@ -55,6 +55,3 @@ export const Slider = ({ min, max, init, step, suffix, reset, onChange }: Slider
     </div>
   );
 };
-
-
-

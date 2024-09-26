@@ -3,8 +3,26 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useWallet } from "@frontend-monorepo/borrower-wallet";
 import { LoanOffer, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import { formatCurrency, usePrice } from "@frontend-monorepo/ui-shared";
+import {
+  Badge,
+  Box,
+  Button,
+  Callout,
+  Container,
+  Flex,
+  Grid,
+  Heading,
+  IconButton,
+  Separator,
+  Text,
+  TextField,
+  Tooltip,
+} from "@radix-ui/themes";
 import React, { useState } from "react";
 import { Alert, Col, Form, InputGroup, Row } from "react-bootstrap";
+import { BiError, BiSolidCopy } from "react-icons/bi";
+import { IoIosArrowRoundBack } from "react-icons/io";
+import { MdSecurity } from "react-icons/md";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { CreateWalletModal } from "../wallet/create-wallet-modal";
 import { UnlockWalletModal } from "../wallet/unlock-wallet-modal";
@@ -12,13 +30,6 @@ import { Lender } from "./lender";
 import { LoanFilter } from "./loan-offers-filter";
 import { Slider, SliderProps } from "./slider";
 import { StableCoin, StableCoinDropdown, StableCoinHelper } from "./stable-coin";
-import { Badge, Box, Button, Callout, Container, Flex, Grid, Heading, IconButton, Separator, Text, TextField, Tooltip } from "@radix-ui/themes";
-import { MdSecurity } from "react-icons/md";
-import { BiError, BiSolidCopy } from "react-icons/bi";
-import { IoIosArrowRoundBack } from "react-icons/io";
-
-
-
 
 type LocationState = {
   loanOffer: LoanOffer;
@@ -81,7 +92,8 @@ export function RequestLoanSummary() {
       setAmountError("Amount is required");
     } else if (value < loanOffer.loan_amount_min || value > loanOffer.loan_amount_max) {
       setAmountError(
-        `Amount must be between ${formatCurrency(loanOffer.loan_amount_min)} and ${formatCurrency(loanOffer.loan_amount_max)
+        `Amount must be between ${formatCurrency(loanOffer.loan_amount_min)} and ${
+          formatCurrency(loanOffer.loan_amount_max)
         }`,
       );
     } else {
@@ -176,66 +188,62 @@ export function RequestLoanSummary() {
 
   return (
     <Box className="bg-white h-screen overflow-y-scroll p-3 pb-16 md:p-5 lg:p-8">
-
       <Grid className="md:grid-cols-4 lg:grid-cols-5 gap-5 items-center">
         <Box className="md:col-span-2 lg:col-span-3">
           <Box className="flex items-center gap-3">
             <Link to="/request-loan">
               <IoIosArrowRoundBack size={30} />
             </Link>
-            <Heading size={'8'} className="text-font-dark">Details</Heading>
-            <Badge variant="soft" size={'2'} color="gray" radius="medium">
+            <Heading size={"8"} className="text-font-dark">Details</Heading>
+            <Badge variant="soft" size={"2"} color="gray" radius="medium">
               Draft
             </Badge>
           </Box>
-          <Box mt={'7'}>
-            <Text weight={'medium'} size={'2'}>Ticket Information</Text>
-            <Box mt={'4'} className="border border-font/20 rounded-lg p-4 md:p-6 space-y-5">
-
-              <Flex direction={'column'} align={'start'} gap={'2'}>
-                <Text as="label" size={'2'} weight={'medium'}>Amount</Text>
+          <Box mt={"7"}>
+            <Text weight={"medium"} size={"2"}>Ticket Information</Text>
+            <Box mt={"4"} className="border border-font/20 rounded-lg p-4 md:p-6 space-y-5">
+              <Flex direction={"column"} align={"start"} gap={"2"}>
+                <Text as="label" size={"2"} weight={"medium"}>Amount</Text>
                 <TextField.Root
                   className="w-full font-semibold border-0"
-                  size={'3'}
+                  size={"3"}
                   variant="surface"
                   type="number"
-                  color={amountError ? 'red' : "gray"}
+                  color={amountError ? "red" : "gray"}
                   value={loanAmount !== undefined ? loanAmount : ""}
                   onChange={handleLoanAmountChange}
                 >
                   <TextField.Slot>
-                    <Text size={'3'} weight={'medium'}>$</Text>
+                    <Text size={"3"} weight={"medium"}>$</Text>
                   </TextField.Slot>
 
-                  {
-                    amountError &&
-                    <TextField.Slot>
-                      <BiError color={'red'} className="" />
-                    </TextField.Slot>
-                  }
+                  {amountError
+                    && (
+                      <TextField.Slot>
+                        <BiError color={"red"} className="" />
+                      </TextField.Slot>
+                    )}
                 </TextField.Root>
-                {
-                  amountError && <Text as="span" size={'1'} color="red" weight={'medium'}>{amountError}</Text>
-                }
+                {amountError && <Text as="span" size={"1"} color="red" weight={"medium"}>{amountError}</Text>}
               </Flex>
-              <Separator size={'4'} />
-              <Flex direction={'column'} align={'start'} gap={'2'}>
-                <Text as="label" size={'2'} weight={'medium'}>Loan Duration</Text>
+              <Separator size={"4"} />
+              <Flex direction={"column"} align={"start"} gap={"2"}>
+                <Text as="label" size={"2"} weight={"medium"}>Loan Duration</Text>
                 <Slider {...periodSliderProps} />
               </Flex>
-              <Separator size={'4'} />
-              <Flex direction={'row'} align={'center'} gap={'2'}>
-                <Text as="label" size={'2'} weight={'medium'}>Coin:</Text>
-                <Badge color="gray" size={'3'}>
+              <Separator size={"4"} />
+              <Flex direction={"row"} align={"center"} gap={"2"}>
+                <Text as="label" size={"2"} weight={"medium"}>Coin:</Text>
+                <Badge color="gray" size={"3"}>
                   {initCoin}
                 </Badge>
               </Flex>
-              <Separator size={'4'} />
-              <Flex direction={'column'} align={'start'} gap={'2'}>
-                <Text as="label" size={'2'} weight={'medium'}>Bitcoin Refund Address</Text>
+              <Separator size={"4"} />
+              <Flex direction={"column"} align={"start"} gap={"2"}>
+                <Text as="label" size={"2"} weight={"medium"}>Bitcoin Refund Address</Text>
                 <TextField.Root
                   className="w-full font-semibold text-sm border-0"
-                  size={'3'}
+                  size={"3"}
                   color="gray"
                   type="text"
                   readOnly
@@ -244,7 +252,7 @@ export function RequestLoanSummary() {
                 >
                   <TextField.Slot className="p-1.5" />
                   <TextField.Slot>
-                    <Tooltip content={'Copy to clipboard'} className="font-medium">
+                    <Tooltip content={"Copy to clipboard"} className="font-medium">
                       <IconButton
                         variant="ghost"
                         onClick={() => navigator.clipboard.writeText(btcAddress)}
@@ -253,28 +261,25 @@ export function RequestLoanSummary() {
                       </IconButton>
                     </Tooltip>
                   </TextField.Slot>
-
                 </TextField.Root>
               </Flex>
-              <Separator size={'4'} />
-              <Flex direction={'column'} align={'start'} gap={'2'}>
-                <Text as="label" size={'2'} weight={'medium'}>{addressLabel}</Text>
-                {
-                  loanAddress && (
-                    <Callout.Root color="amber">
-                      <Callout.Icon>
-                        <FontAwesomeIcon icon={faInfoCircle} />
-                      </Callout.Icon>
-                      <Callout.Text>
-                        Provide a valid address on the target network. Providing an incorrect address here will lead to loss of
-                        funds.
-                      </Callout.Text>
-                    </Callout.Root>
-                  )
-                }
+              <Separator size={"4"} />
+              <Flex direction={"column"} align={"start"} gap={"2"}>
+                <Text as="label" size={"2"} weight={"medium"}>{addressLabel}</Text>
+                {loanAddress && (
+                  <Callout.Root color="amber">
+                    <Callout.Icon>
+                      <FontAwesomeIcon icon={faInfoCircle} />
+                    </Callout.Icon>
+                    <Callout.Text>
+                      Provide a valid address on the target network. Providing an incorrect address here will lead to
+                      loss of funds.
+                    </Callout.Text>
+                  </Callout.Root>
+                )}
                 <TextField.Root
                   className="w-full font-semibold border-0"
-                  size={'3'}
+                  size={"3"}
                   variant="surface"
                   placeholder="Enter a valid address"
                   type="text"
@@ -285,34 +290,33 @@ export function RequestLoanSummary() {
               </Flex>
             </Box>
           </Box>
-
         </Box>
-        <Box className="md:col-span-2" p={'2'}>
+        <Box className="md:col-span-2" p={"2"}>
           <Box className="bg-active-nav/10 rounded-xl p-5 py-10 md:p-10 md:pt-16 h-full">
             <Flex className="items-center justify-center">
-              <Box width={'100%'}>
+              <Box width={"100%"}>
                 <Box className="flex flex-col items-center gap-5">
-                  <Text className="font-semibold" size={'2'}>To Receive</Text>
-                  <Heading as="h4" size={'8'} weight={'bold'} className="text-font-dark">
-                    {loanAmount ? '$' + loanAmount : '$0'}
+                  <Text className="font-semibold" size={"2"}>To Receive</Text>
+                  <Heading as="h4" size={"8"} weight={"bold"} className="text-font-dark">
+                    {loanAmount ? "$" + loanAmount : "$0"}
                   </Heading>
                   <Box className="flex items-center justify-center gap-1">
                     <MdSecurity className="text-green-700" />
-                    <Text size={'1'} weight={'medium'} className="text-font/70">Secured</Text>
+                    <Text size={"1"} weight={"medium"} className="text-font/70">Secured</Text>
                   </Box>
                 </Box>
-                <Separator size={'4'} my={'7'} />
+                <Separator size={"4"} my={"7"} />
                 <Box>
-                  <Text className="font-semibold" size={'2'}>Loan Summary</Text>
+                  <Text className="font-semibold" size={"2"}>Loan Summary</Text>
 
-                  <Box mt={'6'} className="flex flex-col gap-4">
-                    <Flex justify={'between'} align={'center'}>
+                  <Box mt={"6"} className="flex flex-col gap-4">
+                    <Flex justify={"between"} align={"center"}>
                       <Text className="text-xs font-medium text-font/60">Lender</Text>
                       <Text className="text-[13px] font-semibold text-black/70 capitalize">
                         {loanOffer.lender.name}
                       </Text>
                     </Flex>
-                    <Flex justify={'between'} align={'center'}>
+                    <Flex justify={"between"} align={"center"}>
                       <Text className="text-xs font-medium text-font/60">Collateral</Text>
                       <Text className="text-[13px] font-semibold text-black/70 capitalize">
                         {collateral?.toFixed(4)} BTC
@@ -320,45 +324,45 @@ export function RequestLoanSummary() {
                     </Flex>
                   </Box>
 
-                  <Separator size={'4'} my={'4'} />
+                  <Separator size={"4"} my={"4"} />
 
                   <Box className="flex flex-col gap-4">
-                    <Flex justify={'between'} align={'center'}>
+                    <Flex justify={"between"} align={"center"}>
                       <Text className="text-xs font-medium text-font/60">Coin</Text>
                       <Text className="text-[13px] font-semibold text-black/70 capitalize">
                         {initCoin}
                       </Text>
                     </Flex>
-                    <Flex justify={'between'} align={'center'}>
+                    <Flex justify={"between"} align={"center"}>
                       <Text className="text-xs font-medium text-font/60">LTV ratio</Text>
                       <Text className="text-[13px] font-semibold text-black/70 capitalize">
                         {minLtv.toFixed(0)}%
                       </Text>
                     </Flex>
-                    <Flex justify={'between'} align={'center'}>
+                    <Flex justify={"between"} align={"center"}>
                       <Text className="text-xs font-medium text-font/60">Interest rate P.A</Text>
                       <Text className="text-[13px] font-semibold text-black/70 capitalize">
                         {loanOffer.interest_rate * 100}%
                       </Text>
                     </Flex>
-                    <Flex justify={'between'} align={'center'}>
+                    <Flex justify={"between"} align={"center"}>
                       <Text className="text-xs font-medium text-font/60">Duration</Text>
                       <Text className="text-[13px] font-semibold text-black/70 capitalize">
-                        {loanDuration}{' '}Months
+                        {loanDuration} Months
                       </Text>
                     </Flex>
                   </Box>
                 </Box>
-                <Separator size={'4'} my={'4'} />
+                <Separator size={"4"} my={"4"} />
                 <Box className="flex flex-col gap-4">
-                  <Flex justify={'between'} align={'start'}>
+                  <Flex justify={"between"} align={"start"}>
                     <Text className="text-xs font-medium text-font/60">1% Originator fee</Text>
                     <Box className="text-end">
                       <Text className="text-[13px] block font-semibold text-black/70 capitalize">
                         {loanOriginatorFee?.toFixed(4)} BTC
                       </Text>
                       <Text className="text-[13px] block font-semibold text-black/70 capitalize">
-                        ~{loanAmount ? formatCurrency(loanAmount * ORIGINATOR_FEE) : '0'}
+                        ~{loanAmount ? formatCurrency(loanAmount * ORIGINATOR_FEE) : "0"}
                       </Text>
                     </Box>
                   </Flex>
@@ -366,14 +370,16 @@ export function RequestLoanSummary() {
               </Box>
             </Flex>
           </Box>
-        </Box >
+        </Box>
         <Box className="md:col-span-2 lg:col-span-3">
           <Button
             variant="solid"
-            size={'3'}
+            size={"3"}
             color="purple"
             className="w-full font-semibold"
-            onClick={handleRequestLoan} disabled={isButtonDisabled}>
+            onClick={handleRequestLoan}
+            disabled={isButtonDisabled}
+          >
             {doesWalletExist ? isWalletLoaded ? "Request" : "Load Wallet" : "Create Wallet"}
           </Button>
         </Box>
@@ -388,7 +394,7 @@ export function RequestLoanSummary() {
           handleSubmit={handleSubmitUnlockWalletModal}
         />
 
-        <Box px={'2'} className="md:col-span-2">
+        <Box px={"2"} className="md:col-span-2">
           {error
             ? (
               <Callout.Root color="red" className="w-full">
@@ -402,8 +408,7 @@ export function RequestLoanSummary() {
             )
             : ""}
         </Box>
-
-      </Grid >
+      </Grid>
     </Box>
   );
 }
