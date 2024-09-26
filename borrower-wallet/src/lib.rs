@@ -8,13 +8,13 @@ mod storage;
 pub mod wallet;
 
 #[wasm_bindgen]
-pub fn new_wallet(passphrase: String, network: String) -> Result<(), JsValue> {
-    map_err_to_js!(browser_wallet::new(passphrase, network))
+pub fn new_wallet(passphrase: String, network: String, username: String) -> Result<(), JsValue> {
+    map_err_to_js!(browser_wallet::new(passphrase, network, username))
 }
 
 #[wasm_bindgen]
-pub fn load_wallet(passphrase: String) -> Result<(), JsValue> {
-    map_err_to_js!(browser_wallet::load(&passphrase))
+pub fn load_wallet(passphrase: String, username: String) -> Result<(), JsValue> {
+    map_err_to_js!(browser_wallet::load(&passphrase, &username))
 }
 
 #[wasm_bindgen]
@@ -23,8 +23,8 @@ pub fn is_wallet_loaded() -> Result<bool, JsValue> {
 }
 
 #[wasm_bindgen]
-pub fn does_wallet_exist() -> Result<bool, JsValue> {
-    map_err_to_js!(browser_wallet::does_wallet_exist())
+pub fn does_wallet_exist(username: String) -> Result<bool, JsValue> {
+    map_err_to_js!(browser_wallet::does_wallet_exist(&username))
 }
 
 #[wasm_bindgen]
@@ -33,8 +33,8 @@ pub fn get_mnemonic() -> Result<String, JsValue> {
 }
 
 #[wasm_bindgen]
-pub fn get_next_pk() -> Result<String, JsValue> {
-    map_err_to_js!(browser_wallet::get_next_pk())
+pub fn get_next_pk(username: String) -> Result<String, JsValue> {
+    map_err_to_js!(browser_wallet::get_next_pk(&username))
 }
 
 #[wasm_bindgen]
@@ -42,11 +42,13 @@ pub fn sign_claim_psbt(
     psbt: String,
     collateral_descriptor: String,
     pk: String,
+    username: String,
 ) -> Result<String, JsValue> {
     map_err_to_js!(browser_wallet::sign_claim_psbt(
         &psbt,
         &collateral_descriptor,
-        &pk
+        &pk,
+        &username
     ))
 }
 
