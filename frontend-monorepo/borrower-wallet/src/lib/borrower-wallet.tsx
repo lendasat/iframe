@@ -33,9 +33,10 @@ export const useWallet = () => {
 
 interface WalletProviderProps {
   children: ReactNode;
+  username: string;
 }
 
-export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
+export const WalletProvider: React.FC<WalletProviderProps> = ({ children, username }) => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isWalletLoaded, setIsWalletLoaded] = useState(false);
   const [doesWalletExist, setDoesWalletExist] = useState(false);
@@ -43,7 +44,7 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
   useEffect(() => {
     init().then(() => {
       setIsInitialized(true);
-      setDoesWalletExist(does_wallet_exist());
+      setDoesWalletExist(does_wallet_exist(username));
       setIsWalletLoaded(is_wallet_loaded());
     }).catch((error) => {
       console.log(`Failed initializing wasm library ${error}`);
@@ -52,7 +53,7 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
 
   const createWallet = (passphrase: string, network: string) => {
     if (isInitialized) {
-      new_wallet(passphrase, network);
+      new_wallet(passphrase, network, username);
       setDoesWalletExist(true);
       setIsWalletLoaded(true);
     } else {
@@ -63,7 +64,7 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
   const loadWallet = (passphrase: string) => {
     console.log("loading wallet");
     if (isInitialized) {
-      load_wallet(passphrase);
+      load_wallet(passphrase, username);
       setIsWalletLoaded(true);
       console.log("wallet loaded successfully");
     } else {
@@ -80,7 +81,7 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
 
   const getNextPublicKey = () => {
     if (isInitialized && isWalletLoaded) {
-      return get_next_pk();
+      return get_next_pk(username);
     } else if (!isInitialized) {
       throw Error("Wallet not initialized");
     } else {
@@ -90,7 +91,7 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
 
   const signClaimPsbt = (psbt: string, collateralDescriptor: string, pk: string) => {
     if (isInitialized && isWalletLoaded) {
-      return sign_claim_psbt(psbt, collateralDescriptor, pk);
+      return sign_claim_psbt(psbt, collateralDescriptor, pk, username);
     } else {
       throw Error("Wallet not initialized");
     }

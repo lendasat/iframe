@@ -67,14 +67,14 @@ const menuItems = [
 ];
 
 function MainLayoutComponents() {
-  const { backendVersion } = useAuth();
+  const { backendVersion, user } = useAuth();
   const version = backendVersion ?? {
     version: new SemVer("0.0.0"),
     commit_hash: "unknown",
   };
 
   return (
-    <WalletProvider>
+    <WalletProvider username={user!.name}>
       <Layout
         menuItems={menuItems}
         theme={"light"}

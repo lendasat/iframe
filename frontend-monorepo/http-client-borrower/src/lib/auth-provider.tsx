@@ -62,7 +62,7 @@ export const AuthProviderBorrower: React.FC<AuthProviderProps> = ({ children, ba
 
 const BorrowerAuthProviderInner: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [backendVersion, setBackendVersion] = useState<Version | undefined>(undefined);
+  const [backendVersion, setBackendVersion] = useState<Version | undefined>();
   const [loading, setLoading] = useState(true);
   const { me, login: baseLogin, logout: baseLogout, getVersion } = useBaseHttpClient();
 
