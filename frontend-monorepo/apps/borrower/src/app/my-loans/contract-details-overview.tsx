@@ -1,13 +1,16 @@
+import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   Contract,
   ContractStatus,
   contractStatusToLabelString,
   LiquidationStatus,
+  useAuth,
   useBorrowerHttpClient,
 } from "@frontend-monorepo/http-client-borrower";
 import { CurrencyFormatter } from "@frontend-monorepo/ui-shared";
 import React, { Suspense, useState } from "react";
-import { Badge, Col, Container, OverlayTrigger, Row, Tooltip } from "react-bootstrap";
+import { Alert, Badge, Button, Col, Container, OverlayTrigger, Row, Tooltip } from "react-bootstrap";
 import { Await, useParams } from "react-router-dom";
 import { Lender } from "../request-loan/lender";
 import { CollateralContractDetails } from "./collateralize-contract";
@@ -16,6 +19,7 @@ import { ContractPrincipalGiven } from "./contract-principal-given";
 import { ContractRepaid } from "./contract-repaid";
 import { ContractRequested } from "./contract-requested";
 import { ExpandableDisputeCard } from "./dispute-card";
+import { downloadLocalStorage } from "./download-local-storage";
 
 function ContractDetailsOverview() {
   const { getContract } = useBorrowerHttpClient();
@@ -89,6 +93,8 @@ interface DetailsProps {
 
 function ContractDetails({ contract }: DetailsProps) {
   const [startingDisputeLoading, setStartingDisputeLoading] = useState(false);
+  const { backendVersion } = useAuth();
+
   const [error, setError] = useState("");
 
   const { startDispute } = useBorrowerHttpClient();
@@ -148,9 +154,16 @@ function ContractDetails({ contract }: DetailsProps) {
 
   return (
     <Container fluid>
-      <Row>
+      <Row className="mb-2">
         <h4>Contract Details</h4>
       </Row>
+      <Alert variant={"info"} className="d-flex align-items-center">
+        <div className="d-flex align-items-center">
+          <FontAwesomeIcon icon={faExclamationCircle} className="h-4 w-4 mr-2" />
+          Download contract backup. It is encrypted with the contract password you set earlier.
+        </div>
+        <Button onClick={() => downloadLocalStorage(backendVersion)}>Download</Button>
+      </Alert>
       <Row className="justify-content-between border-b mt-2">
         <Col>Lender</Col>
         <Col className="text-end mb-2">
