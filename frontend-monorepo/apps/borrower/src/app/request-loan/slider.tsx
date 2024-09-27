@@ -26,10 +26,6 @@ export const Slider = ({ min, max, init, step, suffix, reset, onChange }: Slider
     onChange(newValue);
   };
 
-  // const handleValueChange = (newValue: number[]) => {
-  //   setValue(newValue); // Update the state with the new slider value
-  // };
-
   return (
     <div className="w-full">
       <Form.Range
