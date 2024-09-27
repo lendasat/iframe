@@ -3,7 +3,6 @@
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
-    use bitcoin::Amount;
     use bitcoin::Psbt;
     use hub::model::ContractRequestSchema;
     use hub::model::ContractStatus;
@@ -17,15 +16,11 @@ mod tests {
     use hub::routes::borrower::Contract;
     use reqwest::cookie::Jar;
     use reqwest::Client;
-    use rust_decimal::prelude::ToPrimitive;
-    use rust_decimal::Decimal;
     use rust_decimal_macros::dec;
     use serde_json::json;
     use std::sync::Arc;
     use std::sync::Once;
     use std::time::Duration;
-
-    const ORIGINATION_FEE_RATE: f32 = 0.01;
 
     /// Run `just prepare-e2e` before this test.
     #[ignore]

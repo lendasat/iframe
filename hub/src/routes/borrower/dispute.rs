@@ -1,4 +1,3 @@
-use crate::db;
 use crate::email::Email;
 use crate::model::DisputeRequestBodySchema;
 use crate::model::DisputeStatus;
@@ -8,7 +7,8 @@ use crate::routes::borrower::ClaimCollateralPsbt;
 use crate::routes::AppState;
 use crate::routes::ErrorResponse;
 use crate::wallet::LIQUIDATOR_ADDRESS;
-use anyhow::Context;
+use crate::{db, mempool};
+use anyhow::{bail, Context};
 use axum::extract::Path;
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -19,8 +19,6 @@ use axum::routing::post;
 use axum::Extension;
 use axum::Json;
 use axum::Router;
-use bitcoin_units::Amount;
-use rust_decimal::Decimal;
 use std::sync::Arc;
 use time::OffsetDateTime;
 use tracing::instrument;
@@ -257,48 +255,52 @@ pub async fn get_claim_collateral_psbt(
         )
         .await?;
 
-        let contract_index = contract
-            .contract_index
-            .context("Can't generate claim PSBT without contract index")?;
+        let psbt = async {
+            let contract_index = contract
+                .contract_index
+                .context("Can't generate claim PSBT without contract index")?;
 
-        // FIXME: We can't spend the collateral like this, as it may come from more than one output.
-        // We must persist all collateral outputs separately (including value), so that we can spend
-        // them here.
+            let contract_address = contract
+                .contract_address
+                .context("Cannot claim collateral without collateral address")?;
+            let collateral_outputs = data
+                .mempool
+                .send(mempool::GetCollateralOutputs(contract_address))
+                .await?;
 
-        let collateral_output = todo!();
+            if collateral_outputs.is_empty() {
+                bail!("Unaware of any collateral outputs to claim");
+            }
 
-        let collateral_sats = Amount::from_sat(contract.initial_collateral_sats);
-        let collateral_btc = Decimal::try_from(collateral_sats.to_btc()).expect("to fit");
-        let initial_price = contract.loan_amount / (collateral_btc * contract.initial_ltv);
+            let (psbt, collateral_descriptor) = data.wallet.create_dispute_claim_collateral_psbt(
+                contract.borrower_pk,
+                contract_index,
+                collateral_outputs,
+                [
+                    (
+                        contract.borrower_btc_address,
+                        dispute.borrower_payout_sats.expect("To be some") as u64,
+                    ),
+                    (
+                        LIQUIDATOR_ADDRESS.parse().expect("to be valid"),
+                        dispute.borrower_payout_sats.expect("To be some") as u64,
+                    ),
+                ],
+                contract.origination_fee_sats,
+            )?;
 
-        let origination_fee = Amount::from_sat(contract.origination_fee_sats);
+            let psbt = psbt.serialize_hex();
 
-        let (psbt, collateral_descriptor) = data.wallet.create_dispute_claim_collateral_psbt(
-            contract.borrower_pk,
-            contract_index,
-            collateral_output,
-            collateral_sats.to_sat(),
-            [
-                (
-                    contract.borrower_btc_address,
-                    dispute.borrower_payout_sats.expect("To be some") as u64,
-                ),
-                (
-                    LIQUIDATOR_ADDRESS.parse().expect("to be valid"),
-                    dispute.borrower_payout_sats.expect("To be some") as u64,
-                ),
-            ],
-            origination_fee.to_sat(),
-        )?;
+            let res = ClaimCollateralPsbt {
+                psbt,
+                collateral_descriptor,
+            };
 
-        let psbt = psbt.serialize_hex();
+            anyhow::Ok(res)
+        }
+        .await?;
 
-        let res = ClaimCollateralPsbt {
-            psbt,
-            collateral_descriptor,
-        };
-
-        anyhow::Ok(res)
+        anyhow::Ok(psbt)
     }
     .await
     .map_err(|error| {
