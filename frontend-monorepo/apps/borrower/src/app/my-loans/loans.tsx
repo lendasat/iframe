@@ -1,8 +1,8 @@
 import { Contract, contractStatusToLabelString, LiquidationStatus } from "@frontend-monorepo/http-client-borrower";
 import { CurrencyFormatter, LtvProgressBar, usePrice } from "@frontend-monorepo/ui-shared";
-import React from "react";
 import { Badge, Button, Card, Col, Container, Row } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
+import { collateralForStatus } from "./collateralForStatus";
 
 interface LoansComponentProps {
   loans: Contract[];
@@ -66,8 +66,19 @@ function ContractsComponent({ loans }: LoansComponentProps) {
         ))}
       </Row>
       {loans.map((loan, index) => {
-        const { id, loan_amount, expiry, interest_rate, initial_collateral_sats, status, liquidation_status } = loan;
-        const collateral_btc = initial_collateral_sats / 100000000;
+        const {
+          id,
+          loan_amount,
+          expiry,
+          interest_rate,
+          initial_collateral_sats,
+          status,
+          liquidation_status,
+          collateral_sats,
+        } = loan;
+
+        let collateral_btc = collateralForStatus(status, initial_collateral_sats, collateral_sats) / 100000000;
+
         const ltvRatio = loan_amount / (collateral_btc * latestPrice);
 
         const firstMarginCall = liquidation_status == LiquidationStatus.FirstMarginCall;

@@ -3,19 +3,20 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useWallet } from "@frontend-monorepo/borrower-wallet";
 import { Contract, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import { FeeSelector } from "@frontend-monorepo/mempool";
-import React, { useState } from "react";
+import { useState } from "react";
 import { Alert, Button, Col, Container, Row } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import { UnlockWalletModal } from "../wallet/unlock-wallet-modal";
 
 interface ContractRepaidProps {
   contract: Contract;
+  collateralBtc: number;
 }
 
 export function ContractRepaid({
   contract,
+  collateralBtc,
 }: ContractRepaidProps) {
-  const collateralAmountBtc = contract.initial_collateral_sats / 100000000;
   const refundAddress = contract.borrower_btc_address;
 
   const { getClaimCollateralPsbt, postClaimTx } = useBorrowerHttpClient();
@@ -93,7 +94,7 @@ export function ContractRepaid({
           <Col>
             <Alert variant="info">
               <FontAwesomeIcon icon={faInfoCircle} /> Once claimed, your collateral of{" "}
-              <strong>{collateralAmountBtc} BTC</strong> will be disbursed to <strong>{refundAddress}</strong>.
+              <strong>{collateralBtc} BTC</strong> will be disbursed to <strong>{refundAddress}</strong>.
             </Alert>
           </Col>
         </Row>

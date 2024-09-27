@@ -162,8 +162,6 @@ pub struct Contract {
     pub initial_ltv: Decimal,
     /// The minimum amount of collateral the borrower is expected to send to set up a loan.
     ///
-    /// FIXME: This does not include the origination fee! Some logic must use the origination fee!
-    ///
     /// This value is only relevant before the loan has been established and must not be used again
     /// afterwards. You almost certainly want to use `collateral_sats` instead.
     pub initial_collateral_sats: u64,
