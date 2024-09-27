@@ -1,6 +1,5 @@
 import { Box, Button, Flex, Separator, Text, TextField } from "@radix-ui/themes";
 import React from "react";
-import { Form } from "react-bootstrap";
 import { Slider, SliderProps } from "./slider";
 import { parseStableCoin, StableCoin, StableCoinDropdown, StableCoinHelper } from "./stable-coin";
 
@@ -177,7 +176,7 @@ function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
               variant="ghost"
               className="hover:bg-transparent"
             >
-              <Text className={"text-xs font-medium text-purple-700"}>
+              <Text className={"text-xs font-medium text-font"}>
                 Reset
               </Text>
             </Button>
@@ -203,7 +202,7 @@ function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
               variant="ghost"
               className="hover:bg-transparent"
             >
-              <Text className={"text-xs font-medium text-purple-700"}>
+              <Text className={"text-xs font-medium text-font"}>
                 Reset
               </Text>
             </Button>
@@ -228,7 +227,7 @@ function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
               variant="ghost"
               className="hover:bg-transparent"
             >
-              <Text className={"text-xs font-medium text-purple-700"}>
+              <Text className={"text-xs font-medium text-font"}>
                 Reset
               </Text>
             </Button>
@@ -248,7 +247,7 @@ function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
               variant="ghost"
               className="hover:bg-transparent"
             >
-              <Text className={"text-xs font-medium text-purple-700"}>
+              <Text className={"text-xs font-medium text-font"}>
                 Reset
               </Text>
             </Button>
@@ -268,7 +267,7 @@ function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
               variant="ghost"
               className="hover:bg-transparent"
             >
-              <Text className={"text-xs font-medium text-purple-700"}>
+              <Text className={"text-xs font-medium text-font"}>
                 Reset
               </Text>
             </Button>

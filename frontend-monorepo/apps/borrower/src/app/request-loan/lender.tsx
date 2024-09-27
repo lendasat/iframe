@@ -9,7 +9,7 @@ export function Lender({ name, id }: LenderProfile) {
       <Link to={`/profile/${id}`}>
         <Flex direction={"row"} align={"center"} gap={"3"}>
           <Avatar
-            // radius="full"
+            radius="full"
             color="purple"
             fallback={name.substring(0, 1)}
           />
