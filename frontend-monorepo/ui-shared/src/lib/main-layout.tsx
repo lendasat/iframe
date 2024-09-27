@@ -1,6 +1,7 @@
 import { faBars } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Version } from "@frontend-monorepo/base-http-client";
+import { useAuth } from "@frontend-monorepo/http-client-borrower";
 import { Avatar, Box, Flex } from "@radix-ui/themes";
 import React, { ReactNode } from "react";
 import { IconType } from "react-icons";
@@ -11,7 +12,6 @@ import { Menu, MenuItem, Sidebar } from "react-pro-sidebar";
 import { Link, NavLink } from "react-router-dom";
 import { SidebarFooter } from "./components/SidebarFooter";
 import { SidebarHeader } from "./components/SidebarHeader";
-import { useAuth } from "@frontend-monorepo/http-client-borrower";
 
 type Theme = "light" | "dark";
 
@@ -32,8 +32,8 @@ interface LayoutProps {
 export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme = "light", backendVersion }) => {
   const [toggled, setToggled] = React.useState(false);
   const [broken, setBroken] = React.useState(false);
-  const layout = window
-  const { user } = useAuth()
+  const layout = window;
+  const { user } = useAuth();
 
   return (
     <div
@@ -47,7 +47,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme = "li
         breakPoint="lg"
         rootStyles={{
           height: "100vh !important",
-          borderWidth: 0
+          borderWidth: 0,
         }}
       >
         <div className="flex flex-col h-full px-3 pt-10 pb-2 items-center bg-dashboard">
@@ -100,16 +100,16 @@ export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme = "li
             </Flex>
           </Box>
           <Box>
-            <Flex align={'center'} className="gap-4 md:gap-8">
-              <Link to={'https://lendasat.notion.site'} target="_blank">
-                <RiCustomerService2Fill size={'20'} />
+            <Flex align={"center"} className="gap-4 md:gap-8">
+              <Link to={"https://lendasat.notion.site"} target="_blank">
+                <RiCustomerService2Fill size={"20"} />
               </Link>
-              <Link to={'/history'}>
-                <IoNotifications size={'20'} />
+              <Link to={"/history"}>
+                <IoNotifications size={"20"} />
               </Link>
-              <Link to={'/my-account'}>
+              <Link to={"/my-account"}>
                 <Avatar
-                  size={'3'}
+                  size={"3"}
                   radius="full"
                   color="purple"
                   fallback={user ? user.name.substring(0, 1) : "U"}
@@ -121,7 +121,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme = "li
         <Box
           className="bg-gradient-to-br from-active-nav/5 from-40% via-70% via-purple/800/5 to-100% to-[#1a56e30b] lg:rounded-tl-2xl"
           style={{
-            height: layout.innerHeight - 60
+            height: layout.innerHeight - 60,
           }}
         >
           {children}

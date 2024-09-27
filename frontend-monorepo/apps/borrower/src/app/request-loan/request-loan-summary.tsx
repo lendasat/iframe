@@ -23,7 +23,7 @@ type LocationState = {
 export function RequestLoanSummary() {
   const location = useLocation();
   const { loanOffer, loanFilter } = location.state as LocationState;
-  const layout = window
+  const layout = window;
   const [error, setError] = useState("");
 
   const ORIGINATOR_FEE = 0.01;
@@ -77,7 +77,8 @@ export function RequestLoanSummary() {
       setAmountError("Amount is required");
     } else if (value < loanOffer.loan_amount_min || value > loanOffer.loan_amount_max) {
       setAmountError(
-        `Amount must be between ${formatCurrency(loanOffer.loan_amount_min)} and ${formatCurrency(loanOffer.loan_amount_max)
+        `Amount must be between ${formatCurrency(loanOffer.loan_amount_min)} and ${
+          formatCurrency(loanOffer.loan_amount_max)
         }`,
       );
     } else {
@@ -175,7 +176,7 @@ export function RequestLoanSummary() {
     <Box
       className="bg-white overflow-y-scroll p-3 pb-16 md:p-5 lg:p-8"
       style={{
-        height: layout.innerHeight - 60
+        height: layout.innerHeight - 60,
       }}
     >
       <Grid className="md:grid-cols-4 lg:grid-cols-5 gap-5 items-center">
