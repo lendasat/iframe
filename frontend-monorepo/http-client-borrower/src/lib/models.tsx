@@ -79,6 +79,8 @@ export interface Contract {
   repaid_at: Date | undefined;
   expiry: Date;
   interest_rate: number;
+  initial_collateral_sats: number;
+  origination_fee_sats: number;
   collateral_sats: number;
   initial_ltv: number;
   status: ContractStatus;

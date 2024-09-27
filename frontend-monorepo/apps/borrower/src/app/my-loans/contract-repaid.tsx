@@ -14,7 +14,7 @@ interface ContractRepaidProps {
 export function ContractRepaid({
   contract,
 }: ContractRepaidProps) {
-  const collateralAmountBtc = contract.collateral_sats / 100000000;
+  const collateralAmountBtc = contract.initial_collateral_sats / 100000000;
   const refundAddress = contract.borrower_btc_address;
 
   const { getClaimCollateralPsbt, postClaimTx } = useBorrowerHttpClient();

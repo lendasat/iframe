@@ -10,9 +10,9 @@ interface LoansHistoryComponentProps {
 export function LoanHistoryComponent(props: LoansHistoryComponentProps) {
   const { loan } = props;
 
-  const { loan_amount, lender, interest_rate, collateral_sats, created_at, repaid_at } = loan;
+  const { loan_amount, lender, interest_rate, initial_collateral_sats, created_at, repaid_at } = loan;
 
-  const collateral_btc = collateral_sats / 100000000;
+  const collateral_btc = initial_collateral_sats / 100000000;
 
   return (
     <Card>

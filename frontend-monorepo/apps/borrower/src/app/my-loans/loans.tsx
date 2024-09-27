@@ -66,8 +66,8 @@ function ContractsComponent({ loans }: LoansComponentProps) {
         ))}
       </Row>
       {loans.map((loan, index) => {
-        const { id, loan_amount, expiry, interest_rate, collateral_sats, status, liquidation_status } = loan;
-        const collateral_btc = collateral_sats / 100000000;
+        const { id, loan_amount, expiry, interest_rate, initial_collateral_sats, status, liquidation_status } = loan;
+        const collateral_btc = initial_collateral_sats / 100000000;
         const ltvRatio = loan_amount / (collateral_btc * latestPrice);
 
         const firstMarginCall = liquidation_status == LiquidationStatus.FirstMarginCall;

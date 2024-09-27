@@ -86,8 +86,6 @@ function ContractDetails({ contract }: DetailsProps) {
   const [error, setError] = useState("");
   const [startingDisputeLoading, setStartingDisputeLoading] = useState(false);
 
-  const ORIGINATOR_FEE = 0.01;
-
   const collateral_sats = contract.initial_collateral_sats;
   const collateral = collateral_sats / 100000000;
   const loanAmount = contract.loan_amount;
@@ -105,8 +103,7 @@ function ContractDetails({ contract }: DetailsProps) {
     || contract.status === ContractStatus.DisputeBorrowerStarted
     || contract.status === ContractStatus.DisputeLenderStarted;
 
-  // FIXME: Let's do this once, in the backend.
-  const loanOriginatorFee = (loanAmount / initial_price) * ORIGINATOR_FEE;
+  const loanOriginatorFee = contract.origination_fee_sats;
   const loanOriginatorFeeUsd = (loanOriginatorFee * initial_price).toFixed(0);
 
   const onStartDispute = async (reason: string, comment: string) => {

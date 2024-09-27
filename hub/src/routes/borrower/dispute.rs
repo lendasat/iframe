@@ -20,7 +20,6 @@ use axum::Extension;
 use axum::Json;
 use axum::Router;
 use bitcoin_units::Amount;
-use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
 use std::sync::Arc;
 use time::OffsetDateTime;
@@ -272,12 +271,7 @@ pub async fn get_claim_collateral_psbt(
         let collateral_btc = Decimal::try_from(collateral_sats.to_btc()).expect("to fit");
         let initial_price = contract.loan_amount / (collateral_btc * contract.initial_ltv);
 
-        let origination_fee = (contract.loan_amount / initial_price)
-            * Decimal::try_from(crate::routes::borrower::contracts::ORIGINATION_FEE_RATE)
-                .expect("to fit");
-        let origination_fee = origination_fee.round_dp(8);
-        let origination_fee =
-            Amount::from_btc(origination_fee.to_f64().expect("to fit")).expect("to fit");
+        let origination_fee = Amount::from_sat(contract.origination_fee_sats);
 
         let (psbt, collateral_descriptor) = data.wallet.create_dispute_claim_collateral_psbt(
             contract.borrower_pk,

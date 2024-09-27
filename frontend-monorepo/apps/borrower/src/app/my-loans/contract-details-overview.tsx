@@ -50,7 +50,7 @@ function Details({ contract }: DetailsProps) {
   // TODO: this should come from the backend
   const ORIGINATOR_FEE = 0.01;
 
-  const collateral_sats = contract.collateral_sats;
+  const collateral_sats = contract.initial_collateral_sats;
   const collateral = collateral_sats / 100000000;
   const loanAmount = contract.loan_amount;
   const contractAddress = contract.contract_address;
@@ -99,9 +99,7 @@ function ContractDetails({ contract }: DetailsProps) {
 
   const { startDispute } = useBorrowerHttpClient();
 
-  const ORIGINATOR_FEE = 0.01;
-
-  const collateral_sats = contract.collateral_sats;
+  const collateral_sats = contract.initial_collateral_sats;
   const collateral = collateral_sats / 100000000;
   const loanAmount = contract.loan_amount;
   const interestRate = contract.interest_rate;
@@ -112,8 +110,7 @@ function ContractDetails({ contract }: DetailsProps) {
 
   const initialLtvFormatted = (initialLtv * 100).toFixed(0);
 
-  // FIXME: Let's do this once, in the backend.
-  const loanOriginatorFee = (loanAmount / initial_price) * ORIGINATOR_FEE;
+  const loanOriginatorFee = contract.origination_fee_sats / 100000000;
   const loanOriginatorFeeUsd = (loanOriginatorFee * initial_price).toFixed(0);
 
   const disputeInProgress = contract.status === ContractStatus.DisputeBorrowerResolved
@@ -353,7 +350,7 @@ const ContractStatusDetails = (
         <CollateralContractDetails
           totalCollateral={totalCollateral}
           collateralAddress={contractAddress}
-          collateral_btc={contract.collateral_sats / 100000000}
+          collateral_btc={contract.initial_collateral_sats / 100000000}
           loanOriginatorFeeUsd={loanOriginatorFeeUsd}
           loanOriginatorFee={loanOriginatorFee}
         />

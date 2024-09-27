@@ -102,6 +102,7 @@ CREATE TABLE
     loan_id                 CHAR(36)                 NOT NULL,
     initial_ltv             DECIMAL                  NOT NULL,
     initial_collateral_sats BIGINT                   NOT NULL,
+    origination_fee_sats    BIGINT                   NOT NULL,
     collateral_sats         BIGINT                   NOT NULL,
     loan_amount             DECIMAL                  NOT NULL,
     duration_months         INT                      NOT NULL,

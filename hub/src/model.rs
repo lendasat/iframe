@@ -167,6 +167,7 @@ pub struct Contract {
     /// This value is only relevant before the loan has been established and must not be used again
     /// afterwards. You almost certainly want to use `collateral_sats` instead.
     pub initial_collateral_sats: u64,
+    pub origination_fee_sats: u64,
     /// The current amount of confirmed collateral in the loan contract.
     ///
     /// We have decided to not persist the collateral outputs to make the implementation simpler.
@@ -247,6 +248,7 @@ pub mod db {
         pub loan_id: String,
         pub initial_ltv: Decimal,
         pub initial_collateral_sats: i64,
+        pub origination_fee_sats: i64,
         pub collateral_sats: i64,
         pub loan_amount: Decimal,
         pub duration_months: i32,
@@ -301,6 +303,7 @@ impl From<db::Contract> for Contract {
             loan_id: value.loan_id,
             initial_ltv: value.initial_ltv,
             initial_collateral_sats: value.initial_collateral_sats as u64,
+            origination_fee_sats: value.origination_fee_sats as u64,
             collateral_sats: value.collateral_sats as u64,
             loan_amount: value.loan_amount,
             duration_months: value.duration_months,
@@ -361,6 +364,7 @@ impl From<Contract> for db::Contract {
             loan_id: value.loan_id,
             initial_ltv: value.initial_ltv,
             initial_collateral_sats: value.initial_collateral_sats as i64,
+            origination_fee_sats: value.origination_fee_sats as i64,
             collateral_sats: value.collateral_sats as i64,
             loan_amount: value.loan_amount,
             duration_months: value.duration_months,

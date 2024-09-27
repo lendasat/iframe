@@ -166,22 +166,7 @@ mod tests {
         let contracts: Vec<Contract> = res.json().await.unwrap();
         let contract = contracts.iter().find(|c| c.id == contract.id).unwrap();
 
-        // TODO: Ensure that we don't need to calculate this again in the client (and in the tests).
-        let total_collateral = {
-            let initial_price = contract.loan_amount
-                / (contract.initial_ltv
-                    * Decimal::try_from(
-                        Amount::from_sat(contract.initial_collateral_sats).to_btc(),
-                    )
-                    .unwrap());
-
-            let origination_fee = (contract.loan_amount / initial_price)
-                * Decimal::try_from(ORIGINATION_FEE_RATE).unwrap();
-            let origination_fee =
-                Amount::from_btc(origination_fee.round_dp(8).to_f64().unwrap()).unwrap();
-
-            contract.initial_collateral_sats + origination_fee.to_sat()
-        };
+        let total_collateral = contract.initial_collateral_sats + contract.origination_fee_sats;
 
         if network == "regtest" {
             tracing::info!("Running on regtest");

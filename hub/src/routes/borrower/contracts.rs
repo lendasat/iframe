@@ -26,6 +26,7 @@ use bitcoin::Transaction;
 use miniscript::Descriptor;
 use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
+use rust_decimal_macros::dec;
 use serde::Deserialize;
 use serde::Serialize;
 use std::sync::Arc;
@@ -34,7 +35,7 @@ use time::format_description;
 use time::OffsetDateTime;
 use tracing::instrument;
 
-pub(crate) const ORIGINATION_FEE_RATE: f32 = 0.01;
+pub(crate) const ORIGINATION_FEE_RATE: Decimal = dec!(0.01);
 
 pub(crate) fn router(app_state: Arc<AppState>) -> Router {
     Router::new()
@@ -83,6 +84,7 @@ pub struct Contract {
     pub loan_amount: Decimal,
     pub duration_months: i32,
     pub initial_collateral_sats: u64,
+    pub origination_fee_sats: u64,
     pub collateral_sats: u64,
     #[serde(with = "rust_decimal::serde::float")]
     pub interest_rate: Decimal,
@@ -178,6 +180,7 @@ pub async fn get_contracts(
             loan_amount: contract.loan_amount,
             duration_months: contract.duration_months,
             initial_collateral_sats: contract.initial_collateral_sats,
+            origination_fee_sats: contract.origination_fee_sats,
             interest_rate: offer.interest_rate,
             initial_ltv: contract.initial_ltv,
             status: contract.status,
@@ -266,6 +269,7 @@ pub async fn get_contract(
             loan_amount: contract.loan_amount,
             duration_months: contract.duration_months,
             initial_collateral_sats: contract.initial_collateral_sats,
+            origination_fee_sats: contract.origination_fee_sats,
             interest_rate: offer.interest_rate,
             initial_ltv: contract.initial_ltv,
             status: contract.status,
@@ -307,12 +311,18 @@ pub async fn post_contract_request(
         let collateral_btc = collateral_btc.to_f64().context("Invalid conversion")?;
         let collateral = Amount::from_btc(collateral_btc)?;
 
+        let origination_fee_btc = (body.loan_amount * ORIGINATION_FEE_RATE) / price;
+        let origination_fee = origination_fee_btc.round_dp(8);
+        let origination_fee =
+            Amount::from_btc(origination_fee.to_f64().expect("to fit")).expect("to fit");
+
         let contract = db::contracts::insert_contract_request(
             &data.db,
             user.id.as_str(),
             &body.loan_id,
             offer.min_ltv,
             collateral.to_sat(),
+            origination_fee.to_sat(),
             body.loan_amount,
             body.duration_months,
             body.borrower_btc_address,
@@ -335,6 +345,7 @@ pub async fn post_contract_request(
             loan_amount: contract.loan_amount,
             duration_months: contract.duration_months,
             initial_collateral_sats: contract.initial_collateral_sats,
+            origination_fee_sats: contract.origination_fee_sats,
             interest_rate: offer.interest_rate,
             initial_ltv: contract.initial_ltv,
             status: contract.status,
@@ -413,17 +424,7 @@ pub async fn get_claim_collateral_psbt(
             bail!("Unaware of any collateral outputs to claim");
         }
 
-        let initial_collateral_sats = Amount::from_sat(contract.initial_collateral_sats);
-        let initial_collateral_btc =
-            Decimal::try_from(initial_collateral_sats.to_btc()).expect("to fit");
-        let initial_price = contract.loan_amount / (initial_collateral_btc * contract.initial_ltv);
-
-        // TODO: we should store this in the database to not have to calculate it again.
-        let origination_fee = (contract.loan_amount / initial_price)
-            * Decimal::try_from(ORIGINATION_FEE_RATE).expect("to fit");
-        let origination_fee = origination_fee.round_dp(8);
-        let origination_fee =
-            Amount::from_btc(origination_fee.to_f64().expect("to fit")).expect("to fit");
+        let origination_fee = Amount::from_sat(contract.origination_fee_sats);
 
         let (psbt, collateral_descriptor) = data.wallet.create_claim_collateral_psbt(
             contract.borrower_pk,
