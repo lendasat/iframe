@@ -3,23 +3,9 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useWallet } from "@frontend-monorepo/borrower-wallet";
 import { LoanOffer, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import { formatCurrency, usePrice } from "@frontend-monorepo/ui-shared";
-import {
-  Badge,
-  Box,
-  Button,
-  Callout,
-  Container,
-  Flex,
-  Grid,
-  Heading,
-  IconButton,
-  Separator,
-  Text,
-  TextField,
-  Tooltip,
-} from "@radix-ui/themes";
+import { Badge, Box, Button, Callout, Flex, Grid, Heading, Separator, Text, TextField } from "@radix-ui/themes";
 import React, { useState } from "react";
-import { BiError, BiSolidCopy } from "react-icons/bi";
+import { BiError } from "react-icons/bi";
 import { IoIosArrowRoundBack } from "react-icons/io";
 import { MdSecurity } from "react-icons/md";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -27,7 +13,7 @@ import { CreateWalletModal } from "../wallet/create-wallet-modal";
 import { UnlockWalletModal } from "../wallet/unlock-wallet-modal";
 import { LoanFilter } from "./loan-offers-filter";
 import { Slider, SliderProps } from "./slider";
-import { StableCoin, StableCoinHelper } from "./stable-coin";
+import { StableCoinHelper } from "./stable-coin";
 
 type LocationState = {
   loanOffer: LoanOffer;
@@ -58,7 +44,6 @@ export function RequestLoanSummary() {
   const initCoin = StableCoinHelper.mapFromBackend(loanOffer.loan_asset_chain, loanOffer.loan_asset_type);
 
   const [loanAmount, setLoanAmount] = useState<number>(initAmount);
-  const [selectedCoin, setSelectedCoin] = useState<StableCoin>(initCoin!);
 
   const [loanAddress, setLoanAddress] = useState("");
 
@@ -77,7 +62,7 @@ export function RequestLoanSummary() {
   const [showCreateWalletModal, setShowCreateWalletModal] = useState(false);
   const [showUnlockWalletModal, setShowUnlockWalletModal] = useState(false);
 
-  const collateral = latestPrice ? (loanAmount / (loanOffer.min_ltv / 100) / latestPrice) : undefined;
+  const collateral = latestPrice ? (loanAmount / loanOffer.min_ltv / latestPrice) : undefined;
 
   const loanOriginatorFee = latestPrice ? ((loanAmount / latestPrice) * ORIGINATOR_FEE) : undefined;
 
@@ -151,10 +136,6 @@ export function RequestLoanSummary() {
     }
   };
 
-  const handleCoinSelect = (coin: StableCoin) => {
-    setSelectedCoin(coin);
-  };
-
   const periodSliderProps: SliderProps = {
     min: loanOffer.duration_months_min,
     max: loanOffer.duration_months_max,
@@ -170,10 +151,10 @@ export function RequestLoanSummary() {
     || loanAmount < loanOffer.loan_amount_min
     || loanAmount > loanOffer.loan_amount_max
     || amountError != null
-    || !selectedCoin
+    || !initCoin
     || !loanAddress.trim();
 
-  const addressLabel = selectedCoin ? `${StableCoinHelper.print(selectedCoin)} address` : "Address";
+  const addressLabel = initCoin ? `${StableCoinHelper.print(initCoin)} address` : "Address";
 
   const handleSubmitCreateWalletModal = async () => {
     handleCloseCreateWalletModal();
@@ -230,13 +211,6 @@ export function RequestLoanSummary() {
                 <Slider {...periodSliderProps} />
               </Flex>
               <Separator size={"4"} />
-              <Flex direction={"row"} align={"center"} gap={"2"}>
-                <Text as="label" size={"2"} weight={"medium"}>Coin:</Text>
-                <Badge color="gray" size={"3"}>
-                  {initCoin}
-                </Badge>
-              </Flex>
-              <Separator size={"4"} />
               <Flex direction={"column"} align={"start"} gap={"2"}>
                 <Text as="label" size={"2"} weight={"medium"}>Bitcoin Refund Address</Text>
                 <TextField.Root
@@ -285,7 +259,7 @@ export function RequestLoanSummary() {
                 <Box className="flex flex-col items-center gap-5">
                   <Text className="font-semibold" size={"2"}>To Receive</Text>
                   <Heading as="h4" size={"8"} weight={"bold"} className="text-font-dark">
-                    {loanAmount ? "$" + loanAmount : "$0"}
+                    {loanAmount ? formatCurrency(loanAmount) : "$0"}
                   </Heading>
                   <Box className="flex items-center justify-center gap-1">
                     <MdSecurity className="text-green-700" />
@@ -346,7 +320,7 @@ export function RequestLoanSummary() {
                     <Text className="text-xs font-medium text-font/60">1% Originator fee</Text>
                     <Box className="text-end">
                       <Text className="text-[13px] block font-semibold text-black/70 capitalize">
-                        {loanOriginatorFee?.toFixed(4)} BTC
+                        {loanOriginatorFee?.toFixed(8)} BTC
                       </Text>
                       <Text className="text-[13px] block font-semibold text-black/70 capitalize">
                         ~{loanAmount ? formatCurrency(loanAmount * ORIGINATOR_FEE) : "0"}
