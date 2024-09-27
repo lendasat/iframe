@@ -63,6 +63,7 @@ export function RequestLoanSummary() {
   const [showUnlockWalletModal, setShowUnlockWalletModal] = useState(false);
 
   const collateral = latestPrice ? (loanAmount / loanOffer.min_ltv / latestPrice) : undefined;
+  const collateralInUsd = collateral ? collateral * latestPrice : undefined;
 
   const loanOriginatorFee = latestPrice ? ((loanAmount / latestPrice) * ORIGINATOR_FEE) : undefined;
 
@@ -165,6 +166,11 @@ export function RequestLoanSummary() {
 
   const minLtv = loanOffer.min_ltv * 100;
 
+  const interestAmountUsd = loanAmount * (loanOffer.interest_rate / 12 * loanDuration);
+
+  const totalAmount = collateral && loanOriginatorFee ? (collateral + loanOriginatorFee) : undefined;
+  const totalAmountUsd = totalAmount ? totalAmount * latestPrice : undefined;
+
   return (
     <Box className="bg-white h-screen overflow-y-scroll p-3 pb-16 md:p-5 lg:p-8">
       <Grid className="md:grid-cols-4 lg:grid-cols-5 gap-5 items-center">
@@ -179,7 +185,7 @@ export function RequestLoanSummary() {
             </Badge>
           </Box>
           <Box mt={"7"}>
-            <Text weight={"medium"} size={"2"}>Ticket Information</Text>
+            <Text weight={"medium"} size={"2"}>Please enter your preferred loan details</Text>
             <Box mt={"4"} className="border border-font/20 rounded-lg p-4 md:p-6 space-y-5">
               <Flex direction={"column"} align={"start"} gap={"2"}>
                 <Text as="label" size={"2"} weight={"medium"}>Amount</Text>
@@ -278,20 +284,15 @@ export function RequestLoanSummary() {
                       </Text>
                     </Flex>
                     <Flex justify={"between"} align={"center"}>
-                      <Text className="text-xs font-medium text-font/60">Collateral</Text>
-                      <Text className="text-[13px] font-semibold text-black/70 capitalize">
-                        {collateral?.toFixed(4)} BTC
-                      </Text>
-                    </Flex>
-                  </Box>
-
-                  <Separator size={"4"} my={"4"} />
-
-                  <Box className="flex flex-col gap-4">
-                    <Flex justify={"between"} align={"center"}>
                       <Text className="text-xs font-medium text-font/60">Coin</Text>
                       <Text className="text-[13px] font-semibold text-black/70 capitalize">
                         {initCoin}
+                      </Text>
+                    </Flex>
+                    <Flex justify={"between"} align={"center"}>
+                      <Text className="text-xs font-medium text-font/60">Duration</Text>
+                      <Text className="text-[13px] font-semibold text-black/70 capitalize">
+                        {loanDuration} Months
                       </Text>
                     </Flex>
                     <Flex justify={"between"} align={"center"}>
@@ -301,29 +302,65 @@ export function RequestLoanSummary() {
                       </Text>
                     </Flex>
                     <Flex justify={"between"} align={"center"}>
-                      <Text className="text-xs font-medium text-font/60">Interest rate P.A</Text>
+                      <Text className="text-xs font-medium text-font/60">APR</Text>
                       <Text className="text-[13px] font-semibold text-black/70 capitalize">
                         {loanOffer.interest_rate * 100}%
                       </Text>
                     </Flex>
+                    <Flex justify={"between"} align={"start"}>
+                      <Text className="text-xs font-medium text-font/60">Interest to be paid on maturity</Text>
+                      <Box className="text-end">
+                        <Text className="text-[13px] block font-semibold text-black/70 capitalize">
+                          {formatCurrency(interestAmountUsd)}
+                        </Text>
+                      </Box>
+                    </Flex>
+                  </Box>
+
+                  <Separator size={"4"} my={"4"} />
+
+                  <Box className="flex flex-col gap-4">
                     <Flex justify={"between"} align={"center"}>
-                      <Text className="text-xs font-medium text-font/60">Duration</Text>
+                      <Text className="text-xs font-medium text-font/60">Collateral</Text>
+                      <Box className="text-end">
+                        <Text className="text-[13px] block font-semibold text-black/70 capitalize">
+                          {collateral?.toFixed(8)} BTC
+                        </Text>
+                        <Text className="text-[13px] block font-semibold text-black/70 capitalize">
+                          ~{collateralInUsd ? formatCurrency(collateralInUsd) : "loading..."}
+                        </Text>
+                      </Box>
+                    </Flex>
+
+                    <Flex justify={"between"} align={"center"}>
+                      <Text className="text-xs font-medium text-font/60"></Text>
                       <Text className="text-[13px] font-semibold text-black/70 capitalize">
-                        {loanDuration} Months
                       </Text>
+                    </Flex>
+
+                    <Flex justify={"between"} align={"start"}>
+                      <Text className="text-xs font-medium text-font/60">1% Originator fee</Text>
+                      <Box className="text-end">
+                        <Text className="text-[13px] block font-semibold text-black/70 capitalize">
+                          {loanOriginatorFee?.toFixed(8)} BTC
+                        </Text>
+                        <Text className="text-[13px] block font-semibold text-black/70 capitalize">
+                          ~{loanAmount ? formatCurrency(loanAmount * ORIGINATOR_FEE) : "0"}
+                        </Text>
+                      </Box>
                     </Flex>
                   </Box>
                 </Box>
                 <Separator size={"4"} my={"4"} />
                 <Box className="flex flex-col gap-4">
                   <Flex justify={"between"} align={"start"}>
-                    <Text className="text-xs font-medium text-font/60">1% Originator fee</Text>
+                    <Text className="text-xs font-medium text-font/60">Total lock-up amount</Text>
                     <Box className="text-end">
                       <Text className="text-[13px] block font-semibold text-black/70 capitalize">
-                        {loanOriginatorFee?.toFixed(8)} BTC
+                        {totalAmount?.toFixed(8)} BTC
                       </Text>
                       <Text className="text-[13px] block font-semibold text-black/70 capitalize">
-                        ~{loanAmount ? formatCurrency(loanAmount * ORIGINATOR_FEE) : "0"}
+                        ~{totalAmountUsd ? formatCurrency(totalAmountUsd) : "0"}
                       </Text>
                     </Box>
                   </Flex>
