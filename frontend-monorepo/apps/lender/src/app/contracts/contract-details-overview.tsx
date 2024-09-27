@@ -5,20 +5,10 @@ import { useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
 import { LiquidationStatus } from "@frontend-monorepo/http-client-lender";
 import { CurrencyFormatter } from "@frontend-monorepo/ui-shared";
 import React, { Suspense, useState } from "react";
-import {
-  Alert,
-  Badge,
-  Button,
-  ButtonGroup,
-  Col,
-  Container,
-  OverlayTrigger,
-  Row,
-  Spinner,
-  Tooltip,
-} from "react-bootstrap";
+import { Alert, Badge, Button, Col, Container, OverlayTrigger, Row, Spinner, Tooltip } from "react-bootstrap";
 import { Await, useNavigate, useParams } from "react-router-dom";
 import { ExpandableDisputeCard } from "../disputes/dispute-card";
+import RepaymentDetails from "./pay-loan-principal";
 
 function ContractDetailsOverview() {
   const { getContract } = useLenderHttpClient();
@@ -407,17 +397,7 @@ const ContractStatusDetails = (
       );
     case ContractStatus.CollateralSeen:
     case ContractStatus.CollateralConfirmed:
-      return (
-        <Button onClick={onPrincipalGiven} disabled={isLoading}>
-          {isLoading
-            ? (
-              <Spinner animation="border" role="status" variant="light" size="sm">
-                <span className="visually-hidden">Loading...</span>
-              </Spinner>
-            )
-            : "Mark principal given"}
-        </Button>
-      );
+      return <RepaymentDetails contract={contract} isLoading={isLoading} onPrincipalGiven={onPrincipalGiven} />;
     case ContractStatus.PrincipalGiven:
       return (
         <Button onClick={onMarkAsRepaid} disabled={isLoading}>
