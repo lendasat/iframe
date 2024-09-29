@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        UPDATE contracts\n        SET\n            claim_txid = $1,\n            updated_at = $2\n        WHERE id = $3\n        RETURNING\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            contract_address,\n            contract_index,\n            collateral_txid,\n            collateral_vout,\n            claim_txid,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            created_at,\n            updated_at\n        ",
+  "query": "\n        UPDATE contracts\n        SET\n            liquidation_status = $1,\n            updated_at = $2\n        WHERE id = $3\n        RETURNING\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            contract_address,\n            contract_index,\n            claim_txid,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            created_at,\n            updated_at\n        ",
   "describe": {
     "columns": [
       {
@@ -35,42 +35,42 @@
       },
       {
         "ordinal": 6,
+        "name": "origination_fee_sats",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 7,
+        "name": "collateral_sats",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 8,
         "name": "loan_amount",
         "type_info": "Numeric"
       },
       {
-        "ordinal": 7,
+        "ordinal": 9,
         "name": "borrower_btc_address",
         "type_info": "Text"
       },
       {
-        "ordinal": 8,
+        "ordinal": 10,
         "name": "borrower_pk",
         "type_info": "Bpchar"
       },
       {
-        "ordinal": 9,
+        "ordinal": 11,
         "name": "borrower_loan_address",
         "type_info": "Text"
       },
       {
-        "ordinal": 10,
+        "ordinal": 12,
         "name": "contract_address",
         "type_info": "Text"
       },
       {
-        "ordinal": 11,
-        "name": "contract_index",
-        "type_info": "Int4"
-      },
-      {
-        "ordinal": 12,
-        "name": "collateral_txid",
-        "type_info": "Text"
-      },
-      {
         "ordinal": 13,
-        "name": "collateral_vout",
+        "name": "contract_index",
         "type_info": "Int4"
       },
       {
@@ -139,7 +139,19 @@
     ],
     "parameters": {
       "Left": [
-        "Text",
+        {
+          "Custom": {
+            "name": "liquidation_status",
+            "kind": {
+              "Enum": [
+                "Healthy",
+                "FirstMarginCall",
+                "SecondMarginCall",
+                "Liquidated"
+              ]
+            }
+          }
+        },
         "Timestamptz",
         "Bpchar"
       ]
@@ -155,8 +167,8 @@
       false,
       false,
       false,
-      true,
-      true,
+      false,
+      false,
       true,
       true,
       true,
@@ -167,5 +179,5 @@
       false
     ]
   },
-  "hash": "7f92d7ffc8a6ccf30202e3d6ff48d5208849851c9c79d414ae7c8de03c0a4534"
+  "hash": "74418d40af804c080331c95e415b85d53e689a4e13d78f6123c538403471d30c"
 }

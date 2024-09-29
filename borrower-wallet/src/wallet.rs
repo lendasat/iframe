@@ -170,34 +170,31 @@ pub fn sign_claim_psbt(
     let sk = kp.secret_key();
     let pk = PublicKey::new(kp.public_key());
 
-    let collateral_amount = psbt.inputs[0]
-        .clone()
-        .witness_utxo
-        .context("No witness UTXO")?
-        .value;
-
-    let sighash = SighashCache::new(&psbt.unsigned_tx)
-        .p2wsh_signature_hash(
-            0,
-            &collateral_descriptor
-                .script_code()
-                .context("No script code")?,
-            collateral_amount,
-            EcdsaSighashType::All,
-        )
-        .context("Can't produce sighash cache")?;
-
     let secp = Secp256k1::new();
+    for (i, input) in psbt.inputs.iter_mut().enumerate() {
+        let collateral_amount = input.clone().witness_utxo.context("No witness UTXO")?.value;
 
-    let sig = secp.sign_ecdsa(&sighash.into(), &sk);
+        let sighash = SighashCache::new(&psbt.unsigned_tx)
+            .p2wsh_signature_hash(
+                i,
+                &collateral_descriptor
+                    .script_code()
+                    .context("No script code")?,
+                collateral_amount,
+                EcdsaSighashType::All,
+            )
+            .context("Can't produce sighash cache")?;
 
-    psbt.inputs[0].partial_sigs.insert(
-        pk,
-        bitcoin::ecdsa::Signature {
-            signature: sig,
-            sighash_type: EcdsaSighashType::All,
-        },
-    );
+        let sig = secp.sign_ecdsa(&sighash.into(), &sk);
+
+        input.partial_sigs.insert(
+            pk,
+            bitcoin::ecdsa::Signature {
+                signature: sig,
+                sighash_type: EcdsaSighashType::All,
+            },
+        );
+    }
 
     let psbt = psbt
         .finalize(&secp)

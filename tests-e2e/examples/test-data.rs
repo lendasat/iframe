@@ -29,6 +29,8 @@ use tracing_subscriber::Layer;
 
 const RUST_LOG_ENV: &str = "RUST_LOG";
 
+const ORIGINATION_FEE_RATE: Decimal = dec!(0.01);
+
 #[tokio::main]
 async fn main() -> Result<()> {
     init_tracing(LevelFilter::DEBUG, false, true)?;
@@ -105,13 +107,17 @@ async fn create_loan_request(
     borrower_id: &str,
 ) -> Result<Contract> {
     let initial_ltv = dec!(0.5);
-    let initial_collateral_sats = ((loan_amount / initial_ltv) / dec!(58_000)) * dec!(100_000_000);
+    let price = dec!(58_000);
+    let one_btc_in_sats = dec!(100_000_000);
+    let initial_collateral_sats = ((loan_amount / initial_ltv) / price) * one_btc_in_sats;
+    let origination_fee_sats = ((loan_amount / price) * ORIGINATION_FEE_RATE) / one_btc_in_sats;
     db::contracts::insert_contract_request(
         pool,
         borrower_id,
         offer.id.as_str(),
         initial_ltv,
         initial_collateral_sats.to_u64().expect("to fit"),
+        origination_fee_sats.to_u64().expect("to fit"),
         loan_amount,
         offer.duration_months_max,
         Address::from_str("tb1qtsasnju08gh7ptqg7260qujgasvtexkf9t3yj3")

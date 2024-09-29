@@ -136,7 +136,6 @@ pub async fn put_approve_contract(
             .send(TrackContractFunding {
                 contract_id,
                 contract_address,
-                initial_collateral_sats: contract.initial_collateral_sats,
             })
             .await?
             .context("Failed to track accepted contract")?;

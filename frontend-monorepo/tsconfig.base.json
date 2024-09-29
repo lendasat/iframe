@@ -23,6 +23,7 @@
       "@frontend-monorepo/http-client-lender": [
         "http-client-lender/src/index.ts"
       ],
+      "@frontend-monorepo/mempool": ["mempool/src/index.ts"],
       "@frontend-monorepo/ui-shared": ["ui-shared/src/index.ts"]
     }
   },

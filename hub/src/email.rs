@@ -219,7 +219,7 @@ impl Email {
 
         let expiry =
             contract.created_at + Duration::days((365 / 12 * contract.duration_months) as i64);
-        let collateral_value_usd = (Decimal::from_u64(contract.initial_collateral_sats)
+        let collateral_value_usd = (Decimal::from_u64(contract.collateral_sats)
             .expect("to fit into u64")
             / dec!(100_000_000))
             * price;
@@ -237,7 +237,7 @@ impl Email {
 
         let liquidation_price = calculate_liquidation_price(
             contract.loan_amount,
-            Decimal::from_u64(contract.initial_collateral_sats).expect("to fit"),
+            Decimal::from_u64(contract.collateral_sats).expect("to fit"),
         );
         let liquidation_price = liquidation_price.round_dp(2).to_string();
 
@@ -246,7 +246,7 @@ impl Email {
             "contract_id": contract.id,
             "loan_amount": contract.loan_amount,
             "expiry": expiry,
-            "collateral_sats": contract.initial_collateral_sats,
+            "collateral_sats": contract.collateral_sats,
             "collateral_value_usd": collateral_value_usd,
             "current_ltv": current_ltv,
             "liquidation_price": liquidation_price,
@@ -290,7 +290,7 @@ impl Email {
 
         let liquidation_price = calculate_liquidation_price(
             contract.loan_amount,
-            Decimal::from_u64(contract.initial_collateral_sats).expect("to fit"),
+            Decimal::from_u64(contract.collateral_sats).expect("to fit"),
         );
         let liquidation_price = liquidation_price.round_dp(2).to_string();
         let price = price.round_dp(2).to_string();

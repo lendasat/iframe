@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            contract_address,\n            contract_index,\n            collateral_txid,\n            collateral_vout,\n            claim_txid,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            created_at,\n            updated_at\n        FROM contracts\n        WHERE status IN ($1, $2)\n        ",
+  "query": "\n        INSERT INTO contracts (\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            duration_months,\n            status,\n            liquidation_status,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            contract_address,\n            contract_index\n        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)\n        RETURNING\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            contract_address,\n            contract_index,\n            claim_txid,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            created_at,\n            updated_at\n        ",
   "describe": {
     "columns": [
       {
@@ -35,42 +35,42 @@
       },
       {
         "ordinal": 6,
+        "name": "origination_fee_sats",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 7,
+        "name": "collateral_sats",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 8,
         "name": "loan_amount",
         "type_info": "Numeric"
       },
       {
-        "ordinal": 7,
+        "ordinal": 9,
         "name": "borrower_btc_address",
         "type_info": "Text"
       },
       {
-        "ordinal": 8,
+        "ordinal": 10,
         "name": "borrower_pk",
         "type_info": "Bpchar"
       },
       {
-        "ordinal": 9,
+        "ordinal": 11,
         "name": "borrower_loan_address",
         "type_info": "Text"
       },
       {
-        "ordinal": 10,
+        "ordinal": 12,
         "name": "contract_address",
         "type_info": "Text"
       },
       {
-        "ordinal": 11,
-        "name": "contract_index",
-        "type_info": "Int4"
-      },
-      {
-        "ordinal": 12,
-        "name": "collateral_txid",
-        "type_info": "Text"
-      },
-      {
         "ordinal": 13,
-        "name": "collateral_vout",
+        "name": "contract_index",
         "type_info": "Int4"
       },
       {
@@ -139,6 +139,16 @@
     ],
     "parameters": {
       "Left": [
+        "Bpchar",
+        "Bpchar",
+        "Bpchar",
+        "Bpchar",
+        "Numeric",
+        "Int8",
+        "Int8",
+        "Int8",
+        "Numeric",
+        "Int4",
         {
           "Custom": {
             "name": "contract_status",
@@ -163,26 +173,22 @@
         },
         {
           "Custom": {
-            "name": "contract_status",
+            "name": "liquidation_status",
             "kind": {
               "Enum": [
-                "Requested",
-                "Approved",
-                "CollateralSeen",
-                "CollateralConfirmed",
-                "PrincipalGiven",
-                "Repaid",
-                "Closing",
-                "Closed",
-                "Rejected",
-                "DisputeBorrowerStarted",
-                "DisputeLenderStarted",
-                "DisputeBorrowerResolved",
-                "DisputeLenderResolved"
+                "Healthy",
+                "FirstMarginCall",
+                "SecondMarginCall",
+                "Liquidated"
               ]
             }
           }
-        }
+        },
+        "Text",
+        "Bpchar",
+        "Text",
+        "Text",
+        "Int4"
       ]
     },
     "nullable": [
@@ -196,8 +202,8 @@
       false,
       false,
       false,
-      true,
-      true,
+      false,
+      false,
       true,
       true,
       true,
@@ -208,5 +214,5 @@
       false
     ]
   },
-  "hash": "07ef41e82eb4502b84f0a8ce24b4c7cbdb28cc0ae95ad7e463d0cf46ecb6e9f2"
+  "hash": "3a4a8b0534d2b119d8ce141dbc5a0ed1a6b9eed3050c9288d17d0bc3e95a1768"
 }

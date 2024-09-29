@@ -3,7 +3,6 @@
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
-    use bitcoin::Amount;
     use bitcoin::Psbt;
     use hub::model::ContractRequestSchema;
     use hub::model::ContractStatus;
@@ -17,15 +16,11 @@ mod tests {
     use hub::routes::borrower::Contract;
     use reqwest::cookie::Jar;
     use reqwest::Client;
-    use rust_decimal::prelude::ToPrimitive;
-    use rust_decimal::Decimal;
     use rust_decimal_macros::dec;
     use serde_json::json;
     use std::sync::Arc;
     use std::sync::Once;
     use std::time::Duration;
-
-    const ORIGINATION_FEE_RATE: f32 = 0.01;
 
     /// Run `just prepare-e2e` before this test.
     #[ignore]
@@ -84,7 +79,7 @@ mod tests {
         let loan_offer = CreateLoanOfferSchema {
             name: "a fantastic loan".to_string(),
             min_ltv: dec!(0.5),
-            interest_rate: dec!(10),
+            interest_rate: dec!(0.10),
             loan_amount_min: dec!(1_000),
             loan_amount_max: dec!(50_000),
             duration_months_min: 1,
@@ -166,20 +161,7 @@ mod tests {
         let contracts: Vec<Contract> = res.json().await.unwrap();
         let contract = contracts.iter().find(|c| c.id == contract.id).unwrap();
 
-        // TODO: Ensure that we don't need to calculate this again in the client (and in the tests).
-        let total_collateral = {
-            let initial_price = contract.loan_amount
-                / (contract.initial_ltv
-                    * Decimal::try_from(Amount::from_sat(contract.collateral_sats).to_btc())
-                        .unwrap());
-
-            let origination_fee = (contract.loan_amount / initial_price)
-                * Decimal::try_from(ORIGINATION_FEE_RATE).unwrap();
-            let origination_fee =
-                Amount::from_btc(origination_fee.round_dp(8).to_f64().unwrap()).unwrap();
-
-            contract.collateral_sats + origination_fee.to_sat()
-        };
+        let total_collateral = contract.initial_collateral_sats + contract.origination_fee_sats;
 
         if network == "regtest" {
             tracing::info!("Running on regtest");
@@ -220,19 +202,25 @@ mod tests {
 
             let contract_address = contract.contract_address.clone().expect("contract address");
 
-            let res = faucet
-                .post("https://faucet.mutinynet.com/api/onchain")
-                .json(&json!({
-                    "sats": total_collateral,
-                    "address": contract_address
-                }))
-                .send()
-                .await
-                .unwrap();
+            // Testing the ability to fund the collateral with two outputs.
 
-            let status = res.status();
+            // We add 1 to ensure that we don't round down.
+            let half = (total_collateral + 1) / 2;
+            for _ in 0..=1 {
+                let res = faucet
+                    .post("https://faucet.mutinynet.com/api/onchain")
+                    .json(&json!({
+                        "sats": half,
+                        "address": contract_address
+                    }))
+                    .send()
+                    .await
+                    .unwrap();
 
-            assert!(status.is_success());
+                let status = res.status();
+
+                assert!(status.is_success());
+            }
         }
 
         // 5. Hub sees collateral funding TX.
@@ -260,7 +248,18 @@ mod tests {
 
         // TODO: 6. Hub tells lender to send principal to borrower on Ethereum.
         // TODO: 7. Borrower confirms payment.
-        // TODO: 8. Repay loan on loan blockchain.
+
+        // 8. Repay loan on loan blockchain.
+        let res = lender
+            .put(format!(
+                "http://localhost:7338/api/contracts/{}/repaid",
+                contract.id
+            ))
+            .send()
+            .await
+            .unwrap();
+
+        assert!(res.status().is_success());
 
         // 9. Claim collateral on Bitcoin.
         // With DLCs, we will need to construct a spend transaction using the loan secret.

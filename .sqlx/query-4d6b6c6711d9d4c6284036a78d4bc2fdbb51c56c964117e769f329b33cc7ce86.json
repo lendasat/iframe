@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            contract_address,\n            contract_index,\n            collateral_txid,\n            collateral_vout,\n            claim_txid,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            created_at,\n            updated_at\n        FROM contracts\n        where lender_id = $1\n        ",
+  "query": "\n        UPDATE contracts\n        SET\n            claim_txid = $1,\n            status = $2,\n            updated_at = $3\n        WHERE id = $4\n        RETURNING\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            contract_address,\n            contract_index,\n            claim_txid,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            created_at,\n            updated_at\n        ",
   "describe": {
     "columns": [
       {
@@ -35,42 +35,42 @@
       },
       {
         "ordinal": 6,
+        "name": "origination_fee_sats",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 7,
+        "name": "collateral_sats",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 8,
         "name": "loan_amount",
         "type_info": "Numeric"
       },
       {
-        "ordinal": 7,
+        "ordinal": 9,
         "name": "borrower_btc_address",
         "type_info": "Text"
       },
       {
-        "ordinal": 8,
+        "ordinal": 10,
         "name": "borrower_pk",
         "type_info": "Bpchar"
       },
       {
-        "ordinal": 9,
+        "ordinal": 11,
         "name": "borrower_loan_address",
         "type_info": "Text"
       },
       {
-        "ordinal": 10,
+        "ordinal": 12,
         "name": "contract_address",
         "type_info": "Text"
       },
       {
-        "ordinal": 11,
-        "name": "contract_index",
-        "type_info": "Int4"
-      },
-      {
-        "ordinal": 12,
-        "name": "collateral_txid",
-        "type_info": "Text"
-      },
-      {
         "ordinal": 13,
-        "name": "collateral_vout",
+        "name": "contract_index",
         "type_info": "Int4"
       },
       {
@@ -139,6 +139,30 @@
     ],
     "parameters": {
       "Left": [
+        "Text",
+        {
+          "Custom": {
+            "name": "contract_status",
+            "kind": {
+              "Enum": [
+                "Requested",
+                "Approved",
+                "CollateralSeen",
+                "CollateralConfirmed",
+                "PrincipalGiven",
+                "Repaid",
+                "Closing",
+                "Closed",
+                "Rejected",
+                "DisputeBorrowerStarted",
+                "DisputeLenderStarted",
+                "DisputeBorrowerResolved",
+                "DisputeLenderResolved"
+              ]
+            }
+          }
+        },
+        "Timestamptz",
         "Bpchar"
       ]
     },
@@ -153,8 +177,8 @@
       false,
       false,
       false,
-      true,
-      true,
+      false,
+      false,
       true,
       true,
       true,
@@ -165,5 +189,5 @@
       false
     ]
   },
-  "hash": "70e3794e3c6b428527818e51b46e303e1a368307fbd1ee56dd890c6d9a53bc3c"
+  "hash": "4d6b6c6711d9d4c6284036a78d4bc2fdbb51c56c964117e769f329b33cc7ce86"
 }

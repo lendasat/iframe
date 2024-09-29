@@ -3,7 +3,6 @@ use argon2::PasswordHash;
 use argon2::PasswordVerifier;
 use bitcoin::address::NetworkUnchecked;
 use bitcoin::Address;
-use bitcoin::OutPoint;
 use bitcoin::PublicKey;
 use bitcoin::Txid;
 use rust_decimal::Decimal;
@@ -161,8 +160,17 @@ pub struct Contract {
     pub loan_id: String,
     #[serde(with = "rust_decimal::serde::float")]
     pub initial_ltv: Decimal,
-    // TODO: Should probably rename since borrower can add collateral.
+    /// The minimum amount of collateral the borrower is expected to send to set up a loan.
+    ///
+    /// This value is only relevant before the loan has been established and must not be used again
+    /// afterwards. You almost certainly want to use `collateral_sats` instead.
     pub initial_collateral_sats: u64,
+    pub origination_fee_sats: u64,
+    /// The current amount of confirmed collateral in the loan contract.
+    ///
+    /// We have decided to not persist the collateral outputs to make the implementation simpler.
+    /// This may come back to bite us.
+    pub collateral_sats: u64,
     #[serde(with = "rust_decimal::serde::float")]
     pub loan_amount: Decimal,
     pub duration_months: i32,
@@ -171,7 +179,6 @@ pub struct Contract {
     pub borrower_loan_address: String,
     pub contract_address: Option<Address<NetworkUnchecked>>,
     pub contract_index: Option<u32>,
-    pub collateral_output: Option<OutPoint>,
     pub claim_txid: Option<Txid>,
     pub status: ContractStatus,
     pub liquidation_status: LiquidationStatus,
@@ -239,6 +246,8 @@ pub mod db {
         pub loan_id: String,
         pub initial_ltv: Decimal,
         pub initial_collateral_sats: i64,
+        pub origination_fee_sats: i64,
+        pub collateral_sats: i64,
         pub loan_amount: Decimal,
         pub duration_months: i32,
         pub borrower_btc_address: String,
@@ -246,8 +255,6 @@ pub mod db {
         pub borrower_loan_address: String,
         pub contract_address: Option<String>,
         pub contract_index: Option<i32>,
-        pub collateral_txid: Option<String>,
-        pub collateral_vout: Option<i32>,
         pub claim_txid: Option<String>,
         pub status: ContractStatus,
         pub liquidation_status: LiquidationStatus,
@@ -294,6 +301,8 @@ impl From<db::Contract> for Contract {
             loan_id: value.loan_id,
             initial_ltv: value.initial_ltv,
             initial_collateral_sats: value.initial_collateral_sats as u64,
+            origination_fee_sats: value.origination_fee_sats as u64,
+            collateral_sats: value.collateral_sats as u64,
             loan_amount: value.loan_amount,
             duration_months: value.duration_months,
             borrower_btc_address: Address::from_str(&value.borrower_btc_address)
@@ -304,12 +313,6 @@ impl From<db::Contract> for Contract {
                 .contract_address
                 .map(|addr| addr.parse().expect("valid address")),
             contract_index: value.contract_index.map(|i| i as u32),
-            collateral_output: value.collateral_txid.and_then(|txid| {
-                value.collateral_vout.map(|vout| OutPoint {
-                    txid: txid.parse().expect("valid txid"),
-                    vout: vout as u32,
-                })
-            }),
             claim_txid: value.claim_txid.map(|t| t.parse().expect("valid txid")),
             status: value.status.into(),
             liquidation_status: value.liquidation_status.into(),
@@ -359,6 +362,8 @@ impl From<Contract> for db::Contract {
             loan_id: value.loan_id,
             initial_ltv: value.initial_ltv,
             initial_collateral_sats: value.initial_collateral_sats as i64,
+            origination_fee_sats: value.origination_fee_sats as i64,
+            collateral_sats: value.collateral_sats as i64,
             loan_amount: value.loan_amount,
             duration_months: value.duration_months,
             borrower_btc_address: value.borrower_btc_address.assume_checked().to_string(),
@@ -368,8 +373,6 @@ impl From<Contract> for db::Contract {
                 .contract_address
                 .map(|addr| addr.assume_checked().to_string()),
             contract_index: value.contract_index.map(|i| i as i32),
-            collateral_txid: value.collateral_output.map(|o| o.txid.to_string()),
-            collateral_vout: value.collateral_output.map(|o| o.vout as i32),
             claim_txid: value.claim_txid.map(|t| t.to_string()),
             status: value.status.into(),
             liquidation_status: value.liquidation_status.into(),
@@ -452,4 +455,10 @@ pub struct DisputeRequestBodySchema {
     pub contract_id: String,
     pub reason: String,
     pub comment: String,
+}
+
+#[derive(Deserialize)]
+pub struct PsbtQueryParams {
+    // fee rate in sats/vbyte
+    pub fee_rate: u64,
 }

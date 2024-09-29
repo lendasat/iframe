@@ -8,11 +8,13 @@ import {
   useAuth,
   useBorrowerHttpClient,
 } from "@frontend-monorepo/http-client-borrower";
-import { CurrencyFormatter } from "@frontend-monorepo/ui-shared";
-import React, { Suspense, useState } from "react";
+import { CurrencyFormatter, usePrice } from "@frontend-monorepo/ui-shared";
+import { Suspense, useState } from "react";
 import { Alert, Badge, Button, Col, Container, OverlayTrigger, Row, Tooltip } from "react-bootstrap";
 import { Await, useParams } from "react-router-dom";
 import { Lender } from "../request-loan/lender";
+import { AddCollateralModal } from "./add-collateral-modal";
+import { collateralForStatus } from "./collateralForStatus";
 import { CollateralContractDetails } from "./collateralize-contract";
 import { CollateralSeenOrConfirmed } from "./contract-collateral-seen-or-confirmed";
 import { ContractPrincipalGiven } from "./contract-principal-given";
@@ -47,26 +49,26 @@ interface DetailsProps {
 }
 
 function Details({ contract }: DetailsProps) {
-  // TODO: this should come from the backend
-  const ORIGINATOR_FEE = 0.01;
+  const collateralSats = collateralForStatus(
+    contract.status,
+    contract.initial_collateral_sats,
+    contract.collateral_sats,
+  );
+  const collateralBtc = collateralSats / 100000000;
 
-  const collateral_sats = contract.collateral_sats;
-  const collateral = collateral_sats / 100000000;
   const loanAmount = contract.loan_amount;
   const contractAddress = contract.contract_address;
 
-  const initialLtv = contract.initial_ltv;
-  const initial_price = loanAmount / (collateral * initialLtv);
-
-  // FIXME: Let's do this once, in the backend.
-  const loanOriginatorFee = (loanAmount / initial_price) * ORIGINATOR_FEE;
-  const totalCollateral = (collateral + loanOriginatorFee).toFixed(8);
+  const originationFeeBtc = contract.origination_fee_sats / 100000000;
+  const totalCollateral = (collateralBtc + originationFeeBtc).toFixed(8);
 
   const accruedInterest = contract.loan_amount * ((contract.interest_rate / 12) * contract.duration_months);
   const totalRepaymentAmount = accruedInterest + loanAmount;
 
-  // FIXME: Let's do this once, in the backend.
-  const loanOriginatorFeeUsd = (loanOriginatorFee * initial_price).toFixed(0);
+  // TODO: Let's calculate the initial price once, in the backend.
+  const initialCollateralBtc = contract.initial_collateral_sats / 100000000;
+  const initialPrice = loanAmount / (initialCollateralBtc * contract.initial_ltv);
+  const loanOriginatorFeeUsd = (originationFeeBtc * initialPrice).toFixed(0);
 
   return (
     <Row className="mt-3">
@@ -76,10 +78,11 @@ function Details({ contract }: DetailsProps) {
       <Col xs={12} md={6}>
         <ContractStatusDetails
           contract={contract}
+          collateralBtc={collateralBtc}
           contractAddress={contractAddress || ""}
           totalCollateral={totalCollateral}
           totalRepaymentAmount={totalRepaymentAmount}
-          loanOriginatorFee={loanOriginatorFee}
+          loanOriginatorFee={originationFeeBtc}
           loanOriginatorFeeUsd={loanOriginatorFeeUsd}
         />
       </Col>
@@ -92,17 +95,18 @@ interface DetailsProps {
 }
 
 function ContractDetails({ contract }: DetailsProps) {
+  const { latestPrice } = usePrice();
   const [startingDisputeLoading, setStartingDisputeLoading] = useState(false);
   const { backendVersion } = useAuth();
+
+  const [showAddCollateralModal, setShowAddCollateralModal] = useState(false);
 
   const [error, setError] = useState("");
 
   const { startDispute } = useBorrowerHttpClient();
 
-  const ORIGINATOR_FEE = 0.01;
-
-  const collateral_sats = contract.collateral_sats;
-  const collateral = collateral_sats / 100000000;
+  const collateral = collateralForStatus(contract.status, contract.initial_collateral_sats, contract.collateral_sats);
+  const collateralBtc = collateral / 100000000;
   const loanAmount = contract.loan_amount;
   const interestRate = contract.interest_rate;
   const durationMonths = contract.duration_months;
@@ -110,10 +114,10 @@ function ContractDetails({ contract }: DetailsProps) {
   const initialLtv = contract.initial_ltv;
   const initial_price = loanAmount / (collateral * initialLtv);
 
-  const initialLtvFormatted = (initialLtv * 100).toFixed(0);
+  const ltvRatio = loanAmount / (collateralBtc * latestPrice);
+  const ltvPercentage = (ltvRatio * 100).toFixed(0);
 
-  // FIXME: Let's do this once, in the backend.
-  const loanOriginatorFee = (loanAmount / initial_price) * ORIGINATOR_FEE;
+  const loanOriginatorFee = contract.origination_fee_sats / 100000000;
   const loanOriginatorFeeUsd = (loanOriginatorFee * initial_price).toFixed(0);
 
   const disputeInProgress = contract.status === ContractStatus.DisputeBorrowerResolved
@@ -152,8 +156,37 @@ function ContractDetails({ contract }: DetailsProps) {
     contractStatusLabel = "Liquidated";
   }
 
+  const handleCloseAddCollateralModal = () => setShowAddCollateralModal(false);
+  const handleOpenAddCollateralModal = () => setShowAddCollateralModal(true);
+
+  let canAddExtraCollateral;
+  switch (contract.status) {
+    case ContractStatus.Requested:
+    case ContractStatus.Approved:
+    case ContractStatus.Rejected:
+    case ContractStatus.Repaid:
+    case ContractStatus.Closing:
+    case ContractStatus.Closed:
+      canAddExtraCollateral = false;
+      break;
+    case ContractStatus.CollateralSeen:
+    case ContractStatus.CollateralConfirmed:
+    case ContractStatus.PrincipalGiven:
+    case ContractStatus.DisputeBorrowerStarted:
+    case ContractStatus.DisputeLenderStarted:
+    case ContractStatus.DisputeBorrowerResolved:
+    case ContractStatus.DisputeLenderResolved:
+      canAddExtraCollateral = true;
+      break;
+  }
+
   return (
     <Container fluid>
+      <AddCollateralModal
+        show={showAddCollateralModal}
+        address={contract.contract_address!}
+        handleClose={handleCloseAddCollateralModal}
+      />
       <Row className="mb-2">
         <h4>Contract Details</h4>
       </Row>
@@ -189,9 +222,16 @@ function ContractDetails({ contract }: DetailsProps) {
         </Col>
       </Row>
       <Row className="justify-content-between border-b mt-2">
-        <Col>Collateral</Col>
+        <Col>
+          Collateral
+          {canAddExtraCollateral && (
+            <Button onClick={handleOpenAddCollateralModal} size="sm" className="ml-2">
+              +
+            </Button>
+          )}
+        </Col>
         <Col className="text-end mb-2">
-          {collateral.toFixed(8)} BTC
+          {collateralBtc.toFixed(8)} BTC
         </Col>
       </Row>
       <Row className="justify-content-between border-b mt-2">
@@ -207,7 +247,7 @@ function ContractDetails({ contract }: DetailsProps) {
       </Row>
       <Row className="justify-content-between border-b mt-2">
         <Col>LTV ratio</Col>
-        <Col className="text-end mb-2">{initialLtvFormatted}%</Col>
+        <Col className="text-end mb-2">{ltvPercentage}%</Col>
       </Row>
       <Row className="justify-content-between mt-2">
         <Col>Interest rate p.a.</Col>
@@ -328,6 +368,7 @@ const AdditionalDetail = ({ contract }: AdditionalDetailsProps) => {
 
 interface ContractStatusDetailsProps {
   contract: Contract;
+  collateralBtc: number;
   totalCollateral: string;
   contractAddress: string;
   totalRepaymentAmount: number;
@@ -338,6 +379,7 @@ interface ContractStatusDetailsProps {
 const ContractStatusDetails = (
   {
     contract,
+    collateralBtc,
     totalCollateral,
     contractAddress,
     totalRepaymentAmount,
@@ -353,7 +395,7 @@ const ContractStatusDetails = (
         <CollateralContractDetails
           totalCollateral={totalCollateral}
           collateralAddress={contractAddress}
-          collateral_btc={contract.collateral_sats / 100000000}
+          collateral_btc={contract.initial_collateral_sats / 100000000}
           loanOriginatorFeeUsd={loanOriginatorFeeUsd}
           loanOriginatorFee={loanOriginatorFee}
         />
@@ -375,7 +417,7 @@ const ContractStatusDetails = (
         />
       );
     case ContractStatus.Repaid:
-      return <ContractRepaid contract={contract} />;
+      return <ContractRepaid contract={contract} collateralBtc={collateralBtc} />;
     case ContractStatus.Closed:
     case ContractStatus.Closing:
     case ContractStatus.Rejected:

@@ -1,9 +1,5 @@
-// TODO: We will need to watch _spending_ transactions too! Luckily, I think it's the same API.
-// Although I haven't mocked those responses yet.
-
 use crate::db;
 use anyhow::anyhow;
-use anyhow::bail;
 use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Result;
@@ -34,6 +30,8 @@ const MIN_CONFIRMATIONS: u64 = 1;
 
 pub struct Actor {
     tracked_contracts: HashMap<Address, TrackedContract>,
+    // It would be nicer to just monitor output spends, but this does not seem to be supported by
+    // mempool. As such, we have to monitor each claim transaction separately.
     tracked_claim_txs: HashMap<Txid, TrackedClaimTx>,
     block_height: u64,
     db: Pool<Postgres>,
@@ -46,22 +44,22 @@ pub struct Actor {
 #[derive(Debug, Clone)]
 struct TrackedContract {
     contract_id: String,
-    contract_address: Address,
-    initial_collateral_sats: u64,
-    status: ContractStatus,
+    /// A contract may be funded by more than one output.
+    collateral_outputs: HashMap<OutPoint, CollateralOutput>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
-enum ContractStatus {
-    /// Contract not seen.
-    Pending,
-    /// Contract found in mempool.
-    Seen(OutPoint),
-    /// Contract confirmed.
-    Confirmed {
-        outpoint: OutPoint,
-        block_height: u64,
-    },
+#[derive(Debug, Clone, Copy, PartialEq)]
+struct CollateralOutput {
+    outpoint: OutPoint,
+    amount_sats: u64,
+    state: ConfirmationState,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum ConfirmationState {
+    Seen,
+    OnChain { height: u64 },
+    Confirmed,
 }
 
 #[derive(Debug, Clone)]
@@ -152,10 +150,7 @@ impl xtra::Actor for Actor {
     type Stop = anyhow::Error;
 
     async fn started(&mut self, mailbox: &Mailbox<Self>) -> Result<()> {
-        let contracts = db::contracts::load_contracts_pending_confirmation(&self.db).await?;
-
-        // TODO: Load contracts with a claim TXID which are _not_ `Closed`. Without this, we lose
-        // track of claim transactions which are not confirmed before a restart.
+        let contracts = db::contracts::load_open_contracts(&self.db).await?;
 
         let starting_block_height = self.rest_client.get_block_tip_height().await?;
 
@@ -206,7 +201,6 @@ impl xtra::Actor for Actor {
                         .send(TrackContractFunding {
                             contract_id: contract.id.clone(),
                             contract_address: contract_address.clone().assume_checked(),
-                            initial_collateral_sats: contract.initial_collateral_sats,
                         })
                         .await
                     {
@@ -292,7 +286,6 @@ impl xtra::Handler<ContractUpdate> for Actor {
     async fn handle(&mut self, msg: ContractUpdate, _: &mut xtra::Context<Self>) -> Self::Return {
         tracing::debug!(update = ?msg, "Handling contract update");
 
-        let mut contracts_to_remove = Vec::<Address>::new();
         for tx in msg.transactions {
             for (index, vout) in tx.vout.iter().enumerate() {
                 let contract = match self
@@ -304,86 +297,56 @@ impl xtra::Handler<ContractUpdate> for Actor {
                     None => continue,
                 };
 
-                if vout.value < contract.initial_collateral_sats {
-                    tracing::error!(?contract, ?tx, "Insufficient collateral amount in contract");
-                    continue;
-                }
-
                 let outpoint = OutPoint {
                     txid: tx.txid,
                     vout: index as u32,
                 };
 
-                let status = if !tx.status.confirmed {
-                    ContractStatus::Seen(outpoint)
-                } else {
-                    match tx.status.block_height {
-                        Some(tx_block_height) => ContractStatus::Confirmed {
-                            outpoint,
-                            block_height: tx_block_height,
-                        },
-                        None => ContractStatus::Seen(outpoint),
-                    }
-                };
-
-                // Update the contract status in the DB to `Seen` if the collateral was just spotted
-                // in mempool.
-                if let ContractStatus::Seen(outpoint) = status {
-                    if contract.status == ContractStatus::Pending {
-                        // TODO!!! Consider other spot(s).
-                        if let Err(e) = db::contracts::mark_contract_as_seen(
-                            &self.db,
-                            &contract.contract_id,
-                            outpoint,
-                        )
-                        .await
-                        {
-                            tracing::error!(?contract, "Failed to mark contract as seen: {e:#}");
-                            continue;
+                let state = match tx.status.block_height {
+                    Some(tx_block_height) => {
+                        let confirmations =
+                            calculate_confirmations(self.block_height, tx_block_height);
+                        if confirmations >= MIN_CONFIRMATIONS {
+                            ConfirmationState::Confirmed
+                        } else {
+                            ConfirmationState::OnChain {
+                                height: tx_block_height,
+                            }
                         }
                     }
-                }
+                    None => ConfirmationState::Seen,
+                };
 
-                contract.status = status;
-
-                // Check if the contract is already sufficiently confirmed.
-                if let ContractStatus::Confirmed {
+                let collateral_output = CollateralOutput {
                     outpoint,
-                    block_height: tx_block_height,
-                } = contract.status
+                    amount_sats: vout.value,
+                    state,
+                };
+
+                // We either insert or overwrite the collateral output. Since this is based on the
+                // latest contract update, overwriting should be desirable.
+                contract
+                    .collateral_outputs
+                    .insert(outpoint, collateral_output);
+
+                let confirmed_collateral_sats = confirmed_collateral_sats(
+                    &contract
+                        .collateral_outputs
+                        .values()
+                        .cloned()
+                        .collect::<Vec<_>>(),
+                );
+
+                if let Err(e) = db::contracts::update_collateral(
+                    &self.db,
+                    &contract.contract_id,
+                    confirmed_collateral_sats,
+                )
+                .await
                 {
-                    let confirmations = calculate_confirmations(self.block_height, tx_block_height);
-
-                    if confirmations >= MIN_CONFIRMATIONS {
-                        let contract_id = &contract.contract_id;
-
-                        tracing::info!(
-                            contract_id,
-                            "Contract reached necessary number of confirmations"
-                        );
-
-                        if let Err(e) = db::contracts::mark_contract_as_confirmed(
-                            &self.db,
-                            contract_id,
-                            outpoint,
-                        )
-                        .await
-                        {
-                            tracing::error!(
-                                ?contract,
-                                "Failed to mark contract as confirmed: {e:#}"
-                            );
-                            continue;
-                        };
-
-                        contracts_to_remove.push(contract.contract_address.clone());
-                    }
+                    tracing::error!(?contract, "Failed to update collateral: {e:#}");
                 }
             }
-        }
-
-        for address in contracts_to_remove {
-            self.tracked_contracts.remove(&address);
         }
     }
 }
@@ -393,7 +356,6 @@ impl xtra::Handler<ContractUpdate> for Actor {
 pub struct TrackContractFunding {
     pub contract_id: String,
     pub contract_address: Address,
-    pub initial_collateral_sats: u64,
 }
 
 impl xtra::Handler<TrackContractFunding> for Actor {
@@ -417,65 +379,19 @@ impl xtra::Handler<TrackContractFunding> for Actor {
             .await
             .context("Failed to get address transactions")?;
 
-        let contract_status =
-            derive_contract_status(&txs, &msg.contract_address, msg.initial_collateral_sats)
-                .await
-                .context("Failed to get confirmations")?;
+        let collateral_outputs = collateral_outputs(&txs, &msg.contract_address, self.block_height);
+        let confirmed_collateral_sats = confirmed_collateral_sats(&collateral_outputs);
+
+        let collateral_outputs =
+            HashMap::from_iter(collateral_outputs.into_iter().map(|o| (o.outpoint, o)));
 
         let contract_id = &msg.contract_id;
-
-        // Check if the contract is already sufficiently confirmed.
-        match contract_status {
-            ContractStatus::Pending => {}
-            ContractStatus::Seen(outpoint) => {
-                tracing::info!(
-                    contract_id,
-                    confirmations = 0,
-                    "Contract not yet sufficiently confirmed"
-                );
-
-                db::contracts::mark_contract_as_seen(&self.db, contract_id, outpoint)
-                    .await
-                    .context("Failed to mark contract as confirmed")?;
-            }
-            ContractStatus::Confirmed {
-                outpoint,
-                block_height: tx_block_height,
-            } => {
-                let confirmations = calculate_confirmations(self.block_height, tx_block_height);
-
-                if confirmations >= MIN_CONFIRMATIONS {
-                    tracing::info!(
-                        contract_id,
-                        "Contract reached necessary number of confirmations"
-                    );
-
-                    db::contracts::mark_contract_as_confirmed(&self.db, contract_id, outpoint)
-                        .await
-                        .context("Failed to mark contract as confirmed")?;
-
-                    return Ok(());
-                } else {
-                    tracing::info!(
-                        contract_id,
-                        confirmations,
-                        "Contract not yet sufficiently confirmed"
-                    );
-
-                    db::contracts::mark_contract_as_seen(&self.db, contract_id, outpoint)
-                        .await
-                        .context("Failed to mark contract as confirmed")?;
-                }
-            }
-        };
 
         self.tracked_contracts.insert(
             msg.contract_address.clone(),
             TrackedContract {
-                contract_id: msg.contract_id,
-                contract_address: msg.contract_address.clone(),
-                initial_collateral_sats: msg.initial_collateral_sats,
-                status: contract_status,
+                contract_id: contract_id.clone(),
+                collateral_outputs,
             },
         );
 
@@ -489,6 +405,9 @@ impl xtra::Handler<TrackContractFunding> for Actor {
             .send(Message::Text(msg))
             .await
             .context("Failed to send TrackAddress message via WS")?;
+
+        // Ideally we would only update when we learn something new, but alas.
+        db::contracts::update_collateral(&self.db, contract_id, confirmed_collateral_sats).await?;
 
         Ok(())
     }
@@ -541,46 +460,71 @@ impl xtra::Handler<NewBlockHeight> for Actor {
     async fn handle(&mut self, msg: NewBlockHeight, _: &mut xtra::Context<Self>) -> Self::Return {
         self.block_height = msg.0;
 
-        let mut contracts_to_remove = Vec::<Address>::new();
-        for contract in self.tracked_contracts.values() {
-            // We only consider transactions with at least 1 confirmation for simplicity. We know
-            // that unconfirmed transactions are handled via the `track-address` WS subscription.
-            if let ContractStatus::Confirmed {
-                outpoint,
-                block_height: tx_block_height,
-            } = contract.status
-            {
-                let confirmations = calculate_confirmations(self.block_height, tx_block_height);
-                if confirmations >= MIN_CONFIRMATIONS {
-                    let contract_id = &contract.contract_id;
+        for (_, contract) in self.tracked_contracts.iter_mut() {
+            let confirmed_collateral_sats_before = confirmed_collateral_sats(
+                &contract
+                    .collateral_outputs
+                    .values()
+                    .cloned()
+                    .collect::<Vec<_>>(),
+            );
 
-                    tracing::info!(
-                        contract_id,
-                        "Contract reached necessary number of confirmations"
-                    );
+            for (_, output) in contract.collateral_outputs.iter_mut() {
+                let new_state = match output.state {
+                    ConfirmationState::OnChain {
+                        height: tx_block_height,
+                    } => {
+                        let contract_id = &contract.contract_id;
 
-                    if let Err(e) =
-                        db::contracts::mark_contract_as_confirmed(&self.db, contract_id, outpoint)
-                            .await
-                    {
-                        tracing::error!(?contract, "Failed to mark contract as confirmed: {e:#}");
-                        continue;
-                    };
+                        let confirmations =
+                            calculate_confirmations(self.block_height, tx_block_height);
+                        if confirmations >= MIN_CONFIRMATIONS {
+                            tracing::info!(
+                                contract_id,
+                                amount_sats = output.amount_sats,
+                                "Collateral output reached necessary number of confirmations"
+                            );
 
-                    contracts_to_remove.push(contract.contract_address.clone());
+                            ConfirmationState::Confirmed
+                        } else {
+                            output.state
+                        }
+                    }
+                    ConfirmationState::Seen | ConfirmationState::Confirmed => output.state,
+                };
+
+                output.state = new_state;
+            }
+
+            let confirmed_collateral_sats_after = confirmed_collateral_sats(
+                &contract
+                    .collateral_outputs
+                    .values()
+                    .cloned()
+                    .collect::<Vec<_>>(),
+            );
+
+            // NOTE: We cannot actually learn if a collateral output was unconfirmed via the
+            // WebSocket subscription. But we can learn this information after a restart, via the
+            // REST API.
+            if confirmed_collateral_sats_after != confirmed_collateral_sats_before {
+                if let Err(e) = db::contracts::update_collateral(
+                    &self.db,
+                    &contract.contract_id,
+                    confirmed_collateral_sats_after,
+                )
+                .await
+                {
+                    tracing::error!(?contract, "Failed to update collateral: {e:#}");
                 }
             }
-        }
-
-        for address in contracts_to_remove {
-            self.tracked_contracts.remove(&address);
         }
 
         self.update_claim_txs_status().await;
     }
 }
 
-/// Internal message to update the [`Actor`]'s block height.
+/// Message to tell the [`Actor`] to post a transaction.
 #[derive(Debug)]
 pub struct PostTx(pub String);
 
@@ -594,56 +538,86 @@ impl xtra::Handler<PostTx> for Actor {
     }
 }
 
-#[instrument(skip(txs), err(Debug), ret)]
-async fn derive_contract_status(
+/// Message to get the outputs with the given collateral address.
+#[derive(Debug)]
+pub struct GetCollateralOutputs(pub Address<NetworkUnchecked>);
+
+impl xtra::Handler<GetCollateralOutputs> for Actor {
+    type Return = Vec<(OutPoint, u64)>;
+
+    async fn handle(
+        &mut self,
+        msg: GetCollateralOutputs,
+        _: &mut xtra::Context<Self>,
+    ) -> Self::Return {
+        let address = msg.0.assume_checked();
+        match self.tracked_contracts.get(&address) {
+            Some(contract) => contract
+                .collateral_outputs
+                .iter()
+                .map(|(outpoint, output)| (*outpoint, output.amount_sats))
+                .collect(),
+            None => Vec::new(),
+        }
+    }
+}
+
+/// Process the `txs` to find all the outputs which pay to the given collateral `address`.
+#[instrument(skip(txs), ret)]
+fn collateral_outputs(
     txs: &[Transaction],
     address: &Address,
-    amount: u64,
-) -> Result<ContractStatus> {
-    if txs.is_empty() {
-        return Ok(ContractStatus::Pending);
-    }
+    blockchain_height: u64,
+) -> Vec<CollateralOutput> {
+    let outputs = txs.iter().flat_map(|tx| {
+        tx.vout
+            .iter()
+            .filter_map(|vout| {
+                (vout.scriptpubkey_address.clone().assume_checked() == *address).then_some((
+                    tx.txid,
+                    vout.value,
+                    tx.status.block_height,
+                ))
+            })
+            .enumerate()
+            .collect::<Vec<_>>()
+    });
 
-    // TODO: Handle the possibility that the address is reused.
-    let tx = match txs.first() {
-        Some(tx) => tx,
-        None => return Ok(ContractStatus::Pending),
-    };
+    outputs
+        .map(|(index, (txid, amount_sats, block_height))| {
+            let outpoint = OutPoint {
+                txid,
+                vout: index as u32,
+            };
 
-    let (index, vout) = match tx
-        .vout
+            let state = match block_height {
+                Some(tx_block_height) => {
+                    let confirmations = calculate_confirmations(blockchain_height, tx_block_height);
+                    if confirmations >= MIN_CONFIRMATIONS {
+                        ConfirmationState::Confirmed
+                    } else {
+                        ConfirmationState::OnChain {
+                            height: tx_block_height,
+                        }
+                    }
+                }
+                None => ConfirmationState::Seen,
+            };
+
+            CollateralOutput {
+                outpoint,
+                amount_sats,
+                state,
+            }
+        })
+        .collect::<Vec<_>>()
+}
+
+fn confirmed_collateral_sats(collateral_outputs: &[CollateralOutput]) -> u64 {
+    collateral_outputs
         .iter()
-        .enumerate()
-        .find(|(_, vout)| vout.scriptpubkey_address.clone().assume_checked() == *address)
-    {
-        Some(vout) => vout,
-        None => {
-            return Ok(ContractStatus::Pending);
-        }
-    };
-
-    if vout.value < amount {
-        bail!("Insufficient collateral amount for {address} in {tx:?}, expected {amount} sats");
-    }
-
-    let outpoint = OutPoint {
-        txid: tx.txid,
-        vout: index as u32,
-    };
-
-    if !tx.status.confirmed {
-        return Ok(ContractStatus::Seen(outpoint));
-    }
-
-    let status = match tx.status.block_height {
-        Some(tx_block_height) => ContractStatus::Confirmed {
-            outpoint,
-            block_height: tx_block_height,
-        },
-        None => ContractStatus::Seen(outpoint),
-    };
-
-    Ok(status)
+        .filter(|o| matches!(o.state, ConfirmationState::Confirmed))
+        .fold(0, |acc, o| acc + o.amount_sats)
 }
 
 struct MempoolRestClient {

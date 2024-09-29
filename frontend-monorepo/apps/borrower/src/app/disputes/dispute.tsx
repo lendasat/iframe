@@ -2,6 +2,7 @@ import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useWallet } from "@frontend-monorepo/borrower-wallet";
 import { Dispute, DisputeStatus, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
+import { FeeSelector } from "@frontend-monorepo/mempool";
 import React, { Suspense, useState } from "react";
 import { Alert, Button } from "react-bootstrap";
 import { Await, useParams } from "react-router-dom";
@@ -12,6 +13,7 @@ function ResolveDispute() {
   const { id } = useParams();
   const { getClaimDisputeCollateralPsbt, postClaimTx, getContract } = useBorrowerHttpClient();
   const [error, setError] = useState("");
+  const [selectedFee, setSelectedFee] = useState(1);
 
   const [showUnlockWalletModal, setShowUnlockWalletModal] = useState(false);
   const handleCloseUnlockWalletModal = () => setShowUnlockWalletModal(false);
@@ -24,18 +26,29 @@ function ResolveDispute() {
       if (!isWalletLoaded) {
         handleOpenUnlockWalletModal();
         return;
+      } else {
+        await claimCollateralRequest(dispute);
       }
-
-      await claimCollateralRequest(dispute);
     } catch (err) {
       console.error("Failed to claim collateral", err);
+    }
+  };
+
+  const unlockWallet = async () => {
+    try {
+      if (!isWalletLoaded) {
+        handleOpenUnlockWalletModal();
+        return;
+      }
+    } catch (err) {
+      console.error("Failed unlocking wallet", err);
     }
   };
 
   const claimCollateralRequest = async (dispute: Dispute) => {
     try {
       const contract = await getContract(dispute.contract_id);
-      const res = await getClaimDisputeCollateralPsbt(dispute.id);
+      const res = await getClaimDisputeCollateralPsbt(dispute.id, selectedFee);
       console.log(`${JSON.stringify(res)}`);
       const claimTx = signClaimPsbt(res.psbt, res.collateral_descriptor, contract.borrower_pk);
       const txid = await postClaimTx(contract.id, claimTx);
@@ -48,7 +61,6 @@ function ResolveDispute() {
 
   const handleSubmitUnlockWalletModal = async (dispute: Dispute) => {
     handleCloseUnlockWalletModal();
-    await claimCollateralRequest(dispute);
   };
 
   return (
@@ -100,7 +112,8 @@ function ResolveDispute() {
                     <strong>Borrower Payout (sats):</strong> {dispute.borrower_payout_sats}
                   </p>
                 )}
-                <ActionItem dispute={dispute} onWithdrawAction={onWithdrawAction}></ActionItem>
+                <ActionItem dispute={dispute} onWithdrawAction={onWithdrawAction} onFeeSelected={setSelectedFee}>
+                </ActionItem>
                 {error
                   ? (
                     <Alert variant="danger">
@@ -121,9 +134,10 @@ function ResolveDispute() {
 interface ActionItemProps {
   dispute: Dispute;
   onWithdrawAction: (dispute: Dispute) => void;
+  onFeeSelected: (fee: number) => void;
 }
 
-const ActionItem = ({ dispute, onWithdrawAction }: ActionItemProps) => {
+const ActionItem = ({ dispute, onWithdrawAction, onFeeSelected }: ActionItemProps) => {
   let actionDisabled = true;
 
   switch (dispute.status) {
@@ -147,6 +161,9 @@ const ActionItem = ({ dispute, onWithdrawAction }: ActionItemProps) => {
           </Alert>
         )
         : ""}
+      {!actionDisabled
+        ? <FeeSelector onSelectFee={onFeeSelected} />
+        : <></>}
       <Button disabled={actionDisabled} onClick={() => onWithdrawAction(dispute)}>Withdraw collateral</Button>
     </>
   );

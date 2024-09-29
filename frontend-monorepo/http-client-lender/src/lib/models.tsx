@@ -21,6 +21,7 @@ export interface Contract {
   loan_id: string;
   initial_ltv: number;
   initial_collateral_sats: number;
+  origination_fee_sats: number;
   loan_amount: number;
   interest_rate: number;
   duration_months: number;
