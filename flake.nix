@@ -3,20 +3,23 @@
 
   inputs = {
     nixpkgs.url      = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-24.05";
     rust-overlay.url = "github:oxalica/rust-overlay";
     flake-utils.url  = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, rust-overlay, flake-utils, ... }:
+  outputs = { self, nixpkgs, nixpkgs-stable, rust-overlay, flake-utils, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        overlays = [ (import rust-overlay) ];
         pkgs = import nixpkgs {
-          inherit system overlays;
+          inherit system;
+          overlays = [ (import rust-overlay) ];
           config = {
             allowUnfree = true;
           };
         };
+        pkgs-stable = import nixpkgs-stable { inherit system; };
+
         rustToolchain = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
         rustToolchainWithWasm = rustToolchain.override {
           # NOTE: I had to `yarn install --force` in `frontend-monorepo` after deleting `node_modules/borrower-wallet`.
@@ -68,6 +71,7 @@
               wasm-pack # Does not produce a valid `borrower-wallet` output.
               binaryen
               wasm-bindgen-cli
+              pkgs-stable.nodePackages.eslint
             ];
 
             # TODO: rust-analyzer dies when we jump to the standard library and this does not fix it.
