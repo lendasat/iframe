@@ -1,7 +1,6 @@
 import { faBars } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Version } from "@frontend-monorepo/base-http-client";
-import { useAuth } from "@frontend-monorepo/http-client-borrower";
 import { Avatar, Box, Flex } from "@radix-ui/themes";
 import React, { ReactNode } from "react";
 import { IconType } from "react-icons";
@@ -34,7 +33,6 @@ export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme = "li
   const [toggled, setToggled] = React.useState(false);
   const [broken, setBroken] = React.useState(false);
   const layout = window;
-  // const { user } = useAuth();
 
   return (
     <div
