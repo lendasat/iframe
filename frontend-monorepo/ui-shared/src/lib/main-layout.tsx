@@ -27,13 +27,14 @@ interface LayoutProps {
   menuItems: MenuItem[];
   theme?: Theme;
   backendVersion: Version;
+  user: any
 }
 
-export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme = "light", backendVersion }) => {
+export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme = "light", backendVersion, user }) => {
   const [toggled, setToggled] = React.useState(false);
   const [broken, setBroken] = React.useState(false);
   const layout = window;
-  const { user } = useAuth();
+  // const { user } = useAuth();
 
   return (
     <div
