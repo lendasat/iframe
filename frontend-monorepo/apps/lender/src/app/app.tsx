@@ -34,7 +34,7 @@ function MainLayoutComponents() {
     name: lenderUser?.name,
     email: lenderUser?.email,
     createdAt: lenderUser?.created_at,
-    verified: lenderUser?.verified
+    verified: lenderUser?.verified,
   });
 
   const user = lenderUser ? mapLenderUser(lenderUser) : null;

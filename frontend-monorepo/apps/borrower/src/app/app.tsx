@@ -68,14 +68,13 @@ const menuItems = [
 function MainLayoutComponents() {
   const { backendVersion, user: borrowerUser } = useAuth();
 
-
   // Mapping function to normalize user objects
   const mapBorrowerUser = (borrowerUser: any) => ({
     id: borrowerUser?.id,
     name: borrowerUser?.name,
     email: borrowerUser?.email,
     createdAt: borrowerUser?.created_at,
-    verified: borrowerUser?.verified
+    verified: borrowerUser?.verified,
   });
 
   const user = borrowerUser ? mapBorrowerUser(borrowerUser) : null;

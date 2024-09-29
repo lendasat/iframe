@@ -27,7 +27,7 @@ interface LayoutProps {
   menuItems: MenuItem[];
   theme?: Theme;
   backendVersion: Version;
-  user: any
+  user: any;
 }
 
 export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme = "light", backendVersion, user }) => {
