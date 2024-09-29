@@ -77,7 +77,7 @@ function ContractsComponent({ loans }: LoansComponentProps) {
           collateral_sats,
         } = loan;
 
-        let collateral_btc = collateralForStatus(status, initial_collateral_sats, collateral_sats) / 100000000;
+        const collateral_btc = collateralForStatus(status, initial_collateral_sats, collateral_sats) / 100000000;
 
         const ltvRatio = loan_amount / (collateral_btc * latestPrice);
 
