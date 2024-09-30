@@ -1,4 +1,4 @@
-import { Box, Flex, Heading, Separator } from "@radix-ui/themes";
+import { Box, Flex, Heading } from "@radix-ui/themes";
 
 interface DashInterface {
   label: string;
@@ -14,7 +14,6 @@ export default function DashHeader(props: DashInterface) {
           </Heading>
         </Flex>
       </Box>
-      <Separator size={"4"} />
     </Box>
   );
 }

@@ -30,12 +30,19 @@ import Profile from "./profile";
 import RequestLoan from "./request-loan/request-loan";
 import { RequestLoanSummary } from "./request-loan/request-loan-summary";
 import "./../styles.css";
+import RequestMade from "./request-loan/my-requests";
 
 const menuItems = [
   {
     label: "Dashboad",
     icon: TbLayoutDashboardFilled,
     path: "/",
+    borrower: true,
+  },
+  {
+    label: "History",
+    icon: TbHistory,
+    path: "/history",
   },
   {
     label: "Loan offers",
@@ -48,20 +55,15 @@ const menuItems = [
     path: "/my-contracts",
   },
   {
-    label: "History",
-    icon: TbHistory,
-    path: "/history",
-  },
-  {
-    label: "My account",
-    icon: HiUsers,
-    path: "/my-account",
-  },
-  {
-    label: "Help center",
+    label: "Support",
     icon: IoMdHelpCircle,
     path: "https://lendasat.notion.site",
     target: "_blank",
+  },
+  {
+    label: "setting",
+    icon: HiUsers,
+    path: "/my-account",
   },
 ];
 
@@ -84,9 +86,9 @@ function MainLayoutComponents() {
       username={user!.name}
     >
       <Layout
+        user={user}
         menuItems={menuItems}
         theme={"light"}
-        user={user}
         backendVersion={backendVersion}
       >
         <Routes>
@@ -103,8 +105,9 @@ function MainLayoutComponents() {
               <Route index element={<MyLoans />} />
               <Route path={":id"} element={<ContractDetailsOverview />} />
             </Route>
+            <Route path="/requests" element={<RequestMade />} />
             <Route path="/history" element={<History />} />
-            <Route path="/my-account" element={<MyAccount />} />
+            <Route path="/setting" element={<MyAccount />} />
             <Route path="/logout" element={<Logout />} />
             <Route path="/profile/:id" element={<Profile />} />
             <Route path="/request-loan" element={<RequestLoan />} />
