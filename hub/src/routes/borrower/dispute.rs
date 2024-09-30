@@ -276,7 +276,8 @@ pub async fn get_claim_collateral_psbt(
                 bail!("Unaware of any collateral outputs to claim");
             }
 
-            let (psbt, collateral_descriptor) = data.wallet.create_dispute_claim_collateral_psbt(
+            let mut wallet = data.wallet.lock().await;
+            let (psbt, collateral_descriptor) = wallet.create_dispute_claim_collateral_psbt(
                 contract.borrower_pk,
                 contract_index,
                 collateral_outputs,

@@ -19,9 +19,11 @@ use bitcoin::Network;
 use bitcoin::NetworkKind;
 use bitcoin::OutPoint;
 use bitcoin::PublicKey;
+use bitcoin::ScriptBuf;
 use bitcoin::Transaction;
 use bitcoin::TxIn;
 use bitcoin::TxOut;
+use descriptor_wallet::DescriptorWallet;
 use miniscript::Descriptor;
 use std::str::FromStr;
 use std::sync::LazyLock;
@@ -42,7 +44,7 @@ pub struct Wallet {
     /// using DLCs.
     fallback_xpub: Xpub,
     network: Network,
-    hub_fee_address: Address,
+    hub_fee_wallet: DescriptorWallet,
 }
 
 impl Wallet {
@@ -50,7 +52,7 @@ impl Wallet {
         hub_seed: Vec<u8>,
         fallback_xpub: &str,
         network: Network,
-        hub_fee_address: Address,
+        hub_fee_wallet: DescriptorWallet,
     ) -> Result<Self> {
         let hub_xpriv = Xpriv::new_master(NetworkKind::from(network), &hub_seed)?;
         let fallback_xpub = Xpub::from_str(fallback_xpub)?;
@@ -59,7 +61,7 @@ impl Wallet {
             hub_xpriv,
             fallback_xpub,
             network,
-            hub_fee_address,
+            hub_fee_wallet,
         })
     }
 
@@ -78,7 +80,7 @@ impl Wallet {
 
     #[allow(clippy::too_many_arguments)]
     pub fn create_dispute_claim_collateral_psbt(
-        &self,
+        &mut self,
         borrower_pk: PublicKey,
         contract_index: u32,
         collateral_outputs: Vec<(OutPoint, u64)>,
@@ -146,9 +148,10 @@ impl Wallet {
             })
             .collect::<Vec<_>>();
 
+        let new_address = self.hub_fee_wallet.get_new_address()?;
         let origination_fee_output = TxOut {
             value: Amount::from_sat(origination_fee),
-            script_pubkey: self.hub_fee_address.script_pubkey(),
+            script_pubkey: ScriptBuf::from_bytes(new_address.address.script_pubkey().to_bytes()),
         };
 
         outputs.push(origination_fee_output);
@@ -213,7 +216,7 @@ impl Wallet {
 
     #[allow(clippy::too_many_arguments)]
     pub fn create_claim_collateral_psbt(
-        &self,
+        &mut self,
         borrower_pk: PublicKey,
         contract_index: u32,
         collateral_outputs: Vec<(OutPoint, u64)>,
@@ -250,9 +253,11 @@ impl Wallet {
             script_pubkey: borrower_btc_address.script_pubkey(),
         };
 
+        let new_address = self.hub_fee_wallet.get_new_address()?;
+
         let origination_fee_output = TxOut {
             value: Amount::from_sat(origination_fee),
-            script_pubkey: self.hub_fee_address.script_pubkey(),
+            script_pubkey: ScriptBuf::from_bytes(new_address.address.script_pubkey().to_bytes()),
         };
 
         let unsigned_claim_tx = Transaction {

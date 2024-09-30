@@ -21,7 +21,7 @@ pub struct ErrorResponse {
 
 pub struct AppState {
     db: Pool<Postgres>,
-    wallet: Arc<Wallet>,
+    wallet: Arc<Mutex<Wallet>>,
     config: Config,
     mempool: xtra::Address<mempool::Actor>,
     connections: Arc<Mutex<Vec<mpsc::UnboundedSender<Message>>>>,

@@ -119,8 +119,8 @@ pub async fn put_approve_contract(
         .await
         .context("Failed to load contract request")?;
 
-        let (contract_address, contract_index) =
-            data.wallet.contract_address(contract.borrower_pk)?;
+        let wallet = data.wallet.lock().await;
+        let (contract_address, contract_index) = wallet.contract_address(contract.borrower_pk)?;
 
         db::contracts::accept_contract_request(
             &data.db,
