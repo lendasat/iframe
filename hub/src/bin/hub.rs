@@ -1,6 +1,7 @@
 use anyhow::Context;
 use anyhow::Result;
 use axum::extract::ws::Message;
+use descriptor_wallet::DescriptorWallet;
 use hub::bitmex_index_pricefeed::subscribe_index_price;
 use hub::config::Config;
 use hub::db::connect_to_db;
@@ -12,6 +13,7 @@ use hub::routes::borrower::spawn_borrower_server;
 use hub::routes::lender::spawn_lender_server;
 use hub::wallet::Wallet;
 use std::sync::Arc;
+use temp_dir::TempDir;
 use tokio::sync::mpsc;
 use tokio::sync::Mutex;
 use tracing::level_filters::LevelFilter;
@@ -26,12 +28,31 @@ async fn main() -> Result<()> {
     let db = connect_to_db(config.database_url.as_str()).await?;
     run_migration(&db).await?;
 
-    let network = config.network.parse().context("Invalid network")?;
+    let network = config.network.clone().parse().context("Invalid network")?;
     tracing::info!("Running hub on {network}");
 
     let hub_seed = seed_from_file(&config.seed_file)?;
-    let wallet = Wallet::new(hub_seed, &config.fallback_xpub, network)?;
-    let wallet = Arc::new(wallet);
+
+    let (db_path, _temp_db_dir) = match config.hub_fee_wallet_dir.as_ref() {
+        None => {
+            let temp_dir = TempDir::new().expect("to exist");
+            let path = temp_dir.path();
+            let path_str = path.to_str().map(|s| s.to_string()).expect("to work");
+            let db_path = format!("{}/one-time.db", path_str);
+            tracing::warn!(db_path, "Fee wallet is using non-persistent storage");
+            (db_path, Some(temp_dir))
+        }
+        Some(path) => (path.clone(), None),
+    };
+
+    let descriptor_wallet = DescriptorWallet::new(
+        config.hub_fee_descriptor.as_str(),
+        db_path.as_str(),
+        config.network.clone().as_str(),
+    )?;
+
+    let wallet = Wallet::new(hub_seed, &config.fallback_xpub, network, descriptor_wallet)?;
+    let wallet = Arc::new(Mutex::new(wallet));
 
     let (mempool_addr, mempool_mailbox) = xtra::Mailbox::unbounded();
     let mempool = mempool::Actor::new(

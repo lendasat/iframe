@@ -14,6 +14,7 @@ axum-extra = { version = "0.9.0", features = ["cookie"] }
 bitcoin = { version = "0.32.2", features = ["bitcoinconsensus", "serde"] }
 bitcoin-units = "0.1.2"
 bitmex-stream = { git = "https://github.com/get10101/bitmex-stream.git" }
+descriptor-wallet = { path = "../descriptor-wallet" }
 futures = "0.3"
 handlebars = "4.3.7"
 include_dir = "0.7.4"
@@ -30,6 +31,7 @@ rust_decimal_macros = "1.35"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sqlx = { version = "0.8", features = ["runtime-async-std", "tls-rustls", "postgres", "uuid", "time", "rust_decimal"] }
+temp-dir = "0.1.13"
 time = { version = "0.3", features = ["macros", "serde", "serde-well-known"] }
 tokio = { version = "1", features = ["full", "tracing"] }
 tokio-tungstenite = { version = "0.23.1", features = ["native-tls"] }

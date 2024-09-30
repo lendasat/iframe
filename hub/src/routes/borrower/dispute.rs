@@ -9,7 +9,6 @@ use crate::routes::borrower::auth::jwt_auth;
 use crate::routes::borrower::ClaimCollateralPsbt;
 use crate::routes::AppState;
 use crate::routes::ErrorResponse;
-use crate::wallet::LIQUIDATOR_ADDRESS;
 use anyhow::bail;
 use anyhow::Context;
 use axum::extract::Path;
@@ -277,7 +276,8 @@ pub async fn get_claim_collateral_psbt(
                 bail!("Unaware of any collateral outputs to claim");
             }
 
-            let (psbt, collateral_descriptor) = data.wallet.create_dispute_claim_collateral_psbt(
+            let mut wallet = data.wallet.lock().await;
+            let (psbt, collateral_descriptor) = wallet.create_dispute_claim_collateral_psbt(
                 contract.borrower_pk,
                 contract_index,
                 collateral_outputs,
@@ -287,7 +287,7 @@ pub async fn get_claim_collateral_psbt(
                         dispute.borrower_payout_sats.expect("To be some") as u64,
                     ),
                     (
-                        LIQUIDATOR_ADDRESS.parse().expect("to be valid"),
+                        data.config.liquidator_address.as_unchecked().clone(),
                         dispute.borrower_payout_sats.expect("To be some") as u64,
                     ),
                 ],

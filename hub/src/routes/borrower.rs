@@ -37,7 +37,7 @@ pub(crate) mod version;
 
 pub async fn spawn_borrower_server(
     config: Config,
-    wallet: Arc<Wallet>,
+    wallet: Arc<Mutex<Wallet>>,
     db: Pool<Postgres>,
     mempool: xtra::Address<mempool::Actor>,
     connections: Arc<Mutex<Vec<mpsc::UnboundedSender<Message>>>>,
