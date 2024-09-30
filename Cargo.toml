@@ -1,5 +1,5 @@
 [workspace]
-members = ["hub", "borrower-wallet", "tests-e2e", "mempool-mock"]
+members = ["hub", "borrower-wallet", "tests-e2e", "mempool-mock", "descriptor-wallet"]
 resolver = "2"
 
 [profile.release]
