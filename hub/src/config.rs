@@ -1,3 +1,6 @@
+use bitcoin::Address;
+use std::str::FromStr;
+
 #[derive(Debug, Clone)]
 pub struct Config {
     pub database_url: String,
@@ -17,6 +20,8 @@ pub struct Config {
     pub borrower_listen_address: String,
     pub lender_frontend_origin: String,
     pub lender_listen_address: String,
+    pub hub_fee_address: Address,
+    pub liquidator_address: Address,
 }
 
 impl Config {
@@ -50,6 +55,11 @@ impl Config {
         let lender_frontend_origin =
             std::env::var("LENDER_FRONTEND_ORIGIN").expect("LENDER_FRONTEND_ORIGIN must be set");
 
+        let hub_fee_address =
+            std::env::var("HUB_FEE_ADDRESS").expect("HUB_FEE_ADDRESS must be set");
+        let liquidator_address =
+            std::env::var("LIQUIDATOR_ADDRESS").expect("LIQUIDATOR_ADDRESS must be set");
+
         let any_smtp_not_configured = smtp_host.is_none()
             || smtp_port.is_none()
             || smtp_user.is_none()
@@ -78,6 +88,12 @@ impl Config {
                 || smtp_disabled
                     .map(|disabled| disabled.parse::<bool>().expect("to be able to parse"))
                     .unwrap_or_default(),
+            hub_fee_address: Address::from_str(hub_fee_address.as_str())
+                .expect("to be valid address")
+                .assume_checked(),
+            liquidator_address: Address::from_str(liquidator_address.as_str())
+                .expect("to be valid address")
+                .assume_checked(),
         }
     }
 }

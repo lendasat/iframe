@@ -30,12 +30,6 @@ use std::sync::Mutex;
 // FIXME: Persist this.
 static KEY_INDEX: LazyLock<Mutex<u32>> = LazyLock::new(|| Mutex::new(0));
 
-// FIXME: Pass another xpub in to receive fee payments?
-const HUB_FEE_ADDRESS: &str = "tb1quw75h0w26rcrdfar6knvkfazpwyzq4z8vqmt37";
-// FIXME: This is the address we receive the funds on for the lender in case of a dispute resolution
-// or a liquidation
-pub const LIQUIDATOR_ADDRESS: &str = "tb1q54wsjqzdm0fmqzezuzq00x9tramznhfa7zw6y0";
-
 /// Everything below this value is counted as dust. At the time of writing, this is ~$58
 const MIN_TX_OUTPUT_SIZE: u64 = 100_000;
 
@@ -48,10 +42,16 @@ pub struct Wallet {
     /// using DLCs.
     fallback_xpub: Xpub,
     network: Network,
+    hub_fee_address: Address,
 }
 
 impl Wallet {
-    pub fn new(hub_seed: Vec<u8>, fallback_xpub: &str, network: Network) -> Result<Self> {
+    pub fn new(
+        hub_seed: Vec<u8>,
+        fallback_xpub: &str,
+        network: Network,
+        hub_fee_address: Address,
+    ) -> Result<Self> {
         let hub_xpriv = Xpriv::new_master(NetworkKind::from(network), &hub_seed)?;
         let fallback_xpub = Xpub::from_str(fallback_xpub)?;
 
@@ -59,6 +59,7 @@ impl Wallet {
             hub_xpriv,
             fallback_xpub,
             network,
+            hub_fee_address,
         })
     }
 
@@ -145,11 +146,9 @@ impl Wallet {
             })
             .collect::<Vec<_>>();
 
-        let address = Address::from_str(HUB_FEE_ADDRESS).expect("valid address");
-
         let origination_fee_output = TxOut {
             value: Amount::from_sat(origination_fee),
-            script_pubkey: address.assume_checked().script_pubkey(),
+            script_pubkey: self.hub_fee_address.script_pubkey(),
         };
 
         outputs.push(origination_fee_output);
@@ -251,11 +250,9 @@ impl Wallet {
             script_pubkey: borrower_btc_address.script_pubkey(),
         };
 
-        let address = Address::from_str(HUB_FEE_ADDRESS).expect("valid address");
-
         let origination_fee_output = TxOut {
             value: Amount::from_sat(origination_fee),
-            script_pubkey: address.assume_checked().script_pubkey(),
+            script_pubkey: self.hub_fee_address.script_pubkey(),
         };
 
         let unsigned_claim_tx = Transaction {

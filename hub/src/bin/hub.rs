@@ -30,7 +30,12 @@ async fn main() -> Result<()> {
     tracing::info!("Running hub on {network}");
 
     let hub_seed = seed_from_file(&config.seed_file)?;
-    let wallet = Wallet::new(hub_seed, &config.fallback_xpub, network)?;
+    let wallet = Wallet::new(
+        hub_seed,
+        &config.fallback_xpub,
+        network,
+        config.hub_fee_address.clone(),
+    )?;
     let wallet = Arc::new(wallet);
 
     let (mempool_addr, mempool_mailbox) = xtra::Mailbox::unbounded();
