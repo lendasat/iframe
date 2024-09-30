@@ -62,10 +62,11 @@ function MyAccount() {
               {["profile", "security"].map((items, index) => (
                 <Tabs.Trigger
                   key={index}
-                  className={`md:justify-start data-[state=active]:before:bg-transparent flex-grow md:w-fit px-2 rounded-full */hover:bg-transparent ${items === "delete account"
+                  className={`md:justify-start data-[state=active]:before:bg-transparent flex-grow md:w-fit px-2 rounded-full */hover:bg-transparent ${
+                    items === "delete account"
                       ? "text-red-600 data-[state=active]:bg-red-600/20 md:mt-8"
                       : "data-[state=inactive]:text-font/70 data-[state=active]:text-purple-800 data-[state=active]:bg-purple-800/20"
-                    } font-medium data-[state=active]:font-semibold capitalize`}
+                  } font-medium data-[state=active]:font-semibold capitalize`}
                   value={items}
                 >
                   {items}

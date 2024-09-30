@@ -77,7 +77,8 @@ export function RequestLoanSummary() {
       setAmountError("Amount is required");
     } else if (value < loanOffer.loan_amount_min || value > loanOffer.loan_amount_max) {
       setAmountError(
-        `Amount must be between ${formatCurrency(loanOffer.loan_amount_min)} and ${formatCurrency(loanOffer.loan_amount_max)
+        `Amount must be between ${formatCurrency(loanOffer.loan_amount_min)} and ${
+          formatCurrency(loanOffer.loan_amount_max)
         }`,
       );
     } else {
