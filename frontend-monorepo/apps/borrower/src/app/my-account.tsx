@@ -1,14 +1,13 @@
-import { faEdit } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
 import { useWallet } from "@frontend-monorepo/borrower-wallet";
 import { useAuth } from "@frontend-monorepo/http-client-borrower";
-import { Box, Tabs, Text } from "@radix-ui/themes";
-import React, { useState } from "react";
-import { Button, Spinner, Table } from "react-bootstrap";
-import { FaEye } from "react-icons/fa";
-import { FaEyeSlash } from "react-icons/fa6";
-import DashHeader from "./components/DashHeader";
+import { Avatar, Box, Button, Callout, Flex, Heading, Separator, Spinner, Tabs, Text } from "@radix-ui/themes";
+import { useState } from "react";
+import { BiSolidError } from "react-icons/bi";
+import { GiPadlock, GiPadlockOpen } from "react-icons/gi";
+import { GoVerified } from "react-icons/go";
+import { IoIosUnlock } from "react-icons/io";
+import { MdEdit } from "react-icons/md";
 import { CreateWalletModal } from "./wallet/create-wallet-modal";
 import { UnlockWalletModal } from "./wallet/unlock-wallet-modal";
 
@@ -31,98 +30,182 @@ function MyAccount() {
     setLoading(false);
   };
 
+  const layout = window;
+
+  // Format date options
+  const options: any = {
+    weekday: "short",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  };
+
   return (
-    <div className="h-[90vh]">
-      <DashHeader label="Account" />
-      <div className="mt-8 rounded-3xl bg-dashboard border border-font/10 flex-1 h-[80vh] py-5">
-        <Tabs.Root defaultValue="account" className="md:flex md:items-start w-full md:h-full">
-          <div className="h-full md:border-r px-3">
-            <Tabs.List className="md:grid md:shadow-none md:space-y-4 md:items-left min-w-[200px] md:justify-start">
-              <Tabs.Trigger className="md:justify-start" value="account">
-                Account
-              </Tabs.Trigger>
-              <Tabs.Trigger className="md:justify-start" value="documents">
-                Seed Phrase
-              </Tabs.Trigger>
-              <Tabs.Trigger
-                className="md:justify-start"
-                value="settings"
-              >
-                Delete Account
-              </Tabs.Trigger>
+    <Box
+      className="p-4 flex flex-col overflow-y-scroll"
+      style={{
+        height: layout.innerHeight - 60,
+      }}
+    >
+      <Heading weight={"medium"} mb={"4"}>Account Settings</Heading>
+      <Box className="bg-dashboard rounded-3xl shadow-sm flex-grow">
+        <Tabs.Root
+          activationMode="manual"
+          defaultValue="profile"
+          className="md:flex md:items-start p-5 h-full"
+        >
+          <Box className="md:h-full md:border-r md:border-black/5 bg-purple-800/5 p-2 md:p-0 rounded-full md:rounded-none md:bg-transparent md:max-w-[200px] w-full">
+            <Tabs.List
+              color="purple"
+              className="border-b-0 shadow-none md:flex-col rounded-r-full md:rounded-none"
+            >
+              {["profile", "security"].map((items, index) => (
+                <Tabs.Trigger
+                  key={index}
+                  className={`md:justify-start data-[state=active]:before:bg-transparent flex-grow md:w-fit px-2 rounded-full */hover:bg-transparent ${
+                    items === "delete account"
+                      ? "text-red-600 data-[state=active]:bg-red-600/20 md:mt-8"
+                      : "data-[state=inactive]:text-font/70 data-[state=active]:text-purple-800 data-[state=active]:bg-purple-800/20"
+                  } font-medium data-[state=active]:font-semibold capitalize`}
+                  value={items}
+                >
+                  {items}
+                </Tabs.Trigger>
+              ))}
             </Tabs.List>
-          </div>
-          <Box pt="3" className="flex-grow pl-5">
-            <Tabs.Content value="account">
+          </Box>
+          <Box pt="3" className="flex-grow">
+            <Tabs.Content value="profile">
               {user
                 ? (
-                  <div>
-                    <Table>
-                      <tbody>
-                        <tr>
-                          <td className="font-bold">Name</td>
-                          <td>{user.name}</td>
-                        </tr>
-                        <tr>
-                          <td className="font-bold">Email</td>
-                          <td>{user.email}</td>
-                        </tr>
-                        <tr>
-                          <td className="font-bold">Password</td>
-                          <td className="flex justify-between items-center">
-                            *******
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={handleResetPassword}
-                              disabled={isLoading}
-                              title="Change Password"
-                            >
-                              {isLoading
-                                ? <Spinner className="h-4 w-4" />
-                                : <FontAwesomeIcon icon={faEdit} className="text-blue-500" />}
-                            </Button>
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="font-bold">Joined</td>
-                          <td>{new Date(user.created_at).toLocaleDateString()}</td>
-                        </tr>
-                      </tbody>
-                    </Table>
-                    {error && (
-                      <div
-                        className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mt-4"
-                        role="alert"
-                      >
-                        {error}
-                      </div>
-                    )}
-                    {success
-                      && (
-                        <div
-                          className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mt-4"
-                          role="alert"
-                        >
-                          {success}
-                        </div>
+                  <Box className="md:pl-8">
+                    <Heading as="h4" className="font-semibold" size={"5"}>Profile</Heading>
+                    <Box mt={"6"} className="space-y-4">
+                      <Box p={"4"} className="border border-purple-400/20 rounded-2xl">
+                        <Flex align={"center"} gap={"3"}>
+                          <Avatar
+                            src="https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?&w=256&h=256&q=70&crop=focalpoint&fp-x=0.5&fp-y=0.3&fp-z=1&fit=crop"
+                            size={"7"}
+                            radius="full"
+                            color="purple"
+                            fallback={user.name.substring(0, 1)}
+                          />
+                          <Flex align={"start"} direction={"column"} gap={"1"}>
+                            <Heading as="h4" weight={"medium"} className="capitalize" size={"4"}>{user.name}</Heading>
+                            <Text size={"2"} className="text-font/50">
+                              {new Date(user.created_at).toLocaleDateString("en-CA", options)}
+                            </Text>
+                            {user.verified && (
+                              <Flex gap={"1"}>
+                                <GoVerified color="green" />
+                                <Text size={"1"} weight={"medium"} color="green">Verified</Text>
+                              </Flex>
+                            )}
+                          </Flex>
+                        </Flex>
+                      </Box>
+
+                      <Box className="border border-purple-400/20 rounded-2xl px-5 py-6">
+                        <Heading as="h4" className="font-semibold capitalize" size={"3"}>Personal information</Heading>
+                        <Box mt={"4"} className="max-w-lg grid md:grid-cols-2 gap-5">
+                          <Box>
+                            <Flex direction={"column"} gap={"1"}>
+                              <Text as="label" weight={"medium"} size={"2"} className="text-font/50">
+                                Full Name
+                              </Text>
+                              <Text size={"3"} weight={"medium"} className="capitalize text-font-dark">
+                                {user.name}
+                              </Text>
+                            </Flex>
+                          </Box>
+
+                          <Box>
+                            <Flex direction={"column"} gap={"1"}>
+                              <Text as="label" weight={"medium"} size={"2"} className="text-font/50">
+                                Email Address
+                              </Text>
+                              <Text size={"3"} weight={"medium"} className="capitalize text-font-dark">
+                                {user.email}
+                              </Text>
+                            </Flex>
+                          </Box>
+                          <Box>
+                            <Flex direction={"column"} gap={"1"}>
+                              <Text as="label" weight={"medium"} size={"2"} className="text-font/50">
+                                Password
+                              </Text>
+                              <Text size={"3"} weight={"medium"} className="capitalize text-font-dark">********</Text>
+                            </Flex>
+                          </Box>
+                          <Box>
+                            <Flex direction={"column"} gap={"1"}>
+                              <Text as="label" weight={"medium"} size={"2"} className="text-font/50">
+                                Joined on
+                              </Text>
+                              <Text size={"3"} weight={"medium"} className="capitalize text-font-dark">
+                                {new Date(user.created_at).toLocaleDateString("en-CA", options)}
+                              </Text>
+                            </Flex>
+                          </Box>
+                        </Box>
+                      </Box>
+                      {error && (
+                        <Callout.Root color="red">
+                          <Callout.Icon>
+                            <BiSolidError />
+                          </Callout.Icon>
+                          <Callout.Text>
+                            {error}
+                          </Callout.Text>
+                        </Callout.Root>
                       )}
-                  </div>
+
+                      {success
+                        && (
+                          <Callout.Root color="green">
+                            <Callout.Icon>
+                              <IoIosUnlock />
+                            </Callout.Icon>
+                            <Callout.Text>
+                              {success}
+                            </Callout.Text>
+                          </Callout.Root>
+                        )}
+
+                      <Box pt={"5"}>
+                        <Flex justify={"end"}>
+                          <Button
+                            size={"3"}
+                            onClick={handleResetPassword}
+                            disabled={isLoading}
+                            className="bg-btn text-sm"
+                          >
+                            {isLoading
+                              ? <Spinner size={"3"} />
+                              : <MdEdit />}
+                            Recover Password
+                          </Button>
+                        </Flex>
+                      </Box>
+                    </Box>
+                  </Box>
                 )
-                : <div>No user data found.</div>}
+                : (
+                  <Box className="px-5">
+                    {/* To be worked on */}
+                    <div>No user data found.</div>
+                  </Box>
+                )}
             </Tabs.Content>
-
-            <Tabs.Content value="documents">
-              <MnemonicDisplay />
-            </Tabs.Content>
-
-            <Tabs.Content value="settings">
-              <Text size="2">Edit your profile or update contact information.</Text>
+            <Tabs.Content value="security">
+              <Box className="md:pl-8">
+                <MnemonicDisplay />
+              </Box>
             </Tabs.Content>
           </Box>
         </Tabs.Root>
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }
 
@@ -176,10 +259,10 @@ const MnemonicDisplay = () => {
   };
 
   return (
-    <div className="md:w-1/2">
-      <h2 className="text-2xl font-bold mb-4">Seed phrase</h2>
-      <div className="space-y-4">
-        <div className="bg-white shadow rounded-lg p-4">
+    <Box>
+      <Box className="md:w-1/2">
+        <Heading as="h4" className="font-semibold" size={"5"}>Seed phrase</Heading>
+        <Box mt={"6"} className="space-y-4">
           <CreateWalletModal
             show={showCreateWalletModal}
             handleClose={handleCloseCreateWalletModal}
@@ -190,24 +273,31 @@ const MnemonicDisplay = () => {
             handleClose={handleCloseUnlockWalletModal}
             handleSubmit={handleSubmitUnlockWalletModal}
           />
-          <div className="flex justify-between items-center mb-2">
-            <h3 className="text-lg font-semibold">Mnemonic Seed Phrase</h3>
-            <button
-              onClick={onEyeButtonClick}
-              className="text-gray-600 hover:text-gray-800 focus:outline-none"
-              aria-label={isVisible ? "Hide mnemonic" : "Show mnemonic"}
-            >
-              {isVisible ? <FaEyeSlash className="w-5 h-5" /> : <FaEye className="w-5 h-5" />}
-            </button>
-          </div>
-          <div className="bg-gray-100 p-3 rounded">
-            {isVisible
-              ? <p className="break-all">{mnemonic}</p>
-              : <p className="text-gray-500">● ● ● ● ● ● ● ● ● ● ● ●</p>}
-          </div>
-        </div>
-      </div>
-    </div>
+
+          <Box>
+            <Flex direction={"column"} gap={"2"}>
+              <Text as="label" weight={"medium"} size={"2"} className="text-font/50">
+                Mnemonic Seed Phrase
+              </Text>
+              <Text size={"3"} weight={"medium"} className="capitalize text-font-dark">
+                {isVisible
+                  ? mnemonic
+                  : "● ● ● ● ● ● ● ● ● ● ● ●"}
+              </Text>
+            </Flex>
+          </Box>
+          <Separator size={"4"} />
+          <Button
+            size={"3"}
+            onClick={onEyeButtonClick}
+            className="bg-btn text-sm"
+          >
+            {isVisible ? <GiPadlock /> : <GiPadlockOpen />}
+            {isVisible ? "Hide phrase" : "Open phrase"}
+          </Button>
+        </Box>
+      </Box>
+    </Box>
   );
 };
 

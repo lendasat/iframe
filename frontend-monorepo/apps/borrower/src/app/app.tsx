@@ -66,7 +66,18 @@ const menuItems = [
 ];
 
 function MainLayoutComponents() {
-  const { backendVersion, user } = useAuth();
+  const { backendVersion, user: borrowerUser } = useAuth();
+
+  // Mapping function to normalize user objects
+  const mapBorrowerUser = (borrowerUser: any) => ({
+    id: borrowerUser?.id,
+    name: borrowerUser?.name,
+    email: borrowerUser?.email,
+    createdAt: borrowerUser?.created_at,
+    verified: borrowerUser?.verified,
+  });
+
+  const user = borrowerUser ? mapBorrowerUser(borrowerUser) : null;
 
   return (
     <WalletProvider
@@ -75,6 +86,7 @@ function MainLayoutComponents() {
       <Layout
         menuItems={menuItems}
         theme={"light"}
+        user={user}
         backendVersion={backendVersion}
       >
         <Routes>

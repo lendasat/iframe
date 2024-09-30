@@ -1,11 +1,11 @@
 import { faBars } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Version } from "@frontend-monorepo/base-http-client";
-import { Container, Heading } from "@radix-ui/themes";
+import { Avatar, Box, Flex } from "@radix-ui/themes";
 import React, { ReactNode } from "react";
 import { IconType } from "react-icons";
 import { IoNotifications } from "react-icons/io5";
-import { RiCustomerService2Fill, RiUser6Fill } from "react-icons/ri";
+import { RiCustomerService2Fill } from "react-icons/ri";
 import { TbLogout } from "react-icons/tb";
 import { Menu, MenuItem, Sidebar } from "react-pro-sidebar";
 import { Link, NavLink } from "react-router-dom";
@@ -26,14 +26,17 @@ interface LayoutProps {
   menuItems: MenuItem[];
   theme?: Theme;
   backendVersion: Version;
+  user: any;
 }
 
-export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme = "light", backendVersion }) => {
+export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme = "light", backendVersion, user }) => {
   const [toggled, setToggled] = React.useState(false);
   const [broken, setBroken] = React.useState(false);
+  const layout = window;
+
   return (
     <div
-      className="bg-gradient-to-br from-white from-40% via-70% via-purple/900/5 to-100% to-[#1a56e30b] h-screen overflow-hidden"
+      className="bg-dashboard h-screen overflow-hidden"
       style={{ display: "flex", height: "100%" }}
     >
       <Sidebar
@@ -43,6 +46,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme = "li
         breakPoint="lg"
         rootStyles={{
           height: "100vh !important",
+          borderWidth: 0,
         }}
       >
         <div className="flex flex-col h-full px-3 pt-10 pb-2 items-center bg-dashboard">
@@ -81,23 +85,46 @@ export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme = "li
         </div>
       </Sidebar>
 
-      <main className="w-full h-screen">
-        <div
-          className="h-screen w-full bg-active-nav/5 overflow-hidden relative"
-          style={{ color: "#44596e" }}
+      <main className="w-full h-screen overflow-hidden relative">
+        <Box className="h-[60px] px-6 md:px-8 flex items-center justify-between">
+          <Box>
+            <Flex>
+              {broken && (
+                <div className="flex items-center justify-between md:px-10 px-4">
+                  <button className="sb-button" onClick={() => setToggled(!toggled)}>
+                    <FontAwesomeIcon icon={faBars} />
+                  </button>
+                </div>
+              )}
+            </Flex>
+          </Box>
+          <Box>
+            <Flex align={"center"} className="gap-4 md:gap-8">
+              <Link to={"https://lendasat.notion.site"} target="_blank">
+                <RiCustomerService2Fill size={"20"} />
+              </Link>
+              <Link to={"/history"}>
+                <IoNotifications size={"20"} />
+              </Link>
+              <Link to={"/my-account"}>
+                <Avatar
+                  size={"3"}
+                  radius="full"
+                  color="purple"
+                  fallback={user ? user.name.substring(0, 1) : "U"}
+                />
+              </Link>
+            </Flex>
+          </Box>
+        </Box>
+        <Box
+          className="bg-gradient-to-br from-active-nav/5 from-40% via-70% via-purple/800/5 to-100% to-[#1a56e30b] lg:rounded-tl-2xl"
+          style={{
+            height: layout.innerHeight - 60,
+          }}
         >
-          {broken && (
-            <div className="w-full   flex items-center justify-between md:px-10 px-4">
-              <button className="sb-button" onClick={() => setToggled(!toggled)}>
-                <FontAwesomeIcon icon={faBars} />
-              </button>
-            </div>
-          )}
-
-          <div className="h-full">
-            {children}
-          </div>
-        </div>
+          {children}
+        </Box>
       </main>
     </div>
   );

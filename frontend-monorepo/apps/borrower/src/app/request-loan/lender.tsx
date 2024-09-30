@@ -1,6 +1,5 @@
 import { LenderProfile } from "@frontend-monorepo/http-client-borrower";
-import { Avatar, Box, Flex, Heading, Text } from "@radix-ui/themes";
-import { Container, Row } from "react-bootstrap";
+import { Avatar, Box, Flex, Heading } from "@radix-ui/themes";
 import { Link } from "react-router-dom";
 
 export function Lender({ name, id }: LenderProfile) {

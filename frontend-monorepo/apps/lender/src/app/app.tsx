@@ -22,13 +22,25 @@ const menuItems = [
 ];
 
 function MainLayoutComponents() {
-  const { backendVersion } = useAuth();
+  const { backendVersion, user: lenderUser } = useAuth();
   const version = backendVersion ?? {
     version: new SemVer("0.0.0"),
     commit_hash: "unknown",
   };
+
+  // Mapping function to normalize user objects
+  const mapLenderUser = (lenderUser: any) => ({
+    id: lenderUser?.id,
+    name: lenderUser?.name,
+    email: lenderUser?.email,
+    createdAt: lenderUser?.created_at,
+    verified: lenderUser?.verified,
+  });
+
+  const user = lenderUser ? mapLenderUser(lenderUser) : null;
+
   return (
-    <Layout menuItems={menuItems} theme={"light"} backendVersion={version}>
+    <Layout user={user} menuItems={menuItems} theme={"light"} backendVersion={version}>
       <Routes>
         <Route
           element={
