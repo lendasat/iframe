@@ -168,7 +168,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme, back
         <Box
           className="lg:rounded-tl-2xl"
           style={{
-            height: layout.innerHeight - 60,
+            height: layout.innerHeight - 65,
           }}
         >
           {children}
