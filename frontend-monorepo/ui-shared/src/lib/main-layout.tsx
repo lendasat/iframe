@@ -1,5 +1,5 @@
 import { Version } from "@frontend-monorepo/base-http-client";
-import { Avatar, Box, Flex, Heading, IconButton, Separator, Text } from "@radix-ui/themes";
+import { Avatar, Box, Flex, Heading, IconButton, Text } from "@radix-ui/themes";
 import React, { ReactNode } from "react";
 import { IconType } from "react-icons";
 import { IoIosNotificationsOutline } from "react-icons/io";

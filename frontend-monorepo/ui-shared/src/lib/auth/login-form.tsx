@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 import Background from "./../assets/background-art.jpeg";
 import Dashboard from "./../assets/background-art.png";
 import { ReactComponent as Logo } from "./../assets/lendasat_svg_logo.svg";
-import { InputField } from "../components/SearchBar";
+import { InputField } from "../components/InputField";
 
 interface LoginFormProps {
   handleLogin: (email: string, password: string) => Promise<void>;
