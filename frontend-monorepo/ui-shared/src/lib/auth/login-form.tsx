@@ -1,15 +1,4 @@
-import {
-  Box,
-  Button,
-  Callout,
-  Checkbox,
-  Flex,
-  Grid,
-  Heading,
-  IconButton,
-  Spinner,
-  Text,
-} from "@radix-ui/themes";
+import { Box, Button, Callout, Checkbox, Flex, Grid, Heading, IconButton, Spinner, Text } from "@radix-ui/themes";
 import React, { useState } from "react";
 import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
 import { IoInformationCircleOutline } from "react-icons/io5";
@@ -148,7 +137,6 @@ export function LoginForm(
                 </Button>
               </Box>
             </form>
-
 
             {/* Sign Up Routing */}
             <Box className="flex items-center gap-1 justify-center mt-16">
