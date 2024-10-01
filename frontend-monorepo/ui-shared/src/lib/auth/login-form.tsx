@@ -151,15 +151,14 @@ export function LoginForm(
         <Box width={"100%"} height={"100vh"} py={"6"} pr={"6"} className="hidden xl:block">
           <Box className="bg-purple-800 w-full h-full rounded-3xl relative z-10 overflow-hidden pt-20 px-10 text-center pb-10">
             <Heading className="text-white text-4xl xl:text-5xl 2xl:text-6xl font-semibold">
-              Welcome Back! <br /> Please sign in to your <br />{" "}
               <Text className="relative after:absolute after:bottom-0 after:h-0.5 after:w-full after:bg-white after:left-0">
-                Lendersat
-              </Text>{" "}
-              account
+                Lendasat
+              </Text>
+              {" "}
             </Heading>
             <Box mt={"6"} maxWidth={"500px"} mx={"auto"}>
               <Text size={"4"} weight={"medium"} className="text-white">
-                Lendasat lets you take instant loans to pay Lightning invoices. No need to sell your Bitcoin.
+                Borrow against your Bitcoin in a secure and non-custodial way. Never. Sell. Your. Bitcoin.
               </Text>
             </Box>
 
