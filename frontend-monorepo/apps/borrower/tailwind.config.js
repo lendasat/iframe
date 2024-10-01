@@ -15,7 +15,7 @@ module.exports = {
     extend: {
       colors: {
         base: '#623AB0',
-        font: '#393E3A',
+        font: '#3C3D40',
         color: '#623AB0',
         'font-dark': '#191E1A',
         dashboard: '#ffffff',

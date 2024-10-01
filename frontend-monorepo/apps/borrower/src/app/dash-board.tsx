@@ -1,8 +1,10 @@
 import { FullLogoWhiteBg } from "@frontend-monorepo/ui-shared";
+import { Button } from "@radix-ui/themes";
 import React from "react";
-import { Button, Col, Container, Row } from "react-bootstrap";
+import { Col, Container, Row } from "react-bootstrap";
 import { FaDiscord, FaGithub, FaGlobe } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
+import { Link } from "react-router-dom";
 import DashHeader from "./components/DashHeader";
 
 function DashBoard() {
@@ -47,6 +49,10 @@ function DashBoard() {
         }
       </Row>
       <DashHeader label={"Dashboard"} />
+
+      <Button asChild>
+        <Link to={"/logout"}>Logout</Link>
+      </Button>
     </Container>
   );
 }

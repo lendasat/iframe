@@ -44,7 +44,7 @@ function MyAccount() {
     <Box
       className="p-4 flex flex-col overflow-y-scroll"
       style={{
-        height: layout.innerHeight - 60,
+        height: layout.innerHeight - 65,
       }}
     >
       <Heading weight={"medium"} mb={"4"}>Account Settings</Heading>
