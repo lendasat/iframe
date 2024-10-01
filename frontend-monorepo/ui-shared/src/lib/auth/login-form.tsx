@@ -6,7 +6,8 @@ import { Link } from "react-router-dom";
 import Background from "./../assets/background-art.jpeg";
 import Dashboard from "./../assets/background-art.png";
 import { ReactComponent as Logo } from "./../assets/lendasat_svg_logo.svg";
-import { InputField } from "../components/InputField";
+import TypeField from "../components/TypeField";
+
 
 interface LoginFormProps {
   handleLogin: (email: string, password: string) => Promise<void>;
@@ -70,7 +71,7 @@ export function LoginForm(
               <Box className="text-left mt-3">
                 <Box>
                   <Text as="label" size={"1"} weight={"medium"} className="text-font/70 mb-2">Email</Text>
-                  <InputField
+                  <TypeField
                     placeholder="Enter your email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -80,7 +81,7 @@ export function LoginForm(
               <Box className="text-left mt-3">
                 <Box>
                   <Text as="label" size={"1"} weight={"medium"} className="text-font/70 mb-2">Password</Text>
-                  <InputField
+                  <TypeField
                     type={isVisible ? "text" : "password"}
                     placeholder="••••••••••"
                     value={password}
@@ -94,7 +95,7 @@ export function LoginForm(
                     >
                       {isVisible ? <FaRegEye /> : <FaRegEyeSlash />}
                     </IconButton>
-                  </InputField>
+                  </TypeField>
                 </Box>
               </Box>
 

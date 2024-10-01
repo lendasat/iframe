@@ -4,6 +4,7 @@ import {
   LoanAssetType,
   useLenderHttpClient,
 } from "@frontend-monorepo/http-client-lender";
+import { Box, Grid, Heading } from "@radix-ui/themes";
 import React, { useState } from "react";
 import { Button, Col, Form, Row } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
@@ -38,6 +39,7 @@ function parseStableCoin(value: string): StableCoin | undefined {
 }
 
 const CreateLoanOffer: React.FC = () => {
+  const layout = window;
   const [loanAmount, setLoanAmount] = useState<LoanAmount>({ min: 1000, max: 100000 });
   const [loanDuration, setLoanDuration] = useState<LoanDuration>({ min: 1, max: 12 });
   const [ltv, setLtv] = useState<number>(0.5);
@@ -111,116 +113,139 @@ const CreateLoanOffer: React.FC = () => {
 
   return (
     <Form onSubmit={handleSubmit}>
-      <Form.Group as={Row} controlId="formLoanAmount">
-        <Form.Label column={true} sm="2">Loan Amount</Form.Label>
-        <Col sm="5">
-          <Form.Control
-            type="number"
-            placeholder="Min Amount"
-            value={loanAmount.min}
-            onChange={(e) => setLoanAmount({ ...loanAmount, min: Number(e.target.value) })}
-          />
-        </Col>
-        <Col sm="5">
-          <Form.Control
-            type="number"
-            placeholder="Max Amount"
-            value={loanAmount.max}
-            onChange={(e) => setLoanAmount({ ...loanAmount, max: Number(e.target.value) })}
-          />
-        </Col>
-      </Form.Group>
+      <Box
+        style={{
+          height: layout.innerHeight - 65
+        }}>
+        <Grid className="md:grid-cols-6 w-full">
+          <Box
+            className="px-6 md:px-8 pt-7 col-span-4 bg-gradient-to-br from-white/0 to-white border-r border-font/50"
+            style={{
+              minHeight: layout.innerHeight - 65
+            }}
+          >
 
-      <Form.Group as={Row} controlId="formLoanDuration">
-        <Form.Label column={true} sm="2">Loan Duration (Months)</Form.Label>
-        <Col sm="5">
-          <Form.Control
-            type="number"
-            placeholder="Min Duration"
-            value={loanDuration.min}
-            onChange={(e) => setLoanDuration({ ...loanDuration, min: Number(e.target.value) })}
-          />
-        </Col>
-        <Col sm="5">
-          <Form.Control
-            type="number"
-            placeholder="Max Duration"
-            value={loanDuration.max}
-            onChange={(e) => setLoanDuration({ ...loanDuration, max: Number(e.target.value) })}
-          />
-        </Col>
-      </Form.Group>
+            <Heading size={'7'}>
+              Create an Offer
+            </Heading>
 
-      <Form.Group as={Row} controlId="formLtv">
-        <Form.Label column={true} sm="2">Loan-to-Value (LTV) (0.0-0.9)</Form.Label>
-        <Col sm="10">
-          <Form.Control
-            type="number"
-            placeholder="LTV (0-1)"
-            value={ltv}
-            min={0}
-            max={0.9}
-            step={0.1}
-            onChange={(e) => setLtv(Number(e.target.value))}
-          />
-        </Col>
-      </Form.Group>
 
-      <Form.Group as={Row} controlId="formInterest">
-        <Form.Label column={true} sm="2">Interest Rate (0.0-1.0)</Form.Label>
-        <Col sm="10">
-          <Form.Control
-            type="number"
-            placeholder="Interest Rate"
-            value={interest}
-            min={0}
-            max={1}
-            step={0.01}
-            onChange={(e) => setInterest(Number(e.target.value))}
-          />
-        </Col>
-      </Form.Group>
 
-      <Form.Group as={Row} controlId="formStableCoins">
-        <Form.Label column={true} sm="2">Stable Coins</Form.Label>
-        <Col sm="10">
-          {Object.keys(StableCoin).map((coin) => (
-            <Form.Check
-              inline
-              key={coin}
-              label={coin}
-              type="radio"
-              value={coin}
-              checked={selectedCoin === coin}
-              onChange={(e) => handleStableCoinChange(e.target.value)}
-            />
-          ))}
-        </Col>
-      </Form.Group>
 
-      <Form.Group as={Row} controlId="formLoanRepaymentAddress">
-        <Form.Label column={true} sm="2">Loan Repayment Address</Form.Label>
-        <Col sm="10">
-          <Form.Control
-            type="text"
-            placeholder="Enter Repayment Address"
-            value={loanRepaymentAddress}
-            onChange={(e) => setLoanRepaymentAddress(e.target.value)}
-          />
-        </Col>
-      </Form.Group>
+            <Form.Group as={Row} controlId="formLoanAmount">
+              <Form.Label column={true} sm="2">Loan Amount</Form.Label>
+              <Col sm="5">
+                <Form.Control
+                  type="number"
+                  placeholder="Min Amount"
+                  value={loanAmount.min}
+                  onChange={(e) => setLoanAmount({ ...loanAmount, min: Number(e.target.value) })}
+                />
+              </Col>
+              <Col sm="5">
+                <Form.Control
+                  type="number"
+                  placeholder="Max Amount"
+                  value={loanAmount.max}
+                  onChange={(e) => setLoanAmount({ ...loanAmount, max: Number(e.target.value) })}
+                />
+              </Col>
+            </Form.Group>
 
-      <Button variant="primary" type="submit">
-        Submit
-      </Button>
-      {error && (
-        <div
-          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mt-4"
-          role="alert"
-        >
-          {error}
-        </div>
-      )}
+            <Form.Group as={Row} controlId="formLoanDuration">
+              <Form.Label column={true} sm="2">Loan Duration (Months)</Form.Label>
+              <Col sm="5">
+                <Form.Control
+                  type="number"
+                  placeholder="Min Duration"
+                  value={loanDuration.min}
+                  onChange={(e) => setLoanDuration({ ...loanDuration, min: Number(e.target.value) })}
+                />
+              </Col>
+              <Col sm="5">
+                <Form.Control
+                  type="number"
+                  placeholder="Max Duration"
+                  value={loanDuration.max}
+                  onChange={(e) => setLoanDuration({ ...loanDuration, max: Number(e.target.value) })}
+                />
+              </Col>
+            </Form.Group>
+
+            <Form.Group as={Row} controlId="formLtv">
+              <Form.Label column={true} sm="2">Loan-to-Value (LTV) (0.0-0.9)</Form.Label>
+              <Col sm="10">
+                <Form.Control
+                  type="number"
+                  placeholder="LTV (0-1)"
+                  value={ltv}
+                  min={0}
+                  max={0.9}
+                  step={0.1}
+                  onChange={(e) => setLtv(Number(e.target.value))}
+                />
+              </Col>
+            </Form.Group>
+
+            <Form.Group as={Row} controlId="formInterest">
+              <Form.Label column={true} sm="2">Interest Rate (0.0-1.0)</Form.Label>
+              <Col sm="10">
+                <Form.Control
+                  type="number"
+                  placeholder="Interest Rate"
+                  value={interest}
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  onChange={(e) => setInterest(Number(e.target.value))}
+                />
+              </Col>
+            </Form.Group>
+
+            <Form.Group as={Row} controlId="formStableCoins">
+              <Form.Label column={true} sm="2">Stable Coins</Form.Label>
+              <Col sm="10">
+                {Object.keys(StableCoin).map((coin) => (
+                  <Form.Check
+                    inline
+                    key={coin}
+                    label={coin}
+                    type="radio"
+                    value={coin}
+                    checked={selectedCoin === coin}
+                    onChange={(e) => handleStableCoinChange(e.target.value)}
+                  />
+                ))}
+              </Col>
+            </Form.Group>
+
+            <Form.Group as={Row} controlId="formLoanRepaymentAddress">
+              <Form.Label column={true} sm="2">Loan Repayment Address</Form.Label>
+              <Col sm="10">
+                <Form.Control
+                  type="text"
+                  placeholder="Enter Repayment Address"
+                  value={loanRepaymentAddress}
+                  onChange={(e) => setLoanRepaymentAddress(e.target.value)}
+                />
+              </Col>
+            </Form.Group>
+
+            <Button variant="primary" type="submit">
+              Submit
+            </Button>
+            {error && (
+              <div
+                className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mt-4"
+                role="alert"
+              >
+                {error}
+              </div>
+            )}
+
+          </Box>
+        </Grid>
+      </Box>
     </Form>
   );
 };
