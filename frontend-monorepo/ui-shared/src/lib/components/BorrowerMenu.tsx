@@ -118,26 +118,3 @@ const NewMenuList = [
     separator: false,
   },
 ];
-
-const Old = [{
-  label: "Dashboad",
-  path: "/",
-  borrower: true,
-}, {
-  label: "History",
-  th: "/history",
-  separator: true,
-}, {
-  label: "Loan offers",
-  th: "/request-loan",
-}, {
-  label: "My loans",
-  th: "/my-contracts",
-}, {
-  label: "Support",
-  th: "https://lendasat.notion.site",
-  target: "_blank",
-}, {
-  label: "setting",
-  th: "/my-account",
-}];

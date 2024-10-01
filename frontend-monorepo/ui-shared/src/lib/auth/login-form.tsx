@@ -7,13 +7,11 @@ import {
   Grid,
   Heading,
   IconButton,
-  Separator,
   Spinner,
   Text,
 } from "@radix-ui/themes";
 import React, { useState } from "react";
-import { FaApple, FaRegEye, FaRegEyeSlash } from "react-icons/fa";
-import { FcGoogle } from "react-icons/fc";
+import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
 import { IoInformationCircleOutline } from "react-icons/io5";
 import { Link } from "react-router-dom";
 import Background from "./../assets/background-art.jpeg";
@@ -151,31 +149,9 @@ export function LoginForm(
               </Box>
             </form>
 
-            {/* Seperator */}
-            <Box my={"5"}>
-              <Flex align={"center"} gap={"3"}>
-                <Separator size={"4"} color="gray" className="opacity-30" />
-                <Text size={"1"} weight={"medium"} className="text-font/50">
-                  OR
-                </Text>
-                <Separator size={"4"} color="gray" className="opacity-30" />
-              </Flex>
-            </Box>
-
-            {/* Google and Apple Auth */}
-            <Box className="flex items-center justify-center gap-3 mb-10">
-              <Button variant="outline" color="gray" size={"3"} className="h-11 rounded-xl text-sm">
-                <FcGoogle size={20} />
-                <Text className="hidden md:block">Sign up with Google</Text>
-              </Button>
-              <Button variant="outline" color="gray" size={"3"} className="h-11 rounded-xl text-sm">
-                <FaApple size={20} color="black" />
-                <Text className="hidden md:block">Sign up with Apple</Text>
-              </Button>
-            </Box>
 
             {/* Sign Up Routing */}
-            <Box className="flex items-center gap-1 justify-center">
+            <Box className="flex items-center gap-1 justify-center mt-16">
               <Text as="label" size={"1"} weight={"medium"} className="text-font/70">Don't have an account?</Text>
               <Link to={registrationLink} className="text-sm font-medium text-font-dark hover:text-purple-800">
                 Sign up
