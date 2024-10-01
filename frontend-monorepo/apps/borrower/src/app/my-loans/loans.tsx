@@ -114,7 +114,7 @@ function ContractsComponent({ loans }: LoansComponentProps) {
                 </Col>
                 <Col xs={12} md={interest_col.md} className="mb-2 mb-md-0">
                   <div className="d-md-none font-weight-bold">Interest:</div>
-                  {interest_rate * 100}%
+                  {(interest_rate * 100).toFixed(2)}%
                 </Col>
                 <Col xs={12} md={collateral_col.md} className="mb-2 mb-md-0">
                   <div className="d-md-none font-weight-bold">Collateral:</div>

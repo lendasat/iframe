@@ -35,13 +35,13 @@ export function LoanOfferComponent({ loanOffer, onRequest }: LoanOfferProps) {
 
         <Box className="hidden md:flex justify-center">
           <Text size={"1"} weight={"medium"}>
-            {loanOffer.min_ltv * 100}%
+            {(loanOffer.min_ltv * 100).toFixed(2)}%
           </Text>
         </Box>
 
         <Box className="flex justify-center">
           <Text size={"1"} weight={"medium"}>
-            {loanOffer.interest_rate * 100}%
+            {(loanOffer.interest_rate * 100).toFixed(2)}%
           </Text>
         </Box>
 
@@ -126,7 +126,7 @@ export function LoanOfferComponent({ loanOffer, onRequest }: LoanOfferProps) {
                     LTV rate:
                   </Text>
                   <Text className="capitalize" size={"3"}>
-                    {loanOffer.min_ltv * 100}%
+                    {(loanOffer.min_ltv * 100).toFixed(2)}%
                   </Text>
                 </Flex>
               </Box>
@@ -136,7 +136,7 @@ export function LoanOfferComponent({ loanOffer, onRequest }: LoanOfferProps) {
                     Interest:
                   </Text>
                   <Text className="capitalize" size={"3"}>
-                    {loanOffer.interest_rate * 100}%
+                    {(loanOffer.interest_rate * 100).toFixed(2)}%
                   </Text>
                 </Flex>
               </Box>
