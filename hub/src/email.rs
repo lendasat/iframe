@@ -97,7 +97,11 @@ impl Email {
             tracing::info!("Sending smtp is disabled.");
             return Ok(());
         }
-        transport.send(email).await?;
+        tokio::spawn(async move {
+            if let Err(err) = transport.send(email).await {
+                tracing::error!("Failed at sending email {err:#}");
+            }
+        });
         Ok(())
     }
 
