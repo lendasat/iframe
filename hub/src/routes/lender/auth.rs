@@ -160,8 +160,11 @@ pub async fn register_user_handler(
             .expect("to have verification code for new user")
     );
 
-    let email_instance = Email::new(user, verification_url, data.config.clone());
-    if let Err(err) = email_instance.send_verification_code().await {
+    let email_instance = Email::new(data.config.clone());
+    if let Err(err) = email_instance
+        .send_verification_code(user, verification_url.as_str())
+        .await
+    {
         tracing::error!("Failed sending email {err:#}");
         let json_error = ErrorResponse {
             message: "Something bad happended while sending the verification code".to_string(),
@@ -334,12 +337,16 @@ pub async fn forgot_password_handler(
         password_reset_token
     );
 
-    let email_instance = Email::new(user.clone(), password_reset_url, data.config.clone());
+    let email_instance = Email::new(data.config.clone());
+    let user_id = user.id.clone();
     if let Err(error) = email_instance
-        .send_password_reset_token(PASSWORD_TOKEN_EXPIRES_IN_MINUTES)
+        .send_password_reset_token(
+            user,
+            PASSWORD_TOKEN_EXPIRES_IN_MINUTES,
+            password_reset_url.as_str(),
+        )
         .await
     {
-        let user_id = user.id;
         tracing::error!(user_id, "Failed resetting user password {error:#}");
         let json_error = ErrorResponse {
             message: "Something bad happened while sending the password reset code".to_string(),
