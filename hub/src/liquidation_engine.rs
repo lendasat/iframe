@@ -5,7 +5,6 @@ use crate::email::Email;
 use crate::model;
 use crate::model::db::LiquidationStatus;
 use crate::model::Contract;
-use crate::model::User;
 use crate::utils::calculate_ltv;
 use crate::LTV_THRESHOLD_LIQUIDATION;
 use crate::LTV_THRESHOLD_MARGIN_CALL_1;
@@ -313,14 +312,7 @@ async fn send_email(
         .await?
         .context("user not found")?;
 
-    let email = Email::new(
-        User {
-            email: "test@philipp.ai".to_string(),
-            ..user
-        },
-        "".to_string(),
-        config,
-    );
+    let email = Email::new(config);
 
     match status {
         LiquidationStatus::Healthy => {
@@ -328,7 +320,7 @@ async fn send_email(
         }
         LiquidationStatus::FirstMarginCall | LiquidationStatus::SecondMarginCall => {
             if let Err(err) = email
-                .send_user_about_margin_call(contract.clone(), price, current_ltv)
+                .send_user_about_margin_call(user, contract.clone(), price, current_ltv)
                 .await
             {
                 bail!("Failed sending email {err:#}")
@@ -336,7 +328,7 @@ async fn send_email(
         }
         LiquidationStatus::Liquidated => {
             if let Err(err) = email
-                .send_user_about_liquidation_notice(contract.clone(), price)
+                .send_user_about_liquidation_notice(user, contract.clone(), price)
                 .await
             {
                 bail!("Failed sending email {err:#}")

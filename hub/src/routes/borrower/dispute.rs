@@ -23,7 +23,6 @@ use axum::Extension;
 use axum::Json;
 use axum::Router;
 use std::sync::Arc;
-use time::OffsetDateTime;
 use tracing::instrument;
 
 pub(crate) fn router(app_state: Arc<AppState>) -> Router {
@@ -158,15 +157,12 @@ pub(crate) async fn create_dispute(
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
     })?;
 
-    let dispute_details_url = format!(
-        "{}/disputes/{}",
-        data.config.borrower_frontend_origin.to_owned(),
-        dispute.id
-    );
-
-    let email_instance = Email::new(user.clone(), dispute_details_url, data.config.clone());
-    if let Err(error) = email_instance.send_start_dispute(dispute.id.as_str()).await {
-        let user_id = user.id;
+    let email_instance = Email::new(data.config.clone());
+    let user_id = user.id.clone();
+    if let Err(error) = email_instance
+        .send_start_dispute(user.clone(), dispute.id.as_str())
+        .await
+    {
         tracing::error!(user_id, "Failed sending dispute email {error:#}");
         let json_error = ErrorResponse {
             message: "Something bad happened while sending the confirmation email".to_string(),
@@ -174,26 +170,10 @@ pub(crate) async fn create_dispute(
         return Err((StatusCode::INTERNAL_SERVER_ERROR, Json(json_error)));
     }
 
-    let email_instance = Email::new(
-        // values here don't matter
-        User {
-            id: "".to_string(),
-            name: "".to_string(),
-            email: "".to_string(),
-            password: "".to_string(),
-            verified: false,
-            verification_code: None,
-            invite_code: None,
-            password_reset_token: None,
-            password_reset_at: None,
-            created_at: OffsetDateTime::now_utc(),
-            updated_at: OffsetDateTime::now_utc(),
-        },
-        "".to_string(),
-        data.config.clone(),
-    );
+    let email_instance = Email::new(data.config.clone());
     if let Err(error) = email_instance
         .send_notify_admin_about_dispute(
+            user,
             dispute.id.as_str(),
             contract.lender_id.as_str(),
             contract.borrower_id.as_str(),
@@ -201,7 +181,6 @@ pub(crate) async fn create_dispute(
         )
         .await
     {
-        let user_id = user.id;
         tracing::error!(user_id, "Failed sending dispute email {error:#}");
         let json_error = ErrorResponse {
             message: "Something bad happened while sending the confirmation email".to_string(),

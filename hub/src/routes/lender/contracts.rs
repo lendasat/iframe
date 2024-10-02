@@ -1,4 +1,5 @@
 use crate::db;
+use crate::email::Email;
 use crate::mempool::TrackContractFunding;
 use crate::model::User;
 use crate::routes::lender::auth::jwt_auth;
@@ -122,6 +123,11 @@ pub async fn put_approve_contract(
         let wallet = data.wallet.lock().await;
         let (contract_address, contract_index) = wallet.contract_address(contract.borrower_pk)?;
 
+        let borrower = db::borrowers::get_user_by_id(&data.db, contract.borrower_id.as_str())
+            .await
+            .context("Failed loading borrower")?
+            .context("Borrower not found")?;
+
         db::contracts::accept_contract_request(
             &data.db,
             user.id.as_str(),
@@ -139,6 +145,21 @@ pub async fn put_approve_contract(
             })
             .await?
             .context("Failed to track accepted contract")?;
+
+        let loan_url = format!(
+            "{}/my-contracts/{}",
+            data.config.borrower_frontend_origin.to_owned(),
+            contract.id
+        );
+        let email = Email::new(data.config.clone());
+        // We don't want to fail this upwards because the contract request has been already
+        // approved.
+        if let Err(err) = email
+            .send_loan_request_approved(borrower, loan_url.as_str())
+            .await
+        {
+            tracing::error!("Failed notifying lender {err:#}");
+        }
 
         anyhow::Ok(())
     }
@@ -180,6 +201,30 @@ pub async fn put_principal_given(
         };
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
     })?;
+
+    // We don't want to fail this upwards because the contract request has been already
+    // approved.
+    if let Err(err) = async {
+        let loan_url = format!(
+            "{}/my-contracts/{}",
+            data.config.borrower_frontend_origin.to_owned(),
+            contract_id
+        );
+        let borrower = db::borrowers::get_user_by_id(&data.db, contract.borrower_id.as_str())
+            .await?
+            .context("Borrower not found")?;
+
+        let email = Email::new(data.config.clone());
+        email
+            .send_loan_paid_out(borrower, loan_url.as_str())
+            .await?;
+        anyhow::Ok(())
+    }
+    .await
+    {
+        tracing::error!("Failed notifying borrower {err:#}");
+    }
+
     Ok(Json(contract))
 }
 
@@ -189,14 +234,40 @@ pub async fn delete_reject_contract(
     Path(contract_id): Path<String>,
     Extension(user): Extension<User>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    db::contracts::reject_contract_request(&data.db, user.id.as_str(), contract_id.as_str())
-        .await
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
+    let contract =
+        db::contracts::reject_contract_request(&data.db, user.id.as_str(), contract_id.as_str())
+            .await
+            .map_err(|error| {
+                let error_response = ErrorResponse {
+                    message: format!("Database error: {}", error),
+                };
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+            })?;
+
+    // We don't want to fail this upwards because the contract request has been already
+    // approved.
+    if let Err(err) = async {
+        let loan_url = format!(
+            "{}/my-contracts/{}",
+            data.config.borrower_frontend_origin.to_owned(),
+            contract_id
+        );
+
+        let borrower = db::borrowers::get_user_by_id(&data.db, contract.borrower_id.as_str())
+            .await?
+            .context("Borrower not found")?;
+
+        let email = Email::new(data.config.clone());
+        email
+            .send_loan_request_approved(borrower, loan_url.as_str())
+            .await?;
+        anyhow::Ok(())
+    }
+    .await
+    {
+        tracing::error!("Failed notifying borrower {err:#}");
+    }
+
     Ok(())
 }
 

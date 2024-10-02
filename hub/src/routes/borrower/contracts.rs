@@ -1,4 +1,5 @@
 use crate::db;
+use crate::email::Email;
 use crate::mempool;
 use crate::model::ContractRequestSchema;
 use crate::model::ContractStatus;
@@ -361,12 +362,24 @@ pub async fn post_contract_request(
             loan_repayment_address: offer.loan_repayment_address,
             lender: LenderProfile {
                 id: contract.lender_id,
-                name: lender.name,
+                name: lender.name.clone(),
             },
             created_at: contract.created_at,
             repaid_at: None,
             expiry,
         };
+
+        let loan_url = format!(
+            "{}/my-contracts/{}",
+            data.config.lender_frontend_origin.to_owned(),
+            contract.id
+        );
+        let email = Email::new(data.config.clone());
+
+        // We don't want to fail this upwards because the contract request has been sent already.
+        if let Err(err) = email.send_new_loan_request(lender, loan_url.as_str()).await {
+            tracing::error!("Failed notifying lender {err:#}");
+        }
 
         anyhow::Ok(contract)
     }

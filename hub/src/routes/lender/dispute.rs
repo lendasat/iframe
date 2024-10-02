@@ -142,15 +142,12 @@ pub(crate) async fn create_dispute(
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
     })?;
 
-    let dispute_details_url = format!(
-        "{}/disputes/{}",
-        data.config.lender_frontend_origin.to_owned(),
-        dispute.id
-    );
-
-    let email_instance = Email::new(user.clone(), dispute_details_url, data.config.clone());
-    if let Err(error) = email_instance.send_start_dispute(dispute.id.as_str()).await {
-        let user_id = user.id;
+    let email_instance = Email::new(data.config.clone());
+    let user_id = user.id.clone();
+    if let Err(error) = email_instance
+        .send_start_dispute(user, dispute.id.as_str())
+        .await
+    {
         tracing::error!(user_id, "Failed sending dispute email {error:#}");
         let json_error = ErrorResponse {
             message: "Something bad happened while sending the confirmation email".to_string(),

@@ -4,6 +4,7 @@ use crate::model::User;
 use crate::utils::calculate_liquidation_price;
 use anyhow::bail;
 use anyhow::Context;
+use anyhow::Result;
 use handlebars::Handlebars;
 use include_dir::include_dir;
 use include_dir::Dir;
@@ -20,67 +21,46 @@ use time::format_description;
 use time::Duration;
 
 static TEMPLATES_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/../templates");
-
-pub struct Email {
-    user: User,
-    url: String,
-    from: String,
-    config: Config,
-}
-
 const DISPUTE_ADMIN_EMAIL: &str = "dispute-center@lendasat.com";
 
+pub struct Email {
+    from: String,
+    smtp_user: String,
+    smtp_pass: String,
+    smtp_host: String,
+    smtp_port: u16,
+    smtp_disabled: bool,
+}
+
 impl Email {
-    pub fn new(user: User, url: String, config: Config) -> Self {
+    pub fn new(config: Config) -> Self {
         let from = format!("Lendasat <{}>", config.smtp_from.to_owned());
 
-        Email {
-            user,
-            url,
+        Self {
             from,
-            config,
+            smtp_user: config.smtp_user,
+            smtp_pass: config.smtp_pass,
+            smtp_host: config.smtp_host,
+            smtp_port: config.smtp_port,
+            smtp_disabled: config.smtp_disabled,
         }
     }
 
     fn new_transport(
         &self,
     ) -> Result<AsyncSmtpTransport<Tokio1Executor>, lettre::transport::smtp::Error> {
-        let creds = Credentials::new(
-            self.config.smtp_user.to_owned(),
-            self.config.smtp_pass.to_owned(),
-        );
+        let creds = Credentials::new(self.smtp_user.to_owned(), self.smtp_pass.to_owned());
 
-        let transport = AsyncSmtpTransport::<Tokio1Executor>::starttls_relay(
-            &self.config.smtp_host.to_owned(),
-        )?
-        .port(self.config.smtp_port)
-        .credentials(creds)
-        .build();
+        let transport =
+            AsyncSmtpTransport::<Tokio1Executor>::starttls_relay(&self.smtp_host.to_owned())?
+                .port(self.smtp_port)
+                .credentials(creds)
+                .build();
 
         Ok(transport)
     }
 
-    fn render_template(&self, template_name: &str) -> anyhow::Result<String> {
-        let mut handlebars = Handlebars::new();
-        let content = Self::get_template_content(&format!("{}.hbs", template_name))?;
-        handlebars.register_template_string(template_name, content)?;
-        let content = Self::get_template_content("partials/styles.hbs")?;
-        handlebars.register_template_string("styles", content)?;
-        let content = Self::get_template_content("layouts/base.hbs")?;
-        handlebars.register_template_string("base", content)?;
-
-        let data = serde_json::json!({
-            "first_name": &self.user.name,
-            "subject": &template_name,
-            "url": &self.url
-        });
-
-        let content_template = handlebars.render(template_name, &data)?;
-
-        Ok(content_template)
-    }
-
-    fn get_template_content(file_name: &str) -> anyhow::Result<String> {
+    fn get_template_content(file_name: &str) -> Result<String> {
         match TEMPLATES_DIR.get_file(file_name) {
             None => {
                 bail!("Could not find file {file_name}");
@@ -98,12 +78,13 @@ impl Email {
 
     async fn send_email(
         &self,
-        template_name: &str,
         subject: &str,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        let html_template = self.render_template(template_name)?;
+        user_name: &str,
+        user_email: &str,
+        html_template: String,
+    ) -> Result<()> {
         let email = Message::builder()
-            .to(format!("{} <{}>", self.user.name.as_str(), self.user.email.as_str()).parse()?)
+            .to(format!("{} <{}>", user_name, user_email).parse()?)
             .reply_to(self.from.as_str().parse()?)
             .from(self.from.as_str().parse()?)
             .subject(subject)
@@ -112,58 +93,19 @@ impl Email {
 
         let transport = self.new_transport()?;
 
-        if self.config.smtp_disabled {
-            let verification_code = self.user.clone().verification_code.unwrap_or_default();
-            tracing::info!(
-                "Sending smtp is disabled. Verification code is: '{}'.",
-                verification_code
-            );
+        if self.smtp_disabled {
+            tracing::info!("Sending smtp is disabled.");
             return Ok(());
         }
-        transport.send(email).await?;
+        tokio::spawn(async move {
+            if let Err(err) = transport.send(email).await {
+                tracing::error!("Failed at sending email {err:#}");
+            }
+        });
         Ok(())
     }
 
-    pub async fn send_verification_code(&self) -> Result<(), Box<dyn std::error::Error>> {
-        self.send_email("verification_code", "Your account verification code")
-            .await
-    }
-
-    pub async fn send_password_reset_token(
-        &self,
-        password_reset_token_expires_in: i64,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        self.send_email(
-            "reset_password",
-            format!(
-                "Your password reset token (valid for only {} minutes)",
-                password_reset_token_expires_in
-            )
-            .as_str(),
-        )
-        .await
-    }
-
-    pub async fn send_start_dispute(
-        &self,
-        dispute_id: &str,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        self.send_email(
-            "start_dispute",
-            format!("Dispute started {} ", dispute_id).as_str(),
-        )
-        .await
-    }
-
-    pub async fn send_notify_admin_about_dispute(
-        &self,
-        dispute_id: &str,
-        lender_id: &str,
-        borrower_id: &str,
-        contract_id: &str,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        let template_name = "notify_admin_dispute";
-
+    fn prepare_template(template_name: &str) -> Result<Handlebars> {
         let mut handlebars = Handlebars::new();
         let content = Self::get_template_content(&format!("{}.hbs", template_name))?;
         handlebars.register_template_string(template_name, content)?;
@@ -171,9 +113,97 @@ impl Email {
         handlebars.register_template_string("styles", content)?;
         let content = Self::get_template_content("layouts/base.hbs")?;
         handlebars.register_template_string("base", content)?;
+        Ok(handlebars)
+    }
+
+    pub async fn send_verification_code(&self, user: User, url: &str) -> Result<()> {
+        let template_name = "verification_code";
+        let handlebars = Self::prepare_template(template_name)?;
 
         let data = serde_json::json!({
-            "first_name": &self.user.name,
+            "first_name": &user.name,
+            "subject": &template_name,
+            "url": url
+        });
+
+        let content_template = handlebars.render(template_name, &data)?;
+
+        self.send_email(
+            "Your account verification code",
+            user.name.as_str(),
+            user.email.as_str(),
+            content_template,
+        )
+        .await
+    }
+
+    pub async fn send_password_reset_token(
+        &self,
+        user: User,
+        password_reset_token_expires_in: i64,
+        url: &str,
+    ) -> Result<()> {
+        let template_name = "reset_password";
+        let handlebars = Self::prepare_template(template_name)?;
+
+        let subject = format!(
+            "Your password reset token (valid for only {} minutes)",
+            password_reset_token_expires_in
+        );
+
+        let data = serde_json::json!({
+            "first_name": &user.name,
+            "subject": subject,
+            "url": url
+        });
+
+        let content_template = handlebars.render(template_name, &data)?;
+
+        self.send_email(
+            subject.as_str(),
+            user.name.as_str(),
+            user.email.as_str(),
+            content_template,
+        )
+        .await
+    }
+
+    pub async fn send_start_dispute(&self, user: User, dispute_id: &str) -> Result<()> {
+        let template_name = "start_dispute";
+        let handlebars = Self::prepare_template(template_name)?;
+
+        let subject = format!("Dispute started {} ", dispute_id);
+
+        let data = serde_json::json!({
+            "first_name": &user.name,
+            "subject": subject,
+        });
+
+        let content_template = handlebars.render(template_name, &data)?;
+
+        self.send_email(
+            subject.as_str(),
+            user.name.as_str(),
+            user.email.as_str(),
+            content_template,
+        )
+        .await
+    }
+
+    pub async fn send_notify_admin_about_dispute(
+        &self,
+        user: User,
+        dispute_id: &str,
+        lender_id: &str,
+        borrower_id: &str,
+        contract_id: &str,
+    ) -> Result<()> {
+        let template_name = "notify_admin_dispute";
+
+        let handlebars = Self::prepare_template(template_name)?;
+
+        let data = serde_json::json!({
+            "first_name": user.name.as_str(),
             "subject": &template_name,
             "lender_id": lender_id,
             "borrower_id": borrower_id,
@@ -183,39 +213,25 @@ impl Email {
 
         let html_template = handlebars.render(template_name, &data)?;
 
-        let email = Message::builder()
-            .to(format!("{} <{}>", self.user.name.as_str(), DISPUTE_ADMIN_EMAIL).parse()?)
-            .reply_to(self.from.as_str().parse()?)
-            .from(self.from.as_str().parse()?)
-            .subject(format!("Dispute started {} ", dispute_id).as_str())
-            .header(ContentType::TEXT_HTML)
-            .body(html_template)?;
-
-        let transport = self.new_transport()?;
-
-        if self.config.smtp_disabled {
-            tracing::info!("Sending smtp is disabled.",);
-            return Ok(());
-        }
-        transport.send(email).await?;
-        Ok(())
+        self.send_email(
+            format!("Dispute started {} ", dispute_id).as_str(),
+            "admin",
+            DISPUTE_ADMIN_EMAIL,
+            html_template,
+        )
+        .await
     }
 
     pub async fn send_user_about_margin_call(
         &self,
+        user: User,
         contract: Contract,
         price: Decimal,
         current_ltv: Decimal,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<()> {
         let template_name = "margin_call";
 
-        let mut handlebars = Handlebars::new();
-        let content = Self::get_template_content(&format!("{}.hbs", template_name))?;
-        handlebars.register_template_string(template_name, content)?;
-        let content = Self::get_template_content("partials/styles.hbs")?;
-        handlebars.register_template_string("styles", content)?;
-        let content = Self::get_template_content("layouts/base.hbs")?;
-        handlebars.register_template_string("base", content)?;
+        let handlebars = Self::prepare_template(template_name)?;
 
         let expiry =
             contract.created_at + Duration::days((365 / 12 * contract.duration_months) as i64);
@@ -242,7 +258,7 @@ impl Email {
         let liquidation_price = liquidation_price.round_dp(2).to_string();
 
         let data = serde_json::json!({
-            "first_name": &self.user.name,
+            "first_name": user.name.as_str(),
             "contract_id": contract.id,
             "loan_amount": contract.loan_amount,
             "expiry": expiry,
@@ -253,40 +269,26 @@ impl Email {
 
         });
 
-        let html_template = handlebars.render(template_name, &data)?;
+        let content_template = handlebars.render(template_name, &data)?;
 
-        let email = Message::builder()
-            .to(format!("{} <{}>", self.user.name.as_str(), self.user.email.as_str()).parse()?)
-            .reply_to(self.from.as_str().parse()?)
-            .from(self.from.as_str().parse()?)
-            .subject(format!("Margin call {}", contract.id).as_str())
-            .header(ContentType::TEXT_HTML)
-            .body(html_template)?;
-
-        let transport = self.new_transport()?;
-
-        if self.config.smtp_disabled {
-            tracing::info!("Sending smtp is disabled.",);
-            return Ok(());
-        }
-        transport.send(email).await?;
-        Ok(())
+        self.send_email(
+            format!("Margin call {}", contract.id).as_str(),
+            user.name.as_str(),
+            user.email.as_str(),
+            content_template,
+        )
+        .await
     }
 
     pub async fn send_user_about_liquidation_notice(
         &self,
+        user: User,
         contract: Contract,
         price: Decimal,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<()> {
         let template_name = "liquidated";
 
-        let mut handlebars = Handlebars::new();
-        let content = Self::get_template_content(&format!("{}.hbs", template_name))?;
-        handlebars.register_template_string(template_name, content)?;
-        let content = Self::get_template_content("partials/styles.hbs")?;
-        handlebars.register_template_string("styles", content)?;
-        let content = Self::get_template_content("layouts/base.hbs")?;
-        handlebars.register_template_string("base", content)?;
+        let handlebars = Self::prepare_template(template_name)?;
 
         let liquidation_price = calculate_liquidation_price(
             contract.loan_amount,
@@ -296,29 +298,125 @@ impl Email {
         let price = price.round_dp(2).to_string();
 
         let data = serde_json::json!({
-            "first_name": &self.user.name,
+            "first_name": user.name.as_str(),
             "contract_id": contract.id,
             "latest_price": price,
             "liquidation_price": liquidation_price,
         });
 
-        let html_template = handlebars.render(template_name, &data)?;
+        let content_template = handlebars.render(template_name, &data)?;
 
-        let email = Message::builder()
-            .to(format!("{} <{}>", self.user.name.as_str(), self.user.email.as_str()).parse()?)
-            .reply_to(self.from.as_str().parse()?)
-            .from(self.from.as_str().parse()?)
-            .subject("Liquidation Notice: Your position has been liquidated")
-            .header(ContentType::TEXT_HTML)
-            .body(html_template)?;
+        self.send_email(
+            "Liquidation Notice: Your position has been liquidated",
+            user.name.as_str(),
+            user.email.as_str(),
+            content_template,
+        )
+        .await
+    }
 
-        let transport = self.new_transport()?;
+    pub async fn send_new_loan_request(&self, lender: User, url: &str) -> Result<()> {
+        let template_name = "loan_requested";
+        let handlebars = Self::prepare_template(template_name)?;
 
-        if self.config.smtp_disabled {
-            tracing::info!("Sending smtp is disabled.",);
-            return Ok(());
-        }
-        transport.send(email).await?;
-        Ok(())
+        let data = serde_json::json!({
+            "first_name": &lender.name,
+            "subject": &template_name,
+            "url": url
+        });
+
+        let content_template = handlebars.render(template_name, &data)?;
+
+        self.send_email(
+            "New loan request",
+            lender.name.as_str(),
+            lender.email.as_str(),
+            content_template,
+        )
+        .await
+    }
+
+    pub async fn send_loan_request_approved(&self, lender: User, url: &str) -> Result<()> {
+        let template_name = "loan_request_approved";
+        let handlebars = Self::prepare_template(template_name)?;
+
+        let data = serde_json::json!({
+            "first_name": &lender.name,
+            "subject": &template_name,
+            "url": url
+        });
+
+        let content_template = handlebars.render(template_name, &data)?;
+
+        self.send_email(
+            "New loan request approved",
+            lender.name.as_str(),
+            lender.email.as_str(),
+            content_template,
+        )
+        .await
+    }
+
+    pub async fn send_loan_request_rejected(&self, lender: User, url: &str) -> Result<()> {
+        let template_name = "loan_request_rejected";
+        let handlebars = Self::prepare_template(template_name)?;
+
+        let data = serde_json::json!({
+            "first_name": &lender.name,
+            "subject": &template_name,
+            "url": url
+        });
+
+        let content_template = handlebars.render(template_name, &data)?;
+
+        self.send_email(
+            "New loan request declined",
+            lender.name.as_str(),
+            lender.email.as_str(),
+            content_template,
+        )
+        .await
+    }
+
+    pub async fn send_loan_collateralized(&self, user: User, url: &str) -> Result<()> {
+        let template_name = "loan_collateralized";
+        let handlebars = Self::prepare_template(template_name)?;
+
+        let data = serde_json::json!({
+            "first_name": &user.name,
+            "subject": &template_name,
+            "url": url
+        });
+
+        let content_template = handlebars.render(template_name, &data)?;
+
+        self.send_email(
+            "New loan has been funded",
+            user.name.as_str(),
+            user.email.as_str(),
+            content_template,
+        )
+        .await
+    }
+
+    pub async fn send_loan_paid_out(&self, user: User, url: &str) -> Result<()> {
+        let template_name = "loan_paid_out";
+        let handlebars = Self::prepare_template(template_name)?;
+
+        let data = serde_json::json!({
+            "first_name": &user.name,
+            "subject": &template_name,
+            "url": url
+        });
+
+        let content_template = handlebars.render(template_name, &data)?;
+
+        self.send_email(
+            "New loan amount has been paid out",
+            user.name.as_str(),
+            user.email.as_str(),
+            content_template,
+        )
+        .await
     }
 }
