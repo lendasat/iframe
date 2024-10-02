@@ -1,4 +1,5 @@
 use crate::db;
+use crate::email::Email;
 use crate::mempool::TrackContractFunding;
 use crate::model::User;
 use crate::routes::lender::auth::jwt_auth;
@@ -122,6 +123,11 @@ pub async fn put_approve_contract(
         let wallet = data.wallet.lock().await;
         let (contract_address, contract_index) = wallet.contract_address(contract.borrower_pk)?;
 
+        let borrower = db::borrowers::get_user_by_id(&data.db, contract.borrower_id.as_str())
+            .await
+            .context("Failed loading borrower")?
+            .context("Borrower not found")?;
+
         db::contracts::accept_contract_request(
             &data.db,
             user.id.as_str(),
@@ -139,6 +145,20 @@ pub async fn put_approve_contract(
             })
             .await?
             .context("Failed to track accepted contract")?;
+
+        let loan_url = format!(
+            "{}/my-contracts/{}",
+            data.config.borrower_frontend_origin.to_owned(),
+            contract.id
+        );
+        let email = Email::new(data.config.clone());
+        // We don't want to fail this upwards because the contract request has been already approved.
+        if let Err(err) = email
+            .send_loan_request_approved(borrower, loan_url.as_str())
+            .await
+        {
+            tracing::error!("Failed notifying lender {err:#}");
+        }
 
         anyhow::Ok(())
     }
