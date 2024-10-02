@@ -93,7 +93,7 @@ function ContractDetails({ contract }: DetailsProps) {
     || contract.status === ContractStatus.DisputeBorrowerStarted
     || contract.status === ContractStatus.DisputeLenderStarted;
 
-  const loanOriginatorFee = contract.origination_fee_sats;
+  const loanOriginatorFee = contract.origination_fee_sats / 100000000;
   const loanOriginatorFeeUsd = (loanOriginatorFee * initial_price).toFixed(0);
 
   const onStartDispute = async (reason: string, comment: string) => {

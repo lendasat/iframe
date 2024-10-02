@@ -110,7 +110,7 @@ async fn create_loan_request(
     let price = dec!(58_000);
     let one_btc_in_sats = dec!(100_000_000);
     let initial_collateral_sats = ((loan_amount / initial_ltv) / price) * one_btc_in_sats;
-    let origination_fee_sats = ((loan_amount / price) * ORIGINATION_FEE_RATE) / one_btc_in_sats;
+    let origination_fee_sats = ((loan_amount / price) * ORIGINATION_FEE_RATE) * one_btc_in_sats;
     db::contracts::insert_contract_request(
         pool,
         borrower_id,
