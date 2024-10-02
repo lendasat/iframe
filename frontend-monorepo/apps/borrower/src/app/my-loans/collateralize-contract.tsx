@@ -1,6 +1,8 @@
+import { faCopy } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import QRCode from "qrcode.react";
-import React from "react";
-import { Col, Container, OverlayTrigger, Row, Tooltip } from "react-bootstrap";
+import React, { useState } from "react";
+import { Button, Col, Container, OverlayTrigger, Row, Tooltip } from "react-bootstrap";
 
 interface CollateralContractDetailsProps {
   collateral_btc: number;
@@ -17,6 +19,18 @@ export function CollateralContractDetails({
   loanOriginatorFee,
   loanOriginatorFeeUsd,
 }: CollateralContractDetailsProps) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy text: ", err);
+    }
+  };
+
   return (
     <Container fluid>
       <Row>
@@ -52,15 +66,26 @@ export function CollateralContractDetails({
       <Row className="mt-4">
         <Col className="text-center">
           <div className="d-flex justify-content-center align-items-center flex-column">
-            <QRCode value={collateralAddress} size={200} />
+            <div
+              onClick={() => handleCopy(collateralAddress)}
+              style={{ cursor: "pointer" }}
+            >
+              <QRCode value={collateralAddress} size={200} />
+            </div>
             <p className="mt-2 text-break">
-              Send <strong>{totalCollateral} BTC</strong> to <strong>{collateralAddress}</strong>.
+              Please send <strong>{totalCollateral}</strong> to:
             </p>
-            <p className="text-break">
-              <em>
-                Make sure you pay the amount <strong>in full</strong>
-              </em>.
-            </p>
+            <div className="d-flex align-items-center">
+              <code style={{ "width": 300, textOverflow: "ellipsis" }}>{collateralAddress}</code>
+              <Button
+                variant="link"
+                className="ms-2"
+                onClick={() => handleCopy(collateralAddress)}
+              >
+                <FontAwesomeIcon icon={faCopy} />
+              </Button>
+            </div>
+            {copied && <small className="text-success">Copied to clipboard!</small>}
           </div>
         </Col>
       </Row>
