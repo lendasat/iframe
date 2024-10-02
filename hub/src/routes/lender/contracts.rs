@@ -201,6 +201,30 @@ pub async fn put_principal_given(
         };
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
     })?;
+
+    // We don't want to fail this upwards because the contract request has been already
+    // approved.
+    if let Err(err) = async {
+        let loan_url = format!(
+            "{}/my-contracts/{}",
+            data.config.borrower_frontend_origin.to_owned(),
+            contract_id
+        );
+        let borrower = db::borrowers::get_user_by_id(&data.db, contract.borrower_id.as_str())
+            .await?
+            .context("Borrower not found")?;
+
+        let email = Email::new(data.config.clone());
+        email
+            .send_loan_paid_out(borrower, loan_url.as_str())
+            .await?;
+        anyhow::Ok(())
+    }
+    .await
+    {
+        tracing::error!("Failed notifying borrower {err:#}");
+    }
+
     Ok(Json(contract))
 }
 

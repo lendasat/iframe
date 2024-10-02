@@ -378,12 +378,12 @@ impl Email {
         .await
     }
 
-    pub async fn send_loan_collateralized(&self, lender: User, url: &str) -> Result<()> {
+    pub async fn send_loan_collateralized(&self, user: User, url: &str) -> Result<()> {
         let template_name = "loan_collateralized";
         let handlebars = Self::prepare_template(template_name)?;
 
         let data = serde_json::json!({
-            "first_name": &lender.name,
+            "first_name": &user.name,
             "subject": &template_name,
             "url": url
         });
@@ -392,8 +392,29 @@ impl Email {
 
         self.send_email(
             "New loan has been funded",
-            lender.name.as_str(),
-            lender.email.as_str(),
+            user.name.as_str(),
+            user.email.as_str(),
+            content_template,
+        )
+        .await
+    }
+
+    pub async fn send_loan_paid_out(&self, user: User, url: &str) -> Result<()> {
+        let template_name = "loan_paid_out";
+        let handlebars = Self::prepare_template(template_name)?;
+
+        let data = serde_json::json!({
+            "first_name": &user.name,
+            "subject": &template_name,
+            "url": url
+        });
+
+        let content_template = handlebars.render(template_name, &data)?;
+
+        self.send_email(
+            "New loan amount has been paid out",
+            user.name.as_str(),
+            user.email.as_str(),
             content_template,
         )
         .await
