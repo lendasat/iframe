@@ -420,7 +420,8 @@ impl xtra::Handler<TrackContractFunding> for Actor {
                 .await?;
 
         if contract.status == ContractStatus::CollateralConfirmed {
-            // We don't want to fail this upwards because the contract status has been udpated already.
+            // We don't want to fail this upwards because the contract status has been udpated
+            // already.
             if let Err(err) = {
                 let lender = db::lenders::get_user_by_id(&self.db, contract.lender_id.as_str())
                     .await?
