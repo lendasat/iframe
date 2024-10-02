@@ -314,4 +314,25 @@ impl Email {
         )
         .await
     }
+
+    pub async fn send_new_loan_request(&self, lender: User, url: &str) -> Result<()> {
+        let template_name = "loan_requested";
+        let handlebars = Self::prepare_template(template_name)?;
+
+        let data = serde_json::json!({
+            "first_name": &lender.name,
+            "subject": &template_name,
+            "url": url
+        });
+
+        let content_template = handlebars.render(template_name, &data)?;
+
+        self.send_email(
+            "New loan request",
+            lender.name.as_str(),
+            lender.email.as_str(),
+            content_template,
+        )
+        .await
+    }
 }
