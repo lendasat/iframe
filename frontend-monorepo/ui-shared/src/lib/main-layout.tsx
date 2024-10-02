@@ -9,8 +9,8 @@ import { TbLayoutSidebarLeftCollapse } from "react-icons/tb";
 import { Menu, MenuItem, Sidebar } from "react-pro-sidebar";
 import { Link, NavLink } from "react-router-dom";
 import BorrowerMenu from "./components/BorrowerMenu";
-import { SidebarHeader } from "./components/SidebarHeader";
 import { SearchBar } from "./components/SearchBar";
+import { SidebarHeader } from "./components/SidebarHeader";
 
 type Theme = "light" | "dark";
 

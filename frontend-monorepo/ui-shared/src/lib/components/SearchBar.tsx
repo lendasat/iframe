@@ -16,5 +16,5 @@ export const SearchBar = ({ label, ...rest }: InputProps) => {
         {...rest}
       />
     </div>
-  )
-}
+  );
+};

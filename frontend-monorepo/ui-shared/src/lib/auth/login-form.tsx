@@ -8,7 +8,6 @@ import Dashboard from "./../assets/background-art.png";
 import { ReactComponent as Logo } from "./../assets/lendasat_svg_logo.svg";
 import TypeField from "../components/TypeField";
 
-
 interface LoginFormProps {
   handleLogin: (email: string, password: string) => Promise<void>;
   registrationLink: string;
