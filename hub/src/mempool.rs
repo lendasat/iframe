@@ -345,14 +345,47 @@ impl xtra::Handler<ContractUpdate> for Actor {
                         .collect::<Vec<_>>(),
                 );
 
-                if let Err(e) = db::contracts::update_collateral(
+                match db::contracts::update_collateral(
                     &self.db,
                     &contract.contract_id,
                     confirmed_collateral_sats,
                 )
                 .await
                 {
-                    tracing::error!(?contract, "Failed to update collateral: {e:#}");
+                    Ok(contract) => {
+                        if contract.status == ContractStatus::CollateralConfirmed {
+                            // We don't want to fail this upwards because the contract status has
+                            // been udpated already.
+                            if let Err(err) = async {
+                                let lender = db::lenders::get_user_by_id(
+                                    &self.db,
+                                    contract.lender_id.as_str(),
+                                )
+                                .await?
+                                .context("Lender not found")?;
+                                let email = Email::new(self.config.clone());
+                                let loan_url = format!(
+                                    "{}/my-contracts/{}",
+                                    self.config.lender_frontend_origin.clone(),
+                                    contract.id
+                                );
+
+                                email
+                                    .send_loan_collateralized(lender, loan_url.as_str())
+                                    .await?;
+                                Ok::<(), anyhow::Error>(())
+                            }
+                            .await
+                            {
+                                tracing::error!(
+                                    "Failed at notifying lender about funded contract {err:?}"
+                                );
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        tracing::error!(?contract, "Failed to update collateral: {e:#}");
+                    }
                 }
             }
         }
@@ -540,14 +573,47 @@ impl xtra::Handler<NewBlockHeight> for Actor {
             // WebSocket subscription. But we can learn this information after a restart, via the
             // REST API.
             if confirmed_collateral_sats_after != confirmed_collateral_sats_before {
-                if let Err(e) = db::contracts::update_collateral(
+                match db::contracts::update_collateral(
                     &self.db,
                     &contract.contract_id,
                     confirmed_collateral_sats_after,
                 )
                 .await
                 {
-                    tracing::error!(?contract, "Failed to update collateral: {e:#}");
+                    Ok(contract) => {
+                        if contract.status == ContractStatus::CollateralConfirmed {
+                            // We don't want to fail this upwards because the contract status has
+                            // been udpated already.
+                            if let Err(err) = async {
+                                let lender = db::lenders::get_user_by_id(
+                                    &self.db,
+                                    contract.lender_id.as_str(),
+                                )
+                                .await?
+                                .context("Lender not found")?;
+                                let email = Email::new(self.config.clone());
+                                let loan_url = format!(
+                                    "{}/my-contracts/{}",
+                                    self.config.lender_frontend_origin.clone(),
+                                    contract.id
+                                );
+
+                                email
+                                    .send_loan_collateralized(lender, loan_url.as_str())
+                                    .await?;
+                                Ok::<(), anyhow::Error>(())
+                            }
+                            .await
+                            {
+                                tracing::error!(
+                                    "Failed at notifying lender about funded contract {err:?}"
+                                );
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        tracing::error!(?contract, "Failed to update collateral: {e:#}");
+                    }
                 }
             }
         }
