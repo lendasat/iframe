@@ -152,7 +152,8 @@ pub async fn put_approve_contract(
             contract.id
         );
         let email = Email::new(data.config.clone());
-        // We don't want to fail this upwards because the contract request has been already approved.
+        // We don't want to fail this upwards because the contract request has been already
+        // approved.
         if let Err(err) = email
             .send_loan_request_approved(borrower, loan_url.as_str())
             .await

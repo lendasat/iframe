@@ -55,12 +55,7 @@ async fn main() -> Result<()> {
     let wallet = Arc::new(Mutex::new(wallet));
 
     let (mempool_addr, mempool_mailbox) = xtra::Mailbox::unbounded();
-    let mempool = mempool::Actor::new(
-        config.mempool_rest_url.clone(),
-        config.mempool_ws_url.clone(),
-        db.clone(),
-        network,
-    );
+    let mempool = mempool::Actor::new(db.clone(), network, config.clone());
 
     tokio::spawn(async {
         let e = xtra::run(mempool_mailbox, mempool).await;

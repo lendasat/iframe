@@ -1,4 +1,7 @@
+use crate::config::Config;
 use crate::db;
+use crate::email::Email;
+use crate::model::ContractStatus;
 use anyhow::anyhow;
 use anyhow::ensure;
 use anyhow::Context;
@@ -39,6 +42,7 @@ pub struct Actor {
     ws_url: String,
     ws_sink: Option<SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>>,
     is_test_network: bool,
+    config: Config,
 }
 
 #[derive(Debug, Clone)]
@@ -69,7 +73,10 @@ struct TrackedClaimTx {
 }
 
 impl Actor {
-    pub fn new(rest_url: String, ws_url: String, db: Pool<Postgres>, network: Network) -> Self {
+    pub fn new(db: Pool<Postgres>, network: Network, config: Config) -> Self {
+        let rest_url = config.mempool_rest_url.clone();
+        let ws_url = config.mempool_ws_url.clone();
+
         let is_test_network = !matches!(network, Network::Bitcoin);
         let rest_client = MempoolRestClient::new(rest_url, is_test_network);
 
@@ -82,6 +89,7 @@ impl Actor {
             ws_url,
             ws_sink: None,
             is_test_network,
+            config,
         }
     }
 
@@ -407,8 +415,31 @@ impl xtra::Handler<TrackContractFunding> for Actor {
             .context("Failed to send TrackAddress message via WS")?;
 
         // Ideally we would only update when we learn something new, but alas.
-        db::contracts::update_collateral(&self.db, contract_id, confirmed_collateral_sats).await?;
+        let contract =
+            db::contracts::update_collateral(&self.db, contract_id, confirmed_collateral_sats)
+                .await?;
 
+        if contract.status == ContractStatus::CollateralConfirmed {
+            // We don't want to fail this upwards because the contract status has been udpated already.
+            if let Err(err) = {
+                let lender = db::lenders::get_user_by_id(&self.db, contract.lender_id.as_str())
+                    .await?
+                    .context("Lender not found")?;
+                let email = Email::new(self.config.clone());
+                let loan_url = format!(
+                    "{}/my-contracts/{}",
+                    self.config.lender_frontend_origin.clone(),
+                    contract.id
+                );
+
+                email
+                    .send_loan_collateralized(lender, loan_url.as_str())
+                    .await?;
+                Ok::<(), anyhow::Error>(())
+            } {
+                tracing::error!("Failed at notifying lender about funded contract {err:?}");
+            }
+        }
         Ok(())
     }
 }
