@@ -1,5 +1,5 @@
 import { Version } from "@frontend-monorepo/base-http-client";
-import { Avatar, Box, Flex, Heading, IconButton, Separator, Text } from "@radix-ui/themes";
+import { Avatar, Box, Flex, Heading, IconButton, Text } from "@radix-ui/themes";
 import React, { ReactNode } from "react";
 import { IconType } from "react-icons";
 import { IoIosNotificationsOutline } from "react-icons/io";
@@ -9,7 +9,7 @@ import { TbLayoutSidebarLeftCollapse } from "react-icons/tb";
 import { Menu, MenuItem, Sidebar } from "react-pro-sidebar";
 import { Link, NavLink } from "react-router-dom";
 import BorrowerMenu from "./components/BorrowerMenu";
-import SearchBar from "./components/SearchBar";
+import { SearchBar } from "./components/SearchBar";
 import { SidebarHeader } from "./components/SidebarHeader";
 
 type Theme = "light" | "dark";
