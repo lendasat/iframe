@@ -1,16 +1,14 @@
+import { Box, Button, Callout, Grid, Heading, IconButton, Spinner, Text } from "@radix-ui/themes";
 import React, { useState } from "react";
 import { Form } from "react-bootstrap";
-import { ReactComponent as Logo } from "./../assets/lendasat_svg_logo.svg";
-import { Box, Button, Callout, Flex, Grid, Heading, IconButton, Separator, Spinner, Text } from "@radix-ui/themes";
-import { RiUserLine } from "react-icons/ri";
-import TypeField from "../components/TypeField";
 import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
 import { IoInformationCircleOutline } from "react-icons/io5";
+import { RiUserLine } from "react-icons/ri";
+import { Link } from "react-router-dom";
 import Background from "./../assets/background-art.jpeg";
 import Dashboard from "./../assets/background-art.png";
-import { Link } from "react-router-dom";
-
-
+import { ReactComponent as Logo } from "./../assets/lendasat_svg_logo.svg";
+import TypeField from "../components/TypeField";
 
 interface RegistrationFormProps {
   handleRegister: (name: string, email: string, password: string, inviteCode?: string) => Promise<void>;
@@ -59,11 +57,11 @@ export function RegistrationForm({ handleRegister }: RegistrationFormProps) {
             </Box>
           </Box>
 
-          <Heading weight={'medium'} size={'8'} mb={'2'} className="text-font-dark">
+          <Heading weight={"medium"} size={"8"} mb={"2"} className="text-font-dark">
             Get Started Now
           </Heading>
 
-          <Text size={'2'} weight={'medium'} className="text-font/60 text-center">
+          <Text size={"2"} weight={"medium"} className="text-font/60 text-center">
             Enter your credentials and become a member of the LENDASAT.
           </Text>
 
@@ -93,7 +91,6 @@ export function RegistrationForm({ handleRegister }: RegistrationFormProps) {
 
             {/* Password */}
             <Box className="text-left mt-3">
-
               <Text as="label" size={"1"} weight={"medium"} className="text-font/70 mb-2">Password</Text>
               <TypeField
                 type={isVisible ? "text" : "password"}
@@ -177,13 +174,11 @@ export function RegistrationForm({ handleRegister }: RegistrationFormProps) {
           {/* Sign Up Routing */}
           <Box className="flex items-center gap-1 justify-center mt-16">
             <Text as="label" size={"1"} weight={"medium"} className="text-font/70">Already have an account?</Text>
-            <Link to={'/login'} className="text-sm font-medium text-font-dark hover:text-purple-800">
+            <Link to={"/login"} className="text-sm font-medium text-font-dark hover:text-purple-800">
               Sign in
             </Link>
           </Box>
-
         </Box>
-
       </Box>
 
       <Box className="bg-purple-900 relative flex flex-col items-center justify-center px-12 order-1 py-20 lg:order-2">
@@ -201,7 +196,7 @@ export function RegistrationForm({ handleRegister }: RegistrationFormProps) {
 
         {/* Information */}
         <Box maxWidth={"500px"} mx={"auto"} className="text-center text-white">
-          <Heading size={'7'} className="xl:text-4xl">
+          <Heading size={"7"} className="xl:text-4xl">
             Kickstart your journey at Lendasat with a few Clicks
           </Heading>
           <Box mt={"3"}>
