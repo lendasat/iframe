@@ -91,6 +91,7 @@ export interface Contract {
   loan_repayment_address: string;
   contract_address?: string;
   borrower_loan_address: string;
+  transactions: LoanTransaction[];
 }
 
 export enum LoanAssetType {
@@ -139,4 +140,20 @@ export interface Dispute {
   status: DisputeStatus;
   created_at: Date;
   updated_at: Date;
+}
+
+export enum TransactionType {
+  Funding = "Funding",
+  Dispute = "Dispute",
+  PrincipalGiven = "PrincipalGiven",
+  PrincipalRepaid = "PrincipalRepaid",
+  Liquidation = "Liquidation",
+  ClaimCollateral = "ClaimCollateral",
+}
+
+export interface LoanTransaction {
+  id: string;
+  contract_id: string;
+  transaction_type: TransactionType;
+  timestamp: Date;
 }

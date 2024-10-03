@@ -314,6 +314,7 @@ const ContractStatusDetails = (
 ) => {
   const { approveContract, rejectContract, principalGiven, markAsRepaid } = useLenderHttpClient();
   const [isLoading, setIsLoading] = useState(false);
+  const [txid, setTxid] = useState("");
 
   const onContractApprove = async () => {
     try {
@@ -340,7 +341,7 @@ const ContractStatusDetails = (
   const onPrincipalGiven = async () => {
     try {
       setIsLoading(true);
-      await principalGiven(contract.id);
+      await principalGiven(contract.id, txid);
       onSuccess();
     } catch (error) {
       onError(`${error}`);
@@ -351,7 +352,7 @@ const ContractStatusDetails = (
   const onMarkAsRepaid = async () => {
     try {
       setIsLoading(true);
-      await markAsRepaid(contract.id);
+      await markAsRepaid(contract.id, txid);
       onSuccess();
     } catch (error) {
       onError(`${error}`);
@@ -394,18 +395,43 @@ const ContractStatusDetails = (
       );
     case ContractStatus.CollateralSeen:
     case ContractStatus.CollateralConfirmed:
-      return <RepaymentDetails contract={contract} isLoading={isLoading} onPrincipalGiven={onPrincipalGiven} />;
+      return (
+        <div>
+          <label htmlFor="txid">Transaction ID:</label>
+          <input
+            id="txid"
+            type="text"
+            value={txid}
+            onChange={(e) => setTxid(e.target.value)}
+            placeholder="Enter transaction ID"
+          />
+
+          <RepaymentDetails contract={contract} isLoading={isLoading} onPrincipalGiven={onPrincipalGiven} />
+        </div>
+      );
     case ContractStatus.PrincipalGiven:
       return (
-        <Button onClick={onMarkAsRepaid} disabled={isLoading}>
-          {isLoading
-            ? (
-              <Spinner animation="border" role="status" variant="light" size="sm">
-                <span className="visually-hidden">Loading...</span>
-              </Spinner>
-            )
-            : "Mark as repaid"}
-        </Button>
+        <div>
+          {/* Text input for txid */}
+          <label htmlFor="txid">Transaction ID:</label>
+          <input
+            id="txid"
+            type="text"
+            value={txid}
+            onChange={(e) => setTxid(e.target.value)}
+            placeholder="Enter transaction ID"
+          />
+
+          <Button onClick={onMarkAsRepaid} disabled={isLoading}>
+            {isLoading
+              ? (
+                <Spinner animation="border" role="status" variant="light" size="sm">
+                  <span className="visually-hidden">Loading...</span>
+                </Spinner>
+              )
+              : "Mark as repaid"}
+          </Button>
+        </div>
       );
     case ContractStatus.Repaid:
       return (

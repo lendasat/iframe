@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        UPDATE contracts\n        SET\n            claim_txid = $1,\n            status = $2,\n            updated_at = $3\n        WHERE id = $4\n        RETURNING\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            contract_address,\n            contract_index,\n            claim_txid,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            created_at,\n            updated_at\n        ",
+  "query": "\n        UPDATE contracts\n        SET status = $1,\n            updated_at = $2\n        WHERE lender_id = $3\n          AND id = $4\n        RETURNING\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            created_at,\n            updated_at\n        ",
   "describe": {
     "columns": [
       {
@@ -75,11 +75,6 @@
       },
       {
         "ordinal": 14,
-        "name": "claim_txid",
-        "type_info": "Text"
-      },
-      {
-        "ordinal": 15,
         "name": "status: crate::model::db::ContractStatus",
         "type_info": {
           "Custom": {
@@ -90,7 +85,7 @@
                 "Approved",
                 "CollateralSeen",
                 "CollateralConfirmed",
-                "PrincipalGiven",
+                "PrincipalRepaid",
                 "Repaid",
                 "Closing",
                 "Closed",
@@ -105,7 +100,7 @@
         }
       },
       {
-        "ordinal": 16,
+        "ordinal": 15,
         "name": "liquidation_status: crate::model::db::LiquidationStatus",
         "type_info": {
           "Custom": {
@@ -122,24 +117,23 @@
         }
       },
       {
-        "ordinal": 17,
+        "ordinal": 16,
         "name": "duration_months",
         "type_info": "Int4"
       },
       {
-        "ordinal": 18,
+        "ordinal": 17,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 19,
+        "ordinal": 18,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
-        "Text",
         {
           "Custom": {
             "name": "contract_status",
@@ -149,7 +143,7 @@
                 "Approved",
                 "CollateralSeen",
                 "CollateralConfirmed",
-                "PrincipalGiven",
+                "PrincipalRepaid",
                 "Repaid",
                 "Closing",
                 "Closed",
@@ -163,6 +157,7 @@
           }
         },
         "Timestamptz",
+        "Bpchar",
         "Bpchar"
       ]
     },
@@ -181,7 +176,6 @@
       false,
       true,
       true,
-      true,
       false,
       false,
       false,
@@ -189,5 +183,5 @@
       false
     ]
   },
-  "hash": "4d6b6c6711d9d4c6284036a78d4bc2fdbb51c56c964117e769f329b33cc7ce86"
+  "hash": "411906d7d68cf1efd610e709587523e8a7a8312563ae320b76a9cec6c8853e4d"
 }

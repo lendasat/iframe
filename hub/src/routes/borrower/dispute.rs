@@ -274,6 +274,9 @@ pub async fn get_claim_collateral_psbt(
                 query_params.fee_rate,
             )?;
 
+            let txid = psbt.clone().extract_tx_unchecked_fee_rate().compute_txid();
+            db::transactions::insert_dispute_txid(&data.db, contract.id.as_str(), &txid).await?;
+
             let psbt = psbt.serialize_hex();
 
             let res = ClaimCollateralPsbt {

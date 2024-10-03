@@ -131,7 +131,8 @@ impl Actor {
                 "Claim TX confirmed"
             );
 
-            db::contracts::mark_contract_as_closed(&self.db, contract_id, claim_txid)
+            db::transactions::insert_claim_txid(&self.db, contract_id, claim_txid).await?;
+            db::contracts::mark_contract_as_closed(&self.db, contract_id)
                 .await
                 .context("Failed to mark contract as closed")?;
 
@@ -345,6 +346,16 @@ impl xtra::Handler<ContractUpdate> for Actor {
                         .collect::<Vec<_>>(),
                 );
 
+                if let Err(err) = db::transactions::insert_funding_txid(
+                    &self.db,
+                    &contract.contract_id,
+                    &outpoint.txid,
+                )
+                .await
+                {
+                    tracing::error!("Failed at inserting funding tx id: {err:?}");
+                }
+
                 match db::contracts::update_collateral(
                     &self.db,
                     &contract.contract_id,
@@ -420,11 +431,16 @@ impl xtra::Handler<TrackContractFunding> for Actor {
             .await
             .context("Failed to get address transactions")?;
 
-        let collateral_outputs = collateral_outputs(&txs, &msg.contract_address, self.block_height);
-        let confirmed_collateral_sats = confirmed_collateral_sats(&collateral_outputs);
+        let collateral_outputs_vec =
+            collateral_outputs(&txs, &msg.contract_address, self.block_height);
+        let confirmed_collateral_sats = confirmed_collateral_sats(&collateral_outputs_vec);
 
-        let collateral_outputs =
-            HashMap::from_iter(collateral_outputs.into_iter().map(|o| (o.outpoint, o)));
+        let collateral_outputs = HashMap::from_iter(
+            collateral_outputs_vec
+                .clone()
+                .into_iter()
+                .map(|o| (o.outpoint, o)),
+        );
 
         let contract_id = &msg.contract_id;
 
@@ -446,6 +462,18 @@ impl xtra::Handler<TrackContractFunding> for Actor {
             .send(Message::Text(msg))
             .await
             .context("Failed to send TrackAddress message via WS")?;
+
+        for outpoint in collateral_outputs_vec {
+            if let Err(err) = db::transactions::insert_funding_txid(
+                &self.db,
+                contract_id,
+                &outpoint.outpoint.txid,
+            )
+            .await
+            {
+                tracing::error!("Failed inserting funding txid {err:?}");
+            }
+        }
 
         // Ideally we would only update when we learn something new, but alas.
         let contract =
@@ -568,6 +596,17 @@ impl xtra::Handler<NewBlockHeight> for Actor {
                     .cloned()
                     .collect::<Vec<_>>(),
             );
+            for outpoint in contract.collateral_outputs.keys() {
+                if let Err(err) = db::transactions::insert_funding_txid(
+                    &self.db,
+                    &contract.contract_id,
+                    &outpoint.txid,
+                )
+                .await
+                {
+                    tracing::error!("Failed at inserting funding tx id: {err:?}");
+                }
+            }
 
             // NOTE: We cannot actually learn if a collateral output was unconfirmed via the
             // WebSocket subscription. But we can learn this information after a restart, via the

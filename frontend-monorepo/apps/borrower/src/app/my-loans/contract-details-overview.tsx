@@ -5,6 +5,7 @@ import {
   ContractStatus,
   contractStatusToLabelString,
   LiquidationStatus,
+  TransactionType,
   useAuth,
   useBorrowerHttpClient,
 } from "@frontend-monorepo/http-client-borrower";
@@ -22,6 +23,7 @@ import { ContractRepaid } from "./contract-repaid";
 import { ContractRequested } from "./contract-requested";
 import { ExpandableDisputeCard } from "./dispute-card";
 import { downloadLocalStorage } from "./download-local-storage";
+import TransactionList from "./transaction-list";
 
 function ContractDetailsOverview() {
   const { getContract } = useBorrowerHttpClient();
@@ -286,7 +288,7 @@ const AdditionalDetail = ({ contract }: AdditionalDetailsProps) => {
         <Row className="justify-content-between border-b mt-2">
           <Col>Funding transaction</Col>
           <Col className="text-end mb-2">
-            TODO!
+            <TransactionList contract={contract} transactionType={TransactionType.Funding} />
           </Col>
         </Row>
       );
@@ -296,13 +298,15 @@ const AdditionalDetail = ({ contract }: AdditionalDetailsProps) => {
           <Row className="justify-content-between border-b mt-2">
             <Col>Funding transaction</Col>
             <Col className="text-end mb-2">
-              TODO!
+              <Col className="text-end mb-2">
+                <TransactionList contract={contract} transactionType={TransactionType.Funding} />
+              </Col>
             </Col>
           </Row>
           <Row className="justify-content-between border-b mt-2">
             <Col>Principal transaction</Col>
             <Col className="text-end mb-2">
-              TODO!
+              <TransactionList contract={contract} transactionType={TransactionType.PrincipalGiven} />
             </Col>
           </Row>
         </>
@@ -313,19 +317,19 @@ const AdditionalDetail = ({ contract }: AdditionalDetailsProps) => {
           <Row className="justify-content-between border-b mt-2">
             <Col>Funding transaction</Col>
             <Col className="text-end mb-2">
-              TODO!
+              <TransactionList contract={contract} transactionType={TransactionType.Funding} />
             </Col>
           </Row>
           <Row className="justify-content-between border-b mt-2">
             <Col>Principal transaction</Col>
             <Col className="text-end mb-2">
-              TODO!
+              <TransactionList contract={contract} transactionType={TransactionType.PrincipalGiven} />
             </Col>
           </Row>
           <Row className="justify-content-between border-b mt-2">
             <Col>Principal repayment transaction</Col>
             <Col className="text-end mb-2">
-              TODO!
+              <TransactionList contract={contract} transactionType={TransactionType.PrincipalRepaid} />
             </Col>
           </Row>
         </>
@@ -337,25 +341,25 @@ const AdditionalDetail = ({ contract }: AdditionalDetailsProps) => {
           <Row className="justify-content-between border-b mt-2">
             <Col>Funding transaction</Col>
             <Col className="text-end mb-2">
-              TODO!
+              <TransactionList contract={contract} transactionType={TransactionType.Funding} />
             </Col>
           </Row>
           <Row className="justify-content-between border-b mt-2">
             <Col>Principal transaction</Col>
             <Col className="text-end mb-2">
-              TODO!
+              <TransactionList contract={contract} transactionType={TransactionType.PrincipalGiven} />
             </Col>
           </Row>
           <Row className="justify-content-between border-b mt-2">
             <Col>Principal repayment transaction</Col>
             <Col className="text-end mb-2">
-              TODO!
+              <TransactionList contract={contract} transactionType={TransactionType.PrincipalRepaid} />
             </Col>
           </Row>
           <Row className="justify-content-between mt-2">
             <Col>Collateral claim transaction</Col>
             <Col className="text-end mb-2">
-              TODO!
+              <TransactionList contract={contract} transactionType={TransactionType.ClaimCollateral} />
             </Col>
           </Row>
         </>

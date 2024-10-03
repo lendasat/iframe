@@ -145,3 +145,21 @@ CREATE TABLE DISPUTES
     FOREIGN KEY (borrower_id) REFERENCES borrowers (id),
     FOREIGN KEY (contract_id) REFERENCES contracts (id)
 );
+
+CREATE TYPE transaction_type AS ENUM (
+    'Funding',
+    'Dispute',
+    'ClaimCollateral',
+    'PrincipalGiven',
+    'PrincipalRepaid',
+    'Liquidation'
+    );
+
+CREATE TABLE transactions
+(
+    id               VARCHAR(255) PRIMARY KEY NOT NULL,
+    transaction_type transaction_type         NOT NULL,
+    timestamp        TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    contract_id      CHAR(36) NOT NULL ,
+    FOREIGN KEY (contract_id) REFERENCES contracts (id)
+);
