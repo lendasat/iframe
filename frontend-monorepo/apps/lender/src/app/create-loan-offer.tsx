@@ -343,7 +343,9 @@ const CreateLoanOffer: React.FC = () => {
               <Separator size={"4"} color={"gray"} mt={"4"} className="opacity-50" />
               <Flex align={"center"} justify={"between"} my={"4"}>
                 <Text as="label" size={"2"} className="text-font/50">Amount</Text>
-                <Text size={"2"} className="text-font-dark/80 font-semibold">{loanAmount.min} ~ {loanAmount.max}</Text>
+                <Text size={"2"} className="text-font-dark/80 font-semibold">
+                  ${loanAmount.min} ~ ${loanAmount.max}
+                </Text>
               </Flex>
               <Separator size={"4"} color={"gray"} className="opacity-50" />
               <Flex align={"center"} justify={"between"} my={"4"}>
@@ -355,12 +357,12 @@ const CreateLoanOffer: React.FC = () => {
               <Separator size={"4"} color={"gray"} className="opacity-50" />
               <Flex align={"center"} justify={"between"} my={"4"}>
                 <Text as="label" size={"2"} className="text-font/50">LTV</Text>
-                <Text size={"2"} className="text-font-dark/80 font-semibold">{ltv * 100}%</Text>
+                <Text size={"2"} className="text-font-dark/80 font-semibold">{(ltv * 100).toFixed(2)}%</Text>
               </Flex>
               <Separator size={"4"} color={"gray"} className="opacity-50" />
               <Flex align={"center"} justify={"between"} my={"4"}>
                 <Text as="label" size={"2"} className="text-font/50">Interest Rate</Text>
-                <Text size={"2"} className="text-font-dark/80 font-semibold">{interest * 100}$</Text>
+                <Text size={"2"} className="text-font-dark/80 font-semibold">{(interest * 100).toFixed(2)}$</Text>
               </Flex>
               <Separator size={"4"} color={"gray"} className="opacity-50" />
               <Flex align={"center"} justify={"between"} my={"4"}>
