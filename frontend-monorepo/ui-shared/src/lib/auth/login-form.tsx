@@ -88,6 +88,7 @@ export function LoginForm(
                   >
                     <IconButton
                       variant="ghost"
+                      type="button"
                       color="gray"
                       className="hover:bg-transparent"
                       onClick={() => setIsVisible(!isVisible)}
