@@ -17,13 +17,23 @@ function Login() {
     navigate("/");
   };
 
+  let defaultUsername = "";
+  let defaultPassword = "";
+  if (import.meta.env.VITE_BITCOIN_NETWORK === "regtest" || import.meta.env.VITE_BITCOIN_NETWORK === "signet") {
+    console.log(`Im here and this is sparta ${import.meta.env.VITE_BORROWER_USERNAME} gotya?`);
+    defaultUsername = import.meta.env.VITE_BORROWER_USERNAME;
+  }
+  if (import.meta.env.VITE_BITCOIN_NETWORK === "regtest" || import.meta.env.VITE_BITCOIN_NETWORK === "signet") {
+    defaultPassword = import.meta.env.VITE_BORROWER_PASSWORD;
+  }
+
   return (
     <LoginForm
       handleLogin={handleLogin}
       registrationLink={"/registration"}
       forgotPasswordLink={"/forgotpassword"}
-      initialUserEmail={"borrower@lendasat.com"}
-      initialUserPassword={"password123"}
+      initialUserEmail={defaultUsername}
+      initialUserPassword={defaultPassword}
       infoMessage={registered ? "We have sent an verification email to your email address" : undefined}
     />
   );

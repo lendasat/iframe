@@ -13,7 +13,7 @@ interface ForgotPasswordProps {
 }
 
 export function ForgotPasswordForm({ handleSubmit }: ForgotPasswordProps) {
-  const [email, setEmail] = useState("borrower@lendasat.com");
+  const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isLoading, setLoading] = useState(false);
