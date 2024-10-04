@@ -7,6 +7,7 @@ use crate::routes::AppState;
 use crate::routes::ErrorResponse;
 use anyhow::Context;
 use axum::extract::Path;
+use axum::extract::Query;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::middleware;
@@ -17,6 +18,7 @@ use axum::routing::put;
 use axum::Extension;
 use axum::Json;
 use axum::Router;
+use serde::Deserialize;
 use std::sync::Arc;
 use tracing::instrument;
 
@@ -173,10 +175,16 @@ pub async fn put_approve_contract(
     Ok(())
 }
 
+#[derive(Deserialize)]
+pub struct PrincipalGivenQueryParam {
+    pub txid: String,
+}
+
 #[instrument(skip_all, err(Debug))]
 pub async fn put_principal_given(
     State(data): State<Arc<AppState>>,
     Path(contract_id): Path<String>,
+    query_params: Query<PrincipalGivenQueryParam>,
     Extension(user): Extension<User>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     let contract = async {
@@ -191,6 +199,14 @@ pub async fn put_principal_given(
         db::contracts::mark_contract_as_principal_given(&data.db, contract_id.as_str())
             .await
             .context("Failed to mark contract as repaid")?;
+
+        db::transactions::insert_principal_given_txid(
+            &data.db,
+            contract_id.as_str(),
+            query_params.txid.as_str(),
+        )
+        .await
+        .context("Failed inserting principal given tx id")?;
 
         anyhow::Ok(contract)
     }
@@ -271,10 +287,16 @@ pub async fn delete_reject_contract(
     Ok(())
 }
 
+#[derive(Deserialize)]
+pub struct PrincipalRepaidQueryParam {
+    pub txid: String,
+}
+
 #[instrument(skip_all, err(Debug))]
 pub async fn put_repaid_contract(
     State(data): State<Arc<AppState>>,
     Path(contract_id): Path<String>,
+    query_params: Query<PrincipalRepaidQueryParam>,
     Extension(user): Extension<User>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     async {
@@ -289,6 +311,14 @@ pub async fn put_repaid_contract(
         db::contracts::mark_contract_as_repaid(&data.db, contract.id.as_str())
             .await
             .context("Failed to mark contract as repaid")?;
+
+        db::transactions::insert_principal_repaid_txid(
+            &data.db,
+            contract_id.as_str(),
+            query_params.txid.as_str(),
+        )
+        .await
+        .context("Failed inserting principal given tx id")?;
 
         anyhow::Ok(())
     }

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        UPDATE contracts\n        SET status = $1,\n            updated_at = $2,\n            contract_address = $3,\n            contract_index = $4\n        WHERE lender_id = $5\n          AND id = $6\n        RETURNING\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            contract_address,\n            contract_index,\n            claim_txid,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            created_at,\n            updated_at\n        ",
+  "query": "\n        SELECT\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            created_at,\n            updated_at\n        FROM contracts\n        WHERE status NOT IN ($1, $2, $3, $4, $5) and liquidation_status NOT in ($6)\n        ",
   "describe": {
     "columns": [
       {
@@ -75,11 +75,6 @@
       },
       {
         "ordinal": 14,
-        "name": "claim_txid",
-        "type_info": "Text"
-      },
-      {
-        "ordinal": 15,
         "name": "status: crate::model::db::ContractStatus",
         "type_info": {
           "Custom": {
@@ -105,7 +100,7 @@
         }
       },
       {
-        "ordinal": 16,
+        "ordinal": 15,
         "name": "liquidation_status: crate::model::db::LiquidationStatus",
         "type_info": {
           "Custom": {
@@ -122,17 +117,17 @@
         }
       },
       {
-        "ordinal": 17,
+        "ordinal": 16,
         "name": "duration_months",
         "type_info": "Int4"
       },
       {
-        "ordinal": 18,
+        "ordinal": 17,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 19,
+        "ordinal": 18,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -161,11 +156,107 @@
             }
           }
         },
-        "Timestamptz",
-        "Text",
-        "Int4",
-        "Bpchar",
-        "Bpchar"
+        {
+          "Custom": {
+            "name": "contract_status",
+            "kind": {
+              "Enum": [
+                "Requested",
+                "Approved",
+                "CollateralSeen",
+                "CollateralConfirmed",
+                "PrincipalGiven",
+                "Repaid",
+                "Closing",
+                "Closed",
+                "Rejected",
+                "DisputeBorrowerStarted",
+                "DisputeLenderStarted",
+                "DisputeBorrowerResolved",
+                "DisputeLenderResolved"
+              ]
+            }
+          }
+        },
+        {
+          "Custom": {
+            "name": "contract_status",
+            "kind": {
+              "Enum": [
+                "Requested",
+                "Approved",
+                "CollateralSeen",
+                "CollateralConfirmed",
+                "PrincipalGiven",
+                "Repaid",
+                "Closing",
+                "Closed",
+                "Rejected",
+                "DisputeBorrowerStarted",
+                "DisputeLenderStarted",
+                "DisputeBorrowerResolved",
+                "DisputeLenderResolved"
+              ]
+            }
+          }
+        },
+        {
+          "Custom": {
+            "name": "contract_status",
+            "kind": {
+              "Enum": [
+                "Requested",
+                "Approved",
+                "CollateralSeen",
+                "CollateralConfirmed",
+                "PrincipalGiven",
+                "Repaid",
+                "Closing",
+                "Closed",
+                "Rejected",
+                "DisputeBorrowerStarted",
+                "DisputeLenderStarted",
+                "DisputeBorrowerResolved",
+                "DisputeLenderResolved"
+              ]
+            }
+          }
+        },
+        {
+          "Custom": {
+            "name": "contract_status",
+            "kind": {
+              "Enum": [
+                "Requested",
+                "Approved",
+                "CollateralSeen",
+                "CollateralConfirmed",
+                "PrincipalGiven",
+                "Repaid",
+                "Closing",
+                "Closed",
+                "Rejected",
+                "DisputeBorrowerStarted",
+                "DisputeLenderStarted",
+                "DisputeBorrowerResolved",
+                "DisputeLenderResolved"
+              ]
+            }
+          }
+        },
+        {
+          "Custom": {
+            "name": "liquidation_status",
+            "kind": {
+              "Enum": [
+                "Healthy",
+                "FirstMarginCall",
+                "SecondMarginCall",
+                "Liquidated"
+              ]
+            }
+          }
+        }
       ]
     },
     "nullable": [
@@ -183,7 +274,6 @@
       false,
       true,
       true,
-      true,
       false,
       false,
       false,
@@ -191,5 +281,5 @@
       false
     ]
   },
-  "hash": "6a3142c0711f355879d89d56e821a79997c41a82f09ffc70f795581efb9c78ff"
+  "hash": "778d1866e4a34b02a1fb3a6aeb7193695bab585434ccad5b5c282348a51fb7f6"
 }

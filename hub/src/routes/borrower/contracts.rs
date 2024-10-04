@@ -4,6 +4,7 @@ use crate::mempool;
 use crate::model::ContractRequestSchema;
 use crate::model::ContractStatus;
 use crate::model::LiquidationStatus;
+use crate::model::LoanTransaction;
 use crate::model::PsbtQueryParams;
 use crate::model::User;
 use crate::routes::borrower::auth::jwt_auth;
@@ -107,6 +108,7 @@ pub struct Contract {
     #[serde(with = "time::serde::rfc3339")]
     pub expiry: OffsetDateTime,
     pub liquidation_status: LiquidationStatus,
+    pub transactions: Vec<LoanTransaction>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -141,6 +143,16 @@ pub async fn get_contracts(
 
     let mut contracts_2 = Vec::new();
     for contract in contracts {
+        let transactions =
+            db::transactions::get_all_for_contract_id(&data.db, contract.id.as_str())
+                .await
+                .map_err(|error| {
+                    let error_response = ErrorResponse {
+                        message: format!("Database error: {}", error),
+                    };
+                    (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+                })?;
+
         let offer = db::loan_offers::loan_by_id(&data.db, &contract.loan_id)
             .await
             .map_err(|error| {
@@ -201,6 +213,7 @@ pub async fn get_contracts(
             },
             created_at: contract.created_at,
             repaid_at: None,
+            transactions,
             expiry,
         };
 
@@ -264,6 +277,15 @@ pub async fn get_contract(
     // TODO: Do this better tomorrow.
     let expiry = contract.created_at + time::Duration::weeks((contract.duration_months * 4) as i64);
 
+    let transactions = db::transactions::get_all_for_contract_id(&data.db, contract_id.as_str())
+        .await
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Database error: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
+
     Ok((
         StatusCode::OK,
         Json(Contract {
@@ -290,6 +312,7 @@ pub async fn get_contract(
             },
             created_at: contract.created_at,
             repaid_at: None,
+            transactions,
             expiry,
         }),
     ))
@@ -342,6 +365,9 @@ pub async fn post_contract_request(
         let expiry =
             contract.created_at + time::Duration::weeks((contract.duration_months * 4) as i64);
 
+        let transactions =
+            db::transactions::get_all_for_contract_id(&data.db, contract.id.as_str()).await?;
+
         let contract = Contract {
             collateral_sats: contract.collateral_sats,
             id: contract.id,
@@ -366,6 +392,7 @@ pub async fn post_contract_request(
             },
             created_at: contract.created_at,
             repaid_at: None,
+            transactions,
             expiry,
         };
 
@@ -487,8 +514,6 @@ pub async fn post_claim_tx(
         let tx: Transaction = bitcoin::consensus::encode::deserialize_hex(&body.tx)?;
         let claim_txid = tx.compute_txid();
 
-        db::contracts::insert_claim_txid(&data.db, contract_id.as_str(), &claim_txid).await?;
-
         data.mempool
             .send(mempool::TrackCollateralClaim {
                 contract_id: contract_id.clone(),
@@ -497,7 +522,7 @@ pub async fn post_claim_tx(
             .await??;
 
         data.mempool.send(mempool::PostTx(body.tx)).await??;
-
+        db::transactions::insert_claim_txid(&data.db, contract_id.as_str(), &claim_txid).await?;
         db::contracts::mark_contract_as_closing(&data.db, contract_id.as_str()).await?;
 
         anyhow::Ok(claim_txid)

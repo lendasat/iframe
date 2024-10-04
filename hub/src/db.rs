@@ -4,6 +4,7 @@ pub mod dispute;
 pub mod invite_code;
 pub mod lenders;
 pub mod loan_offers;
+pub mod transactions;
 
 use anyhow::Result;
 use sqlx::postgres::PgPoolOptions;

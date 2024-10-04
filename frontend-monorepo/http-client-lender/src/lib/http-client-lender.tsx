@@ -104,9 +104,9 @@ export class HttpClientLender extends BaseHttpClient {
     }
   }
 
-  async principalGiven(id: string): Promise<void> {
+  async principalGiven(id: string, txid: string): Promise<void> {
     try {
-      await this.httpClient.put(`/api/contracts/${id}/principalgiven`);
+      await this.httpClient.put(`/api/contracts/${id}/principalgiven?txid=${txid}`);
     } catch (error) {
       console.error(
         `Failed to fetch contract: http: ${error.response?.status} and response: ${error.response?.data}`,
@@ -115,9 +115,9 @@ export class HttpClientLender extends BaseHttpClient {
     }
   }
 
-  async markAsRepaid(id: string): Promise<void> {
+  async markAsRepaid(id: string, txid: string): Promise<void> {
     try {
-      await this.httpClient.put(`/api/contracts/${id}/repaid`);
+      await this.httpClient.put(`/api/contracts/${id}/repaid?txid=${txid}`);
     } catch (error) {
       console.error(
         `Failed to fetch contract: http: ${error.response?.status} and response: ${error.response?.data}`,

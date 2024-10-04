@@ -4,7 +4,6 @@ use argon2::PasswordVerifier;
 use bitcoin::address::NetworkUnchecked;
 use bitcoin::Address;
 use bitcoin::PublicKey;
-use bitcoin::Txid;
 use rust_decimal::Decimal;
 use serde::Deserialize;
 use serde::Deserializer;
@@ -179,7 +178,6 @@ pub struct Contract {
     pub borrower_loan_address: String,
     pub contract_address: Option<Address<NetworkUnchecked>>,
     pub contract_index: Option<u32>,
-    pub claim_txid: Option<Txid>,
     pub status: ContractStatus,
     pub liquidation_status: LiquidationStatus,
     #[serde(with = "time::serde::rfc3339")]
@@ -255,7 +253,6 @@ pub mod db {
         pub borrower_loan_address: String,
         pub contract_address: Option<String>,
         pub contract_index: Option<i32>,
-        pub claim_txid: Option<String>,
         pub status: ContractStatus,
         pub liquidation_status: LiquidationStatus,
         #[serde(with = "time::serde::rfc3339")]
@@ -313,7 +310,6 @@ impl From<db::Contract> for Contract {
                 .contract_address
                 .map(|addr| addr.parse().expect("valid address")),
             contract_index: value.contract_index.map(|i| i as u32),
-            claim_txid: value.claim_txid.map(|t| t.parse().expect("valid txid")),
             status: value.status.into(),
             liquidation_status: value.liquidation_status.into(),
             created_at: value.created_at,
@@ -373,7 +369,6 @@ impl From<Contract> for db::Contract {
                 .contract_address
                 .map(|addr| addr.assume_checked().to_string()),
             contract_index: value.contract_index.map(|i| i as i32),
-            claim_txid: value.claim_txid.map(|t| t.to_string()),
             status: value.status.into(),
             liquidation_status: value.liquidation_status.into(),
             created_at: value.created_at,
@@ -461,4 +456,24 @@ pub struct DisputeRequestBodySchema {
 pub struct PsbtQueryParams {
     // fee rate in sats/vbyte
     pub fee_rate: u64,
+}
+
+#[derive(Debug, Deserialize, sqlx::Type, Serialize, Clone)]
+#[sqlx(type_name = "transaction_type")]
+pub enum TransactionType {
+    Funding,
+    Dispute,
+    PrincipalGiven,
+    PrincipalRepaid,
+    Liquidation,
+    ClaimCollateral,
+}
+
+#[derive(Debug, Deserialize, Serialize, sqlx::FromRow)]
+pub struct LoanTransaction {
+    pub id: String,
+    pub contract_id: String,
+    pub transaction_type: TransactionType,
+    #[serde(with = "time::serde::rfc3339")]
+    pub timestamp: OffsetDateTime,
 }

@@ -34,7 +34,6 @@ export interface Contract {
   liquidation_status: LiquidationStatus;
   contract_index: number;
   collateral_output: string;
-  claim_txid: string;
   created_at: Date;
   updated_at: Date | undefined;
 }
