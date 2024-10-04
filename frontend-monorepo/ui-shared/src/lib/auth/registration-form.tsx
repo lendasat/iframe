@@ -16,7 +16,7 @@ interface RegistrationFormProps {
 
 export function RegistrationForm({ handleRegister }: RegistrationFormProps) {
   let defaultInviteCode = "";
-  if (import.meta.env.VITE_BITCOIN_NETWORK === "regtest" || import.meta.env.VITE_BITCOIN_NETWORK === "signet") {
+  if (import.meta.env.VITE_BITCOIN_NETWORK === "regtest") {
     defaultInviteCode = "IMONFIRE2024";
   }
 
@@ -58,12 +58,8 @@ export function RegistrationForm({ handleRegister }: RegistrationFormProps) {
           </Box>
 
           <Heading weight={"medium"} size={"8"} mb={"2"} className="text-font-dark">
-            Get Started Now
+            Join the future of lending
           </Heading>
-
-          <Text size={"2"} weight={"medium"} className="text-font/60 text-center">
-            Enter your credentials and become a member of the LENDASAT.
-          </Text>
 
           {/* Form */}
           <Form className="w-full mt-7 space-y-2.5" onSubmit={onSubmit}>
@@ -72,7 +68,7 @@ export function RegistrationForm({ handleRegister }: RegistrationFormProps) {
               <Box>
                 <Text as="label" size={"1"} weight={"medium"} className="text-font/70 mb-2">Name</Text>
                 <TypeField
-                  placeholder="Aziz Rahman"
+                  placeholder="Satoshi Nakamoto"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
@@ -137,7 +133,7 @@ export function RegistrationForm({ handleRegister }: RegistrationFormProps) {
             <Box>
               <Text as="label" size={"1"} weight={"medium"} className="text-font/70 mb-2">Referral Code</Text>
               <TypeField
-                placeholder="IMONFIRE2024"
+                placeholder=""
                 value={inviteCode}
                 onChange={(e) => setInviteCode(e.target.value)}
               />
@@ -163,7 +159,7 @@ export function RegistrationForm({ handleRegister }: RegistrationFormProps) {
                 size={"3"}
                 variant="solid"
                 radius="large"
-                disabled={email && password === confirmPassword && name && !isLoading ? false : true}
+                disabled={!(email && password === confirmPassword && name && !isLoading)}
                 className="w-full h-12"
               >
                 {isLoading ? <Spinner size={"3"} /> : "Register"}
