@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useWallet } from "@frontend-monorepo/borrower-wallet";
 import { LoanOffer, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import { formatCurrency, usePrice } from "@frontend-monorepo/ui-shared";
+import { StableCoinHelper } from "@frontend-monorepo/ui-shared";
 import { Badge, Box, Button, Callout, Flex, Grid, Heading, Separator, Text, TextField } from "@radix-ui/themes";
 import React, { useState } from "react";
 import { BiError } from "react-icons/bi";
@@ -13,7 +14,6 @@ import { CreateWalletModal } from "../wallet/create-wallet-modal";
 import { UnlockWalletModal } from "../wallet/unlock-wallet-modal";
 import { LoanFilter } from "./loan-offers-filter";
 import { Slider, SliderProps } from "./slider";
-import { StableCoinHelper } from "./stable-coin";
 
 type LocationState = {
   loanOffer: LoanOffer;

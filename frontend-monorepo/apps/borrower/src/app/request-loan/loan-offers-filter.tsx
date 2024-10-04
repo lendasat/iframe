@@ -1,7 +1,7 @@
+import { parseStableCoin, StableCoin, StableCoinDropdown, StableCoinHelper } from "@frontend-monorepo/ui-shared";
 import { Box, Button, Flex, Separator, Text, TextField } from "@radix-ui/themes";
 import React from "react";
 import { Slider, SliderProps } from "./slider";
-import { parseStableCoin, StableCoin, StableCoinDropdown, StableCoinHelper } from "./stable-coin";
 
 export interface LoanFilter {
   amount?: number;

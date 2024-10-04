@@ -1,8 +1,8 @@
 import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Dispute, DisputeStatus, useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
-import React, { Suspense, useState } from "react";
-import { Alert, Button } from "react-bootstrap";
+import React, { Suspense } from "react";
+import { Alert } from "react-bootstrap";
 import { Await, useParams } from "react-router-dom";
 
 function ResolveDispute() {
@@ -12,7 +12,7 @@ function ResolveDispute() {
   return (
     <Suspense>
       <Await
-        resolve={getDispute(id)}
+        resolve={getDispute(id!)}
         errorElement={<div>Could not load dispute</div>}
         children={(dispute: Awaited<Dispute>) => (
           <div>
@@ -75,39 +75,5 @@ function ResolveDispute() {
     </Suspense>
   );
 }
-
-interface ActionItemProps {
-  dispute: Dispute;
-  onWithdrawAction: (dispute: Dispute) => void;
-}
-
-const ActionItem = ({ dispute, onWithdrawAction }: ActionItemProps) => {
-  let actionDisabled = true;
-
-  switch (dispute.status) {
-    case DisputeStatus.ResolvedBorrower:
-    case DisputeStatus.ResolvedLender:
-      actionDisabled = false;
-      break;
-    case DisputeStatus.StartedBorrower:
-    case DisputeStatus.StartedLender:
-      actionDisabled = true;
-      break;
-  }
-
-  return (
-    <>
-      {actionDisabled
-        ? (
-          <Alert variant="warning">
-            <FontAwesomeIcon icon={faExclamationCircle} className="h-4 w-4 mr-2" />
-            {"The dispute is still ongoing. Once it's been resolved you will be able to withdraw your collateral."}
-          </Alert>
-        )
-        : ""}
-      <Button disabled={actionDisabled} onClick={() => onWithdrawAction(dispute)}>Withdraw collateral</Button>
-    </>
-  );
-};
 
 export default ResolveDispute;

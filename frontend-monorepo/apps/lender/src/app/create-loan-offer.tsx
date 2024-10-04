@@ -5,7 +5,8 @@ import {
   useLenderHttpClient,
 } from "@frontend-monorepo/http-client-lender";
 import { useAuth } from "@frontend-monorepo/http-client-lender";
-import { Box, Button, Callout, Flex, Grid, Heading, Separator, Spinner, Text, TextField } from "@radix-ui/themes";
+import { parseStableCoin, StableCoin } from "@frontend-monorepo/ui-shared";
+import { Box, Button, Callout, Flex, Heading, Separator, Spinner, Text, TextField } from "@radix-ui/themes";
 import React, { useState } from "react";
 import { Form } from "react-bootstrap";
 import { MdOutlineSwapCalls } from "react-icons/md";
@@ -20,25 +21,6 @@ export interface LoanDuration {
 export interface LoanAmount {
   min: number;
   max: number;
-}
-
-export enum StableCoin {
-  USDT_SN = "USDT_SN",
-  USDC_SN = "USDC_SN",
-  USDT_ETH = "USDT_ETH",
-  USDC_ETH = "USDC_ETH",
-}
-
-function parseStableCoin(value: string): StableCoin | undefined {
-  const normalizedValue = value.toUpperCase();
-
-  for (const key in StableCoin) {
-    if (StableCoin[key as keyof typeof StableCoin] === normalizedValue) {
-      return StableCoin[key as keyof typeof StableCoin];
-    }
-  }
-
-  return undefined;
 }
 
 const CreateLoanOffer: React.FC = () => {
@@ -109,7 +91,7 @@ const CreateLoanOffer: React.FC = () => {
         const res = await postLoanOffer(data);
         console.log(res);
         if (res !== undefined) {
-          navigate("/my-contracts");
+          navigate(`/my-offers/${res.id}`);
         } else {
           console.error(res);
         }

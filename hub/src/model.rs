@@ -113,9 +113,13 @@ pub struct LoanOffer {
     pub id: String,
     pub lender_id: String,
     pub name: String,
+    #[serde(with = "rust_decimal::serde::float")]
     pub min_ltv: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
     pub interest_rate: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
     pub loan_amount_min: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
     pub loan_amount_max: Decimal,
     pub duration_months_min: i32,
     pub duration_months_max: i32,

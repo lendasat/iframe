@@ -1,24 +1,23 @@
-import { LoanOffer } from "@frontend-monorepo/http-client-borrower";
+import { LoanOffer } from "@frontend-monorepo/http-client-lender";
 import { CurrencyFormatter, StableCoinHelper } from "@frontend-monorepo/ui-shared";
 import { Badge, Box, Button, DropdownMenu, Flex, Grid, Heading, Text } from "@radix-ui/themes";
 import React from "react";
 import { BsThreeDotsVertical } from "react-icons/bs";
-import { Lender } from "./lender";
+import { useNavigate } from "react-router-dom";
+import { StatusBadge } from "./status-badge";
 
 interface LoanOfferProps {
   loanOffer: LoanOffer;
-  onRequest: (loanOffer: LoanOffer) => void;
 }
 
-export function LoanOfferComponent({ loanOffer, onRequest }: LoanOfferProps) {
+export function MyLoanOfferComponent({ loanOffer }: LoanOfferProps) {
   const coin = StableCoinHelper.mapFromBackend(loanOffer.loan_asset_chain, loanOffer.loan_asset_type)!;
-  const [loadingState, setLoadingState] = React.useState<boolean>(false);
+
+  const navigate = useNavigate();
+
   return (
     <Box className="pl-5 pr-6 md:pl-7 md:pr-8 py-3 border-b border-black/5 flex md:gap-2 items-center">
       <Grid className="grid-cols-4 md:grid-cols-6 xl:grid-cols-8 items-center grow text-font">
-        <Box className="col-span-1 xl:col-span-2">
-          <Lender {...loanOffer.lender} />
-        </Box>
         <Box className="flex justify-center col-span-2 md:col-span-1">
           <Text size={"1"} weight={"medium"}>
             <CurrencyFormatter value={loanOffer.loan_amount_min} /> -{" "}
@@ -49,25 +48,26 @@ export function LoanOfferComponent({ loanOffer, onRequest }: LoanOfferProps) {
             <Badge color="purple" size={"2"}>{StableCoinHelper.print(coin)}</Badge>
           </Text>
         </Box>
+
+        <Box className="hidden md:flex justify-center">
+          <Text size={"1"} weight={"medium"}>
+            <StatusBadge offer={loanOffer} />
+          </Text>
+        </Box>
         <Box className="hidden xl:flex justify-center">
           <Button
             size={"3"}
-            loading={loadingState}
             variant="solid"
             className="bg-btn text-white"
             onClick={() => {
-              setLoadingState(true);
-              setTimeout(() => {
-                setLoadingState(false);
-                onRequest(loanOffer);
-              }, 1000);
+              navigate(`/my-offers/${loanOffer.id}`);
             }}
           >
             <Text
               size={"2"}
               className="font-semibold"
             >
-              Request Loan
+              Details
             </Text>
           </Button>
         </Box>
@@ -94,7 +94,7 @@ export function LoanOfferComponent({ loanOffer, onRequest }: LoanOfferProps) {
                     From:
                   </Text>
                   <Text className="capitalize" size={"3"}>
-                    {loanOffer.lender.name}
+                    {loanOffer.id}
                   </Text>
                 </Flex>
               </Box>
@@ -149,24 +149,29 @@ export function LoanOfferComponent({ loanOffer, onRequest }: LoanOfferProps) {
                   </Text>
                 </Flex>
               </Box>
+              <Box>
+                <Flex align={"center"} gap={"3"}>
+                  <Text size={"3"} weight={"medium"}>
+                    Status:
+                  </Text>
+                  <Text className="capitalize" size={"3"}>
+                    <StatusBadge offer={loanOffer} />
+                  </Text>
+                </Flex>
+              </Box>
               <Button
                 size={"3"}
-                loading={loadingState}
                 variant="solid"
                 className="bg-btn text-white w-full active:scale-90"
                 onClick={() => {
-                  setLoadingState(true);
-                  setTimeout(() => {
-                    setLoadingState(false);
-                    onRequest(loanOffer);
-                  }, 1000);
+                  navigate(`/my-offers/${loanOffer.id}`);
                 }}
               >
                 <Text
                   size={"2"}
                   className="font-semibold"
                 >
-                  Request Loan
+                  Details
                 </Text>
               </Button>
             </Flex>

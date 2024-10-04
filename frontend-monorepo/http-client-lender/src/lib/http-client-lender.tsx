@@ -108,10 +108,15 @@ export class HttpClientLender extends BaseHttpClient {
     try {
       await this.httpClient.put(`/api/contracts/${id}/principalgiven?txid=${txid}`);
     } catch (error) {
-      console.error(
-        `Failed to fetch contract: http: ${error.response?.status} and response: ${error.response?.data}`,
-      );
-      throw error;
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to mark contract as principal given: http: ${error.response?.status} and response: ${error.response?.data}`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Failed to mark contract as principal given ${JSON.stringify(error)}`);
+      }
     }
   }
 
@@ -119,10 +124,15 @@ export class HttpClientLender extends BaseHttpClient {
     try {
       await this.httpClient.put(`/api/contracts/${id}/repaid?txid=${txid}`);
     } catch (error) {
-      console.error(
-        `Failed to fetch contract: http: ${error.response?.status} and response: ${error.response?.data}`,
-      );
-      throw error;
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to mark contract as repaid: http: ${error.response?.status} and response: ${error.response?.data}`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Failed to mark contract as repaid ${JSON.stringify(error)}`);
+      }
     }
   }
 
@@ -210,6 +220,63 @@ export class HttpClientLender extends BaseHttpClient {
       }
     }
   }
+
+  async getMyLoanOffers(): Promise<LoanOffer[]> {
+    try {
+      const response: AxiosResponse<LoanOffer[]> = await this.httpClient.get("/api/offers");
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to fetch offers: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not fetch offers ${JSON.stringify(error)}`);
+      }
+    }
+  }
+
+  async getMyLoanOffer(id: string): Promise<LoanOffer> {
+    try {
+      const response: AxiosResponse<LoanOffer> = await this.httpClient.get(`/api/offers/${id}`);
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to fetch offer: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not fetch offer ${JSON.stringify(error)}`);
+      }
+    }
+  }
+
+  async deleteLoanOffer(id: string): Promise<void> {
+    try {
+      await this.httpClient.delete(`/api/offers/${id}`);
+      return;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to fetch offer: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not fetch offer ${JSON.stringify(error)}`);
+      }
+    }
+  }
 }
 
 type LenderHttpClientContextType = Pick<
@@ -225,6 +292,9 @@ type LenderHttpClientContextType = Pick<
   | "getDispute"
   | "getLenderProfile"
   | "getBorrowerProfile"
+  | "getMyLoanOffers"
+  | "getMyLoanOffer"
+  | "deleteLoanOffer"
 >;
 
 export const LenderHttpClientContext = createContext<LenderHttpClientContextType | undefined>(undefined);
@@ -269,6 +339,9 @@ export const HttpClientLenderProvider: React.FC<HttpClientProviderProps> = ({ ch
     getDispute: httpClient.getDispute.bind(httpClient),
     getLenderProfile: httpClient.getLenderProfile.bind(httpClient),
     getBorrowerProfile: httpClient.getBorrowerProfile.bind(httpClient),
+    getMyLoanOffers: httpClient.getMyLoanOffers.bind(httpClient),
+    getMyLoanOffer: httpClient.getMyLoanOffer.bind(httpClient),
+    deleteLoanOffer: httpClient.deleteLoanOffer.bind(httpClient),
   };
 
   return (

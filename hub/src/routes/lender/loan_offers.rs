@@ -3,10 +3,12 @@ use crate::model::CreateLoanOfferSchema;
 use crate::model::User;
 use crate::routes::lender::auth;
 use crate::routes::lender::AppState;
+use axum::extract::Path;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::middleware;
 use axum::response::IntoResponse;
+use axum::routing::delete;
 use axum::routing::get;
 use axum::routing::post;
 use axum::Extension;
@@ -27,6 +29,19 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
                 app_state.clone(),
                 auth::jwt_auth::auth,
             )),
+        )
+        .route(
+            "/api/offers/:id",
+            get(get_loan_offer_by_lender_and_offer_id).route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                auth::jwt_auth::auth,
+            )),
+        )
+        .route(
+            "/api/offers/:id",
+            delete(delete_loan_offer_by_lender_and_offer_id).route_layer(
+                middleware::from_fn_with_state(app_state.clone(), auth::jwt_auth::auth),
+            ),
         )
         .route(
             "/api/offers/create",
@@ -91,6 +106,50 @@ pub async fn get_loan_offers_by_lender(
         })?;
 
     Ok((StatusCode::OK, Json(loans)))
+}
+
+#[instrument(skip_all, err(Debug))]
+pub async fn get_loan_offer_by_lender_and_offer_id(
+    State(data): State<Arc<AppState>>,
+    Extension(user): Extension<User>,
+    Path(offer_id): Path<String>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    let loan = db::loan_offers::get_loan_offer_by_lender_and_offer_id(
+        &data.db,
+        user.id.as_str(),
+        offer_id.as_str(),
+    )
+    .await
+    .map_err(|error| {
+        let error_response = ErrorResponse {
+            message: format!("Database error: {}", error),
+        };
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+    })?;
+
+    Ok((StatusCode::OK, Json(loan)))
+}
+
+#[instrument(skip_all, err(Debug))]
+pub async fn delete_loan_offer_by_lender_and_offer_id(
+    State(data): State<Arc<AppState>>,
+    Extension(user): Extension<User>,
+    Path(offer_id): Path<String>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    db::loan_offers::mark_as_deleted_by_lender_and_offer_id(
+        &data.db,
+        user.id.as_str(),
+        offer_id.as_str(),
+    )
+    .await
+    .map_err(|error| {
+        let error_response = ErrorResponse {
+            message: format!("Database error: {}", error),
+        };
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+    })?;
+
+    Ok((StatusCode::OK, ()))
 }
 
 #[derive(Debug, Serialize)]

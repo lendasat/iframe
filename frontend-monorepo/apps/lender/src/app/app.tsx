@@ -15,9 +15,14 @@ import MyContracts from "./contracts/my-contracts";
 import CreateLoanOffer from "./create-loan-offer";
 import ResolveDispute from "./disputes/dispute";
 import "./../styles.css";
+import React from "react";
+import { SiBookmyshow } from "react-icons/si";
+import MyLoanOfferDetails from "./my-offers/my-loan-offer-details";
+import MyLoanOffersOverview from "./my-offers/my-loan-offers-overview";
 
 const menuItems = [
   { label: "Create Loan Offer", icon: GiPayMoney, path: "/create-loan-offer" },
+  { label: "My Offers", icon: SiBookmyshow, path: "/my-offers" },
   { label: "My Loans", icon: BsPiggyBank, path: "/my-contracts" },
 ];
 
@@ -53,6 +58,10 @@ function MainLayoutComponents() {
           <Route path="/my-contracts">
             <Route index element={<MyContracts />} />
             <Route path={":id"} element={<ContractDetailsOverview />} />
+          </Route>
+          <Route path="/my-offers">
+            <Route index element={<MyLoanOffersOverview />} />
+            <Route path={":id"} element={<MyLoanOfferDetails />} />
           </Route>
           <Route path="/disputes/:id" element={<ResolveDispute />} />
         </Route>
