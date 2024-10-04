@@ -62,6 +62,12 @@ export interface CreateLoanOfferRequest {
   loan_repayment_address: string;
 }
 
+export enum LoanOfferStatus {
+  Available = "Available",
+  Unavailable = "Unavailable",
+  Deleted = "Deleted",
+}
+
 export interface LoanOffer {
   id: string;
   lender_id: string;
@@ -73,6 +79,7 @@ export interface LoanOffer {
   duration_months_max: number;
   loan_asset_type: string;
   loan_asset_chain: string;
+  status: LoanOfferStatus;
 }
 
 export function contractStatusToLabelString(status: ContractStatus): string {

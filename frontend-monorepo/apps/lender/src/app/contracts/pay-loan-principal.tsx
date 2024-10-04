@@ -14,7 +14,7 @@ interface RepaymentDetailsProps {
 const RepaymentDetails = ({ contract, onPrincipalGiven, isLoading }: RepaymentDetailsProps) => {
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = async (text) => {
+  const handleCopy = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);

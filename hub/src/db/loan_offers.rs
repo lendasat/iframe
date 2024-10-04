@@ -6,6 +6,7 @@ use crate::model::LoanOfferStatus;
 use anyhow::Result;
 use sqlx::Pool;
 use sqlx::Postgres;
+use time::OffsetDateTime;
 
 pub(crate) async fn load_all_available_loan_offers(
     pool: &Pool<Postgres>,
@@ -71,6 +72,65 @@ pub async fn load_all_loan_offers_by_lender(
     .await?;
 
     Ok(loans)
+}
+pub async fn get_loan_offer_by_lender_and_offer_id(
+    pool: &Pool<Postgres>,
+    lender_id: &str,
+    offer_id: &str,
+) -> Result<LoanOffer> {
+    let loan = sqlx::query_as!(
+        LoanOffer,
+        r#"
+        SELECT
+            id,
+            lender_id,
+            name,
+            min_ltv,
+            interest_rate,
+            loan_amount_min,
+            loan_amount_max,
+            duration_months_min,
+            duration_months_max,
+            loan_asset_type AS "loan_asset_type: crate::model::LoanAssetType",
+            loan_asset_chain AS "loan_asset_chain: crate::model::LoanAssetChain",
+            status AS "status: crate::model::LoanOfferStatus",
+            loan_repayment_address,
+            created_at,
+            updated_at
+        FROM loan_offers
+        WHERE lender_id = $1 and id = $2
+        "#,
+        lender_id,
+        offer_id
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(loan)
+}
+
+pub async fn mark_as_deleted_by_lender_and_offer_id(
+    pool: &Pool<Postgres>,
+    lender_id: &str,
+    offer_id: &str,
+) -> Result<()> {
+    sqlx::query_as!(
+        LoanOffer,
+        r#"
+        UPDATE loan_offers set 
+            status = $1,
+            updated_at = $2
+        WHERE lender_id = $3 and id = $4
+        "#,
+        LoanOfferStatus::Deleted as LoanOfferStatus,
+        OffsetDateTime::now_utc(),
+        lender_id,
+        offer_id
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
 }
 
 pub async fn insert_loan_offer(
