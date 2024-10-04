@@ -108,10 +108,15 @@ export class HttpClientLender extends BaseHttpClient {
     try {
       await this.httpClient.put(`/api/contracts/${id}/principalgiven`);
     } catch (error) {
-      console.error(
-        `Failed to fetch contract: http: ${error.response?.status} and response: ${error.response?.data}`,
-      );
-      throw error;
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to mark contract as principal given: http: ${error.response?.status} and response: ${error.response?.data}`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Failed to mark contract as principal given ${JSON.stringify(error)}`);
+      }
     }
   }
 
@@ -119,10 +124,15 @@ export class HttpClientLender extends BaseHttpClient {
     try {
       await this.httpClient.put(`/api/contracts/${id}/repaid`);
     } catch (error) {
-      console.error(
-        `Failed to fetch contract: http: ${error.response?.status} and response: ${error.response?.data}`,
-      );
-      throw error;
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to mark contract as repaid: http: ${error.response?.status} and response: ${error.response?.data}`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Failed to mark contract as repaid ${JSON.stringify(error)}`);
+      }
     }
   }
 
