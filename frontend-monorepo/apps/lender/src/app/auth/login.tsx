@@ -12,13 +12,22 @@ function Login() {
     navigate("/");
   };
 
+  let defaultUsername = "";
+  let defaultPassword = "";
+  if (import.meta.env.VITE_BITCOIN_NETWORK === "regtest" || import.meta.env.VITE_BITCOIN_NETWORK === "signet") {
+    defaultUsername = import.meta.env.VITE_LENDER_USERNAME || "lender@lendasat.com";
+  }
+  if (import.meta.env.VITE_BITCOIN_NETWORK === "regtest" || import.meta.env.VITE_BITCOIN_NETWORK === "signet") {
+    defaultPassword = import.meta.env.VITE_LENDER_PASSWORD || "password123";
+  }
+
   return (
     <LoginForm
       handleLogin={handleLogin}
       registrationLink={"/registration"}
       forgotPasswordLink={"/forgotpassword"}
-      initialUserEmail={"lender@lendasat.com"}
-      initialUserPassword={"password123"}
+      initialUserEmail={defaultUsername}
+      initialUserPassword={defaultPassword}
     />
   );
 }
