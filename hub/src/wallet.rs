@@ -78,21 +78,32 @@ impl Wallet {
         Ok((address, index))
     }
 
+    /// Will create a PSBT to spend the whole output to 2 address:
+    /// 1. the `borrower_address` and 2. a newly derived address from `hub_fee_wallet`
     #[allow(clippy::too_many_arguments)]
     pub fn create_dispute_claim_collateral_psbt(
         &mut self,
         borrower_pk: PublicKey,
         contract_index: u32,
         collateral_outputs: Vec<(OutPoint, u64)>,
-        target_outputs: [(Address<NetworkUnchecked>, u64); 2],
+        borrower_address: Address<NetworkUnchecked>,
+        borrower_amount_sats: u64,
+        liquidator_amount_sats: u64,
         // In the DLC-based protocol, we will probably charge the origination fee when the
         // collateral is locked up.
         origination_fee: u64,
         fee_rate_spvb: u64,
     ) -> Result<(Psbt, Descriptor<PublicKey>)> {
         let (hub_kp, fallback_pk) = self.get_keys_for_index(contract_index)?;
-
         let hub_pk = PublicKey::new(hub_kp.public_key());
+
+        let liquidator_address_info = self.hub_fee_wallet.get_new_address()?;
+        let liquidator_address =
+            Address::from_str(liquidator_address_info.address.to_string().as_str())?;
+        let target_outputs = [
+            (borrower_address, borrower_amount_sats),
+            (liquidator_address, liquidator_amount_sats),
+        ];
 
         let mut inputs = Vec::new();
         for (outpoint, _) in collateral_outputs.iter() {

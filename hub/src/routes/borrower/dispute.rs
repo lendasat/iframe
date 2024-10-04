@@ -260,16 +260,9 @@ pub async fn get_claim_collateral_psbt(
                 contract.borrower_pk,
                 contract_index,
                 collateral_outputs,
-                [
-                    (
-                        contract.borrower_btc_address,
-                        dispute.borrower_payout_sats.expect("To be some") as u64,
-                    ),
-                    (
-                        data.config.liquidator_address.as_unchecked().clone(),
-                        dispute.borrower_payout_sats.expect("To be some") as u64,
-                    ),
-                ],
+                contract.borrower_btc_address,
+                dispute.borrower_payout_sats.expect("To be some") as u64,
+                dispute.lender_payout_sats.expect("To be some") as u64,
                 contract.origination_fee_sats,
                 query_params.fee_rate,
             )?;

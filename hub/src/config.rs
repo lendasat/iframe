@@ -1,6 +1,3 @@
-use bitcoin::Address;
-use std::str::FromStr;
-
 #[derive(Debug, Clone)]
 pub struct Config {
     pub database_url: String,
@@ -22,7 +19,6 @@ pub struct Config {
     pub lender_listen_address: String,
     pub hub_fee_descriptor: String,
     pub hub_fee_wallet_dir: Option<String>,
-    pub liquidator_address: Address,
 }
 
 impl Config {
@@ -58,8 +54,6 @@ impl Config {
 
         let hub_fee_descriptor =
             std::env::var("HUB_FEE_DESCRIPTOR").expect("HUB_FEE_DESCRIPTOR must be set");
-        let liquidator_address =
-            std::env::var("LIQUIDATOR_ADDRESS").expect("LIQUIDATOR_ADDRESS must be set");
         let hub_fee_wallet_dir = std::env::var("HUB_FEE_WALLET_DIR").ok();
 
         let any_smtp_not_configured = smtp_host.is_none()
@@ -91,9 +85,6 @@ impl Config {
                     .map(|disabled| disabled.parse::<bool>().expect("to be able to parse"))
                     .unwrap_or_default(),
             hub_fee_descriptor,
-            liquidator_address: Address::from_str(liquidator_address.as_str())
-                .expect("to be valid address")
-                .assume_checked(),
             hub_fee_wallet_dir,
         }
     }
