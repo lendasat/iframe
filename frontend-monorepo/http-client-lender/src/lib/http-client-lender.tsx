@@ -2,7 +2,6 @@ import { BaseHttpClient, BaseHttpClientContext, BaseHttpClientContextType } from
 import { Dispute, LenderProfile } from "@frontend-monorepo/http-client-borrower";
 import axios, { AxiosResponse } from "axios";
 import { createContext, useContext } from "react";
-import LoanOffers from "../../../apps/borrower/src/app/request-loan/loan-offers";
 import { Contract, CreateLoanOfferRequest, LoanOffer } from "./models";
 import { parseRFC3339Date } from "./utils";
 

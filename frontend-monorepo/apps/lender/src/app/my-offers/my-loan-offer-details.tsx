@@ -2,7 +2,7 @@ import { faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { LoanOffer, LoanOfferStatus, useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
 import { formatCurrency, StableCoin, StableCoinHelper } from "@frontend-monorepo/ui-shared";
-import { Badge, Box, Button, Callout, Flex, Grid, Heading, Separator, Text } from "@radix-ui/themes";
+import { Box, Button, Callout, Flex, Grid, Heading, Separator, Text } from "@radix-ui/themes";
 import React, { Suspense, useState } from "react";
 import { IoIosArrowRoundBack } from "react-icons/io";
 import { Await, Link, useParams } from "react-router-dom";

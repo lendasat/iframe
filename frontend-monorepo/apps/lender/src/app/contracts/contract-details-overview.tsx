@@ -111,9 +111,9 @@ function ContractDetails({ contract }: DetailsProps) {
   };
 
   let contractStatusLabel = contractStatusToLabelString(contract.status);
-  const firstMarginCall = contract.liquidation_status == LiquidationStatus.FirstMarginCall;
-  const secondMarginCall = contract.liquidation_status == LiquidationStatus.SecondMarginCall;
-  const liquidated = contract.liquidation_status == LiquidationStatus.Liquidated;
+  const firstMarginCall = contract.liquidation_status === LiquidationStatus.FirstMarginCall;
+  const secondMarginCall = contract.liquidation_status === LiquidationStatus.SecondMarginCall;
+  const liquidated = contract.liquidation_status === LiquidationStatus.Liquidated;
 
   if (firstMarginCall) {
     contractStatusLabel = "First Margin Call";

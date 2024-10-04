@@ -6,7 +6,7 @@ import {
 } from "@frontend-monorepo/http-client-lender";
 import { useAuth } from "@frontend-monorepo/http-client-lender";
 import { parseStableCoin, StableCoin } from "@frontend-monorepo/ui-shared";
-import { Box, Button, Callout, Flex, Grid, Heading, Separator, Spinner, Text, TextField } from "@radix-ui/themes";
+import { Box, Button, Callout, Flex, Heading, Separator, Spinner, Text, TextField } from "@radix-ui/themes";
 import React, { useState } from "react";
 import { Form } from "react-bootstrap";
 import { MdOutlineSwapCalls } from "react-icons/md";

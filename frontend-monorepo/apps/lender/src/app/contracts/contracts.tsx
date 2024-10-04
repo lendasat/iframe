@@ -70,9 +70,9 @@ function ContractsComponent({ loans }: LoansComponentProps) {
         const ltvRatio = contract.loan_amount / (collateral_btc * latestPrice);
 
         let contractStatus = contractStatusToLabelString(contract.status);
-        const firstMarginCall = contract.liquidation_status == LiquidationStatus.FirstMarginCall;
-        const secondMarginCall = contract.liquidation_status == LiquidationStatus.SecondMarginCall;
-        const liquidated = contract.liquidation_status == LiquidationStatus.Liquidated;
+        const firstMarginCall = contract.liquidation_status === LiquidationStatus.FirstMarginCall;
+        const secondMarginCall = contract.liquidation_status === LiquidationStatus.SecondMarginCall;
+        const liquidated = contract.liquidation_status === LiquidationStatus.Liquidated;
 
         if (firstMarginCall) {
           contractStatus = "First Margin Call";

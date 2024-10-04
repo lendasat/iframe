@@ -13,7 +13,7 @@ function MyLoanOffersOverview() {
   const { getMyLoanOffers } = useLenderHttpClient();
 
   const [loanOffers, setLoanOffers] = useState<LoanOffer[]>([]);
-  const [tableSorting, _setTableSorting] = useState<TableSortBy>(TableSortBy.Amount);
+  const tableSorting = TableSortBy.Amount;
 
   useEffect(() => {
     const fetchLoans = async () => {

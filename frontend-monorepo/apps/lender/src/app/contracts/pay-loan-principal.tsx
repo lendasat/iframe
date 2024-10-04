@@ -8,8 +8,8 @@ import { Alert, Button, Col, Container, Row, Spinner } from "react-bootstrap";
 
 interface RepaymentDetailsProps {
   contract: Contract;
-  onPrincipalGiven: any;
-  isLoading: any;
+  onPrincipalGiven: () => void;
+  isLoading: boolean;
 }
 const RepaymentDetails = ({ contract, onPrincipalGiven, isLoading }: RepaymentDetailsProps) => {
   const [copied, setCopied] = useState(false);
