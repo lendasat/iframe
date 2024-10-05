@@ -57,6 +57,7 @@ function LoanOffersComponent({ loanOffers, onRequest }: LoanOffersComponentProps
   const [durationSort, setDurationSort] = useState<Sort>(Sort.NONE);
   const [ltvSort, setLTVSort] = useState<Sort>(Sort.NONE);
   const [interestSort, setInterestSort] = useState<Sort>(Sort.NONE);
+  const layout = window;
 
   return (
     <>
@@ -204,26 +205,34 @@ function LoanOffersComponent({ loanOffers, onRequest }: LoanOffersComponentProps
 
         <PiWarningOctagon className="opacity-40 text-black xl:hidden" />
       </Box>
-      {loanOffers.sort((a, b) => {
-        // Compare by amount first
-        const amountComparison = SortHelper.sort(amountSort, a.loan_amount_min, b.loan_amount_min);
-        if (amountComparison !== 0) return amountComparison;
+      <Box
+        style={{
+          paddingBottom: 50,
+          overflowY: "scroll",
+          height: layout.innerHeight * 0.74,
+        }}
+      >
+        {loanOffers.sort((a, b) => {
+          // Compare by amount first
+          const amountComparison = SortHelper.sort(amountSort, a.loan_amount_min, b.loan_amount_min);
+          if (amountComparison !== 0) return amountComparison;
 
-        // Compare by duration if amount is the same
-        const durationComparison = SortHelper.sort(durationSort, a.duration_months_min, b.duration_months_min);
-        if (durationComparison !== 0) return durationComparison;
+          // Compare by duration if amount is the same
+          const durationComparison = SortHelper.sort(durationSort, a.duration_months_min, b.duration_months_min);
+          if (durationComparison !== 0) return durationComparison;
 
-        // Compare by LTV if amount and duration are the same
-        const ltvComparison = SortHelper.sort(ltvSort, a.min_ltv, b.min_ltv);
-        if (ltvComparison !== 0) return ltvComparison;
+          // Compare by LTV if amount and duration are the same
+          const ltvComparison = SortHelper.sort(ltvSort, a.min_ltv, b.min_ltv);
+          if (ltvComparison !== 0) return ltvComparison;
 
-        // Compare by interest if amount, duration, and LTV are the same
-        return SortHelper.sort(interestSort, a.interest_rate, b.interest_rate);
-      }).map((loanOffer, index) => (
-        <div key={index} className={"overflow-y-scroll"}>
-          <LoanOfferComponent key={index} loanOffer={loanOffer} onRequest={onRequest} />
-        </div>
-      ))}
+          // Compare by interest if amount, duration, and LTV are the same
+          return SortHelper.sort(interestSort, a.interest_rate, b.interest_rate);
+        }).map((loanOffer, index) => (
+          <div key={index} className={"overflow-y-scroll"}>
+            <LoanOfferComponent key={index} loanOffer={loanOffer} onRequest={onRequest} />
+          </div>
+        ))}
+      </Box>
     </>
   );
 }
