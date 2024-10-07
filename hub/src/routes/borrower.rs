@@ -33,6 +33,7 @@ pub(crate) mod contracts;
 mod dispute;
 pub(crate) mod health_check;
 pub(crate) mod loan_offers;
+pub(crate) mod loan_requests;
 pub(crate) mod version;
 
 pub async fn spawn_borrower_server(
@@ -58,7 +59,8 @@ pub async fn spawn_borrower_server(
         .merge(contracts::router(app_state.clone()))
         .merge(dispute::router(app_state.clone()))
         .merge(price_feed_ws::router(app_state.clone()))
-        .merge(profiles::router(app_state))
+        .merge(profiles::router(app_state.clone()))
+        .merge(loan_requests::router(app_state))
         // This is a relative path on the filesystem, which means, when deploying `hub` we will need
         // to have the frontend in this directory. Ideally we would bundle the frontend with
         // the binary, but so far we failed at handling requests which are meant to be handled by

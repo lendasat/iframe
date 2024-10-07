@@ -1,7 +1,16 @@
 import { BaseHttpClient, BaseHttpClientContext, BaseHttpClientContextType } from "@frontend-monorepo/base-http-client";
 import axios, { AxiosResponse } from "axios";
 import { createContext, useContext } from "react";
-import { ClaimCollateralPsbtResponse, Contract, ContractRequest, Dispute, LenderProfile, LoanOffer } from "./models";
+import {
+  ClaimCollateralPsbtResponse,
+  Contract,
+  ContractRequest,
+  Dispute,
+  LenderProfile,
+  LoanOffer,
+  LoanRequest,
+  PostLoanRequest,
+} from "./models";
 import { parseRFC3339Date } from "./utils";
 
 // Interface for the raw data received from the API
@@ -59,10 +68,36 @@ export class HttpClientBorrower extends BaseHttpClient {
       const response: AxiosResponse<LoanOffer> = await this.httpClient.post("/api/offers/create", offer);
       return response.data;
     } catch (error) {
-      console.error(
-        `Failed to post loan offer: http: ${error.response?.status} and response: ${error.response?.data}`,
-      );
-      throw error.response?.data;
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to post loan offer: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not post loan offer: ${JSON.stringify(error)}`);
+      }
+    }
+  }
+
+  async postLoanRequest(request: PostLoanRequest): Promise<LoanRequest | undefined> {
+    try {
+      const response: AxiosResponse<LoanRequest> = await this.httpClient.post("/api/requests/create", request);
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to post loan request: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not post loan request: ${JSON.stringify(error)}`);
+      }
     }
   }
 
@@ -264,6 +299,7 @@ type BorrowerHttpClientContextType = Pick<
   | "getLoanOffers"
   | "getLoanOffer"
   | "postLoanOffer"
+  | "postLoanRequest"
   | "postContractRequest"
   | "getContracts"
   | "getContract"
@@ -310,6 +346,7 @@ export const HttpClientBorrowerProvider: React.FC<HttpClientProviderProps> = ({ 
     getLoanOffers: httpClient.getLoanOffers.bind(httpClient),
     getLoanOffer: httpClient.getLoanOffer.bind(httpClient),
     postLoanOffer: httpClient.postLoanOffer.bind(httpClient),
+    postLoanRequest: httpClient.postLoanRequest.bind(httpClient),
     postContractRequest: httpClient.postContractRequest.bind(httpClient),
     getContracts: httpClient.getContracts.bind(httpClient),
     getContract: httpClient.getContract.bind(httpClient),

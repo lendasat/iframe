@@ -23,7 +23,8 @@
               "Enum": [
                 "Funding",
                 "Dispute",
-                "LoanPayout",
+                "ClaimCollateral",
+                "PrincipalGiven",
                 "PrincipalRepaid",
                 "Liquidation"
               ]
