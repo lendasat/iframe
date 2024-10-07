@@ -45,10 +45,10 @@ function MyAccount() {
     <Box
       className="p-4 flex flex-col overflow-y-scroll"
       style={{
-        height: layout.innerHeight - 65,
+        height: layout.innerHeight - 120,
       }}
     >
-      <Box className="bg-dashboard/50 rounded-2xl shadow-sm flex-grow max-h-[75vh]">
+      <Box className="bg-dashboard/50 rounded-2xl shadow-sm flex-grow md:max-h-[800px]">
         <Tabs.Root
           activationMode="manual"
           defaultValue="profile"
@@ -172,7 +172,7 @@ function MyAccount() {
                           </Callout.Root>
                         )}
 
-                      <Box pt={"5"}>
+                      <Box className="md:pt-5">
                         <Flex justify={"end"}>
                           <Button
                             size={"3"}
@@ -205,7 +205,7 @@ function MyAccount() {
           </Box>
         </Tabs.Root>
       </Box>
-      <Box py={"3"}>
+      <Box py={"3"} mb={"8"}>
         <Flex gap={"1"} align={"center"}>
           <PiWarningCircleFill color="rgb(235, 172, 14)" size={22} />
           <Text size={"1"} weight={"medium"} className="text-font/60">

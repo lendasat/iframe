@@ -209,7 +209,7 @@ function LoanOffersComponent({ loanOffers, onRequest }: LoanOffersComponentProps
         style={{
           paddingBottom: 50,
           overflowY: "scroll",
-          height: layout.innerHeight * 0.74,
+          height: layout.innerHeight - 280,
         }}
       >
         {loanOffers.sort((a, b) => {
@@ -228,7 +228,7 @@ function LoanOffersComponent({ loanOffers, onRequest }: LoanOffersComponentProps
           // Compare by interest if amount, duration, and LTV are the same
           return SortHelper.sort(interestSort, a.interest_rate, b.interest_rate);
         }).map((loanOffer, index) => (
-          <div key={index} className={"overflow-y-scroll"}>
+          <div key={index}>
             <LoanOfferComponent key={index} loanOffer={loanOffer} onRequest={onRequest} />
           </div>
         ))}
