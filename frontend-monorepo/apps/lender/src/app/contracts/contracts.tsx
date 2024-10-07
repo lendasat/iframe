@@ -1,3 +1,4 @@
+import { ContractStatus } from "@frontend-monorepo/http-client-borrower";
 import { Contract, contractStatusToLabelString, LiquidationStatus } from "@frontend-monorepo/http-client-lender";
 import { CurrencyFormatter, LtvProgressBar, usePrice } from "@frontend-monorepo/ui-shared";
 import React from "react";
@@ -113,7 +114,9 @@ function ContractsComponent({ loans }: LoansComponentProps) {
                   <Badge bg="primary">{contractStatus}</Badge>
                 </Col>
                 <Col xs={12} md={empty_col.md} className="mb-2 mb-md-0">
-                  <Button onClick={() => navigate(`${contract.id}`)} variant={"primary"}>Details</Button>
+                  <Button onClick={() => navigate(`${contract.id}`)} variant={"primary"}>
+                    {actionFromStatus(contract.status)}
+                  </Button>
                 </Col>
               </Row>
             </Card.Body>
@@ -125,3 +128,32 @@ function ContractsComponent({ loans }: LoansComponentProps) {
 }
 
 export default ContractsComponent;
+
+const actionFromStatus = (status: ContractStatus) => {
+  switch (status) {
+    case ContractStatus.Requested:
+      return "Approve or Reject";
+    case ContractStatus.Approved:
+      return "Details";
+    case ContractStatus.CollateralSeen:
+    case ContractStatus.CollateralConfirmed:
+      return "Payout principal";
+    case ContractStatus.PrincipalGiven:
+      return "Details";
+    case ContractStatus.Closed:
+    case ContractStatus.Closing:
+      return "Details";
+    case ContractStatus.Repaid:
+      return "Details";
+    case ContractStatus.Rejected:
+      return "Details";
+    case ContractStatus.DisputeBorrowerStarted:
+      return "Details";
+    case ContractStatus.DisputeLenderStarted:
+      return "Details";
+    case ContractStatus.DisputeBorrowerResolved:
+      return "Details";
+    case ContractStatus.DisputeLenderResolved:
+      return "Details";
+  }
+};
