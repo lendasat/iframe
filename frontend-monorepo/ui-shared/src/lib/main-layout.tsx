@@ -4,6 +4,7 @@ import React, { ReactNode } from "react";
 import { IconType } from "react-icons";
 import { IoIosNotificationsOutline } from "react-icons/io";
 import { IoChevronForward, IoHelpCircleOutline } from "react-icons/io5";
+import { PiCopyright } from "react-icons/pi";
 import { RiVerifiedBadgeFill } from "react-icons/ri";
 import { TbLayoutSidebarLeftCollapse } from "react-icons/tb";
 import { Menu, MenuItem, Sidebar } from "react-pro-sidebar";
@@ -32,10 +33,10 @@ interface LayoutProps {
 }
 
 export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme, backendVersion, user }) => {
+  const versionString = `${backendVersion.version}-${backendVersion.commit_hash.substring(0, 5)}`;
   const [toggled, setToggled] = React.useState(false);
   const [broken, setBroken] = React.useState(false);
   const [collasped, setCollapsed] = React.useState(false);
-  const layout = window;
 
   return (
     <div
@@ -121,7 +122,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme, back
         </div>
       </Sidebar>
 
-      <main className="w-full h-screen overflow-hidden relative bg-gradient-to-tr from-60% to-100% from-[#FBFAF8] to-pink-700/5">
+      <main className="w-full h-screen flex flex-col pb-2 overflow-hidden relative bg-gradient-to-tr from-60% to-100% from-[#FBFAF8] to-pink-700/5">
+        {/* Header */}
         <Box className="h-[65px] px-5 md:px-8 flex items-center justify-between gap-10 border-b border-black/5">
           <Box className="shrink-0">
             <Flex align={"center"} gap={"5"}>
@@ -164,13 +166,43 @@ export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme, back
             </Flex>
           </Box>
         </Box>
-        <Box
-          className="lg:rounded-tl-2xl"
-          style={{
-            height: layout.innerHeight - 65,
-          }}
-        >
+
+        {/* Content */}
+        <Box className="lg:rounded-tl-2xl flex-1">
           {children}
+        </Box>
+
+        {/* Footer */}
+        <Box className="flex flex-col gap-2 items-center justify-center">
+          <Text as="p" size={"1"} weight={"medium"} className="text-font/70 tracking-wider">
+            {versionString}
+          </Text>
+          <Box className="flex flex-row items-center gap-2">
+            <Link to={"/"} className="flex items-center gap-1 text-font/70 no-underline">
+              <PiCopyright />
+              <Text as="p" size={"1"} weight={"medium"}>
+                {new Date().getFullYear()} Lendasat
+              </Text>
+            </Link>
+            <Text as="span" color="gray">•</Text>
+            <Link
+              to={"https://lendasat.notion.site/Terms-of-Service-100d2f24d4cf801aa6cee15f1b77e11b?pvs=25"}
+              className="flex items-center gap-1 text-font/70 no-underline"
+            >
+              <Text as="p" size={"1"} weight={"medium"}>
+                Terms of Service
+              </Text>
+            </Link>
+            <Text as="span" color="gray">•</Text>
+            <Link
+              to={"https://lendasat.notion.site/Privacy-a91b9883bca1495693654c996f5423e1?pvs=25"}
+              className="flex items-center gap-1 text-font/70 no-underline"
+            >
+              <Text as="p" size={"1"} weight={"medium"}>
+                Privacy Policy
+              </Text>
+            </Link>
+          </Box>
         </Box>
       </main>
     </div>

@@ -8,6 +8,7 @@ import { GiPadlock, GiPadlockOpen } from "react-icons/gi";
 import { GoVerified } from "react-icons/go";
 import { IoIosUnlock } from "react-icons/io";
 import { MdEdit } from "react-icons/md";
+import { PiWarningCircleFill } from "react-icons/pi";
 import { CreateWalletModal } from "./wallet/create-wallet-modal";
 import { UnlockWalletModal } from "./wallet/unlock-wallet-modal";
 
@@ -44,11 +45,10 @@ function MyAccount() {
     <Box
       className="p-4 flex flex-col overflow-y-scroll"
       style={{
-        height: layout.innerHeight - 65,
+        height: layout.innerHeight - 120,
       }}
     >
-      <Heading weight={"medium"} mb={"4"}>Account Settings</Heading>
-      <Box className="bg-dashboard rounded-3xl shadow-sm flex-grow">
+      <Box className="bg-dashboard/50 rounded-2xl shadow-sm flex-grow md:max-h-[800px]">
         <Tabs.Root
           activationMode="manual"
           defaultValue="profile"
@@ -172,7 +172,7 @@ function MyAccount() {
                           </Callout.Root>
                         )}
 
-                      <Box pt={"5"}>
+                      <Box className="md:pt-5">
                         <Flex justify={"end"}>
                           <Button
                             size={"3"}
@@ -204,6 +204,16 @@ function MyAccount() {
             </Tabs.Content>
           </Box>
         </Tabs.Root>
+      </Box>
+      <Box py={"3"} mb={"8"}>
+        <Flex gap={"1"} align={"center"}>
+          <PiWarningCircleFill color="rgb(235, 172, 14)" size={22} />
+          <Text size={"1"} weight={"medium"} className="text-font/60">
+            Do not disclose your password, or seed phrase with anyone, including Lendasat support.
+          </Text>
+        </Flex>
+      </Box>
+      <Box>
       </Box>
     </Box>
   );
