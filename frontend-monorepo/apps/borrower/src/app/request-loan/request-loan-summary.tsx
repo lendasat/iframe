@@ -176,7 +176,7 @@ export function RequestLoanSummary() {
     <Box
       className="overflow-y-scroll p-3 pb-16 md:p-5 lg:p-8"
       style={{
-        height: layout.innerHeight - 65,
+        height: layout.innerHeight - 130,
       }}
     >
       <Grid className="md:grid-cols-4 lg:grid-cols-5 gap-5 items-center">
