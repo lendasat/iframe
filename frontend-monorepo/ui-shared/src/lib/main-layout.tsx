@@ -168,41 +168,40 @@ export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme, back
         </Box>
 
         {/* Content */}
-        <Box className="lg:rounded-tl-2xl flex-1 flex flex-col">
-          <Box className="flex-1">
-            {children}
-          </Box>
-          {/* Footer */}
-          <Box className="flex flex-col gap-2 items-center justify-center">
-            <Text as="p" size={"1"} weight={"medium"} className="text-font/70 tracking-wider">
-              {versionString}
-            </Text>
-            <Box className="flex flex-row items-center gap-2">
-              <Link to={"/"} className="flex items-center gap-1 text-font/70 no-underline">
-                <PiCopyright />
-                <Text as="p" size={"1"} weight={"medium"}>
-                  {new Date().getFullYear()} Lendasat
-                </Text>
-              </Link>
-              <Text as="span" color="gray">•</Text>
-              <Link
-                to={"https://lendasat.notion.site/Terms-of-Service-100d2f24d4cf801aa6cee15f1b77e11b?pvs=25"}
-                className="flex items-center gap-1 text-font/70 no-underline"
-              >
-                <Text as="p" size={"1"} weight={"medium"}>
-                  Terms of Service
-                </Text>
-              </Link>
-              <Text as="span" color="gray">•</Text>
-              <Link
-                to={"https://lendasat.notion.site/Privacy-a91b9883bca1495693654c996f5423e1?pvs=25"}
-                className="flex items-center gap-1 text-font/70 no-underline"
-              >
-                <Text as="p" size={"1"} weight={"medium"}>
-                  Privacy Policy
-                </Text>
-              </Link>
-            </Box>
+        <Box className="lg:rounded-tl-2xl flex-1">
+          {children}
+        </Box>
+
+        {/* Footer */}
+        <Box className="flex flex-col gap-2 items-center justify-center">
+          <Text as="p" size={"1"} weight={"medium"} className="text-font/70 tracking-wider">
+            {versionString}
+          </Text>
+          <Box className="flex flex-row items-center gap-2">
+            <Link to={"/"} className="flex items-center gap-1 text-font/70 no-underline">
+              <PiCopyright />
+              <Text as="p" size={"1"} weight={"medium"}>
+                {new Date().getFullYear()} Lendasat
+              </Text>
+            </Link>
+            <Text as="span" color="gray">•</Text>
+            <Link
+              to={"https://lendasat.notion.site/Terms-of-Service-100d2f24d4cf801aa6cee15f1b77e11b?pvs=25"}
+              className="flex items-center gap-1 text-font/70 no-underline"
+            >
+              <Text as="p" size={"1"} weight={"medium"}>
+                Terms of Service
+              </Text>
+            </Link>
+            <Text as="span" color="gray">•</Text>
+            <Link
+              to={"https://lendasat.notion.site/Privacy-a91b9883bca1495693654c996f5423e1?pvs=25"}
+              className="flex items-center gap-1 text-font/70 no-underline"
+            >
+              <Text as="p" size={"1"} weight={"medium"}>
+                Privacy Policy
+              </Text>
+            </Link>
           </Box>
         </Box>
       </main>
