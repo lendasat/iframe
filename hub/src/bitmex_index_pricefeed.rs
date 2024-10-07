@@ -27,17 +27,19 @@ pub async fn subscribe_index_price(txs: [mpsc::Sender<BitmexIndexPrice>; 2]) -> 
                     Ok(Some(Event::Instrument { data, .. })) => {
                         for instrument in data {
                             for tx in &txs {
-                                if let Err(err) = tx
-                                    .send(BitmexIndexPrice {
-                                        market_price: instrument.market_price,
-                                        timestamp: instrument.timestamp,
-                                    })
-                                    .await
-                                {
-                                    tracing::error!(
-                                        "Failed to notify channel about update {err:#}"
-                                    );
-                                    continue;
+                                if let Some(market_price) = instrument.market_price {
+                                    if let Err(err) = tx
+                                        .send(BitmexIndexPrice {
+                                            market_price,
+                                            timestamp: instrument.timestamp,
+                                        })
+                                        .await
+                                    {
+                                        tracing::error!(
+                                            "Failed to notify channel about update {err:#}"
+                                        );
+                                        continue;
+                                    }
                                 }
                             }
                         }

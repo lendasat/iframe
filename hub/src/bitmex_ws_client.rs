@@ -120,8 +120,8 @@ impl From<wire::BitmexAction> for Action {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Instrument {
     pub symbol: ContractSymbol,
-    pub last_price: Decimal,
-    pub market_price: Decimal,
+    pub last_price: Option<Decimal>,
+    pub market_price: Option<Decimal>,
     pub timestamp: OffsetDateTime,
 }
 
@@ -164,9 +164,9 @@ mod wire {
     pub struct InstrumentData {
         pub symbol: ContractSymbol,
         #[serde(rename = "lastPrice")]
-        pub last_price: Decimal,
+        pub last_price: Option<Decimal>,
         #[serde(rename = "markPrice")]
-        pub market_price: Decimal,
+        pub market_price: Option<Decimal>,
         #[serde(with = "time::serde::rfc3339")]
         pub timestamp: OffsetDateTime,
     }
