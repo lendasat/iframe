@@ -34,7 +34,7 @@ import SimpleRequest from "./request-loan/my-requests";
 
 const menuItems = [
   {
-    label: "Dashboad",
+    label: "Dashboard",
     icon: TbLayoutDashboardFilled,
     path: "/",
     borrower: true,

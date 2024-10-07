@@ -6,6 +6,7 @@ import { IoAddOutline } from "react-icons/io5";
 import { LiaTimesSolid } from "react-icons/lia";
 import { RiFilter2Line } from "react-icons/ri";
 import LoanOffersFilter, { LoanFilter, parseTableSortBy, TableSortBy } from "../request-loan/loan-offers-filter";
+import { Link } from "react-router-dom";
 
 interface FilterOption {
   onLoanFilterChange: (filter: LoanFilter) => void;
@@ -58,11 +59,12 @@ export default function OffersNav(props: FilterOption) {
           </Offcanvas>
         </Box>
         <Box>
-          <Button className="flex items-center gap-1 rounded bg-purple-800/10 transition-colors ease-out duration-300 group/request">
-            <IoAddOutline className="text-xl group-hover/request:rotate-180 transition-transform ease-linear text-base duration-300" />
+          <Button asChild className="flex items-center gap-1 rounded bg-purple-800/10 transition-colors ease-out duration-300 group/request">
+           <Link to={'/request'}>
+           <IoAddOutline className="text-xl group-hover/request:rotate-180 transition-transform ease-linear text-base duration-300" />
             <Text size={"1"} className="text-purple-800 font-semibold">
               Customize a Request
-            </Text>
+            </Text></Link>
           </Button>
         </Box>
       </Flex>
