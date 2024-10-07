@@ -25,8 +25,8 @@ export function ForgotPasswordForm({ handleSubmit }: ForgotPasswordProps) {
       const success = await handleSubmit(email);
       setSuccess(success);
     } catch (err) {
-      console.error("Failed resetting password: ", err);
-      setError(`Failed resetting password. ${err}`);
+      console.error(`Failed resetting password: ${JSON.stringify(err)}`);
+      setError(`Failed resetting password. ${JSON.stringify(err)}`);
     }
     setLoading(false);
   };
