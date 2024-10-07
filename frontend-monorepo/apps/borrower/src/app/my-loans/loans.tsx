@@ -1,4 +1,9 @@
-import { Contract, contractStatusToLabelString, LiquidationStatus } from "@frontend-monorepo/http-client-borrower";
+import {
+  Contract,
+  ContractStatus,
+  contractStatusToLabelString,
+  LiquidationStatus,
+} from "@frontend-monorepo/http-client-borrower";
 import { CurrencyFormatter, LtvProgressBar, usePrice } from "@frontend-monorepo/ui-shared";
 import { Badge, Button, Card, Col, Container, Row } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
@@ -125,7 +130,7 @@ function ContractsComponent({ loans }: LoansComponentProps) {
                   <Badge bg="primary">{contractStatusLabel}</Badge>
                 </Col>
                 <Col xs={12} md={empty_col.md} className="mb-2 mb-md-0">
-                  <Button onClick={() => navigate(`${id}`)} variant={"primary"}>Details</Button>
+                  <Button onClick={() => navigate(`${id}`)} variant={"primary"}>{actionFromStatus(status)}</Button>
                 </Col>
               </Row>
             </Card.Body>
@@ -137,3 +142,32 @@ function ContractsComponent({ loans }: LoansComponentProps) {
 }
 
 export default ContractsComponent;
+
+const actionFromStatus = (status: ContractStatus) => {
+  switch (status) {
+    case ContractStatus.Requested:
+      return "Details";
+    case ContractStatus.Approved:
+      return "Fund it now";
+    case ContractStatus.CollateralSeen:
+    case ContractStatus.CollateralConfirmed:
+      return "Details";
+    case ContractStatus.PrincipalGiven:
+      return "Repay";
+    case ContractStatus.Closed:
+    case ContractStatus.Closing:
+      return "Details";
+    case ContractStatus.Repaid:
+      return "Withdraw collateral";
+    case ContractStatus.Rejected:
+      return "Details";
+    case ContractStatus.DisputeBorrowerStarted:
+      return "Details";
+    case ContractStatus.DisputeLenderStarted:
+      return "Details";
+    case ContractStatus.DisputeBorrowerResolved:
+      return "Details";
+    case ContractStatus.DisputeLenderResolved:
+      return "Details";
+  }
+};

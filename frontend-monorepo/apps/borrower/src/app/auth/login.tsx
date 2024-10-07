@@ -11,16 +11,20 @@ function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const { registered } = location.state as LoginState || {};
+  const oldPath = location.pathname;
 
   const handleLogin = async (email: string, password: string) => {
     await login(email, password);
-    navigate("/");
+    if (oldPath) {
+      navigate(oldPath);
+    } else {
+      navigate("/");
+    }
   };
 
   let defaultUsername = "";
   let defaultPassword = "";
   if (import.meta.env.VITE_BITCOIN_NETWORK === "regtest" || import.meta.env.VITE_BITCOIN_NETWORK === "signet") {
-    console.log(`Im here and this is sparta ${import.meta.env.VITE_BORROWER_USERNAME} gotya?`);
     defaultUsername = import.meta.env.VITE_BORROWER_USERNAME;
   }
   if (import.meta.env.VITE_BITCOIN_NETWORK === "regtest" || import.meta.env.VITE_BITCOIN_NETWORK === "signet") {

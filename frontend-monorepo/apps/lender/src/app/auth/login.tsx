@@ -1,15 +1,21 @@
 import { useAuth } from "@frontend-monorepo/http-client-lender";
 import { LoginForm } from "@frontend-monorepo/ui-shared";
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const oldPath = location.pathname;
 
   const handleLogin = async (email: string, password: string) => {
     await login(email, password);
-    navigate("/");
+    if (oldPath) {
+      navigate(oldPath);
+    } else {
+      navigate("/");
+    }
   };
 
   let defaultUsername = "";
