@@ -2,9 +2,9 @@ import { faInfoCircle, faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useWallet } from "@frontend-monorepo/borrower-wallet";
 import { LoanOffer, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
-import { formatCurrency, usePrice } from "@frontend-monorepo/ui-shared";
-import { StableCoinHelper } from "@frontend-monorepo/ui-shared";
+import { formatCurrency, StableCoinHelper, usePrice } from "@frontend-monorepo/ui-shared";
 import { Badge, Box, Button, Callout, Flex, Grid, Heading, Separator, Text, TextField } from "@radix-ui/themes";
+import { Network, validate } from "bitcoin-address-validation";
 import React, { useState } from "react";
 import { BiError } from "react-icons/bi";
 import { IoIosArrowRoundBack } from "react-icons/io";
@@ -25,6 +25,7 @@ export function RequestLoanSummary() {
   const { loanOffer, loanFilter } = location.state as LocationState;
   const layout = window;
   const [error, setError] = useState("");
+  const [bitcoinAddressInputError, setBitcoinAddressInputError] = useState("");
 
   const ORIGINATOR_FEE = 0.01;
   const { latestPrice } = usePrice();
@@ -149,13 +150,6 @@ export function RequestLoanSummary() {
     },
   };
 
-  const isButtonDisabled = loanAmount === undefined
-    || loanAmount < loanOffer.loan_amount_min
-    || loanAmount > loanOffer.loan_amount_max
-    || amountError != null
-    || !initCoin
-    || !loanAddress.trim();
-
   const addressLabel = initCoin ? `${StableCoinHelper.print(initCoin)} address` : "Address";
 
   const handleSubmitCreateWalletModal = async () => {
@@ -171,6 +165,31 @@ export function RequestLoanSummary() {
 
   const totalAmount = collateral && loanOriginatorFee ? (collateral + loanOriginatorFee) : undefined;
   const totalAmountUsd = totalAmount ? totalAmount * latestPrice : undefined;
+
+  const onBitcoinAddressChange = (address: string) => {
+    let network = Network.mainnet;
+    if (import.meta.env.VITE_BITCOIN_NETWORK === "signet") {
+      network = Network.testnet;
+    } else if (import.meta.env.VITE_BITCOIN_NETWORK === "regtest") {
+      network = Network.regtest;
+    }
+
+    const valid = validate(address, network);
+    if (!valid) {
+      setBitcoinAddressInputError("Invalid address");
+    } else {
+      setBitcoinAddressInputError("");
+    }
+    setBtcAddress(address);
+  };
+
+  const isButtonDisabled = loanAmount === undefined
+    || loanAmount < loanOffer.loan_amount_min
+    || loanAmount > loanOffer.loan_amount_max
+    || amountError != null
+    || !initCoin
+    || !loanAddress.trim()
+    || bitcoinAddressInputError;
 
   return (
     <Box
@@ -224,14 +243,20 @@ export function RequestLoanSummary() {
               </Flex>
               <Separator size={"4"} />
               <Flex direction={"column"} align={"start"} gap={"2"}>
-                <Text as="label" size={"2"} weight={"medium"}>Bitcoin Refund Address</Text>
+                <div className="flex items-center gap-2">
+                  <Text as="label" size={"2"} weight={"medium"}>
+                    Bitcoin Refund Address
+                  </Text>
+                  {/* Error message next to label */}
+                  {bitcoinAddressInputError && <span className="text-red-500 text-sm">{bitcoinAddressInputError}</span>}
+                </div>
                 <TextField.Root
                   className="w-full font-semibold text-sm border-0"
                   size={"3"}
                   color="gray"
                   type="text"
                   value={btcAddress}
-                  onChange={(e) => setBtcAddress(e.target.value)}
+                  onChange={(e) => onBitcoinAddressChange(e.target.value)}
                 >
                   <TextField.Slot className="p-1.5" />
                 </TextField.Root>
