@@ -9,13 +9,16 @@ use rust_decimal::Decimal;
 use serde::Deserialize;
 use serde::Serialize;
 use std::hash::Hash;
+use std::time::Duration;
 use time::OffsetDateTime;
 
 pub async fn stream(network: Network) -> impl Stream<Item = Result<Event>> + Unpin {
     let stream = stream! {
+        let timeout = Duration::from_secs(10);
         let mut stream = bitmex_stream::subscribe(
-                [ "instrument:.BXBT".to_owned()],
-                network,
+            [ "instrument:.BXBT".to_owned()],
+            network,
+            timeout,
         ).boxed();
 
         loop {

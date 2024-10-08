@@ -667,7 +667,7 @@ dependencies = [
 [[package]]
 name = "bitmex-stream"
 version = "0.1.0"
-source = "git+https://github.com/get10101/bitmex-stream.git#e82661db0fed1507b039bc121e182bdd492022f9"
+source = "git+https://github.com/get10101/bitmex-stream?rev=c68668b#c68668b8fb0a2665046d1ad8a3e552d0f4e3a968"
 dependencies = [
  "anyhow",
  "async-stream",

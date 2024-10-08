@@ -13,7 +13,7 @@ axum = { version = "0.7.5", features = ["ws"] }
 axum-extra = { version = "0.9.0", features = ["cookie"] }
 bitcoin = { version = "0.32.2", features = ["bitcoinconsensus", "serde"] }
 bitcoin-units = "0.1.2"
-bitmex-stream = { git = "https://github.com/get10101/bitmex-stream.git" }
+bitmex-stream = { git = "https://github.com/get10101/bitmex-stream", rev = "c68668b" }
 descriptor-wallet = { path = "../descriptor-wallet" }
 futures = "0.3"
 handlebars = "4.3.7"
