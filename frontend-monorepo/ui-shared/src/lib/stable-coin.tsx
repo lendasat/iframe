@@ -66,7 +66,7 @@ export function StableCoinDropdown({
 }: {
   onSelect: (coin: StableCoin) => void;
   coins: StableCoin[];
-  filter: boolean;
+  filter?: boolean;
   defaultCoin?: StableCoin; // Optional prop for default selected coin
 }) {
   // Initialize selectedCoin with defaultCoin if provided, otherwise fall back to StableCoin.USDT_SN
