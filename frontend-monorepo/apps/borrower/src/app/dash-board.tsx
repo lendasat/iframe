@@ -1,5 +1,5 @@
 import { FullLogoWhiteBg } from "@frontend-monorepo/ui-shared";
-import { Box, Button, Grid, Heading, Separator, Text } from "@radix-ui/themes";
+import { Box, Button, Flex, Grid, Heading, Separator, Text } from "@radix-ui/themes";
 import React from "react";
 import { Col, Container, Row } from "react-bootstrap";
 import { IconType } from "react-icons";
@@ -9,6 +9,10 @@ import { FaXTwitter } from "react-icons/fa6";
 import { IoWalletOutline } from "react-icons/io5";
 import { RiCustomerService2Fill } from "react-icons/ri";
 import { Link } from "react-router-dom";
+import LoanCarousel from "./components/LoanCarousel";
+import DashboardTransaction from "./components/DashboardTransaction";
+import SecurityImg from "../assets/security-icon.png";
+
 
 function DashBoard() {
   const { innerHeight } = window;
@@ -60,12 +64,11 @@ function DashBoard() {
     // </Container>
 
     <Box
-      className="flex flex-col overflow-y-scroll p-6 md:p-8"
+      className="flex flex-col overflow-y-scroll p-4 md:p-8"
       height={innerHeight - 120 + "px"}
     >
-      <Grid className="md:grid-cols-2 xl:grid-cols-[minmax(350px,_1fr)_minmax(450px,_1fr)_minmax(300px,_1fr)] gap-5 flex-1 ">
-        {/* First Column */}
-        <Box className="bg-gradient-to-b from-white to-white/10 backdrop-blur rounded-2xl p-5">
+      <Grid className="md:grid-cols-2 md:grid-rows-2 xl:grid-cols-[minmax(350px,_1fr)_minmax(450px,_1fr)_minmax(300px,_1fr)] gap-5">
+        <Box className="md:bg-gradient-to-b from-white to-white/10 backdrop-blur rounded-2xl p-5 md:row-span-2">
           <Text as="p" weight={"medium"} className="text-font" size={"3"}>Loan Secured</Text>
           {/* Total Loan Received */}
           <Heading size={"8"} mt={"3"} className="text-font-dark">$756,809.32</Heading>
@@ -123,11 +126,25 @@ function DashBoard() {
           </Box>
         </Box>
 
-        {/* Second Column */}
-        <Box className="bg-gradient-to-b from-white to-white/10 backdrop-blur rounded-2xl p-5">
-          
+        <Box className="p-5 rounded-2xl xl:bg-white">
+          <LoanCarousel />
         </Box>
-        <Box className="bg-gradient-to-b from-white to-white/10 backdrop-blur rounded-2xl p-5"></Box>
+        <Box className="bg-white rounded-2xl p-5 min-h-60 flex flex-col items-center justify-center">
+        <img src={SecurityImg} alt="credit card" className="max-w-32" />
+          <Text size={'2'} className="text-font/60 max-w-[250px] text-center"> Lendasat is your gateway to borrow against your Bitcoin in a non-custodial and peer-2-peer way.</Text>
+        </Box>
+
+        <Box className="bg-gradient-to-b from-white to-white/10 backdrop-blur rounded-2xl p-5 md:col-span-2 min-h-72 h-full">
+          <Flex align={"center"} justify={"between"} pr={"3"} pb={'3'}>
+            <Text as="p" weight={"medium"} className="text-font" size={"3"}>Transaction</Text>
+            <Button variant="ghost" className="hover:bg-transparent text-purple-800 hover:text-font-dark font-medium">
+              <Link to={"/history"}>
+                View All
+              </Link>
+            </Button>
+          </Flex>
+          <DashboardTransaction/>
+        </Box>
       </Grid>
     </Box>
   );
