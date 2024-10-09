@@ -34,52 +34,6 @@ function DashBoard() {
   ).length;
 
   return (
-    // <Container className="">
-    //   <Row className="justify-content-center">
-    //     {
-    //       /* <Col md={6} className="d-flex flex-column align-items-center">
-    //       <FullLogoWhiteBg />
-    //       <h1 className="mt-4">Welcome to Lendasat</h1>
-    //       <p className="lead mt-3">
-    //         Lendasat is your gateway to borrow against your Bitcoin in a non-custodial and peer-2-peer way.
-    //       </p>
-    //       <div className="mt-4">
-    //         <Button variant="primary" href="/request-loan" className="me-3">Get a Loan</Button>
-    //         <Button variant="secondary" href="https://whitepaper.lendasat.com/lendasat-whitepaper.pdf" target="_blank">
-    //           Learn How It Works
-    //         </Button>
-    //       </div>
-    //       <Row className="justify-content-center mt-5">
-    //         <Col md={6} className="d-flex justify-content-around">
-    //           <a href="https://x.com/lendasat" target="_blank" rel="noopener noreferrer" className="mx-3">
-    //             <FaXTwitter size={"30"} color={"black"} />
-    //           </a>
-    //           <a href="https://lendasat.com" target="_blank" rel="noopener noreferrer" className="mx-3">
-    //             <FaGlobe size={"30"} color={"black"} />
-    //           </a>
-    //           <a href="https://github.com/lendasat" target="_blank" rel="noopener noreferrer" className="mx-3">
-    //             <FaGithub size={"30"} color={"black"} />
-    //           </a>
-    //           <a
-    //             href="https://discord.gg/kyxqWFKMCF"
-    //             target="_blank"
-    //             rel="noopener noreferrer"
-    //             className="mx-3"
-    //           >
-    //             <FaDiscord size={"30"} color={"black"} />
-    //           </a>
-    //         </Col>
-    //       </Row>
-    //     </Col> */
-    //     }
-    //   </Row>
-    //   <DashHeader label={"Dashboard"} />
-
-    //   <Button asChild>
-    //     <Link to={"/logout"}>Logout</Link>
-    //   </Button>
-    // </Container>
-
     <Box
       className="flex flex-col overflow-y-scroll p-4 md:p-8"
       height={innerHeight - 120 + "px"}
@@ -141,8 +95,8 @@ function DashBoard() {
         <Box className="p-5 rounded-2xl xl:bg-white">
           <LoanCarousel />
         </Box>
-        <Box className="bg-white rounded-2xl p-5 min-h-60 flex flex-col items-center justify-center">
-          <img src={SecurityImg} alt="credit card" className="max-w-32" />
+        <Box className="bg-white rounded-2xl p-5 min-h-72 flex flex-col items-center justify-center">
+          <img src={SecurityImg} alt="credit card" className="max-w-32 animate-[bounce_2s_ease-in-out_infinite]" />
           <Text size={"2"} className="text-font/60 max-w-[250px] text-center">
             Lendasat is your gateway to borrow against your Bitcoin in a non-custodial and peer-2-peer way.
           </Text>
