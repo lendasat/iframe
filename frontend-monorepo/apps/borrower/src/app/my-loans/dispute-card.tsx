@@ -1,6 +1,7 @@
+import { IconProp } from "@fortawesome/fontawesome-svg-core";
 import { faChevronDown, faChevronUp, faExclamationCircle, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import React, { useEffect, useState } from "react";
+import React, { ReactNode, useEffect, useState } from "react";
 import { Alert, Button, Card, Col, Collapse, Dropdown, Form, Row } from "react-bootstrap";
 
 interface ExpandableDisputeCardProps {
@@ -11,7 +12,13 @@ interface ExpandableDisputeCardProps {
   disputeInProgress: boolean;
 }
 
-const AlertMessage = ({ variant, icon, children }) => (
+interface AlertMessageProps {
+  variant: string | undefined;
+  icon: IconProp;
+  children: ReactNode;
+}
+
+const AlertMessage = ({ variant, icon, children }: AlertMessageProps) => (
   <Alert variant={variant}>
     <FontAwesomeIcon icon={icon} className="me-2" />
     {children}
@@ -126,7 +133,7 @@ export const ExpandableDisputeCard = (
               </Row>
             </Form>
             {!disputeInProgress && error && (
-              <AlertMessage variant="danger" icon={faExclamationCircle} className="mt-3">
+              <AlertMessage variant="danger" icon={faExclamationCircle}>
                 {error}
               </AlertMessage>
             )}

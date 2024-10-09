@@ -21,7 +21,7 @@ export function CollateralContractDetails({
 }: CollateralContractDetailsProps) {
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = async (text) => {
+  const handleCopy = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);

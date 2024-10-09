@@ -5,11 +5,11 @@ import { LoanOffer, useBorrowerHttpClient } from "@frontend-monorepo/http-client
 import { formatCurrency, StableCoinHelper, usePrice } from "@frontend-monorepo/ui-shared";
 import { Badge, Box, Button, Callout, Flex, Grid, Heading, Separator, Text, TextField } from "@radix-ui/themes";
 import { Network, validate } from "bitcoin-address-validation";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { BiError } from "react-icons/bi";
 import { IoIosArrowRoundBack } from "react-icons/io";
 import { MdSecurity } from "react-icons/md";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { CreateWalletModal } from "../wallet/create-wallet-modal";
 import { UnlockWalletModal } from "../wallet/unlock-wallet-modal";
 import { LoanFilter } from "./loan-offers-filter";
@@ -22,7 +22,42 @@ type LocationState = {
 
 export function RequestLoanSummary() {
   const location = useLocation();
-  const { loanOffer, loanFilter } = location.state as LocationState;
+  let loanOfferFromState: LoanOffer | undefined;
+  let loanFilterFromState: LoanFilter | undefined;
+  if (location.state) {
+    const { loanOffer, loanFilter } = location.state as LocationState;
+    loanOfferFromState = loanOffer;
+    loanFilterFromState = loanFilter;
+  }
+  const { id } = useParams();
+  const [loanOffer, setLoanOffer] = useState<LoanOffer | undefined>(loanOfferFromState);
+  const { getLoanOffer } = useBorrowerHttpClient();
+
+  useEffect(() => {
+    if (!loanOfferFromState && id) {
+      getLoanOffer(id).then((offer) => {
+        setLoanOffer(offer);
+      });
+    } else if (loanOfferFromState) {
+      // do nothing
+    } else {
+      console.log(`Error: no id nor state set}`);
+    }
+  }, [id, loanOfferFromState, setLoanOffer]);
+
+  if (!loanOffer) {
+    return <>loading...</>;
+  } else {
+    return <RequestLoanSummaryInner loanOffer={loanOffer!} loanFilter={loanFilterFromState} />;
+  }
+}
+
+interface RequestLoanSummaryInnerProps {
+  loanOffer: LoanOffer;
+  loanFilter?: LoanFilter;
+}
+
+export function RequestLoanSummaryInner({ loanOffer, loanFilter }: RequestLoanSummaryInnerProps) {
   const layout = window;
   const [error, setError] = useState("");
   const [bitcoinAddressInputError, setBitcoinAddressInputError] = useState("");
@@ -33,12 +68,12 @@ export function RequestLoanSummary() {
   const { postContractRequest } = useBorrowerHttpClient();
 
   // Initialize filters
-  let initMonths = loanFilter.period || loanOffer.duration_months_min;
+  let initMonths = loanFilter?.period || loanOffer.duration_months_min;
   if (initMonths > loanOffer.duration_months_max) {
     initMonths = loanOffer.duration_months_max;
   }
 
-  let initAmount = loanFilter.amount || loanOffer.loan_amount_min;
+  let initAmount = loanFilter?.amount || loanOffer.loan_amount_min;
   if (initAmount > loanOffer.loan_amount_max) {
     initAmount = loanOffer.loan_amount_max;
   }
