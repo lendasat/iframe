@@ -80,21 +80,21 @@ const NewMenuList = [
   {
     borrow: [
       {
-        label: "Offers",
+        label: "Request Loan",
+        path: "/requests",
+        icon: GoGitPullRequest,
+        target: "_self",
+      },
+      {
+        label: "Available offers",
         path: "/request-loan",
         icon: BsBank,
         target: "_self",
       },
       {
-        label: "Loans",
+        label: "My Loans",
         path: "/my-contracts",
         icon: IoWalletOutline,
-        target: "_self",
-      },
-      {
-        label: "Requests",
-        path: "/requests",
-        icon: GoGitPullRequest,
         target: "_self",
       },
     ],

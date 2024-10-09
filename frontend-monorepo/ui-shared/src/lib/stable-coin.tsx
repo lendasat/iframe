@@ -1,5 +1,7 @@
-import { Select } from "@radix-ui/themes";
-import React, { useState } from "react";
+import { Button, Select } from "@radix-ui/themes";
+import React, { MouseEventHandler, useState } from "react";
+import { IoCloseCircle } from "react-icons/io5";
+import { MdOutlineClear } from "react-icons/md";
 
 // Enum and Helper Class
 export enum StableCoin {
@@ -64,65 +66,97 @@ export function StableCoinDropdown({
   filter,
   defaultCoin,
 }: {
-  onSelect: (coin: StableCoin) => void;
+  onSelect: (coin?: StableCoin) => void;
   coins: StableCoin[];
   filter?: boolean;
   defaultCoin?: StableCoin; // Optional prop for default selected coin
 }) {
   // Initialize selectedCoin with defaultCoin if provided, otherwise fall back to StableCoin.USDT_SN
-  const [selectedCoin, setSelectedCoin] = useState<StableCoin | undefined>(defaultCoin);
+  const [selectedCoin, setSelectedCoin] = useState<StableCoin | "disabled">(defaultCoin ?? "disabled");
 
   // Reseting choosen coin
   React.useEffect(() => {
     if (!filter) {
-      setSelectedCoin(defaultCoin);
+      setSelectedCoin(defaultCoin ?? "disabled");
     }
   });
 
   const handleChange = (value: string) => {
-    const selectedValue = value as StableCoin;
-    setSelectedCoin(selectedValue);
+    const selectedValue = parseStableCoin(value);
+    setSelectedCoin(selectedValue ?? "disabled");
     onSelect(selectedValue);
+  };
+
+  const handleClear = (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    setSelectedCoin("disabled");
+    onSelect(undefined);
   };
 
   if (coins.length === 1) {
     return (
-      <Select.Root
-        value={selectedCoin}
-        onValueChange={handleChange}
-      >
-        <Select.Trigger
-          variant={"surface"}
-          className="shadow-none focus-visible:outline-none p-3 outline-none h-8 font-normal text-sm w-auto border z-50 rounded-lg"
-        />
-        <Select.Content highContrast color="purple" className="font-normal text-sm">
-          <Select.Item key={coins[0]} value={coins[0]}>
-            {StableCoinHelper.print(coins[0])}
-          </Select.Item>
-        </Select.Content>
-      </Select.Root>
+      <div className="flex items-center space-x-2 max-w-full">
+        <div className="w-full">
+          <Select.Root
+            value={selectedCoin}
+            onValueChange={handleChange}
+          >
+            <Select.Trigger
+              variant="surface"
+              className="shadow-none focus-visible:outline-none p-3 outline-none h-8 font-normal text-sm w-auto border z-50 rounded-lg"
+            />
+            <Select.Content highContrast color="purple" className="font-normal text-sm">
+              <Select.Item key={coins[0]} value={coins[0]}>
+                {StableCoinHelper.print(coins[0])}
+              </Select.Item>
+              {/* Add more Select.Item components for other coins if needed */}
+            </Select.Content>
+          </Select.Root>
+
+          <Button
+            variant="outline"
+            onClick={handleClear}
+            aria-label="Clear selection"
+            type={"button"}
+          >
+            <MdOutlineClear size={"16px"} />
+          </Button>
+        </div>
+      </div>
     );
   } else {
     return (
-      <Select.Root
-        value={selectedCoin == undefined ? "disabled" : selectedCoin}
-        onValueChange={handleChange}
-        defaultValue={"disabled"}
-      >
-        <Select.Trigger
-          variant={"surface"}
-          className="shadow-none focus-visible:outline-none p-3 outline-none h-10 font-normal text-sm border rounded-lg w-full"
-        />
+      <div className="flex items-center space-x-2 max-w-full">
+        <div className="w-full">
+          <Select.Root
+            value={selectedCoin}
+            onValueChange={handleChange}
+            defaultValue={"disabled"}
+          >
+            <Select.Trigger
+              variant={"surface"}
+              className="shadow-none focus-visible:outline-none p-3 outline-none h-10 font-normal text-sm border rounded-lg w-full max-w-full"
+            />
 
-        <Select.Content highContrast color="purple" className="font-normal text-sm z-50">
-          <Select.Item value="disabled" disabled>-- Select a coin --</Select.Item>
-          {coins.map((coin: StableCoin) => (
-            <Select.Item key={coin} value={coin}>
-              {StableCoinHelper.print(coin)}
-            </Select.Item>
-          ))}
-        </Select.Content>
-      </Select.Root>
+            <Select.Content highContrast color="purple" className="font-normal text-sm z-50">
+              <Select.Item value="disabled">-- Select a coin --</Select.Item>
+              {coins.map((coin: StableCoin) => (
+                <Select.Item key={coin} value={coin}>
+                  {StableCoinHelper.print(coin)}
+                </Select.Item>
+              ))}
+            </Select.Content>
+          </Select.Root>
+        </div>
+        <Button
+          variant="outline"
+          onClick={handleClear}
+          aria-label="Clear selection"
+          className="flex-shrink-0"
+        >
+          <MdOutlineClear size={"16px"} />
+        </Button>
+      </div>
     );
   }
 }

@@ -30,7 +30,7 @@ import Profile from "./profile";
 import RequestLoan from "./request-loan/request-loan";
 import { RequestLoanSummary } from "./request-loan/request-loan-summary";
 import "./../styles.css";
-import RequestMade from "./request-loan/my-requests";
+import SimpleRequest from "./request-loan/my-requests";
 
 const menuItems = [
   {
@@ -105,7 +105,7 @@ function MainLayoutComponents() {
               <Route index element={<MyLoans />} />
               <Route path={":id"} element={<ContractDetailsOverview />} />
             </Route>
-            <Route path="/requests" element={<RequestMade />} />
+            <Route path="/requests" element={<SimpleRequest />} />
             <Route path="/history" element={<History />} />
             <Route path="/setting" element={<MyAccount />} />
             <Route path="/logout" element={<Logout />} />

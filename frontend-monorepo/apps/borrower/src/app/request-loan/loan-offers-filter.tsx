@@ -76,8 +76,12 @@ function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
     },
   };
 
-  function onStableCoinSelect(value: string) {
-    const filter: LoanFilter = { ...loanFilter, stableCoin: parseStableCoin(value) };
+  function onStableCoinSelect(value: StableCoin | undefined) {
+    let stableCoin;
+    if (value) {
+      stableCoin = value;
+    }
+    const filter: LoanFilter = { ...loanFilter, stableCoin };
 
     onChange(filter);
   }

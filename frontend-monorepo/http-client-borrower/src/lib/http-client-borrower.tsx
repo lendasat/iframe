@@ -30,7 +30,7 @@ export class HttpClientBorrower extends BaseHttpClient {
         );
         throw new Error(message);
       } else {
-        throw new Error(`Could not fetch version ${JSON.stringify(error)}`);
+        throw new Error(`Could not fetch loan offers ${JSON.stringify(error)}`);
       }
     }
   }
