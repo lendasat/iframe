@@ -14,10 +14,12 @@ import { Form } from "react-bootstrap";
 import { BsSearch } from "react-icons/bs";
 import { IoInformationCircleOutline } from "react-icons/io5";
 import { TfiTarget } from "react-icons/tfi";
+import { useNavigate } from "react-router-dom";
 import EmptyResult from "../../assets/search.png";
 
 export default function SimpleRequest() {
   const { innerHeight } = window;
+  const navigate = useNavigate();
   const [advanceSearch, setAdvanceSearch] = React.useState<boolean>(false);
   const [adsSearchLoading, setAdsSearchLoading] = React.useState<boolean>(false);
   const [isLoading, setIsLoading] = React.useState(false);
@@ -80,7 +82,7 @@ export default function SimpleRequest() {
     { loanAmount, duration, wantedCoin, minLtv, maxInterest }: OfferFilter,
   ) {
     setIsLoading(true);
-    let sortedAndFiltered = availableOffers
+    const sortedAndFiltered = availableOffers
       .filter((offer) => {
         if (!loanAmount) {
           return false;
@@ -94,7 +96,7 @@ export default function SimpleRequest() {
         return offer.duration_months_max >= duration && offer.duration_months_min <= duration;
       }).filter((offer) => {
         if (advanceSearch && wantedCoin) {
-          let mapFromBackend = StableCoinHelper.mapFromBackend(offer.loan_asset_chain, offer.loan_asset_type);
+          const mapFromBackend = StableCoinHelper.mapFromBackend(offer.loan_asset_chain, offer.loan_asset_type);
           return wantedCoin == mapFromBackend;
         } else {
           return true;
@@ -410,7 +412,14 @@ export default function SimpleRequest() {
                       interest={bestOffer.interest_rate}
                       ltv={bestOffer.min_ltv}
                       coin={StableCoinHelper.mapFromBackend(bestOffer.loan_asset_chain, bestOffer.loan_asset_type)!}
-                      onRequest={() => undefined}
+                      onRequest={() => {
+                        navigate(`/request-loan/${bestOffer.id}`, {
+                          state: {
+                            loanOffer: bestOffer,
+                            loanFilter: { amount: loanAmount, stableCoin: stableCoin, ltv: ltv, period: loanDuration },
+                          },
+                        });
+                      }}
                     />
                   </Box>
                 </>

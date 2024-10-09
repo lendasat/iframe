@@ -6,6 +6,7 @@ use crate::routes::borrower::auth::jwt_auth;
 use crate::routes::borrower::contracts::LenderProfile;
 use crate::routes::AppState;
 use anyhow::Context;
+use axum::extract::Path;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::middleware;
@@ -24,6 +25,13 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
         .route(
             "/api/offers",
             get(get_all_available_loan_offers).route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                jwt_auth::auth,
+            )),
+        )
+        .route(
+            "/api/offer/:id",
+            get(get_loan_offer).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
                 jwt_auth::auth,
             )),
@@ -105,6 +113,68 @@ pub async fn get_all_available_loan_offers(
     }
 
     Ok((StatusCode::OK, Json(ret)))
+}
+
+#[instrument(skip_all, err(Debug))]
+pub async fn get_loan_offer(
+    State(data): State<Arc<AppState>>,
+    Path(id): Path<String>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    let loan = db::loan_offers::loan_by_id(&data.db, id.as_str())
+        .await
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Database error: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
+
+    match loan {
+        None => {
+            let error_response = ErrorResponse {
+                message: "Loan offer not found".to_string(),
+            };
+            return Err((StatusCode::INTERNAL_SERVER_ERROR, Json(error_response)));
+        }
+        Some(loan_offer) => {
+            let lender = db::lenders::get_user_by_id(&data.db, &loan_offer.lender_id)
+                .await
+                .map_err(|error| {
+                    let error_response = ErrorResponse {
+                        message: format!("Database error: {}", error),
+                    };
+                    (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+                })?
+                .context("No lender found for contract")
+                .map_err(|error| {
+                    let error_response = ErrorResponse {
+                        message: format!("Illegal state error: {}", error),
+                    };
+                    (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+                })?;
+            Ok((
+                StatusCode::OK,
+                Json(LoanOffer {
+                    id: loan_offer.id,
+                    lender: LenderProfile {
+                        id: lender.id,
+                        name: lender.name,
+                    },
+                    name: loan_offer.name,
+                    min_ltv: loan_offer.min_ltv,
+                    interest_rate: loan_offer.interest_rate,
+                    loan_amount_min: loan_offer.loan_amount_min,
+                    loan_amount_max: loan_offer.loan_amount_max,
+                    duration_months_min: loan_offer.duration_months_min,
+                    duration_months_max: loan_offer.duration_months_max,
+                    loan_asset_type: loan_offer.loan_asset_type,
+                    loan_asset_chain: loan_offer.loan_asset_chain,
+                    status: loan_offer.status,
+                    loan_repayment_address: loan_offer.loan_repayment_address,
+                }),
+            ))
+        }
+    }
 }
 
 #[derive(Debug, Serialize)]

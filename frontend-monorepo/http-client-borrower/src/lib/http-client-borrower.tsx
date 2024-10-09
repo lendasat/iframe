@@ -35,6 +35,25 @@ export class HttpClientBorrower extends BaseHttpClient {
     }
   }
 
+  async getLoanOffer(id: string): Promise<LoanOffer | undefined> {
+    try {
+      const response: AxiosResponse<LoanOffer> = await this.httpClient.get(`/api/offer/${id}`);
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to fetch loan offer: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not fetch loan offer ${JSON.stringify(error)}`);
+      }
+    }
+  }
+
   async postLoanOffer(offer: LoanOffer): Promise<LoanOffer | undefined> {
     try {
       const response: AxiosResponse<LoanOffer> = await this.httpClient.post("/api/offers/create", offer);
@@ -243,6 +262,7 @@ export class HttpClientBorrower extends BaseHttpClient {
 type BorrowerHttpClientContextType = Pick<
   HttpClientBorrower,
   | "getLoanOffers"
+  | "getLoanOffer"
   | "postLoanOffer"
   | "postContractRequest"
   | "getContracts"
@@ -288,6 +308,7 @@ export const HttpClientBorrowerProvider: React.FC<HttpClientProviderProps> = ({ 
 
   const borrowerClientFunctions: BorrowerHttpClientContextType = {
     getLoanOffers: httpClient.getLoanOffers.bind(httpClient),
+    getLoanOffer: httpClient.getLoanOffer.bind(httpClient),
     postLoanOffer: httpClient.postLoanOffer.bind(httpClient),
     postContractRequest: httpClient.postContractRequest.bind(httpClient),
     getContracts: httpClient.getContracts.bind(httpClient),
