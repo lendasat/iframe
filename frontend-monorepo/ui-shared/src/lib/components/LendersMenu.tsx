@@ -1,14 +1,13 @@
 import { Box, Separator } from "@radix-ui/themes";
 import { BsBank } from "react-icons/bs";
 import { FiHome } from "react-icons/fi";
-import { GoGitPullRequest } from "react-icons/go";
 import { HiOutlineSupport } from "react-icons/hi";
-import { IoWalletOutline } from "react-icons/io5";
+import { IoCreateOutline, IoWalletOutline } from "react-icons/io5";
 import { LuActivity, LuSettings } from "react-icons/lu";
 import { Menu, MenuItem } from "react-pro-sidebar";
 import { NavLink } from "react-router-dom";
 
-export default function BorrowerMenu() {
+export default function LendersMenu() {
   return (
     <Menu
       style={{
@@ -35,9 +34,9 @@ export default function BorrowerMenu() {
         },
       }}
     >
-      {NewMenuList.map((items, index) => (
+      {LendersMenuList.map((items, index) => (
         <Box key={index} className={index === 0 ? "px-3" : "px-3 pt-[5vh]"}>
-          {items.borrow.map((item, idx) => (
+          {items.lender.map((item, idx) => (
             <MenuItem
               key={idx}
               component={
@@ -52,16 +51,22 @@ export default function BorrowerMenu() {
               {item.label}
             </MenuItem>
           ))}
-          {items.separator && <Separator size={"4"} color="gray" className="opacity-40 mt-[5vh]" />}
+          {items.separator && (
+            <Separator
+              size={"4"}
+              color="gray"
+              className="opacity-40 mt-[5vh]"
+            />
+          )}
         </Box>
       ))}
     </Menu>
   );
 }
 
-const NewMenuList = [
+const LendersMenuList = [
   {
-    borrow: [
+    lender: [
       {
         label: "home",
         path: "/",
@@ -78,16 +83,16 @@ const NewMenuList = [
     separator: true,
   },
   {
-    borrow: [
+    lender: [
       {
-        label: "Request Loan",
-        path: "/requests",
-        icon: GoGitPullRequest,
+        label: "Create an offer",
+        path: "/create-loan-offer",
+        icon: IoCreateOutline,
         target: "_self",
       },
       {
-        label: "Available offers",
-        path: "/request-loan",
+        label: "loan proposal",
+        path: "/my-offers",
         icon: BsBank,
         target: "_self",
       },
@@ -101,7 +106,7 @@ const NewMenuList = [
     separator: true,
   },
   {
-    borrow: [
+    lender: [
       {
         label: "settings",
         path: "/setting",

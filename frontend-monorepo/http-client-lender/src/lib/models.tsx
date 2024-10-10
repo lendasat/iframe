@@ -79,6 +79,8 @@ export interface LoanOffer {
   loan_asset_type: string;
   loan_asset_chain: string;
   status: LoanOfferStatus;
+  created_at: string;
+  updated_at: string;
 }
 
 export function contractStatusToLabelString(status: ContractStatus): string {

@@ -107,7 +107,7 @@ const CreateLoanOffer: React.FC = () => {
     <Form onSubmit={handleSubmit}>
       <Box
         style={{
-          height: layout.innerHeight - 65,
+          height: layout.innerHeight - 130,
           overflowY: "scroll",
         }}
       >

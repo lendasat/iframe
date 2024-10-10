@@ -10,6 +10,7 @@ import { TbLayoutSidebarLeftCollapse } from "react-icons/tb";
 import { Menu, MenuItem, Sidebar } from "react-pro-sidebar";
 import { Link, NavLink } from "react-router-dom";
 import BorrowerMenu from "./components/BorrowerMenu";
+import LendersMenu from "./components/LendersMenu";
 import { SearchBar } from "./components/SearchBar";
 import { SidebarHeader } from "./components/SidebarHeader";
 
@@ -66,28 +67,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme, back
               <TbLayoutSidebarLeftCollapse size={20} />
             </IconButton>
           </Box>
-          {menuItems[0].borrower ? <BorrowerMenu /> : (
-            <Menu className="h-full w-full">
-              {menuItems.map((item, index) => (
-                <MenuItem
-                  key={index}
-                  className="hover:bg-transparent px-3"
-                  id="navLink"
-                  component={
-                    <NavLink
-                      className="px-1 h-auto text-font text-base rounded-xl font-medium py-1.5 aria-[current=page]:bg-active-nav mb-1"
-                      to={item.path}
-                      target={item.target ? item.target : "_self"}
-                      rel="noopener noreferrer"
-                    />
-                  }
-                  icon={<item.icon className="text-lg -mr-4" />}
-                >
-                  {item.label}
-                </MenuItem>
-              ))}
-            </Menu>
-          )}
+          {menuItems[0].borrower ? <BorrowerMenu /> : <LendersMenu />}
           {user && (
             <Link to={"setting"} className="w-full px-3">
               <Box className="h-14 shadow-sm w-full bg-white/90 rounded-xl p-3 flex flex-row items-center justify-between">
