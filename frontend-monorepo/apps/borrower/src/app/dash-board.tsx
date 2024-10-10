@@ -9,10 +9,9 @@ import { FaXTwitter } from "react-icons/fa6";
 import { IoWalletOutline } from "react-icons/io5";
 import { RiCustomerService2Fill } from "react-icons/ri";
 import { Link } from "react-router-dom";
-import LoanCarousel from "./components/LoanCarousel";
-import DashboardTransaction from "./components/DashboardTransaction";
 import SecurityImg from "../assets/security-icon.png";
-
+import DashboardTransaction from "./components/DashboardTransaction";
+import LoanCarousel from "./components/LoanCarousel";
 
 function DashBoard() {
   const { innerHeight } = window;
@@ -130,12 +129,14 @@ function DashBoard() {
           <LoanCarousel />
         </Box>
         <Box className="bg-white rounded-2xl p-5 min-h-60 flex flex-col items-center justify-center">
-        <img src={SecurityImg} alt="credit card" className="max-w-32" />
-          <Text size={'2'} className="text-font/60 max-w-[250px] text-center"> Lendasat is your gateway to borrow against your Bitcoin in a non-custodial and peer-2-peer way.</Text>
+          <img src={SecurityImg} alt="credit card" className="max-w-32" />
+          <Text size={"2"} className="text-font/60 max-w-[250px] text-center">
+            Lendasat is your gateway to borrow against your Bitcoin in a non-custodial and peer-2-peer way.
+          </Text>
         </Box>
 
         <Box className="bg-gradient-to-b from-white to-white/10 backdrop-blur rounded-2xl p-5 md:col-span-2 min-h-72 h-full">
-          <Flex align={"center"} justify={"between"} pr={"3"} pb={'3'}>
+          <Flex align={"center"} justify={"between"} pr={"3"} pb={"3"}>
             <Text as="p" weight={"medium"} className="text-font" size={"3"}>Transaction</Text>
             <Button variant="ghost" className="hover:bg-transparent text-purple-800 hover:text-font-dark font-medium">
               <Link to={"/history"}>
@@ -143,7 +144,7 @@ function DashBoard() {
               </Link>
             </Button>
           </Flex>
-          <DashboardTransaction/>
+          <DashboardTransaction />
         </Box>
       </Grid>
     </Box>
