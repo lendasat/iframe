@@ -20,7 +20,7 @@ import { FaFileExport, FaPenNib } from "react-icons/fa";
 import { IoReceipt } from "react-icons/io5";
 import { MdOutlineSwapCalls } from "react-icons/md";
 import { Await, useParams } from "react-router-dom";
-import LendasatLogo from "./../../../../../ui-shared/src/lib/assets/lendasat.png";
+import LendasatLogo from "./../../assets/lendasat.png";
 import BannerImg from "./../../assets/banner.png";
 import ReceipImg from "./../../assets/receipt_img.png";
 import { LoanAmount, LoanDuration } from "../create-loan-offer";
@@ -44,6 +44,22 @@ function MyLoanOfferDetails() {
     }
   };
 
+  // Edit loan Information
+
+  //  Should be replaced with the current offer values
+  const [loanAmount, setLoanAmount] = useState<LoanAmount>({
+    min: 1000,
+    max: 10000,
+  });
+  const [loanDuration, setLoanDuration] = useState<LoanDuration>({
+    min: 3,
+    max: 18,
+  });
+  const [ltv, setLtv] = useState<number>(0.5);
+  const [interest, setInterest] = useState<number>(0.3);
+  const [isLoading, setIsLoading] = useState(false);
+
+
   return (
     <Suspense>
       <Await
@@ -58,7 +74,7 @@ function MyLoanOfferDetails() {
             <Box className="rounded-full bg-white h-52 w-52 overflow-hidden flex items-center justify-center">
               <img src={ReceipImg} alt="credit card" className="max-w-52" />
             </Box>
-            <Text className="text-font/50" size={"2"}>We would let you know when you perform an activity...</Text>
+            <Text className="text-font/50" size={"2"}>An Error Occurred...</Text>
           </Box>
         }
         children={(offer: Awaited<LoanOffer>) => {
@@ -82,19 +98,6 @@ function MyLoanOfferDetails() {
               coinLabel = "USDC - Ethereum";
               break;
           }
-
-          // Edit loan Information
-          const [loanAmount, setLoanAmount] = useState<LoanAmount>({
-            min: offer.loan_amount_min,
-            max: offer.loan_amount_max,
-          });
-          const [loanDuration, setLoanDuration] = useState<LoanDuration>({
-            min: offer.duration_months_min,
-            max: offer.duration_months_max,
-          });
-          const [ltv, setLtv] = useState<number>(offer.min_ltv);
-          const [interest, setInterest] = useState<number>(offer.interest_rate);
-          const [isLoading, setIsLoading] = useState(false);
 
           return (
             <Box
