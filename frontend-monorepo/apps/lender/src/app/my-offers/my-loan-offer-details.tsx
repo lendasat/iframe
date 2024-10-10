@@ -251,7 +251,7 @@ function MyLoanOfferDetails() {
                           }, 1000);
                         }}
                       >
-                        <Text weight={"medium"} size={"2"}>Save Change</Text>
+                        <Text weight={"medium"} size={"2"}>Update Changes</Text>
                       </Button>
                     </Flex>
                   </Box>
