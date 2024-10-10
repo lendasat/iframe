@@ -20,8 +20,8 @@ import { FaFileExport, FaPenNib } from "react-icons/fa";
 import { IoReceipt } from "react-icons/io5";
 import { MdOutlineSwapCalls } from "react-icons/md";
 import { Await, useParams } from "react-router-dom";
-import LendasatLogo from "./../../assets/lendasat.png";
 import BannerImg from "./../../assets/banner.png";
+import LendasatLogo from "./../../assets/lendasat.png";
 import ReceipImg from "./../../assets/receipt_img.png";
 import { LoanAmount, LoanDuration } from "../create-loan-offer";
 import { StatusBadge } from "./status-badge";
@@ -58,7 +58,6 @@ function MyLoanOfferDetails() {
   const [ltv, setLtv] = useState<number>(0.5);
   const [interest, setInterest] = useState<number>(0.3);
   const [isLoading, setIsLoading] = useState(false);
-
 
   return (
     <Suspense>
