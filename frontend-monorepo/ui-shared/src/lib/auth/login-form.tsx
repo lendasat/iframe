@@ -104,7 +104,7 @@ export function LoginForm(
                 <Flex align={"center"} justify={"between"}>
                   <Flex align={"center"} gap={"1"}>
                     <Checkbox size="1" color="purple" />
-                    <Text as="label" size={"1"} weight={"medium"} className="text-font/70">Remeber me</Text>
+                    <Text as="label" size={"1"} weight={"medium"} className="text-font/70">Remember me</Text>
                   </Flex>
                   <Link to={forgotPasswordLink} className="text-sm font-medium text-purple-800 hover:text-font-dark">
                     Forgot Password
