@@ -502,7 +502,7 @@ pub async fn get_claim_collateral_psbt(
 // We don't need the borrower to publish the claim TX through the hub, but it is convenient to be
 // able to move the contract state forward. Eventually we could remove this and publish from the
 // borrower client.
-#[instrument(skip_all, err(Debug), ret)]
+#[instrument(skip(data, _user), err(Debug), ret)]
 pub async fn post_claim_tx(
     State(data): State<Arc<AppState>>,
     // TODO: Make sure that the claim TX is issued by the _right_ user.
