@@ -709,14 +709,11 @@ fn collateral_outputs(
     let outputs = txs.iter().flat_map(|tx| {
         tx.vout
             .iter()
-            .filter_map(|vout| {
-                (vout.scriptpubkey_address.clone().assume_checked() == *address).then_some((
-                    tx.txid,
-                    vout.value,
-                    tx.status.block_height,
-                ))
-            })
             .enumerate()
+            .filter_map(|(i, vout)| {
+                (vout.scriptpubkey_address.clone().assume_checked() == *address)
+                    .then_some((i, (tx.txid, vout.value, tx.status.block_height)))
+            })
             .collect::<Vec<_>>()
     });
 
@@ -909,4 +906,95 @@ pub enum Data {
 pub struct TrackAddress {
     #[serde(rename = "track-address")]
     pub address: String,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use insta::assert_debug_snapshot;
+    use std::str::FromStr;
+
+    #[test]
+    fn test_collateral_outputs() {
+        let collateral_address =
+            Address::from_str("tb1ph4kwft3ese6guh8cdkpfezr53tnz506s5lz7x62n5m4j5ksxlk5sckj2dr")
+                .unwrap();
+        let other_address =
+            Address::from_str("tb1qtslhzseyts27gp5ahtud9ftt3l8ceytxk22y03sfnylex56msmsse5t80u")
+                .unwrap();
+
+        let tx0 = Transaction {
+            txid: Txid::from_str(
+                "44fe3d70a3058eb1bef62e24379b4865ada8332f9ee30752cf606f37343461a0",
+            )
+            .unwrap(),
+            vout: vec![
+                Vout {
+                    scriptpubkey_address: other_address.clone(),
+                    value: 10,
+                },
+                Vout {
+                    scriptpubkey_address: collateral_address.clone(),
+                    value: 100,
+                },
+            ],
+            status: TransactionStatus {
+                confirmed: false,
+                block_height: None,
+            },
+        };
+
+        let tx1 = Transaction {
+            txid: Txid::from_str(
+                "44fe3d70a3058eb1bef62e24379b4865ada8332f9ee30752cf606f37343461a1",
+            )
+            .unwrap(),
+            vout: vec![
+                Vout {
+                    scriptpubkey_address: collateral_address.clone(),
+                    value: 100,
+                },
+                Vout {
+                    scriptpubkey_address: other_address.clone(),
+                    value: 10,
+                },
+            ],
+            status: TransactionStatus {
+                confirmed: false,
+                block_height: None,
+            },
+        };
+
+        let tx2 = Transaction {
+            txid: Txid::from_str(
+                "44fe3d70a3058eb1bef62e24379b4865ada8332f9ee30752cf606f37343461a2",
+            )
+            .unwrap(),
+            vout: vec![
+                Vout {
+                    scriptpubkey_address: other_address.clone(),
+                    value: 10,
+                },
+                Vout {
+                    scriptpubkey_address: collateral_address.clone(),
+                    value: 100,
+                },
+            ],
+            status: TransactionStatus {
+                confirmed: false,
+                block_height: None,
+            },
+        };
+
+        let txs = vec![tx0, tx1, tx2];
+
+        let blockchain_height = 1;
+        let outputs = collateral_outputs(
+            &txs,
+            &collateral_address.assume_checked(),
+            blockchain_height,
+        );
+
+        assert_debug_snapshot!(outputs);
+    }
 }
