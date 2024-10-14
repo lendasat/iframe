@@ -5,9 +5,10 @@ import {
   LiquidationStatus,
 } from "@frontend-monorepo/http-client-borrower";
 import { CurrencyFormatter, LtvProgressBar, usePrice } from "@frontend-monorepo/ui-shared";
-import { Badge, Button, Card, Col, Container, Row } from "react-bootstrap";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { collateralForStatus } from "./collateralForStatus";
+import { Badge, Box, Button, DropdownMenu, Flex, Grid, Heading, Text } from "@radix-ui/themes";
+import { BsThreeDotsVertical } from "react-icons/bs";
 
 interface LoansComponentProps {
   loans: Contract[];
@@ -51,7 +52,7 @@ function ContractsComponent({ loans }: LoansComponentProps) {
   const status_col = {
     label: "Status",
     md: 2,
-    className: "",
+    className: "text-center",
   };
   const empty_col = {
     label: "",
@@ -59,85 +60,250 @@ function ContractsComponent({ loans }: LoansComponentProps) {
     className: "text-center",
   };
 
-  const headers = [amount_col, expiry_col, ltv_col, interest_col, collateral_col, status_col, empty_col];
+  const headers = [amount_col, expiry_col, interest_col, ltv_col, collateral_col, status_col, empty_col];
 
   return (
-    <Container fluid>
-      <Row className="d-none d-md-flex mb-3">
-        {headers.map((header, index) => (
-          <Col key={index} md={header.md} className={header.className}>
-            <small className="text-muted">{header.label}</small>
-          </Col>
-        ))}
-      </Row>
-      {loans.map((loan, index) => {
-        const {
-          id,
-          loan_amount,
-          expiry,
-          interest_rate,
-          initial_collateral_sats,
-          status,
-          liquidation_status,
-          collateral_sats,
-        } = loan;
+    <Box>
+      <Box className="px-6 md:px-8 py-4">
+        <Flex align={'center'} justify={'between'}>
+          <Heading size={"6"}>My Loans</Heading>
+          <Button asChild color="purple" className="text-sm" size={'3'}>
+            <Link to={'/requests'}>
+              New Request
+            </Link>
+          </Button>
+        </Flex>
+      </Box>
 
-        const collateral_btc = collateralForStatus(status, initial_collateral_sats, collateral_sats) / 100000000;
+      <Flex align={'center'} className="bg-active-nav/15 pr-8 border-b border-font/5">
+        <Box className="w-[45px] xl:w-[80px] text-center py-1">
+          <Text size={'1'} weight={'medium'} className="text-font/50">S/N</Text>
+        </Box>
+        <Grid className="grid-cols-3 md:grid-cols-5 xl:grid-cols-7 flex-grow">
+          {
+            headers.map((header, index) => (
+              <Box key={index} className={header.className}>
+                <Text className="text-font/50" size={'1'} weight={'medium'}>{header.label}</Text>
+              </Box>
+            ))
+          }
+        </Grid>
+      </Flex>
 
-        const ltvRatio = loan_amount / (collateral_btc * latestPrice);
+      <Box
+        style={{
+          overflowY: 'scroll',
+          height: innerHeight - 210
+        }}
+      >
+        {loans.map((loan, index) => {
+          const {
+            id,
+            loan_amount,
+            expiry,
+            interest_rate,
+            initial_collateral_sats,
+            status,
+            liquidation_status,
+            collateral_sats,
+          } = loan;
 
-        const firstMarginCall = liquidation_status == LiquidationStatus.FirstMarginCall;
-        const secondMarginCall = liquidation_status == LiquidationStatus.SecondMarginCall;
-        const liquidated = liquidation_status == LiquidationStatus.Liquidated;
+          const collateral_btc = collateralForStatus(status, initial_collateral_sats, collateral_sats) / 100000000;
 
-        let contractStatusLabel = contractStatusToLabelString(status);
-        if (firstMarginCall) {
-          contractStatusLabel = "First Margin Call";
-        }
-        if (secondMarginCall) {
-          contractStatusLabel = "Second Margin Call";
-        }
-        if (liquidated) {
-          contractStatusLabel = "Liquidated";
-        }
+          const ltvRatio = loan_amount / (collateral_btc * latestPrice);
 
-        return (
-          <Card key={index} className="mb-3">
-            <Card.Body>
-              <Row className="align-items-center">
-                <Col xs={12} md={amount_col.md} className="mb-2 mb-md-0">
-                  <div className="d-md-none">Amount:</div>
-                  <CurrencyFormatter value={loan_amount} />
-                </Col>
-                <Col xs={12} md={expiry_col.md} className="mb-2 mb-md-0">
-                  <div className="d-md-none font-weight-bold">Expiry:</div>
-                  {expiry.toLocaleDateString()}
-                </Col>
-                <Col xs={12} md={ltv_col.md} className="mb-2 mb-md-0">
-                  <div className="d-md-none font-weight-bold">LTV:</div>
+          const firstMarginCall = liquidation_status == LiquidationStatus.FirstMarginCall;
+          const secondMarginCall = liquidation_status == LiquidationStatus.SecondMarginCall;
+          const liquidated = liquidation_status == LiquidationStatus.Liquidated;
+
+          let contractStatusLabel = contractStatusToLabelString(status);
+          if (firstMarginCall) {
+            contractStatusLabel = "First Margin Call";
+          }
+          if (secondMarginCall) {
+            contractStatusLabel = "Second Margin Call";
+          }
+          if (liquidated) {
+            contractStatusLabel = "Liquidated";
+          }
+
+          return (
+            <Flex key={index} align={'center'} className={`border-b ${(index + 1) % 2 === 0 ? "bg-white/50" : "bg-transparent"
+              } border-black/5 pr-3`}>
+              <Box className="w-[45px] xl:w-[80px] text-center py-5 border-r">
+                <Text size={'1'} weight={'medium'} className="text-font/50">{index + 1}</Text>
+              </Box>
+              <Grid className="grid-cols-3 pr-2 flex-grow md:grid-cols-5 xl:grid-cols-7 items-center text-font">
+                <Box className="text-center">
+                  <Text size={'1'} weight={'medium'}>
+                    <CurrencyFormatter value={loan_amount} />
+                  </Text>
+                </Box>
+
+                <Box className="justify-center text-center">
+                  <Text size={"1"} weight={"medium"}>
+                    {expiry.toLocaleDateString()}
+                  </Text>
+                </Box>
+
+                <Box className="hidden md:flex justify-center">
+                  <Text size={"1"} weight={"medium"}>
+                    {(interest_rate * 100).toFixed(2)}%
+                  </Text>
+                </Box>
+
+                <Box className="hidden xl:block">
                   <LtvProgressBar ltvRatio={latestPrice ? ltvRatio * 100 : undefined} />
-                </Col>
-                <Col xs={12} md={interest_col.md} className="mb-2 mb-md-0">
-                  <div className="d-md-none font-weight-bold">Interest:</div>
-                  {(interest_rate * 100).toFixed(2)}%
-                </Col>
-                <Col xs={12} md={collateral_col.md} className="mb-2 mb-md-0">
-                  <div className="d-md-none font-weight-bold">Collateral:</div>
-                  {collateral_btc} BTC
-                </Col>
-                <Col xs={12} md={status_col.md} className="mb-2 mb-md-0">
-                  <div className="d-md-none font-weight-bold">Status:</div>
-                  <Badge bg="primary">{contractStatusLabel}</Badge>
-                </Col>
-                <Col xs={12} md={empty_col.md} className="mb-2 mb-md-0">
-                  <Button onClick={() => navigate(`${id}`)} variant={"primary"}>{actionFromStatus(status)}</Button>
-                </Col>
-              </Row>
-            </Card.Body>
-          </Card>
-        );
-      })}
-    </Container>
+                </Box>
+
+                <Box className="flex justify-center">
+                  <Text size={"1"} weight={"medium"}>
+                    {collateral_btc} BTC
+                  </Text>
+                </Box>
+
+                <Box className="hidden md:flex justify-center ">
+
+                  <Badge
+                    color={status === ContractStatus.Requested
+                      ? "amber"
+                      : status === ContractStatus.Approved
+                        ? "green"
+                        : status === ContractStatus.Rejected
+                          ? "red"
+                          : "gray"}
+                    size={"2"}>
+                    {contractStatusLabel}
+                  </Badge>
+
+                </Box>
+
+                <Box className="hidden xl:flex justify-center">
+                  <Button
+                    size={"3"}
+                    variant="solid"
+                    className="bg-btn text-white rounded-lg"
+                    onClick={() => navigate(`${id}`)}
+                  >
+                    <Text
+                      size={"1"}
+                      className="font-semibold"
+                    >
+                      {actionFromStatus(status)}
+                    </Text>
+                  </Button>
+                </Box>
+              </Grid>
+
+              {/* Responsive Dropdown */}
+              <DropdownMenu.Root>
+                <DropdownMenu.Trigger>
+                  <Button variant="ghost" className="xl:hidden text-font hover:bg-transparent">
+                    <BsThreeDotsVertical />
+                  </Button>
+                </DropdownMenu.Trigger>
+                <DropdownMenu.Content>
+                  <Box width={"100%"} minWidth={"300px"} p={"3"}>
+                    <Heading as="h6" weight={"medium"}>
+                      More Information
+                    </Heading>
+                  </Box>
+                  <DropdownMenu.Separator />
+                  <Box width={"100%"} minWidth={"300px"} p={"3"}>
+                    <Flex direction={"column"} gap={"4"} align={"start"}>
+                      <Box width={'100%'}>
+                        <Flex align={"center"} justify={'between'} gap={"3"}>
+                          <Text size={"3"} weight={"medium"}>
+                            Amount
+                          </Text>
+                          <Text size={"3"}>
+                            <CurrencyFormatter value={loan_amount} />
+                          </Text>
+                        </Flex>
+                      </Box>
+                      <Box width={'100%'}>
+                        <Flex align={"center"} justify={'between'} gap={"3"}>
+                          <Text size={"3"} weight={"medium"}>
+                            Expiry date:
+                          </Text>
+                          <Text className="capitalize" size={"3"}>
+                            {expiry.toLocaleDateString()}
+                          </Text>
+                        </Flex>
+                      </Box>
+                      <Box width={'100%'}>
+                        <Flex align={"center"} justify={'between'} gap={"3"}>
+                          <Text size={"3"} weight={"medium"}>
+                            LTV rate:
+                          </Text>
+                          <Box minWidth={'150px'}>
+                            <LtvProgressBar ltvRatio={latestPrice ? ltvRatio * 100 : undefined} />
+                          </Box>
+                        </Flex>
+                      </Box>
+                      <Box width={'100%'}>
+                        <Flex align={"center"} justify={'between'} gap={"3"}>
+                          <Text size={"3"} weight={"medium"}>
+                            Interest:
+                          </Text>
+                          <Text className="capitalize" size={"3"}>
+                            {(interest_rate * 100).toFixed(2)}%
+                          </Text>
+                        </Flex>
+                      </Box>
+                      <Box width={'100%'}>
+                        <Flex align={"center"} justify={'between'} gap={"3"}>
+                          <Text size={"3"} weight={"medium"}>
+                            Collateral:
+                          </Text>
+                          <Text className="capitalize" size={"3"}>
+                            {collateral_btc} BTC
+                          </Text>
+                        </Flex>
+                      </Box>
+                      <Box width={'100%'}>
+                        <Flex align={"center"} justify={'between'} gap={"3"}>
+                          <Text size={"3"} weight={"medium"}>
+                            Status:
+                          </Text>
+                          <Text className="capitalize" size={"3"}>
+                            <Badge
+                              color={status === ContractStatus.Requested
+                                ? "amber"
+                                : status === ContractStatus.Approved
+                                  ? "green"
+                                  : status === ContractStatus.Rejected
+                                    ? "red"
+                                    : "gray"}
+                              size={"2"}>
+                              {contractStatusLabel}
+                            </Badge>
+
+                          </Text>
+                        </Flex>
+                      </Box>
+                      <Button
+                        size={"3"}
+                        variant="solid"
+                        className="bg-btn text-white w-full active:scale-90"
+                        onClick={() => navigate(`${id}`)}
+                      >
+                        <Text
+                          size={"1"}
+                          className="font-semibold"
+                        >
+                          {actionFromStatus(status)}
+                        </Text>
+                      </Button>
+                    </Flex>
+                  </Box>
+                </DropdownMenu.Content>
+              </DropdownMenu.Root>
+            </Flex>
+          );
+        })}
+      </Box>
+    </Box>
   );
 }
 

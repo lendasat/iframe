@@ -11,8 +11,8 @@ import {
 } from "@frontend-monorepo/http-client-borrower";
 import { CurrencyFormatter, usePrice } from "@frontend-monorepo/ui-shared";
 import { Suspense, useState } from "react";
-import { Alert, Badge, Button, Col, Container, OverlayTrigger, Row, Tooltip } from "react-bootstrap";
-import { Await, useParams } from "react-router-dom";
+import { Col, OverlayTrigger, Row, Tooltip } from "react-bootstrap";
+import { Await, Link, useParams } from "react-router-dom";
 import { Lender } from "../request-loan/lender";
 import { AddCollateralModal } from "./add-collateral-modal";
 import { collateralForStatus } from "./collateralForStatus";
@@ -24,6 +24,8 @@ import { ContractRequested } from "./contract-requested";
 import { ExpandableDisputeCard } from "./dispute-card";
 import { downloadLocalStorage } from "./download-local-storage";
 import TransactionList from "./transaction-list";
+import { Badge, Box, Button, Callout, Dialog, Flex, Grid, Heading, IconButton, Separator, Text } from "@radix-ui/themes";
+import { IoMdCloudDownload } from "react-icons/io";
 
 function ContractDetailsOverview() {
   const { getContract } = useBorrowerHttpClient();
@@ -35,9 +37,13 @@ function ContractDetailsOverview() {
         resolve={getContract(id!)}
         errorElement={<div>Could not load contracts</div>}
         children={(contract: Awaited<Contract>) => (
-          <Container className={"p-4"} fluid>
+          <Box
+            style={{
+              overflowY: 'scroll',
+              height: innerHeight - 100
+            }}>
             <Details contract={contract} />
-          </Container>
+          </Box>
         )}
       />
     </Suspense>
@@ -72,55 +78,11 @@ function Details({ contract }: DetailsProps) {
   const initialPrice = loanAmount / (initialCollateralBtc * contract.initial_ltv);
   const loanOriginatorFeeUsd = (originationFeeBtc * initialPrice).toFixed(0);
 
-  return (
-    <Row className="mt-3">
-      <Col xs={12} md={6}>
-        {<ContractDetails contract={contract} />}
-      </Col>
-      <Col xs={12} md={6}>
-        <ContractStatusDetails
-          contract={contract}
-          collateralBtc={collateralBtc}
-          contractAddress={contractAddress || ""}
-          totalCollateral={totalCollateral}
-          totalRepaymentAmount={totalRepaymentAmount}
-          loanOriginatorFee={originationFeeBtc}
-          loanOriginatorFeeUsd={loanOriginatorFeeUsd}
-        />
-      </Col>
-    </Row>
-  );
-}
 
-interface DetailsProps {
-  contract: Contract;
-}
-
-function ContractDetails({ contract }: DetailsProps) {
-  const { latestPrice } = usePrice();
+  // Expandable Dispute Card
   const [startingDisputeLoading, setStartingDisputeLoading] = useState(false);
-  const { backendVersion } = useAuth();
-
-  const [showAddCollateralModal, setShowAddCollateralModal] = useState(false);
-
   const [error, setError] = useState("");
-
   const { startDispute } = useBorrowerHttpClient();
-
-  const collateral = collateralForStatus(contract.status, contract.initial_collateral_sats, contract.collateral_sats);
-  const collateralBtc = collateral / 100000000;
-  const loanAmount = contract.loan_amount;
-  const interestRate = contract.interest_rate;
-  const durationMonths = contract.duration_months;
-
-  const initialLtv = contract.initial_ltv;
-  const initial_price = loanAmount / (collateral * initialLtv);
-
-  const ltvRatio = loanAmount / (collateralBtc * latestPrice);
-  const ltvPercentage = (ltvRatio * 100).toFixed(0);
-
-  const loanOriginatorFee = contract.origination_fee_sats / 100000000;
-  const loanOriginatorFeeUsd = (loanOriginatorFee * initial_price).toFixed(0);
 
   const disputeInProgress = contract.status === ContractStatus.DisputeBorrowerResolved
     || contract.status === ContractStatus.DisputeLenderResolved
@@ -142,6 +104,60 @@ function ContractDetails({ contract }: DetailsProps) {
       setStartingDisputeLoading(false);
     }
   };
+
+  return (
+    <Grid className="md:grid-cols-2">
+      <Box className="order-2 md:order-1 border-r border-font/10">
+        <ContractDetails contract={contract} />
+        <ExpandableDisputeCard
+          info={info}
+          onStartDispute={onStartDispute}
+          startingDisputeLoading={startingDisputeLoading}
+          error={error}
+          disputeInProgress={disputeInProgress}
+        />
+      </Box>
+
+      <Box className="p-6 md:p-8 space-y-5 order-1 md:order-2">
+        <ContractStatusDetails
+          contract={contract}
+          collateralBtc={collateralBtc}
+          contractAddress={contractAddress || ""}
+          totalCollateral={totalCollateral}
+          totalRepaymentAmount={totalRepaymentAmount}
+          loanOriginatorFee={originationFeeBtc}
+          loanOriginatorFeeUsd={loanOriginatorFeeUsd}
+        />
+      </Box>
+    </Grid>
+  );
+}
+
+interface DetailsProps {
+  contract: Contract;
+}
+
+function ContractDetails({ contract }: DetailsProps) {
+  const { latestPrice } = usePrice();
+  const { backendVersion } = useAuth();
+
+  const [showAddCollateralModal, setShowAddCollateralModal] = useState(false);
+
+  const collateral = collateralForStatus(contract.status, contract.initial_collateral_sats, contract.collateral_sats);
+  const collateralBtc = collateral / 100000000;
+  const loanAmount = contract.loan_amount;
+  const interestRate = contract.interest_rate;
+  const durationMonths = contract.duration_months;
+
+  const initialLtv = contract.initial_ltv;
+  const initial_price = loanAmount / (collateral * initialLtv);
+
+  const ltvRatio = loanAmount / (collateralBtc * latestPrice);
+  const ltvPercentage = (ltvRatio * 100).toFixed(0);
+
+  const loanOriginatorFee = contract.origination_fee_sats / 100000000;
+  const loanOriginatorFeeUsd = (loanOriginatorFee * initial_price).toFixed(0);
+
 
   const firstMarginCall = contract.liquidation_status == LiquidationStatus.FirstMarginCall;
   const secondMarginCall = contract.liquidation_status == LiquidationStatus.SecondMarginCall;
@@ -183,92 +199,149 @@ function ContractDetails({ contract }: DetailsProps) {
   }
 
   return (
-    <Container fluid>
+    <Box>
+      <Box className="p-6 md:pl-8 border-b border-font/10">
+        <Heading size={'6'}>
+          Contract Details
+        </Heading>
+      </Box>
+
       <AddCollateralModal
         show={showAddCollateralModal}
         address={contract.contract_address!}
         handleClose={handleCloseAddCollateralModal}
       />
-      <Row className="mb-2">
-        <h4>Contract Details</h4>
-      </Row>
-      <Alert variant={"info"} className="d-flex align-items-center">
-        <div className="d-flex align-items-center">
-          <FontAwesomeIcon icon={faExclamationCircle} className="h-4 w-4 mr-2" />
-          Download contract backup. It is encrypted with the contract password you set earlier.
-        </div>
-        <Button onClick={() => downloadLocalStorage(backendVersion)}>Download</Button>
-      </Alert>
-      <Row className="justify-content-between border-b mt-2">
-        <Col>Lender</Col>
-        <Col className="text-end mb-2">
-          <Lender {...contract.lender} />
-        </Col>
-      </Row>
-      <Row className="justify-content-between border-b mt-2">
-        <Col>Contract status</Col>
-        <Col className="text-end mb-2">
-          <Badge bg="primary">{contractStatusLabel}</Badge>
-        </Col>
-      </Row>
-      <Row className="justify-content-between border-b mt-2">
-        <Col md={6}>Loan amount</Col>
-        <Col md={6} className="text-end mb-2">
-          <CurrencyFormatter value={loanAmount} />
-        </Col>
-      </Row>
-      <Row className="justify-content-between border-b mt-2">
-        <Col md={6}>Loan duration</Col>
-        <Col md={6} className="text-end mb-2">
-          {durationMonths} months
-        </Col>
-      </Row>
-      <Row className="justify-content-between border-b mt-2">
-        <Col>
-          Collateral
-          {canAddExtraCollateral && (
-            <Button onClick={handleOpenAddCollateralModal} size="sm" className="ml-2">
-              +
-            </Button>
-          )}
-        </Col>
-        <Col className="text-end mb-2">
-          {collateralBtc.toFixed(8)} BTC
-        </Col>
-      </Row>
-      <Row className="justify-content-between border-b mt-2">
-        <Col md={6}>Origination fee (1%)</Col>
-        <Col md={6} className="text-end mb-2">
-          <OverlayTrigger
-            placement="top"
-            overlay={<Tooltip>${loanOriginatorFeeUsd}</Tooltip>}
-          >
-            <span>{loanOriginatorFee.toFixed(8)} BTC</span>
-          </OverlayTrigger>
-        </Col>
-      </Row>
-      <Row className="justify-content-between border-b mt-2">
-        <Col>LTV ratio</Col>
-        <Col className="text-end mb-2">{ltvPercentage}%</Col>
-      </Row>
-      <Row className="justify-content-between mt-2">
-        <Col>Interest rate p.a.</Col>
-        <Col className="text-end mb-2">
-          {interestRate * 100}%
-        </Col>
-      </Row>
-      <Row className="justify-content-between mt-5">
-        <AdditionalDetail contract={contract} />
-      </Row>
 
-      <ExpandableDisputeCard
-        info={info}
-        onStartDispute={onStartDispute}
-        startingDisputeLoading={startingDisputeLoading}
-        error={error}
-        disputeInProgress={disputeInProgress}
-      />
-    </Container>
+      <Box className="p-6 md:p-8 space-y-5">
+        <Flex gap={'5'} align={'start'} justify={'between'}>
+          <Text size={'2'} weight={'medium'} className="text-font/70 shrink-0">
+            Lender
+          </Text>
+
+          <Link to={`/profile/${contract.lender.id}`}>
+            <Text size={'2'} weight={'medium'} className="text-end">
+              {contract.lender.name}
+            </Text>
+          </Link>
+        </Flex>
+        <Separator size={'4'} className="bg-font/10" />
+
+        <Flex gap={'5'} align={'center'} justify={'between'}>
+          <Text size={'2'} weight={'medium'} className="text-font/70">
+            Contract status
+          </Text>
+          <Text size={'2'} weight={'medium'}>
+            <Badge
+              color={contract.status === ContractStatus.Requested
+                ? "amber"
+                : contract.status === ContractStatus.Approved
+                  ? "green"
+                  : contract.status === ContractStatus.Rejected
+                    ? "red"
+                    : "gray"}
+              size={"2"}>{contractStatusLabel}</Badge>
+
+          </Text>
+        </Flex>
+        <Separator size={'4'} className="bg-font/10" />
+
+        <Flex gap={'5'} align={'start'} justify={'between'}>
+          <Text size={'2'} weight={'medium'} className="text-font/70">
+            Loan Amount
+          </Text>
+          <Text size={'2'} weight={'medium'}>
+            <CurrencyFormatter value={loanAmount} />
+          </Text>
+        </Flex>
+        <Separator size={'4'} className="bg-font/10" />
+
+
+        <Flex gap={'5'} align={'start'} justify={'between'}>
+          <Text size={'2'} weight={'medium'} className="text-font/70">
+            Duration
+          </Text>
+          <Text size={'2'} weight={'medium'}>
+            {durationMonths} months
+          </Text>
+        </Flex>
+        <Separator size={'4'} className="bg-font/10" />
+
+        <Flex gap={'5'} align={'start'} justify={'between'}>
+          <Flex align={'center'} gap={'1'}>
+            <Text size={'2'} weight={'medium'} className="text-font/70">
+              Collateral
+            </Text>
+            {canAddExtraCollateral && (
+              <IconButton onClick={handleOpenAddCollateralModal} size={'2'}>
+                +
+              </IconButton>
+            )}
+          </Flex>
+          <Text size={'2'} weight={'medium'}>
+            {collateralBtc.toFixed(8)} BTC
+          </Text>
+        </Flex>
+        <Separator size={'4'} className="bg-font/10" />
+
+        <Flex gap={'5'} align={'start'} justify={'between'}>
+          <Text size={'2'} weight={'medium'} className="text-font/70">
+            Origination fee (1%)
+          </Text>
+          <Box className="max-w-sm text-end">
+            <OverlayTrigger
+              placement="top"
+              overlay={<Tooltip>${loanOriginatorFeeUsd}</Tooltip>}
+            >
+              <Text size={'2'} weight={'medium'}>
+                {loanOriginatorFee.toFixed(8)} BTC
+              </Text>
+            </OverlayTrigger>
+          </Box>
+        </Flex>
+        <Separator size={'4'} className="bg-font/10" />
+
+
+        <Flex gap={'5'} align={'start'} justify={'between'}>
+          <Text size={'2'} weight={'medium'} className="text-font/70">
+            LTV ratio
+          </Text>
+          <Text size={'2'} weight={'medium'}>
+            {ltvPercentage}%
+          </Text>
+        </Flex>
+        <Separator size={'4'} className="bg-font/10" />
+
+
+        <Flex gap={'5'} align={'start'} justify={'between'}>
+          <Text size={'2'} weight={'medium'} className="text-font/70">
+            Interest rate p.a.
+          </Text>
+          <Text size={'2'} weight={'medium'}>
+            {interestRate * 100}%
+          </Text>
+        </Flex>
+        <Separator size={'4'} className="bg-font/10" />
+        <AdditionalDetail contract={contract} />
+        <Callout.Root>
+          <Callout.Icon>
+            <IoMdCloudDownload size={'18'} />
+          </Callout.Icon>
+          <Callout.Text>
+            Download contract backup. It is encrypted with the contract password you set earlier.
+          </Callout.Text>
+        </Callout.Root>
+        <Flex align={'center'} justify={'end'}>
+          <Button
+            size="3"
+            className="bg-btn"
+            onClick={() => downloadLocalStorage(backendVersion)}
+          >
+            <IoMdCloudDownload />
+            Download
+          </Button>
+        </Flex>
+      </Box>
+    </Box>
   );
 }
 
