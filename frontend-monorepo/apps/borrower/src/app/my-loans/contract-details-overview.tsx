@@ -8,18 +8,7 @@ import {
   useBorrowerHttpClient,
 } from "@frontend-monorepo/http-client-borrower";
 import { CurrencyFormatter, usePrice } from "@frontend-monorepo/ui-shared";
-import {
-  Badge,
-  Box,
-  Button,
-  Callout,
-  Flex,
-  Grid,
-  Heading,
-  IconButton,
-  Separator,
-  Text,
-} from "@radix-ui/themes";
+import { Badge, Box, Button, Callout, Flex, Grid, Heading, IconButton, Separator, Text } from "@radix-ui/themes";
 import { Suspense, useState } from "react";
 import { Col, OverlayTrigger, Row, Tooltip } from "react-bootstrap";
 import { IoMdCloudDownload } from "react-icons/io";
