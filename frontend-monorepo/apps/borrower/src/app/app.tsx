@@ -25,13 +25,13 @@ import Profile from "./profile";
 import RequestLoan from "./request-loan/request-loan";
 import { RequestLoanSummary } from "./request-loan/request-loan-summary";
 import "./../styles.css";
-import CustomRequest from "./request-loan/custom-loan-request";
-import SimpleRequest from "./request-loan/my-requests";
+import { FiHome } from "react-icons/fi";
 import { GoGitPullRequest } from "react-icons/go";
+import { HiOutlineSupport } from "react-icons/hi";
 import { IoWalletOutline } from "react-icons/io5";
 import { LuActivity, LuSettings } from "react-icons/lu";
-import { HiOutlineSupport } from "react-icons/hi";
-import { FiHome } from "react-icons/fi";
+import CustomRequest from "./request-loan/custom-loan-request";
+import SimpleRequest from "./request-loan/my-requests";
 
 const menuItems = [
   {
@@ -87,7 +87,7 @@ const menuItems = [
         path: "https://lendasat.notion.site",
         icon: HiOutlineSupport,
         target: "_blank",
-      }
+      },
     ],
     separator: false,
   },

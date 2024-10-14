@@ -9,9 +9,9 @@ import { RiVerifiedBadgeFill } from "react-icons/ri";
 import { TbLayoutSidebarLeftCollapse } from "react-icons/tb";
 import { Menu, MenuItem, Sidebar } from "react-pro-sidebar";
 import { Link, NavLink } from "react-router-dom";
+import Logout from "./components/Logout";
 import { SearchBar } from "./components/SearchBar";
 import { SidebarHeader } from "./components/SidebarHeader";
-import Logout from "./components/Logout";
 
 type Theme = "light" | "dark";
 
@@ -34,7 +34,7 @@ interface LayoutProps {
   menuItems: MenuItem[];
   theme?: Theme;
   backendVersion: Version;
-  logout: () => Promise<void>
+  logout: () => Promise<void>;
 }
 
 export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme, backendVersion, user, logout }) => {
@@ -96,34 +96,32 @@ export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme, back
               },
             }}
           >
-            {
-              menuItems.map((items, index) => (
-                <Box key={index} className={index === 0 ? "px-3" : "px-3 pt-[5vh]"}>
-                  {items.group.map((item, idx) => (
-                    <MenuItem
-                      key={idx}
-                      component={
-                        <NavLink
-                          className={"aria-[current=page]:bg-white/65 aria-[current=page]:border aria-[current=page]:border-white/95 aria-[current=page]:text-font-dark aria-[current=page]:font-medium aria-[current=page]:backdrop-blur-md aria-[current=page]:shadow-sm capitalize text-font/90"}
-                          to={item.path}
-                          target={item.target ? item.target : "_self"}
-                        />
-                      }
-                      icon={<item.icon size={18} />}
-                    >
-                      {item.label}
-                    </MenuItem>
-                  ))}
-                  {items.separator && (
-                    <Separator
-                      size={"4"}
-                      color="gray"
-                      className="opacity-40 mt-[5vh]"
-                    />
-                  )}
-                </Box>
-              ))
-            }
+            {menuItems.map((items, index) => (
+              <Box key={index} className={index === 0 ? "px-3" : "px-3 pt-[5vh]"}>
+                {items.group.map((item, idx) => (
+                  <MenuItem
+                    key={idx}
+                    component={
+                      <NavLink
+                        className={"aria-[current=page]:bg-white/65 aria-[current=page]:border aria-[current=page]:border-white/95 aria-[current=page]:text-font-dark aria-[current=page]:font-medium aria-[current=page]:backdrop-blur-md aria-[current=page]:shadow-sm capitalize text-font/90"}
+                        to={item.path}
+                        target={item.target ? item.target : "_self"}
+                      />
+                    }
+                    icon={<item.icon size={18} />}
+                  >
+                    {item.label}
+                  </MenuItem>
+                ))}
+                {items.separator && (
+                  <Separator
+                    size={"4"}
+                    color="gray"
+                    className="opacity-40 mt-[5vh]"
+                  />
+                )}
+              </Box>
+            ))}
             <Box className="px-3">
               <Logout logout={logout} />
             </Box>

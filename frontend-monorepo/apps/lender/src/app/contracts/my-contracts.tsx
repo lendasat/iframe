@@ -1,8 +1,8 @@
 import { Contract, ContractStatus, useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
+import { Box } from "@radix-ui/themes";
 import { Suspense } from "react";
 import { Await } from "react-router-dom";
 import ContractsComponent from "./contracts";
-import { Box } from "@radix-ui/themes";
 
 function MyContracts() {
   const { getContracts } = useLenderHttpClient();

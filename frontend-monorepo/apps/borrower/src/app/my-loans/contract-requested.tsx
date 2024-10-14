@@ -25,7 +25,8 @@ export function ContractRequested({ createdAt }: ContractRequestedProps) {
         const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
         setTimeRemaining(
-          `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")
+          `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${
+            seconds.toString().padStart(2, "0")
           }`,
         );
       }
@@ -36,21 +37,21 @@ export function ContractRequested({ createdAt }: ContractRequestedProps) {
 
   return (
     <Box>
-      <Heading weight={'medium'} size={'4'}>Awaiting Lenders Remark...</Heading>
+      <Heading weight={"medium"} size={"4"}>Awaiting Lenders Remark...</Heading>
       <Box className="mt-3 h-12 px-2 justify-between rounded-xl bg-gradient-to-r from-pink-500/20 to-active-nav/50 to-90% flex items-center">
-        <Flex align={'center'} gap={'2'}>
+        <Flex align={"center"} gap={"2"}>
           <Box className="h-8 w-8 bg-black rounded-lg flex items-center justify-center">
             <LuClock1 color="white" size={17} />
           </Box>
-          <Text weight={'medium'} size={'2'}>
+          <Text weight={"medium"} size={"2"}>
             Time Remaining
           </Text>
         </Flex>
-        <Flex align={'center'} gap={'2'}>
-          <Heading size={'3'}>
+        <Flex align={"center"} gap={"2"}>
+          <Heading size={"3"}>
             {timeRemaining}
           </Heading>
-          <Tooltip content={'Waiting for the lenders response'}>
+          <Tooltip content={"Waiting for the lenders response"}>
             <PiWarningCircleBold />
           </Tooltip>
         </Flex>

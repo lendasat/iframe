@@ -5,10 +5,10 @@ import {
   LiquidationStatus,
 } from "@frontend-monorepo/http-client-borrower";
 import { CurrencyFormatter, LtvProgressBar, usePrice } from "@frontend-monorepo/ui-shared";
-import { Link, useNavigate } from "react-router-dom";
-import { collateralForStatus } from "./collateralForStatus";
 import { Badge, Box, Button, DropdownMenu, Flex, Grid, Heading, Text } from "@radix-ui/themes";
 import { BsThreeDotsVertical } from "react-icons/bs";
+import { Link, useNavigate } from "react-router-dom";
+import { collateralForStatus } from "./collateralForStatus";
 
 interface LoansComponentProps {
   loans: Contract[];
@@ -65,35 +65,33 @@ function ContractsComponent({ loans }: LoansComponentProps) {
   return (
     <Box>
       <Box className="px-6 md:px-8 py-4">
-        <Flex align={'center'} justify={'between'}>
+        <Flex align={"center"} justify={"between"}>
           <Heading size={"6"}>My Loans</Heading>
-          <Button asChild color="purple" className="text-sm" size={'3'}>
-            <Link to={'/requests'}>
+          <Button asChild color="purple" className="text-sm" size={"3"}>
+            <Link to={"/requests"}>
               New Request
             </Link>
           </Button>
         </Flex>
       </Box>
 
-      <Flex align={'center'} className="bg-active-nav/15 pr-8 border-b border-font/5">
+      <Flex align={"center"} className="bg-active-nav/15 pr-8 border-b border-font/5">
         <Box className="w-[45px] xl:w-[80px] text-center py-1">
-          <Text size={'1'} weight={'medium'} className="text-font/50">S/N</Text>
+          <Text size={"1"} weight={"medium"} className="text-font/50">S/N</Text>
         </Box>
         <Grid className="grid-cols-3 md:grid-cols-5 xl:grid-cols-7 flex-grow">
-          {
-            headers.map((header, index) => (
-              <Box key={index} className={header.className}>
-                <Text className="text-font/50" size={'1'} weight={'medium'}>{header.label}</Text>
-              </Box>
-            ))
-          }
+          {headers.map((header, index) => (
+            <Box key={index} className={header.className}>
+              <Text className="text-font/50" size={"1"} weight={"medium"}>{header.label}</Text>
+            </Box>
+          ))}
         </Grid>
       </Flex>
 
       <Box
         style={{
-          overflowY: 'scroll',
-          height: innerHeight - 210
+          overflowY: "scroll",
+          height: innerHeight - 210,
         }}
       >
         {loans.map((loan, index) => {
@@ -128,14 +126,17 @@ function ContractsComponent({ loans }: LoansComponentProps) {
           }
 
           return (
-            <Flex key={index} align={'center'} className={`border-b ${(index + 1) % 2 === 0 ? "bg-white/50" : "bg-transparent"
-              } border-black/5 pr-3`}>
+            <Flex
+              key={index}
+              align={"center"}
+              className={`border-b ${(index + 1) % 2 === 0 ? "bg-white/50" : "bg-transparent"} border-black/5 pr-3`}
+            >
               <Box className="w-[45px] xl:w-[80px] text-center py-5 border-r">
-                <Text size={'1'} weight={'medium'} className="text-font/50">{index + 1}</Text>
+                <Text size={"1"} weight={"medium"} className="text-font/50">{index + 1}</Text>
               </Box>
               <Grid className="grid-cols-3 pr-2 flex-grow md:grid-cols-5 xl:grid-cols-7 items-center text-font">
                 <Box className="text-center">
-                  <Text size={'1'} weight={'medium'}>
+                  <Text size={"1"} weight={"medium"}>
                     <CurrencyFormatter value={loan_amount} />
                   </Text>
                 </Box>
@@ -163,19 +164,18 @@ function ContractsComponent({ loans }: LoansComponentProps) {
                 </Box>
 
                 <Box className="hidden md:flex justify-center ">
-
                   <Badge
                     color={status === ContractStatus.Requested
                       ? "amber"
                       : status === ContractStatus.Approved
-                        ? "green"
-                        : status === ContractStatus.Rejected
-                          ? "red"
-                          : "gray"}
-                    size={"2"}>
+                      ? "green"
+                      : status === ContractStatus.Rejected
+                      ? "red"
+                      : "gray"}
+                    size={"2"}
+                  >
                     {contractStatusLabel}
                   </Badge>
-
                 </Box>
 
                 <Box className="hidden xl:flex justify-center">
@@ -211,8 +211,8 @@ function ContractsComponent({ loans }: LoansComponentProps) {
                   <DropdownMenu.Separator />
                   <Box width={"100%"} minWidth={"300px"} p={"3"}>
                     <Flex direction={"column"} gap={"4"} align={"start"}>
-                      <Box width={'100%'}>
-                        <Flex align={"center"} justify={'between'} gap={"3"}>
+                      <Box width={"100%"}>
+                        <Flex align={"center"} justify={"between"} gap={"3"}>
                           <Text size={"3"} weight={"medium"}>
                             Amount
                           </Text>
@@ -221,8 +221,8 @@ function ContractsComponent({ loans }: LoansComponentProps) {
                           </Text>
                         </Flex>
                       </Box>
-                      <Box width={'100%'}>
-                        <Flex align={"center"} justify={'between'} gap={"3"}>
+                      <Box width={"100%"}>
+                        <Flex align={"center"} justify={"between"} gap={"3"}>
                           <Text size={"3"} weight={"medium"}>
                             Expiry date:
                           </Text>
@@ -231,18 +231,18 @@ function ContractsComponent({ loans }: LoansComponentProps) {
                           </Text>
                         </Flex>
                       </Box>
-                      <Box width={'100%'}>
-                        <Flex align={"center"} justify={'between'} gap={"3"}>
+                      <Box width={"100%"}>
+                        <Flex align={"center"} justify={"between"} gap={"3"}>
                           <Text size={"3"} weight={"medium"}>
                             LTV rate:
                           </Text>
-                          <Box minWidth={'150px'}>
+                          <Box minWidth={"150px"}>
                             <LtvProgressBar ltvRatio={latestPrice ? ltvRatio * 100 : undefined} />
                           </Box>
                         </Flex>
                       </Box>
-                      <Box width={'100%'}>
-                        <Flex align={"center"} justify={'between'} gap={"3"}>
+                      <Box width={"100%"}>
+                        <Flex align={"center"} justify={"between"} gap={"3"}>
                           <Text size={"3"} weight={"medium"}>
                             Interest:
                           </Text>
@@ -251,8 +251,8 @@ function ContractsComponent({ loans }: LoansComponentProps) {
                           </Text>
                         </Flex>
                       </Box>
-                      <Box width={'100%'}>
-                        <Flex align={"center"} justify={'between'} gap={"3"}>
+                      <Box width={"100%"}>
+                        <Flex align={"center"} justify={"between"} gap={"3"}>
                           <Text size={"3"} weight={"medium"}>
                             Collateral:
                           </Text>
@@ -261,8 +261,8 @@ function ContractsComponent({ loans }: LoansComponentProps) {
                           </Text>
                         </Flex>
                       </Box>
-                      <Box width={'100%'}>
-                        <Flex align={"center"} justify={'between'} gap={"3"}>
+                      <Box width={"100%"}>
+                        <Flex align={"center"} justify={"between"} gap={"3"}>
                           <Text size={"3"} weight={"medium"}>
                             Status:
                           </Text>
@@ -271,14 +271,14 @@ function ContractsComponent({ loans }: LoansComponentProps) {
                               color={status === ContractStatus.Requested
                                 ? "amber"
                                 : status === ContractStatus.Approved
-                                  ? "green"
-                                  : status === ContractStatus.Rejected
-                                    ? "red"
-                                    : "gray"}
-                              size={"2"}>
+                                ? "green"
+                                : status === ContractStatus.Rejected
+                                ? "red"
+                                : "gray"}
+                              size={"2"}
+                            >
                               {contractStatusLabel}
                             </Badge>
-
                           </Text>
                         </Flex>
                       </Box>

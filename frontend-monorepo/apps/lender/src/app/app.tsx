@@ -14,12 +14,12 @@ import MyContracts from "./contracts/my-contracts";
 import CreateLoanOffer from "./create-loan-offer";
 import ResolveDispute from "./disputes/dispute";
 import "./../styles.css";
+import { FiHome } from "react-icons/fi";
+import { HiOutlineSupport } from "react-icons/hi";
+import { IoCreateOutline, IoWalletOutline } from "react-icons/io5";
+import { LuActivity, LuSettings } from "react-icons/lu";
 import MyLoanOfferDetails from "./my-offers/my-loan-offer-details";
 import MyLoanOffersOverview from "./my-offers/my-loan-offers-overview";
-import { FiHome } from "react-icons/fi";
-import { LuActivity, LuSettings } from "react-icons/lu";
-import { IoCreateOutline, IoWalletOutline } from "react-icons/io5";
-import { HiOutlineSupport } from "react-icons/hi";
 
 const menuItems = [
   {

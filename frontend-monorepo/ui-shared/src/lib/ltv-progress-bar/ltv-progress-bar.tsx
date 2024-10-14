@@ -35,7 +35,7 @@ export const LtvProgressBar: React.FC<LtvProgressBarProps> = ({ ltvRatio }) => {
           aria-valuemax={100}
         />
       </div>
-      <Text className="text-xs font-medium" weight={'medium'}>
+      <Text className="text-xs font-medium" weight={"medium"}>
         {isNan
           ? (
             <Spinner animation="border" role="status" variant="light" size="sm">

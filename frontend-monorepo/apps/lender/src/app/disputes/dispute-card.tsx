@@ -12,9 +12,9 @@ interface ExpandableDisputeCardProps {
 }
 
 interface AlertProps {
-  variant: 'amber' | 'teal' | 'red',
-  icon: IconDefinition,
-  children: string
+  variant: "amber" | "teal" | "red";
+  icon: IconDefinition;
+  children: string;
 }
 
 const AlertMessage = ({ variant, icon, children }: AlertProps) => (
@@ -31,7 +31,7 @@ const AlertMessage = ({ variant, icon, children }: AlertProps) => (
 export const ExpandableDisputeCard = (
   { info, error, onStartDispute, startingDisputeLoading, disputeInProgress }: ExpandableDisputeCardProps,
 ) => {
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false);
   const [selectedReason, setSelectedReason] = useState("");
   const [otherReason, setOtherReason] = useState("");
   const [isOtherReasonValid, setIsOtherReasonValid] = useState(true);
@@ -81,23 +81,22 @@ export const ExpandableDisputeCard = (
         <Select.Root
           value={selectedReason}
           onValueChange={(reason) => setSelectedReason(reason)}
-          size={'3'}
+          size={"3"}
         >
           <Select.Trigger
             placeholder="Select reason"
             color="gray"
             className="shadow-none focus-visible:outline-none p-3 outline-none font-normal text-sm w-full border z-50 rounded-lg"
-            variant="soft" />
+            variant="soft"
+          />
           <Select.Content>
-            {disputeReasons.map((reason, index) => (
-              <Select.Item key={index} value={reason}>{reason}</Select.Item>
-            ))}
+            {disputeReasons.map((reason, index) => <Select.Item key={index} value={reason}>{reason}</Select.Item>)}
           </Select.Content>
         </Select.Root>
       </Box>
       <TextArea
         color="gray"
-        resize={'none'}
+        resize={"none"}
         className="h-40 rounded-lg focus-visible:outline-none outline-none p-2"
         variant="soft"
         value={otherReason}
@@ -112,16 +111,16 @@ export const ExpandableDisputeCard = (
         </Box>
       )}
       <Button
-        size={'3'}
+        size={"3"}
         color="purple"
         className="w-full"
         onClick={(event) => {
           event.preventDefault();
-          setIsLoading(true)
+          setIsLoading(true);
           setTimeout(() => {
             onStartDispute(selectedReason, otherReason);
-            setIsLoading(false)
-          }, 1000)
+            setIsLoading(false);
+          }, 1000);
         }}
         loading={isLoading}
         disabled={startingDisputeLoading || !selectedReason || !isOtherReasonValid || !otherReason || isLoading}
