@@ -1,16 +1,38 @@
-import { Box, Button, Flex, Grid, Heading, Separator, Skeleton, Text } from '@radix-ui/themes';
+import { ContractStatus, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
+import { formatCurrency } from "@frontend-monorepo/ui-shared";
+import { Box, Button, Flex, Grid, Heading, Separator, Skeleton, Text } from "@radix-ui/themes";
 import React from "react";
 import { IconType } from "react-icons";
 import { BsBank, BsTicketPerforatedFill } from "react-icons/bs";
 import { IoWalletOutline } from "react-icons/io5";
 import { RiCustomerService2Fill } from "react-icons/ri";
 import { Link } from "react-router-dom";
+import { useAsync } from "react-use";
 import SecurityImg from "../../assets/security-icon.png";
 import DashboardTransaction from "./DashboardTransaction";
 import LoanCarousel from "./LoanCarousel";
 
 function DashBoard() {
   const { innerHeight } = window;
+  const { getContracts } = useBorrowerHttpClient();
+
+  const { loading, value } = useAsync(async () => {
+    return await getContracts();
+  }, []);
+
+  const totalLoanAmount = value
+    ? value
+      .map((loan) => loan.loan_amount)
+      .reduce((sum, amount) => sum + amount, 0)
+    : 0;
+
+  const totalLoans = value?.length;
+
+  const totalActiveLoans = value?.filter((loan) =>
+    loan.status !== ContractStatus.Closed && loan.status !== ContractStatus.Closing
+    && loan.status !== ContractStatus.Rejected
+  ).length;
+
   return (
     // <Container className="">
     //   <Row className="justify-content-center">
@@ -66,18 +88,20 @@ function DashBoard() {
         <Box className="md:bg-gradient-to-b from-white to-white/10 backdrop-blur rounded-2xl p-5 md:row-span-2">
           <Text as="p" weight={"medium"} className="text-font" size={"3"}>Total Secured Loans</Text>
           {/* Total Loan Received */}
-          <Heading size={"8"} mt={"3"} className="text-font-dark"><Skeleton>$756,809.32</Skeleton></Heading>
+          <Heading size={"8"} mt={"3"} className="text-font-dark">
+            {loading ? <Skeleton>$756,809.32</Skeleton> : formatCurrency(totalLoanAmount)}
+          </Heading>
 
           <Box className="grid grid-cols-2 gap-3 mt-8">
             <Box className="border border-font/10 rounded-xl py-2 px-3">
               {/* Total number of loans received */}
-              <Heading size={"6"}><Skeleton>6</Skeleton></Heading>
+              <Heading size={"6"}>{loading ? <Skeleton>6</Skeleton> : totalLoans}</Heading>
               <Text size={"2"} weight={"medium"} className="text-font/70">Loans in Total</Text>
             </Box>
 
             <Box className="border border-font/10 rounded-xl py-2 px-3">
               {/* Total number of loans not repaid/closed */}
-              <Heading size={"6"}><Skeleton>2</Skeleton></Heading>
+              <Heading size={"6"}>{loading ? <Skeleton>2</Skeleton> : totalActiveLoans}</Heading>
               <Text size={"2"} weight={"medium"} className="text-font/70">Active Loan</Text>
             </Box>
           </Box>
