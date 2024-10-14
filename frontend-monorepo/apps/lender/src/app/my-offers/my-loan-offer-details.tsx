@@ -57,7 +57,7 @@ function MyLoanOfferDetails() {
   });
   const [ltv, setLtv] = useState<number>(0.5);
   const [interest, setInterest] = useState<number>(0.3);
-  const [isLoading, setIsLoading] = useState(false);
+  // const [isLoading, setIsLoading] = useState(false);
 
   return (
     <Suspense>
@@ -234,27 +234,28 @@ function MyLoanOfferDetails() {
                     </Box>
 
                     <Flex align={"center"} justify={"start"}>
-                      <Button
-                        loading={isLoading}
-                        size={"3"}
-                        color="purple"
-                        disabled={loanAmount.max !== offer.loan_amount_max
-                            || loanAmount.min !== offer.loan_amount_min
-                            || loanDuration.max !== offer.duration_months_max
-                            || loanDuration.min !== offer.duration_months_min
-                            || interest !== offer.interest_rate
-                            || ltv !== offer.min_ltv
-                          ? false
-                          : true}
-                        onClick={() => {
-                          setIsLoading(true);
-                          setTimeout(() => {
-                            setIsLoading(false);
-                          }, 1000);
-                        }}
-                      >
-                        <Text weight={"medium"} size={"2"}>Update Changes</Text>
-                      </Button>
+                      {/*TODO: implement update*/}
+                      {/*<Button*/}
+                      {/*  loading={isLoading}*/}
+                      {/*  size={"3"}*/}
+                      {/*  color="purple"*/}
+                      {/*  disabled={loanAmount.max !== offer.loan_amount_max*/}
+                      {/*      || loanAmount.min !== offer.loan_amount_min*/}
+                      {/*      || loanDuration.max !== offer.duration_months_max*/}
+                      {/*      || loanDuration.min !== offer.duration_months_min*/}
+                      {/*      || interest !== offer.interest_rate*/}
+                      {/*      || ltv !== offer.min_ltv*/}
+                      {/*    ? false*/}
+                      {/*    : true}*/}
+                      {/*  onClick={() => {*/}
+                      {/*    setIsLoading(true);*/}
+                      {/*    setTimeout(() => {*/}
+                      {/*      setIsLoading(false);*/}
+                      {/*    }, 1000);*/}
+                      {/*  }}*/}
+                      {/*>*/}
+                      {/*  <Text weight={"medium"} size={"2"}>Update Changes</Text>*/}
+                      {/*</Button>*/}
                     </Flex>
                   </Box>
                 </Box>
