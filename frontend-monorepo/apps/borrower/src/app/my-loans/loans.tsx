@@ -61,7 +61,7 @@ function ContractsComponent({ loans }: LoansComponentProps) {
   };
 
   const headers = [amount_col, expiry_col, interest_col, ltv_col, collateral_col, status_col, empty_col];
-
+  const { innerHeight } = window;
   return (
     <Box>
       <Box className="px-6 md:px-8 py-4">
@@ -165,11 +165,11 @@ function ContractsComponent({ loans }: LoansComponentProps) {
 
                 <Box className="hidden md:flex justify-center ">
                   <Badge
-                    color={status === ContractStatus.Requested
+                    color={status == ContractStatus.Requested
                       ? "amber"
-                      : status === ContractStatus.Approved
+                      : status == ContractStatus.Approved
                       ? "green"
-                      : status === ContractStatus.Rejected
+                      : status == ContractStatus.Rejected
                       ? "red"
                       : "gray"}
                     size={"2"}

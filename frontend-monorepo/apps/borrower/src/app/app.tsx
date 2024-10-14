@@ -32,6 +32,7 @@ import { IoWalletOutline } from "react-icons/io5";
 import { LuActivity, LuSettings } from "react-icons/lu";
 import CustomRequest from "./request-loan/custom-loan-request";
 import SimpleRequest from "./request-loan/my-requests";
+import { User } from "@frontend-monorepo/base-http-client";
 
 const menuItems = [
   {
@@ -97,7 +98,7 @@ function MainLayoutComponents() {
   const { backendVersion, user: borrowerUser, logout } = useAuth();
 
   // Mapping function to normalize user objects
-  const mapBorrowerUser = (borrowerUser: any) => ({
+  const mapBorrowerUser = (borrowerUser: User) => ({
     id: borrowerUser?.id,
     name: borrowerUser?.name,
     email: borrowerUser?.email,

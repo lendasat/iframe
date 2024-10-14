@@ -1,5 +1,3 @@
-import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   Contract,
   ContractStatus,
@@ -15,7 +13,6 @@ import {
   Box,
   Button,
   Callout,
-  Dialog,
   Flex,
   Grid,
   Heading,
@@ -27,7 +24,6 @@ import { Suspense, useState } from "react";
 import { Col, OverlayTrigger, Row, Tooltip } from "react-bootstrap";
 import { IoMdCloudDownload } from "react-icons/io";
 import { Await, Link, useParams } from "react-router-dom";
-import { Lender } from "../request-loan/lender";
 import { AddCollateralModal } from "./add-collateral-modal";
 import { collateralForStatus } from "./collateralForStatus";
 import { CollateralContractDetails } from "./collateralize-contract";
@@ -40,6 +36,7 @@ import { downloadLocalStorage } from "./download-local-storage";
 import TransactionList from "./transaction-list";
 
 function ContractDetailsOverview() {
+  const { innerHeight } = window;
   const { getContract } = useBorrowerHttpClient();
   const { id } = useParams();
 
@@ -243,11 +240,11 @@ function ContractDetails({ contract }: DetailsProps) {
           </Text>
           <Text size={"2"} weight={"medium"}>
             <Badge
-              color={contract.status === ContractStatus.Requested
+              color={contract.status == ContractStatus.Requested
                 ? "amber"
-                : contract.status === ContractStatus.Approved
+                : contract.status == ContractStatus.Approved
                 ? "green"
-                : contract.status === ContractStatus.Rejected
+                : contract.status == ContractStatus.Rejected
                 ? "red"
                 : "gray"}
               size={"2"}
