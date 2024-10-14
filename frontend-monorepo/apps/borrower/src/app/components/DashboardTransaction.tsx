@@ -50,18 +50,20 @@ function NotificationComponent(props: LoansNotificationSectionProps) {
   }
 
   return (
-    loans.slice(0, 3).map((loan, index) => {
-      const { lender, status, created_at, loan_amount } = loan;
-      return (
-        (
-          <Box key={index} py={"2"}>
-            <Flex px={"2"} align={"center"} justify={"between"}>
+    <div className="h-56 overflow-y-auto">
+      {loans.sort((a, b) => {
+        return (b.created_at - a.created_at);
+      }).slice(0, 3).map((loan, index) => {
+        const { lender, status, created_at, loan_amount } = loan;
+        return (
+          <Box key={index} py="2">
+            <Flex px="2" align="center" justify="between">
               <Lender {...lender} />
-              <Text size={"3"} weight={"medium"}>
+              <Text size="3" weight="medium">
                 <CurrencyFormatter value={loan_amount} />
               </Text>
 
-              <Box className="flex flex-col item-end text-end gap-1">
+              <Box className="flex flex-col items-end text-end gap-1">
                 <Badge
                   color={status === ContractStatus.Requested
                     ? "amber"
@@ -73,13 +75,13 @@ function NotificationComponent(props: LoansNotificationSectionProps) {
                 >
                   {status}
                 </Badge>
-                <Text size={"1"} className="text-font/70">{created_at.toLocaleDateString("en-US")}</Text>
+                <Text size="1" className="text-font/70">{created_at.toLocaleDateString("en-US")}</Text>
               </Box>
             </Flex>
-            <Separator size={"4"} mt="4" className="bg-font/5" />
+            <Separator size="4" mt="4" className="bg-font/5" />
           </Box>
-        )
-      );
-    })
+        );
+      })}
+    </div>
   );
 }
