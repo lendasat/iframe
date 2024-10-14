@@ -1,5 +1,5 @@
 import { Version } from "@frontend-monorepo/base-http-client";
-import { Avatar, Box, Flex, Heading, IconButton, Text } from "@radix-ui/themes";
+import { Avatar, Box, Flex, Heading, IconButton, Separator, Text } from "@radix-ui/themes";
 import React, { ReactNode } from "react";
 import { IconType } from "react-icons";
 import { IoIosNotificationsOutline } from "react-icons/io";
@@ -9,20 +9,23 @@ import { RiVerifiedBadgeFill } from "react-icons/ri";
 import { TbLayoutSidebarLeftCollapse } from "react-icons/tb";
 import { Menu, MenuItem, Sidebar } from "react-pro-sidebar";
 import { Link, NavLink } from "react-router-dom";
-import BorrowerMenu from "./components/BorrowerMenu";
-import LendersMenu from "./components/LendersMenu";
 import { SearchBar } from "./components/SearchBar";
 import { SidebarHeader } from "./components/SidebarHeader";
+import Logout from "./components/Logout";
 
 type Theme = "light" | "dark";
 
-interface MenuItem {
+interface GroupProps {
   label: string;
   icon: IconType;
   path: string;
   target?: string;
   borrower?: boolean;
-  seperator?: true;
+}
+
+interface MenuItem {
+  group: GroupProps[];
+  separator?: boolean;
 }
 
 interface LayoutProps {
@@ -31,9 +34,10 @@ interface LayoutProps {
   menuItems: MenuItem[];
   theme?: Theme;
   backendVersion: Version;
+  logout: () => Promise<void>
 }
 
-export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme, backendVersion, user }) => {
+export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme, backendVersion, user, logout }) => {
   const versionString = `${backendVersion.version}-${backendVersion.commit_hash.substring(0, 5)}`;
   const [toggled, setToggled] = React.useState(false);
   const [broken, setBroken] = React.useState(false);
@@ -67,7 +71,63 @@ export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme, back
               <TbLayoutSidebarLeftCollapse size={20} />
             </IconButton>
           </Box>
-          {menuItems[0].borrower ? <BorrowerMenu /> : <LendersMenu />}
+          <Menu
+            style={{
+              height: "100%",
+              width: "100%",
+            }}
+            menuItemStyles={{
+              button: () => {
+                return {
+                  paddingLeft: "9px",
+                  paddingRight: "9px",
+                  borderRadius: 12,
+                  height: "45px",
+                  ":hover": {
+                    backgroundColor: "transparent",
+                  },
+                };
+              },
+              icon: {
+                marginRight: 0,
+              },
+              label: {
+                fontSize: 14,
+              },
+            }}
+          >
+            {
+              menuItems.map((items, index) => (
+                <Box key={index} className={index === 0 ? "px-3" : "px-3 pt-[5vh]"}>
+                  {items.group.map((item, idx) => (
+                    <MenuItem
+                      key={idx}
+                      component={
+                        <NavLink
+                          className={"aria-[current=page]:bg-white/65 aria-[current=page]:border aria-[current=page]:border-white/95 aria-[current=page]:text-font-dark aria-[current=page]:font-medium aria-[current=page]:backdrop-blur-md aria-[current=page]:shadow-sm capitalize text-font/90"}
+                          to={item.path}
+                          target={item.target ? item.target : "_self"}
+                        />
+                      }
+                      icon={<item.icon size={18} />}
+                    >
+                      {item.label}
+                    </MenuItem>
+                  ))}
+                  {items.separator && (
+                    <Separator
+                      size={"4"}
+                      color="gray"
+                      className="opacity-40 mt-[5vh]"
+                    />
+                  )}
+                </Box>
+              ))
+            }
+            <Box className="px-3">
+              <Logout logout={logout} />
+            </Box>
+          </Menu>
           {user && (
             <Link to={"setting"} className="w-full px-3">
               <Box className="h-14 shadow-sm w-full bg-white/90 rounded-xl p-3 flex flex-row items-center justify-between">

@@ -1,3 +1,4 @@
+import { Text } from "@radix-ui/themes";
 import React from "react";
 import { Spinner } from "react-bootstrap";
 
@@ -23,25 +24,26 @@ export const LtvProgressBar: React.FC<LtvProgressBarProps> = ({ ltvRatio }) => {
   }
 
   return (
-    <div className="d-flex justify-content-center align-items-center" style={{ height: "100%" }}>
-      <div className="progress" style={{ width: "100%", height: "20px", backgroundColor: "#e9ecef" }}>
+    <div className="d-flex justify-content-center align-items-center gap-3" style={{ height: "100%" }}>
+      <div className="progress" style={{ width: "100%", height: "4px", backgroundColor: "#e9ecef" }}>
         <div
-          className={`progress-bar ${barColor} d-flex justify-content-center align-items-center`}
+          className={`progress-bar ${barColor} d-flex rounded-full justify-content-center align-items-center`}
           role="progressbar"
           style={{ width: `${ltvRatio ? ltvRatio : 50}%` }}
           aria-valuenow={ltvRatio ? ltvRatio : 50}
-          aria-valuemin="0"
-          aria-valuemax="100"
-        >
-          {isNan
-            ? (
-              <Spinner animation="border" role="status" variant="light" size="sm">
-                <span className="visually-hidden">Loading...</span>
-              </Spinner>
-            )
-            : <>{formattedValue}%</>}
-        </div>
+          aria-valuemin={0}
+          aria-valuemax={100}
+        />
       </div>
+      <Text className="text-xs font-medium" weight={'medium'}>
+        {isNan
+          ? (
+            <Spinner animation="border" role="status" variant="light" size="sm">
+              <span className="visually-hidden">Loading...</span>
+            </Spinner>
+          )
+          : <>{formattedValue}%</>}
+      </Text>
     </div>
   );
 };

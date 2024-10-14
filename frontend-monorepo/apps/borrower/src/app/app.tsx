@@ -6,12 +6,7 @@ import {
   useAuth,
 } from "@frontend-monorepo/http-client-borrower";
 import { Layout, PriceProvider } from "@frontend-monorepo/ui-shared";
-import { BsPiggyBank } from "react-icons/bs";
-import { GiPayMoney } from "react-icons/gi";
-import { HiUsers } from "react-icons/hi2";
-import { IoMdHelpCircle } from "react-icons/io";
-import { TbLayoutDashboardFilled } from "react-icons/tb";
-import { TbHistory } from "react-icons/tb";
+import { BsBank } from "react-icons/bs";
 import { Outlet, Route, Routes } from "react-router-dom";
 import EmailVerification from "./auth/email-verification";
 import ForgotPassword from "./auth/forgot-password";
@@ -32,44 +27,74 @@ import { RequestLoanSummary } from "./request-loan/request-loan-summary";
 import "./../styles.css";
 import CustomRequest from "./request-loan/custom-loan-request";
 import SimpleRequest from "./request-loan/my-requests";
+import { GoGitPullRequest } from "react-icons/go";
+import { IoWalletOutline } from "react-icons/io5";
+import { LuActivity, LuSettings } from "react-icons/lu";
+import { HiOutlineSupport } from "react-icons/hi";
+import { FiHome } from "react-icons/fi";
 
 const menuItems = [
   {
-    label: "Dashboard",
-    icon: TbLayoutDashboardFilled,
-    path: "/",
-    borrower: true,
+    group: [
+      {
+        label: "home",
+        path: "/",
+        icon: FiHome,
+        target: "_self",
+      },
+      {
+        label: "activities",
+        path: "/history",
+        icon: LuActivity,
+        target: "_self",
+      },
+    ],
+    separator: true,
   },
   {
-    label: "History",
-    icon: TbHistory,
-    path: "/history",
+    group: [
+      {
+        label: "Request Loan",
+        path: "/requests",
+        icon: GoGitPullRequest,
+        target: "_self",
+      },
+      {
+        label: "Available offers",
+        path: "/request-loan",
+        icon: BsBank,
+        target: "_self",
+      },
+      {
+        label: "My Loans",
+        path: "/my-contracts",
+        icon: IoWalletOutline,
+        target: "_self",
+      },
+    ],
+    separator: true,
   },
   {
-    label: "Loan offers",
-    icon: GiPayMoney,
-    path: "/request-loan",
-  },
-  {
-    label: "My loans",
-    icon: BsPiggyBank,
-    path: "/my-contracts",
-  },
-  {
-    label: "Support",
-    icon: IoMdHelpCircle,
-    path: "https://lendasat.notion.site",
-    target: "_blank",
-  },
-  {
-    label: "setting",
-    icon: HiUsers,
-    path: "/my-account",
+    group: [
+      {
+        label: "settings",
+        path: "/setting",
+        icon: LuSettings,
+        target: "_self",
+      },
+      {
+        label: "support",
+        path: "https://lendasat.notion.site",
+        icon: HiOutlineSupport,
+        target: "_blank",
+      }
+    ],
+    separator: false,
   },
 ];
 
 function MainLayoutComponents() {
-  const { backendVersion, user: borrowerUser } = useAuth();
+  const { backendVersion, user: borrowerUser, logout } = useAuth();
 
   // Mapping function to normalize user objects
   const mapBorrowerUser = (borrowerUser: any) => ({
@@ -91,6 +116,7 @@ function MainLayoutComponents() {
         menuItems={menuItems}
         theme={"light"}
         backendVersion={backendVersion}
+        logout={logout}
       >
         <Routes>
           <Route

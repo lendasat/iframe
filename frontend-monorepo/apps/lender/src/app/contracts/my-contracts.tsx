@@ -2,6 +2,7 @@ import { Contract, ContractStatus, useLenderHttpClient } from "@frontend-monorep
 import { Suspense } from "react";
 import { Await } from "react-router-dom";
 import ContractsComponent from "./contracts";
+import { Box } from "@radix-ui/themes";
 
 function MyContracts() {
   const { getContracts } = useLenderHttpClient();
@@ -12,13 +13,11 @@ function MyContracts() {
         resolve={getContracts()}
         errorElement={<div>Could not load contracts</div>}
         children={(contracts: Awaited<Contract[]>) => (
-          <div>
-            <div className="p-4">
-              <ContractsComponent
-                loans={contracts.filter((loan) => loan.status !== ContractStatus.Closed)}
-              />
-            </div>
-          </div>
+          <Box>
+            <ContractsComponent
+              loans={contracts.filter((loan) => loan.status !== ContractStatus.Closed)}
+            />
+          </Box>
         )}
       />
     </Suspense>

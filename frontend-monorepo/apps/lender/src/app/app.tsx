@@ -1,8 +1,7 @@
 import { AuthIsNotSignedIn, AuthIsSignedIn, AuthProviderLender } from "@frontend-monorepo/http-client-lender";
 import { useAuth } from "@frontend-monorepo/http-client-lender";
 import { Layout, PriceProvider } from "@frontend-monorepo/ui-shared";
-import { BsPiggyBank } from "react-icons/bs";
-import { GiPayMoney } from "react-icons/gi";
+import { BsBank } from "react-icons/bs";
 import { Outlet, Route, Routes } from "react-router-dom";
 import { SemVer } from "semver";
 import ForgotPassword from "./auth/forgot-password";
@@ -15,19 +14,75 @@ import MyContracts from "./contracts/my-contracts";
 import CreateLoanOffer from "./create-loan-offer";
 import ResolveDispute from "./disputes/dispute";
 import "./../styles.css";
-import React from "react";
-import { SiBookmyshow } from "react-icons/si";
 import MyLoanOfferDetails from "./my-offers/my-loan-offer-details";
 import MyLoanOffersOverview from "./my-offers/my-loan-offers-overview";
+import { FiHome } from "react-icons/fi";
+import { LuActivity, LuSettings } from "react-icons/lu";
+import { IoCreateOutline, IoWalletOutline } from "react-icons/io5";
+import { HiOutlineSupport } from "react-icons/hi";
 
 const menuItems = [
-  { label: "Create Loan Offer", icon: GiPayMoney, path: "/create-loan-offer" },
-  { label: "My Offers", icon: SiBookmyshow, path: "/my-offers" },
-  { label: "My Loans", icon: BsPiggyBank, path: "/my-contracts" },
+  {
+    group: [
+      {
+        label: "home",
+        path: "/",
+        icon: FiHome,
+        target: "_self",
+      },
+      {
+        label: "activities",
+        path: "/history",
+        icon: LuActivity,
+        target: "_self",
+      },
+    ],
+    separator: true,
+  },
+  {
+    group: [
+      {
+        label: "Create an offer",
+        path: "/create-loan-offer",
+        icon: IoCreateOutline,
+        target: "_self",
+      },
+      {
+        label: "loan proposal",
+        path: "/my-offers",
+        icon: BsBank,
+        target: "_self",
+      },
+      {
+        label: "My Loans",
+        path: "/my-contracts",
+        icon: IoWalletOutline,
+        target: "_self",
+      },
+    ],
+    separator: true,
+  },
+  {
+    group: [
+      {
+        label: "settings",
+        path: "/setting",
+        icon: LuSettings,
+        target: "_self",
+      },
+      {
+        label: "support",
+        path: "https://lendasat.notion.site",
+        icon: HiOutlineSupport,
+        target: "_blank",
+      },
+    ],
+    separator: false,
+  },
 ];
 
 function MainLayoutComponents() {
-  const { backendVersion, user: lenderUser } = useAuth();
+  const { backendVersion, user: lenderUser, logout } = useAuth();
   const version = backendVersion ?? {
     version: new SemVer("0.0.0"),
     commit_hash: "unknown",
@@ -45,7 +100,13 @@ function MainLayoutComponents() {
   const user = lenderUser ? mapLenderUser(lenderUser) : null;
 
   return (
-    <Layout user={user} menuItems={menuItems} theme={"light"} backendVersion={version}>
+    <Layout
+      user={user}
+      menuItems={menuItems}
+      theme={"light"}
+      backendVersion={version}
+      logout={logout}
+    >
       <Routes>
         <Route
           element={
