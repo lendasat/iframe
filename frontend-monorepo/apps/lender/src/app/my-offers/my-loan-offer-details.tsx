@@ -270,15 +270,15 @@ function MyLoanOfferDetails() {
                         </Heading>
                       </Flex>
 
-                      {/* Export */}
-                      <Tooltip content="Download Preview" className="font-medium">
-                        <Button className="hover:bg-transparent" variant="ghost">
-                          <FaFileExport className="text-font" />
-                          <Text as="span" size={"2"} weight={"medium"} className="text-font">
-                            Export
-                          </Text>
-                        </Button>
-                      </Tooltip>
+                      {/* Export: TODO: implement */}
+                      {/*<Tooltip content="Download Preview" className="font-medium">*/}
+                      {/*  <Button className="hover:bg-transparent" variant="ghost">*/}
+                      {/*    <FaFileExport className="text-font" />*/}
+                      {/*    <Text as="span" size={"2"} weight={"medium"} className="text-font">*/}
+                      {/*      Export*/}
+                      {/*    </Text>*/}
+                      {/*  </Button>*/}
+                      {/*</Tooltip>*/}
                     </Flex>
 
                     <Box className="bg-gradient-to-tr from-60% to-100% from-[#FBFAF8] to-pink-700/5 p-6 rounded-2xl flex items-center justify-center flex-1">
