@@ -36,7 +36,7 @@ interface WalletProviderProps {
   username: string;
 }
 
-export const WalletProvider: React.FC<WalletProviderProps> = ({ children, username }) => {
+export const WalletProvider = ({ children, username }: WalletProviderProps) => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isWalletLoaded, setIsWalletLoaded] = useState(false);
   const [doesWalletExist, setDoesWalletExist] = useState(false);

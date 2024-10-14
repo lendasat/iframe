@@ -173,7 +173,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme, back
         </Box>
 
         {/* Footer */}
-        <Box className="flex flex-col gap-2 items-center justify-center">
+        <Box className="flex md:justify-end gap-3 items-center px-4 md:px-6 flex-wrap justify-center">
           <Text as="p" size={"1"} weight={"medium"} className="text-font/70 tracking-wider">
             {versionString}
           </Text>

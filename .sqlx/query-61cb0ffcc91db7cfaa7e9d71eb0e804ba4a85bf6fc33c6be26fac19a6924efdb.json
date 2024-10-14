@@ -1,0 +1,152 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO loan_requests (\n            id,\n            borrower_id,\n            ltv,\n            interest_rate,\n            loan_amount,\n            duration_months,\n            loan_asset_type,\n            loan_asset_chain,\n            status\n        )\n        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)\n        RETURNING\n            id,\n            borrower_id,\n            ltv,\n            interest_rate,\n            loan_amount,\n            duration_months,\n            loan_asset_type AS \"loan_asset_type: crate::model::LoanAssetType\",\n            loan_asset_chain AS \"loan_asset_chain: crate::model::LoanAssetChain\",\n            status AS \"status: crate::model::LoanRequestStatus\",\n            created_at,\n            updated_at\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "borrower_id",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "ltv",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 3,
+        "name": "interest_rate",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 4,
+        "name": "loan_amount",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 5,
+        "name": "duration_months",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 6,
+        "name": "loan_asset_type: crate::model::LoanAssetType",
+        "type_info": {
+          "Custom": {
+            "name": "loan_asset_type",
+            "kind": {
+              "Enum": [
+                "Usdc",
+                "Usdt"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "loan_asset_chain: crate::model::LoanAssetChain",
+        "type_info": {
+          "Custom": {
+            "name": "loan_asset_chain",
+            "kind": {
+              "Enum": [
+                "Ethereum",
+                "Starknet"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "status: crate::model::LoanRequestStatus",
+        "type_info": {
+          "Custom": {
+            "name": "loan_request_status",
+            "kind": {
+              "Enum": [
+                "Available",
+                "Unavailable",
+                "Deleted"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 10,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bpchar",
+        "Bpchar",
+        "Numeric",
+        "Numeric",
+        "Numeric",
+        "Int4",
+        {
+          "Custom": {
+            "name": "loan_asset_type",
+            "kind": {
+              "Enum": [
+                "Usdc",
+                "Usdt"
+              ]
+            }
+          }
+        },
+        {
+          "Custom": {
+            "name": "loan_asset_chain",
+            "kind": {
+              "Enum": [
+                "Ethereum",
+                "Starknet"
+              ]
+            }
+          }
+        },
+        {
+          "Custom": {
+            "name": "loan_request_status",
+            "kind": {
+              "Enum": [
+                "Available",
+                "Unavailable",
+                "Deleted"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "61cb0ffcc91db7cfaa7e9d71eb0e804ba4a85bf6fc33c6be26fac19a6924efdb"
+}

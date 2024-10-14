@@ -64,11 +64,13 @@ export function StableCoinDropdown({
   onSelect,
   coins,
   filter,
+  disabled,
   defaultCoin,
 }: {
   onSelect: (coin?: StableCoin) => void;
   coins: StableCoin[];
   filter?: boolean;
+  disabled?: boolean;
   defaultCoin?: StableCoin; // Optional prop for default selected coin
 }) {
   // Initialize selectedCoin with defaultCoin if provided, otherwise fall back to StableCoin.USDT_SN
@@ -132,6 +134,7 @@ export function StableCoinDropdown({
             value={selectedCoin}
             onValueChange={handleChange}
             defaultValue={"disabled"}
+            disabled={disabled}
           >
             <Select.Trigger
               variant={"surface"}

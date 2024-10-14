@@ -23,8 +23,9 @@
               "Enum": [
                 "Funding",
                 "Dispute",
-                "LoanPayout",
+                "ClaimCollateral",
                 "PrincipalGiven",
+                "PrincipalRepaid",
                 "Liquidation"
               ]
             }
@@ -48,8 +49,9 @@
               "Enum": [
                 "Funding",
                 "Dispute",
-                "LoanPayout",
+                "ClaimCollateral",
                 "PrincipalGiven",
+                "PrincipalRepaid",
                 "Liquidation"
               ]
             }

@@ -209,7 +209,7 @@ function MyAccount() {
         <Flex gap={"1"} align={"center"}>
           <PiWarningCircleFill color="rgb(235, 172, 14)" size={22} />
           <Text size={"1"} weight={"medium"} className="text-font/60">
-            Do not disclose your password, or seed phrase with anyone, including Lendasat support.
+            Do not disclose your password or seed phrase with anyone, including Lendasat support.
           </Text>
         </Flex>
       </Box>

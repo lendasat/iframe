@@ -69,7 +69,7 @@ const NewMenuList = [
         target: "_self",
       },
       {
-        label: "activtiies",
+        label: "activity",
         path: "/history",
         icon: LuActivity,
         target: "_self",

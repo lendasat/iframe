@@ -122,6 +122,33 @@ export interface LoanOffer {
   loan_asset_chain: string;
 }
 
+export interface PostLoanRequest {
+  ltv: number;
+  interest_rate: number;
+  loan_amount: number;
+  duration_months: number;
+  loan_asset_type: LoanAssetType;
+  loan_asset_chain: LoanAssetChain;
+}
+
+export interface LoanRequest {
+  id: string;
+  borrower: BorrowerProfile;
+  ltv: number;
+  interest_rate: number;
+  loan_amount: number;
+  duration_months: number;
+  loan_asset_type: LoanAssetType;
+  loan_asset_chain: LoanAssetChain;
+  status: LoanRequestStatus;
+}
+
+export enum LoanRequestStatus {
+  Available = "Available",
+  Unavailable = "Unavailable",
+  Deleted = "Deleted",
+}
+
 export enum DisputeStatus {
   StartedBorrower = "StartedBorrower",
   StartedLender = "StartedLender",

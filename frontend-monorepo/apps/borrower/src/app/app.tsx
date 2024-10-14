@@ -30,11 +30,12 @@ import Profile from "./profile";
 import RequestLoan from "./request-loan/request-loan";
 import { RequestLoanSummary } from "./request-loan/request-loan-summary";
 import "./../styles.css";
+import CustomRequest from "./request-loan/custom-loan-request";
 import SimpleRequest from "./request-loan/my-requests";
 
 const menuItems = [
   {
-    label: "Dashboad",
+    label: "Dashboard",
     icon: TbLayoutDashboardFilled,
     path: "/",
     borrower: true,
@@ -106,6 +107,7 @@ function MainLayoutComponents() {
               <Route path={":id"} element={<ContractDetailsOverview />} />
             </Route>
             <Route path="/requests" element={<SimpleRequest />} />
+            <Route path="/custom-request" element={<CustomRequest />} />
             <Route path="/history" element={<History />} />
             <Route path="/setting" element={<MyAccount />} />
             <Route path="/logout" element={<Logout />} />

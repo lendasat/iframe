@@ -99,6 +99,16 @@ pub struct CreateLoanOfferSchema {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
+pub struct CreateLoanRequestSchema {
+    pub ltv: Decimal,
+    pub interest_rate: Decimal,
+    pub loan_amount: Decimal,
+    pub duration_months: i32,
+    pub loan_asset_type: LoanAssetType,
+    pub loan_asset_chain: LoanAssetChain,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
 pub struct ContractRequestSchema {
     pub loan_id: String,
     pub loan_amount: Decimal,
@@ -150,6 +160,34 @@ pub enum LoanAssetChain {
 #[derive(Debug, Deserialize, sqlx::Type, Serialize, Clone)]
 #[sqlx(type_name = "loan_offer_status")]
 pub enum LoanOfferStatus {
+    Available,
+    Unavailable,
+    Deleted,
+}
+
+#[derive(Debug, FromRow, Serialize, Deserialize, Clone)]
+pub struct LoanRequest {
+    pub id: String,
+    pub borrower_id: String,
+    #[serde(with = "rust_decimal::serde::float")]
+    pub ltv: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
+    pub interest_rate: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
+    pub loan_amount: Decimal,
+    pub duration_months: i32,
+    pub loan_asset_type: LoanAssetType,
+    pub loan_asset_chain: LoanAssetChain,
+    pub status: LoanRequestStatus,
+    #[serde(with = "time::serde::rfc3339")]
+    pub created_at: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339")]
+    pub updated_at: OffsetDateTime,
+}
+
+#[derive(Debug, Deserialize, sqlx::Type, Serialize, Clone)]
+#[sqlx(type_name = "loan_request_status")]
+pub enum LoanRequestStatus {
     Available,
     Unavailable,
     Deleted,
