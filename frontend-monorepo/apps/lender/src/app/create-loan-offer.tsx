@@ -5,7 +5,7 @@ import {
   useLenderHttpClient,
 } from "@frontend-monorepo/http-client-lender";
 import { useAuth } from "@frontend-monorepo/http-client-lender";
-import { parseStableCoin, StableCoin } from "@frontend-monorepo/ui-shared";
+import { formatCurrency, parseStableCoin, StableCoin, StableCoinHelper } from "@frontend-monorepo/ui-shared";
 import { Box, Button, Callout, Flex, Heading, Separator, Spinner, Text, TextField } from "@radix-ui/themes";
 import React, { useState } from "react";
 import { Form } from "react-bootstrap";
@@ -28,8 +28,8 @@ const CreateLoanOffer: React.FC = () => {
   const { user } = useAuth();
   const [loanAmount, setLoanAmount] = useState<LoanAmount>({ min: 1000, max: 100000 });
   const [loanDuration, setLoanDuration] = useState<LoanDuration>({ min: 1, max: 12 });
-  const [ltv, setLtv] = useState<number>(0.5);
-  const [interest, setInterest] = useState<number>(0.12);
+  const [ltv, setLtv] = useState<number>(50);
+  const [interest, setInterest] = useState<number>(12);
   const [selectedCoin, setSelectedCoin] = useState<StableCoin | undefined>(StableCoin.USDT_ETH);
   const [loanRepaymentAddress, setLoanRepaymentAddress] = useState<string>("");
   const [error, setError] = useState("");
@@ -188,23 +188,23 @@ const CreateLoanOffer: React.FC = () => {
                 {/* LTV */}
                 <Box className="space-y-1">
                   <Text as="label" size={"2"} weight={"medium"} className="text-font/60">
-                    Loan to value
+                    Loan to value (LTV)
                   </Text>
                   <TextField.Root
                     size="3"
                     className="flex-1 text-sm rounded-lg"
                     type="number"
-                    placeholder="LTV (0-1)"
+                    placeholder="LTV (1-90%)"
                     color="purple"
                     value={ltv}
-                    min={0}
-                    max={0.9}
-                    step={0.1}
+                    min={1}
+                    max={90}
+                    step={1}
                     onChange={(e) => setLtv(Number(e.target.value))}
                   >
                     <TextField.Slot className="pr-0" />
                     <TextField.Slot>
-                      <Text size={"2"} weight={"medium"}>0.1 - 0.9</Text>
+                      <Text size={"2"} weight={"medium"}>1% - 90%</Text>
                     </TextField.Slot>
                   </TextField.Root>
                 </Box>
@@ -212,7 +212,7 @@ const CreateLoanOffer: React.FC = () => {
                 {/* Interest Rate */}
                 <Box className="space-y-1">
                   <Text as="label" size={"2"} weight={"medium"} className="text-font/60">
-                    Interest Rate
+                    Interest Rate (APR)
                   </Text>
                   <TextField.Root
                     size="3"
@@ -222,13 +222,13 @@ const CreateLoanOffer: React.FC = () => {
                     color="purple"
                     value={interest}
                     min={0}
-                    max={1}
-                    step={0.01}
+                    max={100}
+                    step={1}
                     onChange={(e) => setInterest(Number(e.target.value))}
                   >
                     <TextField.Slot className="pr-0" />
                     <TextField.Slot>
-                      <Text size={"2"} weight={"medium"}>0.0 - 1.0</Text>
+                      <Text size={"2"} weight={"medium"}>0% - 100%</Text>
                     </TextField.Slot>
                   </TextField.Root>
                 </Box>
@@ -324,7 +324,7 @@ const CreateLoanOffer: React.FC = () => {
               <Flex align={"center"} justify={"between"} my={"4"}>
                 <Text as="label" size={"2"} className="text-font/50">Amount</Text>
                 <Text size={"2"} className="text-font-dark/80 font-semibold">
-                  ${loanAmount.min} ~ ${loanAmount.max}
+                  {formatCurrency(loanAmount.min)} - {formatCurrency(loanAmount.max)}
                 </Text>
               </Flex>
               <Separator size={"4"} color={"gray"} className="opacity-50" />
@@ -337,26 +337,18 @@ const CreateLoanOffer: React.FC = () => {
               <Separator size={"4"} color={"gray"} className="opacity-50" />
               <Flex align={"center"} justify={"between"} my={"4"}>
                 <Text as="label" size={"2"} className="text-font/50">LTV</Text>
-                <Text size={"2"} className="text-font-dark/80 font-semibold">{(ltv * 100).toFixed(2)}%</Text>
+                <Text size={"2"} className="text-font-dark/80 font-semibold">{ltv.toFixed(2)}%</Text>
               </Flex>
               <Separator size={"4"} color={"gray"} className="opacity-50" />
               <Flex align={"center"} justify={"between"} my={"4"}>
                 <Text as="label" size={"2"} className="text-font/50">Interest Rate</Text>
-                <Text size={"2"} className="text-font-dark/80 font-semibold">{(interest * 100).toFixed(2)}$</Text>
+                <Text size={"2"} className="text-font-dark/80 font-semibold">{interest.toFixed(2)}%</Text>
               </Flex>
               <Separator size={"4"} color={"gray"} className="opacity-50" />
               <Flex align={"center"} justify={"between"} my={"4"}>
                 <Text as="label" size={"2"} className="text-font/50">Preferred Coin</Text>
                 <Text size={"2"} className="text-font-dark/80 font-semibold">
-                  {selectedCoin === "USDT_SN"
-                    ? "USDT Straknet"
-                    : selectedCoin === "USDC_SN"
-                    ? "USDC Starknet"
-                    : selectedCoin === "USDT_ETH"
-                    ? "USDT Ethereum"
-                    : selectedCoin === "USDC_ETH"
-                    ? "USDC Ethereum"
-                    : ""}
+                  {selectedCoin ? StableCoinHelper.print(selectedCoin) : ""}
                 </Text>
               </Flex>
             </Box>
