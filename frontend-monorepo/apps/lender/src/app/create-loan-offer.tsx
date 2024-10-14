@@ -31,9 +31,7 @@ const CreateLoanOffer: React.FC = () => {
   const [ltv, setLtv] = useState<number>(0.5);
   const [interest, setInterest] = useState<number>(0.12);
   const [selectedCoin, setSelectedCoin] = useState<StableCoin | undefined>(StableCoin.USDT_ETH);
-  const [loanRepaymentAddress, setLoanRepaymentAddress] = useState<string>(
-    "0xA0C68B2C3cC21F9376eB514c9f1bF80A4939e4A6",
-  );
+  const [loanRepaymentAddress, setLoanRepaymentAddress] = useState<string>("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
