@@ -5,9 +5,9 @@ import { BsBank, BsTicketPerforatedFill } from "react-icons/bs";
 import { IoWalletOutline } from "react-icons/io5";
 import { RiCustomerService2Fill } from "react-icons/ri";
 import { Link } from "react-router-dom";
-import SecurityImg from "../assets/security-icon.png";
-import DashboardTransaction from "./components/DashboardTransaction";
-import LoanCarousel from "./components/LoanCarousel";
+import SecurityImg from "../../assets/security-icon.png";
+import DashboardTransaction from "./DashboardTransaction";
+import LoanCarousel from "./LoanCarousel";
 
 function DashBoard() {
   const { innerHeight } = window;

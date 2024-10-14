@@ -14,7 +14,7 @@ import Login from "./auth/login";
 import Logout from "./auth/logout";
 import Registration from "./auth/registration";
 import ResetPassword from "./auth/reset-password";
-import DashBoard from "./dash-board";
+import DashBoard from "./dashboard/dash-board";
 import ResolveDispute from "./disputes/dispute";
 import ErrorBoundary from "./ErrorBoundary";
 import History from "./History";
