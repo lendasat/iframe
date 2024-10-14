@@ -1,11 +1,7 @@
-import { FullLogoWhiteBg } from "@frontend-monorepo/ui-shared";
 import { Box, Button, Flex, Grid, Heading, Separator, Text } from "@radix-ui/themes";
 import React from "react";
-import { Col, Container, Row } from "react-bootstrap";
 import { IconType } from "react-icons";
 import { BsBank, BsTicketPerforatedFill } from "react-icons/bs";
-import { FaDiscord, FaGithub, FaGlobe } from "react-icons/fa";
-import { FaXTwitter } from "react-icons/fa6";
 import { IoWalletOutline } from "react-icons/io5";
 import { RiCustomerService2Fill } from "react-icons/ri";
 import { Link } from "react-router-dom";
@@ -90,19 +86,12 @@ function DashBoard() {
           {/* Quick action buttons */}
           <Text as="p" weight={"medium"} className="text-font" size={"3"}>Quick Actions</Text>
           <Box className="grid grid-cols-2 gap-y-5 gap-x-8 px-3 mt-5">
-            <Button
-              asChild
-              size={"3"}
-              variant="ghost"
-              className="min-h-40 rounded-2xl bg-purple-100 flex flex-col gap-2 text-font hover:opacity-80"
-            >
-              <Link to={"/request"}>
-                <Box className="h-14 w-14 rounded-full bg-purple-50/50 place-items-center flex justify-center">
-                  <BsTicketPerforatedFill size={"20"} />
-                </Box>
-                <Text size={"2"} weight={"medium"}>Open Ticket</Text>
-              </Link>
-            </Button>
+            <QuickLinks
+              Icon={BsTicketPerforatedFill}
+              target="/request"
+              iconStyle="bg-purple-100"
+              label="Request new Loan"
+            />
 
             <QuickLinks
               Icon={IoWalletOutline}
@@ -114,7 +103,7 @@ function DashBoard() {
               Icon={BsBank}
               target="/request-loan"
               iconStyle="bg-pink-100"
-              label="My Loans"
+              label="Available offers"
             />
             <QuickLinks
               Icon={RiCustomerService2Fill}
