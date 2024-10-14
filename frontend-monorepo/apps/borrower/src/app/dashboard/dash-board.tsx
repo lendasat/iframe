@@ -1,4 +1,4 @@
-import { Box, Button, Flex, Grid, Heading, Separator, Text } from "@radix-ui/themes";
+import { Box, Button, Flex, Grid, Heading, Separator, Skeleton, Text } from '@radix-ui/themes';
 import React from "react";
 import { IconType } from "react-icons";
 import { BsBank, BsTicketPerforatedFill } from "react-icons/bs";
@@ -64,20 +64,20 @@ function DashBoard() {
     >
       <Grid className="md:grid-cols-2 md:grid-rows-2 xl:grid-cols-[minmax(350px,_1fr)_minmax(450px,_1fr)_minmax(300px,_1fr)] gap-5">
         <Box className="md:bg-gradient-to-b from-white to-white/10 backdrop-blur rounded-2xl p-5 md:row-span-2">
-          <Text as="p" weight={"medium"} className="text-font" size={"3"}>Loan Secured</Text>
+          <Text as="p" weight={"medium"} className="text-font" size={"3"}>Total Secured Loans</Text>
           {/* Total Loan Received */}
-          <Heading size={"8"} mt={"3"} className="text-font-dark">$756,809.32</Heading>
+          <Heading size={"8"} mt={"3"} className="text-font-dark"><Skeleton>$756,809.32</Skeleton></Heading>
 
           <Box className="grid grid-cols-2 gap-3 mt-8">
             <Box className="border border-font/10 rounded-xl py-2 px-3">
               {/* Total number of loans received */}
-              <Heading size={"6"}>7</Heading>
+              <Heading size={"6"}><Skeleton>6</Skeleton></Heading>
               <Text size={"2"} weight={"medium"} className="text-font/70">Loans in Total</Text>
             </Box>
 
             <Box className="border border-font/10 rounded-xl py-2 px-3">
               {/* Total number of loans not repaid/closed */}
-              <Heading size={"6"}>2</Heading>
+              <Heading size={"6"}><Skeleton>2</Skeleton></Heading>
               <Text size={"2"} weight={"medium"} className="text-font/70">Active Loan</Text>
             </Box>
           </Box>
