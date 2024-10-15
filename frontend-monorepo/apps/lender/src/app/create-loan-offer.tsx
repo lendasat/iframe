@@ -250,7 +250,7 @@ const CreateLoanOffer: React.FC = () => {
                         onClick={() => handleStableCoinChange(coin)}
                       >
                         {coin === "USDT_SN"
-                          ? "USDT Straknet"
+                          ? "USDT Starknet"
                           : coin === "USDC_SN"
                           ? "USDC Starknet"
                           : coin === "USDT_ETH"
