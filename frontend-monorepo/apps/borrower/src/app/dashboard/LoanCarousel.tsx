@@ -3,12 +3,13 @@ import { Swiper, SwiperRef, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import "swiper/css/navigation";
 import { CurrencyFormatter } from "@frontend-monorepo/ui-shared";
-import { Box, Flex, Heading, IconButton, Text } from "@radix-ui/themes";
+import { Badge, Box, Flex, Heading, IconButton, Text } from "@radix-ui/themes";
 import React, { Suspense } from "react";
 import { FaExternalLinkAlt } from "react-icons/fa";
 import { FaArrowLeftLong, FaArrowRightLong } from "react-icons/fa6";
 import { Await } from "react-router-dom";
 import CreditCard from "../../assets/credit-card.png";
+import { StatusBadge } from "../components/status-badge";
 
 interface UCardProp {
   loans: Contract[];
@@ -69,7 +70,7 @@ export default function LoanCarousel() {
           loop
         >
           {loans.map((loan, index) => {
-            const { lender, expiry, loan_amount, contract_address } = loan;
+            const { lender, expiry, loan_amount, contract_address, status } = loan;
             const displayedAddress = contract_address || "Your vault address will be shown here once funded";
             const isAddressPresent = !!contract_address;
 
@@ -83,9 +84,12 @@ export default function LoanCarousel() {
                 <Box>
                   <Text weight={"regular"} size={"1"} className="text-font/60">Loan Amount</Text>
                   {/* Loan Amount */}
-                  <Heading size={"7"} mt={"1"}>
-                    <CurrencyFormatter value={loan_amount} />
-                  </Heading>
+                  <Flex justify="between" align="center" width="100%">
+                    <Heading size={"7"} mt={"1"}>
+                      <CurrencyFormatter value={loan_amount} />
+                    </Heading>
+                    {<StatusBadge status={status} />}
+                  </Flex>
                 </Box>
                 <Box>
                   <Flex align={"end"} justify={"between"}>
