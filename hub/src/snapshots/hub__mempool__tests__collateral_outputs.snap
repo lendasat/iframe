@@ -1,0 +1,30 @@
+---
+source: hub/src/mempool.rs
+expression: outputs
+---
+[
+    CollateralOutput {
+        outpoint: OutPoint {
+            txid: 44fe3d70a3058eb1bef62e24379b4865ada8332f9ee30752cf606f37343461a0,
+            vout: 1,
+        },
+        amount_sats: 100,
+        state: Seen,
+    },
+    CollateralOutput {
+        outpoint: OutPoint {
+            txid: 44fe3d70a3058eb1bef62e24379b4865ada8332f9ee30752cf606f37343461a1,
+            vout: 0,
+        },
+        amount_sats: 100,
+        state: Seen,
+    },
+    CollateralOutput {
+        outpoint: OutPoint {
+            txid: 44fe3d70a3058eb1bef62e24379b4865ada8332f9ee30752cf606f37343461a2,
+            vout: 1,
+        },
+        amount_sats: 100,
+        state: Seen,
+    },
+]
