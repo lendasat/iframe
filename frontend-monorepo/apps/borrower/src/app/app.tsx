@@ -6,12 +6,7 @@ import {
   useAuth,
 } from "@frontend-monorepo/http-client-borrower";
 import { Layout, PriceProvider } from "@frontend-monorepo/ui-shared";
-import { BsPiggyBank } from "react-icons/bs";
-import { GiPayMoney } from "react-icons/gi";
-import { HiUsers } from "react-icons/hi2";
-import { IoMdHelpCircle } from "react-icons/io";
-import { TbLayoutDashboardFilled } from "react-icons/tb";
-import { TbHistory } from "react-icons/tb";
+import { BsBank } from "react-icons/bs";
 import { Outlet, Route, Routes } from "react-router-dom";
 import EmailVerification from "./auth/email-verification";
 import ForgotPassword from "./auth/forgot-password";
@@ -19,7 +14,7 @@ import Login from "./auth/login";
 import Logout from "./auth/logout";
 import Registration from "./auth/registration";
 import ResetPassword from "./auth/reset-password";
-import DashBoard from "./dash-board";
+import DashBoard from "./dashboard/dash-board";
 import ResolveDispute from "./disputes/dispute";
 import ErrorBoundary from "./ErrorBoundary";
 import History from "./History";
@@ -30,49 +25,80 @@ import Profile from "./profile";
 import RequestLoan from "./request-loan/request-loan";
 import { RequestLoanSummary } from "./request-loan/request-loan-summary";
 import "./../styles.css";
+import { User } from "@frontend-monorepo/base-http-client";
+import { FiHome } from "react-icons/fi";
+import { GoGitPullRequest } from "react-icons/go";
+import { HiOutlineSupport } from "react-icons/hi";
+import { IoWalletOutline } from "react-icons/io5";
+import { LuActivity, LuSettings } from "react-icons/lu";
 import CustomRequest from "./request-loan/custom-loan-request";
 import SimpleRequest from "./request-loan/my-requests";
 
 const menuItems = [
   {
-    label: "Dashboard",
-    icon: TbLayoutDashboardFilled,
-    path: "/",
-    borrower: true,
+    group: [
+      {
+        label: "home",
+        path: "/",
+        icon: FiHome,
+        target: "_self",
+      },
+      {
+        label: "activities",
+        path: "/history",
+        icon: LuActivity,
+        target: "_self",
+      },
+    ],
+    separator: true,
   },
   {
-    label: "History",
-    icon: TbHistory,
-    path: "/history",
+    group: [
+      {
+        label: "Request Loan",
+        path: "/requests",
+        icon: GoGitPullRequest,
+        target: "_self",
+      },
+      {
+        label: "Available offers",
+        path: "/request-loan",
+        icon: BsBank,
+        target: "_self",
+      },
+      {
+        label: "My Loans",
+        path: "/my-contracts",
+        icon: IoWalletOutline,
+        target: "_self",
+      },
+    ],
+    separator: true,
   },
   {
-    label: "Loan offers",
-    icon: GiPayMoney,
-    path: "/request-loan",
-  },
-  {
-    label: "My loans",
-    icon: BsPiggyBank,
-    path: "/my-contracts",
-  },
-  {
-    label: "Support",
-    icon: IoMdHelpCircle,
-    path: "https://lendasat.notion.site",
-    target: "_blank",
-  },
-  {
-    label: "setting",
-    icon: HiUsers,
-    path: "/my-account",
+    group: [
+      {
+        label: "settings",
+        path: "/setting",
+        icon: LuSettings,
+        target: "_self",
+      },
+      {
+        label: "support",
+        path: "https://lendasat.notion.site",
+        icon: HiOutlineSupport,
+        target: "_blank",
+      },
+    ],
+    separator: false,
   },
 ];
 
 function MainLayoutComponents() {
-  const { backendVersion, user: borrowerUser } = useAuth();
+  const { backendVersion, user: borrowerUser, logout } = useAuth();
 
   // Mapping function to normalize user objects
-  const mapBorrowerUser = (borrowerUser: any) => ({
+  const mapBorrowerUser = (borrowerUser: User) => ({
     id: borrowerUser?.id,
     name: borrowerUser?.name,
     email: borrowerUser?.email,
@@ -91,6 +117,7 @@ function MainLayoutComponents() {
         menuItems={menuItems}
         theme={"light"}
         backendVersion={backendVersion}
+        logout={logout}
       >
         <Routes>
           <Route

@@ -1,4 +1,5 @@
 import { Contract, ContractStatus, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
+import { Box } from "@radix-ui/themes";
 import { Suspense } from "react";
 import { Await } from "react-router-dom";
 import ContractsComponent from "./loans";
@@ -12,13 +13,13 @@ function MyLoans() {
         resolve={getContracts()}
         errorElement={<div>Could not load contracts</div>}
         children={(contracts: Awaited<Contract[]>) => (
-          <div className="p-4">
+          <Box>
             <ContractsComponent
               loans={contracts.filter((
                 loan,
               ) => (loan.status !== ContractStatus.Closed && loan.status !== ContractStatus.Rejected))}
             />
-          </div>
+          </Box>
         )}
       />
     </Suspense>

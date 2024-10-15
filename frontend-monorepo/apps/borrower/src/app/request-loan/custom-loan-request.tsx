@@ -23,6 +23,7 @@ import {
 } from "@radix-ui/themes";
 import React, { useState } from "react";
 import { Form } from "react-bootstrap";
+import { IoIosUnlock } from "react-icons/io";
 
 export default function CustomRequest() {
   const { postLoanRequest } = useBorrowerHttpClient();
@@ -47,6 +48,7 @@ export default function CustomRequest() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   // Since we only support creating loan requests for now, this flow is currently a dead end. To
   // emphasise that, we can disable the form after a loan request is created.
@@ -97,6 +99,7 @@ export default function CustomRequest() {
       if (res !== undefined) {
         setIsDone(true);
         setError("");
+        setSuccess("Loan request successfully created");
       } else {
         console.error(res);
         setError("Failed creating request: undefined");
@@ -263,6 +266,19 @@ export default function CustomRequest() {
               </Button>
             </Form>
           </Box>
+          {success
+            && (
+              <Box className={"mt-4"}>
+                <Callout.Root color="green">
+                  <Callout.Icon>
+                    <IoIosUnlock />
+                  </Callout.Icon>
+                  <Callout.Text>
+                    {success}
+                  </Callout.Text>
+                </Callout.Root>
+              </Box>
+            )}
         </Box>
 
         <Box className="flex flex-col items-center justify-center">

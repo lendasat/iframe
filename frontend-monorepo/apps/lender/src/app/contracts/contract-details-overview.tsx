@@ -4,13 +4,15 @@ import { Contract, ContractStatus, contractStatusToLabelString } from "@frontend
 import { useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
 import { LiquidationStatus } from "@frontend-monorepo/http-client-lender";
 import { CurrencyFormatter } from "@frontend-monorepo/ui-shared";
+import { Badge, Box, Button, Callout, Dialog, Flex, Grid, Heading, Separator, Text } from "@radix-ui/themes";
 import React, { Suspense, useState } from "react";
-import { Alert, Badge, Button, Col, Container, OverlayTrigger, Row, Spinner, Tooltip } from "react-bootstrap";
+import { Alert, OverlayTrigger, Spinner, Tooltip } from "react-bootstrap";
 import { Await, useNavigate, useParams } from "react-router-dom";
 import { ExpandableDisputeCard } from "../disputes/dispute-card";
 import RepaymentDetails from "./pay-loan-principal";
 
 function ContractDetailsOverview() {
+  const { innerHeight } = window;
   const { getContract } = useLenderHttpClient();
   const { id } = useParams();
 
@@ -20,9 +22,14 @@ function ContractDetailsOverview() {
         resolve={getContract(id!)}
         errorElement={<div>Could not load contracts</div>}
         children={(contract: Awaited<Contract>) => (
-          <Container className={"p-4"} fluid>
+          <Box
+            style={{
+              overflowY: "scroll",
+              height: innerHeight - 130,
+            }}
+          >
             <Details contract={contract} />
-          </Container>
+          </Box>
         )}
       />
     </Suspense>
@@ -36,32 +43,10 @@ interface DetailsProps {
 }
 
 function Details({ contract }: DetailsProps) {
-  const [error, setError] = useState("");
-  const navigate = useNavigate();
-
-  const onSuccess = () => {
-    navigate(0);
-  };
-
   return (
-    <Row className="mt-3">
-      <Col xs={12} md={6}>
-        {<ContractDetails contract={contract} />}
-      </Col>
-      <Col xs={12} md={6}>
-        <ContractStatusDetails
-          contract={contract}
-          onError={setError}
-          onSuccess={onSuccess}
-        />
-        {error && (
-          <Alert variant="danger">
-            <FontAwesomeIcon icon={faExclamationCircle} className="h-4 w-4 mr-2" />
-            {error}
-          </Alert>
-        )}
-      </Col>
-    </Row>
+    <Box className="h-full">
+      <ContractDetails contract={contract} />
+    </Box>
   );
 }
 
@@ -125,72 +110,153 @@ function ContractDetails({ contract }: DetailsProps) {
     contractStatusLabel = "Liquidated";
   }
 
+  const [errorAlt, setErrorAlt] = useState("");
+  const navigate = useNavigate();
+
+  const onSuccess = () => {
+    navigate(0);
+  };
+
   return (
-    <Container fluid>
-      <Row>
-        <h4>Contract Details</h4>
-      </Row>
-      <Row className="justify-content-between border-b mt-2">
-        <Col>id</Col>
-        <Col className="text-end mb-2">
-          {contract.id}
-        </Col>
-      </Row>
-      <Row className="justify-content-between border-b mt-2">
-        <Col>Borrower</Col>
-        <Col className="text-end mb-2">
-          {contract.borrower_pk}
-        </Col>
-      </Row>
-      <Row className="justify-content-between border-b mt-2">
-        <Col>Contract status</Col>
-        <Col className="text-end mb-2">
-          <Badge bg="primary">{contractStatusLabel}</Badge>
-        </Col>
-      </Row>
-      <Row className="justify-content-between border-b mt-2">
-        <Col md={6}>Loan amount</Col>
-        <Col md={6} className="text-end mb-2">
-          <CurrencyFormatter value={loanAmount} />
-        </Col>
-      </Row>
-      <Row className="justify-content-between border-b mt-2">
-        <Col md={6}>Duration</Col>
-        <Col md={6} className="text-end mb-2">
-          {durationMonths} months
-        </Col>
-      </Row>
-      <Row className="justify-content-between border-b mt-2">
-        <Col>Collateral</Col>
-        <Col className="text-end mb-2">
-          {collateral.toFixed(8)} BTC
-        </Col>
-      </Row>
-      <Row className="justify-content-between border-b mt-2">
-        <Col md={6}>Origination fee (1%)</Col>
-        <Col md={6} className="text-end mb-2">
-          <OverlayTrigger
-            placement="top"
-            overlay={<Tooltip>${loanOriginatorFeeUsd}</Tooltip>}
-          >
-            <span>{loanOriginatorFee.toFixed(8)} BTC</span>
-          </OverlayTrigger>
-        </Col>
-      </Row>
-      <Row className="justify-content-between border-b mt-2">
-        <Col>LTV ratio</Col>
-        <Col className="text-end mb-2">{initialLtvFormatted}%</Col>
-      </Row>
-      <Row className="justify-content-between mt-2">
-        <Col>Interest rate p.a.</Col>
-        <Col className="text-end mb-2">
-          {interestRate * 100}%
-        </Col>
-      </Row>
-      <Row className="justify-content-between mt-5">
-        <AdditionalDetail contract={contract} />
-      </Row>
-      <Row>
+    <Grid className="md:grid-cols-2">
+      <Box className="border-r border-font/10">
+        <Box className="p-6 md:pl-8 border-b border-font/10">
+          <Heading size={"6"}>
+            Contract Details
+          </Heading>
+        </Box>
+        <Box className="p-6 md:p-8 space-y-5">
+          <Flex gap={"5"} align={"start"} justify={"between"}>
+            <Text size={"2"} weight={"medium"} className="text-font/70 shrink-0">
+              Tracking ID
+            </Text>
+            <Text size={"2"} weight={"medium"} className="text-end">
+              {contract.id}
+            </Text>
+          </Flex>
+          <Separator size={"4"} className="bg-font/10" />
+
+          <Flex gap={"5"} align={"start"} justify={"between"}>
+            <Text size={"2"} weight={"medium"} className="shrink-0 text-font/70">
+              Borrower ID
+            </Text>
+            <Box className="max-w-sm text-end">
+              <Text size={"2"} weight={"medium"} className="break-all">
+                {contract.borrower_pk}
+              </Text>
+            </Box>
+          </Flex>
+          <Separator size={"4"} className="bg-font/10" />
+
+          <Flex gap={"5"} align={"center"} justify={"between"}>
+            <Text size={"2"} weight={"medium"} className="text-font/70">
+              Contract status
+            </Text>
+            <Text size={"2"} weight={"medium"}>
+              <Badge
+                color={contract.status === ContractStatus.Requested
+                  ? "amber"
+                  : contract.status === ContractStatus.Approved
+                  ? "green"
+                  : contract.status === ContractStatus.Rejected
+                  ? "red"
+                  : "gray"}
+                size={"2"}
+              >
+                {contractStatusLabel}
+              </Badge>
+            </Text>
+          </Flex>
+          <Separator size={"4"} className="bg-font/10" />
+
+          <Flex gap={"5"} align={"start"} justify={"between"}>
+            <Text size={"2"} weight={"medium"} className="text-font/70">
+              Loan Amount
+            </Text>
+            <Text size={"2"} weight={"medium"}>
+              <CurrencyFormatter value={loanAmount} />
+            </Text>
+          </Flex>
+          <Separator size={"4"} className="bg-font/10" />
+
+          <Flex gap={"5"} align={"start"} justify={"between"}>
+            <Text size={"2"} weight={"medium"} className="text-font/70">
+              Duration
+            </Text>
+            <Text size={"2"} weight={"medium"}>
+              {durationMonths} months
+            </Text>
+          </Flex>
+          <Separator size={"4"} className="bg-font/10" />
+
+          <Flex gap={"5"} align={"start"} justify={"between"}>
+            <Text size={"2"} weight={"medium"} className="text-font/70">
+              Collateral
+            </Text>
+            <Text size={"2"} weight={"medium"}>
+              {collateral.toFixed(8)} BTC
+            </Text>
+          </Flex>
+          <Separator size={"4"} className="bg-font/10" />
+
+          <Flex gap={"5"} align={"start"} justify={"between"}>
+            <Text size={"2"} weight={"medium"} className="text-font/70">
+              Origination fee (1%)
+            </Text>
+            <Box className="max-w-sm text-end">
+              <OverlayTrigger
+                placement="top"
+                overlay={<Tooltip>${loanOriginatorFeeUsd}</Tooltip>}
+              >
+                <Text size={"2"} weight={"medium"}>
+                  {loanOriginatorFee.toFixed(8)} BTC
+                </Text>
+              </OverlayTrigger>
+            </Box>
+          </Flex>
+          <Separator size={"4"} className="bg-font/10" />
+
+          <Flex gap={"5"} align={"start"} justify={"between"}>
+            <Text size={"2"} weight={"medium"} className="text-font/70">
+              LTV ratio
+            </Text>
+            <Text size={"2"} weight={"medium"}>
+              {initialLtvFormatted}%
+            </Text>
+          </Flex>
+          <Separator size={"4"} className="bg-font/10" />
+
+          <Flex gap={"5"} align={"start"} justify={"between"}>
+            <Text size={"2"} weight={"medium"} className="text-font/70">
+              Interest rate p.a.
+            </Text>
+            <Text size={"2"} weight={"medium"}>
+              {interestRate * 100}%
+            </Text>
+          </Flex>
+          <Separator size={"4"} className="bg-font/10" />
+          <AdditionalDetail contract={contract} />
+          {errorAlt && (
+            <Callout.Root color="red">
+              <Callout.Icon>
+                <FontAwesomeIcon icon={faExclamationCircle} className="h-4 w-4" />
+              </Callout.Icon>
+              <Callout.Text>
+                {error}
+              </Callout.Text>
+            </Callout.Root>
+          )}
+
+          <Flex justify={"end"}>
+            <ContractStatusDetails
+              contract={contract}
+              onError={setErrorAlt}
+              onSuccess={onSuccess}
+            />
+          </Flex>
+        </Box>
+      </Box>
+      <Box className="p-6 md:p-8 space-y-5">
         <ExpandableDisputeCard
           info={info}
           onStartDispute={onStartDispute}
@@ -198,8 +264,8 @@ function ContractDetails({ contract }: DetailsProps) {
           error={error}
           disputeInProgress={disputeInProgress}
         />
-      </Row>
-    </Container>
+      </Box>
+    </Grid>
   );
 }
 
@@ -216,81 +282,137 @@ const AdditionalDetail = ({ contract }: AdditionalDetailsProps) => {
     case ContractStatus.CollateralSeen:
     case ContractStatus.CollateralConfirmed:
       return (
-        <Row className="justify-content-between border-b mt-2">
-          <Col>Funding transaction</Col>
-          <Col className="text-end mb-2">
-            TODO!
-          </Col>
-        </Row>
+        <Box className="space-y-5">
+          <Flex gap={"5"} align={"start"} justify={"between"}>
+            <Text size={"2"} weight={"medium"} className="text-font/70">
+              Funding transaction
+            </Text>
+            <Text size={"2"} weight={"medium"}>
+              TODO!
+            </Text>
+          </Flex>
+          <Separator size={"4"} className="bg-font/10" />
+        </Box>
       );
     case ContractStatus.PrincipalGiven:
       return (
         <>
-          <Row className="justify-content-between border-b mt-2">
-            <Col>Funding transaction</Col>
-            <Col className="text-end mb-2">
-              TODO!
-            </Col>
-          </Row>
-          <Row className="justify-content-between border-b mt-2">
-            <Col>Principal transaction</Col>
-            <Col className="text-end mb-2">
-              TODO!
-            </Col>
-          </Row>
+          <Box className="space-y-5">
+            <Flex gap={"5"} align={"start"} justify={"between"}>
+              <Text size={"2"} weight={"medium"} className="text-font/70">
+                Funding transaction
+              </Text>
+              <Text size={"2"} weight={"medium"}>
+                TODO!
+              </Text>
+            </Flex>
+            <Separator size={"4"} className="bg-font/10" />
+          </Box>
+
+          <Box className="space-y-5">
+            <Flex gap={"5"} align={"start"} justify={"between"}>
+              <Text size={"2"} weight={"medium"} className="text-font/70">
+                Principal transaction
+              </Text>
+              <Text size={"2"} weight={"medium"}>
+                TODO!
+              </Text>
+            </Flex>
+            <Separator size={"4"} className="bg-font/10" />
+          </Box>
         </>
       );
     case ContractStatus.Repaid:
       return (
         <>
-          <Row className="justify-content-between border-b mt-2">
-            <Col>Funding transaction</Col>
-            <Col className="text-end mb-2">
-              TODO!
-            </Col>
-          </Row>
-          <Row className="justify-content-between border-b mt-2">
-            <Col>Principal transaction</Col>
-            <Col className="text-end mb-2">
-              TODO!
-            </Col>
-          </Row>
-          <Row className="justify-content-between border-b mt-2">
-            <Col>Principal repayment transaction</Col>
-            <Col className="text-end mb-2">
-              TODO!
-            </Col>
-          </Row>
+          <Box className="space-y-5">
+            <Flex gap={"5"} align={"start"} justify={"between"}>
+              <Text size={"2"} weight={"medium"} className="text-font/70">
+                Funding transaction
+              </Text>
+              <Text size={"2"} weight={"medium"}>
+                TODO!
+              </Text>
+            </Flex>
+            <Separator size={"4"} className="bg-font/10" />
+          </Box>
+
+          <Box className="space-y-5">
+            <Flex gap={"5"} align={"start"} justify={"between"}>
+              <Text size={"2"} weight={"medium"} className="text-font/70">
+                Principal transaction
+              </Text>
+              <Text size={"2"} weight={"medium"}>
+                TODO!
+              </Text>
+            </Flex>
+            <Separator size={"4"} className="bg-font/10" />
+          </Box>
+
+          <Box className="space-y-5">
+            <Flex gap={"5"} align={"start"} justify={"between"}>
+              <Text size={"2"} weight={"medium"} className="text-font/70">
+                Principal repayment transaction
+              </Text>
+              <Text size={"2"} weight={"medium"}>
+                TODO!
+              </Text>
+            </Flex>
+            <Separator size={"4"} className="bg-font/10" />
+          </Box>
         </>
       );
     case ContractStatus.Closing:
     case ContractStatus.Closed:
       return (
         <>
-          <Row className="justify-content-between border-b mt-2">
-            <Col>Funding transaction</Col>
-            <Col className="text-end mb-2">
-              TODO!
-            </Col>
-          </Row>
-          <Row className="justify-content-between border-b mt-2">
-            <Col>Principal transaction</Col>
-            <Col className="text-end mb-2">
-              TODO!
-            </Col>
-          </Row>
-          <Row className="justify-content-between border-b mt-2">
-            <Col>Principal repayment transaction</Col>
-            <Col className="text-end mb-2">
-              TODO!
-            </Col>
-          </Row>
-          <Row className="justify-content-between mt-2">
-            <Col>Collateral claim transaction</Col>
-            <Col className="text-end mb-2">
-              TODO!
-            </Col>
-          </Row>
+          <Box className="space-y-5">
+            <Flex gap={"5"} align={"start"} justify={"between"}>
+              <Text size={"2"} weight={"medium"} className="text-font/70">
+                Funding transaction
+              </Text>
+              <Text size={"2"} weight={"medium"}>
+                TODO!
+              </Text>
+            </Flex>
+            <Separator size={"4"} className="bg-font/10" />
+          </Box>
+
+          <Box className="space-y-5">
+            <Flex gap={"5"} align={"start"} justify={"between"}>
+              <Text size={"2"} weight={"medium"} className="text-font/70">
+                Principal transaction
+              </Text>
+              <Text size={"2"} weight={"medium"}>
+                TODO!
+              </Text>
+            </Flex>
+            <Separator size={"4"} className="bg-font/10" />
+          </Box>
+
+          <Box className="space-y-5">
+            <Flex gap={"5"} align={"start"} justify={"between"}>
+              <Text size={"2"} weight={"medium"} className="text-font/70">
+                Principal repayment transaction
+              </Text>
+              <Text size={"2"} weight={"medium"}>
+                TODO!
+              </Text>
+            </Flex>
+            <Separator size={"4"} className="bg-font/10" />
+          </Box>
+
+          <Box className="space-y-5">
+            <Flex gap={"5"} align={"start"} justify={"between"}>
+              <Text size={"2"} weight={"medium"} className="text-font/70">
+                Collateral claim transaction
+              </Text>
+              <Text size={"2"} weight={"medium"}>
+                TODO!
+              </Text>
+            </Flex>
+            <Separator size={"4"} className="bg-font/10" />
+          </Box>
         </>
       );
     case ContractStatus.Rejected:
@@ -366,32 +488,67 @@ const ContractStatusDetails = (
       // TODO:
       return (
         <div className="d-flex gap-2">
-          <Button onClick={onContractApprove} disabled={isLoading}>
-            {isLoading
-              ? (
-                <Spinner animation="border" role="status" variant="light" size="sm">
-                  <span className="visually-hidden">Loading...</span>
-                </Spinner>
-              )
-              : "Approve"}
-          </Button>
-          <Button onClick={onContractReject} disabled={isLoading}>
-            {isLoading
-              ? (
-                <Spinner animation="border" role="status" variant="light" size="sm">
-                  <span className="visually-hidden">Loading...</span>
-                </Spinner>
-              )
-              : "Reject"}
-          </Button>
+          {/* Approve Button */}
+          <Dialog.Root>
+            <Dialog.Trigger>
+              <Button color="green" loading={isLoading} disabled={isLoading} size={"3"}>
+                Approve
+              </Button>
+            </Dialog.Trigger>
+            <Dialog.Content maxWidth="450px">
+              <Dialog.Title>Approval Contract</Dialog.Title>
+              <Dialog.Description size="2" mb="4">
+                Are you sure you want to approve this loan?
+              </Dialog.Description>
+              <Flex gap="3" mt="4" justify="end">
+                <Dialog.Close>
+                  <Button variant="soft" color="gray">
+                    Quit
+                  </Button>
+                </Dialog.Close>
+                <Button color="green" loading={isLoading} disabled={isLoading} onClick={onContractApprove}>
+                  Approve
+                </Button>
+              </Flex>
+            </Dialog.Content>
+          </Dialog.Root>
+
+          {/* Reject Button */}
+          <Dialog.Root>
+            <Dialog.Trigger>
+              <Button color="red" loading={isLoading} disabled={isLoading} size={"3"}>
+                Reject
+              </Button>
+            </Dialog.Trigger>
+            <Dialog.Content maxWidth="450px">
+              <Dialog.Title>Reject Contract</Dialog.Title>
+              <Dialog.Description size="2" mb="4">
+                Are you sure you want to reject this loan?
+              </Dialog.Description>
+              <Flex gap="3" mt="4" justify="end">
+                <Dialog.Close>
+                  <Button variant="soft" color="gray">
+                    Quit
+                  </Button>
+                </Dialog.Close>
+                <Button color="red" loading={isLoading} disabled={isLoading} onClick={onContractReject}>
+                  Reject
+                </Button>
+              </Flex>
+            </Dialog.Content>
+          </Dialog.Root>
         </div>
       );
     case ContractStatus.Approved:
       return (
-        <Alert variant="info">
-          <FontAwesomeIcon icon={faInfoCircle} className="h-4 w-4 mr-2" />
-          Waiting for user to fund the contract. Please refresh to check for updates.
-        </Alert>
+        <Callout.Root className="w-full" color="teal">
+          <Callout.Icon>
+            <FontAwesomeIcon icon={faInfoCircle} className="h-4 w-4" />
+          </Callout.Icon>
+          <Callout.Text>
+            Waiting for user to fund the contract. Please refresh to check for updates.
+          </Callout.Text>
+        </Callout.Root>
       );
     case ContractStatus.CollateralSeen:
     case ContractStatus.CollateralConfirmed:

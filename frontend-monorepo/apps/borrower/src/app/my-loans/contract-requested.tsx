@@ -1,5 +1,7 @@
+import { Box, Flex, Heading, Text, Tooltip } from "@radix-ui/themes";
 import React, { useEffect, useState } from "react";
-import { Col, Container, Row } from "react-bootstrap";
+import { LuClock1 } from "react-icons/lu";
+import { PiWarningCircleBold } from "react-icons/pi";
 
 interface ContractRequestedProps {
   createdAt: Date;
@@ -34,23 +36,26 @@ export function ContractRequested({ createdAt }: ContractRequestedProps) {
   }, [createdAt]);
 
   return (
-    <Container fluid>
-      <Row>
-        <h4>Waiting for response</h4>
-      </Row>
-
-      <Row className="mt-4">
-        <Col className="text-center">
-          <div className="d-flex justify-content-center align-items-center flex-column">
-            <p className="mt-2 text-break">
-              Waiting for the lender to accept the loan request.
-            </p>
-            <p className="mt-2">
-              Time remaining: <strong>{timeRemaining}</strong>
-            </p>
-          </div>
-        </Col>
-      </Row>
-    </Container>
+    <Box>
+      <Heading weight={"medium"} size={"4"}>Awaiting Lenders Remark...</Heading>
+      <Box className="mt-3 h-12 px-2 justify-between rounded-xl bg-gradient-to-r from-pink-500/20 to-active-nav/50 to-90% flex items-center">
+        <Flex align={"center"} gap={"2"}>
+          <Box className="h-8 w-8 bg-black rounded-lg flex items-center justify-center">
+            <LuClock1 color="white" size={17} />
+          </Box>
+          <Text weight={"medium"} size={"2"}>
+            Time Remaining
+          </Text>
+        </Flex>
+        <Flex align={"center"} gap={"2"}>
+          <Heading size={"3"}>
+            {timeRemaining}
+          </Heading>
+          <Tooltip content={"Waiting for the lenders response"}>
+            <PiWarningCircleBold />
+          </Tooltip>
+        </Flex>
+      </Box>
+    </Box>
   );
 }

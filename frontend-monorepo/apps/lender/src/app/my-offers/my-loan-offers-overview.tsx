@@ -1,4 +1,5 @@
 import { LoanOffer, useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
+import { Box, Heading } from "@radix-ui/themes";
 import { useEffect, useState } from "react";
 import MyLoanOffersComponent from "./my-loan-offers";
 
@@ -17,25 +18,28 @@ function MyLoanOffersOverview() {
 
   useEffect(() => {
     const fetchLoans = async () => {
-      const offers = await getMyLoanOffers() || [];
+      const offers = (await getMyLoanOffers()) || [];
 
       const sortedOffers = sortOffers(offers, tableSorting);
 
-      setLoanOffers(
-        sortedOffers,
-      );
+      setLoanOffers(sortedOffers);
     };
     fetchLoans();
   }, [getMyLoanOffers, tableSorting]);
 
+  const { innerHeight } = window;
+
   return (
-    <div className="h-screen">
-      <div className="pt-3 h-full">
-        <div className="h-full mt-3 overflow-hidden">
-          <MyLoanOffersComponent loanOffers={loanOffers} />
-        </div>
-      </div>
-    </div>
+    <Box
+      style={{
+        height: innerHeight - 130,
+      }}
+    >
+      <Box className="p-6 md:p-8">
+        <Heading size={"7"}>My Proposals</Heading>
+      </Box>
+      <MyLoanOffersComponent loanOffers={loanOffers} />
+    </Box>
   );
 }
 
