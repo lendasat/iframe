@@ -136,6 +136,7 @@ function MyLoanOfferDetails() {
                           type="number"
                           placeholder="Min Amount"
                           value={loanAmount.min}
+                          disabled={true}
                           onChange={(e) => setLoanAmount({ ...loanAmount, min: Number(e.target.value) })}
                         />
 
@@ -149,6 +150,7 @@ function MyLoanOfferDetails() {
                           placeholder="Max Amount"
                           value={loanAmount.max}
                           variant="surface"
+                          disabled={true}
                           onChange={(e) => setLoanAmount({ ...loanAmount, max: Number(e.target.value) })}
                         />
                       </Flex>
@@ -168,6 +170,7 @@ function MyLoanOfferDetails() {
                           color="purple"
                           placeholder="Min Duration"
                           value={loanDuration.min}
+                          disabled={true}
                           onChange={(e) => setLoanDuration({ ...loanDuration, min: Number(e.target.value) })}
                         />
 
@@ -180,6 +183,7 @@ function MyLoanOfferDetails() {
                           className="flex-1 text-sm rounded-lg"
                           placeholder="Max Duration"
                           value={loanDuration.max}
+                          disabled={true}
                           onChange={(e) => setLoanDuration({ ...loanDuration, max: Number(e.target.value) })}
                         />
                       </Flex>
@@ -200,6 +204,7 @@ function MyLoanOfferDetails() {
                         min={0}
                         max={1}
                         step={0.01}
+                        disabled={true}
                         onChange={(e) => setInterest(Number(e.target.value))}
                       >
                         <TextField.Slot className="pr-0" />
@@ -224,6 +229,7 @@ function MyLoanOfferDetails() {
                         min={0}
                         max={0.9}
                         step={0.1}
+                        disabled={true}
                         onChange={(e) => setLtv(Number(e.target.value))}
                       >
                         <TextField.Slot className="pr-0" />
