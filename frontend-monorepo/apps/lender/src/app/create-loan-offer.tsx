@@ -64,8 +64,8 @@ const CreateLoanOffer: React.FC = () => {
 
     return {
       name: "Loan Offer",
-      min_ltv: ltv,
-      interest_rate: interest,
+      min_ltv: ltv / 100,
+      interest_rate: interest / 100,
       loan_amount_min: loanAmount.min,
       loan_amount_max: loanAmount.max,
       duration_months_min: loanDuration.min,

@@ -23,7 +23,9 @@ export class HttpClientLender extends BaseHttpClient {
       return response.data;
     } catch (error) {
       console.error(
-        `Failed to post loan offer: http: ${error.response?.status} and response: ${error.response?.data}`,
+        `Failed to post loan offer: http: ${error.response?.status} and response: ${
+          JSON.stringify(error.response?.data)
+        }`,
       );
       throw error.response?.data;
     }
