@@ -1,75 +1,90 @@
+import { useEffect, useState } from "react";
+import { Alert, Button, Modal } from "react-bootstrap";
+
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Box, Button, Flex, Heading, IconButton, Text, TextField } from "@radix-ui/themes";
-import { useEffect, useState } from "react";
-import { Alert, Modal } from "react-bootstrap";
+import { Box, Flex, Heading, IconButton, Text, TextField } from "@radix-ui/themes";
 import { MdOutlineVisibility, MdOutlineVisibilityOff } from "react-icons/md";
-import { useWallet } from "./borrower-wallet";
+import { useWallet } from "./browser-wallet";
+import { delay } from "./unlock-wallet-modal";
 
 interface WalletModalProps {
   show: boolean;
   handleClose: () => void;
-  handleSubmit: () => void;
+  handleSubmit: (password: string) => void;
 }
 
-export function UnlockWalletModal({ show, handleClose, handleSubmit }: WalletModalProps) {
+export function CreateWalletModal({ show, handleClose, handleSubmit }: WalletModalProps) {
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [passVisibility, setPassVisibility] = useState<boolean>(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const { loadWallet, isWalletLoaded, doesWalletExist } = useWallet();
+  const { doesWalletExist, createWallet } = useWallet();
 
   useEffect(() => {
     if (show) {
       // Reset all states when the modal is shown
       setPassword("");
+      setConfirmPassword("");
       setError("");
     }
   }, [show]); // This effect runs every time 'show' changes
 
+  const validatePasswords = () => {
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return false;
+    }
+    setError("");
+    return true;
+  };
+
   const onOkClick = async () => {
     setLoading(true);
     await delay(100);
-    try {
-      if (!doesWalletExist) {
-        setError("Wallet does not exist");
+    if (validatePasswords()) {
+      try {
+        if (!doesWalletExist) {
+          createWallet(password, import.meta.env.VITE_BITCOIN_NETWORK ?? "signet");
+          console.log("Created new wallet");
+        } else {
+          setError("Wallet already exists, please unlock instead");
+          return;
+        }
+      } catch (error) {
+        setError(`${JSON.stringify(error)}`);
         return;
+      } finally {
+        setLoading(false);
       }
-      if (!isWalletLoaded) {
-        loadWallet(password);
-        console.log("Wallet loaded successfully");
-      } else {
-        console.log("Wallet already loaded");
-        return;
-      }
-    } catch (error) {
-      setError(`${error}`);
-      return;
-    } finally {
-      setLoading(false);
-    }
 
-    handleSubmit();
+      handleSubmit(password);
+      handleClose();
+    }
   };
 
   return (
     <Modal show={show} onHide={handleClose} centered>
       <Box className="px-4 pt-7">
         <Box>
-          <Heading as="h2" className="text-xl md:text-2xl lg:text-4xl font-semibold text-center text-font-dark mb-7">
-            Input Contract Password
+          <Heading as="h2" className="text-xl md:text-2xl lg:text-3xl font-semibold text-center text-font-dark mb-7">
+            Create Contract Password
           </Heading>
         </Box>
         <Box className="mb-3">
           <Flex className="flex flex-col gap-3">
             {(!error)
               ? (
-                <Alert variant={"info"} className="flex items-baseline gap-2">
+                <Alert variant={"info"} className="flex items-start gap-2">
                   <Box>
                     <FontAwesomeIcon icon={faInfoCircle} />
                   </Box>
-                  <Text>Please enter your wallet secret to unlock your wallet.</Text>
+                  <Text>
+                    Please enter a secret for your contracts. Keep this password safe. You will need it when unlocking
+                    your funds.
+                  </Text>
                 </Alert>
               )
               : ""}
@@ -84,7 +99,7 @@ export function UnlockWalletModal({ show, handleClose, handleSubmit }: WalletMod
               )}
           </Flex>
         </Box>
-        <Box>
+        <Box className="mb-4">
           <TextField.Root
             variant="soft"
             className="py-3 px-4 rounded-lg border border-font/10"
@@ -92,6 +107,25 @@ export function UnlockWalletModal({ show, handleClose, handleSubmit }: WalletMod
             type={passVisibility ? "text" : "password"}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+          >
+            <TextField.Slot />
+            <TextField.Slot>
+              <IconButton variant="ghost" onClick={() => setPassVisibility(!passVisibility)}>
+                {passVisibility
+                  ? <MdOutlineVisibilityOff size={24} className="text-font/50" />
+                  : <MdOutlineVisibility size={24} className="text-font/50" />}
+              </IconButton>
+            </TextField.Slot>
+          </TextField.Root>
+        </Box>
+        <Box>
+          <TextField.Root
+            variant="soft"
+            className="py-3 px-4 rounded-lg border border-font/10"
+            placeholder="Confirm Secret Pin"
+            type={passVisibility ? "text" : "password"}
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
           >
             <TextField.Slot />
             <TextField.Slot>
@@ -116,8 +150,4 @@ export function UnlockWalletModal({ show, handleClose, handleSubmit }: WalletMod
       </Box>
     </Modal>
   );
-}
-
-export function delay(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms));
 }

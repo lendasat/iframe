@@ -1,6 +1,6 @@
 import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
-import { useWallet } from "@frontend-monorepo/borrower-wallet";
-import { CreateWalletModal, UnlockWalletModal } from "@frontend-monorepo/borrower-wallet";
+import { useWallet } from "@frontend-monorepo/browser-wallet";
+import { CreateWalletModal, UnlockWalletModal } from "@frontend-monorepo/browser-wallet";
 import { useAuth } from "@frontend-monorepo/http-client-borrower";
 import { Avatar, Box, Button, Callout, Flex, Heading, Separator, Spinner, Tabs, Text } from "@radix-ui/themes";
 import { useState } from "react";

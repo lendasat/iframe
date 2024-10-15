@@ -1,4 +1,4 @@
-import { WalletProvider } from "@frontend-monorepo/borrower-wallet";
+import { WalletProvider } from "@frontend-monorepo/browser-wallet";
 import { AuthIsNotSignedIn, AuthIsSignedIn, AuthProviderLender } from "@frontend-monorepo/http-client-lender";
 import { useAuth } from "@frontend-monorepo/http-client-lender";
 import { Layout, PriceProvider } from "@frontend-monorepo/ui-shared";

@@ -1,7 +1,6 @@
 import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { useWallet } from "@frontend-monorepo/borrower-wallet";
-import { UnlockWalletModal } from "@frontend-monorepo/borrower-wallet";
+import { UnlockWalletModal, useWallet } from "@frontend-monorepo/browser-wallet";
 import { Dispute, DisputeStatus, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import { FeeSelector } from "@frontend-monorepo/mempool";
 import { Suspense, useState } from "react";

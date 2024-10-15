@@ -118,9 +118,9 @@ deps-frontend:
     cd frontend-monorepo
     npm install
 
-# build the borrower's WASM wallet
+# build the WASM browser wallet
 build-wallet:
-    wasm-pack build borrower-wallet --target web
+    wasm-pack build browser-wallet --target web
 
 # build frontend
 build-frontend:
@@ -223,7 +223,7 @@ db-test-data:
 ## ------------------------
 
 release-wallet:
-    wasm-pack build borrower-wallet --target web --release
+    wasm-pack build browser-wallet --target web --release
 
 # just a convenience function
 release-frontend:

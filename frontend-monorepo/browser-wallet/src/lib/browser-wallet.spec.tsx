@@ -1,10 +1,10 @@
 import { render } from "@testing-library/react";
 
-import BorrowerWallet from "./borrower-wallet";
+import BrowserWallet from "./browser-wallet";
 
-describe("BorrowerWallet", () => {
+describe("BrowserWallet", () => {
   it("should render successfully", () => {
-    const { baseElement } = render(<BorrowerWallet />);
+    const { baseElement } = render(<BrowserWallet />);
     expect(baseElement).toBeTruthy();
   });
 });

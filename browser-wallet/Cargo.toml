@@ -1,5 +1,5 @@
 [package]
-name = "borrower-wallet"
+name = "browser-wallet"
 version = "0.1.0"
 edition = "2018"
 

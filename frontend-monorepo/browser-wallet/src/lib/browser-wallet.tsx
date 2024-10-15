@@ -9,7 +9,7 @@ import init, {
   load_wallet,
   new_wallet,
   sign_claim_psbt,
-} from "borrower-wallet";
+} from "browser-wallet";
 
 interface WalletContextType {
   isInitialized: boolean;

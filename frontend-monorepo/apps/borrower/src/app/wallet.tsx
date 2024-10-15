@@ -1,4 +1,4 @@
-import { useWallet } from "@frontend-monorepo/borrower-wallet";
+import { useWallet } from "@frontend-monorepo/browser-wallet";
 import { FormEvent, useState } from "react";
 import { Button } from "react-bootstrap";
 

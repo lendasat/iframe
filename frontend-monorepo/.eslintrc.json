@@ -11,7 +11,7 @@
           {
             "enforceBuildableLibDependency": true,
             "allow": [
-              "../borrower-wallet/pkg"
+              "../browser-wallet/pkg"
             ],
             "depConstraints": [
               {

@@ -744,26 +744,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "borrower-wallet"
-version = "0.1.0"
-dependencies = [
- "aes-gcm-siv",
- "anyhow",
- "argon2 0.6.0-pre.1",
- "bip39",
- "bitcoin 0.32.2",
- "getrandom",
- "hex",
- "hkdf",
- "miniscript 12.2.0",
- "rand",
- "sha2",
- "wasm-bindgen",
- "wasm-bindgen-test",
- "web-sys",
-]
-
-[[package]]
 name = "borsh"
 version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -785,6 +765,26 @@ dependencies = [
  "quote",
  "syn 2.0.74",
  "syn_derive",
+]
+
+[[package]]
+name = "browser-wallet"
+version = "0.1.0"
+dependencies = [
+ "aes-gcm-siv",
+ "anyhow",
+ "argon2 0.6.0-pre.1",
+ "bip39",
+ "bitcoin 0.32.2",
+ "getrandom",
+ "hex",
+ "hkdf",
+ "miniscript 12.2.0",
+ "rand",
+ "sha2",
+ "wasm-bindgen",
+ "wasm-bindgen-test",
+ "web-sys",
 ]
 
 [[package]]
@@ -3670,7 +3670,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bitcoin 0.32.2",
- "borrower-wallet",
+ "browser-wallet",
  "dotenv",
  "hex",
  "hub",

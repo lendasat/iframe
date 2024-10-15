@@ -1,4 +1,4 @@
-import { CreateWalletModal, UnlockWalletModal, useWallet } from "@frontend-monorepo/borrower-wallet";
+import { CreateWalletModal, UnlockWalletModal, useWallet } from "@frontend-monorepo/browser-wallet";
 import { Box, Button, Flex, Heading, Separator, Tabs, Text } from "@radix-ui/themes";
 import { useState } from "react";
 import { GiPadlock, GiPadlockOpen } from "react-icons/gi";

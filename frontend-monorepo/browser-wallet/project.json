@@ -1,0 +1,9 @@
+{
+  "name": "browser-wallet",
+  "$schema": "../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "browser-wallet/src",
+  "projectType": "library",
+  "tags": [],
+  "// targets": "to see all targets run: nx show project browser-wallet --web",
+  "targets": {}
+}
