@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from "react";
-import { Alert, Button, Form, Modal } from "react-bootstrap";
+import { useEffect, useState } from "react";
+import { Alert, Button, Modal } from "react-bootstrap";
 
-import { faInfoCircle, faWarning } from "@fortawesome/free-solid-svg-icons";
+import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { useWallet } from "@frontend-monorepo/borrower-wallet";
 import { Box, Flex, Heading, IconButton, Text, TextField } from "@radix-ui/themes";
 import { MdOutlineVisibility, MdOutlineVisibilityOff } from "react-icons/md";
+import { useWallet } from "./borrower-wallet";
 import { delay } from "./unlock-wallet-modal";
 
 interface WalletModalProps {
@@ -47,7 +47,6 @@ export function CreateWalletModal({ show, handleClose, handleSubmit }: WalletMod
     if (validatePasswords()) {
       try {
         if (!doesWalletExist) {
-          // TODO: use env variable here for the network
           createWallet(password, import.meta.env.VITE_BITCOIN_NETWORK ?? "signet");
           console.log("Created new wallet");
         } else {

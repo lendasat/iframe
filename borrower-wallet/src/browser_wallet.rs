@@ -13,6 +13,7 @@ const PASSPHRASE_STORAGE_KEY: &str = "passphrase";
 const SEED_STORAGE_KEY: &str = "seed";
 const NETWORK_KEY: &str = "network";
 const NEXT_PK_INDEX_KEY: &str = "next_pk_index";
+const XPUB_KEY: &str = "xpub";
 
 pub fn new(passphrase: String, network: String, username: String) -> Result<()> {
     let storage = local_storage()?;
@@ -21,7 +22,7 @@ pub fn new(passphrase: String, network: String, username: String) -> Result<()> 
         bail!("Can't create new wallet if it already exists in local storage");
     }
 
-    let (passphrase_hash, mnemonic_ciphertext, network) =
+    let (passphrase_hash, mnemonic_ciphertext, network, xpub) =
         wallet::new_wallet(&passphrase, &network)?;
 
     storage.set_item(
@@ -42,6 +43,11 @@ pub fn new(passphrase: String, network: String, username: String) -> Result<()> 
     storage.set_item(
         derive_storage_key(username.as_str(), NEXT_PK_INDEX_KEY).as_str(),
         0,
+    )?;
+
+    storage.set_item(
+        derive_storage_key(username.as_str(), XPUB_KEY).as_str(),
+        xpub,
     )?;
 
     Ok(())
@@ -127,4 +133,14 @@ pub fn does_wallet_exist(username: &str) -> Result<bool> {
         storage.get_item::<String>(derive_storage_key(username, SEED_STORAGE_KEY).as_str())?;
 
     Ok(passphrase.is_some() || mnemonic.is_some())
+}
+
+pub fn get_xpub(username: &str) -> Result<String> {
+    let storage = local_storage()?;
+
+    let xpub = storage
+        .get_item::<String>(derive_storage_key(username, XPUB_KEY).as_str())?
+        .context("No xpub found")?;
+
+    Ok(xpub)
 }

@@ -1,5 +1,6 @@
 import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
 import { useWallet } from "@frontend-monorepo/borrower-wallet";
+import { CreateWalletModal, UnlockWalletModal } from "@frontend-monorepo/borrower-wallet";
 import { useAuth } from "@frontend-monorepo/http-client-borrower";
 import { Avatar, Box, Button, Callout, Flex, Heading, Separator, Spinner, Tabs, Text } from "@radix-ui/themes";
 import { useState } from "react";
@@ -9,8 +10,6 @@ import { GoVerified } from "react-icons/go";
 import { IoIosUnlock } from "react-icons/io";
 import { MdEdit } from "react-icons/md";
 import { PiWarningCircleFill } from "react-icons/pi";
-import { CreateWalletModal } from "./wallet/create-wallet-modal";
-import { UnlockWalletModal } from "./wallet/unlock-wallet-modal";
 
 function MyAccount() {
   const { user } = useAuth();

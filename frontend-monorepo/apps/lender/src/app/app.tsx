@@ -1,3 +1,4 @@
+import { WalletProvider } from "@frontend-monorepo/borrower-wallet";
 import { AuthIsNotSignedIn, AuthIsSignedIn, AuthProviderLender } from "@frontend-monorepo/http-client-lender";
 import { useAuth } from "@frontend-monorepo/http-client-lender";
 import { Layout, PriceProvider } from "@frontend-monorepo/ui-shared";
@@ -13,6 +14,7 @@ import ContractDetailsOverview from "./contracts/contract-details-overview";
 import MyContracts from "./contracts/my-contracts";
 import CreateLoanOffer from "./create-loan-offer";
 import ResolveDispute from "./disputes/dispute";
+import MyAccount from "./my-account";
 import "./../styles.css";
 import { FiHome } from "react-icons/fi";
 import { HiOutlineSupport } from "react-icons/hi";
@@ -100,35 +102,40 @@ function MainLayoutComponents() {
   const user = lenderUser ? mapLenderUser(lenderUser) : null;
 
   return (
-    <Layout
-      user={user}
-      menuItems={menuItems}
-      theme={"light"}
-      backendVersion={version}
-      logout={logout}
+    <WalletProvider
+      username={user!.name}
     >
-      <Routes>
-        <Route
-          element={
-            <div>
-              <Outlet />
-            </div>
-          }
-        >
-          <Route path="/create-loan-offer" element={<CreateLoanOffer />} />
-          <Route path="/my-contracts">
-            <Route index element={<MyContracts />} />
-            <Route path={":id"} element={<ContractDetailsOverview />} />
+      <Layout
+        user={user}
+        menuItems={menuItems}
+        theme={"light"}
+        backendVersion={version}
+        logout={logout}
+      >
+        <Routes>
+          <Route
+            element={
+              <div>
+                <Outlet />
+              </div>
+            }
+          >
+            <Route path="/create-loan-offer" element={<CreateLoanOffer />} />
+            <Route path="/my-contracts">
+              <Route index element={<MyContracts />} />
+              <Route path={":id"} element={<ContractDetailsOverview />} />
+            </Route>
+            <Route path="/my-offers">
+              <Route index element={<MyLoanOffersOverview />} />
+              <Route path={":id"} element={<MyLoanOfferDetails />} />
+            </Route>
+            <Route path="/disputes/:id" element={<ResolveDispute />} />
+            <Route path="/setting" element={<MyAccount />} />
           </Route>
-          <Route path="/my-offers">
-            <Route index element={<MyLoanOffersOverview />} />
-            <Route path={":id"} element={<MyLoanOfferDetails />} />
-          </Route>
-          <Route path="/disputes/:id" element={<ResolveDispute />} />
-        </Route>
-        <Route path="/logout" element={<Logout />} />
-      </Routes>
-    </Layout>
+          <Route path="/logout" element={<Logout />} />
+        </Routes>
+      </Layout>
+    </WalletProvider>
   );
 }
 

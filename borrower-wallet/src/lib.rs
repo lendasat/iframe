@@ -52,6 +52,11 @@ pub fn sign_claim_psbt(
     ))
 }
 
+#[wasm_bindgen]
+pub fn get_xpub(username: String) -> Result<String, JsValue> {
+    map_err_to_js!(browser_wallet::get_xpub(&username))
+}
+
 #[macro_export]
 macro_rules! map_err_to_js {
     ($e:expr) => {

@@ -3675,6 +3675,7 @@ dependencies = [
  "hex",
  "hub",
  "mempool-mock",
+ "rand",
  "reqwest",
  "rust_decimal",
  "rust_decimal_macros",

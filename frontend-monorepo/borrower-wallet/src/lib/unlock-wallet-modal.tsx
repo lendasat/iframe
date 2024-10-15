@@ -1,10 +1,10 @@
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { useWallet } from "@frontend-monorepo/borrower-wallet";
 import { Box, Button, Flex, Heading, IconButton, Text, TextField } from "@radix-ui/themes";
 import { useEffect, useState } from "react";
 import { Alert, Modal } from "react-bootstrap";
 import { MdOutlineVisibility, MdOutlineVisibilityOff } from "react-icons/md";
+import { useWallet } from "./borrower-wallet";
 
 interface WalletModalProps {
   show: boolean;

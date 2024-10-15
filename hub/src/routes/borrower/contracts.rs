@@ -458,6 +458,11 @@ pub async fn get_claim_collateral_psbt(
         let contract_address = contract
             .contract_address
             .context("Cannot claim collateral without collateral address")?;
+
+        let lender_xpub = contract
+            .lender_xpub
+            .context("Cannot calim collateral without lender xpub")?;
+
         let collateral_outputs = data
             .mempool
             .send(mempool::GetCollateralOutputs(contract_address))
@@ -470,8 +475,10 @@ pub async fn get_claim_collateral_psbt(
         let origination_fee = Amount::from_sat(contract.origination_fee_sats);
 
         let mut wallet = data.wallet.lock().await;
+
         let (psbt, collateral_descriptor) = wallet.create_claim_collateral_psbt(
             contract.borrower_pk,
+            &lender_xpub,
             contract_index,
             collateral_outputs,
             origination_fee.to_sat(),

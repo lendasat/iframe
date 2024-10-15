@@ -15,6 +15,7 @@ use argon2::PasswordVerifier;
 use bip39::Mnemonic;
 use bitcoin::bip32::ChildNumber;
 use bitcoin::bip32::Xpriv;
+use bitcoin::bip32::Xpub;
 use bitcoin::key::Keypair;
 use bitcoin::key::Secp256k1;
 use bitcoin::sighash::SighashCache;
@@ -55,7 +56,7 @@ pub struct MnemonicCiphertext {
 pub fn new_wallet(
     passphrase: &str,
     network: &str,
-) -> Result<(PasswordHashString, MnemonicCiphertext, Network)> {
+) -> Result<(PasswordHashString, MnemonicCiphertext, Network, Xpub)> {
     let mut guard = WALLET.lock().expect("to get lock");
 
     ensure!(guard.is_none(), "Wallet already loaded");
@@ -66,12 +67,13 @@ pub fn new_wallet(
 
     let (wallet, mnemonic_ciphertext) = Wallet::new(&mut rng, mnemonic, passphrase, network)?;
     let network = wallet.network;
+    let xpub = Xpub::from_priv(&Secp256k1::new(), &wallet.xprv);
 
     let passphrase_hash = hash_passphrase(&mut rng, passphrase)?;
 
     guard.replace(wallet);
 
-    Ok((passphrase_hash, mnemonic_ciphertext, network))
+    Ok((passphrase_hash, mnemonic_ciphertext, network, xpub))
 }
 
 pub fn load_wallet(

@@ -1,9 +1,10 @@
-import React, { createContext, ReactNode, useContext, useEffect, useState } from "react";
+import { createContext, ReactNode, useContext, useEffect, useState } from "react";
 
 import init, {
   does_wallet_exist,
   get_mnemonic,
   get_next_pk,
+  get_xpub,
   is_wallet_loaded,
   load_wallet,
   new_wallet,
@@ -19,6 +20,7 @@ interface WalletContextType {
   getMnemonic: () => string;
   getNextPublicKey: () => string;
   signClaimPsbt: (psbt: string, collateralDescriptor: string, pk: string) => string;
+  getXpub: () => string;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -97,6 +99,18 @@ export const WalletProvider = ({ children, username }: WalletProviderProps) => {
     }
   };
 
+  const getXpub = () => {
+    if (!isInitialized) {
+      throw Error("Wallet not initialized");
+    }
+
+    if (!doesWalletExist) {
+      throw Error("Wallet does not exist");
+    }
+
+    return get_xpub(username);
+  };
+
   const value = {
     isInitialized,
     isWalletLoaded,
@@ -106,6 +120,7 @@ export const WalletProvider = ({ children, username }: WalletProviderProps) => {
     getMnemonic,
     getNextPublicKey,
     signClaimPsbt,
+    getXpub,
   };
 
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;

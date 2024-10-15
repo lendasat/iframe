@@ -4,6 +4,7 @@ use crate::model::ContractStatus;
 use anyhow::bail;
 use anyhow::Result;
 use bitcoin::address::NetworkUnchecked;
+use bitcoin::bip32::Xpub;
 use bitcoin::Address;
 use bitcoin::PublicKey;
 use rust_decimal::Decimal;
@@ -32,6 +33,7 @@ pub async fn load_contracts_by_borrower_id(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            lender_xpub,
             contract_address,
             contract_index,
             status as "status: crate::model::db::ContractStatus",
@@ -75,6 +77,7 @@ pub async fn load_contracts_by_lender_id(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            lender_xpub,
             contract_address,
             contract_index,
             status as "status: crate::model::db::ContractStatus",
@@ -115,6 +118,7 @@ async fn load_contract(pool: &Pool<Postgres>, contract_id: &str) -> Result<Contr
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            lender_xpub,
             contract_address,
             contract_index,
             status as "status: crate::model::db::ContractStatus",
@@ -154,6 +158,7 @@ pub async fn load_contract_by_contract_id_and_borrower_id(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            lender_xpub,
             contract_address,
             contract_index,
             status as "status: crate::model::db::ContractStatus",
@@ -195,6 +200,7 @@ pub async fn load_contract_by_contract_id_and_lender_id(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            lender_xpub,
             contract_address,
             contract_index,
             status as "status: crate::model::db::ContractStatus",
@@ -232,6 +238,7 @@ pub async fn load_open_contracts(pool: &Pool<Postgres>) -> Result<Vec<Contract>>
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            lender_xpub,
             contract_address,
             contract_index,
             status as "status: crate::model::db::ContractStatus",
@@ -324,6 +331,7 @@ pub async fn insert_contract_request(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            lender_xpub,
             contract_address,
             contract_index,
             status as "status: crate::model::db::ContractStatus",
@@ -362,6 +370,7 @@ pub async fn accept_contract_request(
     contract_id: &str,
     contract_address: Address,
     contract_index: u32,
+    lender_xpub: Xpub,
 ) -> Result<Contract> {
     let contract = sqlx::query_as!(
         db::Contract,
@@ -370,9 +379,10 @@ pub async fn accept_contract_request(
         SET status = $1,
             updated_at = $2,
             contract_address = $3,
-            contract_index = $4
-        WHERE lender_id = $5
-          AND id = $6
+            contract_index = $4,
+            lender_xpub = $5
+        WHERE lender_id = $6
+          AND id = $7
         RETURNING
             id,
             lender_id,
@@ -386,6 +396,7 @@ pub async fn accept_contract_request(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            lender_xpub,
             contract_address,
             contract_index,
             status as "status: crate::model::db::ContractStatus",
@@ -398,6 +409,7 @@ pub async fn accept_contract_request(
         time::OffsetDateTime::now_utc(),
         contract_address.to_string(),
         contract_index as i32,
+        lender_xpub.to_string(),
         lender_id,
         contract_id
     )
@@ -432,6 +444,7 @@ pub async fn mark_contract_as_principal_given(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            lender_xpub,
             contract_address,
             contract_index,
             status as "status: crate::model::db::ContractStatus",
@@ -472,6 +485,7 @@ pub async fn mark_contract_as_repaid(pool: &Pool<Postgres>, contract_id: &str) -
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            lender_xpub,
             contract_address,
             contract_index,
             status as "status: crate::model::db::ContractStatus",
@@ -512,6 +526,7 @@ pub async fn mark_contract_as_closed(pool: &Pool<Postgres>, contract_id: &str) -
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            lender_xpub,
             contract_address,
             contract_index,
             status as "status: crate::model::db::ContractStatus",
@@ -555,6 +570,7 @@ pub async fn mark_contract_as_closing(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            lender_xpub,
             contract_address,
             contract_index,
             status as "status: crate::model::db::ContractStatus",
@@ -599,6 +615,7 @@ pub async fn reject_contract_request(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            lender_xpub,
             contract_address,
             contract_index,
             status as "status: crate::model::db::ContractStatus",
@@ -644,6 +661,7 @@ pub(crate) async fn mark_liquidation_state_as(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            lender_xpub,
             contract_address,
             contract_index,
             status as "status: crate::model::db::ContractStatus",
@@ -688,6 +706,7 @@ pub(crate) async fn mark_contract_as(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            lender_xpub,
             contract_address,
             contract_index,
             status as "status: crate::model::db::ContractStatus",
@@ -725,6 +744,7 @@ pub(crate) async fn load_open_not_liquidated_contracts(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            lender_xpub,
             contract_address,
             contract_index,
             status as "status: crate::model::db::ContractStatus",
@@ -872,6 +892,7 @@ pub async fn update_collateral(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            lender_xpub,
             contract_address,
             contract_index,
             status as "status: crate::model::db::ContractStatus",

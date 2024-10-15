@@ -40,7 +40,7 @@ pub struct Wallet {
     /// We only have the fallback key as an [`Xpub`] because we only want to use the corresponding
     /// [`Xpriv`] _manually_ under extreme circumstances.
     ///
-    /// Reminder that the 2-of-3 multisig setup is _temporary_ and will disappear when we start
+    /// Reminder that the 2-of-4 multisig setup is _temporary_ and will disappear when we start
     /// using DLCs.
     fallback_xpub: Xpub,
     network: Network,
@@ -66,12 +66,20 @@ impl Wallet {
     }
 
     /// Generate a collateral contract address for a borrower.
-    pub fn contract_address(&self, borrower_pk: PublicKey) -> Result<(Address, u32)> {
+    pub fn contract_address(
+        &self,
+        borrower_pk: PublicKey,
+        lender_xpub: &Xpub,
+    ) -> Result<(Address, u32)> {
         let (hub_pk, fallback_pk, index) = self.derive_next_pks()?;
+
+        // We use the same index for the lender so that it's easier to recover the correct lender
+        // keypair.
+        let lender_pk = derive_lender_pk(lender_xpub, index, self.hub_xpriv.network.is_mainnet())?;
 
         // TODO: Extract into a function.
         let descriptor: Descriptor<PublicKey> =
-            format!("wsh(multi(2,{borrower_pk},{hub_pk},{fallback_pk}))").parse()?;
+            format!("wsh(multi(2,{borrower_pk},{hub_pk},{fallback_pk},{lender_pk}))").parse()?;
 
         let address = descriptor.address(self.network)?;
 
@@ -84,6 +92,7 @@ impl Wallet {
     pub fn create_dispute_claim_collateral_psbt(
         &mut self,
         borrower_pk: PublicKey,
+        lender_xpub: &Xpub,
         contract_index: u32,
         collateral_outputs: Vec<(OutPoint, u64)>,
         borrower_address: Address<NetworkUnchecked>,
@@ -96,6 +105,12 @@ impl Wallet {
     ) -> Result<(Psbt, Descriptor<PublicKey>)> {
         let (hub_kp, fallback_pk) = self.get_keys_for_index(contract_index)?;
         let hub_pk = PublicKey::new(hub_kp.public_key());
+
+        let lender_pk = derive_lender_pk(
+            lender_xpub,
+            contract_index,
+            self.hub_xpriv.network.is_mainnet(),
+        )?;
 
         let liquidator_address_info = self.hub_fee_wallet.get_new_address()?;
         let liquidator_address =
@@ -176,7 +191,7 @@ impl Wallet {
 
         // All collateral outputs share the same script.
         let collateral_descriptor: Descriptor<PublicKey> =
-            format!("wsh(multi(2,{borrower_pk},{hub_pk},{fallback_pk}))").parse()?;
+            format!("wsh(multi(2,{borrower_pk},{hub_pk},{fallback_pk},{lender_pk}))").parse()?;
         let witness_script = collateral_descriptor.script_code()?;
 
         let mut inputs = Vec::new();
@@ -229,6 +244,7 @@ impl Wallet {
     pub fn create_claim_collateral_psbt(
         &mut self,
         borrower_pk: PublicKey,
+        lender_xpub: &Xpub,
         contract_index: u32,
         collateral_outputs: Vec<(OutPoint, u64)>,
         // NOTE: In the DLC-based protocol, we will probably charge the origination fee when the
@@ -238,6 +254,12 @@ impl Wallet {
         fee_rate_spvb: u64,
     ) -> Result<(Psbt, Descriptor<PublicKey>)> {
         let (hub_kp, fallback_pk) = self.get_keys_for_index(contract_index)?;
+
+        let lender_pk = derive_lender_pk(
+            lender_xpub,
+            contract_index,
+            self.hub_xpriv.network.is_mainnet(),
+        )?;
 
         let mut inputs = Vec::new();
         for (outpoint, _) in collateral_outputs.iter() {
@@ -281,7 +303,7 @@ impl Wallet {
         // All collateral outputs share the same script.
         let hub_pk = PublicKey::new(hub_kp.public_key());
         let collateral_descriptor: Descriptor<PublicKey> =
-            format!("wsh(multi(2,{borrower_pk},{hub_pk},{fallback_pk}))").parse()?;
+            format!("wsh(multi(2,{borrower_pk},{hub_pk},{fallback_pk},{lender_pk}))").parse()?;
         let witness_script = collateral_descriptor.script_code()?;
 
         let mut inputs = Vec::new();
@@ -393,4 +415,27 @@ impl Wallet {
 
         Ok((hub_pk, fallback_pk, index))
     }
+}
+
+fn derive_lender_pk(lender_xpub: &Xpub, index: u32, is_mainnet: bool) -> Result<PublicKey> {
+    let secp = Secp256k1::new();
+
+    let network_index = if is_mainnet {
+        ChildNumber::from_normal_idx(0).expect("infallible")
+    } else {
+        ChildNumber::from_normal_idx(1).expect("infallible")
+    };
+
+    let pk = {
+        let path = [
+            ChildNumber::from_normal_idx(586).expect("infallible"),
+            network_index,
+            ChildNumber::from_normal_idx(index).expect("infallible"),
+        ];
+
+        let child_xpub = lender_xpub.derive_pub(&secp, &path)?;
+        PublicKey::new(child_xpub.public_key)
+    };
+
+    Ok(pk)
 }
