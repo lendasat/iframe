@@ -1,8 +1,12 @@
 import { faExclamationCircle, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Contract, ContractStatus, contractStatusToLabelString } from "@frontend-monorepo/http-client-lender";
-import { useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
-import { LiquidationStatus } from "@frontend-monorepo/http-client-lender";
+import {
+  Contract,
+  ContractStatus,
+  contractStatusToLabelString,
+  LiquidationStatus,
+  useLenderHttpClient,
+} from "@frontend-monorepo/http-client-lender";
 import { CurrencyFormatter } from "@frontend-monorepo/ui-shared";
 import { Badge, Box, Button, Callout, Dialog, Flex, Grid, Heading, Separator, Text } from "@radix-ui/themes";
 import React, { Suspense, useState } from "react";
@@ -116,6 +120,8 @@ function ContractDetails({ contract }: DetailsProps) {
   const onSuccess = () => {
     navigate(0);
   };
+
+  const displayDispute = contract.status !== ContractStatus.Requested && contract.status !== ContractStatus.Approved;
 
   return (
     <Grid className="md:grid-cols-2">
@@ -256,15 +262,18 @@ function ContractDetails({ contract }: DetailsProps) {
           </Flex>
         </Box>
       </Box>
-      <Box className="p-6 md:p-8 space-y-5">
-        <ExpandableDisputeCard
-          info={info}
-          onStartDispute={onStartDispute}
-          startingDisputeLoading={startingDisputeLoading}
-          error={error}
-          disputeInProgress={disputeInProgress}
-        />
-      </Box>
+      {displayDispute
+        && (
+          <Box className="p-6 md:p-8 space-y-5">
+            <ExpandableDisputeCard
+              info={info}
+              onStartDispute={onStartDispute}
+              startingDisputeLoading={startingDisputeLoading}
+              error={error}
+              disputeInProgress={disputeInProgress}
+            />
+          </Box>
+        )}
     </Grid>
   );
 }
