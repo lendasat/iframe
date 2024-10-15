@@ -72,6 +72,12 @@ async fn check_margin_call_or_liquidation(
     match db::contracts::load_open_not_liquidated_contracts(db).await {
         Ok(contracts) => {
             for contract in contracts {
+                if contract.collateral_sats == 0 {
+                    // contracts which have not been funded do not have a collateral set, hence we
+                    // do not need to liquidate them
+                    continue;
+                }
+
                 match calculate_ltv(
                     latest_price,
                     contract.loan_amount,
