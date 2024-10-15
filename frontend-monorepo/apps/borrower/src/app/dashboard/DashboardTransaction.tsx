@@ -75,7 +75,7 @@ function NotificationComponent(props: LoansNotificationSectionProps) {
                 >
                   {status}
                 </Badge>
-                <Text size="1" className="text-font/70">{created_at.toLocaleDateString("en-US")}</Text>
+                <Text size="1" className="text-font/70">{created_at.toLocaleDateString()}</Text>
               </Box>
             </Flex>
             <Separator size="4" mt="4" className="bg-font/5" />
