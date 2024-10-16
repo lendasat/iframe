@@ -132,7 +132,7 @@ const MnemonicDisplay = () => {
               <Text as="label" weight={"medium"} size={"2"} className="text-font/50">
                 Mnemonic Seed Phrase
               </Text>
-              <Text size={"3"} weight={"medium"} className="capitalize text-font-dark">
+              <Text size={"3"} weight={"medium"} className="text-font-dark">
                 {isVisible
                   ? mnemonic
                   : "● ● ● ● ● ● ● ● ● ● ● ●"}
