@@ -1,6 +1,13 @@
-import { parseStableCoin, StableCoin, StableCoinDropdown, StableCoinHelper } from "@frontend-monorepo/ui-shared";
+import {
+  LtvInfoLabel,
+  parseStableCoin,
+  StableCoin,
+  StableCoinDropdown,
+  StableCoinHelper,
+} from "@frontend-monorepo/ui-shared";
 import { Box, Button, Flex, Separator, Text, TextField } from "@radix-ui/themes";
 import React from "react";
+import { FaInfoCircle } from "react-icons/fa";
 import { Slider, SliderProps } from "./slider";
 
 export interface LoanFilter {
@@ -222,9 +229,12 @@ function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
         <Separator size="4" />
         <Box className={"p-4 w-full"}>
           <Flex className={"flex items-center justify-between mb-2"}>
-            <Text as="label" className="text-sm font-medium text-font">
-              LTV ratio
-            </Text>
+            <LtvInfoLabel>
+              <Text as="label" className="text-sm font-medium text-font">
+                LTV ratio
+              </Text>
+              <FaInfoCircle color={"gray"} />
+            </LtvInfoLabel>
             <Button
               onClick={clearRatio}
               size={"1"}

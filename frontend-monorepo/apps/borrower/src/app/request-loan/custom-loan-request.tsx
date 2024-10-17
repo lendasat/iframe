@@ -6,7 +6,7 @@ import {
   PostLoanRequest,
   useBorrowerHttpClient,
 } from "@frontend-monorepo/http-client-borrower";
-import { StableCoin, StableCoinDropdown, StableCoinHelper } from "@frontend-monorepo/ui-shared";
+import { LtvInfoLabel, StableCoin, StableCoinDropdown, StableCoinHelper } from "@frontend-monorepo/ui-shared";
 import { formatCurrency } from "@frontend-monorepo/ui-shared";
 import {
   Badge,
@@ -23,6 +23,7 @@ import {
 } from "@radix-ui/themes";
 import React, { useState } from "react";
 import { Form } from "react-bootstrap";
+import { FaInfoCircle } from "react-icons/fa";
 import { IoIosUnlock } from "react-icons/io";
 
 export default function CustomRequest() {
@@ -220,7 +221,10 @@ export default function CustomRequest() {
               {/* LTV Rate */}
               <Box className="space-y-1">
                 <Flex align={"center"} justify={"between"} pr={"2"}>
-                  <Text className="text-font/70" as="label" size={"2"} weight={"medium"}>LTV</Text>
+                  <LtvInfoLabel>
+                    <Text className="text-font/70" as="label" size={"2"} weight={"medium"}>LTV</Text>
+                    <FaInfoCircle color={"gray"} />
+                  </LtvInfoLabel>
                 </Flex>
                 <TextField.Root
                   size={"3"}
@@ -318,7 +322,10 @@ export default function CustomRequest() {
               </Flex>
               <Separator size={"4"} className="bg-font/5" />
               <Flex justify={"between"} align={"center"}>
-                <Text className="text-xs font-medium text-font/60">LTV ratio</Text>
+                <LtvInfoLabel>
+                  <Text className="text-xs font-medium text-font/60">LTV ratio</Text>
+                  <FaInfoCircle color={"gray"} />
+                </LtvInfoLabel>
                 <Text className="text-[13px] font-semibold text-black/70 capitalize">
                   {ltv}%
                 </Text>

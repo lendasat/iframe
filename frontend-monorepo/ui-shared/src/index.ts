@@ -1,3 +1,5 @@
+export * from './lib/components/abbreviation-explanation-info';
+export * from './lib/components/LtvInfoLabel';
 export * from './lib/full-logo-white-bg';
 export * from './lib/ltv-progress-bar/ltv-progress-bar';
 export * from './lib/auth/registration-form';

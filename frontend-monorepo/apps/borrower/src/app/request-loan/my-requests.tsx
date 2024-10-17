@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { LoanOffer, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import {
   formatCurrency,
+  LtvInfoLabel,
   StableCoin,
   StableCoinDropdown,
   StableCoinHelper,
@@ -12,6 +13,7 @@ import { Box, Button, Callout, Flex, Grid, Heading, Separator, Text, TextField }
 import React, { ChangeEvent, useEffect, useState } from "react";
 import { Form } from "react-bootstrap";
 import { BsSearch } from "react-icons/bs";
+import { FaInfoCircle } from "react-icons/fa";
 import { IoInformationCircleOutline } from "react-icons/io5";
 import { TfiTarget } from "react-icons/tfi";
 import { useNavigate } from "react-router-dom";
@@ -313,9 +315,13 @@ export default function SimpleRequest() {
 
                   {/* LTV Rate */}
                   <Box className="space-y-1">
-                    <Text className="text-font/70" as="label" size={"2"} weight={"medium"}>
-                      What's your preferred loan-to-value ratio?
-                    </Text>
+                    <LtvInfoLabel>
+                      <Text className="text-font/70" as="label" size={"2"} weight={"medium"}>
+                        What's your preferred LTV ratio?
+                      </Text>
+                      <FaInfoCircle color={"gray"} />
+                    </LtvInfoLabel>
+
                     <TextField.Root
                       size={"3"}
                       variant="surface"
@@ -479,9 +485,18 @@ const LoanSearched = (props: SearchParams) => {
           </Flex>
           <Separator size={"4"} />
           <Flex justify={"between"} align={"center"}>
-            <Text className="text-xs font-medium text-font/60">
-              Needed collateral ({(props.ltv * 100).toFixed(0)}% LTC)
-            </Text>
+            <Flex justify={"between"} align={"start"} gap={"2"}>
+              <Text className="text-xs font-medium text-font/60">
+                Needed collateral
+              </Text>
+              <LtvInfoLabel>
+                <Text className="text-font/50" size={"1"} weight={"medium"}>
+                  ({(props.ltv * 100).toFixed(0)}% LTV)
+                </Text>
+                <FaInfoCircle color={"gray"} />
+              </LtvInfoLabel>
+            </Flex>
+
             <div className="flex flex-col">
               <Text className="text-[13px] font-semibold text-black/70 capitalize">
                 {collateralAmountBtc.toFixed(8)} BTC

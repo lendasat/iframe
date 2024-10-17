@@ -7,10 +7,11 @@ import {
   useAuth,
   useBorrowerHttpClient,
 } from "@frontend-monorepo/http-client-borrower";
-import { CurrencyFormatter, usePrice } from "@frontend-monorepo/ui-shared";
+import { CurrencyFormatter, LtvInfoLabel, usePrice } from "@frontend-monorepo/ui-shared";
 import { Badge, Box, Button, Callout, Flex, Grid, Heading, IconButton, Separator, Text } from "@radix-ui/themes";
 import { Suspense, useState } from "react";
 import { Col, OverlayTrigger, Row, Tooltip } from "react-bootstrap";
+import { FaInfoCircle } from "react-icons/fa";
 import { IoMdCloudDownload } from "react-icons/io";
 import { Await, Link, useParams } from "react-router-dom";
 import { AddCollateralModal } from "./add-collateral-modal";
@@ -299,9 +300,15 @@ function ContractDetails({ contract }: DetailsProps) {
         <Separator size={"4"} className="bg-font/10" />
 
         <Flex gap={"5"} align={"start"} justify={"between"}>
-          <Text size={"2"} weight={"medium"} className="text-font/70">
-            LTV ratio
-          </Text>
+          <LtvInfoLabel>
+            <>
+              <Text size={"2"} weight={"medium"} className="text-font/70">
+                LTV ratio
+              </Text>
+              <FaInfoCircle />
+            </>
+          </LtvInfoLabel>
+
           <Text size={"2"} weight={"medium"}>
             {ltvPercentage}%
           </Text>

@@ -4,9 +4,10 @@ import {
   contractStatusToLabelString,
   LiquidationStatus,
 } from "@frontend-monorepo/http-client-borrower";
-import { CurrencyFormatter, LtvProgressBar, usePrice } from "@frontend-monorepo/ui-shared";
+import { CurrencyFormatter, LtvInfoLabel, LtvProgressBar, usePrice } from "@frontend-monorepo/ui-shared";
 import { Badge, Box, Button, DropdownMenu, Flex, Grid, Heading, Text } from "@radix-ui/themes";
 import { BsThreeDotsVertical } from "react-icons/bs";
+import { FaInfoCircle } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import { collateralForStatus } from "./collateralForStatus";
 
@@ -23,34 +24,73 @@ function ContractsComponent({ loans }: LoansComponentProps) {
   }
 
   const amount_col = {
-    label: "Amount",
+    label: (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+        <Text className="text-font/50" size={"1"} weight={"medium"}>
+          Amount
+        </Text>
+      </div>
+    ),
     md: 1,
     className: "text-center",
   };
 
   const expiry_col = {
-    label: "Expiry",
+    label: (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+        <Text className="text-font/50" size={"1"} weight={"medium"}>
+          Expiry
+        </Text>
+      </div>
+    ),
     md: 2,
     className: "text-center",
   };
 
   const ltv_col = {
-    label: "LTV",
+    label: (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+        <LtvInfoLabel>
+          <Text className="text-font/50" size={"1"} weight={"medium"}>
+            LTV
+          </Text>
+          <FaInfoCircle color={"gray"} />
+        </LtvInfoLabel>
+      </div>
+    ),
     md: 2,
     className: "text-center",
   };
   const interest_col = {
-    label: "Interest",
+    label: (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+        <Text className="text-font/50" size={"1"} weight={"medium"}>
+          Interest
+        </Text>
+      </div>
+    ),
     md: 1,
     className: "text-center",
   };
   const collateral_col = {
-    label: "Collateral",
+    label: (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+        <Text className="text-font/50" size={"1"} weight={"medium"}>
+          Collateral
+        </Text>
+      </div>
+    ),
     md: 2,
     className: "text-center",
   };
   const status_col = {
-    label: "Status",
+    label: (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+        <Text className="text-font/50" size={"1"} weight={"medium"}>
+          Status
+        </Text>
+      </div>
+    ),
     md: 2,
     className: "text-center",
   };
@@ -82,7 +122,7 @@ function ContractsComponent({ loans }: LoansComponentProps) {
         <Grid className="grid-cols-3 md:grid-cols-5 xl:grid-cols-7 flex-grow">
           {headers.map((header, index) => (
             <Box key={index} className={header.className}>
-              <Text className="text-font/50" size={"1"} weight={"medium"}>{header.label}</Text>
+              {header.label}
             </Box>
           ))}
         </Grid>
@@ -233,9 +273,14 @@ function ContractsComponent({ loans }: LoansComponentProps) {
                       </Box>
                       <Box width={"100%"}>
                         <Flex align={"center"} justify={"between"} gap={"3"}>
-                          <Text size={"3"} weight={"medium"}>
-                            LTV rate:
-                          </Text>
+                          <LtvInfoLabel>
+                            <>
+                              <Text size={"3"} weight={"medium"}>
+                                LTV ratio
+                              </Text>
+                              <FaInfoCircle />
+                            </>
+                          </LtvInfoLabel>
                           <Box minWidth={"150px"}>
                             <LtvProgressBar ltvRatio={latestPrice ? ltvRatio * 100 : undefined} />
                           </Box>
