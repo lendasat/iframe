@@ -42,7 +42,8 @@ const RepaymentDetails = ({ contract, onPrincipalGiven, isLoading }: RepaymentDe
               <QRCode value={contract.borrower_loan_address} size={200} />
             </div>
             <p className="mt-2 text-break">
-              Please send <strong>{formatCurrency(contract.loan_amount)}</strong> to:
+              Please send <strong>{formatCurrency(contract.loan_amount)}</strong> ({contract.loan_asset_type} on{" "}
+              {contract.loan_asset_chain}) to:
             </p>
             <div className="d-flex align-items-center">
               <code>{contract.borrower_loan_address}</code>

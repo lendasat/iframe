@@ -1,6 +1,11 @@
 use crate::db;
 use crate::email::Email;
 use crate::mempool::TrackContractFunding;
+use crate::model::ContractStatus;
+use crate::model::LiquidationStatus;
+use crate::model::LoanAssetChain;
+use crate::model::LoanAssetType;
+use crate::model::LoanTransaction;
 use crate::model::User;
 use crate::routes::lender::auth::jwt_auth;
 use crate::routes::AppState;
@@ -18,8 +23,12 @@ use axum::routing::put;
 use axum::Extension;
 use axum::Json;
 use axum::Router;
+use bitcoin::PublicKey;
+use rust_decimal::Decimal;
 use serde::Deserialize;
+use serde::Serialize;
 use std::sync::Arc;
+use time::OffsetDateTime;
 use tracing::instrument;
 
 pub(crate) fn router(app_state: Arc<AppState>) -> Router {
@@ -69,6 +78,44 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
         .with_state(app_state)
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Contract {
+    pub id: String,
+    #[serde(with = "rust_decimal::serde::float")]
+    pub loan_amount: Decimal,
+    pub duration_months: i32,
+    pub initial_collateral_sats: u64,
+    pub origination_fee_sats: u64,
+    pub collateral_sats: u64,
+    #[serde(with = "rust_decimal::serde::float")]
+    pub interest_rate: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
+    pub initial_ltv: Decimal,
+    pub status: ContractStatus,
+    pub borrower_pk: PublicKey,
+    pub borrower_btc_address: String,
+    pub borrower_loan_address: String,
+    pub contract_address: Option<String>,
+    pub loan_repayment_address: String,
+    pub borrower: BorrowerProfile,
+    #[serde(with = "time::serde::rfc3339")]
+    pub created_at: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339::option")]
+    pub repaid_at: Option<OffsetDateTime>,
+    #[serde(with = "time::serde::rfc3339")]
+    pub expiry: OffsetDateTime,
+    pub liquidation_status: LiquidationStatus,
+    pub transactions: Vec<LoanTransaction>,
+    pub loan_asset_chain: LoanAssetChain,
+    pub loan_asset_type: LoanAssetType,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct BorrowerProfile {
+    pub(crate) id: String,
+    pub(crate) name: String,
+}
+
 #[instrument(skip_all, err(Debug))]
 pub async fn get_active_contracts(
     State(data): State<Arc<AppState>>,
@@ -83,8 +130,93 @@ pub async fn get_active_contracts(
             (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
         })?;
 
-    Ok((StatusCode::OK, Json(contracts)))
+    let mut contracts_2 = Vec::new();
+    for contract in contracts {
+        let transactions =
+            db::transactions::get_all_for_contract_id(&data.db, contract.id.as_str())
+                .await
+                .map_err(|error| {
+                    let error_response = ErrorResponse {
+                        message: format!("Database error: {}", error),
+                    };
+                    (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+                })?;
+
+        let offer = db::loan_offers::loan_by_id(&data.db, &contract.loan_id)
+            .await
+            .map_err(|error| {
+                let error_response = ErrorResponse {
+                    message: format!("Database error: {}", error),
+                };
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+            })?
+            .context("No loan found for contract")
+            .map_err(|error| {
+                let error_response = ErrorResponse {
+                    message: format!("Illegal state error: {}", error),
+                };
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+            })?;
+
+        let borrower = db::borrowers::get_user_by_id(&data.db, &contract.borrower_id)
+            .await
+            .map_err(|error| {
+                let error_response = ErrorResponse {
+                    message: format!("Database error: {}", error),
+                };
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+            })?
+            .context("No lender found for contract")
+            .map_err(|error| {
+                let error_response = ErrorResponse {
+                    message: format!("Illegal state error: {}", error),
+                };
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+            })?;
+
+        // TODO: Do this better tomorrow.
+        let expiry =
+            contract.created_at + time::Duration::weeks((contract.duration_months * 4) as i64);
+
+        let asset_chain = offer.loan_asset_chain;
+        let asset_type = offer.loan_asset_type;
+
+        let contract = Contract {
+            collateral_sats: contract.collateral_sats,
+            id: contract.id,
+            loan_amount: contract.loan_amount,
+            duration_months: contract.duration_months,
+            initial_collateral_sats: contract.initial_collateral_sats,
+            origination_fee_sats: contract.origination_fee_sats,
+            interest_rate: offer.interest_rate,
+            initial_ltv: contract.initial_ltv,
+            status: contract.status,
+            liquidation_status: contract.liquidation_status,
+            borrower_pk: contract.borrower_pk,
+            borrower_btc_address: contract.borrower_btc_address.assume_checked().to_string(),
+            borrower_loan_address: contract.borrower_loan_address,
+            contract_address: contract
+                .contract_address
+                .map(|c| c.assume_checked().to_string()),
+            loan_repayment_address: offer.loan_repayment_address,
+            borrower: BorrowerProfile {
+                id: contract.borrower_id,
+                name: borrower.name,
+            },
+            created_at: contract.created_at,
+            repaid_at: None,
+            transactions,
+            expiry,
+            loan_asset_chain: asset_chain,
+            loan_asset_type: asset_type,
+        };
+
+        contracts_2.push(contract);
+    }
+
+    Ok((StatusCode::OK, Json(contracts_2)))
 }
+
 #[instrument(skip_all, err(Debug))]
 pub async fn get_contract(
     State(data): State<Arc<AppState>>,
@@ -103,6 +235,83 @@ pub async fn get_contract(
         };
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
     })?;
+
+    let offer = db::loan_offers::loan_by_id(&data.db, &contract.loan_id)
+        .await
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Database error: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?
+        .context("No loan found for contract")
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Illegal state error: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
+
+    let transactions = db::transactions::get_all_for_contract_id(&data.db, contract_id.as_str())
+        .await
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Database error: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
+
+    let borrower = db::borrowers::get_user_by_id(&data.db, &contract.borrower_id)
+        .await
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Database error: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?
+        .context("No lender found for contract")
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Illegal state error: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
+
+    // TODO: Do this better tomorrow.
+    let expiry = contract.created_at + time::Duration::weeks((contract.duration_months * 4) as i64);
+
+    let asset_chain = offer.loan_asset_chain;
+    let asset_type = offer.loan_asset_type;
+
+    let contract = Contract {
+        collateral_sats: contract.collateral_sats,
+        id: contract.id,
+        loan_amount: contract.loan_amount,
+        duration_months: contract.duration_months,
+        initial_collateral_sats: contract.initial_collateral_sats,
+        origination_fee_sats: contract.origination_fee_sats,
+        interest_rate: offer.interest_rate,
+        initial_ltv: contract.initial_ltv,
+        status: contract.status,
+        liquidation_status: contract.liquidation_status,
+        borrower_pk: contract.borrower_pk,
+        borrower_btc_address: contract.borrower_btc_address.assume_checked().to_string(),
+        borrower_loan_address: contract.borrower_loan_address,
+        contract_address: contract
+            .contract_address
+            .map(|c| c.assume_checked().to_string()),
+        loan_repayment_address: offer.loan_repayment_address,
+        borrower: BorrowerProfile {
+            id: borrower.id,
+            name: borrower.name,
+        },
+        created_at: contract.created_at,
+        repaid_at: None,
+        transactions,
+        expiry,
+        loan_asset_chain: asset_chain,
+        loan_asset_type: asset_type,
+    };
 
     Ok((StatusCode::OK, Json(contract)))
 }
@@ -240,6 +449,83 @@ pub async fn put_principal_given(
     {
         tracing::error!("Failed notifying borrower {err:#}");
     }
+
+    let offer = db::loan_offers::loan_by_id(&data.db, &contract.loan_id)
+        .await
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Database error: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?
+        .context("No loan found for contract")
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Illegal state error: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
+
+    let transactions = db::transactions::get_all_for_contract_id(&data.db, contract_id.as_str())
+        .await
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Database error: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
+
+    let borrower = db::borrowers::get_user_by_id(&data.db, &contract.borrower_id)
+        .await
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Database error: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?
+        .context("No lender found for contract")
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Illegal state error: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
+
+    // TODO: Do this better tomorrow. No idea where this comment came from, but I'll leave it 😅
+    let expiry = contract.created_at + time::Duration::weeks((contract.duration_months * 4) as i64);
+
+    let asset_chain = offer.loan_asset_chain;
+    let asset_type = offer.loan_asset_type;
+
+    let contract = Contract {
+        collateral_sats: contract.collateral_sats,
+        id: contract.id,
+        loan_amount: contract.loan_amount,
+        duration_months: contract.duration_months,
+        initial_collateral_sats: contract.initial_collateral_sats,
+        origination_fee_sats: contract.origination_fee_sats,
+        interest_rate: offer.interest_rate,
+        initial_ltv: contract.initial_ltv,
+        status: contract.status,
+        liquidation_status: contract.liquidation_status,
+        borrower_pk: contract.borrower_pk,
+        borrower_btc_address: contract.borrower_btc_address.assume_checked().to_string(),
+        borrower_loan_address: contract.borrower_loan_address,
+        contract_address: contract
+            .contract_address
+            .map(|c| c.assume_checked().to_string()),
+        loan_repayment_address: offer.loan_repayment_address,
+        borrower: BorrowerProfile {
+            id: borrower.id,
+            name: borrower.name,
+        },
+        created_at: contract.created_at,
+        repaid_at: None,
+        transactions,
+        expiry,
+        loan_asset_chain: asset_chain,
+        loan_asset_type: asset_type,
+    };
 
     Ok(Json(contract))
 }
