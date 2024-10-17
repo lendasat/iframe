@@ -7,7 +7,7 @@ import {
   LiquidationStatus,
   useLenderHttpClient,
 } from "@frontend-monorepo/http-client-lender";
-import { CurrencyFormatter } from "@frontend-monorepo/ui-shared";
+import { CurrencyFormatter, StableCoinHelper } from "@frontend-monorepo/ui-shared";
 import { Badge, Box, Button, Callout, Dialog, Flex, Grid, Heading, Separator, Text } from "@radix-ui/themes";
 import React, { Suspense, useState } from "react";
 import { Alert, OverlayTrigger, Spinner, Tooltip } from "react-bootstrap";
@@ -123,6 +123,8 @@ function ContractDetails({ contract }: DetailsProps) {
 
   const displayDispute = contract.status !== ContractStatus.Requested && contract.status !== ContractStatus.Approved;
 
+  const stableCoin = StableCoinHelper.mapFromBackend(contract.loan_asset_chain, contract.loan_asset_type);
+
   return (
     <Grid className="md:grid-cols-2">
       <Box className="border-r border-font/10">
@@ -147,9 +149,14 @@ function ContractDetails({ contract }: DetailsProps) {
               Borrower ID
             </Text>
             <Box className="max-w-sm text-end">
-              <Text size={"2"} weight={"medium"} className="break-all">
-                {contract.borrower_pk}
-              </Text>
+              <div className="flex flex-col">
+                <Text size={"2"} weight={"medium"} className="break-all">
+                  {contract.borrower.name}
+                </Text>
+                <Text size={"1"} className="break-all">
+                  ({contract.borrower.id})
+                </Text>
+              </div>
             </Box>
           </Flex>
           <Separator size={"4"} className="bg-font/10" />
@@ -181,6 +188,25 @@ function ContractDetails({ contract }: DetailsProps) {
             </Text>
             <Text size={"2"} weight={"medium"}>
               <CurrencyFormatter value={loanAmount} />
+            </Text>
+          </Flex>
+          <Separator size={"4"} className="bg-font/10" />
+
+          <Flex gap={"5"} align={"start"} justify={"between"}>
+            <Text size={"2"} weight={"medium"} className="text-font/70">
+              Asset / Chain
+            </Text>
+            <Text size={"2"} weight={"medium"}>
+              <Text>
+                {stableCoin
+                  ? <Badge>{StableCoinHelper.print(stableCoin)}</Badge>
+                  : (
+                    <>
+                      {contract.loan_asset_chain}
+                      {contract.loan_asset_type}
+                    </>
+                  )}
+              </Text>
             </Text>
           </Flex>
           <Separator size={"4"} className="bg-font/10" />

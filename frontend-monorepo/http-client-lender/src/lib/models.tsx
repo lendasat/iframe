@@ -14,28 +14,34 @@ export enum ContractStatus {
   DisputeLenderResolved = "DisputeLenderResolved",
 }
 
+export interface BorrowerProfile {
+  id: string;
+  name: string;
+}
+
 export interface Contract {
   id: string;
-  lender_id: string;
-  borrower_id: string;
-  loan_id: string;
-  initial_ltv: number;
+  loan_amount: number;
+  duration_months: number;
+  created_at: Date;
+  repaid_at: Date | undefined;
+  expiry: Date;
+  interest_rate: number;
   initial_collateral_sats: number;
   origination_fee_sats: number;
-  loan_amount: number;
-  interest_rate: number;
-  duration_months: number;
-  borrower_btc_address: string;
+  collateral_sats: number;
+  initial_ltv: number;
+  status: ContractStatus;
+  liquidation_status: LiquidationStatus;
+  borrower: BorrowerProfile;
   borrower_pk: string;
+  borrower_btc_address: string;
   loan_repayment_address: string;
   contract_address?: string;
   borrower_loan_address: string;
-  status: ContractStatus;
-  liquidation_status: LiquidationStatus;
-  contract_index: number;
-  collateral_output: string;
-  created_at: Date;
-  updated_at: Date | undefined;
+  transactions: LoanTransaction[];
+  loan_asset_type: LoanAssetType;
+  loan_asset_chain: LoanAssetChain;
 }
 
 export enum LoanAssetType {
@@ -149,4 +155,20 @@ export interface LenderProfile {
 export interface BorrowerProfile {
   id: string;
   name: string;
+}
+
+export enum TransactionType {
+  Funding = "Funding",
+  Dispute = "Dispute",
+  PrincipalGiven = "PrincipalGiven",
+  PrincipalRepaid = "PrincipalRepaid",
+  Liquidation = "Liquidation",
+  ClaimCollateral = "ClaimCollateral",
+}
+
+export interface LoanTransaction {
+  id: string;
+  contract_id: string;
+  transaction_type: TransactionType;
+  timestamp: Date;
 }
