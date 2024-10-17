@@ -2,11 +2,12 @@ import { faInfoCircle, faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useWallet } from "@frontend-monorepo/borrower-wallet";
 import { LoanOffer, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
-import { formatCurrency, StableCoinHelper, usePrice } from "@frontend-monorepo/ui-shared";
+import { formatCurrency, LtvInfoLabel, StableCoinHelper, usePrice } from "@frontend-monorepo/ui-shared";
 import { Badge, Box, Button, Callout, Flex, Grid, Heading, Separator, Text, TextField } from "@radix-ui/themes";
 import { Network, validate } from "bitcoin-address-validation";
 import React, { useEffect, useState } from "react";
 import { BiError } from "react-icons/bi";
+import { FaInfoCircle } from "react-icons/fa";
 import { IoIosArrowRoundBack } from "react-icons/io";
 import { MdSecurity } from "react-icons/md";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
@@ -359,7 +360,11 @@ export function RequestLoanSummaryInner({ loanOffer, loanFilter }: RequestLoanSu
                       </Text>
                     </Flex>
                     <Flex justify={"between"} align={"center"}>
-                      <Text className="text-xs font-medium text-font/60">LTV ratio</Text>
+                      <LtvInfoLabel>
+                        <Text className="text-xs font-medium text-font/60">LTV ratio</Text>
+                        <FaInfoCircle color={"gray"} />
+                      </LtvInfoLabel>
+
                       <Text className="text-[13px] font-semibold text-black/70 capitalize">
                         {minLtv.toFixed(0)}%
                       </Text>
