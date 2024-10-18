@@ -6,6 +6,8 @@ import { MdOutlineClear } from "react-icons/md";
 export enum StableCoin {
   USDT_SN = "USDT_SN",
   USDC_SN = "USDC_SN",
+  USDT_POL = "USDT_POL",
+  USDC_POL = "USDC_POL",
   USDT_ETH = "USDT_ETH",
   USDC_ETH = "USDC_ETH",
 }
@@ -24,6 +26,10 @@ export class StableCoinHelper {
         return "USDT Starknet";
       case StableCoin.USDC_SN:
         return "USDC Starknet";
+      case StableCoin.USDT_POL:
+        return "USDT Polygon";
+      case StableCoin.USDC_POL:
+        return "USDC Polygon";
       case StableCoin.USDT_ETH:
         return "USDT Ethereum";
       case StableCoin.USDC_ETH:
@@ -48,6 +54,8 @@ export class StableCoinHelper {
       StableCoin.USDC_SN,
       StableCoin.USDT_ETH,
       StableCoin.USDC_ETH,
+      StableCoin.USDT_POL,
+      StableCoin.USDC_POL,
     ];
   }
 
@@ -63,6 +71,12 @@ export class StableCoinHelper {
         return StableCoin.USDC_SN;
       } else if (asset === "Usdt") {
         return StableCoin.USDT_SN;
+      }
+    } else if (chain === "Polygon") {
+      if (asset === "Usdc") {
+        return StableCoin.USDC_POL;
+      } else if (asset === "Usdt") {
+        return StableCoin.USDT_POL;
       }
     }
     return undefined;

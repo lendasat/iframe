@@ -155,6 +155,7 @@ pub enum LoanAssetType {
 #[sqlx(type_name = "loan_asset_chain")]
 pub enum LoanAssetChain {
     Ethereum,
+    Polygon,
     Starknet,
 }
 

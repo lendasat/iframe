@@ -83,6 +83,8 @@ export interface Contract {
   origination_fee_sats: number;
   collateral_sats: number;
   initial_ltv: number;
+  loan_asset_type: LoanAssetType;
+  loan_asset_chain: LoanAssetChain;
   status: ContractStatus;
   liquidation_status: LiquidationStatus;
   lender: LenderProfile;
@@ -101,6 +103,7 @@ export enum LoanAssetType {
 
 export enum LoanAssetChain {
   Ethereum = "Ethereum",
+  Polygon = "Polygon",
   Starknet = "Starknet",
 }
 

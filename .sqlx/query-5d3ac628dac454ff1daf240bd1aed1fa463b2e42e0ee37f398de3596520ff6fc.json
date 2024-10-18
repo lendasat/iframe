@@ -72,7 +72,8 @@
             "kind": {
               "Enum": [
                 "Ethereum",
-                "Starknet"
+                "Starknet",
+                "Polygon"
               ]
             }
           }

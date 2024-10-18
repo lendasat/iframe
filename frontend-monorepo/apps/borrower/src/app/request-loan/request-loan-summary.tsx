@@ -342,7 +342,7 @@ export function RequestLoanSummaryInner({ loanOffer, loanFilter }: RequestLoanSu
                     <Flex justify={"between"} align={"center"}>
                       <Text className="text-xs font-medium text-font/60">Coin</Text>
                       <Text className="text-[13px] font-semibold text-black/70 capitalize">
-                        {initCoin}
+                        {initCoin ? StableCoinHelper.print(initCoin) : ""}
                       </Text>
                     </Flex>
                     <Flex justify={"between"} align={"center"}>
