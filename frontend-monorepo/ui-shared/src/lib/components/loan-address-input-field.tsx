@@ -97,14 +97,18 @@ export function LoanAddressInputField({
 
                       if (chain.unsupported) {
                         return (
-                          <button onClick={openChainModal} type="button">
+                          <Button
+                            variant="solid"
+                            size={"1"}
+                            className="rounded-lg"
+                            color={"blue"}
+                            onClick={openChainModal} type="button">
                             Wrong network
-                          </button>
+                          </Button>
                         );
                       }
 
                       return (
-                        <Flex gap={"12"}>
                           <Button
                             variant="solid"
                             size={"1"}
@@ -117,7 +121,6 @@ export function LoanAddressInputField({
                           >
                             Get Address
                           </Button>
-                        </Flex>
                       );
                     })()}
                   </div>
