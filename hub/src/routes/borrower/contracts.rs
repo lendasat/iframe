@@ -4,6 +4,8 @@ use crate::mempool;
 use crate::model::ContractRequestSchema;
 use crate::model::ContractStatus;
 use crate::model::LiquidationStatus;
+use crate::model::LoanAssetChain;
+use crate::model::LoanAssetType;
 use crate::model::LoanTransaction;
 use crate::model::PsbtQueryParams;
 use crate::model::User;
@@ -94,6 +96,8 @@ pub struct Contract {
     pub interest_rate: Decimal,
     #[serde(with = "rust_decimal::serde::float")]
     pub initial_ltv: Decimal,
+    pub loan_asset_type: LoanAssetType,
+    pub loan_asset_chain: LoanAssetChain,
     pub status: ContractStatus,
     pub borrower_pk: PublicKey,
     pub borrower_btc_address: String,
@@ -198,6 +202,8 @@ pub async fn get_contracts(
             origination_fee_sats: contract.origination_fee_sats,
             interest_rate: offer.interest_rate,
             initial_ltv: contract.initial_ltv,
+            loan_asset_type: offer.loan_asset_type,
+            loan_asset_chain: offer.loan_asset_chain,
             status: contract.status,
             liquidation_status: contract.liquidation_status,
             borrower_pk: contract.borrower_pk,
@@ -297,6 +303,8 @@ pub async fn get_contract(
             origination_fee_sats: contract.origination_fee_sats,
             interest_rate: offer.interest_rate,
             initial_ltv: contract.initial_ltv,
+            loan_asset_type: offer.loan_asset_type,
+            loan_asset_chain: offer.loan_asset_chain,
             status: contract.status,
             liquidation_status: contract.liquidation_status,
             borrower_pk: contract.borrower_pk,
@@ -377,6 +385,8 @@ pub async fn post_contract_request(
             origination_fee_sats: contract.origination_fee_sats,
             interest_rate: offer.interest_rate,
             initial_ltv: contract.initial_ltv,
+            loan_asset_type: offer.loan_asset_type,
+            loan_asset_chain: offer.loan_asset_chain,
             status: contract.status,
             liquidation_status: contract.liquidation_status,
             borrower_pk: contract.borrower_pk,

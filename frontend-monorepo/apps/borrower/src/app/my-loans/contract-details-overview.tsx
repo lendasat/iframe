@@ -7,7 +7,7 @@ import {
   useAuth,
   useBorrowerHttpClient,
 } from "@frontend-monorepo/http-client-borrower";
-import { CurrencyFormatter, LtvInfoLabel, usePrice } from "@frontend-monorepo/ui-shared";
+import { CurrencyFormatter, LtvInfoLabel, StableCoinHelper, usePrice } from "@frontend-monorepo/ui-shared";
 import { Badge, Box, Button, Callout, Flex, Grid, Heading, IconButton, Separator, Text } from "@radix-ui/themes";
 import { Suspense, useState } from "react";
 import { Col, OverlayTrigger, Row, Tooltip } from "react-bootstrap";
@@ -142,6 +142,11 @@ function ContractDetails({ contract }: DetailsProps) {
 
   const [showAddCollateralModal, setShowAddCollateralModal] = useState(false);
 
+  const coin = StableCoinHelper.mapFromBackend(
+    contract.loan_asset_chain,
+    contract.loan_asset_type,
+  );
+
   const collateral = collateralForStatus(contract.status, contract.initial_collateral_sats, contract.collateral_sats);
   const collateralBtc = collateral / 100000000;
   const loanAmount = contract.loan_amount;
@@ -251,6 +256,18 @@ function ContractDetails({ contract }: DetailsProps) {
           </Text>
           <Text size={"2"} weight={"medium"}>
             <CurrencyFormatter value={loanAmount} />
+          </Text>
+        </Flex>
+        <Separator size={"4"} className="bg-font/10" />
+
+        <Flex gap={"5"} align={"start"} justify={"between"}>
+          <Text size={"2"} weight={"medium"} className="text-font/70">
+            Asset
+          </Text>
+          <Text size={"2"} weight={"medium"}>
+            <Text>
+              <Badge>{coin ? StableCoinHelper.print(coin) : ""}</Badge>
+            </Text>
           </Text>
         </Flex>
         <Separator size={"4"} className="bg-font/10" />
