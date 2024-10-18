@@ -222,7 +222,7 @@ export function RequestLoanSummaryInner({ loanOffer, loanFilter }: RequestLoanSu
     || amountError != null
     || !initCoin
     || !loanAddress.trim()
-    || bitcoinAddressInputError;
+    || !!bitcoinAddressInputError;
 
   return (
     <Box
