@@ -1,0 +1,2 @@
+-- Note: There is no down migration for removing the `Polygon` variant that was added to
+-- `loan_asset_chain` because it is not feasible to remove enum variants in the DB!

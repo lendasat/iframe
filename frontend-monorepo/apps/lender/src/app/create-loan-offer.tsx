@@ -52,6 +52,14 @@ const CreateLoanOffer: React.FC = () => {
         assetType = LoanAssetType.Usdc;
         assetChain = LoanAssetChain.Starknet;
         break;
+      case StableCoin.USDT_POL:
+        assetType = LoanAssetType.Usdt;
+        assetChain = LoanAssetChain.Polygon;
+        break;
+      case StableCoin.USDC_POL:
+        assetType = LoanAssetType.Usdc;
+        assetChain = LoanAssetChain.Polygon;
+        break;
       case StableCoin.USDT_ETH:
         assetType = LoanAssetType.Usdt;
         assetChain = LoanAssetChain.Ethereum;
@@ -253,6 +261,10 @@ const CreateLoanOffer: React.FC = () => {
                           ? "USDT Starknet"
                           : coin === "USDC_SN"
                           ? "USDC Starknet"
+                          : coin === "USDT_POL"
+                          ? "USDT Polygon"
+                          : coin === "USDC_POL"
+                          ? "USDC Polygon"
                           : coin === "USDT_ETH"
                           ? "USDT Ethereum"
                           : coin === "USDC_ETH"
