@@ -1,7 +1,7 @@
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { useSDK } from "@metamask/sdk-react";
-import { Button, Callout, TextField } from "@radix-ui/themes";
+import { Button, Callout, Flex, TextField } from "@radix-ui/themes";
+import { ConnectButton, useAccountModal, useChainModal, useConnectModal } from "@rainbow-me/rainbowkit";
 import React, { useState } from "react";
 
 interface LoanAddressInputFieldProps {
@@ -15,28 +15,8 @@ export function LoanAddressInputField({
   setLoanAddress,
   assetChain,
 }: LoanAddressInputFieldProps) {
-  const { sdk, connected, chainId, provider } = useSDK();
-
   const [hideButton, setHideButton] = useState(false);
   const [manualInput, setManualInput] = useState(true);
-
-  const connect = async () => {
-    try {
-      setManualInput(false);
-      const accounts = await sdk?.connect();
-      setLoanAddress(accounts?.[0] ?? "");
-      setHideButton(true);
-    } catch (err) {
-      console.warn("failed to connect..", err);
-    }
-  };
-
-  if (provider) {
-    function handleChainChanged() {
-      window.location.reload();
-    }
-    provider.on("chainChanged", handleChainChanged);
-  }
 
   let warning = "";
   if (manualInput) {
@@ -44,18 +24,19 @@ export function LoanAddressInputField({
       `Provide a valid address on the ${assetChain} network. Providing an incorrect address here will lead to loss of funds.`;
   }
 
-  switch (assetChain) {
-    case "Ethereum":
-      if (chainId && chainId !== "0x1") {
-        warning = "Please check the selected network in the extension.";
-      }
-      break;
-  }
-
   function onInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     setManualInput(true);
     setLoanAddress(e.target.value);
   }
+
+  const onAddressFetched = (address: string) => {
+    setLoanAddress(address);
+    setHideButton(true);
+    setManualInput(false);
+  };
+
+  // WalletConnect extension only supports Ethereum and Ethereum-L2s... No Starknet
+  const isChainSupportedByExtension = assetChain.toLowerCase() === "ethereum";
 
   return (
     <>
@@ -81,28 +62,68 @@ export function LoanAddressInputField({
         value={loanAddress}
         onChange={onInputChange}
       >
-        {!connected && (
+        {isChainSupportedByExtension && !hideButton && (
           <TextField.Slot side={"right"}>
-            <Button
-              className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded"
-              onClick={async () => {
-                await connect();
+            <ConnectButton.Custom>
+              {({
+                account,
+                chain,
+                openChainModal,
+                openConnectModal,
+                mounted,
+              }) => {
+                const ready = mounted;
+                const connected = ready && account && chain;
+
+                return (
+                  <div
+                    {...(!ready && {
+                      "aria-hidden": true,
+                      "style": {
+                        opacity: 0,
+                        pointerEvents: "none",
+                        userSelect: "none",
+                      },
+                    })}
+                  >
+                    {(() => {
+                      if (!connected) {
+                        return (
+                          <button onClick={openConnectModal} type="button">
+                            Connect Wallet
+                          </button>
+                        );
+                      }
+
+                      if (chain.unsupported) {
+                        return (
+                          <button onClick={openChainModal} type="button">
+                            Wrong network
+                          </button>
+                        );
+                      }
+
+                      return (
+                        <Flex gap={"12"}>
+                          <Button
+                            variant="solid"
+                            size={"1"}
+                            className="rounded-lg"
+                            color={"blue"}
+                            onClick={() => {
+                              onAddressFetched(account.address);
+                            }}
+                            type="button"
+                          >
+                            Get Address
+                          </Button>
+                        </Flex>
+                      );
+                    })()}
+                  </div>
+                );
               }}
-            >
-              Connect Wallet
-            </Button>
-          </TextField.Slot>
-        )}
-        {connected && !hideButton && (
-          <TextField.Slot side={"right"}>
-            <Button
-              className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded"
-              onClick={async () => {
-                await connect();
-              }}
-            >
-              Get Address
-            </Button>
+            </ConnectButton.Custom>
           </TextField.Slot>
         )}
       </TextField.Root>
