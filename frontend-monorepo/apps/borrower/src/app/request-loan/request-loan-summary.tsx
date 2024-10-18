@@ -2,7 +2,13 @@ import { faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useWallet } from "@frontend-monorepo/borrower-wallet";
 import { LoanOffer, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
-import { formatCurrency, LtvInfoLabel, StableCoinHelper, usePrice } from "@frontend-monorepo/ui-shared";
+import {
+  formatCurrency,
+  LoanAddressInputField,
+  LtvInfoLabel,
+  StableCoinHelper,
+  usePrice,
+} from "@frontend-monorepo/ui-shared";
 import { Badge, Box, Button, Callout, Flex, Grid, Heading, Separator, Text, TextField } from "@radix-ui/themes";
 import { Network, validate } from "bitcoin-address-validation";
 import React, { useEffect, useState } from "react";
@@ -11,7 +17,6 @@ import { FaInfoCircle } from "react-icons/fa";
 import { IoIosArrowRoundBack } from "react-icons/io";
 import { MdSecurity } from "react-icons/md";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
-import { LoanAddressInputField } from "../../../../../ui-shared/src/lib/components/loan-address-input-field";
 import { CreateWalletModal } from "../wallet/create-wallet-modal";
 import { UnlockWalletModal } from "../wallet/unlock-wallet-modal";
 import { LoanFilter } from "./loan-offers-filter";
@@ -97,6 +102,7 @@ export function RequestLoanSummaryInner({ loanOffer, loanFilter }: RequestLoanSu
   const [loanDuration, setLoanDuration] = useState<number>(initMonths);
   const [showCreateWalletModal, setShowCreateWalletModal] = useState(false);
   const [showUnlockWalletModal, setShowUnlockWalletModal] = useState(false);
+  const [hideWalletConnectButton, setHideWalletConnectButton] = useState(false);
 
   const collateral = latestPrice ? (loanAmount / loanOffer.min_ltv / latestPrice) : undefined;
   const collateralInUsd = collateral ? collateral * latestPrice : undefined;
@@ -302,6 +308,8 @@ export function RequestLoanSummaryInner({ loanOffer, loanFilter }: RequestLoanSu
                   loanAddress={loanAddress}
                   setLoanAddress={setLoanAddress}
                   assetChain={loanOffer.loan_asset_chain}
+                  hideButton={hideWalletConnectButton}
+                  setHideButton={setHideWalletConnectButton}
                 />
               </Flex>
             </Box>

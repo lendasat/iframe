@@ -1,6 +1,6 @@
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Button, Callout, Flex, TextField } from "@radix-ui/themes";
+import { Button, Callout, TextField } from "@radix-ui/themes";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import React, { useState } from "react";
 import { connect } from "starknetkit";
@@ -9,14 +9,17 @@ interface LoanAddressInputFieldProps {
   loanAddress: string;
   setLoanAddress: (value: ((prevState: string) => string) | string) => void;
   assetChain: string;
+  hideButton: boolean;
+  setHideButton: (value: boolean) => void;
 }
 
 export function LoanAddressInputField({
   loanAddress,
   setLoanAddress,
   assetChain,
+  hideButton,
+  setHideButton,
 }: LoanAddressInputFieldProps) {
-  const [hideButton, setHideButton] = useState(false);
   const [manualInput, setManualInput] = useState(true);
 
   let warning = "";
@@ -91,9 +94,16 @@ export function LoanAddressInputField({
                     {(() => {
                       if (!connected) {
                         return (
-                          <button onClick={openConnectModal} type="button">
+                          <Button
+                            variant="solid"
+                            size={"1"}
+                            className="rounded-lg"
+                            color={"blue"}
+                            onClick={openConnectModal}
+                            type="button"
+                          >
                             Connect Wallet
-                          </button>
+                          </Button>
                         );
                       }
 
@@ -149,7 +159,7 @@ export function LoanAddressInputField({
               }
             }}
           >
-            Connect Wallet
+            Get Address
           </Button>
         )}
       </TextField.Root>

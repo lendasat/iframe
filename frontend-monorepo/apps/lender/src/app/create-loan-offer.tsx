@@ -40,10 +40,13 @@ const CreateLoanOffer: React.FC = () => {
   const [loanRepaymentAddress, setLoanRepaymentAddress] = useState<string>("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [hideWalletConnectButton, setHideWalletConnectButton] = useState(false);
 
   const handleStableCoinChange = (coinString: string) => {
     const coin = parseStableCoin(coinString);
     setSelectedCoin(coin);
+    setLoanRepaymentAddress("");
+    setHideWalletConnectButton(false);
   };
 
   const mapToCreateLoanOfferSchema = (): CreateLoanOfferRequest => {
@@ -278,6 +281,8 @@ const CreateLoanOffer: React.FC = () => {
                     loanAddress={loanRepaymentAddress}
                     setLoanAddress={setLoanRepaymentAddress}
                     assetChain={selectedCoin ? StableCoinHelper.toChain(selectedCoin) : "undefined"}
+                    hideButton={hideWalletConnectButton}
+                    setHideButton={setHideWalletConnectButton}
                   />
                 </Box>
 
