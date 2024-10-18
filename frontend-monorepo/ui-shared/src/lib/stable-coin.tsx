@@ -1,6 +1,5 @@
 import { Button, Select } from "@radix-ui/themes";
-import React, { MouseEventHandler, useState } from "react";
-import { IoCloseCircle } from "react-icons/io5";
+import React, { useState } from "react";
 import { MdOutlineClear } from "react-icons/md";
 
 // Enum and Helper Class
@@ -89,8 +88,7 @@ export function StableCoinDropdown({
     onSelect(selectedValue);
   };
 
-  const handleClear = (e: React.ChangeEvent<HTMLInputElement>) => {
-    e.preventDefault();
+  const handleClear = () => {
     setSelectedCoin("disabled");
     onSelect(undefined);
   };
