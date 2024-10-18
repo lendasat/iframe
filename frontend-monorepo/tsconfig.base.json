@@ -16,7 +16,7 @@
     "baseUrl": ".",
     "paths": {
       "@frontend-monorepo/base-http-client": ["base-http-client/src/index.ts"],
-      "@frontend-monorepo/borrower-wallet": ["borrower-wallet/src/index.ts"],
+      "@frontend-monorepo/browser-wallet": ["browser-wallet/src/index.ts"],
       "@frontend-monorepo/http-client-borrower": [
         "http-client-borrower/src/index.ts"
       ],

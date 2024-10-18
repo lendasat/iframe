@@ -24,7 +24,7 @@ jobs:
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
-      - name: Build borrower wallet
+      - name: Build browser wallet
         run: just build-wallet
 
       - name: Install frontend deps

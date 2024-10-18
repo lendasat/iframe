@@ -1,6 +1,7 @@
 import { faInfoCircle, faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { useWallet } from "@frontend-monorepo/borrower-wallet";
+import { useWallet } from "@frontend-monorepo/browser-wallet";
+import { CreateWalletModal, UnlockWalletModal } from "@frontend-monorepo/browser-wallet";
 import { LoanOffer, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import { formatCurrency, LtvInfoLabel, StableCoinHelper, usePrice } from "@frontend-monorepo/ui-shared";
 import { Badge, Box, Button, Callout, Flex, Grid, Heading, Separator, Text, TextField } from "@radix-ui/themes";
@@ -11,8 +12,6 @@ import { FaInfoCircle } from "react-icons/fa";
 import { IoIosArrowRoundBack } from "react-icons/io";
 import { MdSecurity } from "react-icons/md";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
-import { CreateWalletModal } from "../wallet/create-wallet-modal";
-import { UnlockWalletModal } from "../wallet/unlock-wallet-modal";
 import { LoanFilter } from "./loan-offers-filter";
 import { Slider, SliderProps } from "./slider";
 

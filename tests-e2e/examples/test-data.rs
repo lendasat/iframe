@@ -1,5 +1,6 @@
 use anyhow::Context;
 use anyhow::Result;
+use bitcoin::bip32::Xpub;
 use bitcoin::Address;
 use bitcoin::PublicKey;
 use hub::config::Config;
@@ -96,6 +97,8 @@ async fn accept_loan_request(
             .expect("to be a valid address")
             .assume_checked(),
         1,
+        Xpub::from_str("tpubDAenfwNu5GyCJWv8oqRAckdKMSUoZjgVF5p8WvQwHQeXjDhAHmGrPa4a4y2Fn7HF2nfCLefJanHV3ny1UY25MRVogizB2zRUdAo7Tr9XAjm")
+            .expect("valid xpub"),
     )
     .await
 }

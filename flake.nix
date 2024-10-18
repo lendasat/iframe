@@ -22,7 +22,7 @@
 
         rustToolchain = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
         rustToolchainWithWasm = rustToolchain.override {
-          # NOTE: I had to `yarn install --force` in `frontend-monorepo` after deleting `node_modules/borrower-wallet`.
+# NOTE: I had to `yarn install --force` in `frontend-monorepo` after deleting `node_modules/browser-wallet`.
           targets = [ "wasm32-unknown-unknown" ];
           # rust-src needs to match rustc's version for rust-analyzer to be able to use it.
           extensions = [ "rust-src" ];
@@ -68,7 +68,7 @@
               rustToolchainWithWasm
               sqlx-cli
               wabt
-              wasm-pack # Does not produce a valid `borrower-wallet` output.
+wasm-pack # Does not produce a valid `browser-wallet` output.
               binaryen
               wasm-bindgen-cli
               pkgs-stable.nodePackages.eslint

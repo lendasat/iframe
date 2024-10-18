@@ -2,6 +2,7 @@ use argon2::Argon2;
 use argon2::PasswordHash;
 use argon2::PasswordVerifier;
 use bitcoin::address::NetworkUnchecked;
+use bitcoin::bip32::Xpub;
 use bitcoin::Address;
 use bitcoin::PublicKey;
 use rust_decimal::Decimal;
@@ -218,6 +219,7 @@ pub struct Contract {
     pub borrower_btc_address: Address<NetworkUnchecked>,
     pub borrower_pk: PublicKey,
     pub borrower_loan_address: String,
+    pub lender_xpub: Option<Xpub>,
     pub contract_address: Option<Address<NetworkUnchecked>>,
     pub contract_index: Option<u32>,
     pub status: ContractStatus,
@@ -293,6 +295,7 @@ pub mod db {
         pub borrower_btc_address: String,
         pub borrower_pk: String,
         pub borrower_loan_address: String,
+        pub lender_xpub: Option<String>,
         pub contract_address: Option<String>,
         pub contract_index: Option<i32>,
         pub status: ContractStatus,
@@ -348,6 +351,9 @@ impl From<db::Contract> for Contract {
                 .expect("valid address"),
             borrower_pk: PublicKey::from_str(&value.borrower_pk).expect("valid pk"),
             borrower_loan_address: value.borrower_loan_address,
+            lender_xpub: value
+                .lender_xpub
+                .map(|xpub| xpub.parse().expect("valid xpub")),
             contract_address: value
                 .contract_address
                 .map(|addr| addr.parse().expect("valid address")),
@@ -407,6 +413,7 @@ impl From<Contract> for db::Contract {
             borrower_btc_address: value.borrower_btc_address.assume_checked().to_string(),
             borrower_pk: value.borrower_pk.to_string(),
             borrower_loan_address: value.borrower_loan_address,
+            lender_xpub: value.lender_xpub.map(|xpub| xpub.to_string()),
             contract_address: value
                 .contract_address
                 .map(|addr| addr.assume_checked().to_string()),

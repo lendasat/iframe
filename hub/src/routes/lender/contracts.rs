@@ -23,6 +23,7 @@ use axum::routing::put;
 use axum::Extension;
 use axum::Json;
 use axum::Router;
+use bitcoin::bip32::Xpub;
 use bitcoin::PublicKey;
 use rust_decimal::Decimal;
 use serde::Deserialize;
@@ -316,10 +317,16 @@ pub async fn get_contract(
     Ok((StatusCode::OK, Json(contract)))
 }
 
-#[instrument(skip_all, err(Debug))]
+#[derive(Debug, Deserialize)]
+pub struct ApproveQueryParam {
+    pub xpub: Xpub,
+}
+
+#[instrument(skip(data, user), err(Debug))]
 pub async fn put_approve_contract(
     State(data): State<Arc<AppState>>,
     Path(contract_id): Path<String>,
+    query_params: Query<ApproveQueryParam>,
     Extension(user): Extension<User>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     async {
@@ -332,7 +339,10 @@ pub async fn put_approve_contract(
         .context("Failed to load contract request")?;
 
         let wallet = data.wallet.lock().await;
-        let (contract_address, contract_index) = wallet.contract_address(contract.borrower_pk)?;
+
+        let lender_xpub = query_params.xpub;
+        let (contract_address, contract_index) =
+            wallet.contract_address(contract.borrower_pk, &lender_xpub)?;
 
         let borrower = db::borrowers::get_user_by_id(&data.db, contract.borrower_id.as_str())
             .await
@@ -345,6 +355,7 @@ pub async fn put_approve_contract(
             contract_id.as_str(),
             contract_address.clone(),
             contract_index,
+            lender_xpub,
         )
         .await
         .context("Failed to accept contract request")?;
@@ -363,7 +374,7 @@ pub async fn put_approve_contract(
             contract.id
         );
         let email = Email::new(data.config.clone());
-        // We don't want to fail this upwards because the contract request has been already
+        // We don't want to fail this upwards because the contract request has already been
         // approved.
         if let Err(err) = email
             .send_loan_request_approved(borrower, loan_url.as_str())
@@ -381,15 +392,16 @@ pub async fn put_approve_contract(
         };
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
     })?;
+
     Ok(())
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct PrincipalGivenQueryParam {
     pub txid: String,
 }
 
-#[instrument(skip_all, err(Debug))]
+#[instrument(skip(data, user), err(Debug))]
 pub async fn put_principal_given(
     State(data): State<Arc<AppState>>,
     Path(contract_id): Path<String>,
@@ -573,12 +585,12 @@ pub async fn delete_reject_contract(
     Ok(())
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct PrincipalRepaidQueryParam {
     pub txid: String,
 }
 
-#[instrument(skip_all, err(Debug))]
+#[instrument(skip(data, user), err(Debug))]
 pub async fn put_repaid_contract(
     State(data): State<Arc<AppState>>,
     Path(contract_id): Path<String>,
