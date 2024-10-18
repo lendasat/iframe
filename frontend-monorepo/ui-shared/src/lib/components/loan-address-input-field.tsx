@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Button, Callout, Flex, TextField } from "@radix-ui/themes";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import React, { useState } from "react";
+import { connect } from "starknetkit";
 
 interface LoanAddressInputFieldProps {
   loanAddress: string;
@@ -26,6 +27,7 @@ export function LoanAddressInputField({
 
   function onInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     setManualInput(true);
+    setHideButton(false);
     setLoanAddress(e.target.value);
   }
 
@@ -36,7 +38,7 @@ export function LoanAddressInputField({
   };
 
   // WalletConnect extension only supports Ethereum and Ethereum-L2s... No Starknet
-  const isChainSupportedByExtension = assetChain.toLowerCase() === "ethereum";
+  const isStarknet = assetChain.toLowerCase() === "starknet";
 
   return (
     <>
@@ -62,7 +64,7 @@ export function LoanAddressInputField({
         value={loanAddress}
         onChange={onInputChange}
       >
-        {isChainSupportedByExtension && !hideButton && (
+        {!isStarknet && !hideButton && (
           <TextField.Slot side={"right"}>
             <ConnectButton.Custom>
               {({
@@ -102,25 +104,27 @@ export function LoanAddressInputField({
                             size={"1"}
                             className="rounded-lg"
                             color={"blue"}
-                            onClick={openChainModal} type="button">
+                            onClick={openChainModal}
+                            type="button"
+                          >
                             Wrong network
                           </Button>
                         );
                       }
 
                       return (
-                          <Button
-                            variant="solid"
-                            size={"1"}
-                            className="rounded-lg"
-                            color={"blue"}
-                            onClick={() => {
-                              onAddressFetched(account.address);
-                            }}
-                            type="button"
-                          >
-                            Get Address
-                          </Button>
+                        <Button
+                          variant="solid"
+                          size={"1"}
+                          className="rounded-lg"
+                          color={"blue"}
+                          onClick={() => {
+                            onAddressFetched(account.address);
+                          }}
+                          type="button"
+                        >
+                          Get Address
+                        </Button>
                       );
                     })()}
                   </div>
@@ -128,6 +132,25 @@ export function LoanAddressInputField({
               }}
             </ConnectButton.Custom>
           </TextField.Slot>
+        )}
+        {isStarknet && !hideButton && (
+          <Button
+            variant="solid"
+            size={"1"}
+            className="rounded-lg"
+            color={"blue"}
+            type={"button"}
+            onClick={async () => {
+              const { wallet, connectorData } = await connect({});
+              console.log(`Wallet name : ${wallet?.name}`);
+              console.log(`Account: ${connectorData?.account}`);
+              if (connectorData?.account) {
+                onAddressFetched(connectorData?.account);
+              }
+            }}
+          >
+            Connect Wallet
+          </Button>
         )}
       </TextField.Root>
     </>

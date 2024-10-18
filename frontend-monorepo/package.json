@@ -25,6 +25,7 @@
     "react-router-dom": "6.11.2",
     "react-use": "^17.5.1",
     "semver": "^7.6.3",
+    "starknetkit": "^2.3.3",
     "swiper": "^11.1.14",
     "tslib": "^2.3.0",
     "uuid": "^10.0.0",
