@@ -151,10 +151,15 @@ function MainLayoutComponents() {
 }
 
 function App() {
+  const baseUrl = import.meta.env.VITE_BORROWER_BASE_URL;
+  if (!baseUrl) {
+    throw new Error("VITE_BORROWER_BASE_URL is undefined!");
+  }
+
   return (
-    <AuthProviderBorrower baseUrl={import.meta.env.VITE_BORROWER_BASE_URL || "/"}>
+    <AuthProviderBorrower baseUrl={import.meta.env.VITE_BORROWER_BASE_URL!}>
       <AuthIsSignedIn>
-        <PriceProvider url={import.meta.env.VITE_BORROWER_BASE_URL || "/"}>
+        <PriceProvider url={import.meta.env.VITE_BORROWER_BASE_URL!}>
           <MainLayoutComponents />
         </PriceProvider>
       </AuthIsSignedIn>

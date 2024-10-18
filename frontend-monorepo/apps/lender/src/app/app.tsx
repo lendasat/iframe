@@ -140,9 +140,14 @@ function MainLayoutComponents() {
 }
 
 function App() {
+  const baseUrl = import.meta.env.VITE_LENDER_BASE_URL;
+  if (!baseUrl) {
+    throw new Error("VITE_LENDER_BASE_URL is undefined!");
+  }
+
   return (
-    <PriceProvider url={import.meta.env.VITE_LENDER_BASE_URL || "/"}>
-      <AuthProviderLender baseUrl={import.meta.env.VITE_LENDER_BASE_URL || "/"}>
+    <PriceProvider url={baseUrl}>
+      <AuthProviderLender baseUrl={baseUrl}>
         <AuthIsSignedIn>
           <MainLayoutComponents />
         </AuthIsSignedIn>
