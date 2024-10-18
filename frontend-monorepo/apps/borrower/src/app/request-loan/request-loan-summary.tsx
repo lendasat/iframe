@@ -11,9 +11,9 @@ import { FaInfoCircle } from "react-icons/fa";
 import { IoIosArrowRoundBack } from "react-icons/io";
 import { MdSecurity } from "react-icons/md";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { LoanAddressInputField } from "../../../../../ui-shared/src/lib/components/loan-address-input-field";
 import { CreateWalletModal } from "../wallet/create-wallet-modal";
 import { UnlockWalletModal } from "../wallet/unlock-wallet-modal";
-import { LoanAddressInputField } from "./loan-address-input-field";
 import { LoanFilter } from "./loan-offers-filter";
 import { Slider, SliderProps } from "./slider";
 
