@@ -1,4 +1,4 @@
-import { faInfoCircle, faWarning } from "@fortawesome/free-solid-svg-icons";
+import { faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useWallet } from "@frontend-monorepo/borrower-wallet";
 import { LoanOffer, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
@@ -13,6 +13,7 @@ import { MdSecurity } from "react-icons/md";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { CreateWalletModal } from "../wallet/create-wallet-modal";
 import { UnlockWalletModal } from "../wallet/unlock-wallet-modal";
+import { LoanAddressInputField } from "./loan-address-input-field";
 import { LoanFilter } from "./loan-offers-filter";
 import { Slider, SliderProps } from "./slider";
 
@@ -297,26 +298,10 @@ export function RequestLoanSummaryInner({ loanOffer, loanFilter }: RequestLoanSu
               <Separator size={"4"} />
               <Flex direction={"column"} align={"start"} gap={"2"}>
                 <Text as="label" size={"2"} weight={"medium"}>{addressLabel}</Text>
-                {loanAddress && (
-                  <Callout.Root color="amber">
-                    <Callout.Icon>
-                      <FontAwesomeIcon icon={faInfoCircle} />
-                    </Callout.Icon>
-                    <Callout.Text>
-                      Provide a valid address on the target network. Providing an incorrect address here will lead to
-                      loss of funds.
-                    </Callout.Text>
-                  </Callout.Root>
-                )}
-                <TextField.Root
-                  className="w-full font-semibold border-0"
-                  size={"3"}
-                  variant="surface"
-                  placeholder="Enter a valid address"
-                  type="text"
-                  color={"gray"}
-                  value={loanAddress}
-                  onChange={(e) => setLoanAddress(e.target.value)}
+                <LoanAddressInputField
+                  loanAddress={loanAddress}
+                  setLoanAddress={setLoanAddress}
+                  assetChain={loanOffer.loan_asset_chain}
                 />
               </Flex>
             </Box>
