@@ -5,7 +5,13 @@ import {
   useLenderHttpClient,
 } from "@frontend-monorepo/http-client-lender";
 import { useAuth } from "@frontend-monorepo/http-client-lender";
-import { formatCurrency, parseStableCoin, StableCoin, StableCoinHelper } from "@frontend-monorepo/ui-shared";
+import {
+  formatCurrency,
+  LoanAddressInputField,
+  parseStableCoin,
+  StableCoin,
+  StableCoinHelper,
+} from "@frontend-monorepo/ui-shared";
 import { Box, Button, Callout, Flex, Heading, Separator, Spinner, Text, TextField } from "@radix-ui/themes";
 import React, { useState } from "react";
 import { Form } from "react-bootstrap";
@@ -34,10 +40,13 @@ const CreateLoanOffer: React.FC = () => {
   const [loanRepaymentAddress, setLoanRepaymentAddress] = useState<string>("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [hideWalletConnectButton, setHideWalletConnectButton] = useState(false);
 
   const handleStableCoinChange = (coinString: string) => {
     const coin = parseStableCoin(coinString);
     setSelectedCoin(coin);
+    setLoanRepaymentAddress("");
+    setHideWalletConnectButton(false);
   };
 
   const mapToCreateLoanOfferSchema = (): CreateLoanOfferRequest => {
@@ -268,13 +277,12 @@ const CreateLoanOffer: React.FC = () => {
                   <Text as="label" size={"2"} weight={"medium"} className="text-font/60">
                     Loan Repayment Address
                   </Text>
-                  <TextField.Root
-                    size="3"
-                    className="flex-1 text-sm"
-                    color="purple"
-                    placeholder="Enter Repayment Address"
-                    value={loanRepaymentAddress}
-                    onChange={(e) => setLoanRepaymentAddress(e.target.value)}
+                  <LoanAddressInputField
+                    loanAddress={loanRepaymentAddress}
+                    setLoanAddress={setLoanRepaymentAddress}
+                    assetChain={selectedCoin ? StableCoinHelper.toChain(selectedCoin) : "undefined"}
+                    hideButton={hideWalletConnectButton}
+                    setHideButton={setHideWalletConnectButton}
                   />
                 </Box>
 
@@ -298,11 +306,9 @@ const CreateLoanOffer: React.FC = () => {
                     size={"3"}
                     variant="solid"
                     radius="large"
-                    disabled={loanAmount.max && loanDuration.max
-                        && ltv && loanRepaymentAddress
-                        && !loading
-                      ? false
-                      : true}
+                    disabled={!(loanAmount.max && loanDuration.max
+                      && ltv && loanRepaymentAddress
+                      && !loading)}
                     className="w-full h-12"
                   >
                     {loading ? <Spinner size={"3"} /> : "Create Offer"}
@@ -397,11 +403,9 @@ const CreateLoanOffer: React.FC = () => {
               size={"3"}
               variant="solid"
               radius="large"
-              disabled={loanAmount.max && loanDuration.max
-                  && ltv && loanRepaymentAddress
-                  && !loading
-                ? false
-                : true}
+              disabled={!(loanAmount.max && loanDuration.max
+                && ltv && loanRepaymentAddress
+                && !loading)}
               className="w-full h-12"
             >
               {loading ? <Spinner size={"3"} /> : "Create Offer"}

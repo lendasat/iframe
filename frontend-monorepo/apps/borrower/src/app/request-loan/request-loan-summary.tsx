@@ -1,9 +1,15 @@
-import { faInfoCircle, faWarning } from "@fortawesome/free-solid-svg-icons";
+import { faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useWallet } from "@frontend-monorepo/browser-wallet";
 import { CreateWalletModal, UnlockWalletModal } from "@frontend-monorepo/browser-wallet";
 import { LoanOffer, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
-import { formatCurrency, LtvInfoLabel, StableCoinHelper, usePrice } from "@frontend-monorepo/ui-shared";
+import {
+  formatCurrency,
+  LoanAddressInputField,
+  LtvInfoLabel,
+  StableCoinHelper,
+  usePrice,
+} from "@frontend-monorepo/ui-shared";
 import { Badge, Box, Button, Callout, Flex, Grid, Heading, Separator, Text, TextField } from "@radix-ui/themes";
 import { Network, validate } from "bitcoin-address-validation";
 import React, { useEffect, useState } from "react";
@@ -95,6 +101,7 @@ export function RequestLoanSummaryInner({ loanOffer, loanFilter }: RequestLoanSu
   const [loanDuration, setLoanDuration] = useState<number>(initMonths);
   const [showCreateWalletModal, setShowCreateWalletModal] = useState(false);
   const [showUnlockWalletModal, setShowUnlockWalletModal] = useState(false);
+  const [hideWalletConnectButton, setHideWalletConnectButton] = useState(false);
 
   const collateral = latestPrice ? (loanAmount / loanOffer.min_ltv / latestPrice) : undefined;
   const collateralInUsd = collateral ? collateral * latestPrice : undefined;
@@ -221,7 +228,7 @@ export function RequestLoanSummaryInner({ loanOffer, loanFilter }: RequestLoanSu
     || amountError != null
     || !initCoin
     || !loanAddress.trim()
-    || bitcoinAddressInputError;
+    || !!bitcoinAddressInputError;
 
   return (
     <Box
@@ -296,26 +303,12 @@ export function RequestLoanSummaryInner({ loanOffer, loanFilter }: RequestLoanSu
               <Separator size={"4"} />
               <Flex direction={"column"} align={"start"} gap={"2"}>
                 <Text as="label" size={"2"} weight={"medium"}>{addressLabel}</Text>
-                {loanAddress && (
-                  <Callout.Root color="amber">
-                    <Callout.Icon>
-                      <FontAwesomeIcon icon={faInfoCircle} />
-                    </Callout.Icon>
-                    <Callout.Text>
-                      Provide a valid address on the target network. Providing an incorrect address here will lead to
-                      loss of funds.
-                    </Callout.Text>
-                  </Callout.Root>
-                )}
-                <TextField.Root
-                  className="w-full font-semibold border-0"
-                  size={"3"}
-                  variant="surface"
-                  placeholder="Enter a valid address"
-                  type="text"
-                  color={"gray"}
-                  value={loanAddress}
-                  onChange={(e) => setLoanAddress(e.target.value)}
+                <LoanAddressInputField
+                  loanAddress={loanAddress}
+                  setLoanAddress={setLoanAddress}
+                  assetChain={loanOffer.loan_asset_chain}
+                  hideButton={hideWalletConnectButton}
+                  setHideButton={setHideWalletConnectButton}
                 />
               </Flex>
             </Box>

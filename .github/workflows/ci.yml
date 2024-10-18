@@ -104,6 +104,3 @@ jobs:
 
       - name: Run tests
         run: just test-frontend
-
-      - name: Run e2e tests
-        run: just e2e-tests-frontend

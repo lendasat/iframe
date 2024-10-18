@@ -1,6 +1,5 @@
 import { Button, Select } from "@radix-ui/themes";
-import React, { MouseEventHandler, useState } from "react";
-import { IoCloseCircle } from "react-icons/io5";
+import React, { useState } from "react";
 import { MdOutlineClear } from "react-icons/md";
 
 // Enum and Helper Class
@@ -29,6 +28,17 @@ export class StableCoinHelper {
         return "USDT Ethereum";
       case StableCoin.USDC_ETH:
         return "USDC Ethereum";
+    }
+  }
+
+  static toChain(stableCoin: StableCoin) {
+    switch (stableCoin) {
+      case StableCoin.USDT_SN:
+      case StableCoin.USDC_SN:
+        return "Starknet";
+      case StableCoin.USDC_ETH:
+      case StableCoin.USDT_ETH:
+        return "Ethereum";
     }
   }
 
@@ -89,8 +99,7 @@ export function StableCoinDropdown({
     onSelect(selectedValue);
   };
 
-  const handleClear = (e: React.ChangeEvent<HTMLInputElement>) => {
-    e.preventDefault();
+  const handleClear = () => {
     setSelectedCoin("disabled");
     onSelect(undefined);
   };
