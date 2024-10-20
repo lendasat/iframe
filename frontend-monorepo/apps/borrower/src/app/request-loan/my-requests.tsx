@@ -635,6 +635,8 @@ export default function SimpleRequest() {
                               loanRequested={loanRequested}
                               onRequest={() => {
                                 if (loanRequested) {
+                                  // create wallet
+                                  setLoanRequested(true);
                                 } else {
                                   setLoanRequested(true);
                                 }
