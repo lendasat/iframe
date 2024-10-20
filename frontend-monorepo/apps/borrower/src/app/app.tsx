@@ -29,10 +29,11 @@ import { User } from "@frontend-monorepo/base-http-client";
 import { FiHome } from "react-icons/fi";
 import { GoGitPullRequest } from "react-icons/go";
 import { HiOutlineSupport } from "react-icons/hi";
-import { IoWalletOutline } from "react-icons/io5";
+import { IoCardOutline, IoWalletOutline } from "react-icons/io5";
 import { LuActivity, LuSettings } from "react-icons/lu";
 import CustomRequest from "./request-loan/custom-loan-request";
 import SimpleRequest from "./request-loan/my-requests";
+import Cards from "./cards/Cards";
 
 const menuItems = [
   {
@@ -56,7 +57,7 @@ const menuItems = [
     group: [
       {
         label: "Request Loan",
-        path: "/requests",
+        path: "/requests", 
         icon: GoGitPullRequest,
         target: "_self",
       },
@@ -64,6 +65,12 @@ const menuItems = [
         label: "Available offers",
         path: "/request-loan",
         icon: BsBank,
+        target: "_self",
+      },
+      {
+        label: "Cards",
+        path: "/cards",
+        icon: IoCardOutline,
         target: "_self",
       },
       {
@@ -134,6 +141,7 @@ function MainLayoutComponents() {
               <Route path={":id"} element={<ContractDetailsOverview />} />
             </Route>
             <Route path="/requests" element={<SimpleRequest />} />
+               <Route path="/cards" element={<Cards />} />
             <Route path="/custom-request" element={<CustomRequest />} />
             <Route path="/history" element={<History />} />
             <Route path="/setting" element={<MyAccount />} />
