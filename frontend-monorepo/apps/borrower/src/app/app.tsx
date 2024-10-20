@@ -31,9 +31,9 @@ import { GoGitPullRequest } from "react-icons/go";
 import { HiOutlineSupport } from "react-icons/hi";
 import { IoCardOutline, IoWalletOutline } from "react-icons/io5";
 import { LuActivity, LuSettings } from "react-icons/lu";
+import Cards from "./cards/Cards";
 import CustomRequest from "./request-loan/custom-loan-request";
 import SimpleRequest from "./request-loan/my-requests";
-import Cards from "./cards/Cards";
 
 const menuItems = [
   {
@@ -57,7 +57,7 @@ const menuItems = [
     group: [
       {
         label: "Request Loan",
-        path: "/requests", 
+        path: "/requests",
         icon: GoGitPullRequest,
         target: "_self",
       },
@@ -141,7 +141,7 @@ function MainLayoutComponents() {
               <Route path={":id"} element={<ContractDetailsOverview />} />
             </Route>
             <Route path="/requests" element={<SimpleRequest />} />
-               <Route path="/cards" element={<Cards />} />
+            <Route path="/cards" element={<Cards />} />
             <Route path="/custom-request" element={<CustomRequest />} />
             <Route path="/history" element={<History />} />
             <Route path="/setting" element={<MyAccount />} />
