@@ -527,3 +527,21 @@ pub struct LoanTransaction {
     #[serde(with = "time::serde::rfc3339")]
     pub timestamp: OffsetDateTime,
 }
+
+/// Origination fee when establishing a new loan depends on the loan length.
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct OriginationFee {
+    /// Loans starting from this are considered, i.e. `>=from_month`
+    pub from_month: i32,
+    /// Loans smaller than this are considered, i.e. `<to_month`
+    pub to_month: i32,
+    /// Fee expressed as a number between 0 and 1, e.g. 0.01 = 1%
+    #[serde(with = "rust_decimal::serde::float")]
+    pub fee: Decimal,
+}
+
+impl OriginationFee {
+    pub fn is_relevant(&self, contract_duration: i32) -> bool {
+        self.from_month <= contract_duration && self.to_month > contract_duration
+    }
+}

@@ -1,3 +1,9 @@
+use crate::model::OriginationFee;
+use rust_decimal::Decimal;
+use rust_decimal_macros::dec;
+use std::ops::Div;
+use std::str::FromStr;
+
 #[derive(Debug, Clone)]
 pub struct Config {
     pub database_url: String,
@@ -19,6 +25,7 @@ pub struct Config {
     pub lender_listen_address: String,
     pub hub_fee_descriptor: String,
     pub hub_fee_wallet_dir: Option<String>,
+    pub origination_fee: Vec<OriginationFee>,
 }
 
 impl Config {
@@ -56,6 +63,17 @@ impl Config {
             std::env::var("HUB_FEE_DESCRIPTOR").expect("HUB_FEE_DESCRIPTOR must be set");
         let hub_fee_wallet_dir = std::env::var("HUB_FEE_WALLET_DIR").ok();
 
+        let origination_fee =
+            std::env::var("HUB_ORIGINATION_FEE").expect("HUB_ORIGINATION_FEE must be set");
+        let orig_fee_parts: Vec<&str> = origination_fee.split(',').collect();
+        let start = i32::from_str(orig_fee_parts[0])
+            .expect("HUB_ORIGINATION_FEE does not fit format `start,end,fee`");
+        let end = i32::from_str(orig_fee_parts[1])
+            .expect("HUB_ORIGINATION_FEE does not fit format `start,end,fee`");
+        let fee = Decimal::from_str(orig_fee_parts[2])
+            .expect("HUB_ORIGINATION_FEE does not fit format `start,end,fee`");
+        let fee = fee.div(dec!(100));
+
         let any_smtp_not_configured = smtp_host.is_none()
             || smtp_port.is_none()
             || smtp_user.is_none()
@@ -86,6 +104,11 @@ impl Config {
                     .unwrap_or_default(),
             hub_fee_descriptor,
             hub_fee_wallet_dir,
+            origination_fee: vec![OriginationFee {
+                from_month: start,
+                to_month: end,
+                fee,
+            }],
         }
     }
 }

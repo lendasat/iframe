@@ -301,7 +301,8 @@ function ContractDetails({ contract }: DetailsProps) {
 
         <Flex gap={"5"} align={"start"} justify={"between"}>
           <Text size={"2"} weight={"medium"} className="text-font/70">
-            Origination fee (1%)
+            {/* TODO: here we showed the percentage as well, but we don't know the number :) */}
+            Origination fee
           </Text>
           <Box className="max-w-sm text-end">
             <OverlayTrigger

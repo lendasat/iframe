@@ -96,6 +96,8 @@ pub async fn get_loan_offers_by_lender(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<User>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    // TODO: don't return the db object here but map it to a different one so that we can enhance it
+    // with more data.
     let loans = db::loan_offers::load_all_loan_offers_by_lender(&data.db, user.id.as_str())
         .await
         .map_err(|error| {
