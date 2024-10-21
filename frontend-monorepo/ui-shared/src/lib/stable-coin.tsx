@@ -39,9 +39,12 @@ export class StableCoinHelper {
 
   static toChain(stableCoin: StableCoin) {
     switch (stableCoin) {
-      case StableCoin.USDT_SN:
       case StableCoin.USDC_SN:
+      case StableCoin.USDT_SN:
         return "Starknet";
+      case StableCoin.USDC_POL:
+      case StableCoin.USDT_POL:
+        return "Polygon";
       case StableCoin.USDC_ETH:
       case StableCoin.USDT_ETH:
         return "Ethereum";
