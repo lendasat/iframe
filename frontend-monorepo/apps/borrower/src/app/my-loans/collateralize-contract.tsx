@@ -48,7 +48,8 @@ export function CollateralContractDetails({
         </Flex>
         <Flex align={"center"} justify={"between"}>
           <Text size={"2"} weight={"medium"} className="text-font/70 shrink-0">
-            Origination fee (1%)
+            {/* TODO: here we showed the percentage as well, but we don't know the number :) */}
+            Origination fee
           </Text>
 
           <OverlayTrigger

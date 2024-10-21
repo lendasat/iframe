@@ -2,6 +2,7 @@ use crate::db;
 use crate::model::LoanAssetChain;
 use crate::model::LoanAssetType;
 use crate::model::LoanOfferStatus;
+use crate::model::OriginationFee;
 use crate::routes::borrower::auth::jwt_auth;
 use crate::routes::borrower::contracts::LenderProfile;
 use crate::routes::AppState;
@@ -58,6 +59,7 @@ pub struct LoanOffer {
     pub loan_asset_chain: LoanAssetChain,
     pub status: LoanOfferStatus,
     pub loan_repayment_address: String,
+    pub origination_fee: Vec<OriginationFee>,
 }
 
 #[instrument(skip_all, err(Debug))]
@@ -92,6 +94,9 @@ pub async fn get_all_available_loan_offers(
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
             })?;
 
+        // TODO: filter available origination fees once we have more than one
+        let origination_fee = data.config.origination_fee.clone();
+
         ret.push(LoanOffer {
             id: loan_offer.id,
             lender: LenderProfile {
@@ -109,6 +114,7 @@ pub async fn get_all_available_loan_offers(
             loan_asset_chain: loan_offer.loan_asset_chain,
             status: loan_offer.status,
             loan_repayment_address: loan_offer.loan_repayment_address,
+            origination_fee,
         })
     }
 
@@ -152,6 +158,9 @@ pub async fn get_loan_offer(
                     };
                     (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
                 })?;
+
+            // TODO: filter available origination fees once we have more than one
+            let origination_fee = data.config.origination_fee.clone();
             Ok((
                 StatusCode::OK,
                 Json(LoanOffer {
@@ -171,6 +180,7 @@ pub async fn get_loan_offer(
                     loan_asset_chain: loan_offer.loan_asset_chain,
                     status: loan_offer.status,
                     loan_repayment_address: loan_offer.loan_repayment_address,
+                    origination_fee,
                 }),
             ))
         }

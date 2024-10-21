@@ -2,7 +2,7 @@ import { faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useWallet } from "@frontend-monorepo/browser-wallet";
 import { CreateWalletModal, UnlockWalletModal } from "@frontend-monorepo/browser-wallet";
-import { LoanOffer, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
+import { findBestOriginationFee, LoanOffer, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import {
   formatCurrency,
   LoanAddressInputField,
@@ -68,7 +68,6 @@ export function RequestLoanSummaryInner({ loanOffer, loanFilter }: RequestLoanSu
   const [error, setError] = useState("");
   const [bitcoinAddressInputError, setBitcoinAddressInputError] = useState("");
 
-  const ORIGINATOR_FEE = 0.01;
   const { latestPrice } = usePrice();
 
   const { postContractRequest } = useBorrowerHttpClient();
@@ -106,7 +105,9 @@ export function RequestLoanSummaryInner({ loanOffer, loanFilter }: RequestLoanSu
   const collateral = latestPrice ? (loanAmount / loanOffer.min_ltv / latestPrice) : undefined;
   const collateralInUsd = collateral ? collateral * latestPrice : undefined;
 
-  const loanOriginatorFee = latestPrice ? ((loanAmount / latestPrice) * ORIGINATOR_FEE) : undefined;
+  const bestOriginationFee = findBestOriginationFee(loanOffer.origination_fee, loanDuration);
+
+  const loanOriginatorFee = latestPrice ? ((loanAmount / latestPrice) * bestOriginationFee) : undefined;
 
   const handleLoanAmountChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseFloat(event.target.value);
@@ -230,6 +231,7 @@ export function RequestLoanSummaryInner({ loanOffer, loanFilter }: RequestLoanSu
     || !loanAddress.trim()
     || !!bitcoinAddressInputError;
 
+  const originationFeeUsd = formatCurrency(loanAmount * bestOriginationFee);
   return (
     <Box
       className="overflow-y-scroll p-3 pb-16 md:p-5 lg:p-8"
@@ -399,13 +401,15 @@ export function RequestLoanSummaryInner({ loanOffer, loanFilter }: RequestLoanSu
                     </Flex>
 
                     <Flex justify={"between"} align={"start"}>
-                      <Text className="text-xs font-medium text-font/60">1% Originator fee</Text>
+                      <Text className="text-xs font-medium text-font/60">
+                        Origination fee ({(bestOriginationFee * 100).toFixed(1)}%)
+                      </Text>
                       <Box className="text-end">
                         <Text className="text-[13px] block font-semibold text-black/70 capitalize">
                           {loanOriginatorFee?.toFixed(8)} BTC
                         </Text>
                         <Text className="text-[13px] block font-semibold text-black/70 capitalize">
-                          ~{loanAmount ? formatCurrency(loanAmount * ORIGINATOR_FEE) : "0"}
+                          ~{loanAmount ? originationFeeUsd : "0"}
                         </Text>
                       </Box>
                     </Flex>
