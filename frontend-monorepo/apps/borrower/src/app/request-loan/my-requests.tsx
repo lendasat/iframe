@@ -11,6 +11,7 @@ import {
 import { Box, Button, Callout, Flex, Grid, Heading, Separator, Text, TextField } from "@radix-ui/themes";
 import React, { ChangeEvent, useEffect, useState } from "react";
 import { Form } from "react-bootstrap";
+import { IoIosCheckmarkCircle } from "react-icons/io";
 import { IoInformationCircleOutline } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
 import Bitrefil from "./../../assets/bitrefil.png";
@@ -200,467 +201,445 @@ export default function SimpleRequest() {
 
   // Return firstLoan as true or false depending on if the user has performed a loan before
   const [currentStep, setCurrentStep] = React.useState<number>(1);
+  const [stepsFinished, setStepsFinished] = React.useState<boolean>(false);
   const [firstLoan, setFirstLoan] = React.useState<boolean>(true);
   const [loanRequested, setLoanRequested] = React.useState<boolean>(false);
   const [loanAddress, setLoanAddress] = useState("");
 
+  const Steps = ["Select a Card", "Make Offer Request", "Add Wallet Address", "Create Wallet"];
+
+  // const onMoveNextStep = () => {
+  //   if (currentStep < Steps.length) {
+  //     setCurrentStep(currentStep + 1);
+  //   } else {
+  //     setStepsFinished(true);
+  //   }
+  // };
+
   return (
     <Box
-      className="flex-1 overflow-y-scroll"
+      className="flex-1 overflow-y-scroll p-6 md:px-8"
       style={{
         height: innerHeight - 130,
       }}
     >
-      {firstLoan
+      {/* Heading */}
+      <Box className="text-center">
+        <Heading size={"7"}>Request Loan</Heading>
+        <Text size={"2"} weight={"medium"} className="text-font/45">
+          Get your first loan with four (4) easy steps.
+        </Text>
+      </Box>
+
+      {/* Steps */}
+      <Flex my={"7"} align={"center"} justify={"center"}>
+        {Steps.map((items, index) => (
+          <Flex key={index} align={"center"}>
+            <Flex
+              className={`border rounded-full ${currentStep == index + 1 || stepsFinished ? "border-purple-800" : ""} ${
+                currentStep > index + 1 || stepsFinished ? "border-font-dark" : "border-font/10"
+              } p-2.5`}
+              align={"center"}
+              gap={"2"}
+            >
+              <Flex
+                align={"center"}
+                justify={"center"}
+                className={`h-5 w-5 ${
+                  currentStep == index + 1 || stepsFinished ? "border-purple-800 text-purple-800" : ""
+                } ${
+                  currentStep > index + 1 || stepsFinished ? "text-font-dark" : "md:border border-font/10 text-font/50"
+                } rounded-full`}
+              >
+                {currentStep > index + 1
+                    || stepsFinished
+                  ? (
+                    <IoIosCheckmarkCircle
+                      size={24}
+                    />
+                  )
+                  : (
+                    <Text
+                      size={"1"}
+                      weight={"medium"}
+                    >
+                      {index + 1}
+                    </Text>
+                  )}
+              </Flex>
+              <Text
+                size={"1"}
+                weight={"medium"}
+                className={`hidden 
+                 ${currentStep == index + 1 || stepsFinished ? "border-purple-800 text-purple-800" : ""}
+                 ${currentStep > index + 1 || stepsFinished ? "text-font-dark" : "text-font/50"} md:block`}
+              >
+                {items}
+              </Text>
+            </Flex>
+            {Steps.length !== index + 1 && (
+              <Separator
+                className={currentStep > index + 1 ? "border-font-dark" : "border-font/50"}
+                size={{
+                  initial: "2",
+                  lg: "3",
+                }}
+              />
+            )}
+          </Flex>
+        ))}
+      </Flex>
+
+      {currentStep === 1
         ? (
-          <Box className="p-6 md:p-8 h-full flex flex-col md:items-center md:justify-center pt-12">
-            <Heading size={"4"} className="font-semibold text-font-dark/90">
-              Get your first loan with 4 easy steps.
-            </Heading>
-
-            <Box className="mt-6 md:mt-10 space-y-5 flex flex-col md:items-center">
-              <Box className="flex flex-col md:flex-row md:grid md:grid-cols-2 xl:grid-cols-4 md:justify-center gap-4">
-                {StepsToLoan.map((items, index) => (
-                  <Box className="grid items-start grid-cols-[minmax(32px,_40px)_250px] md:flex gap-x-3 max-w-xs">
-                    <Box className="h-full flex flex-col gap-2 items-center justify-start pt-0.5">
-                      <Flex
-                        align={"center"}
-                        justify={"center"}
-                        className={`h-8 w-8 border
-                            ${
-                          index === 0
-                            ? "border-font-dark/80 text-font-dark/80 font-semibold"
-                            : "border-font/10 text-font/30"
-                        } 
-                            rounded-full text-sm shrink-0`}
-                      >
-                        {index + 1}
-                      </Flex>
-                      <Box
-                        className={index !== 3
-                          ? "w-0 border-r-2 mx-auto border-dashed flex-grow md:hidden border-font/10"
-                          : ""}
-                      />
-                    </Box>
-
-                    <Box className={`space-y-1 rounded-lg max-w-[250px] mb-4`}>
-                      <Heading
-                        size={"3"}
-                        className={index === 0
-                          ? "text-font-dark/90 font-semibold"
-                          : "text-font/70 font-semibold"}
-                      >
-                        {items.label}
-                      </Heading>
-                      <Text
-                        as="p"
-                        size={"2"}
-                        className={index === 0
-                          ? "text-font/80 font-medium"
-                          : "text-font/60 font-medium"}
-                      >
-                        {items.description}
-                      </Text>
-                    </Box>
-                  </Box>
-                ))}
+          <Box className="py-6 md:py-8 grid md:grid-cols-2 xl:grid-cols-3 gap-5 px-6 md:px-8">
+            {/* PayWithMoon */}
+            <Box className="text-left w-full max-w-[350px]">
+              <Text as="p" size={"3"} weight={"bold"}>
+                A debit card by PayWithMoon
+              </Text>
+              <Box className="h-52 w-full mb-4 mt-2 overflow-hidden rounded-2xl">
+                <img src={Moon} alt="PayWithMoon" />
               </Box>
-              <Box className="space-y-4 max-w-sm w-full">
-                <Button
-                  variant="soft"
-                  size={"3"}
-                  color="purple"
-                  className="w-full"
-                  onClick={() => {
-                    setFirstLoan(false);
-                  }}
-                >
-                  Continue
-                </Button>
+
+              <Button
+                variant="soft"
+                size={"3"}
+                color="purple"
+                className="w-full"
+                onClick={() => setCurrentStep(currentStep + 1)}
+              >
+                Continue
+              </Button>
+            </Box>
+            {/* Bitrefil */}
+            <Box className="text-left w-full max-w-[350px]">
+              <Text as="p" size={"3"} weight={"bold"}>
+                A debit card by Bitrefil
+              </Text>
+              <Box className="h-52 w-full mb-4 mt-2 overflow-hidden rounded-2xl">
+                <img src={Bitrefil} alt="Bitrefil" />
               </Box>
+
+              <Button
+                variant="soft"
+                size={"3"}
+                color="purple"
+                className="w-full"
+                onClick={() => setCurrentStep(currentStep + 1)}
+              >
+                Continue
+              </Button>
+            </Box>
+            {/* Stable Coin */}
+            <Box className="text-left w-full max-w-[350px]">
+              <Text as="p" size={"3"} weight={"bold"}>
+                Receive stable coins
+              </Text>
+              <Box className="h-52 w-full mb-4 mt-2 overflow-hidden rounded-2xl">
+                <img src={Defi} alt="DEFI" />
+              </Box>
+
+              <Button
+                variant="soft"
+                size={"3"}
+                color="purple"
+                className="w-full"
+                onClick={() => setCurrentStep(currentStep + 1)}
+              >
+                Continue
+              </Button>
+            </Box>
+            {/* Bringin */}
+            <Box className="text-left w-full max-w-[350px]">
+              <Text as="p" size={"3"} weight={"bold"}>
+                To a bank account using SEPA via Bringin
+              </Text>
+              <Box className="h-52 w-full mb-4 mt-2 overflow-hidden rounded-2xl">
+                <img src={Sepa} alt="SEPA" />
+              </Box>
+
+              <Button
+                variant="soft"
+                size={"3"}
+                color="purple"
+                className="w-full"
+                onClick={() => setCurrentStep(currentStep + 1)}
+              >
+                Continue
+              </Button>
             </Box>
           </Box>
         )
         : (
-          currentStep === 1
-            ? (
-              <Box className="py-6 md:py-8">
-                <Box className="px-6 md:px-8">
-                  <Heading weight={"medium"} size={"5"}>
-                    Select an option to proceed with
-                  </Heading>
-                </Box>
-                <Separator size={"4"} className="bg-font/10 my-5" />
-                <Box className="grid md:grid-cols-2 xl:grid-cols-3 gap-5 px-6 md:px-8">
-                  {/* PayWithMoon */}
-                  <Box className="text-left w-full max-w-[350px]">
-                    <Text as="p" size={"3"} weight={"bold"}>
-                      A debit card by PayWithMoon
+          <Grid className="md:grid-cols-2 h-full">
+            <Box className="p-6 md:p-8 ">
+              <Box>
+                <Heading as="h3" size={"6"} className="font-semibold text-font-dark">
+                  Make a Request
+                </Heading>
+                {advanceSearch
+                  ? (
+                    <Text size={"2"} as="p" weight={"medium"} className="text-font/70">
+                      Want to go back to{"  "}
+                      <Text
+                        size={"2"}
+                        as="span"
+                        onClick={() => {
+                          setAdsSearchLoading(true);
+                          setTimeout(() => {
+                            setAdvanceSearch(!advanceSearch);
+                            setAdsSearchLoading(false);
+                          }, 200);
+                        }}
+                        className="text-font font-semibold hover:text-purple-700 cursor-pointer"
+                      >
+                        Simple search
+                      </Text>{" "}
+                      instead...
                     </Text>
-                    <Box className="h-52 w-full mb-4 mt-2 overflow-hidden rounded-2xl">
-                      <img src={Moon} alt="PayWithMoon" />
-                    </Box>
-
-                    <Button
-                      variant="soft"
-                      size={"3"}
-                      color="purple"
-                      className="w-full"
-                      onClick={() => setCurrentStep(currentStep + 1)}
-                    >
-                      Continue
-                    </Button>
-                  </Box>
-                  {/* Bitrefil */}
-                  <Box className="text-left w-full max-w-[350px]">
-                    <Text as="p" size={"3"} weight={"bold"}>
-                      A debit card by Bitrefil
+                  )
+                  : (
+                    <Text size={"2"} as="p" weight={"medium"} className="text-font/70">
+                      Want a more precise offer, perform{"  "}
+                      <Text
+                        size={"2"}
+                        as="span"
+                        onClick={() => {
+                          setAdsSearchLoading(true);
+                          setTimeout(() => {
+                            setAdvanceSearch(!advanceSearch);
+                            setAdsSearchLoading(false);
+                          }, 1000);
+                        }}
+                        className="text-font font-semibold hover:text-purple-700 cursor-pointer"
+                      >
+                        Advance search
+                      </Text>{" "}
+                      instead...
                     </Text>
-                    <Box className="h-52 w-full mb-4 mt-2 overflow-hidden rounded-2xl">
-                      <img src={Bitrefil} alt="Bitrefil" />
-                    </Box>
-
-                    <Button
-                      variant="soft"
-                      size={"3"}
-                      color="purple"
-                      className="w-full"
-                      onClick={() => setCurrentStep(currentStep + 1)}
-                    >
-                      Continue
-                    </Button>
-                  </Box>
-                  {/* Stable Coin */}
-                  <Box className="text-left w-full max-w-[350px]">
-                    <Text as="p" size={"3"} weight={"bold"}>
-                      Receive stable coins
-                    </Text>
-                    <Box className="h-52 w-full mb-4 mt-2 overflow-hidden rounded-2xl">
-                      <img src={Defi} alt="DEFI" />
-                    </Box>
-
-                    <Button
-                      variant="soft"
-                      size={"3"}
-                      color="purple"
-                      className="w-full"
-                      onClick={() => setCurrentStep(currentStep + 1)}
-                    >
-                      Continue
-                    </Button>
-                  </Box>
-                  {/* Bringin */}
-                  <Box className="text-left w-full max-w-[350px]">
-                    <Text as="p" size={"3"} weight={"bold"}>
-                      To a bank account using SEPA via Bringin
-                    </Text>
-                    <Box className="h-52 w-full mb-4 mt-2 overflow-hidden rounded-2xl">
-                      <img src={Sepa} alt="SEPA" />
-                    </Box>
-
-                    <Button
-                      variant="soft"
-                      size={"3"}
-                      color="purple"
-                      className="w-full"
-                      onClick={() => setCurrentStep(currentStep + 1)}
-                    >
-                      Continue
-                    </Button>
-                  </Box>
-                </Box>
+                  )}
               </Box>
-            )
-            : (
-              <Grid className="md:grid-cols-2 h-full">
-                <Box className="p-6 md:p-8 ">
-                  <Box>
-                    <Heading as="h3" size={"6"} className="font-semibold text-font-dark">
-                      Make a Request
-                    </Heading>
-                    {advanceSearch
-                      ? (
-                        <Text size={"2"} as="p" weight={"medium"} className="text-font/70">
-                          Want to go back to{"  "}
-                          <Text
-                            size={"2"}
-                            as="span"
-                            onClick={() => {
-                              setAdsSearchLoading(true);
-                              setTimeout(() => {
-                                setAdvanceSearch(!advanceSearch);
-                                setAdsSearchLoading(false);
-                              }, 200);
-                            }}
-                            className="text-font font-semibold hover:text-purple-700 cursor-pointer"
-                          >
-                            Simple search
-                          </Text>{" "}
-                          instead...
-                        </Text>
-                      )
-                      : (
-                        <Text size={"2"} as="p" weight={"medium"} className="text-font/70">
-                          Want a more precise offer, perform{"  "}
-                          <Text
-                            size={"2"}
-                            as="span"
-                            onClick={() => {
-                              setAdsSearchLoading(true);
-                              setTimeout(() => {
-                                setAdvanceSearch(!advanceSearch);
-                                setAdsSearchLoading(false);
-                              }, 1000);
-                            }}
-                            className="text-font font-semibold hover:text-purple-700 cursor-pointer"
-                          >
-                            Advance search
-                          </Text>{" "}
-                          instead...
-                        </Text>
-                      )}
+              <Box mt={"7"}>
+                <Form className="space-y-4" onSubmit={onShowOfferClick}>
+                  {/* Loan Amount */}
+                  <Box className="space-y-1">
+                    <Text className="text-font/70" as="label" size={"2"} weight={"medium"}>
+                      How much do you wish to borrow?
+                    </Text>
+                    <TextField.Root
+                      size={"3"}
+                      variant="surface"
+                      type="number"
+                      color="gray"
+                      min={1}
+                      value={loanAmount}
+                      onChange={onLoanAmountChange}
+                      className="w-full rounded-lg text-sm text-font"
+                    >
+                      <TextField.Slot>
+                        <Text size={"3"} weight={"medium"}>$</Text>
+                      </TextField.Slot>
+                    </TextField.Root>
                   </Box>
-                  <Box mt={"7"}>
-                    <Form className="space-y-4" onSubmit={onShowOfferClick}>
-                      {/* Loan Amount */}
+
+                  {/* Loan Duration */}
+                  <Box className="space-y-1">
+                    <Text className="text-font/70" as="label" size={"2"} weight={"medium"}>
+                      For how long do you want to borrow?
+                    </Text>
+                    <TextField.Root
+                      size={"3"}
+                      variant="surface"
+                      type="number"
+                      color="gray"
+                      min={1}
+                      max={maxRepaymentTime}
+                      value={loanDuration}
+                      onChange={onLoanDurationChange}
+                      className="w-full rounded-lg text-sm text-font"
+                    >
+                      <TextField.Slot className="pl-0" />
+                      <TextField.Slot>
+                        <Flex>
+                          <Text size={"2"} color="gray" weight={"medium"}>Month</Text>
+                          <Text
+                            size={"2"}
+                            color="gray"
+                            weight={"medium"}
+                            className={`transition-opacity ease-in-out ${
+                              loanDuration > 1 ? "opacity-100" : "opacity-0"
+                            } duration-300`}
+                          >
+                            s
+                          </Text>
+                        </Flex>
+                      </TextField.Slot>
+                    </TextField.Root>
+                  </Box>
+
+                  {advanceSearch && (
+                    <>
+                      {/* Stable Coin */}
                       <Box className="space-y-1">
                         <Text className="text-font/70" as="label" size={"2"} weight={"medium"}>
-                          How much do you wish to borrow?
+                          What stable coin do you need?
                         </Text>
-                        <TextField.Root
-                          size={"3"}
-                          variant="surface"
-                          type="number"
-                          color="gray"
-                          min={1}
-                          value={loanAmount}
-                          onChange={onLoanAmountChange}
-                          className="w-full rounded-lg text-sm text-font"
-                        >
-                          <TextField.Slot>
-                            <Text size={"3"} weight={"medium"}>$</Text>
-                          </TextField.Slot>
-                        </TextField.Root>
+                        <StableCoinDropdown
+                          coins={StableCoinHelper.all()}
+                          defaultCoin={stableCoin}
+                          onSelect={onStableCoinSelect}
+                        />
                       </Box>
 
-                      {/* Loan Duration */}
+                      {/* Interest Rate */}
                       <Box className="space-y-1">
                         <Text className="text-font/70" as="label" size={"2"} weight={"medium"}>
-                          For how long do you want to borrow?
+                          What's your preferred interest rate?
                         </Text>
                         <TextField.Root
                           size={"3"}
                           variant="surface"
                           type="number"
                           color="gray"
-                          min={1}
-                          max={maxRepaymentTime}
-                          value={loanDuration}
-                          onChange={onLoanDurationChange}
+                          min={minInterestRate * 100}
+                          max={100}
+                          value={maxInterest ? (maxInterest * 100).toFixed(0) : ""}
+                          onChange={onMaxInterestChange}
                           className="w-full rounded-lg text-sm text-font"
                         >
                           <TextField.Slot className="pl-0" />
                           <TextField.Slot>
-                            <Flex>
-                              <Text size={"2"} color="gray" weight={"medium"}>Month</Text>
-                              <Text
-                                size={"2"}
-                                color="gray"
-                                weight={"medium"}
-                                className={`transition-opacity ease-in-out ${
-                                  loanDuration > 1 ? "opacity-100" : "opacity-0"
-                                } duration-300`}
-                              >
-                                s
-                              </Text>
-                            </Flex>
+                            <Text size={"2"} color="gray" weight={"medium"}>
+                              %
+                            </Text>
                           </TextField.Slot>
                         </TextField.Root>
                       </Box>
 
-                      {advanceSearch && (
-                        <>
-                          {/* Stable Coin */}
-                          <Box className="space-y-1">
-                            <Text className="text-font/70" as="label" size={"2"} weight={"medium"}>
-                              What stable coin do you need?
+                      {/* LTV Rate */}
+                      <Box className="space-y-1">
+                        <Text className="text-font/70" as="label" size={"2"} weight={"medium"}>
+                          What's your preferred loan-to-value ratio?
+                        </Text>
+                        <TextField.Root
+                          size={"3"}
+                          variant="surface"
+                          type="number"
+                          color="gray"
+                          min={minLtvRate * 100}
+                          max={90}
+                          value={ltv ? (ltv * 100).toFixed(2) : ""}
+                          onChange={onLtvChange}
+                          className="w-full rounded-lg text-sm text-font"
+                        >
+                          <TextField.Slot className="pl-0" />
+                          <TextField.Slot>
+                            <Text size={"2"} color="gray" weight={"medium"}>
+                              %
                             </Text>
-                            <StableCoinDropdown
-                              coins={StableCoinHelper.all()}
-                              defaultCoin={stableCoin}
-                              onSelect={onStableCoinSelect}
-                            />
-                          </Box>
+                          </TextField.Slot>
+                        </TextField.Root>
+                      </Box>
+                    </>
+                  )}
 
-                          {/* Interest Rate */}
-                          <Box className="space-y-1">
-                            <Text className="text-font/70" as="label" size={"2"} weight={"medium"}>
-                              What's your preferred interest rate?
-                            </Text>
-                            <TextField.Root
-                              size={"3"}
-                              variant="surface"
-                              type="number"
-                              color="gray"
-                              min={minInterestRate * 100}
-                              max={100}
-                              value={maxInterest ? (maxInterest * 100).toFixed(0) : ""}
-                              onChange={onMaxInterestChange}
-                              className="w-full rounded-lg text-sm text-font"
-                            >
-                              <TextField.Slot className="pl-0" />
-                              <TextField.Slot>
-                                <Text size={"2"} color="gray" weight={"medium"}>
-                                  %
-                                </Text>
-                              </TextField.Slot>
-                            </TextField.Root>
-                          </Box>
+                  {error
+                    && (
+                      <Callout.Root color="red" className="w-full">
+                        <Callout.Icon>
+                          <FontAwesomeIcon icon={faWarning} />
+                        </Callout.Icon>
+                        <Callout.Text>
+                          {error}
+                        </Callout.Text>
+                      </Callout.Root>
+                    )}
 
-                          {/* LTV Rate */}
-                          <Box className="space-y-1">
-                            <Text className="text-font/70" as="label" size={"2"} weight={"medium"}>
-                              What's your preferred loan-to-value ratio?
-                            </Text>
-                            <TextField.Root
-                              size={"3"}
-                              variant="surface"
-                              type="number"
-                              color="gray"
-                              min={minLtvRate * 100}
-                              max={90}
-                              value={ltv ? (ltv * 100).toFixed(2) : ""}
-                              onChange={onLtvChange}
-                              className="w-full rounded-lg text-sm text-font"
-                            >
-                              <TextField.Slot className="pl-0" />
-                              <TextField.Slot>
-                                <Text size={"2"} color="gray" weight={"medium"}>
-                                  %
-                                </Text>
-                              </TextField.Slot>
-                            </TextField.Root>
-                          </Box>
-                        </>
-                      )}
+                  {success && (
+                    <Callout.Root color="green">
+                      <Callout.Icon>
+                        <IoInformationCircleOutline />
+                      </Callout.Icon>
+                      <Callout.Text>
+                        {success}
+                      </Callout.Text>
+                    </Callout.Root>
+                  )}
 
-                      {error
-                        && (
-                          <Callout.Root color="red" className="w-full">
-                            <Callout.Icon>
-                              <FontAwesomeIcon icon={faWarning} />
-                            </Callout.Icon>
-                            <Callout.Text>
-                              {error}
-                            </Callout.Text>
-                          </Callout.Root>
-                        )}
-
-                      {success && (
-                        <Callout.Root color="green">
-                          <Callout.Icon>
-                            <IoInformationCircleOutline />
-                          </Callout.Icon>
-                          <Callout.Text>
-                            {success}
-                          </Callout.Text>
-                        </Callout.Root>
-                      )}
-
-                      {loanRequested
-                        ? (
-                          <Flex direction={"column"} align={"start"} gap={"2"}>
-                            <Text as="label" size={"2"} weight={"medium"}>Wallet Address</Text>
-                            {loanAddress && (
-                              <Callout.Root color="amber">
-                                <Callout.Icon>
-                                  <FontAwesomeIcon icon={faInfoCircle} />
-                                </Callout.Icon>
-                                <Callout.Text>
-                                  Provide a valid address on the target network. Providing an incorrect address here
-                                  will lead to loss of funds.
-                                </Callout.Text>
-                              </Callout.Root>
-                            )}
-                            <TextField.Root
-                              className="w-full font-semibold border-0"
-                              size={"3"}
-                              variant="surface"
-                              placeholder="Enter a valid address"
-                              type="text"
-                              color={"gray"}
-                              value={loanAddress}
-                              onChange={(e) => setLoanAddress(e.target.value)}
-                            />
-                          </Flex>
-                        )
-                        : (
-                          <Box className="flex space-x-4 w-full">
-                            <Button
-                              color="purple"
-                              size="3"
-                              variant="soft"
-                              className="flex-1 font-medium rounded-lg"
-                              loading={isLoading}
-                              type="button"
-                              onClick={onShowOfferClick}
-                            >
-                              See offers
-                            </Button>
-                          </Box>
-                        )}
-                    </Form>
-                  </Box>
-                </Box>
-                <Box className="flex flex-col items-center justify-center p-6 md:p-8">
-                  <Box className="flex flex-col items-center h-full w-full border border-font/10 bg-white max-w-lg rounded-3xl pt-10">
-                    {bestOffer
-                      ? (
-                        <>
-                          <Heading size="4" mb="4" className="font-normal">
-                            Best match to borrow <strong>{formatCurrency(loanAmount || 0)}</strong> for{" "}
-                            <strong>{loanDuration}</strong> months
-                          </Heading>
-                          <Box className="w-full">
-                            <LoanSearched
-                              lender={bestOffer.lender.name}
-                              amount={loanAmount || 0}
-                              duration={loanDuration || 0}
-                              interest={bestOffer.interest_rate}
-                              ltv={bestOffer.min_ltv}
-                              coin={StableCoinHelper.mapFromBackend(
-                                bestOffer.loan_asset_chain,
-                                bestOffer.loan_asset_type,
-                              )!}
-                              loanRequested={loanRequested}
-                              onRequest={() => {
-                                if (loanRequested) {
-                                  // create wallet
-                                  setLoanRequested(true);
-                                } else {
-                                  setLoanRequested(true);
-                                }
-                              }}
-                            />
-                          </Box>
-                        </>
-                      )
-                      : (
-                        <Box minHeight={"500px"} className="flex flex-col items-center justify-center">
-                          <img
-                            src={EmptyResult}
-                            alt="No Result"
-                            className="max-w-xs"
-                          />
-                          <Text className="text-font/90" size={"2"} weight={"medium"}>
-                            Nothing yet, make a request...
-                          </Text>
-                        </Box>
-                      )}
-                  </Box>
-                </Box>
-              </Grid>
-            )
+                  {loanRequested
+                    ? ""
+                    : (
+                      <Box className="flex space-x-4 w-full">
+                        <Button
+                          color="purple"
+                          size="3"
+                          variant="soft"
+                          className="flex-1 font-medium rounded-lg"
+                          loading={isLoading}
+                          type="button"
+                          onClick={onShowOfferClick}
+                        >
+                          See offers
+                        </Button>
+                      </Box>
+                    )}
+                </Form>
+              </Box>
+            </Box>
+            <Box className="flex flex-col items-center justify-center p-6 md:p-8">
+              <Box className="flex flex-col items-center h-full w-full border border-font/10 bg-white max-w-lg rounded-3xl pt-10">
+                {bestOffer
+                  ? (
+                    <>
+                      <Heading size="4" mb="4" className="font-normal">
+                        Best match to borrow <strong>{formatCurrency(loanAmount || 0)}</strong> for{" "}
+                        <strong>{loanDuration}</strong> months
+                      </Heading>
+                      <Box className="w-full">
+                        <LoanSearched
+                          lender={bestOffer.lender.name}
+                          amount={loanAmount || 0}
+                          duration={loanDuration || 0}
+                          interest={bestOffer.interest_rate}
+                          ltv={bestOffer.min_ltv}
+                          coin={StableCoinHelper.mapFromBackend(
+                            bestOffer.loan_asset_chain,
+                            bestOffer.loan_asset_type,
+                          )!}
+                          loanAddress={loanAddress}
+                          setLoanAddress={setLoanAddress}
+                          loanRequested={loanRequested}
+                          onRequest={() => {
+                            if (loanRequested) {
+                              // create wallet
+                              if (loanAddress) {
+                                setStepsFinished(true);
+                              }
+                            } else {
+                              setLoanRequested(true);
+                              setCurrentStep(currentStep + 1);
+                            }
+                          }}
+                        />
+                      </Box>
+                    </>
+                  )
+                  : (
+                    <Box minHeight={"500px"} className="flex flex-col items-center justify-center">
+                      <img
+                        src={EmptyResult}
+                        alt="No Result"
+                        className="max-w-xs"
+                      />
+                      <Text className="text-font/90" size={"2"} weight={"medium"}>
+                        Nothing yet, make a request...
+                      </Text>
+                    </Box>
+                  )}
+              </Box>
+            </Box>
+          </Grid>
         )}
     </Box>
   );
@@ -675,6 +654,8 @@ interface SearchParams {
   loanRequested: boolean;
   coin: StableCoin;
   onRequest: () => void;
+  loanAddress: string;
+  setLoanAddress: (val: string) => void;
 }
 
 // Loan Display Component
@@ -721,6 +702,33 @@ const LoanSearched = (props: SearchParams) => {
               {StableCoinHelper.print(props.coin)}
             </Text>
           </Flex>
+          <Separator size={"4"} />
+          {props.loanRequested && (
+            <Flex direction={"column"} align={"start"} gap={"2"}>
+              <Text as="label" size={"2"} weight={"medium"}>Wallet Address</Text>
+              {props.loanAddress && (
+                <Callout.Root color="amber">
+                  <Callout.Icon>
+                    <FontAwesomeIcon icon={faInfoCircle} />
+                  </Callout.Icon>
+                  <Callout.Text>
+                    Provide a valid address on the target network. Providing an incorrect address here will lead to loss
+                    of funds.
+                  </Callout.Text>
+                </Callout.Root>
+              )}
+              <TextField.Root
+                className="w-full font-semibold border-0"
+                size={"3"}
+                variant="surface"
+                placeholder="Enter a valid address"
+                type="text"
+                color={"gray"}
+                value={props.loanAddress}
+                onChange={(e) => props.setLoanAddress(e.target.value)}
+              />
+            </Flex>
+          )}
           <Separator size={"4"} />
           <Button
             size={"3"}
