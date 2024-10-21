@@ -25,9 +25,7 @@ lint-frontend:
     #!/usr/bin/env bash
     set -euxo pipefail
     cd frontend-monorepo
-    npx nx run-many --target=lint --all --skipNxCache
-
-
+    npx nx run-many --target=lint --all --skipNxCache -- --max-warnings 0
 
 ## ------------------------
 ## Test functions
