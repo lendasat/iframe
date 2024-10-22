@@ -34,14 +34,13 @@ export default function CardHistory() {
         ))}
       </Grid>
       <Box className="md:overflow-y-scroll h-full">
-        {TransactionInformations.map((history, index) => (
+        {TransactionInformationList.map((history, index) => (
           <HistoryComponent
             transactionType={history.transactionType}
             cardUsed={history.cardUsed}
             status={history.status}
             amount={history.amount}
             date={history.date}
-            time={history.time}
             key={index}
           />
         ))}
@@ -50,29 +49,46 @@ export default function CardHistory() {
   );
 }
 
-const TransactionInformations = [
+export enum TransactionStatus {
+  InProcess = "in process",
+  Completed = "completed",
+  Failed = "failed",
+  Pending = "pending",
+}
+
+export enum TransactionType {
+  IncomingLoan = "incoming Loan",
+  Payment = "payment",
+}
+
+interface TransactionInformation {
+  transactionType: TransactionType;
+  cardUsed: string;
+  status: TransactionStatus;
+  amount: number;
+  date: number;
+}
+
+const TransactionInformationList: TransactionInformation[] = [
   {
-    transactionType: "incoming Loan",
+    transactionType: TransactionType.IncomingLoan,
     cardUsed: "0145",
-    status: "in process",
+    status: TransactionStatus.InProcess,
     amount: 3000,
-    date: "Tuesday, 15 Oct",
-    time: "3:01 PM",
+    date: Date.now(),
   },
   {
-    transactionType: "withdrawal",
+    transactionType: TransactionType.Payment,
     cardUsed: "0845",
-    status: "failed",
+    status: TransactionStatus.Failed,
     amount: 8000,
-    date: "Thursday, 17 May",
-    time: "8:43 AM",
+    date: Date.now(),
   },
   {
-    transactionType: "withdrawal",
+    transactionType: TransactionType.Payment,
     cardUsed: "0145",
-    status: "success",
+    status: TransactionStatus.Completed,
     amount: 17000,
-    date: "Friday, 18 Jan",
-    time: "9:31 PM",
+    date: Date.now(),
   },
 ];

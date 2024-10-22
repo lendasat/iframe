@@ -2,14 +2,14 @@ import { CurrencyFormatter } from "@frontend-monorepo/ui-shared";
 import { Badge, Box, Flex, Grid, Heading, Text } from "@radix-ui/themes";
 import { GoArrowDownLeft, GoArrowUpRight } from "react-icons/go";
 import VisaIcon from "./../../assets/visa_logo_icon.webp";
+import { TransactionStatus, TransactionType } from "./CardHistory";
 
 interface HistoryProps {
-  transactionType: string;
+  transactionType: TransactionType;
   cardUsed: string;
-  status: string;
+  status: TransactionStatus;
   amount: number;
-  date: string;
-  time: string;
+  date: number;
 }
 
 export default function HistoryComponent(history: HistoryProps) {
@@ -41,11 +41,11 @@ export default function HistoryComponent(history: HistoryProps) {
         </Box>
         <Box className="flex items-center justify-center capitalize">
           <Badge
-            color={history.status == "in process"
+            color={history.status == TransactionStatus.InProcess
               ? "indigo"
-              : history.status == "success"
+              : history.status == TransactionStatus.Completed
               ? "green"
-              : history.status == "failed"
+              : history.status == TransactionStatus.Failed
               ? "red"
               : "gray"}
           >
@@ -61,13 +61,32 @@ export default function HistoryComponent(history: HistoryProps) {
 
         <Box className="text-left">
           <Text as="p" weight={"medium"} size={"1"}>
-            {history.date}
+            {formatDateAsDayAndMonth(history.date)}
           </Text>
           <Text size={"1"} className="text-font/50" weight={"medium"}>
-            {history.time}
+            {formatDateAsTime(history.date)}
           </Text>
         </Box>
       </Grid>
     </>
   );
 }
+
+const formatDateAsDayAndMonth = (timestamp: number): string => {
+  console.log(timestamp);
+  const date = new Date(timestamp);
+  return date.toLocaleDateString([], {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const formatDateAsTime = (timestamp: number): string => {
+  console.log(timestamp);
+  const date = new Date(timestamp);
+  return date.toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "numeric",
+  });
+};
