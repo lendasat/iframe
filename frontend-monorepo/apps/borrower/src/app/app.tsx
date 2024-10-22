@@ -43,12 +43,14 @@ const menuItems = [
         path: "/",
         icon: FiHome,
         target: "_self",
+        visible: true,
       },
       {
         label: "activities",
         path: "/history",
         icon: LuActivity,
         target: "_self",
+        visible: false,
       },
     ],
     separator: true,
@@ -60,24 +62,31 @@ const menuItems = [
         path: "/requests",
         icon: GoGitPullRequest,
         target: "_self",
+        visible: true,
       },
       {
         label: "Available offers",
         path: "/request-loan",
         icon: BsBank,
         target: "_self",
+        visible: true,
       },
       {
         label: "Cards",
         path: "/cards",
         icon: IoCardOutline,
         target: "_self",
+        // If VITE_SHOW_CARDS_FEATURE is undefined, visible should be false
+        visible: typeof import.meta.env.VITE_SHOW_CARDS_FEATURE !== "undefined"
+          ? import.meta.env.VITE_SHOW_CARDS_FEATURE
+          : false,
       },
       {
         label: "My Loans",
         path: "/my-contracts",
         icon: IoWalletOutline,
         target: "_self",
+        visible: true,
       },
     ],
     separator: true,
@@ -89,12 +98,14 @@ const menuItems = [
         path: "/setting",
         icon: LuSettings,
         target: "_self",
+        visible: true,
       },
       {
         label: "support",
         path: "https://lendasat.notion.site",
         icon: HiOutlineSupport,
         target: "_blank",
+        visible: true,
       },
     ],
     separator: false,
@@ -141,7 +152,8 @@ function MainLayoutComponents() {
               <Route path={":id"} element={<ContractDetailsOverview />} />
             </Route>
             <Route path="/requests" element={<SimpleRequest />} />
-            <Route path="/cards" element={<Cards />} />
+            {import.meta.env.VITE_SHOW_CARDS_FEATURE
+              && <Route path="/cards" element={<Cards />} />}
             <Route path="/custom-request" element={<CustomRequest />} />
             <Route path="/history" element={<History />} />
             <Route path="/setting" element={<MyAccount />} />
