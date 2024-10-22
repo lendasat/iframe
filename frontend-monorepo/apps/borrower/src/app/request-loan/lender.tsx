@@ -1,4 +1,4 @@
-import { LenderProfile } from "@frontend-monorepo/http-client-borrower";
+import type { LenderProfile } from "@frontend-monorepo/http-client-borrower";
 import { Avatar, Box, Flex, Heading } from "@radix-ui/themes";
 import { Link } from "react-router-dom";
 

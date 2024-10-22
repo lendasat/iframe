@@ -1,4 +1,4 @@
-import { InputHTMLAttributes, ReactNode } from "react";
+import type { InputHTMLAttributes, ReactNode } from "react";
 import { BiSearchAlt } from "react-icons/bi";
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {

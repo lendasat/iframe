@@ -1,29 +1,18 @@
 import { faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { LoanOffer, LoanOfferStatus, useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
+import type { LoanOffer } from "@frontend-monorepo/http-client-lender";
+import { LoanOfferStatus, useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
 import { formatCurrency, StableCoin, StableCoinHelper } from "@frontend-monorepo/ui-shared";
-import {
-  Box,
-  Button,
-  Callout,
-  Dialog,
-  Flex,
-  Grid,
-  Heading,
-  Separator,
-  Text,
-  TextField,
-  Tooltip,
-} from "@radix-ui/themes";
+import { Box, Button, Callout, Dialog, Flex, Grid, Heading, Separator, Text, TextField } from "@radix-ui/themes";
 import { Suspense, useState } from "react";
-import { FaFileExport, FaPenNib } from "react-icons/fa";
+import { FaPenNib } from "react-icons/fa";
 import { IoReceipt } from "react-icons/io5";
 import { MdOutlineSwapCalls } from "react-icons/md";
 import { Await, useParams } from "react-router-dom";
 import BannerImg from "./../../assets/banner.png";
 import LendasatLogo from "./../../assets/lendasat.png";
 import ReceipImg from "./../../assets/receipt_img.png";
-import { LoanAmount, LoanDuration } from "../create-loan-offer";
+import type { LoanAmount, LoanDuration } from "../create-loan-offer";
 import { StatusBadge } from "./status-badge";
 
 function MyLoanOfferDetails() {
@@ -62,7 +51,12 @@ function MyLoanOfferDetails() {
   return (
     <Suspense>
       <Await
-        resolve={getMyLoanOffer(id!)}
+        resolve={async () => {
+          if (id == null) {
+            return Promise.reject(new Error("Cannot load offer without ID"));
+          }
+          return getMyLoanOffer(id);
+        }}
         errorElement={
           <Box
             className="flex flex-col items-center justify-center gap-y-4 px-5 text-center"

@@ -1,5 +1,6 @@
 import { ContractStatus } from "@frontend-monorepo/http-client-borrower";
-import { Contract, contractStatusToLabelString, LiquidationStatus } from "@frontend-monorepo/http-client-lender";
+import type { Contract } from "@frontend-monorepo/http-client-lender";
+import { contractStatusToLabelString, LiquidationStatus } from "@frontend-monorepo/http-client-lender";
 import { CurrencyFormatter, LtvProgressBar, usePrice } from "@frontend-monorepo/ui-shared";
 import { Badge, Box, Button, DropdownMenu, Flex, Grid, Heading, Text } from "@radix-ui/themes";
 import { BsThreeDotsVertical } from "react-icons/bs";

@@ -1,5 +1,5 @@
+import type { Contract } from "@frontend-monorepo/http-client-borrower";
 import {
-  Contract,
   ContractStatus,
   contractStatusToLabelString,
   LiquidationStatus,
@@ -33,7 +33,12 @@ function ContractDetailsOverview() {
   return (
     <Suspense>
       <Await
-        resolve={getContract(id!)}
+        resolve={async () => {
+          if (id == null) {
+            return Promise.reject(new Error("Cannot load contract without ID"));
+          }
+          return getContract(id);
+        }}
         errorElement={<div>Could not load contracts</div>}
         children={(contract: Awaited<Contract>) => (
           <Box
@@ -162,9 +167,9 @@ function ContractDetails({ contract }: DetailsProps) {
   const loanOriginatorFee = contract.origination_fee_sats / 100000000;
   const loanOriginatorFeeUsd = (loanOriginatorFee * initial_price).toFixed(0);
 
-  const firstMarginCall = contract.liquidation_status == LiquidationStatus.FirstMarginCall;
-  const secondMarginCall = contract.liquidation_status == LiquidationStatus.SecondMarginCall;
-  const liquidated = contract.liquidation_status == LiquidationStatus.Liquidated;
+  const firstMarginCall = contract.liquidation_status === LiquidationStatus.FirstMarginCall;
+  const secondMarginCall = contract.liquidation_status === LiquidationStatus.SecondMarginCall;
+  const liquidated = contract.liquidation_status === LiquidationStatus.Liquidated;
 
   let contractStatusLabel = contractStatusToLabelString(contract.status);
   if (firstMarginCall) {
@@ -209,11 +214,13 @@ function ContractDetails({ contract }: DetailsProps) {
         </Heading>
       </Box>
 
+      (contract.contract_address ?{" "}
       <AddCollateralModal
         show={showAddCollateralModal}
-        address={contract.contract_address!}
+        address={contract.contract_address}
         handleClose={handleCloseAddCollateralModal}
-      />
+      />{" "}
+      : null)
 
       <Box className="p-6 md:p-8 space-y-5">
         <Flex gap={"5"} align={"start"} justify={"between"}>
@@ -235,11 +242,11 @@ function ContractDetails({ contract }: DetailsProps) {
           </Text>
           <Text size={"2"} weight={"medium"}>
             <Badge
-              color={contract.status == ContractStatus.Requested
+              color={contract.status === ContractStatus.Requested
                 ? "amber"
-                : contract.status == ContractStatus.Approved
+                : contract.status === ContractStatus.Approved
                 ? "green"
-                : contract.status == ContractStatus.Rejected
+                : contract.status === ContractStatus.Rejected
                 ? "red"
                 : "gray"}
               size={"2"}
@@ -459,6 +466,10 @@ const AdditionalDetail = ({ contract }: AdditionalDetailsProps) => {
         </>
       );
     case ContractStatus.Rejected:
+    case ContractStatus.DisputeBorrowerStarted:
+    case ContractStatus.DisputeLenderStarted:
+    case ContractStatus.DisputeBorrowerResolved:
+    case ContractStatus.DisputeLenderResolved:
       // TODO
       return "";
   }

@@ -1,6 +1,7 @@
-import axios, { AxiosInstance, AxiosResponse } from "axios";
+import type { AxiosInstance, AxiosResponse } from "axios";
+import axios from "axios";
 import { createContext, useContext } from "react";
-import { User, Version } from "./models";
+import type { User, Version } from "./models";
 
 export class BaseHttpClient {
   public httpClient: AxiosInstance;
@@ -36,7 +37,6 @@ export class BaseHttpClient {
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         console.log(error.response);
-        const status = error.response.status;
         const message = error.response.data.message;
 
         throw new Error(message);

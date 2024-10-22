@@ -1,5 +1,5 @@
+import type { Contract } from "@frontend-monorepo/http-client-borrower";
 import {
-  Contract,
   ContractStatus,
   contractStatusToLabelString,
   LiquidationStatus,
@@ -150,9 +150,9 @@ function ContractsComponent({ loans }: LoansComponentProps) {
 
           const ltvRatio = loan_amount / (collateral_btc * latestPrice);
 
-          const firstMarginCall = liquidation_status == LiquidationStatus.FirstMarginCall;
-          const secondMarginCall = liquidation_status == LiquidationStatus.SecondMarginCall;
-          const liquidated = liquidation_status == LiquidationStatus.Liquidated;
+          const firstMarginCall = liquidation_status === LiquidationStatus.FirstMarginCall;
+          const secondMarginCall = liquidation_status === LiquidationStatus.SecondMarginCall;
+          const liquidated = liquidation_status === LiquidationStatus.Liquidated;
 
           let contractStatusLabel = contractStatusToLabelString(status);
           if (firstMarginCall) {
@@ -205,11 +205,11 @@ function ContractsComponent({ loans }: LoansComponentProps) {
 
                 <Box className="hidden md:flex justify-center ">
                   <Badge
-                    color={status == ContractStatus.Requested
+                    color={status === ContractStatus.Requested
                       ? "amber"
-                      : status == ContractStatus.Approved
+                      : status === ContractStatus.Approved
                       ? "green"
-                      : status == ContractStatus.Rejected
+                      : status === ContractStatus.Rejected
                       ? "red"
                       : "gray"}
                     size={"2"}

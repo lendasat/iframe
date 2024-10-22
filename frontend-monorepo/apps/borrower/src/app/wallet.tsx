@@ -1,5 +1,6 @@
 import { useWallet } from "@frontend-monorepo/browser-wallet";
-import { FormEvent, useState } from "react";
+import type { FormEvent } from "react";
+import { useState } from "react";
 import { Button } from "react-bootstrap";
 
 function Wallet() {

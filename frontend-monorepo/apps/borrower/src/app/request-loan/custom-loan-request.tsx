@@ -1,11 +1,7 @@
 import { faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  LoanAssetChain,
-  LoanAssetType,
-  PostLoanRequest,
-  useBorrowerHttpClient,
-} from "@frontend-monorepo/http-client-borrower";
+import type { PostLoanRequest } from "@frontend-monorepo/http-client-borrower";
+import { LoanAssetChain, LoanAssetType, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import { LtvInfoLabel, StableCoin, StableCoinDropdown, StableCoinHelper } from "@frontend-monorepo/ui-shared";
 import { formatCurrency } from "@frontend-monorepo/ui-shared";
 import {
@@ -56,8 +52,8 @@ export default function CustomRequest() {
   const [isDone, setIsDone] = useState(false);
 
   const mapToPostLoanRequest = (): PostLoanRequest => {
-    let assetType;
-    let assetChain;
+    let assetType: LoanAssetType;
+    let assetChain: LoanAssetChain;
     switch (stableCoin) {
       case StableCoin.USDT_SN:
         assetType = LoanAssetType.Usdt;
@@ -90,8 +86,8 @@ export default function CustomRequest() {
       interest_rate: interest / 100,
       loan_amount: loanAmount,
       duration_months: duration,
-      loan_asset_type: assetType!,
-      loan_asset_chain: assetChain!,
+      loan_asset_type: assetType,
+      loan_asset_chain: assetChain,
     };
   };
 

@@ -2,7 +2,8 @@ import { faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useWallet } from "@frontend-monorepo/browser-wallet";
 import { CreateWalletModal, UnlockWalletModal } from "@frontend-monorepo/browser-wallet";
-import { findBestOriginationFee, LoanOffer, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
+import type { LoanOffer } from "@frontend-monorepo/http-client-borrower";
+import { findBestOriginationFee, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import {
   formatCurrency,
   LoanAddressInputField,
@@ -18,8 +19,9 @@ import { FaInfoCircle } from "react-icons/fa";
 import { IoIosArrowRoundBack } from "react-icons/io";
 import { MdSecurity } from "react-icons/md";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
-import { LoanFilter } from "./loan-offers-filter";
-import { Slider, SliderProps } from "./slider";
+import type { LoanFilter } from "./loan-offers-filter";
+import type { SliderProps } from "./slider";
+import { Slider } from "./slider";
 
 type LocationState = {
   loanOffer: LoanOffer;
@@ -49,12 +51,12 @@ export function RequestLoanSummary() {
     } else {
       console.log(`Error: no id nor state set}`);
     }
-  }, [id, loanOfferFromState, setLoanOffer]);
+  }, [id, loanOfferFromState, setLoanOffer, getLoanOffer]);
 
   if (!loanOffer) {
     return <>loading...</>;
   } else {
-    return <RequestLoanSummaryInner loanOffer={loanOffer!} loanFilter={loanFilterFromState} />;
+    return <RequestLoanSummaryInner loanOffer={loanOffer} loanFilter={loanFilterFromState} />;
   }
 }
 

@@ -27,6 +27,9 @@ const router = createBrowserRouter(
   ),
 );
 
+// TODO: Can we handle these scenarios explicitly, instead of relying on non-null assertions?
+//
+// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 const root = ReactDOM.createRoot(document.getElementById("root")!);
 
 root.render(

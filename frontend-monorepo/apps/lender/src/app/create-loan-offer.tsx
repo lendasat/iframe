@@ -1,9 +1,5 @@
-import {
-  CreateLoanOfferRequest,
-  LoanAssetChain,
-  LoanAssetType,
-  useLenderHttpClient,
-} from "@frontend-monorepo/http-client-lender";
+import type { CreateLoanOfferRequest } from "@frontend-monorepo/http-client-lender";
+import { LoanAssetChain, LoanAssetType, useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
 import { useAuth } from "@frontend-monorepo/http-client-lender";
 import {
   formatCurrency,

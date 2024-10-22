@@ -1,6 +1,5 @@
-import { ContractStatus, LoanOffer, LoanOfferStatus } from "@frontend-monorepo/http-client-borrower";
+import { ContractStatus } from "@frontend-monorepo/http-client-borrower";
 import { Badge } from "@radix-ui/themes";
-import React from "react";
 
 export interface StatusBadgeProps {
   status: ContractStatus;
@@ -93,7 +92,7 @@ export function StatusBadge({ status }: StatusBadgeProps) {
 
   return (
     <Badge variant="soft" size={"2"} color={color} radius="medium">
-      {status}
+      {label}
     </Badge>
   );
 }

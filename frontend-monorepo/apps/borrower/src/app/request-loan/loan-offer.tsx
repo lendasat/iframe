@@ -1,4 +1,4 @@
-import { LoanOffer } from "@frontend-monorepo/http-client-borrower";
+import type { LoanOffer } from "@frontend-monorepo/http-client-borrower";
 import { CurrencyFormatter, StableCoinHelper } from "@frontend-monorepo/ui-shared";
 import { Badge, Box, Button, DropdownMenu, Flex, Grid, Heading, Text } from "@radix-ui/themes";
 import React from "react";
@@ -11,7 +11,7 @@ interface LoanOfferProps {
 }
 
 export function LoanOfferComponent({ loanOffer, onRequest }: LoanOfferProps) {
-  const coin = StableCoinHelper.mapFromBackend(loanOffer.loan_asset_chain, loanOffer.loan_asset_type)!;
+  const coin = StableCoinHelper.mapFromBackend(loanOffer.loan_asset_chain, loanOffer.loan_asset_type);
   const [loadingState, setLoadingState] = React.useState<boolean>(false);
   return (
     <Box className="pl-5 pr-6 md:pl-7 md:pr-8 py-3 border-b border-black/5 flex md:gap-2 items-center">
@@ -46,7 +46,7 @@ export function LoanOfferComponent({ loanOffer, onRequest }: LoanOfferProps) {
 
         <Box className="hidden md:flex justify-center">
           <Text size={"1"} weight={"medium"}>
-            <Badge color="purple" size={"2"}>{StableCoinHelper.print(coin)}</Badge>
+            <Badge color="purple" size={"2"}>{coin ? StableCoinHelper.print(coin) : "unknown"}</Badge>
           </Text>
         </Box>
         <Box className="hidden xl:flex justify-center">

@@ -1,7 +1,8 @@
-import { Version } from "@frontend-monorepo/base-http-client";
+import type { Version } from "@frontend-monorepo/base-http-client";
 import { Avatar, Box, Flex, Heading, IconButton, Separator, Text } from "@radix-ui/themes";
-import React, { ReactNode } from "react";
-import { IconType } from "react-icons";
+import type { ReactNode } from "react";
+import React from "react";
+import type { IconType } from "react-icons";
 import { IoIosNotificationsOutline } from "react-icons/io";
 import { IoChevronForward, IoHelpCircleOutline } from "react-icons/io5";
 import { PiCopyright } from "react-icons/pi";
@@ -29,7 +30,7 @@ interface MenuItem {
 }
 
 interface LayoutProps {
-  user: any;
+  user: User;
   children: ReactNode;
   menuItems: MenuItem[];
   theme?: Theme;
@@ -37,11 +38,16 @@ interface LayoutProps {
   logout: () => Promise<void>;
 }
 
+export interface User {
+  name: string;
+  email: string;
+}
+
 export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme, backendVersion, user, logout }) => {
   const versionString = `${backendVersion.version}-${backendVersion.commit_hash.substring(0, 5)}`;
   const [toggled, setToggled] = React.useState(false);
   const [broken, setBroken] = React.useState(false);
-  const [collasped, setCollapsed] = React.useState(false);
+  const [collapsed, setCollapsed] = React.useState(false);
 
   return (
     <div
@@ -50,7 +56,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme, back
     >
       <Sidebar
         toggled={toggled}
-        collapsed={collasped}
+        collapsed={collapsed}
         onBackdropClick={() => setToggled(false)}
         onBreakPoint={setBroken}
         breakPoint="lg"
@@ -60,13 +66,13 @@ export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme, back
         }}
       >
         <div className="flex flex-col h-full pb-3 items-center bg-gradient-to-b from-blue-500/[2%] via-40% via-pink-500/5 to-[#FBFAF8] to-90% border-l border-black/5">
-          <Box className={`w-full flex items-center ${collasped ? "justify-center" : "justify-between"} px-3 h-20`}>
-            <SidebarHeader className={`shrink-0 ${collasped ? "hidden" : "flex"} ml-5`} />
+          <Box className={`w-full flex items-center ${collapsed ? "justify-center" : "justify-between"} px-3 h-20`}>
+            <SidebarHeader className={`shrink-0 ${collapsed ? "hidden" : "flex"} ml-5`} />
             <IconButton
               variant={"ghost"}
               color="gray"
               className="hover:bg-transparent hidden lg:block"
-              onClick={() => (setCollapsed(!collasped))}
+              onClick={() => (setCollapsed(!collapsed))}
             >
               <TbLayoutSidebarLeftCollapse size={20} />
             </IconButton>
@@ -143,7 +149,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme, back
                   </Box>
                   <Flex
                     direction={"column"}
-                    className={collasped ? "opacity-0" : "shrink-0 opacity-100 transition-opacity duration-200 ease-in"}
+                    className={collapsed ? "opacity-0" : "shrink-0 opacity-100 transition-opacity duration-200 ease-in"}
                   >
                     <Text size={"2"} weight={"medium"} className={"capitalize break-keep"}>
                       {user.name}
@@ -153,7 +159,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme, back
                     </Text>
                   </Flex>
                 </Flex>
-                <IoChevronForward size={15} className={collasped ? "hidden" : "flex"} />
+                <IoChevronForward size={15} className={collapsed ? "hidden" : "flex"} />
               </Box>
             </Link>
           )}

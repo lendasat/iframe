@@ -1,4 +1,4 @@
-import { Version } from "@frontend-monorepo/base-http-client";
+import type { Version } from "@frontend-monorepo/base-http-client";
 
 export function downloadLocalStorage(version: Version) {
   const localStorageData = { version, ...localStorage };

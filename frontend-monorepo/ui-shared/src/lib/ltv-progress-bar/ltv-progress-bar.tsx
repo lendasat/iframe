@@ -9,9 +9,8 @@ interface LtvProgressBarProps {
 export const LtvProgressBar: React.FC<LtvProgressBarProps> = ({ ltvRatio }) => {
   let barColor = "";
 
-  const isNan = ltvRatio == undefined || isNaN(ltvRatio);
-
-  const formattedValue = isNan ? "Loading" : ltvRatio!.toFixed(0);
+  const isNan = ltvRatio == null || isNaN(ltvRatio);
+  const formattedValue = isNan ? "Loading" : ltvRatio.toFixed(0);
 
   if (isNan) {
     barColor = "bg-secondary";

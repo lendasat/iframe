@@ -1,9 +1,11 @@
-import { Contract, ContractStatus, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
-import { Swiper, SwiperRef, SwiperSlide } from "swiper/react";
+import type { Contract } from "@frontend-monorepo/http-client-borrower";
+import { ContractStatus, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
+import type { SwiperRef } from "swiper/react";
+import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import "swiper/css/navigation";
 import { CurrencyFormatter } from "@frontend-monorepo/ui-shared";
-import { Badge, Box, Flex, Heading, IconButton, Text } from "@radix-ui/themes";
+import { Box, Flex, Heading, IconButton, Text } from "@radix-ui/themes";
 import React, { Suspense } from "react";
 import { FaExternalLinkAlt } from "react-icons/fa";
 import { FaArrowLeftLong, FaArrowRightLong } from "react-icons/fa6";

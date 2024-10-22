@@ -1,8 +1,8 @@
 import { faExclamationCircle, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { CreateWalletModal, useWallet } from "@frontend-monorepo/browser-wallet";
+import type { Contract } from "@frontend-monorepo/http-client-lender";
 import {
-  Contract,
   ContractStatus,
   contractStatusToLabelString,
   LiquidationStatus,
@@ -26,7 +26,12 @@ function ContractDetailsOverview() {
   return (
     <Suspense>
       <Await
-        resolve={getContract(id!)}
+        resolve={async () => {
+          if (id == null) {
+            return Promise.reject(new Error("Cannot load contract without ID"));
+          }
+          return getContract(id);
+        }}
         errorElement={<div>Could not load contracts</div>}
         children={(contract: Awaited<Contract>) => (
           <Box
@@ -326,22 +331,22 @@ const AdditionalDetail = ({ contract }: AdditionalDetailsProps) => {
     tx.transaction_type === TransactionType.PrincipalGiven
   );
 
-  let fundingTxDetails = <></>;
+  let fundingTxDetails;
   if (fundingTransaction) {
     fundingTxDetails = <TransactionLink transaction={fundingTransaction} />;
   }
 
-  let claimTransactionDetails = <></>;
+  let claimTransactionDetails;
   if (claimTransaction) {
     claimTransactionDetails = <TransactionLink transaction={claimTransaction} />;
   }
 
-  let principalRepaidDetails = <></>;
+  let principalRepaidDetails;
   if (principalRepaidTransaction) {
     principalRepaidDetails = <TransactionLink transaction={principalRepaidTransaction} />;
   }
 
-  let principalGivenDetails = <></>;
+  let principalGivenDetails;
   if (principalGivenTransaction) {
     principalGivenDetails = <TransactionLink transaction={principalGivenTransaction} />;
   }
@@ -488,6 +493,10 @@ const AdditionalDetail = ({ contract }: AdditionalDetailsProps) => {
         </>
       );
     case ContractStatus.Rejected:
+    case ContractStatus.DisputeBorrowerStarted:
+    case ContractStatus.DisputeLenderStarted:
+    case ContractStatus.DisputeBorrowerResolved:
+    case ContractStatus.DisputeLenderResolved:
       // TODO
       return "";
   }

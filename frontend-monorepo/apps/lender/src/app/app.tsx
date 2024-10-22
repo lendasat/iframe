@@ -1,3 +1,4 @@
+import type { User } from "@frontend-monorepo/base-http-client";
 import { WalletProvider } from "@frontend-monorepo/browser-wallet";
 import { AuthIsNotSignedIn, AuthIsSignedIn, AuthProviderLender } from "@frontend-monorepo/http-client-lender";
 import { useAuth } from "@frontend-monorepo/http-client-lender";
@@ -91,19 +92,23 @@ function MainLayoutComponents() {
   };
 
   // Mapping function to normalize user objects
-  const mapLenderUser = (lenderUser: any) => ({
-    id: lenderUser?.id,
-    name: lenderUser?.name,
-    email: lenderUser?.email,
-    createdAt: lenderUser?.created_at,
-    verified: lenderUser?.verified,
+  const mapLenderUser = (lenderUser: User) => ({
+    id: lenderUser.id,
+    name: lenderUser.name,
+    email: lenderUser.email,
+    createdAt: lenderUser.created_at,
+    verified: lenderUser.verified,
   });
 
-  const user = lenderUser ? mapLenderUser(lenderUser) : null;
+  // TODO: It's annoying to have to deal with a possibly null or incomplete `User` here. Can we
+  // handle these scenarios explicitly, instead of relying on non-null assertions?
+  //
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const user = mapLenderUser(lenderUser!);
 
   return (
     <WalletProvider
-      username={user!.name}
+      username={user.name}
     >
       <Layout
         user={user}

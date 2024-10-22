@@ -108,7 +108,7 @@ export function StableCoinDropdown({
     if (!filter) {
       setSelectedCoin(defaultCoin ?? "disabled");
     }
-  });
+  }, [filter, defaultCoin]);
 
   const handleChange = (value: string) => {
     const selectedValue = parseStableCoin(value);

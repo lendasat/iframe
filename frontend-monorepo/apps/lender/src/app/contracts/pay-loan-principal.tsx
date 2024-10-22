@@ -1,9 +1,9 @@
 import { faCopy, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Contract } from "@frontend-monorepo/http-client-lender";
+import type { Contract } from "@frontend-monorepo/http-client-lender";
 import { formatCurrency } from "@frontend-monorepo/ui-shared";
 import QRCode from "qrcode.react";
-import React, { useState } from "react";
+import { useState } from "react";
 import { Alert, Button, Col, Container, Row, Spinner } from "react-bootstrap";
 
 interface RepaymentDetailsProps {

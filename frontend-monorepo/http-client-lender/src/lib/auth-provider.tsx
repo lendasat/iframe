@@ -1,4 +1,5 @@
-import { useBaseHttpClient, User, Version } from "@frontend-monorepo/base-http-client";
+import type { User, Version } from "@frontend-monorepo/base-http-client";
+import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
 import axios from "axios";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { HttpClientLenderProvider } from "./http-client-lender";
@@ -31,13 +32,13 @@ type Props = {
 };
 
 export const AuthIsSignedIn = ({ children }: Props) => {
-  const { user } = useContext(AuthContext)!;
-  return <>{user !== null ? children : ""}</>;
+  const context = useContext(AuthContext);
+  return context?.user ? children : "";
 };
 
 export const AuthIsNotSignedIn = ({ children }: Props) => {
-  const { user } = useContext(AuthContext)!;
-  return <>{user === null ? children : ""}</>;
+  const context = useContext(AuthContext);
+  return context?.user ? "" : children;
 };
 
 interface AuthProviderProps {
@@ -93,7 +94,7 @@ const LenderAuthProviderInner: React.FC<{ children: React.ReactNode }> = ({ chil
     };
 
     initializeAuth();
-  }, [me]);
+  }, [me, backendVersion, getVersion]);
 
   const login = async (email: string, password: string) => {
     setLoading(true);

@@ -1,16 +1,18 @@
 import { faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { LoanOffer, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
+import type { LoanOffer } from "@frontend-monorepo/http-client-borrower";
+import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
+import type { StableCoin } from "@frontend-monorepo/ui-shared";
 import {
   formatCurrency,
   LtvInfoLabel,
-  StableCoin,
   StableCoinDropdown,
   StableCoinHelper,
   usePrice,
 } from "@frontend-monorepo/ui-shared";
 import { Box, Button, Callout, Flex, Grid, Heading, Separator, Text, TextField } from "@radix-ui/themes";
-import React, { ChangeEvent, useEffect, useState } from "react";
+import type { ChangeEvent } from "react";
+import React, { useEffect, useState } from "react";
 import { Form } from "react-bootstrap";
 import { BsSearch } from "react-icons/bs";
 import { FaInfoCircle } from "react-icons/fa";
@@ -60,7 +62,7 @@ export default function SimpleRequest() {
   const [ltv, setLtv] = React.useState<number | undefined>(undefined);
 
   const [error, setError] = React.useState("");
-  const [success, setSuccess] = React.useState("");
+  const [success] = React.useState("");
 
   interface OfferFilter {
     loanAmount?: number;
@@ -99,7 +101,7 @@ export default function SimpleRequest() {
       }).filter((offer) => {
         if (advanceSearch && wantedCoin) {
           const mapFromBackend = StableCoinHelper.mapFromBackend(offer.loan_asset_chain, offer.loan_asset_type);
-          return wantedCoin == mapFromBackend;
+          return wantedCoin === mapFromBackend;
         } else {
           return true;
         }
@@ -197,6 +199,10 @@ export default function SimpleRequest() {
       maxInterest: parsedInterestRate,
     });
   }
+
+  const coin = bestOffer
+    ? StableCoinHelper.mapFromBackend(bestOffer.loan_asset_chain, bestOffer.loan_asset_type)
+    : null;
 
   return (
     <Box
@@ -403,7 +409,7 @@ export default function SimpleRequest() {
           <Box>
           </Box>
           <Box className="flex flex-col items-center h-full w-full">
-            {bestOffer
+            {bestOffer && coin
               ? (
                 <>
                   <Heading size="4" mb="4" className="font-normal">
@@ -417,7 +423,7 @@ export default function SimpleRequest() {
                       duration={loanDuration || 0}
                       interest={bestOffer.interest_rate}
                       ltv={bestOffer.min_ltv}
-                      coin={StableCoinHelper.mapFromBackend(bestOffer.loan_asset_chain, bestOffer.loan_asset_type)!}
+                      coin={coin}
                       onRequest={() => {
                         navigate(`/request-loan/${bestOffer.id}`, {
                           state: {
@@ -467,70 +473,68 @@ const LoanSearched = (props: SearchParams) => {
   const collateralUsdAmount = props.amount / props.ltv;
 
   return (
-    <>
-      <Box>
-        <Box className="px-6 py-4 space-y-3">
-          <Flex justify={"between"} align={"center"}>
-            <Text className="text-xs font-medium text-font/60">Lender</Text>
-            <Text className="text-[13px] font-semibold text-black/70 capitalize">
-              {props.lender}
-            </Text>
-          </Flex>
-          <Separator size={"4"} />
-          <Flex justify={"between"} align={"center"}>
-            <Text className="text-xs font-medium text-font/60">Interest</Text>
-            <Text className="text-[13px] font-semibold text-black/70">
-              {(props.interest * 100).toFixed(1)}% Per Year
-            </Text>
-          </Flex>
-          <Separator size={"4"} />
-          <Flex justify={"between"} align={"center"}>
-            <Flex justify={"between"} align={"start"} gap={"2"}>
-              <Text className="text-xs font-medium text-font/60">
-                Needed collateral
-              </Text>
-              <LtvInfoLabel>
-                <Text className="text-font/50" size={"1"} weight={"medium"}>
-                  ({(props.ltv * 100).toFixed(0)}% LTV)
-                </Text>
-                <FaInfoCircle color={"gray"} />
-              </LtvInfoLabel>
-            </Flex>
-
-            <div className="flex flex-col">
-              <Text className="text-[13px] font-semibold text-black/70 capitalize">
-                {collateralAmountBtc.toFixed(8)} BTC
-              </Text>
-              <Text className="text-[11px] text-black/50 mt-0.5 self-end">
-                ≈ {formatCurrency(collateralUsdAmount)}
-              </Text>
-            </div>
-          </Flex>
-          <Separator size={"4"} />
-          <Flex justify={"between"} align={"center"}>
-            <Text className="text-xs font-medium text-font/60">Coin</Text>
-            <Text className="text-[13px] font-semibold text-black/70 capitalize">
-              {StableCoinHelper.print(props.coin)}
-            </Text>
-          </Flex>
-          <Separator size={"4"} />
-          <Button
-            size={"3"}
-            variant="solid"
-            className="bg-btn text-white w-full"
-            onClick={props.onRequest}
-          >
-            <Text
-              size={"2"}
-              className="font-semibold"
-            >
-              Request Loan
-            </Text>
-          </Button>
-        </Box>
-
+    <Box>
+      <Box className="px-6 py-4 space-y-3">
+        <Flex justify={"between"} align={"center"}>
+          <Text className="text-xs font-medium text-font/60">Lender</Text>
+          <Text className="text-[13px] font-semibold text-black/70 capitalize">
+            {props.lender}
+          </Text>
+        </Flex>
         <Separator size={"4"} />
+        <Flex justify={"between"} align={"center"}>
+          <Text className="text-xs font-medium text-font/60">Interest</Text>
+          <Text className="text-[13px] font-semibold text-black/70">
+            {(props.interest * 100).toFixed(1)}% Per Year
+          </Text>
+        </Flex>
+        <Separator size={"4"} />
+        <Flex justify={"between"} align={"center"}>
+          <Flex justify={"between"} align={"start"} gap={"2"}>
+            <Text className="text-xs font-medium text-font/60">
+              Needed collateral
+            </Text>
+            <LtvInfoLabel>
+              <Text className="text-font/50" size={"1"} weight={"medium"}>
+                ({(props.ltv * 100).toFixed(0)}% LTV)
+              </Text>
+              <FaInfoCircle color={"gray"} />
+            </LtvInfoLabel>
+          </Flex>
+
+          <div className="flex flex-col">
+            <Text className="text-[13px] font-semibold text-black/70 capitalize">
+              {collateralAmountBtc.toFixed(8)} BTC
+            </Text>
+            <Text className="text-[11px] text-black/50 mt-0.5 self-end">
+              ≈ {formatCurrency(collateralUsdAmount)}
+            </Text>
+          </div>
+        </Flex>
+        <Separator size={"4"} />
+        <Flex justify={"between"} align={"center"}>
+          <Text className="text-xs font-medium text-font/60">Coin</Text>
+          <Text className="text-[13px] font-semibold text-black/70 capitalize">
+            {StableCoinHelper.print(props.coin)}
+          </Text>
+        </Flex>
+        <Separator size={"4"} />
+        <Button
+          size={"3"}
+          variant="solid"
+          className="bg-btn text-white w-full"
+          onClick={props.onRequest}
+        >
+          <Text
+            size={"2"}
+            className="font-semibold"
+          >
+            Request Loan
+          </Text>
+        </Button>
       </Box>
-    </>
+
+      <Separator size={"4"} />
+    </Box>
   );
 };

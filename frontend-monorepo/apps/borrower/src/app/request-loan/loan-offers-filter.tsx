@@ -1,14 +1,10 @@
-import {
-  LtvInfoLabel,
-  parseStableCoin,
-  StableCoin,
-  StableCoinDropdown,
-  StableCoinHelper,
-} from "@frontend-monorepo/ui-shared";
+import type { StableCoin } from "@frontend-monorepo/ui-shared";
+import { LtvInfoLabel, StableCoinDropdown, StableCoinHelper } from "@frontend-monorepo/ui-shared";
 import { Box, Button, Flex, Separator, Text, TextField } from "@radix-ui/themes";
 import React from "react";
 import { FaInfoCircle } from "react-icons/fa";
-import { Slider, SliderProps } from "./slider";
+import type { SliderProps } from "./slider";
+import { Slider } from "./slider";
 
 export interface LoanFilter {
   amount?: number;

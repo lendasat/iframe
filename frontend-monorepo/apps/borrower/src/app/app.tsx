@@ -25,7 +25,7 @@ import Profile from "./profile";
 import RequestLoan from "./request-loan/request-loan";
 import { RequestLoanSummary } from "./request-loan/request-loan-summary";
 import "./../styles.css";
-import { User } from "@frontend-monorepo/base-http-client";
+import type { User } from "@frontend-monorepo/base-http-client";
 import { FiHome } from "react-icons/fi";
 import { GoGitPullRequest } from "react-icons/go";
 import { HiOutlineSupport } from "react-icons/hi";
@@ -106,11 +106,15 @@ function MainLayoutComponents() {
     verified: borrowerUser?.verified,
   });
 
-  const user = borrowerUser ? mapBorrowerUser(borrowerUser) : null;
+  // TODO: It's annoying to have to deal with a possibly null or incomplete `User` here. Can we
+  // handle these scenarios explicitly, instead of relying on non-null assertions.
+  //
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const user = mapBorrowerUser(borrowerUser!);
 
   return (
     <WalletProvider
-      username={user!.name}
+      username={user.name}
     >
       <Layout
         user={user}
@@ -157,9 +161,9 @@ function App() {
   }
 
   return (
-    <AuthProviderBorrower baseUrl={import.meta.env.VITE_BORROWER_BASE_URL!}>
+    <AuthProviderBorrower baseUrl={baseUrl}>
       <AuthIsSignedIn>
-        <PriceProvider url={import.meta.env.VITE_BORROWER_BASE_URL!}>
+        <PriceProvider url={baseUrl}>
           <MainLayoutComponents />
         </PriceProvider>
       </AuthIsSignedIn>

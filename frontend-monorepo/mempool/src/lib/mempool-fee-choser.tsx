@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Button, ButtonGroup, Form, Row, Spinner } from "react-bootstrap";
-import MempoolClient, { RecommendedFees } from "./mempool-client";
+import type { RecommendedFees } from "./mempool-client";
+import MempoolClient from "./mempool-client";
 
 interface FeeSelectorProps {
   onSelectFee: (fee: number) => void;
@@ -34,7 +35,7 @@ export const FeeSelector = ({ onSelectFee }: FeeSelectorProps) => {
     };
 
     fetchFees();
-  }, []);
+  }, [onSelectFee]);
 
   const handleFeeSelection = (feeType: string) => {
     if (selectedFeeType === feeType) {
@@ -62,7 +63,10 @@ export const FeeSelector = ({ onSelectFee }: FeeSelectorProps) => {
   const handleConfirm = (feeType: string, customRate?: number) => {
     let fee = 0;
     if (feeType === "custom") {
-      fee = customRate!;
+      if (customRate == null) {
+        throw new Error("Did not provide custom rate");
+      }
+      fee = customRate;
     } else if (recommendedFees) {
       switch (feeType) {
         case "fast":

@@ -19,7 +19,7 @@ export const Slider = ({ min, max, init, step, suffix, reset, onChange }: Slider
     if (!reset) {
       setValue(init);
     }
-  });
+  }, [reset, init]);
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = parseFloat(e.target.value); // Convert string to number
     setValue(newValue);

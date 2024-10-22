@@ -1,4 +1,5 @@
-import React, { createContext, ReactNode, useContext, useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 
 interface PriceContextProps {
   latestPrice: number;
