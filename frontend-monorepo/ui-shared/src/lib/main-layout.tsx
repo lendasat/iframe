@@ -190,8 +190,10 @@ export const Layout: React.FC<LayoutProps> = ({ children, menuItems, backendVers
             </Flex>
           </Box>
 
-          {/*TODO: removed for now due to not being implemented
-          <SearchBar placeholder="Looking for something..." />*/}
+          {
+            /*TODO: removed for now due to not being implemented
+          <SearchBar placeholder="Looking for something..." />*/
+          }
 
           <Box className="shrink-0">
             <Flex align={"center"} className="gap-4">

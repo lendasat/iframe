@@ -1,8 +1,26 @@
-import { Box, Grid, Text } from "@radix-ui/themes";
+import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
+import { Box, Grid, Spinner, Text } from "@radix-ui/themes";
 import React from "react";
+import { useAsync } from "react-use";
 import HistoryComponent from "./HistoryComponent";
 
-export default function CardHistory() {
+interface CardHistoryProps {
+  cardId: number;
+}
+
+export default function CardHistory({ cardId }: CardHistoryProps) {
+  const { getCardTransactions } = useBorrowerHttpClient();
+
+  const { loading, value: maybeTransactionHistory, error } = useAsync(async () => {
+    return getCardTransactions(cardId);
+  }, [cardId]);
+
+  if (error) {
+    console.error(`Failed loading transactions ${error}`);
+  }
+
+  const transactionHistory = maybeTransactionHistory || [];
+
   const amount_col = {
     label: "Amount",
     className: "text-center",
@@ -34,61 +52,19 @@ export default function CardHistory() {
         ))}
       </Grid>
       <Box className="md:overflow-y-scroll h-full">
-        {TransactionInformationList.map((history, index) => (
-          <HistoryComponent
-            transactionType={history.transactionType}
-            cardUsed={history.cardUsed}
-            status={history.status}
-            amount={history.amount}
-            date={history.date}
-            key={index}
-          />
-        ))}
+        {loading
+          ? <Spinner />
+          : transactionHistory.map((history, index) => (
+            <HistoryComponent
+              transactionType={history.transactionType}
+              cardUsed={history.cardUsed}
+              status={history.status}
+              amount={history.amount}
+              date={history.date}
+              key={index}
+            />
+          ))}
       </Box>
     </Box>
   );
 }
-
-export enum TransactionStatus {
-  InProcess = "in process",
-  Completed = "completed",
-  Failed = "failed",
-  Pending = "pending",
-}
-
-export enum TransactionType {
-  IncomingLoan = "incoming Loan",
-  Payment = "payment",
-}
-
-interface TransactionInformation {
-  transactionType: TransactionType;
-  cardUsed: string;
-  status: TransactionStatus;
-  amount: number;
-  date: number;
-}
-
-const TransactionInformationList: TransactionInformation[] = [
-  {
-    transactionType: TransactionType.IncomingLoan,
-    cardUsed: "0145",
-    status: TransactionStatus.InProcess,
-    amount: 3000,
-    date: Date.now(),
-  },
-  {
-    transactionType: TransactionType.Payment,
-    cardUsed: "0845",
-    status: TransactionStatus.Failed,
-    amount: 8000,
-    date: Date.now(),
-  },
-  {
-    transactionType: TransactionType.Payment,
-    cardUsed: "0145",
-    status: TransactionStatus.Completed,
-    amount: 17000,
-    date: Date.now(),
-  },
-];

@@ -1,9 +1,11 @@
+import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import { CurrencyFormatter } from "@frontend-monorepo/ui-shared";
-import { Box, Button, Flex, Grid, Heading, Text } from "@radix-ui/themes";
+import { Box, Button, Flex, Grid, Heading, Spinner, Text } from "@radix-ui/themes";
 import React from "react";
 import { GoArrowUpRight } from "react-icons/go";
 import { IoWallet } from "react-icons/io5";
 import { Link } from "react-router-dom";
+import { useAsync } from "react-use";
 import { EffectCards } from "swiper/modules";
 import { Swiper as SwiperComponent, SwiperRef, SwiperSlide } from "swiper/react";
 import CardHistory from "./CardHistory";
@@ -12,19 +14,37 @@ import CreditCards from "./CreditCards";
 export default function Cards() {
   const { innerHeight } = window;
   const [moreInfo, setMoreInfo] = React.useState<boolean>(false);
-  const [activeCard, setActiveCard] = React.useState<number>(0);
-
+  const [activeCardIndex, setActiveCardIndex] = React.useState<number>(0);
   // Change Card
   const SlideRef = React.useRef<SwiperRef>(null);
+
+  const { getUserCards } = useBorrowerHttpClient();
+
+  const { loading, value: maybeUserCardDetails, error } = useAsync(async () => {
+    return getUserCards();
+  }, []);
+
+  if (error) {
+    console.error(`Failed loading card details ${error}`);
+  }
+
+  if (loading) {
+    // TODO: return something smarter
+    return <Spinner />;
+  }
+
+  const userCardDetails = maybeUserCardDetails || [];
+
   const onSwitchCard = () => {
     SlideRef.current?.swiper.slideNext();
-    if (activeCard !== UserCardDetails.length - 1) {
-      setActiveCard(activeCard + 1);
+    if (activeCardIndex !== userCardDetails.length - 1) {
+      setActiveCardIndex(activeCardIndex + 1);
     } else {
-      setActiveCard(0);
+      setActiveCardIndex(0);
     }
   };
 
+  const activeCard = userCardDetails[activeCardIndex];
   return (
     <Grid
       className="md:grid-cols-[minmax(350px,_1fr)_2fr] overflow-y-scroll"
@@ -37,7 +57,7 @@ export default function Cards() {
           <Heading size={"5"} weight={"medium"}>
             My Cards
           </Heading>
-          {UserCardDetails.length > 1 && (
+          {userCardDetails.length > 1 && (
             <Button
               variant="ghost"
               onClick={onSwitchCard}
@@ -62,7 +82,7 @@ export default function Cards() {
           }}
           className="h-52 w-full"
         >
-          {UserCardDetails.map((card, index) => (
+          {userCardDetails.map((card, index) => (
             <SwiperSlide key={index}>
               <CreditCards
                 cardNumber={card.cardNumber}
@@ -91,7 +111,7 @@ export default function Cards() {
                 </Box>
                 <Text size={"1"} weight={"medium"}>Balance</Text>
                 <Heading size={"2"}>
-                  <CurrencyFormatter value={UserCardDetails[activeCard].balance} />
+                  <CurrencyFormatter value={activeCard.balance} />
                 </Heading>
               </Box>
             </Box>
@@ -103,7 +123,7 @@ export default function Cards() {
                 </Box>
                 <Text size={"1"} weight={"medium"}>Outgoing</Text>
                 <Heading size={"2"}>
-                  <CurrencyFormatter value={UserCardDetails[activeCard].outgoing} />
+                  <CurrencyFormatter value={activeCard.outgoing} />
                 </Heading>
               </Box>
             </Box>
@@ -125,20 +145,20 @@ export default function Cards() {
             <Box>
               <Text size={"1"} weight={"medium"} className="text-font/60">Card Number</Text>
               <Text as="p" weight={"medium"}>
-                {moreInfo ? formatCreditCardNumber(UserCardDetails[activeCard].cardNumber) : "******"}
+                {moreInfo ? formatCreditCardNumber(activeCard.cardNumber) : "******"}
               </Text>
             </Box>
             <Flex justify={"between"}>
               <Box>
                 <Text size={"1"} weight={"medium"} className="text-font/60">Expiry</Text>
                 <Text as="p" weight={"medium"}>
-                  {moreInfo ? formatDate(UserCardDetails[activeCard].expiry) : "****"}
+                  {moreInfo ? formatDate(activeCard.expiry) : "****"}
                 </Text>
               </Box>
               <Box>
                 <Text size={"1"} weight={"medium"} className="text-font/60">CVV</Text>
                 <Text as="p" weight={"medium"}>
-                  {moreInfo ? UserCardDetails[activeCard].cardCvv : "****"}
+                  {moreInfo ? activeCard.cardCvv : "****"}
                 </Text>
               </Box>
             </Flex>
@@ -160,7 +180,7 @@ export default function Cards() {
             Transactions
           </Heading>
         </Box>
-        <CardHistory />
+        <CardHistory cardId={activeCard.id} />
       </Box>
     </Grid>
   );
@@ -171,39 +191,6 @@ export const formatCreditCardNumber = (number: number) => {
   const numStr = number.toString().replace(/\D/g, "");
   return numStr.replace(/(\d{4})(?=\d)/g, "$1 ");
 };
-
-interface UserCardDetail {
-  balance: number;
-  outgoing: number;
-  cardNumber: number;
-  cardCvv: number;
-  expiry: number;
-}
-
-// Card details
-const UserCardDetails: UserCardDetail[] = [
-  {
-    balance: 95485.68,
-    outgoing: 2524.45,
-    cardNumber: 3782822463101845,
-    cardCvv: 759,
-    expiry: Date.now(),
-  },
-  {
-    balance: 99545.68,
-    outgoing: 9574.45,
-    cardNumber: 5610591081018250,
-    cardCvv: 957,
-    expiry: Date.now(),
-  },
-  {
-    balance: 7653.24,
-    outgoing: 2582.45,
-    cardNumber: 5019717010103742,
-    cardCvv: 579,
-    expiry: Date.now(),
-  },
-];
 
 const formatDate = (timestamp: number): string => {
   console.log(timestamp);

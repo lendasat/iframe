@@ -187,3 +187,32 @@ export interface LoanTransaction {
   transaction_type: TransactionType;
   timestamp: Date;
 }
+
+export interface UserCardDetail {
+  id: number;
+  balance: number;
+  outgoing: number;
+  cardNumber: number;
+  cardCvv: number;
+  expiry: number;
+}
+
+export interface CardTransactionInformation {
+  transactionType: CardTransactionType;
+  cardUsed: string;
+  status: CardTransactionStatus;
+  amount: number;
+  date: number;
+}
+
+export enum CardTransactionStatus {
+  InProcess = "in process",
+  Completed = "completed",
+  Failed = "failed",
+  Pending = "pending",
+}
+
+export enum CardTransactionType {
+  IncomingLoan = "incoming Loan",
+  Payment = "payment",
+}

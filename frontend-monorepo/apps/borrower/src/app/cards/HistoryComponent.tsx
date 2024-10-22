@@ -1,13 +1,13 @@
+import { CardTransactionStatus, CardTransactionType } from "@frontend-monorepo/http-client-borrower";
 import { CurrencyFormatter } from "@frontend-monorepo/ui-shared";
 import { Badge, Box, Flex, Grid, Heading, Text } from "@radix-ui/themes";
 import { GoArrowDownLeft, GoArrowUpRight } from "react-icons/go";
 import VisaIcon from "./../../assets/visa_logo_icon.webp";
-import { TransactionStatus, TransactionType } from "./CardHistory";
 
 interface HistoryProps {
-  transactionType: TransactionType;
+  transactionType: CardTransactionType;
   cardUsed: string;
-  status: TransactionStatus;
+  status: CardTransactionStatus;
   amount: number;
   date: number;
 }
@@ -31,6 +31,7 @@ export default function HistoryComponent(history: HistoryProps) {
                 <Text size={"1"}>**** {history.cardUsed}</Text>
                 <Box className="h-2.5 w-auto">
                   <img
+                    alt={"Visa card icon"}
                     src={VisaIcon}
                     className="h-full w-full object-contain object-center"
                   />
@@ -41,11 +42,11 @@ export default function HistoryComponent(history: HistoryProps) {
         </Box>
         <Box className="flex items-center justify-center capitalize">
           <Badge
-            color={history.status == TransactionStatus.InProcess
+            color={history.status == CardTransactionStatus.InProcess
               ? "indigo"
-              : history.status == TransactionStatus.Completed
+              : history.status == CardTransactionStatus.Completed
               ? "green"
-              : history.status == TransactionStatus.Failed
+              : history.status == CardTransactionStatus.Failed
               ? "red"
               : "gray"}
           >
@@ -73,7 +74,6 @@ export default function HistoryComponent(history: HistoryProps) {
 }
 
 const formatDateAsDayAndMonth = (timestamp: number): string => {
-  console.log(timestamp);
   const date = new Date(timestamp);
   return date.toLocaleDateString([], {
     day: "numeric",
@@ -83,7 +83,6 @@ const formatDateAsDayAndMonth = (timestamp: number): string => {
 };
 
 const formatDateAsTime = (timestamp: number): string => {
-  console.log(timestamp);
   const date = new Date(timestamp);
   return date.toLocaleTimeString([], {
     hour: "numeric",

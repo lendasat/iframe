@@ -2,6 +2,9 @@ import { BaseHttpClient, BaseHttpClientContext, BaseHttpClientContextType } from
 import axios, { AxiosResponse } from "axios";
 import { createContext, useContext } from "react";
 import {
+  CardTransactionInformation,
+  CardTransactionStatus,
+  CardTransactionType,
   ClaimCollateralPsbtResponse,
   Contract,
   ContractRequest,
@@ -10,6 +13,7 @@ import {
   LoanOffer,
   LoanRequest,
   PostLoanRequest,
+  UserCardDetail,
 } from "./models";
 import { parseRFC3339Date } from "./utils";
 
@@ -292,6 +296,61 @@ export class HttpClientBorrower extends BaseHttpClient {
       }
     }
   }
+
+  async getUserCards(): Promise<UserCardDetail[]> {
+    return [
+      {
+        id: 1,
+        balance: 95485.68,
+        outgoing: 2524.45,
+        cardNumber: 3782822463101845,
+        cardCvv: 759,
+        expiry: Date.now(),
+      },
+      {
+        id: 2,
+        balance: 99545.68,
+        outgoing: 9574.45,
+        cardNumber: 5610591081018250,
+        cardCvv: 957,
+        expiry: Date.now(),
+      },
+      {
+        id: 3,
+        balance: 7653.24,
+        outgoing: 2582.45,
+        cardNumber: 5019717010103742,
+        cardCvv: 579,
+        expiry: Date.now(),
+      },
+    ];
+  }
+
+  async getCardTransactions(_cardId: number): Promise<CardTransactionInformation[]> {
+    return [
+      {
+        transactionType: CardTransactionType.IncomingLoan,
+        cardUsed: "0145",
+        status: CardTransactionStatus.InProcess,
+        amount: 3000,
+        date: Date.now(),
+      },
+      {
+        transactionType: CardTransactionType.Payment,
+        cardUsed: "0845",
+        status: CardTransactionStatus.Failed,
+        amount: 8000,
+        date: Date.now(),
+      },
+      {
+        transactionType: CardTransactionType.Payment,
+        cardUsed: "0145",
+        status: CardTransactionStatus.Completed,
+        amount: 17000,
+        date: Date.now(),
+      },
+    ];
+  }
 }
 
 type BorrowerHttpClientContextType = Pick<
@@ -310,6 +369,8 @@ type BorrowerHttpClientContextType = Pick<
   | "getDispute"
   | "getLenderProfile"
   | "getBorrowerProfile"
+  | "getUserCards"
+  | "getCardTransactions"
 >;
 
 export const BorrowerHttpClientContext = createContext<BorrowerHttpClientContextType | undefined>(undefined);
@@ -357,6 +418,8 @@ export const HttpClientBorrowerProvider: React.FC<HttpClientProviderProps> = ({ 
     getDispute: httpClient.getDispute.bind(httpClient),
     getLenderProfile: httpClient.getLenderProfile.bind(httpClient),
     getBorrowerProfile: httpClient.getBorrowerProfile.bind(httpClient),
+    getUserCards: httpClient.getUserCards.bind(httpClient),
+    getCardTransactions: httpClient.getCardTransactions.bind(httpClient),
   };
 
   return (
