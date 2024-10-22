@@ -19,7 +19,10 @@ export default function CardHistory({ cardId }: CardHistoryProps) {
     console.error(`Failed loading transactions ${error}`);
   }
 
-  const transactionHistory = maybeTransactionHistory || [];
+  const transactionHistoryUnsorted = maybeTransactionHistory || [];
+  const transactionHistorySorted = transactionHistoryUnsorted.sort((a, b) => {
+    return b.date - a.date;
+  });
 
   const amount_col = {
     label: "Amount",
@@ -42,7 +45,7 @@ export default function CardHistory({ cardId }: CardHistoryProps) {
 
   const headers = [action_col, status_col, amount_col, date_col];
 
-  const noTxHistory = transactionHistory.length === 0;
+  const noTxHistory = transactionHistorySorted.length === 0;
 
   return (
     <Box className="flex-1">
@@ -69,7 +72,7 @@ export default function CardHistory({ cardId }: CardHistoryProps) {
             </Flex>
           )}
 
-        {!loading && transactionHistory.map((history, index) => (
+        {!loading && transactionHistorySorted.map((history, index) => (
           <HistoryComponent
             transactionType={history.transactionType}
             cardUsed={history.cardUsed}

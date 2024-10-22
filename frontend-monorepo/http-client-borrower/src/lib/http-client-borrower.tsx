@@ -333,21 +333,21 @@ export class HttpClientBorrower extends BaseHttpClient {
         cardUsed: "0145",
         status: CardTransactionStatus.InProcess,
         amount: 3000,
-        date: Date.now(),
+        date: new Date(1721631360000).getTime(),
       },
       {
         transactionType: CardTransactionType.Payment,
         cardUsed: "0845",
         status: CardTransactionStatus.Failed,
         amount: 8000,
-        date: Date.now(),
+        date: new Date(1729631360000).getTime(),
       },
       {
         transactionType: CardTransactionType.Payment,
         cardUsed: "0145",
         status: CardTransactionStatus.Completed,
         amount: 17000,
-        date: Date.now(),
+        date: new Date(1729641360000).getTime(),
       },
     ];
   }
