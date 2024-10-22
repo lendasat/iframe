@@ -43,18 +43,18 @@ export function TransactionLink({ transaction }: TransactionLinkProps) {
 
   return (
     <Flex justify={"end"}>
-      <code>{ellipseId(transaction.id)}</code>
+      <code>{ellipseId(transaction.txid)}</code>
       {urlPrefix
         ? (
-          <a href={`${urlPrefix}/tx/${transaction.id}`} target={"_blank"} style={{ marginLeft: "8px" }}>
+          <a href={`${urlPrefix}/tx/${transaction.txid}`} target={"_blank"} style={{ marginLeft: "8px" }}>
             <FaLink />
           </a>
         )
         : ""}
       <Box
-        onClick={() => handleCopy(transaction.id)}
+        onClick={() => handleCopy(transaction.txid)}
       >
-        <NotificationToast description={transaction.id} title={"Transaction id copied"}>
+        <NotificationToast description={transaction.txid} title={"Transaction id copied"}>
           {copied ? <FaCheckCircle /> : <FaCopy />}
         </NotificationToast>
       </Box>
