@@ -7,6 +7,7 @@ import { Link } from "react-router-dom";
 import { useAsync } from "react-use";
 import { EffectCards } from "swiper/modules";
 import { Swiper as SwiperComponent, SwiperRef, SwiperSlide } from "swiper/react";
+import NoCreditCard from "./../../assets/creditcard-illustration.png";
 import CardHistory from "./CardHistory";
 import CreditCards from "./CreditCards";
 
@@ -53,6 +54,7 @@ export default function Cards() {
   };
 
   const activeCard = userCardDetails[activeCardIndex];
+
   return (
     <Grid
       className="md:grid-cols-[minmax(350px,_1fr)_2fr] overflow-y-scroll"
@@ -60,59 +62,73 @@ export default function Cards() {
         height: innerHeight - 100,
       }}
     >
-      <Box className="border-r border-font/10 bg-white p-4 md:px-8 h-full space-y-4">
-        <Flex align={"center"} justify={"between"}>
-          <Heading size={"5"} weight={"medium"}>
-            My Cards
-          </Heading>
-          {userCardDetails.length > 1 && (
-            <Button
-              variant="ghost"
-              onClick={onSwitchCard}
-              className="hover:bg-transparent font-medium text-font/60 hover:text-font"
-            >
-              Switch Card
-            </Button>
-          )}
-        </Flex>
+      <Box
+        className={` p-4 ${
+          activeCard ? " " : "hidden md:block"
+        } md:px-8 space-y-4 border-r border-font/10 bg-white h-full`}
+      >
+        <Skeleton loading={!activeCard}>
+          <Box>
+            <Flex align={"center"} justify={"between"}>
+              <Heading size={"5"} weight={"medium"}>
+                My Cards
+              </Heading>
+              {userCardDetails.length > 1 && (
+                <Button
+                  variant="ghost"
+                  onClick={onSwitchCard}
+                  className="hover:bg-transparent font-medium text-font/60 hover:text-font"
+                >
+                  Switch Card
+                </Button>
+              )}
+            </Flex>
+          </Box>
+        </Skeleton>
 
-        <SwiperComponent
-          loop
-          ref={SlideRef}
-          effect={"cards"}
-          grabCursor={false}
-          allowTouchMove={false}
-          modules={[EffectCards]}
-          centeredSlides
-          cardsEffect={{
-            perSlideOffset: 7,
-            slideShadows: false,
-          }}
-          className="h-52 w-full"
-        >
-          {userCardDetails.map((card, index) => (
-            <SwiperSlide key={index}>
-              <CreditCards
-                cardNumber={card.cardNumber}
-                visibility={moreInfo}
-              />
-            </SwiperSlide>
-          ))}
-        </SwiperComponent>
-        <Box>
+        <Skeleton loading={!activeCard}>
+          <SwiperComponent
+            loop
+            ref={SlideRef}
+            effect={"cards"}
+            grabCursor={false}
+            allowTouchMove={false}
+            modules={[EffectCards]}
+            centeredSlides
+            cardsEffect={{
+              perSlideOffset: 7,
+              slideShadows: false,
+            }}
+            className="h-52 w-full"
+          >
+            {userCardDetails.map((card, index) => (
+              <SwiperSlide key={index}>
+                <CreditCards
+                  cardNumber={card.cardNumber}
+                  visibility={moreInfo}
+                />
+              </SwiperSlide>
+            ))}
+          </SwiperComponent>
+        </Skeleton>
+
+        <Skeleton loading={!activeCard}>
           <Flex align={"center"}>
             <Button variant="soft" size={"3"} color="purple" className="text-sm flex-grow rounded-lg">
               Add New Card
             </Button>
           </Flex>
-        </Box>
+        </Skeleton>
+
         <Box className="pt-5 space-y-4">
-          <Heading as="h4" size={"3"} weight={"medium"}>
-            My Details
-          </Heading>
+          <Skeleton loading={!activeCard}>
+            <Heading as="h4" size={"3"} weight={"medium"}>
+              My Details
+            </Heading>
+          </Skeleton>
 
           <Grid className="grid-cols-2 gap-2">
-            <Box className="flex items-center justify-between">
+            <Skeleton loading={!activeCard} className="flex items-center justify-between">
               <Box className="min-h-[150px] w-full border border-font/10 flex flex-col items-center justify-center gap-1.5 text-font rounded-2xl">
                 <Box className={`h-12 w-12 bg-purple-50 rounded-xl place-items-center flex justify-center`}>
                   <IoWallet size={"24"} />
@@ -124,9 +140,9 @@ export default function Cards() {
                   </Skeleton>
                 </Heading>
               </Box>
-            </Box>
+            </Skeleton>
 
-            <Box className="flex items-center justify-between">
+            <Skeleton loading={!activeCard} className="flex items-center justify-between">
               <Box className="min-h-[150px] w-full border border-font/10 flex flex-col items-center justify-center gap-1.5 text-font rounded-2xl">
                 <Box className={`h-12 w-12 bg-purple-50 rounded-xl place-items-center flex justify-center`}>
                   <GoArrowUpRight size={"24"} />
@@ -138,52 +154,57 @@ export default function Cards() {
                   </Skeleton>
                 </Heading>
               </Box>
-            </Box>
+            </Skeleton>
           </Grid>
 
           <Box className="space-y-1">
-            <Flex align={"center"} justify={"between"}>
-              <Heading as="h4" size={"3"} weight={"medium"}>
-                More Info
-              </Heading>
-              <Button
-                onClick={() => setMoreInfo(!moreInfo)}
-                disabled={!activeCard}
-                variant="ghost"
-                className="hover:bg-transparent text-xs font-medium text-purple-800"
-              >
-                {!moreInfo ? " View" : "Hide"}{"   "}Details
-              </Button>
-            </Flex>
-            <Box>
+            <Skeleton loading={!activeCard}>
+              <Flex align={"center"} justify={"between"}>
+                <Heading as="h4" size={"3"} weight={"medium"}>
+                  More Info
+                </Heading>
+                <Button
+                  onClick={() => setMoreInfo(!moreInfo)}
+                  disabled={!activeCard}
+                  variant="ghost"
+                  className="hover:bg-transparent text-xs font-medium text-purple-800"
+                >
+                  {!moreInfo ? " View" : "Hide"}{"   "}Details
+                </Button>
+              </Flex>
+            </Skeleton>
+
+            <Skeleton loading={!activeCard}>
               <Text size={"1"} weight={"medium"} className="text-font/60">Card Number</Text>
               <Text as="p" weight={"medium"}>
                 <Skeleton loading={!activeCard}>
                   {moreInfo ? formatCreditCardNumber(activeCard.cardNumber) : "******"}
                 </Skeleton>
               </Text>
-            </Box>
-            <Flex justify={"between"}>
-              <Box>
-                <Text size={"1"} weight={"medium"} className="text-font/60">Expiry</Text>
-                <Text as="p" weight={"medium"}>
-                  <Skeleton loading={!activeCard}>
-                    {moreInfo ? formatDate(activeCard.expiry) : "****"}
-                  </Skeleton>
-                </Text>
-              </Box>
-              <Box>
-                <Text size={"1"} weight={"medium"} className="text-font/60">CVV</Text>
-                <Text as="p" weight={"medium"}>
-                  <Skeleton loading={!activeCard}>
-                    {moreInfo ? activeCard.cardCvv : "****"}
-                  </Skeleton>
-                </Text>
-              </Box>
-            </Flex>
+            </Skeleton>
+            <Skeleton loading={!activeCard}>
+              <Flex justify={"between"}>
+                <Box>
+                  <Text size={"1"} weight={"medium"} className="text-font/60">Expiry</Text>
+                  <Text as="p" weight={"medium"}>
+                    <Skeleton loading={!activeCard}>
+                      {moreInfo ? formatDate(activeCard.expiry) : "****"}
+                    </Skeleton>
+                  </Text>
+                </Box>
+                <Box>
+                  <Text size={"1"} weight={"medium"} className="text-font/60">CVV</Text>
+                  <Text as="p" weight={"medium"}>
+                    <Skeleton loading={!activeCard}>
+                      {moreInfo ? activeCard.cardCvv : "****"}
+                    </Skeleton>
+                  </Text>
+                </Box>
+              </Flex>
+            </Skeleton>
           </Box>
         </Box>
-        <Box>
+        <Skeleton loading={!activeCard}>
           <Flex align={"center"} gap={"2"}>
             <Button asChild variant="outline" size={"4"} color="purple" className="text-sm flex-grow rounded-lg">
               <Link to={"/requests"}>
@@ -191,16 +212,34 @@ export default function Cards() {
               </Link>
             </Button>
           </Flex>
-        </Box>
+        </Skeleton>
       </Box>
-      <Box className="flex flex-col gap-4 py-4">
-        <Box className="px-6 md:px-8">
-          <Heading>
-            Transactions
-          </Heading>
-        </Box>
+      <Box className={`flex flex-col ${!activeCard ? "items-center justify-center" : ""} gap-4 py-4`}>
+        {activeCard
+          && (
+            <Box className="px-6 md:px-8">
+              <Heading>
+                Transactions
+              </Heading>
+            </Box>
+          )}
+
         {/*TODO: show some information if no card is available yet*/}
-        {!activeCard ? "" : <CardHistory cardId={activeCard.id} />}
+        {!activeCard
+          ? (
+            <Box className="text-center">
+              <Text as="p" weight={"medium"}>
+                Why no Credit Card yet!!!
+              </Text>
+              <img src={NoCreditCard} alt="Credit Card" className="h-40 w-auto mb-3" />
+              <Link to={"/requests"} className="text-font/70 hover:text-purple-800">
+                <Text weight={"medium"}>
+                  Get a Card
+                </Text>
+              </Link>
+            </Box>
+          )
+          : <CardHistory cardId={activeCard.id} />}
       </Box>
     </Grid>
   );
