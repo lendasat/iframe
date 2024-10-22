@@ -6,6 +6,7 @@ import {
   ContractStatus,
   contractStatusToLabelString,
   LiquidationStatus,
+  TransactionType,
   useLenderHttpClient,
 } from "@frontend-monorepo/http-client-lender";
 import { CurrencyFormatter, StableCoinHelper } from "@frontend-monorepo/ui-shared";
@@ -13,6 +14,7 @@ import { Badge, Box, Button, Callout, Dialog, Flex, Grid, Heading, Separator, Te
 import { Suspense, useState } from "react";
 import { Alert, OverlayTrigger, Spinner, Tooltip } from "react-bootstrap";
 import { Await, useNavigate, useParams } from "react-router-dom";
+import TransactionLink from "../components/transactionLink";
 import { ExpandableDisputeCard } from "../disputes/dispute-card";
 import RepaymentDetails from "./pay-loan-principal";
 
@@ -315,6 +317,35 @@ interface AdditionalDetailsProps {
 }
 
 const AdditionalDetail = ({ contract }: AdditionalDetailsProps) => {
+  const fundingTransaction = contract.transactions.find((tx) => tx.transaction_type === TransactionType.Funding);
+  const claimTransaction = contract.transactions.find((tx) => tx.transaction_type === TransactionType.ClaimCollateral);
+  const principalRepaidTransaction = contract.transactions.find((tx) =>
+    tx.transaction_type === TransactionType.PrincipalRepaid
+  );
+  const principalGivenTransaction = contract.transactions.find((tx) =>
+    tx.transaction_type === TransactionType.PrincipalGiven
+  );
+
+  let fundingTxDetails = <></>;
+  if (fundingTransaction) {
+    fundingTxDetails = <TransactionLink transaction={fundingTransaction} />;
+  }
+
+  let claimTransactionDetails = <></>;
+  if (claimTransaction) {
+    claimTransactionDetails = <TransactionLink transaction={claimTransaction} />;
+  }
+
+  let principalRepaidDetails = <></>;
+  if (principalRepaidTransaction) {
+    principalRepaidDetails = <TransactionLink transaction={principalRepaidTransaction} />;
+  }
+
+  let principalGivenDetails = <></>;
+  if (principalGivenTransaction) {
+    principalGivenDetails = <TransactionLink transaction={principalGivenTransaction} />;
+  }
+
   switch (contract.status) {
     case ContractStatus.Requested:
       break;
@@ -329,7 +360,7 @@ const AdditionalDetail = ({ contract }: AdditionalDetailsProps) => {
               Funding transaction
             </Text>
             <Text size={"2"} weight={"medium"}>
-              TODO!
+              {fundingTxDetails}
             </Text>
           </Flex>
           <Separator size={"4"} className="bg-font/10" />
@@ -344,7 +375,7 @@ const AdditionalDetail = ({ contract }: AdditionalDetailsProps) => {
                 Funding transaction
               </Text>
               <Text size={"2"} weight={"medium"}>
-                TODO!
+                {fundingTxDetails}
               </Text>
             </Flex>
             <Separator size={"4"} className="bg-font/10" />
@@ -356,7 +387,7 @@ const AdditionalDetail = ({ contract }: AdditionalDetailsProps) => {
                 Principal transaction
               </Text>
               <Text size={"2"} weight={"medium"}>
-                TODO!
+                {principalGivenDetails}
               </Text>
             </Flex>
             <Separator size={"4"} className="bg-font/10" />
@@ -372,7 +403,7 @@ const AdditionalDetail = ({ contract }: AdditionalDetailsProps) => {
                 Funding transaction
               </Text>
               <Text size={"2"} weight={"medium"}>
-                TODO!
+                {fundingTxDetails}
               </Text>
             </Flex>
             <Separator size={"4"} className="bg-font/10" />
@@ -384,7 +415,7 @@ const AdditionalDetail = ({ contract }: AdditionalDetailsProps) => {
                 Principal transaction
               </Text>
               <Text size={"2"} weight={"medium"}>
-                TODO!
+                {principalGivenDetails}
               </Text>
             </Flex>
             <Separator size={"4"} className="bg-font/10" />
@@ -396,7 +427,7 @@ const AdditionalDetail = ({ contract }: AdditionalDetailsProps) => {
                 Principal repayment transaction
               </Text>
               <Text size={"2"} weight={"medium"}>
-                TODO!
+                {principalRepaidDetails}
               </Text>
             </Flex>
             <Separator size={"4"} className="bg-font/10" />
@@ -413,7 +444,7 @@ const AdditionalDetail = ({ contract }: AdditionalDetailsProps) => {
                 Funding transaction
               </Text>
               <Text size={"2"} weight={"medium"}>
-                TODO!
+                {fundingTxDetails}
               </Text>
             </Flex>
             <Separator size={"4"} className="bg-font/10" />
@@ -425,7 +456,7 @@ const AdditionalDetail = ({ contract }: AdditionalDetailsProps) => {
                 Principal transaction
               </Text>
               <Text size={"2"} weight={"medium"}>
-                TODO!
+                {principalGivenDetails}
               </Text>
             </Flex>
             <Separator size={"4"} className="bg-font/10" />
@@ -437,7 +468,7 @@ const AdditionalDetail = ({ contract }: AdditionalDetailsProps) => {
                 Principal repayment transaction
               </Text>
               <Text size={"2"} weight={"medium"}>
-                TODO!
+                {principalRepaidDetails}
               </Text>
             </Flex>
             <Separator size={"4"} className="bg-font/10" />
@@ -449,7 +480,7 @@ const AdditionalDetail = ({ contract }: AdditionalDetailsProps) => {
                 Collateral claim transaction
               </Text>
               <Text size={"2"} weight={"medium"}>
-                TODO!
+                {claimTransactionDetails}
               </Text>
             </Flex>
             <Separator size={"4"} className="bg-font/10" />
