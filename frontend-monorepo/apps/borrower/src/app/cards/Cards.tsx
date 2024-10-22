@@ -29,7 +29,16 @@ export default function Cards() {
 
   if (loading) {
     // TODO: return something nicer
-    return <Spinner />;
+    return (
+      <Box
+        className="flex items-center justify-center"
+        style={{
+          height: innerHeight - 100,
+        }}
+      >
+        <Spinner size={"3"} />
+      </Box>
+    );
   }
 
   const userCardDetails = maybeUserCardDetails || [];
