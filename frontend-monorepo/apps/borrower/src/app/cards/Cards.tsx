@@ -229,13 +229,18 @@ export default function Cards() {
           ? (
             <Box className="text-center">
               <Text as="p" weight={"medium"}>
-                Why no Credit Card yet!!!
+                Why no credit card yet?!
               </Text>
               <img src={NoCreditCard} alt="Credit Card" className="h-40 w-auto mb-3" />
               <Link to={"/requests"} className="text-font/70 hover:text-purple-800">
-                <Text weight={"medium"}>
+                <Button
+                  variant="soft"
+                  size={"3"}
+                  color="purple"
+                  className="w-full"
+                >
                   Get a Card
-                </Text>
+                </Button>
               </Link>
             </Box>
           )
