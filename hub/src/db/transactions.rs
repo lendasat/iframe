@@ -111,10 +111,11 @@ async fn inner_insert(
     let tx = sqlx::query_as!(
         LoanTransaction,
         r#"
-            INSERT INTO transactions (id, contract_id, transaction_type)
+            INSERT INTO transactions (txid, contract_id, transaction_type)
             VALUES ($1, $2, $3)
             RETURNING 
                 id,
+                txid,
                 contract_id,
                 transaction_type as "transaction_type: crate::model::TransactionType",
                 timestamp
@@ -138,12 +139,13 @@ async fn find_transaction_by_id(
         LoanTransaction,
         r#"
             SELECT
-                id,
+                id, 
+                txid,
                 contract_id,
                 transaction_type as "transaction_type: crate::model::TransactionType",
                 timestamp
             FROM transactions
-            WHERE id = $1 AND contract_id = $2
+            WHERE txid = $1 AND contract_id = $2
         "#,
         tx_id,
         contract_id
@@ -163,6 +165,7 @@ pub async fn get_all_for_contract_id(
         r#"
             SELECT 
                 id,
+                txid,
                 contract_id,
                 transaction_type as "transaction_type: crate::model::TransactionType",
                 timestamp

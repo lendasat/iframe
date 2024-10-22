@@ -111,7 +111,7 @@ pub async fn register_user_handler(
                 }),
             ));
         }
-        Some(code) => db::invite_code::load_invite_code(&data.db, code.as_str()).await,
+        Some(code) => db::invite_code::load_invite_code_lender(&data.db, code.as_str()).await,
     };
 
     let invite_code = match invite_code {

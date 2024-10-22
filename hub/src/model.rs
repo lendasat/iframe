@@ -521,7 +521,8 @@ pub enum TransactionType {
 
 #[derive(Debug, Deserialize, Serialize, sqlx::FromRow)]
 pub struct LoanTransaction {
-    pub id: String,
+    pub id: i64,
+    pub txid: String,
     pub contract_id: String,
     pub transaction_type: TransactionType,
     #[serde(with = "time::serde::rfc3339")]
