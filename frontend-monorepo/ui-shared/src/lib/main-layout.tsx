@@ -10,7 +10,6 @@ import { TbLayoutSidebarLeftCollapse } from "react-icons/tb";
 import { Menu, MenuItem, Sidebar } from "react-pro-sidebar";
 import { Link, NavLink } from "react-router-dom";
 import Logout from "./components/Logout";
-import { SearchBar } from "./components/SearchBar";
 import { SidebarHeader } from "./components/SidebarHeader";
 
 type Theme = "light" | "dark";
@@ -38,11 +37,11 @@ interface LayoutProps {
   logout: () => Promise<void>;
 }
 
-export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme, backendVersion, user, logout }) => {
+export const Layout: React.FC<LayoutProps> = ({ children, menuItems, backendVersion, user, logout }) => {
   const versionString = `${backendVersion.version}-${backendVersion.commit_hash.substring(0, 5)}`;
   const [toggled, setToggled] = React.useState(false);
   const [broken, setBroken] = React.useState(false);
-  const [collasped, setCollapsed] = React.useState(false);
+  const [collapsed, setCollapsed] = React.useState(false);
 
   return (
     <div
@@ -51,7 +50,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme, back
     >
       <Sidebar
         toggled={toggled}
-        collapsed={collasped}
+        collapsed={collapsed}
         onBackdropClick={() => setToggled(false)}
         onBreakPoint={setBroken}
         breakPoint="lg"
@@ -61,13 +60,13 @@ export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme, back
         }}
       >
         <div className="flex flex-col h-full pb-3 items-center bg-gradient-to-b from-blue-500/[2%] via-40% via-pink-500/5 to-[#FBFAF8] to-90% border-l border-black/5">
-          <Box className={`w-full flex items-center ${collasped ? "justify-center" : "justify-between"} px-3 h-20`}>
-            <SidebarHeader className={`shrink-0 ${collasped ? "hidden" : "flex"} ml-5`} />
+          <Box className={`w-full flex items-center ${collapsed ? "justify-center" : "justify-between"} px-3 h-20`}>
+            <SidebarHeader className={`shrink-0 ${collapsed ? "hidden" : "flex"} ml-5`} />
             <IconButton
               variant={"ghost"}
               color="gray"
               className="hover:bg-transparent hidden lg:block"
-              onClick={() => (setCollapsed(!collasped))}
+              onClick={() => (setCollapsed(!collapsed))}
             >
               <TbLayoutSidebarLeftCollapse size={20} />
             </IconButton>
@@ -150,7 +149,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme, back
                   </Box>
                   <Flex
                     direction={"column"}
-                    className={collasped ? "opacity-0" : "shrink-0 opacity-100 transition-opacity duration-200 ease-in"}
+                    className={collapsed ? "opacity-0" : "shrink-0 opacity-100 transition-opacity duration-200 ease-in"}
                   >
                     <Text size={"2"} weight={"medium"} className={"capitalize break-keep"}>
                       {user.name}
@@ -160,7 +159,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme, back
                     </Text>
                   </Flex>
                 </Flex>
-                <IoChevronForward size={15} className={collasped ? "hidden" : "flex"} />
+                <IoChevronForward size={15} className={collapsed ? "hidden" : "flex"} />
               </Box>
             </Link>
           )}
@@ -191,7 +190,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme, back
             </Flex>
           </Box>
 
-          <SearchBar placeholder="Looking for something..." />
+          {/*TODO: removed for now due to not being implemented
+          <SearchBar placeholder="Looking for something..." />*/}
 
           <Box className="shrink-0">
             <Flex align={"center"} className="gap-4">
