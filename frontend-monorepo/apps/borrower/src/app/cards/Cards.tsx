@@ -1,6 +1,5 @@
 import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
-import { CurrencyFormatter } from "@frontend-monorepo/ui-shared";
-import { Box, Button, Flex, Grid, Heading, Spinner, Text } from "@radix-ui/themes";
+import { Box, Button, Flex, Grid, Heading, Skeleton, Spinner, Text } from "@radix-ui/themes";
 import React from "react";
 import { GoArrowUpRight } from "react-icons/go";
 import { IoWallet } from "react-icons/io5";
@@ -29,7 +28,7 @@ export default function Cards() {
   }
 
   if (loading) {
-    // TODO: return something smarter
+    // TODO: return something nicer
     return <Spinner />;
   }
 
@@ -111,7 +110,9 @@ export default function Cards() {
                 </Box>
                 <Text size={"1"} weight={"medium"}>Balance</Text>
                 <Heading size={"2"}>
-                  <CurrencyFormatter value={activeCard.balance} />
+                  <Skeleton loading={!activeCard}>
+                    {/*<CurrencyFormatter value={activeCard.balance} />*/}
+                  </Skeleton>
                 </Heading>
               </Box>
             </Box>
@@ -123,7 +124,9 @@ export default function Cards() {
                 </Box>
                 <Text size={"1"} weight={"medium"}>Outgoing</Text>
                 <Heading size={"2"}>
-                  <CurrencyFormatter value={activeCard.outgoing} />
+                  <Skeleton loading={!activeCard}>
+                    {/*<CurrencyFormatter value={activeCard.outgoing} />*/}
+                  </Skeleton>
                 </Heading>
               </Box>
             </Box>
@@ -136,6 +139,7 @@ export default function Cards() {
               </Heading>
               <Button
                 onClick={() => setMoreInfo(!moreInfo)}
+                disabled={!activeCard}
                 variant="ghost"
                 className="hover:bg-transparent text-xs font-medium text-purple-800"
               >
@@ -145,20 +149,26 @@ export default function Cards() {
             <Box>
               <Text size={"1"} weight={"medium"} className="text-font/60">Card Number</Text>
               <Text as="p" weight={"medium"}>
-                {moreInfo ? formatCreditCardNumber(activeCard.cardNumber) : "******"}
+                <Skeleton loading={!activeCard}>
+                  {moreInfo ? formatCreditCardNumber(activeCard.cardNumber) : "******"}
+                </Skeleton>
               </Text>
             </Box>
             <Flex justify={"between"}>
               <Box>
                 <Text size={"1"} weight={"medium"} className="text-font/60">Expiry</Text>
                 <Text as="p" weight={"medium"}>
-                  {moreInfo ? formatDate(activeCard.expiry) : "****"}
+                  <Skeleton loading={!activeCard}>
+                    {moreInfo ? formatDate(activeCard.expiry) : "****"}
+                  </Skeleton>
                 </Text>
               </Box>
               <Box>
                 <Text size={"1"} weight={"medium"} className="text-font/60">CVV</Text>
                 <Text as="p" weight={"medium"}>
-                  {moreInfo ? activeCard.cardCvv : "****"}
+                  <Skeleton loading={!activeCard}>
+                    {moreInfo ? activeCard.cardCvv : "****"}
+                  </Skeleton>
                 </Text>
               </Box>
             </Flex>
@@ -180,7 +190,8 @@ export default function Cards() {
             Transactions
           </Heading>
         </Box>
-        <CardHistory cardId={activeCard.id} />
+        {/*TODO: show some information if no card is available yet*/}
+        {!activeCard ? "" : <CardHistory cardId={activeCard.id} />}
       </Box>
     </Grid>
   );
@@ -193,7 +204,6 @@ export const formatCreditCardNumber = (number: number) => {
 };
 
 const formatDate = (timestamp: number): string => {
-  console.log(timestamp);
   const date = new Date(timestamp);
   return date.toLocaleDateString("en-US", {
     year: "numeric",

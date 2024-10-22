@@ -1,5 +1,5 @@
 import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
-import { Box, Grid, Spinner, Text } from "@radix-ui/themes";
+import { Box, Flex, Grid, Spinner, Text } from "@radix-ui/themes";
 import React from "react";
 import { useAsync } from "react-use";
 import HistoryComponent from "./HistoryComponent";
@@ -42,6 +42,8 @@ export default function CardHistory({ cardId }: CardHistoryProps) {
 
   const headers = [action_col, status_col, amount_col, date_col];
 
+  const noTxHistory = transactionHistory.length === 0;
+
   return (
     <Box className="flex-1">
       <Grid align={"center"} className="py-1 bg-purple-50 grid-cols-4 px-6 md:px-8">
@@ -53,17 +55,30 @@ export default function CardHistory({ cardId }: CardHistoryProps) {
       </Grid>
       <Box className="md:overflow-y-scroll h-full">
         {loading
-          ? <Spinner />
-          : transactionHistory.map((history, index) => (
-            <HistoryComponent
-              transactionType={history.transactionType}
-              cardUsed={history.cardUsed}
-              status={history.status}
-              amount={history.amount}
-              date={history.date}
-              key={index}
-            />
-          ))}
+          && <Spinner />}
+        {!loading && noTxHistory
+          && (
+            <Flex
+              align={"center"}
+              justify={"center"}
+              className="w-full py-1 px-2 rounded-md  bg-gray-100 border border-gray-200"
+            >
+              <Text size={"1"} weight={"medium"} className="text-gray-500">
+                No transactions yet...
+              </Text>
+            </Flex>
+          )}
+
+        {!loading && transactionHistory.map((history, index) => (
+          <HistoryComponent
+            transactionType={history.transactionType}
+            cardUsed={history.cardUsed}
+            status={history.status}
+            amount={history.amount}
+            date={history.date}
+            key={index}
+          />
+        ))}
       </Box>
     </Box>
   );
