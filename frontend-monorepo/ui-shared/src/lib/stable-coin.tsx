@@ -1,5 +1,5 @@
 import { Button, Select } from "@radix-ui/themes";
-import React, { useState } from "react";
+import { useEffect, useState } from "react";
 import { MdOutlineClear } from "react-icons/md";
 
 // Enum and Helper Class
@@ -104,7 +104,7 @@ export function StableCoinDropdown({
   const [selectedCoin, setSelectedCoin] = useState<StableCoin | "disabled">(defaultCoin ?? "disabled");
 
   // Reseting choosen coin
-  React.useEffect(() => {
+  useEffect(() => {
     if (!filter) {
       setSelectedCoin(defaultCoin ?? "disabled");
     }

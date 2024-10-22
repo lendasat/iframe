@@ -12,7 +12,7 @@ import {
 } from "@frontend-monorepo/ui-shared";
 import { Box, Button, Callout, Flex, Grid, Heading, Separator, Text, TextField } from "@radix-ui/themes";
 import type { ChangeEvent } from "react";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Form } from "react-bootstrap";
 import { BsSearch } from "react-icons/bs";
 import { FaInfoCircle } from "react-icons/fa";
@@ -24,17 +24,17 @@ import EmptyResult from "../../assets/search.png";
 export default function SimpleRequest() {
   const { innerHeight } = window;
   const navigate = useNavigate();
-  const [advanceSearch, setAdvanceSearch] = React.useState<boolean>(false);
-  const [adsSearchLoading, setAdsSearchLoading] = React.useState<boolean>(false);
-  const [isLoading, setIsLoading] = React.useState(false);
+  const [advanceSearch, setAdvanceSearch] = useState<boolean>(false);
+  const [adsSearchLoading, setAdsSearchLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [availableOffers, setAvailableOffers] = useState<LoanOffer[]>([]);
   const [bestOffer, setBestOffer] = useState<LoanOffer | undefined>();
   // Loan Amount
-  const [loanAmount, setLoanAmount] = React.useState<number | undefined>(undefined);
+  const [loanAmount, setLoanAmount] = useState<number | undefined>(undefined);
   // Stable Coin
-  const [stableCoin, setStableCoin] = React.useState<StableCoin | undefined>(undefined);
+  const [stableCoin, setStableCoin] = useState<StableCoin | undefined>(undefined);
   // Loan Duration
-  const [loanDuration, setLoanDuration] = React.useState<number>(12);
+  const [loanDuration, setLoanDuration] = useState<number>(12);
 
   const { getLoanOffers } = useBorrowerHttpClient();
 
@@ -55,14 +55,14 @@ export default function SimpleRequest() {
   // minimum maxInterest rate
   const minInterestRate = 0.1;
   // Interest Rate
-  const [maxInterest, setMaxInterest] = React.useState<number | undefined>(undefined);
+  const [maxInterest, setMaxInterest] = useState<number | undefined>(undefined);
   // minimum LTV ratio
   const minLtvRate = 0.3;
   // LTV ratio
-  const [ltv, setLtv] = React.useState<number | undefined>(undefined);
+  const [ltv, setLtv] = useState<number | undefined>(undefined);
 
-  const [error, setError] = React.useState("");
-  const [success] = React.useState("");
+  const [error, setError] = useState("");
+  const [success] = useState("");
 
   interface OfferFilter {
     loanAmount?: number;
@@ -168,7 +168,7 @@ export default function SimpleRequest() {
     });
   }
 
-  function onLtvChange(e: React.ChangeEvent<HTMLInputElement>) {
+  function onLtvChange(e: ChangeEvent<HTMLInputElement>) {
     e.preventDefault();
     let parsedLtv = parseFloat(e.target.value);
     if (isNaN(parsedLtv)) {
@@ -184,7 +184,7 @@ export default function SimpleRequest() {
     });
   }
 
-  function onMaxInterestChange(e: React.ChangeEvent<HTMLInputElement>) {
+  function onMaxInterestChange(e: ChangeEvent<HTMLInputElement>) {
     e.preventDefault();
     let parsedInterestRate = parseFloat(e.target.value);
     if (isNaN(parsedInterestRate)) {

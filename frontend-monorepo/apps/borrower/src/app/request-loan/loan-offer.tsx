@@ -1,7 +1,7 @@
 import type { LoanOffer } from "@frontend-monorepo/http-client-borrower";
 import { CurrencyFormatter, StableCoinHelper } from "@frontend-monorepo/ui-shared";
 import { Badge, Box, Button, DropdownMenu, Flex, Grid, Heading, Text } from "@radix-ui/themes";
-import React from "react";
+import { useState } from "react";
 import { BsThreeDotsVertical } from "react-icons/bs";
 import { Lender } from "./lender";
 
@@ -12,7 +12,7 @@ interface LoanOfferProps {
 
 export function LoanOfferComponent({ loanOffer, onRequest }: LoanOfferProps) {
   const coin = StableCoinHelper.mapFromBackend(loanOffer.loan_asset_chain, loanOffer.loan_asset_type);
-  const [loadingState, setLoadingState] = React.useState<boolean>(false);
+  const [loadingState, setLoadingState] = useState<boolean>(false);
   return (
     <Box className="pl-5 pr-6 md:pl-7 md:pr-8 py-3 border-b border-black/5 flex md:gap-2 items-center">
       <Grid className="grid-cols-4 md:grid-cols-6 xl:grid-cols-8 items-center grow text-font">

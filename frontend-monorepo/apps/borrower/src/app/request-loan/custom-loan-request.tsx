@@ -17,7 +17,8 @@ import {
   Text,
   TextField,
 } from "@radix-ui/themes";
-import React, { useState } from "react";
+import type { FormEvent } from "react";
+import { useState } from "react";
 import { Form } from "react-bootstrap";
 import { FaInfoCircle } from "react-icons/fa";
 import { IoIosUnlock } from "react-icons/io";
@@ -91,7 +92,7 @@ export default function CustomRequest() {
     };
   };
 
-  const handleSubmit = async (event: React.FormEvent) => {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
 
     const data = mapToPostLoanRequest();

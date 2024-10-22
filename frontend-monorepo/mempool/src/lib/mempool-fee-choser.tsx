@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import type { ChangeEvent } from "react";
+import { useEffect, useState } from "react";
 import { Button, ButtonGroup, Form, Row, Spinner } from "react-bootstrap";
 import type { RecommendedFees } from "./mempool-client";
 import MempoolClient from "./mempool-client";
@@ -50,7 +51,7 @@ export const FeeSelector = ({ onSelectFee }: FeeSelectorProps) => {
     }
   };
 
-  const handleCustomFeeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCustomFeeChange = (event: ChangeEvent<HTMLInputElement>) => {
     setCustomFee(event.target.value);
     if (event.target.value.length === 0) {
       return;

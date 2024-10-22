@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import React, { createContext, useContext, useEffect, useRef, useState } from "react";
+import type { FC } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 
 interface PriceContextProps {
   latestPrice: number;
@@ -13,7 +14,7 @@ const PriceContext = createContext<PriceContextProps | undefined>(undefined);
 
 type WebSocketConnect = () => void;
 
-export const PriceProvider: React.FC<{ url: string; children: ReactNode }> = ({ children, url }) => {
+export const PriceProvider: FC<{ url: string; children: ReactNode }> = ({ children, url }) => {
   const [latestPrice, setLatestPrice] = useState<number | undefined>();
   const ws = useRef<WebSocket | null>(null);
 

@@ -1,5 +1,5 @@
 import { Box, Button, Flex, Separator, Text } from "@radix-ui/themes";
-import React from "react";
+import { useState } from "react";
 import Offcanvas from "react-bootstrap/Offcanvas";
 import { IoAddOutline } from "react-icons/io5";
 import { LiaTimesSolid } from "react-icons/lia";
@@ -17,7 +17,7 @@ interface FilterOption {
 }
 
 export default function OffersNav(props: FilterOption) {
-  const [offCanvas, setOffCanvas] = React.useState<boolean>(false);
+  const [offCanvas, setOffCanvas] = useState<boolean>(false);
 
   return (
     <Box className="px-6 md:px-8">

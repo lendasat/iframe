@@ -1,6 +1,5 @@
 import { useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
 import { ForgotPasswordForm } from "@frontend-monorepo/ui-shared";
-import React from "react";
 
 function ForgotPassword() {
   const { forgotPassword } = useLenderHttpClient();

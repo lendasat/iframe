@@ -2,7 +2,7 @@ import { faCheckCircle, faExclamationCircle, faSpinner } from "@fortawesome/free
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
 import { FullLogoWhiteBg } from "@frontend-monorepo/ui-shared";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert, Button, Card, Col, Container, Row } from "react-bootstrap";
 import { useNavigate, useParams } from "react-router-dom";
 

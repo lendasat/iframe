@@ -1,7 +1,8 @@
 import type { Version } from "@frontend-monorepo/base-http-client";
 import { Avatar, Box, Flex, Heading, IconButton, Separator, Text } from "@radix-ui/themes";
 import type { ReactNode } from "react";
-import React from "react";
+import type { FC } from "react";
+import { useState } from "react";
 import type { IconType } from "react-icons";
 import { IoIosNotificationsOutline } from "react-icons/io";
 import { IoChevronForward, IoHelpCircleOutline } from "react-icons/io5";
@@ -43,11 +44,11 @@ export interface User {
   email: string;
 }
 
-export const Layout: React.FC<LayoutProps> = ({ children, menuItems, theme, backendVersion, user, logout }) => {
+export const Layout: FC<LayoutProps> = ({ children, menuItems, theme, backendVersion, user, logout }) => {
   const versionString = `${backendVersion.version}-${backendVersion.commit_hash.substring(0, 5)}`;
-  const [toggled, setToggled] = React.useState(false);
-  const [broken, setBroken] = React.useState(false);
-  const [collapsed, setCollapsed] = React.useState(false);
+  const [toggled, setToggled] = useState(false);
+  const [broken, setBroken] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
   return (
     <div

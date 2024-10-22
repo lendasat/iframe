@@ -1,9 +1,9 @@
 import styled from "@emotion/styled";
-import React from "react";
+import type { FC, HTMLAttributes, ReactNode } from "react";
 import Lendasat from "./../assets/lendasat.png";
 
-interface SidebarHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
-  children?: React.ReactNode;
+interface SidebarHeaderProps extends HTMLAttributes<HTMLDivElement> {
+  children?: ReactNode;
 }
 
 const StyledSidebarHeader = styled.div`
@@ -19,7 +19,7 @@ const StyledSidebarHeader = styled.div`
   }
 `;
 
-export const SidebarHeader: React.FC<SidebarHeaderProps> = ({ children, ...rest }) => {
+export const SidebarHeader: FC<SidebarHeaderProps> = ({ children, ...rest }) => {
   return (
     <StyledSidebarHeader {...rest}>
       <div>

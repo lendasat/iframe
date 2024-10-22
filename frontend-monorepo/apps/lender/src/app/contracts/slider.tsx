@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import type { ChangeEvent } from "react";
+import { useEffect, useState } from "react";
 import { Form } from "react-bootstrap";
 import "../components/Slider.css";
 
@@ -20,7 +21,7 @@ export const Slider = ({ min, max, init, step, suffix, reset, onChange }: Slider
       setValue(init);
     }
   }, [setValue, init, reset]);
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const newValue = parseFloat(e.target.value); // Convert string to number
     setValue(newValue);
     onChange(newValue);

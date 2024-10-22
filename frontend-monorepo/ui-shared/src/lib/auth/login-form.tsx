@@ -1,5 +1,6 @@
 import { Box, Button, Callout, Checkbox, Flex, Grid, Heading, IconButton, Spinner, Text } from "@radix-ui/themes";
-import React, { useState } from "react";
+import type { FormEvent } from "react";
+import { useState } from "react";
 import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
 import { IoInformationCircleOutline } from "react-icons/io5";
 import { Link } from "react-router-dom";
@@ -27,7 +28,7 @@ export function LoginForm(
   const [isVisible, setIsVisible] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     try {

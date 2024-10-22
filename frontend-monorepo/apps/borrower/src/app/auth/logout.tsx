@@ -1,5 +1,4 @@
 import { useAuth } from "@frontend-monorepo/http-client-borrower";
-import React from "react";
 import { Button, Container, Form } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 
