@@ -1,7 +1,7 @@
 import { CurrencyFormatter } from "@frontend-monorepo/ui-shared";
 import { Box, Button, Flex, Grid, Heading, Text } from "@radix-ui/themes";
 import React from "react";
-import { GoArrowDownLeft, GoArrowUpRight } from "react-icons/go";
+import { GoArrowUpRight } from "react-icons/go";
 import { IoWallet } from "react-icons/io5";
 import { Link } from "react-router-dom";
 import { EffectCards } from "swiper/modules";
@@ -83,7 +83,7 @@ export default function Cards() {
             My Details
           </Heading>
 
-          <Grid className="grid-cols-3 gap-2">
+          <Grid className="grid-cols-2 gap-2">
             <Box className="flex items-center justify-between">
               <Box className="min-h-[150px] w-full border border-font/10 flex flex-col items-center justify-center gap-1.5 text-font rounded-2xl">
                 <Box className={`h-12 w-12 bg-purple-50 rounded-xl place-items-center flex justify-center`}>
@@ -92,18 +92,6 @@ export default function Cards() {
                 <Text size={"1"} weight={"medium"}>Balance</Text>
                 <Heading size={"2"}>
                   <CurrencyFormatter value={UserCardDetails[activeCard].balance} />
-                </Heading>
-              </Box>
-            </Box>
-
-            <Box className="flex items-center justify-between">
-              <Box className="min-h-[150px] w-full border border-font/10 flex flex-col items-center justify-center gap-1.5 text-font rounded-2xl">
-                <Box className={`h-12 w-12 bg-purple-50 rounded-xl place-items-center flex justify-center`}>
-                  <GoArrowDownLeft size={"24"} />
-                </Box>
-                <Text size={"1"} weight={"medium"}>Incoming</Text>
-                <Heading size={"2"}>
-                  <CurrencyFormatter value={UserCardDetails[activeCard].incoming} />
                 </Heading>
               </Box>
             </Box>
@@ -140,12 +128,20 @@ export default function Cards() {
                 {moreInfo ? formatCreditCardNumber(UserCardDetails[activeCard].cardNumber) : "******"}
               </Text>
             </Box>
-            <Box>
-              <Text size={"1"} weight={"medium"} className="text-font/60">CVV</Text>
-              <Text as="p" weight={"medium"}>
-                {moreInfo ? UserCardDetails[activeCard].cardCvv : "****"}
-              </Text>
-            </Box>
+            <Flex justify={"between"}>
+              <Box>
+                <Text size={"1"} weight={"medium"} className="text-font/60">Expiry</Text>
+                <Text as="p" weight={"medium"}>
+                  {moreInfo ? formatDate(UserCardDetails[activeCard].expiry) : "****"}
+                </Text>
+              </Box>
+              <Box>
+                <Text size={"1"} weight={"medium"} className="text-font/60">CVV</Text>
+                <Text as="p" weight={"medium"}>
+                  {moreInfo ? UserCardDetails[activeCard].cardCvv : "****"}
+                </Text>
+              </Box>
+            </Flex>
           </Box>
         </Box>
         <Box>
@@ -176,27 +172,44 @@ export const formatCreditCardNumber = (number: number) => {
   return numStr.replace(/(\d{4})(?=\d)/g, "$1 ");
 };
 
+interface UserCardDetail {
+  balance: number;
+  outgoing: number;
+  cardNumber: number;
+  cardCvv: number;
+  expiry: number;
+}
+
 // Card details
-const UserCardDetails = [
+const UserCardDetails: UserCardDetail[] = [
   {
     balance: 95485.68,
-    incoming: 52531.85,
     outgoing: 2524.45,
     cardNumber: 3782822463101845,
     cardCvv: 759,
+    expiry: Date.now(),
   },
   {
     balance: 99545.68,
-    incoming: 87531.85,
     outgoing: 9574.45,
     cardNumber: 5610591081018250,
     cardCvv: 957,
+    expiry: Date.now(),
   },
   {
     balance: 7653.24,
-    incoming: 21531.85,
     outgoing: 2582.45,
     cardNumber: 5019717010103742,
     cardCvv: 579,
+    expiry: Date.now(),
   },
 ];
+
+const formatDate = (timestamp: number): string => {
+  console.log(timestamp);
+  const date = new Date(timestamp);
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "2-digit",
+  });
+};
