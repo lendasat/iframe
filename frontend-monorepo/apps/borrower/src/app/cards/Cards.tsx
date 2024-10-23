@@ -1,6 +1,7 @@
 import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
+import { CurrencyFormatter } from "@frontend-monorepo/ui-shared";
 import { Box, Button, Flex, Grid, Heading, Skeleton, Spinner, Text } from "@radix-ui/themes";
-import React from "react";
+import React, { ReactNode } from "react";
 import { GoArrowUpRight } from "react-icons/go";
 import { IoWallet } from "react-icons/io5";
 import { Link } from "react-router-dom";
@@ -9,7 +10,7 @@ import { EffectCards } from "swiper/modules";
 import { Swiper as SwiperComponent, SwiperRef, SwiperSlide } from "swiper/react";
 import NoCreditCard from "./../../assets/creditcard-illustration.png";
 import CardHistory from "./CardHistory";
-import CreditCards from "./CreditCards";
+import CreditCard from "./CreditCard";
 
 export default function Cards() {
   const { innerHeight } = window;
@@ -103,9 +104,9 @@ export default function Cards() {
           >
             {userCardDetails.map((card, index) => (
               <SwiperSlide key={index}>
-                <CreditCards
-                  cardNumber={card.cardNumber}
-                  visibility={moreInfo}
+                <CreditCard
+                  card={card}
+                  visible={moreInfo}
                 />
               </SwiperSlide>
             ))}
@@ -114,19 +115,19 @@ export default function Cards() {
 
         <Skeleton loading={!activeCard}>
           <Flex align={"center"}>
-            <Button variant="soft" size={"3"} color="purple" className="text-sm flex-grow rounded-lg">
+            <Button
+              variant="soft"
+              size={"3"}
+              color="purple"
+              className="text-sm flex-grow rounded-lg"
+              disabled={activeCard !== undefined}
+            >
               Add New Card
             </Button>
           </Flex>
         </Skeleton>
 
         <Box className="pt-5 space-y-4">
-          <Skeleton loading={!activeCard}>
-            <Heading as="h4" size={"3"} weight={"medium"}>
-              My Details
-            </Heading>
-          </Skeleton>
-
           <Grid className="grid-cols-2 gap-2">
             <Skeleton loading={!activeCard} className="flex items-center justify-between">
               <Box className="min-h-[150px] w-full border border-font/10 flex flex-col items-center justify-center gap-1.5 text-font rounded-2xl">
@@ -136,7 +137,7 @@ export default function Cards() {
                 <Text size={"1"} weight={"medium"}>Balance</Text>
                 <Heading size={"2"}>
                   <Skeleton loading={!activeCard}>
-                    {/*<CurrencyFormatter value={activeCard.balance} />*/}
+                    <CurrencyFormatter value={activeCard.balance} />
                   </Skeleton>
                 </Heading>
               </Box>
@@ -150,7 +151,7 @@ export default function Cards() {
                 <Text size={"1"} weight={"medium"}>Outgoing</Text>
                 <Heading size={"2"}>
                   <Skeleton loading={!activeCard}>
-                    {/*<CurrencyFormatter value={activeCard.outgoing} />*/}
+                    <CurrencyFormatter value={activeCard.outgoing} />
                   </Skeleton>
                 </Heading>
               </Box>
@@ -161,7 +162,7 @@ export default function Cards() {
             <Skeleton loading={!activeCard}>
               <Flex align={"center"} justify={"between"}>
                 <Heading as="h4" size={"3"} weight={"medium"}>
-                  More Info
+                  Card Details
                 </Heading>
                 <Button
                   onClick={() => setMoreInfo(!moreInfo)}
@@ -169,7 +170,8 @@ export default function Cards() {
                   variant="ghost"
                   className="hover:bg-transparent text-xs font-medium text-purple-800"
                 >
-                  {!moreInfo ? " View" : "Hide"}{"   "}Details
+                  {!moreInfo ? " Show" : "Hide"}
+                  {"   "}
                 </Button>
               </Flex>
             </Skeleton>
@@ -188,7 +190,7 @@ export default function Cards() {
                   <Text size={"1"} weight={"medium"} className="text-font/60">Expiry</Text>
                   <Text as="p" weight={"medium"}>
                     <Skeleton loading={!activeCard}>
-                      {moreInfo ? formatDate(activeCard.expiry) : "****"}
+                      {moreInfo ? formatExpiryDate(activeCard.expiry) : "****"}
                     </Skeleton>
                   </Text>
                 </Box>
@@ -204,15 +206,18 @@ export default function Cards() {
             </Skeleton>
           </Box>
         </Box>
-        <Skeleton loading={!activeCard}>
-          <Flex align={"center"} gap={"2"}>
-            <Button asChild variant="outline" size={"4"} color="purple" className="text-sm flex-grow rounded-lg">
-              <Link to={"/requests"}>
-                Add Funds
-              </Link>
-            </Button>
-          </Flex>
-        </Skeleton>
+        {/*TODO: adding additional funds is currently not supported */}
+        {/*<Skeleton loading={!activeCard}>*/}
+        {/*  <Flex align={"center"} gap={"2"}>*/}
+        {/*    <Button asChild variant="outline" size={"4"}*/}
+        {/*            disabled={true}*/}
+        {/*            color="purple" className="text-sm flex-grow rounded-lg">*/}
+        {/*      <Link to={"/requests"}>*/}
+        {/*        Add Funds*/}
+        {/*      </Link>*/}
+        {/*    </Button>*/}
+        {/*  </Flex>*/}
+        {/*</Skeleton>*/}
       </Box>
       <Box className={`flex flex-col ${!activeCard ? "items-center justify-center" : ""} gap-4 py-4`}>
         {activeCard
@@ -256,7 +261,7 @@ export const formatCreditCardNumber = (number: number) => {
   return numStr.replace(/(\d{4})(?=\d)/g, "$1 ");
 };
 
-const formatDate = (timestamp: number): string => {
+export const formatExpiryDate = (timestamp: number): string => {
   const date = new Date(timestamp);
   return date.toLocaleDateString("en-US", {
     year: "numeric",
