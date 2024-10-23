@@ -32,7 +32,6 @@ use bitcoin::Transaction;
 use miniscript::Descriptor;
 use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
-use rust_decimal_macros::dec;
 use serde::Deserialize;
 use serde::Serialize;
 use std::sync::Arc;
@@ -40,8 +39,6 @@ use time::ext::NumericalDuration;
 use time::format_description;
 use time::OffsetDateTime;
 use tracing::instrument;
-
-pub(crate) const ORIGINATION_FEE_RATE: Decimal = dec!(0.01);
 
 pub(crate) fn router(app_state: Arc<AppState>) -> Router {
     Router::new()
@@ -345,7 +342,14 @@ pub async fn post_contract_request(
         let collateral_btc = collateral_btc.to_f64().context("Invalid conversion")?;
         let collateral = Amount::from_btc(collateral_btc)?;
 
-        let origination_fee_btc = (body.loan_amount * ORIGINATION_FEE_RATE) / price;
+        // TODO: implement a proper filter, for now we only have one fee anyways
+        let filter = data
+            .config
+            .origination_fee
+            .first()
+            .context("No origination fee variable set")?;
+
+        let origination_fee_btc = (body.loan_amount * filter.fee) / price;
         let origination_fee = origination_fee_btc.round_dp(8);
         let origination_fee =
             Amount::from_btc(origination_fee.to_f64().expect("to fit")).expect("to fit");

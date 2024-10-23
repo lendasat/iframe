@@ -1,20 +1,25 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            INSERT INTO transactions (id, contract_id, transaction_type)\n            VALUES ($1, $2, $3)\n            RETURNING \n                id,\n                contract_id,\n                transaction_type as \"transaction_type: crate::model::TransactionType\",\n                timestamp\n        ",
+  "query": "\n            INSERT INTO transactions (txid, contract_id, transaction_type)\n            VALUES ($1, $2, $3)\n            RETURNING \n                id,\n                txid,\n                contract_id,\n                transaction_type as \"transaction_type: crate::model::TransactionType\",\n                timestamp\n        ",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
         "name": "id",
-        "type_info": "Varchar"
+        "type_info": "Int8"
       },
       {
         "ordinal": 1,
+        "name": "txid",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
         "name": "contract_id",
         "type_info": "Bpchar"
       },
       {
-        "ordinal": 2,
+        "ordinal": 3,
         "name": "transaction_type: crate::model::TransactionType",
         "type_info": {
           "Custom": {
@@ -33,7 +38,7 @@
         }
       },
       {
-        "ordinal": 3,
+        "ordinal": 4,
         "name": "timestamp",
         "type_info": "Timestamptz"
       }
@@ -63,8 +68,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "9ffdd9f07f1d87d591a7580bd2efb4329768ea47f86d13f181f65ee60f87e3e2"
+  "hash": "bcb68e55105b1b52a8bc5cad3660d757dddbd92999cc90cb4c6ce85dca055d11"
 }

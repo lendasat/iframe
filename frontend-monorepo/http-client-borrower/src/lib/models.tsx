@@ -123,6 +123,7 @@ export interface LoanOffer {
   duration_months_max: number;
   loan_asset_type: string;
   loan_asset_chain: string;
+  origination_fee: OriginationFee[];
 }
 
 export interface PostLoanRequest {
@@ -182,10 +183,38 @@ export enum TransactionType {
 }
 
 export interface LoanTransaction {
-  id: string;
+  txid: string;
   contract_id: string;
   transaction_type: TransactionType;
   timestamp: Date;
+}
+
+export interface OriginationFee {
+  from_month: number;
+  to_month: number;
+  fee: number;
+}
+
+export class OriginationFeeHelper {
+  static isRelevant(originationFee: OriginationFee, contractDuration: number): boolean {
+    return originationFee.from_month <= contractDuration && originationFee.to_month > contractDuration;
+  }
+}
+
+export function findBestOriginationFee(
+  originationFees: OriginationFee[],
+  contractDuration: number,
+): number {
+  const relevantFees = originationFees.filter(fee => OriginationFeeHelper.isRelevant(fee, contractDuration));
+
+  if (relevantFees.length === 0) {
+    return 0.01;
+  }
+
+  const bestFee = relevantFees.reduce((bestFee, currentFee) => {
+    return currentFee.fee < bestFee.fee ? currentFee : bestFee;
+  });
+  return bestFee.fee;
 }
 
 export interface UserCardDetail {

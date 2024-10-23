@@ -1,4 +1,4 @@
-import { Contract, LoanTransaction, TransactionType } from "@frontend-monorepo/http-client-borrower";
+import { Contract, LoanTransaction, TransactionType } from "@frontend-monorepo/http-client-lender";
 import { NotificationToast } from "@frontend-monorepo/ui-shared";
 import { Box, Flex } from "@radix-ui/themes";
 import React, { useState } from "react";
@@ -9,10 +9,10 @@ interface TransactionLinkProps {
   transaction: LoanTransaction;
 }
 
-function TransactionLink({ transaction }: TransactionLinkProps) {
+export function TransactionLink({ transaction }: TransactionLinkProps) {
+  const [copied, setCopied] = useState(false);
   // TODO add prefix for loan chain
   let urlPrefix = "";
-  const [copied, setCopied] = useState(false);
 
   const transactionType = transaction.transaction_type;
 
@@ -62,31 +62,4 @@ function TransactionLink({ transaction }: TransactionLinkProps) {
   );
 }
 
-interface TransactionListProps {
-  contract: Contract;
-  transactionType: TransactionType;
-}
-
-const TransactionList: React.FC<TransactionListProps> = ({ contract, transactionType }) => {
-  const filteredTransactions = contract.transactions.filter(
-    (transaction) => transaction.transaction_type === transactionType,
-  );
-
-  return (
-    <div>
-      <ul>
-        {filteredTransactions.length > 0
-          ? (
-            filteredTransactions.map((transaction) => (
-              <li key={transaction.txid} style={{ display: "flex", justifyContent: "flex-end", alignItems: "center" }}>
-                <TransactionLink transaction={transaction} />
-              </li>
-            ))
-          )
-          : <li>No transaction yet</li>}
-      </ul>
-    </div>
-  );
-};
-
-export default TransactionList;
+export default TransactionLink;

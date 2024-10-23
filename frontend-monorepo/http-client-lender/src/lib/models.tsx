@@ -168,7 +168,7 @@ export enum TransactionType {
 }
 
 export interface LoanTransaction {
-  id: string;
+  txid: string;
   contract_id: string;
   transaction_type: TransactionType;
   timestamp: Date;
