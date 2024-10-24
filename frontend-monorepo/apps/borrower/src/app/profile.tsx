@@ -1,7 +1,8 @@
 import { faTools } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { LenderProfile, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
-import React, { Suspense } from "react";
+import type { LenderProfile } from "@frontend-monorepo/http-client-borrower";
+import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
+import { Suspense } from "react";
 import { Await, useParams } from "react-router-dom";
 
 export function Profile() {
@@ -11,7 +12,12 @@ export function Profile() {
   return (
     <Suspense>
       <Await
-        resolve={getLenderProfile(id!)}
+        resolve={async () => {
+          if (id == null) {
+            return Promise.reject(new Error("Cannot load profile without ID"));
+          }
+          return getLenderProfile(id);
+        }}
         errorElement={<div>Could not load profile</div>}
         children={(profile: Awaited<LenderProfile>) => (
           <div>

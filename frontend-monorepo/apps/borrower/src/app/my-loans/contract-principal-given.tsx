@@ -2,7 +2,6 @@ import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { formatCurrency } from "@frontend-monorepo/ui-shared";
 import QRCode from "qrcode.react";
-import React from "react";
 import { Alert, Col, Container, Row } from "react-bootstrap";
 
 interface ContractPrincipalGivenProps {

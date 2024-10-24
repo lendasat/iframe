@@ -1,7 +1,8 @@
-import { Contract, LoanTransaction, TransactionType } from "@frontend-monorepo/http-client-lender";
+import type { LoanTransaction } from "@frontend-monorepo/http-client-lender";
+import { TransactionType } from "@frontend-monorepo/http-client-lender";
 import { NotificationToast } from "@frontend-monorepo/ui-shared";
 import { Box, Flex } from "@radix-ui/themes";
-import React, { useState } from "react";
+import { useState } from "react";
 import { FaCheckCircle } from "react-icons/fa";
 import { FaCopy, FaLink } from "react-icons/fa6";
 
@@ -46,7 +47,12 @@ export function TransactionLink({ transaction }: TransactionLinkProps) {
       <code>{ellipseId(transaction.txid)}</code>
       {urlPrefix
         ? (
-          <a href={`${urlPrefix}/tx/${transaction.txid}`} target={"_blank"} style={{ marginLeft: "8px" }}>
+          <a
+            href={`${urlPrefix}/tx/${transaction.txid}`}
+            target={"_blank"}
+            rel={"noreferrer"}
+            style={{ marginLeft: "8px" }}
+          >
             <FaLink />
           </a>
         )

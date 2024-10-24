@@ -1,7 +1,11 @@
-import { Contract, LoanTransaction, TransactionType } from "@frontend-monorepo/http-client-borrower";
+import type { Contract, LoanTransaction, TransactionType } from "@frontend-monorepo/http-client-borrower";
+import type { Contract, LoanTransaction, TransactionType } from "@frontend-monorepo/http-client-borrower";
+import { TransactionType } from "@frontend-monorepo/http-client-borrower";
+import { NotificationToast } from "@frontend-monorepo/ui-shared";
 import { NotificationToast } from "@frontend-monorepo/ui-shared";
 import { Box, Flex } from "@radix-ui/themes";
-import React, { useState } from "react";
+import type { FC } from "react";
+import { useState } from "react";
 import { FaCheckCircle } from "react-icons/fa";
 import { FaCopy, FaLink } from "react-icons/fa6";
 
@@ -46,7 +50,12 @@ function TransactionLink({ transaction }: TransactionLinkProps) {
       <code>{ellipseId(transaction.txid)}</code>
       {urlPrefix
         ? (
-          <a href={`${urlPrefix}/tx/${transaction.txid}`} target={"_blank"} style={{ marginLeft: "8px" }}>
+          <a
+            href={`${urlPrefix}/tx/${transaction.txid}`}
+            target={"_blank"}
+            rel={"noreferrer"}
+            style={{ marginLeft: "8px" }}
+          >
             <FaLink />
           </a>
         )
@@ -67,7 +76,7 @@ interface TransactionListProps {
   transactionType: TransactionType;
 }
 
-const TransactionList: React.FC<TransactionListProps> = ({ contract, transactionType }) => {
+const TransactionList: FC<TransactionListProps> = ({ contract, transactionType }) => {
   const filteredTransactions = contract.transactions.filter(
     (transaction) => transaction.transaction_type === transactionType,
   );

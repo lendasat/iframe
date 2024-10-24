@@ -1,19 +1,20 @@
 import * as Toast from "@radix-ui/react-toast";
-import * as React from "react";
+import type { ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./NotificationToast.css";
 import { Box } from "@radix-ui/themes";
 
 type NotificationToastProps = {
-  children?: React.ReactNode;
+  children?: ReactNode;
   title: string;
   description: string;
 };
 
 export function NotificationToast({ children, title, description }: NotificationToastProps) {
-  const [open, setOpen] = React.useState(false);
-  const timerRef = React.useRef(0);
+  const [open, setOpen] = useState(false);
+  const timerRef = useRef(0);
 
-  React.useEffect(() => {
+  useEffect(() => {
     return () => clearTimeout(timerRef.current);
   }, []);
 

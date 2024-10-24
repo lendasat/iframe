@@ -1,7 +1,8 @@
 import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { UnlockWalletModal, useWallet } from "@frontend-monorepo/browser-wallet";
-import { Dispute, DisputeStatus, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
+import type { Dispute } from "@frontend-monorepo/http-client-borrower";
+import { DisputeStatus, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import { FeeSelector } from "@frontend-monorepo/mempool";
 import { Suspense, useState } from "react";
 import { Alert, Button } from "react-bootstrap";
@@ -33,17 +34,6 @@ function ResolveDispute() {
     }
   };
 
-  const unlockWallet = async () => {
-    try {
-      if (!isWalletLoaded) {
-        handleOpenUnlockWalletModal();
-        return;
-      }
-    } catch (err) {
-      console.error("Failed unlocking wallet", err);
-    }
-  };
-
   const claimCollateralRequest = async (dispute: Dispute) => {
     try {
       const contract = await getContract(dispute.contract_id);
@@ -58,14 +48,19 @@ function ResolveDispute() {
     }
   };
 
-  const handleSubmitUnlockWalletModal = async (dispute: Dispute) => {
+  const handleSubmitUnlockWalletModal = async (_: Dispute) => {
     handleCloseUnlockWalletModal();
   };
 
   return (
     <Suspense>
       <Await
-        resolve={getDispute(id!)}
+        resolve={async () => {
+          if (id == null) {
+            return Promise.reject(new Error("Cannot load dispute without ID"));
+          }
+          return getDispute(id);
+        }}
         errorElement={<div>Could not load dispute</div>}
         children={(dispute: Awaited<Dispute>) => (
           <div>
@@ -162,7 +157,7 @@ const ActionItem = ({ dispute, onWithdrawAction, onFeeSelected }: ActionItemProp
         : ""}
       {!actionDisabled
         ? <FeeSelector onSelectFee={onFeeSelected} />
-        : <></>}
+        : null}
       <Button disabled={actionDisabled} onClick={() => onWithdrawAction(dispute)}>Withdraw collateral</Button>
     </>
   );

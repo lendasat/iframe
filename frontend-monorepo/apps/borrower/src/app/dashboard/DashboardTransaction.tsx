@@ -1,4 +1,5 @@
-import { Contract, ContractStatus, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
+import type { Contract } from "@frontend-monorepo/http-client-borrower";
+import { ContractStatus, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import { CurrencyFormatter } from "@frontend-monorepo/ui-shared";
 import { Badge, Box, Flex, Separator, Text } from "@radix-ui/themes";
 import { Suspense } from "react";

@@ -1,7 +1,6 @@
-import { LoanOffer } from "@frontend-monorepo/http-client-lender";
+import type { LoanOffer } from "@frontend-monorepo/http-client-lender";
 import { CurrencyFormatter, StableCoinHelper } from "@frontend-monorepo/ui-shared";
 import { Badge, Box, Button, DropdownMenu, Flex, Grid, Heading, Text } from "@radix-ui/themes";
-import React from "react";
 import { BsThreeDotsVertical } from "react-icons/bs";
 import { MdCreate } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
@@ -15,7 +14,7 @@ export function MyLoanOfferComponent({ loanOffer }: LoanOfferProps) {
   const coin = StableCoinHelper.mapFromBackend(
     loanOffer.loan_asset_chain,
     loanOffer.loan_asset_type,
-  )!;
+  );
 
   const navigate = useNavigate();
 
@@ -50,7 +49,7 @@ export function MyLoanOfferComponent({ loanOffer }: LoanOfferProps) {
         <Box className="hidden md:flex justify-center">
           <Text size={"1"} weight={"medium"}>
             <Badge color="purple" size={"2"}>
-              {StableCoinHelper.print(coin)}
+              {coin ? StableCoinHelper.print(coin) : ""}
             </Badge>
           </Text>
         </Box>

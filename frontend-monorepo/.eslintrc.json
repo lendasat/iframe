@@ -1,7 +1,8 @@
 {
   "root": true,
   "ignorePatterns": ["**/*"],
-  "plugins": ["@nx"],
+  "plugins": ["@nx", "@typescript-eslint"],
+  "parser": "@typescript-eslint/parser",
   "overrides": [
     {
       "files": ["*.ts", "*.tsx", "*.js", "*.jsx"],
@@ -25,8 +26,28 @@
     },
     {
       "files": ["*.ts", "*.tsx"],
-      "extends": ["plugin:@nx/typescript"],
-      "rules": {}
+      "parserOptions": {
+        "project": ["./tsconfig.base.json"]
+      },
+      "extends": [
+        "plugin:@typescript-eslint/recommended",
+        "plugin:@nx/typescript"
+      ],
+      "rules": {
+        "@typescript-eslint/switch-exhaustiveness-check": "error",
+        "@typescript-eslint/consistent-type-imports": "warn",
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "react",
+                "importNames": ["default"]
+              }
+            ]
+          }
+        ]
+      }
     },
     {
       "files": ["*.js", "*.jsx"],

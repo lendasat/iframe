@@ -1,4 +1,5 @@
-import { Contract, ContractStatus, useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
+import type { Contract } from "@frontend-monorepo/http-client-lender";
+import { ContractStatus, useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
 import { Box } from "@radix-ui/themes";
 import { Suspense } from "react";
 import { Await } from "react-router-dom";

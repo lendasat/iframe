@@ -1,4 +1,5 @@
-import { LoanOffer, useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
+import type { LoanOffer } from "@frontend-monorepo/http-client-lender";
+import { useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
 import { Box, Heading } from "@radix-ui/themes";
 import { useEffect, useState } from "react";
 import MyLoanOffersComponent from "./my-loan-offers";

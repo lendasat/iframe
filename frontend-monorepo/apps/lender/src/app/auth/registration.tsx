@@ -1,6 +1,5 @@
 import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
 import { RegistrationForm } from "@frontend-monorepo/ui-shared";
-import React from "react";
 import { useNavigate } from "react-router-dom";
 
 function Registration() {

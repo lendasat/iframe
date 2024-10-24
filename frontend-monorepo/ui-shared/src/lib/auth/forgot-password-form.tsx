@@ -1,5 +1,6 @@
 import { Box, Button, Callout, Grid, Heading, Spinner, Text } from "@radix-ui/themes";
-import React, { useState } from "react";
+import type { FormEvent } from "react";
+import { useState } from "react";
 import { Form } from "react-bootstrap";
 import { IoArrowBackOutline, IoInformationCircleOutline } from "react-icons/io5";
 import { TbFingerprint } from "react-icons/tb";
@@ -18,7 +19,7 @@ export function ForgotPasswordForm({ handleSubmit }: ForgotPasswordProps) {
   const [success, setSuccess] = useState("");
   const [isLoading, setLoading] = useState(false);
 
-  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     try {

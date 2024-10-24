@@ -1,4 +1,3 @@
-import React from "react";
 import { Button, Col, Container, Row } from "react-bootstrap";
 import { BiError } from "react-icons/bi";
 import { Link, useNavigate } from "react-router-dom";

@@ -1,4 +1,5 @@
-import { faExclamationCircle, faInfoCircle, IconDefinition } from "@fortawesome/free-solid-svg-icons";
+import type { IconDefinition } from "@fortawesome/free-solid-svg-icons";
+import { faExclamationCircle, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Box, Button, Callout, Heading, Select, TextArea } from "@radix-ui/themes";
 import { useEffect, useState } from "react";

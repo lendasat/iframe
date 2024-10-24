@@ -1,7 +1,8 @@
 import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Dispute, DisputeStatus, useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
-import React, { Suspense } from "react";
+import type { Dispute } from "@frontend-monorepo/http-client-lender";
+import { DisputeStatus, useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
+import { Suspense } from "react";
 import { Alert } from "react-bootstrap";
 import { Await, useParams } from "react-router-dom";
 
@@ -12,7 +13,12 @@ function ResolveDispute() {
   return (
     <Suspense>
       <Await
-        resolve={getDispute(id!)}
+        resolve={async () => {
+          if (id == null) {
+            return Promise.reject(new Error("Cannot load dispute without ID"));
+          }
+          return getDispute(id);
+        }}
         errorElement={<div>Could not load dispute</div>}
         children={(dispute: Awaited<Dispute>) => (
           <div>

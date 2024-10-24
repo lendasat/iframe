@@ -1,11 +1,13 @@
-import { LoanOffer, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
+import type { LoanOffer } from "@frontend-monorepo/http-client-borrower";
+import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import { StableCoinHelper } from "@frontend-monorepo/ui-shared";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DashHeader from "../components/DashHeader";
 import OffersNav from "../components/OffersNav";
 import LoanOffersComponent from "./loan-offers";
-import { LoanFilter, TableSortBy } from "./loan-offers-filter";
+import type { LoanFilter } from "./loan-offers-filter";
+import { TableSortBy } from "./loan-offers-filter";
 
 function RequestLoan() {
   const { getLoanOffers } = useBorrowerHttpClient();
