@@ -51,12 +51,7 @@ function MyLoanOfferDetails() {
   return (
     <Suspense>
       <Await
-        resolve={async () => {
-          if (id == null) {
-            return Promise.reject(new Error("Cannot load offer without ID"));
-          }
-          return getMyLoanOffer(id);
-        }}
+        resolve={id ? getMyLoanOffer(id) : null}
         errorElement={
           <Box
             className="flex flex-col items-center justify-center gap-y-4 px-5 text-center"
