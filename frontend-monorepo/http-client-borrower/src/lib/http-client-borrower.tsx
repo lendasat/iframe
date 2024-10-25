@@ -18,7 +18,7 @@ import { parseRFC3339Date } from "./utils";
 // Interface for the raw data received from the API
 interface RawContract extends Omit<Contract, "created_at" | "repaid_at" | "expiry"> {
   created_at: string;
-  repaid_at: string;
+  repaid_at?: string;
   expiry: string;
 }
 interface RawDispute extends Omit<Dispute, "created_at" | "updated_at"> {
@@ -132,10 +132,21 @@ export class HttpClientBorrower extends BaseHttpClient {
 
       return response.data.map(contract => {
         const createdAt = parseRFC3339Date(contract.created_at);
-        const repaidAt = parseRFC3339Date(contract.repaid_at);
         const expiry = parseRFC3339Date(contract.expiry);
-        if (createdAt == null || repaidAt == null || expiry == null) {
+        if (createdAt === undefined || expiry === undefined) {
           throw new Error("Invalid date");
+        }
+
+        let repaidAt: Date | undefined;
+        if (contract.repaid_at === undefined) {
+          repaidAt = undefined;
+        } else {
+          const parsed = parseRFC3339Date(contract.repaid_at);
+          if (parsed === undefined) {
+            throw new Error("Invalid repaid_at date");
+          }
+
+          repaidAt = parsed;
         }
 
         return {
