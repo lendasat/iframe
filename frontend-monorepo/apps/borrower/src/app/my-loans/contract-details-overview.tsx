@@ -33,12 +33,7 @@ function ContractDetailsOverview() {
   return (
     <Suspense>
       <Await
-        resolve={async () => {
-          if (id == null) {
-            return Promise.reject(new Error("Cannot load contract without ID"));
-          }
-          return getContract(id);
-        }}
+        resolve={id ? getContract(id) : null}
         errorElement={<div>Could not load contracts</div>}
         children={(contract: Awaited<Contract>) => (
           <Box
@@ -214,13 +209,15 @@ function ContractDetails({ contract }: DetailsProps) {
         </Heading>
       </Box>
 
-      (contract.contract_address ?{" "}
-      <AddCollateralModal
-        show={showAddCollateralModal}
-        address={contract.contract_address}
-        handleClose={handleCloseAddCollateralModal}
-      />{" "}
-      : null)
+      {contract.contract_address
+        ? (
+          <AddCollateralModal
+            show={showAddCollateralModal}
+            address={contract.contract_address}
+            handleClose={handleCloseAddCollateralModal}
+          />
+        )
+        : null}
 
       <Box className="p-6 md:p-8 space-y-5">
         <Flex gap={"5"} align={"start"} justify={"between"}>

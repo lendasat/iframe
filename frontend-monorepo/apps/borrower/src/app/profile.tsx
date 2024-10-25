@@ -12,12 +12,7 @@ export function Profile() {
   return (
     <Suspense>
       <Await
-        resolve={async () => {
-          if (id == null) {
-            return Promise.reject(new Error("Cannot load profile without ID"));
-          }
-          return getLenderProfile(id);
-        }}
+        resolve={id ? getLenderProfile(id) : null}
         errorElement={<div>Could not load profile</div>}
         children={(profile: Awaited<LenderProfile>) => (
           <div>

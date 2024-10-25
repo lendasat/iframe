@@ -13,12 +13,7 @@ function ResolveDispute() {
   return (
     <Suspense>
       <Await
-        resolve={async () => {
-          if (id == null) {
-            return Promise.reject(new Error("Cannot load dispute without ID"));
-          }
-          return getDispute(id);
-        }}
+        resolve={id ? getDispute(id) : null}
         errorElement={<div>Could not load dispute</div>}
         children={(dispute: Awaited<Dispute>) => (
           <div>

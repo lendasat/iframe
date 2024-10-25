@@ -1,4 +1,4 @@
-import type { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import type { Contract } from "@frontend-monorepo/http-client-borrower";
 import { contractStatusToLabelString } from "@frontend-monorepo/http-client-borrower";

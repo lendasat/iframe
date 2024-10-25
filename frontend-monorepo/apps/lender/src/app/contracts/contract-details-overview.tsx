@@ -26,12 +26,7 @@ function ContractDetailsOverview() {
   return (
     <Suspense>
       <Await
-        resolve={async () => {
-          if (id == null) {
-            return Promise.reject(new Error("Cannot load contract without ID"));
-          }
-          return getContract(id);
-        }}
+        resolve={id ? getContract(id) : null}
         errorElement={<div>Could not load contracts</div>}
         children={(contract: Awaited<Contract>) => (
           <Box

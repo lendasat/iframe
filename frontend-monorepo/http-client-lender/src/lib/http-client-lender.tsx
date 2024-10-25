@@ -8,9 +8,9 @@ import type { Contract, CreateLoanOfferRequest, LoanOffer } from "./models";
 import { parseRFC3339Date } from "./utils";
 
 // Interface for the raw data received from the API
-interface RawContract extends Omit<Contract, "created_at" | "updated_at"> {
+interface RawContract extends Omit<Contract, "created_at" | "repaid_at"> {
   created_at: string;
-  updated_at: string;
+  repaid_at?: string;
 }
 
 interface RawDispute extends Omit<Dispute, "created_at" | "updated_at"> {
@@ -37,15 +37,26 @@ export class HttpClientLender extends BaseHttpClient {
       const response: AxiosResponse<RawContract[]> = await this.httpClient.get("/api/contracts");
       return response.data.map(contract => {
         const createdAt = parseRFC3339Date(contract.created_at);
-        const updatedAt = parseRFC3339Date(contract.updated_at);
-        if (createdAt == null || updatedAt == null) {
+        if (createdAt === undefined) {
           throw new Error("Invalid date");
+        }
+
+        let repaidAt: Date | undefined;
+        if (contract.repaid_at === undefined) {
+          repaidAt = undefined;
+        } else {
+          const parsed = parseRFC3339Date(contract.repaid_at);
+          if (parsed === undefined) {
+            throw new Error("Invalid repaid_at date");
+          }
+
+          repaidAt = parsed;
         }
 
         return {
           ...contract,
           created_at: createdAt,
-          updated_at: updatedAt,
+          repaid_at: repaidAt,
         };
       });
     } catch (error) {
@@ -62,15 +73,14 @@ export class HttpClientLender extends BaseHttpClient {
       const contract = contractResponse.data;
 
       const createdAt = parseRFC3339Date(contract.created_at);
-      const updatedAt = parseRFC3339Date(contract.updated_at);
-      if (createdAt == null || updatedAt == null) {
+      if (createdAt == null) {
         throw new Error("Invalid date");
       }
 
       return {
         ...contract,
         created_at: createdAt,
-        updated_at: updatedAt,
+        repaid_at: contract?.repaid_at,
       };
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
