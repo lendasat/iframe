@@ -1,7 +1,5 @@
-import type { Contract, LoanTransaction, TransactionType } from "@frontend-monorepo/http-client-borrower";
-import type { Contract, LoanTransaction, TransactionType } from "@frontend-monorepo/http-client-borrower";
+import type { Contract, LoanTransaction } from "@frontend-monorepo/http-client-borrower";
 import { TransactionType } from "@frontend-monorepo/http-client-borrower";
-import { NotificationToast } from "@frontend-monorepo/ui-shared";
 import { NotificationToast } from "@frontend-monorepo/ui-shared";
 import { Box, Flex } from "@radix-ui/themes";
 import type { FC } from "react";
