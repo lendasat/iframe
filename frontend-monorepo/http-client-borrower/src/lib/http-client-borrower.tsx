@@ -11,12 +11,11 @@ import type {
   Dispute,
   LenderProfile,
   LoanOffer,
-  LoanProductOption,
   LoanRequest,
   PostLoanRequest,
   UserCardDetail,
 } from "./models";
-import { CardTransactionStatus, CardTransactionType } from "./models";
+import { CardTransactionStatus, CardTransactionType, LoanProductOption } from "./models";
 import { parseRFC3339Date } from "./utils";
 
 // Interface for the raw data received from the API
