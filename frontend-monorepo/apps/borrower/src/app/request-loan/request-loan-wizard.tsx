@@ -33,7 +33,7 @@ const RequestLoanWizard = () => {
   };
 
   const availableOptions = [ProductOption.StableCoins];
-  if (import.meta.env.VITE_SHOW_CARDS_FEATURE) {
+  if (import.meta.env.VITE_ENABLE_CARDS_FEATURE) {
     availableOptions.push(ProductOption.PayWithMoonDebitCard);
   }
 

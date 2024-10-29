@@ -76,9 +76,9 @@ const menuItems = [
         path: "/cards",
         icon: IoCardOutline,
         target: "_self",
-        // If VITE_SHOW_CARDS_FEATURE is undefined, visible should be false
-        visible: typeof import.meta.env.VITE_SHOW_CARDS_FEATURE !== "undefined"
-          ? import.meta.env.VITE_SHOW_CARDS_FEATURE
+        // If VITE_ENABLE_CARDS_FEATURE is undefined, visible should be false
+        visible: typeof import.meta.env.VITE_ENABLE_CARDS_FEATURE !== "undefined"
+          ? import.meta.env.VITE_ENABLE_CARDS_FEATURE
           : false,
       },
       {
@@ -152,7 +152,7 @@ function MainLayoutComponents() {
               <Route path={":id"} element={<ContractDetailsOverview />} />
             </Route>
             <Route path="/requests/*" element={<RequestLoanWizard />} />
-            {import.meta.env.VITE_SHOW_CARDS_FEATURE
+            {import.meta.env.VITE_ENABLE_CARDS_FEATURE
               && <Route path="/cards" element={<Cards />} />}
             <Route path="/custom-request" element={<CustomRequest />} />
             <Route path="/history" element={<History />} />
