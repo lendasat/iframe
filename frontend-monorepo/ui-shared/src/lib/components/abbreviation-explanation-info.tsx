@@ -1,6 +1,6 @@
-import { Box, Flex, Heading, HoverCard, Link, Text } from "@radix-ui/themes";
+import { Box, Flex, Heading, HoverCard, Text } from "@radix-ui/themes";
 import { Link as RadixLink } from "@radix-ui/themes/dist/cjs/components/link";
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 import { FaExternalLinkAlt, FaInfoCircle } from "react-icons/fa";
 
 export interface AbbreviationExplanationInfoProps {

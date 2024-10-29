@@ -1,5 +1,6 @@
-import { faChevronDown, faChevronUp, faMinus, IconDefinition } from "@fortawesome/free-solid-svg-icons";
-import { LoanOffer } from "@frontend-monorepo/http-client-lender";
+import type { IconDefinition } from "@fortawesome/free-solid-svg-icons";
+import { faChevronDown, faChevronUp, faMinus } from "@fortawesome/free-solid-svg-icons";
+import type { LoanOffer } from "@frontend-monorepo/http-client-lender";
 import { Box, Button, Flex, Grid, Text } from "@radix-ui/themes";
 import { useState } from "react";
 import { IoCaretDownOutline, IoCaretUp } from "react-icons/io5";

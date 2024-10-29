@@ -1,6 +1,6 @@
 import { Badge, Box, Button, Flex, Heading, Separator, Text } from "@radix-ui/themes";
 import QRCode from "qrcode.react";
-import React, { useState } from "react";
+import { useState } from "react";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
 
 interface CollateralContractDetailsProps {

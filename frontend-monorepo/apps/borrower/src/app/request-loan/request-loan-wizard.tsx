@@ -1,6 +1,6 @@
-import { LoanProductOption } from "@frontend-monorepo/http-client-borrower";
+import type { LoanProductOption } from "@frontend-monorepo/http-client-borrower";
 import { Box, Button, Flex, Heading, Separator, Text } from "@radix-ui/themes";
-import React, { useState } from "react";
+import { useState } from "react";
 import { CardBody, CardFooter } from "react-bootstrap";
 import { FaArrowLeft, FaArrowRight } from "react-icons/fa6";
 import { IoIosCheckmarkCircle } from "react-icons/io";
@@ -52,7 +52,7 @@ const RequestLoanWizard = () => {
         {steps.map((step, index) => (
           <Flex key={index} align={"center"}>
             <Flex
-              className={`border rounded-full ${currentStepIndex == index ? "border-purple-800" : ""} ${
+              className={`border rounded-full ${currentStepIndex === index ? "border-purple-800" : ""} ${
                 currentStepIndex > index ? "border-font-dark" : "border-font/10"
               } p-2.5`}
               align={"center"}
@@ -61,7 +61,7 @@ const RequestLoanWizard = () => {
               <Flex
                 align={"center"}
                 justify={"center"}
-                className={`h-5 w-5 ${currentStepIndex == index ? "border-purple-800 text-purple-800" : ""} ${
+                className={`h-5 w-5 ${currentStepIndex === index ? "border-purple-800 text-purple-800" : ""} ${
                   currentStepIndex > index ? "text-font-dark" : "md:border border-font/10 text-font/50"
                 } rounded-full`}
               >
@@ -85,7 +85,7 @@ const RequestLoanWizard = () => {
                 size={"2"}
                 weight={"medium"}
                 className={`hidden
-                 ${currentStepIndex == index ? "border-purple-800 text-purple-800" : ""}
+                 ${currentStepIndex === index ? "border-purple-800 text-purple-800" : ""}
                  ${currentStepIndex > index ? "text-font-dark" : "text-font/50"} md:block`}
               >
                 {currentStepIndex > index
@@ -99,7 +99,7 @@ const RequestLoanWizard = () => {
             </Flex>
             {steps.length !== index + 1 && (
               <Separator
-                className={currentStepIndex == index ? "border-font-dark" : "border-font/50"}
+                className={currentStepIndex === index ? "border-font-dark" : "border-font/50"}
                 size={{
                   initial: "2",
                   lg: "3",

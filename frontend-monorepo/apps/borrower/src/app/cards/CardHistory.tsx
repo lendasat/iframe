@@ -1,6 +1,5 @@
 import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import { Box, Flex, Grid, Spinner, Text } from "@radix-ui/themes";
-import React from "react";
 import { useAsync } from "react-use";
 import HistoryComponent from "./HistoryComponent";
 

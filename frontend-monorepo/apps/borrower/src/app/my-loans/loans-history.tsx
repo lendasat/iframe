@@ -1,4 +1,4 @@
-import { Contract } from "@frontend-monorepo/http-client-borrower";
+import type { Contract } from "@frontend-monorepo/http-client-borrower";
 import { Col, Container, Row } from "react-bootstrap";
 import { LoanHistoryComponent } from "./loan-history";
 

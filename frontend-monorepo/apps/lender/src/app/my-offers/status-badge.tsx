@@ -1,7 +1,6 @@
-import { LoanOffer, LoanOfferStatus } from "@frontend-monorepo/http-client-lender";
+import type { LoanOffer } from "@frontend-monorepo/http-client-lender";
+import { LoanOfferStatus } from "@frontend-monorepo/http-client-lender";
 import { Badge } from "@radix-ui/themes";
-import { badgePropDefs } from "@radix-ui/themes/dist/cjs/components/badge.props";
-import React from "react";
 
 export interface StatusBadgeProps {
   offer: LoanOffer;

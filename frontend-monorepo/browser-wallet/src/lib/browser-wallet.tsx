@@ -1,4 +1,5 @@
-import { createContext, ReactNode, useContext, useEffect, useState } from "react";
+import type { ReactNode } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 
 import init, {
   does_wallet_exist,
@@ -51,7 +52,7 @@ export const WalletProvider = ({ children, username }: WalletProviderProps) => {
     }).catch((error) => {
       console.log(`Failed initializing wasm library ${error}`);
     });
-  }, []);
+  }, [username]);
 
   const createWallet = (passphrase: string, network: string) => {
     if (isInitialized) {

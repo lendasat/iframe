@@ -2,7 +2,8 @@ import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Button, Callout, TextField } from "@radix-ui/themes";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import React, { useState } from "react";
+import type { ChangeEvent } from "react";
+import { useState } from "react";
 import { connect } from "starknetkit";
 
 interface LoanAddressInputFieldProps {
@@ -28,7 +29,7 @@ export function LoanAddressInputField({
       `Provide a valid address on the ${assetChain} network. Providing an incorrect address here will lead to loss of funds.`;
   }
 
-  function onInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+  function onInputChange(e: ChangeEvent<HTMLInputElement>) {
     setManualInput(true);
     setHideButton(false);
     setLoanAddress(e.target.value);

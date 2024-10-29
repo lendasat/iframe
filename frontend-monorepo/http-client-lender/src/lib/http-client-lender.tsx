@@ -1,14 +1,16 @@
-import { BaseHttpClient, BaseHttpClientContext, BaseHttpClientContextType } from "@frontend-monorepo/base-http-client";
-import { Dispute, LenderProfile } from "@frontend-monorepo/http-client-borrower";
-import axios, { AxiosResponse } from "axios";
+import type { BaseHttpClientContextType } from "@frontend-monorepo/base-http-client";
+import { BaseHttpClient, BaseHttpClientContext } from "@frontend-monorepo/base-http-client";
+import type { Dispute, LenderProfile } from "@frontend-monorepo/http-client-borrower";
+import type { AxiosResponse } from "axios";
+import axios from "axios";
 import { createContext, useContext } from "react";
-import { Contract, CreateLoanOfferRequest, LoanOffer } from "./models";
+import type { Contract, CreateLoanOfferRequest, LoanOffer } from "./models";
 import { parseRFC3339Date } from "./utils";
 
 // Interface for the raw data received from the API
-interface RawContract extends Omit<Contract, "created_at" | "updated_at"> {
+interface RawContract extends Omit<Contract, "created_at" | "repaid_at"> {
   created_at: string;
-  updated_at: string;
+  repaid_at?: string;
 }
 
 interface RawDispute extends Omit<Dispute, "created_at" | "updated_at"> {
@@ -33,11 +35,30 @@ export class HttpClientLender extends BaseHttpClient {
   async getContracts(): Promise<Contract[]> {
     try {
       const response: AxiosResponse<RawContract[]> = await this.httpClient.get("/api/contracts");
-      return response.data.map(contract => ({
-        ...contract,
-        created_at: parseRFC3339Date(contract.created_at)!,
-        updated_at: parseRFC3339Date(contract.updated_at),
-      }));
+      return response.data.map(contract => {
+        const createdAt = parseRFC3339Date(contract.created_at);
+        if (createdAt === undefined) {
+          throw new Error("Invalid date");
+        }
+
+        let repaidAt: Date | undefined;
+        if (contract.repaid_at === undefined) {
+          repaidAt = undefined;
+        } else {
+          const parsed = parseRFC3339Date(contract.repaid_at);
+          if (parsed === undefined) {
+            throw new Error("Invalid repaid_at date");
+          }
+
+          repaidAt = parsed;
+        }
+
+        return {
+          ...contract,
+          created_at: createdAt,
+          repaid_at: repaidAt,
+        };
+      });
     } catch (error) {
       console.error(
         `Failed to fetch contracts: http: ${error.response?.status} and response: ${error.response?.data}`,
@@ -50,10 +71,16 @@ export class HttpClientLender extends BaseHttpClient {
     try {
       const contractResponse: AxiosResponse<RawContract> = await this.httpClient.get(`/api/contracts/${id}`);
       const contract = contractResponse.data;
+
+      const createdAt = parseRFC3339Date(contract.created_at);
+      if (createdAt == null) {
+        throw new Error("Invalid date");
+      }
+
       return {
         ...contract,
-        created_at: parseRFC3339Date(contract.created_at)!,
-        updated_at: parseRFC3339Date(contract.updated_at),
+        created_at: createdAt,
+        repaid_at: contract?.repaid_at,
       };
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
@@ -165,10 +192,17 @@ export class HttpClientLender extends BaseHttpClient {
     try {
       const response: AxiosResponse<RawDispute> = await this.httpClient.get(`/api/disputes/${disputeId}`);
       const dispute = response.data;
+
+      const createdAt = parseRFC3339Date(dispute.created_at);
+      const updatedAt = parseRFC3339Date(dispute.updated_at);
+      if (createdAt == null || updatedAt == null) {
+        throw new Error("Invalid date");
+      }
+
       return {
         ...dispute,
-        created_at: parseRFC3339Date(dispute.created_at)!,
-        updated_at: parseRFC3339Date(dispute.updated_at)!,
+        created_at: createdAt,
+        updated_at: updatedAt,
       };
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {

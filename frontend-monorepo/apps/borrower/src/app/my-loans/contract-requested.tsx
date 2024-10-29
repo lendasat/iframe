@@ -1,5 +1,5 @@
 import { Box, Flex, Heading, Text, Tooltip } from "@radix-ui/themes";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { LuClock1 } from "react-icons/lu";
 import { PiWarningCircleBold } from "react-icons/pi";
 

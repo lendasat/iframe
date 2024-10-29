@@ -1,6 +1,8 @@
-import { useBaseHttpClient, User, Version } from "@frontend-monorepo/base-http-client";
+import type { User, Version } from "@frontend-monorepo/base-http-client";
+import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
 import axios from "axios";
-import React, { createContext, useContext, useEffect, useState } from "react";
+import type { FC, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { HttpClientLenderProvider } from "./http-client-lender";
 
 interface AuthContextType {
@@ -23,34 +25,34 @@ export const useAuth = () => {
 
 interface AuthProviderProps {
   baseUrl: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 type Props = {
-  children?: React.ReactNode;
+  children?: ReactNode;
 };
 
 export const AuthIsSignedIn = ({ children }: Props) => {
-  const { user } = useContext(AuthContext)!;
-  return <>{user !== null ? children : ""}</>;
+  const context = useContext(AuthContext);
+  return context?.user ? children : "";
 };
 
 export const AuthIsNotSignedIn = ({ children }: Props) => {
-  const { user } = useContext(AuthContext)!;
-  return <>{user === null ? children : ""}</>;
+  const context = useContext(AuthContext);
+  return context?.user ? "" : children;
 };
 
 interface AuthProviderProps {
   baseUrl: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 interface AuthProviderProps {
-  children: React.ReactNode;
+  children: ReactNode;
   baseUrl: string;
 }
 
-export const AuthProviderLender: React.FC<AuthProviderProps> = ({ children, baseUrl }) => {
+export const AuthProviderLender: FC<AuthProviderProps> = ({ children, baseUrl }) => {
   return (
     <HttpClientLenderProvider baseUrl={baseUrl}>
       <LenderAuthProviderInner>
@@ -60,7 +62,7 @@ export const AuthProviderLender: React.FC<AuthProviderProps> = ({ children, base
   );
 };
 
-const LenderAuthProviderInner: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const LenderAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [backendVersion, setBackendVersion] = useState<Version | undefined>(undefined);
@@ -93,7 +95,7 @@ const LenderAuthProviderInner: React.FC<{ children: React.ReactNode }> = ({ chil
     };
 
     initializeAuth();
-  }, [me]);
+  }, [me, backendVersion, getVersion]);
 
   const login = async (email: string, password: string) => {
     setLoading(true);

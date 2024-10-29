@@ -1,17 +1,16 @@
 import { Text } from "@radix-ui/themes";
-import React from "react";
+import type { FC } from "react";
 import { Spinner } from "react-bootstrap";
 
 interface LtvProgressBarProps {
   ltvRatio?: number;
 }
 
-export const LtvProgressBar: React.FC<LtvProgressBarProps> = ({ ltvRatio }) => {
+export const LtvProgressBar: FC<LtvProgressBarProps> = ({ ltvRatio }) => {
   let barColor = "";
 
-  const isNan = ltvRatio == undefined || isNaN(ltvRatio);
-
-  const formattedValue = isNan ? "Loading" : ltvRatio!.toFixed(0);
+  const isNan = ltvRatio == null || isNaN(ltvRatio);
+  const formattedValue = isNan ? "Loading" : ltvRatio.toFixed(0);
 
   if (isNan) {
     barColor = "bg-secondary";

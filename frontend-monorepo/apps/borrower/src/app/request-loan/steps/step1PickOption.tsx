@@ -1,6 +1,6 @@
 import { LoanProductOption, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import { Box, Button, Text } from "@radix-ui/themes";
-import React, { ReactElement } from "react";
+import type { ReactElement } from "react";
 import { useAsync } from "react-use";
 import Bitrefil from "../../../assets/bitrefil.png";
 import Defi from "../../../assets/defi.jpg";
@@ -15,7 +15,7 @@ interface Step1Props {
 export const Step1PickOption = ({ onSelect, selectedOption }: Step1Props) => {
   const { getLoanProductOptions } = useBorrowerHttpClient();
 
-  const { loading, value, error } = useAsync(async () => {
+  const { value } = useAsync(async () => {
     return await getLoanProductOptions();
   });
 
@@ -70,6 +70,17 @@ export const Step1PickOption = ({ onSelect, selectedOption }: Step1Props) => {
                 title={"A debit card by Bitrefill"}
                 key={index}
                 image={<img src={Bitrefil} alt="Bitrefil" />}
+              />
+            );
+          default:
+            return (
+              <ProductOptionComponent
+                onSelect={onSelect}
+                option={option}
+                selectedOption={selectedOption}
+                title={"Receive stable coins"}
+                key={index}
+                image={<img src={Defi} alt="DEFI" />}
               />
             );
         }

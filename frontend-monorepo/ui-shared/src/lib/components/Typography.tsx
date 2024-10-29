@@ -1,8 +1,8 @@
 import styled from "@emotion/styled";
-import React from "react";
+import type { FC, HTMLAttributes, ReactNode } from "react";
 
-interface TypographyProps extends React.HTMLAttributes<HTMLParagraphElement> {
-  children?: React.ReactNode;
+interface TypographyProps extends HTMLAttributes<HTMLParagraphElement> {
+  children?: ReactNode;
   fontWeight?: number | string;
   color?: string;
   fontSize?: number | string;
@@ -30,58 +30,58 @@ const StyledTypography = styled.p<TypographyProps>`
   switch (variant) {
     case "h1":
       return `
-        font-size: 72px; 
+        font-size: 72px;
         line-height: 90px;
         `;
     case "h2":
       return `
-        font-size: 60px; 
+        font-size: 60px;
         line-height: 72px;
         `;
     case "h3":
       return `
-        font-size: 48px; 
+        font-size: 48px;
         line-height: 60px;
         `;
     case "h4":
       return `
-        font-size: 36px; 
+        font-size: 36px;
         line-height: 44px;
         `;
     case "h5":
       return `
-        font-size: 30px; 
+        font-size: 30px;
         line-height: 38px;
         `;
     case "h6":
       return `
-        font-size: 24px; 
+        font-size: 24px;
         line-height: 32px;
         `;
     case "subtitle1":
       return `
-        font-size: 20px; 
+        font-size: 20px;
         line-height: 30px;
         `;
     case "subtitle2":
       return `
-        font-size: 18px; 
+        font-size: 18px;
         line-height: 28px;
         `;
     case "body1":
       return `
-        font-size: 16px; 
+        font-size: 16px;
         line-height: 24px;
         `;
 
     case "body2":
       return `
-        font-size: 12px; 
+        font-size: 12px;
         line-height: 18px;
         `;
     case "caption":
       return `
-        font-size: 10px; 
+        font-size: 10px;
         line-height: 16px;
         `;
 
@@ -95,7 +95,7 @@ const StyledTypography = styled.p<TypographyProps>`
   ${({ fontSize }) => (fontSize ? `font-size: ${fontSize};` : "")}
 `;
 
-export const Typography: React.FC<TypographyProps> = ({ variant = "body1", children, ...rest }) => {
+export const Typography: FC<TypographyProps> = ({ variant = "body1", children, ...rest }) => {
   return (
     <StyledTypography variant={variant} {...rest}>
       {children}

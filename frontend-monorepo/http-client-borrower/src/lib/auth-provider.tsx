@@ -1,6 +1,8 @@
-import { useBaseHttpClient, User, Version } from "@frontend-monorepo/base-http-client";
+import type { User, Version } from "@frontend-monorepo/base-http-client";
+import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
 import axios from "axios";
-import React, { createContext, useContext, useEffect, useState } from "react";
+import type { FC, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { SemVer } from "semver";
 import { HttpClientBorrowerProvider } from "./http-client-borrower";
 
@@ -24,34 +26,34 @@ export const useAuth = () => {
 
 interface AuthProviderProps {
   baseUrl: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 type Props = {
-  children?: React.ReactNode;
+  children?: ReactNode;
 };
 
 export const AuthIsSignedIn = ({ children }: Props) => {
-  const { user } = useContext(AuthContext)!;
-  return <>{user !== null ? children : ""}</>;
+  const context = useContext(AuthContext);
+  return context?.user ? children : "";
 };
 
 export const AuthIsNotSignedIn = ({ children }: Props) => {
-  const { user } = useContext(AuthContext)!;
-  return <>{user === null ? children : ""}</>;
+  const context = useContext(AuthContext);
+  return context?.user ? "" : children;
 };
 
 interface AuthProviderProps {
   baseUrl: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 interface AuthProviderProps {
-  children: React.ReactNode;
+  children: ReactNode;
   baseUrl: string;
 }
 
-export const AuthProviderBorrower: React.FC<AuthProviderProps> = ({ children, baseUrl }) => {
+export const AuthProviderBorrower: FC<AuthProviderProps> = ({ children, baseUrl }) => {
   return (
     <HttpClientBorrowerProvider baseUrl={baseUrl}>
       <BorrowerAuthProviderInner>
@@ -61,7 +63,7 @@ export const AuthProviderBorrower: React.FC<AuthProviderProps> = ({ children, ba
   );
 };
 
-const BorrowerAuthProviderInner: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const BorrowerAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [backendVersionFetched, setBackendVersionFetched] = useState(false);
   const [backendVersion, setBackendVersion] = useState<Version>({
@@ -98,7 +100,7 @@ const BorrowerAuthProviderInner: React.FC<{ children: React.ReactNode }> = ({ ch
     };
 
     initializeAuth();
-  }, [me]);
+  }, [me, backendVersionFetched, getVersion]);
 
   const login = async (email: string, password: string) => {
     setLoading(true);

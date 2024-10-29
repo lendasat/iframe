@@ -1,4 +1,4 @@
-import { UserCardDetail } from "@frontend-monorepo/http-client-borrower";
+import type { UserCardDetail } from "@frontend-monorepo/http-client-borrower";
 import { Box, Flex, Heading } from "@radix-ui/themes";
 import { ReactComponent as Pattern } from "./../../assets/credit-card-pattern.svg";
 import LendasatLogo from "./../../assets/lendasat.png";
@@ -28,7 +28,7 @@ export default function CreditCard({ card, visible }: CredtCardProps) {
             <Heading className="text-white text-lg">
               {visible
                 ? formatCreditCardNumber(card.cardNumber)
-                : "**** **** ****" + " " + card.cardNumber.toString().slice(-4)}
+                : `**** **** **** ${card.cardNumber.toString().slice(-4)}`}
             </Heading>
           </Box>
         </Flex>

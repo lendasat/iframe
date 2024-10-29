@@ -33,7 +33,7 @@ function MyAccount() {
   const layout = window;
 
   // Format date options
-  const options: any = {
+  const options = {
     weekday: "short",
     year: "numeric",
     month: "long",

@@ -1,5 +1,5 @@
 import { Button, Select } from "@radix-ui/themes";
-import React, { useState } from "react";
+import { useEffect, useState } from "react";
 import { MdOutlineClear } from "react-icons/md";
 
 // Enum and Helper Class
@@ -39,9 +39,12 @@ export class StableCoinHelper {
 
   static toChain(stableCoin: StableCoin) {
     switch (stableCoin) {
-      case StableCoin.USDT_SN:
       case StableCoin.USDC_SN:
+      case StableCoin.USDT_SN:
         return "Starknet";
+      case StableCoin.USDC_POL:
+      case StableCoin.USDT_POL:
+        return "Polygon";
       case StableCoin.USDC_ETH:
       case StableCoin.USDT_ETH:
         return "Ethereum";
@@ -61,7 +64,7 @@ export class StableCoinHelper {
     ];
   }
 
-  static mapFromBackend(chain: string, asset: string): StableCoin | undefined {
+  static mapFromBackend(chain: string, asset: string): StableCoin {
     if (chain === "Ethereum") {
       if (asset === "Usdc") {
         return StableCoin.USDC_ETH;
@@ -81,7 +84,7 @@ export class StableCoinHelper {
         return StableCoin.USDT_POL;
       }
     }
-    return undefined;
+    throw Error("Invalid chain or network provided");
   }
 }
 
@@ -103,11 +106,11 @@ export function StableCoinDropdown({
   const [selectedCoin, setSelectedCoin] = useState<StableCoin | "disabled">(defaultCoin ?? "disabled");
 
   // Reseting choosen coin
-  React.useEffect(() => {
+  useEffect(() => {
     if (!filter) {
       setSelectedCoin(defaultCoin ?? "disabled");
     }
-  });
+  }, [filter, defaultCoin]);
 
   const handleChange = (value: string) => {
     const selectedValue = parseStableCoin(value);

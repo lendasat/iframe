@@ -1,6 +1,5 @@
 import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
 import { ResetPasswordForm } from "@frontend-monorepo/ui-shared";
-import React from "react";
 import { useParams } from "react-router-dom";
 
 function ForgotPassword() {

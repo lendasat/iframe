@@ -1,5 +1,6 @@
 import { Box, Button, Callout, Grid, Heading, Spinner, Text } from "@radix-ui/themes";
-import React, { useState } from "react";
+import type { FormEvent } from "react";
+import { useState } from "react";
 import { Form } from "react-bootstrap";
 import { IoArrowBackOutline, IoInformationCircleOutline } from "react-icons/io5";
 import { TbFingerprint } from "react-icons/tb";
@@ -18,7 +19,7 @@ export function ForgotPasswordForm({ handleSubmit }: ForgotPasswordProps) {
   const [success, setSuccess] = useState("");
   const [isLoading, setLoading] = useState(false);
 
-  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     try {
@@ -61,11 +62,11 @@ export function ForgotPasswordForm({ handleSubmit }: ForgotPasswordProps) {
           </Box>
 
           <Heading size={"7"} mb={"1"} className="text-font-dark font-semibold">
-            Forgot password?
+            Forgot your password?
           </Heading>
 
           <Text size={"2"} weight={"medium"} className="text-font/60 text-center">
-            Worry not, we'll send you a reset instruction.
+            Worry not, we'll send you reset instructions.
           </Text>
 
           <Form onSubmit={onSubmit} className="w-full mt-7 space-y-2.5">
@@ -115,7 +116,7 @@ export function ForgotPasswordForm({ handleSubmit }: ForgotPasswordProps) {
                 disabled={email && !isLoading ? false : true}
                 className="w-full h-12"
               >
-                {isLoading ? <Spinner size={"3"} /> : "Register"}
+                {isLoading ? <Spinner size={"3"} /> : "OK"}
               </Button>
             </Box>
           </Form>

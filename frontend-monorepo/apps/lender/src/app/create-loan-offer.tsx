@@ -1,9 +1,5 @@
-import {
-  CreateLoanOfferRequest,
-  LoanAssetChain,
-  LoanAssetType,
-  useLenderHttpClient,
-} from "@frontend-monorepo/http-client-lender";
+import type { CreateLoanOfferRequest } from "@frontend-monorepo/http-client-lender";
+import { LoanAssetChain, LoanAssetType, useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
 import { useAuth } from "@frontend-monorepo/http-client-lender";
 import {
   formatCurrency,
@@ -13,7 +9,8 @@ import {
   StableCoinHelper,
 } from "@frontend-monorepo/ui-shared";
 import { Box, Button, Callout, Flex, Heading, Separator, Spinner, Text, TextField } from "@radix-ui/themes";
-import React, { useState } from "react";
+import type { FC, FormEvent } from "react";
+import { useState } from "react";
 import { Form } from "react-bootstrap";
 import { MdOutlineSwapCalls } from "react-icons/md";
 import { PiWarningCircle } from "react-icons/pi";
@@ -29,7 +26,7 @@ export interface LoanAmount {
   max: number;
 }
 
-const CreateLoanOffer: React.FC = () => {
+const CreateLoanOffer: FC = () => {
   const layout = window;
   const { user } = useAuth();
   const [loanAmount, setLoanAmount] = useState<LoanAmount>({ min: 1000, max: 100000 });
@@ -94,7 +91,7 @@ const CreateLoanOffer: React.FC = () => {
   };
   const navigate = useNavigate();
   const { postLoanOffer } = useLenderHttpClient();
-  const handleSubmit = async (event: React.FormEvent) => {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
 
     const data = mapToCreateLoanOfferSchema();

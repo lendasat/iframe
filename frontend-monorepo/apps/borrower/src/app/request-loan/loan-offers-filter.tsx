@@ -1,14 +1,11 @@
-import {
-  LtvInfoLabel,
-  parseStableCoin,
-  StableCoin,
-  StableCoinDropdown,
-  StableCoinHelper,
-} from "@frontend-monorepo/ui-shared";
+import type { StableCoin } from "@frontend-monorepo/ui-shared";
+import { LtvInfoLabel, StableCoinDropdown, StableCoinHelper } from "@frontend-monorepo/ui-shared";
 import { Box, Button, Flex, Separator, Text, TextField } from "@radix-ui/themes";
-import React from "react";
+import type { ChangeEvent } from "react";
+import { useRef, useState } from "react";
 import { FaInfoCircle } from "react-icons/fa";
-import { Slider, SliderProps } from "./slider";
+import type { SliderProps } from "./slider";
+import { Slider } from "./slider";
 
 export interface LoanFilter {
   amount?: number;
@@ -39,11 +36,11 @@ interface LoanOffersFilterProps {
 }
 
 function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
-  const resetAmount = React.useRef<HTMLInputElement>(null);
-  const [resetCoin, setResetcoin] = React.useState(true);
-  const [resetRatio, setResetRatio] = React.useState(true);
-  const [resetDuration, setResetDuration] = React.useState(true);
-  const [resetInterest, setResetInterest] = React.useState(true);
+  const resetAmount = useRef<HTMLInputElement>(null);
+  const [resetCoin, setResetcoin] = useState(true);
+  const [resetRatio, setResetRatio] = useState(true);
+  const [resetDuration, setResetDuration] = useState(true);
+  const [resetInterest, setResetInterest] = useState(true);
 
   const ltvSliderProps: SliderProps = {
     min: 30,
@@ -93,7 +90,7 @@ function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
     onChange(filter);
   }
 
-  function onAmountChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
+  function onAmountChange(e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
     const value = e.target.value ? Number(e.target.value) : undefined;
     const filter: LoanFilter = { ...loanFilter, amount: value };
     onChange(filter);

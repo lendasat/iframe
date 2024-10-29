@@ -1,6 +1,7 @@
 import { faCheckCircle, faX } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import React, { useState } from "react";
+import type { ChangeEvent, FormEvent } from "react";
+import { useState } from "react";
 import { Button, Col, Container, Form, InputGroup, Row } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import { ReactComponent as Logo } from "../lendasat_white_bg.svg";
@@ -18,7 +19,7 @@ export function ResetPasswordForm({ handleSubmit, loginUrl }: ResetPasswordFormP
   const [isLoading, setLoading] = useState(false);
   const [passwordMatch, setPasswordMatch] = useState(false);
 
-  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     try {
@@ -30,7 +31,7 @@ export function ResetPasswordForm({ handleSubmit, loginUrl }: ResetPasswordFormP
     }
     setLoading(false);
   };
-  const onConfirmPasswordChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onConfirmPasswordChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const confirmPasswordInput = e.target.value;
     setConfirmPassword(confirmPasswordInput);
     if (confirmPasswordInput !== password) {

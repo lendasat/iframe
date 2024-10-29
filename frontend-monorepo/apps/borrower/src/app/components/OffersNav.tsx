@@ -1,12 +1,13 @@
-import { Box, Button, Flex, Select, Separator, Text } from "@radix-ui/themes";
-import React from "react";
+import { Box, Button, Flex, Separator, Text } from "@radix-ui/themes";
+import { useState } from "react";
 import Offcanvas from "react-bootstrap/Offcanvas";
-import { BsSortUp } from "react-icons/bs";
 import { IoAddOutline } from "react-icons/io5";
 import { LiaTimesSolid } from "react-icons/lia";
 import { RiFilter2Line } from "react-icons/ri";
 import { Link } from "react-router-dom";
-import LoanOffersFilter, { LoanFilter, parseTableSortBy, TableSortBy } from "../request-loan/loan-offers-filter";
+import type { LoanFilter } from "../request-loan/loan-offers-filter";
+import type { TableSortBy } from "../request-loan/loan-offers-filter";
+import LoanOffersFilter from "../request-loan/loan-offers-filter";
 
 interface FilterOption {
   onLoanFilterChange: (filter: LoanFilter) => void;
@@ -16,11 +17,7 @@ interface FilterOption {
 }
 
 export default function OffersNav(props: FilterOption) {
-  const [offCanvas, setOffCanvas] = React.useState<boolean>(false);
-  const updateSorting = (sortBy: string) => {
-    const tableSorting = parseTableSortBy(sortBy);
-    props.onTableSortingChange(tableSorting ?? TableSortBy.Amount);
-  };
+  const [offCanvas, setOffCanvas] = useState<boolean>(false);
 
   return (
     <Box className="px-6 md:px-8">

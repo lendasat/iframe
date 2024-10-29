@@ -20,6 +20,7 @@ use serde::Serialize;
 use sqlx::Pool;
 use sqlx::Postgres;
 use std::collections::HashMap;
+use std::time::Duration;
 use tokio::net::TcpStream;
 use tokio_tungstenite::connect_async_tls_with_config;
 use tokio_tungstenite::tungstenite::Message;
@@ -30,6 +31,7 @@ use tracing::instrument;
 use xtra::Mailbox;
 
 const MIN_CONFIRMATIONS: u64 = 1;
+const WS_RECONNECT_TIMEOUT_SECS: u64 = 2;
 
 pub struct Actor {
     tracked_contracts: HashMap<Address, TrackedContract>,
@@ -175,12 +177,13 @@ impl xtra::Actor for Actor {
             None
         };
 
+        let ws_url = format!("{}/ws", self.ws_url);
         let (ws_stream, _) =
-            connect_async_tls_with_config(format!("{}/ws", self.ws_url), None, false, connector)
+            connect_async_tls_with_config(ws_url.clone(), None, false, connector.clone())
                 .await
                 .context("Failed to establish WS connection")?;
 
-        let (mut sink, mut stream) = ws_stream.split();
+        let (mut sink, stream) = ws_stream.split();
 
         // Subscribe to block updates.
         let msg = serde_json::to_string(&WsRequest::Action {
@@ -217,58 +220,93 @@ impl xtra::Actor for Actor {
                     };
                 }
 
-                while let Some(message) = stream.next().await {
-                    match message {
-                        Ok(Message::Text(text)) => {
-                            match serde_json::from_str::<WsResponse>(&text) {
-                                Ok(response) => match response {
-                                    // What you get when you first subscribe to block updates.
-                                    WsResponse::Blocks { blocks } => {
-                                        let height = blocks
-                                            .iter()
-                                            .max_by(|x, y| x.height.cmp(&y.height))
-                                            .map(|block| block.height)
-                                            .unwrap_or_default();
+                let mut stream = stream;
 
-                                        let _ = actor.send(NewBlockHeight(height)).await;
-                                    }
-                                    // Subsequent blocks.
-                                    WsResponse::Block {
-                                        block,
-                                        block_transactions,
-                                    } => {
-                                        let _ = actor.send(NewBlockHeight(block.height)).await;
+                loop {
+                    while let Some(message) = stream.next().await {
+                        match message {
+                            Ok(Message::Text(text)) => {
+                                match serde_json::from_str::<WsResponse>(&text) {
+                                    Ok(response) => match response {
+                                        // What you get when you first subscribe to block updates.
+                                        WsResponse::Blocks { blocks } => {
+                                            let height = blocks
+                                                .iter()
+                                                .max_by(|x, y| x.height.cmp(&y.height))
+                                                .map(|block| block.height)
+                                                .unwrap_or_default();
 
-                                        if let Some(transactions) = block_transactions {
+                                            let _ = actor.send(NewBlockHeight(height)).await;
+                                        }
+                                        // Subsequent blocks.
+                                        WsResponse::Block {
+                                            block,
+                                            block_transactions,
+                                        } => {
+                                            let _ = actor.send(NewBlockHeight(block.height)).await;
+
+                                            if let Some(transactions) = block_transactions {
+                                                let _ = actor
+                                                    .send(ContractUpdate { transactions })
+                                                    .await;
+                                            }
+                                        }
+                                        WsResponse::AddressTransactions(AddressTransactions {
+                                            address_transactions: transactions,
+                                        })
+                                        | WsResponse::BlockTransactions(BlockTransactions {
+                                            block_transactions: transactions,
+                                        }) => {
                                             let _ =
                                                 actor.send(ContractUpdate { transactions }).await;
                                         }
+                                    },
+                                    Err(e) => {
+                                        tracing::warn!(
+                                            response = text,
+                                            "Failed to deserialize response: {e:?}",
+                                        );
                                     }
-                                    WsResponse::AddressTransactions(AddressTransactions {
-                                        address_transactions: transactions,
-                                    })
-                                    | WsResponse::BlockTransactions(BlockTransactions {
-                                        block_transactions: transactions,
-                                    }) => {
-                                        let _ = actor.send(ContractUpdate { transactions }).await;
-                                    }
-                                },
-                                Err(e) => {
-                                    tracing::warn!(
-                                        response = text,
-                                        "Failed to deserialize response: {e:?}",
-                                    );
                                 }
                             }
-                        }
-                        Ok(msg) => {
-                            tracing::debug!(?msg, "Unhandled message");
-                        }
-                        Err(e) => {
-                            tracing::error!("WS error: {e:?}");
-                            break;
+                            Ok(msg) => {
+                                tracing::debug!(?msg, "Unhandled message");
+                            }
+                            Err(e) => {
+                                tracing::error!("WS error: {e:?}");
+                                break;
+                            }
                         }
                     }
+
+                    let ws_stream = loop {
+                        tracing::debug!(url = ws_url, "Reconnecting to mempool WS");
+
+                        match connect_async_tls_with_config(
+                            ws_url.clone(),
+                            None,
+                            false,
+                            connector.clone(),
+                        )
+                        .await
+                        {
+                            Ok((ws_stream, _)) => break ws_stream,
+                            Err(e) => {
+                                tracing::error!(
+                                    "Failed to reconnect to mempool WS: {e:?}. \
+                                     Retrying in {WS_RECONNECT_TIMEOUT_SECS} seconds"
+                                );
+
+                                tokio::time::sleep(Duration::from_secs(WS_RECONNECT_TIMEOUT_SECS))
+                                    .await;
+                            }
+                        };
+                    };
+
+                    let (sink, new_stream) = ws_stream.split();
+                    let _ = actor.send(NewWsSink(sink)).await;
+
+                    stream = new_stream;
                 }
             }
         });
@@ -696,6 +734,18 @@ impl xtra::Handler<GetCollateralOutputs> for Actor {
                 .collect(),
             None => Vec::new(),
         }
+    }
+}
+
+/// Internal message to update the [`Actor`]'s mempool WS sink.
+#[derive(Debug)]
+struct NewWsSink(SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>);
+
+impl xtra::Handler<NewWsSink> for Actor {
+    type Return = ();
+
+    async fn handle(&mut self, msg: NewWsSink, _: &mut xtra::Context<Self>) -> Self::Return {
+        self.ws_sink = Some(msg.0)
     }
 }
 

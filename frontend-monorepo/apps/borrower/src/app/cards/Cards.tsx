@@ -1,23 +1,24 @@
 import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import { CurrencyFormatter } from "@frontend-monorepo/ui-shared";
 import { Box, Button, Flex, Grid, Heading, Skeleton, Spinner, Text } from "@radix-ui/themes";
-import React, { ReactNode } from "react";
+import { useRef, useState } from "react";
 import { GoArrowUpRight } from "react-icons/go";
 import { IoWallet } from "react-icons/io5";
 import { Link } from "react-router-dom";
 import { useAsync } from "react-use";
 import { EffectFade } from "swiper/modules";
-import { Swiper as SwiperComponent, SwiperRef, SwiperSlide } from "swiper/react";
+import { Swiper as SwiperComponent, SwiperSlide } from "swiper/react";
+import type { SwiperRef } from "swiper/react";
 import NoCreditCard from "./../../assets/creditcard-illustration.png";
 import CardHistory from "./CardHistory";
 import CreditCard from "./CreditCard";
 
 export default function Cards() {
   const { innerHeight } = window;
-  const [moreInfo, setMoreInfo] = React.useState<boolean>(false);
-  const [activeCardIndex, setActiveCardIndex] = React.useState<number>(0);
+  const [moreInfo, setMoreInfo] = useState<boolean>(false);
+  const [activeCardIndex, setActiveCardIndex] = useState<number>(0);
   // Change Card
-  const SlideRef = React.useRef<SwiperRef>(null);
+  const SlideRef = useRef<SwiperRef>(null);
 
   const { getUserCards } = useBorrowerHttpClient();
 

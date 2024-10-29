@@ -1,5 +1,6 @@
 import { Box, Button, Callout, Grid, Heading, IconButton, Spinner, Text } from "@radix-ui/themes";
-import React, { useState } from "react";
+import type { FormEvent } from "react";
+import { useState } from "react";
 import { Form } from "react-bootstrap";
 import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
 import { IoInformationCircleOutline } from "react-icons/io5";
@@ -29,7 +30,7 @@ export function RegistrationForm({ handleRegister }: RegistrationFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
 
-  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
     if (password !== confirmPassword) {

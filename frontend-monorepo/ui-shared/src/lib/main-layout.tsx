@@ -1,7 +1,9 @@
-import { Version } from "@frontend-monorepo/base-http-client";
+import type { Version } from "@frontend-monorepo/base-http-client";
 import { Avatar, Box, Flex, Heading, IconButton, Separator, Text } from "@radix-ui/themes";
-import React, { ReactNode } from "react";
-import { IconType } from "react-icons";
+import type { ReactNode } from "react";
+import type { FC } from "react";
+import { useState } from "react";
+import type { IconType } from "react-icons";
 import { IoIosNotificationsOutline } from "react-icons/io";
 import { IoChevronForward, IoHelpCircleOutline } from "react-icons/io5";
 import { PiCopyright } from "react-icons/pi";
@@ -29,7 +31,7 @@ interface MenuItem {
 }
 
 interface LayoutProps {
-  user: any;
+  user: User;
   children: ReactNode;
   menuItems: MenuItem[];
   theme?: Theme;
@@ -37,11 +39,16 @@ interface LayoutProps {
   logout: () => Promise<void>;
 }
 
-export const Layout: React.FC<LayoutProps> = ({ children, menuItems, backendVersion, user, logout }) => {
+export interface User {
+  name: string;
+  email: string;
+}
+
+export const Layout: FC<LayoutProps> = ({ children, menuItems, backendVersion, user, logout }) => {
   const versionString = `${backendVersion.version}-${backendVersion.commit_hash.substring(0, 5)}`;
-  const [toggled, setToggled] = React.useState(false);
-  const [broken, setBroken] = React.useState(false);
-  const [collapsed, setCollapsed] = React.useState(false);
+  const [toggled, setToggled] = useState(false);
+  const [broken, setBroken] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
   return (
     <div

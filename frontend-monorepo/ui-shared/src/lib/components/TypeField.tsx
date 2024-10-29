@@ -1,5 +1,4 @@
-import { InputHTMLAttributes, ReactNode } from "react";
-import { BiSearchAlt } from "react-icons/bi";
+import type { InputHTMLAttributes, ReactNode } from "react";
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
