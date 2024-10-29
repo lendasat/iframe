@@ -45,6 +45,8 @@ export class StableCoinHelper {
       case StableCoin.USDC_ETH:
       case StableCoin.USDT_ETH:
         return "Ethereum";
+      default:
+        return "undefined";
     }
   }
 

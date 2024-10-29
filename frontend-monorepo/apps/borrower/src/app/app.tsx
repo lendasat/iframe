@@ -33,7 +33,7 @@ import { IoCardOutline, IoWalletOutline } from "react-icons/io5";
 import { LuActivity, LuSettings } from "react-icons/lu";
 import Cards from "./cards/Cards";
 import CustomRequest from "./request-loan/custom-loan-request";
-import SimpleRequest from "./request-loan/my-requests";
+import RequestLoanWizard from "./request-loan/request-loan-wizard";
 
 const menuItems = [
   {
@@ -151,7 +151,7 @@ function MainLayoutComponents() {
               <Route index element={<MyLoans />} />
               <Route path={":id"} element={<ContractDetailsOverview />} />
             </Route>
-            <Route path="/requests" element={<SimpleRequest />} />
+            <Route path="/requests/*" element={<RequestLoanWizard />} />
             {import.meta.env.VITE_SHOW_CARDS_FEATURE
               && <Route path="/cards" element={<Cards />} />}
             <Route path="/custom-request" element={<CustomRequest />} />

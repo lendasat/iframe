@@ -6,7 +6,7 @@ import { GoArrowUpRight } from "react-icons/go";
 import { IoWallet } from "react-icons/io5";
 import { Link } from "react-router-dom";
 import { useAsync } from "react-use";
-import { EffectCards } from "swiper/modules";
+import { EffectFade } from 'swiper/modules';
 import { Swiper as SwiperComponent, SwiperRef, SwiperSlide } from "swiper/react";
 import NoCreditCard from "./../../assets/creditcard-illustration.png";
 import CardHistory from "./CardHistory";
@@ -78,6 +78,7 @@ export default function Cards() {
                 <Button
                   variant="ghost"
                   onClick={onSwitchCard}
+                  disabled={true}
                   className="hover:bg-transparent font-medium text-font/60 hover:text-font"
                 >
                   Switch Card
@@ -94,13 +95,14 @@ export default function Cards() {
             effect={"cards"}
             grabCursor={false}
             allowTouchMove={false}
-            modules={[EffectCards]}
+            modules={[EffectFade]}
             centeredSlides
             cardsEffect={{
               perSlideOffset: 7,
               slideShadows: false,
             }}
             className="h-52 w-full"
+            enabled={false}
           >
             {userCardDetails.map((card, index) => (
               <SwiperSlide key={index}>
