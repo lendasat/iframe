@@ -129,7 +129,7 @@ impl Email {
         let content_template = handlebars.render(template_name, &data)?;
 
         self.send_email(
-            "Your account verification code",
+            "Lendasat email verification",
             user.name.as_str(),
             user.email.as_str(),
             content_template,
@@ -140,27 +140,25 @@ impl Email {
     pub async fn send_password_reset_token(
         &self,
         user: User,
-        password_reset_token_expires_in: i64,
+        token_expiry_minutes: i64,
         url: &str,
     ) -> Result<()> {
         let template_name = "reset_password";
         let handlebars = Self::prepare_template(template_name)?;
 
-        let subject = format!(
-            "Your password reset token (valid for only {} minutes)",
-            password_reset_token_expires_in
-        );
+        let subject = "Lendasat reset password request";
 
         let data = serde_json::json!({
             "first_name": &user.name,
             "subject": subject,
-            "url": url
+            "url": url,
+            "expiry_minutes": token_expiry_minutes,
         });
 
         let content_template = handlebars.render(template_name, &data)?;
 
         self.send_email(
-            subject.as_str(),
+            subject,
             user.name.as_str(),
             user.email.as_str(),
             content_template,
