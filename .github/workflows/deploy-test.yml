@@ -39,6 +39,7 @@ jobs:
           envkey_VITE_LENDER_BASE_URL: "https://lend.signet.lendasat.com"
           envkey_VITE_BITCOIN_NETWORK: "signet"
           envkey_VITE_MEMPOOL_REST_URL: "https://mutinynet.com"
+          envkey_VITE_ENABLE_CARDS_FEATURE: "false"
 
       - name: Build borrower frontend
         run: just build-frontend

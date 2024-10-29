@@ -4,6 +4,7 @@ import type { AxiosResponse } from "axios";
 import axios from "axios";
 import { createContext, useContext } from "react";
 import type {
+  CardTransactionInformation,
   ClaimCollateralPsbtResponse,
   Contract,
   ContractRequest,
@@ -12,7 +13,9 @@ import type {
   LoanOffer,
   LoanRequest,
   PostLoanRequest,
+  UserCardDetail,
 } from "./models";
+import { CardTransactionStatus, CardTransactionType, LoanProductOption } from "./models";
 import { parseRFC3339Date } from "./utils";
 
 // Interface for the raw data received from the API
@@ -330,6 +333,69 @@ export class HttpClientBorrower extends BaseHttpClient {
       }
     }
   }
+
+  async getUserCards(): Promise<UserCardDetail[]> {
+    return [
+      {
+        id: 1,
+        balance: 95485.68,
+        outgoing: 2524.45,
+        cardNumber: 3782822463101845,
+        cardCvv: 759,
+        expiry: Date.now(),
+      },
+      {
+        id: 2,
+        balance: 99545.68,
+        outgoing: 9574.45,
+        cardNumber: 5610591081018250,
+        cardCvv: 957,
+        expiry: Date.now(),
+      },
+      {
+        id: 3,
+        balance: 7653.24,
+        outgoing: 2582.45,
+        cardNumber: 5019717010103742,
+        cardCvv: 579,
+        expiry: Date.now(),
+      },
+    ];
+  }
+
+  async getCardTransactions(_cardId: number): Promise<CardTransactionInformation[]> {
+    return [
+      {
+        transactionType: CardTransactionType.IncomingLoan,
+        cardUsed: "0145",
+        status: CardTransactionStatus.InProcess,
+        amount: 3000,
+        date: new Date(1721631360000).getTime(),
+      },
+      {
+        transactionType: CardTransactionType.Payment,
+        cardUsed: "0845",
+        status: CardTransactionStatus.Failed,
+        amount: 8000,
+        date: new Date(1729631360000).getTime(),
+      },
+      {
+        transactionType: CardTransactionType.Payment,
+        cardUsed: "0145",
+        status: CardTransactionStatus.Completed,
+        amount: 17000,
+        date: new Date(1729641360000).getTime(),
+      },
+    ];
+  }
+
+  async getLoanProductOptions(): Promise<LoanProductOption[]> {
+    const availableOptions = [LoanProductOption.StableCoins];
+    if (import.meta.env.VITE_ENABLE_CARDS_FEATURE) {
+      availableOptions.push(LoanProductOption.PayWithMoonDebitCard);
+    }
+    return availableOptions;
+  }
 }
 
 type BorrowerHttpClientContextType = Pick<
@@ -348,6 +414,9 @@ type BorrowerHttpClientContextType = Pick<
   | "getDispute"
   | "getLenderProfile"
   | "getBorrowerProfile"
+  | "getUserCards"
+  | "getCardTransactions"
+  | "getLoanProductOptions"
 >;
 
 export const BorrowerHttpClientContext = createContext<BorrowerHttpClientContextType | undefined>(undefined);
@@ -395,6 +464,9 @@ export const HttpClientBorrowerProvider: React.FC<HttpClientProviderProps> = ({ 
     getDispute: httpClient.getDispute.bind(httpClient),
     getLenderProfile: httpClient.getLenderProfile.bind(httpClient),
     getBorrowerProfile: httpClient.getBorrowerProfile.bind(httpClient),
+    getUserCards: httpClient.getUserCards.bind(httpClient),
+    getCardTransactions: httpClient.getCardTransactions.bind(httpClient),
+    getLoanProductOptions: httpClient.getLoanProductOptions.bind(httpClient),
   };
 
   return (

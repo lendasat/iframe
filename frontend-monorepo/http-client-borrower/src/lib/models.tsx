@@ -216,3 +216,39 @@ export function findBestOriginationFee(
   });
   return bestFee.fee;
 }
+
+export interface UserCardDetail {
+  id: number;
+  balance: number;
+  outgoing: number;
+  cardNumber: number;
+  cardCvv: number;
+  expiry: number;
+}
+
+export interface CardTransactionInformation {
+  transactionType: CardTransactionType;
+  cardUsed: string;
+  status: CardTransactionStatus;
+  amount: number;
+  date: number;
+}
+
+export enum CardTransactionStatus {
+  InProcess = "in process",
+  Completed = "completed",
+  Failed = "failed",
+  Pending = "pending",
+}
+
+export enum CardTransactionType {
+  IncomingLoan = "incoming Loan",
+  Payment = "payment",
+}
+
+export enum LoanProductOption {
+  PayWithMoonDebitCard = "PayWithMoonDebitCard",
+  StableCoins = "StableCoins",
+  BringinBankAccount = "BringinBankAccount",
+  BitrefillDebitCard = "BitrefillDebitCard",
+}

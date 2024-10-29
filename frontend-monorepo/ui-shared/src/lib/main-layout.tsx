@@ -12,7 +12,6 @@ import { TbLayoutSidebarLeftCollapse } from "react-icons/tb";
 import { Menu, MenuItem, Sidebar } from "react-pro-sidebar";
 import { Link, NavLink } from "react-router-dom";
 import Logout from "./components/Logout";
-import { SearchBar } from "./components/SearchBar";
 import { SidebarHeader } from "./components/SidebarHeader";
 
 type Theme = "light" | "dark";
@@ -23,6 +22,7 @@ interface GroupProps {
   path: string;
   target?: string;
   borrower?: boolean;
+  visible: boolean;
 }
 
 interface MenuItem {
@@ -44,7 +44,7 @@ export interface User {
   email: string;
 }
 
-export const Layout: FC<LayoutProps> = ({ children, menuItems, theme, backendVersion, user, logout }) => {
+export const Layout: FC<LayoutProps> = ({ children, menuItems, backendVersion, user, logout }) => {
   const versionString = `${backendVersion.version}-${backendVersion.commit_hash.substring(0, 5)}`;
   const [toggled, setToggled] = useState(false);
   const [broken, setBroken] = useState(false);
@@ -105,21 +105,27 @@ export const Layout: FC<LayoutProps> = ({ children, menuItems, theme, backendVer
           >
             {menuItems.map((items, index) => (
               <Box key={index} className={index === 0 ? "px-3" : "px-3 pt-[5vh]"}>
-                {items.group.map((item, idx) => (
-                  <MenuItem
-                    key={idx}
-                    component={
-                      <NavLink
-                        className={"aria-[current=page]:bg-white/65 aria-[current=page]:border aria-[current=page]:border-white/95 aria-[current=page]:text-font-dark aria-[current=page]:font-medium aria-[current=page]:backdrop-blur-md aria-[current=page]:shadow-sm capitalize text-font/90"}
-                        to={item.path}
-                        target={item.target ? item.target : "_self"}
-                      />
-                    }
-                    icon={<item.icon size={18} />}
-                  >
-                    {item.label}
-                  </MenuItem>
-                ))}
+                {items.group.map((item, idx) => {
+                  if (!item.visible) {
+                    return "";
+                  }
+
+                  return (
+                    <MenuItem
+                      key={idx}
+                      component={
+                        <NavLink
+                          className={"aria-[current=page]:bg-white/65 aria-[current=page]:border aria-[current=page]:border-white/95 aria-[current=page]:text-font-dark aria-[current=page]:font-medium aria-[current=page]:backdrop-blur-md aria-[current=page]:shadow-sm capitalize text-font/90"}
+                          to={item.path}
+                          target={item.target ? item.target : "_self"}
+                        />
+                      }
+                      icon={<item.icon size={18} />}
+                    >
+                      {item.label}
+                    </MenuItem>
+                  );
+                })}
                 {items.separator && (
                   <Separator
                     size={"4"}
@@ -191,7 +197,10 @@ export const Layout: FC<LayoutProps> = ({ children, menuItems, theme, backendVer
             </Flex>
           </Box>
 
-          <SearchBar placeholder="Looking for something..." />
+          {
+            /*TODO: removed for now due to not being implemented
+          <SearchBar placeholder="Looking for something..." />*/
+          }
 
           <Box className="shrink-0">
             <Flex align={"center"} className="gap-4">

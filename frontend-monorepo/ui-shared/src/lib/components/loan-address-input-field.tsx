@@ -8,7 +8,7 @@ import { connect } from "starknetkit";
 
 interface LoanAddressInputFieldProps {
   loanAddress: string;
-  setLoanAddress: (value: ((prevState: string) => string) | string) => void;
+  setLoanAddress: (value: string) => void;
   assetChain: string;
   hideButton: boolean;
   setHideButton: (value: boolean) => void;

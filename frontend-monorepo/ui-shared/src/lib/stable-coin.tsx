@@ -48,6 +48,8 @@ export class StableCoinHelper {
       case StableCoin.USDC_ETH:
       case StableCoin.USDT_ETH:
         return "Ethereum";
+      default:
+        return "undefined";
     }
   }
 
@@ -62,7 +64,7 @@ export class StableCoinHelper {
     ];
   }
 
-  static mapFromBackend(chain: string, asset: string): StableCoin | undefined {
+  static mapFromBackend(chain: string, asset: string): StableCoin {
     if (chain === "Ethereum") {
       if (asset === "Usdc") {
         return StableCoin.USDC_ETH;
@@ -82,7 +84,7 @@ export class StableCoinHelper {
         return StableCoin.USDT_POL;
       }
     }
-    return undefined;
+    throw Error("Invalid chain or network provided");
   }
 }
 
