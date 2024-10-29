@@ -1,74 +1,87 @@
-import { ProductOption } from "@frontend-monorepo/http-client-borrower";
+import { LoanProductOption, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import { Box, Button, Text } from "@radix-ui/themes";
 import React, { ReactElement } from "react";
+import { useAsync } from "react-use";
 import Bitrefil from "../../../assets/bitrefil.png";
 import Defi from "../../../assets/defi.jpg";
 import Moon from "../../../assets/moon.jpg";
 import Sepa from "../../../assets/sepa.jpg";
 
 interface Step1Props {
-  options: ProductOption[];
-  onSelect: (option: ProductOption) => void;
-  selectedOption?: ProductOption;
+  onSelect: (option: LoanProductOption) => void;
+  selectedOption?: LoanProductOption;
 }
 
-export const Step1PickOption = ({ options, onSelect, selectedOption }: Step1Props) => (
-  <Box className="py-6 md:py-8 grid md:grid-cols-2 xl:grid-cols-3 gap-5 px-6 md:px-8">
-    {options.map((option, index) => {
-      switch (option) {
-        case ProductOption.PayWithMoonDebitCard:
-          return (
-            <ProductOptionComponent
-              onSelect={onSelect}
-              option={option}
-              selectedOption={selectedOption}
-              title={"Debit card by PayWithMoon"}
-              key={index}
-              image={<img src={Moon} alt="PayWithMoon" />}
-            />
-          );
-        case ProductOption.StableCoins:
-          return (
-            <ProductOptionComponent
-              onSelect={onSelect}
-              option={option}
-              selectedOption={selectedOption}
-              title={"Receive stable coins"}
-              key={index}
-              image={<img src={Defi} alt="DEFI" />}
-            />
-          );
-        case ProductOption.BringinBankAccount:
-          return (
-            <ProductOptionComponent
-              onSelect={onSelect}
-              option={option}
-              selectedOption={selectedOption}
-              title={"To a bank account using SEPA via Bringin"}
-              key={index}
-              image={<img src={Sepa} alt="SEPA" />}
-            />
-          );
-        case ProductOption.BitrefillDebitCard:
-          return (
-            <ProductOptionComponent
-              onSelect={onSelect}
-              option={option}
-              selectedOption={selectedOption}
-              title={"A debit card by Bitrefill"}
-              key={index}
-              image={<img src={Bitrefil} alt="Bitrefil" />}
-            />
-          );
-      }
-    })}
-  </Box>
-);
+export const Step1PickOption = ({ onSelect, selectedOption }: Step1Props) => {
+  const { getLoanProductOptions } = useBorrowerHttpClient();
+
+  const { loading, value, error } = useAsync(async () => {
+    return await getLoanProductOptions();
+  });
+
+  let options: LoanProductOption[] = [];
+  if (value) {
+    options = value;
+  }
+
+  return (
+    <Box className="py-6 md:py-8 grid md:grid-cols-2 xl:grid-cols-3 gap-5 px-6 md:px-8">
+      {options.map((option, index) => {
+        switch (option) {
+          case LoanProductOption.PayWithMoonDebitCard:
+            return (
+              <ProductOptionComponent
+                onSelect={onSelect}
+                option={option}
+                selectedOption={selectedOption}
+                title={"Debit card by PayWithMoon"}
+                key={index}
+                image={<img src={Moon} alt="PayWithMoon" />}
+              />
+            );
+          case LoanProductOption.StableCoins:
+            return (
+              <ProductOptionComponent
+                onSelect={onSelect}
+                option={option}
+                selectedOption={selectedOption}
+                title={"Receive stable coins"}
+                key={index}
+                image={<img src={Defi} alt="DEFI" />}
+              />
+            );
+          case LoanProductOption.BringinBankAccount:
+            return (
+              <ProductOptionComponent
+                onSelect={onSelect}
+                option={option}
+                selectedOption={selectedOption}
+                title={"To a bank account using SEPA via Bringin"}
+                key={index}
+                image={<img src={Sepa} alt="SEPA" />}
+              />
+            );
+          case LoanProductOption.BitrefillDebitCard:
+            return (
+              <ProductOptionComponent
+                onSelect={onSelect}
+                option={option}
+                selectedOption={selectedOption}
+                title={"A debit card by Bitrefill"}
+                key={index}
+                image={<img src={Bitrefil} alt="Bitrefil" />}
+              />
+            );
+        }
+      })}
+    </Box>
+  );
+};
 
 interface ProductOptionComponentProps {
-  onSelect: (option: ProductOption) => void;
-  option: ProductOption | ProductOption.PayWithMoonDebitCard;
-  selectedOption: ProductOption | undefined;
+  onSelect: (option: LoanProductOption) => void;
+  option: LoanProductOption | LoanProductOption.PayWithMoonDebitCard;
+  selectedOption: LoanProductOption | undefined;
   title: string;
   image: ReactElement;
 }

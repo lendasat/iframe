@@ -246,7 +246,7 @@ export enum CardTransactionType {
   Payment = "payment",
 }
 
-export enum ProductOption {
+export enum LoanProductOption {
   PayWithMoonDebitCard = "PayWithMoonDebitCard",
   StableCoins = "StableCoins",
   BringinBankAccount = "BringinBankAccount",

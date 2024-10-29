@@ -1,7 +1,7 @@
 import { faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { CreateWalletModal, UnlockWalletModal, useWallet } from "@frontend-monorepo/browser-wallet";
-import { LoanOffer, ProductOption, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
+import { LoanOffer, LoanProductOption, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import {
   formatCurrency,
   LoanAddressInputField,
@@ -77,7 +77,7 @@ const findBestOffer = ({
 };
 
 type LocationState = {
-  option: ProductOption;
+  option: LoanProductOption;
 };
 
 export const Step2PickOffer = () => {
@@ -86,7 +86,7 @@ export const Step2PickOffer = () => {
   const navigate = useNavigate();
 
   const location = useLocation();
-  let selectedOption: ProductOption | undefined;
+  let selectedOption: LoanProductOption | undefined;
   if (location.state) {
     const { option } = location.state as LocationState;
     selectedOption = option;

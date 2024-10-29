@@ -6,7 +6,7 @@ import { GoArrowUpRight } from "react-icons/go";
 import { IoWallet } from "react-icons/io5";
 import { Link } from "react-router-dom";
 import { useAsync } from "react-use";
-import { EffectFade } from 'swiper/modules';
+import { EffectFade } from "swiper/modules";
 import { Swiper as SwiperComponent, SwiperRef, SwiperSlide } from "swiper/react";
 import NoCreditCard from "./../../assets/creditcard-illustration.png";
 import CardHistory from "./CardHistory";

@@ -1,4 +1,4 @@
-import { ProductOption } from "@frontend-monorepo/http-client-borrower";
+import { LoanProductOption } from "@frontend-monorepo/http-client-borrower";
 import { Box, Button, Flex, Heading, Separator, Text } from "@radix-ui/themes";
 import React, { useState } from "react";
 import { CardBody, CardFooter } from "react-bootstrap";
@@ -11,7 +11,7 @@ import { Step2PickOffer } from "./steps/step2PickOffer";
 const RequestLoanWizard = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [selectedOption, setSelectedOption] = useState<ProductOption | undefined>(undefined);
+  const [selectedOption, setSelectedOption] = useState<LoanProductOption | undefined>(undefined);
 
   const steps = [
     { path: "1", title: "Pick an option" },
@@ -31,11 +31,6 @@ const RequestLoanWizard = () => {
       navigate(steps[currentStepIndex - 1].path, { state: { option: selectedOption } });
     }
   };
-
-  const availableOptions = [ProductOption.StableCoins];
-  if (import.meta.env.VITE_ENABLE_CARDS_FEATURE) {
-    availableOptions.push(ProductOption.PayWithMoonDebitCard);
-  }
 
   return (
     <Box
@@ -122,7 +117,6 @@ const RequestLoanWizard = () => {
             path="1"
             element={
               <Step1PickOption
-                options={availableOptions}
                 onSelect={setSelectedOption}
                 selectedOption={selectedOption}
               />
