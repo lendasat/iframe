@@ -129,7 +129,7 @@ function ProductOptionComponent({
         </AlertDialog.Trigger>
         <AlertDialog.Content maxWidth="450px" className="rounded-lg">
           <Box className="py-4 text-center max-w-sm mx-auto">
-            <Flex align={"center"} justify={"center"} gap={"3"} pb={'1'}>
+            <Flex align={"center"} justify={"center"} gap={"3"} pb={"1"}>
               <Separator size={"3"} className="bg-font/30" />
               <AlertDialog.Title className="shrink-0 p-0 m-0">Terms of service</AlertDialog.Title>
               <Separator size={"3"} className="bg-font/30" />
