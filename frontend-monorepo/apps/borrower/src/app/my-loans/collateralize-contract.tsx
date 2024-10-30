@@ -1,5 +1,6 @@
 import { Badge, Box, Button, Flex, Heading, Separator, Text, Tooltip as Popup } from "@radix-ui/themes";
 import QRCode from "qrcode.react";
+import queryString from "query-string";
 import { useState } from "react";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
 
@@ -29,6 +30,8 @@ export function CollateralContractDetails({
       console.error("Failed to copy text: ", err);
     }
   };
+
+  const bip21Url = encodeBip21(collateralAddress, { amount: collateral_btc, label: `fund contract` });
 
   return (
     <Box>
@@ -84,11 +87,11 @@ export function CollateralContractDetails({
       </Box>
       <Flex align={"center"} justify={"center"} direction={"column"} gap={"4"}>
         <Box
-          onClick={() => handleCopy(collateralAddress)}
+          onClick={() => handleCopy(bip21Url)}
           p={"5"}
           className="rounded-2xl bg-white cursor-copy hover:shadow-sm"
         >
-          <QRCode value={collateralAddress} size={300} />
+          <QRCode value={bip21Url} size={300} />
         </Box>
         <Flex
           align={"center"}
@@ -135,4 +138,29 @@ export function CollateralContractDetails({
       </Flex>
     </Box>
   );
+}
+
+interface EncodeOptions {
+  amount: number;
+  label: string;
+}
+
+function encodeBip21(
+  address: string,
+  options: EncodeOptions,
+  urnScheme: string = "bitcoin",
+): string {
+  const scheme = urnScheme;
+
+  if (options.amount !== undefined) {
+    if (!isFinite(options.amount)) {
+      throw new TypeError("Invalid amount");
+    }
+    if (options.amount < 0) {
+      throw new TypeError("Invalid amount");
+    }
+  }
+
+  const query = queryString.stringify(options);
+  return `${scheme}:${address}${(query ? "?" : "") + query}`;
 }
