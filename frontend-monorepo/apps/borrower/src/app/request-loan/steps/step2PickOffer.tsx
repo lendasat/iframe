@@ -611,6 +611,9 @@ const LoanSearched = (props: SearchParams) => {
     props.setBtcAddress(address);
   };
 
+  const actualInterest = props.interest / (12 / props.duration);
+  const actualInterestUsdAmount = props.amount * actualInterest;
+
   return (
     <>
       <CreateWalletModal
@@ -633,10 +636,18 @@ const LoanSearched = (props: SearchParams) => {
           </Flex>
           <Separator size={"4"} />
           <Flex justify={"between"} align={"center"}>
-            <Text className="text-xs font-medium text-font/60">Interest</Text>
-            <Text className="text-[13px] font-semibold text-black/70">
-              {(props.interest * 100).toFixed(1)}% per year
+            <Text className="text-xs font-medium text-font/60">
+              Interest
             </Text>
+
+            <div className="flex flex-col">
+              <Text className="text-[13px] font-semibold text-black/70 capitalize">
+                {(props.interest * 100).toFixed(1)}% per year
+              </Text>
+              <Text className="text-[11px] text-black/50 mt-0.5 self-end">
+                ≈ {formatCurrency(actualInterestUsdAmount, 1, 1)} in total
+              </Text>
+            </div>
           </Flex>
           <Separator size={"4"} />
           <Flex justify={"between"} align={"center"}>
