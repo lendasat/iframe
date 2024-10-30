@@ -163,7 +163,7 @@ export class HttpClientBorrower extends BaseHttpClient {
       if (axios.isAxiosError(error) && error.response) {
         const message = error.response.data.message;
         console.error(
-          `Failed to fetch contracts: http: ${error.response?.status} and response: ${error.response?.data}`,
+          `Failed to fetch contracts: http: ${error.response?.status} and response: ${JSON.stringify(error.response?.data)}`,
         );
         throw new Error(message);
       } else {
@@ -194,7 +194,7 @@ export class HttpClientBorrower extends BaseHttpClient {
       if (axios.isAxiosError(error) && error.response) {
         const message = error.response.data.message;
         console.error(
-          `Failed to fetch contract: http: ${error.response?.status} and response: ${error.response?.data}`,
+          `Failed to fetch contract: http: ${error.response?.status} and response: ${JSON.stringify(error.response?.data)}`,
         );
         throw new Error(message);
       } else {
