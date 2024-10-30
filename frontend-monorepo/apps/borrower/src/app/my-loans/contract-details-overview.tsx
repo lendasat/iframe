@@ -106,7 +106,7 @@ function Details({ contract }: DetailsProps) {
 
   return (
     <Grid className="md:grid-cols-2">
-      <Box className="order-2 md:order-1 border-r border-font/10">
+      <Box className="order-1 md:order-1 border-r border-font/10">
         <ContractDetails contract={contract} />
         <ExpandableDisputeCard
           info={info}
@@ -117,7 +117,7 @@ function Details({ contract }: DetailsProps) {
         />
       </Box>
 
-      <Box className="p-6 md:p-8 space-y-5 order-1 md:order-2">
+      <Box className="order-2 md:order-2 p-6 md:p-8 space-y-5">
         <ContractStatusDetails
           contract={contract}
           collateralBtc={collateralBtc}
