@@ -109,7 +109,7 @@ export function CollateralContractDetails({
                 onClick={() => handleCopy(totalCollateral)}
                 className="text-font-dark font-semibold cursor-copy"
               >
-                {totalCollateral} BTC
+                {totalCollateral} BTC {"  "}
               </span>
             </Popup>
             to{"  "}
