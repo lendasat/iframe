@@ -3,6 +3,7 @@ import { BaseHttpClient, BaseHttpClientContext } from "@frontend-monorepo/base-h
 import type { AxiosResponse } from "axios";
 import axios from "axios";
 import { createContext, useContext } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import type {
   CardTransactionInformation,
   ClaimCollateralPsbtResponse,
@@ -451,7 +452,22 @@ interface HttpClientProviderProps {
 }
 
 export const HttpClientBorrowerProvider: React.FC<HttpClientProviderProps> = ({ children, baseUrl }) => {
-  const httpClient = new HttpClientBorrower(baseUrl);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleAuthError = () => {
+    console.log("Handling error");
+    if (location.pathname.includes(`login`)) {
+      console.log(`Already on login page`);
+      return;
+    }
+
+    navigate("/login", {
+      state: { returnUrl: window.location.pathname },
+    });
+  };
+
+  const httpClient = new HttpClientBorrower(baseUrl, handleAuthError);
 
   const baseClientFunctions: BaseHttpClientContextType = {
     register: httpClient.register.bind(httpClient),

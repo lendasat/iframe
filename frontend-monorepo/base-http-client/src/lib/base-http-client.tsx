@@ -1,4 +1,4 @@
-import type { AxiosInstance, AxiosResponse } from "axios";
+import type { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import axios from "axios";
 import { createContext, useContext } from "react";
 import type { LoginResponse, MeResponse, Version } from "./models";
@@ -6,11 +6,22 @@ import type { LoginResponse, MeResponse, Version } from "./models";
 export class BaseHttpClient {
   public httpClient: AxiosInstance;
 
-  constructor(baseUrl: string) {
+  constructor(baseUrl: string, onAuthError?: () => void) {
     this.httpClient = axios.create({
       baseURL: baseUrl,
       withCredentials: true,
     });
+    // Add response interceptor for handling 401s
+    this.httpClient.interceptors.response.use(
+      (response) => response,
+      (error: AxiosError) => {
+        if (error.response?.status === 401) {
+          // Call the auth error handler if provided
+          onAuthError?.();
+        }
+        return Promise.reject(error);
+      },
+    );
   }
 
   async getVersion(): Promise<Version> {

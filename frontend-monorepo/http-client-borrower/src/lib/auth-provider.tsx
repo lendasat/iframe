@@ -4,7 +4,7 @@ import type { LoanProductOption } from "@frontend-monorepo/base-http-client";
 import axios from "axios";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import type { FC, ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { SemVer } from "semver";
 import { HttpClientBorrowerProvider } from "./http-client-borrower";
 import { FeatureMapper } from "./models";
@@ -69,6 +69,8 @@ export const AuthProviderBorrower: FC<AuthProviderProps> = ({ children, baseUrl 
 
 const BorrowerAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) => {
   const navigate = useNavigate();
+  const location = useLocation();
+
   const [user, setUser] = useState<User | null>(null);
   const [backendVersionFetched, setBackendVersionFetched] = useState(false);
   const [backendVersion, setBackendVersion] = useState<Version>({
@@ -81,12 +83,18 @@ const BorrowerAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) =>
 
   const handle401 = useCallback(() => {
     setUser(null);
+
+    if (location.pathname.includes(`login`)) {
+      console.log(`Already on login page`);
+      return;
+    }
+
     navigate("/login", {
       state: {
         returnUrl: window.location.pathname,
       },
     });
-  }, [navigate]);
+  }, [navigate, location]);
 
   const checkAuthStatus = useCallback(async () => {
     try {
@@ -140,8 +148,6 @@ const BorrowerAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) =>
         if (axios.isAxiosError(error) && error.response) {
           const message = error.response.data.message;
           console.error(message);
-        } else {
-          throw new Error(`Could not check if user is logged in ${JSON.stringify(error)}`);
         }
       } finally {
         setLoading(false);

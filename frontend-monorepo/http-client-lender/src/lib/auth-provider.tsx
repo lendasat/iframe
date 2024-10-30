@@ -87,7 +87,7 @@ const LenderAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) => {
           const message = error.response.data.message;
           console.error(message);
         } else {
-          throw new Error(`Could not check if user is logged in ${JSON.stringify(error)}`);
+          console.log(`Unexpected error received`, error);
         }
       } finally {
         setLoading(false);

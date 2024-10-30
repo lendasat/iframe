@@ -1,7 +1,8 @@
 import { faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import type { LoanProductOption } from "@frontend-monorepo/base-http-client";
 import { CreateWalletModal, UnlockWalletModal, useWallet } from "@frontend-monorepo/browser-wallet";
-import type { LoanOffer, LoanProductOption } from "@frontend-monorepo/http-client-borrower";
+import type { LoanOffer } from "@frontend-monorepo/http-client-borrower";
 import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import type { StableCoin } from "@frontend-monorepo/ui-shared";
 import {
@@ -96,6 +97,7 @@ export const Step2PickOffer = () => {
     navigate("/requests");
   }
 
+  // TODO: use this option in a text or something to tell the user what he has picked
   console.log(`Selected option ${selectedOption}`);
 
   const [advanceSearch, setAdvanceSearch] = useState<boolean>(false);
