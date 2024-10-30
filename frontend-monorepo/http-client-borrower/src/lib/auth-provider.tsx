@@ -74,7 +74,7 @@ const BorrowerAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) =>
     commit_hash: "unknown",
   });
   const [loading, setLoading] = useState(true);
-  const [enabledFeatures, setEnabledFeatures] = useState<LoanProductOption[]>();
+  const [enabledFeatures, setEnabledFeatures] = useState<LoanProductOption[]>([]);
   const { me, login: baseLogin, logout: baseLogout, getVersion } = useBaseHttpClient();
 
   useEffect(() => {
