@@ -91,7 +91,7 @@ export function CollateralContractDetails({
           p={"5"}
           className="rounded-2xl bg-white cursor-copy hover:shadow-sm"
         >
-          <QRCode value={bip21Url} size={300} />
+          <QRCode renderAs={"svg"} value={bip21Url} size={300} />
         </Box>
         <Flex
           align={"center"}
@@ -148,7 +148,7 @@ interface EncodeOptions {
 function encodeBip21(
   address: string,
   options: EncodeOptions,
-  urnScheme: string = "bitcoin",
+  urnScheme = "bitcoin",
 ): string {
   const scheme = urnScheme;
 
