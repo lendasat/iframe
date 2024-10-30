@@ -2,11 +2,12 @@ import type { User, Version } from "@frontend-monorepo/base-http-client";
 import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
 import type { LoanProductOption } from "@frontend-monorepo/base-http-client";
 import axios from "axios";
-import { FC, ReactNode , createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import type { FC, ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 import { SemVer } from "semver";
-import { HttpClientBorrowerProvider } from './http-client-borrower';
+import { HttpClientBorrowerProvider } from "./http-client-borrower";
 import { FeatureMapper } from "./models";
-import { useNavigate } from 'react-router-dom';
 
 interface AuthContextType {
   user: User | null;
@@ -78,21 +79,45 @@ const BorrowerAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) =>
   const [enabledFeatures, setEnabledFeatures] = useState<LoanProductOption[]>([]);
   const { me, login: baseLogin, logout: baseLogout, getVersion, check } = useBaseHttpClient();
 
-  const handle401 = () => {
+  const handle401 = useCallback(() => {
     setUser(null);
-    navigate('/login', {
+    navigate("/login", {
       state: {
-        returnUrl: window.location.pathname
-      }
+        returnUrl: window.location.pathname,
+      },
     });
-  };
+  }, [navigate]);
+
+  const checkAuthStatus = useCallback(async () => {
+    try {
+      console.log(`Checking status if logged in`);
+      await check();
+    } catch (error) {
+      console.log(`Checking status: failed`);
+      if (axios.isAxiosError(error) && error.response) {
+        if (error.response.status === 401) {
+          handle401();
+        } else {
+          const message = error.response.data.message;
+          console.error(
+            `Failed to check login status: http: ${error.response?.status} and response: ${
+              JSON.stringify(error.response?.data)
+            }`,
+          );
+          throw new Error(message);
+        }
+      } else {
+        throw new Error(`Failed to check login status: http: ${JSON.stringify(error)}`);
+      }
+    }
+  }, [check, handle401]);
 
   // Background session check
   useEffect(() => {
     checkAuthStatus();
     const intervalId = setInterval(checkAuthStatus, 5 * 60 * 1000);
     return () => clearInterval(intervalId);
-  }, []);
+  }, [checkAuthStatus]);
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -125,31 +150,6 @@ const BorrowerAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) =>
 
     initializeAuth();
   }, [me, backendVersionFetched, getVersion]);
-
-  const checkAuthStatus = async () => {
-    try {
-      console.log(`Checking status if logged in`);
-      await check();
-    } catch (error) {
-      console.log(`Checking status: failed`)
-      if (axios.isAxiosError(error) && error.response) {
-
-        if (error.response.status === 401) {
-          handle401();
-        } else {
-          const message = error.response.data.message;
-          console.error(
-            `Failed to check login status: http: ${error.response?.status} and response: ${
-              JSON.stringify(error.response?.data)
-            }`
-          );
-          throw new Error(message);
-        }
-      } else {
-        throw new Error(`Failed to check login status: http: ${JSON.stringify(error)}`);
-      }
-    }
-  };
 
   const login = async (email: string, password: string) => {
     setLoading(true);

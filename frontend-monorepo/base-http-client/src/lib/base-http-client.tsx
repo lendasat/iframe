@@ -102,11 +102,10 @@ export class BaseHttpClient {
     }
   }
 
-
   // A convenience function to check if the user is still logged in.
   // Throws an exception if the user was not or if another error occurred
   async check(): Promise<void> {
-      return await this.httpClient.get('/api/auth/check');
+    return await this.httpClient.get("/api/auth/check");
   }
 
   async forgotPassword(email: string): Promise<string> {
