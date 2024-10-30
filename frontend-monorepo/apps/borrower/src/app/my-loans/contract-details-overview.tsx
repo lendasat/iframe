@@ -7,7 +7,13 @@ import {
   useAuth,
   useBorrowerHttpClient,
 } from "@frontend-monorepo/http-client-borrower";
-import { CurrencyFormatter, LtvInfoLabel, StableCoinHelper, usePrice } from "@frontend-monorepo/ui-shared";
+import {
+  CurrencyFormatter,
+  formatCurrency,
+  LtvInfoLabel,
+  StableCoinHelper,
+  usePrice,
+} from "@frontend-monorepo/ui-shared";
 import { Badge, Box, Button, Callout, Flex, Grid, Heading, IconButton, Separator, Text } from "@radix-ui/themes";
 import { Suspense, useState } from "react";
 import { Col, OverlayTrigger, Row, Tooltip } from "react-bootstrap";
@@ -201,6 +207,8 @@ function ContractDetails({ contract }: DetailsProps) {
       break;
   }
 
+  const actualInterestUsdAmount = loanAmount * interestRate / (12 / durationMonths);
+
   return (
     <Box>
       <Box className="p-6 md:pl-8 border-b border-font/10">
@@ -339,11 +347,16 @@ function ContractDetails({ contract }: DetailsProps) {
 
         <Flex gap={"5"} align={"start"} justify={"between"}>
           <Text size={"2"} weight={"medium"} className="text-font/70">
-            Interest rate p.a.
+            Interest
           </Text>
-          <Text size={"2"} weight={"medium"}>
-            {interestRate * 100}%
-          </Text>
+          <div className="flex flex-col">
+            <Text size={"2"} weight={"medium"}>
+              {interestRate * 100}% per year
+            </Text>
+            <Text className="text-[11px] text-black/50 mt-0.5 self-end">
+              ≈ {formatCurrency(actualInterestUsdAmount, 1, 1)} in total
+            </Text>
+          </div>
         </Flex>
         <Separator size={"4"} className="bg-font/10" />
         <AdditionalDetail contract={contract} />

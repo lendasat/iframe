@@ -1,6 +1,6 @@
 import type { FC } from "react";
 
-export const formatCurrency = (value: number, minFraction: number = 0, maxFraction: number = 0) => {
+export const formatCurrency = (value: number, minFraction = 0, maxFraction = 0) => {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
