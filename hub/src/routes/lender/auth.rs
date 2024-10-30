@@ -449,13 +449,31 @@ pub async fn logout_handler() -> Result<impl IntoResponse, (StatusCode, Json<Err
     Ok(response)
 }
 
+#[derive(Debug, Serialize)]
+pub struct LenderLoanFeature {
+    pub id: String,
+    pub name: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct MeResponse {
+    pub enabled_features: Vec<LenderLoanFeature>,
+    pub user: FilteredUser,
+}
+
 #[instrument(skip_all, err(Debug))]
 pub async fn get_me_handler(
     Extension(user): Extension<User>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let filtered_user = FilteredUser::new_user(&user);
 
-    Ok((StatusCode::OK, Json(filtered_user)))
+    Ok((
+        StatusCode::OK,
+        Json(MeResponse {
+            enabled_features: vec![],
+            user: filtered_user,
+        }),
+    ))
 }
 
 #[derive(Debug, Serialize)]

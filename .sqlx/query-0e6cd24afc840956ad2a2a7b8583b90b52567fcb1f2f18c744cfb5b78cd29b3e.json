@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n       INSERT INTO borrower_feature_flags (borrower_id, feature_id, is_enabled)\n       VALUES (\n           $1,\n           $2,\n           true\n       )\n       ON CONFLICT (borrower_id, feature_id)\n       DO UPDATE SET \n           is_enabled = true,\n           updated_at = CURRENT_TIMESTAMP\n       ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Bpchar",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0e6cd24afc840956ad2a2a7b8583b90b52567fcb1f2f18c744cfb5b78cd29b3e"
+}

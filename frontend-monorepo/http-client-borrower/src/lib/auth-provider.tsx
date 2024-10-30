@@ -1,10 +1,12 @@
 import type { User, Version } from "@frontend-monorepo/base-http-client";
 import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
+import type { LoanProductOption } from "@frontend-monorepo/base-http-client";
 import axios from "axios";
 import type { FC, ReactNode } from "react";
 import { createContext, useContext, useEffect, useState } from "react";
 import { SemVer } from "semver";
 import { HttpClientBorrowerProvider } from "./http-client-borrower";
+import { FeatureMapper } from "./models";
 
 interface AuthContextType {
   user: User | null;
@@ -12,6 +14,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   backendVersion: Version;
+  enabledFeatures: LoanProductOption[];
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -71,6 +74,7 @@ const BorrowerAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) =>
     commit_hash: "unknown",
   });
   const [loading, setLoading] = useState(true);
+  const [enabledFeatures, setEnabledFeatures] = useState<LoanProductOption[]>();
   const { me, login: baseLogin, logout: baseLogout, getVersion } = useBaseHttpClient();
 
   useEffect(() => {
@@ -78,7 +82,10 @@ const BorrowerAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) =>
       try {
         const currentUser = await me();
         if (currentUser) {
-          setUser(currentUser);
+          setUser(currentUser.user);
+          const enabledFeatures = FeatureMapper.mapEnabledFeatures(currentUser.enabled_features);
+
+          setEnabledFeatures(enabledFeatures);
         } else {
           setUser(null);
         }
@@ -105,8 +112,17 @@ const BorrowerAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) =>
   const login = async (email: string, password: string) => {
     setLoading(true);
     try {
-      await baseLogin(email, password);
-      const currentUser = await me();
+      const loginResponse = await baseLogin(email, password);
+      const enabledFeatures = FeatureMapper.mapEnabledFeatures(loginResponse.enabled_features);
+
+      const currentUser = loginResponse.user;
+
+      console.log(`Enabled features after login ${enabledFeatures}`);
+      if (enabledFeatures) {
+        setEnabledFeatures(enabledFeatures);
+      } else {
+        setEnabledFeatures([]);
+      }
       if (currentUser) {
         setUser(currentUser);
       } else {
@@ -138,7 +154,7 @@ const BorrowerAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, backendVersion }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, backendVersion, enabledFeatures }}>
       {children}
     </AuthContext.Provider>
   );

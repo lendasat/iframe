@@ -18,7 +18,7 @@ export default function Cards() {
   const [moreInfo, setMoreInfo] = useState<boolean>(false);
   const [activeCardIndex, setActiveCardIndex] = useState<number>(0);
   // Change Card
-  const SlideRef = useRef<SwiperRef>(null);
+  const SlideRef = useRef<SwiperRef>();
 
   const { getUserCards } = useBorrowerHttpClient();
 

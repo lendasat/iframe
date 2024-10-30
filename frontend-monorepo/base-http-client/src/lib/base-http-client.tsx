@@ -1,7 +1,7 @@
 import type { AxiosInstance, AxiosResponse } from "axios";
 import axios from "axios";
 import { createContext, useContext } from "react";
-import type { User, Version } from "./models";
+import type { LoginResponse, MeResponse, User, Version } from "./models";
 
 export class BaseHttpClient {
   public httpClient: AxiosInstance;
@@ -46,10 +46,12 @@ export class BaseHttpClient {
     }
   }
 
-  async login(email: string, password: string): Promise<void> {
+  async login(email: string, password: string): Promise<LoginResponse> {
     try {
-      await this.httpClient.post("/api/auth/login", { email, password });
+      const [response] = await Promise.all([this.httpClient.post("/api/auth/login", { email, password })]);
+      const data = response.data as LoginResponse;
       console.log(`Login successful`);
+      return data;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         console.log(error.response);
@@ -79,16 +81,16 @@ export class BaseHttpClient {
     }
   }
 
-  async me(): Promise<User | undefined> {
+  async me(): Promise<MeResponse | undefined> {
     try {
-      const response: AxiosResponse<User> = await this.httpClient.get("/api/users/me");
-      const user = response.data;
-      if (user) {
-        this.user = user;
+      const response: AxiosResponse<MeResponse> = await this.httpClient.get("/api/users/me");
+      const meResponse = response.data;
+      if (meResponse) {
+        this.user = meResponse.user;
       } else {
         this.user = null;
       }
-      return user;
+      return meResponse;
     } catch (error) {
       if (error.response.status !== 401) {
         console.error(`Failed to fetch me: http: ${error.response?.status} and response: ${error.response?.data}`);

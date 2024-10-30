@@ -1,3 +1,6 @@
+import { LoanProductOption } from "@frontend-monorepo/base-http-client";
+import type { LoanFeature } from "@frontend-monorepo/base-http-client";
+
 export enum ContractStatus {
   Requested = "Requested",
   Approved = "Approved",
@@ -246,9 +249,17 @@ export enum CardTransactionType {
   Payment = "payment",
 }
 
-export enum LoanProductOption {
-  PayWithMoonDebitCard = "PayWithMoonDebitCard",
-  StableCoins = "StableCoins",
-  BringinBankAccount = "BringinBankAccount",
-  BitrefillDebitCard = "BitrefillDebitCard",
+export class FeatureMapper {
+  private static readonly FEATURE_MAP: Record<string, LoanProductOption> = {
+    [LoanProductOption.StableCoins]: LoanProductOption.StableCoins,
+    [LoanProductOption.PayWithMoonDebitCard]: LoanProductOption.PayWithMoonDebitCard,
+    // Add other mappings once we use them
+  };
+
+  static mapEnabledFeatures(features: LoanFeature[]): LoanProductOption[] {
+    return features.flatMap((feature) => {
+      const mappedFeature = this.FEATURE_MAP[feature.id];
+      return mappedFeature ? [mappedFeature] : [];
+    });
+  }
 }

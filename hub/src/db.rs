@@ -1,3 +1,4 @@
+pub mod borrower_features;
 pub mod borrowers;
 pub mod contracts;
 pub mod dispute;
