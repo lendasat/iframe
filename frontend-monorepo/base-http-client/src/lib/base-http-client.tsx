@@ -102,6 +102,13 @@ export class BaseHttpClient {
     }
   }
 
+
+  // A convenience function to check if the user is still logged in.
+  // Throws an exception if the user was not or if another error occurred
+  async check(): Promise<void> {
+      return await this.httpClient.get('/api/auth/check');
+  }
+
   async forgotPassword(email: string): Promise<string> {
     try {
       const response = await this.httpClient.post("/api/auth/forgotpassword", { email: email });
@@ -174,6 +181,7 @@ export type BaseHttpClientContextType = Pick<
   | "resetPassword"
   | "verifyEmail"
   | "getVersion"
+  | "check"
 >;
 
 // Create the contexts
@@ -205,6 +213,7 @@ export const HttpClientProvider: React.FC<HttpClientProviderProps> = ({ children
     verifyEmail: httpClient.verifyEmail.bind(httpClient),
     resetPassword: httpClient.resetPassword.bind(httpClient),
     getVersion: httpClient.getVersion.bind(httpClient),
+    check: httpClient.check.bind(httpClient),
   };
 
   return (

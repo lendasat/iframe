@@ -458,6 +458,7 @@ export const HttpClientBorrowerProvider: React.FC<HttpClientProviderProps> = ({ 
     verifyEmail: httpClient.verifyEmail.bind(httpClient),
     resetPassword: httpClient.resetPassword.bind(httpClient),
     getVersion: httpClient.getVersion.bind(httpClient),
+    check: httpClient.check.bind(httpClient),
   };
 
   const borrowerClientFunctions: BorrowerHttpClientContextType = {
