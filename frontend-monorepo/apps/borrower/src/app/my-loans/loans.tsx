@@ -196,7 +196,7 @@ function ContractsComponent({ loans }: LoansComponentProps) {
             contractStatusLabel = "Liquidated";
           }
 
-          if (loan.status == ContractStatus.Closed) {
+          if (loan.status === ContractStatus.Closed) {
             return null;
           }
 
