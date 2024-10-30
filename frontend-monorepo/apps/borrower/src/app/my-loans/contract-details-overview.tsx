@@ -15,7 +15,7 @@ import {
   usePrice,
 } from "@frontend-monorepo/ui-shared";
 import { Badge, Box, Button, Callout, Flex, Grid, Heading, IconButton, Separator, Text } from "@radix-ui/themes";
-import React, { Suspense, useState } from "react";
+import { Suspense, useState } from "react";
 import { Col, OverlayTrigger, Row, Tooltip } from "react-bootstrap";
 import { FaInfoCircle } from "react-icons/fa";
 import { IoMdCloudDownload } from "react-icons/io";
@@ -214,7 +214,7 @@ function ContractDetails({ contract }: DetailsProps) {
 
   const actualInterestUsdAmount = (loanAmount * interestRate) / (12 / durationMonths);
 
-  const [copied, setCopied] = React.useState<boolean>(false);
+  const [copied, setCopied] = useState<boolean>(false);
 
   const formatId = (number: string) => {
     const formattedNumber = number.slice(0, 3) + "***" + number.slice(-2);
