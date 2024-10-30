@@ -78,10 +78,7 @@ const menuItems = [
         path: "/cards",
         icon: IoCardOutline,
         target: "_self",
-        // If VITE_ENABLE_CARDS_FEATURE is undefined, visible should be false
-        visible: typeof import.meta.env.VITE_ENABLE_CARDS_FEATURE !== "undefined"
-          ? import.meta.env.VITE_ENABLE_CARDS_FEATURE
-          : false,
+        visible: true,
       },
       {
         label: "My Loans",
