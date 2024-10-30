@@ -7,7 +7,7 @@ import {
 } from "@frontend-monorepo/http-client-borrower";
 import { Layout, PriceProvider } from "@frontend-monorepo/ui-shared";
 import { BsBank } from "react-icons/bs";
-import { Outlet, Route, Routes } from "react-router-dom";
+import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import EmailVerification from "./auth/email-verification";
 import ForgotPassword from "./auth/forgot-password";
 import Login from "./auth/login";
@@ -26,6 +26,7 @@ import RequestLoan from "./request-loan/request-loan";
 import { RequestLoanSummary } from "./request-loan/request-loan-summary";
 import "./../styles.css";
 import type { User } from "@frontend-monorepo/base-http-client";
+import { LoanProductOption } from "@frontend-monorepo/base-http-client";
 import { FiHome } from "react-icons/fi";
 import { GoGitPullRequest } from "react-icons/go";
 import { HiOutlineSupport } from "react-icons/hi";
@@ -34,6 +35,7 @@ import { LuActivity, LuSettings } from "react-icons/lu";
 import Cards from "./cards/Cards";
 import CustomRequest from "./request-loan/custom-loan-request";
 import RequestLoanWizard from "./request-loan/request-loan-wizard";
+import RestrictedAccessPage from "./RestrictedAccessPage";
 
 const menuItems = [
   {
@@ -112,6 +114,25 @@ const menuItems = [
   },
 ];
 
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+  neededFeature: LoanProductOption;
+}
+
+const FeatureFlagProtectedRoute = ({ children, neededFeature }: ProtectedRouteProps) => {
+  const { enabledFeatures } = useAuth();
+  if (!enabledFeatures) {
+    return <Navigate to="/restricted" replace />;
+  }
+
+  const hasAccess = enabledFeatures.includes(neededFeature);
+  if (!hasAccess) {
+    return <Navigate to="/restricted" replace />;
+  }
+
+  return <div>{children}</div>;
+};
+
 function MainLayoutComponents() {
   const { backendVersion, user: borrowerUser, logout } = useAuth();
 
@@ -156,8 +177,15 @@ function MainLayoutComponents() {
               <Route path={":id"} element={<ContractDetailsOverview />} />
             </Route>
             <Route path="/requests/*" element={<RequestLoanWizard />} />
-            {import.meta.env.VITE_ENABLE_CARDS_FEATURE
-              && <Route path="/cards" element={<Cards />} />}
+
+            <Route
+              path="/cards"
+              element={
+                <FeatureFlagProtectedRoute neededFeature={LoanProductOption.PayWithMoonDebitCard}>
+                  <Cards />
+                </FeatureFlagProtectedRoute>
+              }
+            />
             <Route path="/custom-request" element={<CustomRequest />} />
             <Route path="/history" element={<History />} />
             <Route path="/setting" element={<MyAccount />} />
@@ -166,6 +194,7 @@ function MainLayoutComponents() {
             <Route path="/request-loan" element={<RequestLoan />} />
             <Route path="/request-loan/:id" element={<RequestLoanSummary />} />
             <Route path="/disputes/:id" element={<ResolveDispute />} />
+            <Route path="/restricted" element={<RestrictedAccessPage />} />
             <Route path="/error" element={<ErrorBoundary />} />
           </Route>
         </Routes>

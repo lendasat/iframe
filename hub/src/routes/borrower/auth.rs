@@ -177,6 +177,19 @@ pub async fn register_user_handler(
     Ok(Json(user_response))
 }
 
+#[derive(Debug, Serialize)]
+pub struct BorrowerLoanFeature {
+    pub id: String,
+    pub name: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct LoginResponse {
+    pub token: String,
+    pub enabled_features: Vec<BorrowerLoanFeature>,
+    pub user: FilteredUser,
+}
+
 #[instrument(skip_all, err(Debug))]
 pub async fn login_user_handler(
     State(data): State<Arc<AppState>>,
@@ -240,16 +253,55 @@ pub async fn login_user_handler(
         .same_site(SameSite::Lax)
         .http_only(true);
 
-    let mut response = Response::new(json!({"token": token}).to_string());
-    response.headers_mut().insert(
-        header::SET_COOKIE,
-        cookie.to_string().parse().map_err(|error| {
+    let features = db::borrower_features::load_borrower_features(&data.db, user.id.clone())
+        .await
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Database error: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
+
+    let features = features
+        .iter()
+        .filter_map(|f| {
+            if f.is_enabled {
+                Some(BorrowerLoanFeature {
+                    id: f.id.clone(),
+                    name: f.name.clone(),
+                })
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>();
+
+    if features.is_empty() {
+        let error_response = ErrorResponse {
+            message: "No features enabled".to_string(),
+        };
+        return Err((StatusCode::INTERNAL_SERVER_ERROR, Json(error_response)));
+    }
+
+    let filtered_user = FilteredUser::new_user(&user);
+
+    let response = Response::builder()
+        .status(StatusCode::OK)
+        .header(header::SET_COOKIE.as_str(), cookie.to_string().as_str())
+        .body(
+            json!(LoginResponse {
+                token,
+                enabled_features: features,
+                user: filtered_user
+            })
+            .to_string(),
+        )
+        .map_err(|error| {
             let error_response = ErrorResponse {
                 message: format!("Failed parsing cookie: {}", error),
             };
             (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?,
-    );
+        })?;
     Ok(response)
 }
 
@@ -450,13 +502,56 @@ pub async fn logout_handler() -> Result<impl IntoResponse, (StatusCode, Json<Err
     Ok(response)
 }
 
+#[derive(Debug, Serialize)]
+pub struct MeResponse {
+    pub enabled_features: Vec<BorrowerLoanFeature>,
+    pub user: FilteredUser,
+}
+
 #[instrument(skip_all, err(Debug))]
 pub async fn get_me_handler(
+    State(data): State<Arc<AppState>>,
     Extension(user): Extension<User>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     let filtered_user = FilteredUser::new_user(&user);
 
-    Ok((StatusCode::OK, Json(filtered_user)))
+    let features = db::borrower_features::load_borrower_features(&data.db, user.id.clone())
+        .await
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Database error: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
+
+    let features = features
+        .iter()
+        .filter_map(|f| {
+            if f.is_enabled {
+                Some(BorrowerLoanFeature {
+                    id: f.id.clone(),
+                    name: f.name.clone(),
+                })
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>();
+
+    if features.is_empty() {
+        let error_response = ErrorResponse {
+            message: "No features enabled".to_string(),
+        };
+        return Err((StatusCode::INTERNAL_SERVER_ERROR, Json(error_response)));
+    }
+
+    Ok((
+        StatusCode::OK,
+        Json(MeResponse {
+            enabled_features: features,
+            user: filtered_user,
+        }),
+    ))
 }
 
 #[derive(Debug, Serialize)]

@@ -65,7 +65,7 @@ export const AuthProviderLender: FC<AuthProviderProps> = ({ children, baseUrl })
 const LenderAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [backendVersion, setBackendVersion] = useState<Version | undefined>(undefined);
+  const [backendVersion, setBackendVersion] = useState<Version | undefined>();
   const { me, login: baseLogin, logout: baseLogout, getVersion } = useBaseHttpClient();
 
   useEffect(() => {
@@ -73,7 +73,7 @@ const LenderAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) => {
       try {
         const currentUser = await me();
         if (currentUser) {
-          setUser(currentUser);
+          setUser(currentUser.user);
         } else {
           setUser(null);
         }
@@ -103,7 +103,7 @@ const LenderAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) => {
       await baseLogin(email, password);
       const currentUser = await me();
       if (currentUser) {
-        setUser(currentUser);
+        setUser(currentUser.user);
       } else {
         setUser(null);
       }

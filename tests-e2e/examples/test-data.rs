@@ -185,14 +185,21 @@ async fn insert_borrower(pool: &Pool<Postgres>) -> Result<User> {
         let maybe_user = db::borrowers::get_user_by_email(pool, email)
             .await?
             .expect("expect to have user");
+        enable_features(pool, maybe_user.id.as_str()).await?;
         return Ok(maybe_user);
     }
     let user =
         db::borrowers::register_user(pool, "bob the borrower", email, "password123", None).await?;
     let verification_code = user.verification_code.clone().expect("to exist");
     db::borrowers::verify_user(pool, verification_code.as_str()).await?;
+    enable_features(pool, user.id.as_str()).await?;
 
     Ok(user)
+}
+
+async fn enable_features(pool: &Pool<Postgres>, user_id: &str) -> Result<()> {
+    db::borrower_features::enable_feature(pool, user_id, "pay_with_moon").await?;
+    Ok(())
 }
 
 pub async fn connect_to_db(db_connection: &str) -> Result<Pool<Postgres>> {

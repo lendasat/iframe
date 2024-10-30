@@ -15,7 +15,7 @@ import type {
   PostLoanRequest,
   UserCardDetail,
 } from "./models";
-import { CardTransactionStatus, CardTransactionType, LoanProductOption } from "./models";
+import { CardTransactionStatus, CardTransactionType } from "./models";
 import { parseRFC3339Date } from "./utils";
 
 // Interface for the raw data received from the API
@@ -388,14 +388,6 @@ export class HttpClientBorrower extends BaseHttpClient {
       },
     ];
   }
-
-  async getLoanProductOptions(): Promise<LoanProductOption[]> {
-    const availableOptions = [LoanProductOption.StableCoins];
-    if (import.meta.env.VITE_ENABLE_CARDS_FEATURE) {
-      availableOptions.push(LoanProductOption.PayWithMoonDebitCard);
-    }
-    return availableOptions;
-  }
 }
 
 type BorrowerHttpClientContextType = Pick<
@@ -416,7 +408,6 @@ type BorrowerHttpClientContextType = Pick<
   | "getBorrowerProfile"
   | "getUserCards"
   | "getCardTransactions"
-  | "getLoanProductOptions"
 >;
 
 export const BorrowerHttpClientContext = createContext<BorrowerHttpClientContextType | undefined>(undefined);
@@ -466,7 +457,6 @@ export const HttpClientBorrowerProvider: React.FC<HttpClientProviderProps> = ({ 
     getBorrowerProfile: httpClient.getBorrowerProfile.bind(httpClient),
     getUserCards: httpClient.getUserCards.bind(httpClient),
     getCardTransactions: httpClient.getCardTransactions.bind(httpClient),
-    getLoanProductOptions: httpClient.getLoanProductOptions.bind(httpClient),
   };
 
   return (

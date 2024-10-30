@@ -1,7 +1,7 @@
-import { LoanProductOption, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
+import { LoanProductOption } from "@frontend-monorepo/base-http-client";
+import { useAuth } from "@frontend-monorepo/http-client-borrower";
 import { Box, Button, Text } from "@radix-ui/themes";
 import type { ReactElement } from "react";
-import { useAsync } from "react-use";
 import Bitrefil from "../../../assets/bitrefil.png";
 import Defi from "../../../assets/defi.jpg";
 import Moon from "../../../assets/moon.jpg";
@@ -13,20 +13,11 @@ interface Step1Props {
 }
 
 export const Step1PickOption = ({ onSelect, selectedOption }: Step1Props) => {
-  const { getLoanProductOptions } = useBorrowerHttpClient();
-
-  const { value } = useAsync(async () => {
-    return await getLoanProductOptions();
-  });
-
-  let options: LoanProductOption[] = [];
-  if (value) {
-    options = value;
-  }
+  const { enabledFeatures } = useAuth();
 
   return (
     <Box className="py-6 md:py-8 grid md:grid-cols-2 xl:grid-cols-3 gap-5 px-6 md:px-8">
-      {options.map((option, index) => {
+      {enabledFeatures.map((option, index) => {
         switch (option) {
           case LoanProductOption.PayWithMoonDebitCard:
             return (

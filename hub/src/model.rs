@@ -546,3 +546,11 @@ impl OriginationFee {
         self.from_month <= contract_duration && self.to_month > contract_duration
     }
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct BorrowerLoanFeature {
+    pub id: String,
+    pub name: String,
+    pub description: Option<String>,
+    pub is_enabled: bool,
+}

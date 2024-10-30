@@ -1,4 +1,4 @@
-import type { LoanProductOption } from "@frontend-monorepo/http-client-borrower";
+import type { LoanProductOption } from "@frontend-monorepo/base-http-client";
 import { Box, Button, Flex, Heading, Separator, Text } from "@radix-ui/themes";
 import { useState } from "react";
 import { CardBody, CardFooter } from "react-bootstrap";
