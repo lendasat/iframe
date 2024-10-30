@@ -160,10 +160,15 @@ export class HttpClientBorrower extends BaseHttpClient {
         };
       });
     } catch (error) {
-      console.error(
-        `Failed to fetch contracts: http: ${error.response?.status} and response: ${error.response?.data}`,
-      );
-      throw error;
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to fetch contracts: http: ${error.response?.status} and response: ${error.response?.data}`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not fetch contracts ${JSON.stringify(error)}`);
+      }
     }
   }
 
@@ -186,10 +191,15 @@ export class HttpClientBorrower extends BaseHttpClient {
         expiry: expiry,
       };
     } catch (error) {
-      console.error(
-        `Failed to fetch contract: http: ${error.response?.status} and response: ${error.response?.data}`,
-      );
-      throw error;
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to fetch contract: http: ${error.response?.status} and response: ${error.response?.data}`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not fetch contracts ${JSON.stringify(error)}`);
+      }
     }
   }
 
@@ -200,12 +210,17 @@ export class HttpClientBorrower extends BaseHttpClient {
       );
       return res.data;
     } catch (error) {
-      console.error(
-        `Failed to fetch claim-collateral PSBT: http: ${error.response?.status} and response: ${
-          JSON.stringify(error.response?.data)
-        }`,
-      );
-      throw error;
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to fetch claim-collateral PSBT: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Failed to fetch claim-collateral PSBT ${JSON.stringify(error)}`);
+      }
     }
   }
   async getClaimDisputeCollateralPsbt(disputeId: string, feeRate: number): Promise<ClaimCollateralPsbtResponse> {
@@ -235,10 +250,15 @@ export class HttpClientBorrower extends BaseHttpClient {
       const response: AxiosResponse<string> = await this.httpClient.post(`/api/contracts/${contract_id}`, { tx: tx });
       return response.data;
     } catch (error) {
-      console.error(
-        `Failed to post claim TX: http: ${error.response?.status} and response: ${error.response?.data}`,
-      );
-      throw error;
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to post claim TX: http: ${error.response?.status} and response: ${error.response?.data}`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Failed to post claim tx ${JSON.stringify(error)}`);
+      }
     }
   }
 
