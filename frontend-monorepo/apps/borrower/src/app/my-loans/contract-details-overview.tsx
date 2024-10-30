@@ -18,6 +18,7 @@ import { Badge, Box, Button, Callout, Flex, Grid, Heading, IconButton, Separator
 import { Suspense, useState } from "react";
 import { Col, OverlayTrigger, Row, Tooltip } from "react-bootstrap";
 import { FaInfoCircle } from "react-icons/fa";
+import { FaCopy } from "react-icons/fa6";
 import { IoMdCloudDownload } from "react-icons/io";
 import { Await, Link, useParams } from "react-router-dom";
 import { AddCollateralModal } from "./add-collateral-modal";
@@ -214,18 +215,19 @@ function ContractDetails({ contract }: DetailsProps) {
 
   const actualInterestUsdAmount = (loanAmount * interestRate) / (12 / durationMonths);
 
-  const [copied, setCopied] = useState<boolean>(false);
+  const [contractIdCopied, setContractIdCopied] = useState<boolean>(false);
 
-  const formatId = (number: string) => {
-    const formattedNumber = number.slice(0, 3) + "***" + number.slice(-2);
-    return formattedNumber;
+  const formatId = (id: string) => {
+    const start = id.slice(0, 6);
+    const end = id.slice(-4);
+    return `${start}...${end}`;
   };
 
   const handleCopy = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setContractIdCopied(true);
+      setTimeout(() => setContractIdCopied(false), 2000);
     } catch (err) {
       console.error("Failed to copy text: ", err);
     }
@@ -264,7 +266,7 @@ function ContractDetails({ contract }: DetailsProps) {
           <Text size={"2"} weight={"medium"} className="text-font/70 shrink-0">
             Contract ID
           </Text>
-          {copied
+          {contractIdCopied
             ? (
               <Text size={"2"} className="font-medium" color="green">
                 Copied
@@ -275,9 +277,9 @@ function ContractDetails({ contract }: DetailsProps) {
                 onClick={() => handleCopy(contract.id)}
                 size={"2"}
                 weight={"medium"}
-                className="text-end cursor-copy hover:opacity-70"
+                className="text-end cursor-copy hover:opacity-70 flex items-center gap-1"
               >
-                {formatId(contract.id)}
+                {formatId(contract.id)} <FaCopy />
               </Text>
             )}
         </Flex>
