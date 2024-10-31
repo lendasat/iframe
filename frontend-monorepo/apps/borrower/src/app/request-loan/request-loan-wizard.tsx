@@ -138,14 +138,20 @@ const RequestLoanWizard = () => {
         </Button>
         {currentStepIndex < steps.length - 1
           && (
-            <Button
-              onClick={goToNext}
-              disabled={currentStepIndex === steps.length - 1
-                || selectedOption === undefined}
-            >
-              {currentStepIndex === steps.length - 1 ? "Finish" : "Next"}
-              <FaArrowRight className="w-4 h-4 ml-2" />
-            </Button>
+            <Flex direction="column" align="end">
+              <Button
+                onClick={goToNext}
+                disabled={currentStepIndex === steps.length - 1 || selectedOption === undefined}
+              >
+                {currentStepIndex === steps.length - 1 ? "Finish" : "Next"}
+                <FaArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+              {currentStepIndex === 0 && (
+                <p className="text-xs text-gray-500 mt-2 text-center">
+                  By clicking next you agree to the terms and conditions of the selected product.
+                </p>
+              )}
+            </Flex>
           )}
       </CardFooter>
     </Box>
