@@ -18,6 +18,7 @@ import { Badge, Box, Button, Callout, Flex, Grid, Heading, IconButton, Separator
 import { Suspense, useState } from "react";
 import { Col, OverlayTrigger, Row, Tooltip } from "react-bootstrap";
 import { FaInfoCircle } from "react-icons/fa";
+import { FaCopy } from "react-icons/fa6";
 import { IoMdCloudDownload } from "react-icons/io";
 import { Await, Link, useParams } from "react-router-dom";
 import { AddCollateralModal } from "./add-collateral-modal";
@@ -76,7 +77,8 @@ function Details({ contract }: DetailsProps) {
   const originationFeeBtc = contract.origination_fee_sats / 100000000;
   const totalCollateral = (collateralBtc + originationFeeBtc).toFixed(8);
 
-  const accruedInterest = contract.loan_amount * ((contract.interest_rate / 12) * contract.duration_months);
+  const accruedInterest = contract.loan_amount
+    * ((contract.interest_rate / 12) * contract.duration_months);
   const totalRepaymentAmount = accruedInterest + loanAmount;
 
   // TODO: Let's calculate the initial price once, in the backend.
@@ -153,7 +155,11 @@ function ContractDetails({ contract }: DetailsProps) {
     contract.loan_asset_type,
   );
 
-  const collateral = collateralForStatus(contract.status, contract.initial_collateral_sats, contract.collateral_sats);
+  const collateral = collateralForStatus(
+    contract.status,
+    contract.initial_collateral_sats,
+    contract.collateral_sats,
+  );
   const collateralBtc = collateral / 100000000;
   const loanAmount = contract.loan_amount;
   const interestRate = contract.interest_rate;
@@ -207,14 +213,30 @@ function ContractDetails({ contract }: DetailsProps) {
       break;
   }
 
-  const actualInterestUsdAmount = loanAmount * interestRate / (12 / durationMonths);
+  const actualInterestUsdAmount = (loanAmount * interestRate) / (12 / durationMonths);
+
+  const [contractIdCopied, setContractIdCopied] = useState<boolean>(false);
+
+  const formatId = (id: string) => {
+    const start = id.slice(0, 6);
+    const end = id.slice(-4);
+    return `${start}...${end}`;
+  };
+
+  const handleCopy = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setContractIdCopied(true);
+      setTimeout(() => setContractIdCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy text: ", err);
+    }
+  };
 
   return (
     <Box>
       <Box className="p-6 md:pl-8 border-b border-font/10">
-        <Heading size={"6"}>
-          Contract Details
-        </Heading>
+        <Heading size={"6"}>Contract Details</Heading>
       </Box>
 
       {contract.contract_address
@@ -238,6 +260,28 @@ function ContractDetails({ contract }: DetailsProps) {
               {contract.lender.name}
             </Text>
           </Link>
+        </Flex>
+        <Separator size={"4"} className="bg-font/10" />
+        <Flex gap={"5"} align={"start"} justify={"between"}>
+          <Text size={"2"} weight={"medium"} className="text-font/70 shrink-0">
+            Contract ID
+          </Text>
+          {contractIdCopied
+            ? (
+              <Text size={"2"} className="font-medium" color="green">
+                Copied
+              </Text>
+            )
+            : (
+              <Text
+                onClick={() => handleCopy(contract.id)}
+                size={"2"}
+                weight={"medium"}
+                className="text-end cursor-copy hover:opacity-70 flex items-center gap-1"
+              >
+                {formatId(contract.id)} <FaCopy />
+              </Text>
+            )}
         </Flex>
         <Separator size={"4"} className="bg-font/10" />
 
@@ -399,7 +443,10 @@ const AdditionalDetail = ({ contract }: AdditionalDetailsProps) => {
         <Row className="justify-content-between border-b mt-2">
           <Col>Funding transaction</Col>
           <Col className="text-end mb-2">
-            <TransactionList contract={contract} transactionType={TransactionType.Funding} />
+            <TransactionList
+              contract={contract}
+              transactionType={TransactionType.Funding}
+            />
           </Col>
         </Row>
       );
@@ -410,14 +457,20 @@ const AdditionalDetail = ({ contract }: AdditionalDetailsProps) => {
             <Col>Funding transaction</Col>
             <Col className="text-end mb-2">
               <Col className="text-end mb-2">
-                <TransactionList contract={contract} transactionType={TransactionType.Funding} />
+                <TransactionList
+                  contract={contract}
+                  transactionType={TransactionType.Funding}
+                />
               </Col>
             </Col>
           </Row>
           <Row className="justify-content-between border-b mt-2">
             <Col>Principal transaction</Col>
             <Col className="text-end mb-2">
-              <TransactionList contract={contract} transactionType={TransactionType.PrincipalGiven} />
+              <TransactionList
+                contract={contract}
+                transactionType={TransactionType.PrincipalGiven}
+              />
             </Col>
           </Row>
         </>
@@ -428,19 +481,28 @@ const AdditionalDetail = ({ contract }: AdditionalDetailsProps) => {
           <Row className="justify-content-between border-b mt-2">
             <Col>Funding transaction</Col>
             <Col className="text-end mb-2">
-              <TransactionList contract={contract} transactionType={TransactionType.Funding} />
+              <TransactionList
+                contract={contract}
+                transactionType={TransactionType.Funding}
+              />
             </Col>
           </Row>
           <Row className="justify-content-between border-b mt-2">
             <Col>Principal transaction</Col>
             <Col className="text-end mb-2">
-              <TransactionList contract={contract} transactionType={TransactionType.PrincipalGiven} />
+              <TransactionList
+                contract={contract}
+                transactionType={TransactionType.PrincipalGiven}
+              />
             </Col>
           </Row>
           <Row className="justify-content-between border-b mt-2">
             <Col>Principal repayment transaction</Col>
             <Col className="text-end mb-2">
-              <TransactionList contract={contract} transactionType={TransactionType.PrincipalRepaid} />
+              <TransactionList
+                contract={contract}
+                transactionType={TransactionType.PrincipalRepaid}
+              />
             </Col>
           </Row>
         </>
@@ -452,25 +514,37 @@ const AdditionalDetail = ({ contract }: AdditionalDetailsProps) => {
           <Row className="justify-content-between border-b mt-2">
             <Col>Funding transaction</Col>
             <Col className="text-end mb-2">
-              <TransactionList contract={contract} transactionType={TransactionType.Funding} />
+              <TransactionList
+                contract={contract}
+                transactionType={TransactionType.Funding}
+              />
             </Col>
           </Row>
           <Row className="justify-content-between border-b mt-2">
             <Col>Principal transaction</Col>
             <Col className="text-end mb-2">
-              <TransactionList contract={contract} transactionType={TransactionType.PrincipalGiven} />
+              <TransactionList
+                contract={contract}
+                transactionType={TransactionType.PrincipalGiven}
+              />
             </Col>
           </Row>
           <Row className="justify-content-between border-b mt-2">
             <Col>Principal repayment transaction</Col>
             <Col className="text-end mb-2">
-              <TransactionList contract={contract} transactionType={TransactionType.PrincipalRepaid} />
+              <TransactionList
+                contract={contract}
+                transactionType={TransactionType.PrincipalRepaid}
+              />
             </Col>
           </Row>
           <Row className="justify-content-between mt-2">
             <Col>Collateral claim transaction</Col>
             <Col className="text-end mb-2">
-              <TransactionList contract={contract} transactionType={TransactionType.ClaimCollateral} />
+              <TransactionList
+                contract={contract}
+                transactionType={TransactionType.ClaimCollateral}
+              />
             </Col>
           </Row>
         </>
@@ -495,17 +569,15 @@ interface ContractStatusDetailsProps {
   loanOriginatorFeeUsd: string;
 }
 
-const ContractStatusDetails = (
-  {
-    contract,
-    collateralBtc,
-    totalCollateral,
-    contractAddress,
-    totalRepaymentAmount,
-    loanOriginatorFee,
-    loanOriginatorFeeUsd,
-  }: ContractStatusDetailsProps,
-) => {
+const ContractStatusDetails = ({
+  contract,
+  collateralBtc,
+  totalCollateral,
+  contractAddress,
+  totalRepaymentAmount,
+  loanOriginatorFee,
+  loanOriginatorFeeUsd,
+}: ContractStatusDetailsProps) => {
   switch (contract.status) {
     case ContractStatus.Requested:
       return <ContractRequested createdAt={contract.created_at} />;
