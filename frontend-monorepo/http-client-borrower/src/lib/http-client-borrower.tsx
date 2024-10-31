@@ -3,6 +3,7 @@ import { BaseHttpClient, BaseHttpClientContext } from "@frontend-monorepo/base-h
 import type { AxiosResponse } from "axios";
 import axios from "axios";
 import { createContext, useContext } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import type {
   CardTransactionInformation,
   ClaimCollateralPsbtResponse,
@@ -160,10 +161,17 @@ export class HttpClientBorrower extends BaseHttpClient {
         };
       });
     } catch (error) {
-      console.error(
-        `Failed to fetch contracts: http: ${error.response?.status} and response: ${error.response?.data}`,
-      );
-      throw error;
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to fetch contracts: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not fetch contracts ${JSON.stringify(error)}`);
+      }
     }
   }
 
@@ -186,10 +194,17 @@ export class HttpClientBorrower extends BaseHttpClient {
         expiry: expiry,
       };
     } catch (error) {
-      console.error(
-        `Failed to fetch contract: http: ${error.response?.status} and response: ${error.response?.data}`,
-      );
-      throw error;
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to fetch contract: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not fetch contracts ${JSON.stringify(error)}`);
+      }
     }
   }
 
@@ -200,12 +215,17 @@ export class HttpClientBorrower extends BaseHttpClient {
       );
       return res.data;
     } catch (error) {
-      console.error(
-        `Failed to fetch claim-collateral PSBT: http: ${error.response?.status} and response: ${
-          JSON.stringify(error.response?.data)
-        }`,
-      );
-      throw error;
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to fetch claim-collateral PSBT: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Failed to fetch claim-collateral PSBT ${JSON.stringify(error)}`);
+      }
     }
   }
   async getClaimDisputeCollateralPsbt(disputeId: string, feeRate: number): Promise<ClaimCollateralPsbtResponse> {
@@ -235,10 +255,15 @@ export class HttpClientBorrower extends BaseHttpClient {
       const response: AxiosResponse<string> = await this.httpClient.post(`/api/contracts/${contract_id}`, { tx: tx });
       return response.data;
     } catch (error) {
-      console.error(
-        `Failed to post claim TX: http: ${error.response?.status} and response: ${error.response?.data}`,
-      );
-      throw error;
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to post claim TX: http: ${error.response?.status} and response: ${error.response?.data}`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Failed to post claim tx ${JSON.stringify(error)}`);
+      }
     }
   }
 
@@ -427,7 +452,22 @@ interface HttpClientProviderProps {
 }
 
 export const HttpClientBorrowerProvider: React.FC<HttpClientProviderProps> = ({ children, baseUrl }) => {
-  const httpClient = new HttpClientBorrower(baseUrl);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleAuthError = () => {
+    console.log("Handling error");
+    if (location.pathname.includes(`login`)) {
+      console.log(`Already on login page`);
+      return;
+    }
+
+    navigate("/login", {
+      state: { returnUrl: window.location.pathname },
+    });
+  };
+
+  const httpClient = new HttpClientBorrower(baseUrl, handleAuthError);
 
   const baseClientFunctions: BaseHttpClientContextType = {
     register: httpClient.register.bind(httpClient),
@@ -438,6 +478,7 @@ export const HttpClientBorrowerProvider: React.FC<HttpClientProviderProps> = ({ 
     verifyEmail: httpClient.verifyEmail.bind(httpClient),
     resetPassword: httpClient.resetPassword.bind(httpClient),
     getVersion: httpClient.getVersion.bind(httpClient),
+    check: httpClient.check.bind(httpClient),
   };
 
   const borrowerClientFunctions: BorrowerHttpClientContextType = {

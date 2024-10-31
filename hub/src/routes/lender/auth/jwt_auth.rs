@@ -40,7 +40,7 @@ pub async fn auth(
 
     let token = token.ok_or_else(|| {
         let json_error = ErrorResponse {
-            message: "You are not logged in, please provide token".to_string(),
+            message: "You are not logged in.".to_string(),
         };
         (StatusCode::UNAUTHORIZED, Json(json_error))
     })?;

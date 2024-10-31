@@ -97,6 +97,7 @@ export const Step2PickOffer = () => {
     navigate("/requests");
   }
 
+  // TODO: use this option in a text or something to tell the user what he has picked
   console.log(`Selected option ${selectedOption}`);
 
   const [advanceSearch, setAdvanceSearch] = useState<boolean>(false);

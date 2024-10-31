@@ -2,8 +2,9 @@ import type { User, Version } from "@frontend-monorepo/base-http-client";
 import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
 import type { LoanProductOption } from "@frontend-monorepo/base-http-client";
 import axios from "axios";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import type { FC, ReactNode } from "react";
-import { createContext, useContext, useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { SemVer } from "semver";
 import { HttpClientBorrowerProvider } from "./http-client-borrower";
 import { FeatureMapper } from "./models";
@@ -67,6 +68,9 @@ export const AuthProviderBorrower: FC<AuthProviderProps> = ({ children, baseUrl 
 };
 
 const BorrowerAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [user, setUser] = useState<User | null>(null);
   const [backendVersionFetched, setBackendVersionFetched] = useState(false);
   const [backendVersion, setBackendVersion] = useState<Version>({
@@ -74,8 +78,54 @@ const BorrowerAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) =>
     commit_hash: "unknown",
   });
   const [loading, setLoading] = useState(true);
-  const [enabledFeatures, setEnabledFeatures] = useState<LoanProductOption[]>();
-  const { me, login: baseLogin, logout: baseLogout, getVersion } = useBaseHttpClient();
+  const [enabledFeatures, setEnabledFeatures] = useState<LoanProductOption[]>([]);
+  const { me, login: baseLogin, logout: baseLogout, getVersion, check } = useBaseHttpClient();
+
+  const handle401 = useCallback(() => {
+    setUser(null);
+
+    if (location.pathname.includes(`login`)) {
+      console.log(`Already on login page`);
+      return;
+    }
+
+    navigate("/login", {
+      state: {
+        returnUrl: window.location.pathname,
+      },
+    });
+  }, [navigate, location]);
+
+  const checkAuthStatus = useCallback(async () => {
+    try {
+      console.log(`Checking status if logged in`);
+      await check();
+    } catch (error) {
+      console.log(`Checking status: failed`);
+      if (axios.isAxiosError(error) && error.response) {
+        if (error.response.status === 401) {
+          handle401();
+        } else {
+          const message = error.response.data.message;
+          console.error(
+            `Failed to check login status: http: ${error.response?.status} and response: ${
+              JSON.stringify(error.response?.data)
+            }`,
+          );
+          throw new Error(message);
+        }
+      } else {
+        throw new Error(`Failed to check login status: http: ${JSON.stringify(error)}`);
+      }
+    }
+  }, [check, handle401]);
+
+  // Background session check
+  useEffect(() => {
+    checkAuthStatus();
+    const intervalId = setInterval(checkAuthStatus, 5 * 60 * 1000);
+    return () => clearInterval(intervalId);
+  }, [checkAuthStatus]);
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -98,8 +148,6 @@ const BorrowerAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) =>
         if (axios.isAxiosError(error) && error.response) {
           const message = error.response.data.message;
           console.error(message);
-        } else {
-          throw new Error(`Could not check if user is logged in ${JSON.stringify(error)}`);
         }
       } finally {
         setLoading(false);
@@ -117,7 +165,6 @@ const BorrowerAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) =>
 
       const currentUser = loginResponse.user;
 
-      console.log(`Enabled features after login ${enabledFeatures}`);
       if (enabledFeatures) {
         setEnabledFeatures(enabledFeatures);
       } else {

@@ -61,6 +61,11 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
                 .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
         )
         .route(
+            "/api/auth/check",
+            get(check_auth_handler)
+                .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
+        )
+        .route(
             "/api/auth/verifyemail/:verification_code",
             get(verify_email_handler),
         )
@@ -552,6 +557,12 @@ pub async fn get_me_handler(
             user: filtered_user,
         }),
     ))
+}
+#[instrument(skip_all, err(Debug))]
+pub async fn check_auth_handler(
+    Extension(_user): Extension<User>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    Ok(())
 }
 
 #[derive(Debug, Serialize)]

@@ -193,6 +193,7 @@ function MainLayoutComponents() {
             <Route path="/disputes/:id" element={<ResolveDispute />} />
             <Route path="/restricted" element={<RestrictedAccessPage />} />
             <Route path="/error" element={<ErrorBoundary />} />
+            <Route path="*" element={<DashBoard />} />
           </Route>
         </Routes>
       </Layout>
@@ -231,7 +232,6 @@ function App() {
             <Route path="/logout" element={<Logout />} />
             <Route path="/login" element={<Login />} />
             <Route path="/error" element={<ErrorBoundary />} />
-            <Route path="*" element={<Login />} />
           </Route>
         </Routes>
       </AuthIsNotSignedIn>

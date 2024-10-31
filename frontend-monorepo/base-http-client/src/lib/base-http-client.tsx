@@ -1,17 +1,27 @@
-import type { AxiosInstance, AxiosResponse } from "axios";
+import type { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import axios from "axios";
 import { createContext, useContext } from "react";
-import type { LoginResponse, MeResponse, User, Version } from "./models";
+import type { LoginResponse, MeResponse, Version } from "./models";
 
 export class BaseHttpClient {
   public httpClient: AxiosInstance;
-  private user: User | null = null;
 
-  constructor(baseUrl: string) {
+  constructor(baseUrl: string, onAuthError?: () => void) {
     this.httpClient = axios.create({
       baseURL: baseUrl,
       withCredentials: true,
     });
+    // Add response interceptor for handling 401s
+    this.httpClient.interceptors.response.use(
+      (response) => response,
+      (error: AxiosError) => {
+        if (error.response?.status === 401) {
+          // Call the auth error handler if provided
+          onAuthError?.();
+        }
+        return Promise.reject(error);
+      },
+    );
   }
 
   async getVersion(): Promise<Version> {
@@ -41,7 +51,7 @@ export class BaseHttpClient {
 
         throw new Error(message);
       } else {
-        throw new Error(error);
+        throw error;
       }
     }
   }
@@ -74,29 +84,39 @@ export class BaseHttpClient {
       await this.httpClient.get("/api/auth/logout");
       console.log("Logout successful");
     } catch (error) {
-      if (error.response.status !== 401) {
-        console.error(`Failed logging out: http: ${error.response.status} and response: ${error.response.data}`);
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed logging out: http: ${error.response?.status} and response: ${JSON.stringify(error.response?.data)}`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Failed logging out: ${JSON.stringify(error)}`);
       }
-      // If status is 401, user wasn't logged in, so we don't need to throw an error
     }
   }
 
   async me(): Promise<MeResponse | undefined> {
     try {
       const response: AxiosResponse<MeResponse> = await this.httpClient.get("/api/users/me");
-      const meResponse = response.data;
-      if (meResponse) {
-        this.user = meResponse.user;
-      } else {
-        this.user = null;
-      }
-      return meResponse;
+      return response.data;
     } catch (error) {
-      if (error.response.status !== 401) {
-        console.error(`Failed to fetch me: http: ${error.response?.status} and response: ${error.response?.data}`);
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to fetch me: http: ${error.response?.status} and response: ${JSON.stringify(error.response?.data)}`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Failed to fetch me: ${JSON.stringify(error)}`);
       }
-      throw error;
     }
+  }
+
+  // A convenience function to check if the user is still logged in.
+  // Throws an exception if the user was not or if another error occurred
+  async check(): Promise<void> {
+    return await this.httpClient.get("/api/auth/check");
   }
 
   async forgotPassword(email: string): Promise<string> {
@@ -104,9 +124,17 @@ export class BaseHttpClient {
       const response = await this.httpClient.post("/api/auth/forgotpassword", { email: email });
       return response.data.message;
     } catch (error) {
-      const msg = `Failed to reset password: http: ${error.response?.status} and response: ${error.response?.data}`;
-      console.error(msg);
-      throw new Error(msg);
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to call forget password: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Failed to call forget password: http: ${JSON.stringify(error)}`);
+      }
     }
   }
 
@@ -115,9 +143,17 @@ export class BaseHttpClient {
       const response = await this.httpClient.get(`/api/auth/verifyemail/${token}`);
       return response.data.message;
     } catch (error) {
-      const msg = `http: ${error.response?.status} and response: ${error.response?.data.message}`;
-      console.error(msg);
-      throw new Error(msg);
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to verify email: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Failed to verify email: http: ${JSON.stringify(error)}`);
+      }
     }
   }
 
@@ -129,10 +165,17 @@ export class BaseHttpClient {
       });
       return response.data.message;
     } catch (error) {
-      const msg =
-        `Failed to reset password: http: ${error.response?.status} and response: ${error.response?.data.message}`;
-      console.error(msg);
-      throw new Error(`HTTP-${error.response?.status}. ${error.response?.data.message}`);
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to reset password: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Failed to reset password: http: ${JSON.stringify(error)}`);
+      }
     }
   }
 }
@@ -148,6 +191,7 @@ export type BaseHttpClientContextType = Pick<
   | "resetPassword"
   | "verifyEmail"
   | "getVersion"
+  | "check"
 >;
 
 // Create the contexts
@@ -179,6 +223,7 @@ export const HttpClientProvider: React.FC<HttpClientProviderProps> = ({ children
     verifyEmail: httpClient.verifyEmail.bind(httpClient),
     resetPassword: httpClient.resetPassword.bind(httpClient),
     getVersion: httpClient.getVersion.bind(httpClient),
+    check: httpClient.check.bind(httpClient),
   };
 
   return (
