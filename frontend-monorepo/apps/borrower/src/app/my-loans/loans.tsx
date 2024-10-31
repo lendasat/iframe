@@ -1,9 +1,9 @@
-import type { Contract } from "@frontend-monorepo/http-client-borrower";
 import {
   ContractStatus,
   contractStatusToLabelString,
   LiquidationStatus,
 } from "@frontend-monorepo/http-client-borrower";
+import type { Contract } from "@frontend-monorepo/http-client-borrower";
 import {
   CurrencyFormatter,
   LtvInfoLabel,
@@ -137,7 +137,7 @@ function ContractsComponent({ loans }: LoansComponentProps) {
     <Box>
       <Box className="px-6 md:px-8 py-4">
         <Flex align={"center"} justify={"between"}>
-          <Heading size={"6"}>My Loans</Heading>
+          <Heading size={"6"}>Open Contracts</Heading>
           <Button asChild color="purple" className="text-sm" size={"3"}>
             <Link to={"/requests"}>
               New Request
@@ -165,7 +165,10 @@ function ContractsComponent({ loans }: LoansComponentProps) {
           height: innerHeight * 0.4,
         }}
       >
-        {loans.map((loan, index) => {
+        {loans.filter((loan) => {
+          return loan.status !== ContractStatus.Closed && loan.status !== ContractStatus.Closing
+            && loan.status !== ContractStatus.Rejected;
+        }).map((loan, index) => {
           const {
             id,
             loan_amount,
@@ -445,7 +448,7 @@ const ClosedLoans = ({ header, loans, latestPrice }: ClosedPorps) => {
     <Box>
       <Box className="px-6 md:px-8 py-4">
         <Flex align={"center"} justify={"between"}>
-          <Heading size={"6"}>Loan Closed</Heading>
+          <Heading size={"6"}>Closed Contracts</Heading>
         </Flex>
       </Box>
 
@@ -468,7 +471,10 @@ const ClosedLoans = ({ header, loans, latestPrice }: ClosedPorps) => {
           height: innerHeight * 0.25,
         }}
       >
-        {loans.map((loan, index) => {
+        {loans.filter((loan) => {
+          return loan.status === ContractStatus.Closed || loan.status === ContractStatus.Closing
+            || loan.status === ContractStatus.Rejected;
+        }).map((loan, index) => {
           const {
             id,
             loan_amount,
