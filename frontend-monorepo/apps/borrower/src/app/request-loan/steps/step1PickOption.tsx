@@ -7,6 +7,7 @@ import Defi from "../../../assets/defi.jpg";
 import Moon from "../../../assets/moon.jpg";
 import Sepa from "../../../assets/sepa.jpg";
 import "./../../components/scrollbar.css";
+import { PayWithMoonDescriptionDialog } from "./PayWithMoonDescriptionDialog";
 import { StableCoinDescriptionDialog } from "./StableCoinDescriptionDialog";
 
 interface Step1Props {
@@ -144,6 +145,8 @@ const LoanOptionsDescriptionDialog = ({
   option,
 }: LoanOptionsDescriptionDialogProps) => {
   switch (option) {
+    case LoanProductOption.PayWithMoonDebitCard:
+      return <PayWithMoonDescriptionDialog option={option}>{children}</PayWithMoonDescriptionDialog>;
     case LoanProductOption.StableCoins:
     default:
       return <StableCoinDescriptionDialog option={option}>{children}</StableCoinDescriptionDialog>;
