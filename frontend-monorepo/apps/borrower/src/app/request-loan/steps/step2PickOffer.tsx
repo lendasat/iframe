@@ -5,6 +5,7 @@ import { CreateWalletModal, UnlockWalletModal, useWallet } from "@frontend-monor
 import type { LoanOffer } from "@frontend-monorepo/http-client-borrower";
 import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import type { StableCoin } from "@frontend-monorepo/ui-shared";
+import { AprInfoLabel } from "@frontend-monorepo/ui-shared";
 import {
   formatCurrency,
   LoanAddressInputField,
@@ -391,9 +392,15 @@ export const Step2PickOffer = () => {
 
                 {/* Interest Rate */}
                 <Box className="space-y-1">
-                  <Text className="text-font/70" as="label" size={"2"} weight={"medium"}>
-                    What's your preferred interest rate?
-                  </Text>
+                  <AprInfoLabel>
+                    <Flex align={"center"} gap={"2"} className="text-font-dark">
+                      <Text className="text-font/70" as="label" size={"2"} weight={"medium"}>
+                        What's your preferred interest rate?
+                      </Text>
+                      <FaInfoCircle />
+                    </Flex>
+                  </AprInfoLabel>
+
                   <TextField.Root
                     size={"3"}
                     variant="surface"
@@ -638,9 +645,14 @@ const LoanSearched = (props: SearchParams) => {
           </Flex>
           <Separator size={"4"} />
           <Flex justify={"between"} align={"center"}>
-            <Text className="text-xs font-medium text-font/60">
-              Interest
-            </Text>
+            <AprInfoLabel>
+              <Flex align={"center"} gap={"2"} className="text-font-dark">
+                <Text className="text-xs font-medium text-font/60">
+                  Interest
+                </Text>
+                <FaInfoCircle />
+              </Flex>
+            </AprInfoLabel>
 
             <div className="flex flex-col">
               <Text className="text-[13px] font-semibold text-black/70 capitalize">
@@ -653,9 +665,14 @@ const LoanSearched = (props: SearchParams) => {
           </Flex>
           <Separator size={"4"} />
           <Flex justify={"between"} align={"center"}>
-            <Text className="text-xs font-medium text-font/60">
-              Needed collateral ({(props.ltv * 100).toFixed(0)}% LTV)
-            </Text>
+            <LtvInfoLabel>
+              <Flex align={"center"} gap={"2"} className="text-font-dark">
+                <Text className="text-xs font-medium text-font/60">
+                  Needed collateral ({(props.ltv * 100).toFixed(0)}% LTV)
+                </Text>
+                <FaInfoCircle />
+              </Flex>
+            </LtvInfoLabel>
             <div className="flex flex-col">
               <Text className="text-[13px] font-semibold text-black/70 capitalize">
                 {collateralAmountBtc.toFixed(8)} BTC

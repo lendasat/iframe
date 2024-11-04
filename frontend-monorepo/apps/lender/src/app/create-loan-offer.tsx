@@ -2,8 +2,10 @@ import type { CreateLoanOfferRequest } from "@frontend-monorepo/http-client-lend
 import { LoanAssetChain, LoanAssetType, useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
 import { useAuth } from "@frontend-monorepo/http-client-lender";
 import {
+  AprInfoLabel,
   formatCurrency,
   LoanAddressInputField,
+  LtvInfoLabel,
   parseStableCoin,
   StableCoin,
   StableCoinHelper,
@@ -12,6 +14,7 @@ import { Box, Button, Callout, Flex, Heading, Separator, Spinner, Text, TextFiel
 import type { FC, FormEvent } from "react";
 import { useState } from "react";
 import { Form } from "react-bootstrap";
+import { FaInfoCircle } from "react-icons/fa";
 import { MdOutlineSwapCalls } from "react-icons/md";
 import { PiWarningCircle } from "react-icons/pi";
 import { useNavigate } from "react-router-dom";
@@ -201,9 +204,14 @@ const CreateLoanOffer: FC = () => {
 
                 {/* LTV */}
                 <Box className="space-y-1">
-                  <Text as="label" size={"2"} weight={"medium"} className="text-font/60">
-                    Loan to value (LTV)
-                  </Text>
+                  <LtvInfoLabel>
+                    <Flex align={"center"} gap={"2"} className="text-font-dark">
+                      <Text as="label" size={"2"} weight={"medium"} className="text-font/60">
+                        Loan to value (LTV)
+                      </Text>
+                      <FaInfoCircle />
+                    </Flex>
+                  </LtvInfoLabel>
                   <TextField.Root
                     size="3"
                     className="flex-1 text-sm rounded-lg"
@@ -225,9 +233,15 @@ const CreateLoanOffer: FC = () => {
 
                 {/* Interest Rate */}
                 <Box className="space-y-1">
-                  <Text as="label" size={"2"} weight={"medium"} className="text-font/60">
-                    Interest Rate (APR)
-                  </Text>
+                  <AprInfoLabel>
+                    <Flex align={"center"} gap={"2"} className="text-font-dark">
+                      <Text as="label" size={"2"} weight={"medium"} className="text-font/60">
+                        Interest Rate (APR)
+                      </Text>
+                      <FaInfoCircle />
+                    </Flex>
+                  </AprInfoLabel>
+
                   <TextField.Root
                     size="3"
                     className="flex-1 text-sm rounded-lg"
@@ -351,12 +365,24 @@ const CreateLoanOffer: FC = () => {
               </Flex>
               <Separator size={"4"} color={"gray"} className="opacity-50" />
               <Flex align={"center"} justify={"between"} my={"4"}>
-                <Text as="label" size={"2"} className="text-font/50">LTV</Text>
+                <LtvInfoLabel>
+                  <Flex align={"center"} gap={"2"} className="text-font-dark">
+                    <Text as="label" size={"2"} className="text-font/50">LTV</Text>
+                    <FaInfoCircle />
+                  </Flex>
+                </LtvInfoLabel>
+
                 <Text size={"2"} className="text-font-dark/80 font-semibold">{ltv.toFixed(2)}%</Text>
               </Flex>
               <Separator size={"4"} color={"gray"} className="opacity-50" />
               <Flex align={"center"} justify={"between"} my={"4"}>
-                <Text as="label" size={"2"} className="text-font/50">Interest Rate</Text>
+                <AprInfoLabel>
+                  <Flex align={"center"} gap={"2"} className="text-font-dark">
+                    <Text as="label" size={"2"} className="text-font/50">Interest Rate</Text>
+                    <FaInfoCircle />
+                  </Flex>
+                </AprInfoLabel>
+
                 <Text size={"2"} className="text-font-dark/80 font-semibold">{interest.toFixed(2)}%</Text>
               </Flex>
               <Separator size={"4"} color={"gray"} className="opacity-50" />

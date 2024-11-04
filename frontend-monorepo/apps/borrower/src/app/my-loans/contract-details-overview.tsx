@@ -8,6 +8,7 @@ import {
   useBorrowerHttpClient,
 } from "@frontend-monorepo/http-client-borrower";
 import {
+  AprInfoLabel,
   CurrencyFormatter,
   formatCurrency,
   LtvInfoLabel,
@@ -375,12 +376,10 @@ function ContractDetails({ contract }: DetailsProps) {
 
         <Flex gap={"5"} align={"start"} justify={"between"}>
           <LtvInfoLabel>
-            <>
-              <Text size={"2"} weight={"medium"} className="text-font/70">
-                LTV ratio
-              </Text>
-              <FaInfoCircle />
-            </>
+            <Text size={"2"} weight={"medium"} className="text-font/70">
+              LTV ratio
+            </Text>
+            <FaInfoCircle />
           </LtvInfoLabel>
 
           <Text size={"2"} weight={"medium"}>
@@ -390,12 +389,17 @@ function ContractDetails({ contract }: DetailsProps) {
         <Separator size={"4"} className="bg-font/10" />
 
         <Flex gap={"5"} align={"start"} justify={"between"}>
-          <Text size={"2"} weight={"medium"} className="text-font/70">
-            Interest
-          </Text>
+          <AprInfoLabel>
+            <Flex align={"center"} gap={"2"}>
+              <Text size={"2"} weight={"medium"} className="text-font/70">
+                Interest Rate (APR)
+              </Text>
+              <FaInfoCircle />
+            </Flex>
+          </AprInfoLabel>
           <div className="flex flex-col">
             <Text size={"2"} weight={"medium"}>
-              {interestRate * 100}% per year
+              {(interestRate * 100).toFixed(2)}% per year
             </Text>
             <Text className="text-[11px] text-black/50 mt-0.5 self-end">
               ≈ {formatCurrency(actualInterestUsdAmount, 1, 1)} in total

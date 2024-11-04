@@ -5,6 +5,7 @@ import {
 } from "@frontend-monorepo/http-client-borrower";
 import type { Contract } from "@frontend-monorepo/http-client-borrower";
 import {
+  AprInfoLabel,
   CurrencyFormatter,
   LtvInfoLabel,
   LtvProgressBar,
@@ -70,9 +71,14 @@ function ContractsComponent({ loans }: LoansComponentProps) {
   const interest_col = {
     label: (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-        <Text className="text-font/50" size={"1"} weight={"medium"}>
-          Interest
-        </Text>
+        <AprInfoLabel>
+          <Flex align={"center"} gap={"2"} className="text-font-dark">
+            <Text className="text-font/50" size={"1"} weight={"medium"}>
+              Interest / APR
+            </Text>
+            <FaInfoCircle />
+          </Flex>
+        </AprInfoLabel>
       </div>
     ),
     md: 1,
@@ -326,9 +332,15 @@ function ContractsComponent({ loans }: LoansComponentProps) {
                       </Box>
                       <Box width={"100%"}>
                         <Flex align={"center"} justify={"between"} gap={"3"}>
-                          <Text size={"3"} weight={"medium"}>
-                            Interest:
-                          </Text>
+                          <AprInfoLabel>
+                            <Flex align={"center"} gap={"2"} className="text-font-dark">
+                              <Text size={"3"} weight={"medium"}>
+                                Interest / APR:
+                              </Text>
+                              <FaInfoCircle />
+                            </Flex>
+                          </AprInfoLabel>
+
                           <Text className="capitalize" size={"3"}>
                             {(interest_rate * 100).toFixed(2)}%
                           </Text>
@@ -639,9 +651,15 @@ const ClosedLoans = ({ header, loans, latestPrice }: ClosedPorps) => {
                       </Box>
                       <Box width={"100%"}>
                         <Flex align={"center"} justify={"between"} gap={"3"}>
-                          <Text size={"3"} weight={"medium"}>
-                            Interest:
-                          </Text>
+                          <AprInfoLabel>
+                            <Flex align={"center"} gap={"2"} className="text-font-dark">
+                              <Text size={"3"} weight={"medium"}>
+                                Interest Rate (APR)
+                              </Text>
+                              <FaInfoCircle />
+                            </Flex>
+                          </AprInfoLabel>
+
                           <Text className="capitalize" size={"3"}>
                             {(interest_rate * 100).toFixed(2)}%
                           </Text>

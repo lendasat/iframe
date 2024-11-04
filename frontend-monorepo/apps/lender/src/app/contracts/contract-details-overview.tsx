@@ -9,10 +9,11 @@ import {
   TransactionType,
   useLenderHttpClient,
 } from "@frontend-monorepo/http-client-lender";
-import { CurrencyFormatter, StableCoinHelper } from "@frontend-monorepo/ui-shared";
+import { AprInfoLabel, CurrencyFormatter, StableCoinHelper } from "@frontend-monorepo/ui-shared";
 import { Badge, Box, Button, Callout, Dialog, Flex, Grid, Heading, Separator, Text } from "@radix-ui/themes";
 import { Suspense, useState } from "react";
 import { Alert, OverlayTrigger, Spinner, Tooltip } from "react-bootstrap";
+import { FaInfoCircle } from "react-icons/fa";
 import { Await, useNavigate, useParams } from "react-router-dom";
 import TransactionLink from "../components/transactionLink";
 import { ExpandableDisputeCard } from "../disputes/dispute-card";
@@ -267,11 +268,17 @@ function ContractDetails({ contract }: DetailsProps) {
           <Separator size={"4"} className="bg-font/10" />
 
           <Flex gap={"5"} align={"start"} justify={"between"}>
-            <Text size={"2"} weight={"medium"} className="text-font/70">
-              Interest rate p.a.
-            </Text>
+            <AprInfoLabel>
+              <Flex align={"center"} gap={"2"} className="text-font-dark">
+                <Text size={"2"} weight={"medium"} className="text-font/70">
+                  Interest Rate (APR)
+                </Text>
+                <FaInfoCircle />
+              </Flex>
+            </AprInfoLabel>
+
             <Text size={"2"} weight={"medium"}>
-              {interestRate * 100}%
+              {(interestRate * 100).toFixed(2)}%
             </Text>
           </Flex>
           <Separator size={"4"} className="bg-font/10" />
