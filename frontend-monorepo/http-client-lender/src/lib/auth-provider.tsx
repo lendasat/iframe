@@ -3,6 +3,7 @@ import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
 import axios from "axios";
 import type { FC, ReactNode } from "react";
 import { createContext, useContext, useEffect, useState } from "react";
+import { SemVer } from "semver";
 import { HttpClientLenderProvider } from "./http-client-lender";
 
 interface AuthContextType {
@@ -10,7 +11,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  backendVersion?: Version;
+  backendVersion: Version;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -65,7 +66,10 @@ export const AuthProviderLender: FC<AuthProviderProps> = ({ children, baseUrl })
 const LenderAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [backendVersion, setBackendVersion] = useState<Version | undefined>();
+  const [backendVersion, setBackendVersion] = useState<Version>({
+    version: new SemVer("0.0.0"),
+    commit_hash: "unknown",
+  });
   const { me, login: baseLogin, logout: baseLogout, getVersion } = useBaseHttpClient();
 
   useEffect(() => {

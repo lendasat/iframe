@@ -18,7 +18,7 @@ export function LtvInfoLabel({ children }: LtvInfoLabelProps) {
         href="https://lendasat.notion.site/Frequently-Asked-Questions-100d2f24d4cf800e83bbca7cff3bb707"
         target="_blank"
       >
-        <Flex gap={"2"}>
+        <Flex gap={"2"} align={"center"}>
           {children}
         </Flex>
       </RadixLink>

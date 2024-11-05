@@ -9,14 +9,23 @@ import {
   TransactionType,
   useLenderHttpClient,
 } from "@frontend-monorepo/http-client-lender";
-import { AprInfoLabel, CurrencyFormatter, StableCoinHelper } from "@frontend-monorepo/ui-shared";
+import { useAuth } from "@frontend-monorepo/http-client-lender";
+import {
+  AprInfoLabel,
+  CurrencyFormatter,
+  formatCurrency,
+  LtvInfoLabel,
+  StableCoinHelper,
+} from "@frontend-monorepo/ui-shared";
 import { Badge, Box, Button, Callout, Dialog, Flex, Grid, Heading, Separator, Text } from "@radix-ui/themes";
 import { Suspense, useState } from "react";
-import { Alert, OverlayTrigger, Spinner, Tooltip } from "react-bootstrap";
-import { FaInfoCircle } from "react-icons/fa";
+import { Alert, Col, OverlayTrigger, Row, Spinner, Tooltip } from "react-bootstrap";
+import { FaCopy, FaInfoCircle } from "react-icons/fa";
+import { IoMdCloudDownload } from "react-icons/io";
 import { Await, useNavigate, useParams } from "react-router-dom";
 import TransactionLink from "../components/transactionLink";
 import { ExpandableDisputeCard } from "../disputes/dispute-card";
+import { downloadLocalStorage } from "./download-local-storage";
 import RepaymentDetails from "./pay-loan-principal";
 
 function ContractDetailsOverview() {
@@ -64,6 +73,7 @@ interface DetailsProps {
 
 function ContractDetails({ contract }: DetailsProps) {
   const { startDispute } = useLenderHttpClient();
+  const { backendVersion } = useAuth();
 
   const [info, setInfo] = useState("");
   const [error, setError] = useState("");
@@ -118,6 +128,8 @@ function ContractDetails({ contract }: DetailsProps) {
     contractStatusLabel = "Liquidated";
   }
 
+  const actualInterestUsdAmount = (loanAmount * interestRate) / (12 / durationMonths);
+  const [contractIdCopied, setContractIdCopied] = useState<boolean>(false);
   const [errorAlt, setErrorAlt] = useState("");
   const navigate = useNavigate();
 
@@ -129,43 +141,79 @@ function ContractDetails({ contract }: DetailsProps) {
     setErrorAlt(error);
   };
 
-  const displayDispute = contract.status !== ContractStatus.Requested && contract.status !== ContractStatus.Approved;
+  const formatId = (id: string) => {
+    const start = id.slice(0, 6);
+    const end = id.slice(-4);
+    return `${start}...${end}`;
+  };
 
-  const stableCoin = StableCoinHelper.mapFromBackend(contract.loan_asset_chain, contract.loan_asset_type);
+  const handleCopy = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setContractIdCopied(true);
+      setTimeout(() => setContractIdCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy text: ", err);
+    }
+  };
+
+  const displayDispute = contract.status !== ContractStatus.Requested
+    && contract.status !== ContractStatus.Approved;
+
+  const stableCoin = StableCoinHelper.mapFromBackend(
+    contract.loan_asset_chain,
+    contract.loan_asset_type,
+  );
 
   return (
     <Grid className="md:grid-cols-2">
       <Box className="border-r border-font/10">
         <Box className="p-6 md:pl-8 border-b border-font/10">
-          <Heading size={"6"}>
-            Contract Details
-          </Heading>
+          <Heading size={"6"}>Contract Details</Heading>
         </Box>
         <Box className="p-6 md:p-8 space-y-5">
           <Flex gap={"5"} align={"start"} justify={"between"}>
-            <Text size={"2"} weight={"medium"} className="text-font/70 shrink-0">
-              Tracking ID
-            </Text>
-            <Text size={"2"} weight={"medium"} className="text-end">
-              {contract.id}
-            </Text>
-          </Flex>
-          <Separator size={"4"} className="bg-font/10" />
-
-          <Flex gap={"5"} align={"start"} justify={"between"}>
-            <Text size={"2"} weight={"medium"} className="shrink-0 text-font/70">
-              Borrower ID
+            <Text
+              size={"2"}
+              weight={"medium"}
+              className="shrink-0 text-font/70"
+            >
+              Borrower
             </Text>
             <Box className="max-w-sm text-end">
               <div className="flex flex-col">
                 <Text size={"2"} weight={"medium"} className="break-all">
                   {contract.borrower.name}
                 </Text>
-                <Text size={"1"} className="break-all">
-                  ({contract.borrower.id})
-                </Text>
               </div>
             </Box>
+          </Flex>
+          <Separator size={"4"} className="bg-font/10" />
+
+          <Flex gap={"5"} align={"start"} justify={"between"}>
+            <Text
+              size={"2"}
+              weight={"medium"}
+              className="text-font/70 shrink-0"
+            >
+              Contract ID
+            </Text>
+            {contractIdCopied
+              ? (
+                <Text size={"2"} className="font-medium" color="green">
+                  Copied
+                </Text>
+              )
+              : (
+                <Text
+                  onClick={() => handleCopy(contract.id)}
+                  size={"2"}
+                  weight={"medium"}
+                  className="text-end cursor-copy hover:opacity-70 flex items-center gap-1"
+                >
+                  {formatId(contract.id)} <FaCopy />
+                </Text>
+              )}
           </Flex>
           <Separator size={"4"} className="bg-font/10" />
 
@@ -202,18 +250,16 @@ function ContractDetails({ contract }: DetailsProps) {
 
           <Flex gap={"5"} align={"start"} justify={"between"}>
             <Text size={"2"} weight={"medium"} className="text-font/70">
-              Asset / Chain
+              Asset
             </Text>
             <Text size={"2"} weight={"medium"}>
               <Text>
-                {stableCoin
-                  ? <Badge>{StableCoinHelper.print(stableCoin)}</Badge>
-                  : (
-                    <>
-                      {contract.loan_asset_chain}
-                      {contract.loan_asset_type}
-                    </>
-                  )}
+                {stableCoin ? <Badge>{StableCoinHelper.print(stableCoin)}</Badge> : (
+                  <>
+                    {contract.loan_asset_chain}
+                    {contract.loan_asset_type}
+                  </>
+                )}
               </Text>
             </Text>
           </Flex>
@@ -258,9 +304,12 @@ function ContractDetails({ contract }: DetailsProps) {
           <Separator size={"4"} className="bg-font/10" />
 
           <Flex gap={"5"} align={"start"} justify={"between"}>
-            <Text size={"2"} weight={"medium"} className="text-font/70">
-              LTV ratio
-            </Text>
+            <LtvInfoLabel>
+              <Text size={"2"} weight={"medium"} className="text-font/70">
+                LTV ratio
+              </Text>
+              <FaInfoCircle className="text-font-dark" />
+            </LtvInfoLabel>
             <Text size={"2"} weight={"medium"}>
               {initialLtvFormatted}%
             </Text>
@@ -277,35 +326,58 @@ function ContractDetails({ contract }: DetailsProps) {
               </Flex>
             </AprInfoLabel>
 
-            <Text size={"2"} weight={"medium"}>
-              {(interestRate * 100).toFixed(2)}%
-            </Text>
+            <div className="flex flex-col">
+              <Text size={"2"} weight={"medium"}>
+                {(interestRate * 100).toFixed(2)}% per year
+              </Text>
+              <Text className="text-[11px] text-black/50 mt-0.5 self-end">
+                ≈ {formatCurrency(actualInterestUsdAmount, 1, 1)} in total
+              </Text>
+            </div>
           </Flex>
           <Separator size={"4"} className="bg-font/10" />
           <AdditionalDetail contract={contract} />
+          <Callout.Root>
+            <Callout.Icon>
+              <IoMdCloudDownload size={"18"} />
+            </Callout.Icon>
+            <Callout.Text>
+              Download contract backup. It is encrypted with the contract password you set earlier.
+            </Callout.Text>
+          </Callout.Root>
+          <Flex align={"center"} justify={"end"}>
+            <Button
+              size="3"
+              className="bg-btn"
+              onClick={() => downloadLocalStorage(backendVersion)}
+            >
+              <IoMdCloudDownload />
+              Download
+            </Button>
+          </Flex>
+
           {errorAlt && (
             <Callout.Root color="red">
               <Callout.Icon>
-                <FontAwesomeIcon icon={faExclamationCircle} className="h-4 w-4" />
+                <FontAwesomeIcon
+                  icon={faExclamationCircle}
+                  className="h-4 w-4"
+                />
               </Callout.Icon>
-              <Callout.Text>
-                {errorAlt}
-              </Callout.Text>
+              <Callout.Text>{errorAlt}</Callout.Text>
             </Callout.Root>
           )}
-
-          <Flex justify={"end"}>
-            <ContractStatusDetails
-              contract={contract}
-              onError={onError}
-              onSuccess={onSuccess}
-            />
-          </Flex>
         </Box>
       </Box>
-      {displayDispute
-        && (
-          <Box className="p-6 md:p-8 space-y-5">
+      <Box className="p-6 md:p-8 space-y-5">
+        <ContractStatusDetails
+          contract={contract}
+          onError={onError}
+          onSuccess={onSuccess}
+        />
+
+        {displayDispute && (
+          <Box>
             <ExpandableDisputeCard
               info={info}
               onStartDispute={onStartDispute}
@@ -315,6 +387,7 @@ function ContractDetails({ contract }: DetailsProps) {
             />
           </Box>
         )}
+      </Box>
     </Grid>
   );
 }
@@ -324,13 +397,17 @@ interface AdditionalDetailsProps {
 }
 
 const AdditionalDetail = ({ contract }: AdditionalDetailsProps) => {
-  const fundingTransaction = contract.transactions.find((tx) => tx.transaction_type === TransactionType.Funding);
-  const claimTransaction = contract.transactions.find((tx) => tx.transaction_type === TransactionType.ClaimCollateral);
-  const principalRepaidTransaction = contract.transactions.find((tx) =>
-    tx.transaction_type === TransactionType.PrincipalRepaid
+  const fundingTransaction = contract.transactions.find(
+    (tx) => tx.transaction_type === TransactionType.Funding,
   );
-  const principalGivenTransaction = contract.transactions.find((tx) =>
-    tx.transaction_type === TransactionType.PrincipalGiven
+  const claimTransaction = contract.transactions.find(
+    (tx) => tx.transaction_type === TransactionType.ClaimCollateral,
+  );
+  const principalRepaidTransaction = contract.transactions.find(
+    (tx) => tx.transaction_type === TransactionType.PrincipalRepaid,
+  );
+  const principalGivenTransaction = contract.transactions.find(
+    (tx) => tx.transaction_type === TransactionType.PrincipalGiven,
   );
 
   let fundingTxDetails;
@@ -510,13 +587,11 @@ interface ContractStatusDetailsProps {
   onSuccess: () => void;
 }
 
-const ContractStatusDetails = (
-  {
-    contract,
-    onError,
-    onSuccess,
-  }: ContractStatusDetailsProps,
-) => {
+const ContractStatusDetails = ({
+  contract,
+  onError,
+  onSuccess,
+}: ContractStatusDetailsProps) => {
   const { approveContract, rejectContract, principalGiven, markAsRepaid } = useLenderHttpClient();
   const [isLoading, setIsLoading] = useState(false);
   const [txid, setTxid] = useState("");
@@ -586,71 +661,100 @@ const ContractStatusDetails = (
     case ContractStatus.Requested:
       // TODO:
       return (
-        <div className="d-flex gap-2">
-          <CreateWalletModal
-            show={showCreateWalletModal}
-            handleClose={handleCloseCreateWalletModal}
-            handleSubmit={handleCloseCreateWalletModal}
-          />
-          {/* Approve Button */}
-          {doesWalletExist
-            ? (
-              <Dialog.Root>
-                <Dialog.Trigger>
-                  <Button color="green" loading={isLoading} disabled={isLoading} size={"3"}>
-                    Approve
-                  </Button>
-                </Dialog.Trigger>
-                <Dialog.Content maxWidth="450px">
-                  <Dialog.Title>Approval Contract</Dialog.Title>
-                  <Dialog.Description size="2" mb="4">
-                    Are you sure you want to approve this loan?
-                  </Dialog.Description>
-                  <Flex gap="3" mt="4" justify="end">
-                    <Dialog.Close>
-                      <Button variant="soft" color="gray">
-                        Quit
-                      </Button>
-                    </Dialog.Close>
-                    <Dialog.Close>
-                      <Button color="green" loading={isLoading} disabled={isLoading} onClick={onContractApprove}>
-                        Approve
-                      </Button>
-                    </Dialog.Close>
-                  </Flex>
-                </Dialog.Content>
-              </Dialog.Root>
-            )
-            : (
-              <Button color="green" onClick={onCreateWalletButtonClick} size={"3"}>
-                Create Bitcoin wallet
-              </Button>
-            )}
+        <div>
+          <Heading weight={"medium"} size={"4"}>
+            Awaiting Your Remark...
+          </Heading>
+          <div className="d-flex gap-2 mt-5">
+            <CreateWalletModal
+              show={showCreateWalletModal}
+              handleClose={handleCloseCreateWalletModal}
+              handleSubmit={handleCloseCreateWalletModal}
+            />
+            {/* Approve Button */}
+            {doesWalletExist
+              ? (
+                <Dialog.Root>
+                  <Dialog.Trigger>
+                    <Button
+                      color="green"
+                      loading={isLoading}
+                      disabled={isLoading}
+                      size={"3"}
+                    >
+                      Approve
+                    </Button>
+                  </Dialog.Trigger>
+                  <Dialog.Content maxWidth="450px">
+                    <Dialog.Title>Approval Contract</Dialog.Title>
+                    <Dialog.Description size="2" mb="4">
+                      Are you sure you want to approve this loan?
+                    </Dialog.Description>
+                    <Flex gap="3" mt="4" justify="end">
+                      <Dialog.Close>
+                        <Button variant="soft" color="gray">
+                          Quit
+                        </Button>
+                      </Dialog.Close>
+                      <Dialog.Close>
+                        <Button
+                          color="green"
+                          loading={isLoading}
+                          disabled={isLoading}
+                          onClick={onContractApprove}
+                        >
+                          Approve
+                        </Button>
+                      </Dialog.Close>
+                    </Flex>
+                  </Dialog.Content>
+                </Dialog.Root>
+              )
+              : (
+                <Button
+                  color="green"
+                  onClick={onCreateWalletButtonClick}
+                  size={"3"}
+                >
+                  Create Bitcoin wallet
+                </Button>
+              )}
 
-          {/* Reject Button */}
-          <Dialog.Root>
-            <Dialog.Trigger>
-              <Button color="red" loading={isLoading} disabled={isLoading} size={"3"}>
-                Reject
-              </Button>
-            </Dialog.Trigger>
-            <Dialog.Content maxWidth="450px">
-              <Dialog.Title>Reject Contract</Dialog.Title>
-              <Dialog.Description size="2" mb="4">
-                Are you sure you want to reject this loan?
-              </Dialog.Description>
-              <Flex gap="3" mt="4" justify="end">
-                <Dialog.Close>
-                  <Button variant="soft" color="gray">
-                    Quit
-                  </Button>
-                </Dialog.Close>
-                <Button color="red" loading={isLoading} disabled={isLoading} onClick={onContractReject}>
+            {/* Reject Button */}
+            <Dialog.Root>
+              <Dialog.Trigger>
+                <Button
+                  color="red"
+                  loading={isLoading}
+                  disabled={isLoading}
+                  size={"3"}
+                >
                   Reject
                 </Button>
-              </Flex>
-            </Dialog.Content>
-          </Dialog.Root>
+              </Dialog.Trigger>
+              <Dialog.Content maxWidth="450px">
+                <Dialog.Title>Reject Contract</Dialog.Title>
+                <Dialog.Description size="2" mb="4">
+                  Are you sure you want to reject this loan?
+                </Dialog.Description>
+                <Flex gap="3" mt="4" justify="end">
+                  <Dialog.Close>
+                    <Button variant="soft" color="gray">
+                      Quit
+                    </Button>
+                  </Dialog.Close>
+                  <Button
+                    color="red"
+                    loading={isLoading}
+                    disabled={isLoading}
+                    onClick={onContractReject}
+                  >
+                    Reject
+                  </Button>
+                </Flex>
+              </Dialog.Content>
+            </Dialog.Root>
+          </div>
         </div>
       );
     case ContractStatus.Approved:
@@ -668,40 +772,52 @@ const ContractStatusDetails = (
     case ContractStatus.CollateralConfirmed:
       return (
         <div>
-          <label htmlFor="txid">Transaction ID:</label>
-          <input
-            id="txid"
-            type="text"
-            value={txid}
-            onChange={(e) => setTxid(e.target.value)}
-            placeholder="Enter transaction ID"
+          <RepaymentDetails
+            contract={contract}
+            isLoading={isLoading}
+            onPrincipalGiven={onPrincipalGiven}
+            txid={txid}
+            setTxId={setTxid}
           />
-
-          <RepaymentDetails contract={contract} isLoading={isLoading} onPrincipalGiven={onPrincipalGiven} />
         </div>
       );
     case ContractStatus.PrincipalGiven:
       return (
         <div>
           {/* Text input for txid */}
-          <label htmlFor="txid">Transaction ID:</label>
-          <input
-            id="txid"
-            type="text"
-            value={txid}
-            onChange={(e) => setTxid(e.target.value)}
-            placeholder="Enter transaction ID"
-          />
+          <Row className="mt-3">
+            <Col>
+              <label htmlFor="txid">Transaction ID:</label>
+              <input
+                id="txid"
+                type="text"
+                value={txid}
+                onChange={(e) => setTxid(e.target.value)}
+                placeholder="Enter transaction ID"
+              />
+            </Col>
+          </Row>
 
-          <Button onClick={onMarkAsRepaid} disabled={isLoading}>
-            {isLoading
-              ? (
-                <Spinner animation="border" role="status" variant="light" size="sm">
-                  <span className="visually-hidden">Loading...</span>
-                </Spinner>
-              )
-              : "Mark as repaid"}
-          </Button>
+          <Row className="mt-3">
+            <Col>
+              <Button onClick={onMarkAsRepaid} disabled={isLoading}>
+                {isLoading
+                  ? (
+                    <Spinner
+                      animation="border"
+                      role="status"
+                      variant="light"
+                      size="sm"
+                    >
+                      <span className="visually-hidden">Loading...</span>
+                    </Spinner>
+                  )
+                  : (
+                    "Mark as repaid"
+                  )}
+              </Button>
+            </Col>
+          </Row>
         </div>
       );
     case ContractStatus.Repaid:
