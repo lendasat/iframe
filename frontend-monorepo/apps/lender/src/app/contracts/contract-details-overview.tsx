@@ -7,7 +7,6 @@ import {
   contractStatusToLabelString,
   LiquidationStatus,
   TransactionType,
-  useAuth,
   useLenderHttpClient,
 } from "@frontend-monorepo/http-client-lender";
 import {
@@ -25,7 +24,6 @@ import { IoMdCloudDownload } from "react-icons/io";
 import { Await, useNavigate, useParams } from "react-router-dom";
 import TransactionLink from "../components/transactionLink";
 import { ExpandableDisputeCard } from "../disputes/dispute-card";
-import { downloadLocalStorage } from "./download-local-storage";
 import RepaymentDetails from "./pay-loan-principal";
 
 function ContractDetailsOverview() {
@@ -131,7 +129,6 @@ function ContractDetails({ contract }: DetailsProps) {
   const [contractIdCopied, setContractIdCopied] = useState<boolean>(false);
   const [errorAlt, setErrorAlt] = useState("");
   const navigate = useNavigate();
-  const { backendVersion } = useAuth();
 
   const onSuccess = () => {
     navigate(0);
@@ -349,7 +346,6 @@ function ContractDetails({ contract }: DetailsProps) {
             <Button
               size="3"
               className="bg-btn"
-              // onClick={() => downloadLocalStorage(backendVersion)}
             >
               <IoMdCloudDownload />
               Download
