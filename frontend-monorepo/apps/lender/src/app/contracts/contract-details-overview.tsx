@@ -9,6 +9,7 @@ import {
   TransactionType,
   useLenderHttpClient,
 } from "@frontend-monorepo/http-client-lender";
+import { useAuth } from "@frontend-monorepo/http-client-lender";
 import {
   AprInfoLabel,
   CurrencyFormatter,
@@ -22,6 +23,7 @@ import { Alert, OverlayTrigger, Spinner, Tooltip } from "react-bootstrap";
 import { FaCopy, FaInfoCircle } from "react-icons/fa";
 import { IoMdCloudDownload } from "react-icons/io";
 import { Await, useNavigate, useParams } from "react-router-dom";
+import { downloadLocalStorage } from "./download-local-storage";
 import TransactionLink from "../components/transactionLink";
 import { ExpandableDisputeCard } from "../disputes/dispute-card";
 import RepaymentDetails from "./pay-loan-principal";
@@ -346,6 +348,7 @@ function ContractDetails({ contract }: DetailsProps) {
             <Button
               size="3"
               className="bg-btn"
+              onClick={() => downloadLocalStorage(backendVersion)}
             >
               <IoMdCloudDownload />
               Download
