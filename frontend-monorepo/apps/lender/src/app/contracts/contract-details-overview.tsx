@@ -19,13 +19,13 @@ import {
 } from "@frontend-monorepo/ui-shared";
 import { Badge, Box, Button, Callout, Dialog, Flex, Grid, Heading, Separator, Text } from "@radix-ui/themes";
 import { Suspense, useState } from "react";
-import { Alert, OverlayTrigger, Spinner, Tooltip } from "react-bootstrap";
+import { Alert, Col, OverlayTrigger, Row, Spinner, Tooltip } from "react-bootstrap";
 import { FaCopy, FaInfoCircle } from "react-icons/fa";
 import { IoMdCloudDownload } from "react-icons/io";
 import { Await, useNavigate, useParams } from "react-router-dom";
-import { downloadLocalStorage } from "./download-local-storage";
 import TransactionLink from "../components/transactionLink";
 import { ExpandableDisputeCard } from "../disputes/dispute-card";
+import { downloadLocalStorage } from "./download-local-storage";
 import RepaymentDetails from "./pay-loan-principal";
 
 function ContractDetailsOverview() {
@@ -73,6 +73,7 @@ interface DetailsProps {
 
 function ContractDetails({ contract }: DetailsProps) {
   const { startDispute } = useLenderHttpClient();
+  const { backendVersion } = useAuth();
 
   const [info, setInfo] = useState("");
   const [error, setError] = useState("");
@@ -771,19 +772,12 @@ const ContractStatusDetails = ({
     case ContractStatus.CollateralConfirmed:
       return (
         <div>
-          <label htmlFor="txid">Transaction ID:</label>
-          <input
-            id="txid"
-            type="text"
-            value={txid}
-            onChange={(e) => setTxid(e.target.value)}
-            placeholder="Enter transaction ID"
-          />
-
           <RepaymentDetails
             contract={contract}
             isLoading={isLoading}
             onPrincipalGiven={onPrincipalGiven}
+            txid={txid}
+            setTxId={setTxid}
           />
         </div>
       );
@@ -791,31 +785,39 @@ const ContractStatusDetails = ({
       return (
         <div>
           {/* Text input for txid */}
-          <label htmlFor="txid">Transaction ID:</label>
-          <input
-            id="txid"
-            type="text"
-            value={txid}
-            onChange={(e) => setTxid(e.target.value)}
-            placeholder="Enter transaction ID"
-          />
+          <Row className="mt-3">
+            <Col>
+              <label htmlFor="txid">Transaction ID:</label>
+              <input
+                id="txid"
+                type="text"
+                value={txid}
+                onChange={(e) => setTxid(e.target.value)}
+                placeholder="Enter transaction ID"
+              />
+            </Col>
+          </Row>
 
-          <Button onClick={onMarkAsRepaid} disabled={isLoading}>
-            {isLoading
-              ? (
-                <Spinner
-                  animation="border"
-                  role="status"
-                  variant="light"
-                  size="sm"
-                >
-                  <span className="visually-hidden">Loading...</span>
-                </Spinner>
-              )
-              : (
-                "Mark as repaid"
-              )}
-          </Button>
+          <Row className="mt-3">
+            <Col>
+              <Button onClick={onMarkAsRepaid} disabled={isLoading}>
+                {isLoading
+                  ? (
+                    <Spinner
+                      animation="border"
+                      role="status"
+                      variant="light"
+                      size="sm"
+                    >
+                      <span className="visually-hidden">Loading...</span>
+                    </Spinner>
+                  )
+                  : (
+                    "Mark as repaid"
+                  )}
+              </Button>
+            </Col>
+          </Row>
         </div>
       );
     case ContractStatus.Repaid:

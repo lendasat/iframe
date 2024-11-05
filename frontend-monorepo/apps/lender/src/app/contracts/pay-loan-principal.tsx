@@ -1,4 +1,4 @@
-import { faCopy, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+import { faCopy, faExclamationCircle, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import type { Contract } from "@frontend-monorepo/http-client-lender";
 import { formatCurrency } from "@frontend-monorepo/ui-shared";
@@ -10,9 +10,13 @@ interface RepaymentDetailsProps {
   contract: Contract;
   onPrincipalGiven: () => void;
   isLoading: boolean;
+  txid: string;
+  setTxId: (value: ((prevState: string) => string) | string) => void;
 }
-const RepaymentDetails = ({ contract, onPrincipalGiven, isLoading }: RepaymentDetailsProps) => {
+
+const RepaymentDetails = ({ contract, onPrincipalGiven, isLoading, txid, setTxId }: RepaymentDetailsProps) => {
   const [copied, setCopied] = useState(false);
+  const [error, setError] = useState("");
 
   const handleCopy = async (text: string) => {
     try {
@@ -24,6 +28,13 @@ const RepaymentDetails = ({ contract, onPrincipalGiven, isLoading }: RepaymentDe
     }
   };
 
+  const onConfirm = () => {
+    if (txid.length === 0) {
+      setError("Transaction id is required");
+      return;
+    }
+    onPrincipalGiven();
+  };
   return (
     <Container fluid>
       <Row>
@@ -39,7 +50,7 @@ const RepaymentDetails = ({ contract, onPrincipalGiven, isLoading }: RepaymentDe
               onClick={() => handleCopy(contract.borrower_loan_address)}
               style={{ cursor: "pointer" }}
             >
-              <QRCode value={contract.borrower_loan_address} size={200} />
+              <QRCode value={contract.borrower_loan_address} size={200} renderAs={"svg"} />
             </div>
             <p className="mt-2 text-break">
               Please send <strong>{formatCurrency(contract.loan_amount)}</strong> ({contract.loan_asset_type} on{" "}
@@ -71,7 +82,20 @@ const RepaymentDetails = ({ contract, onPrincipalGiven, isLoading }: RepaymentDe
 
       <Row className="mt-3">
         <Col>
-          <Button onClick={onPrincipalGiven} disabled={isLoading}>
+          <label htmlFor="txid">Transaction ID:</label>
+          <input
+            id="txid"
+            type="text"
+            value={txid}
+            onChange={(e) => setTxId(e.target.value)}
+            placeholder="Enter transaction ID"
+          />
+        </Col>
+      </Row>
+
+      <Row className="mt-3">
+        <Col>
+          <Button onClick={onConfirm} disabled={isLoading}>
             {isLoading
               ? (
                 <Spinner animation="border" role="status" variant="light" size="sm">
@@ -82,6 +106,17 @@ const RepaymentDetails = ({ contract, onPrincipalGiven, isLoading }: RepaymentDe
                 "Mark principal given"
               )}
           </Button>
+        </Col>
+      </Row>
+
+      <Row className="mt-3">
+        <Col>
+          {error && (
+            <Alert variant="danger">
+              <FontAwesomeIcon icon={faExclamationCircle} className="h-4 w-4 mr-2" />
+              {error}
+            </Alert>
+          )}
         </Col>
       </Row>
     </Container>
