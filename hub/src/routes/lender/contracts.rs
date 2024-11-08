@@ -2,6 +2,7 @@ use crate::db;
 use crate::email::Email;
 use crate::mempool::TrackContractFunding;
 use crate::model::ContractStatus;
+use crate::model::Integration;
 use crate::model::LiquidationStatus;
 use crate::model::LoanAssetChain;
 use crate::model::LoanAssetType;
@@ -349,7 +350,7 @@ pub async fn put_approve_contract(
             .context("Failed loading borrower")?
             .context("Borrower not found")?;
 
-        db::contracts::accept_contract_request(
+        let contract = db::contracts::accept_contract_request(
             &data.db,
             user.id.as_str(),
             contract_id.as_str(),
@@ -367,6 +368,15 @@ pub async fn put_approve_contract(
             })
             .await?
             .context("Failed to track accepted contract")?;
+
+        // We could consider creating the card even earlier, but this is a simple way to only
+        // generate a card when the loan is likely to be opened.
+        if let Some(Integration::PayWithMoon) = contract.integration {
+            data.moon
+                .create_card(borrower.id.clone(), contract.id.clone())
+                .await
+                .context("Failed to create borrower Moon card")?;
+        }
 
         let loan_url = format!(
             "{}/my-contracts/{}",

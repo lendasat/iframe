@@ -320,6 +320,12 @@ impl Wallet {
                 EcdsaSighashType::All,
             )?;
 
+            SighashCache::new(&unsigned_claim_tx).taproot_key_spend_signature_hash(
+                input_index,
+                prevouts,
+                sighash_type,
+            );
+
             let mut input = psbt::Input {
                 witness_utxo: Some(TxOut {
                     value: amount_sats,

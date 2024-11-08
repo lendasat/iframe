@@ -10,6 +10,7 @@ pub mod liquidation_engine;
 pub mod logger;
 pub mod mempool;
 pub mod model;
+pub mod moon;
 pub mod routes;
 pub mod utils;
 pub mod wallet;

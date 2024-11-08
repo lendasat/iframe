@@ -1660,6 +1660,7 @@ dependencies = [
  "mime_guess",
  "miniscript 12.2.0",
  "native-tls",
+ "pay-with-moon",
  "rand",
  "reqwest",
  "rust_decimal",
@@ -3701,6 +3702,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+ "uuid",
 ]
 
 [[package]]

@@ -71,7 +71,8 @@ export interface ContractRequest {
   duration_months: number;
   borrower_btc_address: string;
   borrower_pk: string;
-  borrower_loan_address: string;
+  borrower_loan_address?: string;
+  integration?: Integration;
 }
 
 export interface Contract {
@@ -223,10 +224,10 @@ export function findBestOriginationFee(
 export interface UserCardDetail {
   id: number;
   balance: number;
-  outgoing: number;
-  cardNumber: number;
-  cardCvv: number;
-  expiry: number;
+  available_balance: number;
+  pan: number;
+  cvv: number;
+  expiration: Date;
 }
 
 export interface CardTransactionInformation {
@@ -262,4 +263,8 @@ export class FeatureMapper {
       return mappedFeature ? [mappedFeature] : [];
     });
   }
+}
+
+export enum Integration {
+  PayWithMoon = "PayWithMoon",
 }

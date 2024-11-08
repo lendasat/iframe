@@ -9,6 +9,7 @@ mod tests {
     use hub::model::ContractRequestSchema;
     use hub::model::ContractStatus;
     use hub::model::CreateLoanOfferSchema;
+    use hub::model::Integration;
     use hub::model::LoanAssetChain::Ethereum;
     use hub::model::LoanAssetType;
     use hub::model::LoanOffer;
@@ -123,8 +124,10 @@ mod tests {
             duration_months: 6,
             borrower_btc_address,
             borrower_pk,
-            borrower_loan_address:
+            borrower_loan_address: Some(
                 "0x055098f73c89ca554f98c0298ce900235d2e1b4205a7ca629ae017518521c2c3".to_string(),
+            ),
+            integration: Some(Integration::PayWithMoon),
         };
 
         let res = borrower
@@ -345,6 +348,258 @@ mod tests {
         )
         .await
         .unwrap();
+    }
+
+    /// Run `just prepare-e2e` before this test.
+    #[ignore]
+    #[tokio::test]
+    async fn open_a_loan_and_get_principal_in_pay_with_moon_card() {
+        let env_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
+        let env_path = format!("{env_dir}/../.env");
+        dotenv::from_filename(env_path).ok();
+
+        let network = std::env::var("NETWORK").unwrap_or("regtest".to_string());
+
+        init_tracing();
+
+        // 0. Log in borrower and lender.
+        let borrower_cookie_jar = Arc::new(Jar::default());
+        let borrower = Client::builder()
+            .cookie_provider(borrower_cookie_jar)
+            .build()
+            .unwrap();
+
+        let borrower_login = LoginUserSchema {
+            email: "borrower@lendasat.com".to_string(),
+            password: "password123".to_string(),
+        };
+
+        let res = borrower
+            .post("http://localhost:7337/api/auth/login")
+            .json(&borrower_login)
+            .send()
+            .await
+            .unwrap();
+
+        assert!(res.status().is_success());
+
+        let lender_cookie_jar = Arc::new(Jar::default());
+        let lender = Client::builder()
+            .cookie_provider(lender_cookie_jar)
+            .build()
+            .unwrap();
+
+        let lender_login = LoginUserSchema {
+            email: "lender@lendasat.com".to_string(),
+            password: "password123".to_string(),
+        };
+
+        let res = lender
+            .post("http://localhost:7338/api/auth/login")
+            .json(&lender_login)
+            .send()
+            .await
+            .unwrap();
+
+        assert!(res.status().is_success());
+
+        // 1. Lender creates loan offer.
+        let loan_offer = CreateLoanOfferSchema {
+            name: "a fantastic loan".to_string(),
+            min_ltv: dec!(0.5),
+            interest_rate: dec!(0.10),
+            loan_amount_min: dec!(1_000),
+            loan_amount_max: dec!(50_000),
+            duration_months_min: 1,
+            duration_months_max: 12,
+            loan_asset_type: LoanAssetType::Usdc,
+            loan_asset_chain: Ethereum,
+            loan_repayment_address:
+                "0x055098f73c89ca554f98c0298ce900235d2e1b4205a7ca629ae017518521c2c3".to_string(),
+        };
+
+        let res = lender
+            .post("http://localhost:7338/api/offers/create")
+            .json(&loan_offer)
+            .send()
+            .await
+            .unwrap();
+
+        assert!(res.status().is_success());
+
+        let loan_offer: LoanOffer = res.json().await.unwrap();
+
+        // 2. Borrower takes loan offer by creating a contract request.
+        browser_wallet::wallet::new_wallet("borrower", "regtest").unwrap();
+
+        let borrower_wallet_index = 0;
+        let borrower_pk = browser_wallet::wallet::get_pk(borrower_wallet_index).unwrap();
+
+        let borrower_btc_address = "tb1quw75h0w26rcrdfar6knvkfazpwyzq4z8vqmt37"
+            .parse()
+            .unwrap();
+
+        let contract_request = ContractRequestSchema {
+            loan_id: loan_offer.id,
+            loan_amount: dec!(2_000),
+            duration_months: 6,
+            borrower_btc_address,
+            borrower_pk,
+            borrower_loan_address: None,
+            // The borrower wants to get a Moon card with their stable coins.
+            integration: Some(Integration::PayWithMoon),
+        };
+
+        let res = borrower
+            .post("http://localhost:7337/api/contracts")
+            .json(&contract_request)
+            .send()
+            .await
+            .unwrap();
+
+        assert!(res.status().is_success());
+
+        let contract: Contract = res.json().await.unwrap();
+
+        // 3. Lender accepts contract request.
+
+        let xpub = "tpubD6NzVbkrYhZ4Yon2URjspXp7Y7DKaBaX1ZVMCEnhc8zCrj1AuJyLrhmAKFmnkqVULW6znfEMLvgukHBVJD4fukpVYre3dpHXmkbcpvtviro";
+        let res = lender
+            .put(format!(
+                "http://localhost:7338/api/contracts/{}/approve?xpub={xpub}",
+                contract.id
+            ))
+            .send()
+            .await
+            .unwrap();
+
+        assert!(res.status().is_success());
+
+        // The borrower's Moon card is created as soon as the lender accepts the loan.
+
+        // 4. Borrower pays to collateral address.
+
+        let res = borrower
+            .get("http://localhost:7337/api/contracts")
+            .send()
+            .await
+            .unwrap();
+
+        assert!(res.status().is_success());
+
+        let contracts: Vec<Contract> = res.json().await.unwrap();
+        let contract = contracts.iter().find(|c| c.id == contract.id).unwrap();
+
+        let total_collateral = contract.initial_collateral_sats + contract.origination_fee_sats;
+
+        if network == "regtest" {
+            tracing::info!("Running on regtest");
+
+            // In production, the borrower would use an _external_ wallet to publish the
+            // transaction. As such, we can fake all this.
+            let mempool = Client::new();
+            let res = mempool
+                .post("http://localhost:7339/sendtoaddress")
+                .json(&mempool_mock::SendToAddress {
+                    address: contract
+                        .contract_address
+                        .clone()
+                        .expect("contract address")
+                        .to_string(),
+                    amount: total_collateral,
+                })
+                .send()
+                .await
+                .unwrap();
+
+            assert!(res.status().is_success());
+
+            let res = mempool
+                .post("http://localhost:7339/mine/6")
+                .send()
+                .await
+                .unwrap();
+
+            assert!(res.status().is_success());
+        } else {
+            tracing::info!("Running on signet");
+
+            let faucet = Client::builder()
+                .danger_accept_invalid_certs(true)
+                .build()
+                .expect("valid build");
+
+            let contract_address = contract.contract_address.clone().expect("contract address");
+
+            // Testing the ability to fund the collateral with two outputs.
+
+            // We add 1 to ensure that we don't round down.
+            let half = (total_collateral + 1) / 2;
+            for _ in 0..=1 {
+                let res = faucet
+                    .post("https://faucet.mutinynet.com/api/onchain")
+                    .json(&json!({
+                        "sats": half,
+                        "address": contract_address
+                    }))
+                    .send()
+                    .await
+                    .unwrap();
+
+                let status = res.status();
+
+                assert!(status.is_success());
+            }
+        }
+
+        // 5. Hub sees collateral funding TX.
+
+        let res = borrower
+            .get("http://localhost:7337/api/contracts")
+            .send()
+            .await
+            .unwrap();
+
+        assert!(res.status().is_success());
+
+        let contracts: Vec<Contract> = res.json().await.unwrap();
+        let contract = contracts.iter().find(|c| c.id == contract.id).unwrap();
+
+        wait_until_contract_status(
+            &borrower,
+            "localhost:7337",
+            &contract.id,
+            ContractStatus::CollateralConfirmed,
+            &network,
+        )
+        .await
+        .unwrap();
+
+        // 6. Hub generates Pay with Moon on-chain USDC POLY invoice to add Moon Credit balance and
+        //    shows the corresponding address to the lender.
+
+        // 7. Lender pays invoice. (With the final protocol, the borrower must claim the principal
+        //    HTLC to the invoice address instead of an address owned by them!)
+
+        // 8. TODO: Hub checks that _address_ in invoice has received expected amount. We can only
+        //    do this as soon as we know exactly how to use the webhook API!
+
+        // 9. TODO: Hub adds balance to borrower card.
+
+        // 10. TODO: Simulate spend.
+
+        // We need random TXIDs to avoid errors due to rerunning this test without wiping the DB.
+        let loan_txid = random_txid();
+        let res = lender
+            .put(format!(
+                "http://localhost:7338/api/contracts/{}/principalgiven?txid={loan_txid}",
+                contract.id
+            ))
+            .send()
+            .await
+            .unwrap();
+
+        assert!(res.status().is_success());
     }
 
     async fn wait_until_contract_status(

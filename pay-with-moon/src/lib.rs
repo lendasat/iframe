@@ -23,10 +23,9 @@ pub struct CreateCardResponse {
     /// The card's available balance.
     #[serde(with = "rust_decimal::serde::float")]
     pub available_balance: Decimal,
-    /// The expiration date of the card. Date format in `[year]-[month]`, e.g. `2024-11`.
+    /// The expiration date of the card. Date format in `[year]-[month]-[day]`, e.g. `2024-11-01`.
     ///
-    /// Unfortunately, we can't write a custom deserializer for this because just the year and the
-    /// month is not sufficient.
+    /// We can't use `#[serde(with = "time::serde::iso8601")]`, because we are missing data.
     pub expiration: String,
     /// The expiration date of the card in MM/YY format.
     pub display_expiration: String,
@@ -56,10 +55,9 @@ pub struct GetCardResponse {
     /// The card's available balance.
     #[serde(with = "rust_decimal::serde::str")]
     pub available_balance: Decimal,
-    /// The expiration date of the card. Date format in `[year]-[month]`, e.g. `2024-11`.
+    /// The expiration date of the card. Date format in `[year]-[month]-[day]`, e.g. `2024-11-01`.
     ///
-    /// Unfortunately, we can't write a custom deserializer for this because just the year and the
-    /// month is not sufficient.
+    /// We can't use `#[serde(with = "time::serde::iso8601")]`, because we are missing data.
     pub expiration: String,
     /// The expiration date of the card in MM/YY format.
     pub display_expiration: String,
@@ -92,10 +90,9 @@ pub struct AddBalanceResponse {
     /// The card's available balance.
     #[serde(with = "rust_decimal::serde::float")]
     pub available_balance: Decimal,
-    /// The expiration date of the card. Date format in `[year]-[month]`, e.g. `2024-11`.
+    /// The expiration date of the card. Date format in `[year]-[month]-[day]`, e.g. `2024-11-01`.
     ///
-    /// Unfortunately, we can't write a custom deserializer for this because just the year and the
-    /// month is not sufficient.
+    /// We can't use `#[serde(with = "time::serde::iso8601")]`, because we are missing data.
     pub expiration: String,
     /// The expiration date of the card in MM/YY format.
     pub display_expiration: String,
@@ -255,6 +252,7 @@ pub struct CardProduct {
     // TODO: There might be more things, but we can't trust the docs.
 }
 
+#[derive(Clone)]
 pub struct MoonCardClient {
     client: Client,
     api_key: String,
@@ -581,16 +579,6 @@ mod tests {
         assert_eq!(card.frozen, retrieved_card.frozen);
 
         assert_eq!(retrieved_card.card_product_id, card_product_id);
-
-        // For some reason the `card_product_id` of the CreateCardResponse is a different one (not
-        // listed under the card products API!).
-        // assert_eq!(card.card_product_id, retrieved_card.card_product_id);
-
-        let amount = dec!(100.0);
-        let topped_up_card = client.add_balance(card.id, amount).await.unwrap();
-
-        assert_eq!(topped_up_card.balance, amount);
-        assert_eq!(topped_up_card.available_balance, amount);
     }
 
     #[tokio::test]

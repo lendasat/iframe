@@ -9,6 +9,7 @@ use hub::db::run_migration;
 use hub::liquidation_engine::monitor_positions;
 use hub::logger::init_tracing;
 use hub::mempool;
+use hub::moon;
 use hub::routes::borrower::spawn_borrower_server;
 use hub::routes::lender::spawn_lender_server;
 use hub::wallet::Wallet;
@@ -95,17 +96,32 @@ async fn main() -> Result<()> {
         }
     });
 
+    let moon_client = moon::Manager::new(
+        config.moon_api_key.clone(),
+        config.moon_api_url.clone(),
+        config.moon_visa_product_id,
+        db.clone(),
+    );
+
     let borrower_server = spawn_borrower_server(
         config.clone(),
         wallet.clone(),
         db.clone(),
         mempool_addr.clone(),
         broadcast_state.clone(),
+        moon_client.clone(),
     )
     .await?;
 
-    let lender_server =
-        spawn_lender_server(config, wallet, db, mempool_addr, broadcast_state).await?;
+    let lender_server = spawn_lender_server(
+        config,
+        wallet,
+        db,
+        mempool_addr,
+        broadcast_state,
+        moon_client,
+    )
+    .await?;
 
     let _ = tokio::join!(borrower_server, lender_server);
 

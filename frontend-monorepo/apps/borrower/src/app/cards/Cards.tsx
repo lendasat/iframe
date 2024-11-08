@@ -2,7 +2,6 @@ import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import { CurrencyFormatter } from "@frontend-monorepo/ui-shared";
 import { Box, Button, Flex, Grid, Heading, Skeleton, Spinner, Text } from "@radix-ui/themes";
 import { useRef, useState } from "react";
-import { GoArrowUpRight } from "react-icons/go";
 import { IoWallet } from "react-icons/io5";
 import { Link } from "react-router-dom";
 import { useAsync } from "react-use";
@@ -137,10 +136,10 @@ export default function Cards() {
                 <Box className={`h-12 w-12 bg-purple-50 rounded-xl place-items-center flex justify-center`}>
                   <IoWallet size={"24"} />
                 </Box>
-                <Text size={"1"} weight={"medium"}>Balance</Text>
+                <Text size={"1"} weight={"medium"}>Available</Text>
                 <Heading size={"2"}>
                   <Skeleton loading={!activeCard}>
-                    <CurrencyFormatter value={activeCard.balance} />
+                    <CurrencyFormatter value={activeCard.available_balance} />
                   </Skeleton>
                 </Heading>
               </Box>
@@ -149,12 +148,12 @@ export default function Cards() {
             <Skeleton loading={!activeCard} className="flex items-center justify-between">
               <Box className="min-h-[150px] w-full border border-font/10 flex flex-col items-center justify-center gap-1.5 text-font rounded-2xl">
                 <Box className={`h-12 w-12 bg-purple-50 rounded-xl place-items-center flex justify-center`}>
-                  <GoArrowUpRight size={"24"} />
+                  <IoWallet size={"24"} />
                 </Box>
-                <Text size={"1"} weight={"medium"}>Outgoing</Text>
+                <Text size={"1"} weight={"medium"}>Total</Text>
                 <Heading size={"2"}>
                   <Skeleton loading={!activeCard}>
-                    <CurrencyFormatter value={activeCard.outgoing} />
+                    <CurrencyFormatter value={activeCard.balance} />
                   </Skeleton>
                 </Heading>
               </Box>
@@ -183,7 +182,7 @@ export default function Cards() {
               <Text size={"1"} weight={"medium"} className="text-font/60">Card Number</Text>
               <Text as="p" weight={"medium"}>
                 <Skeleton loading={!activeCard}>
-                  {moreInfo ? formatCreditCardNumber(activeCard.cardNumber) : "******"}
+                  {moreInfo ? formatCreditCardNumber(activeCard.pan) : "******"}
                 </Skeleton>
               </Text>
             </Skeleton>
@@ -193,7 +192,7 @@ export default function Cards() {
                   <Text size={"1"} weight={"medium"} className="text-font/60">Expiry</Text>
                   <Text as="p" weight={"medium"}>
                     <Skeleton loading={!activeCard}>
-                      {moreInfo ? formatExpiryDate(activeCard.expiry) : "****"}
+                      {moreInfo ? formatExpiryDate(activeCard.expiration) : "****"}
                     </Skeleton>
                   </Text>
                 </Box>
@@ -201,7 +200,7 @@ export default function Cards() {
                   <Text size={"1"} weight={"medium"} className="text-font/60">CVV</Text>
                   <Text as="p" weight={"medium"}>
                     <Skeleton loading={!activeCard}>
-                      {moreInfo ? activeCard.cardCvv : "****"}
+                      {moreInfo ? activeCard.cvv : "****"}
                     </Skeleton>
                   </Text>
                 </Box>

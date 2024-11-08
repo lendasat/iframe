@@ -1,5 +1,6 @@
 use crate::config::Config;
 use crate::mempool;
+use crate::moon;
 use crate::routes::price_feed_ws;
 use crate::routes::profiles;
 use crate::routes::AppState;
@@ -39,6 +40,7 @@ pub async fn spawn_lender_server(
     db: Pool<Postgres>,
     mempool: xtra::Address<mempool::Actor>,
     connections: Arc<Mutex<Vec<mpsc::UnboundedSender<Message>>>>,
+    moon_client: moon::Manager,
 ) -> Result<JoinHandle<()>> {
     let app_state = Arc::new(AppState {
         db,
@@ -46,6 +48,7 @@ pub async fn spawn_lender_server(
         config: config.clone(),
         mempool,
         connections,
+        moon: moon_client,
     });
     let app = Router::new().merge(
         health_check::router()

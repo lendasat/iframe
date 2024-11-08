@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        UPDATE contracts\n        SET\n            collateral_sats = $1,\n            status = $2,\n            updated_at = $3\n        WHERE id = $4\n        RETURNING\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            lender_xpub,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            created_at,\n            updated_at\n        ",
+  "query": "\n        SELECT\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            integration as \"integration: crate::model::db::Integration\",\n            lender_xpub,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            created_at,\n            updated_at\n        FROM contracts\n        where id = $1 AND\n        borrower_id = $2\n        ",
   "describe": {
     "columns": [
       {
@@ -65,21 +65,35 @@
       },
       {
         "ordinal": 12,
+        "name": "integration: crate::model::db::Integration",
+        "type_info": {
+          "Custom": {
+            "name": "integration",
+            "kind": {
+              "Enum": [
+                "PayWithMoon"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 13,
         "name": "lender_xpub",
         "type_info": "Text"
       },
       {
-        "ordinal": 13,
+        "ordinal": 14,
         "name": "contract_address",
         "type_info": "Text"
       },
       {
-        "ordinal": 14,
+        "ordinal": 15,
         "name": "contract_index",
         "type_info": "Int4"
       },
       {
-        "ordinal": 15,
+        "ordinal": 16,
         "name": "status: crate::model::db::ContractStatus",
         "type_info": {
           "Custom": {
@@ -105,7 +119,7 @@
         }
       },
       {
-        "ordinal": 16,
+        "ordinal": 17,
         "name": "liquidation_status: crate::model::db::LiquidationStatus",
         "type_info": {
           "Custom": {
@@ -122,47 +136,24 @@
         }
       },
       {
-        "ordinal": 17,
+        "ordinal": 18,
         "name": "duration_months",
         "type_info": "Int4"
       },
       {
-        "ordinal": 18,
+        "ordinal": 19,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 19,
+        "ordinal": 20,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
-        "Int8",
-        {
-          "Custom": {
-            "name": "contract_status",
-            "kind": {
-              "Enum": [
-                "Requested",
-                "Approved",
-                "CollateralSeen",
-                "CollateralConfirmed",
-                "PrincipalGiven",
-                "Repaid",
-                "Closing",
-                "Closed",
-                "Rejected",
-                "DisputeBorrowerStarted",
-                "DisputeLenderStarted",
-                "DisputeBorrowerResolved",
-                "DisputeLenderResolved"
-              ]
-            }
-          }
-        },
-        "Timestamptz",
+        "Bpchar",
         "Bpchar"
       ]
     },
@@ -182,6 +173,7 @@
       true,
       true,
       true,
+      true,
       false,
       false,
       false,
@@ -189,5 +181,5 @@
       false
     ]
   },
-  "hash": "14fd519147c7483b72b7de44ec8217476d55add07bcb3b91dff781718b13bb63"
+  "hash": "11eb05df7e116faa80edc9e88e5afce503b0b628c7ba26020a8fe5ec0958bd6f"
 }

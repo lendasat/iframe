@@ -3,6 +3,7 @@ use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use std::ops::Div;
 use std::str::FromStr;
+use uuid::Uuid;
 
 #[derive(Debug, Clone)]
 pub struct Config {
@@ -26,6 +27,9 @@ pub struct Config {
     pub hub_fee_descriptor: String,
     pub hub_fee_wallet_dir: Option<String>,
     pub origination_fee: Vec<OriginationFee>,
+    pub moon_api_key: String,
+    pub moon_api_url: String,
+    pub moon_visa_product_id: Uuid,
 }
 
 impl Config {
@@ -74,6 +78,14 @@ impl Config {
             .expect("HUB_ORIGINATION_FEE does not fit format `start,end,fee`");
         let fee = fee.div(dec!(100));
 
+        let moon_api_key = std::env::var("MOON_API_KEY").expect("MOON_API_KEY must be set");
+        let moon_api_url = std::env::var("MOON_API_URL").expect("MOON_API_URL must be set");
+        let moon_visa_product_id =
+            std::env::var("MOON_VISA_PRODUCT_ID").expect("MOON_VISA_PRODUCT_ID must be set");
+        let moon_visa_product_id = moon_visa_product_id
+            .parse()
+            .expect("MOON_VISA_PRODUCT_ID to be a UUID");
+
         let any_smtp_not_configured = smtp_host.is_none()
             || smtp_port.is_none()
             || smtp_user.is_none()
@@ -109,6 +121,9 @@ impl Config {
                 to_month: end,
                 fee,
             }],
+            moon_api_key,
+            moon_api_url,
+            moon_visa_product_id,
         }
     }
 }

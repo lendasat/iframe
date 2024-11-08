@@ -70,25 +70,6 @@ export class HttpClientBorrower extends BaseHttpClient {
     }
   }
 
-  async postLoanOffer(offer: LoanOffer): Promise<LoanOffer | undefined> {
-    try {
-      const response: AxiosResponse<LoanOffer> = await this.httpClient.post("/api/offers/create", offer);
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        const message = error.response.data.message;
-        console.error(
-          `Failed to post loan offer: http: ${error.response?.status} and response: ${
-            JSON.stringify(error.response?.data)
-          }`,
-        );
-        throw new Error(message);
-      } else {
-        throw new Error(`Could not post loan offer: ${JSON.stringify(error)}`);
-      }
-    }
-  }
-
   async postLoanRequest(request: PostLoanRequest): Promise<LoanRequest | undefined> {
     try {
       const response: AxiosResponse<LoanRequest> = await this.httpClient.post("/api/requests/create", request);
@@ -361,32 +342,22 @@ export class HttpClientBorrower extends BaseHttpClient {
   }
 
   async getUserCards(): Promise<UserCardDetail[]> {
-    return [
-      {
-        id: 1,
-        balance: 95485.68,
-        outgoing: 2524.45,
-        cardNumber: 3782822463101845,
-        cardCvv: 759,
-        expiry: Date.now(),
-      },
-      {
-        id: 2,
-        balance: 99545.68,
-        outgoing: 9574.45,
-        cardNumber: 5610591081018250,
-        cardCvv: 957,
-        expiry: Date.now(),
-      },
-      {
-        id: 3,
-        balance: 7653.24,
-        outgoing: 2582.45,
-        cardNumber: 5019717010103742,
-        cardCvv: 579,
-        expiry: Date.now(),
-      },
-    ];
+    try {
+      const [response] = await Promise.all([this.httpClient.get(`/api/cards`)]);
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to fetch borrower cards: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not fetch borrower cards: ${JSON.stringify(error)}`);
+      }
+    }
   }
 
   async getCardTransactions(_cardId: number): Promise<CardTransactionInformation[]> {
@@ -420,7 +391,6 @@ type BorrowerHttpClientContextType = Pick<
   HttpClientBorrower,
   | "getLoanOffers"
   | "getLoanOffer"
-  | "postLoanOffer"
   | "postLoanRequest"
   | "postContractRequest"
   | "getContracts"
@@ -498,7 +468,6 @@ export const HttpClientBorrowerProvider: React.FC<HttpClientProviderProps> = ({ 
   const borrowerClientFunctions: BorrowerHttpClientContextType = {
     getLoanOffers: httpClient.getLoanOffers.bind(httpClient),
     getLoanOffer: httpClient.getLoanOffer.bind(httpClient),
-    postLoanOffer: httpClient.postLoanOffer.bind(httpClient),
     postLoanRequest: httpClient.postLoanRequest.bind(httpClient),
     postContractRequest: httpClient.postContractRequest.bind(httpClient),
     getContracts: httpClient.getContracts.bind(httpClient),

@@ -27,8 +27,8 @@ export default function CreditCard({ card, visible }: CredtCardProps) {
           <Box>
             <Heading className="text-white text-lg">
               {visible
-                ? formatCreditCardNumber(card.cardNumber)
-                : `**** **** **** ${card.cardNumber.toString().slice(-4)}`}
+                ? formatCreditCardNumber(card.pan)
+                : `**** **** **** ${card.pan.toString().slice(-4)}`}
             </Heading>
           </Box>
         </Flex>
@@ -37,7 +37,7 @@ export default function CreditCard({ card, visible }: CredtCardProps) {
           <Box>
             <Heading className="text-white text-sm">
               {visible
-                ? formatExpiryDate(card.expiry)
+                ? formatExpiryDate(card.expiration)
                 : "**/**"}
             </Heading>
           </Box>
@@ -45,7 +45,7 @@ export default function CreditCard({ card, visible }: CredtCardProps) {
           <Box>
             <Heading className="text-white text-sm">
               {visible
-                ? card.cardCvv
+                ? card.cvv
                 : "***"}
             </Heading>
           </Box>
