@@ -13,6 +13,7 @@ use hub::model::LoanAssetChain;
 use hub::model::LoanAssetType;
 use hub::model::LoanOffer;
 use hub::model::User;
+use hub::moon::Card;
 use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
@@ -21,6 +22,7 @@ use sqlx::Pool;
 use sqlx::Postgres;
 use std::str::FromStr;
 use time::macros::format_description;
+use time::OffsetDateTime;
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::filter::Directive;
 use tracing_subscriber::fmt::time::UtcTime;
@@ -49,7 +51,10 @@ async fn main() -> Result<()> {
 
     let offers = create_loan_offers(&pool, lender.id.as_str()).await?;
 
-    create_sample_contracts(&pool, &borrower, &offers[0], lender.id.as_str()).await?;
+    let (_requested_contract, approved_contract) =
+        create_sample_contracts(&pool, &borrower, &offers[0], lender.id.as_str()).await?;
+
+    create_sample_card(&pool, &borrower, &approved_contract).await?;
 
     Ok(())
 }
@@ -59,36 +64,82 @@ async fn create_sample_contracts(
     borrower: &User,
     offer: &LoanOffer,
     lender_id: &str,
-) -> Result<()> {
+) -> Result<(Contract, Contract)> {
     let borrower_contracts =
         db::contracts::load_contracts_by_borrower_id(pool, borrower.id.as_str()).await?;
     let requested = borrower_contracts
         .iter()
         .filter(|contract| contract.status == ContractStatus::Requested)
-        .count();
+        .collect::<Vec<_>>();
     let approved = borrower_contracts
         .iter()
         .filter(|contract| contract.status == ContractStatus::Approved)
-        .count();
+        .collect::<Vec<_>>();
 
-    if requested > 0 && approved > 0 {
+    let (contract1, contract2) = if !requested.is_empty() && !approved.is_empty() {
         tracing::debug!("DB already contains one approved and one requested");
+        let requested = requested.first().cloned().expect("to be one").clone();
+        let approved = approved.first().cloned().expect("to be one").clone();
+        (requested, approved)
+    } else {
+        let contract1 =
+            create_loan_request(pool, offer, offer.loan_amount_min, borrower.id.as_str()).await?;
+        let contract2 =
+            create_loan_request(pool, offer, offer.loan_amount_max, borrower.id.as_str()).await?;
+        (contract1, contract2)
+    };
 
-        return Ok(());
+    accept_loan_request(pool, &contract2, lender_id).await?;
+
+    Ok((contract1, contract2))
+}
+
+async fn create_sample_card(
+    pool: &Pool<Postgres>,
+    borrower: &User,
+    contract: &Contract,
+) -> Result<Card> {
+    let borrower_id = borrower.id.as_str();
+    let contract_id = contract.id.as_str();
+
+    let cards = db::moon::get_borrower_cards(pool, borrower_id).await?;
+    if !cards.is_empty() {
+        let card = cards
+            .first()
+            .cloned()
+            .context("to have at least one card")?;
+        tracing::debug!(card_id = card.id.to_string(), "Load sample card from tdb");
+        return Ok(card);
     }
 
-    let _contract1 =
-        create_loan_request(pool, offer, offer.loan_amount_min, borrower.id.as_str()).await?;
-    let contract2 =
-        create_loan_request(pool, offer, offer.loan_amount_max, borrower.id.as_str()).await?;
+    // The data below was taken once from a stagenet run. If their data is persistant, then there
+    // might be some transactions attached
+    let card = Card {
+        id: Uuid::from_str("0926cd27-7774-4fb3-9f9b-5f23744445e7").expect("to be valid"),
+        balance: Decimal::ZERO,
+        available_balance: Decimal::ZERO,
+        expiration: OffsetDateTime::from_unix_timestamp(1738367999).expect("to be valid"),
+        pan: "4513650002606667".to_string(),
+        cvv: "064".to_string(),
+        support_token: "028084d792".to_string(),
+        product_id: Uuid::from_str("8f1c611d-098d-4f61-b106-f7b6d344b1ae").expect("to be valid"),
+        end_customer_id: format!("{borrower_id}/{contract_id}"),
+        contract_id: contract_id.to_string(),
+        borrower_id: borrower_id.to_string(),
+    };
+    tracing::debug!(
+        card_id = card.id.to_string(),
+        "Inserting sample card into tdb"
+    );
 
-    accept_loan_request(pool, contract2, lender_id).await?;
-    Ok(())
+    db::moon::insert_card(pool, card.clone()).await?;
+
+    Ok(card)
 }
 
 async fn accept_loan_request(
     pool: &Pool<Postgres>,
-    contract: Contract,
+    contract: &Contract,
     lender_id: &str,
 ) -> Result<Contract> {
     db::contracts::accept_contract_request(

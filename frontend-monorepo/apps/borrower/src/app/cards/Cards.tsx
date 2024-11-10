@@ -5,8 +5,6 @@ import { useRef, useState } from "react";
 import { IoWallet } from "react-icons/io5";
 import { Link } from "react-router-dom";
 import { useAsync } from "react-use";
-import { EffectFade } from "swiper/modules";
-import { Swiper as SwiperComponent, SwiperSlide } from "swiper/react";
 import type { SwiperRef } from "swiper/react";
 import NoCreditCard from "./../../assets/creditcard-illustration.png";
 import CardHistory from "./CardHistory";
@@ -89,30 +87,36 @@ export default function Cards() {
         </Skeleton>
 
         <Skeleton loading={!activeCard}>
-          <SwiperComponent
-            loop
-            ref={SlideRef}
-            effect={"cards"}
-            grabCursor={false}
-            allowTouchMove={false}
-            modules={[EffectFade]}
-            centeredSlides
-            cardsEffect={{
-              perSlideOffset: 7,
-              slideShadows: false,
-            }}
-            className="h-52 w-full"
-            enabled={false}
-          >
-            {userCardDetails.map((card, index) => (
-              <SwiperSlide key={index}>
-                <CreditCard
-                  card={card}
-                  visible={moreInfo}
-                />
-              </SwiperSlide>
-            ))}
-          </SwiperComponent>
+          {/*<SwiperComponent*/}
+          {/*  loop*/}
+          {/*  ref={SlideRef}*/}
+          {/*  effect={"cards"}*/}
+          {/*  grabCursor={false}*/}
+          {/*  allowTouchMove={false}*/}
+          {/*  modules={[EffectFade]}*/}
+          {/*  centeredSlides*/}
+          {/*  slidesPerView={1}*/}
+          {/*  slidesPerGroup={1}*/}
+          {/*  cardsEffect={{*/}
+          {/*    perSlideOffset: 7,*/}
+          {/*    slideShadows: false,*/}
+          {/*  }}*/}
+          {/*  className="h-52 w-full"*/}
+          {/*  enabled={false}*/}
+          {/*>*/}
+          {/*  {userCardDetails.map((card, index) => (*/}
+          {
+            activeCard
+            // <SwiperSlide key={1}>
+            && <CreditCard
+              card={activeCard}
+              visible={moreInfo}
+            />
+            // </SwiperSlide>
+          }
+          {/*))*/}
+          {/*}*/}
+          {/*</SwiperComponent>*/}
         </Skeleton>
 
         <Skeleton loading={!activeCard}>
@@ -136,28 +140,29 @@ export default function Cards() {
                 <Box className={`h-12 w-12 bg-purple-50 rounded-xl place-items-center flex justify-center`}>
                   <IoWallet size={"24"} />
                 </Box>
-                <Text size={"1"} weight={"medium"}>Available</Text>
+                <Text size={"1"} weight={"medium"}>Available Balance</Text>
                 <Heading size={"2"}>
                   <Skeleton loading={!activeCard}>
-                    <CurrencyFormatter value={activeCard.available_balance} />
+                    {activeCard && <CurrencyFormatter value={activeCard.available_balance} />}
                   </Skeleton>
                 </Heading>
               </Box>
             </Skeleton>
 
-            <Skeleton loading={!activeCard} className="flex items-center justify-between">
-              <Box className="min-h-[150px] w-full border border-font/10 flex flex-col items-center justify-center gap-1.5 text-font rounded-2xl">
-                <Box className={`h-12 w-12 bg-purple-50 rounded-xl place-items-center flex justify-center`}>
-                  <IoWallet size={"24"} />
-                </Box>
-                <Text size={"1"} weight={"medium"}>Total</Text>
-                <Heading size={"2"}>
-                  <Skeleton loading={!activeCard}>
-                    <CurrencyFormatter value={activeCard.balance} />
-                  </Skeleton>
-                </Heading>
-              </Box>
-            </Skeleton>
+            {/*TODO: sum up the total tx history */}
+            {/*<Skeleton loading={!activeCard} className="flex items-center justify-between">*/}
+            {/*  <Box className="min-h-[150px] w-full border border-font/10 flex flex-col items-center justify-center gap-1.5 text-font rounded-2xl">*/}
+            {/*    <Box className={`h-12 w-12 bg-purple-50 rounded-xl place-items-center flex justify-center`}>*/}
+            {/*      <IoWallet size={"24"} />*/}
+            {/*    </Box>*/}
+            {/*    <Text size={"1"} weight={"medium"}>Total Spent</Text>*/}
+            {/*    <Heading size={"2"}>*/}
+            {/*      <Skeleton loading={!activeCard}>*/}
+            {/*        {activeCard && <CurrencyFormatter value={activeCard.balance} />}*/}
+            {/*      </Skeleton>*/}
+            {/*    </Heading>*/}
+            {/*  </Box>*/}
+            {/*</Skeleton>*/}
           </Grid>
 
           <Box className="space-y-1">
@@ -251,7 +256,12 @@ export default function Cards() {
               </Link>
             </Box>
           )
-          : <CardHistory cardId={activeCard.id} />}
+          : (
+            <CardHistory
+              cardId={activeCard.id}
+              lastFourCardDigits={activeCard.pan.toString().substring(activeCard.pan.toString().length - 4)}
+            />
+          )}
       </Box>
     </Grid>
   );
@@ -263,8 +273,12 @@ export const formatCreditCardNumber = (number: number) => {
   return numStr.replace(/(\d{4})(?=\d)/g, "$1 ");
 };
 
-export const formatExpiryDate = (timestamp: number): string => {
+export const formatExpiryTimestamp = (timestamp: number): string => {
   const date = new Date(timestamp);
+  return formatExpiryDate(date);
+};
+
+export const formatExpiryDate = (date: Date): string => {
   return date.toLocaleDateString("en-US", {
     year: "numeric",
     month: "2-digit",

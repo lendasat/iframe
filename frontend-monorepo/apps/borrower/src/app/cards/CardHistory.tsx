@@ -5,9 +5,10 @@ import HistoryComponent from "./HistoryComponent";
 
 interface CardHistoryProps {
   cardId: number;
+  lastFourCardDigits: string;
 }
 
-export default function CardHistory({ cardId }: CardHistoryProps) {
+export default function CardHistory({ cardId, lastFourCardDigits }: CardHistoryProps) {
   const { getCardTransactions } = useBorrowerHttpClient();
 
   const { loading, value: maybeTransactionHistory, error } = useAsync(async () => {
@@ -20,7 +21,7 @@ export default function CardHistory({ cardId }: CardHistoryProps) {
 
   const transactionHistoryUnsorted = maybeTransactionHistory || [];
   const transactionHistorySorted = transactionHistoryUnsorted.sort((a, b) => {
-    return b.date - a.date;
+    return b.date.getTime() - a.date.getTime();
   });
 
   const amount_col = {
@@ -73,11 +74,8 @@ export default function CardHistory({ cardId }: CardHistoryProps) {
 
         {!loading && transactionHistorySorted.map((history, index) => (
           <HistoryComponent
-            transactionType={history.transactionType}
-            cardUsed={history.cardUsed}
-            status={history.status}
-            amount={history.amount}
-            date={history.date}
+            transaction={history}
+            lastFourCardDigits={lastFourCardDigits}
             key={index}
           />
         ))}

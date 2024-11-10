@@ -119,11 +119,35 @@ pub struct TransactionResponse {
     pub transactions: Vec<Transaction>,
 }
 
+#[derive(Debug, Deserialize, PartialEq)]
+pub enum CardTransactionType {
+    #[serde(rename = "CARD_TRANSACTION")]
+    CardTransaction,
+    #[serde(untagged)]
+    Unknown(String),
+}
+
 #[derive(Debug, Deserialize)]
 pub struct Transaction {
     #[serde(rename = "type")]
-    pub transaction_type: String,
+    pub transaction_type: CardTransactionType,
     pub data: TransactionData,
+}
+
+#[derive(Debug, Deserialize, PartialEq)]
+pub enum TransactionStatus {
+    #[serde(rename = "AUTHORIZATION")]
+    Authorization,
+    #[serde(rename = "REVERSAL")]
+    Reversal,
+    #[serde(rename = "CLEARING")]
+    Clearing,
+    #[serde(rename = "REFUND")]
+    Refund,
+    #[serde(rename = "PENDING")]
+    Pending,
+    #[serde(untagged)]
+    Unknown(String),
 }
 
 #[derive(Debug, Deserialize)]
@@ -131,7 +155,7 @@ pub struct Transaction {
 pub struct TransactionData {
     pub card: TransactionCard,
     pub transaction_id: Uuid,
-    pub transaction_status: String,
+    pub transaction_status: TransactionStatus,
     #[serde(with = "time::serde::iso8601")]
     pub datetime: OffsetDateTime,
     pub merchant: String,
@@ -660,15 +684,17 @@ mod tests {
             .await
             .unwrap();
 
-        let transactions = client.get_card_transactions(card.id, 1, 10).await.unwrap();
+        let card_id = card.id;
+
+        let transactions = client.get_card_transactions(card_id, 1, 10).await.unwrap();
         assert!(transactions.is_empty());
 
-        client.add_balance(card.id, dec!(1000.0)).await.unwrap();
+        client.add_balance(card_id, dec!(1000.0)).await.unwrap();
 
         let tx_amount = 10;
         client
             .simulate_card_transaction(
-                card.id,
+                card_id,
                 tx_amount,
                 "USD".to_string(),
                 "AUTHORIZATION".to_string(),
@@ -676,11 +702,18 @@ mod tests {
             .await
             .unwrap();
 
-        let transactions = client.get_card_transactions(card.id, 1, 10).await.unwrap();
+        let transactions = client.get_card_transactions(card_id, 1, 10).await.unwrap();
         assert_eq!(transactions.len(), 1);
 
+        assert_eq!(
+            transactions[0].transaction_type,
+            CardTransactionType::CardTransaction
+        );
         assert_eq!(transactions[0].data.amount, tx_amount.into());
-        assert_eq!(transactions[0].data.transaction_status, "PENDING");
+        assert_eq!(
+            transactions[0].data.transaction_status,
+            TransactionStatus::Pending
+        );
     }
 
     #[tokio::test]

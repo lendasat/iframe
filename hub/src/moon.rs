@@ -2,6 +2,7 @@ use crate::db;
 use anyhow::Context;
 use anyhow::Result;
 use pay_with_moon::MoonCardClient;
+use pay_with_moon::Transaction;
 use rust_decimal::Decimal;
 use sqlx::Pool;
 use sqlx::Postgres;
@@ -14,6 +15,7 @@ use uuid::Uuid;
 /// Information about a Moon card.
 ///
 /// The only things that can change is the `available_balance`.
+#[derive(Clone, Debug)]
 pub struct Card {
     pub id: Uuid,
     pub balance: Decimal,
@@ -110,6 +112,16 @@ impl Manager {
             .context("DB")?;
 
         Ok(cards)
+    }
+
+    pub async fn get_transactions(&self, card_id: Uuid) -> Result<Vec<Transaction>> {
+        let transactions = self
+            .client
+            // TODO: implement pagination
+            .get_card_transactions(card_id, 1, 50)
+            .await?;
+
+        Ok(transactions)
     }
 
     pub async fn generate_invoice(

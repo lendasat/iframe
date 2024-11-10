@@ -230,26 +230,6 @@ export interface UserCardDetail {
   expiration: Date;
 }
 
-export interface CardTransactionInformation {
-  transactionType: CardTransactionType;
-  cardUsed: string;
-  status: CardTransactionStatus;
-  amount: number;
-  date: number;
-}
-
-export enum CardTransactionStatus {
-  InProcess = "in process",
-  Completed = "completed",
-  Failed = "failed",
-  Pending = "pending",
-}
-
-export enum CardTransactionType {
-  IncomingLoan = "incoming Loan",
-  Payment = "payment",
-}
-
 export class FeatureMapper {
   private static readonly FEATURE_MAP: Record<string, LoanProductOption> = {
     [LoanProductOption.StableCoins]: LoanProductOption.StableCoins,
@@ -267,4 +247,35 @@ export class FeatureMapper {
 
 export enum Integration {
   PayWithMoon = "PayWithMoon",
+}
+
+export enum CardTransactionStatus {
+  Authorization = "Authorization",
+  Reversal = "Reversal",
+  Clearing = "Clearing",
+  Refund = "Refund",
+  Pending = "Pending",
+}
+
+// Needed for the Unknown variant
+export type CardTransactionStatusType = CardTransactionStatus | string;
+
+export interface CardTransaction {
+  transaction_id: string;
+  transaction_status: CardTransactionStatusType;
+  date: Date;
+  merchant: string;
+  amount: number;
+  ledger_currency: string;
+  amount_fees_in_ledger_currency: number;
+  amount_in_transaction_currency: number;
+  transaction_currency: string;
+  amount_fees_in_transaction_currency: number;
+  fees: Fee[];
+}
+
+export interface Fee {
+  type: string;
+  amount: number;
+  fee_description: string;
 }

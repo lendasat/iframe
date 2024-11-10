@@ -3,7 +3,7 @@ import { Box, Flex, Heading } from "@radix-ui/themes";
 import { ReactComponent as Pattern } from "./../../assets/credit-card-pattern.svg";
 import LendasatLogo from "./../../assets/lendasat.png";
 import VisaIcon from "./../../assets/visa_logo_icon.webp";
-import { formatCreditCardNumber, formatExpiryDate } from "./Cards";
+import { formatCreditCardNumber, formatExpiryTimestamp } from "./Cards";
 
 interface CredtCardProps {
   card: UserCardDetail;
@@ -37,7 +37,7 @@ export default function CreditCard({ card, visible }: CredtCardProps) {
           <Box>
             <Heading className="text-white text-sm">
               {visible
-                ? formatExpiryDate(card.expiration)
+                ? formatExpiryTimestamp(card.expiration)
                 : "**/**"}
             </Heading>
           </Box>
