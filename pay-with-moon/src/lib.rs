@@ -224,9 +224,8 @@ pub struct Invoice {
 
 #[derive(Debug, Deserialize)]
 pub struct Balance {
-    // #[serde(with = "rust_decimal::serde::str")]
-    // TODO: in the testing environment this field is set to `String`🙈
-    pub balance: String,
+    #[serde(with = "rust_decimal::serde::float")]
+    pub balance: Decimal,
 }
 
 #[derive(Deserialize, Debug)]
