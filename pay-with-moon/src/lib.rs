@@ -563,6 +563,7 @@ mod tests {
         env::var("MOON_API_KEY").expect("need an API key")
     }
 
+    #[ignore]
     #[tokio::test]
     async fn create_and_get_card() {
         let client = MoonCardClient::new(get_api_key(), get_api_url());
@@ -604,6 +605,7 @@ mod tests {
         assert_eq!(retrieved_card.card_product_id, card_product_id);
     }
 
+    #[ignore]
     #[tokio::test]
     async fn add_balance_to_card() {
         let client = MoonCardClient::new(get_api_key(), get_api_url());
@@ -623,6 +625,7 @@ mod tests {
         assert_eq!(topped_up_card.available_balance, amount);
     }
 
+    #[ignore]
     #[tokio::test]
     async fn freeze_and_thaw_card() {
         let client = MoonCardClient::new(get_api_key(), get_api_url());
@@ -648,6 +651,7 @@ mod tests {
         assert!(!thawed_card.frozen);
     }
 
+    #[ignore]
     #[tokio::test]
     async fn test_generate_invoice() {
         let client = MoonCardClient::new(get_api_key(), get_api_url());
@@ -671,6 +675,7 @@ mod tests {
             .is_zero());
     }
 
+    #[ignore]
     #[tokio::test]
     async fn test_get_card_transactions() {
         let client = MoonCardClient::new(get_api_key(), get_api_url());
@@ -715,13 +720,14 @@ mod tests {
         );
     }
 
+    #[ignore]
     #[tokio::test]
     async fn test_get_moon_reserve_balance() {
         let client = MoonCardClient::new(get_api_key(), get_api_url());
 
         let balance = client.get_moon_reserve_balance().await.unwrap();
 
-        assert!(!balance.balance.is_empty());
+        assert!(!balance.balance.is_zero());
         dbg!(balance);
     }
 }
