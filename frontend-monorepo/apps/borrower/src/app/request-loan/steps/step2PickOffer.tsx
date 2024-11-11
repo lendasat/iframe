@@ -104,11 +104,9 @@ export const Step2PickOffer = () => {
     navigate("/requests");
   }
 
-  // TODO: use this option in a text or something to tell the user what he has picked
-  console.log(`Selected option ${selectedOption}`);
-
   let validCoins: StableCoin[];
   let integration: Integration | undefined;
+  let coinSelectHidden = false;
   switch (selectedOption) {
     case LoanProductOption.StableCoins:
       validCoins = StableCoinHelper.all();
@@ -116,6 +114,7 @@ export const Step2PickOffer = () => {
     case LoanProductOption.PayWithMoonDebitCard:
       validCoins = [StableCoin.USDC_POL];
       integration = Integration.PayWithMoon;
+      coinSelectHidden = true;
       break;
     case LoanProductOption.BitrefillDebitCard:
     case LoanProductOption.BringinBankAccount:
@@ -319,41 +318,8 @@ export const Step2PickOffer = () => {
       <Box className="p-6 md:p-8 ">
         <Box>
           <Heading as="h3" size={"6"} className="font-semibold text-font-dark">
-            Make a Request
+            Find a loan offer
           </Heading>
-          {advanceSearch
-            ? (
-              <Text size={"2"} as="p" weight={"medium"} className="text-font/70">
-                Want to go back to{"  "}
-                <Text
-                  size={"2"}
-                  as="span"
-                  onClick={() => {
-                    setAdvanceSearch(!advanceSearch);
-                  }}
-                  className="text-font font-semibold hover:text-purple-700 cursor-pointer"
-                >
-                  Simple search
-                </Text>{" "}
-                instead...
-              </Text>
-            )
-            : (
-              <Text size={"2"} as="p" weight={"medium"} className="text-font/70">
-                Want a more precise offer, perform{"  "}
-                <Text
-                  size={"2"}
-                  as="span"
-                  onClick={() => {
-                    setAdvanceSearch(!advanceSearch);
-                  }}
-                  className="text-font font-semibold hover:text-purple-700 cursor-pointer"
-                >
-                  Advance search
-                </Text>{" "}
-                instead...
-              </Text>
-            )}
         </Box>
         <Box mt={"7"}>
           <Form className="space-y-4" onSubmit={onShowOfferClick}>
@@ -415,17 +381,20 @@ export const Step2PickOffer = () => {
 
             {advanceSearch && (
               <>
-                {/* Stable Coin */}
-                <Box className="space-y-1">
-                  <Text className="text-font/70" as="label" size={"2"} weight={"medium"}>
-                    What stable coin do you need?
-                  </Text>
-                  <StableCoinDropdown
-                    coins={validCoins}
-                    defaultCoin={stableCoin}
-                    onSelect={onStableCoinSelect}
-                  />
-                </Box>
+                {/* Stable Coin */ !coinSelectHidden
+                  && (
+                    <Box className="space-y-1">
+                      <Text className="text-font/70" as="label" size={"2"} weight={"medium"}>
+                        What stable coin do you need?
+                      </Text>
+                      <StableCoinDropdown
+                        coins={validCoins}
+                        defaultCoin={stableCoin}
+                        onSelect={onStableCoinSelect}
+                        disabled={coinSelectHidden}
+                      />
+                    </Box>
+                  )}
 
                 {/* Interest Rate */}
                 <Box className="space-y-1">
@@ -502,7 +471,18 @@ export const Step2PickOffer = () => {
                 </Callout.Root>
               )}
 
-            <Box className="flex space-x-4 w-full">
+            <Box className="flex space-x-4">
+              <Button
+                color="blue"
+                size="3"
+                variant="soft"
+                className="flex-1 font-medium rounded-lg"
+                loading={isLoading}
+                type="button"
+                onClick={() => setAdvanceSearch(!advanceSearch)}
+              >
+                {!advanceSearch ? "Advanced options" : "Back to simple search"}
+              </Button>
               <Button
                 color="purple"
                 size="3"
@@ -554,6 +534,7 @@ export const Step2PickOffer = () => {
                       setOfferPicked(true);
                     }}
                     isLoading={isLoading}
+                    coinSelectHidden={coinSelectHidden}
                   />
                 </Box>
               </>
@@ -595,6 +576,7 @@ interface SearchParams {
   setError: (val: string) => void;
   error: string;
   isLoading: boolean;
+  coinSelectHidden: boolean;
 }
 
 // Loan Display Component
@@ -722,13 +704,17 @@ const LoanSearched = (props: SearchParams) => {
               </Text>
             </div>
           </Flex>
-          <Separator size={"4"} />
-          <Flex justify={"between"} align={"center"}>
-            <Text className="text-xs font-medium text-font/60">Coin</Text>
-            <Text className="text-[13px] font-semibold text-black/70 capitalize">
-              {StableCoinHelper.print(props.coin)}
-            </Text>
-          </Flex>
+          {!props.coinSelectHidden && (
+            <>
+              <Separator size={"4"} />
+              <Flex justify={"between"} align={"center"}>
+                <Text className="text-xs font-medium text-font/60">Coin</Text>
+                <Text className="text-[13px] font-semibold text-black/70 capitalize">
+                  {StableCoinHelper.print(props.coin)}
+                </Text>
+              </Flex>
+            </>
+          )}
           <Separator size={"4"} />
           {props.offerPicked && (
             <>
@@ -790,11 +776,11 @@ const LoanSearched = (props: SearchParams) => {
 
           {props.offerPicked
             && (
-              <Flex className="gap-4 justify-center">
+              <Box className="flex space-x-4 justify-center">
                 <Button
                   size={"3"}
                   variant="solid"
-                  className={`text-white ${!walletSecretConfirmed ? "bg-purple-950" : "bg-gray-400"} w-1/3`}
+                  className={`text-white ${!walletSecretConfirmed ? "bg-purple-950" : "bg-gray-400"}`}
                   onClick={() => handleUnlockOrCreateWallet()}
                   disabled={walletSecretConfirmed}
                   loading={props.isLoading}
@@ -806,11 +792,10 @@ const LoanSearched = (props: SearchParams) => {
                     Confirm Secret
                   </Text>
                 </Button>
-
                 <Button
                   size={"3"}
                   variant="solid"
-                  className={`text-white ${walletSecretConfirmed ? "bg-purple-950" : "bg-gray-400"} w-1/3`}
+                  className={`text-white ${walletSecretConfirmed ? "bg-purple-950" : "bg-gray-400"}`}
                   onClick={props.onOfferConfirmed}
                   disabled={!walletSecretConfirmed}
                   loading={props.isLoading}
@@ -822,7 +807,7 @@ const LoanSearched = (props: SearchParams) => {
                     Confirm Offer
                   </Text>
                 </Button>
-              </Flex>
+              </Box>
             )}
 
           {props.error
