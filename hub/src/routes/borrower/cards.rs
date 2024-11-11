@@ -45,14 +45,36 @@ pub async fn get_cards(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<User>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let cards = data.moon.get_cards(user.id).await.map_err(|error| {
-        let error_response = ErrorResponse {
-            message: format!("Database error: {}", error),
-        };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?;
+    let cards = data
+        .moon
+        .get_cards_from_db(user.id)
+        .await
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Database error: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
 
-    let cards = cards.into_iter().map(Card::from).collect::<Vec<_>>();
+    let mut refreshed_cards = vec![];
+    for card in cards.iter() {
+        match data.moon.fetch_card_details_from_moon(card).await {
+            Ok(card) => {
+                refreshed_cards.push(card);
+            }
+            Err(error) => {
+                tracing::error!(
+                    card_id = card.id.to_string(),
+                    "Failed fetching card update {error:#}"
+                )
+            }
+        }
+    }
+
+    let cards = refreshed_cards
+        .into_iter()
+        .map(Card::from)
+        .collect::<Vec<_>>();
 
     Ok((StatusCode::OK, Json(cards)))
 }
@@ -170,12 +192,16 @@ pub async fn get_card_transaction(
         };
         (StatusCode::BAD_REQUEST, Json(error_response))
     })?;
-    let cards = data.moon.get_cards(user.id).await.map_err(|error| {
-        let error_response = ErrorResponse {
-            message: format!("Database error: {}", error),
-        };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?;
+    let cards = data
+        .moon
+        .get_cards_from_db(user.id)
+        .await
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Database error: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
     if !cards.iter().any(|card| card.id == uuid) {
         // The card might exist in general but we are not aware of it and hence cannot be sure
         // that it belongs to this user

@@ -149,20 +149,19 @@ export default function Cards() {
               </Box>
             </Skeleton>
 
-            {/*TODO: sum up the total tx history */}
-            {/*<Skeleton loading={!activeCard} className="flex items-center justify-between">*/}
-            {/*  <Box className="min-h-[150px] w-full border border-font/10 flex flex-col items-center justify-center gap-1.5 text-font rounded-2xl">*/}
-            {/*    <Box className={`h-12 w-12 bg-purple-50 rounded-xl place-items-center flex justify-center`}>*/}
-            {/*      <IoWallet size={"24"} />*/}
-            {/*    </Box>*/}
-            {/*    <Text size={"1"} weight={"medium"}>Total Spent</Text>*/}
-            {/*    <Heading size={"2"}>*/}
-            {/*      <Skeleton loading={!activeCard}>*/}
-            {/*        {activeCard && <CurrencyFormatter value={activeCard.balance} />}*/}
-            {/*      </Skeleton>*/}
-            {/*    </Heading>*/}
-            {/*  </Box>*/}
-            {/*</Skeleton>*/}
+            <Skeleton loading={!activeCard} className="flex items-center justify-between">
+              <Box className="min-h-[150px] w-full border border-font/10 flex flex-col items-center justify-center gap-1.5 text-font rounded-2xl">
+                <Box className={`h-12 w-12 bg-purple-50 rounded-xl place-items-center flex justify-center`}>
+                  <IoWallet size={"24"} />
+                </Box>
+                <Text size={"1"} weight={"medium"}>Balance</Text>
+                <Heading size={"2"}>
+                  <Skeleton loading={!activeCard}>
+                    {activeCard && <CurrencyFormatter value={activeCard.balance} />}
+                  </Skeleton>
+                </Heading>
+              </Box>
+            </Skeleton>
           </Grid>
 
           <Box className="space-y-1">

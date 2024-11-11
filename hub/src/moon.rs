@@ -1,4 +1,5 @@
 use crate::db;
+use anyhow::bail;
 use anyhow::Context;
 use anyhow::Result;
 use pay_with_moon::MoonCardClient;
@@ -106,12 +107,44 @@ impl Manager {
         Ok(())
     }
 
-    pub async fn get_cards(&self, borrower_id: String) -> Result<Vec<Card>> {
+    pub async fn get_cards_from_db(&self, borrower_id: String) -> Result<Vec<Card>> {
         let cards = db::moon::get_borrower_cards(&self.db, &borrower_id)
             .await
             .context("DB")?;
 
         Ok(cards)
+    }
+
+    pub async fn fetch_card_details_from_moon(&self, card: &Card) -> Result<Card> {
+        let response = self.client.get_card(card.id).await?;
+        if response.id != card.id {
+            bail!("Received wrong card");
+        }
+
+        let date = response.expiration.split('-').collect::<Vec<_>>();
+        let year: i32 = date[0].parse().context("Year")?;
+        let month: u8 = date[1].parse().context("Parse month")?;
+        let month = Month::try_from(month).context("Month")?;
+        let day: u8 = date[2].parse().context("Day")?;
+
+        let date = Date::from_calendar_date(year, month, day).context("Date")?;
+        let time = Time::from_hms(23, 59, 59).expect("valid time");
+
+        let expiration = OffsetDateTime::new_utc(date, time);
+
+        Ok(Card {
+            id: response.id,
+            balance: response.balance,
+            available_balance: response.available_balance,
+            expiration,
+            pan: response.pan,
+            cvv: response.cvv,
+            support_token: response.support_token,
+            product_id: response.card_product_id,
+            end_customer_id: card.end_customer_id.clone(),
+            contract_id: card.contract_id.clone(),
+            borrower_id: card.borrower_id.clone(),
+        })
     }
 
     pub async fn get_transactions(&self, card_id: Uuid) -> Result<Vec<Transaction>> {
