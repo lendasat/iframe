@@ -45,16 +45,35 @@ export const PayWithMoonDescriptionDialog = ({
         <Box className="py-4 text-center max-w-sm mx-auto">
           <Flex align={"center"} justify={"center"} gap={"3"} pb={"1"}>
             <Separator size={"3"} className="bg-font/30" />
-            <AlertDialog.Title className="shrink-0 p-0 m-0">Receive a debit card (TODO)</AlertDialog.Title>
+            <AlertDialog.Title className="shrink-0 p-0 m-0">Visa Debit Card - Powered by Moon</AlertDialog.Title>
             <Separator size={"3"} className="bg-font/30" />
           </Flex>
         </Box>
         <Box className="relative bg-slate-50 py-3">
-          <Box className="max-h-72 overflow-y-scroll px-4 custom-scrollbar">
+          <Box className="max-h-72 overflow-y-scroll px-4 py-3 custom-scrollbar">
             <AlertDialog.Description size="2" className="text-pretty leading-[1.8] text-font/60">
-              <Text size={"2"} className="text-font">
-                TODO
-              </Text>
+              <ul className="list-disc ml-6">
+                <li>
+                  <Text size={"2"} className="text-font">No KYC needed!</Text>
+                </li>
+                <li>
+                  <Text size={"2"} className="text-font">Spend up to US $4,000/month</Text>
+                </li>
+                <li>
+                  <Text size={"2"} className="text-font">Shop at millions of merchants in over 130 countries</Text>
+                </li>
+                <li>
+                  <Text size={"2"} className="text-font">Valid for 3 years from creation date</Text>
+                </li>
+                <li>
+                  <Text size={"2"} className="text-font">Reloadable - add additional funds to the card</Text>
+                </li>
+                <li>
+                  <Text size={"2"} className="text-font">
+                    Zero FX or Foreign transaction fees. 1% or a minimum of $1.00 fee per transaction applies.
+                  </Text>
+                </li>
+              </ul>
             </AlertDialog.Description>
           </Box>
           <div className="absolute bottom-0 h-7 bg-gradient-to-t from-white via-white/70 to-white/0 z-10 w-full left-0" />
@@ -78,7 +97,16 @@ export const PayWithMoonDescriptionDialog = ({
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  Terms and Conditions
+                  Lendasat Terms & Conditions
+                </Link>
+                {" and "}
+                <Link
+                  to="https://paywithmoon.com/terms-conditions"
+                  className="text-blue-600 hover:underline"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  PayWithMoon Terms & Conditions
                 </Link>
               </>
             </Flex>
