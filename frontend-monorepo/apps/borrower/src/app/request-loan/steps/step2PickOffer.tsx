@@ -5,7 +5,7 @@ import { CreateWalletModal, UnlockWalletModal, useWallet } from "@frontend-monor
 import type { LoanOffer } from "@frontend-monorepo/http-client-borrower";
 import { Integration } from "@frontend-monorepo/http-client-borrower";
 import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
-import { AprInfoLabel } from "@frontend-monorepo/ui-shared";
+import { AbbreviationExplanationInfo, AprInfoLabel } from "@frontend-monorepo/ui-shared";
 import {
   formatCurrency,
   LoanAddressInputField,
@@ -16,6 +16,7 @@ import {
   usePrice,
 } from "@frontend-monorepo/ui-shared";
 import { Box, Button, Callout, Flex, Grid, Heading, Separator, Spinner, Text, TextField } from "@radix-ui/themes";
+import { Link as RadixLink } from "@radix-ui/themes/dist/cjs/components/link";
 import { Network, validate } from "bitcoin-address-validation";
 import { useState } from "react";
 import type { ChangeEvent } from "react";
@@ -720,9 +721,18 @@ const LoanSearched = (props: SearchParams) => {
             <>
               <Flex direction={"column"} align={"start"} gap={"2"}>
                 <div className="flex items-center gap-2">
-                  <Text as="label" size={"2"} weight={"medium"}>
-                    Collateral Refund Address
-                  </Text>
+                  <AbbreviationExplanationInfo
+                    header={"Collateral Return Address"}
+                    subHeader={""}
+                    description={"The Bitcoin address where you want your collateral returned upon loan repayment."}
+                  >
+                    <Flex gap={"2"} align={"center"}>
+                      <Text size={"2"} weight={"medium"} className={"text-xs font-medium text-font/60"}>
+                        Collateral Refund Address
+                      </Text>
+                      <FaInfoCircle />
+                    </Flex>
+                  </AbbreviationExplanationInfo>
                   {/* Error message next to label */}
                   {bitcoinAddressInputError && <span className="text-red-500 text-sm">{bitcoinAddressInputError}</span>}
                 </div>
