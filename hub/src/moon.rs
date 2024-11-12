@@ -53,11 +53,12 @@ impl Manager {
     pub fn new(
         api_key: String,
         base_url: String,
+        webhook_url: String,
         visa_product_id: Uuid,
         db: Pool<Postgres>,
     ) -> Self {
         Self {
-            client: MoonCardClient::new(api_key, base_url),
+            client: MoonCardClient::new(api_key, base_url, webhook_url),
             visa_product_id,
             db,
         }
@@ -193,6 +194,12 @@ impl Manager {
         db::moon::insert_moon_invoice(&self.db, invoice)
             .await
             .context("DB")?;
+
+        Ok(())
+    }
+
+    pub async fn register_webhook(&self) -> Result<()> {
+        self.client.register_webhook().await?;
 
         Ok(())
     }

@@ -99,9 +99,12 @@ async fn main() -> Result<()> {
     let moon_client = moon::Manager::new(
         config.moon_api_key.clone(),
         config.moon_api_url.clone(),
+        config.moon_webhook_url.clone(),
         config.moon_visa_product_id,
         db.clone(),
     );
+
+    moon_client.register_webhook().await?;
 
     let borrower_server = spawn_borrower_server(
         config.clone(),

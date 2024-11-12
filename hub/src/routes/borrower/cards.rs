@@ -1,20 +1,28 @@
+use crate::db;
 use crate::model::User;
 use crate::moon;
 use crate::routes::borrower::auth::jwt_auth;
 use crate::routes::AppState;
 use crate::routes::ErrorResponse;
+use anyhow::anyhow;
+use anyhow::bail;
 use anyhow::Result;
+use axum::extract::rejection::JsonRejection;
 use axum::extract::Path;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::middleware;
 use axum::response::IntoResponse;
 use axum::routing::get;
+use axum::routing::post;
 use axum::Extension;
 use axum::Json;
 use axum::Router;
 use rust_decimal::Decimal;
 use serde::Serialize;
+use serde_json::Value;
+use sqlx::Pool;
+use sqlx::Postgres;
 use std::str::FromStr;
 use std::sync::Arc;
 use time::OffsetDateTime;
@@ -37,6 +45,7 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
                 jwt_auth::auth,
             )),
         )
+        .route("/api/moon/webhook", post(post_webhook).get(get_webhook))
         .with_state(app_state)
 }
 
@@ -248,4 +257,126 @@ impl From<moon::Card> for Card {
             cvv: value.cvv,
         }
     }
+}
+
+#[derive(Serialize)]
+pub struct ApiResponse {
+    status: String,
+    message: Option<String>,
+}
+
+#[instrument(skip(data), err(Debug))]
+pub async fn post_webhook(
+    State(data): State<Arc<AppState>>,
+    payload: Result<Json<Value>, JsonRejection>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    match payload {
+        // Handle request with JSON body
+        Ok(Json(payload)) => {
+            if let Ok(transaction) =
+                serde_json::from_value::<pay_with_moon::Transaction>(payload.clone())
+            {
+                tracing::info!(?transaction, "Received new card transaction notification");
+                // TODO: we should persist this, for now, when we need this info, we fetch it again
+                // from moon
+            } else if let Ok(invoice) =
+                serde_json::from_value::<pay_with_moon::InvoicePayment>(payload.clone())
+            {
+                tracing::info!(?invoice, "Received payment notification");
+                if let Err(error) = update_moon_invoice(&data.db, invoice).await {
+                    tracing::error!("Failed updating moon invoice {error:#}");
+                }
+            } else {
+                tracing::info!(?payload, "Received unknown webhook data");
+            };
+            Ok((StatusCode::OK, ()))
+        }
+
+        // Handle request without JSON body or invalid JSON
+        Err(JsonRejection::MissingJsonContentType(_))
+        | Err(JsonRejection::JsonDataError(_))
+        | Err(JsonRejection::JsonSyntaxError(_)) => {
+            tracing::debug!("Webhook registered");
+
+            Ok((StatusCode::OK, ()))
+        }
+
+        // Handle other JSON rejection cases
+        Err(e) => {
+            tracing::error!("Failed at registering webhook {e:#}");
+
+            Err((
+                StatusCode::BAD_REQUEST,
+                Json(ErrorResponse {
+                    message: "error".to_string(),
+                }),
+            ))
+        }
+    }
+}
+
+async fn update_moon_invoice(
+    pool: &Pool<Postgres>,
+    invoice: pay_with_moon::InvoicePayment,
+) -> Result<()> {
+    if let Err(err) = db::moon::insert_moon_invoice_payment(
+        pool,
+        invoice.id,
+        &invoice.amount,
+        invoice.currency.as_str(),
+    )
+    .await
+    {
+        tracing::error!(?invoice, "Failed at inserting invoice payment {err:#}");
+        bail!("Failed at inserting invoice payment")
+    }
+
+    let db_invoice = match db::moon::get_invoice_by_id(pool, invoice.id).await? {
+        Some(invoice) => invoice,
+        None => {
+            tracing::warn!(
+                invoice_id = invoice.id,
+                amount = %invoice.amount,
+                "Payment received for unknown invoice"
+            );
+            bail!("Payment received for unknown invoice")
+        }
+    };
+
+    if db_invoice.usd_amount_owed > invoice.amount {
+        tracing::error!(
+            invoice_id = invoice.id,
+            needed_amount = %db_invoice.usd_amount_owed,
+            received_amount = %invoice.amount,
+            "Insufficient payment amount"
+        );
+        bail!("Insufficient payment amount received");
+    }
+
+    db::moon::mark_invoice_as_paid(pool, invoice.id)
+        .await
+        .map_err(|err| {
+            tracing::error!(
+                invoice_id = invoice.id,
+                amount = %db_invoice.usd_amount_owed,
+                error = ?err,
+                "Failed to mark invoice as paid"
+            );
+            anyhow!("Db error when marking invoice as paid")
+        })?;
+
+    tracing::info!(
+        invoice_id = invoice.id,
+        amount = %invoice.amount,
+        "Invoice successfully paid"
+    );
+
+    Ok(())
+}
+
+#[instrument(err(Debug))]
+pub async fn get_webhook() -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    tracing::debug!("New webhook registered");
+
+    Ok((StatusCode::OK, ()))
 }

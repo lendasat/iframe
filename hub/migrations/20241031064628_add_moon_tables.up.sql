@@ -25,6 +25,16 @@ CREATE TABLE moon_invoices
     lender_id               CHAR(36)                 NOT NULL,
     is_paid                 BOOLEAN                  NOT NULL DEFAULT FALSE,
     created_at              TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at              TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (contract_id) REFERENCES contracts (id),
     FOREIGN KEY (lender_id)   REFERENCES lenders   (id)
+);
+
+CREATE TABLE moon_invoice_payments
+(
+    id         SERIAL PRIMARY KEY,
+    invoice_id INT                      NOT NULL,
+    amount     DECIMAL                  NOT NULL,
+    currency   CHAR(36)                 NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

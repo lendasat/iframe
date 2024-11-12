@@ -29,6 +29,7 @@ pub struct Config {
     pub origination_fee: Vec<OriginationFee>,
     pub moon_api_key: String,
     pub moon_api_url: String,
+    pub moon_webhook_url: String,
     pub moon_visa_product_id: Uuid,
 }
 
@@ -85,6 +86,8 @@ impl Config {
         let moon_visa_product_id = moon_visa_product_id
             .parse()
             .expect("MOON_VISA_PRODUCT_ID to be a UUID");
+        let moon_webhook_url =
+            std::env::var("MOON_WEBHOOK_URL").expect("MOON_WEBHOOK_URL must be set");
 
         let any_smtp_not_configured = smtp_host.is_none()
             || smtp_port.is_none()
@@ -123,6 +126,7 @@ impl Config {
             }],
             moon_api_key,
             moon_api_url,
+            moon_webhook_url,
             moon_visa_product_id,
         }
     }

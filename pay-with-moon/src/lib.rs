@@ -280,6 +280,7 @@ pub struct MoonCardClient {
     client: Client,
     api_key: String,
     base_url: String,
+    webhook_url: String,
 }
 
 #[derive(Clone, Copy, Serialize, Deserialize, Debug, PartialEq)]
@@ -296,12 +297,23 @@ pub enum Currency {
     Btc,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct InvoicePayment {
+    pub id: u64,
+    #[serde(with = "rust_decimal::serde::float")]
+    pub amount: Decimal,
+    #[serde(rename = "createdAt")]
+    pub created_at: String,
+    pub currency: String,
+}
+
 impl MoonCardClient {
-    pub fn new(api_key: String, base_url: String) -> Self {
+    pub fn new(api_key: String, base_url: String, webhook_url: String) -> Self {
         Self {
             client: Client::new(),
             api_key,
             base_url,
+            webhook_url,
         }
     }
 
@@ -450,6 +462,37 @@ impl MoonCardClient {
             .json::<CardProducts>()
             .await
     }
+
+    pub async fn register_webhook(&self) -> Result<(), reqwest::Error> {
+        let url = format!("{}/webhook", self.base_url);
+
+        let body = serde_json::json!({
+            "url": self.webhook_url,
+        });
+
+        self.client
+            .post(&url)
+            .header("x-api-key", &self.api_key)
+            .json(&body)
+            .send()
+            .await?
+            .error_for_status()?;
+
+        Ok(())
+    }
+
+    pub async fn delete_webhook(&self) -> Result<(), reqwest::Error> {
+        let url = format!("{}/webhook", self.base_url);
+
+        self.client
+            .delete(&url)
+            .header("x-api-key", &self.api_key)
+            .send()
+            .await?
+            .error_for_status()?;
+
+        Ok(())
+    }
 }
 
 fn int_to_bool<'de, D>(deserializer: D) -> Result<bool, D::Error>
@@ -486,6 +529,7 @@ mod tests {
     use super::*;
     use rust_decimal::prelude::Zero;
     use rust_decimal_macros::dec;
+    use serde_json::Value;
     use std::env;
 
     #[derive(Debug, Serialize)]
@@ -516,12 +560,13 @@ mod tests {
             usd_amount: u64,
             transaction_currency: String,
             transaction_type: String,
-        ) -> Result<SimulateCardTransactionResponse, reqwest::Error> {
+            transaction_id: Option<String>,
+        ) -> Result<Value, reqwest::Error> {
             let url = format!("{}/card/{}/transactions", self.base_url, card_id);
 
             let merchant_name = "Test Merchant".to_string();
             let merchant_country_code = "USA".to_string();
-            let original_transaction_id = "transaction_id".to_string();
+            let original_transaction_id = transaction_id.unwrap_or_default();
             let body = SimulateCardTransactionRequest {
                 transaction_amount: usd_amount,
                 transaction_currency,
@@ -538,7 +583,7 @@ mod tests {
                 .json(&body)
                 .send()
                 .await?
-                .json::<SimulateCardTransactionResponse>()
+                .json::<Value>()
                 .await?;
 
             Ok(res)
@@ -563,10 +608,19 @@ mod tests {
         env::var("MOON_API_KEY").expect("need an API key")
     }
 
+    /// Helper function to get a webhook url from the `.env` file.
+    fn get_webook_url() -> String {
+        let env_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
+        let env_path = format!("{env_dir}/../.env");
+        dotenv::from_filename(env_path).ok();
+
+        env::var("MOON_WEBHOOK_URL").expect("need webhook url")
+    }
+
     #[ignore]
     #[tokio::test]
     async fn create_and_get_card() {
-        let client = MoonCardClient::new(get_api_key(), get_api_url());
+        let client = MoonCardClient::new(get_api_key(), get_api_url(), get_webook_url());
 
         // In practice, it doesn't make a difference if you use a valid card product ID or not, but
         // let's try to do it properly and test the card products API in the process.
@@ -608,7 +662,7 @@ mod tests {
     #[ignore]
     #[tokio::test]
     async fn add_balance_to_card() {
-        let client = MoonCardClient::new(get_api_key(), get_api_url());
+        let client = MoonCardClient::new(get_api_key(), get_api_url(), get_webook_url());
 
         let products = client.get_card_products().await.unwrap();
         let card_product_id = products.card_products[0].id;
@@ -628,7 +682,7 @@ mod tests {
     #[ignore]
     #[tokio::test]
     async fn freeze_and_thaw_card() {
-        let client = MoonCardClient::new(get_api_key(), get_api_url());
+        let client = MoonCardClient::new(get_api_key(), get_api_url(), get_webook_url());
 
         let products = client.get_card_products().await.unwrap();
         let card_product_id = products.card_products[0].id;
@@ -654,7 +708,7 @@ mod tests {
     #[ignore]
     #[tokio::test]
     async fn test_generate_invoice() {
-        let client = MoonCardClient::new(get_api_key(), get_api_url());
+        let client = MoonCardClient::new(get_api_key(), get_api_url(), get_webook_url());
 
         let usd_amount = dec!(50.0);
         let invoice = client
@@ -678,7 +732,7 @@ mod tests {
     #[ignore]
     #[tokio::test]
     async fn test_get_card_transactions() {
-        let client = MoonCardClient::new(get_api_key(), get_api_url());
+        let client = MoonCardClient::new(get_api_key(), get_api_url(), get_webook_url());
 
         let products = client.get_card_products().await.unwrap();
         let card_product_id = products.card_products[0].id;
@@ -702,6 +756,7 @@ mod tests {
                 tx_amount,
                 "USD".to_string(),
                 "AUTHORIZATION".to_string(),
+                None,
             )
             .await
             .unwrap();
@@ -723,7 +778,7 @@ mod tests {
     #[ignore]
     #[tokio::test]
     async fn test_get_moon_reserve_balance() {
-        let client = MoonCardClient::new(get_api_key(), get_api_url());
+        let client = MoonCardClient::new(get_api_key(), get_api_url(), get_webook_url());
 
         let balance = client.get_moon_reserve_balance().await.unwrap();
 
