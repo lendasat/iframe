@@ -90,6 +90,7 @@ pub enum TransactionStatus {
     Clearing,
     Refund,
     Pending,
+    Settled,
     #[serde(untagged)]
     Unknown(String),
 }
@@ -103,6 +104,7 @@ impl From<pay_with_moon::TransactionStatus> for TransactionStatus {
             pay_with_moon::TransactionStatus::Refund => TransactionStatus::Refund,
             pay_with_moon::TransactionStatus::Pending => TransactionStatus::Pending,
             pay_with_moon::TransactionStatus::Unknown(u) => TransactionStatus::Unknown(u),
+            pay_with_moon::TransactionStatus::Settled => TransactionStatus::Settled,
         }
     }
 }

@@ -146,6 +146,8 @@ pub enum TransactionStatus {
     Refund,
     #[serde(rename = "PENDING")]
     Pending,
+    #[serde(rename = "SETTLED")]
+    Settled,
     #[serde(untagged)]
     Unknown(String),
 }
@@ -527,6 +529,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rust_decimal::prelude::FromPrimitive;
     use rust_decimal::prelude::Zero;
     use rust_decimal_macros::dec;
     use serde_json::Value;
@@ -733,6 +736,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_card_transactions() {
         let client = MoonCardClient::new(get_api_key(), get_api_url(), get_webook_url());
+        client.register_webhook().await.unwrap();
 
         let products = client.get_card_products().await.unwrap();
         let card_product_id = products.card_products[0].id;
@@ -750,7 +754,7 @@ mod tests {
         client.add_balance(card_id, dec!(1000.0)).await.unwrap();
 
         let tx_amount = 10;
-        client
+        let tx_response = client
             .simulate_card_transaction(
                 card_id,
                 tx_amount,
@@ -761,17 +765,58 @@ mod tests {
             .await
             .unwrap();
 
+        let tx_response: SimulateCardTransactionResponse =
+            serde_json::from_value(tx_response).expect("to be able to parse");
+
+        let transaction_id = Some(tx_response.transaction_id.to_string());
+        client
+            .simulate_card_transaction(
+                card_id,
+                2,
+                "USD".to_string(),
+                "REVERSAL".to_string(),
+                transaction_id.clone(),
+            )
+            .await
+            .unwrap();
+
+        let final_tx_amount = 8;
+        client
+            .simulate_card_transaction(
+                card_id,
+                final_tx_amount,
+                "USD".to_string(),
+                "CLEARING".to_string(),
+                transaction_id.clone(),
+            )
+            .await
+            .unwrap();
+
+        client
+            .simulate_card_transaction(
+                card_id,
+                final_tx_amount,
+                "USD".to_string(),
+                "REFUND".to_string(),
+                transaction_id.clone(),
+            )
+            .await
+            .unwrap();
+
         let transactions = client.get_card_transactions(card_id, 1, 10).await.unwrap();
-        assert_eq!(transactions.len(), 1);
+        assert_eq!(transactions.len(), 3);
 
         assert_eq!(
             transactions[0].transaction_type,
             CardTransactionType::CardTransaction
         );
-        assert_eq!(transactions[0].data.amount, tx_amount.into());
+        assert_eq!(
+            transactions[0].data.amount,
+            Decimal::from_u64(final_tx_amount).expect("to fit")
+        );
         assert_eq!(
             transactions[0].data.transaction_status,
-            TransactionStatus::Pending
+            TransactionStatus::Settled
         );
     }
 
