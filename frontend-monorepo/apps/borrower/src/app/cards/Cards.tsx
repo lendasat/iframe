@@ -1,11 +1,14 @@
 import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import { CurrencyFormatter } from "@frontend-monorepo/ui-shared";
 import { Box, Button, Flex, Grid, Heading, Skeleton, Spinner, Text } from "@radix-ui/themes";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { IoWallet } from "react-icons/io5";
 import { Link } from "react-router-dom";
 import { useAsync } from "react-use";
-import type { SwiperRef } from "swiper/react";
+import { Navigation } from "swiper/modules";
+import { EffectCards } from "swiper/modules";
+import { Swiper } from "swiper/react";
+import { SwiperSlide } from "swiper/react";
 import NoCreditCard from "./../../assets/creditcard-illustration.png";
 import CardHistory from "./CardHistory";
 import CreditCard from "./CreditCard";
@@ -14,8 +17,6 @@ export default function Cards() {
   const { innerHeight } = window;
   const [moreInfo, setMoreInfo] = useState<boolean>(false);
   const [activeCardIndex, setActiveCardIndex] = useState<number>(0);
-  // Change Card
-  const SlideRef = useRef<SwiperRef>();
 
   const { getUserCards } = useBorrowerHttpClient();
 
@@ -43,15 +44,6 @@ export default function Cards() {
 
   const userCardDetails = maybeUserCardDetails || [];
 
-  const onSwitchCard = () => {
-    SlideRef.current?.swiper.slideNext();
-    if (activeCardIndex !== userCardDetails.length - 1) {
-      setActiveCardIndex(activeCardIndex + 1);
-    } else {
-      setActiveCardIndex(0);
-    }
-  };
-
   const activeCard = userCardDetails[activeCardIndex];
 
   return (
@@ -72,21 +64,34 @@ export default function Cards() {
               <Heading size={"5"} weight={"medium"}>
                 My Cards
               </Heading>
-              {userCardDetails.length > 1 && (
-                <Button
-                  variant="ghost"
-                  onClick={onSwitchCard}
-                  disabled={true}
-                  className="hover:bg-transparent font-medium text-font/60 hover:text-font"
-                >
-                  Switch Card
-                </Button>
-              )}
             </Flex>
           </Box>
         </Skeleton>
 
         <Skeleton loading={!activeCard}>
+          <Swiper
+            effect={"cards"}
+            grabCursor={true}
+            modules={[EffectCards, Navigation]}
+            onSlideChange={(s) => {
+              setActiveCardIndex(s.activeIndex);
+            }}
+            className="h-52 w-full"
+            navigation={true}
+            cardsEffect={{
+              perSlideOffset: 7,
+              slideShadows: false,
+            }}
+          >
+            {userCardDetails.map((card, index) => (
+              <SwiperSlide key={index}>
+                <CreditCard
+                  card={card}
+                  visible={moreInfo}
+                />
+              </SwiperSlide>
+            ))}
+          </Swiper>
           {/*<SwiperComponent*/}
           {/*  loop*/}
           {/*  ref={SlideRef}*/}
@@ -95,8 +100,8 @@ export default function Cards() {
           {/*  allowTouchMove={false}*/}
           {/*  modules={[EffectFade]}*/}
           {/*  centeredSlides*/}
-          {/*  slidesPerView={1}*/}
-          {/*  slidesPerGroup={1}*/}
+          {/*    slidesPerView={1}*/}
+          {/*    slidesPerGroup={1}*/}
           {/*  cardsEffect={{*/}
           {/*    perSlideOffset: 7,*/}
           {/*    slideShadows: false,*/}
@@ -105,17 +110,13 @@ export default function Cards() {
           {/*  enabled={false}*/}
           {/*>*/}
           {/*  {userCardDetails.map((card, index) => (*/}
-          {
-            activeCard
-            // <SwiperSlide key={1}>
-            && <CreditCard
-              card={activeCard}
-              visible={moreInfo}
-            />
-            // </SwiperSlide>
-          }
-          {/*))*/}
-          {/*}*/}
+          {/*    <SwiperSlide key={index}>*/}
+          {/*      <CreditCard*/}
+          {/*        card={card}*/}
+          {/*        visible={moreInfo}*/}
+          {/*      />*/}
+          {/*    </SwiperSlide>*/}
+          {/*  ))}*/}
           {/*</SwiperComponent>*/}
         </Skeleton>
 
