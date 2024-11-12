@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n           INSERT INTO card_contract_assignments (card_id, contract_id)\n           VALUES ($1, $2)\n           ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Bpchar",
+        "Bpchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a8db00c1a76b91cd6b2814382cfc02840ff6283df28e45a36983056f7f7b716e"
+}

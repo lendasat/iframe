@@ -104,8 +104,6 @@ async fn main() -> Result<()> {
         db.clone(),
     );
 
-    moon_client.register_webhook().await?;
-
     let borrower_server = spawn_borrower_server(
         config.clone(),
         wallet.clone(),
@@ -122,11 +120,17 @@ async fn main() -> Result<()> {
         db,
         mempool_addr,
         broadcast_state,
-        moon_client,
+        moon_client.clone(),
     )
     .await?;
 
-    let _ = tokio::join!(borrower_server, lender_server);
+    let borrower_handle = tokio::spawn(borrower_server);
+    let lender_handle = tokio::spawn(lender_server);
+
+    // We need the borrower server to be started already for this.
+    moon_client.register_webhook().await?;
+
+    let _ = tokio::join!(borrower_handle, lender_handle);
 
     tracing::info!("Servers stopped");
 

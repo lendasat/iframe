@@ -4,7 +4,9 @@ use anyhow::Result;
 use rust_decimal::Decimal;
 use sqlx::Pool;
 use sqlx::Postgres;
+use std::str::FromStr;
 use time::OffsetDateTime;
+use uuid::Uuid;
 
 pub async fn insert_card(pool: &Pool<Postgres>, card: moon::Card) -> Result<()> {
     sqlx::query!(
@@ -82,14 +84,16 @@ pub async fn insert_moon_invoice(pool: &Pool<Postgres>, invoice: &moon::Invoice)
             address,
             usd_amount_owed,
             contract_id,
-            lender_id
-        ) VALUES ($1, $2, $3, $4, $5)
+            lender_id,
+            borrower_id
+        ) VALUES ($1, $2, $3, $4, $5, $6)
         "#,
         id,
         invoice.address,
         invoice.usd_amount_owed,
         invoice.contract_id,
         invoice.lender_id,
+        invoice.borrower_id,
     )
     .execute(pool)
     .await?;
@@ -104,6 +108,7 @@ pub struct MoonInvoice {
     pub usd_amount_owed: Decimal,
     pub contract_id: String,
     pub lender_id: String,
+    pub borrower_id: String,
     pub is_paid: bool,
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
@@ -122,6 +127,7 @@ pub async fn get_invoice_by_id(
             usd_amount_owed,
             contract_id,
             lender_id,
+            borrower_id,
             is_paid,
             created_at,
             updated_at
@@ -177,4 +183,41 @@ pub async fn insert_moon_invoice_payment(
     .await?;
 
     Ok(())
+}
+
+pub async fn assign_contract_to_card(
+    pool: &Pool<Postgres>,
+    card_id: Uuid,
+    contract_id: String,
+) -> Result<()> {
+    sqlx::query!(
+        r#"
+           INSERT INTO card_contract_assignments (card_id, contract_id)
+           VALUES ($1, $2)
+           "#,
+        card_id.to_string(),
+        contract_id
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+pub async fn get_card_id_by_contract(
+    pool: &Pool<Postgres>,
+    contract_id: &str,
+) -> Result<Option<Uuid>> {
+    let record = sqlx::query!(
+        r#"
+           SELECT card_id
+           FROM card_contract_assignments
+           WHERE contract_id = $1
+           "#,
+        contract_id
+    )
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(record.map(|r| Uuid::from_str(r.card_id.as_str()).expect("to be uuid")))
 }

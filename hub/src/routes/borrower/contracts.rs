@@ -353,7 +353,12 @@ pub async fn post_contract_request(
 
                 let invoice = data
                     .moon
-                    .generate_invoice(body.loan_amount, contract_id.to_string(), offer.lender_id)
+                    .generate_invoice(
+                        body.loan_amount,
+                        contract_id.to_string(),
+                        offer.lender_id,
+                        user.id.as_str(),
+                    )
                     .await
                     .context("Generate Moon invoice")?;
 

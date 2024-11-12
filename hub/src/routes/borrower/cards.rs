@@ -1,11 +1,8 @@
-use crate::db;
 use crate::model::User;
 use crate::moon;
 use crate::routes::borrower::auth::jwt_auth;
 use crate::routes::AppState;
 use crate::routes::ErrorResponse;
-use anyhow::anyhow;
-use anyhow::bail;
 use anyhow::Result;
 use axum::extract::rejection::JsonRejection;
 use axum::extract::Path;
@@ -21,8 +18,6 @@ use axum::Router;
 use rust_decimal::Decimal;
 use serde::Serialize;
 use serde_json::Value;
-use sqlx::Pool;
-use sqlx::Postgres;
 use std::str::FromStr;
 use std::sync::Arc;
 use time::OffsetDateTime;
@@ -283,7 +278,8 @@ pub async fn post_webhook(
                 serde_json::from_value::<pay_with_moon::InvoicePayment>(payload.clone())
             {
                 tracing::info!(?invoice, "Received payment notification");
-                if let Err(error) = update_moon_invoice(&data.db, invoice).await {
+
+                if let Err(error) = data.moon.handle_paid_invoice(invoice).await {
                     tracing::error!("Failed updating moon invoice {error:#}");
                 }
             } else {
@@ -313,65 +309,6 @@ pub async fn post_webhook(
             ))
         }
     }
-}
-
-async fn update_moon_invoice(
-    pool: &Pool<Postgres>,
-    invoice: pay_with_moon::InvoicePayment,
-) -> Result<()> {
-    if let Err(err) = db::moon::insert_moon_invoice_payment(
-        pool,
-        invoice.id,
-        &invoice.amount,
-        invoice.currency.as_str(),
-    )
-    .await
-    {
-        tracing::error!(?invoice, "Failed at inserting invoice payment {err:#}");
-        bail!("Failed at inserting invoice payment")
-    }
-
-    let db_invoice = match db::moon::get_invoice_by_id(pool, invoice.id).await? {
-        Some(invoice) => invoice,
-        None => {
-            tracing::warn!(
-                invoice_id = invoice.id,
-                amount = %invoice.amount,
-                "Payment received for unknown invoice"
-            );
-            bail!("Payment received for unknown invoice")
-        }
-    };
-
-    if db_invoice.usd_amount_owed > invoice.amount {
-        tracing::error!(
-            invoice_id = invoice.id,
-            needed_amount = %db_invoice.usd_amount_owed,
-            received_amount = %invoice.amount,
-            "Insufficient payment amount"
-        );
-        bail!("Insufficient payment amount received");
-    }
-
-    db::moon::mark_invoice_as_paid(pool, invoice.id)
-        .await
-        .map_err(|err| {
-            tracing::error!(
-                invoice_id = invoice.id,
-                amount = %db_invoice.usd_amount_owed,
-                error = ?err,
-                "Failed to mark invoice as paid"
-            );
-            anyhow!("Db error when marking invoice as paid")
-        })?;
-
-    tracing::info!(
-        invoice_id = invoice.id,
-        amount = %invoice.amount,
-        "Invoice successfully paid"
-    );
-
-    Ok(())
 }
 
 #[instrument(err(Debug))]

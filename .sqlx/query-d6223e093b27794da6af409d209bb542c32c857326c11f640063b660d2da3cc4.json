@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n           SELECT card_id\n           FROM card_contract_assignments\n           WHERE contract_id = $1\n           ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "card_id",
+        "type_info": "Bpchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bpchar"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "d6223e093b27794da6af409d209bb542c32c857326c11f640063b660d2da3cc4"
+}

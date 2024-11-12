@@ -1,4 +1,5 @@
 use crate::db;
+use anyhow::anyhow;
 use anyhow::bail;
 use anyhow::Context;
 use anyhow::Result;
@@ -40,6 +41,7 @@ pub struct Invoice {
     pub usd_amount_owed: Decimal,
     pub contract_id: String,
     pub lender_id: String,
+    pub borrower_id: String,
 }
 
 #[derive(Clone)]
@@ -99,11 +101,16 @@ impl Manager {
             support_token: res.support_token,
             product_id: *card_product_id,
             end_customer_id,
-            contract_id,
+            contract_id: contract_id.clone(),
             borrower_id,
         };
 
-        db::moon::insert_card(&self.db, card).await.context("DB")?;
+        db::moon::insert_card(&self.db, card.clone())
+            .await
+            .context("DB")?;
+        db::moon::assign_contract_to_card(&self.db, card.id, contract_id)
+            .await
+            .context("Failed assigning card to contract")?;
 
         Ok(())
     }
@@ -163,6 +170,7 @@ impl Manager {
         usd_amount: Decimal,
         contract_id: String,
         lender_id: String,
+        borrower_id: &str,
     ) -> Result<Invoice> {
         let res = self
             .client
@@ -182,6 +190,7 @@ impl Manager {
             usd_amount_owed: res.crypto_amount_owed,
             contract_id,
             lender_id,
+            borrower_id: borrower_id.to_string(),
         };
 
         Ok(invoice)
@@ -200,6 +209,80 @@ impl Manager {
 
     pub async fn register_webhook(&self) -> Result<()> {
         self.client.register_webhook().await?;
+
+        Ok(())
+    }
+
+    pub async fn handle_paid_invoice(&self, invoice: pay_with_moon::InvoicePayment) -> Result<()> {
+        // First we register the payment, no matter what
+        if let Err(err) = db::moon::insert_moon_invoice_payment(
+            &self.db,
+            invoice.id,
+            &invoice.amount,
+            invoice.currency.as_str(),
+        )
+        .await
+        {
+            tracing::error!(?invoice, "Failed at inserting invoice payment {err:#}");
+            bail!("Failed at inserting invoice payment")
+        }
+
+        // Next we check if we have an invoice we need to set paid
+        let db_invoice = match db::moon::get_invoice_by_id(&self.db, invoice.id).await? {
+            Some(invoice) => invoice,
+            None => {
+                tracing::warn!(
+                    invoice_id = invoice.id,
+                    amount = %invoice.amount,
+                    "Payment received for unknown invoice"
+                );
+                bail!("Payment received for unknown invoice")
+            }
+        };
+
+        if db_invoice.usd_amount_owed > invoice.amount {
+            tracing::error!(
+                invoice_id = invoice.id,
+                needed_amount = %db_invoice.usd_amount_owed,
+                received_amount = %invoice.amount,
+                "Insufficient payment amount"
+            );
+            bail!("Insufficient payment amount received");
+        }
+
+        // Mark the invoice as paid
+        db::moon::mark_invoice_as_paid(&self.db, invoice.id)
+            .await
+            .map_err(|err| {
+                tracing::error!(
+                    invoice_id = invoice.id,
+                    amount = %db_invoice.usd_amount_owed,
+                    error = ?err,
+                    "Failed to mark invoice as paid"
+                );
+                anyhow!("Db error when marking invoice as paid")
+            })?;
+
+        tracing::info!(
+            invoice_id = invoice.id,
+            amount = %invoice.amount,
+            "Invoice successfully paid"
+        );
+        let card = db::moon::get_card_id_by_contract(&self.db, db_invoice.contract_id.as_str())
+            .await?
+            .context("No card found for contract")?;
+
+        let response = self.client.add_balance(card, invoice.amount).await?;
+
+        tracing::info!(
+            card_id = response.id.to_string(),
+            balance = response.balance.to_string(),
+            available_balance = response.available_balance.to_string(),
+            contract_id = db_invoice.contract_id,
+            "Assigned balance to card"
+        );
+
+        //TODO: notify the user via email that the card is ready to use
 
         Ok(())
     }
