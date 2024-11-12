@@ -6,7 +6,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 import type { FC, ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { SemVer } from "semver";
-import { HttpClientBorrowerProvider } from "./http-client-borrower";
+import { allowedPagesWithoutLogin, HttpClientBorrowerProvider } from "./http-client-borrower";
 import { FeatureMapper } from "./models";
 
 interface AuthContextType {
@@ -84,8 +84,8 @@ const BorrowerAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) =>
   const handle401 = useCallback(() => {
     setUser(null);
 
-    if (location.pathname.includes(`login`)) {
-      console.log(`Already on login page`);
+    if (allowedPagesWithoutLogin(location.pathname)) {
+      console.log(`User can stay ${location.pathname}`);
       return;
     }
 

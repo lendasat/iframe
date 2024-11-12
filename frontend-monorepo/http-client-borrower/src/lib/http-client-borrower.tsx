@@ -2,6 +2,7 @@ import type { BaseHttpClientContextType } from "@frontend-monorepo/base-http-cli
 import { BaseHttpClient, BaseHttpClientContext } from "@frontend-monorepo/base-http-client";
 import type { AxiosResponse } from "axios";
 import axios from "axios";
+import type { ReactNode } from "react";
 import { createContext, useContext } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import type {
@@ -447,8 +448,16 @@ export const useBorrowerHttpClient = () => {
 
 // Create a provider component that will wrap your app
 interface HttpClientProviderProps {
-  children: React.ReactNode;
+  children: ReactNode;
   baseUrl: string;
+}
+
+export function allowedPagesWithoutLogin(location: string) {
+  // These need to be aligned with the routes in app.tsx
+  return location.includes(`login`) || location.includes(`registration`)
+    || location.includes(`forgotpassword`) || location.includes(`resetpassword`)
+    || location.includes(`verifyemail`) || location.includes(`logout`)
+    || location.includes(`error`);
 }
 
 export const HttpClientBorrowerProvider: React.FC<HttpClientProviderProps> = ({ children, baseUrl }) => {
@@ -457,10 +466,15 @@ export const HttpClientBorrowerProvider: React.FC<HttpClientProviderProps> = ({ 
 
   const handleAuthError = () => {
     console.log("Handling error");
-    if (location.pathname.includes(`login`)) {
-      console.log(`Already on login page`);
+    if (
+      allowedPagesWithoutLogin(location.pathname)
+    ) {
+      // User can stay here :)
+      console.log(`User can stay ${location.pathname}`);
       return;
     }
+
+    console.log(`Redirecting to loging from ${location.pathname}`);
 
     navigate("/login", {
       state: { returnUrl: window.location.pathname },
