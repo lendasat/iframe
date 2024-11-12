@@ -1,4 +1,6 @@
+use crate::config::Config;
 use crate::db;
+use crate::email::Email;
 use anyhow::anyhow;
 use anyhow::bail;
 use anyhow::Context;
@@ -49,20 +51,21 @@ pub struct Manager {
     client: MoonCardClient,
     visa_product_id: Uuid,
     db: Pool<Postgres>,
+    config: Config,
 }
 
 impl Manager {
-    pub fn new(
-        api_key: String,
-        base_url: String,
-        webhook_url: String,
-        visa_product_id: Uuid,
-        db: Pool<Postgres>,
-    ) -> Self {
+    pub fn new(db: Pool<Postgres>, config: Config) -> Self {
+        let api_key = config.moon_api_key.clone();
+        let base_url = config.moon_api_url.clone();
+        let webhook_url = config.moon_webhook_url.clone();
+        let visa_product_id = config.moon_visa_product_id;
+
         Self {
             client: MoonCardClient::new(api_key, base_url, webhook_url),
             visa_product_id,
             db,
+            config,
         }
     }
 
@@ -283,6 +286,18 @@ impl Manager {
         );
 
         //TODO: notify the user via email that the card is ready to use
+        let email = Email::new(self.config.clone());
+        let borrower = db::borrowers::get_user_by_id(&self.db, db_invoice.borrower_id.as_str())
+            .await
+            .context("Failed loading borrower")?
+            .context("Borrower not found")?;
+
+        let card_details_url =
+            format!("{}/cards", self.config.borrower_frontend_origin.to_owned(),);
+
+        email
+            .send_moon_card_ready(borrower, card_details_url.as_str())
+            .await?;
 
         Ok(())
     }
