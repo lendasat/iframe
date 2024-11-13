@@ -69,6 +69,14 @@ jobs:
         working-directory: ./frontend-monorepo
         run: npm ci
 
+      - name: Make .env file for Vite build
+        uses: SpicyPizza/create-envfile@v2.0
+        with:
+          envkey_VITE_BORROWER_BASE_URL: "https://borrow.lendasat.com"
+          envkey_VITE_LENDER_BASE_URL: "https://lend.lendasat.com"
+          envkey_VITE_BITCOIN_NETWORK: "bitcoin"
+          envkey_VITE_MEMPOOL_REST_URL: "https://mempool.space"
+
       - name: Build frontend
         run: just release-frontend
 
@@ -104,3 +112,27 @@ jobs:
               target/release/hub
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compress frontend directory
+        run: tar -czvf hub-frontend.tar.gz ./frontend-monorepo/dist/
+
+      - name: Copy ssh key
+        run: |
+          install -m 600 -D /dev/null ~/.ssh/id_rsa
+          echo "${{ secrets.PROD_VM_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+
+      - name: Upload hub-frontend.tar.gz to server
+        run: |
+          scp -v -o StrictHostKeyChecking=no -i /.ssh/id_rsa ./hub-frontend.tar.gz ${{secrets.PROD_VM_USERNAME}}@${{secrets.PROD_VM_SSH_HOST}}:/home/${{secrets.PROD_VM_USERNAME}}/uploads/
+
+      - name: Create hub-frontend.confirmed file on server
+        run: |
+          ssh -v -o StrictHostKeyChecking=no -i  /.ssh/id_rsa ${{secrets.PROD_VM_USERNAME}}@${{secrets.PROD_VM_SSH_HOST}} 'touch /home/${{secrets.PROD_VM_USERNAME}}/uploads/hub-frontend.confirmed'
+
+      - name: Upload hub binary to server
+        run: |
+          scp -v -o StrictHostKeyChecking=no -i /.ssh/id_rsa ./target/release/hub ${{secrets.PROD_VM_USERNAME}}@${{secrets.PROD_VM_SSH_HOST}}:/home/${{secrets.PROD_VM_USERNAME}}/uploads/hub
+
+      - name: Create hub.confirmed file on server
+        run: |
+          ssh -v -o StrictHostKeyChecking=no -i  /.ssh/id_rsa ${{secrets.PROD_VM_USERNAME}}@${{secrets.PROD_VM_SSH_HOST}} 'touch /home/${{secrets.PROD_VM_USERNAME}}/uploads/hub.confirmed'
