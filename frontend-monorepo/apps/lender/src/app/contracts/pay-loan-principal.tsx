@@ -2,6 +2,7 @@ import { faCopy, faExclamationCircle, faInfoCircle } from "@fortawesome/free-sol
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import type { Contract } from "@frontend-monorepo/http-client-lender";
 import { formatCurrency } from "@frontend-monorepo/ui-shared";
+import { Heading } from "@radix-ui/themes";
 import QRCode from "qrcode.react";
 import { useState } from "react";
 import { Alert, Button, Col, Container, Row, Spinner } from "react-bootstrap";
@@ -39,7 +40,7 @@ const RepaymentDetails = ({ contract, onPrincipalGiven, isLoading, txid, setTxId
     <Container fluid>
       <Row>
         <Col>
-          <h4>Repayment Details</h4>
+          <Heading>Payout Details</Heading>
         </Col>
       </Row>
 
