@@ -40,7 +40,7 @@ pub async fn spawn_lender_server(
     db: Pool<Postgres>,
     mempool: xtra::Address<mempool::Actor>,
     connections: Arc<Mutex<Vec<mpsc::UnboundedSender<Message>>>>,
-    moon_client: moon::Manager,
+    moon_client: Arc<moon::Manager>,
 ) -> Result<JoinHandle<()>> {
     let app_state = Arc::new(AppState {
         db,

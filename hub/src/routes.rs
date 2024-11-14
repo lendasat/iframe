@@ -26,5 +26,5 @@ pub struct AppState {
     config: Config,
     mempool: xtra::Address<mempool::Actor>,
     connections: Arc<Mutex<Vec<mpsc::UnboundedSender<Message>>>>,
-    moon: moon::Manager,
+    moon: Arc<moon::Manager>,
 }

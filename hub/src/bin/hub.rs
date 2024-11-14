@@ -96,7 +96,7 @@ async fn main() -> Result<()> {
         }
     });
 
-    let moon_client = moon::Manager::new(db.clone(), config.clone());
+    let moon_client = Arc::new(moon::Manager::new(db.clone(), config.clone()));
 
     let borrower_server = spawn_borrower_server(
         config.clone(),
@@ -122,11 +122,21 @@ async fn main() -> Result<()> {
     let lender_handle = tokio::spawn(lender_server);
 
     // We need the borrower server to be started already for this.
-    moon_client.register_webhook().await?;
+    tokio::spawn(register_webhook_in_thread(moon_client));
 
     let _ = tokio::join!(borrower_handle, lender_handle);
 
     tracing::info!("Servers stopped");
+
+    Ok(())
+}
+
+async fn register_webhook_in_thread(moon_client: Arc<moon::Manager>) -> Result<()> {
+    // We wait for 5 seconds to
+    tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+
+    // Call the register_webhook function
+    moon_client.register_webhook().await?;
 
     Ok(())
 }
