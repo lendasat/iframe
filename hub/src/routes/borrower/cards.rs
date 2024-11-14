@@ -152,8 +152,8 @@ pub struct Transaction {
     pub card: TransactionCard,
     pub transaction_id: Uuid,
     pub transaction_status: TransactionStatus,
-    #[serde(with = "time::serde::rfc3339")]
-    pub date: OffsetDateTime,
+    // TODO: this should be OffsetDateTime
+    pub date: String,
     pub merchant: String,
     #[serde(with = "rust_decimal::serde::float")]
     pub amount: Decimal,
@@ -262,7 +262,7 @@ pub struct ApiResponse {
     message: Option<String>,
 }
 
-#[instrument(skip(data), err(Debug))]
+#[instrument(skip(data, payload), err(Debug))]
 pub async fn post_webhook(
     State(data): State<Arc<AppState>>,
     payload: Result<Json<Value>, JsonRejection>,
@@ -270,6 +270,9 @@ pub async fn post_webhook(
     match payload {
         // Handle request with JSON body
         Ok(Json(payload)) => {
+            let json_object = serde_json::to_string(&payload).unwrap();
+            tracing::debug!(?json_object, "Received new webhook data");
+
             if let Ok(transaction) =
                 serde_json::from_value::<pay_with_moon::Transaction>(payload.clone())
             {
@@ -285,7 +288,7 @@ pub async fn post_webhook(
                     tracing::error!("Failed updating moon invoice {error:#}");
                 }
             } else {
-                tracing::info!(?payload, "Received unknown webhook data");
+                tracing::warn!("Received unknown webhook data");
             };
             Ok((StatusCode::OK, ()))
         }
@@ -315,7 +318,7 @@ pub async fn post_webhook(
 
 #[instrument(err(Debug))]
 pub async fn get_webhook() -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    tracing::debug!("New webhook registered");
+    tracing::debug!("New webhook registered via http get");
 
     Ok((StatusCode::OK, ()))
 }

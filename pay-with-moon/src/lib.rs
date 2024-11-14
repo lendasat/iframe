@@ -158,8 +158,9 @@ pub struct TransactionData {
     pub card: TransactionCard,
     pub transaction_id: Uuid,
     pub transaction_status: TransactionStatus,
-    #[serde(with = "time::serde::iso8601")]
-    pub datetime: OffsetDateTime,
+    /// Date when the transaction happened
+    /// The date we receive has the following format: 2024-11-14 10:26:24
+    pub datetime: String,
     pub merchant: String,
     #[serde(with = "rust_decimal::serde::float")]
     pub amount: Decimal,
@@ -736,6 +737,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_card_transactions() {
         let client = MoonCardClient::new(get_api_key(), get_api_url(), get_webook_url());
+        client.delete_webhook().await.unwrap();
         client.register_webhook().await.unwrap();
 
         let products = client.get_card_products().await.unwrap();
@@ -829,5 +831,38 @@ mod tests {
 
         assert!(!balance.balance.is_zero());
         dbg!(balance);
+    }
+
+    #[test]
+    fn deserialize_json_to_transaction() {
+        let string = r#"{
+          "data": {
+            "amount": 8,
+            "amountFeesInLedgerCurrency": 1,
+            "amountFeesInTransactionCurrency": 1,
+            "amountInTransactionCurrency": 8,
+            "card": {
+              "name": "My Moon 1X Visa® Card",
+              "public_id": "11902a69-3fa4-415c-8573-4a607e14ccf3",
+              "type": "Reloadable Moon 1X Visa® Card"
+            },
+            "datetime": "2024-11-14 10:26:24",
+            "fees": [
+              {
+                "amount": 1,
+                "feeDescription": "A 1.00% fee (minimum of $1.00) is charged on all transactions",
+                "type": "TRANSACTION_FEE"
+              }
+            ],
+            "ledgerCurrency": "USD",
+            "merchant": "Test Merchant",
+            "transactionCurrency": "USD",
+            "transactionId": "f9028782-46a2-47ef-b75e-f4c90c598262",
+            "transactionStatus": "SETTLED"
+          },
+          "type": "CARD_TRANSACTION"
+        }"#;
+
+        let _tx: Transaction = serde_json::from_str(string).unwrap();
     }
 }
