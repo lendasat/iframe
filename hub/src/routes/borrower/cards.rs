@@ -270,8 +270,11 @@ pub async fn post_webhook(
     match payload {
         // Handle request with JSON body
         Ok(Json(payload)) => {
-            let json_object = serde_json::to_string(&payload).unwrap();
-            tracing::debug!(?json_object, "Received new webhook data");
+            if let Ok(json_object) = serde_json::to_string(&payload) {
+                tracing::debug!(?json_object, "Received new json webhook data");
+            } else {
+                tracing::debug!(?payload, "Received new webhook data");
+            }
 
             if let Ok(transaction) =
                 serde_json::from_value::<pay_with_moon::Transaction>(payload.clone())
