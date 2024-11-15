@@ -1,7 +1,7 @@
 import { LoanProductOption } from "@frontend-monorepo/base-http-client";
 import { useAuth } from "@frontend-monorepo/http-client-borrower";
-import { Box, Button, Flex, Text } from "@radix-ui/themes";
-import type { ReactElement, ReactNode } from "react";
+import { Box, Flex, Text } from "@radix-ui/themes";
+import type { ReactElement } from "react";
 import Bitrefil from "../../../assets/bitrefil.png";
 import Defi from "../../../assets/defi.jpg";
 import Moon from "../../../assets/moon.jpg";
@@ -11,7 +11,7 @@ import { PayWithMoonDescriptionDialog } from "./PayWithMoonDescriptionDialog";
 import { StableCoinDescriptionDialog } from "./StableCoinDescriptionDialog";
 
 interface Step1Props {
-  onSelect: (option: LoanProductOption) => void;
+  onSelect: (option: LoanProductOption | undefined) => void;
   selectedOption?: LoanProductOption;
 }
 
@@ -84,7 +84,7 @@ export const Step1PickOption = ({ onSelect, selectedOption }: Step1Props) => {
 };
 
 interface ProductOptionComponentProps {
-  onSelect: (option: LoanProductOption) => void;
+  onSelect: (option: LoanProductOption | undefined) => void;
   option: LoanProductOption | LoanProductOption.PayWithMoonDebitCard;
   selectedOption: LoanProductOption | undefined;
   title: string;
@@ -98,8 +98,6 @@ function ProductOptionComponent({
   title,
   image,
 }: ProductOptionComponentProps) {
-  const isSelected = selectedOption === option;
-
   return (
     <Box className="text-left w-full max-w-[350px]">
       <Text as="p" size={"3"} weight={"bold"}>
@@ -109,26 +107,11 @@ function ProductOptionComponent({
         {image}
       </Box>
       <Flex className="justify-center gap-4">
-        <Button
-          variant="soft"
-          size={"3"}
-          color={isSelected ? "purple" : "gray"}
-          className="w-1/3"
-          onClick={() => onSelect(option)}
-        >
-          {isSelected ? "Selected" : "Select"}
-        </Button>
         <LoanOptionsDescriptionDialog
           option={option}
+          onSelect={onSelect}
+          selectedOption={selectedOption}
         >
-          <Button
-            variant="soft"
-            size={"3"}
-            color={"blue"}
-            className="w-1/3"
-          >
-            Details
-          </Button>
         </LoanOptionsDescriptionDialog>
       </Flex>
     </Box>
@@ -136,19 +119,27 @@ function ProductOptionComponent({
 }
 
 interface LoanOptionsDescriptionDialogProps {
-  children: ReactNode;
-  option?: LoanProductOption;
+  option: LoanProductOption;
+  selectedOption: LoanProductOption | undefined;
+  onSelect: (option: LoanProductOption | undefined) => void;
 }
 
 const LoanOptionsDescriptionDialog = ({
-  children,
   option,
+  onSelect,
+  selectedOption,
 }: LoanOptionsDescriptionDialogProps) => {
   switch (option) {
     case LoanProductOption.PayWithMoonDebitCard:
-      return <PayWithMoonDescriptionDialog option={option}>{children}</PayWithMoonDescriptionDialog>;
+      return (
+        <PayWithMoonDescriptionDialog onSelect={onSelect} option={option} selectedOption={selectedOption}>
+        </PayWithMoonDescriptionDialog>
+      );
     case LoanProductOption.StableCoins:
     default:
-      return <StableCoinDescriptionDialog option={option}>{children}</StableCoinDescriptionDialog>;
+      return (
+        <StableCoinDescriptionDialog option={option} onSelect={onSelect} selectedOption={selectedOption}>
+        </StableCoinDescriptionDialog>
+      );
   }
 };
