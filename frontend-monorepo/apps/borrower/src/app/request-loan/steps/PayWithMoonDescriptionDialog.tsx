@@ -1,25 +1,45 @@
 import type { LoanProductOption } from "@frontend-monorepo/base-http-client";
 import { AlertDialog, Box, Button, Checkbox, Flex, Separator, Text } from "@radix-ui/themes";
-import type { ReactNode } from "react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
 interface PayWithMoonDescriptionDialogProps {
-  children: ReactNode;
-  option?: LoanProductOption;
+  option: LoanProductOption;
+  selectedOption: LoanProductOption | undefined;
+  onSelect: (option: LoanProductOption | undefined) => void;
 }
 
 export const PayWithMoonDescriptionDialog = ({
-  children,
   option,
+  selectedOption,
+  onSelect,
 }: PayWithMoonDescriptionDialogProps) => {
-  const [checked, setChecked] = useState<LoanProductOption | undefined>(undefined);
-  const isChecked = checked === option;
+  const [open, setOpen] = useState(false);
+  const [isAccepted, setIsAccepted] = useState(selectedOption === option);
+
+  const isSelected = selectedOption === option;
+  const onOpening = () => {
+    setOpen(true);
+  };
+
+  const onDeclining = () => {
+    setIsAccepted(false);
+    onSelect(undefined);
+    setOpen(false);
+  };
 
   return (
-    <AlertDialog.Root>
+    <AlertDialog.Root open={open} onOpenChange={setOpen}>
       <AlertDialog.Trigger>
-        {children}
+        <Button
+          variant="soft"
+          size={"3"}
+          color={isSelected ? "purple" : "gray"}
+          className="w-1/3"
+          onClick={() => onOpening()}
+        >
+          {isSelected ? "Selected" : "Select"}
+        </Button>
       </AlertDialog.Trigger>
       <AlertDialog.Content maxWidth="450px" className="rounded-lg">
         <Box className="py-4 text-center max-w-sm mx-auto">
@@ -45,13 +65,9 @@ export const PayWithMoonDescriptionDialog = ({
               <Checkbox
                 color="purple"
                 variant="soft"
-                checked={isChecked}
+                checked={isAccepted}
                 onCheckedChange={() => {
-                  if (isChecked) {
-                    setChecked(undefined);
-                  } else {
-                    setChecked(option);
-                  }
+                  setIsAccepted(!isAccepted);
                 }}
               />
               <>
@@ -70,17 +86,18 @@ export const PayWithMoonDescriptionDialog = ({
         </Box>
         <Flex gap="3" mt="4" justify="center" align={"center"}>
           <AlertDialog.Cancel className="grow">
-            <Button variant="outline" size={"3"} className="text-sm" color="gray">
+            <Button variant="outline" size={"3"} className="text-sm" color="gray" onClick={() => onDeclining()}>
               Decline
             </Button>
           </AlertDialog.Cancel>
           <AlertDialog.Action className="grow">
             <Button
-              disabled={!checked}
+              disabled={!isAccepted}
               variant="solid"
               size={"3"}
               color="purple"
               className="text-sm"
+              onClick={() => onSelect(option)}
             >
               Continue
             </Button>
