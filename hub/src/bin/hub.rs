@@ -31,7 +31,7 @@ async fn main() -> Result<()> {
     let network = config.network.clone().parse().context("Invalid network")?;
     tracing::info!("Running hub on {network}");
 
-    let hub_seed = seed_from_file(&config.seed_file)?;
+    let hub_seed = seed_from_file(&config.seed_file).context("Could not load seed from file")?;
 
     let (db_path, _temp_db_dir) = match config.hub_fee_wallet_dir.as_ref() {
         None => {

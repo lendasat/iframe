@@ -177,7 +177,7 @@ impl xtra::Actor for Actor {
             None
         };
 
-        let ws_url = format!("{}/ws", self.ws_url);
+        let ws_url = self.ws_url.clone();
         let (ws_stream, _) =
             connect_async_tls_with_config(ws_url.clone(), None, false, connector.clone())
                 .await
