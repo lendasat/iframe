@@ -1,4 +1,4 @@
-import type { LoanProductOption } from "@frontend-monorepo/base-http-client";
+import { LoanProductOption } from "@frontend-monorepo/base-http-client";
 import { AlertDialog, Box, Button, Checkbox, Flex, Separator, Text } from "@radix-ui/themes";
 import { useState } from "react";
 import { Link } from "react-router-dom";
@@ -7,12 +7,14 @@ interface PayWithMoonDescriptionDialogProps {
   option: LoanProductOption;
   selectedOption: LoanProductOption | undefined;
   onSelect: (option: LoanProductOption | undefined) => void;
+  disabled: boolean;
 }
 
 export const PayWithMoonDescriptionDialog = ({
   option,
   selectedOption,
   onSelect,
+  disabled,
 }: PayWithMoonDescriptionDialogProps) => {
   const [open, setOpen] = useState(false);
   const [isAccepted, setIsAccepted] = useState(selectedOption === option);
@@ -35,8 +37,9 @@ export const PayWithMoonDescriptionDialog = ({
           variant="soft"
           size={"3"}
           color={isSelected ? "purple" : "gray"}
-          className="w-1/3"
-          onClick={() => onOpening()}
+          disabled={disabled}
+          className="w-full"
+          onClick={disabled ? undefined : () => onOpening()}
         >
           {isSelected ? "Selected" : "Select"}
         </Button>
