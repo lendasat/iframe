@@ -1,6 +1,7 @@
-import { LoanProductOption } from "@frontend-monorepo/base-http-client";
+import type { LoanProductOption } from "@frontend-monorepo/base-http-client";
 import { AlertDialog, Box, Button, Checkbox, Flex, Separator, Text } from "@radix-ui/themes";
 import { useState } from "react";
+import { FaTrademark } from "react-icons/fa6";
 import { Link } from "react-router-dom";
 
 interface PayWithMoonDescriptionDialogProps {
@@ -66,7 +67,9 @@ export const PayWithMoonDescriptionDialog = ({
                   <Text size={"2"} className="text-font">Valid for 3 years from creation date</Text>
                 </li>
                 <li>
-                  <Text size={"2"} className="text-font">Reloadable - add additional funds to the card (soon™️)</Text>
+                  <Text size={"2"} className="text-font flex items-center gap-1">
+                    Reloadable - add additional funds to the card (soon<FaTrademark className="inline-block" />)
+                  </Text>
                 </li>
                 <li>
                   <Text size={"2"} className="text-font">

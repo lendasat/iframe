@@ -1,4 +1,4 @@
-import { LoanProductOption } from "@frontend-monorepo/base-http-client";
+import type { LoanProductOption } from "@frontend-monorepo/base-http-client";
 import { StableCoinHelper } from "@frontend-monorepo/ui-shared";
 import { AlertDialog, Box, Button, Checkbox, Flex, Separator, Text } from "@radix-ui/themes";
 import { useState } from "react";

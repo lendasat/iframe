@@ -1,7 +1,7 @@
 import { LoanProductOption } from "@frontend-monorepo/base-http-client";
 import { useAuth, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import { Box, Flex, Text } from "@radix-ui/themes";
-import { ReactElement } from "react";
+import type { ReactElement } from "react";
 import Bitrefil from "../../../assets/bitrefil.png";
 import Defi from "../../../assets/defi.jpg";
 import Moon from "../../../assets/moon.jpg";
@@ -23,13 +23,13 @@ export const Step1PickOption = ({ onSelect, selectedOption }: Step1Props) => {
   const { enabledFeatures } = useAuth();
   const { getUserCards } = useBorrowerHttpClient();
 
-  const { value, error } = useAsync(async () => {
+  const { loading, value, error } = useAsync(async () => {
     return getUserCards();
   });
 
   console.error(`Failed fetching credit cards ${error}`);
 
-  const hasAlreadyCard = value ? value.length > 0 : false;
+  const hasAlreadyCard = loading ? true : value ? value.length > 0 : false;
 
   return (
     <Box className="py-6 md:py-8 grid md:grid-cols-2 xl:grid-cols-3 gap-5 px-6 md:px-8 xl:px-8">
