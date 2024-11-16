@@ -41,7 +41,7 @@ export const PayWithMoonDescriptionDialog = ({
           {isSelected ? "Selected" : "Select"}
         </Button>
       </AlertDialog.Trigger>
-      <AlertDialog.Content maxWidth="450px" className="rounded-lg">
+      <AlertDialog.Content maxWidth="550px" className="rounded-lg">
         <Box className="py-4 text-center max-w-sm mx-auto">
           <Flex align={"center"} justify={"center"} gap={"3"} pb={"1"}>
             <Separator size={"3"} className="bg-font/30" />
@@ -54,9 +54,6 @@ export const PayWithMoonDescriptionDialog = ({
             <AlertDialog.Description size="2" className="text-pretty leading-[1.8] text-font/60">
               <ul className="list-disc ml-6">
                 <li>
-                  <Text size={"2"} className="text-font">No KYC needed!</Text>
-                </li>
-                <li>
                   <Text size={"2"} className="text-font">Spend up to US $4,000/month</Text>
                 </li>
                 <li>
@@ -66,7 +63,7 @@ export const PayWithMoonDescriptionDialog = ({
                   <Text size={"2"} className="text-font">Valid for 3 years from creation date</Text>
                 </li>
                 <li>
-                  <Text size={"2"} className="text-font">Reloadable - add additional funds to the card</Text>
+                  <Text size={"2"} className="text-font">Reloadable - add additional funds to the card (soon™️)</Text>
                 </li>
                 <li>
                   <Text size={"2"} className="text-font">
