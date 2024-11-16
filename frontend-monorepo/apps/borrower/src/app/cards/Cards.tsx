@@ -1,14 +1,14 @@
 import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import { CurrencyFormatter } from "@frontend-monorepo/ui-shared";
 import { Box, Button, Flex, Grid, Heading, Skeleton, Spinner, Text } from "@radix-ui/themes";
-import { useRef, useState } from "react";
-import { GoArrowUpRight } from "react-icons/go";
+import { useState } from "react";
 import { IoWallet } from "react-icons/io5";
 import { Link } from "react-router-dom";
 import { useAsync } from "react-use";
-import { EffectFade } from "swiper/modules";
-import { Swiper as SwiperComponent, SwiperSlide } from "swiper/react";
-import type { SwiperRef } from "swiper/react";
+import { Navigation } from "swiper/modules";
+import { EffectCards } from "swiper/modules";
+import { Swiper } from "swiper/react";
+import { SwiperSlide } from "swiper/react";
 import NoCreditCard from "./../../assets/creditcard-illustration.png";
 import CardHistory from "./CardHistory";
 import CreditCard from "./CreditCard";
@@ -17,8 +17,6 @@ export default function Cards() {
   const { innerHeight } = window;
   const [moreInfo, setMoreInfo] = useState<boolean>(false);
   const [activeCardIndex, setActiveCardIndex] = useState<number>(0);
-  // Change Card
-  const SlideRef = useRef<SwiperRef>();
 
   const { getUserCards } = useBorrowerHttpClient();
 
@@ -46,15 +44,6 @@ export default function Cards() {
 
   const userCardDetails = maybeUserCardDetails || [];
 
-  const onSwitchCard = () => {
-    SlideRef.current?.swiper.slideNext();
-    if (activeCardIndex !== userCardDetails.length - 1) {
-      setActiveCardIndex(activeCardIndex + 1);
-    } else {
-      setActiveCardIndex(0);
-    }
-  };
-
   const activeCard = userCardDetails[activeCardIndex];
 
   return (
@@ -75,35 +64,24 @@ export default function Cards() {
               <Heading size={"5"} weight={"medium"}>
                 My Cards
               </Heading>
-              {userCardDetails.length > 1 && (
-                <Button
-                  variant="ghost"
-                  onClick={onSwitchCard}
-                  disabled={true}
-                  className="hover:bg-transparent font-medium text-font/60 hover:text-font"
-                >
-                  Switch Card
-                </Button>
-              )}
             </Flex>
           </Box>
         </Skeleton>
 
         <Skeleton loading={!activeCard}>
-          <SwiperComponent
-            loop
-            ref={SlideRef}
+          <Swiper
             effect={"cards"}
-            grabCursor={false}
-            allowTouchMove={false}
-            modules={[EffectFade]}
-            centeredSlides
+            grabCursor={true}
+            modules={[EffectCards, Navigation]}
+            onSlideChange={(s) => {
+              setActiveCardIndex(s.activeIndex);
+            }}
+            className="h-52 w-full"
+            navigation={true}
             cardsEffect={{
               perSlideOffset: 7,
               slideShadows: false,
             }}
-            className="h-52 w-full"
-            enabled={false}
           >
             {userCardDetails.map((card, index) => (
               <SwiperSlide key={index}>
@@ -113,7 +91,33 @@ export default function Cards() {
                 />
               </SwiperSlide>
             ))}
-          </SwiperComponent>
+          </Swiper>
+          {/*<SwiperComponent*/}
+          {/*  loop*/}
+          {/*  ref={SlideRef}*/}
+          {/*  effect={"cards"}*/}
+          {/*  grabCursor={false}*/}
+          {/*  allowTouchMove={false}*/}
+          {/*  modules={[EffectFade]}*/}
+          {/*  centeredSlides*/}
+          {/*    slidesPerView={1}*/}
+          {/*    slidesPerGroup={1}*/}
+          {/*  cardsEffect={{*/}
+          {/*    perSlideOffset: 7,*/}
+          {/*    slideShadows: false,*/}
+          {/*  }}*/}
+          {/*  className="h-52 w-full"*/}
+          {/*  enabled={false}*/}
+          {/*>*/}
+          {/*  {userCardDetails.map((card, index) => (*/}
+          {/*    <SwiperSlide key={index}>*/}
+          {/*      <CreditCard*/}
+          {/*        card={card}*/}
+          {/*        visible={moreInfo}*/}
+          {/*      />*/}
+          {/*    </SwiperSlide>*/}
+          {/*  ))}*/}
+          {/*</SwiperComponent>*/}
         </Skeleton>
 
         <Skeleton loading={!activeCard}>
@@ -137,10 +141,10 @@ export default function Cards() {
                 <Box className={`h-12 w-12 bg-purple-50 rounded-xl place-items-center flex justify-center`}>
                   <IoWallet size={"24"} />
                 </Box>
-                <Text size={"1"} weight={"medium"}>Balance</Text>
+                <Text size={"1"} weight={"medium"}>Available Balance</Text>
                 <Heading size={"2"}>
                   <Skeleton loading={!activeCard}>
-                    <CurrencyFormatter value={activeCard.balance} />
+                    {activeCard && <CurrencyFormatter value={activeCard.available_balance} />}
                   </Skeleton>
                 </Heading>
               </Box>
@@ -149,12 +153,12 @@ export default function Cards() {
             <Skeleton loading={!activeCard} className="flex items-center justify-between">
               <Box className="min-h-[150px] w-full border border-font/10 flex flex-col items-center justify-center gap-1.5 text-font rounded-2xl">
                 <Box className={`h-12 w-12 bg-purple-50 rounded-xl place-items-center flex justify-center`}>
-                  <GoArrowUpRight size={"24"} />
+                  <IoWallet size={"24"} />
                 </Box>
-                <Text size={"1"} weight={"medium"}>Outgoing</Text>
+                <Text size={"1"} weight={"medium"}>Balance</Text>
                 <Heading size={"2"}>
                   <Skeleton loading={!activeCard}>
-                    <CurrencyFormatter value={activeCard.outgoing} />
+                    {activeCard && <CurrencyFormatter value={activeCard.balance} />}
                   </Skeleton>
                 </Heading>
               </Box>
@@ -183,7 +187,7 @@ export default function Cards() {
               <Text size={"1"} weight={"medium"} className="text-font/60">Card Number</Text>
               <Text as="p" weight={"medium"}>
                 <Skeleton loading={!activeCard}>
-                  {moreInfo ? formatCreditCardNumber(activeCard.cardNumber) : "******"}
+                  {moreInfo ? formatCreditCardNumber(activeCard.pan) : "******"}
                 </Skeleton>
               </Text>
             </Skeleton>
@@ -193,7 +197,7 @@ export default function Cards() {
                   <Text size={"1"} weight={"medium"} className="text-font/60">Expiry</Text>
                   <Text as="p" weight={"medium"}>
                     <Skeleton loading={!activeCard}>
-                      {moreInfo ? formatExpiryDate(activeCard.expiry) : "****"}
+                      {moreInfo ? formatExpiryDate(activeCard.expiration) : "****"}
                     </Skeleton>
                   </Text>
                 </Box>
@@ -201,7 +205,7 @@ export default function Cards() {
                   <Text size={"1"} weight={"medium"} className="text-font/60">CVV</Text>
                   <Text as="p" weight={"medium"}>
                     <Skeleton loading={!activeCard}>
-                      {moreInfo ? activeCard.cardCvv : "****"}
+                      {moreInfo ? activeCard.cvv : "****"}
                     </Skeleton>
                   </Text>
                 </Box>
@@ -252,7 +256,12 @@ export default function Cards() {
               </Link>
             </Box>
           )
-          : <CardHistory cardId={activeCard.id} />}
+          : (
+            <CardHistory
+              cardId={activeCard.id}
+              lastFourCardDigits={activeCard.pan.toString().substring(activeCard.pan.toString().length - 4)}
+            />
+          )}
       </Box>
     </Grid>
   );
@@ -264,8 +273,12 @@ export const formatCreditCardNumber = (number: number) => {
   return numStr.replace(/(\d{4})(?=\d)/g, "$1 ");
 };
 
-export const formatExpiryDate = (timestamp: number): string => {
+export const formatExpiryTimestamp = (timestamp: number): string => {
   const date = new Date(timestamp);
+  return formatExpiryDate(date);
+};
+
+export const formatExpiryDate = (date: Date): string => {
   return date.toLocaleDateString("en-US", {
     year: "numeric",
     month: "2-digit",

@@ -33,6 +33,14 @@ export function CollateralContractDetails({
 
   const bip21Url = encodeBip21(collateralAddress, { amount: collateral_btc, label: `fund contract` });
 
+  const ellipseAddress = (address: string) => {
+    const start = address.slice(0, 10);
+    const end = address.slice(-10);
+    return `${start}...${end}`;
+  };
+
+  const ellipsedAddress = ellipseAddress(collateralAddress);
+
   return (
     <Box>
       <Heading size={"4"} weight={"medium"}>
@@ -115,7 +123,7 @@ export function CollateralContractDetails({
                 {totalCollateral} BTC {"  "}
               </span>
             </Popup>
-            to{"  "}
+            to{"  "}<br />
             <Button
               onClick={() => handleCopy(collateralAddress)}
               asChild
@@ -123,7 +131,7 @@ export function CollateralContractDetails({
               className="cursor-copy mt-1"
             >
               <span className="text-font-dark font-semibold">
-                {collateralAddress}
+                {ellipsedAddress}
               </span>
             </Button>
           </Text>

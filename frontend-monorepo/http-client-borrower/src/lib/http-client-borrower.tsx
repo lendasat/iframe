@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 import { createContext, useContext } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import type {
-  CardTransactionInformation,
+  CardTransaction,
   ClaimCollateralPsbtResponse,
   Contract,
   ContractRequest,
@@ -17,7 +17,6 @@ import type {
   PostLoanRequest,
   UserCardDetail,
 } from "./models";
-import { CardTransactionStatus, CardTransactionType } from "./models";
 import { parseRFC3339Date } from "./utils";
 
 // Interface for the raw data received from the API
@@ -29,6 +28,12 @@ interface RawContract extends Omit<Contract, "created_at" | "repaid_at" | "expir
 interface RawDispute extends Omit<Dispute, "created_at" | "updated_at"> {
   created_at: string;
   updated_at: string;
+}
+interface RawCardTransaction extends Omit<CardTransaction, "date"> {
+  date: string;
+}
+interface RawUserCardDetail extends Omit<UserCardDetail, "expiration"> {
+  expiration: string;
 }
 
 export class HttpClientBorrower extends BaseHttpClient {
@@ -66,25 +71,6 @@ export class HttpClientBorrower extends BaseHttpClient {
         throw new Error(message);
       } else {
         throw new Error(`Could not fetch loan offer ${JSON.stringify(error)}`);
-      }
-    }
-  }
-
-  async postLoanOffer(offer: LoanOffer): Promise<LoanOffer | undefined> {
-    try {
-      const response: AxiosResponse<LoanOffer> = await this.httpClient.post("/api/offers/create", offer);
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        const message = error.response.data.message;
-        console.error(
-          `Failed to post loan offer: http: ${error.response?.status} and response: ${
-            JSON.stringify(error.response?.data)
-          }`,
-        );
-        throw new Error(message);
-      } else {
-        throw new Error(`Could not post loan offer: ${JSON.stringify(error)}`);
       }
     }
   }
@@ -361,58 +347,66 @@ export class HttpClientBorrower extends BaseHttpClient {
   }
 
   async getUserCards(): Promise<UserCardDetail[]> {
-    return [
-      {
-        id: 1,
-        balance: 95485.68,
-        outgoing: 2524.45,
-        cardNumber: 3782822463101845,
-        cardCvv: 759,
-        expiry: Date.now(),
-      },
-      {
-        id: 2,
-        balance: 99545.68,
-        outgoing: 9574.45,
-        cardNumber: 5610591081018250,
-        cardCvv: 957,
-        expiry: Date.now(),
-      },
-      {
-        id: 3,
-        balance: 7653.24,
-        outgoing: 2582.45,
-        cardNumber: 5019717010103742,
-        cardCvv: 579,
-        expiry: Date.now(),
-      },
-    ];
+    try {
+      const response: AxiosResponse<RawUserCardDetail[]> = await this.httpClient.get("/api/cards");
+
+      return response.data.map(card => {
+        const expiration = parseRFC3339Date(card.expiration);
+        if (expiration == null) {
+          console.error(`Could not parse expiration date ${card.expiration}`);
+          throw new Error("Invalid date");
+        }
+
+        return {
+          ...card,
+          expiration: expiration,
+        };
+      });
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to fetch borrower cards: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not fetch borrower cards: ${JSON.stringify(error)}`);
+      }
+    }
   }
 
-  async getCardTransactions(_cardId: number): Promise<CardTransactionInformation[]> {
-    return [
-      {
-        transactionType: CardTransactionType.IncomingLoan,
-        cardUsed: "0145",
-        status: CardTransactionStatus.InProcess,
-        amount: 3000,
-        date: new Date(1721631360000).getTime(),
-      },
-      {
-        transactionType: CardTransactionType.Payment,
-        cardUsed: "0845",
-        status: CardTransactionStatus.Failed,
-        amount: 8000,
-        date: new Date(1729631360000).getTime(),
-      },
-      {
-        transactionType: CardTransactionType.Payment,
-        cardUsed: "0145",
-        status: CardTransactionStatus.Completed,
-        amount: 17000,
-        date: new Date(1729641360000).getTime(),
-      },
-    ];
+  async getCardTransactions(cardId: number): Promise<CardTransaction[]> {
+    try {
+      const transactionResponse: AxiosResponse<RawCardTransaction[]> = await this.httpClient.get(
+        `/api/transaction/${cardId}`,
+      );
+
+      return transactionResponse.data.map(tx => {
+        const date = parseRFC3339Date(tx.date);
+        if (date == null) {
+          throw new Error("Invalid date");
+        }
+
+        return {
+          ...tx,
+          date: date,
+        };
+      });
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to fetch borrower cards: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not fetch borrower cards: ${JSON.stringify(error)}`);
+      }
+    }
   }
 }
 
@@ -420,7 +414,6 @@ type BorrowerHttpClientContextType = Pick<
   HttpClientBorrower,
   | "getLoanOffers"
   | "getLoanOffer"
-  | "postLoanOffer"
   | "postLoanRequest"
   | "postContractRequest"
   | "getContracts"
@@ -498,7 +491,6 @@ export const HttpClientBorrowerProvider: React.FC<HttpClientProviderProps> = ({ 
   const borrowerClientFunctions: BorrowerHttpClientContextType = {
     getLoanOffers: httpClient.getLoanOffers.bind(httpClient),
     getLoanOffer: httpClient.getLoanOffer.bind(httpClient),
-    postLoanOffer: httpClient.postLoanOffer.bind(httpClient),
     postLoanRequest: httpClient.postLoanRequest.bind(httpClient),
     postContractRequest: httpClient.postContractRequest.bind(httpClient),
     getContracts: httpClient.getContracts.bind(httpClient),

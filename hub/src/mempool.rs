@@ -260,6 +260,9 @@ impl xtra::Actor for Actor {
                                             let _ =
                                                 actor.send(ContractUpdate { transactions }).await;
                                         }
+                                        WsResponse::LoadingIndicator { .. } => {
+                                            // ignored
+                                        }
                                     },
                                     Err(e) => {
                                         tracing::warn!(
@@ -935,6 +938,9 @@ pub enum WsResponse {
         block: Block,
         #[serde(rename = "block-transactions")]
         block_transactions: Option<Vec<Transaction>>,
+    },
+    LoadingIndicator {
+        response: Option<String>,
     },
     AddressTransactions(AddressTransactions),
     BlockTransactions(BlockTransactions),

@@ -52,6 +52,9 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
         .with_state(app_state)
 }
 
+// TODO: we need to handle a loan request for a debit card separately. And throw an error if the
+// user has already a card. In the future we will either allow multiple cards or allow the user to
+// recharge his existing car.
 #[instrument(skip_all, err(Debug))]
 pub async fn create_loan_request(
     State(data): State<Arc<AppState>>,

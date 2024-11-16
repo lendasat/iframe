@@ -1,5 +1,6 @@
 use crate::config::Config;
 use crate::mempool;
+use crate::moon;
 use crate::routes::price_feed_ws;
 use crate::routes::profiles;
 use crate::routes::AppState;
@@ -29,6 +30,7 @@ use tower_http::services::ServeDir;
 use tower_http::services::ServeFile;
 
 pub(crate) mod auth;
+mod cards;
 pub(crate) mod contracts;
 mod dispute;
 pub(crate) mod health_check;
@@ -42,6 +44,7 @@ pub async fn spawn_borrower_server(
     db: Pool<Postgres>,
     mempool: xtra::Address<mempool::Actor>,
     connections: Arc<Mutex<Vec<mpsc::UnboundedSender<Message>>>>,
+    moon_client: Arc<moon::Manager>,
 ) -> Result<JoinHandle<()>> {
     let app_state = Arc::new(AppState {
         db,
@@ -49,6 +52,7 @@ pub async fn spawn_borrower_server(
         config: config.clone(),
         mempool,
         connections,
+        moon: moon_client,
     });
 
     let app = Router::new()
@@ -60,7 +64,8 @@ pub async fn spawn_borrower_server(
         .merge(dispute::router(app_state.clone()))
         .merge(price_feed_ws::router(app_state.clone()))
         .merge(profiles::router(app_state.clone()))
-        .merge(loan_requests::router(app_state))
+        .merge(loan_requests::router(app_state.clone()))
+        .merge(cards::router(app_state))
         // This is a relative path on the filesystem, which means, when deploying `hub` we will need
         // to have the frontend in this directory. Ideally we would bundle the frontend with
         // the binary, but so far we failed at handling requests which are meant to be handled by

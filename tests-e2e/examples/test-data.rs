@@ -8,10 +8,12 @@ use hub::db;
 use hub::model::Contract;
 use hub::model::ContractStatus;
 use hub::model::CreateLoanOfferSchema;
+use hub::model::Integration;
 use hub::model::LoanAssetChain;
 use hub::model::LoanAssetType;
 use hub::model::LoanOffer;
 use hub::model::User;
+use hub::moon::Card;
 use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
@@ -20,6 +22,7 @@ use sqlx::Pool;
 use sqlx::Postgres;
 use std::str::FromStr;
 use time::macros::format_description;
+use time::OffsetDateTime;
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::filter::Directive;
 use tracing_subscriber::fmt::time::UtcTime;
@@ -27,6 +30,7 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::Layer;
+use uuid::Uuid;
 
 const RUST_LOG_ENV: &str = "RUST_LOG";
 
@@ -45,9 +49,12 @@ async fn main() -> Result<()> {
     let borrower = insert_borrower(&pool).await?;
     tracing::debug!(id = borrower.id, email = borrower.email, "Borrower created");
 
-    let offer = create_loan_offer(&pool, lender.id.as_str()).await?;
+    let offers = create_loan_offers(&pool, lender.id.as_str()).await?;
 
-    create_sample_contracts(&pool, &borrower, &offer, lender.id.as_str()).await?;
+    let (_requested_contract, approved_contract) =
+        create_sample_contracts(&pool, &borrower, &offers[0], lender.id.as_str()).await?;
+
+    create_sample_card(&pool, &borrower, &approved_contract).await?;
 
     Ok(())
 }
@@ -57,36 +64,82 @@ async fn create_sample_contracts(
     borrower: &User,
     offer: &LoanOffer,
     lender_id: &str,
-) -> Result<()> {
+) -> Result<(Contract, Contract)> {
     let borrower_contracts =
         db::contracts::load_contracts_by_borrower_id(pool, borrower.id.as_str()).await?;
     let requested = borrower_contracts
         .iter()
         .filter(|contract| contract.status == ContractStatus::Requested)
-        .count();
+        .collect::<Vec<_>>();
     let approved = borrower_contracts
         .iter()
         .filter(|contract| contract.status == ContractStatus::Approved)
-        .count();
+        .collect::<Vec<_>>();
 
-    if requested > 0 && approved > 0 {
+    let (contract1, contract2) = if !requested.is_empty() && !approved.is_empty() {
         tracing::debug!("DB already contains one approved and one requested");
+        let requested = requested.first().cloned().expect("to be one").clone();
+        let approved = approved.first().cloned().expect("to be one").clone();
+        (requested, approved)
+    } else {
+        let contract1 =
+            create_loan_request(pool, offer, offer.loan_amount_min, borrower.id.as_str()).await?;
+        let contract2 =
+            create_loan_request(pool, offer, offer.loan_amount_max, borrower.id.as_str()).await?;
+        (contract1, contract2)
+    };
 
-        return Ok(());
+    accept_loan_request(pool, &contract2, lender_id).await?;
+
+    Ok((contract1, contract2))
+}
+
+async fn create_sample_card(
+    pool: &Pool<Postgres>,
+    borrower: &User,
+    contract: &Contract,
+) -> Result<Card> {
+    let borrower_id = borrower.id.as_str();
+    let contract_id = contract.id.as_str();
+
+    let cards = db::moon::get_borrower_cards(pool, borrower_id).await?;
+    if !cards.is_empty() {
+        let card = cards
+            .first()
+            .cloned()
+            .context("to have at least one card")?;
+        tracing::debug!(card_id = card.id.to_string(), "Load sample card from tdb");
+        return Ok(card);
     }
 
-    let _contract1 =
-        create_loan_request(pool, offer, offer.loan_amount_min, borrower.id.as_str()).await?;
-    let contract2 =
-        create_loan_request(pool, offer, offer.loan_amount_max, borrower.id.as_str()).await?;
+    // The data below was taken once from a stagenet run. If their data is persistant, then there
+    // might be some transactions attached
+    let card = Card {
+        id: Uuid::from_str("0926cd27-7774-4fb3-9f9b-5f23744445e7").expect("to be valid"),
+        balance: Decimal::ZERO,
+        available_balance: Decimal::ZERO,
+        expiration: OffsetDateTime::from_unix_timestamp(1738367999).expect("to be valid"),
+        pan: "4513650002606667".to_string(),
+        cvv: "064".to_string(),
+        support_token: "028084d792".to_string(),
+        product_id: Uuid::from_str("8f1c611d-098d-4f61-b106-f7b6d344b1ae").expect("to be valid"),
+        end_customer_id: format!("{borrower_id}/{contract_id}"),
+        contract_id: contract_id.to_string(),
+        borrower_id: borrower_id.to_string(),
+    };
+    tracing::debug!(
+        card_id = card.id.to_string(),
+        "Inserting sample card into tdb"
+    );
 
-    accept_loan_request(pool, contract2, lender_id).await?;
-    Ok(())
+    db::moon::insert_card(pool, card.clone()).await?;
+
+    Ok(card)
 }
 
 async fn accept_loan_request(
     pool: &Pool<Postgres>,
-    contract: Contract,
+    contract: &Contract,
     lender_id: &str,
 ) -> Result<Contract> {
     db::contracts::accept_contract_request(
@@ -109,6 +162,7 @@ async fn create_loan_request(
     loan_amount: Decimal,
     borrower_id: &str,
 ) -> Result<Contract> {
+    let id = Uuid::new_v4();
     let initial_ltv = dec!(0.5);
     let price = dec!(58_000);
     let one_btc_in_sats = dec!(100_000_000);
@@ -116,6 +170,7 @@ async fn create_loan_request(
     let origination_fee_sats = ((loan_amount / price) * ORIGINATION_FEE_RATE) * one_btc_in_sats;
     db::contracts::insert_contract_request(
         pool,
+        id,
         borrower_id,
         offer.id.as_str(),
         initial_ltv,
@@ -128,22 +183,23 @@ async fn create_loan_request(
         PublicKey::from_str("0363b379acd22b63c29179ad1bff81251e5c0df43a4f53f0e9d9c1f4b800a4243c")
             .expect("to be valid pk"),
         "0x34e3f03F5efFaF7f70Bb1FfC50274697096ebe9d",
+        Some(Integration::PayWithMoon),
     )
     .await
 }
 
-async fn create_loan_offer(pool: &Pool<Postgres>, lender_id: &str) -> Result<LoanOffer> {
+async fn create_loan_offers(pool: &Pool<Postgres>, lender_id: &str) -> Result<Vec<LoanOffer>> {
     let offers = db::loan_offers::load_all_loan_offers_by_lender(pool, lender_id).await?;
     if !offers.is_empty() {
-        tracing::debug!("DB already contains offer by lender");
+        tracing::debug!("DB already contains offer(s) by lender");
 
-        return offers.first().context("to have one ").cloned();
+        return Ok(offers);
     }
 
-    db::loan_offers::insert_loan_offer(
+    let eth_offer = db::loan_offers::insert_loan_offer(
         pool,
         CreateLoanOfferSchema {
-            name: "sample_offer".to_string(),
+            name: "eth-usdt".to_string(),
             min_ltv: dec!(0.5),
             interest_rate: dec!(0.12),
             loan_amount_min: dec!(1_000),
@@ -156,7 +212,27 @@ async fn create_loan_offer(pool: &Pool<Postgres>, lender_id: &str) -> Result<Loa
         },
         lender_id,
     )
-    .await
+    .await?;
+
+    let poly_offer = db::loan_offers::insert_loan_offer(
+        pool,
+        CreateLoanOfferSchema {
+            name: "poly-usdc".to_string(),
+            min_ltv: dec!(0.5),
+            interest_rate: dec!(0.12),
+            loan_amount_min: dec!(1_000),
+            loan_amount_max: dec!(100_000),
+            duration_months_min: 3,
+            duration_months_max: 18,
+            loan_asset_type: LoanAssetType::Usdc,
+            loan_asset_chain: LoanAssetChain::Polygon,
+            loan_repayment_address: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619".to_string(),
+        },
+        lender_id,
+    )
+    .await?;
+
+    Ok(vec![eth_offer, poly_offer])
 }
 
 async fn insert_lender(pool: &Pool<Postgres>) -> Result<User> {

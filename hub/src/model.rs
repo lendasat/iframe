@@ -1,3 +1,4 @@
+use crate::moon;
 use argon2::Argon2;
 use argon2::PasswordHash;
 use argon2::PasswordVerifier;
@@ -12,6 +13,7 @@ use serde::Serialize;
 use sqlx::FromRow;
 use std::str::FromStr;
 use time::OffsetDateTime;
+use uuid::Uuid;
 
 #[derive(Debug, sqlx::FromRow)]
 pub struct InviteCode {
@@ -112,11 +114,21 @@ pub struct CreateLoanRequestSchema {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ContractRequestSchema {
     pub loan_id: String,
+    // TODO: Reconsider this now!
+    #[serde(with = "rust_decimal::serde::float")]
     pub loan_amount: Decimal,
     pub duration_months: i32,
     pub borrower_btc_address: Address<NetworkUnchecked>,
     pub borrower_pk: PublicKey,
-    pub borrower_loan_address: String,
+    /// This is optional because certain integrations (such as Pay with Moon) define their own loan
+    /// address.
+    pub borrower_loan_address: Option<String>,
+    pub integration: Option<Integration>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone, Copy)]
+pub enum Integration {
+    PayWithMoon,
 }
 
 #[derive(Debug, FromRow, Serialize, Deserialize, Clone)]
@@ -144,14 +156,14 @@ pub struct LoanOffer {
     pub updated_at: OffsetDateTime,
 }
 
-#[derive(Debug, Deserialize, sqlx::Type, Serialize, Clone)]
+#[derive(Debug, Deserialize, sqlx::Type, Serialize, Clone, PartialEq)]
 #[sqlx(type_name = "loan_asset_type")]
 pub enum LoanAssetType {
     Usdc,
     Usdt,
 }
 
-#[derive(Debug, Deserialize, sqlx::Type, Serialize, Clone)]
+#[derive(Debug, Deserialize, sqlx::Type, Serialize, Clone, PartialEq)]
 #[sqlx(type_name = "loan_asset_chain")]
 pub enum LoanAssetChain {
     Ethereum,
@@ -220,6 +232,7 @@ pub struct Contract {
     pub borrower_btc_address: Address<NetworkUnchecked>,
     pub borrower_pk: PublicKey,
     pub borrower_loan_address: String,
+    pub integration: Option<Integration>,
     pub lender_xpub: Option<Xpub>,
     pub contract_address: Option<Address<NetworkUnchecked>>,
     pub contract_index: Option<u32>,
@@ -296,6 +309,7 @@ pub mod db {
         pub borrower_btc_address: String,
         pub borrower_pk: String,
         pub borrower_loan_address: String,
+        pub integration: Option<Integration>,
         pub lender_xpub: Option<String>,
         pub contract_address: Option<String>,
         pub contract_index: Option<i32>,
@@ -333,6 +347,29 @@ pub mod db {
         SecondMarginCall,
         Liquidated,
     }
+
+    #[derive(Debug, Deserialize, sqlx::Type, Serialize)]
+    #[sqlx(type_name = "integration")]
+    pub enum Integration {
+        PayWithMoon,
+    }
+
+    #[derive(Debug, Deserialize, sqlx::Type, Serialize)]
+    #[sqlx(type_name = "moon_cards")]
+    pub struct MoonCard {
+        pub id: String,
+        pub balance: Decimal,
+        pub available_balance: Decimal,
+        #[serde(with = "time::serde::rfc3339")]
+        pub expiration: OffsetDateTime,
+        pub pan: String,
+        pub cvv: String,
+        pub support_token: String,
+        pub product_id: String,
+        pub end_customer_id: String,
+        pub contract_id: String,
+        pub borrower_id: String,
+    }
 }
 
 impl From<db::Contract> for Contract {
@@ -352,6 +389,7 @@ impl From<db::Contract> for Contract {
                 .expect("valid address"),
             borrower_pk: PublicKey::from_str(&value.borrower_pk).expect("valid pk"),
             borrower_loan_address: value.borrower_loan_address,
+            integration: value.integration.map(|i| i.into()),
             lender_xpub: value
                 .lender_xpub
                 .map(|xpub| xpub.parse().expect("valid xpub")),
@@ -398,6 +436,58 @@ impl From<db::LiquidationStatus> for LiquidationStatus {
     }
 }
 
+impl From<db::Integration> for Integration {
+    fn from(value: db::Integration) -> Self {
+        match value {
+            db::Integration::PayWithMoon => Self::PayWithMoon,
+        }
+    }
+}
+
+impl From<Integration> for db::Integration {
+    fn from(value: Integration) -> Self {
+        match value {
+            Integration::PayWithMoon => Self::PayWithMoon,
+        }
+    }
+}
+
+impl From<db::MoonCard> for moon::Card {
+    fn from(value: db::MoonCard) -> Self {
+        Self {
+            id: Uuid::from_str(&value.id).expect("uuid"),
+            balance: value.balance,
+            available_balance: value.available_balance,
+            expiration: value.expiration,
+            pan: value.pan,
+            cvv: value.cvv,
+            support_token: value.support_token,
+            product_id: Uuid::from_str(&value.product_id).expect("uuid"),
+            end_customer_id: value.end_customer_id,
+            contract_id: value.contract_id,
+            borrower_id: value.borrower_id,
+        }
+    }
+}
+
+impl From<moon::Card> for db::MoonCard {
+    fn from(value: moon::Card) -> Self {
+        Self {
+            id: value.id.to_string(),
+            balance: value.balance,
+            available_balance: value.available_balance,
+            expiration: value.expiration,
+            pan: value.pan,
+            cvv: value.cvv,
+            support_token: value.support_token,
+            product_id: value.product_id.to_string(),
+            end_customer_id: value.end_customer_id,
+            contract_id: value.contract_id,
+            borrower_id: value.borrower_id,
+        }
+    }
+}
+
 impl From<Contract> for db::Contract {
     fn from(value: Contract) -> Self {
         Self {
@@ -414,6 +504,7 @@ impl From<Contract> for db::Contract {
             borrower_btc_address: value.borrower_btc_address.assume_checked().to_string(),
             borrower_pk: value.borrower_pk.to_string(),
             borrower_loan_address: value.borrower_loan_address,
+            integration: value.integration.map(|i| i.into()),
             lender_xpub: value.lender_xpub.map(|xpub| xpub.to_string()),
             contract_address: value
                 .contract_address

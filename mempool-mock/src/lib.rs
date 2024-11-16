@@ -347,6 +347,9 @@ pub async fn handle_ws(socket: WebSocket, blockchain: Arc<RwLock<Blockchain>>) {
                             block_transactions: txs,
                         })
                     }
+                    WsResponse::LoadingIndicator { response } => {
+                        WsResponse::LoadingIndicator { response }
+                    }
                 };
 
                 let msg = Message::Text(serde_json::to_string(&msg).unwrap());

@@ -8,12 +8,14 @@ interface StableCoinDescriptionDialogProps {
   option?: LoanProductOption;
   selectedOption: LoanProductOption | undefined;
   onSelect: (option: LoanProductOption | undefined) => void;
+  disabled: boolean;
 }
 
 export const StableCoinDescriptionDialog = ({
   option,
   selectedOption,
   onSelect,
+  disabled,
 }: StableCoinDescriptionDialogProps) => {
   const [open, setOpen] = useState(false);
   const [isAccepted, setIsAccepted] = useState(selectedOption === option);
@@ -36,13 +38,14 @@ export const StableCoinDescriptionDialog = ({
           variant="soft"
           size={"3"}
           color={isSelected ? "purple" : "gray"}
-          className="w-1/3"
+          className="w-full"
+          disabled={disabled}
           onClick={() => onOpening()}
         >
           {isSelected ? "Selected" : "Select"}
         </Button>
       </AlertDialog.Trigger>
-      <AlertDialog.Content maxWidth="450px" className="rounded-lg">
+      <AlertDialog.Content maxWidth="550px" className="rounded-lg">
         <Box className="py-4 text-center max-w-sm mx-auto">
           <Flex align={"center"} justify={"center"} gap={"3"} pb={"1"}>
             <Separator size={"3"} className="bg-font/30" />

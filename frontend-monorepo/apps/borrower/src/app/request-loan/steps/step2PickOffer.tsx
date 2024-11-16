@@ -1,15 +1,16 @@
 import { faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import type { LoanProductOption } from "@frontend-monorepo/base-http-client";
+import { LoanProductOption } from "@frontend-monorepo/base-http-client";
 import { CreateWalletModal, UnlockWalletModal, useWallet } from "@frontend-monorepo/browser-wallet";
 import type { LoanOffer } from "@frontend-monorepo/http-client-borrower";
+import { Integration } from "@frontend-monorepo/http-client-borrower";
 import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
-import type { StableCoin } from "@frontend-monorepo/ui-shared";
-import { AprInfoLabel } from "@frontend-monorepo/ui-shared";
+import { AbbreviationExplanationInfo, AprInfoLabel } from "@frontend-monorepo/ui-shared";
 import {
   formatCurrency,
   LoanAddressInputField,
   LtvInfoLabel,
+  StableCoin,
   StableCoinDropdown,
   StableCoinHelper,
   usePrice,
@@ -30,6 +31,7 @@ interface OfferFilter {
   minLtv: number | undefined;
   maxInterest: number | undefined;
   wantedCoin: StableCoin | undefined;
+  validCoins: StableCoin[];
   availableOffers: LoanOffer[];
   advanceSearch: boolean;
 }
@@ -38,6 +40,7 @@ const findBestOffer = ({
   loanAmount,
   duration,
   wantedCoin,
+  validCoins,
   minLtv,
   maxInterest,
   availableOffers,
@@ -55,6 +58,9 @@ const findBestOffer = ({
         return true;
       }
       return offer.duration_months_max >= duration && offer.duration_months_min <= duration;
+    }).filter((offer) => {
+      const offerCoin = StableCoinHelper.mapFromBackend(offer.loan_asset_chain, offer.loan_asset_type);
+      return validCoins.includes(offerCoin);
     }).filter((offer) => {
       if (advanceSearch && wantedCoin) {
         const mapFromBackend = StableCoinHelper.mapFromBackend(offer.loan_asset_chain, offer.loan_asset_type);
@@ -98,15 +104,38 @@ export const Step2PickOffer = () => {
     navigate("/requests");
   }
 
-  // TODO: use this option in a text or something to tell the user what he has picked
-  console.log(`Selected option ${selectedOption}`);
+  let validCoins: StableCoin[];
+  let integration: Integration | undefined;
+  let coinSelectHidden = false;
+  switch (selectedOption) {
+    case LoanProductOption.StableCoins:
+      validCoins = StableCoinHelper.all();
+      break;
+    case LoanProductOption.PayWithMoonDebitCard:
+      validCoins = [StableCoin.USDC_POL];
+      integration = Integration.PayWithMoon;
+      coinSelectHidden = true;
+      break;
+    case LoanProductOption.BitrefillDebitCard:
+    case LoanProductOption.BringinBankAccount:
+    default:
+      validCoins = [];
+  }
+
+  // We do not need the borrower to provide a loan address if they want to create a Pay with Moon
+  // card with their loan.
+  const needLoanAddress = integration !== Integration.PayWithMoon;
 
   const [advanceSearch, setAdvanceSearch] = useState<boolean>(false);
   const [bestOffer, setBestOffer] = useState<LoanOffer | undefined>();
   // Loan Amount
   const [loanAmount, setLoanAmount] = useState<number>(1);
+
+  const validCoin = validCoins[0];
+
   // Stable Coin
-  const [stableCoin, setStableCoin] = useState<StableCoin | undefined>(undefined);
+  const [stableCoin, setStableCoin] = useState<StableCoin | undefined>(validCoin);
+
   // Loan Duration
   const [loanDuration, setLoanDuration] = useState<number>(12);
   // maximum repayment time
@@ -119,7 +148,7 @@ export const Step2PickOffer = () => {
   const minLtvRate = 0.3;
   // LTV ratio
   const [ltv, setLtv] = useState<number | undefined>(undefined);
-  const [loanAddress, setLoanAddress] = useState("");
+  const [loanAddress, setLoanAddress] = useState<string | undefined>(undefined);
   const [btcAddress, setBtcAddress] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -145,6 +174,7 @@ export const Step2PickOffer = () => {
       loanAmount: loanAmount,
       duration: loanDuration,
       wantedCoin: stableCoin,
+      validCoins: validCoins,
       minLtv: ltv,
       maxInterest: maxInterest,
       availableOffers: availableOffers,
@@ -164,6 +194,7 @@ export const Step2PickOffer = () => {
       loanAmount: parsedLoanAmount,
       duration: loanDuration,
       wantedCoin: stableCoin,
+      validCoins: validCoins,
       minLtv: ltv,
       maxInterest: maxInterest,
       availableOffers: availableOffers,
@@ -183,6 +214,7 @@ export const Step2PickOffer = () => {
       loanAmount: loanAmount,
       duration: parsedDuration,
       wantedCoin: stableCoin,
+      validCoins: validCoins,
       minLtv: ltv,
       maxInterest: maxInterest,
       availableOffers: availableOffers,
@@ -197,6 +229,7 @@ export const Step2PickOffer = () => {
       loanAmount: loanAmount,
       duration: loanDuration,
       wantedCoin: selectedStableCoin,
+      validCoins: validCoins,
       minLtv: ltv,
       maxInterest: maxInterest,
       availableOffers: availableOffers,
@@ -218,6 +251,7 @@ export const Step2PickOffer = () => {
       loanAmount: loanAmount,
       duration: loanDuration,
       wantedCoin: stableCoin,
+      validCoins: validCoins,
       minLtv: parsedLtvUnified,
       maxInterest: maxInterest,
       availableOffers: availableOffers,
@@ -238,6 +272,7 @@ export const Step2PickOffer = () => {
       loanAmount: loanAmount,
       duration: loanDuration,
       wantedCoin: stableCoin,
+      validCoins: validCoins,
       minLtv: ltv,
       maxInterest: parsedInterestRateUnified,
       availableOffers: availableOffers,
@@ -262,6 +297,7 @@ export const Step2PickOffer = () => {
         borrower_btc_address: btcAddress,
         borrower_pk: borrowerPk,
         borrower_loan_address: loanAddress,
+        integration: integration,
       });
 
       if (res !== undefined) {
@@ -282,41 +318,8 @@ export const Step2PickOffer = () => {
       <Box className="p-6 md:p-8 ">
         <Box>
           <Heading as="h3" size={"6"} className="font-semibold text-font-dark">
-            Make a Request
+            Find a loan offer
           </Heading>
-          {advanceSearch
-            ? (
-              <Text size={"2"} as="p" weight={"medium"} className="text-font/70">
-                Want to go back to{"  "}
-                <Text
-                  size={"2"}
-                  as="span"
-                  onClick={() => {
-                    setAdvanceSearch(!advanceSearch);
-                  }}
-                  className="text-font font-semibold hover:text-purple-700 cursor-pointer"
-                >
-                  Simple search
-                </Text>{" "}
-                instead...
-              </Text>
-            )
-            : (
-              <Text size={"2"} as="p" weight={"medium"} className="text-font/70">
-                Want a more precise offer, perform{"  "}
-                <Text
-                  size={"2"}
-                  as="span"
-                  onClick={() => {
-                    setAdvanceSearch(!advanceSearch);
-                  }}
-                  className="text-font font-semibold hover:text-purple-700 cursor-pointer"
-                >
-                  Advance search
-                </Text>{" "}
-                instead...
-              </Text>
-            )}
         </Box>
         <Box mt={"7"}>
           <Form className="space-y-4" onSubmit={onShowOfferClick}>
@@ -378,17 +381,20 @@ export const Step2PickOffer = () => {
 
             {advanceSearch && (
               <>
-                {/* Stable Coin */}
-                <Box className="space-y-1">
-                  <Text className="text-font/70" as="label" size={"2"} weight={"medium"}>
-                    What stable coin do you need?
-                  </Text>
-                  <StableCoinDropdown
-                    coins={StableCoinHelper.all()}
-                    defaultCoin={stableCoin}
-                    onSelect={onStableCoinSelect}
-                  />
-                </Box>
+                {/* Stable Coin */ !coinSelectHidden
+                  && (
+                    <Box className="space-y-1">
+                      <Text className="text-font/70" as="label" size={"2"} weight={"medium"}>
+                        What stable coin do you need?
+                      </Text>
+                      <StableCoinDropdown
+                        coins={validCoins}
+                        defaultCoin={stableCoin}
+                        onSelect={onStableCoinSelect}
+                        disabled={coinSelectHidden}
+                      />
+                    </Box>
+                  )}
 
                 {/* Interest Rate */}
                 <Box className="space-y-1">
@@ -465,7 +471,18 @@ export const Step2PickOffer = () => {
                 </Callout.Root>
               )}
 
-            <Box className="flex space-x-4 w-full">
+            <Box className="flex space-x-4">
+              <Button
+                color="blue"
+                size="3"
+                variant="soft"
+                className="flex-1 font-medium rounded-lg"
+                loading={isLoading}
+                type="button"
+                onClick={() => setAdvanceSearch(!advanceSearch)}
+              >
+                {!advanceSearch ? "Advanced options" : "Back to simple search"}
+              </Button>
               <Button
                 color="purple"
                 size="3"
@@ -502,6 +519,7 @@ export const Step2PickOffer = () => {
                       bestOffer.loan_asset_type,
                     )}
                     loanAddress={loanAddress}
+                    needLoanAddress={needLoanAddress}
                     setLoanAddress={setLoanAddress}
                     btcAddress={btcAddress}
                     setBtcAddress={setBtcAddress}
@@ -516,6 +534,7 @@ export const Step2PickOffer = () => {
                       setOfferPicked(true);
                     }}
                     isLoading={isLoading}
+                    coinSelectHidden={coinSelectHidden}
                   />
                 </Box>
               </>
@@ -549,13 +568,15 @@ interface SearchParams {
   coin: StableCoin;
   onOfferSelected: () => void;
   onOfferConfirmed: () => void;
-  loanAddress: string;
+  loanAddress?: string;
+  needLoanAddress: boolean;
   setLoanAddress: (val: string) => void;
   btcAddress: string;
   setBtcAddress: (val: string) => void;
   setError: (val: string) => void;
   error: string;
   isLoading: boolean;
+  coinSelectHidden: boolean;
 }
 
 // Loan Display Component
@@ -565,6 +586,7 @@ const LoanSearched = (props: SearchParams) => {
   const [bitcoinAddressInputError, setBitcoinAddressInputError] = useState("");
   const [walletSecretConfirmed, setWalletSecretConfirmed] = useState(isWalletLoaded);
   const { latestPrice } = usePrice();
+
   const collateralAmountBtc = props.amount / latestPrice;
   const collateralUsdAmount = props.amount / props.ltv;
 
@@ -682,21 +704,34 @@ const LoanSearched = (props: SearchParams) => {
               </Text>
             </div>
           </Flex>
-          <Separator size={"4"} />
-          <Flex justify={"between"} align={"center"}>
-            <Text className="text-xs font-medium text-font/60">Coin</Text>
-            <Text className="text-[13px] font-semibold text-black/70 capitalize">
-              {StableCoinHelper.print(props.coin)}
-            </Text>
-          </Flex>
+          {!props.coinSelectHidden && (
+            <>
+              <Separator size={"4"} />
+              <Flex justify={"between"} align={"center"}>
+                <Text className="text-xs font-medium text-font/60">Coin</Text>
+                <Text className="text-[13px] font-semibold text-black/70 capitalize">
+                  {StableCoinHelper.print(props.coin)}
+                </Text>
+              </Flex>
+            </>
+          )}
           <Separator size={"4"} />
           {props.offerPicked && (
             <>
               <Flex direction={"column"} align={"start"} gap={"2"}>
                 <div className="flex items-center gap-2">
-                  <Text as="label" size={"2"} weight={"medium"}>
-                    Collateral Refund Address
-                  </Text>
+                  <AbbreviationExplanationInfo
+                    header={"Collateral Return Address"}
+                    subHeader={""}
+                    description={"The Bitcoin address where you want your collateral returned upon loan repayment."}
+                  >
+                    <Flex gap={"2"} align={"center"}>
+                      <Text size={"2"} weight={"medium"} className={"text-xs font-medium text-font/60"}>
+                        Collateral Refund Address
+                      </Text>
+                      <FaInfoCircle />
+                    </Flex>
+                  </AbbreviationExplanationInfo>
                   {/* Error message next to label */}
                   {bitcoinAddressInputError && <span className="text-red-500 text-sm">{bitcoinAddressInputError}</span>}
                 </div>
@@ -711,18 +746,24 @@ const LoanSearched = (props: SearchParams) => {
                   <TextField.Slot className="p-1.5" />
                 </TextField.Root>
               </Flex>
-              <Separator size={"4"} />
-              <Flex direction={"column"} align={"start"} gap={"2"}>
-                <Text as="label" size={"2"} weight={"medium"}>Wallet Address</Text>
-                <LoanAddressInputField
-                  loanAddress={props.loanAddress}
-                  setLoanAddress={props.setLoanAddress}
-                  hideButton={hideWalletConnectButton}
-                  setHideButton={setHideWalletConnectButton}
-                  assetChain={StableCoinHelper.toChain(props.coin)}
-                />
-              </Flex>
-              <Separator size={"4"} />
+              {props.needLoanAddress
+                ? (
+                  <>
+                    <Separator size={"4"} />
+                    <Flex direction={"column"} align={"start"} gap={"2"}>
+                      <Text as="label" size={"2"} weight={"medium"}>Wallet Address</Text>
+                      <LoanAddressInputField
+                        loanAddress={props.loanAddress ?? ""}
+                        setLoanAddress={props.setLoanAddress}
+                        hideButton={hideWalletConnectButton}
+                        setHideButton={setHideWalletConnectButton}
+                        assetChain={StableCoinHelper.toChain(props.coin)}
+                      />
+                    </Flex>
+                    <Separator size={"4"} />
+                  </>
+                )
+                : null}
             </>
           )}
           {!props.offerPicked
@@ -744,11 +785,11 @@ const LoanSearched = (props: SearchParams) => {
 
           {props.offerPicked
             && (
-              <Flex className="gap-4 justify-center">
+              <Box className="flex space-x-4 justify-center">
                 <Button
                   size={"3"}
                   variant="solid"
-                  className={`text-white ${!walletSecretConfirmed ? "bg-purple-950" : "bg-gray-400"} w-1/3`}
+                  className={`text-white ${!walletSecretConfirmed ? "bg-purple-950" : "bg-gray-400"}`}
                   onClick={() => handleUnlockOrCreateWallet()}
                   disabled={walletSecretConfirmed}
                   loading={props.isLoading}
@@ -760,11 +801,10 @@ const LoanSearched = (props: SearchParams) => {
                     Confirm Secret
                   </Text>
                 </Button>
-
                 <Button
                   size={"3"}
                   variant="solid"
-                  className={`text-white ${walletSecretConfirmed ? "bg-purple-950" : "bg-gray-400"} w-1/3`}
+                  className={`text-white ${walletSecretConfirmed ? "bg-purple-950" : "bg-gray-400"}`}
                   onClick={props.onOfferConfirmed}
                   disabled={!walletSecretConfirmed}
                   loading={props.isLoading}
@@ -776,7 +816,7 @@ const LoanSearched = (props: SearchParams) => {
                     Confirm Offer
                   </Text>
                 </Button>
-              </Flex>
+              </Box>
             )}
 
           {props.error

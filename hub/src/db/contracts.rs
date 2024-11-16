@@ -1,6 +1,7 @@
 use crate::model::db;
 use crate::model::Contract;
 use crate::model::ContractStatus;
+use crate::model::Integration;
 use anyhow::bail;
 use anyhow::Result;
 use bitcoin::address::NetworkUnchecked;
@@ -33,6 +34,7 @@ pub async fn load_contracts_by_borrower_id(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            integration as "integration: crate::model::db::Integration",
             lender_xpub,
             contract_address,
             contract_index,
@@ -77,6 +79,7 @@ pub async fn load_contracts_by_lender_id(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            integration as "integration: crate::model::db::Integration",
             lender_xpub,
             contract_address,
             contract_index,
@@ -118,6 +121,7 @@ async fn load_contract(pool: &Pool<Postgres>, contract_id: &str) -> Result<Contr
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            integration as "integration: crate::model::db::Integration",
             lender_xpub,
             contract_address,
             contract_index,
@@ -158,6 +162,7 @@ pub async fn load_contract_by_contract_id_and_borrower_id(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            integration as "integration: crate::model::db::Integration",
             lender_xpub,
             contract_address,
             contract_index,
@@ -200,6 +205,7 @@ pub async fn load_contract_by_contract_id_and_lender_id(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            integration as "integration: crate::model::db::Integration",
             lender_xpub,
             contract_address,
             contract_index,
@@ -238,6 +244,7 @@ pub async fn load_open_contracts(pool: &Pool<Postgres>) -> Result<Vec<Contract>>
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            integration as "integration: crate::model::db::Integration",
             lender_xpub,
             contract_address,
             contract_index,
@@ -267,6 +274,7 @@ pub async fn load_open_contracts(pool: &Pool<Postgres>) -> Result<Vec<Contract>>
 #[allow(clippy::too_many_arguments)]
 pub async fn insert_contract_request(
     pool: &Pool<Postgres>,
+    id: Uuid,
     borrower_id: &str,
     loan_id: &str,
     initial_ltv: Decimal,
@@ -277,11 +285,13 @@ pub async fn insert_contract_request(
     borrower_btc_address: Address<NetworkUnchecked>,
     borrower_pk: PublicKey,
     borrower_loan_address: &str,
+    integration: Option<Integration>,
 ) -> Result<Contract> {
-    let id = Uuid::new_v4().to_string();
+    let id = id.to_string();
     let initial_collateral_sats = initial_collateral_sats as i64;
     let origination_fee_sats = origination_fee_sats as i64;
     let collateral_sats = 0;
+    let integration = integration.map(db::Integration::from);
 
     let lender_id_row = sqlx::query!(
         r#"
@@ -315,9 +325,10 @@ pub async fn insert_contract_request(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            integration,
             contract_address,
             contract_index
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
         RETURNING
             id,
             lender_id,
@@ -331,6 +342,7 @@ pub async fn insert_contract_request(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            integration as "integration: crate::model::db::Integration",
             lender_xpub,
             contract_address,
             contract_index,
@@ -340,7 +352,7 @@ pub async fn insert_contract_request(
             created_at,
             updated_at
         "#,
-        id,
+        id.as_str(),
         lender_id,
         borrower_id,
         loan_id,
@@ -355,6 +367,7 @@ pub async fn insert_contract_request(
         borrower_btc_address.assume_checked().to_string(),
         borrower_pk.to_string(),
         borrower_loan_address,
+        integration as Option<db::Integration>,
         None as Option<String>,
         None as Option<i32>,
     )
@@ -396,6 +409,7 @@ pub async fn accept_contract_request(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            integration as "integration: crate::model::db::Integration",
             lender_xpub,
             contract_address,
             contract_index,
@@ -444,6 +458,7 @@ pub async fn mark_contract_as_principal_given(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            integration as "integration: crate::model::db::Integration",
             lender_xpub,
             contract_address,
             contract_index,
@@ -485,6 +500,7 @@ pub async fn mark_contract_as_repaid(pool: &Pool<Postgres>, contract_id: &str) -
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            integration as "integration: crate::model::db::Integration",
             lender_xpub,
             contract_address,
             contract_index,
@@ -526,6 +542,7 @@ pub async fn mark_contract_as_closed(pool: &Pool<Postgres>, contract_id: &str) -
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            integration as "integration: crate::model::db::Integration",
             lender_xpub,
             contract_address,
             contract_index,
@@ -570,6 +587,7 @@ pub async fn mark_contract_as_closing(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            integration as "integration: crate::model::db::Integration",
             lender_xpub,
             contract_address,
             contract_index,
@@ -615,6 +633,7 @@ pub async fn reject_contract_request(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            integration as "integration: crate::model::db::Integration",
             lender_xpub,
             contract_address,
             contract_index,
@@ -661,6 +680,7 @@ pub(crate) async fn mark_liquidation_state_as(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            integration as "integration: crate::model::db::Integration",
             lender_xpub,
             contract_address,
             contract_index,
@@ -706,6 +726,7 @@ pub(crate) async fn mark_contract_as(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            integration as "integration: crate::model::db::Integration",
             lender_xpub,
             contract_address,
             contract_index,
@@ -744,6 +765,7 @@ pub(crate) async fn load_open_not_liquidated_contracts(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            integration as "integration: crate::model::db::Integration",
             lender_xpub,
             contract_address,
             contract_index,
@@ -892,6 +914,7 @@ pub async fn update_collateral(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            integration as "integration: crate::model::db::Integration",
             lender_xpub,
             contract_address,
             contract_index,

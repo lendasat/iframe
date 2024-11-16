@@ -3,6 +3,7 @@ use crate::email::Email;
 use crate::mempool;
 use crate::model::ContractRequestSchema;
 use crate::model::ContractStatus;
+use crate::model::Integration;
 use crate::model::LiquidationStatus;
 use crate::model::LoanAssetChain;
 use crate::model::LoanAssetType;
@@ -13,6 +14,7 @@ use crate::routes::borrower::auth::jwt_auth;
 use crate::routes::AppState;
 use crate::routes::ErrorResponse;
 use anyhow::bail;
+use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Result;
 use axum::extract::Path;
@@ -39,6 +41,7 @@ use time::ext::NumericalDuration;
 use time::format_description;
 use time::OffsetDateTime;
 use tracing::instrument;
+use uuid::Uuid;
 
 pub(crate) fn router(app_state: Arc<AppState>) -> Router {
     Router::new()
@@ -334,6 +337,42 @@ pub async fn post_contract_request(
             .await?
             .context("No loan offer for contract")?;
 
+        let contract_id = Uuid::new_v4();
+        let (borrower_loan_address, moon_invoice) = match body.integration {
+            None => (
+                body.borrower_loan_address
+                    .context("Must provide a borrower loan address without integration")?,
+                None,
+            ),
+            Some(Integration::PayWithMoon) => {
+                ensure!(
+                    offer.loan_asset_chain == LoanAssetChain::Polygon
+                        && offer.loan_asset_type == LoanAssetType::Usdc,
+                    "Pay with Moon only supports USDC on Polygon"
+                );
+
+                let cards = db::moon::get_borrower_cards(&data.db, user.id.as_str())
+                    .await
+                    .context("Could not load from db")?;
+                if !cards.is_empty() {
+                    bail!("Only one card per user is allowed at the moment");
+                }
+
+                let invoice = data
+                    .moon
+                    .generate_invoice(
+                        body.loan_amount,
+                        contract_id.to_string(),
+                        offer.lender_id,
+                        user.id.as_str(),
+                    )
+                    .await
+                    .context("Generate Moon invoice")?;
+
+                (invoice.address.clone(), Some(invoice))
+            }
+        };
+
         let price = get_bitmex_index_price(OffsetDateTime::now_utc()).await?;
         let ltv = offer.min_ltv;
 
@@ -356,6 +395,7 @@ pub async fn post_contract_request(
 
         let contract = db::contracts::insert_contract_request(
             &data.db,
+            contract_id,
             user.id.as_str(),
             &body.loan_id,
             offer.min_ltv,
@@ -365,7 +405,8 @@ pub async fn post_contract_request(
             body.duration_months,
             body.borrower_btc_address,
             body.borrower_pk,
-            body.borrower_loan_address.as_str(),
+            borrower_loan_address.as_str(),
+            body.integration,
         )
         .await?;
 
@@ -410,6 +451,13 @@ pub async fn post_contract_request(
             expiry,
         };
 
+        if let Some(invoice) = moon_invoice {
+            data.moon
+                .persist_invoice(&invoice)
+                .await
+                .context("Persist Moon invoice")?;
+        }
+
         let loan_url = format!(
             "{}/my-contracts/{}",
             data.config.lender_frontend_origin.to_owned(),
@@ -426,8 +474,10 @@ pub async fn post_contract_request(
     }
     .await
     .map_err(|error| {
+        // TODO: while convenient to have one big error catch block, it is not ideal to
+        // differentiate between different error types
         let error_response = ErrorResponse {
-            message: format!("Database error: {}", error),
+            message: format!("{:#}", error),
         };
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
     })?;

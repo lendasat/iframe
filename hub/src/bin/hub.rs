@@ -9,6 +9,7 @@ use hub::db::run_migration;
 use hub::liquidation_engine::monitor_positions;
 use hub::logger::init_tracing;
 use hub::mempool;
+use hub::moon;
 use hub::routes::borrower::spawn_borrower_server;
 use hub::routes::lender::spawn_lender_server;
 use hub::wallet::Wallet;
@@ -95,21 +96,47 @@ async fn main() -> Result<()> {
         }
     });
 
+    let moon_client = Arc::new(moon::Manager::new(db.clone(), config.clone()));
+
     let borrower_server = spawn_borrower_server(
         config.clone(),
         wallet.clone(),
         db.clone(),
         mempool_addr.clone(),
         broadcast_state.clone(),
+        moon_client.clone(),
     )
     .await?;
 
-    let lender_server =
-        spawn_lender_server(config, wallet, db, mempool_addr, broadcast_state).await?;
+    let lender_server = spawn_lender_server(
+        config,
+        wallet,
+        db,
+        mempool_addr,
+        broadcast_state,
+        moon_client.clone(),
+    )
+    .await?;
 
-    let _ = tokio::join!(borrower_server, lender_server);
+    let borrower_handle = tokio::spawn(borrower_server);
+    let lender_handle = tokio::spawn(lender_server);
+
+    // We need the borrower server to be started already for this.
+    tokio::spawn(register_webhook_in_thread(moon_client));
+
+    let _ = tokio::join!(borrower_handle, lender_handle);
 
     tracing::info!("Servers stopped");
+
+    Ok(())
+}
+
+async fn register_webhook_in_thread(moon_client: Arc<moon::Manager>) -> Result<()> {
+    // We wait for 5 seconds to
+    tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+
+    // Call the register_webhook function
+    moon_client.register_webhook().await?;
 
     Ok(())
 }

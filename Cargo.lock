@@ -1660,6 +1660,7 @@ dependencies = [
  "mime_guess",
  "miniscript 12.2.0",
  "native-tls",
+ "pay-with-moon",
  "rand",
  "reqwest",
  "rust_decimal",
@@ -2350,6 +2351,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 
 [[package]]
+name = "pay-with-moon"
+version = "0.1.0"
+dependencies = [
+ "dotenv",
+ "reqwest",
+ "rust_decimal",
+ "rust_decimal_macros",
+ "serde",
+ "serde_json",
+ "time",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
 name = "pem"
 version = "3.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2757,9 +2773,9 @@ dependencies = [
 
 [[package]]
 name = "reqwest"
-version = "0.12.7"
+version = "0.12.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f8f4955649ef5c38cc7f9e8aa41761d48fb9677197daea9984dc54f56aad5e63"
+checksum = "f713147fbe92361e52392c73b8c9e48c04c6625bce969ef54dc901e58e042a7b"
 dependencies = [
  "base64 0.22.1",
  "bytes",
@@ -3675,6 +3691,7 @@ dependencies = [
  "hex",
  "hub",
  "mempool-mock",
+ "pay-with-moon",
  "rand",
  "reqwest",
  "rust_decimal",
@@ -3686,6 +3703,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+ "uuid",
 ]
 
 [[package]]

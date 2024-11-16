@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO moon_invoices (\n            id,\n            address,\n            usd_amount_owed,\n            contract_id,\n            lender_id,\n            borrower_id\n        ) VALUES ($1, $2, $3, $4, $5, $6)\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Text",
+        "Numeric",
+        "Bpchar",
+        "Bpchar",
+        "Bpchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4ad757c0c958a599f468feeae390352347b635c13319fc5ce6f47f04ac02d3d1"
+}

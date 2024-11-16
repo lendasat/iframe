@@ -169,6 +169,7 @@ export function RequestLoanSummaryInner({ loanOffer, loanFilter }: RequestLoanSu
         borrower_btc_address: btcAddress,
         borrower_pk: borrowerPk,
         borrower_loan_address: loanAddress,
+        integration: undefined,
       });
 
       if (res !== undefined) {

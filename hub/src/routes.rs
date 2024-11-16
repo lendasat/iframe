@@ -1,5 +1,6 @@
 use crate::config::Config;
 use crate::mempool;
+use crate::moon;
 use crate::wallet::Wallet;
 use axum::extract::ws::Message;
 use serde::Serialize;
@@ -25,4 +26,5 @@ pub struct AppState {
     config: Config,
     mempool: xtra::Address<mempool::Actor>,
     connections: Arc<Mutex<Vec<mpsc::UnboundedSender<Message>>>>,
+    moon: Arc<moon::Manager>,
 }

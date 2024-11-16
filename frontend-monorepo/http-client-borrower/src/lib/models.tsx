@@ -71,7 +71,8 @@ export interface ContractRequest {
   duration_months: number;
   borrower_btc_address: string;
   borrower_pk: string;
-  borrower_loan_address: string;
+  borrower_loan_address?: string;
+  integration?: Integration;
 }
 
 export interface Contract {
@@ -223,30 +224,10 @@ export function findBestOriginationFee(
 export interface UserCardDetail {
   id: number;
   balance: number;
-  outgoing: number;
-  cardNumber: number;
-  cardCvv: number;
-  expiry: number;
-}
-
-export interface CardTransactionInformation {
-  transactionType: CardTransactionType;
-  cardUsed: string;
-  status: CardTransactionStatus;
-  amount: number;
-  date: number;
-}
-
-export enum CardTransactionStatus {
-  InProcess = "in process",
-  Completed = "completed",
-  Failed = "failed",
-  Pending = "pending",
-}
-
-export enum CardTransactionType {
-  IncomingLoan = "incoming Loan",
-  Payment = "payment",
+  available_balance: number;
+  pan: number;
+  cvv: number;
+  expiration: Date;
 }
 
 export class FeatureMapper {
@@ -262,4 +243,39 @@ export class FeatureMapper {
       return mappedFeature ? [mappedFeature] : [];
     });
   }
+}
+
+export enum Integration {
+  PayWithMoon = "PayWithMoon",
+}
+
+export enum CardTransactionStatus {
+  Authorization = "Authorization",
+  Reversal = "Reversal",
+  Clearing = "Clearing",
+  Refund = "Refund",
+  Pending = "Pending",
+}
+
+// Needed for the Unknown variant
+export type CardTransactionStatusType = CardTransactionStatus | string;
+
+export interface CardTransaction {
+  transaction_id: string;
+  transaction_status: CardTransactionStatusType;
+  date: Date;
+  merchant: string;
+  amount: number;
+  ledger_currency: string;
+  amount_fees_in_ledger_currency: number;
+  amount_in_transaction_currency: number;
+  transaction_currency: string;
+  amount_fees_in_transaction_currency: number;
+  fees: Fee[];
+}
+
+export interface Fee {
+  type: string;
+  amount: number;
+  fee_description: string;
 }

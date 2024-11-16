@@ -1,0 +1,82 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT\n            id,\n            balance,\n            available_balance,\n            expiration,\n            pan,\n            cvv,\n            support_token,\n            product_id,\n            end_customer_id,\n            contract_id,\n            borrower_id\n        FROM moon_cards\n        where borrower_id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "balance",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 2,
+        "name": "available_balance",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 3,
+        "name": "expiration",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
+        "name": "pan",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "cvv",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "support_token",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "product_id",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 8,
+        "name": "end_customer_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "contract_id",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 10,
+        "name": "borrower_id",
+        "type_info": "Bpchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bpchar"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "24d6550463a496a5c3244a7b439c317668fd67eb0942638ed3e92fd0091de280"
+}
