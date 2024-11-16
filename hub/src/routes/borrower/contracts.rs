@@ -351,6 +351,13 @@ pub async fn post_contract_request(
                     "Pay with Moon only supports USDC on Polygon"
                 );
 
+                let cards = db::moon::get_borrower_cards(&data.db, user.id.as_str())
+                    .await
+                    .context("Could not load from db")?;
+                if !cards.is_empty() {
+                    bail!("Only one card per user is allowed at the moment");
+                }
+
                 let invoice = data
                     .moon
                     .generate_invoice(
@@ -467,8 +474,10 @@ pub async fn post_contract_request(
     }
     .await
     .map_err(|error| {
+        // TODO: while convenient to have one big error catch block, it is not ideal to
+        // differentiate between different error types
         let error_response = ErrorResponse {
-            message: format!("Database error: {:#}", error),
+            message: format!("{:#}", error),
         };
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
     })?;
