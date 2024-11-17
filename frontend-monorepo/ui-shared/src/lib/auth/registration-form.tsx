@@ -1,18 +1,26 @@
-import { Box, Button, Callout, Grid, Heading, IconButton, Spinner, Text } from "@radix-ui/themes";
+import { Box, Button, Callout, Flex, Grid, Heading, IconButton, Spinner, Text } from "@radix-ui/themes";
+import { Link as RadixLink } from "@radix-ui/themes/dist/cjs/components/link";
 import type { FormEvent } from "react";
 import { useState } from "react";
 import { Form } from "react-bootstrap";
-import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
+import { FaInfoCircle, FaRegEye, FaRegEyeSlash } from "react-icons/fa";
 import { IoInformationCircleOutline } from "react-icons/io5";
 import { RiUserLine } from "react-icons/ri";
 import { Link } from "react-router-dom";
 import Background from "./../assets/background-art.jpeg";
 import Dashboard from "./../assets/background-art.png";
 import { ReactComponent as Logo } from "./../assets/lendasat_svg_logo.svg";
+import AbbreviationExplanationInfo from "../components/abbreviation-explanation-info";
 import TypeField from "../components/TypeField";
 
 interface RegistrationFormProps {
-  handleRegister: (name: string, email: string, password: string, inviteCode?: string) => Promise<void>;
+  handleRegister: (
+    name: string,
+    email: string,
+    password: string,
+    contractSecret: string,
+    inviteCode?: string,
+  ) => Promise<void>;
 }
 
 export function RegistrationForm({ handleRegister }: RegistrationFormProps) {
@@ -25,10 +33,13 @@ export function RegistrationForm({ handleRegister }: RegistrationFormProps) {
   const [email, setEmail] = useState("");
   const [inviteCode, setInviteCode] = useState<string>(defaultInviteCode);
   const [password, setPassword] = useState("");
+  const [contractSecret, setContractSecret] = useState("");
+  const [confirmContractSecret, setConfirmContractSecret] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isVisible, setIsVisible] = useState(false);
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [isContractSecretVisible, setIsContractSecretVisible] = useState(false);
 
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -38,9 +49,15 @@ export function RegistrationForm({ handleRegister }: RegistrationFormProps) {
       setIsLoading(false);
       return;
     }
+    if (contractSecret !== confirmContractSecret) {
+      setError("Contract secrets do not match");
+      setIsLoading(false);
+      return;
+    }
+
     setError("");
     try {
-      await handleRegister(name, email, password, inviteCode);
+      await handleRegister(name, email, password, contractSecret, inviteCode);
     } catch (err) {
       console.error("Failed registering user:", err);
       setError(err instanceof Error ? err.message : "Registration failed.");
@@ -87,32 +104,31 @@ export function RegistrationForm({ handleRegister }: RegistrationFormProps) {
             </Box>
 
             {/* Password */}
-            <Box className="text-left mt-3">
-              <Text as="label" size={"1"} weight={"medium"} className="text-font/70 mb-2">Password</Text>
-              <TypeField
-                type={isVisible ? "text" : "password"}
-                placeholder="••••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              >
-                <IconButton
-                  type="button"
-                  variant="ghost"
-                  color="gray"
-                  className="hover:bg-transparent"
-                  onClick={() => setIsVisible(!isVisible)}
+            <div className="flex gap-4">
+              <Box className="text-left flex-1">
+                <Text as="label" size={"1"} weight={"medium"} className="text-font/70 mb-2">Password</Text>
+                <TypeField
+                  type={isPasswordVisible ? "text" : "password"}
+                  placeholder="••••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                 >
-                  {isVisible ? <FaRegEye /> : <FaRegEyeSlash />}
-                </IconButton>
-              </TypeField>
-            </Box>
+                  <IconButton
+                    type="button"
+                    variant="ghost"
+                    color="gray"
+                    className="hover:bg-transparent"
+                    onClick={() => setIsPasswordVisible(!isPasswordVisible)}
+                  >
+                    {isPasswordVisible ? <FaRegEye /> : <FaRegEyeSlash />}
+                  </IconButton>
+                </TypeField>
+              </Box>
 
-            {/* Confirm Password */}
-            <Box className="text-left mt-3">
-              <Box>
+              <Box className="text-left flex-1">
                 <Text as="label" size={"1"} weight={"medium"} className="text-font/70 mb-2">Confirm Password</Text>
                 <TypeField
-                  type={isVisible ? "text" : "password"}
+                  type={isPasswordVisible ? "text" : "password"}
                   placeholder="••••••••••"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
@@ -122,13 +138,86 @@ export function RegistrationForm({ handleRegister }: RegistrationFormProps) {
                     variant="ghost"
                     color="gray"
                     className="hover:bg-transparent"
-                    onClick={() => setIsVisible(!isVisible)}
+                    onClick={() => setIsPasswordVisible(!isPasswordVisible)}
                   >
-                    {isVisible ? <FaRegEye /> : <FaRegEyeSlash />}
+                    {isPasswordVisible ? <FaRegEye /> : <FaRegEyeSlash />}
                   </IconButton>
                 </TypeField>
               </Box>
-            </Box>
+            </div>
+
+            {/* Secret password */}
+            <div className="flex gap-4">
+              <Box className="text-left flex-1">
+                <AbbreviationExplanationInfo
+                  header={"Contract Secret"}
+                  subHeader={""}
+                  description={"The contract secret is your password for all your contracts. It cannot be changed. Make sure to back it up safely. At this time this password cannot be changed. "}
+                >
+                  <RadixLink
+                    href="https://lendasat.notion.site/Frequently-Asked-Questions-100d2f24d4cf800e83bbca7cff3bb707"
+                    target="_blank"
+                  >
+                    <Flex align={"center"} gap={"2"} className="text-font-dark mb-2">
+                      <Text as="label" size={"1"} weight={"medium"} className="text-font/70">Contract Secret</Text>
+                      <FaInfoCircle />
+                    </Flex>
+                  </RadixLink>
+                </AbbreviationExplanationInfo>
+                <TypeField
+                  type={isContractSecretVisible ? "text" : "password"}
+                  placeholder="••••••••••"
+                  value={contractSecret}
+                  onChange={(e) => setContractSecret(e.target.value)}
+                >
+                  <IconButton
+                    type="button"
+                    variant="ghost"
+                    color="gray"
+                    className="hover:bg-transparent"
+                    onClick={() => setIsContractSecretVisible(!isContractSecretVisible)}
+                  >
+                    {isContractSecretVisible ? <FaRegEye /> : <FaRegEyeSlash />}
+                  </IconButton>
+                </TypeField>
+              </Box>
+
+              <Box className="text-left flex-1">
+                <AbbreviationExplanationInfo
+                  header={"Contract Secret"}
+                  subHeader={""}
+                  description={"The contract secret is your password for all your contracts. Make sure to back it up safely. At this time this password cannot be changed."}
+                >
+                  <RadixLink
+                    href="https://lendasat.notion.site/Frequently-Asked-Questions-100d2f24d4cf800e83bbca7cff3bb707"
+                    target="_blank"
+                  >
+                    <Flex align={"center"} gap={"2"} className="text-font-dark mb-2">
+                      <Text as="label" size={"1"} weight={"medium"} className="text-font/70">
+                        Confirm Contract Secret
+                      </Text>
+                      <FaInfoCircle />
+                    </Flex>
+                  </RadixLink>
+                </AbbreviationExplanationInfo>
+                <TypeField
+                  type={isContractSecretVisible ? "text" : "password"}
+                  placeholder="••••••••••"
+                  value={confirmContractSecret}
+                  onChange={(e) => setConfirmContractSecret(e.target.value)}
+                >
+                  <IconButton
+                    type="button"
+                    variant="ghost"
+                    color="gray"
+                    className="hover:bg-transparent"
+                    onClick={() => setIsContractSecretVisible(!isContractSecretVisible)}
+                  >
+                    {isContractSecretVisible ? <FaRegEye /> : <FaRegEyeSlash />}
+                  </IconButton>
+                </TypeField>
+              </Box>
+            </div>
 
             {/* Referral Code */}
             <Box>

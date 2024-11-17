@@ -1,4 +1,4 @@
-import type { User, Version } from "@frontend-monorepo/base-http-client";
+import type { LoginResponse, User, Version } from "@frontend-monorepo/base-http-client";
 import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
 import axios from "axios";
 import type { FC, ReactNode } from "react";
@@ -9,7 +9,7 @@ import { HttpClientLenderProvider } from "./http-client-lender";
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<LoginResponse>;
   logout: () => Promise<void>;
   backendVersion: Version;
 }
@@ -104,7 +104,7 @@ const LenderAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) => {
   const login = async (email: string, password: string) => {
     setLoading(true);
     try {
-      await baseLogin(email, password);
+      const loginResponse = await baseLogin(email, password);
       const currentUser = await me();
       if (currentUser) {
         setUser(currentUser.user);
@@ -115,6 +115,7 @@ const LenderAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) => {
         const version = await getVersion();
         setBackendVersion(version);
       }
+      return loginResponse;
     } catch (error) {
       console.error("Login failed:", error);
       throw error;

@@ -8,6 +8,7 @@ use crate::db::lenders::update_password_reset_token_for_user;
 use crate::db::lenders::update_user_password;
 use crate::db::lenders::user_exists;
 use crate::db::lenders::verify_user;
+use crate::db::wallet_backups::NewLenderWalletBackup;
 use crate::email::Email;
 use crate::model::ForgotPasswordSchema;
 use crate::model::LoginUserSchema;
@@ -15,6 +16,7 @@ use crate::model::RegisterUserSchema;
 use crate::model::ResetPasswordSchema;
 use crate::model::TokenClaims;
 use crate::model::User;
+use crate::model::WalletBackupData;
 use crate::routes::lender::auth::jwt_auth::auth;
 use crate::routes::AppState;
 use axum::extract::Path;
@@ -155,6 +157,24 @@ pub async fn register_user_handler(
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
     })?;
 
+    db::wallet_backups::insert_lender_backup(
+        &data.db,
+        NewLenderWalletBackup {
+            lender_id: user.id.clone(),
+            passphrase_hash: body.wallet_backup_data.passphrase_hash,
+            mnemonic_ciphertext: body.wallet_backup_data.mnemonic_ciphertext,
+            network: body.wallet_backup_data.network,
+            xpub: body.wallet_backup_data.xpub,
+        },
+    )
+    .await
+    .map_err(|e| {
+        let error_response = ErrorResponse {
+            message: format!("Database error: {}", e),
+        };
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+    })?;
+
     //  Create an Email instance
     let email = user.email.clone();
     let verification_url = format!(
@@ -180,6 +200,13 @@ pub async fn register_user_handler(
     let user_response = serde_json::json!({"message": format!("We sent an email with a verification code to {}", email)});
 
     Ok(Json(user_response))
+}
+
+#[derive(Serialize)]
+struct LoginResponse {
+    token: String,
+    user: FilteredUser,
+    wallet_backup_data: WalletBackupData,
 }
 
 #[instrument(skip_all, err(Debug))]
@@ -245,7 +272,32 @@ pub async fn login_user_handler(
         .same_site(SameSite::Lax)
         .http_only(true);
 
-    let mut response = Response::new(json!({"token": token}).to_string());
+    let wallet_backup = db::wallet_backups::find_by_lender_id(&data.db, user.id.as_str())
+        .await
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Failed reading wallet backup: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
+
+    let wallet_backup_data = WalletBackupData {
+        passphrase_hash: wallet_backup.passphrase_hash,
+        mnemonic_ciphertext: wallet_backup.mnemonic_ciphertext,
+        network: wallet_backup.network,
+        xpub: wallet_backup.xpub,
+    };
+
+    let filtered_user = FilteredUser::new_user(&user);
+
+    let response = json!(LoginResponse {
+        token,
+        wallet_backup_data,
+        user: filtered_user
+    })
+    .to_string();
+
+    let mut response = Response::new(response);
     response.headers_mut().insert(
         header::SET_COOKIE,
         cookie.to_string().parse().map_err(|error| {

@@ -1,4 +1,4 @@
-import type { User, Version } from "@frontend-monorepo/base-http-client";
+import type { LoginResponse, User, Version } from "@frontend-monorepo/base-http-client";
 import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
 import type { LoanProductOption } from "@frontend-monorepo/base-http-client";
 import axios from "axios";
@@ -12,7 +12,7 @@ import { FeatureMapper } from "./models";
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<LoginResponse>;
   logout: () => Promise<void>;
   backendVersion: Version;
   enabledFeatures: LoanProductOption[];
@@ -179,6 +179,7 @@ const BorrowerAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) =>
         const version = await getVersion();
         setBackendVersion(version);
       }
+      return loginResponse;
     } catch (error) {
       console.error("Login failed:", error);
       throw error;

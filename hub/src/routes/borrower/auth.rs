@@ -8,6 +8,7 @@ use crate::db::borrowers::update_password_reset_token_for_user;
 use crate::db::borrowers::update_user_password;
 use crate::db::borrowers::user_exists;
 use crate::db::borrowers::verify_user;
+use crate::db::wallet_backups::NewBorrowerWalletBackup;
 use crate::email::Email;
 use crate::model::ForgotPasswordSchema;
 use crate::model::LoginUserSchema;
@@ -15,7 +16,9 @@ use crate::model::RegisterUserSchema;
 use crate::model::ResetPasswordSchema;
 use crate::model::TokenClaims;
 use crate::model::User;
+use crate::model::WalletBackupData;
 use crate::routes::borrower::auth::jwt_auth::auth;
+use crate::routes::lender::auth::FilteredUser;
 use crate::routes::AppState;
 use axum::extract::Path;
 use axum::extract::State;
@@ -155,6 +158,24 @@ pub async fn register_user_handler(
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
     })?;
 
+    db::wallet_backups::insert_borrower_backup(
+        &data.db,
+        NewBorrowerWalletBackup {
+            borrower_id: user.id.clone(),
+            passphrase_hash: body.wallet_backup_data.passphrase_hash,
+            mnemonic_ciphertext: body.wallet_backup_data.mnemonic_ciphertext,
+            network: body.wallet_backup_data.network,
+            xpub: body.wallet_backup_data.xpub,
+        },
+    )
+    .await
+    .map_err(|e| {
+        let error_response = ErrorResponse {
+            message: format!("Database error: {}", e),
+        };
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+    })?;
+
     //  Create an Email instance
     let email = user.email.clone();
     let verification_url = format!(
@@ -193,6 +214,7 @@ pub struct LoginResponse {
     pub token: String,
     pub enabled_features: Vec<BorrowerLoanFeature>,
     pub user: FilteredUser,
+    pub wallet_backup_data: WalletBackupData,
 }
 
 #[instrument(skip_all, err(Debug))]
@@ -290,6 +312,22 @@ pub async fn login_user_handler(
 
     let filtered_user = FilteredUser::new_user(&user);
 
+    let wallet_backup = db::wallet_backups::find_by_borrower_id(&data.db, user.id.as_str())
+        .await
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Failed reading wallet backup: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
+
+    let wallet_backup_data = WalletBackupData {
+        passphrase_hash: wallet_backup.passphrase_hash,
+        mnemonic_ciphertext: wallet_backup.mnemonic_ciphertext,
+        network: wallet_backup.network,
+        xpub: wallet_backup.xpub,
+    };
+
     let response = Response::builder()
         .status(StatusCode::OK)
         .header(header::SET_COOKIE.as_str(), cookie.to_string().as_str())
@@ -297,7 +335,8 @@ pub async fn login_user_handler(
             json!(LoginResponse {
                 token,
                 enabled_features: features,
-                user: filtered_user
+                user: filtered_user,
+                wallet_backup_data
             })
             .to_string(),
         )
@@ -563,33 +602,6 @@ pub async fn check_auth_handler(
     Extension(_user): Extension<User>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     Ok(())
-}
-
-#[derive(Debug, Serialize)]
-pub struct FilteredUser {
-    pub id: String,
-    pub name: String,
-    pub email: String,
-    pub verified: bool,
-    #[serde(with = "time::serde::rfc3339")]
-    pub created_at: OffsetDateTime,
-    #[serde(with = "time::serde::rfc3339")]
-    pub updated_at: OffsetDateTime,
-}
-
-impl FilteredUser {
-    pub fn new_user(user: &User) -> Self {
-        let created_at_utc = user.created_at;
-        let updated_at_utc = user.updated_at;
-        Self {
-            id: user.id.to_string(),
-            email: user.email.to_owned(),
-            name: user.name.to_owned(),
-            verified: user.verified,
-            created_at: created_at_utc,
-            updated_at: updated_at_utc,
-        }
-    }
 }
 
 #[derive(Serialize, Debug)]

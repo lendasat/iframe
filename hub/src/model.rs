@@ -67,6 +67,15 @@ pub struct RegisterUserSchema {
     pub password: String,
     #[serde(deserialize_with = "empty_string_is_none")]
     pub invite_code: Option<String>,
+    pub wallet_backup_data: WalletBackupData,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct WalletBackupData {
+    pub passphrase_hash: String,
+    pub mnemonic_ciphertext: String,
+    pub network: String,
+    pub xpub: String,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -644,4 +653,31 @@ pub struct BorrowerLoanFeature {
     pub name: String,
     pub description: Option<String>,
     pub is_enabled: bool,
+}
+
+#[derive(Debug, Serialize)]
+pub struct FilteredUser {
+    pub id: String,
+    pub name: String,
+    pub email: String,
+    pub verified: bool,
+    #[serde(with = "time::serde::rfc3339")]
+    pub created_at: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339")]
+    pub updated_at: OffsetDateTime,
+}
+
+impl FilteredUser {
+    pub fn new_user(user: &User) -> Self {
+        let created_at_utc = user.created_at;
+        let updated_at_utc = user.updated_at;
+        Self {
+            id: user.id.to_string(),
+            email: user.email.to_owned(),
+            name: user.name.to_owned(),
+            verified: user.verified,
+            created_at: created_at_utc,
+            updated_at: updated_at_utc,
+        }
+    }
 }

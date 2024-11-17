@@ -24,10 +24,15 @@ export const Step1PickOption = ({ onSelect, selectedOption }: Step1Props) => {
   const { getUserCards } = useBorrowerHttpClient();
 
   const { loading, value, error } = useAsync(async () => {
-    return getUserCards();
+    if (enabledFeatures.includes(LoanProductOption.PayWithMoonDebitCard)) {
+      return getUserCards();
+    }
+    return [];
   });
 
-  console.error(`Failed fetching credit cards ${error}`);
+  if (error) {
+    console.error(`Failed fetching credit cards ${error}`);
+  }
 
   const hasAlreadyCard = loading ? true : value ? value.length > 0 : false;
 

@@ -8,6 +8,7 @@ pub mod loan_offers;
 pub mod loan_requests;
 pub mod moon;
 pub mod transactions;
+pub mod wallet_backups;
 
 use anyhow::Result;
 use sqlx::postgres::PgPoolOptions;

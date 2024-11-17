@@ -17,6 +17,7 @@ export interface LoginResponse {
   token: string;
   enabled_features: LoanFeature[];
   user: User;
+  wallet_backup_data: WalletBackupData;
 }
 
 export interface LoanFeature {
@@ -36,4 +37,11 @@ export enum LoanProductOption {
 export interface MeResponse {
   user: User;
   enabled_features: LoanFeature[];
+}
+
+export interface WalletBackupData {
+  passphrase_hash: string;
+  mnemonic_ciphertext: string;
+  network: string;
+  xpub: string;
 }

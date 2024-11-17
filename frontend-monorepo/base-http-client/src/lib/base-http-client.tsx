@@ -1,7 +1,7 @@
 import type { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import axios from "axios";
 import { createContext, useContext } from "react";
-import type { LoginResponse, MeResponse, Version } from "./models";
+import type { LoginResponse, MeResponse, Version, WalletBackupData } from "./models";
 
 export class BaseHttpClient {
   public httpClient: AxiosInstance;
@@ -40,9 +40,21 @@ export class BaseHttpClient {
     }
   }
 
-  async register(name: string, email: string, password: string, inviteCode?: string): Promise<void> {
+  async register(
+    name: string,
+    email: string,
+    password: string,
+    walletBackupData: WalletBackupData,
+    inviteCode?: string,
+  ): Promise<void> {
     try {
-      await this.httpClient.post("/api/auth/register", { name, email, password, invite_code: inviteCode });
+      await this.httpClient.post("/api/auth/register", {
+        name,
+        email,
+        password,
+        wallet_backup_data: walletBackupData,
+        invite_code: inviteCode,
+      });
       console.log("Registration successful");
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
