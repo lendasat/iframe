@@ -1,7 +1,7 @@
 import { useAuth } from "@frontend-monorepo/http-client-lender";
 import { LoginForm } from "@frontend-monorepo/ui-shared";
+import init, { does_wallet_exist, restore_wallet } from "browser-wallet";
 import { useLocation, useNavigate } from "react-router-dom";
-import init, { does_wallet_exist, restore_wallet } from 'browser-wallet';
 
 function Login() {
   const { login } = useAuth();

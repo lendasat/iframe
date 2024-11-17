@@ -3,8 +3,11 @@ use anyhow::Result;
 use bitcoin::bip32::Xpub;
 use bitcoin::Address;
 use bitcoin::PublicKey;
+use browser_wallet::wallet;
 use hub::config::Config;
 use hub::db;
+use hub::db::wallet_backups::NewBorrowerWalletBackup;
+use hub::db::wallet_backups::NewLenderWalletBackup;
 use hub::model::Contract;
 use hub::model::ContractStatus;
 use hub::model::CreateLoanOfferSchema;
@@ -39,14 +42,15 @@ const ORIGINATION_FEE_RATE: Decimal = dec!(0.01);
 #[tokio::main]
 async fn main() -> Result<()> {
     init_tracing(LevelFilter::DEBUG, false, true)?;
+    let network = std::env::var("NETWORK").expect("NETWORK must be set");
 
     let config = Config::init();
     let pool = connect_to_db(config.database_url.as_str()).await?;
     run_migration(&pool).await?;
 
-    let lender = insert_lender(&pool).await?;
+    let lender = insert_lender(&pool, network.as_str()).await?;
     tracing::debug!(id = lender.id, email = lender.email, "Lender created");
-    let borrower = insert_borrower(&pool).await?;
+    let borrower = insert_borrower(&pool, network.as_str()).await?;
     tracing::debug!(id = borrower.id, email = borrower.email, "Borrower created");
 
     let offers = create_loan_offers(&pool, lender.id.as_str()).await?;
@@ -235,7 +239,7 @@ async fn create_loan_offers(pool: &Pool<Postgres>, lender_id: &str) -> Result<Ve
     Ok(vec![eth_offer, poly_offer])
 }
 
-async fn insert_lender(pool: &Pool<Postgres>) -> Result<User> {
+async fn insert_lender(pool: &Pool<Postgres>, network: &str) -> Result<User> {
     let email = "lender@lendasat.com";
     if db::lenders::user_exists(pool, email).await? {
         tracing::debug!("DB already contains the lender, not inserting another one");
@@ -250,10 +254,25 @@ async fn insert_lender(pool: &Pool<Postgres>) -> Result<User> {
     let verification_code = user.verification_code.clone().expect("to exist");
     db::lenders::verify_user(pool, verification_code.as_str()).await?;
 
+    wallet::unload_wallet();
+    let (passphrase_hash, mnemonic_ciphertext, network, xpub) =
+        wallet::new_wallet("password123", network)?;
+    db::wallet_backups::insert_lender_backup(
+        pool,
+        NewLenderWalletBackup {
+            lender_id: user.id.clone(),
+            passphrase_hash: passphrase_hash.to_string(),
+            mnemonic_ciphertext: mnemonic_ciphertext.serialize(),
+            network: network.to_string(),
+            xpub: xpub.to_string(),
+        },
+    )
+    .await?;
+
     Ok(user)
 }
 
-async fn insert_borrower(pool: &Pool<Postgres>) -> Result<User> {
+async fn insert_borrower(pool: &Pool<Postgres>, network: &str) -> Result<User> {
     let email = "borrower@lendasat.com";
     if db::borrowers::user_exists(pool, email).await? {
         tracing::debug!("DB already contains the borrower, not inserting another one");
@@ -269,6 +288,21 @@ async fn insert_borrower(pool: &Pool<Postgres>) -> Result<User> {
     let verification_code = user.verification_code.clone().expect("to exist");
     db::borrowers::verify_user(pool, verification_code.as_str()).await?;
     enable_features(pool, user.id.as_str()).await?;
+
+    wallet::unload_wallet();
+    let (passphrase_hash, mnemonic_ciphertext, network, xpub) =
+        wallet::new_wallet("password123", network)?;
+    db::wallet_backups::insert_borrower_backup(
+        pool,
+        NewBorrowerWalletBackup {
+            borrower_id: user.id.clone(),
+            passphrase_hash: passphrase_hash.to_string(),
+            mnemonic_ciphertext: mnemonic_ciphertext.serialize(),
+            network: network.to_string(),
+            xpub: xpub.to_string(),
+        },
+    )
+    .await?;
 
     Ok(user)
 }

@@ -102,6 +102,13 @@ pub fn load_wallet(
     Ok(())
 }
 
+pub fn unload_wallet() {
+    WALLET
+        .lock()
+        .map(|mut guard| *guard = None)
+        .expect("Failed to acquire lock");
+}
+
 pub fn is_wallet_loaded() -> Result<bool> {
     let guard = WALLET.lock().expect("to get lock");
     Ok(guard.is_some())
