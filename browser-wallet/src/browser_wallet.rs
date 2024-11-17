@@ -15,7 +15,14 @@ const NETWORK_KEY: &str = "network";
 const NEXT_PK_INDEX_KEY: &str = "next_pk_index";
 const XPUB_KEY: &str = "xpub";
 
-pub fn new(passphrase: String, network: String, username: String) -> Result<()> {
+pub struct WalletDetails {
+    pub passphrase_hash: String,
+    pub mnemonic_ciphertext: String,
+    pub network: String,
+    pub xpub: String,
+}
+
+pub fn new(passphrase: String, network: String, username: String) -> Result<WalletDetails> {
     let storage = local_storage()?;
 
     if does_wallet_exist(username.as_str())? {
@@ -27,7 +34,7 @@ pub fn new(passphrase: String, network: String, username: String) -> Result<()> 
 
     storage.set_item(
         derive_storage_key(username.as_str(), PASSPHRASE_STORAGE_KEY).as_str(),
-        passphrase_hash,
+        passphrase_hash.clone(),
     )?;
 
     storage.set_item(
@@ -40,6 +47,53 @@ pub fn new(passphrase: String, network: String, username: String) -> Result<()> 
         network.to_string(),
     )?;
 
+    storage.set_item(
+        derive_storage_key(username.as_str(), NEXT_PK_INDEX_KEY).as_str(),
+        0,
+    )?;
+
+    storage.set_item(
+        derive_storage_key(username.as_str(), XPUB_KEY).as_str(),
+        xpub,
+    )?;
+
+    Ok(WalletDetails {
+        passphrase_hash: passphrase_hash.to_string(),
+        mnemonic_ciphertext: mnemonic_ciphertext.serialize(),
+        network: network.to_string(),
+        xpub: xpub.to_string(),
+    })
+}
+
+pub fn restore(
+    username: String,
+    passphrase_hash: String,
+    mnemonic_ciphertext: String,
+    network: String,
+    xpub: String,
+) -> Result<()> {
+    let storage = local_storage()?;
+
+    if does_wallet_exist(username.as_str())? {
+        bail!("Can't create new wallet if it already exists in local storage");
+    }
+
+    storage.set_item(
+        derive_storage_key(username.as_str(), PASSPHRASE_STORAGE_KEY).as_str(),
+        passphrase_hash.clone(),
+    )?;
+
+    storage.set_item(
+        derive_storage_key(username.as_str(), SEED_STORAGE_KEY).as_str(),
+        mnemonic_ciphertext,
+    )?;
+
+    storage.set_item(
+        derive_storage_key(username.as_str(), NETWORK_KEY).as_str(),
+        network,
+    )?;
+
+    // TODO: is this safe?
     storage.set_item(
         derive_storage_key(username.as_str(), NEXT_PK_INDEX_KEY).as_str(),
         0,
