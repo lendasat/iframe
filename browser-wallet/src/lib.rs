@@ -8,8 +8,74 @@ mod storage;
 pub mod wallet;
 
 #[wasm_bindgen]
-pub fn new_wallet(passphrase: String, network: String, username: String) -> Result<(), JsValue> {
-    map_err_to_js!(browser_wallet::new(passphrase, network, username))
+pub struct WalletDetails {
+    passphrase_hash: String,
+    mnemonic_ciphertext: String,
+    network: String,
+    xpub: String,
+}
+
+#[wasm_bindgen]
+impl WalletDetails {
+    #[wasm_bindgen(getter)]
+    pub fn passphrase_hash(&self) -> String {
+        self.passphrase_hash.clone()
+    }
+    #[wasm_bindgen(getter)]
+    pub fn mnemonic_ciphertext(&self) -> String {
+        self.mnemonic_ciphertext.clone()
+    }
+    #[wasm_bindgen(getter)]
+    pub fn network(&self) -> String {
+        self.network.clone()
+    }
+    #[wasm_bindgen(getter)]
+    pub fn xpub(&self) -> String {
+        self.xpub.clone()
+    }
+}
+
+impl From<browser_wallet::WalletDetails> for WalletDetails {
+    fn from(value: browser_wallet::WalletDetails) -> Self {
+        WalletDetails {
+            passphrase_hash: value.passphrase_hash,
+            mnemonic_ciphertext: value.mnemonic_ciphertext,
+            network: value.network,
+            xpub: value.xpub,
+        }
+    }
+}
+
+#[wasm_bindgen(start)]
+pub fn initialize() {
+    console_log::init_with_level(log::Level::Debug).expect("error initializing log");
+    log::info!("Logger initialized!");
+}
+
+#[wasm_bindgen]
+pub fn new_wallet(
+    passphrase: String,
+    network: String,
+    username: String,
+) -> Result<WalletDetails, JsValue> {
+    map_err_to_js!(browser_wallet::new(passphrase, network, username).map(WalletDetails::from))
+}
+
+#[wasm_bindgen]
+pub fn restore_wallet(
+    username: String,
+    passphrase_hash: String,
+    mnemonic_ciphertext: String,
+    xpub: String,
+    network: String,
+) -> Result<(), JsValue> {
+    map_err_to_js!(browser_wallet::restore(
+        username,
+        passphrase_hash,
+        mnemonic_ciphertext,
+        network,
+        xpub
+    ))
 }
 
 #[wasm_bindgen]

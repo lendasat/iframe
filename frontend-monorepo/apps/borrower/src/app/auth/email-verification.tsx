@@ -14,11 +14,13 @@ const EmailVerification = () => {
   const { token } = useParams();
   const navigate = useNavigate();
 
+  const tokenNotNull = token || "";
+
   useEffect(() => {
     const callVerify = async () => {
       try {
         setIsLoading(true);
-        const response = await verifyEmail(token);
+        const response = await verifyEmail(tokenNotNull);
         console.log(response);
         setIsVerified(true);
       } catch (error) {
@@ -31,7 +33,7 @@ const EmailVerification = () => {
     };
 
     callVerify();
-  }, [token, verifyEmail]);
+  }, [tokenNotNull, verifyEmail]);
 
   return (
     <Container className="d-flex align-items-center justify-content-center min-vh-100">

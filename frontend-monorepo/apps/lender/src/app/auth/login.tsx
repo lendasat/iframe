@@ -1,5 +1,6 @@
 import { useAuth } from "@frontend-monorepo/http-client-lender";
 import { LoginForm } from "@frontend-monorepo/ui-shared";
+import init, { does_wallet_exist, restore_wallet } from "browser-wallet";
 import { useLocation, useNavigate } from "react-router-dom";
 
 function Login() {
@@ -9,7 +10,24 @@ function Login() {
   const oldPath = location.pathname;
 
   const handleLogin = async (email: string, password: string) => {
-    await login(email, password);
+    await init();
+    const loginResponse = await login(email, password);
+    const walletBackupData = loginResponse.wallet_backup_data;
+
+    if (!does_wallet_exist(loginResponse.user.name)) {
+      try {
+        restore_wallet(
+          loginResponse.user.name,
+          walletBackupData.passphrase_hash,
+          walletBackupData.mnemonic_ciphertext,
+          walletBackupData.xpub,
+          walletBackupData.network,
+        );
+      } catch (error) {
+        console.error("Failed restoring wallet data");
+      }
+    }
+
     if (oldPath) {
       navigate(oldPath);
     } else {

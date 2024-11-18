@@ -3,7 +3,6 @@ use aes_gcm_siv::Aes256GcmSiv;
 use aes_gcm_siv::KeyInit;
 use anyhow::anyhow;
 use anyhow::bail;
-use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Result;
 use argon2::password_hash::PasswordHashString;
@@ -58,8 +57,11 @@ pub fn new_wallet(
     network: &str,
 ) -> Result<(PasswordHashString, MnemonicCiphertext, Network, Xpub)> {
     let mut guard = WALLET.lock().expect("to get lock");
+    log::info!("Creating new wallet");
 
-    ensure!(guard.is_none(), "Wallet already loaded");
+    if guard.is_some() {
+        log::warn!("Wallet already loaded. Overwriting existing in-memory wallet instance");
+    }
 
     let mut rng = thread_rng();
 
@@ -84,7 +86,11 @@ pub fn load_wallet(
 ) -> Result<()> {
     let mut guard = WALLET.lock().expect("to get lock");
 
-    ensure!(guard.is_none(), "Wallet already loaded");
+    log::debug!("Loading wallet from input... start");
+
+    if guard.is_some() {
+        log::warn!("Wallet already loaded. Overwriting existing in-memory wallet instance");
+    }
 
     let passphrase_hash = PasswordHash::new(passphrase_hash).map_err(|error| anyhow!(error))?;
 
@@ -98,8 +104,16 @@ pub fn load_wallet(
     let wallet = Wallet::from_ciphertext(mnemonic_ciphertext, passphrase, network)?;
 
     guard.replace(wallet);
+    log::debug!("Loading wallet from input.. done");
 
     Ok(())
+}
+
+pub fn unload_wallet() {
+    WALLET
+        .lock()
+        .map(|mut guard| *guard = None)
+        .expect("Failed to acquire lock");
 }
 
 pub fn is_wallet_loaded() -> Result<bool> {
