@@ -13,6 +13,7 @@ use hub::moon;
 use hub::routes::borrower::spawn_borrower_server;
 use hub::routes::lender::spawn_lender_server;
 use hub::wallet::Wallet;
+use std::backtrace::Backtrace;
 use std::sync::Arc;
 use temp_dir::TempDir;
 use tokio::sync::mpsc;
@@ -21,6 +22,18 @@ use tracing::level_filters::LevelFilter;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    std::panic::set_hook(
+        #[allow(clippy::print_stderr)]
+        Box::new(|info| {
+            let backtrace = Backtrace::force_capture();
+
+            tracing::error!(%info, "Aborting after panic in task");
+            eprintln!("{backtrace}");
+
+            std::process::abort()
+        }),
+    );
+
     init_tracing(LevelFilter::DEBUG, false).expect("to work");
     tracing::info!("Hello World");
 
