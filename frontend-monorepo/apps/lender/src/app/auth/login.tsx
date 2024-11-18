@@ -38,10 +38,10 @@ function Login() {
   let defaultUsername = "";
   let defaultPassword = "";
   if (import.meta.env.VITE_BITCOIN_NETWORK === "regtest" || import.meta.env.VITE_BITCOIN_NETWORK === "signet") {
-    defaultUsername = import.meta.env.VITE_LENDER_USERNAME || "lender@lendasat.com";
+    defaultUsername = import.meta.env.VITE_LENDER_USERNAME || "";
   }
   if (import.meta.env.VITE_BITCOIN_NETWORK === "regtest" || import.meta.env.VITE_BITCOIN_NETWORK === "signet") {
-    defaultPassword = import.meta.env.VITE_LENDER_PASSWORD || "password123";
+    defaultPassword = import.meta.env.VITE_LENDER_PASSWORD || "";
   }
 
   return (

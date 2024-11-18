@@ -21,6 +21,7 @@ const EmailVerification = () => {
       try {
         setIsLoading(true);
         const response = await verifyEmail(tokenNotNull);
+        console.log(response);
         setIsVerified(true);
       } catch (error) {
         console.error("Error:", error);
