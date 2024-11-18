@@ -12,9 +12,11 @@ anyhow = "1"
 argon2 = "0.6.0-pre.1"
 bip39 = { version = "2", features = ["rand_core"] }
 bitcoin = "0.32.2"
+console_log = { version = "1", features = ["color"] }
 getrandom = { version = "0.2", features = ["wasm-bindgen", "js"] }
 hex = "0.4"
 hkdf = { version = "0.12", features = ["std"] }
+log = "0.4"
 miniscript = "12"
 rand = "0.8"
 sha2 = "0.10"

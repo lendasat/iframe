@@ -46,6 +46,12 @@ impl From<browser_wallet::WalletDetails> for WalletDetails {
     }
 }
 
+#[wasm_bindgen(start)]
+pub fn initialize() {
+    console_log::init_with_level(log::Level::Debug).expect("error initializing log");
+    log::info!("Logger initialized!");
+}
+
 #[wasm_bindgen]
 pub fn new_wallet(
     passphrase: String,
