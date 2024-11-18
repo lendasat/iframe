@@ -254,6 +254,7 @@ async fn insert_lender(pool: &Pool<Postgres>, network: &str) -> Result<User> {
     let verification_code = user.verification_code.clone().expect("to exist");
     db::lenders::verify_user(pool, verification_code.as_str()).await?;
 
+    // We can only have one wallet loaded at the time, hence, we need to unload any existing one
     wallet::unload_wallet();
     let (passphrase_hash, mnemonic_ciphertext, network, xpub) =
         wallet::new_wallet("password123", network)?;
@@ -289,6 +290,7 @@ async fn insert_borrower(pool: &Pool<Postgres>, network: &str) -> Result<User> {
     db::borrowers::verify_user(pool, verification_code.as_str()).await?;
     enable_features(pool, user.id.as_str()).await?;
 
+    // We can only have one wallet loaded at the time, hence, we need to unload any existing one
     wallet::unload_wallet();
     let (passphrase_hash, mnemonic_ciphertext, network, xpub) =
         wallet::new_wallet("password123", network)?;
