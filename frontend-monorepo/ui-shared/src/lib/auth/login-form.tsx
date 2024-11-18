@@ -4,8 +4,6 @@ import { useState } from "react";
 import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
 import { IoInformationCircleOutline } from "react-icons/io5";
 import { Link } from "react-router-dom";
-import Background from "./../assets/background-art.jpeg";
-import Dashboard from "./../assets/background-art.png";
 import { ReactComponent as Logo } from "./../assets/lendasat_svg_logo.svg";
 import TypeField from "../components/TypeField";
 
@@ -42,9 +40,9 @@ export function LoginForm(
   };
 
   return (
-    <Box className="bg-gradient-to-tr from-60% to-100% from-[#F5F9FD] to-pink-700/5 py-10 lg:pt-48 xl:py-0 h-screen overflow-y-scroll flex items-center justify-center">
-      <Grid align={"center"} className="overflow-hidden xl:grid-cols-2 w-screen">
-        <Box className="flex flex-col items-center p-5 md:p-10 lg:p-16">
+    <Box className="bg-gradient-to-tr from-60% to-100% from-[#F5F9FD] to-pink-700/5 py-20 pt-0 h-screen overflow-y-scroll flex items-center justify-center">
+      <Grid align={"center"} className="overflow-hidden grid-cols-1 w-screen">
+        <Box className="flex flex-col items-center p-5">
           {/* Logo */}
           <Logo height={27} width={"auto"} className="w-fit invert" />
           <Box mt={"6"} maxWidth={"550px"} width={"100%"} py={"6"} px={"6"} className="bg-white shadow-sm rounded-2xl">
@@ -83,7 +81,7 @@ export function LoginForm(
                   <Text as="label" size={"1"} weight={"medium"} className="text-font/70 mb-2">Password</Text>
                   <TypeField
                     type={isVisible ? "text" : "password"}
-                    placeholder="••••••••••"
+                    placeholder=""
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   >
@@ -132,7 +130,7 @@ export function LoginForm(
                   size={"3"}
                   variant="solid"
                   radius="large"
-                  disabled={email && password && !loading ? false : true}
+                  disabled={!(email && password && !loading)}
                   className="w-full h-12"
                 >
                   {loading ? <Spinner size={"3"} /> : " Sign in"}
@@ -147,35 +145,6 @@ export function LoginForm(
                 Sign up
               </Link>
             </Box>
-          </Box>
-        </Box>
-
-        <Box width={"100%"} height={"100vh"} py={"6"} pr={"6"} className="hidden xl:block">
-          <Box className="bg-purple-800 w-full h-full rounded-3xl relative z-10 overflow-hidden pt-20 px-10 text-center pb-10">
-            <Heading className="text-white text-4xl xl:text-5xl 2xl:text-6xl font-semibold">
-              <Text className="relative after:absolute after:bottom-0 after:h-0.5 after:w-full after:bg-white after:left-0">
-                Lendasat
-              </Text>
-              {" "}
-            </Heading>
-            <Box mt={"6"} maxWidth={"500px"} mx={"auto"}>
-              <Text size={"4"} weight={"medium"} className="text-white">
-                Borrow against your Bitcoin in a secure and non-custodial way. Never. Sell. Your. Bitcoin.
-              </Text>
-            </Box>
-
-            <Box className="h-3/5 w-full mt-10 relative flex items-center justify-center">
-              <img
-                className="object-contain object-center h-full w-full"
-                src={Dashboard}
-                alt="Background"
-              />
-            </Box>
-            <img
-              className="absolute z-0 top-0 left-0 h-full w-full mix-blend-overlay opacity-5"
-              src={Background}
-              alt="Background"
-            />
           </Box>
         </Box>
       </Grid>

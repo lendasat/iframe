@@ -3,9 +3,7 @@ import type { FormEvent } from "react";
 import { useState } from "react";
 import { Form } from "react-bootstrap";
 import { IoArrowBackOutline, IoInformationCircleOutline } from "react-icons/io5";
-import { TbFingerprint } from "react-icons/tb";
 import { Link } from "react-router-dom";
-import Background from "./../assets/forget-password-img.png";
 import { ReactComponent as Logo } from "./../assets/lendasat_svg_logo.svg";
 import TypeField from "../components/TypeField";
 
@@ -33,113 +31,84 @@ export function ForgotPasswordForm({ handleSubmit }: ForgotPasswordProps) {
   };
 
   return (
-    <Grid className="min-h-screen lg:grid-cols-5 items-center">
-      {
-        /* <img
-        className="absolute z-0 top-0 left-0 h-full w-full mix-blend-overlay opacity-5"
-        src={Background}
-        alt="Background"
-      /> */
-      }
-      <Box minHeight={"100vh"} className="flex flex-col justify-between py-10 items-center px-6 md:px-10 lg:col-span-2">
-        <Box className="flex items-center justify-between w-full">
+    <Box className="bg-gradient-to-tr from-60% to-100% from-[#F5F9FD] to-pink-700/5 py-20 pt-0 h-screen overflow-y-scroll flex items-center justify-center">
+      <Grid align={"center"} className="overflow-hidden grid-cols-1 w-screen">
+        <Box className="flex flex-col items-center p-5">
           {/* Logo */}
-          <Logo height={20} width={"auto"} className="w-fit invert " />
+          <Logo height={27} width={"auto"} className="w-fit invert" />
 
-          <Link
-            to={"/registration"}
-            className="text-sm font-medium text-font-dark hover:text-purple-900 underline underline-offset-1"
-          >
-            Create an account
-          </Link>
-        </Box>
-
-        <Box className="max-w-xs w-full mx-auto text-center">
-          <Box className="mx-auto h-16 w-16 mb-2 rounded-full shadow-black/10 bg-gradient-to-b from-black/5 to-6% to-white/0 border border-font/5 flex items-center justify-center">
-            <Box className="h-10 w-10 bg-white rounded-full border border-font/5 flex items-center justify-center">
-              <TbFingerprint size={20} className="text-font/50" />
+          <Box mt={"6"} maxWidth={"550px"} width={"100%"} py={"6"} px={"6"} className="bg-white shadow-sm rounded-2xl">
+            <Box className="text-center pb-4">
+              <Heading size={"7"} className="text-font-dark pb-2">Forgot your password?</Heading>
+              <Text size={"3"} className="text-font/70">Worry not, we'll send you reset instructions.</Text>
             </Box>
+
+            <Form className="w-full" onSubmit={onSubmit}>
+              {/* Email */}
+              <Box className="grid grid-cols-1 gap-1">
+                <Box className="text-left mt-3">
+                  <Text as="label" size={"1"} weight={"medium"} className="text-font/70 mb-2">Email</Text>
+                  <TypeField
+                    placeholder="example@domain.com"
+                    value={email}
+                    autoComplete="email"
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </Box>
+              </Box>
+
+              {/* Error message */}
+              {error && (
+                <Callout.Root color="tomato">
+                  <Callout.Icon>
+                    <IoInformationCircleOutline />
+                  </Callout.Icon>
+                  <Callout.Text>
+                    {error}
+                  </Callout.Text>
+                </Callout.Root>
+              )}
+
+              {/* Error message */}
+              {success && (
+                <Callout.Root color="green">
+                  <Callout.Icon>
+                    <IoInformationCircleOutline />
+                  </Callout.Icon>
+                  <Callout.Text>
+                    {success}
+                  </Callout.Text>
+                </Callout.Root>
+              )}
+
+              {/* Submit Button */}
+              <Box className="pt-4">
+                <Button
+                  color="purple"
+                  type="submit"
+                  size={"3"}
+                  variant="solid"
+                  radius="large"
+                  disabled={!(email && !isLoading)}
+                  className="w-full h-12"
+                >
+                  {isLoading ? <Spinner size={"3"} /> : "OK"}
+                </Button>
+              </Box>
+            </Form>
+
+            {/* Sign Up Routing */}
+
+            <Link to={"/login"} className="text-sm font-medium text-font-dark hover:text-purple-800">
+              <Box className="flex items-center gap-1 justify-center mt-6">
+                <IoArrowBackOutline />
+                <Text size={"2"}>Back to Sign in</Text>
+              </Box>
+            </Link>
           </Box>
-
-          <Heading size={"7"} mb={"1"} className="text-font-dark font-semibold">
-            Forgot your password?
-          </Heading>
-
-          <Text size={"2"} weight={"medium"} className="text-font/60 text-center">
-            Worry not, we'll send you reset instructions.
-          </Text>
-
-          <Form onSubmit={onSubmit} className="w-full mt-7 space-y-2.5">
-            {/* Email */}
-            <Box className="text-left">
-              <Text as="label" size={"1"} weight={"medium"} className="text-font/70 mb-2">Email</Text>
-              <TypeField
-                placeholder="example@domain.com"
-                value={email}
-                autoComplete="email"
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </Box>
-
-            {/* Error message */}
-            {error && (
-              <Callout.Root color="tomato">
-                <Callout.Icon>
-                  <IoInformationCircleOutline />
-                </Callout.Icon>
-                <Callout.Text>
-                  {error}
-                </Callout.Text>
-              </Callout.Root>
-            )}
-
-            {/* Error message */}
-            {success && (
-              <Callout.Root color="green">
-                <Callout.Icon>
-                  <IoInformationCircleOutline />
-                </Callout.Icon>
-                <Callout.Text>
-                  {success}
-                </Callout.Text>
-              </Callout.Root>
-            )}
-
-            {/* Submit Button */}
-            <Box className="pt-4">
-              <Button
-                color="purple"
-                type="submit"
-                size={"3"}
-                variant="solid"
-                radius="large"
-                disabled={email && !isLoading ? false : true}
-                className="w-full h-12"
-              >
-                {isLoading ? <Spinner size={"3"} /> : "OK"}
-              </Button>
-            </Box>
-          </Form>
-
-          {/* Sign Up Routing */}
-
-          <Link to={"/login"} className="text-sm font-medium text-font-dark hover:text-purple-800">
-            <Box className="flex items-center gap-1 justify-center mt-6">
-              <IoArrowBackOutline />
-              <Text size={"2"}>Back to Sign in</Text>
-            </Box>
-          </Link>
         </Box>
-
-        <Box className="h-10" />
-      </Box>
-      <Box className="lg:col-span-3 bg-purple-50 h-full flex items-center pl-20 rounded-l-[60px]">
-        <img
-          src={Background}
-          alt="Dashboard Screen"
-        />
-      </Box>
-    </Grid>
+      </Grid>
+    </Box>
   );
 }
 
