@@ -178,7 +178,7 @@ pub async fn register_user_handler(
     //  Create an Email instance
     let email = user.email.clone();
     let verification_url = format!(
-        "{}/api/auth/verifyemail/{}",
+        "{}/verifyemail/{}",
         data.config.lender_frontend_origin.to_owned(),
         user.clone()
             .verification_code

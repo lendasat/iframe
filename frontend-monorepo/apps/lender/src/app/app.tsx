@@ -21,6 +21,7 @@ import { FiHome } from "react-icons/fi";
 import { HiOutlineSupport } from "react-icons/hi";
 import { IoCreateOutline, IoWalletOutline } from "react-icons/io5";
 import { LuActivity, LuSettings } from "react-icons/lu";
+import EmailVerification from "./auth/email-verification";
 import MyLoanOfferDetails from "./my-offers/my-loan-offer-details";
 import MyLoanOffersOverview from "./my-offers/my-loan-offers-overview";
 
@@ -169,6 +170,7 @@ function App() {
             <Route path="/registration" element={<Registration />} />
             <Route path="/forgotpassword" element={<ForgotPassword />} />
             <Route path="/resetpassword/:token" element={<ResetPassword />} />
+            <Route path="/verifyemail/:token" element={<EmailVerification />} />
             <Route path="/logout" element={<Logout />} />
             <Route path="/login" element={<Login />} />
             <Route path="*" element={<Login />} />
