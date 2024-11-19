@@ -1,7 +1,8 @@
 import type { UserCardDetail } from "@frontend-monorepo/http-client-borrower";
 import { Box } from "@radix-ui/themes";
-import Moon from "../../assets/moon_card.png";
+import { ReactComponent as MoonCard } from "../../assets/moon_card.svg";
 import { formatExpiryTimestamp } from "./Cards";
+import "../../assets/moonFont.css";
 
 interface CredtCardProps {
   card: UserCardDetail;
@@ -32,9 +33,10 @@ const CardNumber = ({ number, visible, setVisible }: CardNumberProps) => {
 
   return (
     <div
-      className="flex space-x-3 text-xl font-mono tracking-wider
+      className="flex space-x-3 text-xl tracking-wider
              cursor-copy hover:bg-gray-600 active:bg-gray-900 active:cursor-default
              b-2 rounded-md transition-colors"
+      style={{ fontFamily: "PayWithMoonFont" }}
       onClick={() => handleCopy()}
     >
       {groups.map((group, index) => <span key={index}>{group}</span>)}
@@ -54,7 +56,7 @@ const ExpirationDate = ({ expiry, visible }: ExpirationDateProps) => {
   }
 
   return (
-    <div className="flex space-x-3 text-md font-mono tracking-wider">
+    <div className="flex space-x-3 text-md tracking-wider" style={{ fontFamily: "PayWithMoonFont" }}>
       {formatted}
     </div>
   );
@@ -72,7 +74,7 @@ const Cvv = ({ cvv, visible }: CvvProps) => {
   }
 
   return (
-    <div className="flex space-x-3 text-md font-mono tracking-wider">
+    <div className="flex space-x-3 text-md tracking-wider" style={{ fontFamily: "PayWithMoonFont" }}>
       {formatted}
     </div>
   );
@@ -84,7 +86,7 @@ export default function CreditCard({ card, visible, setVisible }: CredtCardProps
       {/* Background image */}
       <div className="overflow-hidden w-full h-full">
         <div className="absolute inset-0">
-          <img src={Moon} alt="Card background" className="object-cover w-full h-full" />
+          <MoonCard className="object-cover w-full h-full" />
         </div>
         <div className="absolute bottom-10 left-3 transform -translate-y-1/2 text-white text-center p-2 rounded">
           <CardNumber number={card.pan} visible={visible} setVisible={setVisible}></CardNumber>
