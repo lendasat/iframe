@@ -62,7 +62,7 @@ export default function Cards() {
           <Box>
             <Flex align={"center"} justify={"between"}>
               <Heading size={"5"} weight={"medium"}>
-                My Cards
+                My Card
               </Heading>
             </Flex>
           </Box>
