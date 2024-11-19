@@ -34,8 +34,8 @@ export const Step1PickOption = ({ onSelect, selectedOption }: Step1Props) => {
     console.error(`Failed fetching credit cards ${error}`);
   }
 
-  // const hasAlreadyCard = loading ? true : value ? value.length > 0 : false;
-  const hasAlreadyCard = false;
+  const hasAlreadyCard = loading ? true : value ? value.length > 0 : false;
+
   return (
     <Box className="py-6 md:py-8 grid md:grid-cols-2 xl:grid-cols-3 gap-5 px-6 md:px-8 xl:px-8">
       {enabledFeatures.map((option, index) => {

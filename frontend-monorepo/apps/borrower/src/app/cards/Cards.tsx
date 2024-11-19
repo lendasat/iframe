@@ -15,7 +15,7 @@ import CreditCard from "./CreditCard";
 
 export default function Cards() {
   const { innerHeight } = window;
-  const [moreInfo, setMoreInfo] = useState<boolean>(false);
+  const [visible, setVisible] = useState<boolean>(false);
   const [activeCardIndex, setActiveCardIndex] = useState<number>(0);
 
   const { getUserCards } = useBorrowerHttpClient();
@@ -59,16 +59,6 @@ export default function Cards() {
         } md:px-8 space-y-4 border-r border-font/10 bg-white h-full`}
       >
         <Skeleton loading={!activeCard}>
-          <Box>
-            <Flex align={"center"} justify={"between"}>
-              <Heading size={"5"} weight={"medium"}>
-                My Card
-              </Heading>
-            </Flex>
-          </Box>
-        </Skeleton>
-
-        <Skeleton loading={!activeCard}>
           <Swiper
             effect={"cards"}
             grabCursor={true}
@@ -87,51 +77,12 @@ export default function Cards() {
               <SwiperSlide key={index}>
                 <CreditCard
                   card={card}
-                  visible={moreInfo}
+                  visible={visible}
+                  setVisible={(vis) => setVisible(vis)}
                 />
               </SwiperSlide>
             ))}
           </Swiper>
-          {/*<SwiperComponent*/}
-          {/*  loop*/}
-          {/*  ref={SlideRef}*/}
-          {/*  effect={"cards"}*/}
-          {/*  grabCursor={false}*/}
-          {/*  allowTouchMove={false}*/}
-          {/*  modules={[EffectFade]}*/}
-          {/*  centeredSlides*/}
-          {/*    slidesPerView={1}*/}
-          {/*    slidesPerGroup={1}*/}
-          {/*  cardsEffect={{*/}
-          {/*    perSlideOffset: 7,*/}
-          {/*    slideShadows: false,*/}
-          {/*  }}*/}
-          {/*  className="h-52 w-full"*/}
-          {/*  enabled={false}*/}
-          {/*>*/}
-          {/*  {userCardDetails.map((card, index) => (*/}
-          {/*    <SwiperSlide key={index}>*/}
-          {/*      <CreditCard*/}
-          {/*        card={card}*/}
-          {/*        visible={moreInfo}*/}
-          {/*      />*/}
-          {/*    </SwiperSlide>*/}
-          {/*  ))}*/}
-          {/*</SwiperComponent>*/}
-        </Skeleton>
-
-        <Skeleton loading={!activeCard}>
-          <Flex align={"center"}>
-            <Button
-              variant="soft"
-              size={"3"}
-              color="purple"
-              className="text-sm flex-grow rounded-lg"
-              disabled={activeCard !== undefined}
-            >
-              Add New Card
-            </Button>
-          </Flex>
         </Skeleton>
 
         <Box className="pt-5 space-y-4">
@@ -172,12 +123,12 @@ export default function Cards() {
                   Card Details
                 </Heading>
                 <Button
-                  onClick={() => setMoreInfo(!moreInfo)}
+                  onClick={() => setVisible(!visible)}
                   disabled={!activeCard}
                   variant="ghost"
                   className="hover:bg-transparent text-xs font-medium text-purple-800"
                 >
-                  {!moreInfo ? " Show" : "Hide"}
+                  {!visible ? " Show" : "Hide"}
                   {"   "}
                 </Button>
               </Flex>
@@ -187,7 +138,7 @@ export default function Cards() {
               <Text size={"1"} weight={"medium"} className="text-font/60">Card Number</Text>
               <Text as="p" weight={"medium"}>
                 <Skeleton loading={!activeCard}>
-                  {moreInfo ? formatCreditCardNumber(activeCard.pan) : "******"}
+                  {visible ? formatCreditCardNumber(activeCard.pan) : "******"}
                 </Skeleton>
               </Text>
             </Skeleton>
@@ -197,7 +148,7 @@ export default function Cards() {
                   <Text size={"1"} weight={"medium"} className="text-font/60">Expiry</Text>
                   <Text as="p" weight={"medium"}>
                     <Skeleton loading={!activeCard}>
-                      {moreInfo ? formatExpiryDate(activeCard.expiration) : "****"}
+                      {visible ? formatExpiryDate(activeCard.expiration) : "****"}
                     </Skeleton>
                   </Text>
                 </Box>
@@ -205,7 +156,7 @@ export default function Cards() {
                   <Text size={"1"} weight={"medium"} className="text-font/60">CVV</Text>
                   <Text as="p" weight={"medium"}>
                     <Skeleton loading={!activeCard}>
-                      {moreInfo ? activeCard.cvv : "****"}
+                      {visible ? activeCard.cvv : "****"}
                     </Skeleton>
                   </Text>
                 </Box>

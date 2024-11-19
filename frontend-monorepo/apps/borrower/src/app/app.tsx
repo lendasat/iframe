@@ -74,7 +74,7 @@ const menuItems = [
         visible: true,
       },
       {
-        label: "Cards",
+        label: "Card",
         path: "/cards",
         icon: IoCardOutline,
         target: "_self",
