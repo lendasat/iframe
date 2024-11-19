@@ -49,7 +49,7 @@ export const PayWithMoonDescriptionDialog = ({
         <Box className="py-4 text-center max-w-sm mx-auto">
           <Flex align={"center"} justify={"center"} gap={"3"} pb={"1"}>
             <Separator size={"3"} className="bg-font/30" />
-            <AlertDialog.Title className="shrink-0 p-0 m-0">Visa Debit Card - Powered by Moon</AlertDialog.Title>
+            <AlertDialog.Title className="shrink-0 p-0 m-0">Moon Visa® Card</AlertDialog.Title>
             <Separator size={"3"} className="bg-font/30" />
           </Flex>
         </Box>
@@ -58,7 +58,7 @@ export const PayWithMoonDescriptionDialog = ({
             <AlertDialog.Description size="2" className="text-pretty leading-[1.8] text-font/60">
               <ul className="list-disc ml-6">
                 <li>
-                  <Text size={"2"} className="text-font">Spend up to US $4,000/month</Text>
+                  <Text size={"2"} className="text-font">Spend up to $4,000 USD per month</Text>
                 </li>
                 <li>
                   <Text size={"2"} className="text-font">Shop at millions of merchants in over 130 countries</Text>
@@ -68,12 +68,22 @@ export const PayWithMoonDescriptionDialog = ({
                 </li>
                 <li>
                   <Text size={"2"} className="text-font flex items-center gap-1">
-                    Reloadable - add additional funds to the card (soon<FaTrademark className="inline-block" />)
+                    Reloadable - top up your card (soon<FaTrademark className="inline-block" />)
                   </Text>
                 </li>
                 <li>
                   <Text size={"2"} className="text-font">
-                    Zero FX or Foreign transaction fees. 1% or a minimum of $1.00 fee per transaction applies.
+                    No FX or Foreign transaction fees
+                  </Text>
+                </li>
+                <li>
+                  <Text size={"2"} className="text-font">
+                    A fee of 1% on spend applies (minimum of $1 per transaction)
+                  </Text>
+                </li>
+                <li>
+                  <Text size={"2"} className="text-font">
+                    Not available to residents of all countries (see Statement of Eligibility)
                   </Text>
                 </li>
               </ul>
@@ -92,7 +102,7 @@ export const PayWithMoonDescriptionDialog = ({
                   setIsAccepted(!isAccepted);
                 }}
               />
-              <>
+              <div>
                 Accept{" "}
                 <Link
                   to="https://lendasat.notion.site/Terms-of-Service-100d2f24d4cf801aa6cee15f1b77e11b?pvs=25"
@@ -109,9 +119,28 @@ export const PayWithMoonDescriptionDialog = ({
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  PayWithMoon Terms & Conditions
+                  Moon Terms & Conditions
                 </Link>
-              </>
+                {" and "}
+                <Link
+                  to="https://paywithmoon.com/terms-conditions"
+                  className="text-blue-600 hover:underline"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Card Holder Agreement
+                </Link>
+                {" and "}
+                <Link
+                  to="https://paywithmoon.com/terms-conditions"
+                  className="text-blue-600 hover:underline"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Statement of Eligibility
+                </Link>
+                {"."}
+              </div>
             </Flex>
           </Text>
         </Box>
