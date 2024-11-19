@@ -133,7 +133,7 @@ function ContractsComponent({ loans }: LoansComponentProps) {
 
                 <Box className="hidden md:flex justify-center">
                   <Text size={"1"} weight={"medium"}>
-                    TODO
+                    {(contract.interest_rate * 100).toFixed(2)}%
                   </Text>
                 </Box>
 
