@@ -3,8 +3,8 @@ import { useAuth, useBorrowerHttpClient } from "@frontend-monorepo/http-client-b
 import { Box, Flex, Text } from "@radix-ui/themes";
 import type { ReactElement } from "react";
 import Bitrefil from "../../../assets/bitrefil.png";
-import Defi from "../../../assets/defi.jpg";
-import Moon from "../../../assets/moon.jpg";
+import Defi from "../../../assets/defi.png";
+import Moon from "../../../assets/moon_card.png";
 import Sepa from "../../../assets/sepa.jpg";
 import "./../../components/scrollbar.css";
 import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
@@ -46,10 +46,10 @@ export const Step1PickOption = ({ onSelect, selectedOption }: Step1Props) => {
                 onSelect={onSelect}
                 option={option}
                 selectedOption={selectedOption}
-                title={"Debit card by PayWithMoon"}
+                title={"Receive a Moon Visa® Card"}
                 key={index}
                 disabled={hasAlreadyCard}
-                image={<img src={Moon} alt="PayWithMoon" />}
+                image={<img src={Moon} alt="PayWithMoon" className="max-h-full max-w-full" />}
               />
             );
           case LoanProductOption.StableCoins:
@@ -61,7 +61,7 @@ export const Step1PickOption = ({ onSelect, selectedOption }: Step1Props) => {
                 title={"Receive stable coins"}
                 key={index}
                 disabled={false}
-                image={<img src={Defi} alt="DEFI" />}
+                image={<img src={Defi} alt="Defi" className="max-h-full max-w-full" />}
               />
             );
           case LoanProductOption.BringinBankAccount:
@@ -128,7 +128,7 @@ function ProductOptionComponent({
       <Text as="p" size={"3"} weight={"bold"}>
         {title}
       </Text>
-      <Box className="h-52 w-full mb-4 mt-2 overflow-hidden rounded-2xl">
+      <Box className="h-52 w-full mb-4 mt-2 overflow-hidden rounded-2xl flex justify-center items-center">
         {image}
       </Box>
       <Flex className="justify-center gap-4">

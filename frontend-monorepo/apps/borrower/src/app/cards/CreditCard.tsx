@@ -1,66 +1,101 @@
 import type { UserCardDetail } from "@frontend-monorepo/http-client-borrower";
-import { Box, Flex, Heading } from "@radix-ui/themes";
-import { ReactComponent as Pattern } from "./../../assets/credit-card-pattern.svg";
-import LendasatLogo from "./../../assets/lendasat.png";
-import VisaIcon from "./../../assets/visa_logo_icon.webp";
-import { formatCreditCardNumber, formatExpiryTimestamp } from "./Cards";
+import { Box } from "@radix-ui/themes";
+import Moon from "../../assets/moon_card.png";
+import { formatExpiryTimestamp } from "./Cards";
 
 interface CredtCardProps {
   card: UserCardDetail;
   visible?: boolean;
+  setVisible: (value: ((prevState: boolean) => boolean) | boolean) => void;
 }
 
-export default function CreditCard({ card, visible }: CredtCardProps) {
+interface CardNumberProps {
+  number: number;
+  visible?: boolean;
+  setVisible: (value: ((prevState: boolean) => boolean) | boolean) => void;
+}
+
+const CardNumber = ({ number, visible, setVisible }: CardNumberProps) => {
+  let groups = number.toString().match(/.{1,4}/g) || [];
+  if (!visible) {
+    groups = ["****", "****", "****", groups[3]];
+  }
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(number.toString());
+      setVisible(!visible);
+    } catch (err) {
+      console.error("Failed to copy text: ", err);
+    }
+  };
+
   return (
-    <Box className="max-h-52 h-full w-full py-5 bg-[#280f45] border border-white/5 max-w-[390px] md:max-w-[350px] rounded-2xl relative overflow-hidden flex flex-col justify-between">
-      <Box className="pl-6">
-        <img
-          alt={"lendasat logo"}
-          src={LendasatLogo}
-          className="invert h-5 w-auto"
-        />
-      </Box>
+    <div
+      className="flex space-x-3 text-xl font-mono tracking-wider
+             cursor-copy hover:bg-gray-600 active:bg-gray-900 active:cursor-default
+             b-2 rounded-md transition-colors"
+      onClick={() => handleCopy()}
+    >
+      {groups.map((group, index) => <span key={index}>{group}</span>)}
+    </div>
+  );
+};
 
-      <Box>
-        <Flex align={"center"} justify={"between"} className="pl-6 pr-3">
-          {/*Card Owner */}
-          <Box>
-            <Heading className="text-white text-lg">
-              {visible
-                ? formatCreditCardNumber(card.pan)
-                : `**** **** **** ${card.pan.toString().slice(-4)}`}
-            </Heading>
-          </Box>
-        </Flex>
-        <Flex align={"center"} justify={"between"} className="pl-6 pr-3">
-          {/* Card number */}
-          <Box>
-            <Heading className="text-white text-sm">
-              {visible
-                ? formatExpiryTimestamp(card.expiration)
-                : "**/**"}
-            </Heading>
-          </Box>
+interface ExpirationDateProps {
+  expiry: Date;
+  visible: boolean | undefined;
+}
 
-          <Box>
-            <Heading className="text-white text-sm">
-              {visible
-                ? card.cvv
-                : "***"}
-            </Heading>
-          </Box>
+const ExpirationDate = ({ expiry, visible }: ExpirationDateProps) => {
+  let formatted = "**/****";
+  if (visible) {
+    formatted = formatExpiryTimestamp(expiry.getTime());
+  }
 
-          {/* Card type */}
-          <Box className="h-6 w-auto">
-            <img
-              alt={"visa logo"}
-              src={VisaIcon}
-              className="h-full w-full object-contain object-center invert"
-            />
-          </Box>
-        </Flex>
-      </Box>
-      <Pattern className="absolute object-cover object-center opacity-[2%] invert" />
+  return (
+    <div className="flex space-x-3 text-md font-mono tracking-wider">
+      {formatted}
+    </div>
+  );
+};
+
+interface CvvProps {
+  cvv: number;
+  visible: boolean | undefined;
+}
+
+const Cvv = ({ cvv, visible }: CvvProps) => {
+  let formatted = "***";
+  if (visible) {
+    formatted = cvv.toString();
+  }
+
+  return (
+    <div className="flex space-x-3 text-md font-mono tracking-wider">
+      {formatted}
+    </div>
+  );
+};
+
+export default function CreditCard({ card, visible, setVisible }: CredtCardProps) {
+  return (
+    <Box className="relative flex items-center justify-center w-[320px] h-[200px]">
+      {/* Background image */}
+      <div className="overflow-hidden w-full h-full">
+        <div className="absolute inset-0">
+          <img src={Moon} alt="Card background" className="object-cover w-full h-full" />
+        </div>
+        <div className="absolute bottom-10 left-3 transform -translate-y-1/2 text-white text-center p-2 rounded">
+          <CardNumber number={card.pan} visible={visible} setVisible={setVisible}></CardNumber>
+        </div>
+        <div className="absolute bottom-4 left-3 text-white text-center p-2 rounded">
+          <ExpirationDate expiry={card.expiration} visible={visible} />
+        </div>
+        <div className="absolute bottom-4 left-44 transform -translate-x-1 text-white text-center p-2 rounded">
+          <Cvv cvv={card.cvv} visible={visible} />
+        </div>
+      </div>
     </Box>
   );
 }
