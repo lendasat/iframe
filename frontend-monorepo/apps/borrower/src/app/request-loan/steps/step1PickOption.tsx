@@ -4,7 +4,7 @@ import { Box, Flex, Text } from "@radix-ui/themes";
 import type { ReactElement } from "react";
 import Bitrefil from "../../../assets/bitrefil.png";
 import Defi from "../../../assets/defi.png";
-import Moon from "../../../assets/moon_card.png";
+import { ReactComponent as MoonCard } from "../../../assets/moon_card_satoshi_nakamoto.svg";
 import Sepa from "../../../assets/sepa.jpg";
 import "./../../components/scrollbar.css";
 import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
@@ -49,7 +49,8 @@ export const Step1PickOption = ({ onSelect, selectedOption }: Step1Props) => {
                 title={"Receive a Moon Visa® Card"}
                 key={index}
                 disabled={hasAlreadyCard}
-                image={<img src={Moon} alt="PayWithMoon" className="max-h-full max-w-full" />}
+                image={<MoonCard />}
+                // image={<img src={Moon} alt="PayWithMoon" className="max-h-full max-w-full" />}
               />
             );
           case LoanProductOption.StableCoins:
