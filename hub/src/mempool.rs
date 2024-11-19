@@ -260,7 +260,9 @@ impl xtra::Actor for Actor {
                                             let _ =
                                                 actor.send(ContractUpdate { transactions }).await;
                                         }
-                                        WsResponse::LoadingIndicator { .. } => {
+                                        WsResponse::LoadingIndicator { .. }
+                                        | WsResponse::LoadingIndicators {}
+                                        | WsResponse::Conversions {} => {
                                             // ignored
                                         }
                                     },
@@ -939,11 +941,13 @@ pub enum WsResponse {
         #[serde(rename = "block-transactions")]
         block_transactions: Option<Vec<Transaction>>,
     },
+    AddressTransactions(AddressTransactions),
+    BlockTransactions(BlockTransactions),
     LoadingIndicator {
         response: Option<String>,
     },
-    AddressTransactions(AddressTransactions),
-    BlockTransactions(BlockTransactions),
+    LoadingIndicators {},
+    Conversions {},
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
