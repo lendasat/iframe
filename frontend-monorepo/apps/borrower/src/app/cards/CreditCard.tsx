@@ -80,11 +80,11 @@ const Cvv = ({ cvv, visible }: CvvProps) => {
 
 export default function CreditCard({ card, visible, setVisible }: CredtCardProps) {
   return (
-    <Box>
+    <Box className="relative flex items-center justify-center w-[320px] h-[200px]">
       {/* Background image */}
-      <div className="overflow-hidden">
+      <div className="overflow-hidden w-full h-full">
         <div className="absolute inset-0">
-          <img src={Moon} alt="Card background" className="object-cover" />
+          <img src={Moon} alt="Card background" className="object-cover w-full h-full" />
         </div>
         <div className="absolute bottom-10 left-3 transform -translate-y-1/2 text-white text-center p-2 rounded">
           <CardNumber number={card.pan} visible={visible} setVisible={setVisible}></CardNumber>

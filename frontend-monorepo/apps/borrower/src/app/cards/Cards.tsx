@@ -48,7 +48,7 @@ export default function Cards() {
 
   return (
     <Grid
-      className="md:grid-cols-[minmax(350px,_1fr)_2fr] overflow-y-scroll"
+      className="md:grid-cols-[minmax(390px,390px)_2fr] overflow-y-scroll"
       style={{
         height: innerHeight - 100,
       }}
