@@ -19,7 +19,7 @@ import {
 } from "@frontend-monorepo/ui-shared";
 import { Badge, Box, Button, Callout, Dialog, Flex, Grid, Heading, Separator, Text } from "@radix-ui/themes";
 import { Suspense, useState } from "react";
-import { Alert, Col, OverlayTrigger, Row, Spinner, Tooltip } from "react-bootstrap";
+import { Alert, Col, Row, Spinner } from "react-bootstrap";
 import { FaCopy, FaInfoCircle } from "react-icons/fa";
 import { IoMdCloudDownload } from "react-icons/io";
 import { Await, useNavigate, useParams } from "react-router-dom";
@@ -87,7 +87,6 @@ function ContractDetails({ contract }: DetailsProps) {
   const interestRate = contract.interest_rate;
 
   const initialLtv = contract.initial_ltv;
-  const initial_price = loanAmount / (collateral * initialLtv);
 
   const initialLtvFormatted = (initialLtv * 100).toFixed(0);
 
@@ -95,9 +94,6 @@ function ContractDetails({ contract }: DetailsProps) {
     || contract.status === ContractStatus.DisputeLenderResolved
     || contract.status === ContractStatus.DisputeBorrowerStarted
     || contract.status === ContractStatus.DisputeLenderStarted;
-
-  const loanOriginatorFee = contract.origination_fee_sats / 100000000;
-  const loanOriginatorFeeUsd = (loanOriginatorFee * initial_price).toFixed(0);
 
   const onStartDispute = async (reason: string, comment: string) => {
     setStartingDisputeLoading(true);
@@ -286,27 +282,9 @@ function ContractDetails({ contract }: DetailsProps) {
           <Separator size={"4"} className="bg-font/10" />
 
           <Flex gap={"5"} align={"start"} justify={"between"}>
-            <Text size={"2"} weight={"medium"} className="text-font/70">
-              {/* TODO: fill from backend */}
-              Origination fee
-            </Text>
-            <Box className="max-w-sm text-end">
-              <OverlayTrigger
-                placement="top"
-                overlay={<Tooltip>${loanOriginatorFeeUsd}</Tooltip>}
-              >
-                <Text size={"2"} weight={"medium"}>
-                  {loanOriginatorFee.toFixed(8)} BTC
-                </Text>
-              </OverlayTrigger>
-            </Box>
-          </Flex>
-          <Separator size={"4"} className="bg-font/10" />
-
-          <Flex gap={"5"} align={"start"} justify={"between"}>
             <LtvInfoLabel>
               <Text size={"2"} weight={"medium"} className="text-font/70">
-                LTV ratio
+                Initial LTV ratio
               </Text>
               <FaInfoCircle className="text-font-dark" />
             </LtvInfoLabel>

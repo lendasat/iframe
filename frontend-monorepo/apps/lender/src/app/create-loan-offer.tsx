@@ -216,11 +216,11 @@ const CreateLoanOffer: FC = () => {
                     size="3"
                     className="flex-1 text-sm rounded-lg"
                     type="number"
-                    placeholder="LTV (1-90%)"
+                    placeholder="LTV (1-70%)"
                     color="purple"
                     value={ltv}
                     min={1}
-                    max={90}
+                    max={70}
                     step={1}
                     onChange={(e) => setLtv(Number(e.target.value))}
                   >
