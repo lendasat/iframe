@@ -25,6 +25,7 @@ use axum::middleware;
 use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::routing::post;
+use axum::routing::put;
 use axum::Extension;
 use axum::Json;
 use axum::Router;
@@ -69,6 +70,13 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
         .route(
             "/api/contracts",
             post(post_contract_request).route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                jwt_auth::auth,
+            )),
+        )
+        .route(
+            "/api/contracts/:contract_id/repaid",
+            put(put_repayment_provided).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
                 jwt_auth::auth,
             )),
@@ -507,7 +515,7 @@ pub async fn get_claim_collateral_psbt(
         (StatusCode::BAD_REQUEST, Json(error_response))
     })?;
 
-    if contract.status != ContractStatus::Repaid {
+    if contract.status != ContractStatus::RepaymentConfirmed {
         let error_response = ErrorResponse {
             message: "Contract is not yet repaid".to_string(),
         };
@@ -650,4 +658,49 @@ async fn get_bitmex_index_price(timestamp: OffsetDateTime) -> Result<Decimal> {
     let index_price = Decimal::try_from(index.last_price)?;
 
     Ok(index_price)
+}
+
+#[derive(Debug, Deserialize)]
+pub struct PrincipalRepaidQueryParam {
+    pub txid: String,
+}
+
+#[instrument(skip(data, user), err(Debug))]
+pub async fn put_repayment_provided(
+    State(data): State<Arc<AppState>>,
+    Path(contract_id): Path<String>,
+    query_params: Query<PrincipalRepaidQueryParam>,
+    Extension(user): Extension<User>,
+) -> std::result::Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    async {
+        let contract = db::contracts::load_contract_by_contract_id_and_borrower_id(
+            &data.db,
+            contract_id.as_str(),
+            &user.id,
+        )
+        .await
+        .context("Failed to load contract")?;
+
+        db::contracts::mark_contract_as_repayment_provided(&data.db, contract.id.as_str())
+            .await
+            .context("Failed to mark contract as repaid")?;
+
+        db::transactions::insert_principal_repaid_txid(
+            &data.db,
+            contract_id.as_str(),
+            query_params.txid.as_str(),
+        )
+        .await
+        .context("Failed inserting principal given tx id")?;
+
+        anyhow::Ok(())
+    }
+    .await
+    .map_err(|e| {
+        let error_response = ErrorResponse {
+            message: format!("Database error: {e:#}"),
+        };
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+    })?;
+    Ok(())
 }

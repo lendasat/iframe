@@ -195,6 +195,24 @@ export class HttpClientBorrower extends BaseHttpClient {
     }
   }
 
+  async markAsRepaymentProvided(id: string, txid: string): Promise<void> {
+    try {
+      await this.httpClient.put(`/api/contracts/${id}/repaid?txid=${txid}`);
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to mark contract as principal repayment provided: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Failed to mark contract as principal given ${JSON.stringify(error)}`);
+      }
+    }
+  }
+
   async getClaimCollateralPsbt(id: string, feeRate: number): Promise<ClaimCollateralPsbtResponse> {
     try {
       const res: AxiosResponse<ClaimCollateralPsbtResponse> = await this.httpClient.get(
@@ -418,6 +436,7 @@ type BorrowerHttpClientContextType = Pick<
   | "postContractRequest"
   | "getContracts"
   | "getContract"
+  | "markAsRepaymentProvided"
   | "getClaimCollateralPsbt"
   | "getClaimDisputeCollateralPsbt"
   | "postClaimTx"
@@ -495,6 +514,7 @@ export const HttpClientBorrowerProvider: React.FC<HttpClientProviderProps> = ({ 
     postContractRequest: httpClient.postContractRequest.bind(httpClient),
     getContracts: httpClient.getContracts.bind(httpClient),
     getContract: httpClient.getContract.bind(httpClient),
+    markAsRepaymentProvided: httpClient.markAsRepaymentProvided.bind(httpClient),
     getClaimCollateralPsbt: httpClient.getClaimCollateralPsbt.bind(httpClient),
     getClaimDisputeCollateralPsbt: httpClient.getClaimDisputeCollateralPsbt.bind(httpClient),
     postClaimTx: httpClient.postClaimTx.bind(httpClient),

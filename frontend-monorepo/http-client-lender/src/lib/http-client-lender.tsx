@@ -149,9 +149,9 @@ export class HttpClientLender extends BaseHttpClient {
     }
   }
 
-  async markAsRepaid(id: string, txid: string): Promise<void> {
+  async markPrincipalConfirmed(id: string): Promise<void> {
     try {
-      await this.httpClient.put(`/api/contracts/${id}/repaid?txid=${txid}`);
+      await this.httpClient.put(`/api/contracts/${id}/principalconfirmed`);
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         const message = error.response.data.message;
@@ -323,7 +323,7 @@ type LenderHttpClientContextType = Pick<
   | "approveContract"
   | "rejectContract"
   | "principalGiven"
-  | "markAsRepaid"
+  | "markPrincipalConfirmed"
   | "startDispute"
   | "getDispute"
   | "getLenderProfile"
@@ -371,7 +371,7 @@ export const HttpClientLenderProvider: React.FC<HttpClientProviderProps> = ({ ch
     approveContract: httpClient.approveContract.bind(httpClient),
     rejectContract: httpClient.rejectContract.bind(httpClient),
     principalGiven: httpClient.principalGiven.bind(httpClient),
-    markAsRepaid: httpClient.markAsRepaid.bind(httpClient),
+    markPrincipalConfirmed: httpClient.markPrincipalConfirmed.bind(httpClient),
     startDispute: httpClient.startDispute.bind(httpClient),
     getDispute: httpClient.getDispute.bind(httpClient),
     getLenderProfile: httpClient.getLenderProfile.bind(httpClient),

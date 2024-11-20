@@ -424,8 +424,10 @@ const actionFromStatus = (status: ContractStatus) => {
     case ContractStatus.Closed:
     case ContractStatus.Closing:
       return "Details";
-    case ContractStatus.Repaid:
+    case ContractStatus.RepaymentConfirmed:
       return "Withdraw collateral";
+    case ContractStatus.RepaymentProvided:
+      return "Details";
     case ContractStatus.Rejected:
       return "Details";
     case ContractStatus.DisputeBorrowerStarted:

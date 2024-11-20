@@ -3,6 +3,7 @@ use crate::model::Contract;
 use crate::model::ContractStatus;
 use crate::model::Integration;
 use anyhow::bail;
+use anyhow::Error;
 use anyhow::Result;
 use bitcoin::address::NetworkUnchecked;
 use bitcoin::bip32::Xpub;
@@ -478,7 +479,25 @@ pub async fn mark_contract_as_principal_given(
     Ok(contract.into())
 }
 
-pub async fn mark_contract_as_repaid(pool: &Pool<Postgres>, contract_id: &str) -> Result<Contract> {
+pub async fn mark_contract_as_repayment_provided(
+    pool: &Pool<Postgres>,
+    contract_id: &str,
+) -> Result<Contract> {
+    update_contract_state(pool, contract_id, db::ContractStatus::RepaymentProvided).await
+}
+
+pub async fn mark_contract_as_repayment_confirmed(
+    pool: &Pool<Postgres>,
+    contract_id: &str,
+) -> Result<Contract> {
+    update_contract_state(pool, contract_id, db::ContractStatus::RepaymentConfirmed).await
+}
+
+async fn update_contract_state(
+    pool: &Pool<Postgres>,
+    contract_id: &str,
+    new_status: db::ContractStatus,
+) -> Result<Contract, Error> {
     let contract = sqlx::query_as!(
         db::Contract,
         r#"
@@ -510,7 +529,7 @@ pub async fn mark_contract_as_repaid(pool: &Pool<Postgres>, contract_id: &str) -
             created_at,
             updated_at
         "#,
-        db::ContractStatus::Repaid as db::ContractStatus,
+        new_status as db::ContractStatus,
         time::OffsetDateTime::now_utc(),
         contract_id,
     )
@@ -837,7 +856,8 @@ pub async fn update_collateral(
                 }
                 ContractStatus::CollateralConfirmed
                 | ContractStatus::PrincipalGiven
-                | ContractStatus::Repaid
+                | ContractStatus::RepaymentProvided
+                | ContractStatus::RepaymentConfirmed
                 | ContractStatus::Closing
                 | ContractStatus::Closed
                 | ContractStatus::Rejected

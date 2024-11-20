@@ -71,8 +71,8 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
             )),
         )
         .route(
-            "/api/contracts/:contract_id/repaid",
-            put(put_repaid_contract).route_layer(middleware::from_fn_with_state(
+            "/api/contracts/:contract_id/principalconfirmed",
+            put(put_confirm_repayment).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
                 jwt_auth::auth,
             )),
@@ -595,16 +595,10 @@ pub async fn delete_reject_contract(
     Ok(())
 }
 
-#[derive(Debug, Deserialize)]
-pub struct PrincipalRepaidQueryParam {
-    pub txid: String,
-}
-
 #[instrument(skip(data, user), err(Debug))]
-pub async fn put_repaid_contract(
+pub async fn put_confirm_repayment(
     State(data): State<Arc<AppState>>,
     Path(contract_id): Path<String>,
-    query_params: Query<PrincipalRepaidQueryParam>,
     Extension(user): Extension<User>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     async {
@@ -616,17 +610,9 @@ pub async fn put_repaid_contract(
         .await
         .context("Failed to load contract request")?;
 
-        db::contracts::mark_contract_as_repaid(&data.db, contract.id.as_str())
+        db::contracts::mark_contract_as_repayment_confirmed(&data.db, contract.id.as_str())
             .await
-            .context("Failed to mark contract as repaid")?;
-
-        db::transactions::insert_principal_repaid_txid(
-            &data.db,
-            contract_id.as_str(),
-            query_params.txid.as_str(),
-        )
-        .await
-        .context("Failed inserting principal given tx id")?;
+            .context("Failed to confirm contract as repaid")?;
 
         anyhow::Ok(())
     }

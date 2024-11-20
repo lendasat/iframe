@@ -16,12 +16,12 @@
       {
         "ordinal": 2,
         "name": "passphrase_hash",
-        "type_info": "Varchar"
+        "type_info": "Text"
       },
       {
         "ordinal": 3,
         "name": "mnemonic_ciphertext",
-        "type_info": "Varchar"
+        "type_info": "Text"
       },
       {
         "ordinal": 4,
@@ -31,7 +31,7 @@
       {
         "ordinal": 5,
         "name": "xpub",
-        "type_info": "Varchar"
+        "type_info": "Text"
       },
       {
         "ordinal": 6,
