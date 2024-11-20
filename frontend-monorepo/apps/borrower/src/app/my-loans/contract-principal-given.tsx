@@ -6,6 +6,7 @@ import { Button } from "@radix-ui/themes";
 import QRCode from "qrcode.react";
 import { type FormEvent, useState } from "react";
 import { Alert, Col, Container, Form, Row } from "react-bootstrap";
+import { useNavigate } from "react-router-dom";
 
 interface ContractPrincipalGivenProps {
   totalRepaymentAmount: number;
@@ -18,6 +19,8 @@ export function ContractPrincipalGiven({
   repaymentAddress,
   contractId,
 }: ContractPrincipalGivenProps) {
+  const navigate = useNavigate();
+
   const [txid, setTxid] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");

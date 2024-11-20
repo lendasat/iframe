@@ -547,7 +547,7 @@ const ClosedLoans = ({ header, loans, latestPrice }: ClosedPorps) => {
                   {repaid_at
                     ? (
                       <Text size={"1"} weight={"medium"}>
-                        {repaid_at.toLocaleDateString("en-US")}
+                        {repaid_at.toLocaleDateString()}
                       </Text>
                     )
                     : ""}
@@ -635,7 +635,7 @@ const ClosedLoans = ({ header, loans, latestPrice }: ClosedPorps) => {
                           {repaid_at
                             ? (
                               <Text size={"3"} weight={"medium"}>
-                                {repaid_at.toLocaleDateString("en-US")}
+                                {repaid_at.toLocaleDateString()}
                               </Text>
                             )
                             : ""}

@@ -183,6 +183,11 @@ pub async fn get_active_contracts(
         let asset_chain = offer.loan_asset_chain;
         let asset_type = offer.loan_asset_type;
 
+        let mut repaid_at = None;
+        if contract.status == ContractStatus::Closed || contract.status == ContractStatus::Closing {
+            repaid_at = Some(contract.updated_at);
+        }
+
         let contract = Contract {
             collateral_sats: contract.collateral_sats,
             id: contract.id,
@@ -206,7 +211,7 @@ pub async fn get_active_contracts(
                 name: borrower.name,
             },
             created_at: contract.created_at,
-            repaid_at: None,
+            repaid_at,
             transactions,
             expiry,
             loan_asset_chain: asset_chain,
@@ -285,6 +290,11 @@ pub async fn get_contract(
     let asset_chain = offer.loan_asset_chain;
     let asset_type = offer.loan_asset_type;
 
+    let mut repaid_at = None;
+    if contract.status == ContractStatus::Closed || contract.status == ContractStatus::Closing {
+        repaid_at = Some(contract.updated_at);
+    }
+
     let contract = Contract {
         collateral_sats: contract.collateral_sats,
         id: contract.id,
@@ -308,7 +318,7 @@ pub async fn get_contract(
             name: borrower.name,
         },
         created_at: contract.created_at,
-        repaid_at: None,
+        repaid_at,
         transactions,
         expiry,
         loan_asset_chain: asset_chain,

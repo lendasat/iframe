@@ -201,6 +201,11 @@ pub async fn get_contracts(
         let expiry =
             contract.created_at + time::Duration::weeks((contract.duration_months * 4) as i64);
 
+        let mut repaid_at = None;
+        if contract.status == ContractStatus::Closed || contract.status == ContractStatus::Closing {
+            repaid_at = Some(contract.updated_at);
+        }
+
         let contract = Contract {
             collateral_sats: contract.collateral_sats,
             id: contract.id,
@@ -226,7 +231,7 @@ pub async fn get_contracts(
                 name: lender.name,
             },
             created_at: contract.created_at,
-            repaid_at: None,
+            repaid_at,
             transactions,
             expiry,
         };
@@ -300,6 +305,11 @@ pub async fn get_contract(
             (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
         })?;
 
+    let mut repaid_at = None;
+    if contract.status == ContractStatus::Closed || contract.status == ContractStatus::Closing {
+        repaid_at = Some(contract.updated_at);
+    }
+
     Ok((
         StatusCode::OK,
         Json(Contract {
@@ -327,7 +337,7 @@ pub async fn get_contract(
                 name: lender.name,
             },
             created_at: contract.created_at,
-            repaid_at: None,
+            repaid_at,
             transactions,
             expiry,
         }),
@@ -429,6 +439,11 @@ pub async fn post_contract_request(
         let transactions =
             db::transactions::get_all_for_contract_id(&data.db, contract.id.as_str()).await?;
 
+        let mut repaid_at = None;
+        if contract.status == ContractStatus::Closed || contract.status == ContractStatus::Closing {
+            repaid_at = Some(contract.updated_at);
+        }
+
         let contract = Contract {
             collateral_sats: contract.collateral_sats,
             id: contract.id,
@@ -454,7 +469,7 @@ pub async fn post_contract_request(
                 name: lender.name.clone(),
             },
             created_at: contract.created_at,
-            repaid_at: None,
+            repaid_at,
             transactions,
             expiry,
         };
