@@ -108,14 +108,22 @@ mod tests {
         let loan_amount = dec!(50_000);
         let collateral_sats = dec!(100_000_000); // 1 BTC
         let liquidation_price = calculate_liquidation_price(loan_amount, collateral_sats);
-        let expected = dec!(55_555.5555556);
+        let expected = dec!(52631.578947);
 
-        assert!((liquidation_price - expected).abs() < dec!(0.0001));
+        assert!(
+            (liquidation_price - expected).abs() < dec!(0.0001),
+            "({liquidation_price} - {expected}) < 0.0001"
+        );
 
         let result =
             calculate_ltv(liquidation_price, loan_amount, collateral_sats).expect("to work");
-        let expected = dec!(0.9);
+        let expected = LTV_THRESHOLD_LIQUIDATION;
 
-        assert!((result - expected).abs() < dec!(0.0001));
+        assert!(
+            (result - expected).abs() < dec!(0.0001),
+            "({} - {}).abs() < 0.0001",
+            result,
+            expected
+        );
     }
 }
