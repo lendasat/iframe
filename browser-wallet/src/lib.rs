@@ -99,8 +99,8 @@ pub fn get_mnemonic() -> Result<String, JsValue> {
 }
 
 #[wasm_bindgen]
-pub fn get_next_pk(username: String) -> Result<String, JsValue> {
-    map_err_to_js!(browser_wallet::get_next_pk(&username))
+pub fn get_next_pk() -> Result<String, JsValue> {
+    map_err_to_js!(browser_wallet::get_next_pk())
 }
 
 #[wasm_bindgen]
