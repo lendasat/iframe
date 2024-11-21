@@ -8,6 +8,7 @@ use anyhow::Result;
 use pay_with_moon::MoonCardClient;
 use pay_with_moon::Transaction;
 use rust_decimal::Decimal;
+use rust_decimal_macros::dec;
 use sqlx::Pool;
 use sqlx::Postgres;
 use time::Date;
@@ -75,15 +76,17 @@ impl Manager {
         let end_customer_id = format!("{}/{}", borrower_id, contract_id);
 
         let card_product_id = &self.visa_product_id;
-        let res = self
+        let response = self
             .client
             .create_card(&end_customer_id, &card_product_id.to_string())
             .await
             .context("Moon error")?;
 
-        tracing::debug!(invoice = ?res, contract_id, borrower_id, "Created Moon card");
+        tracing::debug!(?response, contract_id, borrower_id, "Created Moon card");
 
-        let date = res.expiration.split('-').collect::<Vec<_>>();
+        let card = response.card;
+
+        let date = card.expiration.split('-').collect::<Vec<_>>();
         let year: i32 = date[0].parse().context("Year")?;
         let month: u8 = date[1].parse().context("Parse month")?;
         let month = Month::try_from(month).context("Month")?;
@@ -98,10 +101,13 @@ impl Manager {
             id: res.id,
             balance: res.balance,
             available_balance: res.available_balance,
+            id: card.id,
+            balance: card.balance,
+            available_balance: dec!(0),
             expiration,
-            pan: res.pan,
-            cvv: res.cvv,
-            support_token: res.support_token,
+            pan: card.pan,
+            cvv: card.cvv,
+            support_token: card.support_token,
             product_id: *card_product_id,
             end_customer_id,
             contract_id: contract_id.clone(),
