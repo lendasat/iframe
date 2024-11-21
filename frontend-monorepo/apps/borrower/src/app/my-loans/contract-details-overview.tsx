@@ -27,6 +27,7 @@ import { collateralForStatus } from "./collateralForStatus";
 import { CollateralContractDetails } from "./collateralize-contract";
 import { CollateralSeenOrConfirmed } from "./contract-collateral-seen-or-confirmed";
 import { ContractPrincipalGiven } from "./contract-principal-given";
+import { ContractPrincipalRepaid } from "./contract-principal-repaid";
 import { ContractRepaid } from "./contract-repaid";
 import { ContractRequested } from "./contract-requested";
 import { ExpandableDisputeCard } from "./dispute-card";
@@ -198,7 +199,8 @@ function ContractDetails({ contract }: DetailsProps) {
     case ContractStatus.Requested:
     case ContractStatus.Approved:
     case ContractStatus.Rejected:
-    case ContractStatus.Repaid:
+    case ContractStatus.RepaymentProvided:
+    case ContractStatus.RepaymentConfirmed:
     case ContractStatus.Closing:
     case ContractStatus.Closed:
       canAddExtraCollateral = false;
@@ -479,7 +481,8 @@ const AdditionalDetail = ({ contract }: AdditionalDetailsProps) => {
           </Row>
         </>
       );
-    case ContractStatus.Repaid:
+    case ContractStatus.RepaymentProvided:
+    case ContractStatus.RepaymentConfirmed:
       return (
         <>
           <Row className="justify-content-between border-b mt-2">
@@ -609,9 +612,12 @@ const ContractStatusDetails = ({
         <ContractPrincipalGiven
           repaymentAddress={contract.loan_repayment_address}
           totalRepaymentAmount={totalRepaymentAmount}
+          contractId={contract.id}
         />
       );
-    case ContractStatus.Repaid:
+    case ContractStatus.RepaymentProvided:
+      return <ContractPrincipalRepaid />;
+    case ContractStatus.RepaymentConfirmed:
       return <ContractRepaid contract={contract} collateralBtc={collateralBtc} />;
     case ContractStatus.Closed:
     case ContractStatus.Closing:

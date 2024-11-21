@@ -8,7 +8,8 @@ export enum ContractStatus {
   CollateralConfirmed = "CollateralConfirmed",
   PrincipalGiven = "PrincipalGiven",
   Closing = "Closing",
-  Repaid = "Repaid",
+  RepaymentProvided = "RepaymentProvided",
+  RepaymentConfirmed = "RepaymentConfirmed",
   Closed = "Closed",
   Rejected = "Rejected",
   DisputeBorrowerStarted = "DisputeBorrowerStarted",
@@ -31,8 +32,10 @@ export function contractStatusToLabelString(status: ContractStatus): string {
       return "Principal Disbursed";
     case ContractStatus.Closing:
       return "Contract Closing";
-    case ContractStatus.Repaid:
-      return "Loan Repaid";
+    case ContractStatus.RepaymentProvided:
+      return "Loan Repayment Provided";
+    case ContractStatus.RepaymentConfirmed:
+      return "Loan Repayment Confirmed";
     case ContractStatus.Closed:
       return "Contract Closed";
     case ContractStatus.Rejected:
@@ -44,6 +47,7 @@ export function contractStatusToLabelString(status: ContractStatus): string {
     case ContractStatus.DisputeLenderResolved:
       return "Dispute Resolved";
     default:
+      console.log(status);
       return "Unknown Status";
   }
 }

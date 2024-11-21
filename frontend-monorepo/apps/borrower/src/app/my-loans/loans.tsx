@@ -424,8 +424,10 @@ const actionFromStatus = (status: ContractStatus) => {
     case ContractStatus.Closed:
     case ContractStatus.Closing:
       return "Details";
-    case ContractStatus.Repaid:
+    case ContractStatus.RepaymentConfirmed:
       return "Withdraw collateral";
+    case ContractStatus.RepaymentProvided:
+      return "Details";
     case ContractStatus.Rejected:
       return "Details";
     case ContractStatus.DisputeBorrowerStarted:
@@ -545,7 +547,7 @@ const ClosedLoans = ({ header, loans, latestPrice }: ClosedPorps) => {
                   {repaid_at
                     ? (
                       <Text size={"1"} weight={"medium"}>
-                        {repaid_at.toLocaleDateString("en-US")}
+                        {repaid_at.toLocaleDateString()}
                       </Text>
                     )
                     : ""}
@@ -633,7 +635,7 @@ const ClosedLoans = ({ header, loans, latestPrice }: ClosedPorps) => {
                           {repaid_at
                             ? (
                               <Text size={"3"} weight={"medium"}>
-                                {repaid_at.toLocaleDateString("en-US")}
+                                {repaid_at.toLocaleDateString()}
                               </Text>
                             )
                             : ""}

@@ -265,8 +265,10 @@ pub enum ContractStatus {
     CollateralConfirmed,
     /// The principal has been given to the borrower.
     PrincipalGiven,
-    /// The principal + interest has been repaid to the lender.
-    Repaid,
+    /// The principal + interest has been repaid to the lender as claimed by the borrower
+    RepaymentProvided,
+    /// The principal + interest has been repaid to the lender and confirmed by the lender
+    RepaymentConfirmed,
     /// The collateral claim tx has been broadcasted but not confirmed yet.
     Closing,
     /// The loan has been repaid, somehow.
@@ -338,7 +340,8 @@ pub mod db {
         CollateralSeen,
         CollateralConfirmed,
         PrincipalGiven,
-        Repaid,
+        RepaymentProvided,
+        RepaymentConfirmed,
         Closing,
         Closed,
         Rejected,
@@ -422,7 +425,8 @@ impl From<db::ContractStatus> for ContractStatus {
             db::ContractStatus::CollateralSeen => Self::CollateralSeen,
             db::ContractStatus::CollateralConfirmed => Self::CollateralConfirmed,
             db::ContractStatus::PrincipalGiven => Self::PrincipalGiven,
-            db::ContractStatus::Repaid => Self::Repaid,
+            db::ContractStatus::RepaymentProvided => Self::RepaymentProvided,
+            db::ContractStatus::RepaymentConfirmed => Self::RepaymentConfirmed,
             db::ContractStatus::Closing => Self::Closing,
             db::ContractStatus::Closed => Self::Closed,
             db::ContractStatus::Rejected => Self::Rejected,
@@ -535,7 +539,8 @@ impl From<ContractStatus> for db::ContractStatus {
             ContractStatus::CollateralSeen => Self::CollateralSeen,
             ContractStatus::CollateralConfirmed => Self::CollateralConfirmed,
             ContractStatus::PrincipalGiven => Self::PrincipalGiven,
-            ContractStatus::Repaid => Self::Repaid,
+            ContractStatus::RepaymentProvided => Self::RepaymentProvided,
+            ContractStatus::RepaymentConfirmed => Self::RepaymentConfirmed,
             ContractStatus::Closing => Self::Closing,
             ContractStatus::Closed => Self::Closed,
             ContractStatus::Rejected => Self::Rejected,

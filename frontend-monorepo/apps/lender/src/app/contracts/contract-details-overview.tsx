@@ -456,7 +456,8 @@ const AdditionalDetail = ({ contract }: AdditionalDetailsProps) => {
           </Box>
         </>
       );
-    case ContractStatus.Repaid:
+    case ContractStatus.RepaymentProvided:
+    case ContractStatus.RepaymentConfirmed:
       return (
         <>
           <Box className="space-y-5">
@@ -570,7 +571,7 @@ const ContractStatusDetails = ({
   onError,
   onSuccess,
 }: ContractStatusDetailsProps) => {
-  const { approveContract, rejectContract, principalGiven, markAsRepaid } = useLenderHttpClient();
+  const { approveContract, rejectContract, principalGiven, markPrincipalConfirmed } = useLenderHttpClient();
   const [isLoading, setIsLoading] = useState(false);
   const [txid, setTxid] = useState("");
   const { getXpub, doesWalletExist } = useWallet();
@@ -616,9 +617,10 @@ const ContractStatusDetails = ({
   const onMarkAsRepaid = async () => {
     try {
       setIsLoading(true);
-      await markAsRepaid(contract.id, txid);
+      await markPrincipalConfirmed(contract.id);
       onSuccess();
     } catch (error) {
+      console.log(`Failed to mark as repaid ${error}`);
       onError(`${error}`);
     } finally {
       setIsLoading(false);
@@ -761,21 +763,14 @@ const ContractStatusDetails = ({
       );
     case ContractStatus.PrincipalGiven:
       return (
+        <Alert variant="info">
+          <FontAwesomeIcon icon={faInfoCircle} className="h-4 w-4 mr-2" />
+          Please wait until the borrower repays the loan
+        </Alert>
+      );
+    case ContractStatus.RepaymentProvided:
+      return (
         <div>
-          {/* Text input for txid */}
-          <Row className="mt-3">
-            <Col>
-              <label htmlFor="txid">Transaction ID:</label>
-              <input
-                id="txid"
-                type="text"
-                value={txid}
-                onChange={(e) => setTxid(e.target.value)}
-                placeholder="Enter transaction ID"
-              />
-            </Col>
-          </Row>
-
           <Row className="mt-3">
             <Col>
               <Button onClick={onMarkAsRepaid} disabled={isLoading}>
@@ -791,14 +786,14 @@ const ContractStatusDetails = ({
                     </Spinner>
                   )
                   : (
-                    "Mark as repaid"
+                    "Accept as repaid"
                   )}
               </Button>
             </Col>
           </Row>
         </div>
       );
-    case ContractStatus.Repaid:
+    case ContractStatus.RepaymentConfirmed:
       return (
         <Alert variant="info">
           <FontAwesomeIcon icon={faInfoCircle} className="h-4 w-4 mr-2" />
