@@ -360,8 +360,14 @@ pub async fn put_approve_contract(
             .context("Failed loading borrower")?
             .context("Borrower not found")?;
 
+        let mut db_tx = data
+            .db
+            .begin()
+            .await
+            .context("Failed to start db transaction")?;
+
         let contract = db::contracts::accept_contract_request(
-            &data.db,
+            &mut db_tx,
             user.id.as_str(),
             contract_id.as_str(),
             contract_address.clone(),
@@ -402,6 +408,8 @@ pub async fn put_approve_contract(
         {
             tracing::error!("Failed notifying lender {err:#}");
         }
+
+        db_tx.commit().await.context("Failed writing to db")?;
 
         anyhow::Ok(())
     }

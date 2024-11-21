@@ -146,8 +146,10 @@ async fn accept_loan_request(
     contract: &Contract,
     lender_id: &str,
 ) -> Result<Contract> {
-    db::contracts::accept_contract_request(
-        pool,
+    let mut transaction = pool.begin().await?;
+
+    let contract = db::contracts::accept_contract_request(
+        &mut transaction,
         lender_id,
         contract.id.as_str(),
         Address::from_str("tb1qtsasnju08gh7ptqg7260qujgasvtexkf9t3yj3")
@@ -157,7 +159,9 @@ async fn accept_loan_request(
         Xpub::from_str("tpubDAenfwNu5GyCJWv8oqRAckdKMSUoZjgVF5p8WvQwHQeXjDhAHmGrPa4a4y2Fn7HF2nfCLefJanHV3ny1UY25MRVogizB2zRUdAo7Tr9XAjm")
             .expect("valid xpub"),
     )
-    .await
+        .await?;
+    transaction.commit().await?;
+    Ok(contract)
 }
 
 async fn create_loan_request(

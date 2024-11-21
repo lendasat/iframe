@@ -98,9 +98,6 @@ impl Manager {
         let expiration = OffsetDateTime::new_utc(date, time);
 
         let card = Card {
-            id: res.id,
-            balance: res.balance,
-            available_balance: res.available_balance,
             id: card.id,
             balance: card.balance,
             available_balance: dec!(0),
