@@ -36,7 +36,7 @@ export function ContractPrincipalGiven({
       setIsLoading(true);
       await markAsRepaymentProvided(contractId, txid);
       setSuccess(
-        "Contract has been marked as repaid. Once the lender confirmed the repayment, you will be\n"
+        "Contract has been marked as repaid. Once the lender confirms the repayment, you will be\n"
           + "able to withdraw the collateral from the contract.",
       );
       setSubmitted(true);
