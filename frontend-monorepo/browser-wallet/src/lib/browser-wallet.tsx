@@ -84,7 +84,7 @@ export const WalletProvider = ({ children, username }: WalletProviderProps) => {
 
   const getNextPublicKey = () => {
     if (isInitialized && isWalletLoaded) {
-      return get_next_pk(username);
+      return get_next_pk();
     } else if (!isInitialized) {
       throw Error("Wallet not initialized");
     } else {

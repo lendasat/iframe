@@ -12,7 +12,6 @@ const STORAGE_KEY_PREFIX: &str = "wallet";
 const PASSPHRASE_STORAGE_KEY: &str = "passphrase";
 const SEED_STORAGE_KEY: &str = "seed";
 const NETWORK_KEY: &str = "network";
-const NEXT_PK_INDEX_KEY: &str = "next_pk_index";
 const XPUB_KEY: &str = "xpub";
 
 pub struct WalletDetails {
@@ -45,11 +44,6 @@ pub fn new(passphrase: String, network: String, username: String) -> Result<Wall
     storage.set_item(
         derive_storage_key(username.as_str(), NETWORK_KEY).as_str(),
         network.to_string(),
-    )?;
-
-    storage.set_item(
-        derive_storage_key(username.as_str(), NEXT_PK_INDEX_KEY).as_str(),
-        0,
     )?;
 
     storage.set_item(
@@ -93,12 +87,6 @@ pub fn restore(
         network,
     )?;
 
-    // TODO: is this safe?
-    storage.set_item(
-        derive_storage_key(username.as_str(), NEXT_PK_INDEX_KEY).as_str(),
-        0,
-    )?;
-
     storage.set_item(
         derive_storage_key(username.as_str(), XPUB_KEY).as_str(),
         xpub,
@@ -132,24 +120,8 @@ pub fn load(passphrase: &str, username: &str) -> Result<()> {
     Ok(())
 }
 
-pub fn get_next_pk(username: &str) -> Result<String> {
-    let storage = local_storage()?;
-
-    let pk_index = storage
-        .get_item::<u32>(derive_storage_key(username, NEXT_PK_INDEX_KEY).as_str())?
-        .context("No index stored for wallet")?;
-
-    let pk = wallet::get_pk(pk_index)?;
-
-    storage.set_item(
-        derive_storage_key(username, &pk.to_string()).as_str(),
-        pk_index,
-    )?;
-
-    storage.set_item(
-        derive_storage_key(username, NEXT_PK_INDEX_KEY).as_str(),
-        pk_index + 1,
-    )?;
+pub fn get_next_pk() -> Result<String> {
+    let pk = wallet::get_pk(0)?;
 
     Ok(pk.to_string())
 }
