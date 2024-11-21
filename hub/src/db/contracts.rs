@@ -379,7 +379,7 @@ pub async fn insert_contract_request(
 }
 
 pub async fn accept_contract_request(
-    pool: &Pool<Postgres>,
+    transaction: &mut sqlx::Transaction<'_, Postgres>,
     lender_id: &str,
     contract_id: &str,
     contract_address: Address,
@@ -428,7 +428,7 @@ pub async fn accept_contract_request(
         lender_id,
         contract_id
     )
-    .fetch_one(pool)
+    .fetch_one(&mut **transaction)
     .await?;
 
     Ok(contract.into())
