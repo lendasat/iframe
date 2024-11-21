@@ -185,7 +185,7 @@ impl Manager {
             .await
             .context("Moon error")?;
 
-        tracing::debug!(invoice = ?res, contract_id, lender_id, "Generated a Moon invoice");
+        tracing::debug!(invoice = ?res, contract_id, lender_id, borrower_id, "Generated a Moon invoice");
 
         let invoice = Invoice {
             id: res.id,

@@ -300,7 +300,7 @@ pub async fn post_webhook(
         Err(JsonRejection::MissingJsonContentType(_))
         | Err(JsonRejection::JsonDataError(_))
         | Err(JsonRejection::JsonSyntaxError(_)) => {
-            tracing::debug!("Webhook registered");
+            tracing::debug!(?payload, "Webhook registered but did not match");
 
             Ok((StatusCode::OK, ()))
         }
