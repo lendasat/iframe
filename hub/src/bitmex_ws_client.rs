@@ -16,7 +16,7 @@ pub async fn stream(network: Network) -> impl Stream<Item = Result<Event>> + Unp
     let stream = stream! {
         let timeout = Duration::from_secs(10);
         let mut stream = bitmex_stream::subscribe(
-            [ "instrument:.BXBT".to_owned()],
+            ["instrument:.BXBT".to_owned()],
             network,
             timeout,
         ).boxed();
@@ -44,7 +44,7 @@ pub async fn stream(network: Network) -> impl Stream<Item = Result<Event>> + Unp
 
                         }
                         Err(err) => {
-                            tracing::warn!("Unexpected message from BitMEX: {text}, {err:?}");
+                            tracing::trace!("Unexpected message from BitMEX: {text}, {err:?}");
                         }
                     }
                 },

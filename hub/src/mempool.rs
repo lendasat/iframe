@@ -3,7 +3,6 @@ use crate::db;
 use crate::email::Email;
 use crate::model::ContractStatus;
 use anyhow::anyhow;
-use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Result;
 use bitcoin::address::NetworkUnchecked;
@@ -161,8 +160,6 @@ impl xtra::Actor for Actor {
     type Stop = anyhow::Error;
 
     async fn started(&mut self, mailbox: &Mailbox<Self>) -> Result<()> {
-        let contracts = db::contracts::load_open_contracts(&self.db).await?;
-
         let starting_block_height = self.rest_client.get_block_tip_height().await?;
 
         self.block_height = starting_block_height;
@@ -196,33 +193,42 @@ impl xtra::Actor for Actor {
 
         tokio::spawn({
             let actor = mailbox.address();
+            let db = self.db.clone();
             async move {
-                for contract in contracts {
-                    let contract_address = match contract.contract_address {
-                        Some(ref contract_address) => contract_address,
-                        None => {
-                            tracing::error!(
-                                ?contract,
-                                "Cannot track pending contract without contract address"
-                            );
-                            continue;
-                        }
-                    };
-
-                    if let Err(e) = actor
-                        .send(TrackContractFunding {
-                            contract_id: contract.id.clone(),
-                            contract_address: contract_address.clone().assume_checked(),
-                        })
-                        .await
-                    {
-                        tracing::error!(?contract, "Failed to track contract: {e:#}");
-                    };
-                }
-
                 let mut stream = stream;
-
                 loop {
+                    // TODO: Maybe we should not go against the database every time. We could rely
+                    // on the `Actor` state.
+                    let contracts = db::contracts::load_open_contracts(&db)
+                        .await
+                        .expect("contracts to start mempool actor");
+                    for contract in contracts {
+                        let contract_address = match contract.contract_address {
+                            Some(ref contract_address) => contract_address,
+                            None => {
+                                tracing::error!(
+                                    ?contract,
+                                    "Cannot track pending contract without contract address"
+                                );
+                                continue;
+                            }
+                        };
+
+                        // TODO: I'm slightly concerned about hitting rate limits after a WS
+                        // reconnect.
+                        if let Err(e) = actor
+                            .send(TrackContractFunding {
+                                contract_id: contract.id.clone(),
+                                contract_address: contract_address.clone().assume_checked(),
+                            })
+                            .await
+                            .expect("actor to be alive")
+                        {
+                            tracing::error!(?contract, "Failed to track contract: {e:#}");
+                        }
+                    }
+
+                    tracing::debug!(url = ws_url, "Listening on mempool WS");
                     while let Some(message) = stream.next().await {
                         match message {
                             Ok(Message::Text(text)) => {
@@ -236,19 +242,26 @@ impl xtra::Actor for Actor {
                                                 .map(|block| block.height)
                                                 .unwrap_or_default();
 
-                                            let _ = actor.send(NewBlockHeight(height)).await;
+                                            actor
+                                                .send(NewBlockHeight(height))
+                                                .await
+                                                .expect("actor to be alive");
                                         }
                                         // Subsequent blocks.
                                         WsResponse::Block {
                                             block,
                                             block_transactions,
                                         } => {
-                                            let _ = actor.send(NewBlockHeight(block.height)).await;
+                                            actor
+                                                .send(NewBlockHeight(block.height))
+                                                .await
+                                                .expect("actor to be alive");
 
                                             if let Some(transactions) = block_transactions {
-                                                let _ = actor
+                                                actor
                                                     .send(ContractUpdate { transactions })
-                                                    .await;
+                                                    .await
+                                                    .expect("actor to be alive");
                                             }
                                         }
                                         WsResponse::AddressTransactions(AddressTransactions {
@@ -257,8 +270,10 @@ impl xtra::Actor for Actor {
                                         | WsResponse::BlockTransactions(BlockTransactions {
                                             block_transactions: transactions,
                                         }) => {
-                                            let _ =
-                                                actor.send(ContractUpdate { transactions }).await;
+                                            actor
+                                                .send(ContractUpdate { transactions })
+                                                .await
+                                                .expect("actor to be alive");
                                         }
                                         WsResponse::LoadingIndicator { .. }
                                         | WsResponse::LoadingIndicators {}
@@ -295,7 +310,9 @@ impl xtra::Actor for Actor {
                         )
                         .await
                         {
-                            Ok((ws_stream, _)) => break ws_stream,
+                            Ok((ws_stream, _)) => {
+                                break ws_stream;
+                            }
                             Err(e) => {
                                 tracing::error!(
                                     "Failed to reconnect to mempool WS: {e:?}. \
@@ -309,7 +326,10 @@ impl xtra::Actor for Actor {
                     };
 
                     let (sink, new_stream) = ws_stream.split();
-                    let _ = actor.send(NewWsSink(sink)).await;
+                    actor
+                        .send(NewWsSink(sink))
+                        .await
+                        .expect("actor to be alive");
 
                     stream = new_stream;
                 }
@@ -463,11 +483,6 @@ impl xtra::Handler<TrackContractFunding> for Actor {
     ) -> Self::Return {
         tracing::debug!(?msg, "Instructed to track contract");
 
-        ensure!(
-            !self.tracked_contracts.contains_key(&msg.contract_address),
-            "Already tracking a contract with the same address"
-        );
-
         let txs = self
             .rest_client
             .get_address_transactions(&msg.contract_address)
@@ -496,13 +511,13 @@ impl xtra::Handler<TrackContractFunding> for Actor {
         );
 
         // Subscribe to updates on this address via mempool's WS.
-        let msg = serde_json::to_string(&WsRequest::TrackAddress(TrackAddress {
+        let ws_msg = serde_json::to_string(&WsRequest::TrackAddress(TrackAddress {
             address: msg.contract_address.to_string(),
         }))?;
         self.ws_sink
             .as_mut()
             .expect("sink")
-            .send(Message::Text(msg))
+            .send(Message::Text(ws_msg))
             .await
             .context("Failed to send TrackAddress message via WS")?;
 
@@ -524,7 +539,7 @@ impl xtra::Handler<TrackContractFunding> for Actor {
                 .await?;
 
         if contract.status == ContractStatus::CollateralConfirmed {
-            // We don't want to fail this upwards because the contract status has been udpated
+            // We don't want to fail this upwards because the contract status has been updated
             // already.
             if let Err(err) = {
                 let lender = db::lenders::get_user_by_id(&self.db, contract.lender_id.as_str())
@@ -542,9 +557,10 @@ impl xtra::Handler<TrackContractFunding> for Actor {
                     .await?;
                 Ok::<(), anyhow::Error>(())
             } {
-                tracing::error!("Failed at notifying lender about funded contract {err:?}");
+                tracing::error!("Failed at notifying lender about funded contract: {err:?}");
             }
         }
+
         Ok(())
     }
 }

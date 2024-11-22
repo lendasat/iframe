@@ -120,14 +120,14 @@ mod tests {
             // TODO: This loan amount can cause the collateral to be over the Mutinynet faucet limit
             // if the real price of Bitcoin changes enough. We should mock the price in
             // the `hub` for the e2e tests.
-            loan_amount: dec!(2_000),
+            loan_amount: dec!(500),
             duration_months: 6,
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address: Some(
                 "0x055098f73c89ca554f98c0298ce900235d2e1b4205a7ca629ae017518521c2c3".to_string(),
             ),
-            integration: Some(Integration::PayWithMoon),
+            integration: None,
         };
 
         let res = borrower
@@ -209,7 +209,7 @@ mod tests {
 
             let contract_address = contract.contract_address.clone().expect("contract address");
 
-            // Testing the ability to fund the collateral with two outputs.
+            // Testing the ability to fund the collateral with several outputs.
 
             // We add 1 to ensure that we don't round down.
             let half = (total_collateral + 1) / 2;
@@ -225,6 +225,11 @@ mod tests {
                     .unwrap();
 
                 let status = res.status();
+
+                if !status.is_success() {
+                    let msg = res.text().await.unwrap();
+                    tracing::error!("Failed to use Mutinynet faucet: {msg}");
+                }
 
                 assert!(status.is_success());
             }
@@ -273,9 +278,20 @@ mod tests {
         // 8. Repay loan on loan blockchain.
 
         let repayment_txid = random_txid();
+        let res = borrower
+            .put(format!(
+                "http://localhost:7337/api/contracts/{}/repaid?txid={repayment_txid}",
+                contract.id
+            ))
+            .send()
+            .await
+            .unwrap();
+
+        assert!(res.status().is_success());
+
         let res = lender
             .put(format!(
-                "http://localhost:7338/api/contracts/{}/repaid?txid={repayment_txid}",
+                "http://localhost:7338/api/contracts/{}/principalconfirmed",
                 contract.id
             ))
             .send()
@@ -639,7 +655,7 @@ mod tests {
                     "Waiting for contract {contract_id} to reach status {status:?}, current: {current:?}",
                 );
 
-                tokio::time::sleep(Duration::from_millis(500)).await;
+                tokio::time::sleep(Duration::from_secs(2)).await;
             }
         }).await.map_err(anyhow::Error::new)
     }
