@@ -1,15 +1,15 @@
 import { faExclamationCircle, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { CreateWalletModal, useWallet } from "@frontend-monorepo/browser-wallet";
+import { useWallet } from "@frontend-monorepo/browser-wallet";
 import type { Contract } from "@frontend-monorepo/http-client-lender";
 import {
   ContractStatus,
   contractStatusToLabelString,
   LiquidationStatus,
   TransactionType,
+  useAuth,
   useLenderHttpClient,
 } from "@frontend-monorepo/http-client-lender";
-import { useAuth } from "@frontend-monorepo/http-client-lender";
 import {
   AprInfoLabel,
   CurrencyFormatter,
@@ -17,7 +17,7 @@ import {
   LtvInfoLabel,
   StableCoinHelper,
 } from "@frontend-monorepo/ui-shared";
-import { Badge, Box, Button, Callout, Dialog, Flex, Grid, Heading, Separator, Text } from "@radix-ui/themes";
+import { Badge, Box, Button, Callout, Flex, Grid, Heading, Separator, Text } from "@radix-ui/themes";
 import { Suspense, useState } from "react";
 import { Alert, Col, Row, Spinner } from "react-bootstrap";
 import { FaCopy, FaInfoCircle } from "react-icons/fa";
@@ -25,6 +25,7 @@ import { IoMdCloudDownload } from "react-icons/io";
 import { Await, useNavigate, useParams } from "react-router-dom";
 import TransactionLink from "../components/transactionLink";
 import { ExpandableDisputeCard } from "../disputes/dispute-card";
+import { ContractRequested } from "./contract-requested";
 import { downloadLocalStorage } from "./download-local-storage";
 import RepaymentDetails from "./pay-loan-principal";
 
@@ -639,103 +640,16 @@ const ContractStatusDetails = ({
 
   switch (contract.status) {
     case ContractStatus.Requested:
-      // TODO:
       return (
-        <div>
-          <Heading weight={"medium"} size={"4"}>
-            Awaiting Your Remark...
-          </Heading>
-          <div className="d-flex gap-2 mt-5">
-            <CreateWalletModal
-              show={showCreateWalletModal}
-              handleClose={handleCloseCreateWalletModal}
-              handleSubmit={handleCloseCreateWalletModal}
-            />
-            {/* Approve Button */}
-            {doesWalletExist
-              ? (
-                <Dialog.Root>
-                  <Dialog.Trigger>
-                    <Button
-                      color="green"
-                      loading={isLoading}
-                      disabled={isLoading}
-                      size={"3"}
-                    >
-                      Approve
-                    </Button>
-                  </Dialog.Trigger>
-                  <Dialog.Content maxWidth="450px">
-                    <Dialog.Title>Approval Contract</Dialog.Title>
-                    <Dialog.Description size="2" mb="4">
-                      Are you sure you want to approve this loan?
-                    </Dialog.Description>
-                    <Flex gap="3" mt="4" justify="end">
-                      <Dialog.Close>
-                        <Button variant="soft" color="gray">
-                          Quit
-                        </Button>
-                      </Dialog.Close>
-                      <Dialog.Close>
-                        <Button
-                          color="green"
-                          loading={isLoading}
-                          disabled={isLoading}
-                          onClick={onContractApprove}
-                        >
-                          Approve
-                        </Button>
-                      </Dialog.Close>
-                    </Flex>
-                  </Dialog.Content>
-                </Dialog.Root>
-              )
-              : (
-                <Button
-                  color="green"
-                  onClick={onCreateWalletButtonClick}
-                  size={"3"}
-                >
-                  Create Bitcoin wallet
-                </Button>
-              )}
-
-            {/* Reject Button */}
-            <Dialog.Root>
-              <Dialog.Trigger>
-                <Button
-                  color="red"
-                  loading={isLoading}
-                  disabled={isLoading}
-                  size={"3"}
-                >
-                  Reject
-                </Button>
-              </Dialog.Trigger>
-              <Dialog.Content maxWidth="450px">
-                <Dialog.Title>Reject Contract</Dialog.Title>
-                <Dialog.Description size="2" mb="4">
-                  Are you sure you want to reject this loan?
-                </Dialog.Description>
-                <Flex gap="3" mt="4" justify="end">
-                  <Dialog.Close>
-                    <Button variant="soft" color="gray">
-                      Quit
-                    </Button>
-                  </Dialog.Close>
-                  <Button
-                    color="red"
-                    loading={isLoading}
-                    disabled={isLoading}
-                    onClick={onContractReject}
-                  >
-                    Reject
-                  </Button>
-                </Flex>
-              </Dialog.Content>
-            </Dialog.Root>
-          </div>
-        </div>
+        <ContractRequested
+          showCreateWalletModal={showCreateWalletModal}
+          handleCloseCreateWalletModal={handleCloseCreateWalletModal}
+          doesWalletExist={doesWalletExist}
+          isLoading={isLoading}
+          onContractApprove={onContractApprove}
+          onCreateWalletButtonClick={onCreateWalletButtonClick}
+          onContractReject={onContractReject}
+        />
       );
     case ContractStatus.Approved:
       return (
