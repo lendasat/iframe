@@ -192,6 +192,7 @@ function MainLayoutComponents() {
             <Route path="/request-loan/:id" element={<RequestLoanSummary />} />
             <Route path="/disputes/:id" element={<ResolveDispute />} />
             <Route path="/restricted" element={<RestrictedAccessPage />} />
+            <Route path="/resetpassword/:token" element={<ResetPassword />} />
             <Route path="/error" element={<ErrorBoundary />} />
             <Route path="*" element={<DashBoard />} />
           </Route>
