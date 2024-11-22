@@ -744,7 +744,8 @@ const ContractStatusDetails = ({
             <FontAwesomeIcon icon={faInfoCircle} className="h-4 w-4" />
           </Callout.Icon>
           <Callout.Text>
-            Waiting for user to fund the contract. Please refresh to check for updates.
+            Waiting for borrower to fund the contract. Please refresh to check for updates or wait for email
+            notification.
           </Callout.Text>
         </Callout.Root>
       );
