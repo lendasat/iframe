@@ -23,7 +23,7 @@ import { Alert, Col, Row, Spinner } from "react-bootstrap";
 import { FaCopy, FaInfoCircle } from "react-icons/fa";
 import { IoMdCloudDownload } from "react-icons/io";
 import { Await, useNavigate, useParams } from "react-router-dom";
-import TransactionLink from "../components/transactionLink";
+import TransactionList from "../components/transaction-list";
 import { ExpandableDisputeCard } from "../disputes/dispute-card";
 import { ContractRequested } from "./contract-requested";
 import { downloadLocalStorage } from "./download-local-storage";
@@ -391,22 +391,42 @@ const AdditionalDetail = ({ contract }: AdditionalDetailsProps) => {
 
   let fundingTxDetails;
   if (fundingTransaction) {
-    fundingTxDetails = <TransactionLink transaction={fundingTransaction} />;
+    fundingTxDetails = (
+      <TransactionList
+        contract={contract}
+        transactionType={TransactionType.Funding}
+      />
+    );
   }
 
   let claimTransactionDetails;
   if (claimTransaction) {
-    claimTransactionDetails = <TransactionLink transaction={claimTransaction} />;
+    claimTransactionDetails = (
+      <TransactionList
+        contract={contract}
+        transactionType={TransactionType.ClaimCollateral}
+      />
+    );
   }
 
   let principalRepaidDetails;
   if (principalRepaidTransaction) {
-    principalRepaidDetails = <TransactionLink transaction={principalRepaidTransaction} />;
+    principalRepaidDetails = (
+      <TransactionList
+        contract={contract}
+        transactionType={TransactionType.PrincipalRepaid}
+      />
+    );
   }
 
   let principalGivenDetails;
   if (principalGivenTransaction) {
-    principalGivenDetails = <TransactionLink transaction={principalGivenTransaction} />;
+    principalGivenDetails = (
+      <TransactionList
+        contract={contract}
+        transactionType={TransactionType.PrincipalGiven}
+      />
+    );
   }
 
   switch (contract.status) {

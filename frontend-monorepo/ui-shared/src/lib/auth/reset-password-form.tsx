@@ -18,13 +18,17 @@ export function ResetPasswordForm({ handleSubmit, loginUrl }: ResetPasswordFormP
   const [success, setSuccess] = useState("");
   const [isLoading, setLoading] = useState(false);
   const [passwordMatch, setPasswordMatch] = useState(false);
+  const [changeComplete, setChangeComplete] = useState(false);
 
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
+    setSuccess("");
+    setChangeComplete(false);
     try {
       const success = await handleSubmit(password, confirmPassword);
       setSuccess(success);
+      setChangeComplete(true);
     } catch (err) {
       console.error("Failed update password: ", err);
       setError(`${err}`);
@@ -66,6 +70,7 @@ export function ResetPasswordForm({ handleSubmit, loginUrl }: ResetPasswordFormP
                   style={{ width: "100%" }}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  disabled={changeComplete}
                 />
               </Form.Group>
 
@@ -77,6 +82,7 @@ export function ResetPasswordForm({ handleSubmit, loginUrl }: ResetPasswordFormP
                     value={confirmPassword}
                     onChange={onConfirmPasswordChange}
                     className="p-3"
+                    disabled={changeComplete}
                   />
                   {
                     <div className="position-absolute top-50 end-0 translate-middle-y me-2">
