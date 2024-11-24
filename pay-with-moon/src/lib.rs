@@ -27,9 +27,8 @@ pub struct CreateCardResponse {
     #[serde(with = "rust_decimal::serde::float")]
     pub balance: Decimal,
     /// The expiration date of the card. Date format in `[year]-[month]-[day]`, e.g. `2024-11-01`.
-    ///
-    /// We can't use `#[serde(with = "time::serde::iso8601")]`, because we are missing data.
-    pub expiration: String,
+    #[serde(with = "time::serde::iso8601")]
+    pub expiration: OffsetDateTime,
     /// The expiration date of the card in MM/YY format.
     pub display_expiration: String,
     /// Indicates if the card has been terminated (deleted).
@@ -61,9 +60,8 @@ pub struct GetCardResponse {
     #[serde(with = "rust_decimal::serde::str")]
     pub available_balance: Decimal,
     /// The expiration date of the card. Date format in `[year]-[month]-[day]`, e.g. `2024-11-01`.
-    ///
-    /// We can't use `#[serde(with = "time::serde::iso8601")]`, because we are missing data.
-    pub expiration: String,
+    #[serde(with = "time::serde::iso8601")]
+    pub expiration: OffsetDateTime,
     /// The expiration date of the card in MM/YY format.
     pub display_expiration: String,
     /// Indicates if the card has been terminated (deleted).
@@ -212,7 +210,7 @@ pub struct InvoiceResponse {
 #[serde(rename_all = "camelCase")]
 pub struct Invoice {
     /// The invoice's on-chain invoice ID.
-    pub id: u64,
+    pub id: Uuid,
     /// The invoice's address.
     pub address: String,
     /// The invoice's USD amount owed.
@@ -305,9 +303,24 @@ pub enum Currency {
     Btc,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
+pub struct InvoicePaymentWrapper {
+    pub data: InvoicePayment,
+    #[serde(rename = "type")]
+    pub kind: InvoicePaymentType,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub enum InvoicePaymentType {
+    #[serde(rename = "MOON_CREDIT_FUNDS_CREDITED")]
+    MoonCreditFundsCredited,
+    #[serde(untagged)]
+    Other(String),
+}
+
+#[derive(Debug, Deserialize, Clone)]
 pub struct InvoicePayment {
-    pub id: u64,
+    pub id: Uuid,
     #[serde(with = "rust_decimal::serde::float")]
     pub amount: Decimal,
     #[serde(rename = "createdAt")]
@@ -605,7 +618,6 @@ mod tests {
     use rust_decimal_macros::dec;
     use serde_json::Value;
     use std::env;
-    use std::str::FromStr;
 
     #[derive(Debug, Serialize)]
     #[serde(rename_all = "camelCase")]
@@ -699,42 +711,40 @@ mod tests {
 
         // In practice, it doesn't make a difference if you use a valid card product ID or not, but
         // let's try to do it properly and test the card products API in the process.
-        // let products = client.get_card_products().await.unwrap();
-        // let card_product_id = products.card_products[0].id;
-        //
-        // let card = client
-        //     .create_card("test_customer_123", &card_product_id.to_string())
-        //     .await
-        //     .unwrap();
-        //
-        // assert!(!card.id.is_nil());
-        // assert!(card.balance.is_zero());
-        // assert!(!card.display_expiration.is_empty());
-        // assert!(!card.terminated);
-        // assert!(!card.card_product_id.is_nil());
-        // assert!(!card.pan.is_empty());
-        // assert!(!card.cvv.is_empty());
-        // assert!(!card.support_token.is_empty());
-        // assert!(!card.frozen);
-        //
-        let retrieved_card = client
-            .get_card(Uuid::from_str("df1dafe4-fc63-4de1-81ee-06c7cd4e930a").unwrap())
+        let products = client.get_card_products().await.unwrap();
+        let card_product_id = products.card_products[0].id;
+
+        let response = client
+            .create_card("test_customer_123", &card_product_id.to_string())
             .await
             .unwrap();
-        dbg!(retrieved_card);
 
-        // assert_eq!(card.id, retrieved_card.id);
-        // assert_eq!(card.balance, retrieved_card.balance);
-        // assert_eq!(card.available_balance, retrieved_card.available_balance);
-        // assert_eq!(card.expiration, retrieved_card.expiration);
-        // assert_eq!(card.display_expiration, retrieved_card.display_expiration);
-        // assert_eq!(card.terminated, retrieved_card.terminated);
-        // assert_eq!(card.pan, retrieved_card.pan);
-        // assert_eq!(card.cvv, retrieved_card.cvv);
-        // assert_eq!(card.support_token, retrieved_card.support_token);
-        // assert_eq!(card.frozen, retrieved_card.frozen);
-        //
-        // assert_eq!(retrieved_card.card_product_id, card_product_id);
+        let card = response.card;
+
+        assert!(!card.id.is_nil());
+        assert!(card.balance.is_zero());
+        assert!(!card.display_expiration.is_empty());
+        assert!(!card.terminated);
+        assert!(!card.card_product_id.is_nil());
+        assert!(!card.pan.is_empty());
+        assert!(!card.cvv.is_empty());
+        assert!(!card.support_token.is_empty());
+        assert!(!card.frozen);
+
+        let retrieved_card = client.get_card(card.id).await.unwrap();
+
+        assert_eq!(card.id, retrieved_card.id);
+        assert_eq!(card.balance, retrieved_card.balance);
+        // we are comparing date only because the milliseconds see to differ
+        assert_eq!(card.expiration.date(), retrieved_card.expiration.date());
+        assert_eq!(card.display_expiration, retrieved_card.display_expiration);
+        assert_eq!(card.terminated, retrieved_card.terminated);
+        assert_eq!(card.pan, retrieved_card.pan);
+        assert_eq!(card.cvv, retrieved_card.cvv);
+        assert_eq!(card.support_token, retrieved_card.support_token);
+        assert_eq!(card.frozen, retrieved_card.frozen);
+
+        assert_eq!(retrieved_card.card_product_id, card_product_id);
     }
 
     #[ignore]
@@ -940,5 +950,40 @@ mod tests {
         }"#;
 
         let _tx: Transaction = serde_json::from_str(string).unwrap();
+    }
+
+    #[test]
+    pub fn deserialize_payment_notification() {
+        let json = r#"{
+              "data": {
+                "amount": 100,
+                "createdAt": "2024-11-21T22:55:49.804Z",
+                "created_at": "2024-11-21T22:55:49.804Z",
+                "currency": "USD",
+                "deprecated_fields": [
+                  "createdAt"
+                ],
+                "id": "25f12bf5-d24b-4733-8683-0d176a271a66"
+              },
+              "type": "MOON_CREDIT_FUNDS_CREDITED"
+            }"#;
+
+        let _payment: InvoicePaymentWrapper = serde_json::from_str(json).unwrap();
+    }
+
+    #[test]
+    pub fn deserialize_invoice() {
+        let json = r#"{
+            "id": "16b1983f-55c7-4b4e-84df-2018bb1a5544",
+            "address": "0x4D336DD746c41e487779faCF0b8cA3b7415A236e",
+            "usdAmountOwed": "10.00",
+            "cryptoAmountOwed": "10.00000000",
+            "exchangeRateLockExpiration": 1732413625675,
+            "blockchain": "POLYGON",
+            "currency": "USDC"
+        }
+        "#;
+
+        let _invoice: Invoice = serde_json::from_str(json).unwrap();
     }
 }
