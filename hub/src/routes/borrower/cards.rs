@@ -15,6 +15,7 @@ use axum::routing::post;
 use axum::Extension;
 use axum::Json;
 use axum::Router;
+use pay_with_moon::InvoicePaymentType;
 use rust_decimal::Decimal;
 use serde::Serialize;
 use serde_json::Value;
@@ -283,13 +284,16 @@ pub async fn post_webhook(
                 // TODO: we should persist this, for now, when we need this info, we fetch it again
                 // from moon
             } else if let Ok(invoice) =
-                serde_json::from_value::<pay_with_moon::InvoicePayment>(payload.clone())
+                serde_json::from_value::<pay_with_moon::InvoicePaymentWrapper>(payload.clone())
             {
                 tracing::info!(?invoice, "Received payment notification");
 
-                if let Err(error) = data.moon.handle_paid_invoice(invoice).await {
-                    tracing::error!("Failed updating moon invoice {error:#}");
+                if let InvoicePaymentType::MoonCreditFundsCredited = invoice.kind {
+                    if let Err(error) = data.moon.handle_paid_invoice(invoice.data.clone()).await {
+                        tracing::error!("Failed updating moon invoice {error:#}");
+                    }
                 }
+                tracing::warn!(?invoice, "Received payment notification with unknown type");
             } else {
                 tracing::warn!("Received unknown webhook data");
             };

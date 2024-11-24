@@ -76,7 +76,7 @@ pub async fn get_borrower_cards(
 }
 
 pub async fn insert_moon_invoice(pool: &Pool<Postgres>, invoice: &moon::Invoice) -> Result<()> {
-    let id = invoice.id as i64;
+    let id = invoice.id;
     sqlx::query!(
         r#"
         INSERT INTO moon_invoices (
@@ -103,7 +103,7 @@ pub async fn insert_moon_invoice(pool: &Pool<Postgres>, invoice: &moon::Invoice)
 
 #[derive(Debug)]
 pub struct MoonInvoice {
-    pub id: i64,
+    pub id: Uuid,
     pub address: String,
     pub usd_amount_owed: Decimal,
     pub contract_id: String,
@@ -116,7 +116,7 @@ pub struct MoonInvoice {
 
 pub async fn get_invoice_by_id(
     pool: &Pool<Postgres>,
-    invoice_id: u64,
+    invoice_id: Uuid,
 ) -> Result<Option<MoonInvoice>> {
     let invoice = sqlx::query_as!(
         MoonInvoice,
@@ -134,7 +134,7 @@ pub async fn get_invoice_by_id(
         FROM moon_invoices 
         WHERE id = $1
         "#,
-        invoice_id as i64
+        invoice_id
     )
     .fetch_optional(pool)
     .await?;
@@ -142,7 +142,7 @@ pub async fn get_invoice_by_id(
     Ok(invoice)
 }
 
-pub async fn mark_invoice_as_paid(pool: &Pool<Postgres>, invoice_id: u64) -> Result<bool> {
+pub async fn mark_invoice_as_paid(pool: &Pool<Postgres>, invoice_id: Uuid) -> Result<bool> {
     let rows_affected = sqlx::query!(
         r#"
         UPDATE moon_invoices 
@@ -151,7 +151,7 @@ pub async fn mark_invoice_as_paid(pool: &Pool<Postgres>, invoice_id: u64) -> Res
             updated_at = $2
         WHERE id = $1
         "#,
-        invoice_id as i64,
+        invoice_id,
         OffsetDateTime::now_utc()
     )
     .execute(pool)
@@ -163,7 +163,7 @@ pub async fn mark_invoice_as_paid(pool: &Pool<Postgres>, invoice_id: u64) -> Res
 
 pub async fn insert_moon_invoice_payment(
     pool: &Pool<Postgres>,
-    invoice_id: u64,
+    invoice_id: Uuid,
     amount: &Decimal,
     currency: &str,
 ) -> Result<()> {
@@ -175,7 +175,7 @@ pub async fn insert_moon_invoice_payment(
             currency
         ) VALUES ($1, $2, $3)
         "#,
-        invoice_id as i64,
+        invoice_id,
         amount,
         currency
     )

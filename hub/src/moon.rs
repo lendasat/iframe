@@ -11,10 +11,7 @@ use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use sqlx::Pool;
 use sqlx::Postgres;
-use time::Date;
-use time::Month;
 use time::OffsetDateTime;
-use time::Time;
 use uuid::Uuid;
 
 /// Information about a Moon card.
@@ -38,7 +35,7 @@ pub struct Card {
 
 /// An USDC Polygon invoice for lenders to add funds to the hub's Moon reserve.
 pub struct Invoice {
-    pub id: u64,
+    pub id: Uuid,
     /// Where the lender needs to send the funds.
     pub address: String,
     pub usd_amount_owed: Decimal,
@@ -86,22 +83,11 @@ impl Manager {
 
         let card = response.card;
 
-        let date = card.expiration.split('-').collect::<Vec<_>>();
-        let year: i32 = date[0].parse().context("Year")?;
-        let month: u8 = date[1].parse().context("Parse month")?;
-        let month = Month::try_from(month).context("Month")?;
-        let day: u8 = date[2].parse().context("Day")?;
-
-        let date = Date::from_calendar_date(year, month, day).context("Date")?;
-        let time = Time::from_hms(23, 59, 59).expect("valid time");
-
-        let expiration = OffsetDateTime::new_utc(date, time);
-
         let card = Card {
             id: card.id,
             balance: card.balance,
             available_balance: dec!(0),
-            expiration,
+            expiration: card.expiration,
             pan: card.pan,
             cvv: card.cvv,
             support_token: card.support_token,
@@ -135,22 +121,11 @@ impl Manager {
             bail!("Received wrong card");
         }
 
-        let date = response.expiration.split('-').collect::<Vec<_>>();
-        let year: i32 = date[0].parse().context("Year")?;
-        let month: u8 = date[1].parse().context("Parse month")?;
-        let month = Month::try_from(month).context("Month")?;
-        let day: u8 = date[2].parse().context("Day")?;
-
-        let date = Date::from_calendar_date(year, month, day).context("Date")?;
-        let time = Time::from_hms(23, 59, 59).expect("valid time");
-
-        let expiration = OffsetDateTime::new_utc(date, time);
-
         Ok(Card {
             id: response.id,
             balance: response.balance,
             available_balance: response.available_balance,
-            expiration,
+            expiration: card.expiration,
             pan: response.pan,
             cvv: response.cvv,
             support_token: response.support_token,
@@ -238,7 +213,7 @@ impl Manager {
             Some(invoice) => invoice,
             None => {
                 tracing::warn!(
-                    invoice_id = invoice.id,
+                    invoice_id = invoice.id.to_string(),
                     amount = %invoice.amount,
                     "Payment received for unknown invoice"
                 );
@@ -248,7 +223,7 @@ impl Manager {
 
         if db_invoice.usd_amount_owed > invoice.amount {
             tracing::error!(
-                invoice_id = invoice.id,
+                invoice_id = invoice.id.to_string(),
                 needed_amount = %db_invoice.usd_amount_owed,
                 received_amount = %invoice.amount,
                 "Insufficient payment amount"
@@ -261,7 +236,7 @@ impl Manager {
             .await
             .map_err(|err| {
                 tracing::error!(
-                    invoice_id = invoice.id,
+                    invoice_id = invoice.id.to_string(),
                     amount = %db_invoice.usd_amount_owed,
                     error = ?err,
                     "Failed to mark invoice as paid"
@@ -270,7 +245,7 @@ impl Manager {
             })?;
 
         tracing::info!(
-            invoice_id = invoice.id,
+            invoice_id = invoice.id.to_string(),
             amount = %invoice.amount,
             "Invoice successfully paid"
         );
