@@ -1,6 +1,7 @@
 import { ContractStatus, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import { formatCurrency } from "@frontend-monorepo/ui-shared";
 import { Box, Button, Flex, Grid, Heading, Separator, Skeleton, Text } from "@radix-ui/themes";
+import { HTMLAttributeAnchorTarget } from "react";
 import type { IconType } from "react-icons";
 import { BsBank, BsTicketPerforatedFill } from "react-icons/bs";
 import { IoWalletOutline } from "react-icons/io5";
@@ -65,28 +66,32 @@ function DashBoard() {
           <Box className="grid grid-cols-2 gap-y-5 gap-x-8 px-3 mt-5">
             <QuickLinks
               Icon={BsTicketPerforatedFill}
-              target="/request"
+              url="/requests"
               iconStyle="bg-purple-100"
               label="Request new Loan"
+              target={"_self"}
             />
 
             <QuickLinks
               Icon={IoWalletOutline}
-              target="/my-contracts"
+              url="/my-contracts"
               iconStyle="bg-green-100"
               label="My Loans"
+              target={"_self"}
             />
             <QuickLinks
               Icon={BsBank}
-              target="/request-loan"
+              url="/request-loan"
               iconStyle="bg-pink-100"
               label="Available offers"
+              target={"_self"}
             />
             <QuickLinks
               Icon={RiCustomerService2Fill}
-              target="https://lendasat.notion.site/"
+              url="https://lendasat.notion.site/"
               iconStyle="bg-gray-100"
               label="Help Center"
+              target={"_blank"}
             />
           </Box>
         </Box>
@@ -119,11 +124,12 @@ function DashBoard() {
 
 export default DashBoard;
 
-const QuickLinks = ({ label, Icon, iconStyle, target }: {
+const QuickLinks = ({ label, Icon, iconStyle, url, target }: {
   Icon: IconType;
   label: string;
   iconStyle: string;
-  target: string;
+  url: string;
+  target: HTMLAttributeAnchorTarget;
 }) => {
   return (
     <Button
@@ -131,7 +137,7 @@ const QuickLinks = ({ label, Icon, iconStyle, target }: {
       variant="ghost"
       className="min-h-40 border border-font/10 flex flex-col gap-2 text-font rounded-2xl"
     >
-      <Link to={target}>
+      <Link to={url} target={target}>
         <Box className={`h-14 w-14 rounded-full place-items-center ${iconStyle} flex justify-center`}>
           <Icon size={"20"} />
         </Box>
