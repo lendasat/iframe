@@ -113,7 +113,7 @@ export function ContractRepaid({
                   }
                 }}
               >
-                {isWalletLoaded ? "Withdraw funds" : "Unlock Wallet"}
+                {isWalletLoaded ? "Withdraw funds" : "Unlock Contract"}
               </Button>
             </Col>
           </Row>

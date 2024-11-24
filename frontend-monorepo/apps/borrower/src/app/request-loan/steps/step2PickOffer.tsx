@@ -621,7 +621,7 @@ const LoanSearched = (props: SearchParams) => {
       }
     } catch (error) {
       console.log(`Unexpected error happened ${error}`);
-      props.setError(`Failed setting contract password ${error}`);
+      props.setError(`Failed setting contract secret ${error}`);
     }
   };
 

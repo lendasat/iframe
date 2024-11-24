@@ -321,7 +321,7 @@ function ContractDetails({ contract }: DetailsProps) {
               <IoMdCloudDownload size={"18"} />
             </Callout.Icon>
             <Callout.Text>
-              Download contract backup. It is encrypted with the contract password you set earlier.
+              Download contract backup. It is encrypted with the contract secret you set during registration.
             </Callout.Text>
           </Callout.Root>
           <Flex align={"center"} justify={"end"}>

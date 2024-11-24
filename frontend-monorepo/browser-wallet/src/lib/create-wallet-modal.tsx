@@ -70,7 +70,7 @@ export function CreateWalletModal({ show, handleClose, handleSubmit }: WalletMod
       <Box className="px-4 pt-7">
         <Box>
           <Heading as="h2" className="text-xl md:text-2xl lg:text-3xl font-semibold text-center text-font-dark mb-7">
-            Create Contract Password
+            Create Contract Secret
           </Heading>
         </Box>
         <Box className="mb-3">
@@ -103,7 +103,7 @@ export function CreateWalletModal({ show, handleClose, handleSubmit }: WalletMod
           <TextField.Root
             variant="soft"
             className="py-3 px-4 rounded-lg border border-font/10"
-            placeholder="Enter Secret Pin"
+            placeholder="Enter Contract Secret"
             type={passVisibility ? "text" : "password"}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
