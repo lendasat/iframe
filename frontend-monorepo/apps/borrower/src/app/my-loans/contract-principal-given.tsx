@@ -127,7 +127,7 @@ export function ContractPrincipalGiven({
 
       <Form onSubmit={onSubmit}>
         <Form.Group controlId="formTxId" className="mb-3">
-          <Form.Label column={"sm"}>Transaction ID</Form.Label>
+          <Form.Label column={"sm"}>Provide the transaction id</Form.Label>
           <Form.Control
             type="text"
             placeholder="0x.."
@@ -139,7 +139,7 @@ export function ContractPrincipalGiven({
           />
         </Form.Group>
         <Button type="submit" loading={isLoading} disabled={submitted}>
-          Submit
+          I've made the payment
         </Button>
       </Form>
 
