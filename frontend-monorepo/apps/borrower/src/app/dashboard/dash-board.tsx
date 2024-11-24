@@ -1,7 +1,7 @@
 import { ContractStatus, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import { formatCurrency } from "@frontend-monorepo/ui-shared";
 import { Box, Button, Flex, Grid, Heading, Separator, Skeleton, Text } from "@radix-ui/themes";
-import { HTMLAttributeAnchorTarget } from "react";
+import type { HTMLAttributeAnchorTarget } from "react";
 import type { IconType } from "react-icons";
 import { BsBank, BsTicketPerforatedFill } from "react-icons/bs";
 import { IoWalletOutline } from "react-icons/io5";
