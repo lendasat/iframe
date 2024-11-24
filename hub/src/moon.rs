@@ -221,6 +221,17 @@ impl Manager {
             }
         };
 
+        if db_invoice.is_paid {
+            tracing::warn!(
+                invoice_id = invoice.id.to_string(),
+                contract_id = db_invoice.contract_id,
+                borrower_id = db_invoice.borrower_id,
+                "Ignoring payment for already paid invoice"
+            );
+
+            return Ok(());
+        }
+
         if db_invoice.usd_amount_owed > invoice.amount {
             tracing::error!(
                 invoice_id = invoice.id.to_string(),
