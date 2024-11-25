@@ -323,6 +323,7 @@ pub enum InvoicePaymentType {
 #[derive(Debug, Deserialize, Clone)]
 pub struct InvoicePayment {
     pub id: Uuid,
+    pub invoice_id: Uuid,
     #[serde(with = "rust_decimal::serde::float")]
     pub amount: Decimal,
     pub created_at: String,
@@ -957,17 +958,19 @@ mod tests {
     pub fn deserialize_payment_notification() {
         let json = r#"{
               "data": {
-                "amount": 100,
-                "createdAt": "2024-11-21T22:55:49.804Z",
-                "created_at": "2024-11-21T22:55:49.804Z",
+                "id": "f97ce211-2fa9-45ab-b21d-91fc069e7fe8",
+                "amount": 5.52,
                 "currency": "USD",
+                "createdAt": "2024-11-25T20:40:55.709Z",
+                "created_at": "2024-11-25T20:40:55.709Z",
+                "invoice_id": "45477529-a8b2-4bf9-bd9d-297a9bc72a93",
                 "deprecated_fields": [
                   "createdAt"
-                ],
-                "id": "25f12bf5-d24b-4733-8683-0d176a271a66"
+                ]
               },
               "type": "MOON_CREDIT_FUNDS_CREDITED"
-            }"#;
+            }
+             "#;
 
         let _payment: InvoicePaymentWrapper = serde_json::from_str(json).unwrap();
     }

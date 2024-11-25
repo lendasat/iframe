@@ -121,7 +121,7 @@ pub async fn get_invoice_by_id(
     let invoice = sqlx::query_as!(
         MoonInvoice,
         r#"
-        SELECT 
+        SELECT
             id,
             address,
             usd_amount_owed,
@@ -131,7 +131,7 @@ pub async fn get_invoice_by_id(
             is_paid,
             created_at,
             updated_at
-        FROM moon_invoices 
+        FROM moon_invoices
         WHERE id = $1
         "#,
         invoice_id
@@ -145,8 +145,8 @@ pub async fn get_invoice_by_id(
 pub async fn mark_invoice_as_paid(pool: &Pool<Postgres>, invoice_id: Uuid) -> Result<bool> {
     let rows_affected = sqlx::query!(
         r#"
-        UPDATE moon_invoices 
-        SET 
+        UPDATE moon_invoices
+        SET
             is_paid = true,
             updated_at = $2
         WHERE id = $1
@@ -163,11 +163,11 @@ pub async fn mark_invoice_as_paid(pool: &Pool<Postgres>, invoice_id: Uuid) -> Re
 
 pub async fn insert_moon_invoice_payment(
     pool: &Pool<Postgres>,
+    invoice_payment_id: Uuid,
     invoice_id: Uuid,
     amount: &Decimal,
     currency: &str,
 ) -> Result<()> {
-    let id = Uuid::new_v4();
     sqlx::query!(
         r#"
         INSERT INTO moon_invoice_payments (
@@ -177,7 +177,7 @@ pub async fn insert_moon_invoice_payment(
             currency
         ) VALUES ($1, $2, $3, $4)
         "#,
-        id,
+        invoice_payment_id,
         invoice_id,
         amount,
         currency
