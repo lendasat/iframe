@@ -27,8 +27,9 @@ pub struct CreateCardResponse {
     #[serde(with = "rust_decimal::serde::float")]
     pub balance: Decimal,
     /// The expiration date of the card. Date format in `[year]-[month]-[day]`, e.g. `2024-11-01`.
-    #[serde(with = "time::serde::iso8601")]
-    pub expiration: OffsetDateTime,
+    ///
+    /// We can't use `#[serde(with = "time::serde::iso8601")]`, because we are missing data.
+    pub expiration: String,
     /// The expiration date of the card in MM/YY format.
     pub display_expiration: String,
     /// Indicates if the card has been terminated (deleted).
@@ -60,8 +61,9 @@ pub struct GetCardResponse {
     #[serde(with = "rust_decimal::serde::str")]
     pub available_balance: Decimal,
     /// The expiration date of the card. Date format in `[year]-[month]-[day]`, e.g. `2024-11-01`.
-    #[serde(with = "time::serde::iso8601")]
-    pub expiration: OffsetDateTime,
+    ///
+    /// We can't use `#[serde(with = "time::serde::iso8601")]`, because we are missing data.
+    pub expiration: String,
     /// The expiration date of the card in MM/YY format.
     pub display_expiration: String,
     /// Indicates if the card has been terminated (deleted).
@@ -736,7 +738,7 @@ mod tests {
         assert_eq!(card.id, retrieved_card.id);
         assert_eq!(card.balance, retrieved_card.balance);
         // we are comparing date only because the milliseconds see to differ
-        assert_eq!(card.expiration.date(), retrieved_card.expiration.date());
+        assert_eq!(card.expiration.to_string(), retrieved_card.expiration);
         assert_eq!(card.display_expiration, retrieved_card.display_expiration);
         assert_eq!(card.terminated, retrieved_card.terminated);
         assert_eq!(card.pan, retrieved_card.pan);
@@ -985,5 +987,31 @@ mod tests {
         "#;
 
         let _invoice: Invoice = serde_json::from_str(json).unwrap();
+    }
+
+    #[test]
+    pub fn deserialize_card_response() {
+        let json = r#"{
+              "id": "cb8d450e-b10d-402a-92a6-28e31674fd3c",
+              "balance": "100.00",
+              "expiration": "2025-01-31",
+              "display_expiration": "01/25",
+              "available_balance": "100.00",
+              "terminated": 0,
+              "card_product_id": "4a667032-c31a-434d-b1da-d2e88f9a2ec7",
+              "pan": "4513650021034362",
+              "cvv": "024",
+              "support_token": "b632604bb9",
+              "frozen": 0,
+              "gift_card_info": {
+                "barcode": null,
+                "pin": null,
+                "securityCode": null,
+                "merchant_card_website": null
+              }
+            }
+            "#;
+
+        let _card_response: GetCardResponse = serde_json::from_str(json).unwrap();
     }
 }

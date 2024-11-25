@@ -11,7 +11,10 @@ use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use sqlx::Pool;
 use sqlx::Postgres;
+use time::Date;
+use time::Month;
 use time::OffsetDateTime;
+use time::Time;
 use uuid::Uuid;
 
 /// Information about a Moon card.
@@ -83,11 +86,22 @@ impl Manager {
 
         let card = response.card;
 
+        let date = card.expiration.split('-').collect::<Vec<_>>();
+        let year: i32 = date[0].parse().context("Year")?;
+        let month: u8 = date[1].parse().context("Parse month")?;
+        let month = Month::try_from(month).context("Month")?;
+        let day: u8 = date[2].parse().context("Day")?;
+
+        let date = Date::from_calendar_date(year, month, day).context("Date")?;
+        let time = Time::from_hms(23, 59, 59).expect("valid time");
+
+        let expiration = OffsetDateTime::new_utc(date, time);
+
         let card = Card {
             id: card.id,
             balance: card.balance,
             available_balance: dec!(0),
-            expiration: card.expiration,
+            expiration,
             pan: card.pan,
             cvv: card.cvv,
             support_token: card.support_token,
@@ -121,11 +135,22 @@ impl Manager {
             bail!("Received wrong card");
         }
 
+        let date = response.expiration.split('-').collect::<Vec<_>>();
+        let year: i32 = date[0].parse().context("Year")?;
+        let month: u8 = date[1].parse().context("Parse month")?;
+        let month = Month::try_from(month).context("Month")?;
+        let day: u8 = date[2].parse().context("Day")?;
+
+        let date = Date::from_calendar_date(year, month, day).context("Date")?;
+        let time = Time::from_hms(23, 59, 59).expect("valid time");
+
+        let expiration = OffsetDateTime::new_utc(date, time);
+
         Ok(Card {
             id: response.id,
             balance: response.balance,
             available_balance: response.available_balance,
-            expiration: card.expiration,
+            expiration,
             pan: response.pan,
             cvv: response.cvv,
             support_token: response.support_token,
