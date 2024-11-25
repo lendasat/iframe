@@ -325,7 +325,6 @@ pub struct InvoicePayment {
     pub id: Uuid,
     #[serde(with = "rust_decimal::serde::float")]
     pub amount: Decimal,
-    #[serde(rename = "createdAt")]
     pub created_at: String,
     pub currency: String,
 }
