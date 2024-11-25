@@ -8,9 +8,10 @@ edition = "2021"
 anyhow = "1"
 argon2 = "0.5.0"
 async-stream = "0.3"
+async-trait = "0.1.81"
 atty = "0.2.14"
-axum = { version = "0.7.5", features = ["ws"] }
-axum-extra = { version = "0.9.0", features = ["cookie"] }
+axum = { version = "0.7.5", features = ["ws", "tokio"] }
+axum-extra = { version = "0.9.0", features = ["cookie", "typed-header"] }
 bitcoin = { version = "0.32.2", features = ["bitcoinconsensus", "serde"] }
 bitcoin-units = "0.1.2"
 bitmex-stream = { git = "https://github.com/get10101/bitmex-stream", rev = "c68668b" }

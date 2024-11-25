@@ -20,9 +20,14 @@ use crate::model::WalletBackupData;
 use crate::routes::borrower::auth::jwt_auth::auth;
 use crate::routes::lender::auth::FilteredUser;
 use crate::routes::AppState;
+use async_trait::async_trait;
+use axum::extract::ConnectInfo;
+use axum::extract::FromRequest;
 use axum::extract::Path;
 use axum::extract::State;
 use axum::http::header;
+use axum::http::header::USER_AGENT;
+use axum::http::Request;
 use axum::http::StatusCode;
 use axum::middleware;
 use axum::response::IntoResponse;
@@ -40,6 +45,7 @@ use jsonwebtoken::EncodingKey;
 use jsonwebtoken::Header;
 use serde::Serialize;
 use serde_json::json;
+use std::net::SocketAddr;
 use std::sync::Arc;
 use time::OffsetDateTime;
 use tracing::instrument;
@@ -209,6 +215,53 @@ pub struct BorrowerLoanFeature {
     pub name: String,
 }
 
+pub struct LoginSchemaWithUserAgent {
+    pub body: LoginUserSchema,
+    pub ip: Option<SocketAddr>,
+    pub user_agent: Option<String>,
+}
+
+#[async_trait]
+impl<S> FromRequest<S> for LoginSchemaWithUserAgent
+where
+    S: Send + Sync,
+{
+    type Rejection = Response;
+
+    async fn from_request(
+        req: Request<axum::body::Body>,
+        state: &S,
+    ) -> Result<Self, Self::Rejection> {
+        // Extract IP address
+        let ip = req
+            .extensions()
+            .get::<ConnectInfo<SocketAddr>>()
+            .map(|ci| ci.0);
+
+        // Extract User-Agent
+        let user_agent = req
+            .headers()
+            .get(USER_AGENT)
+            .and_then(|ua| ua.to_str().ok())
+            .map(|s| s.to_string());
+
+        // Extract JSON body
+        let Json(user): Json<LoginUserSchema> =
+            Json::from_request(req, state).await.map_err(|err| {
+                Response::builder()
+                    .status(400)
+                    .body(format!("Failed to deserialize JSON: {}", err).into())
+                    .expect("to be valid response")
+            })?;
+
+        Ok(LoginSchemaWithUserAgent {
+            body: user,
+            ip,
+            user_agent,
+        })
+    }
+}
+
 #[derive(Debug, Serialize)]
 pub struct LoginResponse {
     pub token: String,
@@ -217,10 +270,14 @@ pub struct LoginResponse {
     pub wallet_backup_data: WalletBackupData,
 }
 
-#[instrument(skip_all, err(Debug))]
+// #[instrument(skip_all, err(Debug))]
 pub async fn login_user_handler(
     State(data): State<Arc<AppState>>,
-    Json(body): Json<LoginUserSchema>,
+    LoginSchemaWithUserAgent {
+        body,
+        ip,
+        user_agent,
+    }: LoginSchemaWithUserAgent,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     let user: User = get_user_by_email(&data.db, body.email.as_str())
         .await
@@ -327,6 +384,31 @@ pub async fn login_user_handler(
         network: wallet_backup.network,
         xpub: wallet_backup.xpub,
     };
+
+    let user_agent = user_agent.unwrap_or("unknown".to_string());
+    let ip_address = ip
+        .map(|ip| ip.ip().to_string())
+        .unwrap_or("unknown".to_string());
+    tracing::debug!(
+        borrower_id = user.id.to_string(),
+        ip_address,
+        ?user_agent,
+        "User logged in"
+    );
+
+    if let Err(err) = db::user_logins::insert_borrower_login_activity(
+        &data.db,
+        user.id.as_str(),
+        Some(ip_address),
+        user_agent.as_str(),
+    )
+    .await
+    {
+        tracing::warn!(
+            borrower_id = user.id.to_string(),
+            "Failed to track login activity {err:#}"
+        )
+    }
 
     let response = Response::builder()
         .status(StatusCode::OK)

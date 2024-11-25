@@ -21,6 +21,7 @@ pub use contracts::ClaimTx;
 pub use contracts::Contract;
 use sqlx::Pool;
 use sqlx::Postgres;
+use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::mpsc;
 use tokio::sync::Mutex;
@@ -101,9 +102,12 @@ pub async fn spawn_borrower_server(
             config.borrower_frontend_origin
         );
 
-        axum::serve(listener, app)
-            .await
-            .expect("to be able to listen");
+        axum::serve(
+            listener,
+            app.into_make_service_with_connect_info::<SocketAddr>(),
+        )
+        .await
+        .expect("to be able to listen");
 
         tracing::error!("Borrower server stopped");
     }))
