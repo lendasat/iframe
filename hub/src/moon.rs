@@ -220,10 +220,14 @@ impl Manager {
     }
 
     pub async fn handle_paid_invoice(&self, invoice: pay_with_moon::InvoicePayment) -> Result<()> {
+        let invoice_id = invoice.invoice_id;
+        let invoice_payment_id = invoice.id;
+
         // First we register the payment, no matter what
         if let Err(err) = db::moon::insert_moon_invoice_payment(
             &self.db,
-            invoice.id,
+            invoice_payment_id,
+            invoice_id,
             &invoice.amount,
             invoice.currency.as_str(),
         )
@@ -234,11 +238,11 @@ impl Manager {
         }
 
         // Next we check if we have an invoice we need to set paid
-        let db_invoice = match db::moon::get_invoice_by_id(&self.db, invoice.id).await? {
+        let db_invoice = match db::moon::get_invoice_by_id(&self.db, invoice_id).await? {
             Some(invoice) => invoice,
             None => {
                 tracing::warn!(
-                    invoice_id = invoice.id.to_string(),
+                    %invoice_id,
                     amount = %invoice.amount,
                     "Payment received for unknown invoice"
                 );
@@ -248,7 +252,7 @@ impl Manager {
 
         if db_invoice.is_paid {
             tracing::warn!(
-                invoice_id = invoice.id.to_string(),
+                %invoice_id,
                 contract_id = db_invoice.contract_id,
                 borrower_id = db_invoice.borrower_id,
                 "Ignoring payment for already paid invoice"
@@ -259,7 +263,7 @@ impl Manager {
 
         if db_invoice.usd_amount_owed > invoice.amount {
             tracing::error!(
-                invoice_id = invoice.id.to_string(),
+                %invoice_id,
                 needed_amount = %db_invoice.usd_amount_owed,
                 received_amount = %invoice.amount,
                 "Insufficient payment amount"
@@ -268,11 +272,11 @@ impl Manager {
         }
 
         // Mark the invoice as paid
-        db::moon::mark_invoice_as_paid(&self.db, invoice.id)
+        db::moon::mark_invoice_as_paid(&self.db, invoice_id)
             .await
             .map_err(|err| {
                 tracing::error!(
-                    invoice_id = invoice.id.to_string(),
+                    %invoice_id,
                     amount = %db_invoice.usd_amount_owed,
                     error = ?err,
                     "Failed to mark invoice as paid"
@@ -281,7 +285,7 @@ impl Manager {
             })?;
 
         tracing::info!(
-            invoice_id = invoice.id.to_string(),
+            %invoice_id,
             amount = %invoice.amount,
             "Invoice successfully paid"
         );
