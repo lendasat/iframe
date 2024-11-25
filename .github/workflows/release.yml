@@ -18,6 +18,7 @@ env:
 permissions:
   actions: write
   contents: write
+  pull-requests: write
 
 jobs:
 
@@ -83,11 +84,20 @@ jobs:
       - name: Build the hub
         run: just release-hub
 
+
+      - name: Push version changes to separate branch
+        if: ${{ github.event.inputs.pr_main != 'true' }}
+        run: |
+          git checkout -b release-branch/${{ github.event.inputs.version }}
+          git push origin release-branch/${{ github.event.inputs.version }}
+
       - name: Create Pull Request to merge into main
         if: ${{ github.event.inputs.pr_main == 'true' }}
         uses: peter-evans/create-pull-request@v7
         with:
           branch: release-branch/${{ github.event.inputs.version }}
+          draft: false
+          token: ${{ secrets.GITHUB_TOKEN }}
           base: main
           title: Merge back release changes from ${{ github.event.inputs.version }}
           body: |
