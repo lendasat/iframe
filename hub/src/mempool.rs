@@ -144,16 +144,16 @@ impl Actor {
     }
 }
 
-fn calculate_confirmations(current_block_height: u64, tx_block_height: u64) -> u64 {
-    if tx_block_height > current_block_height {
-        tracing::warn!("We appear to be behind in blocks");
-        return 0;
+fn calculate_confirmations(known_tip: u64, tx_block_height: u64) -> u64 {
+    if tx_block_height > known_tip {
+        tracing::warn!(
+            tx_block_height,
+            known_tip,
+            "TX block height ahead of known blockchain tip. Defaulting to 1 confirmation"
+        );
     }
 
-    current_block_height
-        .checked_sub(tx_block_height)
-        .unwrap_or_default()
-        + 1
+    known_tip.checked_sub(tx_block_height).unwrap_or_default() + 1
 }
 
 impl xtra::Actor for Actor {
@@ -989,6 +989,30 @@ mod tests {
     use super::*;
     use insta::assert_debug_snapshot;
     use std::str::FromStr;
+
+    #[test]
+    fn test_calculate_confirmations() {
+        let known_tip = 10;
+        let tx_block_height = 10;
+
+        let n_conf = calculate_confirmations(known_tip, tx_block_height);
+
+        assert_eq!(n_conf, 1);
+
+        let known_tip = 12;
+        let tx_block_height = 10;
+
+        let n_conf = calculate_confirmations(known_tip, tx_block_height);
+
+        assert_eq!(n_conf, 3);
+
+        let known_tip = 9;
+        let tx_block_height = 10;
+
+        let n_conf = calculate_confirmations(known_tip, tx_block_height);
+
+        assert_eq!(n_conf, 1);
+    }
 
     #[test]
     fn test_collateral_outputs() {
