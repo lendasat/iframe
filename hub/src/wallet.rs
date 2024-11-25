@@ -1,3 +1,4 @@
+use crate::db;
 use anyhow::Context;
 use anyhow::Result;
 use bitcoin::absolute::LockTime;
@@ -25,12 +26,9 @@ use bitcoin::TxIn;
 use bitcoin::TxOut;
 use descriptor_wallet::DescriptorWallet;
 use miniscript::Descriptor;
+use sqlx::Pool;
+use sqlx::Postgres;
 use std::str::FromStr;
-use std::sync::LazyLock;
-use std::sync::Mutex;
-
-// FIXME: Persist this.
-static KEY_INDEX: LazyLock<Mutex<u32>> = LazyLock::new(|| Mutex::new(0));
 
 /// Everything below this value is counted as dust. At the time of writing, this is ~$58
 const MIN_TX_OUTPUT_SIZE: u64 = 100_000;
@@ -45,6 +43,7 @@ pub struct Wallet {
     fallback_xpub: Xpub,
     network: Network,
     hub_fee_wallet: DescriptorWallet,
+    db: Pool<Postgres>,
 }
 
 impl Wallet {
@@ -53,6 +52,7 @@ impl Wallet {
         fallback_xpub: &str,
         network: Network,
         hub_fee_wallet: DescriptorWallet,
+        db: Pool<Postgres>,
     ) -> Result<Self> {
         let hub_xpriv = Xpriv::new_master(NetworkKind::from(network), &hub_seed)?;
         let fallback_xpub = Xpub::from_str(fallback_xpub)?;
@@ -62,16 +62,17 @@ impl Wallet {
             fallback_xpub,
             network,
             hub_fee_wallet,
+            db,
         })
     }
 
     /// Generate a collateral contract address for a borrower.
-    pub fn contract_address(
+    pub async fn contract_address(
         &self,
         borrower_pk: PublicKey,
         lender_xpub: &Xpub,
     ) -> Result<(Address, u32)> {
-        let (hub_pk, fallback_pk, index) = self.derive_next_pks()?;
+        let (hub_pk, fallback_pk, index) = self.derive_next_pks().await?;
 
         // We use the same index for the lender so that it's easier to recover the correct lender
         // keypair.
@@ -403,15 +404,13 @@ impl Wallet {
     /// - The hub PK to be used in the collateral contract.
     /// - The fallback PK to be used in the collateral contract.
     /// - The index used to derive the two keys.
-    fn derive_next_pks(&self) -> Result<(PublicKey, PublicKey, u32)> {
-        let mut key_index = KEY_INDEX.lock().expect("to get lock");
-        let index = *key_index;
+    async fn derive_next_pks(&self) -> Result<(PublicKey, PublicKey, u32)> {
+        let index = db::wallet_index::get_max_and_increment(&self.db).await?;
+        let index = index as u32;
 
         let (hub_kp, fallback_pk) = self.get_keys_for_index(index)?;
 
         let hub_pk = PublicKey::new(hub_kp.public_key());
-
-        *key_index += 1;
 
         Ok((hub_pk, fallback_pk, index))
     }

@@ -352,8 +352,9 @@ pub async fn put_approve_contract(
         let wallet = data.wallet.lock().await;
 
         let lender_xpub = query_params.xpub;
-        let (contract_address, contract_index) =
-            wallet.contract_address(contract.borrower_pk, &lender_xpub)?;
+        let (contract_address, contract_index) = wallet
+            .contract_address(contract.borrower_pk, &lender_xpub)
+            .await?;
 
         let borrower = db::borrowers::get_user_by_id(&data.db, contract.borrower_id.as_str())
             .await
