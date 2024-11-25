@@ -167,14 +167,17 @@ pub async fn insert_moon_invoice_payment(
     amount: &Decimal,
     currency: &str,
 ) -> Result<()> {
+    let id = Uuid::new_v4();
     sqlx::query!(
         r#"
         INSERT INTO moon_invoice_payments (
+            id,
             invoice_id,
             amount,
             currency
-        ) VALUES ($1, $2, $3)
+        ) VALUES ($1, $2, $3, $4)
         "#,
+        id,
         invoice_id,
         amount,
         currency
