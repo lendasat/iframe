@@ -53,18 +53,7 @@ export const Step1PickOption = ({ onSelect, selectedOption }: Step1Props) => {
                 // image={<img src={Moon} alt="PayWithMoon" className="max-h-full max-w-full" />}
               />
             );
-          case LoanProductOption.StableCoins:
-            return (
-              <ProductOptionComponent
-                onSelect={onSelect}
-                option={option}
-                selectedOption={selectedOption}
-                title={"Receive stable coins"}
-                key={index}
-                disabled={false}
-                image={<img src={Defi} alt="Defi" className="max-h-full max-w-full" />}
-              />
-            );
+
           case LoanProductOption.BringinBankAccount:
             return (
               <ProductOptionComponent
@@ -89,6 +78,7 @@ export const Step1PickOption = ({ onSelect, selectedOption }: Step1Props) => {
                 image={<img src={Bitrefil} alt="Bitrefil" />}
               />
             );
+          case LoanProductOption.StableCoins:
           default:
             return (
               <ProductOptionComponent
@@ -98,7 +88,7 @@ export const Step1PickOption = ({ onSelect, selectedOption }: Step1Props) => {
                 title={"Receive stable coins"}
                 key={index}
                 disabled={false}
-                image={<img src={Defi} alt="DEFI" />}
+                image={<img src={Defi} alt="Defi" className="max-h-full max-w-full" />}
               />
             );
         }
