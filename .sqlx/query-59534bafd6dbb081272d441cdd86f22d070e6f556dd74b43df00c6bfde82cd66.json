@@ -8,7 +8,7 @@
         "Bpchar",
         "Numeric",
         "Numeric",
-        "Timestamptz",
+        "Varchar",
         "Text",
         "Text",
         "Text",

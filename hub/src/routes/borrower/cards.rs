@@ -21,7 +21,6 @@ use serde::Serialize;
 use serde_json::Value;
 use std::str::FromStr;
 use std::sync::Arc;
-use time::OffsetDateTime;
 use tracing::instrument;
 use uuid::Uuid;
 
@@ -238,8 +237,7 @@ pub struct Card {
     pub balance: Decimal,
     #[serde(with = "rust_decimal::serde::float")]
     pub available_balance: Decimal,
-    #[serde(with = "time::serde::rfc3339")]
-    pub expiration: OffsetDateTime,
+    pub expiration: String,
     pub pan: String,
     pub cvv: String,
 }

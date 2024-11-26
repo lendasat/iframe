@@ -26,10 +26,6 @@ pub struct CreateCardResponse {
     /// The value of the card.
     #[serde(with = "rust_decimal::serde::float")]
     pub balance: Decimal,
-    /// The expiration date of the card. Date format in `[year]-[month]-[day]`, e.g. `2024-11-01`.
-    ///
-    /// We can't use `#[serde(with = "time::serde::iso8601")]`, because we are missing data.
-    pub expiration: String,
     /// The expiration date of the card in MM/YY format.
     pub display_expiration: String,
     /// Indicates if the card has been terminated (deleted).
@@ -60,10 +56,6 @@ pub struct GetCardResponse {
     /// The card's available balance.
     #[serde(with = "rust_decimal::serde::str")]
     pub available_balance: Decimal,
-    /// The expiration date of the card. Date format in `[year]-[month]-[day]`, e.g. `2024-11-01`.
-    ///
-    /// We can't use `#[serde(with = "time::serde::iso8601")]`, because we are missing data.
-    pub expiration: String,
     /// The expiration date of the card in MM/YY format.
     pub display_expiration: String,
     /// Indicates if the card has been terminated (deleted).
@@ -620,6 +612,7 @@ mod tests {
     use rust_decimal_macros::dec;
     use serde_json::Value;
     use std::env;
+    use std::str::FromStr;
 
     #[derive(Debug, Serialize)]
     #[serde(rename_all = "camelCase")]
@@ -738,7 +731,6 @@ mod tests {
         assert_eq!(card.id, retrieved_card.id);
         assert_eq!(card.balance, retrieved_card.balance);
         // we are comparing date only because the milliseconds see to differ
-        assert_eq!(card.expiration.to_string(), retrieved_card.expiration);
         assert_eq!(card.display_expiration, retrieved_card.display_expiration);
         assert_eq!(card.terminated, retrieved_card.terminated);
         assert_eq!(card.pan, retrieved_card.pan);

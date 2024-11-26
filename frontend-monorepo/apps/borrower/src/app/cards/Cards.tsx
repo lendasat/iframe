@@ -148,7 +148,7 @@ export default function Cards() {
                   <Text size={"1"} weight={"medium"} className="text-font/60">Expiry</Text>
                   <Text as="p" weight={"medium"}>
                     <Skeleton loading={!activeCard}>
-                      {visible ? formatExpiryDate(activeCard.expiration) : "****"}
+                      {visible ? activeCard.expiration : "****"}
                     </Skeleton>
                   </Text>
                 </Box>

@@ -45,14 +45,14 @@ const CardNumber = ({ number, visible, setVisible }: CardNumberProps) => {
 };
 
 interface ExpirationDateProps {
-  expiry: Date;
+  expiry: string;
   visible: boolean | undefined;
 }
 
 const ExpirationDate = ({ expiry, visible }: ExpirationDateProps) => {
   let formatted = "**/****";
   if (visible) {
-    formatted = formatExpiryTimestamp(expiry.getTime());
+    formatted = expiry;
   }
 
   return (

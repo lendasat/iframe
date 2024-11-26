@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+anyhow = "1"
 dotenv = "0.15.0"
 reqwest = { version = "0.12.7", features = ["json"] }
 rust_decimal = { version = "1.35", features = ["serde-with-float", "serde-with-str"] }
