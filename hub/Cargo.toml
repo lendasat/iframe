@@ -1,6 +1,6 @@
 [package]
 name = "hub"
-version = "0.2.8"
+version = "0.2.9"
 build = "build.rs"
 edition = "2021"
 
