@@ -93,7 +93,7 @@ export const PayWithMoonDescriptionDialog = ({
                   <FaInfoCircle />
                 </Callout.Icon>
                 <Callout.Text>
-                  In closed beta we are using a 2-of-4 multisig contract and not DLCs. The keys are distributed among
+                  During the closed beta we will be using a 2-of-4 multisig contract and not DLCs. The keys are distributed among
                   the borrower, lender, Lendasat and a trusted third party.
                 </Callout.Text>
               </Callout.Root>
