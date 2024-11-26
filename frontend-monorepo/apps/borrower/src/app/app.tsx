@@ -135,11 +135,11 @@ function MainLayoutComponents() {
 
   // Mapping function to normalize user objects
   const mapBorrowerUser = (borrowerUser: User) => ({
-    id: borrowerUser?.id,
-    name: borrowerUser?.name,
-    email: borrowerUser?.email,
-    createdAt: borrowerUser?.created_at,
-    verified: borrowerUser?.verified,
+    id: borrowerUser.id,
+    name: borrowerUser.name,
+    email: borrowerUser.email,
+    createdAt: borrowerUser.created_at,
+    verified: borrowerUser.verified,
   });
 
   // TODO: It's annoying to have to deal with a possibly null or incomplete `User` here. Can we
@@ -150,7 +150,7 @@ function MainLayoutComponents() {
 
   return (
     <WalletProvider
-      username={user.name}
+      email={user.email}
     >
       <Layout
         user={user}

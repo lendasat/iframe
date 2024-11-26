@@ -116,7 +116,7 @@ function MainLayoutComponents() {
 
   return (
     <WalletProvider
-      username={user.name}
+      email={user.name}
     >
       <Layout
         user={user}

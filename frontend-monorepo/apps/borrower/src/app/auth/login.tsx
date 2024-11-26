@@ -1,6 +1,7 @@
 import { useAuth } from "@frontend-monorepo/http-client-borrower";
 import { LoginForm } from "@frontend-monorepo/ui-shared";
 import init, { does_wallet_exist, restore_wallet } from "browser-wallet";
+import { md5 } from "hash-wasm";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 function Login() {
@@ -15,10 +16,11 @@ function Login() {
     const loginResponse = await login(email, password);
     const walletBackupData = loginResponse.wallet_backup_data;
 
-    if (!does_wallet_exist(loginResponse.user.name)) {
+    const key = await md5(email);
+    if (!does_wallet_exist(key)) {
       try {
         restore_wallet(
-          loginResponse.user.name,
+          key,
           walletBackupData.passphrase_hash,
           walletBackupData.mnemonic_ciphertext,
           walletBackupData.xpub,
