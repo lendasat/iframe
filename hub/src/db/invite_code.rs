@@ -17,6 +17,17 @@ pub async fn load_invite_code_borrower(
 
     Ok(invite_code)
 }
+pub async fn deactive_invite_code_borrower(pool: &Pool<Postgres>, code: &str) -> Result<()> {
+    sqlx::query_as!(
+        InviteCode,
+        "UPDATE INVITE_CODES_BORROWER set active = false WHERE code = $1 ",
+        code
+    )
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(())
+}
 
 pub async fn load_invite_code_lender(
     pool: &Pool<Postgres>,
