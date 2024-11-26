@@ -226,7 +226,7 @@ const CreateLoanOffer: FC = () => {
                   >
                     <TextField.Slot className="pr-0" />
                     <TextField.Slot>
-                      <Text size={"2"} weight={"medium"}>1% - 90%</Text>
+                      <Text size={"2"} weight={"medium"}>1% - 70%</Text>
                     </TextField.Slot>
                   </TextField.Root>
                 </Box>

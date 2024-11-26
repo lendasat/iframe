@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        WITH max_id AS (\n            SELECT COALESCE(MAX(id), 0) + 1 AS next_id\n            FROM hub_wallet_index\n        )\n        INSERT INTO hub_wallet_index (id)\n        SELECT next_id FROM max_id\n        RETURNING id;\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "ac4267a1e349630dad82766a16c6c4ea17eaa205cb9332263d467f1aba47f227"
+}

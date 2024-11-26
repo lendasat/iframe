@@ -137,7 +137,7 @@ export const Step2PickOffer = () => {
   const [stableCoin, setStableCoin] = useState<StableCoin | undefined>(validCoin);
 
   // Loan Duration
-  const [loanDuration, setLoanDuration] = useState<number>(12);
+  const [loanDuration, setLoanDuration] = useState<number>(1);
   // maximum repayment time
   const maxRepaymentTime = 18;
   // minimum maxInterest rate

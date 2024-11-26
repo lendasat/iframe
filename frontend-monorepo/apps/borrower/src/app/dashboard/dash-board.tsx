@@ -22,6 +22,7 @@ function DashBoard() {
 
   const totalLoanAmount = value
     ? value
+      .filter((loan) => loan.status !== ContractStatus.Rejected)
       .map((loan) => loan.loan_amount)
       .reduce((sum, amount) => sum + amount, 0)
     : 0;

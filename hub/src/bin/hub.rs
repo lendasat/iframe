@@ -65,7 +65,13 @@ async fn main() -> Result<()> {
         config.network.clone().as_str(),
     )?;
 
-    let wallet = Wallet::new(hub_seed, &config.fallback_xpub, network, descriptor_wallet)?;
+    let wallet = Wallet::new(
+        hub_seed,
+        &config.fallback_xpub,
+        network,
+        descriptor_wallet,
+        db.clone(),
+    )?;
     let wallet = Arc::new(Mutex::new(wallet));
 
     let (mempool_addr, mempool_mailbox) = xtra::Mailbox::unbounded();

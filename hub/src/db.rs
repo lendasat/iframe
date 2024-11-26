@@ -10,6 +10,7 @@ pub mod moon;
 pub mod transactions;
 pub mod user_logins;
 pub mod wallet_backups;
+pub mod wallet_index;
 
 use anyhow::Result;
 use sqlx::postgres::PgPoolOptions;
