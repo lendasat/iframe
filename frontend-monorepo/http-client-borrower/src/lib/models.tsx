@@ -231,7 +231,7 @@ export interface UserCardDetail {
   available_balance: number;
   pan: number;
   cvv: number;
-  expiration: Date;
+  expiration: string;
 }
 
 export class FeatureMapper {

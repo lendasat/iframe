@@ -1,7 +1,6 @@
 import type { UserCardDetail } from "@frontend-monorepo/http-client-borrower";
 import { Box } from "@radix-ui/themes";
 import { ReactComponent as MoonCard } from "../../assets/moon_card.svg";
-import { formatExpiryTimestamp } from "./Cards";
 import "../../assets/moonFont.css";
 
 interface CredtCardProps {
@@ -45,14 +44,14 @@ const CardNumber = ({ number, visible, setVisible }: CardNumberProps) => {
 };
 
 interface ExpirationDateProps {
-  expiry: Date;
+  expiry: string;
   visible: boolean | undefined;
 }
 
 const ExpirationDate = ({ expiry, visible }: ExpirationDateProps) => {
   let formatted = "**/****";
   if (visible) {
-    formatted = formatExpiryTimestamp(expiry.getTime());
+    formatted = expiry;
   }
 
   return (

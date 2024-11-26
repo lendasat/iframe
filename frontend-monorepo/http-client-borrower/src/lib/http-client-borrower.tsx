@@ -32,9 +32,6 @@ interface RawDispute extends Omit<Dispute, "created_at" | "updated_at"> {
 interface RawCardTransaction extends Omit<CardTransaction, "date"> {
   date: string;
 }
-interface RawUserCardDetail extends Omit<UserCardDetail, "expiration"> {
-  expiration: string;
-}
 
 export class HttpClientBorrower extends BaseHttpClient {
   async getLoanOffers(): Promise<LoanOffer[] | undefined> {
@@ -366,20 +363,9 @@ export class HttpClientBorrower extends BaseHttpClient {
 
   async getUserCards(): Promise<UserCardDetail[]> {
     try {
-      const response: AxiosResponse<RawUserCardDetail[]> = await this.httpClient.get("/api/cards");
+      const response: AxiosResponse<UserCardDetail[]> = await this.httpClient.get("/api/cards");
 
-      return response.data.map(card => {
-        const expiration = parseRFC3339Date(card.expiration);
-        if (expiration == null) {
-          console.error(`Could not parse expiration date ${card.expiration}`);
-          throw new Error("Invalid date");
-        }
-
-        return {
-          ...card,
-          expiration: expiration,
-        };
-      });
+      return response.data;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         const message = error.response.data.message;

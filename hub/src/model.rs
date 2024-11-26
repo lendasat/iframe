@@ -372,8 +372,7 @@ pub mod db {
         pub id: String,
         pub balance: Decimal,
         pub available_balance: Decimal,
-        #[serde(with = "time::serde::rfc3339")]
-        pub expiration: OffsetDateTime,
+        pub expiration: String,
         pub pan: String,
         pub cvv: String,
         pub support_token: String,
