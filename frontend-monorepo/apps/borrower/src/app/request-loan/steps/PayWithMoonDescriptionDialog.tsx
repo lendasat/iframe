@@ -1,6 +1,7 @@
 import type { LoanProductOption } from "@frontend-monorepo/base-http-client";
-import { AlertDialog, Box, Button, Checkbox, Flex, Separator, Text } from "@radix-ui/themes";
+import { AlertDialog, Box, Button, Callout, Checkbox, Flex, Separator, Text } from "@radix-ui/themes";
 import { useState } from "react";
+import { FaInfoCircle } from "react-icons/fa";
 import { FaTrademark } from "react-icons/fa6";
 import { Link } from "react-router-dom";
 
@@ -87,6 +88,15 @@ export const PayWithMoonDescriptionDialog = ({
                   </Text>
                 </li>
               </ul>
+              <Callout.Root color="teal" variant="soft" highContrast>
+                <Callout.Icon>
+                  <FaInfoCircle />
+                </Callout.Icon>
+                <Callout.Text>
+                  In closed beta we are using a 2-of-4 multisig contract and not DLCs. The keys are distributed among
+                  the borrower, lender, Lendasat and a trusted third party.
+                </Callout.Text>
+              </Callout.Root>
             </AlertDialog.Description>
           </Box>
           <div className="absolute bottom-0 h-7 bg-gradient-to-t from-white via-white/70 to-white/0 z-10 w-full left-0" />
