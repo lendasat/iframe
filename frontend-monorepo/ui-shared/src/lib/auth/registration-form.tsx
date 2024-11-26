@@ -114,6 +114,7 @@ export function RegistrationForm({ handleRegister }: RegistrationFormProps) {
                       color="gray"
                       className="hover:bg-transparent"
                       onClick={() => setIsPasswordVisible(!isPasswordVisible)}
+                      tabIndex={-1}
                     >
                       {isPasswordVisible ? <FaRegEye /> : <FaRegEyeSlash />}
                     </IconButton>
@@ -133,6 +134,7 @@ export function RegistrationForm({ handleRegister }: RegistrationFormProps) {
                       color="gray"
                       className="hover:bg-transparent"
                       onClick={() => setIsPasswordVisible(!isPasswordVisible)}
+                      tabIndex={-1}
                     >
                       {isPasswordVisible ? <FaRegEye /> : <FaRegEyeSlash />}
                     </IconButton>
@@ -152,6 +154,7 @@ export function RegistrationForm({ handleRegister }: RegistrationFormProps) {
                     <RadixLink
                       href="https://lendasat.notion.site/Frequently-Asked-Questions-100d2f24d4cf800e83bbca7cff3bb707"
                       target="_blank"
+                      tabIndex={-1}
                     >
                       <Flex align={"center"} gap={"2"} className="text-font-dark mb-2">
                         <Text as="label" size={"1"} weight={"medium"} className="text-font/70 mb-2">
@@ -173,6 +176,7 @@ export function RegistrationForm({ handleRegister }: RegistrationFormProps) {
                       color="gray"
                       className="hover:bg-transparent"
                       onClick={() => setIsContractSecretVisible(!isContractSecretVisible)}
+                      tabIndex={-1}
                     >
                       {isContractSecretVisible ? <FaRegEye /> : <FaRegEyeSlash />}
                     </IconButton>
@@ -188,6 +192,7 @@ export function RegistrationForm({ handleRegister }: RegistrationFormProps) {
                     <RadixLink
                       href="https://lendasat.notion.site/Frequently-Asked-Questions-100d2f24d4cf800e83bbca7cff3bb707"
                       target="_blank"
+                      tabIndex={-1}
                     >
                       <Flex align={"center"} gap={"2"} className="text-font-dark mb-2">
                         <Text as="label" size={"1"} weight={"medium"} className="text-font/70 mb-2">
@@ -209,6 +214,7 @@ export function RegistrationForm({ handleRegister }: RegistrationFormProps) {
                       color="gray"
                       className="hover:bg-transparent"
                       onClick={() => setIsContractSecretVisible(!isContractSecretVisible)}
+                      tabIndex={-1}
                     >
                       {isContractSecretVisible ? <FaRegEye /> : <FaRegEyeSlash />}
                     </IconButton>
