@@ -166,10 +166,11 @@ pub struct Transaction {
     #[serde(with = "rust_decimal::serde::float")]
     pub amount_fees_in_transaction_currency: Decimal,
     pub fees: Vec<Fee>,
+    pub tag: String,
 }
 
-impl From<pay_with_moon::Transaction> for Transaction {
-    fn from(value: pay_with_moon::Transaction) -> Self {
+impl From<pay_with_moon::TransactionDataWrapper> for Transaction {
+    fn from(value: pay_with_moon::TransactionDataWrapper) -> Self {
         Transaction {
             card: value.data.card.into(),
             transaction_id: value.data.transaction_id,
@@ -183,6 +184,7 @@ impl From<pay_with_moon::Transaction> for Transaction {
             transaction_currency: value.data.transaction_currency,
             amount_fees_in_transaction_currency: value.data.amount_fees_in_transaction_currency,
             fees: value.data.fees.into_iter().map(|fee| fee.into()).collect(),
+            tag: value.tag,
         }
     }
 }

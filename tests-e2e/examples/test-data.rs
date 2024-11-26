@@ -25,7 +25,6 @@ use sqlx::Pool;
 use sqlx::Postgres;
 use std::str::FromStr;
 use time::macros::format_description;
-use time::OffsetDateTime;
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::filter::Directive;
 use tracing_subscriber::fmt::time::UtcTime;
@@ -122,7 +121,7 @@ async fn create_sample_card(
         id: Uuid::from_str("0926cd27-7774-4fb3-9f9b-5f23744445e7").expect("to be valid"),
         balance: Decimal::ZERO,
         available_balance: Decimal::ZERO,
-        expiration: OffsetDateTime::from_unix_timestamp(1738367999).expect("to be valid"),
+        expiration: "01/70".to_string(),
         pan: "4513650002606667".to_string(),
         cvv: "064".to_string(),
         support_token: "028084d792".to_string(),

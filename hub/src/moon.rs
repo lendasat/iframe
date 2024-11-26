@@ -6,7 +6,7 @@ use anyhow::bail;
 use anyhow::Context;
 use anyhow::Result;
 use pay_with_moon::MoonCardClient;
-use pay_with_moon::Transaction;
+use pay_with_moon::TransactionDataWrapper;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use sqlx::Pool;
@@ -139,7 +139,7 @@ impl Manager {
         })
     }
 
-    pub async fn get_transactions(&self, card_id: Uuid) -> Result<Vec<Transaction>> {
+    pub async fn get_transactions(&self, card_id: Uuid) -> Result<Vec<TransactionDataWrapper>> {
         let transactions = self
             .client
             // TODO: implement pagination
