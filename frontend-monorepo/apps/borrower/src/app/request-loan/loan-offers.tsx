@@ -1,8 +1,10 @@
 import type { IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import { faChevronDown, faChevronUp, faMinus } from "@fortawesome/free-solid-svg-icons";
 import type { LoanOffer } from "@frontend-monorepo/http-client-borrower";
+import { AprInfoLabel, LtvInfoLabel } from "@frontend-monorepo/ui-shared";
 import { Box, Button, Flex, Grid, Spinner, Text } from "@radix-ui/themes";
 import { useState } from "react";
+import { FaInfoCircle } from "react-icons/fa";
 import { IoCaretDownOutline, IoCaretUp } from "react-icons/io5";
 import { PiWarningOctagon } from "react-icons/pi";
 import { LoanOfferComponent } from "./loan-offer";
@@ -139,17 +141,21 @@ function LoanOffersComponent({ loanOffers, onRequest, isLoading }: LoanOffersCom
               className="bg-transparent px-0"
             >
               <Flex gap={"1"}>
-                <Text
-                  size={"1"}
-                  weight={"medium"}
-                  color="gray"
-                  className={SortHelper.getIcon(ltvSort) === faChevronUp
-                      || SortHelper.getIcon(ltvSort) === faChevronDown
-                    ? "text-black"
-                    : "text-black/40"}
-                >
-                  LTV
-                </Text>
+                <LtvInfoLabel>
+                  <Text
+                    size={"1"}
+                    weight={"medium"}
+                    color="gray"
+                    className={SortHelper.getIcon(ltvSort) === faChevronUp
+                        || SortHelper.getIcon(ltvSort) === faChevronDown
+                      ? "text-black"
+                      : "text-black/40"}
+                  >
+                    LTV
+                  </Text>
+                  <FaInfoCircle color={"gray"} />
+                </LtvInfoLabel>
+
                 <Box>
                   <IoCaretUp
                     className={`text-[10px] -mb-1
@@ -169,17 +175,23 @@ function LoanOffersComponent({ loanOffers, onRequest, isLoading }: LoanOffersCom
               className="bg-transparent px-0"
             >
               <Flex gap={"1"}>
-                <Text
-                  size={"1"}
-                  weight={"medium"}
-                  color="gray"
-                  className={SortHelper.getIcon(interestSort) === faChevronUp
-                      || SortHelper.getIcon(interestSort) === faChevronDown
-                    ? "text-black"
-                    : "text-black/40"}
-                >
-                  Interest
-                </Text>
+                <AprInfoLabel>
+                  <Flex align={"center"} gap={"2"} className="text-font-dark">
+                    <Text
+                      size={"1"}
+                      weight={"medium"}
+                      color="gray"
+                      className={SortHelper.getIcon(interestSort) === faChevronUp
+                          || SortHelper.getIcon(interestSort) === faChevronDown
+                        ? "text-black"
+                        : "text-black/40"}
+                    >
+                      Interest Rate/APR
+                    </Text>
+                    <FaInfoCircle color={"gray"} />
+                  </Flex>
+                </AprInfoLabel>
+
                 <Box>
                   <IoCaretUp
                     className={`text-[10px] -mb-1
