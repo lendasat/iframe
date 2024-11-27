@@ -23,6 +23,7 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::middleware;
 use axum::response::IntoResponse;
+use axum::routing::delete;
 use axum::routing::get;
 use axum::routing::post;
 use axum::routing::put;
@@ -70,6 +71,13 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
         .route(
             "/api/contracts",
             post(post_contract_request).route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                jwt_auth::auth,
+            )),
+        )
+        .route(
+            "/api/contracts/:id",
+            delete(cancel_contract_request).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
                 jwt_auth::auth,
             )),
@@ -630,6 +638,56 @@ pub async fn post_claim_tx(
     })?;
 
     Ok((StatusCode::OK, txid.to_string()))
+}
+
+#[instrument(skip(data, user), err(Debug), ret)]
+pub async fn cancel_contract_request(
+    State(data): State<Arc<AppState>>,
+    Extension(user): Extension<User>,
+    Path(contract_id): Path<String>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    let contract = db::contracts::load_contract_by_contract_id_and_borrower_id(
+        &data.db,
+        contract_id.as_str(),
+        user.id.as_str(),
+    )
+    .await
+    .map_err(|e| {
+        tracing::error!(
+            contract_id,
+            borrower_id = user.id,
+            "Could not load contract"
+        );
+
+        let error_response = ErrorResponse {
+            message: format!("Contract not found: {e:#}"),
+        };
+        (StatusCode::BAD_REQUEST, Json(error_response))
+    })?;
+
+    if contract.status != ContractStatus::Requested {
+        let error_response = ErrorResponse {
+            message: "Can only cancel request if it has not yet been approved".to_string(),
+        };
+        return Err((StatusCode::BAD_REQUEST, Json(error_response)));
+    }
+
+    db::contracts::mark_contract_as_cancelled(&data.db, contract_id.as_str(), user.id.as_str())
+        .await
+        .map_err(|e| {
+            tracing::error!(
+                contract_id,
+                borrower_id = user.id,
+                "Could not mark contract as cancelled"
+            );
+
+            let error_response = ErrorResponse {
+                message: format!("Could not cancel request: {e:#}"),
+            };
+            (StatusCode::BAD_REQUEST, Json(error_response))
+        })?;
+
+    Ok(StatusCode::OK)
 }
 
 #[derive(serde::Deserialize, Debug)]

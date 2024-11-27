@@ -92,6 +92,10 @@ export function StatusBadge({ status }: StatusBadgeProps) {
       color = "orange";
       label = "Dispute Resolved";
       break;
+    case ContractStatus.Cancelled:
+      color = "gray";
+      label = "Contract Cancelled";
+      break;
   }
 
   return (

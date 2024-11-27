@@ -539,6 +539,54 @@ async fn update_contract_state(
     Ok(contract.into())
 }
 
+pub async fn mark_contract_as_cancelled(
+    pool: &Pool<Postgres>,
+    contract_id: &str,
+    borrower_id: &str,
+) -> Result<Contract> {
+    let contract = sqlx::query_as!(
+        db::Contract,
+        r#"
+        UPDATE contracts
+        SET
+            status = $1,
+            updated_at = $2,
+            borrower_id = $3
+        WHERE id = $4
+        RETURNING
+            id,
+            lender_id,
+            borrower_id,
+            loan_id,
+            initial_ltv,
+            initial_collateral_sats,
+            origination_fee_sats,
+            collateral_sats,
+            loan_amount,
+            borrower_btc_address,
+            borrower_pk,
+            borrower_loan_address,
+            integration as "integration: crate::model::db::Integration",
+            lender_xpub,
+            contract_address,
+            contract_index,
+            status as "status: crate::model::db::ContractStatus",
+            liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
+            duration_months,
+            created_at,
+            updated_at
+        "#,
+        db::ContractStatus::Cancelled as db::ContractStatus,
+        time::OffsetDateTime::now_utc(),
+        borrower_id,
+        contract_id,
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(contract.into())
+}
+
 pub async fn mark_contract_as_closed(pool: &Pool<Postgres>, contract_id: &str) -> Result<Contract> {
     let contract = sqlx::query_as!(
         db::Contract,
@@ -864,7 +912,8 @@ pub async fn update_collateral(
                 | ContractStatus::DisputeBorrowerStarted
                 | ContractStatus::DisputeLenderStarted
                 | ContractStatus::DisputeBorrowerResolved
-                | ContractStatus::DisputeLenderResolved => contract.status,
+                | ContractStatus::DisputeLenderResolved
+                | ContractStatus::Cancelled => contract.status,
             }
         }
         Ordering::Less => {

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        INSERT INTO contracts (\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            duration_months,\n            status,\n            liquidation_status,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            integration,\n            contract_address,\n            contract_index\n        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)\n        RETURNING\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            integration as \"integration: crate::model::db::Integration\",\n            lender_xpub,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            created_at,\n            updated_at\n        ",
+  "query": "\n        UPDATE contracts\n        SET\n            status = $1,\n            updated_at = $2,\n            borrower_id = $3\n        WHERE id = $4\n        RETURNING\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            integration as \"integration: crate::model::db::Integration\",\n            lender_xpub,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            created_at,\n            updated_at\n        ",
   "describe": {
     "columns": [
       {
@@ -155,16 +155,6 @@
     ],
     "parameters": {
       "Left": [
-        "Bpchar",
-        "Bpchar",
-        "Bpchar",
-        "Bpchar",
-        "Numeric",
-        "Int8",
-        "Int8",
-        "Int8",
-        "Numeric",
-        "Int4",
         {
           "Custom": {
             "name": "contract_status",
@@ -189,34 +179,9 @@
             }
           }
         },
-        {
-          "Custom": {
-            "name": "liquidation_status",
-            "kind": {
-              "Enum": [
-                "Healthy",
-                "FirstMarginCall",
-                "SecondMarginCall",
-                "Liquidated"
-              ]
-            }
-          }
-        },
-        "Text",
+        "Timestamptz",
         "Bpchar",
-        "Text",
-        {
-          "Custom": {
-            "name": "integration",
-            "kind": {
-              "Enum": [
-                "PayWithMoon"
-              ]
-            }
-          }
-        },
-        "Text",
-        "Int4"
+        "Bpchar"
       ]
     },
     "nullable": [
@@ -243,5 +208,5 @@
       false
     ]
   },
-  "hash": "fec5ae3de4f45a0ceb78b43722f87ef9564bc2c98c1b57d7cef3a264fb833a01"
+  "hash": "8fb5fb66c407c145d0dbcba939ceadfbce3e18745dfafc5380a9362b1fdd2768"
 }

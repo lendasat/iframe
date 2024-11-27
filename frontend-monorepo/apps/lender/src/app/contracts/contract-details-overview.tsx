@@ -576,8 +576,9 @@ const AdditionalDetail = ({ contract }: AdditionalDetailsProps) => {
     case ContractStatus.DisputeLenderStarted:
     case ContractStatus.DisputeBorrowerResolved:
     case ContractStatus.DisputeLenderResolved:
+    default:
       // TODO
-      return "";
+      return "Details";
   }
 };
 

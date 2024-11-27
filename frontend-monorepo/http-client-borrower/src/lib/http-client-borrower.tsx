@@ -114,6 +114,24 @@ export class HttpClientBorrower extends BaseHttpClient {
     }
   }
 
+  async cancelContractRequest(contractId: string): Promise<void> {
+    try {
+      await this.httpClient.delete(`/api/contracts/${contractId}`);
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = JSON.stringify(error.response?.data);
+        console.error(
+          `Failed to cancel loan request: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not cancel loan request: ${JSON.stringify(error)}`);
+      }
+    }
+  }
+
   async getContracts(): Promise<Contract[]> {
     try {
       const response: AxiosResponse<RawContract[]> = await this.httpClient.get("/api/contracts");
@@ -420,6 +438,7 @@ type BorrowerHttpClientContextType = Pick<
   | "getLoanOffer"
   | "postLoanRequest"
   | "postContractRequest"
+  | "cancelContractRequest"
   | "getContracts"
   | "getContract"
   | "markAsRepaymentProvided"
@@ -498,6 +517,7 @@ export const HttpClientBorrowerProvider: React.FC<HttpClientProviderProps> = ({ 
     getLoanOffer: httpClient.getLoanOffer.bind(httpClient),
     postLoanRequest: httpClient.postLoanRequest.bind(httpClient),
     postContractRequest: httpClient.postContractRequest.bind(httpClient),
+    cancelContractRequest: httpClient.cancelContractRequest.bind(httpClient),
     getContracts: httpClient.getContracts.bind(httpClient),
     getContract: httpClient.getContract.bind(httpClient),
     markAsRepaymentProvided: httpClient.markAsRepaymentProvided.bind(httpClient),
