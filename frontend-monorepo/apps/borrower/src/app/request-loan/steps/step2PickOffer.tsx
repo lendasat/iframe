@@ -17,10 +17,11 @@ import {
 } from "@frontend-monorepo/ui-shared";
 import { Box, Button, Callout, Flex, Grid, Heading, Separator, Spinner, Text, TextField } from "@radix-ui/themes";
 import { Network, validate } from "bitcoin-address-validation";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { ChangeEvent } from "react";
 import { Form } from "react-bootstrap";
 import { FaInfoCircle } from "react-icons/fa";
+import { FaInfo } from "react-icons/fa6";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAsync } from "react-use";
 import EmptyResult from "../../../assets/search.png";
@@ -90,6 +91,14 @@ type LocationState = {
   option: LoanProductOption;
 };
 
+function findSmallestLoanOffer(loanOffers: LoanOffer[]): LoanOffer | undefined {
+  if (loanOffers.length === 0) return undefined;
+
+  return loanOffers.reduce((smallest, current) =>
+    (current.loan_amount_min < smallest.loan_amount_min) ? current : smallest
+  );
+}
+
 export const Step2PickOffer = () => {
   const { getNextPublicKey } = useWallet();
   const { getLoanOffers, postContractRequest } = useBorrowerHttpClient();
@@ -130,6 +139,7 @@ export const Step2PickOffer = () => {
   const [bestOffer, setBestOffer] = useState<LoanOffer | undefined>();
   // Loan Amount
   const [loanAmount, setLoanAmount] = useState<number>(1);
+  const [loanAmountStringInput, setLoanAmountStringInput] = useState("1");
 
   const validCoin = validCoins[0];
 
@@ -138,6 +148,7 @@ export const Step2PickOffer = () => {
 
   // Loan Duration
   const [loanDuration, setLoanDuration] = useState<number>(1);
+  const [loanDurationString, setLoanDurationString] = useState("1");
   // maximum repayment time
   const maxRepaymentTime = 18;
   // minimum maxInterest rate
@@ -162,29 +173,36 @@ export const Step2PickOffer = () => {
     console.error(`Failed loading loan offers ${loadingError}`);
   }
 
-  if (loading) {
-    // TODO: might be nicer to use a skeleton
-    return <Spinner />;
-  }
-
   const availableOffers = maybeAvailableOffers || [];
 
-  const onShowOfferClick = () => {
+  const onShowOfferClick = useCallback(() => {
+    const availOffers = maybeAvailableOffers || [];
     const loanOffer = findBestOffer({
-      loanAmount: loanAmount,
+      loanAmount,
       duration: loanDuration,
       wantedCoin: stableCoin,
-      validCoins: validCoins,
+      validCoins,
       minLtv: ltv,
-      maxInterest: maxInterest,
-      availableOffers: availableOffers,
-      advanceSearch: advanceSearch,
+      maxInterest,
+      availableOffers: availOffers,
+      advanceSearch,
     });
     setBestOffer(loanOffer);
-  };
+  }, [
+    loanAmount,
+    loanDuration,
+    stableCoin,
+    validCoins,
+    ltv,
+    maxInterest,
+    maybeAvailableOffers,
+    advanceSearch,
+    setBestOffer,
+  ]);
 
   function onLoanAmountChange(e: ChangeEvent<HTMLInputElement>) {
     e.preventDefault();
+    setLoanAmountStringInput(e.target.value);
     let parsedLoanAmount = parseFloat(e.target.value);
     if (isNaN(parsedLoanAmount)) {
       parsedLoanAmount = 1;
@@ -205,6 +223,7 @@ export const Step2PickOffer = () => {
 
   function onLoanDurationChange(e: ChangeEvent<HTMLInputElement>) {
     e.preventDefault();
+    setLoanDurationString(e.target.value);
     let parsedDuration = parseFloat(e.target.value);
     if (isNaN(parsedDuration)) {
       parsedDuration = 1;
@@ -313,6 +332,35 @@ export const Step2PickOffer = () => {
     }
   };
 
+  const offerWithSmallestAmount = findSmallestLoanOffer(availableOffers);
+
+  useEffect(() => {
+    if (loading) {
+      return;
+    }
+
+    if (!offerWithSmallestAmount) {
+      return;
+    }
+
+    setLoanAmountStringInput(offerWithSmallestAmount.loan_amount_min.toString());
+    setLoanAmount(offerWithSmallestAmount.loan_amount_min);
+    setLoanDurationString(offerWithSmallestAmount.duration_months_min.toString());
+    setLoanDuration(offerWithSmallestAmount.duration_months_min);
+  }, [loading, maybeAvailableOffers, offerWithSmallestAmount]);
+
+  useEffect(() => {
+    // This will run after the state updates
+    if (loanAmount && loanDuration) {
+      onShowOfferClick();
+    }
+  }, [loanAmount, loanDuration, onShowOfferClick]);
+
+  if (loading) {
+    // TODO: might be nicer to use a skeleton
+    return <Spinner />;
+  }
+
   return (
     <Grid className="md:grid-cols-2 h-full">
       <Box className="p-6 md:p-8 ">
@@ -334,7 +382,7 @@ export const Step2PickOffer = () => {
                 type="number"
                 color="gray"
                 min={1}
-                value={loanAmount}
+                value={loanAmountStringInput}
                 onChange={onLoanAmountChange}
                 className="w-full rounded-lg text-sm text-font"
               >
@@ -356,7 +404,7 @@ export const Step2PickOffer = () => {
                 color="gray"
                 min={1}
                 max={maxRepaymentTime}
-                value={loanDuration}
+                value={loanDurationString}
                 onChange={onLoanDurationChange}
                 className="w-full rounded-lg text-sm text-font"
               >
@@ -549,6 +597,21 @@ export const Step2PickOffer = () => {
                 <Text className="text-font/90" size={"2"} weight={"medium"}>
                   No offers found for these inputs...
                 </Text>
+                {offerWithSmallestAmount
+                  && (
+                    <Box className={"px-4 py-4"}>
+                      <Callout.Root color={"teal"}>
+                        <Callout.Icon>
+                          <FaInfo size={"18"} />
+                        </Callout.Icon>
+                        <Callout.Text>
+                          Best available offer starts from {formatCurrency(offerWithSmallestAmount.loan_amount_min)}
+                          {"  "}with a minimum duration of {offerWithSmallestAmount.duration_months_min} months.
+                          <br />
+                        </Callout.Text>
+                      </Callout.Root>
+                    </Box>
+                  )}
               </Box>
             )}
         </Box>
