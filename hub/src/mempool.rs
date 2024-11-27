@@ -19,6 +19,7 @@ use serde::Serialize;
 use sqlx::Pool;
 use sqlx::Postgres;
 use std::collections::HashMap;
+use std::hash::RandomState;
 use std::time::Duration;
 use tokio::net::TcpStream;
 use tokio_tungstenite::connect_async_tls_with_config;
@@ -248,30 +249,9 @@ impl xtra::Actor for Actor {
                                                 .expect("actor to be alive");
                                         }
                                         // Subsequent blocks.
-                                        WsResponse::Block {
-                                            block,
-                                            block_transactions,
-                                        } => {
+                                        WsResponse::Block { block } => {
                                             actor
                                                 .send(NewBlockHeight(block.height))
-                                                .await
-                                                .expect("actor to be alive");
-
-                                            if let Some(transactions) = block_transactions {
-                                                actor
-                                                    .send(ContractUpdate { transactions })
-                                                    .await
-                                                    .expect("actor to be alive");
-                                            }
-                                        }
-                                        WsResponse::AddressTransactions(AddressTransactions {
-                                            address_transactions: transactions,
-                                        })
-                                        | WsResponse::BlockTransactions(BlockTransactions {
-                                            block_transactions: transactions,
-                                        }) => {
-                                            actor
-                                                .send(ContractUpdate { transactions })
                                                 .await
                                                 .expect("actor to be alive");
                                         }
@@ -510,17 +490,6 @@ impl xtra::Handler<TrackContractFunding> for Actor {
             },
         );
 
-        // Subscribe to updates on this address via mempool's WS.
-        let ws_msg = serde_json::to_string(&WsRequest::TrackAddress(TrackAddress {
-            address: msg.contract_address.to_string(),
-        }))?;
-        self.ws_sink
-            .as_mut()
-            .expect("sink")
-            .send(Message::Text(ws_msg))
-            .await
-            .context("Failed to send TrackAddress message via WS")?;
-
         for outpoint in collateral_outputs_vec {
             if let Err(err) = db::transactions::insert_funding_txid(
                 &self.db,
@@ -612,7 +581,86 @@ impl xtra::Handler<NewBlockHeight> for Actor {
     async fn handle(&mut self, msg: NewBlockHeight, _: &mut xtra::Context<Self>) -> Self::Return {
         self.block_height = msg.0;
 
-        for (_, contract) in self.tracked_contracts.iter_mut() {
+        // Every time we learn about a new block we iterate through all the tracked contracts.
+        for (address, contract) in self.tracked_contracts.iter_mut() {
+            // We wait to avoid hitting Mempool rate limits. Rate limits will eventually force us to
+            // stop using mempool (or pay for the service).
+            tokio::time::sleep(Duration::from_millis(500)).await;
+            let txs = match self.rest_client.get_address_transactions(address).await {
+                Ok(txs) => txs,
+                Err(e) => {
+                    tracing::error!(%address, "Failed to get address transactions: {e:?}");
+                    continue;
+                }
+            };
+
+            let updated_collateral_outputs = txs
+                .into_iter()
+                .flat_map(|tx| {
+                    let txid = tx.txid;
+
+                    // Determine the confirmation status of every known transaction paying to the
+                    // collateral address.
+                    let state = match tx.status.block_height {
+                        Some(tx_block_height) => {
+                            let confirmations =
+                                calculate_confirmations(self.block_height, tx_block_height);
+
+                            if confirmations >= MIN_CONFIRMATIONS {
+                                ConfirmationState::Confirmed
+                            } else {
+                                ConfirmationState::OnChain {
+                                    height: tx_block_height,
+                                }
+                            }
+                        }
+                        None => ConfirmationState::Seen,
+                    };
+
+                    // We filter out outputs which do not pay to the collateral address.
+                    tx.vout
+                        .into_iter()
+                        .enumerate()
+                        .filter_map(|(i, vout)| {
+                            (vout.scriptpubkey_address == *address.as_unchecked()).then(|| {
+                                let outpoint = OutPoint {
+                                    txid,
+                                    vout: i as u32,
+                                };
+                                (
+                                    outpoint,
+                                    CollateralOutput {
+                                        outpoint,
+                                        amount_sats: vout.value,
+                                        state,
+                                    },
+                                )
+                            })
+                        })
+                        .collect::<Vec<_>>()
+                })
+                .collect::<HashMap<OutPoint, CollateralOutput, RandomState>>();
+
+            // For every new collateral output, we insert another funding TXID in the database.
+            for (outpoint, updated_output) in updated_collateral_outputs.iter() {
+                if !contract
+                    .collateral_outputs
+                    .contains_key(&updated_output.outpoint)
+                {
+                    let txid = outpoint.txid;
+                    let contract_id = &contract.contract_id;
+
+                    tracing::debug!(%contract_id, %txid, "Learnt about funding TX");
+
+                    // Save in the database as a new funding TX.
+                    if let Err(err) =
+                        db::transactions::insert_funding_txid(&self.db, contract_id, &txid).await
+                    {
+                        tracing::error!("Failed to insert funding TXID: {err:?}");
+                    }
+                }
+            }
+
             let confirmed_collateral_sats_before = confirmed_collateral_sats(
                 &contract
                     .collateral_outputs
@@ -621,55 +669,17 @@ impl xtra::Handler<NewBlockHeight> for Actor {
                     .collect::<Vec<_>>(),
             );
 
-            for (_, output) in contract.collateral_outputs.iter_mut() {
-                let new_state = match output.state {
-                    ConfirmationState::OnChain {
-                        height: tx_block_height,
-                    } => {
-                        let contract_id = &contract.contract_id;
-
-                        let confirmations =
-                            calculate_confirmations(self.block_height, tx_block_height);
-                        if confirmations >= MIN_CONFIRMATIONS {
-                            tracing::info!(
-                                contract_id,
-                                amount_sats = output.amount_sats,
-                                "Collateral output reached necessary number of confirmations"
-                            );
-
-                            ConfirmationState::Confirmed
-                        } else {
-                            output.state
-                        }
-                    }
-                    ConfirmationState::Seen | ConfirmationState::Confirmed => output.state,
-                };
-
-                output.state = new_state;
-            }
-
             let confirmed_collateral_sats_after = confirmed_collateral_sats(
-                &contract
-                    .collateral_outputs
+                &updated_collateral_outputs
                     .values()
                     .cloned()
                     .collect::<Vec<_>>(),
             );
-            for outpoint in contract.collateral_outputs.keys() {
-                if let Err(err) = db::transactions::insert_funding_txid(
-                    &self.db,
-                    &contract.contract_id,
-                    &outpoint.txid,
-                )
-                .await
-                {
-                    tracing::error!("Failed at inserting funding tx id: {err:?}");
-                }
-            }
 
-            // NOTE: We cannot actually learn if a collateral output was unconfirmed via the
-            // WebSocket subscription. But we can learn this information after a restart, via the
-            // REST API.
+            // Update actor state.
+            contract.collateral_outputs = updated_collateral_outputs;
+
+            // If the total confirmed collateral has changed, we update it in the database.
             if confirmed_collateral_sats_after != confirmed_collateral_sats_before {
                 match db::contracts::update_collateral(
                     &self.db,
@@ -942,26 +952,15 @@ pub struct Block {
 #[serde(untagged)]
 pub enum WsRequest {
     Action { action: Action, data: Vec<Data> },
-    TrackAddress(TrackAddress),
 }
 
 /// Messages coming from the mempool server.
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(untagged)]
 pub enum WsResponse {
-    Blocks {
-        blocks: Vec<Block>,
-    },
-    Block {
-        block: Block,
-        #[serde(rename = "block-transactions")]
-        block_transactions: Option<Vec<Transaction>>,
-    },
-    AddressTransactions(AddressTransactions),
-    BlockTransactions(BlockTransactions),
-    LoadingIndicator {
-        response: Option<String>,
-    },
+    Blocks { blocks: Vec<Block> },
+    Block { block: Block },
+    LoadingIndicator { response: Option<String> },
     LoadingIndicators {},
     Conversions {},
 }
@@ -976,12 +975,6 @@ pub enum Action {
 #[serde(rename_all = "lowercase")]
 pub enum Data {
     Blocks,
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct TrackAddress {
-    #[serde(rename = "track-address")]
-    pub address: String,
 }
 
 #[cfg(test)]
