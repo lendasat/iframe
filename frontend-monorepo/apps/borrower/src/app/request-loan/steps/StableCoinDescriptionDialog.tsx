@@ -66,18 +66,18 @@ export const StableCoinDescriptionDialog = ({
                 This gives you maximum flexibility, e.g. you can transfer the coins to a preferred exchange, buy more
                 Bitcoin on a DEX or use the coins in any Defi application.
               </Text>
-              <Callout.Root color="teal" variant="soft" highContrast>
-                <Callout.Icon>
-                  <FaInfoCircle />
-                </Callout.Icon>
-                <Callout.Text>
-                  In closed beta we are using a 2-of-4 multisig contract and not DLCs. The keys are distributed among
-                  the borrower, lender, Lendasat and a trusted third party.
-                </Callout.Text>
-              </Callout.Root>
             </AlertDialog.Description>
           </Box>
           <div className="absolute bottom-0 h-7 bg-gradient-to-t from-white via-white/70 to-white/0 z-10 w-full left-0" />
+          <Callout.Root color="teal" variant="soft" highContrast>
+            <Callout.Icon>
+              <FaInfoCircle />
+            </Callout.Icon>
+            <Callout.Text>
+              In closed beta we are using a 2-of-4 multisig contract and not DLCs. The keys are distributed among the
+              borrower, lender, Lendasat and a trusted third party.
+            </Callout.Text>
+          </Callout.Root>
         </Box>
         <Box py={"3"} className="px-4">
           <Text as="label" size="2" weight={"medium"}>
