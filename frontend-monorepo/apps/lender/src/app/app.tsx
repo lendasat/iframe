@@ -115,9 +115,7 @@ function MainLayoutComponents() {
   const user = mapLenderUser(lenderUser!);
 
   return (
-    <WalletProvider
-      email={user.name}
-    >
+    <WalletProvider email={user.email}>
       <Layout
         user={user}
         menuItems={menuItems}
