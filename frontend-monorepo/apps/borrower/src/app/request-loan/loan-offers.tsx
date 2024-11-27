@@ -1,7 +1,7 @@
 import type { IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import { faChevronDown, faChevronUp, faMinus } from "@fortawesome/free-solid-svg-icons";
 import type { LoanOffer } from "@frontend-monorepo/http-client-borrower";
-import { Box, Button, Flex, Grid, Text } from "@radix-ui/themes";
+import { Box, Button, Flex, Grid, Spinner, Text } from "@radix-ui/themes";
 import { useState } from "react";
 import { IoCaretDownOutline, IoCaretUp } from "react-icons/io5";
 import { PiWarningOctagon } from "react-icons/pi";
@@ -51,9 +51,10 @@ class SortHelper {
 interface LoanOffersComponentProps {
   loanOffers: LoanOffer[];
   onRequest: (loanOffer: LoanOffer) => void;
+  isLoading: boolean;
 }
 
-function LoanOffersComponent({ loanOffers, onRequest }: LoanOffersComponentProps) {
+function LoanOffersComponent({ loanOffers, onRequest, isLoading }: LoanOffersComponentProps) {
   const [amountSort, setAmountSort] = useState<Sort>(Sort.NONE);
   const [durationSort, setDurationSort] = useState<Sort>(Sort.NONE);
   const [ltvSort, setLTVSort] = useState<Sort>(Sort.NONE);
@@ -213,29 +214,47 @@ function LoanOffersComponent({ loanOffers, onRequest }: LoanOffersComponentProps
           height: layout.innerHeight - 280,
         }}
       >
-        {loanOffers.sort((a, b) => {
-          // Compare by amount first
-          const amountComparison = SortHelper.sort(amountSort, a.loan_amount_min, b.loan_amount_min);
-          if (amountComparison !== 0) return amountComparison;
+        {isLoading && <Loading />}
+        {!isLoading
+          && loanOffers.sort((a, b) => {
+            // Compare by amount first
+            const amountComparison = SortHelper.sort(amountSort, a.loan_amount_min, b.loan_amount_min);
+            if (amountComparison !== 0) return amountComparison;
 
-          // Compare by duration if amount is the same
-          const durationComparison = SortHelper.sort(durationSort, a.duration_months_min, b.duration_months_min);
-          if (durationComparison !== 0) return durationComparison;
+            // Compare by duration if amount is the same
+            const durationComparison = SortHelper.sort(durationSort, a.duration_months_min, b.duration_months_min);
+            if (durationComparison !== 0) return durationComparison;
 
-          // Compare by LTV if amount and duration are the same
-          const ltvComparison = SortHelper.sort(ltvSort, a.min_ltv, b.min_ltv);
-          if (ltvComparison !== 0) return ltvComparison;
+            // Compare by LTV if amount and duration are the same
+            const ltvComparison = SortHelper.sort(ltvSort, a.min_ltv, b.min_ltv);
+            if (ltvComparison !== 0) return ltvComparison;
 
-          // Compare by interest if amount, duration, and LTV are the same
-          return SortHelper.sort(interestSort, a.interest_rate, b.interest_rate);
-        }).map((loanOffer, index) => (
-          <div key={index}>
-            <LoanOfferComponent key={index} loanOffer={loanOffer} onRequest={onRequest} />
-          </div>
-        ))}
+            // Compare by interest if amount, duration, and LTV are the same
+            return SortHelper.sort(interestSort, a.interest_rate, b.interest_rate);
+          }).map((loanOffer, index) => (
+            <div key={index}>
+              <LoanOfferComponent key={index} loanOffer={loanOffer} onRequest={onRequest} />
+            </div>
+          ))}
       </Box>
     </>
   );
 }
+
+const Loading = () => {
+  return (
+    <div className="flex items-center justify-center bg-gray-100">
+      <div className="text-center">
+        <Spinner
+          className="animate-spin mx-auto mb-4 text-blue-500"
+          size={48}
+        />
+        <p className="text-gray-600 text-lg">
+          Loading...
+        </p>
+      </div>
+    </div>
+  );
+};
 
 export default LoanOffersComponent;
