@@ -108,8 +108,7 @@ mod tests {
         // 2. Borrower takes loan offer by creating a contract request.
         browser_wallet::wallet::new_wallet("borrower", "regtest").unwrap();
 
-        let borrower_wallet_index = 0;
-        let borrower_pk = browser_wallet::wallet::get_pk(borrower_wallet_index).unwrap();
+        let borrower_pk = browser_wallet::wallet::get_pk(0).unwrap();
 
         let borrower_btc_address = "tb1quw75h0w26rcrdfar6knvkfazpwyzq4z8vqmt37"
             .parse()
@@ -323,12 +322,8 @@ mod tests {
         let claim_psbt = hex::decode(claim_psbt).unwrap();
         let claim_psbt = Psbt::deserialize(&claim_psbt).unwrap();
 
-        let tx = browser_wallet::wallet::sign_claim_psbt(
-            claim_psbt,
-            collateral_descriptor,
-            borrower_wallet_index,
-        )
-        .unwrap();
+        let tx =
+            browser_wallet::wallet::sign_claim_psbt(claim_psbt, collateral_descriptor).unwrap();
 
         let tx_hex = bitcoin::consensus::encode::serialize_hex(&tx);
 
@@ -448,8 +443,7 @@ mod tests {
         // 2. Borrower takes loan offer by creating a contract request.
         browser_wallet::wallet::new_wallet("borrower", "regtest").unwrap();
 
-        let borrower_wallet_index = 0;
-        let borrower_pk = browser_wallet::wallet::get_pk(borrower_wallet_index).unwrap();
+        let borrower_pk = browser_wallet::wallet::get_pk(0).unwrap();
 
         let borrower_btc_address = "tb1quw75h0w26rcrdfar6knvkfazpwyzq4z8vqmt37"
             .parse()

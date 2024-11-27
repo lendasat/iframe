@@ -56,7 +56,7 @@ export function ContractRepaid({
 
   const claimCollateralRequest = async () => {
     const res = await getClaimCollateralPsbt(contract.id, selectedFee);
-    const claimTx = signClaimPsbt(res.psbt, res.collateral_descriptor, contract.borrower_pk);
+    const claimTx = await signClaimPsbt(res.psbt, res.collateral_descriptor);
 
     const txid = await postClaimTx(contract.id, claimTx);
 

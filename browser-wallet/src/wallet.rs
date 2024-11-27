@@ -178,11 +178,10 @@ fn get_kp(guard: MutexGuard<Option<Wallet>>, index: u32) -> Result<Keypair> {
 pub fn sign_claim_psbt(
     mut psbt: Psbt,
     collateral_descriptor: Descriptor<PublicKey>,
-    index: u32,
 ) -> Result<Transaction> {
     let guard = WALLET.lock().expect("to get lock");
 
-    let kp = get_kp(guard, index).context("No kp for index")?;
+    let kp = get_kp(guard, 0).context("No kp for index")?;
     let sk = kp.secret_key();
     let pk = PublicKey::new(kp.public_key());
 

@@ -21,7 +21,7 @@ interface WalletContextType {
   loadWallet: (passphrase: string) => Promise<void>;
   getMnemonic: () => string;
   getNextPublicKey: () => string;
-  signClaimPsbt: (psbt: string, collateralDescriptor: string, pk: string) => Promise<string>;
+  signClaimPsbt: (psbt: string, collateralDescriptor: string) => Promise<string>;
   getXpub: () => Promise<string>;
 }
 
@@ -96,10 +96,9 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
     }
   };
 
-  const signClaimPsbt = async (psbt: string, collateralDescriptor: string, pk: string) => {
+  const signClaimPsbt = async (psbt: string, collateralDescriptor: string) => {
     if (isInitialized && isWalletLoaded) {
-      const key = await md5(email);
-      return sign_claim_psbt(psbt, collateralDescriptor, pk, key);
+      return sign_claim_psbt(psbt, collateralDescriptor);
     } else {
       throw Error("Wallet not initialized");
     }

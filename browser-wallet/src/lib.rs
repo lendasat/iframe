@@ -104,17 +104,10 @@ pub fn get_next_pk() -> Result<String, JsValue> {
 }
 
 #[wasm_bindgen]
-pub fn sign_claim_psbt(
-    psbt: String,
-    collateral_descriptor: String,
-    pk: String,
-    key: String,
-) -> Result<String, JsValue> {
+pub fn sign_claim_psbt(psbt: String, collateral_descriptor: String) -> Result<String, JsValue> {
     map_err_to_js!(browser_wallet::sign_claim_psbt(
         &psbt,
         &collateral_descriptor,
-        &pk,
-        &key
     ))
 }
 

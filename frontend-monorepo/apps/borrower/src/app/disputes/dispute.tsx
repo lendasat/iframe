@@ -39,7 +39,7 @@ function ResolveDispute() {
       const contract = await getContract(dispute.contract_id);
       const res = await getClaimDisputeCollateralPsbt(dispute.id, selectedFee);
       console.log(`${JSON.stringify(res)}`);
-      const claimTx = signClaimPsbt(res.psbt, res.collateral_descriptor, contract.borrower_pk);
+      const claimTx = await signClaimPsbt(res.psbt, res.collateral_descriptor);
       const txid = await postClaimTx(contract.id, claimTx);
       alert(`Transaction ${txid} was published!`);
     } catch (error) {
