@@ -78,9 +78,8 @@ impl Wallet {
         // keypair.
         let lender_pk = derive_lender_pk(lender_xpub, index, self.hub_xpriv.network.is_mainnet())?;
 
-        // TODO: Extract into a function.
         let descriptor: Descriptor<PublicKey> =
-            format!("wsh(multi(2,{borrower_pk},{hub_pk},{fallback_pk},{lender_pk}))").parse()?;
+            collateral_contract_descriptor(borrower_pk, hub_pk, fallback_pk, lender_pk)?;
 
         let address = descriptor.address(self.network)?;
 
@@ -191,8 +190,8 @@ impl Wallet {
         };
 
         // All collateral outputs share the same script.
-        let collateral_descriptor: Descriptor<PublicKey> =
-            format!("wsh(multi(2,{borrower_pk},{hub_pk},{fallback_pk},{lender_pk}))").parse()?;
+        let collateral_descriptor =
+            collateral_contract_descriptor(borrower_pk, hub_pk, fallback_pk, lender_pk)?;
         let witness_script = collateral_descriptor.script_code()?;
 
         let mut inputs = Vec::new();
@@ -303,8 +302,8 @@ impl Wallet {
 
         // All collateral outputs share the same script.
         let hub_pk = PublicKey::new(hub_kp.public_key());
-        let collateral_descriptor: Descriptor<PublicKey> =
-            format!("wsh(multi(2,{borrower_pk},{hub_pk},{fallback_pk},{lender_pk}))").parse()?;
+        let collateral_descriptor =
+            collateral_contract_descriptor(borrower_pk, hub_pk, fallback_pk, lender_pk)?;
         let witness_script = collateral_descriptor.script_code()?;
 
         let mut inputs = Vec::new();
@@ -414,6 +413,15 @@ impl Wallet {
 
         Ok((hub_pk, fallback_pk, index))
     }
+}
+
+fn collateral_contract_descriptor(
+    borrower_pk: PublicKey,
+    hub_pk: PublicKey,
+    fallback_pk: PublicKey,
+    lender_pk: PublicKey,
+) -> Result<Descriptor<PublicKey>, miniscript::Error> {
+    format!("wsh(multi(2,{borrower_pk},{hub_pk},{fallback_pk},{lender_pk}))").parse()
 }
 
 fn derive_lender_pk(lender_xpub: &Xpub, index: u32, is_mainnet: bool) -> Result<PublicKey> {
