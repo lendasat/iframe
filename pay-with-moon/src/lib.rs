@@ -5,7 +5,6 @@ use serde::de::Visitor;
 use serde::Deserialize;
 use serde::Deserializer;
 use serde::Serialize;
-use serde_json::Value;
 use std::fmt;
 use time::OffsetDateTime;
 use uuid::Uuid;
@@ -126,8 +125,6 @@ pub enum Transaction {
     CardAuthorizationRefund(TransactionData),
     #[serde(rename = "DECLINE")]
     DeclineData(DeclineData),
-    #[serde(untagged)]
-    Unknown(Value),
 }
 
 #[derive(Debug, Deserialize, PartialEq, Clone)]
@@ -476,13 +473,6 @@ impl MoonCardClient {
                         tracing::warn!(
                             ?declined_data ,
                             "Received decline transaction information which we are not returning it at the moment");
-
-                        None
-                    }
-                    Transaction::Unknown(uknown_data) => {
-                        tracing::warn!(
-                            ?uknown_data,
-                            "Received unknown transaction information which we are not returning it at the moment");
 
                         None
                     }
