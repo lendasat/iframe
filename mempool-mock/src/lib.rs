@@ -13,11 +13,8 @@ use futures::SinkExt;
 use futures::StreamExt;
 use futures::TryStreamExt;
 use hub::mempool::Action;
-use hub::mempool::AddressTransactions;
 use hub::mempool::Block;
-use hub::mempool::BlockTransactions;
 use hub::mempool::Data;
-use hub::mempool::TrackAddress;
 use hub::mempool::Transaction;
 use hub::mempool::TransactionStatus;
 use hub::mempool::Vout;
@@ -81,12 +78,6 @@ impl Blockchain {
             },
         };
 
-        let _ = self
-            .events_tx
-            .send(WsResponse::AddressTransactions(AddressTransactions {
-                address_transactions: vec![tx.clone()],
-            }));
-
         tracing::debug!(?tx, "Transaction found in mempool");
 
         self.txs.push(tx);
@@ -140,12 +131,6 @@ impl Blockchain {
                 };
 
                 tracing::debug!(?tx, "Transaction confirmed");
-
-                let _ = self
-                    .events_tx
-                    .send(WsResponse::BlockTransactions(BlockTransactions {
-                        block_transactions: vec![tx.clone()],
-                    }));
             }
         }
 
@@ -154,8 +139,6 @@ impl Blockchain {
         for height in (self.height + 1)..=new_height {
             let _ = self.events_tx.send(WsResponse::Block {
                 block: Block { height },
-                // We don't like this pattern, so we don't use it.
-                block_transactions: None,
             });
         }
 
@@ -268,7 +251,6 @@ pub async fn handle_ws_upgrade(
 }
 
 pub async fn handle_ws(socket: WebSocket, blockchain: Arc<RwLock<Blockchain>>) {
-    let user_tracked_addresses = Arc::new(RwLock::new(Vec::<String>::new()));
     let wants_blocks = Arc::new(RwLock::new(false));
 
     // Websocket to subscribers.
@@ -295,7 +277,6 @@ pub async fn handle_ws(socket: WebSocket, blockchain: Arc<RwLock<Blockchain>>) {
     };
 
     tokio::spawn({
-        let user_tracked_addresses = user_tracked_addresses.clone();
         let wants_blocks = wants_blocks.clone();
         async move {
             while let Some(Ok(msg)) = tokio_stream::StreamExt::next(&mut merged_stream).await {
@@ -306,46 +287,6 @@ pub async fn handle_ws(socket: WebSocket, blockchain: Arc<RwLock<Blockchain>>) {
                         } else {
                             continue;
                         }
-                    }
-                    WsResponse::AddressTransactions(AddressTransactions {
-                        address_transactions: txs,
-                    }) => {
-                        let tracked_addresses = user_tracked_addresses.read().unwrap();
-
-                        let txs = txs
-                            .into_iter()
-                            .filter(|tx| {
-                                tx.vout.iter().any(|vout| {
-                                    tracked_addresses.contains(
-                                        &vout.scriptpubkey_address.assume_checked_ref().to_string(),
-                                    )
-                                })
-                            })
-                            .collect();
-
-                        WsResponse::AddressTransactions(AddressTransactions {
-                            address_transactions: txs,
-                        })
-                    }
-                    WsResponse::BlockTransactions(BlockTransactions {
-                        block_transactions: txs,
-                    }) => {
-                        let tracked_addresses = user_tracked_addresses.read().unwrap();
-
-                        let txs = txs
-                            .into_iter()
-                            .filter(|tx| {
-                                tx.vout.iter().any(|vout| {
-                                    tracked_addresses.contains(
-                                        &vout.scriptpubkey_address.assume_checked_ref().to_string(),
-                                    )
-                                })
-                            })
-                            .collect();
-
-                        WsResponse::BlockTransactions(BlockTransactions {
-                            block_transactions: txs,
-                        })
                     }
                     WsResponse::LoadingIndicator { response } => {
                         WsResponse::LoadingIndicator { response }
@@ -387,14 +328,6 @@ pub async fn handle_ws(socket: WebSocket, blockchain: Arc<RwLock<Blockchain>>) {
 
                             let _ = outgoing_queue_tx.send(WsResponse::Blocks { blocks }).await;
                         }
-                    }
-                    WsRequest::TrackAddress(TrackAddress { address }) => {
-                        blockchain
-                            .write()
-                            .unwrap()
-                            .tracked_addresses
-                            .push(address.clone());
-                        user_tracked_addresses.write().unwrap().push(address);
                     }
                     _ => {}
                 }
