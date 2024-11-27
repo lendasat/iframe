@@ -2,7 +2,6 @@
 
 use crate::storage::local_storage;
 use crate::wallet;
-use anyhow::bail;
 use anyhow::Context;
 use anyhow::Result;
 use bitcoin::Psbt;
@@ -25,11 +24,15 @@ pub struct WalletDetails {
 ///
 /// The wallet is encrypted with [`password`] and works only for [`network`]. The [`key`] is needed
 /// to uniquely identify the browser storage. This identifier needs to be unique.
+///
+/// Notes: if in browser storage a wallet with given [`key`] already exists, it will be overwritten.
 pub fn new(passphrase: String, network: String, key: String) -> Result<WalletDetails> {
     let storage = local_storage()?;
 
     if does_wallet_exist(key.as_str())? {
-        bail!("Can't create new wallet if it already exists in local storage");
+        log::warn!(
+            "Wallet with same name already exists in local storage. It will be overwritten."
+        );
     }
 
     let (passphrase_hash, mnemonic_ciphertext, network, xpub) =
@@ -60,6 +63,9 @@ pub fn new(passphrase: String, network: String, key: String) -> Result<WalletDet
     })
 }
 
+/// Restores a wallet from provided arguments
+///
+/// Notes: if in browser storage a wallet with given [`key`] already exists, it will be overwritten.
 pub fn restore(
     key: String,
     passphrase_hash: String,
@@ -70,7 +76,9 @@ pub fn restore(
     let storage = local_storage()?;
 
     if does_wallet_exist(key.as_str())? {
-        bail!("Can't create new wallet if it already exists in local storage");
+        log::warn!(
+            "Wallet with same name already exists in local storage. It will be overwritten."
+        );
     }
 
     storage.set_item(
