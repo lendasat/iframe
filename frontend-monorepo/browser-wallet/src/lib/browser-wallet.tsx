@@ -11,17 +11,18 @@ import init, {
   new_wallet,
   sign_claim_psbt,
 } from "browser-wallet";
+import { md5 } from "hash-wasm";
 
 interface WalletContextType {
   isInitialized: boolean;
   isWalletLoaded: boolean;
   doesWalletExist: boolean;
-  createWallet: (passphrase: string, network: string) => void;
-  loadWallet: (passphrase: string) => void;
+  createWallet: (passphrase: string, network: string) => Promise<void>;
+  loadWallet: (passphrase: string) => Promise<void>;
   getMnemonic: () => string;
   getNextPublicKey: () => string;
-  signClaimPsbt: (psbt: string, collateralDescriptor: string, pk: string) => string;
-  getXpub: () => string;
+  signClaimPsbt: (psbt: string, collateralDescriptor: string, pk: string) => Promise<string>;
+  getXpub: () => Promise<string>;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -36,27 +37,29 @@ export const useWallet = () => {
 
 interface WalletProviderProps {
   children: ReactNode;
-  username: string;
+  email: string;
 }
 
-export const WalletProvider = ({ children, username }: WalletProviderProps) => {
+export const WalletProvider = ({ children, email }: WalletProviderProps) => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isWalletLoaded, setIsWalletLoaded] = useState(false);
   const [doesWalletExist, setDoesWalletExist] = useState(false);
 
   useEffect(() => {
-    init().then(() => {
+    init().then(async () => {
       setIsInitialized(true);
-      setDoesWalletExist(does_wallet_exist(username));
+      const key = await md5(email);
+      setDoesWalletExist(does_wallet_exist(key));
       setIsWalletLoaded(is_wallet_loaded());
     }).catch((error) => {
       console.log(`Failed initializing wasm library ${error}`);
     });
-  }, [username]);
+  }, [email]);
 
-  const createWallet = (passphrase: string, network: string) => {
+  const createWallet = async (passphrase: string, network: string) => {
     if (isInitialized) {
-      new_wallet(passphrase, network, username);
+      const key = await md5(email);
+      new_wallet(passphrase, network, key);
       setDoesWalletExist(true);
       setIsWalletLoaded(true);
     } else {
@@ -64,10 +67,11 @@ export const WalletProvider = ({ children, username }: WalletProviderProps) => {
     }
   };
 
-  const loadWallet = (passphrase: string) => {
+  const loadWallet = async (passphrase: string) => {
     console.log("loading wallet");
     if (isInitialized) {
-      load_wallet(passphrase, username);
+      const key = await md5(email);
+      load_wallet(passphrase, key);
       setIsWalletLoaded(true);
       console.log("wallet loaded successfully");
     } else {
@@ -92,15 +96,16 @@ export const WalletProvider = ({ children, username }: WalletProviderProps) => {
     }
   };
 
-  const signClaimPsbt = (psbt: string, collateralDescriptor: string, pk: string) => {
+  const signClaimPsbt = async (psbt: string, collateralDescriptor: string, pk: string) => {
     if (isInitialized && isWalletLoaded) {
-      return sign_claim_psbt(psbt, collateralDescriptor, pk, username);
+      const key = await md5(email);
+      return sign_claim_psbt(psbt, collateralDescriptor, pk, key);
     } else {
       throw Error("Wallet not initialized");
     }
   };
 
-  const getXpub = () => {
+  const getXpub = async () => {
     if (!isInitialized) {
       throw Error("Wallet not initialized");
     }
@@ -109,7 +114,8 @@ export const WalletProvider = ({ children, username }: WalletProviderProps) => {
       throw Error("Wallet does not exist");
     }
 
-    return get_xpub(username);
+    const key = await md5(email);
+    return get_xpub(key);
   };
 
   const value = {

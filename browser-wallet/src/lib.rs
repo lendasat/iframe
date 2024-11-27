@@ -56,21 +56,21 @@ pub fn initialize() {
 pub fn new_wallet(
     passphrase: String,
     network: String,
-    username: String,
+    key: String,
 ) -> Result<WalletDetails, JsValue> {
-    map_err_to_js!(browser_wallet::new(passphrase, network, username).map(WalletDetails::from))
+    map_err_to_js!(browser_wallet::new(passphrase, network, key).map(WalletDetails::from))
 }
 
 #[wasm_bindgen]
 pub fn restore_wallet(
-    username: String,
+    key: String,
     passphrase_hash: String,
     mnemonic_ciphertext: String,
     xpub: String,
     network: String,
 ) -> Result<(), JsValue> {
     map_err_to_js!(browser_wallet::restore(
-        username,
+        key,
         passphrase_hash,
         mnemonic_ciphertext,
         network,
@@ -79,8 +79,8 @@ pub fn restore_wallet(
 }
 
 #[wasm_bindgen]
-pub fn load_wallet(passphrase: String, username: String) -> Result<(), JsValue> {
-    map_err_to_js!(browser_wallet::load(&passphrase, &username))
+pub fn load_wallet(passphrase: String, key: String) -> Result<(), JsValue> {
+    map_err_to_js!(browser_wallet::load(&passphrase, &key))
 }
 
 #[wasm_bindgen]
@@ -89,8 +89,8 @@ pub fn is_wallet_loaded() -> Result<bool, JsValue> {
 }
 
 #[wasm_bindgen]
-pub fn does_wallet_exist(username: String) -> Result<bool, JsValue> {
-    map_err_to_js!(browser_wallet::does_wallet_exist(&username))
+pub fn does_wallet_exist(key: String) -> Result<bool, JsValue> {
+    map_err_to_js!(browser_wallet::does_wallet_exist(&key))
 }
 
 #[wasm_bindgen]
@@ -108,19 +108,19 @@ pub fn sign_claim_psbt(
     psbt: String,
     collateral_descriptor: String,
     pk: String,
-    username: String,
+    key: String,
 ) -> Result<String, JsValue> {
     map_err_to_js!(browser_wallet::sign_claim_psbt(
         &psbt,
         &collateral_descriptor,
         &pk,
-        &username
+        &key
     ))
 }
 
 #[wasm_bindgen]
-pub fn get_xpub(username: String) -> Result<String, JsValue> {
-    map_err_to_js!(browser_wallet::get_xpub(&username))
+pub fn get_xpub(key: String) -> Result<String, JsValue> {
+    map_err_to_js!(browser_wallet::get_xpub(&key))
 }
 
 #[macro_export]
