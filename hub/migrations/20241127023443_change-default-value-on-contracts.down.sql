@@ -1,0 +1,2 @@
+ALTER TABLE contracts ALTER COLUMN integration DROP DEFAULT;
+ALTER TABLE contracts ALTER COLUMN integration DROP NOT NULL;
