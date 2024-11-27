@@ -248,10 +248,28 @@ pub struct Contract {
     pub contract_index: Option<u32>,
     pub status: ContractStatus,
     pub liquidation_status: LiquidationStatus,
+    pub contract_version: ContractVersion,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
     #[serde(with = "time::serde::rfc3339")]
     pub updated_at: OffsetDateTime,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[repr(u32)]
+pub enum ContractVersion {
+    TwoOfFour = 0,
+    TwoOfThree = 1,
+}
+
+impl From<i32> for ContractVersion {
+    fn from(value: i32) -> Self {
+        match value {
+            0 => Self::TwoOfFour,
+            1 => Self::TwoOfThree,
+            unknown => panic!("unknown contract version {unknown}"),
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
@@ -329,6 +347,7 @@ pub mod db {
         pub contract_index: Option<i32>,
         pub status: ContractStatus,
         pub liquidation_status: LiquidationStatus,
+        pub contract_version: i32,
         #[serde(with = "time::serde::rfc3339")]
         pub created_at: OffsetDateTime,
         #[serde(with = "time::serde::rfc3339")]
@@ -415,6 +434,7 @@ impl From<db::Contract> for Contract {
             contract_index: value.contract_index.map(|i| i as u32),
             status: value.status.into(),
             liquidation_status: value.liquidation_status.into(),
+            contract_version: ContractVersion::from(value.contract_version),
             created_at: value.created_at,
             updated_at: value.updated_at,
         }
@@ -532,6 +552,7 @@ impl From<Contract> for db::Contract {
             contract_index: value.contract_index.map(|i| i as i32),
             status: value.status.into(),
             liquidation_status: value.liquidation_status.into(),
+            contract_version: value.contract_version as i32,
             created_at: value.created_at,
             updated_at: value.updated_at,
         }

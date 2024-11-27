@@ -271,6 +271,7 @@ pub async fn get_claim_collateral_psbt(
                 dispute.lender_payout_sats.expect("To be some") as u64,
                 contract.origination_fee_sats,
                 query_params.fee_rate,
+                contract.contract_version,
             )?;
 
             let txid = psbt.clone().extract_tx_unchecked_fee_rate().compute_txid();

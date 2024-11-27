@@ -1,4 +1,5 @@
 use crate::db;
+use crate::model::ContractVersion;
 use anyhow::Context;
 use anyhow::Result;
 use bitcoin::absolute::LockTime;
@@ -38,9 +39,9 @@ pub struct Wallet {
     /// We only have the fallback key as an [`Xpub`] because we only want to use the corresponding
     /// [`Xpriv`] _manually_ under extreme circumstances.
     ///
-    /// Reminder that the 2-of-4 multisig setup is _temporary_ and will disappear when we start
-    /// using DLCs.
-    fallback_xpub: Xpub,
+    /// This key was deprecated with the introduction of [`ContractVersion::TwoOfThree`]. We only
+    /// keep it around for [`ContractVersion::TwoOfFour`].
+    deprecated_fallback_xpub: Xpub,
     network: Network,
     hub_fee_wallet: DescriptorWallet,
     db: Pool<Postgres>,
@@ -49,17 +50,17 @@ pub struct Wallet {
 impl Wallet {
     pub fn new(
         hub_seed: Vec<u8>,
-        fallback_xpub: &str,
+        deprecated_fallback_xpub: &str,
         network: Network,
         hub_fee_wallet: DescriptorWallet,
         db: Pool<Postgres>,
     ) -> Result<Self> {
         let hub_xpriv = Xpriv::new_master(NetworkKind::from(network), &hub_seed)?;
-        let fallback_xpub = Xpub::from_str(fallback_xpub)?;
+        let fallback_xpub = Xpub::from_str(deprecated_fallback_xpub)?;
 
         Ok(Self {
             hub_xpriv,
-            fallback_xpub,
+            deprecated_fallback_xpub: fallback_xpub,
             network,
             hub_fee_wallet,
             db,
@@ -71,6 +72,7 @@ impl Wallet {
         &self,
         borrower_pk: PublicKey,
         lender_xpub: &Xpub,
+        contract_version: ContractVersion,
     ) -> Result<(Address, u32)> {
         let (hub_pk, fallback_pk, index) = self.derive_next_pks().await?;
 
@@ -78,17 +80,28 @@ impl Wallet {
         // keypair.
         let lender_pk = derive_lender_pk(lender_xpub, index, self.hub_xpriv.network.is_mainnet())?;
 
-        // TODO: Extract into a function.
-        let descriptor: Descriptor<PublicKey> =
-            format!("wsh(multi(2,{borrower_pk},{hub_pk},{fallback_pk},{lender_pk}))").parse()?;
+        let descriptor = match contract_version {
+            ContractVersion::TwoOfFour => two_of_four_collateral_contract_descriptor(
+                borrower_pk,
+                hub_pk,
+                fallback_pk,
+                lender_pk,
+            )?,
+            ContractVersion::TwoOfThree => {
+                two_of_three_collateral_contract_descriptor(borrower_pk, hub_pk, lender_pk)?
+            }
+        };
 
         let address = descriptor.address(self.network)?;
 
         Ok((address, index))
     }
 
-    /// Will create a PSBT to spend the whole output to 2 address:
-    /// 1. the `borrower_address` and 2. a newly derived address from `hub_fee_wallet`
+    /// Will create a PSBT to spend the whole output to 2 addresses:
+    ///
+    /// 1. The `borrower_address`.
+    ///
+    /// 2. A newly derived address from the `hub_fee_wallet`.
     #[allow(clippy::too_many_arguments)]
     pub fn create_dispute_claim_collateral_psbt(
         &mut self,
@@ -103,6 +116,7 @@ impl Wallet {
         // collateral is locked up.
         origination_fee: u64,
         fee_rate_spvb: u64,
+        contract_version: ContractVersion,
     ) -> Result<(Psbt, Descriptor<PublicKey>)> {
         let (hub_kp, fallback_pk) = self.get_keys_for_index(contract_index)?;
         let hub_pk = PublicKey::new(hub_kp.public_key());
@@ -191,8 +205,17 @@ impl Wallet {
         };
 
         // All collateral outputs share the same script.
-        let collateral_descriptor: Descriptor<PublicKey> =
-            format!("wsh(multi(2,{borrower_pk},{hub_pk},{fallback_pk},{lender_pk}))").parse()?;
+        let collateral_descriptor = match contract_version {
+            ContractVersion::TwoOfFour => two_of_four_collateral_contract_descriptor(
+                borrower_pk,
+                hub_pk,
+                fallback_pk,
+                lender_pk,
+            )?,
+            ContractVersion::TwoOfThree => {
+                two_of_three_collateral_contract_descriptor(borrower_pk, hub_pk, lender_pk)?
+            }
+        };
         let witness_script = collateral_descriptor.script_code()?;
 
         let mut inputs = Vec::new();
@@ -253,6 +276,7 @@ impl Wallet {
         origination_fee: u64,
         borrower_btc_address: Address,
         fee_rate_spvb: u64,
+        contract_version: ContractVersion,
     ) -> Result<(Psbt, Descriptor<PublicKey>)> {
         let (hub_kp, fallback_pk) = self.get_keys_for_index(contract_index)?;
 
@@ -303,8 +327,17 @@ impl Wallet {
 
         // All collateral outputs share the same script.
         let hub_pk = PublicKey::new(hub_kp.public_key());
-        let collateral_descriptor: Descriptor<PublicKey> =
-            format!("wsh(multi(2,{borrower_pk},{hub_pk},{fallback_pk},{lender_pk}))").parse()?;
+        let collateral_descriptor = match contract_version {
+            ContractVersion::TwoOfFour => two_of_four_collateral_contract_descriptor(
+                borrower_pk,
+                hub_pk,
+                fallback_pk,
+                lender_pk,
+            )?,
+            ContractVersion::TwoOfThree => {
+                two_of_three_collateral_contract_descriptor(borrower_pk, hub_pk, lender_pk)?
+            }
+        };
         let witness_script = collateral_descriptor.script_code()?;
 
         let mut inputs = Vec::new();
@@ -388,7 +421,7 @@ impl Wallet {
                 ChildNumber::from_normal_idx(index).expect("infallible"),
             ];
 
-            let child_xpub = self.fallback_xpub.derive_pub(&secp, &path)?;
+            let child_xpub = self.deprecated_fallback_xpub.derive_pub(&secp, &path)?;
             PublicKey::new(child_xpub.public_key)
         };
 
@@ -414,6 +447,23 @@ impl Wallet {
 
         Ok((hub_pk, fallback_pk, index))
     }
+}
+
+fn two_of_four_collateral_contract_descriptor(
+    borrower_pk: PublicKey,
+    hub_pk: PublicKey,
+    fallback_pk: PublicKey,
+    lender_pk: PublicKey,
+) -> Result<Descriptor<PublicKey>, miniscript::Error> {
+    format!("wsh(multi(2,{borrower_pk},{hub_pk},{fallback_pk},{lender_pk}))").parse()
+}
+
+fn two_of_three_collateral_contract_descriptor(
+    borrower_pk: PublicKey,
+    hub_pk: PublicKey,
+    lender_pk: PublicKey,
+) -> Result<Descriptor<PublicKey>, miniscript::Error> {
+    format!("wsh(multi(2,{borrower_pk},{hub_pk},{lender_pk}))").parse()
 }
 
 fn derive_lender_pk(lender_xpub: &Xpub, index: u32, is_mainnet: bool) -> Result<PublicKey> {

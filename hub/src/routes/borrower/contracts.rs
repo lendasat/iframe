@@ -3,6 +3,7 @@ use crate::email::Email;
 use crate::mempool;
 use crate::model::ContractRequestSchema;
 use crate::model::ContractStatus;
+use crate::model::ContractVersion;
 use crate::model::Integration;
 use crate::model::LiquidationStatus;
 use crate::model::LoanAssetChain;
@@ -436,6 +437,7 @@ pub async fn post_contract_request(
             body.borrower_pk,
             borrower_loan_address.as_str(),
             body.integration,
+            ContractVersion::TwoOfThree,
         )
         .await?;
 
@@ -583,6 +585,7 @@ pub async fn get_claim_collateral_psbt(
             origination_fee.to_sat(),
             contract.borrower_btc_address.assume_checked(),
             query_params.fee_rate,
+            contract.contract_version,
         )?;
 
         let psbt = psbt.serialize_hex();

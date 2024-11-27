@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        UPDATE contracts\n        SET\n            status = $1,\n            updated_at = $2\n        WHERE id = $3\n        RETURNING\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            integration as \"integration: crate::model::db::Integration\",\n            lender_xpub,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            created_at,\n            updated_at\n        ",
+  "query": "\n        UPDATE contracts\n        SET status = $1,\n            updated_at = $2,\n            contract_address = $3,\n            contract_index = $4,\n            lender_xpub = $5\n        WHERE lender_id = $6\n          AND id = $7\n        RETURNING\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            integration as \"integration: crate::model::db::Integration\",\n            lender_xpub,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            contract_version,\n            created_at,\n            updated_at\n        ",
   "describe": {
     "columns": [
       {
@@ -145,11 +145,16 @@
       },
       {
         "ordinal": 19,
+        "name": "contract_version",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 20,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 20,
+        "ordinal": 21,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -181,6 +186,10 @@
           }
         },
         "Timestamptz",
+        "Text",
+        "Int4",
+        "Text",
+        "Bpchar",
         "Bpchar"
       ]
     },
@@ -205,8 +214,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "dc51909a4d7a130084b3cf3db270f45e27e4730d217e9c998c05c2fbfce02cfd"
+  "hash": "c29b3e83f9acc1e1c7d9354ef9d1b49488199165cba40df3e784f9315165a625"
 }
