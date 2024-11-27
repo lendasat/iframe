@@ -2,11 +2,11 @@ import { faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { LoanProductOption } from "@frontend-monorepo/base-http-client";
 import { CreateWalletModal, UnlockWalletModal, useWallet } from "@frontend-monorepo/browser-wallet";
+import { Integration, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import type { LoanOffer } from "@frontend-monorepo/http-client-borrower";
-import { Integration } from "@frontend-monorepo/http-client-borrower";
-import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
-import { AbbreviationExplanationInfo, AprInfoLabel } from "@frontend-monorepo/ui-shared";
 import {
+  AbbreviationExplanationInfo,
+  AprInfoLabel,
   formatCurrency,
   LoanAddressInputField,
   LtvInfoLabel,
@@ -114,11 +114,12 @@ export const Step2PickOffer = () => {
   }
 
   let validCoins: StableCoin[];
-  let integration: Integration | undefined;
+  let integration = Integration.StableCoin;
   let coinSelectHidden = false;
   switch (selectedOption) {
     case LoanProductOption.StableCoins:
       validCoins = StableCoinHelper.all();
+      integration = Integration.StableCoin;
       break;
     case LoanProductOption.PayWithMoonDebitCard:
       validCoins = [StableCoin.USDC_POL];

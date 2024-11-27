@@ -1,9 +1,8 @@
 import { faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { useWallet } from "@frontend-monorepo/browser-wallet";
-import { CreateWalletModal, UnlockWalletModal } from "@frontend-monorepo/browser-wallet";
+import { CreateWalletModal, UnlockWalletModal, useWallet } from "@frontend-monorepo/browser-wallet";
+import { findBestOriginationFee, Integration, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import type { LoanOffer } from "@frontend-monorepo/http-client-borrower";
-import { findBestOriginationFee, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import {
   formatCurrency,
   LoanAddressInputField,
@@ -169,7 +168,7 @@ export function RequestLoanSummaryInner({ loanOffer, loanFilter }: RequestLoanSu
         borrower_btc_address: btcAddress,
         borrower_pk: borrowerPk,
         borrower_loan_address: loanAddress,
-        integration: undefined,
+        integration: Integration.StableCoin,
       });
 
       if (res !== undefined) {
