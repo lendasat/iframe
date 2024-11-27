@@ -8,7 +8,6 @@ import {
 import { Layout, PriceProvider } from "@frontend-monorepo/ui-shared";
 import { BsBank } from "react-icons/bs";
 import { Navigate, Outlet, Route, Routes } from "react-router-dom";
-import EmailVerification from "./auth/email-verification";
 import ForgotPassword from "./auth/forgot-password";
 import Login from "./auth/login";
 import Logout from "./auth/logout";
@@ -32,6 +31,7 @@ import { GoGitPullRequest } from "react-icons/go";
 import { HiOutlineSupport } from "react-icons/hi";
 import { IoCardOutline, IoWalletOutline } from "react-icons/io5";
 import { LuActivity, LuSettings } from "react-icons/lu";
+import VerifyEmailForm from "./auth/verifyEmailForm";
 import Cards from "./cards/Cards";
 import CustomRequest from "./request-loan/custom-loan-request";
 import RequestLoanWizard from "./request-loan/request-loan-wizard";
@@ -229,9 +229,9 @@ function App() {
             <Route path="/registration" element={<Registration />} />
             <Route path="/forgotpassword" element={<ForgotPassword />} />
             <Route path="/resetpassword/:token" element={<ResetPassword />} />
-            <Route path="/verifyemail/:token" element={<EmailVerification />} />
+            <Route path="/verifyemail/:token?" element={<VerifyEmailForm />} />
             <Route path="/logout" element={<Logout />} />
-            <Route path="/login" element={<Login />} />
+            <Route path="/login/:status?" element={<Login />} />
             <Route path="/error" element={<ErrorBoundary />} />
           </Route>
         </Routes>

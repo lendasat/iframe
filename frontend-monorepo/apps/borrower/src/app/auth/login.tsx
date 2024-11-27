@@ -1,17 +1,14 @@
 import { useAuth } from "@frontend-monorepo/http-client-borrower";
 import { LoginForm } from "@frontend-monorepo/ui-shared";
 import init, { does_wallet_exist, restore_wallet } from "browser-wallet";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 
-type LoginState = {
-  registered: boolean;
-};
 function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const { registered } = location.state as LoginState || {};
   const oldPath = location.pathname;
+  const { status } = useParams();
 
   const handleLogin = async (email: string, password: string) => {
     await init();
@@ -48,6 +45,12 @@ function Login() {
     defaultPassword = import.meta.env.VITE_BORROWER_PASSWORD;
   }
 
+  let message = "";
+  switch (status) {
+    case "verified":
+      message = "Email successfully verified. Please login";
+  }
+
   return (
     <LoginForm
       handleLogin={handleLogin}
@@ -55,7 +58,7 @@ function Login() {
       forgotPasswordLink={"/forgotpassword"}
       initialUserEmail={defaultUsername}
       initialUserPassword={defaultPassword}
-      infoMessage={registered ? "We have sent an verification email to your email address" : undefined}
+      infoMessage={message}
     />
   );
 }

@@ -1,26 +1,32 @@
 {{#> base}}
-<table role="presentation" class="main">
+  <table role="presentation" class="main">
     <!-- START MAIN CONTENT AREA -->
     <tr>
-        <td class="wrapper">
-            <table role="presentation" border="0" cellpadding="0" cellspacing="0">
-                <tr>
-                    <td>
-                        <p>Hi {{first_name}}!</p>
+      <td class="wrapper">
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+          <tr>
+            <td>
+              <p>Hi {{first_name}}!</p>
 
-                        <p>To verify your email address, use the link below.</p>
+              <p>Your six-digit verification code:</p>
 
-                        <p><a href="{{url}}">Verify my email address</a></p>
+              <p
+                style="text-align: center; font-weight: bold; font-size: 24px; padding: 10px; background-color: #f0f0f0; border-radius: 4px;">
+                {{code}}
+              </p>
 
-                        <p>Thanks,</p>
 
-                        <p>The Lendasat Team</p>
-                    </td>
-                </tr>
-            </table>
-        </td>
+              <p><a href="{{url}}">Or click here to verify your email address</a></p>
+
+              <p>Thanks,</p>
+
+              <p>The Lendasat Team</p>
+            </td>
+          </tr>
+        </table>
+      </td>
     </tr>
 
     <!-- END MAIN CONTENT AREA -->
-</table>
+  </table>
 {{/base}}
