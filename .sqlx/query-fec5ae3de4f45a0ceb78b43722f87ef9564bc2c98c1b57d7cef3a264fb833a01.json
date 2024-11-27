@@ -72,7 +72,6 @@
             "kind": {
               "Enum": [
                 "PayWithMoon",
-                "Stablecoin",
                 "StableCoin"
               ]
             }
@@ -213,7 +212,6 @@
             "kind": {
               "Enum": [
                 "PayWithMoon",
-                "Stablecoin",
                 "StableCoin"
               ]
             }
