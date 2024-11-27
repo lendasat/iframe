@@ -84,7 +84,7 @@ export class HttpClientLender extends BaseHttpClient {
       };
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
-        const message = error.response.data.message;
+        const message = JSON.stringify(error.response?.data);
         console.error(
           `Failed to fetch contract: http: ${error.response?.status} and response: ${
             JSON.stringify(error.response?.data)
@@ -102,7 +102,7 @@ export class HttpClientLender extends BaseHttpClient {
       await this.httpClient.put(`/api/contracts/${id}/approve?xpub=${xpub}`);
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
-        const message = error.response.data.message;
+        const message = JSON.stringify(error.response?.data);
         console.error(
           `Failed to approve contract: http: ${error.response?.status} and response: ${
             JSON.stringify(error.response?.data)
@@ -120,7 +120,7 @@ export class HttpClientLender extends BaseHttpClient {
       await this.httpClient.delete(`/api/contracts/${id}/reject`);
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
-        const message = error.response.data.message;
+        const message = JSON.stringify(error.response?.data);
         console.error(
           `Failed to reject contract: http: ${error.response?.status} and response: ${
             JSON.stringify(error.response?.data)
@@ -138,7 +138,7 @@ export class HttpClientLender extends BaseHttpClient {
       await this.httpClient.put(`/api/contracts/${id}/principalgiven?txid=${txid}`);
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
-        const message = error.response.data.message;
+        const message = JSON.stringify(error.response?.data);
         console.error(
           `Failed to mark contract as principal given: http: ${error.response?.status} and response: ${error.response?.data}`,
         );
@@ -154,7 +154,7 @@ export class HttpClientLender extends BaseHttpClient {
       await this.httpClient.put(`/api/contracts/${id}/principalconfirmed`);
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
-        const message = error.response.data.message;
+        const message = JSON.stringify(error.response?.data);
         console.error(
           `Failed to mark contract as repaid: http: ${error.response?.status} and response: ${error.response?.data}`,
         );
@@ -175,7 +175,7 @@ export class HttpClientLender extends BaseHttpClient {
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
-        const message = error.response.data.message;
+        const message = JSON.stringify(error.response?.data);
         console.error(
           `Failed to create dispute: http: ${error.response?.status} and response: ${
             JSON.stringify(error.response?.data)

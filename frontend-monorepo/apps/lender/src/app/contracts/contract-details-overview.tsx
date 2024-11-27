@@ -604,7 +604,7 @@ const ContractStatusDetails = ({
     try {
       setIsLoading(true);
 
-      const xpub = getXpub();
+      const xpub = await getXpub();
 
       await approveContract(contract.id, xpub);
       onSuccess();
