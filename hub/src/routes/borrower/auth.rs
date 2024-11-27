@@ -193,17 +193,19 @@ pub async fn register_user_handler(
 
     //  Create an Email instance
     let email = user.email.clone();
+    let verification_code = user
+        .clone()
+        .verification_code
+        .expect("to have verification code for new user");
     let verification_url = format!(
         "{}/verifyemail/{}",
         data.config.borrower_frontend_origin.to_owned(),
-        user.clone()
-            .verification_code
-            .expect("to have verification code for new user")
+        verification_code.as_str()
     );
 
     let email_instance = Email::new(data.config.clone());
     if let Err(err) = email_instance
-        .send_verification_code(user, verification_url.as_str())
+        .send_verification_code(user, verification_url.as_str(), verification_code.as_str())
         .await
     {
         tracing::error!("Failed sending email {err:#}");

@@ -6,6 +6,7 @@ export * from './lib/components/AprInfoLabel';
 export * from './lib/full-logo-white-bg';
 export * from './lib/ltv-progress-bar/ltv-progress-bar';
 export * from './lib/auth/registration-form';
+export * from './lib/auth/email-verification-form';
 export * from './lib/auth/login-form';
 export * from './lib/auth/forgot-password-form';
 export * from './lib/auth/reset-password-form';

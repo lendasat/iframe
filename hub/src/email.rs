@@ -116,14 +116,15 @@ impl Email {
         Ok(handlebars)
     }
 
-    pub async fn send_verification_code(&self, user: User, url: &str) -> Result<()> {
+    pub async fn send_verification_code(&self, user: User, url: &str, code: &str) -> Result<()> {
         let template_name = "verification_code";
         let handlebars = Self::prepare_template(template_name)?;
 
         let data = serde_json::json!({
             "first_name": &user.name,
             "subject": &template_name,
-            "url": url
+            "url": url,
+            "code": code,
         });
 
         let content_template = handlebars.render(template_name, &data)?;

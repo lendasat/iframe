@@ -12,7 +12,7 @@ use sqlx::Pool;
 use sqlx::Postgres;
 use time::OffsetDateTime;
 
-const VERIFICATION_CODE_LENGTH: usize = 20;
+const VERIFICATION_CODE_LENGTH: usize = 6;
 
 /// Inserts a new user and returns said user
 ///
@@ -70,6 +70,7 @@ pub async fn get_user_by_verification_code(
     pool: &Pool<Postgres>,
     verification_code: &str,
 ) -> Result<Option<User>> {
+    let verification_code = verification_code.to_ascii_lowercase();
     let maybe_user = sqlx::query_as!(
         User,
         "SELECT * FROM lenders WHERE verification_code = $1",
@@ -81,6 +82,7 @@ pub async fn get_user_by_verification_code(
 }
 
 pub async fn verify_user(pool: &Pool<Postgres>, verification_code: &str) -> Result<()> {
+    let verification_code = verification_code.to_ascii_lowercase();
     sqlx::query!(
         "UPDATE lenders SET verification_code = $1, verified = $2 WHERE verification_code = $3",
         Option::<String>::None,
@@ -176,12 +178,14 @@ pub fn generate_hashed_password(password: &str) -> Result<String> {
     Ok(hashed_password)
 }
 
+/// Generates a random alphanumeric string with length [`length`]
 pub fn generate_random_string(length: usize) -> String {
     let rng = rand::thread_rng();
+
     let random_string: String = rng
         .sample_iter(&Alphanumeric)
         .take(length)
-        .map(char::from)
+        .map(|c| char::from(c).to_ascii_lowercase())
         .collect();
 
     random_string

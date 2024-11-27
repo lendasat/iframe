@@ -25,7 +25,7 @@ function Registration() {
       xpub: walletDetails.xpub,
     }, inviteCode);
 
-    navigate("/", { state: { registered: true } }); // Redirect to login after successful registration
+    navigate("/verifyemail");
   };
 
   return <RegistrationForm handleRegister={handleRegister} />;
