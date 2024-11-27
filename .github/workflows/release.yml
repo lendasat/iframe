@@ -114,6 +114,7 @@ jobs:
           draft: false
           prerelease: false
           fail_on_unmatched_files: true
+          generate_release_notes: true
           files: |
               target/release/hub
         env:
