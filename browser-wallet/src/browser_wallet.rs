@@ -132,24 +132,13 @@ pub fn get_next_pk() -> Result<String> {
     Ok(pk.to_string())
 }
 
-pub fn sign_claim_psbt(
-    psbt: &str,
-    collateral_descriptor: &str,
-    pk: &str,
-    key: &str,
-) -> Result<String> {
-    let storage = local_storage()?;
-
-    let pk_index = storage
-        .get_item::<u32>(derive_storage_key(key, pk).as_str())?
-        .with_context(|| format!("No pk index for pk {pk}"))?;
-
+pub fn sign_claim_psbt(psbt: &str, collateral_descriptor: &str) -> Result<String> {
     let psbt = hex::decode(psbt)?;
     let psbt = Psbt::deserialize(&psbt)?;
 
     let collateral_descriptor = collateral_descriptor.parse()?;
 
-    let tx = wallet::sign_claim_psbt(psbt, collateral_descriptor, pk_index)?;
+    let tx = wallet::sign_claim_psbt(psbt, collateral_descriptor)?;
     let tx = bitcoin::consensus::encode::serialize_hex(&tx);
 
     Ok(tx)
