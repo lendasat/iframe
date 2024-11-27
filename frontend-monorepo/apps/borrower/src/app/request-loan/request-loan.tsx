@@ -11,10 +11,12 @@ import { TableSortBy } from "./loan-offers-filter";
 
 function RequestLoan() {
   const { getLoanOffers } = useBorrowerHttpClient();
+  const navigate = useNavigate();
 
   const [loanOffers, setLoanOffers] = useState<LoanOffer[]>([]);
   const [loanFilter, setLoanFilter] = useState<LoanFilter>({});
   const [tableSorting, setTableSorting] = useState<TableSortBy>(TableSortBy.Amount);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const fetchLoans = async () => {
@@ -54,15 +56,13 @@ function RequestLoan() {
 
       const sortedOffers = sortOffers(offers, tableSorting);
 
-      setLoanOffers(
-        sortedOffers,
-      );
+      setLoanOffers(sortedOffers);
+      setIsLoading(false);
     };
 
+    setIsLoading(true);
     fetchLoans();
   }, [loanFilter, getLoanOffers, tableSorting]);
-
-  const navigate = useNavigate();
 
   function onLoanOfferFilterChange(loanFilter: LoanFilter) {
     setLoanFilter(loanFilter);
@@ -85,6 +85,7 @@ function RequestLoan() {
         <div className="mt-3 overflow-hidden">
           <LoanOffersComponent
             loanOffers={loanOffers}
+            isLoading={isLoading}
             onRequest={(loanOffer: LoanOffer) => {
               navigate(`/request-loan/${loanOffer.id}`, { state: { loanOffer: loanOffer, loanFilter: loanFilter } });
             }}
