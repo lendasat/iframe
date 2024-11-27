@@ -190,7 +190,7 @@ async fn create_loan_request(
         PublicKey::from_str("0363b379acd22b63c29179ad1bff81251e5c0df43a4f53f0e9d9c1f4b800a4243c")
             .expect("to be valid pk"),
         "0x34e3f03F5efFaF7f70Bb1FfC50274697096ebe9d",
-        Some(Integration::PayWithMoon),
+        Integration::StableCoin,
     )
     .await
 }

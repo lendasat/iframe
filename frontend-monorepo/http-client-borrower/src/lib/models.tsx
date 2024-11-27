@@ -76,7 +76,7 @@ export interface ContractRequest {
   borrower_btc_address: string;
   borrower_pk: string;
   borrower_loan_address?: string;
-  integration?: Integration;
+  integration: Integration;
 }
 
 export interface Contract {
@@ -102,6 +102,7 @@ export interface Contract {
   contract_address?: string;
   borrower_loan_address: string;
   transactions: LoanTransaction[];
+  integration: Integration;
 }
 
 export enum LoanAssetType {
@@ -251,6 +252,7 @@ export class FeatureMapper {
 
 export enum Integration {
   PayWithMoon = "PayWithMoon",
+  StableCoin = "StableCoin",
 }
 
 export enum CardTransactionStatus {

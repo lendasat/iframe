@@ -388,7 +388,7 @@ pub async fn put_approve_contract(
 
         // We could consider creating the card even earlier, but this is a simple way to only
         // generate a card when the loan is likely to be opened.
-        if let Some(Integration::PayWithMoon) = contract.integration {
+        if let Integration::PayWithMoon = contract.integration {
             data.moon
                 .create_card(borrower.id.clone(), contract.id.clone())
                 .await

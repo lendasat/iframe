@@ -286,13 +286,13 @@ pub async fn insert_contract_request(
     borrower_btc_address: Address<NetworkUnchecked>,
     borrower_pk: PublicKey,
     borrower_loan_address: &str,
-    integration: Option<Integration>,
+    integration: Integration,
 ) -> Result<Contract> {
     let id = id.to_string();
     let initial_collateral_sats = initial_collateral_sats as i64;
     let origination_fee_sats = origination_fee_sats as i64;
     let collateral_sats = 0;
-    let integration = integration.map(db::Integration::from);
+    let integration = db::Integration::from(integration);
 
     let lender_id_row = sqlx::query!(
         r#"
@@ -368,7 +368,7 @@ pub async fn insert_contract_request(
         borrower_btc_address.assume_checked().to_string(),
         borrower_pk.to_string(),
         borrower_loan_address,
-        integration as Option<db::Integration>,
+        integration as db::Integration,
         None as Option<String>,
         None as Option<i32>,
     )

@@ -127,7 +127,7 @@ mod tests {
             borrower_loan_address: Some(
                 "0x055098f73c89ca554f98c0298ce900235d2e1b4205a7ca629ae017518521c2c3".to_string(),
             ),
-            integration: None,
+            integration: Integration::StableCoin,
         };
 
         let res = borrower
@@ -463,7 +463,7 @@ mod tests {
             borrower_pk,
             borrower_loan_address: None,
             // The borrower wants to get a Moon card with their stable coins.
-            integration: Some(Integration::PayWithMoon),
+            integration: Integration::PayWithMoon,
         };
 
         let res = borrower

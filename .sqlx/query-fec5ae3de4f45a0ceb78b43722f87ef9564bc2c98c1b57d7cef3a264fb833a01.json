@@ -71,7 +71,9 @@
             "name": "integration",
             "kind": {
               "Enum": [
-                "PayWithMoon"
+                "PayWithMoon",
+                "Stablecoin",
+                "StableCoin"
               ]
             }
           }
@@ -208,7 +210,9 @@
             "name": "integration",
             "kind": {
               "Enum": [
-                "PayWithMoon"
+                "PayWithMoon",
+                "Stablecoin",
+                "StableCoin"
               ]
             }
           }
@@ -230,7 +234,7 @@
       false,
       false,
       false,
-      true,
+      false,
       true,
       true,
       true,

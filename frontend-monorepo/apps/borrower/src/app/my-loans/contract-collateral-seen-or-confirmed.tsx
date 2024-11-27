@@ -1,9 +1,11 @@
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { contractStatusToLabelString, Integration } from "@frontend-monorepo/http-client-borrower";
 import type { Contract } from "@frontend-monorepo/http-client-borrower";
-import { contractStatusToLabelString } from "@frontend-monorepo/http-client-borrower";
 import { formatCurrency } from "@frontend-monorepo/ui-shared";
-import { Alert, Col, Container, Form, InputGroup, Row } from "react-bootstrap";
+import { Callout } from "@radix-ui/themes";
+import { Col, Container, Form, InputGroup, Row } from "react-bootstrap";
+import { FaInfoCircle } from "react-icons/fa";
 
 interface CollateralSeenOrConfirmedProps {
   collateral: string;
@@ -16,6 +18,36 @@ export function CollateralSeenOrConfirmed({
   collateralAddress,
   contract,
 }: CollateralSeenOrConfirmedProps) {
+  let info;
+  switch (contract.integration) {
+    case Integration.PayWithMoon:
+    case Integration.StableCoin:
+      info = (
+        <>
+          Your loan amount of {formatCurrency(contract.loan_amount)}{" "}
+          will be sent to your Moon card. Once confirmed, you will receive an email and you can start using your card.
+        </>
+      );
+      break;
+    default:
+      info = (
+        <>
+          <FontAwesomeIcon icon={faInfoCircle} /> Your loan amount of {formatCurrency(contract.loan_amount)}{" "}
+          will be sent to this address.
+          <InputGroup className="mt-2">
+            <Form.Control
+              type="text"
+              value={contract.borrower_loan_address}
+              disabled
+              readOnly
+              className="bg-white"
+            />
+          </InputGroup>
+        </>
+      );
+      break;
+  }
+
   return (
     <Container fluid>
       <Row>
@@ -33,19 +65,14 @@ export function CollateralSeenOrConfirmed({
         </Col>
       </Row>
       <Row className="justify-content-between mt-4">
-        <Alert className="mb-2" key="info" variant="success">
-          <FontAwesomeIcon icon={faInfoCircle} /> Your loan amount of {formatCurrency(contract.loan_amount)}{" "}
-          will be sent to this address.
-          <InputGroup className="mt-2">
-            <Form.Control
-              type="text"
-              value={contract.borrower_loan_address}
-              disabled
-              readOnly
-              className="bg-white"
-            />
-          </InputGroup>
-        </Alert>
+        <Callout.Root color={"teal"}>
+          <Callout.Icon>
+            <FaInfoCircle size={"18"} />
+          </Callout.Icon>
+          <Callout.Text>
+            {info}
+          </Callout.Text>
+        </Callout.Root>
       </Row>
     </Container>
   );

@@ -121,6 +121,7 @@ pub struct Contract {
     pub expiry: OffsetDateTime,
     pub liquidation_status: LiquidationStatus,
     pub transactions: Vec<LoanTransaction>,
+    pub integration: Integration,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -234,6 +235,7 @@ pub async fn get_contracts(
             repaid_at,
             transactions,
             expiry,
+            integration: contract.integration,
         };
 
         contracts_2.push(contract);
@@ -340,6 +342,7 @@ pub async fn get_contract(
             repaid_at,
             transactions,
             expiry,
+            integration: contract.integration,
         }),
     ))
 }
@@ -357,12 +360,12 @@ pub async fn post_contract_request(
 
         let contract_id = Uuid::new_v4();
         let (borrower_loan_address, moon_invoice) = match body.integration {
-            None => (
+            Integration::StableCoin => (
                 body.borrower_loan_address
-                    .context("Must provide a borrower loan address without integration")?,
+                    .context("Must provide a borrower loan address for stable coin integration")?,
                 None,
             ),
-            Some(Integration::PayWithMoon) => {
+            Integration::PayWithMoon => {
                 ensure!(
                     offer.loan_asset_chain == LoanAssetChain::Polygon
                         && offer.loan_asset_type == LoanAssetType::Usdc,
@@ -472,6 +475,7 @@ pub async fn post_contract_request(
             repaid_at,
             transactions,
             expiry,
+            integration: contract.integration,
         };
 
         if let Some(invoice) = moon_invoice {

@@ -132,12 +132,13 @@ pub struct ContractRequestSchema {
     /// This is optional because certain integrations (such as Pay with Moon) define their own loan
     /// address.
     pub borrower_loan_address: Option<String>,
-    pub integration: Option<Integration>,
+    pub integration: Integration,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, Copy)]
 pub enum Integration {
     PayWithMoon,
+    StableCoin,
 }
 
 #[derive(Debug, FromRow, Serialize, Deserialize, Clone)]
@@ -241,7 +242,7 @@ pub struct Contract {
     pub borrower_btc_address: Address<NetworkUnchecked>,
     pub borrower_pk: PublicKey,
     pub borrower_loan_address: String,
-    pub integration: Option<Integration>,
+    pub integration: Integration,
     pub lender_xpub: Option<Xpub>,
     pub contract_address: Option<Address<NetworkUnchecked>>,
     pub contract_index: Option<u32>,
@@ -320,7 +321,7 @@ pub mod db {
         pub borrower_btc_address: String,
         pub borrower_pk: String,
         pub borrower_loan_address: String,
-        pub integration: Option<Integration>,
+        pub integration: Integration,
         pub lender_xpub: Option<String>,
         pub contract_address: Option<String>,
         pub contract_index: Option<i32>,
@@ -364,6 +365,7 @@ pub mod db {
     #[sqlx(type_name = "integration")]
     pub enum Integration {
         PayWithMoon,
+        StableCoin,
     }
 
     #[derive(Debug, Deserialize, sqlx::Type, Serialize)]
@@ -400,7 +402,7 @@ impl From<db::Contract> for Contract {
                 .expect("valid address"),
             borrower_pk: PublicKey::from_str(&value.borrower_pk).expect("valid pk"),
             borrower_loan_address: value.borrower_loan_address,
-            integration: value.integration.map(|i| i.into()),
+            integration: value.integration.into(),
             lender_xpub: value
                 .lender_xpub
                 .map(|xpub| xpub.parse().expect("valid xpub")),
@@ -452,6 +454,7 @@ impl From<db::Integration> for Integration {
     fn from(value: db::Integration) -> Self {
         match value {
             db::Integration::PayWithMoon => Self::PayWithMoon,
+            db::Integration::StableCoin => Self::StableCoin,
         }
     }
 }
@@ -460,6 +463,7 @@ impl From<Integration> for db::Integration {
     fn from(value: Integration) -> Self {
         match value {
             Integration::PayWithMoon => Self::PayWithMoon,
+            Integration::StableCoin => Self::StableCoin,
         }
     }
 }
@@ -516,7 +520,7 @@ impl From<Contract> for db::Contract {
             borrower_btc_address: value.borrower_btc_address.assume_checked().to_string(),
             borrower_pk: value.borrower_pk.to_string(),
             borrower_loan_address: value.borrower_loan_address,
-            integration: value.integration.map(|i| i.into()),
+            integration: value.integration.into(),
             lender_xpub: value.lender_xpub.map(|xpub| xpub.to_string()),
             contract_address: value
                 .contract_address
