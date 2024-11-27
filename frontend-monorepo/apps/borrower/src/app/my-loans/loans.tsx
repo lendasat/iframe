@@ -438,6 +438,8 @@ const actionFromStatus = (status: ContractStatus) => {
       return "Details";
     case ContractStatus.DisputeLenderResolved:
       return "Details";
+    default:
+      return "Details";
   }
 };
 

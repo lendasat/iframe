@@ -1,0 +1,1 @@
+-- No down script for removing enum variant

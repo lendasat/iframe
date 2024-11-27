@@ -203,6 +203,7 @@ function ContractDetails({ contract }: DetailsProps) {
     case ContractStatus.RepaymentConfirmed:
     case ContractStatus.Closing:
     case ContractStatus.Closed:
+    case ContractStatus.Cancelled:
       canAddExtraCollateral = false;
       break;
     case ContractStatus.CollateralSeen:
@@ -561,6 +562,7 @@ const AdditionalDetail = ({ contract }: AdditionalDetailsProps) => {
     case ContractStatus.DisputeLenderStarted:
     case ContractStatus.DisputeBorrowerResolved:
     case ContractStatus.DisputeLenderResolved:
+    default:
       // TODO
       return "";
   }
@@ -587,7 +589,7 @@ const ContractStatusDetails = ({
 }: ContractStatusDetailsProps) => {
   switch (contract.status) {
     case ContractStatus.Requested:
-      return <ContractRequested createdAt={contract.created_at} />;
+      return <ContractRequested createdAt={contract.created_at} contractId={contract.id} />;
     case ContractStatus.Approved:
       return (
         <CollateralContractDetails

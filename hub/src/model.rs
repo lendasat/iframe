@@ -284,6 +284,8 @@ pub enum ContractStatus {
     DisputeBorrowerResolved,
     /// The dispute has been resolved by the lender
     DisputeLenderResolved,
+    /// The request has been cancelled by the cancelled
+    Cancelled,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
@@ -345,6 +347,7 @@ pub mod db {
         RepaymentConfirmed,
         Closing,
         Closed,
+        Cancelled,
         Rejected,
         DisputeBorrowerStarted,
         DisputeLenderStarted,
@@ -435,6 +438,7 @@ impl From<db::ContractStatus> for ContractStatus {
             db::ContractStatus::DisputeLenderStarted => Self::DisputeLenderStarted,
             db::ContractStatus::DisputeBorrowerResolved => Self::DisputeBorrowerResolved,
             db::ContractStatus::DisputeLenderResolved => Self::DisputeLenderResolved,
+            db::ContractStatus::Cancelled => Self::Cancelled,
         }
     }
 }
@@ -551,6 +555,7 @@ impl From<ContractStatus> for db::ContractStatus {
             ContractStatus::DisputeLenderStarted => Self::DisputeLenderStarted,
             ContractStatus::DisputeBorrowerResolved => Self::DisputeBorrowerResolved,
             ContractStatus::DisputeLenderResolved => Self::DisputeLenderResolved,
+            ContractStatus::Cancelled => Self::Cancelled,
         }
     }
 }
