@@ -10,6 +10,7 @@ use hub::db::wallet_backups::NewBorrowerWalletBackup;
 use hub::db::wallet_backups::NewLenderWalletBackup;
 use hub::model::Contract;
 use hub::model::ContractStatus;
+use hub::model::ContractVersion;
 use hub::model::CreateLoanOfferSchema;
 use hub::model::Integration;
 use hub::model::LoanAssetChain;
@@ -191,6 +192,7 @@ async fn create_loan_request(
             .expect("to be valid pk"),
         "0x34e3f03F5efFaF7f70Bb1FfC50274697096ebe9d",
         Integration::StableCoin,
+        ContractVersion::TwoOfThree,
     )
     .await
 }

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            integration as \"integration: crate::model::db::Integration\",\n            lender_xpub,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            created_at,\n            updated_at\n        FROM contracts\n        WHERE status NOT IN ($1, $2, $3, $4, $5) and liquidation_status NOT in ($6)\n        ",
+  "query": "\n        SELECT\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            integration as \"integration: crate::model::db::Integration\",\n            lender_xpub,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            contract_version,\n            created_at,\n            updated_at\n        FROM contracts\n        WHERE status NOT IN ($1, $2, $3)\n        ",
   "describe": {
     "columns": [
       {
@@ -145,11 +145,16 @@
       },
       {
         "ordinal": 19,
+        "name": "contract_version",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 20,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 20,
+        "ordinal": 21,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -227,67 +232,6 @@
               ]
             }
           }
-        },
-        {
-          "Custom": {
-            "name": "contract_status",
-            "kind": {
-              "Enum": [
-                "Requested",
-                "Approved",
-                "CollateralSeen",
-                "CollateralConfirmed",
-                "PrincipalGiven",
-                "RepaymentProvided",
-                "RepaymentConfirmed",
-                "Closing",
-                "Closed",
-                "Rejected",
-                "DisputeBorrowerStarted",
-                "DisputeLenderStarted",
-                "DisputeBorrowerResolved",
-                "DisputeLenderResolved",
-                "Cancelled"
-              ]
-            }
-          }
-        },
-        {
-          "Custom": {
-            "name": "contract_status",
-            "kind": {
-              "Enum": [
-                "Requested",
-                "Approved",
-                "CollateralSeen",
-                "CollateralConfirmed",
-                "PrincipalGiven",
-                "RepaymentProvided",
-                "RepaymentConfirmed",
-                "Closing",
-                "Closed",
-                "Rejected",
-                "DisputeBorrowerStarted",
-                "DisputeLenderStarted",
-                "DisputeBorrowerResolved",
-                "DisputeLenderResolved",
-                "Cancelled"
-              ]
-            }
-          }
-        },
-        {
-          "Custom": {
-            "name": "liquidation_status",
-            "kind": {
-              "Enum": [
-                "Healthy",
-                "FirstMarginCall",
-                "SecondMarginCall",
-                "Liquidated"
-              ]
-            }
-          }
         }
       ]
     },
@@ -312,8 +256,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "9360ee6f41c2f65047228c2a58526dd45acc37d2663ed322af2b4530feeadd40"
+  "hash": "c9bcb49963efa6010c94f3c4a3b95e8734fbea751e1967bac1176e8dc5001130"
 }
