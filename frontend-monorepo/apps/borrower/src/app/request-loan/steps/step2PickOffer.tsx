@@ -651,7 +651,7 @@ const LoanSearched = (props: SearchParams) => {
   const [walletSecretConfirmed, setWalletSecretConfirmed] = useState(isWalletLoaded);
   const { latestPrice } = usePrice();
 
-  const collateralAmountBtc = props.amount / latestPrice;
+  const collateralAmountBtc = props.amount / latestPrice / props.ltv;
   const collateralUsdAmount = props.amount / props.ltv;
 
   const [hideWalletConnectButton, setHideWalletConnectButton] = useState(false);
