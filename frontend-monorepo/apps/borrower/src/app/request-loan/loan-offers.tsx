@@ -66,7 +66,7 @@ function LoanOffersComponent({ loanOffers, onRequest, isLoading }: LoanOffersCom
   return (
     <>
       <Box className="bg-active-nav/15 py-1 px-6 md:px-8 flex items-center">
-        <Grid className="grid-cols-4 md:grid-cols-6 xl:grid-cols-8 items-center grow">
+        <Grid className="grid-cols-4 md:grid-cols-6 xl:grid-cols-7 items-center grow">
           <Box className="mb-1 col-span-1 xl:col-span-2">
             <Text
               size={"1"}

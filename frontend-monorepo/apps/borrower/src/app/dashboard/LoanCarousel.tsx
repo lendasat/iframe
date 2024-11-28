@@ -145,7 +145,10 @@ export default function LoanCarousel() {
             <UCard
               loans={contracts.filter((
                 loan,
-              ) => (loan.status !== ContractStatus.Closed && loan.status !== ContractStatus.Rejected))}
+              ) =>
+                (loan.status !== ContractStatus.Closed && loan.status !== ContractStatus.Rejected)
+                && loan.status !== ContractStatus.RequestExpired
+              )}
             />
           )}
         />

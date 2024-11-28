@@ -102,6 +102,8 @@ pub struct Contract {
     pub borrower: BorrowerProfile,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339")]
+    pub updated_at: OffsetDateTime,
     #[serde(with = "time::serde::rfc3339::option")]
     pub repaid_at: Option<OffsetDateTime>,
     #[serde(with = "time::serde::rfc3339")]
@@ -211,6 +213,7 @@ pub async fn get_active_contracts(
                 name: borrower.name,
             },
             created_at: contract.created_at,
+            updated_at: contract.updated_at,
             repaid_at,
             transactions,
             expiry,
@@ -323,6 +326,7 @@ pub async fn get_contract(
         expiry,
         loan_asset_chain: asset_chain,
         loan_asset_type: asset_type,
+        updated_at: contract.updated_at,
     };
 
     Ok((StatusCode::OK, Json(contract)))
@@ -565,6 +569,7 @@ pub async fn put_principal_given(
             name: borrower.name,
         },
         created_at: contract.created_at,
+        updated_at: contract.updated_at,
         repaid_at: None,
         transactions,
         expiry,

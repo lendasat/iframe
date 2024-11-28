@@ -20,8 +20,9 @@ import type {
 import { parseRFC3339Date } from "./utils";
 
 // Interface for the raw data received from the API
-interface RawContract extends Omit<Contract, "created_at" | "repaid_at" | "expiry"> {
+interface RawContract extends Omit<Contract, "created_at" | "repaid_at" | "updated_at" | "expiry"> {
   created_at: string;
+  updated_at: string;
   repaid_at?: string;
   expiry: string;
 }
@@ -138,8 +139,9 @@ export class HttpClientBorrower extends BaseHttpClient {
 
       return response.data.map(contract => {
         const createdAt = parseRFC3339Date(contract.created_at);
+        const updatedAt = parseRFC3339Date(contract.updated_at);
         const expiry = parseRFC3339Date(contract.expiry);
-        if (createdAt === undefined || expiry === undefined) {
+        if (createdAt === undefined || expiry === undefined || updatedAt === undefined) {
           throw new Error("Invalid date");
         }
 
@@ -158,6 +160,7 @@ export class HttpClientBorrower extends BaseHttpClient {
         return {
           ...contract,
           created_at: createdAt,
+          updated_at: updatedAt,
           repaid_at: repaidAt,
           expiry: expiry,
         };
@@ -183,6 +186,7 @@ export class HttpClientBorrower extends BaseHttpClient {
       const contract = contractResponse.data;
 
       const createdAt = parseRFC3339Date(contract.created_at);
+      const updatedAt = parseRFC3339Date(contract.updated_at);
       const repaidAt = parseRFC3339Date(contract.repaid_at);
       const expiry = parseRFC3339Date(contract.expiry);
       if (createdAt == null || repaidAt == null || expiry == null) {
@@ -192,6 +196,7 @@ export class HttpClientBorrower extends BaseHttpClient {
       return {
         ...contract,
         created_at: createdAt,
+        updated_at: updatedAt,
         repaid_at: repaidAt,
         expiry: expiry,
       };

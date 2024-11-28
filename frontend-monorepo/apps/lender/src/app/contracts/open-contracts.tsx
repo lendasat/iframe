@@ -1,22 +1,18 @@
 import { ContractStatus } from "@frontend-monorepo/http-client-borrower";
-import type { Contract } from "@frontend-monorepo/http-client-lender";
-import { contractStatusToLabelString, LiquidationStatus } from "@frontend-monorepo/http-client-lender";
+import { type Contract, contractStatusToLabelString, LiquidationStatus } from "@frontend-monorepo/http-client-lender";
 import { CurrencyFormatter, LtvProgressBar, usePrice } from "@frontend-monorepo/ui-shared";
 import { Badge, Box, Button, DropdownMenu, Flex, Grid, Heading, Text } from "@radix-ui/themes";
 import { BsThreeDotsVertical } from "react-icons/bs";
 import { Link, useNavigate } from "react-router-dom";
+import { actionFromStatus } from "./my-contracts";
 
-interface LoansComponentProps {
-  loans: Contract[];
+interface OpenContractsProps {
+  contracts: Contract[];
 }
 
-function ContractsComponent({ loans }: LoansComponentProps) {
+export const OpenContracts = ({ contracts }: OpenContractsProps) => {
   const { latestPrice } = usePrice();
   const navigate = useNavigate();
-  const { innerHeight } = window;
-  if (loans.length === 0) {
-    return <p>You don't have any loans yet.</p>;
-  }
 
   const amount_col = {
     label: "Amount",
@@ -62,7 +58,7 @@ function ContractsComponent({ loans }: LoansComponentProps) {
     <Box>
       <Box className="px-6 md:px-8 py-4">
         <Flex align={"center"} justify={"between"}>
-          <Heading size={"6"}>My Loans</Heading>
+          <Heading size={"6"}>My Contracts</Heading>
           <Button asChild color="purple" className="text-sm" size={"3"}>
             <Link to={"/create-loan-offer"}>
               New Proposal
@@ -87,10 +83,12 @@ function ContractsComponent({ loans }: LoansComponentProps) {
       <Box
         style={{
           overflowY: "scroll",
-          height: innerHeight - 240,
         }}
       >
-        {loans.map((contract, index) => {
+        {contracts.length === 0
+          && <p>You don't have any open contracts.</p>}
+
+        {contracts.map((contract, index) => {
           const collateral_btc = contract.initial_collateral_sats / 100000000;
           const ltvRatio = contract.loan_amount / (collateral_btc * latestPrice);
 
@@ -289,39 +287,4 @@ function ContractsComponent({ loans }: LoansComponentProps) {
       </Box>
     </Box>
   );
-}
-
-export default ContractsComponent;
-
-const actionFromStatus = (status: ContractStatus) => {
-  switch (status) {
-    case ContractStatus.Requested:
-      return "Approve or Reject";
-    case ContractStatus.Approved:
-      return "Details";
-    case ContractStatus.CollateralSeen:
-    case ContractStatus.CollateralConfirmed:
-      return "Payout principal";
-    case ContractStatus.PrincipalGiven:
-      return "Details";
-    case ContractStatus.Closed:
-    case ContractStatus.Closing:
-      return "Details";
-    case ContractStatus.RepaymentProvided:
-      return "Confirm Repayment";
-    case ContractStatus.RepaymentConfirmed:
-      return "Details";
-    case ContractStatus.Rejected:
-      return "Details";
-    case ContractStatus.DisputeBorrowerStarted:
-      return "Details";
-    case ContractStatus.DisputeLenderStarted:
-      return "Details";
-    case ContractStatus.DisputeBorrowerResolved:
-      return "Details";
-    case ContractStatus.DisputeLenderResolved:
-      return "Details";
-    default:
-      return "Details";
-  }
 };

@@ -22,7 +22,7 @@ function DashBoard() {
 
   const totalLoanAmount = value
     ? value
-      .filter((loan) => loan.status !== ContractStatus.Rejected)
+      .filter((loan) => loan.status !== ContractStatus.Rejected && loan.status !== ContractStatus.RequestExpired)
       .map((loan) => loan.loan_amount)
       .reduce((sum, amount) => sum + amount, 0)
     : 0;
@@ -31,7 +31,7 @@ function DashBoard() {
 
   const totalActiveLoans = value?.filter((loan) =>
     loan.status !== ContractStatus.Closed && loan.status !== ContractStatus.Closing
-    && loan.status !== ContractStatus.Rejected
+    && loan.status !== ContractStatus.Rejected && loan.status !== ContractStatus.RequestExpired
   ).length;
 
   return (
@@ -77,7 +77,7 @@ function DashBoard() {
               Icon={IoWalletOutline}
               url="/my-contracts"
               iconStyle="bg-green-100"
-              label="My Loans"
+              label="My Contracts"
               target={"_self"}
             />
             <QuickLinks

@@ -4,6 +4,7 @@ use axum::extract::ws::Message;
 use descriptor_wallet::DescriptorWallet;
 use hub::bitmex_index_pricefeed::subscribe_index_price;
 use hub::config::Config;
+use hub::cron_scheduler;
 use hub::db::connect_to_db;
 use hub::db::run_migration;
 use hub::liquidation_engine::monitor_positions;
@@ -18,6 +19,7 @@ use std::sync::Arc;
 use temp_dir::TempDir;
 use tokio::sync::mpsc;
 use tokio::sync::Mutex;
+use tokio_cron_scheduler::JobScheduler;
 use tracing::level_filters::LevelFilter;
 
 #[tokio::main]
@@ -130,7 +132,7 @@ async fn main() -> Result<()> {
     let lender_server = spawn_lender_server(
         config,
         wallet,
-        db,
+        db.clone(),
         mempool_addr,
         broadcast_state,
         moon_client.clone(),
@@ -142,6 +144,10 @@ async fn main() -> Result<()> {
 
     // We need the borrower server to be started already for this.
     tokio::spawn(register_webhook_in_thread(moon_client));
+
+    let sched = JobScheduler::new().await?;
+    cron_scheduler::add_jobs(&sched, db).await?;
+    sched.start().await?;
 
     let _ = tokio::join!(borrower_handle, lender_handle);
 

@@ -196,16 +196,6 @@ function ContractDetails({ contract }: DetailsProps) {
 
   let canAddExtraCollateral;
   switch (contract.status) {
-    case ContractStatus.Requested:
-    case ContractStatus.Approved:
-    case ContractStatus.Rejected:
-    case ContractStatus.RepaymentProvided:
-    case ContractStatus.RepaymentConfirmed:
-    case ContractStatus.Closing:
-    case ContractStatus.Closed:
-    case ContractStatus.Cancelled:
-      canAddExtraCollateral = false;
-      break;
     case ContractStatus.CollateralSeen:
     case ContractStatus.CollateralConfirmed:
     case ContractStatus.PrincipalGiven:
@@ -214,6 +204,18 @@ function ContractDetails({ contract }: DetailsProps) {
     case ContractStatus.DisputeBorrowerResolved:
     case ContractStatus.DisputeLenderResolved:
       canAddExtraCollateral = true;
+      break;
+    case ContractStatus.Requested:
+    case ContractStatus.Approved:
+    case ContractStatus.Rejected:
+    case ContractStatus.RepaymentProvided:
+    case ContractStatus.RepaymentConfirmed:
+    case ContractStatus.Closing:
+    case ContractStatus.Closed:
+    case ContractStatus.Cancelled:
+    case ContractStatus.RequestExpired:
+    default:
+      canAddExtraCollateral = false;
       break;
   }
 
@@ -558,6 +560,7 @@ const AdditionalDetail = ({ contract }: AdditionalDetailsProps) => {
         </>
       );
     case ContractStatus.Rejected:
+    case ContractStatus.RequestExpired:
     case ContractStatus.DisputeBorrowerStarted:
     case ContractStatus.DisputeLenderStarted:
     case ContractStatus.DisputeBorrowerResolved:
@@ -624,6 +627,7 @@ const ContractStatusDetails = ({
     case ContractStatus.Closed:
     case ContractStatus.Closing:
     case ContractStatus.Rejected:
+    case ContractStatus.RequestExpired:
     default:
       return "";
   }

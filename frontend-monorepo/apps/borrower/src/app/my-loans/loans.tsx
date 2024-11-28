@@ -173,7 +173,7 @@ function ContractsComponent({ loans }: LoansComponentProps) {
       >
         {loans.filter((loan) => {
           return loan.status !== ContractStatus.Closed && loan.status !== ContractStatus.Closing
-            && loan.status !== ContractStatus.Rejected;
+            && loan.status !== ContractStatus.Rejected && loan.status !== ContractStatus.RequestExpired;
         }).map((loan, index) => {
           const {
             id,
@@ -438,6 +438,8 @@ const actionFromStatus = (status: ContractStatus) => {
       return "Details";
     case ContractStatus.DisputeLenderResolved:
       return "Details";
+    case ContractStatus.RequestExpired:
+      return "Details";
     default:
       return "Details";
   }
@@ -489,12 +491,12 @@ const ClosedLoans = ({ header, loans, latestPrice }: ClosedPorps) => {
       >
         {loans.filter((loan) => {
           return loan.status === ContractStatus.Closed || loan.status === ContractStatus.Closing
-            || loan.status === ContractStatus.Rejected;
+            || loan.status === ContractStatus.Rejected || loan.status === ContractStatus.RequestExpired;
         }).map((loan, index) => {
           const {
             id,
             loan_amount,
-            repaid_at,
+            updated_at,
             interest_rate,
             initial_collateral_sats,
             status,
@@ -546,10 +548,10 @@ const ClosedLoans = ({ header, loans, latestPrice }: ClosedPorps) => {
                 </Box>
 
                 <Box className="justify-center text-center">
-                  {repaid_at
+                  {updated_at
                     ? (
                       <Text size={"1"} weight={"medium"}>
-                        {repaid_at.toLocaleDateString()}
+                        {updated_at.toLocaleDateString()}
                       </Text>
                     )
                     : ""}
@@ -634,10 +636,10 @@ const ClosedLoans = ({ header, loans, latestPrice }: ClosedPorps) => {
                           <Text size={"3"} weight={"medium"}>
                             Closed on:
                           </Text>
-                          {repaid_at
+                          {updated_at
                             ? (
                               <Text size={"3"} weight={"medium"}>
-                                {repaid_at.toLocaleDateString()}
+                                {updated_at.toLocaleDateString()}
                               </Text>
                             )
                             : ""}
