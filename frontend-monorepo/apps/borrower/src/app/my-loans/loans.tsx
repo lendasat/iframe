@@ -496,7 +496,7 @@ const ClosedLoans = ({ header, loans, latestPrice }: ClosedPorps) => {
           const {
             id,
             loan_amount,
-            repaid_at,
+            updated_at,
             interest_rate,
             initial_collateral_sats,
             status,
@@ -548,10 +548,10 @@ const ClosedLoans = ({ header, loans, latestPrice }: ClosedPorps) => {
                 </Box>
 
                 <Box className="justify-center text-center">
-                  {repaid_at
+                  {updated_at
                     ? (
                       <Text size={"1"} weight={"medium"}>
-                        {repaid_at.toLocaleDateString()}
+                        {updated_at.toLocaleDateString()}
                       </Text>
                     )
                     : ""}
@@ -636,10 +636,10 @@ const ClosedLoans = ({ header, loans, latestPrice }: ClosedPorps) => {
                           <Text size={"3"} weight={"medium"}>
                             Closed on:
                           </Text>
-                          {repaid_at
+                          {updated_at
                             ? (
                               <Text size={"3"} weight={"medium"}>
-                                {repaid_at.toLocaleDateString()}
+                                {updated_at.toLocaleDateString()}
                               </Text>
                             )
                             : ""}

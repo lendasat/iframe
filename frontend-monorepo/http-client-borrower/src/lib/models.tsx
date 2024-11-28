@@ -90,6 +90,7 @@ export interface Contract {
   loan_amount: number;
   duration_months: number;
   created_at: Date;
+  updated_at: Date;
   repaid_at: Date | undefined;
   expiry: Date;
   interest_rate: number;

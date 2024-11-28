@@ -20,31 +20,20 @@ export const ClosedContracts = ({ contracts }: ClosedContractsProps) => {
     className: "text-center",
   };
 
-  const expiry_col = {
-    label: "Duration",
+  const closed_on = {
+    label: "Closed on",
     md: 1,
     className: "text-center",
-  };
-
-  const ltv_col = {
-    label: "LTV",
-    md: 2,
-    className: "text-center hidden xl:block",
   };
   const interest_col = {
     label: "Interest",
     md: 1,
     className: "text-center hidden md:block",
   };
-  const collateral_col = {
-    label: "Collateral",
-    md: 2,
-    className: "text-center",
-  };
   const status_col = {
     label: "Status",
     md: 2,
-    className: "text-center hidden md:block",
+    className: "text-center",
   };
   const empty_col = {
     label: "",
@@ -52,7 +41,7 @@ export const ClosedContracts = ({ contracts }: ClosedContractsProps) => {
     className: "text-center hidden xl:block",
   };
 
-  const headers = [amount_col, expiry_col, interest_col, ltv_col, collateral_col, status_col, empty_col];
+  const headers = [amount_col, closed_on, interest_col, status_col, empty_col];
 
   return (
     <>
@@ -66,7 +55,7 @@ export const ClosedContracts = ({ contracts }: ClosedContractsProps) => {
         <Box className="w-[45px] xl:w-[80px] text-center py-1">
           <Text size={"1"} weight={"medium"} className="text-font/50">S/N</Text>
         </Box>
-        <Grid className="grid-cols-3 md:grid-cols-5 xl:grid-cols-7 flex-grow">
+        <Grid className="grid-cols-3 md:grid-cols-5 xl:grid-cols-5 flex-grow">
           {headers.map((header, index) => (
             <Box key={index} className={header.className}>
               <Text className="text-font/50" size={"1"} weight={"medium"}>{header.label}</Text>
@@ -111,7 +100,7 @@ export const ClosedContracts = ({ contracts }: ClosedContractsProps) => {
               <Box className="w-[45px] xl:w-[80px] text-center py-5 border-r">
                 <Text size={"1"} weight={"medium"} className="text-font/50">{index + 1}</Text>
               </Box>
-              <Grid className="grid-cols-3 pr-2 flex-grow md:grid-cols-5 xl:grid-cols-7 items-center text-font">
+              <Grid className="grid-cols-3 pr-2 flex-grow md:grid-cols-5 xl:grid-cols-5 items-center text-font">
                 <Box className="text-center">
                   <Text size={"1"} weight={"medium"}>
                     <CurrencyFormatter value={contract.loan_amount} />
@@ -120,7 +109,7 @@ export const ClosedContracts = ({ contracts }: ClosedContractsProps) => {
 
                 <Box className="justify-center text-center">
                   <Text size={"1"} weight={"medium"}>
-                    {contract.duration_months} months
+                    {contract.updated_at?.toLocaleDateString()}
                   </Text>
                 </Box>
 
@@ -130,17 +119,7 @@ export const ClosedContracts = ({ contracts }: ClosedContractsProps) => {
                   </Text>
                 </Box>
 
-                <Box className="hidden xl:block">
-                  <LtvProgressBar ltvRatio={latestPrice ? ltvRatio * 100 : undefined} />
-                </Box>
-
-                <Box className="flex justify-center">
-                  <Text size={"1"} weight={"medium"}>
-                    {collateral_btc} BTC
-                  </Text>
-                </Box>
-
-                <Box className="hidden md:flex justify-center ">
+                <Box className="flex justify-center ">
                   <Badge
                     color={contract.status === ContractStatus.Requested
                       ? "amber"

@@ -124,6 +124,8 @@ pub struct Contract {
     pub lender: LenderProfile,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339")]
+    pub updated_at: OffsetDateTime,
     #[serde(with = "time::serde::rfc3339::option")]
     pub repaid_at: Option<OffsetDateTime>,
     #[serde(with = "time::serde::rfc3339")]
@@ -241,6 +243,7 @@ pub async fn get_contracts(
                 name: lender.name,
             },
             created_at: contract.created_at,
+            updated_at: contract.updated_at,
             repaid_at,
             transactions,
             expiry,
@@ -348,6 +351,7 @@ pub async fn get_contract(
                 name: lender.name,
             },
             created_at: contract.created_at,
+            updated_at: contract.updated_at,
             repaid_at,
             transactions,
             expiry,
@@ -482,6 +486,7 @@ pub async fn post_contract_request(
                 name: lender.name.clone(),
             },
             created_at: contract.created_at,
+            updated_at: contract.updated_at,
             repaid_at,
             transactions,
             expiry,

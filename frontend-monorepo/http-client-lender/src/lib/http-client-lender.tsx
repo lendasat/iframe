@@ -8,8 +8,9 @@ import type { Contract, CreateLoanOfferRequest, LoanOffer } from "./models";
 import { parseRFC3339Date } from "./utils";
 
 // Interface for the raw data received from the API
-interface RawContract extends Omit<Contract, "created_at" | "repaid_at"> {
+interface RawContract extends Omit<Contract, "created_at" | "repaid_at" | "updated_at"> {
   created_at: string;
+  updated_at: string;
   repaid_at?: string;
 }
 
@@ -24,12 +25,17 @@ export class HttpClientLender extends BaseHttpClient {
       const response: AxiosResponse<LoanOffer> = await this.httpClient.post("/api/offers/create", offer);
       return response.data;
     } catch (error) {
-      console.error(
-        `Failed to post loan offer: http: ${error.response?.status} and response: ${
-          JSON.stringify(error.response?.data)
-        }`,
-      );
-      throw error.response?.data;
+      if (axios.isAxiosError(error) && error.response) {
+        const message = JSON.stringify(error.response.data);
+        console.error(
+          `Failed to post loan offer: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not post offer ${JSON.stringify(error)}`);
+      }
     }
   }
   async getContracts(): Promise<Contract[]> {
@@ -38,6 +44,11 @@ export class HttpClientLender extends BaseHttpClient {
       return response.data.map(contract => {
         const createdAt = parseRFC3339Date(contract.created_at);
         if (createdAt === undefined) {
+          throw new Error("Invalid date");
+        }
+
+        const updated_at = parseRFC3339Date(contract.updated_at);
+        if (updated_at === undefined) {
           throw new Error("Invalid date");
         }
 
@@ -56,14 +67,20 @@ export class HttpClientLender extends BaseHttpClient {
         return {
           ...contract,
           created_at: createdAt,
+          updated_at: updated_at,
           repaid_at: repaidAt,
         };
       });
     } catch (error) {
-      console.error(
-        `Failed to fetch contracts: http: ${error.response?.status} and response: ${error.response?.data}`,
-      );
-      throw error;
+      if (axios.isAxiosError(error) && error.response) {
+        const message = JSON.stringify(error.response.data);
+        console.error(
+          `Failed to fetch contracts: http: ${error.response?.status} and response: JSON.stringify(error.response?.data)`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not fetch contracts ${JSON.stringify(error)}`);
+      }
     }
   }
 
@@ -76,11 +93,20 @@ export class HttpClientLender extends BaseHttpClient {
       if (createdAt == null) {
         throw new Error("Invalid date");
       }
+      const updated_at = parseRFC3339Date(contract.updated_at);
+      if (updated_at == null) {
+        throw new Error("Invalid date");
+      }
+      const repaid_at = parseRFC3339Date(contract.repaid_at);
+      if (repaid_at == null) {
+        throw new Error("Invalid date");
+      }
 
       return {
         ...contract,
         created_at: createdAt,
-        repaid_at: contract?.repaid_at,
+        updated_at: updated_at,
+        repaid_at: repaid_at,
       };
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
