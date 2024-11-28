@@ -262,11 +262,13 @@ pub async fn load_open_contracts(pool: &Pool<Postgres>) -> Result<Vec<Contract>>
             created_at,
             updated_at
         FROM contracts
-        WHERE status NOT IN ($1, $2, $3)
+        WHERE status NOT IN ($1, $2, $3, $4, $5)
         "#,
         db::ContractStatus::Requested as db::ContractStatus,
         db::ContractStatus::Closed as db::ContractStatus,
         db::ContractStatus::Rejected as db::ContractStatus,
+        db::ContractStatus::Cancelled as db::ContractStatus,
+        db::ContractStatus::RequestExpired as db::ContractStatus,
     )
     .fetch_all(pool)
     .await?;
@@ -864,13 +866,15 @@ pub(crate) async fn load_open_not_liquidated_contracts(
             created_at,
             updated_at
         FROM contracts
-        WHERE status NOT IN ($1, $2, $3, $4, $5) and liquidation_status NOT in ($6)
+        WHERE status NOT IN ($1, $2, $3, $4, $5, $6, $7) and liquidation_status NOT in ($8)
         "#,
         db::ContractStatus::Requested as db::ContractStatus,
         db::ContractStatus::Approved as db::ContractStatus,
         db::ContractStatus::Closing as db::ContractStatus,
         db::ContractStatus::Closed as db::ContractStatus,
         db::ContractStatus::Rejected as db::ContractStatus,
+        db::ContractStatus::Cancelled as db::ContractStatus,
+        db::ContractStatus::RequestExpired as db::ContractStatus,
         db::LiquidationStatus::Liquidated as db::LiquidationStatus,
     )
     .fetch_all(pool)
@@ -1026,4 +1030,34 @@ pub async fn update_collateral(
     .await?;
 
     Ok(contract.into())
+}
+
+/// Expires contracts in state Requested and returns their IDs
+pub(crate) async fn expire_requested_contracts(
+    pool: &Pool<Postgres>,
+    expiry_in_hours: i64,
+) -> Result<Vec<String>> {
+    let expiration_threshold =
+        time::OffsetDateTime::now_utc() - time::Duration::hours(expiry_in_hours);
+
+    let rows = sqlx::query!(
+        r#"
+            UPDATE 
+                contracts
+            SET 
+                status = 'RequestExpired', updated_at = $1
+            WHERE 
+                status = 'Requested' AND 
+                created_at <= $2
+            RETURNING id;
+        "#,
+        time::OffsetDateTime::now_utc(),
+        expiration_threshold
+    )
+    .fetch_all(pool)
+    .await?;
+
+    let contract_ids = rows.into_iter().map(|row| row.id).collect();
+
+    Ok(contract_ids)
 }

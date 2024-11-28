@@ -115,7 +115,8 @@
                 "DisputeLenderStarted",
                 "DisputeBorrowerResolved",
                 "DisputeLenderResolved",
-                "Cancelled"
+                "Cancelled",
+                "RequestExpired"
               ]
             }
           }
@@ -181,7 +182,8 @@
                 "DisputeLenderStarted",
                 "DisputeBorrowerResolved",
                 "DisputeLenderResolved",
-                "Cancelled"
+                "Cancelled",
+                "RequestExpired"
               ]
             }
           }

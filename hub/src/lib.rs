@@ -4,6 +4,7 @@ use rust_decimal_macros::dec;
 pub mod bitmex_index_pricefeed;
 pub mod bitmex_ws_client;
 pub mod config;
+pub mod cron_scheduler;
 pub mod db;
 pub mod email;
 pub mod liquidation_engine;

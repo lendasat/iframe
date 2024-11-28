@@ -115,7 +115,8 @@
                 "DisputeLenderStarted",
                 "DisputeBorrowerResolved",
                 "DisputeLenderResolved",
-                "Cancelled"
+                "Cancelled",
+                "RequestExpired"
               ]
             }
           }
