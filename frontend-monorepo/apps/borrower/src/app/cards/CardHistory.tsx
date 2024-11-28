@@ -19,10 +19,7 @@ export default function CardHistory({ cardId, lastFourCardDigits }: CardHistoryP
     console.error(`Failed loading transactions ${error}`);
   }
 
-  const transactionHistoryUnsorted = maybeTransactionHistory || [];
-  const transactionHistorySorted = transactionHistoryUnsorted.sort((a, b) => {
-    return b.date.getTime() - a.date.getTime();
-  });
+  const transactionHistory = maybeTransactionHistory || [];
 
   const amount_col = {
     label: "Amount",
@@ -30,7 +27,7 @@ export default function CardHistory({ cardId, lastFourCardDigits }: CardHistoryP
   };
 
   const action_col = {
-    label: "Action",
+    label: "Description",
     className: "text-left",
   };
 
@@ -45,7 +42,7 @@ export default function CardHistory({ cardId, lastFourCardDigits }: CardHistoryP
 
   const headers = [action_col, status_col, amount_col, date_col];
 
-  const noTxHistory = transactionHistorySorted.length === 0;
+  const noTxHistory = transactionHistory.length === 0;
 
   return (
     <Box className="flex-1">
@@ -72,7 +69,7 @@ export default function CardHistory({ cardId, lastFourCardDigits }: CardHistoryP
             </Flex>
           )}
 
-        {!loading && transactionHistorySorted.map((history, index) => (
+        {!loading && transactionHistory.map((history, index) => (
           <HistoryComponent
             transaction={history}
             lastFourCardDigits={lastFourCardDigits}

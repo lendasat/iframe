@@ -1,0 +1,50 @@
+{
+  "data": {
+    "id": "txn_123456789",
+    "card": {
+      "public_id": "card_pub_987654321",
+      "name": "Card name",
+      "type": "Moon 1X Card"
+    },
+    "transaction_id": "500539aa-d323-4fe7-9162-8d6123515ec5",
+    "transaction_status": "SETTLED",
+    "datetime": "2024-11-12T08:45:23Z",
+    "merchant": "Starbucks",
+    "amount": 150.00,
+    "ledger_currency": 840,
+    "amount_fees_in_ledger_currency": 1,
+    "amount_in_transaction_currency": 10,
+    "transaction_currency": 540,
+    "amount_fees_in_transaction_currency": 1,
+    "fees": [{
+      "type": "TRANSACTION_FEE",
+      "amount": 1,
+      "fee_amount_in_transaction_currency": 1,
+      "fee_description": "A 1% fee",
+
+      "feeAmountInTransactionCurrency": 1,
+      "feeDescription": "A 1% fee",
+
+      "deprecated_fields": ["feeAmountInTransactionCurrency", "feeDescription"]
+    }],
+
+    "amountFeesInLedgerCurrency": 1,
+    "ledgerCurrency": 840,
+    "amountInTransactionCurrency": 10,
+    "transactionCurrency": 540,
+    "amountFeesInTransactionCurrency": 1,
+    "transactionStatus": "SETTLED",
+    "transactionId": "500539aa-d323-4fe7-9162-8d6123515ec5",
+
+    "deprecated_fields": [
+      "transactionId",
+      "transactionStatus",
+      "ledgerCurrency",
+      "amountFeesInLedgerCurrency",
+      "amountInTransactionCurrency",
+      "transactionCurrency",
+      "amountFeesInTransactionCurrency"
+    ]
+  },
+  "type": "CARD_TRANSACTION"
+}

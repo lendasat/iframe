@@ -82,7 +82,7 @@ pub async fn get_cards(
     Ok((StatusCode::OK, Json(cards)))
 }
 
-#[derive(Debug, Serialize, PartialEq)]
+#[derive(Debug, Serialize, PartialEq, Clone)]
 pub enum TransactionStatus {
     Authorization,
     Reversal,
@@ -108,8 +108,7 @@ impl From<pay_with_moon::TransactionStatus> for TransactionStatus {
     }
 }
 
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Serialize, PartialEq, Clone)]
 pub struct Fee {
     #[serde(rename = "type")]
     pub fee_type: String,
@@ -128,7 +127,7 @@ impl From<pay_with_moon::Fee> for Fee {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, PartialEq, Clone)]
 pub struct TransactionCard {
     pub public_id: Uuid,
     pub name: String,
@@ -146,13 +145,34 @@ impl From<pay_with_moon::TransactionCard> for TransactionCard {
     }
 }
 
-#[derive(Debug, Serialize)]
-pub struct Transaction {
+#[derive(Debug, Serialize, PartialEq, Clone)]
+#[serde(tag = "type", content = "data")]
+pub enum Transaction {
+    Card(TransactionData),
+    CardAuthorizationRefund(TransactionData),
+    DeclineData(DeclineData),
+}
+
+impl From<pay_with_moon::Transaction> for Transaction {
+    fn from(value: pay_with_moon::Transaction) -> Self {
+        match value {
+            pay_with_moon::Transaction::CardTransaction(tx) => Transaction::Card(tx.into()),
+            pay_with_moon::Transaction::CardAuthorizationRefund(tx) => {
+                Transaction::CardAuthorizationRefund(tx.into())
+            }
+            pay_with_moon::Transaction::DeclineData(dd) => Transaction::DeclineData(dd.into()),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, PartialEq, Clone)]
+pub struct TransactionData {
     pub card: TransactionCard,
     pub transaction_id: Uuid,
     pub transaction_status: TransactionStatus,
-    // TODO: this should be OffsetDateTime
-    pub date: String,
+    /// Date when the transaction happened
+    /// The date we receive has the following format: 2024-11-14 10:26:24
+    pub datetime: String,
     pub merchant: String,
     #[serde(with = "rust_decimal::serde::float")]
     pub amount: Decimal,
@@ -165,25 +185,46 @@ pub struct Transaction {
     #[serde(with = "rust_decimal::serde::float")]
     pub amount_fees_in_transaction_currency: Decimal,
     pub fees: Vec<Fee>,
-    pub tag: String,
 }
 
-impl From<pay_with_moon::TransactionDataWrapper> for Transaction {
-    fn from(value: pay_with_moon::TransactionDataWrapper) -> Self {
-        Transaction {
-            card: value.data.card.into(),
-            transaction_id: value.data.transaction_id,
-            transaction_status: value.data.transaction_status.into(),
-            date: value.data.datetime,
-            merchant: value.data.merchant,
-            amount: value.data.amount,
-            ledger_currency: value.data.ledger_currency,
-            amount_fees_in_ledger_currency: value.data.amount_fees_in_ledger_currency,
-            amount_in_transaction_currency: value.data.amount_in_transaction_currency,
-            transaction_currency: value.data.transaction_currency,
-            amount_fees_in_transaction_currency: value.data.amount_fees_in_transaction_currency,
-            fees: value.data.fees.into_iter().map(|fee| fee.into()).collect(),
-            tag: value.tag,
+impl From<pay_with_moon::TransactionData> for TransactionData {
+    fn from(value: pay_with_moon::TransactionData) -> Self {
+        TransactionData {
+            card: value.card.into(),
+            transaction_id: value.transaction_id,
+            transaction_status: value.transaction_status.into(),
+            datetime: value.datetime,
+            merchant: value.merchant,
+            amount: value.amount,
+            ledger_currency: value.ledger_currency,
+            amount_fees_in_ledger_currency: value.amount_fees_in_ledger_currency,
+            amount_in_transaction_currency: value.amount_in_transaction_currency,
+            transaction_currency: value.transaction_currency,
+            amount_fees_in_transaction_currency: value.amount_fees_in_transaction_currency,
+            fees: value.fees.into_iter().map(|fee| fee.into()).collect(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, PartialEq, Clone)]
+pub struct DeclineData {
+    /// The date we receive has the following format: 2024-11-14 10:26:24
+    pub datetime: String,
+    pub merchant: String,
+    pub customer_friendly_description: String,
+    #[serde(with = "rust_decimal::serde::float")]
+    pub amount: Decimal,
+    pub card: TransactionCard,
+}
+
+impl From<pay_with_moon::DeclineData> for DeclineData {
+    fn from(value: pay_with_moon::DeclineData) -> Self {
+        DeclineData {
+            datetime: value.datetime,
+            merchant: value.merchant,
+            customer_friendly_description: value.customer_friendly_description,
+            amount: value.amount,
+            card: value.card.into(),
         }
     }
 }
@@ -271,9 +312,9 @@ pub async fn post_webhook(
         // Handle request with JSON body
         Ok(Json(payload)) => {
             if let Ok(json_object) = serde_json::to_string(&payload) {
-                tracing::debug!(?json_object, "Received new json webhook data");
+                tracing::trace!(?json_object, "Received new json webhook data");
             } else {
-                tracing::debug!(?payload, "Received new webhook data");
+                tracing::warn!(?payload, "Received new webhook data which was not json");
             }
 
             if let Ok(moon_message) =
