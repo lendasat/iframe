@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE contract_emails\n        SET loan_paid_out_sent = true\n        WHERE contract_id = $1\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Bpchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "956c68b8203cac214e0597c48f7ea78a63e5c428893fa4bf2c356ac85612eb05"
+}
