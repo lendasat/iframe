@@ -31,7 +31,10 @@ export function CollateralContractDetails({
     }
   };
 
-  const bip21Url = encodeBip21(collateralAddress, { amount: collateral_btc, label: `fund contract` });
+  const bip21Url = encodeBip21(collateralAddress, {
+    amount: collateral_btc + loanOriginatorFee,
+    label: `fund contract`,
+  });
 
   const ellipseAddress = (address: string) => {
     const start = address.slice(0, 10);
