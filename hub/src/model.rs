@@ -304,7 +304,7 @@ pub enum ContractStatus {
     DisputeLenderResolved,
     /// The request has been cancelled by the cancelled
     Cancelled,
-    /// The request has expired due to not being accept nor cancelled
+    /// The request has expired due to not being accepted nor cancelled
     RequestExpired,
 }
 
