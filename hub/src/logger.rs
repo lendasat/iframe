@@ -18,6 +18,7 @@ pub fn init_tracing(level: LevelFilter, json_format: bool) -> Result<()> {
 
     let mut filter = EnvFilter::new("")
         .add_directive("sqlx::query=warn".parse()?)
+        .add_directive("hyper_util=warn".parse()?)
         .add_directive(Directive::from(level));
 
     // Parse additional log directives from env variable
