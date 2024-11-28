@@ -304,6 +304,8 @@ pub enum ContractStatus {
     DisputeLenderResolved,
     /// The request has been cancelled by the cancelled
     Cancelled,
+    /// The request has expired due to not being accept nor cancelled
+    RequestExpired,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
@@ -372,6 +374,7 @@ pub mod db {
         DisputeLenderStarted,
         DisputeBorrowerResolved,
         DisputeLenderResolved,
+        RequestExpired,
     }
 
     #[derive(Debug, Deserialize, sqlx::Type, Serialize)]
@@ -459,6 +462,7 @@ impl From<db::ContractStatus> for ContractStatus {
             db::ContractStatus::DisputeBorrowerResolved => Self::DisputeBorrowerResolved,
             db::ContractStatus::DisputeLenderResolved => Self::DisputeLenderResolved,
             db::ContractStatus::Cancelled => Self::Cancelled,
+            db::ContractStatus::RequestExpired => Self::RequestExpired,
         }
     }
 }
@@ -577,6 +581,7 @@ impl From<ContractStatus> for db::ContractStatus {
             ContractStatus::DisputeBorrowerResolved => Self::DisputeBorrowerResolved,
             ContractStatus::DisputeLenderResolved => Self::DisputeLenderResolved,
             ContractStatus::Cancelled => Self::Cancelled,
+            ContractStatus::RequestExpired => Self::RequestExpired,
         }
     }
 }

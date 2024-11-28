@@ -14,6 +14,7 @@ export enum ContractStatus {
   DisputeBorrowerResolved = "DisputeBorrowerResolved",
   DisputeLenderResolved = "DisputeLenderResolved",
   Cancelled = "Cancelled",
+  RequestExpired = "RequestExpired",
 }
 
 export interface BorrowerProfile {
@@ -122,6 +123,8 @@ export function contractStatusToLabelString(status: ContractStatus): string {
       return "Dispute Resolved";
     case ContractStatus.Cancelled:
       return "Contract Cancelled";
+    case ContractStatus.RequestExpired:
+      return "Contract Expired";
     default:
       return "Unknown Status";
   }

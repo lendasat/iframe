@@ -576,6 +576,8 @@ const AdditionalDetail = ({ contract }: AdditionalDetailsProps) => {
     case ContractStatus.DisputeLenderStarted:
     case ContractStatus.DisputeBorrowerResolved:
     case ContractStatus.DisputeLenderResolved:
+    case ContractStatus.Cancelled:
+    case ContractStatus.RequestExpired:
     default:
       // TODO
       return "Details";
@@ -739,6 +741,8 @@ const ContractStatusDetails = ({
     case ContractStatus.Closed:
     case ContractStatus.Closing:
     case ContractStatus.Rejected:
+    case ContractStatus.Cancelled:
+    case ContractStatus.RequestExpired:
     default:
       return "";
   }

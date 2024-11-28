@@ -173,7 +173,7 @@ function ContractsComponent({ loans }: LoansComponentProps) {
       >
         {loans.filter((loan) => {
           return loan.status !== ContractStatus.Closed && loan.status !== ContractStatus.Closing
-            && loan.status !== ContractStatus.Rejected;
+            && loan.status !== ContractStatus.Rejected && loan.status !== ContractStatus.RequestExpired;
         }).map((loan, index) => {
           const {
             id,
@@ -438,6 +438,8 @@ const actionFromStatus = (status: ContractStatus) => {
       return "Details";
     case ContractStatus.DisputeLenderResolved:
       return "Details";
+    case ContractStatus.RequestExpired:
+      return "Details";
     default:
       return "Details";
   }
@@ -489,7 +491,7 @@ const ClosedLoans = ({ header, loans, latestPrice }: ClosedPorps) => {
       >
         {loans.filter((loan) => {
           return loan.status === ContractStatus.Closed || loan.status === ContractStatus.Closing
-            || loan.status === ContractStatus.Rejected;
+            || loan.status === ContractStatus.Rejected || loan.status === ContractStatus.RequestExpired;
         }).map((loan, index) => {
           const {
             id,

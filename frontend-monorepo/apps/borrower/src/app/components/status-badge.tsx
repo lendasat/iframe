@@ -72,6 +72,10 @@ export function StatusBadge({ status }: StatusBadgeProps) {
       color = "gray";
       label = "Closed";
       break;
+    case ContractStatus.RequestExpired:
+      color = "gray";
+      label = "Expired";
+      break;
     case ContractStatus.Rejected:
       color = "red";
       label = "Rejected";

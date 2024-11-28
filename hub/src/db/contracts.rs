@@ -935,7 +935,8 @@ pub async fn update_collateral(
                 | ContractStatus::DisputeLenderStarted
                 | ContractStatus::DisputeBorrowerResolved
                 | ContractStatus::DisputeLenderResolved
-                | ContractStatus::Cancelled => contract.status,
+                | ContractStatus::Cancelled
+                | ContractStatus::RequestExpired => contract.status,
             }
         }
         Ordering::Less => {

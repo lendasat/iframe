@@ -16,7 +16,10 @@ function MyContracts() {
         children={(contracts: Awaited<Contract[]>) => (
           <Box>
             <ContractsComponent
-              loans={contracts.filter((loan) => loan.status !== ContractStatus.Closed)}
+              loans={contracts.filter((loan) =>
+                loan.status !== ContractStatus.Closed && loan.status !== ContractStatus.Cancelled
+                && loan.status !== ContractStatus.RequestExpired
+              )}
             />
           </Box>
         )}

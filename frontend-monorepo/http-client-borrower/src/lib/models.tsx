@@ -17,6 +17,7 @@ export enum ContractStatus {
   DisputeBorrowerResolved = "DisputeBorrowerResolved",
   DisputeLenderResolved = "DisputeLenderResolved",
   Cancelled = "Cancelled",
+  RequestExpired = "RequestExpired",
 }
 
 export function contractStatusToLabelString(status: ContractStatus): string {
@@ -49,6 +50,8 @@ export function contractStatusToLabelString(status: ContractStatus): string {
       return "Dispute Resolved";
     case ContractStatus.Cancelled:
       return "Contract Cancelled";
+    case ContractStatus.RequestExpired:
+      return "Request Expired";
     default:
       console.log(status);
       return "Unknown Status";

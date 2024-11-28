@@ -21,10 +21,11 @@ export function collateralForStatus(status: ContractStatus, initial: number, act
     case ContractStatus.DisputeLenderStarted:
     case ContractStatus.DisputeBorrowerResolved:
     case ContractStatus.DisputeLenderResolved:
+    case ContractStatus.Cancelled:
+    case ContractStatus.RequestExpired:
+    default:
       collateral_btc = actual;
       break;
-    case ContractStatus.Cancelled:
-      collateral_btc = 0;
   }
   return collateral_btc;
 }

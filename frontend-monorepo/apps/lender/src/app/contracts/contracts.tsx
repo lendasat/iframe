@@ -321,6 +321,8 @@ const actionFromStatus = (status: ContractStatus) => {
       return "Details";
     case ContractStatus.DisputeLenderResolved:
       return "Details";
+    case ContractStatus.RequestExpired:
+      return "Details";
     default:
       return "Details";
   }
