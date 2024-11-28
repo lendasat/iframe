@@ -62,7 +62,7 @@ const menuItems = [
         visible: true,
       },
       {
-        label: "My Loans",
+        label: "My Contracts",
         path: "/my-contracts",
         icon: IoWalletOutline,
         target: "_self",
