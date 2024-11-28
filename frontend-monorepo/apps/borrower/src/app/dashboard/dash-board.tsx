@@ -77,7 +77,7 @@ function DashBoard() {
               Icon={IoWalletOutline}
               url="/my-contracts"
               iconStyle="bg-green-100"
-              label="My Loans"
+              label="My Contracts"
               target={"_self"}
             />
             <QuickLinks
