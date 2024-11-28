@@ -6,6 +6,8 @@ use serde::Deserialize;
 use serde::Deserializer;
 use serde::Serialize;
 use serde_json::Value;
+use serde_with::serde_as;
+use serde_with::DisplayFromStr;
 use std::fmt;
 use time::OffsetDateTime;
 use uuid::Uuid;
@@ -125,6 +127,8 @@ pub enum Transaction {
     #[serde(rename = "CARD_AUTHORIZATION_REFUND")]
     CardAuthorizationRefund(TransactionData),
     #[serde(rename = "DECLINE")]
+    /// This sucks! When fetching the transaction data the decline data is a different format
+    /// than when receiving it via the webhook, because, of course it is 🙈
     DeclineData(DeclineData),
 }
 
@@ -135,8 +139,8 @@ pub enum MoonMessage {
     CardTransaction(TransactionData),
     #[serde(rename = "CARD_AUTHORIZATION_REFUND")]
     CardAuthorizationRefund(TransactionData),
-    #[serde(rename = "DECLINE")]
-    DeclineData(DeclineData),
+    #[serde(rename = "CARD_DECLINE")]
+    DeclineData(MoonMessageDeclineData),
     #[serde(rename = "MOON_CREDIT_FUNDS_CREDITED")]
     MoonInvoicePayment(InvoicePayment),
     #[serde(untagged)]
@@ -144,11 +148,27 @@ pub enum MoonMessage {
 }
 
 #[derive(Debug, Deserialize, PartialEq, Clone)]
+pub struct MoonMessageDeclineData {
+    pub id: i32,
+    pub card_public_id: Uuid,
+    pub created_at: String,
+    pub merchant: String,
+    pub customer_friendly_description: String,
+    #[serde(with = "rust_decimal::serde::float")]
+    pub amount: Decimal,
+}
+
+#[serde_as]
+#[derive(Debug, Deserialize, PartialEq, Clone)]
 pub struct DeclineData {
+    #[serde_as(as = "DisplayFromStr")]
+    pub id: i32,
     /// The date we receive has the following format: 2024-11-14 10:26:24
     pub datetime: String,
     pub merchant: String,
     pub customer_friendly_description: String,
+    pub card_public_id: Uuid,
+    pub card_id: Uuid,
     #[serde(with = "rust_decimal::serde::str")]
     pub amount: Decimal,
     pub card: TransactionCard,
@@ -202,8 +222,8 @@ pub struct TransactionDataWrapper {
 
 #[derive(Debug, Deserialize, PartialEq, Clone)]
 pub struct TransactionCard {
-    pub public_id: Uuid,
     pub name: String,
+    pub public_id: Uuid,
     #[serde(rename = "type")]
     pub card_type: String,
 }
@@ -627,6 +647,7 @@ mod tests {
     use std::env;
     use std::fs;
     use std::path::Path;
+    use std::str::FromStr;
 
     #[derive(Debug, Serialize)]
     #[serde(rename_all = "camelCase")]
@@ -1005,7 +1026,7 @@ mod tests {
 
     #[test]
     pub fn deserialize_transaction_response() {
-        let path = Path::new("tests/json_files/card_transactions.json");
+        let path = Path::new("tests/json_files/card_transactions/card_transactions.json");
         let file_contents =
             fs::read_to_string(path).unwrap_or_else(|_| panic!("Unable to read file: {:?}", path));
 
@@ -1019,9 +1040,59 @@ mod tests {
     }
 
     #[test]
+    pub fn deserialize_card_decline_moon_message() {
+        let path = Path::new("tests/json_files/moon_messages/moon_message_card_decline.json");
+        let file_contents =
+            fs::read_to_string(path).unwrap_or_else(|_| panic!("Unable to read file: {:?}", path));
+
+        let result: Result<MoonMessage, _> = serde_json::from_str(&file_contents);
+        assert!(
+            result.is_ok(),
+            "Failed to deserialize JSON file: {:?}. Error: {:?}",
+            path,
+            result.unwrap_err()
+        );
+
+        let message = result.unwrap();
+        if let MoonMessage::DeclineData(m) = message {
+            assert_eq!(
+                m.card_public_id,
+                Uuid::from_str("60274406-e8c5-491c-a793-93e1e20cd699").unwrap()
+            );
+        } else {
+            unreachable!("Could not deserialize message which was");
+        }
+    }
+
+    #[test]
+    pub fn deserialize_normal_card_moon_message() {
+        let path = Path::new("tests/json_files/moon_messages/moon_message4.json");
+        let file_contents =
+            fs::read_to_string(path).unwrap_or_else(|_| panic!("Unable to read file: {:?}", path));
+
+        let result: Result<MoonMessage, _> = serde_json::from_str(&file_contents);
+        assert!(
+            result.is_ok(),
+            "Failed to deserialize JSON file: {:?}. Error: {:?}",
+            path,
+            result.unwrap_err()
+        );
+
+        let message = result.unwrap();
+        if let MoonMessage::CardTransaction(m) = message {
+            assert_eq!(
+                m.card.public_id,
+                Uuid::from_str("0fabfd7e-f4ff-41db-ae4e-4a28bcc35a5d").unwrap()
+            );
+        } else {
+            unreachable!("Could not deserialize message which was");
+        }
+    }
+
+    #[test]
     fn test_deserialize_json_files() {
         // Specify the directory containing your JSON files
-        let json_dir = Path::new("tests/json_files");
+        let json_dir = Path::new("tests/json_files/moon_messages");
 
         // Ensure the directory exists
         assert!(json_dir.is_dir(), "Test JSON directory does not exist");
@@ -1037,7 +1108,7 @@ mod tests {
             }
 
             // Read file contents
-            let file_contents = fs::read_to_string(&path)
+            let file_contents = fs::read_to_string(dbg!(&path))
                 .unwrap_or_else(|_| panic!("Unable to read file: {:?}", path));
 
             // Attempt to deserialize
@@ -1050,6 +1121,11 @@ mod tests {
                 path,
                 result.unwrap_err()
             );
+
+            let message = result.unwrap();
+            if let MoonMessage::Unknown(_) = message {
+                unreachable!("Could not deserialize message which was {:?}", message);
+            }
         }
     }
 }

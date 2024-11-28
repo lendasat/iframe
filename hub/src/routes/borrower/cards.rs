@@ -1,3 +1,4 @@
+use crate::db;
 use crate::model::User;
 use crate::moon;
 use crate::routes::borrower::auth::jwt_auth;
@@ -320,21 +321,9 @@ pub async fn post_webhook(
             if let Ok(moon_message) =
                 serde_json::from_value::<pay_with_moon::MoonMessage>(payload.clone())
             {
-                tracing::info!(?moon_message, "Received new message from moon notification");
-                // TODO: we should persist this, for now, when we need this info, we fetch it again
-                // from moon
-                match moon_message {
-                    pay_with_moon::MoonMessage::CardTransaction(_) => {}
-                    pay_with_moon::MoonMessage::CardAuthorizationRefund(_) => {}
-                    pay_with_moon::MoonMessage::DeclineData(_) => {}
-                    pay_with_moon::MoonMessage::MoonInvoicePayment(payment) => {
-                        if let Err(error) = data.moon.handle_paid_invoice(payment.clone()).await {
-                            tracing::error!("Failed updating moon invoice {error:#}");
-                        }
-                    }
-                    pay_with_moon::MoonMessage::Unknown(json_data) => {
-                        tracing::warn!(?json_data, "Received unknown moon webhook message");
-                    }
+                tracing::debug!(?moon_message, "Received new message from moon notification");
+                if let Err(err) = db::moon::insert_moon_transactions(&data.db, moon_message).await {
+                    tracing::error!("Failed at persisting moon message {err:#}");
                 }
             } else {
                 tracing::warn!("Received unknown webhook data");

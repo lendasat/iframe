@@ -1,0 +1,39 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO moon_transaction_data (\n                transaction_id,\n                card_public_id,\n                transaction_status,\n                datetime,\n                merchant,\n                amount,\n                ledger_currency,\n                amount_fees_in_ledger_currency,\n                amount_in_transaction_currency,\n                transaction_currency,\n                amount_fees_in_transaction_currency\n            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)\n            ON CONFLICT (transaction_id) DO UPDATE\n            SET\n                card_public_id = EXCLUDED.card_public_id,\n                transaction_status = EXCLUDED.transaction_status,\n                datetime = EXCLUDED.datetime,\n                merchant = EXCLUDED.merchant,\n                amount = EXCLUDED.amount,\n                ledger_currency = EXCLUDED.ledger_currency,\n                amount_fees_in_ledger_currency = EXCLUDED.amount_fees_in_ledger_currency,\n                amount_in_transaction_currency = EXCLUDED.amount_in_transaction_currency,\n                transaction_currency = EXCLUDED.transaction_currency,\n                amount_fees_in_transaction_currency = EXCLUDED.amount_fees_in_transaction_currency,\n                updated_at = NOW()\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Bpchar",
+        {
+          "Custom": {
+            "name": "moon_transaction_status",
+            "kind": {
+              "Enum": [
+                "Authorization",
+                "Reversal",
+                "Clearing",
+                "Refund",
+                "Pending",
+                "Settled",
+                "Unknown"
+              ]
+            }
+          }
+        },
+        "Text",
+        "Text",
+        "Numeric",
+        "Text",
+        "Numeric",
+        "Numeric",
+        "Text",
+        "Numeric"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f65e629c41bea7e09ae118bbea87b55d089e0f4665cf75029a2051b1ed835bfe"
+}

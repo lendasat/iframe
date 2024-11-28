@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT \n            message_id,\n            datetime,\n            merchant,\n            customer_friendly_description,\n            amount,\n            card_public_id\n        FROM moon_transaction_decline_data\n        WHERE card_public_id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "message_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "datetime",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "merchant",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "customer_friendly_description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "amount",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 5,
+        "name": "card_public_id",
+        "type_info": "Bpchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bpchar"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "ca53e5bc31dbecb3d996e2f8ab92726f4fa5e7cb95d8ea1625c057c6a0f7fc8f"
+}

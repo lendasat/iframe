@@ -1,5 +1,6 @@
 {
   "data": {
+    "id": "01936639-547e-4e2c-83b5-a5ae06ebd0c0",
     "amount": 75,
     "amountFeesInLedgerCurrency": 1,
     "amountFeesInTransactionCurrency": 1,
@@ -33,7 +34,6 @@
         "type": "TRANSACTION_FEE"
       }
     ],
-    "id": "01936639-547e-4e2c-83b5-a5ae06ebd0c0",
     "ledgerCurrency": "USD",
     "ledger_currency": "USD",
     "merchant": "PAYPAL *1PASSWORD        4165461397   CA",
