@@ -15,7 +15,7 @@ export function LoanOfferComponent({ loanOffer, onRequest }: LoanOfferProps) {
   const [loadingState, setLoadingState] = useState<boolean>(false);
   return (
     <Box className="pl-5 pr-6 md:pl-7 md:pr-8 py-3 border-b border-black/5 flex md:gap-2 items-center">
-      <Grid className="grid-cols-4 md:grid-cols-6 xl:grid-cols-8 items-center grow text-font">
+      <Grid className="grid-cols-4 md:grid-cols-6 xl:grid-cols-7 items-center grow text-font">
         <Box className="col-span-1 xl:col-span-2">
           <Lender {...loanOffer.lender} />
         </Box>
@@ -48,28 +48,6 @@ export function LoanOfferComponent({ loanOffer, onRequest }: LoanOfferProps) {
           <Text size={"1"} weight={"medium"}>
             <Badge color="purple" size={"2"}>{coin ? StableCoinHelper.print(coin) : "unknown"}</Badge>
           </Text>
-        </Box>
-        <Box className="hidden xl:flex justify-center">
-          <Button
-            size={"3"}
-            loading={loadingState}
-            variant="solid"
-            className="bg-btn text-white"
-            onClick={() => {
-              setLoadingState(true);
-              setTimeout(() => {
-                setLoadingState(false);
-                onRequest(loanOffer);
-              }, 1000);
-            }}
-          >
-            <Text
-              size={"2"}
-              className="font-semibold"
-            >
-              Request Loan
-            </Text>
-          </Button>
         </Box>
       </Grid>
 
@@ -162,12 +140,6 @@ export function LoanOfferComponent({ loanOffer, onRequest }: LoanOfferProps) {
                   }, 1000);
                 }}
               >
-                <Text
-                  size={"2"}
-                  className="font-semibold"
-                >
-                  Request Loan
-                </Text>
               </Button>
             </Flex>
           </Box>
