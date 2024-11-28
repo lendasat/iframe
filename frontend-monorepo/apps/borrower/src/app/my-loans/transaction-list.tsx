@@ -31,13 +31,13 @@ function TransactionLink({ transaction, loanAssetChain }: TransactionLinkProps) 
   if (transactionType === TransactionType.PrincipalGiven || transactionType === TransactionType.PrincipalRepaid) {
     switch (loanAssetChain) {
       case LoanAssetChain.Ethereum:
-        urlPrefix = "https://etherscan.io/tx/";
+        urlPrefix = "https://etherscan.io/tx";
         break;
       case LoanAssetChain.Polygon:
-        urlPrefix = "https://polygonscan.com/tx/";
+        urlPrefix = "https://polygonscan.com/tx";
         break;
       case LoanAssetChain.Starknet:
-        urlPrefix = "https://starkscan.co/tx/";
+        urlPrefix = "https://starkscan.co/tx";
         break;
       default:
         urlPrefix = "";
@@ -66,7 +66,7 @@ function TransactionLink({ transaction, loanAssetChain }: TransactionLinkProps) 
       {urlPrefix
         ? (
           <a
-            href={`${urlPrefix}/tx/${transaction.txid}`}
+            href={`${urlPrefix}/${transaction.txid}`}
             target={"_blank"}
             rel={"noreferrer"}
             style={{ marginLeft: "8px" }}
