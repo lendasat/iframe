@@ -321,6 +321,24 @@ pub enum LiquidationStatus {
     FirstMarginCall,
 }
 
+/// A record of all the one-time email messages sent for a particular contract.
+///
+/// We use this to avoid sending the same email message more than once.
+#[derive(Debug)]
+pub struct ContractEmails {
+    pub contract_id: String,
+    /// Whether the loan-request email was sent to the lender.
+    pub loan_request_sent: bool,
+    /// Whether the loan-request-approved email was sent to the borrower.
+    pub loan_request_approved_sent: bool,
+    /// Whether the loan-request-rejected email was sent to the borrower.
+    pub loan_request_rejected_sent: bool,
+    /// Whether the collateral-funded email was sent to the lender.
+    pub collateral_funded_sent: bool,
+    /// Whether the loan-paid-out email was sent to the borrower.
+    pub loan_paid_out_sent: bool,
+}
+
 pub mod db {
     use rust_decimal::Decimal;
     use serde::Deserialize;
@@ -407,6 +425,16 @@ pub mod db {
         pub end_customer_id: String,
         pub contract_id: String,
         pub borrower_id: String,
+    }
+
+    #[derive(Debug, FromRow)]
+    pub struct ContractEmails {
+        pub contract_id: String,
+        pub loan_request_sent: bool,
+        pub loan_request_approved_sent: bool,
+        pub loan_request_rejected_sent: bool,
+        pub collateral_funded_sent: bool,
+        pub loan_paid_out_sent: bool,
     }
 }
 
@@ -593,6 +621,19 @@ impl From<LiquidationStatus> for db::LiquidationStatus {
             LiquidationStatus::Liquidated => Self::Liquidated,
             LiquidationStatus::SecondMarginCall => Self::SecondMarginCall,
             LiquidationStatus::FirstMarginCall => Self::FirstMarginCall,
+        }
+    }
+}
+
+impl From<db::ContractEmails> for ContractEmails {
+    fn from(value: db::ContractEmails) -> Self {
+        Self {
+            contract_id: value.contract_id,
+            loan_request_sent: value.loan_request_sent,
+            loan_request_approved_sent: value.loan_request_approved_sent,
+            loan_request_rejected_sent: value.loan_request_rejected_sent,
+            collateral_funded_sent: value.collateral_funded_sent,
+            loan_paid_out_sent: value.loan_paid_out_sent,
         }
     }
 }

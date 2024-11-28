@@ -508,8 +508,21 @@ pub async fn post_contract_request(
         let email = Email::new(data.config.clone());
 
         // We don't want to fail this upwards because the contract request has been sent already.
-        if let Err(err) = email.send_new_loan_request(lender, loan_url.as_str()).await {
-            tracing::error!("Failed notifying lender {err:#}");
+        if let Err(e) = async {
+            email
+                .send_new_loan_request(lender, loan_url.as_str())
+                .await
+                .context("Failed to send loan-request email")?;
+
+            db::contract_emails::mark_loan_request_as_sent(&data.db, &contract.id)
+                .await
+                .context("Failed to mark loan-request email as sent")?;
+
+            anyhow::Ok(())
+        }
+        .await
+        {
+            tracing::error!("Failed at notifying lender about loan request: {e:#}");
         }
 
         anyhow::Ok(contract)

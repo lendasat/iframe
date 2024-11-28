@@ -1,5 +1,11 @@
+use anyhow::Result;
+use sqlx::postgres::PgPoolOptions;
+use sqlx::Pool;
+use sqlx::Postgres;
+
 pub mod borrower_features;
 pub mod borrowers;
+pub mod contract_emails;
 pub mod contracts;
 pub mod dispute;
 pub mod invite_code;
@@ -11,11 +17,6 @@ pub mod transactions;
 pub mod user_logins;
 pub mod wallet_backups;
 pub mod wallet_index;
-
-use anyhow::Result;
-use sqlx::postgres::PgPoolOptions;
-use sqlx::Pool;
-use sqlx::Postgres;
 
 pub async fn connect_to_db(db_connection: &str) -> Result<Pool<Postgres>> {
     let pool = PgPoolOptions::new()

@@ -409,13 +409,24 @@ pub async fn put_approve_contract(
             contract.id
         );
         let email = Email::new(data.config.clone());
+
         // We don't want to fail this upwards because the contract request has already been
         // approved.
-        if let Err(err) = email
-            .send_loan_request_approved(borrower, loan_url.as_str())
-            .await
+        if let Err(e) = async {
+            email
+                .send_loan_request_approved(borrower, loan_url.as_str())
+                .await
+                .context("Failed to send loan-request-approved email")?;
+
+            db::contract_emails::mark_loan_request_approved_as_sent(&data.db, &contract.id)
+                .await
+                .context("Failed to mark loan-request-approved email as sent")?;
+
+            anyhow::Ok(())
+        }
+        .await
         {
-            tracing::error!("Failed notifying lender {err:#}");
+            tracing::error!("Failed at notifying borrower about loan request approval: {e:#}");
         }
 
         db_tx.commit().await.context("Failed writing to db")?;
@@ -478,7 +489,7 @@ pub async fn put_principal_given(
 
     // We don't want to fail this upwards because the contract request has been already
     // approved.
-    if let Err(err) = async {
+    if let Err(e) = async {
         let loan_url = format!(
             "{}/my-contracts/{}",
             data.config.borrower_frontend_origin.to_owned(),
@@ -489,14 +500,21 @@ pub async fn put_principal_given(
             .context("Borrower not found")?;
 
         let email = Email::new(data.config.clone());
+
         email
             .send_loan_paid_out(borrower, loan_url.as_str())
-            .await?;
+            .await
+            .context("Failed to send loan-paid-out email")?;
+
+        db::contract_emails::mark_loan_paid_out_as_sent(&data.db, &contract.id)
+            .await
+            .context("Failed to mark loan-paid-out email as sent")?;
+
         anyhow::Ok(())
     }
     .await
     {
-        tracing::error!("Failed notifying borrower {err:#}");
+        tracing::error!("Failed at notifying borrower about loan payout: {e:#}");
     }
 
     let offer = db::loan_offers::loan_by_id(&data.db, &contract.loan_id)
@@ -611,8 +629,14 @@ pub async fn delete_reject_contract(
 
         let email = Email::new(data.config.clone());
         email
-            .send_loan_request_approved(borrower, loan_url.as_str())
-            .await?;
+            .send_loan_request_rejected(borrower, loan_url.as_str())
+            .await
+            .context("Failed to send loan-request-approved email")?;
+
+        db::contract_emails::mark_loan_request_rejected_as_sent(&data.db, &contract.id)
+            .await
+            .context("Failed to mark loan-request-approved email as sent")?;
+
         anyhow::Ok(())
     }
     .await

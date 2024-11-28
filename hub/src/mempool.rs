@@ -1,7 +1,6 @@
 use crate::config::Config;
 use crate::db;
 use crate::email::Email;
-use crate::model::ContractStatus;
 use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
@@ -324,128 +323,6 @@ impl xtra::Actor for Actor {
     }
 }
 
-/// Internal message to tell the [`Actor`] to update the state of a tracked contract.
-#[derive(Debug)]
-struct ContractUpdate {
-    /// Set of transactions which may provide an update on the state of one or several of our
-    /// tracked contracts.
-    transactions: Vec<Transaction>,
-}
-
-impl xtra::Handler<ContractUpdate> for Actor {
-    type Return = ();
-
-    async fn handle(&mut self, msg: ContractUpdate, _: &mut xtra::Context<Self>) -> Self::Return {
-        tracing::debug!(update = ?msg, "Handling contract update");
-
-        for tx in msg.transactions {
-            for (index, vout) in tx.vout.iter().enumerate() {
-                let contract = match self
-                    .tracked_contracts
-                    .get_mut(vout.scriptpubkey_address.assume_checked_ref())
-                {
-                    Some(contract) => contract,
-                    // Irrelevant output.
-                    None => continue,
-                };
-
-                let outpoint = OutPoint {
-                    txid: tx.txid,
-                    vout: index as u32,
-                };
-
-                let state = match tx.status.block_height {
-                    Some(tx_block_height) => {
-                        let confirmations =
-                            calculate_confirmations(self.block_height, tx_block_height);
-                        if confirmations >= MIN_CONFIRMATIONS {
-                            ConfirmationState::Confirmed
-                        } else {
-                            ConfirmationState::OnChain {
-                                height: tx_block_height,
-                            }
-                        }
-                    }
-                    None => ConfirmationState::Seen,
-                };
-
-                let collateral_output = CollateralOutput {
-                    outpoint,
-                    amount_sats: vout.value,
-                    state,
-                };
-
-                // We either insert or overwrite the collateral output. Since this is based on the
-                // latest contract update, overwriting should be desirable.
-                contract
-                    .collateral_outputs
-                    .insert(outpoint, collateral_output);
-
-                let confirmed_collateral_sats = confirmed_collateral_sats(
-                    &contract
-                        .collateral_outputs
-                        .values()
-                        .cloned()
-                        .collect::<Vec<_>>(),
-                );
-
-                if let Err(err) = db::transactions::insert_funding_txid(
-                    &self.db,
-                    &contract.contract_id,
-                    &outpoint.txid,
-                )
-                .await
-                {
-                    tracing::error!("Failed at inserting funding tx id: {err:?}");
-                }
-
-                match db::contracts::update_collateral(
-                    &self.db,
-                    &contract.contract_id,
-                    confirmed_collateral_sats,
-                )
-                .await
-                {
-                    Ok(contract) => {
-                        if contract.status == ContractStatus::CollateralConfirmed {
-                            // We don't want to fail this upwards because the contract status has
-                            // been udpated already.
-                            if let Err(err) = async {
-                                let lender = db::lenders::get_user_by_id(
-                                    &self.db,
-                                    contract.lender_id.as_str(),
-                                )
-                                .await?
-                                .context("Lender not found")?;
-                                let email = Email::new(self.config.clone());
-                                let loan_url = format!(
-                                    "{}/my-contracts/{}",
-                                    self.config.lender_frontend_origin.clone(),
-                                    contract.id
-                                );
-
-                                email
-                                    .send_loan_collateralized(lender, loan_url.as_str())
-                                    .await?;
-                                Ok::<(), anyhow::Error>(())
-                            }
-                            .await
-                            {
-                                tracing::error!(
-                                    "Failed at notifying lender about funded contract {err:?}"
-                                );
-                            }
-                        }
-                    }
-                    Err(e) => {
-                        tracing::error!(?contract, "Failed to update collateral: {e:#}");
-                    }
-                }
-            }
-        }
-    }
-}
-
 /// Message to tell the [`Actor`] to start tracking a collateral contract until it is funded.
 #[derive(Debug)]
 pub struct TrackContractFunding {
@@ -502,32 +379,19 @@ impl xtra::Handler<TrackContractFunding> for Actor {
             }
         }
 
-        // Ideally we would only update when we learn something new, but alas.
-        let contract =
+        let (contract, is_newly_confirmed) =
             db::contracts::update_collateral(&self.db, contract_id, confirmed_collateral_sats)
                 .await?;
 
-        if contract.status == ContractStatus::CollateralConfirmed {
-            // We don't want to fail this upwards because the contract status has been updated
-            // already.
-            if let Err(err) = {
-                let lender = db::lenders::get_user_by_id(&self.db, contract.lender_id.as_str())
-                    .await?
-                    .context("Lender not found")?;
-                let email = Email::new(self.config.clone());
-                let loan_url = format!(
-                    "{}/my-contracts/{}",
-                    self.config.lender_frontend_origin.clone(),
-                    contract.id
-                );
-
-                email
-                    .send_loan_collateralized(lender, loan_url.as_str())
-                    .await?;
-                Ok::<(), anyhow::Error>(())
-            } {
-                tracing::error!("Failed at notifying lender about funded contract: {err:?}");
-            }
+        if is_newly_confirmed {
+            send_loan_collateralized_email_to_lender(
+                &self.db,
+                self.config.clone(),
+                contract_id,
+                &contract.lender_id,
+            )
+            .await
+            .context("Failed to send loan collateralized email to lender")?;
         }
 
         Ok(())
@@ -661,15 +525,7 @@ impl xtra::Handler<NewBlockHeight> for Actor {
                 }
             }
 
-            let confirmed_collateral_sats_before = confirmed_collateral_sats(
-                &contract
-                    .collateral_outputs
-                    .values()
-                    .cloned()
-                    .collect::<Vec<_>>(),
-            );
-
-            let confirmed_collateral_sats_after = confirmed_collateral_sats(
+            let updated_confirmed_collateral_sats = confirmed_collateral_sats(
                 &updated_collateral_outputs
                     .values()
                     .cloned()
@@ -679,49 +535,30 @@ impl xtra::Handler<NewBlockHeight> for Actor {
             // Update actor state.
             contract.collateral_outputs = updated_collateral_outputs;
 
-            // If the total confirmed collateral has changed, we update it in the database.
-            if confirmed_collateral_sats_after != confirmed_collateral_sats_before {
-                match db::contracts::update_collateral(
+            let (contract, is_newly_confirmed) = match db::contracts::update_collateral(
+                &self.db,
+                &contract.contract_id,
+                updated_confirmed_collateral_sats,
+            )
+            .await
+            {
+                Ok(res) => res,
+                Err(e) => {
+                    tracing::error!(?contract, "Failed to update collateral: {e:#}");
+                    continue;
+                }
+            };
+
+            if is_newly_confirmed {
+                if let Err(err) = send_loan_collateralized_email_to_lender(
                     &self.db,
-                    &contract.contract_id,
-                    confirmed_collateral_sats_after,
+                    self.config.clone(),
+                    &contract.id,
+                    &contract.lender_id,
                 )
                 .await
                 {
-                    Ok(contract) => {
-                        if contract.status == ContractStatus::CollateralConfirmed {
-                            // We don't want to fail this upwards because the contract status has
-                            // been udpated already.
-                            if let Err(err) = async {
-                                let lender = db::lenders::get_user_by_id(
-                                    &self.db,
-                                    contract.lender_id.as_str(),
-                                )
-                                .await?
-                                .context("Lender not found")?;
-                                let email = Email::new(self.config.clone());
-                                let loan_url = format!(
-                                    "{}/my-contracts/{}",
-                                    self.config.lender_frontend_origin.clone(),
-                                    contract.id
-                                );
-
-                                email
-                                    .send_loan_collateralized(lender, loan_url.as_str())
-                                    .await?;
-                                Ok::<(), anyhow::Error>(())
-                            }
-                            .await
-                            {
-                                tracing::error!(
-                                    "Failed at notifying lender about funded contract {err:?}"
-                                );
-                            }
-                        }
-                    }
-                    Err(e) => {
-                        tracing::error!(?contract, "Failed to update collateral: {e:#}");
-                    }
+                    tracing::error!("Failed at notifying lender about funded contract {err:?}");
                 }
             }
         }
@@ -975,6 +812,40 @@ pub enum Action {
 #[serde(rename_all = "lowercase")]
 pub enum Data {
     Blocks,
+}
+
+async fn send_loan_collateralized_email_to_lender(
+    db: &Pool<Postgres>,
+    config: Config,
+    contract_id: &str,
+    lender_id: &str,
+) -> Result<()> {
+    let contract_emails = db::contract_emails::load_contract_emails(db, contract_id)
+        .await
+        .context("Failed to check if collateral-funded email was sent")?;
+
+    if !contract_emails.collateral_funded_sent {
+        let lender = db::lenders::get_user_by_id(db, lender_id)
+            .await?
+            .context("Cannot send collateral-funded email to unknown lender")?;
+
+        let loan_url = format!(
+            "{}/my-contracts/{}",
+            config.lender_frontend_origin, contract_id
+        );
+        let email = Email::new(config);
+
+        email
+            .send_loan_collateralized(lender, loan_url.as_str())
+            .await
+            .context("Failed to send collateral-funded email")?;
+
+        db::contract_emails::mark_collateral_funded_as_sent(db, contract_id)
+            .await
+            .context("Failed to mark collateral-funded email as sent")?;
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]

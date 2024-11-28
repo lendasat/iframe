@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO contract_emails (\n            contract_id\n        ) VALUES ($1)\n        RETURNING\n            contract_id,\n            loan_request_sent,\n            loan_request_approved_sent,\n            loan_request_rejected_sent,\n            collateral_funded_sent,\n            loan_paid_out_sent\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "contract_id",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "loan_request_sent",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 2,
+        "name": "loan_request_approved_sent",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 3,
+        "name": "loan_request_rejected_sent",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 4,
+        "name": "collateral_funded_sent",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 5,
+        "name": "loan_paid_out_sent",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bpchar"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "3684a4812bbdff2a88fd44d2291a22c90427b134b40eccb0a7ab72f590fb14c5"
+}

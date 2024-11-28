@@ -293,7 +293,8 @@ impl Manager {
 
         email
             .send_moon_card_ready(borrower, card_details_url.as_str())
-            .await?;
+            .await
+            .context("Failed to send moon-card-ready email")?;
 
         Ok(())
     }
