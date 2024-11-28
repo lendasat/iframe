@@ -15,7 +15,6 @@ use axum::routing::post;
 use axum::Extension;
 use axum::Json;
 use axum::Router;
-use pay_with_moon::InvoicePaymentType;
 use rust_decimal::Decimal;
 use serde::Serialize;
 use serde_json::Value;
@@ -277,23 +276,25 @@ pub async fn post_webhook(
                 tracing::debug!(?payload, "Received new webhook data");
             }
 
-            if let Ok(transaction) =
-                serde_json::from_value::<pay_with_moon::Transaction>(payload.clone())
+            if let Ok(moon_message) =
+                serde_json::from_value::<pay_with_moon::MoonMessage>(payload.clone())
             {
-                tracing::info!(?transaction, "Received new card transaction notification");
+                tracing::info!(?moon_message, "Received new message from moon notification");
                 // TODO: we should persist this, for now, when we need this info, we fetch it again
                 // from moon
-            } else if let Ok(invoice) =
-                serde_json::from_value::<pay_with_moon::InvoicePaymentWrapper>(payload.clone())
-            {
-                tracing::info!(?invoice, "Received payment notification");
-
-                if let InvoicePaymentType::MoonCreditFundsCredited = invoice.kind {
-                    if let Err(error) = data.moon.handle_paid_invoice(invoice.data.clone()).await {
-                        tracing::error!("Failed updating moon invoice {error:#}");
+                match moon_message {
+                    pay_with_moon::MoonMessage::CardTransaction(_) => {}
+                    pay_with_moon::MoonMessage::CardAuthorizationRefund(_) => {}
+                    pay_with_moon::MoonMessage::DeclineData(_) => {}
+                    pay_with_moon::MoonMessage::MoonInvoicePayment(payment) => {
+                        if let Err(error) = data.moon.handle_paid_invoice(payment.clone()).await {
+                            tracing::error!("Failed updating moon invoice {error:#}");
+                        }
+                    }
+                    pay_with_moon::MoonMessage::Unknown(json_data) => {
+                        tracing::warn!(?json_data, "Received unknown moon webhook message");
                     }
                 }
-                tracing::warn!(?invoice, "Received payment notification with unknown type");
             } else {
                 tracing::warn!("Received unknown webhook data");
             };

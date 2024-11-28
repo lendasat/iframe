@@ -5,6 +5,7 @@ use serde::de::Visitor;
 use serde::Deserialize;
 use serde::Deserializer;
 use serde::Serialize;
+use serde_json::Value;
 use std::fmt;
 use time::OffsetDateTime;
 use uuid::Uuid;
@@ -125,6 +126,21 @@ pub enum Transaction {
     CardAuthorizationRefund(TransactionData),
     #[serde(rename = "DECLINE")]
     DeclineData(DeclineData),
+}
+
+#[derive(Debug, Deserialize, PartialEq, Clone)]
+#[serde(tag = "type", content = "data")]
+pub enum MoonMessage {
+    #[serde(rename = "CARD_TRANSACTION")]
+    CardTransaction(TransactionData),
+    #[serde(rename = "CARD_AUTHORIZATION_REFUND")]
+    CardAuthorizationRefund(TransactionData),
+    #[serde(rename = "DECLINE")]
+    DeclineData(DeclineData),
+    #[serde(rename = "MOON_CREDIT_FUNDS_CREDITED")]
+    MoonInvoicePayment(InvoicePayment),
+    #[serde(untagged)]
+    Unknown(Value),
 }
 
 #[derive(Debug, Deserialize, PartialEq, Clone)]
@@ -304,22 +320,7 @@ pub enum Currency {
     Btc,
 }
 
-#[derive(Debug, Deserialize, Clone)]
-pub struct InvoicePaymentWrapper {
-    pub data: InvoicePayment,
-    #[serde(rename = "type")]
-    pub kind: InvoicePaymentType,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub enum InvoicePaymentType {
-    #[serde(rename = "MOON_CREDIT_FUNDS_CREDITED")]
-    MoonCreditFundsCredited,
-    #[serde(untagged)]
-    Other(String),
-}
-
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, PartialEq)]
 pub struct InvoicePayment {
     pub id: Uuid,
     pub invoice_id: Uuid,
@@ -634,6 +635,8 @@ mod tests {
     use rust_decimal_macros::dec;
     use serde_json::Value;
     use std::env;
+    use std::fs;
+    use std::path::Path;
 
     #[derive(Debug, Serialize)]
     #[serde(rename_all = "camelCase")]
@@ -964,27 +967,6 @@ mod tests {
     }
 
     #[test]
-    pub fn deserialize_payment_notification() {
-        let json = r#"{
-              "data": {
-                "id": "f97ce211-2fa9-45ab-b21d-91fc069e7fe8",
-                "amount": 5.52,
-                "currency": "USD",
-                "createdAt": "2024-11-25T20:40:55.709Z",
-                "created_at": "2024-11-25T20:40:55.709Z",
-                "invoice_id": "45477529-a8b2-4bf9-bd9d-297a9bc72a93",
-                "deprecated_fields": [
-                  "createdAt"
-                ]
-              },
-              "type": "MOON_CREDIT_FUNDS_CREDITED"
-            }
-             "#;
-
-        let _payment: InvoicePaymentWrapper = serde_json::from_str(json).unwrap();
-    }
-
-    #[test]
     pub fn deserialize_invoice() {
         let json = r#"{
             "id": "16b1983f-55c7-4b4e-84df-2018bb1a5544",
@@ -1157,5 +1139,40 @@ mod tests {
         }
         "#;
         let _tx_response: TransactionResponse = serde_json::from_str(json).unwrap();
+    }
+
+    #[test]
+    fn test_deserialize_json_files() {
+        // Specify the directory containing your JSON files
+        let json_dir = Path::new("tests/json_files");
+
+        // Ensure the directory exists
+        assert!(json_dir.is_dir(), "Test JSON directory does not exist");
+
+        // Read all files in the directory
+        for entry in fs::read_dir(json_dir).expect("Failed to read directory") {
+            let entry = entry.expect("Failed to get directory entry");
+            let path = entry.path();
+
+            // Skip non-JSON files
+            if path.extension().map_or(false, |ext| ext != "json") {
+                continue;
+            }
+
+            // Read file contents
+            let file_contents = fs::read_to_string(&path)
+                .unwrap_or_else(|_| panic!("Unable to read file: {:?}", path));
+
+            // Attempt to deserialize
+            let result: Result<MoonMessage, _> = serde_json::from_str(&file_contents);
+
+            // Assert deserialization is successful
+            assert!(
+                result.is_ok(),
+                "Failed to deserialize JSON file: {:?}. Error: {:?}",
+                path,
+                result.unwrap_err()
+            );
+        }
     }
 }

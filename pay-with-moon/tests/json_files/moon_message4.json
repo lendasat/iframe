@@ -1,0 +1,48 @@
+{
+  "data": {
+    "amount": 144.14615334,
+    "amountFeesInLedgerCurrency": 1.4414615334,
+    "amountFeesInTransactionCurrency": 1.3592,
+    "amountInTransactionCurrency": 135.92,
+    "amount_fees_in_ledger_currency": 1.4414615334,
+    "amount_fees_in_transaction_currency": 1.3592,
+    "amount_in_transaction_currency": 135.92,
+    "card": {
+      "name": "My Moon 1X Visa® Card",
+      "public_id": "0fabfd7e-f4ff-41db-ae4e-4a28bcc35a5d",
+      "type": "Moon Reloadable Prepaid Visa® Card"
+    },
+    "datetime": "2024-11-27 19:56:40",
+    "deprecated_fields": [
+      "transactionId",
+      "transactionStatus",
+      "ledgerCurrency",
+      "amountFeesInLedgerCurrency",
+      "amountInTransactionCurrency",
+      "transactionCurrency",
+      "amountFeesInTransactionCurrency"
+    ],
+    "fees": [
+      {
+        "amount": 1.4414615334,
+        "deprecated_fields": [
+          "feeDescription"
+        ],
+        "feeDescription": "Standard Transaction Fee",
+        "fee_description": "Standard Transaction Fee",
+        "type": "TRANSACTION_FEE"
+      }
+    ],
+    "id": "01936f32-8143-4710-87a1-75bda42f0d65",
+    "ledgerCurrency": "USD",
+    "ledger_currency": "USD",
+    "merchant": "HPY*EKOSPORT             SAINT-ALBAN-LFR",
+    "transactionCurrency": "EUR",
+    "transactionId": "01936f32-8143-4710-87a1-75bda42f0d65",
+    "transactionStatus": "PENDING",
+    "transaction_currency": "EUR",
+    "transaction_id": "01936f32-8143-4710-87a1-75bda42f0d65",
+    "transaction_status": "PENDING"
+  },
+  "type": "CARD_TRANSACTION"
+}
