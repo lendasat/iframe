@@ -412,34 +412,23 @@ export default ContractsComponent;
 
 const actionFromStatus = (status: ContractStatus) => {
   switch (status) {
-    case ContractStatus.Requested:
-      return "Details";
     case ContractStatus.Approved:
       return "Fund it now";
-    case ContractStatus.CollateralSeen:
-    case ContractStatus.CollateralConfirmed:
-      return "Details";
-    case ContractStatus.PrincipalGiven:
-      return "Repay";
-    case ContractStatus.Closed:
-    case ContractStatus.Closing:
-      return "Details";
     case ContractStatus.RepaymentConfirmed:
       return "Withdraw collateral";
-    case ContractStatus.RepaymentProvided:
-      return "Details";
+    case ContractStatus.Requested:
     case ContractStatus.Rejected:
-      return "Details";
-    case ContractStatus.DisputeBorrowerStarted:
-      return "Details";
-    case ContractStatus.DisputeLenderStarted:
-      return "Details";
-    case ContractStatus.DisputeBorrowerResolved:
-      return "Details";
-    case ContractStatus.DisputeLenderResolved:
-      return "Details";
     case ContractStatus.RequestExpired:
-      return "Details";
+    case ContractStatus.CollateralSeen:
+    case ContractStatus.CollateralConfirmed:
+    case ContractStatus.PrincipalGiven:
+    case ContractStatus.RepaymentProvided:
+    case ContractStatus.DisputeBorrowerStarted:
+    case ContractStatus.DisputeLenderStarted:
+    case ContractStatus.DisputeBorrowerResolved:
+    case ContractStatus.DisputeLenderResolved:
+    case ContractStatus.Closed:
+    case ContractStatus.Closing:
     default:
       return "Details";
   }
