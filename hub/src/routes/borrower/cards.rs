@@ -260,16 +260,24 @@ pub async fn get_card_transaction(
         return Err((StatusCode::BAD_REQUEST, Json(error_response)));
     }
 
-    let txs = data.moon.get_transactions(uuid).await.map_err(|error| {
-        tracing::error!("Failed fetching card transactions: {:#}", error);
+    let transactions = db::moon::load_moon_transactions_by_card(&data.db, uuid)
+        .await
+        .map_err(|error| {
+            tracing::error!(
+                card_id = uuid.to_string(),
+                "Failed loading card transactions {error:#}"
+            );
 
-        let error_response = ErrorResponse {
-            message: "Failed fetching card transactions".to_string(),
-        };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?;
+            let error_response = ErrorResponse {
+                message: "Could not load card transactions".to_string(),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
 
-    let txs = txs.into_iter().map(Transaction::from).collect::<Vec<_>>();
+    let txs = transactions
+        .into_iter()
+        .map(Transaction::from)
+        .collect::<Vec<_>>();
     Ok((StatusCode::OK, Json(txs)))
 }
 
