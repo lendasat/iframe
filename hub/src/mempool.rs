@@ -4,6 +4,8 @@ use crate::email::Email;
 use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
+use backon::ExponentialBuilder;
+use backon::Retryable;
 use bitcoin::address::NetworkUnchecked;
 use bitcoin::Address;
 use bitcoin::Network;
@@ -18,7 +20,6 @@ use serde::Serialize;
 use sqlx::Pool;
 use sqlx::Postgres;
 use std::collections::HashMap;
-use std::hash::RandomState;
 use std::time::Duration;
 use tokio::net::TcpStream;
 use tokio_tungstenite::connect_async_tls_with_config;
@@ -100,7 +101,14 @@ impl Actor {
             txid: claim_txid,
         } in self.tracked_claim_txs.clone().values()
         {
-            if let Err(e) = self.update_claim_tx_status(contract_id, claim_txid).await {
+            // TODO: We could look for claim TXs directly in the block.
+
+            // We use 5 attempts since the caller is a background task.
+            let attempts = 5;
+            if let Err(e) = self
+                .update_claim_tx_status(contract_id, claim_txid, attempts)
+                .await
+            {
                 tracing::error!(
                     contract_id,
                     %claim_txid,
@@ -112,11 +120,26 @@ impl Actor {
         }
     }
 
-    async fn update_claim_tx_status(&mut self, contract_id: &str, claim_txid: &Txid) -> Result<()> {
-        let tx = self
-            .rest_client
-            .get_tx(claim_txid)
+    async fn update_claim_tx_status(
+        &mut self,
+        contract_id: &str,
+        claim_txid: &Txid,
+        attempts: usize,
+    ) -> Result<()> {
+        let get_tx = || async { self.rest_client.get_tx(claim_txid).await };
+        let tx = get_tx
+            .retry(ExponentialBuilder::default().with_max_times(attempts))
+            .sleep(tokio::time::sleep)
+            .notify(|err: &anyhow::Error, dur: Duration| {
+                tracing::warn!(
+                    "Retrying getting claim TX {} after {:?}. Error: {:?}",
+                    claim_txid,
+                    dur,
+                    err,
+                );
+            })
             .await
+            // After running out of retries we give up.
             .context("Failed to get claim TX")?;
 
         if let Some(Transaction {
@@ -214,18 +237,22 @@ impl xtra::Actor for Actor {
                             }
                         };
 
-                        // TODO: I'm slightly concerned about hitting rate limits after a WS
-                        // reconnect.
+                        // TODO: I'm slightly concerned about hitting rate limits after a `hub`
+                        // restart.
                         if let Err(e) = actor
                             .send(TrackContractFunding {
                                 contract_id: contract.id.clone(),
                                 contract_address: contract_address.clone().assume_checked(),
+                                attempts: 5,
                             })
                             .await
                             .expect("actor to be alive")
                         {
                             tracing::error!(?contract, "Failed to track contract: {e:#}");
                         }
+
+                        // Try to avoid hitting rate limits by spacing out our requests to Mempool.
+                        tokio::time::sleep(Duration::from_millis(500)).await;
                     }
 
                     tracing::debug!(url = ws_url, "Listening on mempool WS");
@@ -236,21 +263,26 @@ impl xtra::Actor for Actor {
                                     Ok(response) => match response {
                                         // What you get when you first subscribe to block updates.
                                         WsResponse::Blocks { blocks } => {
-                                            let height = blocks
-                                                .iter()
+                                            if let Some(block) = blocks
+                                                .into_iter()
                                                 .max_by(|x, y| x.height.cmp(&y.height))
-                                                .map(|block| block.height)
-                                                .unwrap_or_default();
-
-                                            actor
-                                                .send(NewBlockHeight(height))
-                                                .await
-                                                .expect("actor to be alive");
+                                            {
+                                                actor
+                                                    .send(NewBlockHeight {
+                                                        height: block.height,
+                                                        hash: block.id,
+                                                    })
+                                                    .await
+                                                    .expect("actor to be alive");
+                                            }
                                         }
                                         // Subsequent blocks.
                                         WsResponse::Block { block } => {
                                             actor
-                                                .send(NewBlockHeight(block.height))
+                                                .send(NewBlockHeight {
+                                                    height: block.height,
+                                                    hash: block.id,
+                                                })
                                                 .await
                                                 .expect("actor to be alive");
                                         }
@@ -289,22 +321,36 @@ impl xtra::Actor for Actor {
                         )
                         .await
                         {
-                            Ok((ws_stream, _)) => {
+                            Ok((mut ws_stream, _)) => {
+                                // Resubscribe to block updates.
+                                let msg = serde_json::to_string(&WsRequest::Action {
+                                    action: Action::Want,
+                                    data: vec![Data::Blocks],
+                                })
+                                .expect("valid message");
+
+                                if let Err(e) = ws_stream.send(Message::Text(msg)).await {
+                                    tracing::error!(
+                                        "Failed to subscribe to block updates \
+                                         after reconnect: {e:?}"
+                                    );
+                                }
+
                                 break ws_stream;
                             }
                             Err(e) => {
-                                tracing::error!(
-                                    "Failed to reconnect to mempool WS: {e:?}. \
-                                     Retrying in {WS_RECONNECT_TIMEOUT_SECS} seconds"
-                                );
-
-                                tokio::time::sleep(Duration::from_secs(WS_RECONNECT_TIMEOUT_SECS))
-                                    .await;
+                                tracing::error!("Failed to reconnect to Mempool WS: {e:?}");
                             }
                         };
+
+                        tracing::debug!(
+                            "Reconnecting to Mempool WS in {WS_RECONNECT_TIMEOUT_SECS} seconds"
+                        );
+                        tokio::time::sleep(Duration::from_secs(WS_RECONNECT_TIMEOUT_SECS)).await;
                     };
 
                     let (sink, new_stream) = ws_stream.split();
+
                     actor
                         .send(NewWsSink(sink))
                         .await
@@ -326,8 +372,19 @@ impl xtra::Actor for Actor {
 /// Message to tell the [`Actor`] to start tracking a collateral contract until it is funded.
 #[derive(Debug)]
 pub struct TrackContractFunding {
-    pub contract_id: String,
-    pub contract_address: Address,
+    contract_id: String,
+    contract_address: Address,
+    attempts: usize,
+}
+
+impl TrackContractFunding {
+    pub fn new(contract_id: String, contract_address: Address) -> Self {
+        Self {
+            contract_id,
+            contract_address,
+            attempts: 1,
+        }
+    }
 }
 
 impl xtra::Handler<TrackContractFunding> for Actor {
@@ -338,12 +395,33 @@ impl xtra::Handler<TrackContractFunding> for Actor {
         msg: TrackContractFunding,
         _: &mut xtra::Context<Self>,
     ) -> Self::Return {
+        if self.tracked_contracts.contains_key(&msg.contract_address) {
+            // We are already tracking this address, all updates now come as we get new blocks. We
+            // don't want to call Mempool's REST API if we can help it.
+
+            return Ok(());
+        }
+
         tracing::debug!(?msg, "Instructed to track contract");
 
-        let txs = self
-            .rest_client
-            .get_address_transactions(&msg.contract_address)
+        let get_address_txs = || async {
+            self.rest_client
+                .get_address_transactions(&msg.contract_address)
+                .await
+        };
+        let txs = get_address_txs
+            .retry(ExponentialBuilder::default().with_max_times(msg.attempts))
+            .sleep(tokio::time::sleep)
+            .notify(|err: &anyhow::Error, dur: Duration| {
+                tracing::warn!(
+                    "Retrying getting address TXs for address {} after {:?}. Error: {:?}",
+                    msg.contract_address,
+                    dur,
+                    err,
+                );
+            })
             .await
+            // After running out of retries we give up.
             .context("Failed to get address transactions")?;
 
         let collateral_outputs_vec =
@@ -358,18 +436,6 @@ impl xtra::Handler<TrackContractFunding> for Actor {
         );
 
         let contract_id = &msg.contract_id;
-
-        for outpoint in collateral_outputs_vec {
-            if let Err(err) = db::transactions::insert_funding_txid(
-                &self.db,
-                contract_id,
-                &outpoint.outpoint.txid,
-            )
-            .await
-            {
-                tracing::error!("Failed inserting funding txid {err:?}");
-            }
-        }
 
         // As a side-effect, here we are checking if the contract address was reused: if this is a
         // newly approved contract (still in the `Requested` state) and the address already has
@@ -388,6 +454,19 @@ impl xtra::Handler<TrackContractFunding> for Actor {
             )
             .await
             .context("Failed to send loan collateralized email to lender")?;
+        }
+
+        // TODO: Wrap DB calls in transaction.
+        for output in collateral_outputs_vec {
+            let txid = output.outpoint.txid;
+
+            tracing::debug!(%contract_id, %txid, "Learnt about funding TX");
+
+            if let Err(err) =
+                db::transactions::insert_funding_txid(&self.db, contract_id, &txid).await
+            {
+                tracing::error!("Failed inserting funding txid {err:?}");
+            }
         }
 
         // Only track this contract if the previous steps succeed.
@@ -433,7 +512,9 @@ impl xtra::Handler<TrackCollateralClaim> for Actor {
             },
         );
 
-        self.update_claim_tx_status(&msg.contract_id, &msg.claim_txid)
+        // Only two attempts so that the caller doesn't hang.
+        let attempts = 2;
+        self.update_claim_tx_status(&msg.contract_id, &msg.claim_txid, attempts)
             .await?;
 
         Ok(())
@@ -442,80 +523,94 @@ impl xtra::Handler<TrackCollateralClaim> for Actor {
 
 /// Internal message to update the [`Actor`]'s block height.
 #[derive(Debug)]
-struct NewBlockHeight(u64);
+struct NewBlockHeight {
+    height: u64,
+    hash: String,
+}
 
 impl xtra::Handler<NewBlockHeight> for Actor {
     type Return = ();
 
     async fn handle(&mut self, msg: NewBlockHeight, _: &mut xtra::Context<Self>) -> Self::Return {
-        self.block_height = msg.0;
+        let known_tip = msg.height;
+
+        self.block_height = known_tip;
+
+        let get_block_txs = || async { self.rest_client.get_block_transactions(&msg.hash).await };
+        let block_txs = get_block_txs
+            // We are happy to retry a few times since blocks come every 10 minutes or so on
+            // mainnet.
+            .retry(ExponentialBuilder::default().with_max_times(5))
+            .sleep(tokio::time::sleep)
+            .notify(|err: &anyhow::Error, dur: Duration| {
+                tracing::warn!(
+                    "Retrying getting block TXs for block {} after {:?}. Error: {:?}",
+                    msg.hash,
+                    dur,
+                    err,
+                );
+            })
+            .await
+            .inspect_err(|e| {
+                tracing::error!("Failed to get block transactions: {e:#}");
+            })
+            // After running out of retries we proceed without any TXs.
+            .unwrap_or_default();
 
         // Every time we learn about a new block we iterate through all the tracked contracts.
         for (address, contract) in self.tracked_contracts.iter_mut() {
-            // We wait to avoid hitting Mempool rate limits. Rate limits will eventually force us to
-            // stop using mempool (or pay for the service).
-            tokio::time::sleep(Duration::from_millis(500)).await;
-            let txs = match self.rest_client.get_address_transactions(address).await {
-                Ok(txs) => txs,
-                Err(e) => {
-                    tracing::error!(%address, "Failed to get address transactions: {e:?}");
-                    continue;
-                }
-            };
+            // If the tracked contract address was in this block, we know that at least one
+            // collateral output was newly confirmed.
 
-            let updated_collateral_outputs = txs
-                .into_iter()
-                .flat_map(|tx| {
-                    let txid = tx.txid;
-
-                    // Determine the confirmation status of every known transaction paying to the
-                    // collateral address.
-                    let state = match tx.status.block_height {
-                        Some(tx_block_height) => {
-                            let confirmations =
-                                calculate_confirmations(self.block_height, tx_block_height);
-
-                            if confirmations >= MIN_CONFIRMATIONS {
-                                ConfirmationState::Confirmed
-                            } else {
-                                ConfirmationState::OnChain {
-                                    height: tx_block_height,
-                                }
-                            }
-                        }
-                        None => ConfirmationState::Seen,
-                    };
-
-                    // We filter out outputs which do not pay to the collateral address.
-                    tx.vout
-                        .into_iter()
-                        .enumerate()
-                        .filter_map(|(i, vout)| {
-                            (vout.scriptpubkey_address == *address.as_unchecked()).then(|| {
-                                let outpoint = OutPoint {
-                                    txid,
-                                    vout: i as u32,
-                                };
+            // I think Clippy is wrong.
+            #[allow(clippy::unnecessary_filter_map)]
+            let relevant_txos = block_txs
+                .iter()
+                .filter_map(|tx| {
+                    Some(
+                        tx.output
+                            .iter()
+                            .filter(|o| o.script_pubkey == address.script_pubkey())
+                            .enumerate()
+                            .map(|(i, o)| {
                                 (
-                                    outpoint,
-                                    CollateralOutput {
-                                        outpoint,
-                                        amount_sats: vout.value,
-                                        state,
+                                    OutPoint {
+                                        txid: tx.compute_txid(),
+                                        vout: i as u32,
                                     },
+                                    o,
                                 )
                             })
-                        })
-                        .collect::<Vec<_>>()
+                            .collect::<Vec<_>>(),
+                    )
                 })
-                .collect::<HashMap<OutPoint, CollateralOutput, RandomState>>();
+                .flatten()
+                .collect::<Vec<_>>();
 
-            // For every new collateral output, we insert another funding TXID in the database.
-            for (outpoint, updated_output) in updated_collateral_outputs.iter() {
-                if !contract
-                    .collateral_outputs
-                    .contains_key(&updated_output.outpoint)
-                {
+            // Give the first confirmation to each collateral TXO for this contract found in the
+            // block.
+            for (outpoint, txo) in relevant_txos.iter() {
+                let state = {
+                    // The transaction was just included in a block.
+                    let confirmations = 1;
+
+                    tracing::debug!(
+                        contract_id = contract.contract_id,
+                        ?outpoint,
+                        ?txo,
+                        height = known_tip,
+                        "First confirmation of collateral TXO"
+                    );
+
+                    if confirmations >= MIN_CONFIRMATIONS {
+                        ConfirmationState::Confirmed
+                    } else {
+                        ConfirmationState::OnChain { height: known_tip }
+                    }
+                };
+
+                // If this TXO is truly new, we record the corresponding collateral funding TX.
+                if !contract.collateral_outputs.contains_key(outpoint) {
                     let txid = outpoint.txid;
                     let contract_id = &contract.contract_id;
 
@@ -528,17 +623,42 @@ impl xtra::Handler<NewBlockHeight> for Actor {
                         tracing::error!("Failed to insert funding TXID: {err:?}");
                     }
                 }
+
+                contract
+                    .collateral_outputs
+                    .entry(*outpoint)
+                    .and_modify(|o| o.state = state)
+                    .or_insert(CollateralOutput {
+                        outpoint: *outpoint,
+                        amount_sats: txo.value.to_sat(),
+                        state,
+                    });
+            }
+
+            // If the tracked contract address was not found in this block, we just have to
+            // consider if an output with that address simply gained a new confirmation.
+            if relevant_txos.is_empty() {
+                for (_, collateral_output) in contract.collateral_outputs.iter_mut() {
+                    if let ConfirmationState::OnChain {
+                        height: tx_block_height,
+                    } = collateral_output.state
+                    {
+                        let confirmations = calculate_confirmations(known_tip, tx_block_height);
+
+                        if confirmations >= MIN_CONFIRMATIONS {
+                            collateral_output.state = ConfirmationState::Confirmed;
+                        }
+                    }
+                }
             }
 
             let updated_confirmed_collateral_sats = confirmed_collateral_sats(
-                &updated_collateral_outputs
+                &contract
+                    .collateral_outputs
                     .values()
                     .cloned()
                     .collect::<Vec<_>>(),
             );
-
-            // Update actor state.
-            contract.collateral_outputs = updated_collateral_outputs;
 
             let (contract, is_newly_confirmed) = match db::contracts::update_collateral(
                 &self.db,
@@ -580,7 +700,17 @@ impl xtra::Handler<PostTx> for Actor {
     type Return = Result<()>;
 
     async fn handle(&mut self, msg: PostTx, _: &mut xtra::Context<Self>) -> Self::Return {
-        self.rest_client.post_tx(msg.0).await?;
+        let post_tx = || async { self.rest_client.post_tx(&msg.0).await };
+        post_tx
+            // Only 2 attemps to publish a transaction since the caller is waiting.
+            .retry(ExponentialBuilder::default().with_max_times(2))
+            .sleep(tokio::time::sleep)
+            .notify(|err: &anyhow::Error, dur: Duration| {
+                tracing::warn!("Retrying posting TX after {:?}. Error: {:?}", dur, err,);
+            })
+            .await
+            // After running out of retries we give up.
+            .context("Failed to post TX")?;
 
         Ok(())
     }
@@ -692,6 +822,21 @@ impl MempoolRestClient {
         Self { client, url }
     }
 
+    async fn get_block_transactions(&self, hash: &str) -> Result<Vec<bitcoin::Transaction>> {
+        let res = self
+            .client
+            .get(format!("{}/api/block/{hash}/raw", self.url))
+            .send()
+            .await?;
+
+        let res = res.error_for_status()?;
+
+        let block = res.bytes().await?;
+        let block: bitcoin::block::Block = bitcoin::consensus::deserialize(&block)?;
+
+        Ok(block.txdata)
+    }
+
     async fn get_address_transactions(&self, address: &Address) -> Result<Vec<Transaction>> {
         let res = self
             .client
@@ -724,11 +869,11 @@ impl MempoolRestClient {
         Ok(Some(tx))
     }
 
-    async fn post_tx(&self, tx: String) -> Result<()> {
+    async fn post_tx(&self, tx: &str) -> Result<()> {
         let res = self
             .client
             .post(format!("{}/api/tx", self.url))
-            .body(tx)
+            .body(tx.to_string())
             .send()
             .await?;
 
@@ -787,6 +932,7 @@ pub struct BlockTransactions {
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Block {
     pub height: u64,
+    pub id: String,
 }
 
 /// Messages sent to the mempool server.

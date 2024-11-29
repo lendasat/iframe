@@ -387,10 +387,7 @@ pub async fn put_approve_contract(
         .context("Failed to accept contract request")?;
 
         data.mempool
-            .send(TrackContractFunding {
-                contract_id,
-                contract_address,
-            })
+            .send(TrackContractFunding::new(contract_id, contract_address))
             .await?
             .context("Failed to track accepted contract")?;
 

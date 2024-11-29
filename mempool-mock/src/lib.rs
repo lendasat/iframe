@@ -137,8 +137,11 @@ impl Blockchain {
         let new_height = self.height + n;
 
         for height in (self.height + 1)..=new_height {
+            // FIXME: This is obviously wrong, but it's hardly worth doing this properly since we're
+            // not really using this crate. We can fix it if we start using it again.
+            let id = height.to_string();
             let _ = self.events_tx.send(WsResponse::Block {
-                block: Block { height },
+                block: Block { height, id },
             });
         }
 
@@ -323,7 +326,10 @@ pub async fn handle_ws(socket: WebSocket, blockchain: Arc<RwLock<Blockchain>>) {
                             // can used the highest block to figure out
                             // the current blockchain height.
                             let blocks = (height.checked_sub(5).unwrap_or_default()..=height)
-                                .map(|height| Block { height })
+                                .map(|height| Block {
+                                    height,
+                                    id: height.to_string(),
+                                })
                                 .collect();
 
                             let _ = outgoing_queue_tx.send(WsResponse::Blocks { blocks }).await;
