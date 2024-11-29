@@ -30,9 +30,6 @@ interface RawDispute extends Omit<Dispute, "created_at" | "updated_at"> {
   created_at: string;
   updated_at: string;
 }
-interface RawCardTransaction extends Omit<CardTransaction, "date"> {
-  date: string;
-}
 
 export class HttpClientBorrower extends BaseHttpClient {
   async getLoanOffers(): Promise<LoanOffer[] | undefined> {
@@ -189,7 +186,7 @@ export class HttpClientBorrower extends BaseHttpClient {
       const updatedAt = parseRFC3339Date(contract.updated_at);
       const repaidAt = parseRFC3339Date(contract.repaid_at);
       const expiry = parseRFC3339Date(contract.expiry);
-      if (createdAt == null || repaidAt == null || expiry == null) {
+      if (createdAt == null || updatedAt == null || repaidAt == null || expiry == null) {
         throw new Error("Invalid date");
       }
 
@@ -406,21 +403,10 @@ export class HttpClientBorrower extends BaseHttpClient {
 
   async getCardTransactions(cardId: number): Promise<CardTransaction[]> {
     try {
-      const transactionResponse: AxiosResponse<RawCardTransaction[]> = await this.httpClient.get(
+      const transactionResponse: AxiosResponse<CardTransaction[]> = await this.httpClient.get(
         `/api/transaction/${cardId}`,
       );
-
-      return transactionResponse.data.map(tx => {
-        const date = parseRFC3339Date(tx.date);
-        if (date == null) {
-          throw new Error("Invalid date");
-        }
-
-        return {
-          ...tx,
-          date: date,
-        };
-      });
+      return transactionResponse.data;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         const message = error.response.data.message;

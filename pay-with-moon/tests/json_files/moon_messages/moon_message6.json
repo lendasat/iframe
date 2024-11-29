@@ -1,0 +1,14 @@
+{
+  "data": {
+    "amount": 1000,
+    "createdAt": "2024-11-27T11:35:59.186Z",
+    "created_at": "2024-11-27T11:35:59.186Z",
+    "currency": "USD",
+    "deprecated_fields": [
+      "createdAt"
+    ],
+    "id": "22ff1a92-3d09-4ac4-9baa-0a70518165ea",
+    "invoice_id": "1d0eff9d-a781-434a-984f-2ea487634837"
+  },
+  "type": "MOON_CREDIT_FUNDS_CREDITED"
+}

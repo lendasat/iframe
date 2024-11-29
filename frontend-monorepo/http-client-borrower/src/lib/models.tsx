@@ -273,19 +273,48 @@ export enum CardTransactionStatus {
 // Needed for the Unknown variant
 export type CardTransactionStatusType = CardTransactionStatus | string;
 
-export interface CardTransaction {
+export type CardTransaction =
+  | { type: "Card"; data: TransactionData }
+  | { type: "CardAuthorizationRefund"; data: TransactionData }
+  | { type: "DeclineData"; data: DeclineData };
+
+export interface TransactionData {
+  card: TransactionCard;
   transaction_id: string;
-  transaction_status: CardTransactionStatusType;
-  date: Date;
+  transaction_status: TransactionStatus;
+  datetime: string;
   merchant: string;
   amount: number;
   ledger_currency: string;
   amount_fees_in_ledger_currency: number;
   amount_in_transaction_currency: number;
-  transaction_currency: string;
-  amount_fees_in_transaction_currency: number;
+  transactionCurrency: string;
+  amount_fees_i_tTransaction_currency: number;
   fees: Fee[];
 }
+
+export interface DeclineData {
+  datetime: string;
+  merchant: string;
+  customer_friendly_description: string;
+  amount: number;
+  card: TransactionCard;
+}
+
+export interface TransactionCard {
+  public_id: string;
+  name: string;
+  type: string;
+}
+
+export type TransactionStatus =
+  | "Authorization"
+  | "Reversal"
+  | "Clearing"
+  | "Refund"
+  | "Pending"
+  | "Settled"
+  | string;
 
 export interface Fee {
   type: string;

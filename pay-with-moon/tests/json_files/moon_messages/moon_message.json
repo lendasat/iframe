@@ -1,0 +1,48 @@
+{
+  "data": {
+    "id": "01936639-547e-4e2c-83b5-a5ae06ebd0c0",
+    "amount": 75,
+    "amountFeesInLedgerCurrency": 1,
+    "amountFeesInTransactionCurrency": 1,
+    "amountInTransactionCurrency": 75,
+    "amount_fees_in_ledger_currency": 1,
+    "amount_fees_in_transaction_currency": 1,
+    "amount_in_transaction_currency": 75,
+    "card": {
+      "name": "bonomat_borrower",
+      "public_id": "cb8d450e-b10d-402a-92a6-28e31674fd3c",
+      "type": "Moon Reloadable Prepaid Visa® Card"
+    },
+    "datetime": "2024-11-27 20:41:15",
+    "deprecated_fields": [
+      "transactionId",
+      "transactionStatus",
+      "ledgerCurrency",
+      "amountFeesInLedgerCurrency",
+      "amountInTransactionCurrency",
+      "transactionCurrency",
+      "amountFeesInTransactionCurrency"
+    ],
+    "fees": [
+      {
+        "amount": 1,
+        "deprecated_fields": [
+          "feeDescription"
+        ],
+        "feeDescription": "Standard Transaction Fee",
+        "fee_description": "Standard Transaction Fee",
+        "type": "TRANSACTION_FEE"
+      }
+    ],
+    "ledgerCurrency": "USD",
+    "ledger_currency": "USD",
+    "merchant": "PAYPAL *1PASSWORD        4165461397   CA",
+    "transactionCurrency": "USD",
+    "transactionId": "01936639-547e-4e2c-83b5-a5ae06ebd0c0",
+    "transactionStatus": "SETTLED",
+    "transaction_currency": "USD",
+    "transaction_id": "01936639-547e-4e2c-83b5-a5ae06ebd0c0",
+    "transaction_status": "SETTLED"
+  },
+  "type": "CARD_TRANSACTION"
+}

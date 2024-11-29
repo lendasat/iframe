@@ -5,6 +5,9 @@ use serde::de::Visitor;
 use serde::Deserialize;
 use serde::Deserializer;
 use serde::Serialize;
+use serde_json::Value;
+use serde_with::serde_as;
+use serde_with::DisplayFromStr;
 use std::fmt;
 use time::OffsetDateTime;
 use uuid::Uuid;
@@ -124,12 +127,50 @@ pub enum Transaction {
     #[serde(rename = "CARD_AUTHORIZATION_REFUND")]
     CardAuthorizationRefund(TransactionData),
     #[serde(rename = "DECLINE")]
+    /// This sucks! When fetching the transaction data the decline data is a different format
+    /// than when receiving it via the webhook, because, of course it is 🙈
     DeclineData(DeclineData),
 }
 
 #[derive(Debug, Deserialize, PartialEq, Clone)]
-pub struct DeclineData {
+#[serde(tag = "type", content = "data")]
+pub enum MoonMessage {
+    #[serde(rename = "CARD_TRANSACTION")]
+    CardTransaction(TransactionData),
+    #[serde(rename = "CARD_AUTHORIZATION_REFUND")]
+    CardAuthorizationRefund(TransactionData),
+    #[serde(rename = "CARD_DECLINE")]
+    DeclineData(MoonMessageDeclineData),
+    #[serde(rename = "MOON_CREDIT_FUNDS_CREDITED")]
+    MoonInvoicePayment(InvoicePayment),
+    #[serde(untagged)]
+    Unknown(Value),
+}
+
+#[derive(Debug, Deserialize, PartialEq, Clone)]
+pub struct MoonMessageDeclineData {
+    pub id: i32,
+    pub card_public_id: Uuid,
+    pub created_at: String,
+    pub merchant: String,
     pub customer_friendly_description: String,
+    #[serde(with = "rust_decimal::serde::float")]
+    pub amount: Decimal,
+}
+
+#[serde_as]
+#[derive(Debug, Deserialize, PartialEq, Clone)]
+pub struct DeclineData {
+    #[serde_as(as = "DisplayFromStr")]
+    pub id: i32,
+    /// The date we receive has the following format: 2024-11-14 10:26:24
+    pub datetime: String,
+    pub merchant: String,
+    pub customer_friendly_description: String,
+    pub card_public_id: Uuid,
+    pub card_id: Uuid,
+    #[serde(with = "rust_decimal::serde::str")]
+    pub amount: Decimal,
     pub card: TransactionCard,
 }
 
@@ -181,8 +222,8 @@ pub struct TransactionDataWrapper {
 
 #[derive(Debug, Deserialize, PartialEq, Clone)]
 pub struct TransactionCard {
-    pub public_id: Uuid,
     pub name: String,
+    pub public_id: Uuid,
     #[serde(rename = "type")]
     pub card_type: String,
 }
@@ -304,22 +345,7 @@ pub enum Currency {
     Btc,
 }
 
-#[derive(Debug, Deserialize, Clone)]
-pub struct InvoicePaymentWrapper {
-    pub data: InvoicePayment,
-    #[serde(rename = "type")]
-    pub kind: InvoicePaymentType,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub enum InvoicePaymentType {
-    #[serde(rename = "MOON_CREDIT_FUNDS_CREDITED")]
-    MoonCreditFundsCredited,
-    #[serde(untagged)]
-    Other(String),
-}
-
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, PartialEq)]
 pub struct InvoicePayment {
     pub id: Uuid,
     pub invoice_id: Uuid,
@@ -448,7 +474,7 @@ impl MoonCardClient {
         card_id: Uuid,
         current_page: u32,
         per_page: u32,
-    ) -> Result<Vec<TransactionDataWrapper>, reqwest::Error> {
+    ) -> Result<Vec<Transaction>, reqwest::Error> {
         let url = format!(
             "{}/card/{}/transactions?currentPage={}&perPage={}",
             self.base_url, card_id, current_page, per_page
@@ -465,21 +491,6 @@ impl MoonCardClient {
         match response {
             Ok(response) => {
                 let txs = response.json::<TransactionResponse>().await?.transactions;
-                let txs = txs.into_iter().filter_map(|tx| match tx {
-                    Transaction::CardTransaction(data) => {
-                        Some(TransactionDataWrapper {data, tag : "CardTransaction".to_string() })
-                    }
-                    Transaction::DeclineData(declined_data ) => {
-                        tracing::warn!(
-                            ?declined_data ,
-                            "Received decline transaction information which we are not returning it at the moment");
-
-                        None
-                    }
-                    Transaction::CardAuthorizationRefund(data) => {
-                        Some(TransactionDataWrapper {data, tag : "Refund".to_string() })
-                    }
-                }).collect();
                 Ok(txs)
             }
             Err(error) => {
@@ -634,6 +645,9 @@ mod tests {
     use rust_decimal_macros::dec;
     use serde_json::Value;
     use std::env;
+    use std::fs;
+    use std::path::Path;
+    use std::str::FromStr;
 
     #[derive(Debug, Serialize)]
     #[serde(rename_all = "camelCase")]
@@ -909,14 +923,19 @@ mod tests {
         let transactions = client.get_card_transactions(card_id, 1, 10).await.unwrap();
         assert_eq!(transactions.len(), 3);
 
-        assert_eq!(
-            transactions[0].data.amount,
-            Decimal::from_u64(final_tx_amount).expect("to fit")
-        );
-        assert_eq!(
-            transactions[0].data.transaction_status,
-            TransactionStatus::Settled
-        );
+        let transaction = transactions.first().unwrap();
+        match transaction {
+            Transaction::CardTransaction(data) | Transaction::CardAuthorizationRefund(data) => {
+                assert_eq!(
+                    data.amount,
+                    Decimal::from_u64(final_tx_amount).expect("to fit")
+                );
+                assert_eq!(data.transaction_status, TransactionStatus::Settled);
+            }
+            Transaction::DeclineData(_) => {
+                unreachable!("Not expected");
+            }
+        }
     }
 
     #[ignore]
@@ -964,27 +983,6 @@ mod tests {
     }
 
     #[test]
-    pub fn deserialize_payment_notification() {
-        let json = r#"{
-              "data": {
-                "id": "f97ce211-2fa9-45ab-b21d-91fc069e7fe8",
-                "amount": 5.52,
-                "currency": "USD",
-                "createdAt": "2024-11-25T20:40:55.709Z",
-                "created_at": "2024-11-25T20:40:55.709Z",
-                "invoice_id": "45477529-a8b2-4bf9-bd9d-297a9bc72a93",
-                "deprecated_fields": [
-                  "createdAt"
-                ]
-              },
-              "type": "MOON_CREDIT_FUNDS_CREDITED"
-            }
-             "#;
-
-        let _payment: InvoicePaymentWrapper = serde_json::from_str(json).unwrap();
-    }
-
-    #[test]
     pub fn deserialize_invoice() {
         let json = r#"{
             "id": "16b1983f-55c7-4b4e-84df-2018bb1a5544",
@@ -1028,134 +1026,106 @@ mod tests {
 
     #[test]
     pub fn deserialize_transaction_response() {
-        let json = r#"{
-          "transactions": [
-            {
-              "type": "CARD_TRANSACTION",
-              "data": {
-                "id": "01936639-547e-4e2c-83b5-a5ae06ebd0c0",
-                "card": {
-                  "public_id": "cb8d450e-b10d-402a-92a6-28e31674fd3c",
-                  "name": "bonomat_borrower",
-                  "type": "Moon Reloadable Prepaid Visa® Card"
-                },
-                "transaction_id": "01936639-547e-4e2c-83b5-a5ae06ebd0c0",
-                "transaction_status": "PENDING",
-                "datetime": "2024-11-26T02:07:33.000Z",
-                "merchant": "PAYPAL *1PASSWORD        4165461397   CA",
-                "amount": 75,
-                "ledger_currency": "USD",
-                "amount_fees_in_ledger_currency": 1,
-                "amount_in_transaction_currency": 75,
-                "transaction_currency": "USD",
-                "amount_fees_in_transaction_currency": 1,
-                "fees": [
-                  {
-                    "type": "TRANSACTION_FEE",
-                    "amount": 1,
-                    "feeDescription": "Standard Transaction Fee",
-                    "fee_description": "Standard Transaction Fee",
-                    "deprecated_fields": [
-                      "feeDescription"
-                    ]
-                  }
-                ],
-                "transactionId": "01936639-547e-4e2c-83b5-a5ae06ebd0c0",
-                "transactionStatus": "PENDING",
-                "ledgerCurrency": "USD",
-                "amountFeesInLedgerCurrency": 1,
-                "transactionCurrency": "USD",
-                "amountInTransactionCurrency": 75,
-                "amountFeesInTransactionCurrency": 1,
-                "deprecated_fields": [
-                  "transactionId",
-                  "transactionStatus",
-                  "ledgerCurrency",
-                  "amountFeesInLedgerCurrency",
-                  "amountInTransactionCurrency",
-                  "transactionCurrency",
-                  "amountFeesInTransactionCurrency"
-                ]
-              }
-            },
-            {
-              "type": "CARD_TRANSACTION",
-              "data": {
-                "id": "01936639-311f-49f5-ba01-8bcb618a89d7",
-                "card": {
-                  "public_id": "cb8d450e-b10d-402a-92a6-28e31674fd3c",
-                  "name": "bonomat_borrower",
-                  "type": "Moon Reloadable Prepaid Visa® Card"
-                },
-                "transaction_id": "01936639-311f-49f5-ba01-8bcb618a89d7",
-                "transaction_status": "PENDING",
-                "datetime": "2024-11-26T02:07:24.000Z",
-                "merchant": "PAYPAL                   4029357733   AU",
-                "amount": 0.6456352,
-                "ledger_currency": "USD",
-                "amount_fees_in_ledger_currency": 1,
-                "amount_in_transaction_currency": 1,
-                "transaction_currency": "AUD",
-                "amount_fees_in_transaction_currency": 1.5488622677326143,
-                "fees": [
-                  {
-                    "type": "TRANSACTION_FEE",
-                    "amount": 1,
-                    "feeDescription": "Standard Transaction Fee",
-                    "fee_description": "Standard Transaction Fee",
-                    "deprecated_fields": [
-                      "feeDescription"
-                    ]
-                  }
-                ],
-                "transactionId": "01936639-311f-49f5-ba01-8bcb618a89d7",
-                "transactionStatus": "PENDING",
-                "ledgerCurrency": "USD",
-                "amountFeesInLedgerCurrency": 1,
-                "transactionCurrency": "AUD",
-                "amountInTransactionCurrency": 1,
-                "amountFeesInTransactionCurrency": 1.5488622677326143,
-                "deprecated_fields": [
-                  "transactionId",
-                  "transactionStatus",
-                  "ledgerCurrency",
-                  "amountFeesInLedgerCurrency",
-                  "amountInTransactionCurrency",
-                  "transactionCurrency",
-                  "amountFeesInTransactionCurrency"
-                ]
-              }
-            },
-            {
-              "type": "DECLINE",
-              "data": {
-                "id": "229492",
-                "datetime": "2024-11-26T02:04:56.000Z",
-                "merchant": "PAYPAL                   4029357733   AU",
-                "amount": "0.650000000000000000",
-                "customer_friendly_description": "Invalid expiration date",
-                "card_public_id": "cb8d450e-b10d-402a-92a6-28e31674fd3c",
-                "card_id": "cb8d450e-b10d-402a-92a6-28e31674fd3c",
-                "card": {
-                  "public_id": "cb8d450e-b10d-402a-92a6-28e31674fd3c",
-                  "name": "bonomat_borrower",
-                  "type": "Moon Reloadable Prepaid Visa® Card"
-                }
-              }
-            }
-          ],
-          "pagination": {
-            "total": 4,
-            "lastPage": 1,
-            "prevPage": null,
-            "nextPage": null,
-            "perPage": 10,
-            "currentPage": 1,
-            "from": 0,
-            "to": 4
-          }
+        let path = Path::new("tests/json_files/card_transactions/card_transactions.json");
+        let file_contents =
+            fs::read_to_string(path).unwrap_or_else(|_| panic!("Unable to read file: {:?}", path));
+
+        let result: Result<TransactionResponse, _> = serde_json::from_str(&file_contents);
+        assert!(
+            result.is_ok(),
+            "Failed to deserialize JSON file: {:?}. Error: {:?}",
+            path,
+            result.unwrap_err()
+        );
+    }
+
+    #[test]
+    pub fn deserialize_card_decline_moon_message() {
+        let path = Path::new("tests/json_files/moon_messages/moon_message_card_decline.json");
+        let file_contents =
+            fs::read_to_string(path).unwrap_or_else(|_| panic!("Unable to read file: {:?}", path));
+
+        let result: Result<MoonMessage, _> = serde_json::from_str(&file_contents);
+        assert!(
+            result.is_ok(),
+            "Failed to deserialize JSON file: {:?}. Error: {:?}",
+            path,
+            result.unwrap_err()
+        );
+
+        let message = result.unwrap();
+        if let MoonMessage::DeclineData(m) = message {
+            assert_eq!(
+                m.card_public_id,
+                Uuid::from_str("60274406-e8c5-491c-a793-93e1e20cd699").unwrap()
+            );
+        } else {
+            unreachable!("Could not deserialize message which was");
         }
-        "#;
-        let _tx_response: TransactionResponse = serde_json::from_str(json).unwrap();
+    }
+
+    #[test]
+    pub fn deserialize_normal_card_moon_message() {
+        let path = Path::new("tests/json_files/moon_messages/moon_message4.json");
+        let file_contents =
+            fs::read_to_string(path).unwrap_or_else(|_| panic!("Unable to read file: {:?}", path));
+
+        let result: Result<MoonMessage, _> = serde_json::from_str(&file_contents);
+        assert!(
+            result.is_ok(),
+            "Failed to deserialize JSON file: {:?}. Error: {:?}",
+            path,
+            result.unwrap_err()
+        );
+
+        let message = result.unwrap();
+        if let MoonMessage::CardTransaction(m) = message {
+            assert_eq!(
+                m.card.public_id,
+                Uuid::from_str("0fabfd7e-f4ff-41db-ae4e-4a28bcc35a5d").unwrap()
+            );
+        } else {
+            unreachable!("Could not deserialize message which was");
+        }
+    }
+
+    #[test]
+    fn test_deserialize_json_files() {
+        // Specify the directory containing your JSON files
+        let json_dir = Path::new("tests/json_files/moon_messages");
+
+        // Ensure the directory exists
+        assert!(json_dir.is_dir(), "Test JSON directory does not exist");
+
+        // Read all files in the directory
+        for entry in fs::read_dir(json_dir).expect("Failed to read directory") {
+            let entry = entry.expect("Failed to get directory entry");
+            let path = entry.path();
+
+            // Skip non-JSON files
+            if path.extension().map_or(false, |ext| ext != "json") {
+                continue;
+            }
+
+            // Read file contents
+            let file_contents = fs::read_to_string(dbg!(&path))
+                .unwrap_or_else(|_| panic!("Unable to read file: {:?}", path));
+
+            // Attempt to deserialize
+            let result: Result<MoonMessage, _> = serde_json::from_str(&file_contents);
+
+            // Assert deserialization is successful
+            assert!(
+                result.is_ok(),
+                "Failed to deserialize JSON file: {:?}. Error: {:?}",
+                path,
+                result.unwrap_err()
+            );
+
+            let message = result.unwrap();
+            if let MoonMessage::Unknown(_) = message {
+                unreachable!("Could not deserialize message which was {:?}", message);
+            }
+        }
     }
 }
