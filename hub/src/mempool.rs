@@ -359,14 +359,6 @@ impl xtra::Handler<TrackContractFunding> for Actor {
 
         let contract_id = &msg.contract_id;
 
-        self.tracked_contracts.insert(
-            msg.contract_address.clone(),
-            TrackedContract {
-                contract_id: contract_id.clone(),
-                collateral_outputs,
-            },
-        );
-
         for outpoint in collateral_outputs_vec {
             if let Err(err) = db::transactions::insert_funding_txid(
                 &self.db,
@@ -379,6 +371,10 @@ impl xtra::Handler<TrackContractFunding> for Actor {
             }
         }
 
+        // As a side-effect, here we are checking if the contract address was reused: if this is a
+        // newly approved contract (still in the `Requested` state) and the address already has
+        // money in it, this contract address most likely belongs to a different contract already!
+        // Thus we cannot proceed safely.
         let (contract, is_newly_confirmed) =
             db::contracts::update_collateral(&self.db, contract_id, confirmed_collateral_sats)
                 .await?;
@@ -393,6 +389,15 @@ impl xtra::Handler<TrackContractFunding> for Actor {
             .await
             .context("Failed to send loan collateralized email to lender")?;
         }
+
+        // Only track this contract if the previous steps succeed.
+        self.tracked_contracts.insert(
+            msg.contract_address.clone(),
+            TrackedContract {
+                contract_id: contract_id.clone(),
+                collateral_outputs,
+            },
+        );
 
         Ok(())
     }

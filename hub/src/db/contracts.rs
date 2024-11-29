@@ -934,6 +934,9 @@ pub async fn update_collateral(
 
                 match contract.status {
                     ContractStatus::Requested => {
+                        // This means that a contract's newly assigned address already has money in
+                        // it. We can only get here if the _contract address_ was reused, which is a
+                        // really bad idea.
                         bail!("Should not be able to add collateral to a Requested loan");
                     }
                     ContractStatus::Approved | ContractStatus::CollateralSeen => {
