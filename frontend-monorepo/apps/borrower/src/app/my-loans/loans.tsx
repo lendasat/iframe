@@ -520,6 +520,8 @@ const ClosedLoans = ({ header, loans, latestPrice }: ClosedPorps) => {
           //   return null;
           // }
 
+          const updatedAtDateString = updated_at ? new Date(updated_at).toLocaleDateString() : "";
+
           return (
             <Flex
               key={index}
@@ -537,13 +539,9 @@ const ClosedLoans = ({ header, loans, latestPrice }: ClosedPorps) => {
                 </Box>
 
                 <Box className="justify-center text-center">
-                  {updated_at
-                    ? (
-                      <Text size={"1"} weight={"medium"}>
-                        {updated_at.toLocaleDateString()}
-                      </Text>
-                    )
-                    : ""}
+                  <Text size={"1"} weight={"medium"}>
+                    {updatedAtDateString}
+                  </Text>
                 </Box>
 
                 <Box className="hidden md:flex justify-center">
@@ -625,13 +623,9 @@ const ClosedLoans = ({ header, loans, latestPrice }: ClosedPorps) => {
                           <Text size={"3"} weight={"medium"}>
                             Closed on:
                           </Text>
-                          {updated_at
-                            ? (
-                              <Text size={"3"} weight={"medium"}>
-                                {updated_at.toLocaleDateString()}
-                              </Text>
-                            )
-                            : ""}
+                          <Text size={"1"} weight={"medium"}>
+                            {updatedAtDateString}
+                          </Text>
                         </Flex>
                       </Box>
                       <Box width={"100%"}>

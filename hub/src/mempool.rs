@@ -140,7 +140,7 @@ impl Actor {
             })
             .await
             // After running out of retries we give up.
-            .context("Failed to get claim TX")?;
+            .with_context(|| format!("Failed to get claim TX {claim_txid}"))?;
 
         if let Some(Transaction {
             status: TransactionStatus {
