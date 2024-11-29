@@ -31,8 +31,8 @@ use sqlx::Pool;
 use sqlx::Postgres;
 use std::str::FromStr;
 
-/// Everything below this value is counted as dust. At the time of writing, this is ~$58
-const MIN_TX_OUTPUT_SIZE: u64 = 100_000;
+/// Everything below this value is counted as dust. Based on segwit and 1 input and 1 output
+const MIN_TX_OUTPUT_SIZE: u64 = 294;
 
 pub struct Wallet {
     hub_xpriv: Xpriv,
@@ -318,11 +318,25 @@ impl Wallet {
             script_pubkey: ScriptBuf::from_bytes(new_address.address.script_pubkey().to_bytes()),
         };
 
+        let output = if claim_output.value.to_sat() < MIN_TX_OUTPUT_SIZE {
+            vec![TxOut {
+                value: origination_fee_output.value + claim_output.value,
+                script_pubkey: origination_fee_output.script_pubkey,
+            }]
+        } else if origination_fee_output.value.to_sat() < MIN_TX_OUTPUT_SIZE {
+            vec![TxOut {
+                value: claim_output.value + origination_fee_output.value,
+                script_pubkey: claim_output.script_pubkey,
+            }]
+        } else {
+            vec![claim_output, origination_fee_output]
+        };
+
         let unsigned_claim_tx = Transaction {
             version: Version::TWO,
             lock_time: LockTime::ZERO,
             input: inputs,
-            output: vec![claim_output, origination_fee_output],
+            output,
         };
 
         // All collateral outputs share the same script.
