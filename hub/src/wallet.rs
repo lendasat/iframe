@@ -31,8 +31,8 @@ use sqlx::Pool;
 use sqlx::Postgres;
 use std::str::FromStr;
 
-/// Everything below this value is counted as dust. At the time of writing, this is ~$25
-const MIN_TX_OUTPUT_SIZE: u64 = 25_000;
+/// Everything below this value is counted as dust. Based on segwit and 1 input and 1 output
+const MIN_TX_OUTPUT_SIZE: u64 = 294;
 
 pub struct Wallet {
     hub_xpriv: Xpriv,
