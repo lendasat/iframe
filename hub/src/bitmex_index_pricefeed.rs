@@ -16,7 +16,7 @@ pub struct BitmexIndexPrice {
     pub timestamp: OffsetDateTime,
 }
 
-const RECONNECTION_TIMEOUT_SECONDS: u64 = 30;
+const RECONNECTION_TIMEOUT_SECONDS: u64 = 5;
 
 pub async fn subscribe_index_price(txs: [mpsc::Sender<BitmexIndexPrice>; 2]) -> Result<()> {
     tokio::spawn(async move {
