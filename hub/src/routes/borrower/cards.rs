@@ -330,8 +330,18 @@ pub async fn post_webhook(
                 serde_json::from_value::<pay_with_moon::MoonMessage>(payload.clone())
             {
                 tracing::debug!(?moon_message, "Received new message from moon notification");
-                if let Err(err) = db::moon::insert_moon_transactions(&data.db, moon_message).await {
-                    tracing::error!("Failed at persisting moon message {err:#}");
+                if let pay_with_moon::MoonMessage::MoonInvoicePayment(invoice) = &moon_message {
+                    if let Err(err) = data.moon.handle_paid_invoice(invoice).await {
+                        tracing::error!("Failed at handling moon invoice {err:#}");
+                    }
+                } else {
+                    // MoonMessage::MoonInvoicePayment is already stored in
+                    // `moon.handle_paid_invoice`
+                    if let Err(err) =
+                        db::moon::insert_moon_transactions(&data.db, moon_message).await
+                    {
+                        tracing::error!("Failed at persisting moon message {err:#}");
+                    }
                 }
             } else {
                 tracing::warn!("Received unknown webhook data");

@@ -197,7 +197,7 @@ impl Manager {
         Ok(())
     }
 
-    pub async fn handle_paid_invoice(&self, invoice: pay_with_moon::InvoicePayment) -> Result<()> {
+    pub async fn handle_paid_invoice(&self, invoice: &pay_with_moon::InvoicePayment) -> Result<()> {
         let invoice_id = invoice.invoice_id;
         let invoice_payment_id = invoice.id;
 
