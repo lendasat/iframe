@@ -21,7 +21,6 @@ export function CollateralSeenOrConfirmed({
   let info;
   switch (contract.integration) {
     case Integration.PayWithMoon:
-    case Integration.StableCoin:
       info = (
         <>
           Your loan amount of {formatCurrency(contract.loan_amount)}{" "}
@@ -29,6 +28,7 @@ export function CollateralSeenOrConfirmed({
         </>
       );
       break;
+    case Integration.StableCoin:
     default:
       info = (
         <>
