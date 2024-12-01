@@ -23,6 +23,7 @@ use std::collections::HashMap;
 use std::time::Duration;
 use tokio::net::TcpStream;
 use tokio_tungstenite::connect_async_tls_with_config;
+use tokio_tungstenite::tungstenite;
 use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::Connector;
 use tokio_tungstenite::MaybeTlsStream;
@@ -303,8 +304,17 @@ impl xtra::Actor for Actor {
                             Ok(msg) => {
                                 tracing::debug!(?msg, "Unhandled message");
                             }
+                            Err(tungstenite::Error::Protocol(
+                                tungstenite::error::ProtocolError::ResetWithoutClosingHandshake,
+                            )) => {
+                                // Unfortunately, we expect frequent (once every 5 minutes),
+                                // unceremonious disconnects from the Mempool WS API. Thus, we only
+                                // log this on DEBUG.
+                                tracing::debug!("Mempool WS disconnected");
+                                break;
+                            }
                             Err(e) => {
-                                tracing::error!("WS error: {e:?}");
+                                tracing::error!("Mempool WS disconnected: {e:?}");
                                 break;
                             }
                         }

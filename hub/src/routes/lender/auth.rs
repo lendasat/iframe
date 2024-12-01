@@ -42,6 +42,7 @@ use serde_json::json;
 use std::sync::Arc;
 use time::OffsetDateTime;
 use tracing::instrument;
+use tracing::Level;
 
 pub(crate) mod jwt_auth;
 
@@ -84,7 +85,7 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
         .with_state(app_state)
 }
 
-#[instrument(skip_all, err(Debug))]
+#[instrument(skip_all, err(Debug, level = Level::DEBUG))]
 pub async fn register_user_handler(
     State(data): State<Arc<AppState>>,
     Json(body): Json<RegisterUserSchema>,
@@ -211,7 +212,7 @@ struct LoginResponse {
     wallet_backup_data: WalletBackupData,
 }
 
-#[instrument(skip_all, err(Debug))]
+#[instrument(skip_all, err(Debug, level = Level::DEBUG))]
 pub async fn login_user_handler(
     State(data): State<Arc<AppState>>,
     Json(body): Json<LoginUserSchema>,
@@ -312,7 +313,7 @@ pub async fn login_user_handler(
     Ok(response)
 }
 
-#[instrument(skip_all, err(Debug))]
+#[instrument(skip_all, err(Debug, level = Level::DEBUG))]
 pub async fn verify_email_handler(
     State(data): State<Arc<AppState>>,
     Path(verification_code): Path<String>,
@@ -356,7 +357,7 @@ pub async fn verify_email_handler(
     Ok(Json(response))
 }
 
-#[instrument(skip_all, err(Debug))]
+#[instrument(skip_all, err(Debug, level = Level::DEBUG))]
 pub async fn forgot_password_handler(
     State(data): State<Arc<AppState>>,
     Json(body): Json<ForgotPasswordSchema>,
@@ -430,7 +431,7 @@ pub async fn forgot_password_handler(
     Ok((StatusCode::OK, Json(json!({"message": success_message}))))
 }
 
-#[instrument(skip_all, err(Debug))]
+#[instrument(skip_all, err(Debug, level = Level::DEBUG))]
 pub async fn reset_password_handler(
     State(data): State<Arc<AppState>>,
     Path(password_reset_token): Path<String>,
@@ -487,7 +488,7 @@ pub async fn reset_password_handler(
     Ok(response)
 }
 
-#[instrument(skip_all, err(Debug))]
+#[instrument(skip_all, err(Debug, level = Level::DEBUG))]
 pub async fn logout_handler() -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     let cookie = Cookie::build(("token", ""))
         .path("/")
@@ -520,7 +521,7 @@ pub struct MeResponse {
     pub user: FilteredUser,
 }
 
-#[instrument(skip_all, err(Debug))]
+#[instrument(skip_all, err(Debug, level = Level::DEBUG))]
 pub async fn get_me_handler(
     Extension(user): Extension<User>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
@@ -578,7 +579,7 @@ pub struct ErrorResponse {
     pub message: String,
 }
 
-#[instrument(skip_all, err(Debug))]
+#[instrument(skip_all, err(Debug, level = Level::DEBUG))]
 pub async fn check_auth_handler(
     Extension(_user): Extension<User>,
 ) -> Result<
