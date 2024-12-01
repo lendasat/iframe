@@ -150,15 +150,6 @@ pub async fn register_user_handler(
         ));
     }
 
-    db::invite_code::deactive_invite_code_borrower(&data.db, invite_code.code.as_str())
-        .await
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
-
     let user: User = register_user(
         &data.db,
         body.name.as_str(),
