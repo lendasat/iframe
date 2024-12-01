@@ -36,7 +36,7 @@ pub async fn subscribe_index_price(txs: [mpsc::Sender<BitmexIndexPrice>; 2]) -> 
                                         .await
                                     {
                                         tracing::error!(
-                                            "Failed to notify channel about update {err:#}"
+                                            "Failed to notify channel about update: {err:#}"
                                         );
                                         continue;
                                     }
@@ -44,17 +44,19 @@ pub async fn subscribe_index_price(txs: [mpsc::Sender<BitmexIndexPrice>; 2]) -> 
                             }
                         }
                     }
+                    // In general, losing the connection is not concerning.
                     Err(e) => {
-                        tracing::error!("Closing BitMEX WS after encountering error: {e:#}");
+                        tracing::debug!("BitMEX WS disconnected: {e:#}");
                         break;
                     }
                     Ok(None) => {
-                        tracing::error!("BitMEX WS closed");
+                        tracing::debug!("BitMEX WS closed");
                         break;
                     }
                 }
             }
-            tracing::error!("BitMEX WS connection lost, reconnecting in {RECONNECTION_TIMEOUT_SECONDS} seconds...");
+
+            tracing::debug!("Reconnecting in {RECONNECTION_TIMEOUT_SECONDS} seconds...");
             tokio::time::sleep(Duration::from_secs(RECONNECTION_TIMEOUT_SECONDS)).await;
         }
     });
