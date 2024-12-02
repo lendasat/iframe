@@ -25,7 +25,7 @@ function TransactionLink({ transaction, loanAssetChain }: TransactionLinkProps) 
     || transactionType === TransactionType.Liquidation
     || transactionType === TransactionType.Dispute
   ) {
-    urlPrefix = import.meta.env.VITE_MEMPOOL_REST_URL;
+    urlPrefix = `${import.meta.env.VITE_MEMPOOL_REST_URL}/tx`;
   }
 
   if (transactionType === TransactionType.PrincipalGiven || transactionType === TransactionType.PrincipalRepaid) {
