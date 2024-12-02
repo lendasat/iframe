@@ -61,12 +61,19 @@ export function ContractRepaid({
   };
 
   const claimCollateralRequest = async () => {
+    console.log("Getting claim collateral PSBT");
+
     const res = await getClaimCollateralPsbt(contract.id, selectedFee);
+
+    console.log("Signing claim collateral PSBT");
+
     const claimTx = await signClaimPsbt(res.psbt, res.collateral_descriptor);
+
+    console.log("Posting signed claim TX");
 
     const txid = await postClaimTx(contract.id, claimTx);
 
-    alert(`Transaction ${txid} was published!`);
+    alert(`Collateral claim transaction ${txid} was published!`);
 
     navigate("/my-contracts");
   };
