@@ -542,7 +542,7 @@ pub async fn post_contract_request(
 
 // This API is only needed for the version of the protocol _without_ DLCs. With DLCs, the borrower
 // will be able to unilaterally reclaim the collateral after they learn the loan secret.
-#[instrument(skip_all, err(Debug), ret)]
+#[instrument(skip_all, fields(borrower_id = user.id, contract_id), err(Debug), ret)]
 pub async fn get_claim_collateral_psbt(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<User>,
