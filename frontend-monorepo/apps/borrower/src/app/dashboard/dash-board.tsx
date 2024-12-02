@@ -22,16 +22,26 @@ function DashBoard() {
 
   const totalLoanAmount = value
     ? value
-      .filter((loan) => loan.status !== ContractStatus.Rejected && loan.status !== ContractStatus.RequestExpired)
+      .filter((loan) =>
+        loan.status !== ContractStatus.Requested && loan.status !== ContractStatus.Approved
+        && loan.status !== ContractStatus.CollateralSeen && loan.status !== ContractStatus.Rejected
+        && loan.status !== ContractStatus.RequestExpired && loan.status !== ContractStatus.Cancelled
+      )
       .map((loan) => loan.loan_amount)
       .reduce((sum, amount) => sum + amount, 0)
     : 0;
 
-  const totalLoans = value?.length;
+  // All the loans that were at least approved by the lender.
+  const totalLoans = value?.filter((loan) =>
+    loan.status !== ContractStatus.Rejected && loan.status !== ContractStatus.RequestExpired
+    && loan.status !== ContractStatus.Cancelled
+  ).length;
 
   const totalActiveLoans = value?.filter((loan) =>
-    loan.status !== ContractStatus.Closed && loan.status !== ContractStatus.Closing
-    && loan.status !== ContractStatus.Rejected && loan.status !== ContractStatus.RequestExpired
+    loan.status !== ContractStatus.Requested && loan.status !== ContractStatus.Approved
+    && loan.status !== ContractStatus.CollateralSeen && loan.status !== ContractStatus.Rejected
+    && loan.status !== ContractStatus.RequestExpired && loan.status !== ContractStatus.Cancelled
+    && loan.status !== ContractStatus.Closed && loan.status !== ContractStatus.Closing
   ).length;
 
   return (
@@ -41,7 +51,7 @@ function DashBoard() {
     >
       <Grid className="md:grid-cols-2 md:grid-rows-2 xl:grid-cols-[minmax(350px,_1fr)_minmax(450px,_1fr)_minmax(300px,_1fr)] gap-5">
         <Box className="md:bg-gradient-to-b from-white to-white/10 backdrop-blur rounded-2xl p-5 md:row-span-2">
-          <Text as="p" weight={"medium"} className="text-font" size={"3"}>Total Secured Loans</Text>
+          <Text as="p" weight={"medium"} className="text-font" size={"3"}>Total Borrowed</Text>
           {/* Total Loan Received */}
           <Heading size={"8"} mt={"3"} className="text-font-dark">
             {loading ? <Skeleton>$756,809.32</Skeleton> : formatCurrency(totalLoanAmount)}
@@ -51,13 +61,13 @@ function DashBoard() {
             <Box className="border border-font/10 rounded-xl py-2 px-3">
               {/* Total number of loans received */}
               <Heading size={"6"}>{loading ? <Skeleton>6</Skeleton> : totalLoans}</Heading>
-              <Text size={"2"} weight={"medium"} className="text-font/70">Loans in Total</Text>
+              <Text size={"2"} weight={"medium"} className="text-font/70">All Contracts</Text>
             </Box>
 
             <Box className="border border-font/10 rounded-xl py-2 px-3">
               {/* Total number of loans not repaid/closed */}
               <Heading size={"6"}>{loading ? <Skeleton>2</Skeleton> : totalActiveLoans}</Heading>
-              <Text size={"2"} weight={"medium"} className="text-font/70">Active Loan</Text>
+              <Text size={"2"} weight={"medium"} className="text-font/70">Open Contracts</Text>
             </Box>
           </Box>
           <Separator size={"4"} my={"5"} className="bg-font/10" />
@@ -103,13 +113,13 @@ function DashBoard() {
         <Box className="bg-white rounded-2xl p-5 min-h-72 flex flex-col items-center justify-center">
           <img src={SecurityImg} alt="credit card" className="max-w-32 animate-[bounce_2s_ease-in-out_infinite]" />
           <Text size={"2"} className="text-font/60 max-w-[250px] text-center">
-            Lendasat is your gateway to borrow against your Bitcoin in a non-custodial and peer-2-peer way.
+            Lendasat is your gateway to borrow against your Bitcoin in a non-custodial and peer-to-peer way.
           </Text>
         </Box>
 
         <Box className="bg-gradient-to-b from-white to-white/10 backdrop-blur rounded-2xl p-5 md:col-span-2 min-h-72 h-full">
           <Flex align={"center"} justify={"between"} pr={"3"} pb={"3"}>
-            <Text as="p" weight={"medium"} className="text-font" size={"3"}>Transaction</Text>
+            <Text as="p" weight={"medium"} className="text-font" size={"3"}>Transactions</Text>
             <Button variant="ghost" className="hover:bg-transparent text-purple-800 hover:text-font-dark font-medium">
               <Link to={"/history"}>
                 View All

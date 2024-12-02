@@ -48,7 +48,7 @@ export default function LoanCarousel() {
     return (
       <Box className="space-y-4">
         <Flex align={"center"} justify={"between"} pr={"3"}>
-          <Text as="p" weight={"medium"} className="text-font" size={"3"}>My Loans</Text>
+          <Text as="p" weight={"medium"} className="text-font" size={"3"}>Contract Overview</Text>
           <Flex align={"center"} gap={"4"}>
             <IconButton
               onClick={handlePrev}
@@ -73,7 +73,7 @@ export default function LoanCarousel() {
         >
           {loans.map((loan, index) => {
             const { lender, expiry, loan_amount, contract_address, status } = loan;
-            const displayedAddress = contract_address || "Your vault address will be shown here once funded";
+            const displayedAddress = contract_address || "";
             const isAddressPresent = !!contract_address;
 
             return (
