@@ -126,11 +126,11 @@ build-frontend:
     cd frontend-monorepo
     npx nx run-many --target=build --all --skipNxCache
 
-# rebuilds the frontend if a file in the frontend changes
-watch-frontend:
+# Clear cached Nx artifacts and metadata about the workspace and shut down the Nx Daemon.
+nx-reset:
     #!/usr/bin/env bash
     cd frontend-monorepo
-    npx nx watch --projects=borrower,lender -- npx nx run-many -t build -p borrower,lender
+    npx nx reset
 
 ## ------------------------
 ## Build hub functions
