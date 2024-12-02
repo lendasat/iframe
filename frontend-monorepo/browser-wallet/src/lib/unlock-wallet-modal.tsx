@@ -37,14 +37,14 @@ export function UnlockWalletModal({ show, handleClose, handleSubmit }: WalletMod
         return;
       }
       if (!isWalletLoaded) {
-        loadWallet(password);
+        await loadWallet(password);
         console.log("Wallet loaded successfully");
       } else {
         console.log("Wallet already loaded");
         return;
       }
     } catch (error) {
-      setError(`${error}`);
+      setError(`Failed to unlock: ${error}`);
       return;
     } finally {
       setLoading(false);
@@ -70,8 +70,8 @@ export function UnlockWalletModal({ show, handleClose, handleSubmit }: WalletMod
                     <FontAwesomeIcon icon={faInfoCircle} />
                   </Box>
                   <Text>
-                    Please confirm your contract secret. You have set the contract secret during registration. It is
-                    needed to encrypt the backup of your contract data.
+                    Please provide your contract secret. You set the contract secret during registration. It is needed
+                    to access your encrypted contract data.
                   </Text>
                 </Alert>
               )

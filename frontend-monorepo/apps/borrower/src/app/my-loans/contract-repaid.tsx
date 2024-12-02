@@ -4,8 +4,10 @@ import { UnlockWalletModal, useWallet } from "@frontend-monorepo/browser-wallet"
 import type { Contract } from "@frontend-monorepo/http-client-borrower";
 import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import { FeeSelector } from "@frontend-monorepo/mempool";
+import { Callout, Heading } from "@radix-ui/themes";
 import { useState } from "react";
 import { Alert, Button, Col, Container, Row } from "react-bootstrap";
+import { IoInformationCircleOutline } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
 
 interface ContractRepaidProps {
@@ -25,6 +27,8 @@ export function ContractRepaid({
   const [selectedFee, setSelectedFee] = useState(1);
   const [showUnlockWalletModal, setShowUnlockWalletModal] = useState(false);
 
+  const [error, setError] = useState("");
+
   const handleCloseUnlockWalletModal = () => setShowUnlockWalletModal(false);
   const handleOpenUnlockWalletModal = () => setShowUnlockWalletModal(true);
 
@@ -40,6 +44,7 @@ export function ContractRepaid({
       }
     } catch (err) {
       console.error("Failed to claim collateral", err);
+      throw err;
     }
   };
 
@@ -51,6 +56,7 @@ export function ContractRepaid({
       }
     } catch (err) {
       console.error("Failed unlocking wallet", err);
+      throw err;
     }
   };
 
@@ -69,6 +75,24 @@ export function ContractRepaid({
     handleCloseUnlockWalletModal();
   };
 
+  const onUnlockOrWithdraw = async () => {
+    if (isWalletLoaded) {
+      try {
+        await claimCollateral();
+      } catch (e) {
+        const err = e as Error;
+        setError(`Failed to claim collateral: ${err.message}`);
+      }
+    } else {
+      try {
+        await unlockWallet();
+      } catch (e) {
+        const err = e as Error;
+        setError(`Failed to unlock contract: ${err.message}`);
+      }
+    }
+  };
+
   return (
     <>
       <UnlockWalletModal
@@ -77,24 +101,23 @@ export function ContractRepaid({
         handleSubmit={handleSubmitUnlockWalletModal}
       />
       <Container fluid>
-        <Row>
-          <h4>Claim collateral</h4>
-        </Row>
-
+        <Heading size={"4"} weight={"medium"}>
+          Claim collateral
+        </Heading>
         <Row className="mt-4">
           <Col className="text-center">
             <div className="d-flex justify-content-center align-items-center flex-column">
               <p className="mt-2 text-break">
-                To claim your collateral please confirm with your <strong>contract secret</strong>.
+                To claim the collateral you will have to provide your <strong>contract secret</strong>.
               </p>
             </div>
           </Col>
         </Row>
         <Row className="mt-2">
           <Col>
-            <Alert variant="info">
-              <FontAwesomeIcon icon={faInfoCircle} /> Once claimed, your collateral of{" "}
-              <strong>{collateralBtc} BTC</strong> will be disbursed to <strong>{refundAddress}</strong>.
+            <Alert className="text-center" variant="info">
+              <FontAwesomeIcon icon={faInfoCircle} /> The <strong>{collateralBtc} BTC</strong>{"  "}
+              collateral will be sent to this address: <strong>{refundAddress}</strong>.
             </Alert>
           </Col>
         </Row>
@@ -105,16 +128,22 @@ export function ContractRepaid({
             <Col className="d-grid">
               <Button
                 variant="primary"
-                onClick={async () => {
-                  if (isWalletLoaded) {
-                    await claimCollateral();
-                  } else {
-                    await unlockWallet();
-                  }
-                }}
+                onClick={onUnlockOrWithdraw}
               >
-                {isWalletLoaded ? "Withdraw funds" : "Unlock Contract"}
+                {isWalletLoaded ? "Withdraw Funds" : "Unlock Contract"}
               </Button>
+              {error && (
+                <Col className="d-grid mt-4">
+                  <Callout.Root color="tomato">
+                    <Callout.Icon>
+                      <IoInformationCircleOutline />
+                    </Callout.Icon>
+                    <Callout.Text>
+                      {error}
+                    </Callout.Text>
+                  </Callout.Root>
+                </Col>
+              )}
             </Col>
           </Row>
         </Row>
