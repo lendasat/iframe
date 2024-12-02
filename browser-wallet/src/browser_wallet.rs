@@ -141,6 +141,8 @@ pub fn sign_claim_psbt(psbt: &str, collateral_descriptor: &str) -> Result<String
     let tx = wallet::sign_claim_psbt(psbt, collateral_descriptor)?;
     let tx = bitcoin::consensus::encode::serialize_hex(&tx);
 
+    log::debug!("Signed claim TX: {tx}");
+
     Ok(tx)
 }
 

@@ -191,7 +191,7 @@ pub(crate) async fn create_dispute(
     Ok(Json(dispute))
 }
 
-#[instrument(skip_all, err(Debug), ret)]
+#[instrument(skip_all, fields(borrower_id = user.id, contract_id), err(Debug), ret)]
 pub async fn get_claim_collateral_psbt(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<User>,
