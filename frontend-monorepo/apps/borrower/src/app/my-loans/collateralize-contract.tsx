@@ -1,8 +1,9 @@
-import { Badge, Box, Button, Flex, Heading, Separator, Text, Tooltip as Popup } from "@radix-ui/themes";
+import { Badge, Box, Button, Callout, Flex, Heading, Separator, Text, Tooltip as Popup } from "@radix-ui/themes";
 import QRCode from "qrcode.react";
 import queryString from "query-string";
 import { useState } from "react";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
+import { FaInfoCircle } from "react-icons/fa";
 
 interface CollateralContractDetailsProps {
   collateral_btc: number;
@@ -91,6 +92,20 @@ export function CollateralContractDetails({
         </Flex>
         <Separator className="bg-font/10" size={"4"} my={"4"} />
       </Box>
+
+      <Box py={"4"} className="text-center">
+        <Callout.Root color={"blue"}>
+          <Callout.Icon>
+            <FaInfoCircle size={"18"} />
+          </Callout.Icon>
+          <Callout.Text>
+            Psst! You can send <em>more</em>{" "}
+            collateral if you want. The more you send, the lower the initial LTV ratio of your contract, and the less
+            likely you will ever get liquidated. In any case, you can always add more later.
+          </Callout.Text>
+        </Callout.Root>
+      </Box>
+
       <Box py={"4"} className="text-center">
         <Text size={"2"} weight={"medium"} className="text-font/60">
           Scan QR code to make payment
@@ -114,7 +129,7 @@ export function CollateralContractDetails({
             size={"2"}
             className="text-font/60 text-center max-w-sm font-medium"
           >
-            Please send{"  "}
+            Please send <em>at least</em>{"  "}
             <Popup
               content={"Copy exact amount to send"}
               className="text-font-dark font-semibold"
