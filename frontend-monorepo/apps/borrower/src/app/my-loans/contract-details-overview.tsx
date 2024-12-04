@@ -166,6 +166,7 @@ function ContractDetails({ contract }: DetailsProps) {
   const loanAmount = contract.loan_amount;
   const interestRate = contract.interest_rate;
   const durationMonths = contract.duration_months;
+  const expiry = contract.expiry.toLocaleDateString();
 
   const initialLtv = contract.initial_ltv;
   const initial_price = loanAmount / (collateral * initialLtv);
@@ -340,6 +341,16 @@ function ContractDetails({ contract }: DetailsProps) {
           </Text>
           <Text size={"2"} weight={"medium"}>
             {durationMonths} months
+          </Text>
+        </Flex>
+        <Separator size={"4"} className="bg-font/10" />
+
+        <Flex gap={"5"} align={"start"} justify={"between"}>
+          <Text size={"2"} weight={"medium"} className="text-font/70">
+            Expiry
+          </Text>
+          <Text size={"2"} weight={"medium"}>
+            {expiry}
           </Text>
         </Flex>
         <Separator size={"4"} className="bg-font/10" />
