@@ -572,8 +572,7 @@ async fn map_to_api_contract(
         .map_err(Error::Database)?
         .ok_or(Error::MissingLoanOffer)?;
 
-    // TODO: Do this better tomorrow.
-    let expiry = contract.created_at + time::Duration::weeks((contract.duration_months * 4) as i64);
+    let expiry = contract.expiry();
 
     let lender = db::lenders::get_user_by_id(&data.db, &contract.lender_id)
         .await
