@@ -166,6 +166,7 @@ function ContractDetails({ contract }: DetailsProps) {
   const loanAmount = contract.loan_amount;
   const interestRate = contract.interest_rate;
   const durationMonths = contract.duration_months;
+  const expiry = contract.expiry.toLocaleDateString();
 
   const initialLtv = contract.initial_ltv;
   const initial_price = loanAmount / (collateral * initialLtv);
@@ -293,7 +294,7 @@ function ContractDetails({ contract }: DetailsProps) {
 
         <Flex gap={"5"} align={"center"} justify={"between"}>
           <Text size={"2"} weight={"medium"} className="text-font/70">
-            Contract status
+            Contract Status
           </Text>
           <Text size={"2"} weight={"medium"}>
             <Badge
@@ -345,6 +346,16 @@ function ContractDetails({ contract }: DetailsProps) {
         <Separator size={"4"} className="bg-font/10" />
 
         <Flex gap={"5"} align={"start"} justify={"between"}>
+          <Text size={"2"} weight={"medium"} className="text-font/70">
+            Expiry
+          </Text>
+          <Text size={"2"} weight={"medium"}>
+            {expiry}
+          </Text>
+        </Flex>
+        <Separator size={"4"} className="bg-font/10" />
+
+        <Flex gap={"5"} align={"start"} justify={"between"}>
           <Flex align={"center"} gap={"1"}>
             <Text size={"2"} weight={"medium"} className="text-font/70">
               Collateral
@@ -364,7 +375,7 @@ function ContractDetails({ contract }: DetailsProps) {
         <Flex gap={"5"} align={"start"} justify={"between"}>
           <Text size={"2"} weight={"medium"} className="text-font/70">
             {/* TODO: here we showed the percentage as well, but we don't know the number :) */}
-            Origination fee
+            Origination Fee
           </Text>
           <Box className="max-w-sm text-end">
             <OverlayTrigger
@@ -382,7 +393,7 @@ function ContractDetails({ contract }: DetailsProps) {
         <Flex gap={"5"} align={"start"} justify={"between"}>
           <LtvInfoLabel>
             <Text size={"2"} weight={"medium"} className="text-font/70">
-              LTV ratio
+              LTV Ratio
             </Text>
             <FaInfoCircle />
           </LtvInfoLabel>

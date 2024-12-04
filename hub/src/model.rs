@@ -255,6 +255,21 @@ pub struct Contract {
     pub updated_at: OffsetDateTime,
 }
 
+impl Contract {
+    pub fn expiry(&self) -> OffsetDateTime {
+        // TODO: We should calculate the expiry from the time the borrower gets the principal. Atm
+        // we are using the contract request creation time as the starting point, which is
+        // incorrect.
+        let loan_start = self.created_at;
+
+        // TODO: We are using 30-day months here. This means that a year-long loan actually lasts
+        // 360 days. Is that acceptable?
+        let duration_days = (self.duration_months * 30) as i64;
+
+        loan_start + time::Duration::days(duration_days)
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[repr(u32)]
 pub enum ContractVersion {
