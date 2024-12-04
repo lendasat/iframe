@@ -10,8 +10,8 @@ argon2 = "0.5.0"
 async-stream = "0.3"
 async-trait = "0.1.81"
 atty = "0.2.14"
-axum = { version = "0.7.5", features = ["ws", "tokio"] }
-axum-extra = { version = "0.9.0", features = ["cookie", "typed-header"] }
+axum = { version = "0.7.9", features = ["ws", "tokio", "macros"] }
+axum-extra = { version = "0.9.6", features = ["cookie", "typed-header"] }
 backon = { version = "1", features = ["tokio-sleep"] }
 bitcoin = { version = "0.32.2", features = ["bitcoinconsensus", "serde"] }
 bitcoin-units = "0.1.2"

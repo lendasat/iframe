@@ -14,17 +14,16 @@ use crate::model::PsbtQueryParams;
 use crate::model::User;
 use crate::routes::borrower::auth::jwt_auth;
 use crate::routes::AppState;
-use crate::routes::ErrorResponse;
-use anyhow::bail;
-use anyhow::ensure;
 use anyhow::Context;
-use anyhow::Result;
+use axum::extract::rejection::JsonRejection;
+use axum::extract::FromRequest;
 use axum::extract::Path;
 use axum::extract::Query;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::middleware;
 use axum::response::IntoResponse;
+use axum::response::Response;
 use axum::routing::delete;
 use axum::routing::get;
 use axum::routing::post;
@@ -32,6 +31,7 @@ use axum::routing::put;
 use axum::Extension;
 use axum::Json;
 use axum::Router;
+use bitcoin::consensus::encode::FromHexError;
 use bitcoin::Amount;
 use bitcoin::PublicKey;
 use bitcoin::Transaction;
@@ -101,6 +101,335 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
         .with_state(app_state)
 }
 
+#[instrument(skip_all, err(Debug))]
+async fn post_contract_request(
+    State(data): State<Arc<AppState>>,
+    Extension(user): Extension<User>,
+    AppJson(body): AppJson<ContractRequestSchema>,
+) -> Result<AppJson<Contract>, Error> {
+    let offer = db::loan_offers::loan_by_id(&data.db, &body.loan_id)
+        .await
+        .map_err(Error::Database)?
+        .ok_or(Error::MissingLoanOffer)?;
+
+    let contract_id = Uuid::new_v4();
+    let (borrower_loan_address, moon_invoice) = match body.integration {
+        Integration::StableCoin => return Err(Error::MissingBorrowerLoanAddress),
+        Integration::PayWithMoon => {
+            if offer.loan_asset_chain != LoanAssetChain::Polygon
+                || offer.loan_asset_type != LoanAssetType::Usdc
+            {
+                return Err(Error::InvalidMoonLoanRequest {
+                    chain: offer.loan_asset_chain,
+                    asset: offer.loan_asset_type,
+                });
+            }
+
+            let cards = db::moon::get_borrower_cards(&data.db, user.id.as_str())
+                .await
+                .map_err(Error::Database)?;
+
+            if !cards.is_empty() {
+                return Err(Error::OneMoonCardAllowed);
+            }
+
+            let invoice = data
+                .moon
+                .generate_invoice(
+                    body.loan_amount,
+                    contract_id.to_string(),
+                    offer.lender_id,
+                    user.id.as_str(),
+                )
+                .await
+                .map_err(Error::MoonInvoiceGeneration)?;
+
+            (invoice.address.clone(), Some(invoice))
+        }
+    };
+
+    let initial_price = get_bitmex_index_price(OffsetDateTime::now_utc())
+        .await
+        .map_err(Error::BitMexOpeningPrice)?;
+
+    let min_ltv = offer.min_ltv;
+    let initial_collateral = calculate_initial_collateral(body.loan_amount, min_ltv, initial_price)
+        .map_err(Error::InitialCollateralCalculation)?;
+
+    // TODO: Choose origination fee based on loan parameters. For now we only have one origination
+    // fee anyway.
+    let fee = data
+        .config
+        .origination_fee
+        .first()
+        .ok_or(Error::MissingOriginationFee)?;
+
+    let origination_fee = calculate_origination_fee(body.loan_amount, fee.fee, initial_price)
+        .map_err(Error::OriginationFeeCalculation)?;
+
+    let contract = db::contracts::insert_contract_request(
+        &data.db,
+        contract_id,
+        user.id.as_str(),
+        &body.loan_id,
+        min_ltv,
+        initial_collateral.to_sat(),
+        origination_fee.to_sat(),
+        body.loan_amount,
+        body.duration_months,
+        body.borrower_btc_address,
+        body.borrower_pk,
+        borrower_loan_address.as_str(),
+        body.integration,
+        ContractVersion::TwoOfThree,
+    )
+    .await
+    .map_err(Error::Database)?;
+
+    let contract = map_to_api_contract(&data, contract).await?;
+
+    if let Some(invoice) = moon_invoice {
+        data.moon
+            .persist_invoice(&invoice)
+            .await
+            .map_err(Error::Database)?;
+    }
+
+    let loan_url = format!(
+        "{}/my-contracts/{}",
+        data.config.lender_frontend_origin.to_owned(),
+        contract.id
+    );
+    let email = Email::new(data.config.clone());
+
+    // We don't want to fail this upwards because the contract request has been sent already.
+    if let Err(e) = async {
+        let lender = db::lenders::get_user_by_id(&data.db, &contract.lender.id)
+            .await?
+            .context("Failed to find lender")?;
+
+        email
+            .send_new_loan_request(lender, loan_url.as_str())
+            .await
+            .context("Failed to send loan-request email")?;
+
+        db::contract_emails::mark_loan_request_as_sent(&data.db, &contract.id)
+            .await
+            .context("Failed to mark loan-request email as sent")?;
+
+        anyhow::Ok(())
+    }
+    .await
+    {
+        tracing::error!("Failed at notifying lender about loan request: {e:#}");
+    }
+
+    Ok(AppJson(contract))
+}
+
+#[instrument(skip(data, user), err(Debug), ret)]
+async fn cancel_contract_request(
+    State(data): State<Arc<AppState>>,
+    Extension(user): Extension<User>,
+    Path(contract_id): Path<String>,
+) -> Result<(), Error> {
+    let contract = db::contracts::load_contract_by_contract_id_and_borrower_id(
+        &data.db,
+        contract_id.as_str(),
+        user.id.as_str(),
+    )
+    .await
+    .map_err(Error::Database)?;
+
+    if contract.status != ContractStatus::Requested {
+        return Err(Error::InvalidCancelRequest {
+            status: contract.status,
+        });
+    }
+
+    db::contracts::mark_contract_as_cancelled(&data.db, contract_id.as_str(), user.id.as_str())
+        .await
+        .map_err(Error::Database)?;
+
+    Ok(())
+}
+
+async fn get_contracts(
+    State(data): State<Arc<AppState>>,
+    Extension(user): Extension<User>,
+) -> Result<AppJson<Vec<Contract>>, Error> {
+    let contracts = db::contracts::load_contracts_by_borrower_id(&data.db, user.id.as_str())
+        .await
+        .map_err(Error::Database)?;
+
+    let mut contracts_api = Vec::new();
+    for contract in contracts {
+        let contract = map_to_api_contract(&data, contract).await?;
+
+        contracts_api.push(contract);
+    }
+
+    Ok(AppJson(contracts_api))
+}
+
+async fn get_contract(
+    State(data): State<Arc<AppState>>,
+    Extension(user): Extension<User>,
+    Path(contract_id): Path<String>,
+) -> Result<AppJson<Contract>, Error> {
+    let contract = db::contracts::load_contract_by_contract_id_and_borrower_id(
+        &data.db,
+        contract_id.as_str(),
+        &user.id,
+    )
+    .await
+    .map_err(Error::Database)?;
+
+    let contract = map_to_api_contract(&data, contract).await?;
+
+    Ok(AppJson(contract))
+}
+
+#[instrument(skip(data, user), err(Debug))]
+async fn put_repayment_provided(
+    State(data): State<Arc<AppState>>,
+    Path(contract_id): Path<String>,
+    query_params: Query<PrincipalRepaidQueryParam>,
+    Extension(user): Extension<User>,
+) -> Result<(), Error> {
+    let contract = db::contracts::load_contract_by_contract_id_and_borrower_id(
+        &data.db,
+        contract_id.as_str(),
+        &user.id,
+    )
+    .await
+    .map_err(Error::Database)?;
+
+    // TODO: Use a database transaction.
+    db::contracts::mark_contract_as_repayment_provided(&data.db, contract.id.as_str())
+        .await
+        .map_err(Error::Database)?;
+
+    db::transactions::insert_principal_repaid_txid(
+        &data.db,
+        contract_id.as_str(),
+        query_params.txid.as_str(),
+    )
+    .await
+    .map_err(Error::Database)?;
+
+    Ok(())
+}
+
+// This API is only needed for the version of the protocol _without_ DLCs. With DLCs, the borrower
+// will be able to unilaterally reclaim the collateral after they learn the loan secret.
+#[instrument(skip_all, fields(borrower_id = user.id, contract_id), err(Debug), ret)]
+async fn get_claim_collateral_psbt(
+    State(data): State<Arc<AppState>>,
+    Extension(user): Extension<User>,
+    Path(contract_id): Path<String>,
+    query_params: Query<PsbtQueryParams>,
+) -> Result<AppJson<ClaimCollateralPsbt>, Error> {
+    let contract = db::contracts::load_contract_by_contract_id_and_borrower_id(
+        &data.db,
+        contract_id.as_str(),
+        &user.id,
+    )
+    .await
+    .map_err(Error::Database)?;
+
+    if contract.status != ContractStatus::RepaymentConfirmed {
+        return Err(Error::PrincipalNotRepaid);
+    }
+
+    let contract_index = contract.contract_index.ok_or(Error::MissingContractIndex)?;
+
+    let contract_address = contract
+        .contract_address
+        .ok_or(Error::MissingCollateralAddress)?;
+
+    let lender_xpub = contract.lender_xpub.ok_or(Error::MissingLenderXpub)?;
+
+    let collateral_outputs = data
+        .mempool
+        .send(mempool::GetCollateralOutputs(contract_address))
+        .await
+        .expect("actor to be alive");
+
+    if collateral_outputs.is_empty() {
+        return Err(Error::MissingCollateralOutputs);
+    }
+
+    let origination_fee = Amount::from_sat(contract.origination_fee_sats);
+
+    let mut wallet = data.wallet.lock().await;
+
+    let (psbt, collateral_descriptor) = wallet
+        .create_claim_collateral_psbt(
+            contract.borrower_pk,
+            &lender_xpub,
+            contract_index,
+            collateral_outputs,
+            origination_fee.to_sat(),
+            contract.borrower_btc_address.assume_checked(),
+            query_params.fee_rate,
+            contract.contract_version,
+        )
+        .map_err(Error::CreateClaimCollateralPsbt)?;
+
+    let psbt = psbt.serialize_hex();
+
+    let res = ClaimCollateralPsbt {
+        psbt,
+        collateral_descriptor,
+    };
+
+    Ok(AppJson(res))
+}
+
+// We don't need the borrower to publish the claim TX through the hub, but it is convenient to be
+// able to move the contract state forward. Eventually we could remove this and publish from the
+// borrower client.
+#[instrument(skip(data, _user), err(Debug), ret)]
+async fn post_claim_tx(
+    State(data): State<Arc<AppState>>,
+    // TODO: Make sure that this API is called by the _right_ user.
+    Extension(_user): Extension<User>,
+    Path(contract_id): Path<String>,
+    AppJson(body): AppJson<ClaimTx>,
+) -> Result<String, Error> {
+    let signed_claim_tx_str = body.tx;
+    let signed_claim_tx: Transaction =
+        bitcoin::consensus::encode::deserialize_hex(&signed_claim_tx_str)
+            .map_err(Error::ParseClaimTx)?;
+    let claim_txid = signed_claim_tx.compute_txid();
+
+    data.mempool
+        .send(mempool::TrackCollateralClaim {
+            contract_id: contract_id.clone(),
+            claim_txid,
+        })
+        .await
+        .expect("actor to be alive")
+        .map_err(Error::TrackClaimTx)?;
+
+    data.mempool
+        .send(mempool::PostTx(signed_claim_tx_str))
+        .await
+        .expect("actor to be alive")
+        .map_err(Error::PostClaimTx)?;
+
+    // TODO: Use a database transaction.
+    db::transactions::insert_claim_txid(&data.db, contract_id.as_str(), &claim_txid)
+        .await
+        .map_err(Error::Database)?;
+    db::contracts::mark_contract_as_closing(&data.db, contract_id.as_str())
+        .await
+        .map_err(Error::Database)?;
+
+    Ok(claim_txid.to_string())
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Contract {
     pub id: String,
@@ -153,380 +482,23 @@ pub struct ClaimTx {
     pub tx: String,
 }
 
-#[instrument(skip_all, err(Debug))]
-pub async fn post_contract_request(
-    State(data): State<Arc<AppState>>,
-    Extension(user): Extension<User>,
-    Json(body): Json<ContractRequestSchema>,
-) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let contract = async {
-        let offer = db::loan_offers::loan_by_id(&data.db, &body.loan_id)
-            .await?
-            .context("No loan offer for contract")?;
-
-        let contract_id = Uuid::new_v4();
-        let (borrower_loan_address, moon_invoice) = match body.integration {
-            Integration::StableCoin => (
-                body.borrower_loan_address
-                    .context("Must provide a borrower loan address for stable coin integration")?,
-                None,
-            ),
-            Integration::PayWithMoon => {
-                ensure!(
-                    offer.loan_asset_chain == LoanAssetChain::Polygon
-                        && offer.loan_asset_type == LoanAssetType::Usdc,
-                    "Pay with Moon only supports USDC on Polygon"
-                );
-
-                let cards = db::moon::get_borrower_cards(&data.db, user.id.as_str())
-                    .await
-                    .context("Could not load from db")?;
-                if !cards.is_empty() {
-                    bail!("Only one card per user is allowed at the moment");
-                }
-
-                let invoice = data
-                    .moon
-                    .generate_invoice(
-                        body.loan_amount,
-                        contract_id.to_string(),
-                        offer.lender_id,
-                        user.id.as_str(),
-                    )
-                    .await
-                    .context("Generate Moon invoice")?;
-
-                (invoice.address.clone(), Some(invoice))
-            }
-        };
-
-        let price = get_bitmex_index_price(OffsetDateTime::now_utc()).await?;
-        let ltv = offer.min_ltv;
-
-        let collateral_btc = (body.loan_amount / ltv) / price;
-        let collateral_btc = collateral_btc.round_dp(8);
-        let collateral_btc = collateral_btc.to_f64().context("Invalid conversion")?;
-        let collateral = Amount::from_btc(collateral_btc)?;
-
-        // TODO: implement a proper filter, for now we only have one fee anyways
-        let filter = data
-            .config
-            .origination_fee
-            .first()
-            .context("No origination fee variable set")?;
-
-        let origination_fee_btc = (body.loan_amount * filter.fee) / price;
-        let origination_fee = origination_fee_btc.round_dp(8);
-        let origination_fee =
-            Amount::from_btc(origination_fee.to_f64().expect("to fit")).expect("to fit");
-
-        let contract = db::contracts::insert_contract_request(
-            &data.db,
-            contract_id,
-            user.id.as_str(),
-            &body.loan_id,
-            offer.min_ltv,
-            collateral.to_sat(),
-            origination_fee.to_sat(),
-            body.loan_amount,
-            body.duration_months,
-            body.borrower_btc_address,
-            body.borrower_pk,
-            borrower_loan_address.as_str(),
-            body.integration,
-            ContractVersion::TwoOfThree,
-        )
-        .await?;
-
-        if let Some(invoice) = moon_invoice {
-            data.moon
-                .persist_invoice(&invoice)
-                .await
-                .context("Persist Moon invoice")?;
-        }
-
-        let loan_url = format!(
-            "{}/my-contracts/{}",
-            data.config.lender_frontend_origin.to_owned(),
-            contract.id
-        );
-        let email = Email::new(data.config.clone());
-
-        // We don't want to fail this upwards because the contract request has been sent already.
-        if let Err(e) = async {
-            let lender = db::lenders::get_user_by_id(&data.db, &contract.lender_id)
-                .await?
-                .context("Failed to find lender")?;
-
-            email
-                .send_new_loan_request(lender, loan_url.as_str())
-                .await
-                .context("Failed to send loan-request email")?;
-
-            db::contract_emails::mark_loan_request_as_sent(&data.db, &contract.id)
-                .await
-                .context("Failed to mark loan-request email as sent")?;
-
-            anyhow::Ok(())
-        }
-        .await
-        {
-            tracing::error!("Failed at notifying lender about loan request: {e:#}");
-        }
-
-        let contract = map_to_api_contract(&data, contract)
-            .await
-            .map_err(|_| anyhow::anyhow!("Failed to map contract"))?;
-
-        anyhow::Ok(contract)
-    }
-    .await
-    .map_err(|error| {
-        // TODO: while convenient to have one big error catch block, it is not ideal to
-        // differentiate between different error types
-        let error_response = ErrorResponse {
-            message: format!("{:#}", error),
-        };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?;
-
-    Ok((StatusCode::OK, Json(contract)))
+#[derive(Debug, Deserialize)]
+pub struct PrincipalRepaidQueryParam {
+    pub txid: String,
 }
 
-pub async fn get_contracts(
-    State(data): State<Arc<AppState>>,
-    Extension(user): Extension<User>,
-) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let contracts = db::contracts::load_contracts_by_borrower_id(&data.db, user.id.as_str())
-        .await
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
-
-    let mut contracts_api = Vec::new();
-    for contract in contracts {
-        let contract = map_to_api_contract(&data, contract).await?;
-
-        contracts_api.push(contract);
+async fn get_bitmex_index_price(timestamp: OffsetDateTime) -> anyhow::Result<Decimal> {
+    #[derive(serde::Deserialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    struct Index {
+        #[serde(with = "time::serde::rfc3339")]
+        #[serde(rename = "timestamp")]
+        _timestamp: OffsetDateTime,
+        last_price: f64,
+        #[serde(rename = "reference")]
+        _reference: String,
     }
 
-    Ok((StatusCode::OK, Json(contracts_api)))
-}
-
-#[instrument(skip(data, user), err(Debug))]
-pub async fn get_contract(
-    State(data): State<Arc<AppState>>,
-    Extension(user): Extension<User>,
-    Path(contract_id): Path<String>,
-) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let contract = db::contracts::load_contract_by_contract_id_and_borrower_id(
-        &data.db,
-        contract_id.as_str(),
-        &user.id,
-    )
-    .await
-    .map_err(|error| {
-        let error_response = ErrorResponse {
-            message: format!("Database error: {}", error),
-        };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?;
-
-    let contract = map_to_api_contract(&data, contract).await?;
-
-    Ok((StatusCode::OK, Json(contract)))
-}
-
-// This API is only needed for the version of the protocol _without_ DLCs. With DLCs, the borrower
-// will be able to unilaterally reclaim the collateral after they learn the loan secret.
-#[instrument(skip_all, fields(borrower_id = user.id, contract_id), err(Debug), ret)]
-pub async fn get_claim_collateral_psbt(
-    State(data): State<Arc<AppState>>,
-    Extension(user): Extension<User>,
-    Path(contract_id): Path<String>,
-    query_params: Query<PsbtQueryParams>,
-) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let contract = db::contracts::load_contract_by_contract_id_and_borrower_id(
-        &data.db,
-        contract_id.as_str(),
-        &user.id,
-    )
-    .await
-    .map_err(|error| {
-        let error_response = ErrorResponse {
-            message: format!("Contract not found: {}", error),
-        };
-        (StatusCode::BAD_REQUEST, Json(error_response))
-    })?;
-
-    if contract.status != ContractStatus::RepaymentConfirmed {
-        let error_response = ErrorResponse {
-            message: "Contract is not yet repaid".to_string(),
-        };
-        return Err((StatusCode::BAD_REQUEST, Json(error_response)));
-    }
-
-    let psbt = async {
-        let contract_index = contract
-            .contract_index
-            .context("Can't generate claim PSBT without contract index")?;
-
-        let contract_address = contract
-            .contract_address
-            .context("Cannot claim collateral without collateral address")?;
-
-        let lender_xpub = contract
-            .lender_xpub
-            .context("Cannot calim collateral without lender xpub")?;
-
-        let collateral_outputs = data
-            .mempool
-            .send(mempool::GetCollateralOutputs(contract_address))
-            .await?;
-
-        if collateral_outputs.is_empty() {
-            bail!("Unaware of any collateral outputs to claim");
-        }
-
-        let origination_fee = Amount::from_sat(contract.origination_fee_sats);
-
-        let mut wallet = data.wallet.lock().await;
-
-        let (psbt, collateral_descriptor) = wallet.create_claim_collateral_psbt(
-            contract.borrower_pk,
-            &lender_xpub,
-            contract_index,
-            collateral_outputs,
-            origination_fee.to_sat(),
-            contract.borrower_btc_address.assume_checked(),
-            query_params.fee_rate,
-            contract.contract_version,
-        )?;
-
-        let psbt = psbt.serialize_hex();
-
-        let res = ClaimCollateralPsbt {
-            psbt,
-            collateral_descriptor,
-        };
-
-        anyhow::Ok(res)
-    }
-    .await
-    .map_err(|error| {
-        let error_response = ErrorResponse {
-            message: format!("Database error: {}", error),
-        };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?;
-
-    Ok((StatusCode::OK, Json(psbt)))
-}
-
-// We don't need the borrower to publish the claim TX through the hub, but it is convenient to be
-// able to move the contract state forward. Eventually we could remove this and publish from the
-// borrower client.
-#[instrument(skip(data, _user), err(Debug), ret)]
-pub async fn post_claim_tx(
-    State(data): State<Arc<AppState>>,
-    // TODO: Make sure that the claim TX is issued by the _right_ user.
-    Extension(_user): Extension<User>,
-    Path(contract_id): Path<String>,
-    Json(body): Json<ClaimTx>,
-) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let txid = async {
-        let tx: Transaction = bitcoin::consensus::encode::deserialize_hex(&body.tx)?;
-        let claim_txid = tx.compute_txid();
-
-        data.mempool
-            .send(mempool::TrackCollateralClaim {
-                contract_id: contract_id.clone(),
-                claim_txid,
-            })
-            .await??;
-
-        data.mempool.send(mempool::PostTx(body.tx)).await??;
-        db::transactions::insert_claim_txid(&data.db, contract_id.as_str(), &claim_txid).await?;
-        db::contracts::mark_contract_as_closing(&data.db, contract_id.as_str()).await?;
-
-        anyhow::Ok(claim_txid)
-    }
-    .await
-    .map_err(|error| {
-        let error_response = ErrorResponse {
-            message: format!("Database error: {}", error),
-        };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?;
-
-    Ok((StatusCode::OK, txid.to_string()))
-}
-
-#[instrument(skip(data, user), err(Debug), ret)]
-pub async fn cancel_contract_request(
-    State(data): State<Arc<AppState>>,
-    Extension(user): Extension<User>,
-    Path(contract_id): Path<String>,
-) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let contract = db::contracts::load_contract_by_contract_id_and_borrower_id(
-        &data.db,
-        contract_id.as_str(),
-        user.id.as_str(),
-    )
-    .await
-    .map_err(|e| {
-        tracing::error!(
-            contract_id,
-            borrower_id = user.id,
-            "Could not load contract"
-        );
-
-        let error_response = ErrorResponse {
-            message: format!("Contract not found: {e:#}"),
-        };
-        (StatusCode::BAD_REQUEST, Json(error_response))
-    })?;
-
-    if contract.status != ContractStatus::Requested {
-        let error_response = ErrorResponse {
-            message: "Can only cancel request if it has not yet been approved".to_string(),
-        };
-        return Err((StatusCode::BAD_REQUEST, Json(error_response)));
-    }
-
-    db::contracts::mark_contract_as_cancelled(&data.db, contract_id.as_str(), user.id.as_str())
-        .await
-        .map_err(|e| {
-            tracing::error!(
-                contract_id,
-                borrower_id = user.id,
-                "Could not mark contract as cancelled"
-            );
-
-            let error_response = ErrorResponse {
-                message: format!("Could not cancel request: {e:#}"),
-            };
-            (StatusCode::BAD_REQUEST, Json(error_response))
-        })?;
-
-    Ok(StatusCode::OK)
-}
-
-#[derive(serde::Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-struct Index {
-    #[serde(with = "time::serde::rfc3339")]
-    #[serde(rename = "timestamp")]
-    _timestamp: OffsetDateTime,
-    last_price: f64,
-    #[serde(rename = "reference")]
-    _reference: String,
-}
-
-async fn get_bitmex_index_price(timestamp: OffsetDateTime) -> Result<Decimal> {
     let time_format = format_description::parse("[year]-[month]-[day] [hour]:[minute]")?;
 
     // Ideally we get the price indicated by `timestamp`, but if it is not available we are happy to
@@ -535,7 +507,6 @@ async fn get_bitmex_index_price(timestamp: OffsetDateTime) -> Result<Decimal> {
     let end_time = timestamp.format(&time_format)?;
 
     let mut url = reqwest::Url::parse("https://www.bitmex.com/api/v1/instrument/compositeIndex")?;
-    // TODO: Are we using the right symbol?
     url.query_pairs_mut()
         .append_pair("symbol", ".BXBT")
         .append_pair(
@@ -558,99 +529,60 @@ async fn get_bitmex_index_price(timestamp: OffsetDateTime) -> Result<Decimal> {
     Ok(index_price)
 }
 
-#[derive(Debug, Deserialize)]
-pub struct PrincipalRepaidQueryParam {
-    pub txid: String,
+fn calculate_origination_fee(
+    loan_amount: Decimal,
+    fee: Decimal,
+    initial_price: Decimal,
+) -> anyhow::Result<Amount> {
+    let fee_usd = loan_amount * fee;
+    let fee_btc = fee_usd / initial_price;
+
+    let fee_btc = fee_btc.round_dp(8);
+    let fee_btc = fee_btc.to_f64().expect("to fit");
+
+    Ok(Amount::from_btc(fee_btc).expect("to fit"))
 }
 
-#[instrument(skip(data, user), err(Debug))]
-pub async fn put_repayment_provided(
-    State(data): State<Arc<AppState>>,
-    Path(contract_id): Path<String>,
-    query_params: Query<PrincipalRepaidQueryParam>,
-    Extension(user): Extension<User>,
-) -> std::result::Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    async {
-        let contract = db::contracts::load_contract_by_contract_id_and_borrower_id(
-            &data.db,
-            contract_id.as_str(),
-            &user.id,
-        )
-        .await
-        .context("Failed to load contract")?;
+fn calculate_initial_collateral(
+    loan_amount: Decimal,
+    ltv: Decimal,
+    initial_price: Decimal,
+) -> anyhow::Result<Amount> {
+    let collateral_value_usd = loan_amount
+        .checked_div(ltv)
+        .context("Failed to calculate collateral in USD")?;
 
-        db::contracts::mark_contract_as_repayment_provided(&data.db, contract.id.as_str())
-            .await
-            .context("Failed to mark contract as repaid")?;
+    let collateral_btc = collateral_value_usd
+        .checked_div(initial_price)
+        .context("Failed to calculate collateral in BTC")?;
 
-        db::transactions::insert_principal_repaid_txid(
-            &data.db,
-            contract_id.as_str(),
-            query_params.txid.as_str(),
-        )
-        .await
-        .context("Failed inserting principal given tx id")?;
+    let collateral_btc = collateral_btc.round_dp(8);
+    let collateral_btc = collateral_btc.to_f64().expect("to fit");
 
-        anyhow::Ok(())
-    }
-    .await
-    .map_err(|e| {
-        let error_response = ErrorResponse {
-            message: format!("Database error: {e:#}"),
-        };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?;
-    Ok(())
+    Ok(Amount::from_btc(collateral_btc).expect("to fit"))
 }
 
 /// Convert from a [`model::Contract`] to a [`Contract`].
 async fn map_to_api_contract(
     data: &Arc<AppState>,
     contract: model::Contract,
-) -> Result<Contract, (StatusCode, Json<ErrorResponse>)> {
+) -> Result<Contract, Error> {
     let offer = db::loan_offers::loan_by_id(&data.db, &contract.loan_id)
         .await
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?
-        .context("No loan found for contract")
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Illegal state error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
+        .map_err(Error::Database)?
+        .ok_or(Error::MissingLoanOffer)?;
 
     // TODO: Do this better tomorrow.
     let expiry = contract.created_at + time::Duration::weeks((contract.duration_months * 4) as i64);
 
     let lender = db::lenders::get_user_by_id(&data.db, &contract.lender_id)
         .await
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?
-        .context("No lender found for contract")
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Illegal state error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
+        .map_err(Error::Database)?
+        .ok_or(Error::MissingLender)?;
 
     let transactions = db::transactions::get_all_for_contract_id(&data.db, contract.id.as_str())
         .await
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
+        .map_err(Error::Database)?;
 
     let mut repaid_at = None;
     if contract.status == ContractStatus::Closed || contract.status == ContractStatus::Closing {
@@ -690,4 +622,254 @@ async fn map_to_api_contract(
     };
 
     Ok(contract)
+}
+
+/// All the errors related to the `contracts` REST API.
+#[derive(Debug)]
+enum Error {
+    /// The request body contained invalid JSON.
+    JsonRejection(JsonRejection),
+    /// Failed to interact with the database.
+    Database(anyhow::Error),
+    /// Referenced loan does not exist.
+    MissingLoanOffer,
+    /// Referenced lender does not exist.
+    MissingLender,
+    /// Failed to provide borrower loan address for stablecoin loan.
+    MissingBorrowerLoanAddress,
+    /// Moon only supports USDC on Polygon.
+    InvalidMoonLoanRequest {
+        chain: LoanAssetChain,
+        asset: LoanAssetType,
+    },
+    /// Each user can only have one Moon card for now.
+    OneMoonCardAllowed,
+    /// Failed to generate Moon invoice.
+    MoonInvoiceGeneration(anyhow::Error),
+    /// Failed to get opening price from BitMEX.
+    BitMexOpeningPrice(anyhow::Error),
+    /// Failed to calculate initial collateral.
+    InitialCollateralCalculation(anyhow::Error),
+    /// No origination fee configured.
+    MissingOriginationFee,
+    /// Failed to calculate origination fee in sats.
+    OriginationFeeCalculation(anyhow::Error),
+    /// Can't cancel a contract request with a [`ContractStatus`] different to
+    /// [`ContractStatus::Requested`].
+    InvalidCancelRequest { status: ContractStatus },
+    /// Can't claim collateral if principal has not been repaid.
+    PrincipalNotRepaid,
+    /// Can't claim collateral without contract index.
+    MissingContractIndex,
+    /// Can't claim collateral without collateral address.
+    MissingCollateralAddress,
+    /// Can't claim collateral without lender Xpub.
+    MissingLenderXpub,
+    /// Can't find collateral outputs to claim.
+    MissingCollateralOutputs,
+    /// Failed to create claim-collateral PSBT.
+    CreateClaimCollateralPsbt(anyhow::Error),
+    /// Failed to parse signed claim-collateral transaction.
+    ParseClaimTx(FromHexError),
+    /// Failed to track claim-collateral transaction.
+    TrackClaimTx(anyhow::Error),
+    /// Failed to post claim-collateral transaction.
+    PostClaimTx(anyhow::Error),
+}
+
+impl From<JsonRejection> for Error {
+    fn from(rejection: JsonRejection) -> Self {
+        Self::JsonRejection(rejection)
+    }
+}
+
+// Create our own JSON extractor by wrapping `axum::Json`. This makes it easy to override the
+// rejection and provide our own which formats errors to match our application.
+//
+// `axum::Json` responds with plain text if the input is invalid.
+#[derive(Debug, FromRequest)]
+#[from_request(via(Json), rejection(Error))]
+struct AppJson<T>(T);
+
+impl<T> IntoResponse for AppJson<T>
+where
+    Json<T>: IntoResponse,
+{
+    fn into_response(self) -> Response {
+        Json(self.0).into_response()
+    }
+}
+
+/// Tell `axum` how [`AppError`] should be converted into a response.
+///
+/// This is also a convenient place to log errors.
+impl IntoResponse for Error {
+    fn into_response(self) -> Response {
+        /// How we want error responses to be serialized.
+        #[derive(Serialize)]
+        struct ErrorResponse {
+            message: String,
+        }
+
+        let (status, message) = match self {
+            Error::JsonRejection(rejection) => {
+                // This error is caused by bad user input so don't log it
+                (rejection.status(), rejection.body_text())
+            }
+            Error::Database(e) => {
+                // If we configure `tracing` properly, we don't need to add extra context here!
+                tracing::error!("Database error: {e:#}");
+
+                // Don't expose any details about the error to the client.
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
+            Error::MissingLoanOffer => {
+                tracing::error!("Could not find referenced loan");
+
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
+            Error::MissingLender => {
+                tracing::error!("Could not find referenced lender");
+
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
+            Error::MissingBorrowerLoanAddress => (
+                StatusCode::BAD_REQUEST,
+                "Failed to provide borrower loan address for stablecoin loan".to_owned(),
+            ),
+            Error::InvalidMoonLoanRequest { chain, asset } => (
+                StatusCode::BAD_REQUEST,
+                format!(
+                    "Cannot create loan request for Moon card with asset {asset:?} \
+                     on chain {chain:?}. Moon only supports USDC on Polygon"
+                ),
+            ),
+            Error::OneMoonCardAllowed => (
+                StatusCode::BAD_REQUEST,
+                "Only one Moon card allowed per user".to_owned(),
+            ),
+            Error::MoonInvoiceGeneration(e) => {
+                tracing::error!("Failed to generate Moon invoice: {e:#}");
+
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
+            Error::BitMexOpeningPrice(e) => {
+                tracing::error!("Failed to get opening price from BitMEX: {e:#}");
+
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
+            Error::InitialCollateralCalculation(e) => {
+                tracing::error!("Failed to calculate initial collateral: {e:#}");
+
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
+            Error::MissingOriginationFee => {
+                tracing::error!("Missing origination fee");
+
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
+            Error::OriginationFeeCalculation(e) => {
+                tracing::error!("Failed to calculate origination fee: {e:#}");
+
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
+            Error::InvalidCancelRequest { status } => (
+                StatusCode::BAD_REQUEST,
+                format!("Cannot cancel a contract request with status {status:?}"),
+            ),
+            Error::PrincipalNotRepaid => (
+                StatusCode::BAD_REQUEST,
+                "Cannot claim collateral until loan has been repaid".to_owned(),
+            ),
+            Error::MissingContractIndex => {
+                tracing::error!("Missing contract index");
+
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
+            Error::MissingCollateralAddress => {
+                tracing::error!("Missing collateral address");
+
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
+            Error::MissingLenderXpub => {
+                tracing::error!("Missing lender Xpub");
+
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
+            Error::MissingCollateralOutputs => {
+                tracing::error!("Could not find collateral outputs to claim");
+
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
+            Error::CreateClaimCollateralPsbt(e) => {
+                tracing::error!("Could not create claim-collateral PSBT: {e:#}");
+
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
+            Error::ParseClaimTx(e) => {
+                tracing::error!("Failed to parse signed claim-collateral TX: {e:#}");
+                (
+                    StatusCode::BAD_REQUEST,
+                    "Failed to parse signed claim TX".to_owned(),
+                )
+            }
+            Error::TrackClaimTx(e) => {
+                tracing::error!("Failed to track claim-collateral transaction: {e:#}");
+
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
+            Error::PostClaimTx(e) => {
+                tracing::error!("Failed to post claim-collateral transaction: {e:#}");
+
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
+        };
+
+        (status, AppJson(ErrorResponse { message })).into_response()
+    }
 }
