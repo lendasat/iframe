@@ -294,7 +294,7 @@ function ContractDetails({ contract }: DetailsProps) {
 
         <Flex gap={"5"} align={"center"} justify={"between"}>
           <Text size={"2"} weight={"medium"} className="text-font/70">
-            Contract status
+            Contract Status
           </Text>
           <Text size={"2"} weight={"medium"}>
             <Badge
@@ -375,7 +375,7 @@ function ContractDetails({ contract }: DetailsProps) {
         <Flex gap={"5"} align={"start"} justify={"between"}>
           <Text size={"2"} weight={"medium"} className="text-font/70">
             {/* TODO: here we showed the percentage as well, but we don't know the number :) */}
-            Origination fee
+            Origination Fee
           </Text>
           <Box className="max-w-sm text-end">
             <OverlayTrigger
@@ -393,7 +393,7 @@ function ContractDetails({ contract }: DetailsProps) {
         <Flex gap={"5"} align={"start"} justify={"between"}>
           <LtvInfoLabel>
             <Text size={"2"} weight={"medium"} className="text-font/70">
-              LTV ratio
+              LTV Ratio
             </Text>
             <FaInfoCircle />
           </LtvInfoLabel>
