@@ -1,8 +1,8 @@
 import type { FC } from "react";
 
 export const formatCurrency = (value: number, minFraction?: number, maxFraction?: number) => {
-  let minimumFractionDigits = 0;
-  let maximumFractionDigits = 0;
+  let minimumFractionDigits = minFraction || 0;
+  let maximumFractionDigits = maxFraction || 0;
   if (minFraction && !maxFraction) {
     maximumFractionDigits = minFraction;
   }
