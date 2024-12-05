@@ -14,17 +14,32 @@ const PriceContext = createContext<PriceContextProps | undefined>(undefined);
 
 type WebSocketConnect = () => void;
 
+const changeProtocolToWSS = (urlString: string): string => {
+  try {
+    const url = new URL(urlString);
+    if (url.protocol === "https:") {
+      url.protocol = "wss:";
+    } else if (url.protocol === "http:") {
+      url.protocol = "ws:";
+    }
+    return url.toString();
+  } catch (error) {
+    throw new Error("Invalid URL");
+  }
+};
+
 export const PriceProvider: FC<{ url: string; children: ReactNode }> = ({ children, url }) => {
   const [latestPrice, setLatestPrice] = useState<number | undefined>();
   const ws = useRef<WebSocket | null>(null);
+  const websocketUrl = changeProtocolToWSS(url);
 
   useEffect(() => {
     const connect: WebSocketConnect = () => {
       let wsUrl;
-      if (url.endsWith("/")) {
-        wsUrl = `${url}api/pricefeed`;
+      if (websocketUrl.endsWith("/")) {
+        wsUrl = `${websocketUrl}api/pricefeed`;
       } else {
-        wsUrl = `${url}/api/pricefeed`;
+        wsUrl = `${websocketUrl}/api/pricefeed`;
       }
 
       ws.current = new WebSocket(wsUrl);
@@ -57,7 +72,7 @@ export const PriceProvider: FC<{ url: string; children: ReactNode }> = ({ childr
     return () => {
       ws.current?.close();
     };
-  }, [url]);
+  }, [url, websocketUrl]);
 
   return (
     <PriceContext.Provider value={{ latestPrice }}>
