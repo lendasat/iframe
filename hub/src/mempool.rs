@@ -580,8 +580,8 @@ impl xtra::Handler<NewBlockHeight> for Actor {
                     Some(
                         tx.output
                             .iter()
-                            .filter(|o| o.script_pubkey == address.script_pubkey())
                             .enumerate()
+                            .filter(|(_, o)| o.script_pubkey == address.script_pubkey())
                             .map(|(i, o)| {
                                 (
                                     OutPoint {
