@@ -118,12 +118,14 @@ async fn main() -> Result<()> {
     });
 
     let moon_client = Arc::new(moon::Manager::new(db.clone(), config.clone()));
-    match moon_client.sync_transaction_history().await {
-        Ok(_) => {
-            tracing::info!("Successfully synced card history");
-        }
-        Err(err) => {
-            tracing::error!("Failed syncing card history {err:#}");
+    if config.sync_moon_tx {
+        match moon_client.sync_transaction_history().await {
+            Ok(_) => {
+                tracing::info!("Successfully synced card history");
+            }
+            Err(err) => {
+                tracing::error!("Failed syncing card history {err:#}");
+            }
         }
     }
 
