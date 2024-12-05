@@ -127,7 +127,7 @@ pub fn load(passphrase: &str, key: &str) -> Result<()> {
 }
 
 pub fn get_next_pk() -> Result<String> {
-    let pk = wallet::get_pk(0)?;
+    let pk = wallet::get_pk()?;
 
     Ok(pk.to_string())
 }

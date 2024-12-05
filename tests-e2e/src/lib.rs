@@ -108,7 +108,7 @@ mod tests {
         // 2. Borrower takes loan offer by creating a contract request.
         browser_wallet::wallet::new_wallet("borrower", "regtest").unwrap();
 
-        let borrower_pk = browser_wallet::wallet::get_pk(0).unwrap();
+        let borrower_pk = browser_wallet::wallet::get_pk().unwrap();
 
         let borrower_btc_address = "tb1quw75h0w26rcrdfar6knvkfazpwyzq4z8vqmt37"
             .parse()
@@ -443,7 +443,7 @@ mod tests {
         // 2. Borrower takes loan offer by creating a contract request.
         browser_wallet::wallet::new_wallet("borrower", "regtest").unwrap();
 
-        let borrower_pk = browser_wallet::wallet::get_pk(0).unwrap();
+        let borrower_pk = browser_wallet::wallet::get_pk().unwrap();
 
         let borrower_btc_address = "tb1quw75h0w26rcrdfar6knvkfazpwyzq4z8vqmt37"
             .parse()

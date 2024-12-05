@@ -38,6 +38,11 @@ use std::sync::MutexGuard;
 
 const SECRET_KEY_ENCRYPTION_NONCE: &[u8; 12] = b"SECRET_KEY!!";
 
+/// Index used to derive new keypairs from the wallet's [`Xpriv`].
+///
+/// At the moment, we use a constant value for simplicity, but we should change this.
+const KEY_INDEX: u32 = 0;
+
 static WALLET: LazyLock<Mutex<Option<Wallet>>> = LazyLock::new(|| Mutex::new(None));
 
 struct Wallet {
@@ -134,10 +139,10 @@ pub fn get_mnemonic() -> Result<String> {
     Ok(mnemonic.to_string())
 }
 
-pub fn get_pk(index: u32) -> Result<PublicKey> {
+pub fn get_pk() -> Result<PublicKey> {
     let guard = WALLET.lock().expect("to get lock");
 
-    let kp = get_kp(guard, index)?;
+    let kp = get_kp(guard, KEY_INDEX)?;
     let pk = PublicKey::new(kp.public_key());
 
     Ok(pk)
@@ -181,7 +186,7 @@ pub fn sign_claim_psbt(
 ) -> Result<Transaction> {
     let guard = WALLET.lock().expect("to get lock");
 
-    let kp = get_kp(guard, 0).context("No kp for index")?;
+    let kp = get_kp(guard, KEY_INDEX).context("No kp for index")?;
     let sk = kp.secret_key();
     let pk = PublicKey::new(kp.public_key());
 
