@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                INSERT INTO moon_transaction_fees (\n                    transaction_id,\n                    fee_type,\n                    amount,\n                    fee_description\n                ) VALUES ($1, $2, $3, $4)\n                ON CONFLICT (transaction_id, fee_type) \n                DO UPDATE SET \n                    amount = EXCLUDED.amount,\n                    fee_description = EXCLUDED.fee_description\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Numeric",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "09f1a8c0c8710cedabfb8221f5c382847d61a22357c688851249ba5f7a442526"
+}

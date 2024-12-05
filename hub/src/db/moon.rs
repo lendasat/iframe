@@ -76,6 +76,24 @@ pub async fn get_borrower_cards(
     Ok(cards)
 }
 
+pub async fn get_all_card_ids(pool: &Pool<Postgres>) -> Result<Vec<Uuid>> {
+    let cards: Vec<String> = sqlx::query_scalar!(
+        r#"
+    SELECT
+        id
+    FROM moon_cards
+    "#
+    )
+    .fetch_all(pool)
+    .await?;
+
+    let vec = cards
+        .iter()
+        .map(|string_uuid| Uuid::from_str(string_uuid).expect("to be valid uuid"))
+        .collect();
+    Ok(vec)
+}
+
 pub async fn get_card_by_id(pool: &Pool<Postgres>, card_id: &str) -> Result<Option<moon::Card>> {
     let card = sqlx::query_as!(
         db::MoonCard,
@@ -386,7 +404,7 @@ pub async fn insert_moon_transactions(
                 .context("Failed inserting transaction data")?;
         }
         pay_with_moon::MoonMessage::DeclineData(decline_data) => {
-            insert_decline_data(pool, decline_data)
+            insert_moon_message_decline_data(pool, decline_data)
                 .await
                 .context("Failed inserting decline data")?;
         }
@@ -406,6 +424,25 @@ pub async fn insert_moon_transactions(
                 ?value,
                 "Received unknown moon message which we can't persist"
             );
+        }
+    }
+
+    Ok(())
+}
+
+pub async fn insert_transactions(
+    pool: &Pool<Postgres>,
+    txs: Vec<pay_with_moon::Transaction>,
+) -> Result<()> {
+    for tx in txs.into_iter() {
+        match tx {
+            pay_with_moon::Transaction::CardTransaction(tx)
+            | pay_with_moon::Transaction::CardAuthorizationRefund(tx) => {
+                insert_transaction_data(pool, tx).await?
+            }
+            pay_with_moon::Transaction::DeclineData(decline) => {
+                insert_decline_data(pool, decline.into()).await?
+            }
         }
     }
 
@@ -493,23 +530,27 @@ async fn insert_transaction_data(
     .await?;
 
     for fee in fees {
-        sqlx::query_as!(
-            Fee,
+        sqlx::query!(
             r#"
-            INSERT INTO moon_transaction_fees (
-                transaction_id,
-                fee_type,
-                amount,
-                fee_description
-            ) VALUES ($1, $2, $3, $4)
-        "#,
+                INSERT INTO moon_transaction_fees (
+                    transaction_id,
+                    fee_type,
+                    amount,
+                    fee_description
+                ) VALUES ($1, $2, $3, $4)
+                ON CONFLICT (transaction_id, fee_type) 
+                DO UPDATE SET 
+                    amount = EXCLUDED.amount,
+                    fee_description = EXCLUDED.fee_description
+            "#,
             tx_id,
             fee.fee_type,
             fee.amount,
             fee.fee_description
         )
         .execute(&mut *db_tx)
-        .await?;
+        .await
+        .context("Failed inserting tx fee")?;
     }
 
     db_tx.commit().await?;
@@ -621,12 +662,32 @@ impl From<pay_with_moon::MoonMessageDeclineData> for DeclineData {
     }
 }
 
-async fn insert_decline_data(
+impl From<pay_with_moon::DeclineData> for DeclineData {
+    fn from(value: pay_with_moon::DeclineData) -> Self {
+        Self {
+            message_id: value.id,
+            datetime: value.datetime,
+            merchant: value.merchant,
+            customer_friendly_description: value.customer_friendly_description,
+            amount: value.amount,
+            card_public_id: value.card_public_id.to_string(),
+        }
+    }
+}
+
+async fn insert_moon_message_decline_data(
     pool: &Pool<Postgres>,
     decline_data: pay_with_moon::MoonMessageDeclineData,
 ) -> Result<(), sqlx::Error> {
     let decline_data = DeclineData::from(decline_data);
 
+    insert_decline_data(pool, decline_data).await
+}
+
+async fn insert_decline_data(
+    pool: &Pool<Postgres>,
+    decline_data: DeclineData,
+) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
         INSERT INTO moon_transaction_decline_data (
