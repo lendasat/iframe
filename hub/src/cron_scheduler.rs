@@ -15,7 +15,7 @@ const CONTRACT_REQUEST_TIMEOUT: i64 = 24;
 /// The format is:
 /// sec   min   hour   day of month   month   day of week   year
 /// *     *     *      *              *       *             *
-/// 
+///
 /// Meaning, this one runs every 30 minutes
 const CHECK_CONTRACT_REQUESTS_EXPIRED_SCHEDULER: &str = "0 0/30 * * * *";
 
@@ -50,7 +50,7 @@ async fn create_contract_expiry_check(
                     .await
                     {
                         Ok(contracts) => contracts.iter().for_each(|contract_id| {
-                            tracing::warn!(contract_id, "Contract request expired");
+                            tracing::info!(contract_id, "Contract request expired");
                         }),
                         Err(err) => {
                             tracing::error!("Failed loading contracts {err:#}");
