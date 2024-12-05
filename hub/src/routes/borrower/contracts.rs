@@ -114,7 +114,10 @@ async fn post_contract_request(
 
     let contract_id = Uuid::new_v4();
     let (borrower_loan_address, moon_invoice) = match body.integration {
-        Integration::StableCoin => return Err(Error::MissingBorrowerLoanAddress),
+        Integration::StableCoin => match body.borrower_loan_address {
+            Some(borrower_loan_address) => (borrower_loan_address, None),
+            None => return Err(Error::MissingBorrowerLoanAddress),
+        },
         Integration::PayWithMoon => {
             if offer.loan_asset_chain != LoanAssetChain::Polygon
                 || offer.loan_asset_type != LoanAssetType::Usdc
@@ -382,6 +385,7 @@ async fn get_claim_collateral_psbt(
     let res = ClaimCollateralPsbt {
         psbt,
         collateral_descriptor,
+        borrower_pk: contract.borrower_pk,
     };
 
     Ok(AppJson(res))
@@ -475,6 +479,7 @@ pub struct LenderProfile {
 pub struct ClaimCollateralPsbt {
     pub psbt: String,
     pub collateral_descriptor: Descriptor<PublicKey>,
+    pub borrower_pk: PublicKey,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

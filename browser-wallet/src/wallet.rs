@@ -34,9 +34,13 @@ use sha2::Sha256;
 use std::str::FromStr;
 use std::sync::LazyLock;
 use std::sync::Mutex;
-use std::sync::MutexGuard;
 
 const SECRET_KEY_ENCRYPTION_NONCE: &[u8; 12] = b"SECRET_KEY!!";
+
+/// Index used to derive new keypairs from the wallet's [`Xpriv`].
+///
+/// At the moment, we use a constant value for simplicity, but we should change this.
+const KEY_INDEX: u32 = 0;
 
 static WALLET: LazyLock<Mutex<Option<Wallet>>> = LazyLock::new(|| Mutex::new(None));
 
@@ -134,16 +138,8 @@ pub fn get_mnemonic() -> Result<String> {
     Ok(mnemonic.to_string())
 }
 
-pub fn get_pk(index: u32) -> Result<PublicKey> {
+pub fn get_pk() -> Result<PublicKey> {
     let guard = WALLET.lock().expect("to get lock");
-
-    let kp = get_kp(guard, index)?;
-    let pk = PublicKey::new(kp.public_key());
-
-    Ok(pk)
-}
-
-fn get_kp(guard: MutexGuard<Option<Wallet>>, index: u32) -> Result<Keypair> {
     let wallet = match *guard {
         Some(ref wallet) => wallet,
         None => {
@@ -151,6 +147,13 @@ fn get_kp(guard: MutexGuard<Option<Wallet>>, index: u32) -> Result<Keypair> {
         }
     };
 
+    let kp = get_kp(wallet, KEY_INDEX)?;
+    let pk = PublicKey::new(kp.public_key());
+
+    Ok(pk)
+}
+
+fn get_kp(wallet: &Wallet, index: u32) -> Result<Keypair> {
     let network_index = if wallet.xprv.network.is_mainnet() {
         ChildNumber::from_hardened_idx(0).expect("infallible")
     } else {
@@ -178,10 +181,17 @@ fn get_kp(guard: MutexGuard<Option<Wallet>>, index: u32) -> Result<Keypair> {
 pub fn sign_claim_psbt(
     mut psbt: Psbt,
     collateral_descriptor: Descriptor<PublicKey>,
+    own_pk: PublicKey,
 ) -> Result<Transaction> {
     let guard = WALLET.lock().expect("to get lock");
+    let wallet = match *guard {
+        Some(ref wallet) => wallet,
+        None => {
+            bail!("Can't get keypair if wallet is not loaded");
+        }
+    };
 
-    let kp = get_kp(guard, 0).context("No kp for index")?;
+    let kp = find_kp_for_pk(wallet, &own_pk).context("Could not find keypair to sign")?;
     let sk = kp.secret_key();
     let pk = PublicKey::new(kp.public_key());
 
@@ -218,6 +228,26 @@ pub fn sign_claim_psbt(
     let tx = psbt.extract(&secp).context("Could not extract signed TX")?;
 
     Ok(tx)
+}
+
+/// Find the [`KeyPair`] corresponding to the given [`PublicKey`].
+///
+/// This builds on the assumption that the [`PublicKey`] was derived from the [`Wallet`]'s
+/// [`Xpriv`].
+fn find_kp_for_pk(wallet: &Wallet, pk: &PublicKey) -> Result<Keypair> {
+    let n = 100;
+    for i in 0..n {
+        log::info!("Looking for keypair matching public key {pk}; trying index {i}");
+        let kp = get_kp(wallet, i).context("No kp for index")?;
+
+        if kp.public_key() == pk.inner {
+            log::info!("Found keypair matching public key {pk} at index {i}");
+
+            return Ok(kp);
+        }
+    }
+
+    bail!("Could not find keypair for public key {pk} after {n} iterations");
 }
 
 fn generate_mnemonic<R>(rng: &mut R) -> Result<Mnemonic>

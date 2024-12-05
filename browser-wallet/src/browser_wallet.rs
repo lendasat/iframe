@@ -127,18 +127,20 @@ pub fn load(passphrase: &str, key: &str) -> Result<()> {
 }
 
 pub fn get_next_pk() -> Result<String> {
-    let pk = wallet::get_pk(0)?;
+    let pk = wallet::get_pk()?;
 
     Ok(pk.to_string())
 }
 
-pub fn sign_claim_psbt(psbt: &str, collateral_descriptor: &str) -> Result<String> {
+pub fn sign_claim_psbt(psbt: &str, collateral_descriptor: &str, own_pk: &str) -> Result<String> {
     let psbt = hex::decode(psbt)?;
     let psbt = Psbt::deserialize(&psbt)?;
 
     let collateral_descriptor = collateral_descriptor.parse()?;
 
-    let tx = wallet::sign_claim_psbt(psbt, collateral_descriptor)?;
+    let own_pk = own_pk.parse()?;
+
+    let tx = wallet::sign_claim_psbt(psbt, collateral_descriptor, own_pk)?;
     let tx = bitcoin::consensus::encode::serialize_hex(&tx);
 
     log::debug!("Signed claim TX: {tx}");

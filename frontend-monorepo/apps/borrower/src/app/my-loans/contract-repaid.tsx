@@ -67,7 +67,7 @@ export function ContractRepaid({
 
     console.log("Signing claim collateral PSBT");
 
-    const claimTx = await signClaimPsbt(res.psbt, res.collateral_descriptor);
+    const claimTx = await signClaimPsbt(res.psbt, res.collateral_descriptor, res.borrower_pk);
 
     console.log("Posting signed claim TX");
 
