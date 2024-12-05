@@ -1,5 +1,3 @@
-import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { contractStatusToLabelString, Integration } from "@frontend-monorepo/http-client-borrower";
 import type { Contract } from "@frontend-monorepo/http-client-borrower";
 import { formatCurrency } from "@frontend-monorepo/ui-shared";
@@ -32,8 +30,7 @@ export function CollateralSeenOrConfirmed({
     default:
       info = (
         <>
-          <FontAwesomeIcon icon={faInfoCircle} /> Your loan amount of {formatCurrency(contract.loan_amount)}{" "}
-          will be sent to this address.
+          Your loan amount of {formatCurrency(contract.loan_amount)} will be sent to this address.
           <InputGroup className="mt-2">
             <Form.Control
               type="text"
