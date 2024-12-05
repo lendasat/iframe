@@ -282,6 +282,7 @@ pub async fn get_claim_collateral_psbt(
             let res = ClaimCollateralPsbt {
                 psbt,
                 collateral_descriptor,
+                borrower_pk: contract.borrower_pk,
             };
 
             anyhow::Ok(res)

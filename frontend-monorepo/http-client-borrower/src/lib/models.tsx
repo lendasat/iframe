@@ -126,6 +126,7 @@ export enum LoanAssetChain {
 export interface ClaimCollateralPsbtResponse {
   psbt: string;
   collateral_descriptor: string;
+  borrower_pk: string;
 }
 
 export interface LoanOffer {

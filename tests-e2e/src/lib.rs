@@ -212,7 +212,9 @@ mod tests {
 
             // We add 1 to ensure that we don't round down.
             let half = (total_collateral + 1) / 2;
-            for _ in 0..=1 {
+            for i in 0..=1 {
+                tracing::debug!(i, amount = %half, "Funding collateral");
+
                 let res = faucet
                     .post("https://faucet.mutinynet.com/api/onchain")
                     .json(&json!({
@@ -231,6 +233,8 @@ mod tests {
                 }
 
                 assert!(status.is_success());
+
+                tracing::debug!(i, amount = %half, "Locked up collateral");
             }
         }
 
@@ -317,13 +321,15 @@ mod tests {
         let ClaimCollateralPsbt {
             psbt: claim_psbt,
             collateral_descriptor,
+            borrower_pk,
         } = res.json().await.unwrap();
 
         let claim_psbt = hex::decode(claim_psbt).unwrap();
         let claim_psbt = Psbt::deserialize(&claim_psbt).unwrap();
 
         let tx =
-            browser_wallet::wallet::sign_claim_psbt(claim_psbt, collateral_descriptor).unwrap();
+            browser_wallet::wallet::sign_claim_psbt(claim_psbt, collateral_descriptor, borrower_pk)
+                .unwrap();
 
         let tx_hex = bitcoin::consensus::encode::serialize_hex(&tx);
 
