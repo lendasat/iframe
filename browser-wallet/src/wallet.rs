@@ -154,7 +154,13 @@ pub fn get_pk() -> Result<PublicKey> {
 }
 
 fn get_kp(wallet: &Wallet, index: u32) -> Result<Keypair> {
-    let network_index = if wallet.xprv.network.is_mainnet() {
+    let kp = get_kp_for_network(wallet, index, wallet.xprv.network)?;
+
+    Ok(kp)
+}
+
+fn get_kp_for_network(wallet: &Wallet, index: u32, network: NetworkKind) -> Result<Keypair> {
+    let network_index = if network.is_mainnet() {
         ChildNumber::from_hardened_idx(0).expect("infallible")
     } else {
         ChildNumber::from_hardened_idx(1).expect("infallible")
@@ -235,15 +241,27 @@ pub fn sign_claim_psbt(
 /// This builds on the assumption that the [`PublicKey`] was derived from the [`Wallet`]'s
 /// [`Xpriv`].
 fn find_kp_for_pk(wallet: &Wallet, pk: &PublicKey) -> Result<Keypair> {
+    // We have to try both network types no matter what, because we had a bug that would derive the
+    // `Xpriv` using the wrong network. Since we use the `Xpriv`'s network as part of the derivation
+    // path, we can end up missing the correct keypair if we don't try both.
+    //
+    // See patch https://github.com/lendasat/lendasat/commit/8f14fc2.
+    // See issue https://github.com/lendasat/lendasat/issues/345.
+    let networks = [NetworkKind::Main, NetworkKind::Test];
+
     let n = 100;
     for i in 0..n {
-        log::info!("Looking for keypair matching public key {pk}; trying index {i}");
-        let kp = get_kp(wallet, i).context("No kp for index")?;
+        for network in networks {
+            log::info!("Looking for keypair matching public key {pk}; trying index {i} and network {network:?}");
+            let kp = get_kp_for_network(wallet, i, network).context("No kp for index")?;
 
-        if kp.public_key() == pk.inner {
-            log::info!("Found keypair matching public key {pk} at index {i}");
+            if kp.public_key() == pk.inner {
+                log::info!(
+                    "Found keypair matching public key {pk} at index {i} and network {network:?}"
+                );
 
-            return Ok(kp);
+                return Ok(kp);
+            }
         }
     }
 
@@ -328,7 +346,7 @@ impl Wallet {
 
         let xprv = {
             let seed = mnemonic.to_seed(passphrase);
-            Xpriv::new_master(NetworkKind::Test, &seed)?
+            Xpriv::new_master(network, &seed)?
         };
 
         Ok(Self {
