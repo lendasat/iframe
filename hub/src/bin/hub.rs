@@ -119,14 +119,19 @@ async fn main() -> Result<()> {
 
     let moon_client = Arc::new(moon::Manager::new(db.clone(), config.clone()));
     if config.sync_moon_tx {
-        match moon_client.sync_transaction_history().await {
-            Ok(_) => {
-                tracing::info!("Successfully synced card history");
+        tokio::spawn({
+            let moon_client = moon_client.clone();
+            async move {
+                match moon_client.sync_transaction_history().await {
+                    Ok(_) => {
+                        tracing::info!("Successfully synced card history");
+                    }
+                    Err(err) => {
+                        tracing::error!("Failed syncing card history {err:#}");
+                    }
+                }
             }
-            Err(err) => {
-                tracing::error!("Failed syncing card history {err:#}");
-            }
-        }
+        });
     }
 
     let borrower_server = spawn_borrower_server(
