@@ -132,6 +132,8 @@ async fn main() -> Result<()> {
                 }
             }
         });
+    } else {
+        tracing::debug!("Sync moon tx is disabled");
     }
 
     let borrower_server = spawn_borrower_server(
