@@ -328,7 +328,7 @@ impl Wallet {
 
         let xprv = {
             let seed = mnemonic.to_seed(passphrase);
-            Xpriv::new_master(NetworkKind::Test, &seed)?
+            Xpriv::new_master(network, &seed)?
         };
 
         Ok(Self {
