@@ -23,7 +23,7 @@ import MyLoans from "./my-loans/my-loans";
 import Profile from "./profile";
 import RequestLoan from "./request-loan/request-loan";
 import { RequestLoanSummary } from "./request-loan/request-loan-summary";
-import "./../styles.css";
+import "../assets/styles.css";
 import type { User } from "@frontend-monorepo/base-http-client";
 import { LoanProductOption } from "@frontend-monorepo/base-http-client";
 import { FiHome } from "react-icons/fi";

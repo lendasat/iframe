@@ -16,7 +16,7 @@ import MyContracts from "./contracts/my-contracts";
 import CreateLoanOffer from "./create-loan-offer";
 import ResolveDispute from "./disputes/dispute";
 import MyAccount from "./my-account";
-import "./../styles.css";
+import "../assets/styles.css";
 import { FiHome } from "react-icons/fi";
 import { HiOutlineSupport } from "react-icons/hi";
 import { IoCreateOutline, IoWalletOutline } from "react-icons/io5";
