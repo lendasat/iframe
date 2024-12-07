@@ -14,14 +14,14 @@ function ResolveDispute() {
     <Suspense>
       <Await
         resolve={id ? getDispute(id) : null}
-        errorElement={<div>Could not load dispute</div>}
+        errorElement={<div className={"text-font dark:text-font-dark"}>Could not load dispute</div>}
         children={(dispute: Awaited<Dispute>) => (
           <div>
-            <div className="card my-3">
+            <div className="card my-3 bg-light dark:bg-dark">
               <div className="card-header">
-                <h5>Dispute: {dispute.id}</h5>
+                <h5 className={"text-font dark:text-font-dark"}>Dispute: {dispute.id}</h5>
               </div>
-              <div className="card-body">
+              <div className="card-body dark:bg-dark-700 text-font dark:text-font-dark">
                 <p>
                   <strong>Contract ID:</strong> {dispute.contract_id}
                 </p>

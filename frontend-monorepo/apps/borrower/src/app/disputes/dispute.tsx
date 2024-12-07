@@ -56,7 +56,7 @@ function ResolveDispute() {
     <Suspense>
       <Await
         resolve={id ? getDispute(id) : null}
-        errorElement={<div>Could not load dispute</div>}
+        errorElement={<div className={"text-font dark:text-font-dark"}>Could not load dispute</div>}
         children={(dispute: Awaited<Dispute>) => (
           <div>
             <UnlockWalletModal

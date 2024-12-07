@@ -75,8 +75,8 @@ function MyLoanOffersComponent({ loanOffers }: LoanOffersComponentProps) {
                     weight={"medium"}
                     className={SortHelper.getIcon(amountSort) === faChevronUp
                         || SortHelper.getIcon(amountSort) === faChevronDown
-                      ? "text-black"
-                      : "text-black/40"}
+                      ? "text-font dark:text-font-dark"
+                      : "text-font/40 dark:text-font-dark/40"}
                   >
                     Amount
                   </Text>
@@ -85,16 +85,16 @@ function MyLoanOffersComponent({ loanOffers }: LoanOffersComponentProps) {
                       className={`text-[10px] -mb-1
                     ${
                         SortHelper.getIcon(amountSort) === faChevronUp
-                          ? "text-black"
-                          : "text-black/40"
+                          ? "text-font dark:text-font-dark"
+                          : "text-font/40 dark:text-font-dark/40"
                       }`}
                     />
                     <IoCaretDownOutline
                       className={`text-[10px] -mt-1
                       ${
                         SortHelper.getIcon(amountSort) === faChevronDown
-                          ? "text-black"
-                          : "text-black/40"
+                          ? "text-font dark:text-font-dark"
+                          : "text-font/40 dark:text-font-dark/40"
                       }`}
                     />
                   </Box>
@@ -113,8 +113,8 @@ function MyLoanOffersComponent({ loanOffers }: LoanOffersComponentProps) {
                     color="gray"
                     className={SortHelper.getIcon(durationSort) === faChevronUp
                         || SortHelper.getIcon(durationSort) === faChevronDown
-                      ? "text-black"
-                      : "text-black/40"}
+                      ? "text-font dark:text-font-dark"
+                      : "text-font/40 dark:text-font-dark/40"}
                   >
                     Duration
                   </Text>
@@ -123,16 +123,16 @@ function MyLoanOffersComponent({ loanOffers }: LoanOffersComponentProps) {
                       className={`text-[10px] -mb-1
                     ${
                         SortHelper.getIcon(durationSort) === faChevronUp
-                          ? "text-black"
-                          : "text-black/40"
+                          ? "text-font dark:text-font-dark"
+                          : "text-font/40 dark:text-font-dark/40"
                       }`}
                     />
                     <IoCaretDownOutline
                       className={`text-[10px] -mt-1
                       ${
                         SortHelper.getIcon(durationSort) === faChevronDown
-                          ? "text-black"
-                          : "text-black/40"
+                          ? "text-font dark:text-font-dark"
+                          : "text-font/40 dark:text-font-dark/40"
                       }`}
                     />
                   </Box>
@@ -151,8 +151,8 @@ function MyLoanOffersComponent({ loanOffers }: LoanOffersComponentProps) {
                     color="gray"
                     className={SortHelper.getIcon(ltvSort) === faChevronUp
                         || SortHelper.getIcon(ltvSort) === faChevronDown
-                      ? "text-black"
-                      : "text-black/40"}
+                      ? "text-font dark:text-font-dark"
+                      : "text-font/40 dark:text-font-dark/40"}
                   >
                     LTV
                   </Text>
@@ -161,16 +161,16 @@ function MyLoanOffersComponent({ loanOffers }: LoanOffersComponentProps) {
                       className={`text-[10px] -mb-1
                     ${
                         SortHelper.getIcon(ltvSort) === faChevronUp
-                          ? "text-black"
-                          : "text-black/40"
+                          ? "text-font dark:text-font-dark"
+                          : "text-font/40 dark:text-font-dark/40"
                       }`}
                     />
                     <IoCaretDownOutline
                       className={`text-[10px] -mt-1
                       ${
                         SortHelper.getIcon(ltvSort) === faChevronDown
-                          ? "text-black"
-                          : "text-black/40"
+                          ? "text-font dark:text-font-dark"
+                          : "text-font/40 dark:text-font-dark/40"
                       }`}
                     />
                   </Box>
@@ -189,8 +189,8 @@ function MyLoanOffersComponent({ loanOffers }: LoanOffersComponentProps) {
                     color="gray"
                     className={SortHelper.getIcon(interestSort) === faChevronUp
                         || SortHelper.getIcon(interestSort) === faChevronDown
-                      ? "text-black"
-                      : "text-black/40"}
+                      ? "text-font dark:text-font-dark"
+                      : "text-font/40 dark:text-font-dark/40"}
                   >
                     Interest
                   </Text>
@@ -199,16 +199,16 @@ function MyLoanOffersComponent({ loanOffers }: LoanOffersComponentProps) {
                       className={`text-[10px] -mb-1
                     ${
                         SortHelper.getIcon(interestSort) === faChevronUp
-                          ? "text-black"
-                          : "text-black/40"
+                          ? "text-font dark:text-font-dark"
+                          : "text-font/40 dark:text-font-dark/40"
                       }`}
                     />
                     <IoCaretDownOutline
                       className={`text-[10px] -mt-1
                       ${
                         SortHelper.getIcon(interestSort) === faChevronDown
-                          ? "text-black"
-                          : "text-black/40"
+                          ? "text-font dark:text-font-dark"
+                          : "text-font/40 dark:text-font-dark/40"
                       }`}
                     />
                   </Box>
@@ -216,19 +216,19 @@ function MyLoanOffersComponent({ loanOffers }: LoanOffersComponentProps) {
               </Button>
             </Box>
             <Box className="mb-1 hidden md:flex justify-center">
-              <Text size={"1"} weight={"medium"} className="text-black/50">
+              <Text size={"1"} weight={"medium"} className="text-font/50 dark:text-font-dark/50">
                 Coin
               </Text>
             </Box>
             <Box className="mb-1 hidden md:flex justify-center">
-              <Text size={"1"} weight={"medium"} className="text-black/50">
+              <Text size={"1"} weight={"medium"} className="text-font/50 dark:text-font-dark/50">
                 Status
               </Text>
             </Box>
             <Box className="mb-1 hidden xl:block" />
           </Grid>
 
-          <PiWarningOctagon className="opacity-40 text-black xl:hidden" />
+          <PiWarningOctagon className="opacity-40 text-font dark:text-font-dark xl:hidden" />
         </Box>
       </Box>
       <Box

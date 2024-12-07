@@ -19,11 +19,11 @@ function DashboardTransaction() {
       <Await
         resolve={getContracts()}
         errorElement={
-          <Box className="h-full flex items-center justify-center flex-col gap-y-4 pb-10 bg-white rounded-2xl">
+          <Box className="h-full flex items-center justify-center flex-col gap-y-4 pb-10 bg-white dark:bg-dark rounded-2xl">
           </Box>
         }
         children={(contracts: Awaited<Contract[]>) => (
-          <Box className="bg-white/50 flex-1 flex flex-col pb-4">
+          <Box className="bg-white/50 dark:bg-dark-700/50 flex-1 flex flex-col pb-4">
             <NotificationComponent
               loans={contracts.filter((
                 loan,
@@ -43,9 +43,11 @@ function NotificationComponent(props: LoansNotificationSectionProps) {
 
   if (loans.length === 0) {
     return (
-      <Box className="min-h-56 h-full flex flex-col items-center justify-center">
+      <Box className="min-h-56 h-full flex flex-col items-center justify-center dark:bg-dark-700">
         <img src={ActivityImg} alt="credit card" className="max-w-40" />
-        <Text className="text-font/50" size={"1"}>We would let you know when you perform an activity...</Text>
+        <Text className="text-font/50 dark:text-font-dark/50" size={"1"}>
+          We would let you know when you perform an activity...
+        </Text>
       </Box>
     );
   }
@@ -60,7 +62,7 @@ function NotificationComponent(props: LoansNotificationSectionProps) {
           <Box key={index} py="2">
             <Flex px="2" align="center" justify="between">
               <Lender {...lender} />
-              <Text size="3" weight="medium">
+              <Text className={"text-font dark:text-font-dark"} size="3" weight="medium">
                 <CurrencyFormatter value={loan_amount} />
               </Text>
 
@@ -76,10 +78,10 @@ function NotificationComponent(props: LoansNotificationSectionProps) {
                 >
                   {status}
                 </Badge>
-                <Text size="1" className="text-font/70">{created_at.toLocaleDateString()}</Text>
+                <Text size="1" className="text-font/70 dark:text-font-dark/70">{created_at.toLocaleDateString()}</Text>
               </Box>
             </Flex>
-            <Separator size="4" mt="4" className="bg-font/5" />
+            <Separator size="4" mt="4" className="bg-font/5 dark:bg-font-dark/5" />
           </Box>
         );
       })}

@@ -27,13 +27,13 @@ function ContractsComponent({ loans }: LoansComponentProps) {
   const navigate = useNavigate();
 
   if (loans.length === 0) {
-    return <p>You don't have any loans yet.</p>;
+    return <p className={"text-font dark:text-font-dark"}>You don't have any loans yet.</p>;
   }
 
   const amount_col = {
     label: (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-        <Text className="text-font/50" size={"1"} weight={"medium"}>
+        <Text className="text-font/50 dark:text-font-dark/50" size={"1"} weight={"medium"}>
           Amount
         </Text>
       </div>
@@ -45,7 +45,7 @@ function ContractsComponent({ loans }: LoansComponentProps) {
   const expiry_col = {
     label: (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-        <Text className="text-font/50" size={"1"} weight={"medium"}>
+        <Text className="text-font/50 dark:text-font-dark/50" size={"1"} weight={"medium"}>
           Expiry
         </Text>
       </div>
@@ -58,10 +58,10 @@ function ContractsComponent({ loans }: LoansComponentProps) {
     label: (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
         <LtvInfoLabel>
-          <Text className="text-font/50" size={"1"} weight={"medium"}>
+          <Text className="text-font/50 dark:text-font-dark/50" size={"1"} weight={"medium"}>
             LTV
           </Text>
-          <FaInfoCircle color={"gray"} />
+          <FaInfoCircle className={"text-font dark:text-font-dark"} />
         </LtvInfoLabel>
       </div>
     ),
@@ -72,8 +72,8 @@ function ContractsComponent({ loans }: LoansComponentProps) {
     label: (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
         <AprInfoLabel>
-          <Flex align={"center"} gap={"2"} className="text-font-dark">
-            <Text className="text-font/50" size={"1"} weight={"medium"}>
+          <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
+            <Text className="text-font/50 dark:text-font-dark/50" size={"1"} weight={"medium"}>
               Interest / APR
             </Text>
             <FaInfoCircle />
@@ -87,7 +87,7 @@ function ContractsComponent({ loans }: LoansComponentProps) {
   const collateral_col = {
     label: (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-        <Text className="text-font/50" size={"1"} weight={"medium"}>
+        <Text className="text-font/50 dark:text-font-dark/50" size={"1"} weight={"medium"}>
           Collateral
         </Text>
       </div>
@@ -98,7 +98,7 @@ function ContractsComponent({ loans }: LoansComponentProps) {
   const status_col = {
     label: (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-        <Text className="text-font/50" size={"1"} weight={"medium"}>
+        <Text className="text-font/50 dark:text-font-dark/50" size={"1"} weight={"medium"}>
           Status
         </Text>
       </div>
@@ -115,7 +115,7 @@ function ContractsComponent({ loans }: LoansComponentProps) {
   const repaid_col = {
     label: (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-        <Text className="text-font/50" size={"1"} weight={"medium"}>
+        <Text className="text-font/50 dark:text-font-dark/50" size={"1"} weight={"medium"}>
           Closed on
         </Text>
       </div>
@@ -127,7 +127,7 @@ function ContractsComponent({ loans }: LoansComponentProps) {
   const coin_col = {
     label: (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-        <Text className="text-font/50" size={"1"} weight={"medium"}>
+        <Text className="text-font/50 dark:text-font-dark/50" size={"1"} weight={"medium"}>
           Coin
         </Text>
       </div>
@@ -143,7 +143,7 @@ function ContractsComponent({ loans }: LoansComponentProps) {
     <Box>
       <Box className="px-6 md:px-8 py-4">
         <Flex align={"center"} justify={"between"}>
-          <Heading size={"6"}>Open Contracts</Heading>
+          <Heading className={"text-font dark:text-font-dark"} size={"6"}>Open Contracts</Heading>
           <Button asChild color="purple" className="text-sm" size={"3"}>
             <Link to={"/requests"}>
               New Request
@@ -152,9 +152,9 @@ function ContractsComponent({ loans }: LoansComponentProps) {
         </Flex>
       </Box>
 
-      <Flex align={"center"} className="bg-active-nav/15 pr-8 border-b border-font/5">
+      <Flex align={"center"} className="bg-active-nav/15 pr-8 border-b border-font/5 dark:border-dark-700">
         <Box className="w-[45px] xl:w-[80px] text-center py-1">
-          <Text size={"1"} weight={"medium"} className="text-font/50">S/N</Text>
+          <Text size={"1"} weight={"medium"} className="text-font/50 dark:text-font-dark/50">S/N</Text>
         </Box>
         <Grid className="grid-cols-3 md:grid-cols-5 xl:grid-cols-7 flex-grow">
           {headers.map((header, index) => (
@@ -213,26 +213,28 @@ function ContractsComponent({ loans }: LoansComponentProps) {
             <Flex
               key={index}
               align={"center"}
-              className={`border-b ${(index + 1) % 2 === 0 ? "bg-white/50" : "bg-transparent"} border-black/5 pr-3`}
+              className={`border-b ${
+                (index + 1) % 2 === 0 ? "bg-light/50 dark:bg-dark/50" : "bg-transparent"
+              } border-black/5 dark:border-dark pr-3`}
             >
-              <Box className="w-[45px] xl:w-[80px] text-center py-5 border-r">
-                <Text size={"1"} weight={"medium"} className="text-font/50">{index + 1}</Text>
+              <Box className="w-[45px] xl:w-[80px] text-center py-5 border-r dark:border-dark">
+                <Text size={"1"} weight={"medium"} className="text-font/50 dark:text-font-dark/50">{index + 1}</Text>
               </Box>
               <Grid className="grid-cols-3 pr-2 flex-grow md:grid-cols-5 xl:grid-cols-7 items-center text-font">
                 <Box className="text-center">
-                  <Text size={"1"} weight={"medium"}>
+                  <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
                     <CurrencyFormatter value={loan_amount} />
                   </Text>
                 </Box>
 
                 <Box className="justify-center text-center">
-                  <Text size={"1"} weight={"medium"}>
+                  <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
                     {expiry.toLocaleDateString()}
                   </Text>
                 </Box>
 
                 <Box className="hidden md:flex justify-center">
-                  <Text size={"1"} weight={"medium"}>
+                  <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
                     {(interest_rate * 100).toFixed(2)}%
                   </Text>
                 </Box>
@@ -242,7 +244,7 @@ function ContractsComponent({ loans }: LoansComponentProps) {
                 </Box>
 
                 <Box className="flex justify-center">
-                  <Text size={"1"} weight={"medium"}>
+                  <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
                     {collateral_btc} BTC
                   </Text>
                 </Box>
@@ -266,7 +268,7 @@ function ContractsComponent({ loans }: LoansComponentProps) {
                   <Button
                     size={"3"}
                     variant="solid"
-                    className="bg-btn text-white rounded-lg"
+                    className="bg-btn dark:bg-dark-600 text-white rounded-lg"
                     onClick={() => navigate(`${id}`)}
                   >
                     <Text
@@ -455,13 +457,16 @@ const ClosedLoans = ({ header, loans, latestPrice }: ClosedPorps) => {
     <Box>
       <Box className="px-6 md:px-8 py-4">
         <Flex align={"center"} justify={"between"}>
-          <Heading size={"6"}>Closed Contracts</Heading>
+          <Heading className={"text-font dark:text-font-dark"} size={"6"}>Closed Contracts</Heading>
         </Flex>
       </Box>
 
-      <Flex align={"center"} className="bg-active-nav/15 pr-8 border-b border-font/5">
+      <Flex
+        align={"center"}
+        className="bg-active-nav/15 pr-8 border-b border-font/5 dark:bg-active-nav/25 dark:border-dark"
+      >
         <Box className="w-[45px] xl:w-[80px] text-center py-1">
-          <Text size={"1"} weight={"medium"} className="text-font/50">S/N</Text>
+          <Text size={"1"} weight={"medium"} className="text-font/50 dark:text-font-dark/50">S/N</Text>
         </Box>
         <Grid className="grid-cols-3 md:grid-cols-5 xl:grid-cols-7 flex-grow">
           {header.map((header, index) => (
@@ -526,26 +531,28 @@ const ClosedLoans = ({ header, loans, latestPrice }: ClosedPorps) => {
             <Flex
               key={index}
               align={"center"}
-              className={`border-b ${(index + 1) % 2 === 0 ? "bg-white/50" : "bg-transparent"} border-black/5 pr-3`}
+              className={`border-b ${
+                (index + 1) % 2 === 0 ? "bg-white/50 dark:bg-dark/50" : "bg-transparent"
+              } border-black/5 dark:border-dark pr-3`}
             >
-              <Box className="w-[45px] xl:w-[80px] text-center py-5 border-r">
-                <Text size={"1"} weight={"medium"} className="text-font/50">{index + 1}</Text>
+              <Box className="w-[45px] xl:w-[80px] text-center py-5 border-r dark:border-dark">
+                <Text size={"1"} weight={"medium"} className="text-font/50 dark:text-font-dark/50">{index + 1}</Text>
               </Box>
               <Grid className="grid-cols-3 pr-2 flex-grow md:grid-cols-5 xl:grid-cols-7 items-center text-font">
                 <Box className="text-center">
-                  <Text size={"1"} weight={"medium"}>
+                  <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
                     <CurrencyFormatter value={loan_amount} />
                   </Text>
                 </Box>
 
                 <Box className="justify-center text-center">
-                  <Text size={"1"} weight={"medium"}>
+                  <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
                     {updatedAtDateString}
                   </Text>
                 </Box>
 
                 <Box className="hidden md:flex justify-center">
-                  <Text size={"1"} weight={"medium"}>
+                  <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
                     {(interest_rate * 100).toFixed(2)}%
                   </Text>
                 </Box>
@@ -555,7 +562,7 @@ const ClosedLoans = ({ header, loans, latestPrice }: ClosedPorps) => {
                 </Box>
 
                 <Box className="flex justify-center">
-                  <Text size={"1"} weight={"medium"}>
+                  <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
                     {collateral_btc} BTC
                   </Text>
                 </Box>
@@ -579,7 +586,7 @@ const ClosedLoans = ({ header, loans, latestPrice }: ClosedPorps) => {
                   <Button
                     size={"3"}
                     variant="solid"
-                    className="bg-btn text-white rounded-lg"
+                    className="bg-btn dark:bg-dark-600 text-white rounded-lg"
                     onClick={() => navigate(`${id}`)}
                   >
                     <Text
@@ -620,17 +627,17 @@ const ClosedLoans = ({ header, loans, latestPrice }: ClosedPorps) => {
                       </Box>
                       <Box width={"100%"}>
                         <Flex align={"center"} justify={"between"} gap={"3"}>
-                          <Text size={"3"} weight={"medium"}>
+                          <Text className={"text-font dark:text-font-dark"} size={"3"} weight={"medium"}>
                             Closed on:
                           </Text>
-                          <Text size={"1"} weight={"medium"}>
+                          <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
                             {updatedAtDateString}
                           </Text>
                         </Flex>
                       </Box>
                       <Box width={"100%"}>
                         <Flex align={"center"} justify={"between"} gap={"3"}>
-                          <Text size={"3"} weight={"medium"}>
+                          <Text className={"text-font dark:text-font-dark"} size={"3"} weight={"medium"}>
                             Coin:
                           </Text>
                           <Box>
@@ -641,32 +648,32 @@ const ClosedLoans = ({ header, loans, latestPrice }: ClosedPorps) => {
                       <Box width={"100%"}>
                         <Flex align={"center"} justify={"between"} gap={"3"}>
                           <AprInfoLabel>
-                            <Flex align={"center"} gap={"2"} className="text-font-dark">
-                              <Text size={"3"} weight={"medium"}>
+                            <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
+                              <Text className={"text-font dark:text-font-dark"} size={"3"} weight={"medium"}>
                                 Interest Rate (APR)
                               </Text>
                               <FaInfoCircle />
                             </Flex>
                           </AprInfoLabel>
 
-                          <Text className="capitalize" size={"3"}>
+                          <Text className="capitalize text-font dark:text-font-dark" size={"3"}>
                             {(interest_rate * 100).toFixed(2)}%
                           </Text>
                         </Flex>
                       </Box>
                       <Box width={"100%"}>
                         <Flex align={"center"} justify={"between"} gap={"3"}>
-                          <Text size={"3"} weight={"medium"}>
+                          <Text className={"text-font dark:text-font-dark"} size={"3"} weight={"medium"}>
                             Collateral:
                           </Text>
-                          <Text className="capitalize" size={"3"}>
+                          <Text className="capitalize text-font dark:text-font-dark" size={"3"}>
                             {collateral_btc} BTC
                           </Text>
                         </Flex>
                       </Box>
                       <Box width={"100%"}>
                         <Flex align={"center"} justify={"between"} gap={"3"}>
-                          <Text size={"3"} weight={"medium"}>
+                          <Text className={"text-font dark:text-font-dark"} size={"3"} weight={"medium"}>
                             Status:
                           </Text>
                           <Text className="capitalize" size={"3"}>
@@ -693,7 +700,7 @@ const ClosedLoans = ({ header, loans, latestPrice }: ClosedPorps) => {
                       >
                         <Text
                           size={"1"}
-                          className="font-semibold"
+                          className="font-semibold text-font dark:text-font-dark"
                         >
                           {actionFromStatus(status)}
                         </Text>

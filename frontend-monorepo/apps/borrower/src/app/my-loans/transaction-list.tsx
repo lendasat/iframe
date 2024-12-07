@@ -71,7 +71,7 @@ function TransactionLink({ transaction, loanAssetChain }: TransactionLinkProps) 
             rel={"noreferrer"}
             style={{ marginLeft: "8px" }}
           >
-            <FaLink />
+            <FaLink className={"text-font dark:text-font-dark"} />
           </a>
         )
         : ""}
@@ -79,7 +79,9 @@ function TransactionLink({ transaction, loanAssetChain }: TransactionLinkProps) 
         onClick={() => handleCopy(transaction.txid)}
       >
         <NotificationToast description={transaction.txid} title={"Transaction id copied"}>
-          {copied ? <FaCheckCircle /> : <FaCopy />}
+          {copied
+            ? <FaCheckCircle className={"text-font dark:text-font-dark"} />
+            : <FaCopy className={"text-font dark:text-font-dark"} />}
         </NotificationToast>
       </Box>
     </Flex>
@@ -109,7 +111,7 @@ const TransactionList: FC<TransactionListProps> = ({ contract, transactionType }
               </li>
             ))
           )
-          : <li>No transaction yet</li>}
+          : <li class={"text-font dark:text-font-dark"}>No transaction yet</li>}
       </ul>
     </div>
   );

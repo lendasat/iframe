@@ -116,7 +116,7 @@ function ProductOptionComponent({
 }: ProductOptionComponentProps) {
   return (
     <Box className="text-left w-full max-w-[350px]">
-      <Text as="p" size={"3"} weight={"bold"}>
+      <Text className={"text-font dark:text-font-dark"} as="p" size={"3"} weight={"bold"}>
         {title}
       </Text>
       <Box className="h-52 w-full mb-4 mt-2 overflow-hidden rounded-2xl flex justify-center items-center">
@@ -163,7 +163,7 @@ const LoanOptionsDescriptionDialog = ({
           </div>
           {disabled && (
             <Alert variant="warning">
-              <FontAwesomeIcon icon={faExclamationCircle} className="h-4 w-4 mr-2" />
+              <FontAwesomeIcon icon={faExclamationCircle} className="text-font dark:text-font-dark h-4 w-4 mr-2" />
               You can only have one debit card at the moment.
             </Alert>
           )}

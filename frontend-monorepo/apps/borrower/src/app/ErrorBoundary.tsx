@@ -12,7 +12,7 @@ const ErrorBoundary = () => {
             <BiError size={80} color="#dc3545" />
           </div>
           <h2 className="mb-3">Oops! Something went wrong</h2>
-          <p className="mb-4">
+          <p className="mb-4 text-font dark:text-font-dark">
             {"We couldn't find what you were looking for."}
           </p>
           <Link to="/">

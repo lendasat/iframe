@@ -38,7 +38,7 @@ function ContractDetailsOverview() {
     <Suspense>
       <Await
         resolve={id ? getContract(id) : null}
-        errorElement={<div>Could not load contracts</div>}
+        errorElement={<div className={"text-font dark:text-font-dark"}>Could not load contracts</div>}
         children={(contract: Awaited<Contract>) => (
           <Box
             style={{
@@ -164,40 +164,40 @@ function ContractDetails({ contract }: DetailsProps) {
 
   return (
     <Grid className="md:grid-cols-2">
-      <Box className="border-r border-font/10">
-        <Box className="p-6 md:pl-8 border-b border-font/10">
-          <Heading size={"6"}>Contract Details</Heading>
+      <Box className="border-r border-font/10 dark:border-font-dark/10">
+        <Box className="p-6 md:pl-8 border-b border-font/10 dark:border-font-dark/10">
+          <Heading className={"text-font dark:text-font-dark"} size={"6"}>Contract Details</Heading>
         </Box>
         <Box className="p-6 md:p-8 space-y-5">
           <Flex gap={"5"} align={"start"} justify={"between"}>
             <Text
               size={"2"}
               weight={"medium"}
-              className="shrink-0 text-font/70"
+              className="shrink-0 text-font/70 dark:text-font-dark/70"
             >
               Borrower
             </Text>
             <Box className="max-w-sm text-end">
               <div className="flex flex-col">
-                <Text size={"2"} weight={"medium"} className="break-all">
+                <Text size={"2"} weight={"medium"} className="break-all text-font dark:text-font-dark">
                   {contract.borrower.name}
                 </Text>
               </div>
             </Box>
           </Flex>
-          <Separator size={"4"} className="bg-font/10" />
+          <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
 
           <Flex gap={"5"} align={"start"} justify={"between"}>
             <Text
               size={"2"}
               weight={"medium"}
-              className="text-font/70 shrink-0"
+              className="text-font/70 dark:text-font-dark/70 shrink-0"
             >
               Contract ID
             </Text>
             {contractIdCopied
               ? (
-                <Text size={"2"} className="font-medium" color="green">
+                <Text size={"2"} className="font-medium text-font dark:text-font-dark" color="green">
                   Copied
                 </Text>
               )
@@ -206,16 +206,16 @@ function ContractDetails({ contract }: DetailsProps) {
                   onClick={() => handleCopy(contract.id)}
                   size={"2"}
                   weight={"medium"}
-                  className="text-end cursor-copy hover:opacity-70 flex items-center gap-1"
+                  className="text-end cursor-copy hover:opacity-70 flex items-center gap-1 text-font dark:text-font-dark"
                 >
-                  {formatId(contract.id)} <FaCopy />
+                  {formatId(contract.id)} <FaCopy className={"text-font dark:text-font-dark"} />
                 </Text>
               )}
           </Flex>
-          <Separator size={"4"} className="bg-font/10" />
+          <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
 
           <Flex gap={"5"} align={"center"} justify={"between"}>
-            <Text size={"2"} weight={"medium"} className="text-font/70">
+            <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
               Contract status
             </Text>
             <Text size={"2"} weight={"medium"}>
@@ -233,23 +233,23 @@ function ContractDetails({ contract }: DetailsProps) {
               </Badge>
             </Text>
           </Flex>
-          <Separator size={"4"} className="bg-font/10" />
+          <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
 
           <Flex gap={"5"} align={"start"} justify={"between"}>
-            <Text size={"2"} weight={"medium"} className="text-font/70">
+            <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
               Loan Amount
             </Text>
-            <Text size={"2"} weight={"medium"}>
+            <Text className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
               <CurrencyFormatter value={loanAmount} />
             </Text>
           </Flex>
-          <Separator size={"4"} className="bg-font/10" />
+          <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
 
           <Flex gap={"5"} align={"start"} justify={"between"}>
-            <Text size={"2"} weight={"medium"} className="text-font/70">
+            <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
               Asset
             </Text>
-            <Text size={"2"} weight={"medium"}>
+            <Text className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
               <Text>
                 {stableCoin ? <Badge>{StableCoinHelper.print(stableCoin)}</Badge> : (
                   <>
@@ -260,61 +260,61 @@ function ContractDetails({ contract }: DetailsProps) {
               </Text>
             </Text>
           </Flex>
-          <Separator size={"4"} className="bg-font/10" />
+          <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
 
           <Flex gap={"5"} align={"start"} justify={"between"}>
-            <Text size={"2"} weight={"medium"} className="text-font/70">
+            <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
               Duration
             </Text>
-            <Text size={"2"} weight={"medium"}>
+            <Text className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
               {durationMonths} months
             </Text>
           </Flex>
-          <Separator size={"4"} className="bg-font/10" />
+          <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
 
           <Flex gap={"5"} align={"start"} justify={"between"}>
-            <Text size={"2"} weight={"medium"} className="text-font/70">
+            <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
               Collateral
             </Text>
-            <Text size={"2"} weight={"medium"}>
+            <Text className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
               {collateral.toFixed(8)} BTC
             </Text>
           </Flex>
-          <Separator size={"4"} className="bg-font/10" />
+          <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
 
           <Flex gap={"5"} align={"start"} justify={"between"}>
             <LtvInfoLabel>
-              <Text size={"2"} weight={"medium"} className="text-font/70">
+              <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
                 Initial LTV ratio
               </Text>
-              <FaInfoCircle className="text-font-dark" />
+              <FaInfoCircle className="text-font dark:text-font-dark" />
             </LtvInfoLabel>
-            <Text size={"2"} weight={"medium"}>
+            <Text className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
               {initialLtvFormatted}%
             </Text>
           </Flex>
-          <Separator size={"4"} className="bg-font/10" />
+          <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
 
           <Flex gap={"5"} align={"start"} justify={"between"}>
             <AprInfoLabel>
-              <Flex align={"center"} gap={"2"} className="text-font-dark">
-                <Text size={"2"} weight={"medium"} className="text-font/70">
+              <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dar">
+                <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
                   Interest Rate (APR)
                 </Text>
-                <FaInfoCircle />
+                <FaInfoCircle className={"text-font dark:text-font-dark"} />
               </Flex>
             </AprInfoLabel>
 
             <div className="flex flex-col">
-              <Text size={"2"} weight={"medium"}>
+              <Text className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
                 {(interestRate * 100).toFixed(2)}% per year
               </Text>
-              <Text className="text-[11px] text-black/50 mt-0.5 self-end">
+              <Text className="text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-end">
                 ≈ {formatCurrency(actualInterestUsdAmount, 1, 1)} in total
               </Text>
             </div>
           </Flex>
-          <Separator size={"4"} className="bg-font/10" />
+          <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
           <AdditionalDetail contract={contract} />
           <Callout.Root>
             <Callout.Icon>
@@ -327,7 +327,7 @@ function ContractDetails({ contract }: DetailsProps) {
           <Flex align={"center"} justify={"end"}>
             <Button
               size="3"
-              className="bg-btn"
+              className="bg-btn text-white dark:bg-dark-600"
               onClick={() => downloadLocalStorage(backendVersion)}
             >
               <IoMdCloudDownload />
@@ -439,14 +439,14 @@ const AdditionalDetail = ({ contract }: AdditionalDetailsProps) => {
       return (
         <Box className="space-y-5">
           <Flex gap={"5"} align={"start"} justify={"between"}>
-            <Text size={"2"} weight={"medium"} className="text-font/70">
+            <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
               Funding transaction
             </Text>
-            <Text size={"2"} weight={"medium"}>
+            <Text size={"2"} weight={"medium"} className={"text-font dark:text-font-dark"}>
               {fundingTxDetails}
             </Text>
           </Flex>
-          <Separator size={"4"} className="bg-font/10" />
+          <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
         </Box>
       );
     case ContractStatus.PrincipalGiven:
@@ -454,26 +454,26 @@ const AdditionalDetail = ({ contract }: AdditionalDetailsProps) => {
         <>
           <Box className="space-y-5">
             <Flex gap={"5"} align={"start"} justify={"between"}>
-              <Text size={"2"} weight={"medium"} className="text-font/70">
+              <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
                 Funding transaction
               </Text>
-              <Text size={"2"} weight={"medium"}>
+              <Text size={"2"} weight={"medium"} className={"text-font dark:text-font-dark"}>
                 {fundingTxDetails}
               </Text>
             </Flex>
-            <Separator size={"4"} className="bg-font/10" />
+            <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
           </Box>
 
           <Box className="space-y-5">
             <Flex gap={"5"} align={"start"} justify={"between"}>
-              <Text size={"2"} weight={"medium"} className="text-font/70">
+              <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
                 Principal transaction
               </Text>
-              <Text size={"2"} weight={"medium"}>
+              <Text size={"2"} weight={"medium"} className={"text-font dark:text-font-dark"}>
                 {principalGivenDetails}
               </Text>
             </Flex>
-            <Separator size={"4"} className="bg-font/10" />
+            <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
           </Box>
         </>
       );
@@ -483,38 +483,38 @@ const AdditionalDetail = ({ contract }: AdditionalDetailsProps) => {
         <>
           <Box className="space-y-5">
             <Flex gap={"5"} align={"start"} justify={"between"}>
-              <Text size={"2"} weight={"medium"} className="text-font/70">
+              <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
                 Funding transaction
               </Text>
-              <Text size={"2"} weight={"medium"}>
+              <Text size={"2"} weight={"medium"} className={"text-font dark:text-font-dark"}>
                 {fundingTxDetails}
               </Text>
             </Flex>
-            <Separator size={"4"} className="bg-font/10" />
+            <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
           </Box>
 
           <Box className="space-y-5">
             <Flex gap={"5"} align={"start"} justify={"between"}>
-              <Text size={"2"} weight={"medium"} className="text-font/70">
+              <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
                 Principal transaction
               </Text>
-              <Text size={"2"} weight={"medium"}>
+              <Text size={"2"} weight={"medium"} className={"text-font dark:text-font-dark"}>
                 {principalGivenDetails}
               </Text>
             </Flex>
-            <Separator size={"4"} className="bg-font/10" />
+            <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
           </Box>
 
           <Box className="space-y-5">
             <Flex gap={"5"} align={"start"} justify={"between"}>
-              <Text size={"2"} weight={"medium"} className="text-font/70">
+              <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
                 Principal repayment transaction
               </Text>
-              <Text size={"2"} weight={"medium"}>
+              <Text size={"2"} weight={"medium"} className={"text-font dark:text-font-dark"}>
                 {principalRepaidDetails}
               </Text>
             </Flex>
-            <Separator size={"4"} className="bg-font/10" />
+            <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
           </Box>
         </>
       );
@@ -524,50 +524,50 @@ const AdditionalDetail = ({ contract }: AdditionalDetailsProps) => {
         <>
           <Box className="space-y-5">
             <Flex gap={"5"} align={"start"} justify={"between"}>
-              <Text size={"2"} weight={"medium"} className="text-font/70">
+              <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
                 Funding transaction
               </Text>
-              <Text size={"2"} weight={"medium"}>
+              <Text size={"2"} weight={"medium"} className={"text-font dark:text-font-dark"}>
                 {fundingTxDetails}
               </Text>
             </Flex>
-            <Separator size={"4"} className="bg-font/10" />
+            <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
           </Box>
 
           <Box className="space-y-5">
             <Flex gap={"5"} align={"start"} justify={"between"}>
-              <Text size={"2"} weight={"medium"} className="text-font/70">
+              <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
                 Principal transaction
               </Text>
-              <Text size={"2"} weight={"medium"}>
+              <Text size={"2"} weight={"medium"} className={"text-font dark:text-font-dark"}>
                 {principalGivenDetails}
               </Text>
             </Flex>
-            <Separator size={"4"} className="bg-font/10" />
+            <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
           </Box>
 
           <Box className="space-y-5">
             <Flex gap={"5"} align={"start"} justify={"between"}>
-              <Text size={"2"} weight={"medium"} className="text-font/70">
+              <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
                 Principal repayment transaction
               </Text>
-              <Text size={"2"} weight={"medium"}>
+              <Text size={"2"} weight={"medium"} className={"text-font dark:text-font-dark"}>
                 {principalRepaidDetails}
               </Text>
             </Flex>
-            <Separator size={"4"} className="bg-font/10" />
+            <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
           </Box>
 
           <Box className="space-y-5">
             <Flex gap={"5"} align={"start"} justify={"between"}>
-              <Text size={"2"} weight={"medium"} className="text-font/70">
+              <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
                 Collateral claim transaction
               </Text>
-              <Text size={"2"} weight={"medium"}>
+              <Text size={"2"} weight={"medium"} className={"text-font dark:text-font-dark"}>
                 {claimTransactionDetails}
               </Text>
             </Flex>
-            <Separator size={"4"} className="bg-font/10" />
+            <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
           </Box>
         </>
       );
@@ -580,7 +580,7 @@ const AdditionalDetail = ({ contract }: AdditionalDetailsProps) => {
     case ContractStatus.RequestExpired:
     default:
       // TODO
-      return "Details";
+      return <Text className={"text-font dark:text-font-dark"}>Details</Text>;
   }
 };
 
@@ -678,9 +678,9 @@ const ContractStatusDetails = ({
       return (
         <Callout.Root className="w-full" color="teal">
           <Callout.Icon>
-            <FontAwesomeIcon icon={faInfoCircle} className="h-4 w-4" />
+            <FontAwesomeIcon icon={faInfoCircle} className="h-4 w-4 text-font dark:text-font-dark" />
           </Callout.Icon>
-          <Callout.Text>
+          <Callout.Text className={"text-font dark:text-font-dark"}>
             Waiting for borrower to fund the contract. Please refresh to check for updates or wait for email
             notification.
           </Callout.Text>
@@ -720,7 +720,7 @@ const ContractStatusDetails = ({
                       variant="light"
                       size="sm"
                     >
-                      <span className="visually-hidden">Loading...</span>
+                      <span className="visually-hidden text-font dark:text-font-dark">Loading...</span>
                     </Spinner>
                   )
                   : (

@@ -20,19 +20,19 @@ export function AbbreviationExplanationInfo(
         <HoverCard.Trigger>
           {children}
         </HoverCard.Trigger>
-        <HoverCard.Content maxWidth="300px">
+        <HoverCard.Content className={"bg-light dark:bg-dark"} maxWidth="300px">
           <Flex gap="4">
             <Box width="64px" height="64px">
-              <FaInfoCircle size={"40px"} />
+              <FaInfoCircle size={"40px"} className={"text-font dark:text-font-dark"} />
             </Box>
             <Box>
-              <Heading size="3" as="h3">
+              <Heading className={"text-font dark:text-font-dark"} size="3" as="h3">
                 {header}
               </Heading>
-              <Text as="div" size="2" color="gray" mb="2">
+              <Text className={"text-font dark:text-font-dark"} as="div" size="2" color="gray" mb="2">
                 {subHeader}
               </Text>
-              <Text as="div" size="2">
+              <Text className={"text-font dark:text-font-dark"} as="div" size="2">
                 {description}
               </Text>
 
@@ -41,7 +41,7 @@ export function AbbreviationExplanationInfo(
                 target="_blank"
               >
                 <Flex gap={"2"}>
-                  <Text size={"2"} weight={"medium"} className="text-font/70">
+                  <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
                     Learn More
                   </Text>{" "}
                   <FaExternalLinkAlt />

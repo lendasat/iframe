@@ -175,7 +175,7 @@ function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
       <Box>
         <Box className={"p-4 w-full"}>
           <Flex className={"flex items-center justify-between mb-2"}>
-            <Text as="label" className="text-sm font-medium text-font">
+            <Text as="label" className="text-sm font-medium text-font dark:text-font-dark">
               Amount
             </Text>
             <Button
@@ -184,7 +184,7 @@ function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
               variant="ghost"
               className="hover:bg-transparent"
             >
-              <Text className={"text-xs font-medium text-font"}>
+              <Text className={"text-xs font-medium text-font dark:text-font-dark"}>
                 Reset
               </Text>
             </Button>
@@ -192,7 +192,7 @@ function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
           <TextField.Root
             type="number"
             ref={resetAmount}
-            className="text-sm focus:border-purple-800/50 p-3 rounded-lg"
+            className="text-sm focus:border-purple-800/50 p-3 rounded-lg dark:focus:border-purple-400/50 dark:text-white dark:bg-dark-700"
             placeholder="Input an amount…"
             value={loanFilter.amount}
             onChange={onAmountChange}
@@ -201,7 +201,7 @@ function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
         <Separator size="4" />
         <Box className={"p-4 w-full"}>
           <Flex className={"flex items-center justify-between mb-2"}>
-            <Text as="label" className="text-sm font-medium text-font">
+            <Text as="label" className="text-sm font-medium text-font dark:text-font-dark">
               Coin type
             </Text>
             <Button
@@ -210,7 +210,7 @@ function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
               variant="ghost"
               className="hover:bg-transparent"
             >
-              <Text className={"text-xs font-medium text-font"}>
+              <Text className={"text-xs font-medium text-font dark:text-font-dark"}>
                 Reset
               </Text>
             </Button>
@@ -227,10 +227,10 @@ function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
         <Box className={"p-4 w-full"}>
           <Flex className={"flex items-center justify-between mb-2"}>
             <LtvInfoLabel>
-              <Text as="label" className="text-sm font-medium text-font">
+              <Text as="label" className="text-sm font-medium text-font dark:text-font-dark">
                 LTV ratio
               </Text>
-              <FaInfoCircle color={"gray"} />
+              <FaInfoCircle className={"text-font dark:text-font-dark"} />
             </LtvInfoLabel>
             <Button
               onClick={clearRatio}
@@ -238,7 +238,7 @@ function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
               variant="ghost"
               className="hover:bg-transparent"
             >
-              <Text className={"text-xs font-medium text-font"}>
+              <Text className={"text-xs font-medium text-font dark:text-font-dark"}>
                 Reset
               </Text>
             </Button>
@@ -249,7 +249,7 @@ function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
         <Separator size="4" />
         <Box className={"p-4 w-full"}>
           <Flex className={"flex items-center justify-between mb-2"}>
-            <Text as="label" className="text-sm font-medium text-font">
+            <Text as="label" className="text-sm font-medium text-font dark:text-font-dark">
               Interest rate p.a.
             </Text>
             <Button
@@ -258,7 +258,7 @@ function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
               variant="ghost"
               className="hover:bg-transparent"
             >
-              <Text className={"text-xs font-medium text-font"}>
+              <Text className={"text-xs font-medium text-font dark:text-font-dark"}>
                 Reset
               </Text>
             </Button>
@@ -269,7 +269,7 @@ function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
         <Separator size="4" />
         <Box className={"p-4 w-full"}>
           <Flex className={"flex items-center justify-between mb-2"}>
-            <Text as="label" className="text-sm font-medium text-font">
+            <Text as="label" className="text-sm font-medium text-font dark:text-font-dark">
               Period
             </Text>
             <Button
@@ -278,7 +278,7 @@ function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
               variant="ghost"
               className="hover:bg-transparent"
             >
-              <Text className={"text-xs font-medium text-font"}>
+              <Text className={"text-xs font-medium text-font dark:text-font-dark"}>
                 Reset
               </Text>
             </Button>
@@ -296,7 +296,7 @@ function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
             color="gray"
             className="p-3 rounded-lg w-full active:scale-90 transition-transform duration-200 ease-in-out"
           >
-            <Text className="text-sm font-medium text-font" weight={"medium"}>
+            <Text className="text-sm font-medium text-font dark:text-font-dark" weight={"medium"}>
               Reset all
             </Text>
           </Button>

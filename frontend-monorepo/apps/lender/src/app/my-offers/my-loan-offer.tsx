@@ -19,29 +19,29 @@ export function MyLoanOfferComponent({ loanOffer }: LoanOfferProps) {
   const navigate = useNavigate();
 
   return (
-    <Box className="pl-5 pr-6 md:pl-7 md:pr-8 py-5 xl:py-3 border-b border-black/5 flex md:gap-2 items-center">
+    <Box className="pl-5 pr-6 md:pl-7 md:pr-8 py-5 xl:py-3 border-b border-black/5 D flex md:gap-2 items-center dark:border-dark">
       <Grid className="grid-cols-4 md:grid-cols-6 xl:grid-cols-7 items-center grow text-font">
         <Box className="flex justify-center col-span-2 md:col-span-1">
-          <Text size={"1"} weight={"medium"}>
+          <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
             <CurrencyFormatter value={loanOffer.loan_amount_min} /> -{" "}
             <CurrencyFormatter value={loanOffer.loan_amount_max} />
           </Text>
         </Box>
 
         <Box className="hidden md:flex justify-center">
-          <Text size={"1"} weight={"medium"}>
+          <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
             {loanOffer.duration_months_min} - {loanOffer.duration_months_max} months
           </Text>
         </Box>
 
         <Box className="hidden md:flex justify-center">
-          <Text size={"1"} weight={"medium"}>
+          <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
             {(loanOffer.min_ltv * 100).toFixed(2)}%
           </Text>
         </Box>
 
         <Box className="flex justify-center">
-          <Text size={"1"} weight={"medium"}>
+          <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
             {(loanOffer.interest_rate * 100).toFixed(2)}%
           </Text>
         </Box>
@@ -55,7 +55,7 @@ export function MyLoanOfferComponent({ loanOffer }: LoanOfferProps) {
         </Box>
 
         <Box className="hidden md:flex justify-center">
-          <Text size={"1"} weight={"medium"}>
+          <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
             <StatusBadge offer={loanOffer} />
           </Text>
         </Box>
@@ -63,7 +63,7 @@ export function MyLoanOfferComponent({ loanOffer }: LoanOfferProps) {
           <Button
             size={"3"}
             variant="solid"
-            className="bg-btn text-white"
+            className="bg-btn text-white dark:bg-dark-600"
             onClick={() => {
               navigate(`/my-offers/${loanOffer.id}`);
             }}

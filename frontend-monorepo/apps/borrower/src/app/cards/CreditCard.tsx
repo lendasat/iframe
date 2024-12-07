@@ -33,7 +33,7 @@ const CardNumber = ({ number, visible, setVisible }: CardNumberProps) => {
   return (
     <div
       className="flex space-x-3 text-xl tracking-wider
-             cursor-copy hover:bg-gray-600 active:bg-gray-900 active:cursor-default
+             cursor-copy hover:bg-dark-600 active:bg-dark active:cursor-default
              b-2 rounded-md transition-colors"
       style={{ fontFamily: "PayWithMoonFont" }}
       onClick={() => handleCopy()}

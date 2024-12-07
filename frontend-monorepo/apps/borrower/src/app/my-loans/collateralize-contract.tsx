@@ -47,22 +47,22 @@ export function CollateralContractDetails({
 
   return (
     <Box>
-      <Heading size={"4"} weight={"medium"}>
+      <Heading className={"text-font dark:text-font-dark"} size={"4"} weight={"medium"}>
         Fund Collateral Contract
       </Heading>
-      <Separator className="bg-font/10" size={"4"} my={"4"} />
+      <Separator className="bg-font/10 dark:bg-font-dark/10" size={"4"} my={"4"} />
       <Box className="space-y-4">
         <Flex align={"center"} justify={"between"}>
-          <Text size={"2"} weight={"medium"} className="text-font/70 shrink-0">
+          <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70 shrink-0">
             Collateral
           </Text>
 
-          <Text size={"2"} weight={"medium"} className="text-end text-font/70">
+          <Text size={"2"} weight={"medium"} className="text-end text-font/70 dark:text-font-dark/70">
             {collateral_btc.toFixed(8)} BTC
           </Text>
         </Flex>
         <Flex align={"center"} justify={"between"}>
-          <Text size={"2"} weight={"medium"} className="text-font/70 shrink-0">
+          <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70 shrink-0">
             {/* TODO: here we showed the percentage as well, but we don't know the number :) */}
             Origination fee
           </Text>
@@ -74,23 +74,23 @@ export function CollateralContractDetails({
             <Text
               size={"2"}
               weight={"medium"}
-              className="text-end text-font/70"
+              className="text-end text-font/70 dark:text-font-dark/70"
             >
               {loanOriginatorFee.toFixed(8)} BTC
             </Text>
           </OverlayTrigger>
         </Flex>
-        <Separator className="bg-font/10" size={"4"} my={"4"} />
+        <Separator className="bg-font/10 dark:bg-font-dark/10" size={"4"} my={"4"} />
         <Flex align={"center"} justify={"between"}>
-          <Text size={"2"} weight={"bold"} className="shrink-0">
+          <Text size={"2"} weight={"bold"} className="shrink-0 text-font dark:text-font-dark">
             Total
           </Text>
 
-          <Text size={"2"} weight={"bold"} className="text-end">
+          <Text size={"2"} weight={"bold"} className="text-end text-font dark:text-font-dark">
             {totalCollateral} BTC
           </Text>
         </Flex>
-        <Separator className="bg-font/10" size={"4"} my={"4"} />
+        <Separator className="bg-font/10 dark:bg-font-dark/10" size={"4"} my={"4"} />
       </Box>
 
       <Box py={"4"} className="text-center">
@@ -107,7 +107,7 @@ export function CollateralContractDetails({
       </Box>
 
       <Box py={"4"} className="text-center">
-        <Text size={"2"} weight={"medium"} className="text-font/60">
+        <Text size={"2"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">
           Scan QR code to make payment
         </Text>
       </Box>
@@ -127,16 +127,16 @@ export function CollateralContractDetails({
         >
           <Text
             size={"2"}
-            className="text-font/60 text-center max-w-sm font-medium"
+            className="text-font/60 dark:text-font-dark/60 text-center max-w-sm font-medium"
           >
             Please send <em>at least</em>{"  "}
             <Popup
               content={"Copy exact amount to send"}
-              className="text-font-dark font-semibold"
+              className="text-font dark:text-font-dark font-semibold"
             >
               <span
                 onClick={() => handleCopy(totalCollateral)}
-                className="text-font-dark font-semibold cursor-copy"
+                className="text-font dark:text-font-dark font-semibold cursor-copy"
               >
                 {totalCollateral} BTC {"  "}
               </span>
@@ -148,7 +148,7 @@ export function CollateralContractDetails({
               variant="ghost"
               className="cursor-copy mt-1"
             >
-              <span className="text-font-dark font-semibold">
+              <span className="text-font dark:text-font-dark font-semibold">
                 {ellipsedAddress}
               </span>
             </Button>

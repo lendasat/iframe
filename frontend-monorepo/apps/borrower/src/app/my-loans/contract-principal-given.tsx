@@ -65,7 +65,7 @@ export function ContractPrincipalGiven({
   return (
     <Container fluid>
       <Row>
-        <h4>Repayment Details</h4>
+        <h4 className={"text-font dark:text-font-dark"}>Repayment Details</h4>
       </Row>
 
       <Row className="mt-4">
@@ -82,25 +82,25 @@ export function ContractPrincipalGiven({
               <div className="p-4 d-flex align-items-center flex-wrap gap-2">
                 <p
                   onClick={() => handleCopy(totalRepaymentAmount.toString())}
-                  className="text-break font-semibold cursor-copy m-0"
+                  className="text-break font-semibold cursor-copy m-0 text-font dark:text-font-dark"
                 >
                   To receive back your collateral please send
                 </p>
                 <p
                   onClick={() => handleCopy(totalRepaymentAmount.toString())}
-                  className="text-break font-semibold cursor-copy m-0"
+                  className="text-break font-semibold cursor-copy m-0 text-font dark:text-font-dark"
                 >
                   <strong>{formatCurrency(totalRepaymentAmount)}</strong>
                 </p>
                 <p
                   onClick={() => handleCopy(totalRepaymentAmount.toString())}
-                  className="text-break font-semibold cursor-copy m-0"
+                  className="text-break font-semibold cursor-copy m-0 text-font dark:text-font-dark"
                 >
                   to
                 </p>
                 <p
                   onClick={() => handleCopy(repaymentAddress)}
-                  className="text-break text-font-dark font-semibold cursor-copy m-0"
+                  className="text-break font-semibold cursor-copy m-0 text-font dark:text-font-dark"
                 >
                   {repaymentAddress}
                 </p>
@@ -127,11 +127,11 @@ export function ContractPrincipalGiven({
 
       <Form onSubmit={onSubmit}>
         <Form.Group controlId="formTxId" className="mb-3">
-          <Form.Label column={"sm"}>Provide the transaction id</Form.Label>
+          <Form.Label className={"text-font dark:text-font-dark"} column={"sm"}>Provide the transaction id</Form.Label>
           <Form.Control
             type="text"
             placeholder="0x.."
-            className="p-3"
+            className="p-3 bg-light dark:bg-dark text-font dark:text-font-dark"
             style={{ width: "100%" }}
             value={txid}
             onChange={(e) => setTxid(e.target.value)}

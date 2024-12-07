@@ -37,7 +37,7 @@ function MyLoanOffersOverview() {
       }}
     >
       <Box className="p-6 md:p-8">
-        <Heading size={"7"}>My Proposals</Heading>
+        <Heading className={"text-font dark:text-font-dark"} size={"7"}>My Proposals</Heading>
       </Box>
       <MyLoanOffersComponent loanOffers={loanOffers} />
     </Box>

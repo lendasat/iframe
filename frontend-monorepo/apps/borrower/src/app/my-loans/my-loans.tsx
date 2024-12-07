@@ -12,7 +12,7 @@ function MyLoans() {
     <Suspense>
       <Await
         resolve={getContracts()}
-        errorElement={<div>Could not load contracts</div>}
+        errorElement={<div className={"text-font dark:text-font-dark"}>Could not load contracts</div>}
         children={(contracts: Awaited<Contract[]>) => (
           <Box>
             <ContractsComponent loans={contracts} />

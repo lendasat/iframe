@@ -13,7 +13,7 @@ function MyContracts() {
     <Suspense>
       <Await
         resolve={getContracts()}
-        errorElement={<div>Could not load contracts</div>}
+        errorElement={<div className={"text-font dark:text-font-dark"}>Could not load contracts</div>}
         children={(contracts: Awaited<Contract[]>) => (
           <Box className="h-screen flex flex-col">
             <Box className="flex-1 max-h-1/2 overflow-auto">

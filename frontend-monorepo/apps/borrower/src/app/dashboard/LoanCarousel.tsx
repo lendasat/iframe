@@ -38,7 +38,7 @@ export default function LoanCarousel() {
       return (
         <Box className="h-60 flex flex-col items-center justify-center">
           <img src={CreditCard} alt="credit card" className="max-w-40" />
-          <Text className="text-font/50" size={"1"}>You currently don't have any loans</Text>
+          <Text className="text-font/50 dark:text-font-dark/50" size={"1"}>You currently don't have any loans</Text>
         </Box>
       );
     }
@@ -48,19 +48,19 @@ export default function LoanCarousel() {
     return (
       <Box className="space-y-4">
         <Flex align={"center"} justify={"between"} pr={"3"}>
-          <Text as="p" weight={"medium"} className="text-font" size={"3"}>Contract Overview</Text>
+          <Text as="p" weight={"medium"} className="text-font dark:text-font-dark" size={"3"}>Contract Overview</Text>
           <Flex align={"center"} gap={"4"}>
             <IconButton
               onClick={handlePrev}
               variant="ghost"
-              className="hover:bg-transparent text-font/80 text-lg"
+              className="hover:bg-transparent text-font/80 dark:text-font-dark/80 text-lg"
             >
               <FaArrowLeftLong />
             </IconButton>
             <IconButton
               onClick={handleNext}
               variant="ghost"
-              className="hover:bg-transparent text-font/80 text-lg"
+              className="hover:bg-transparent text-font/80 dark:text-font-dark/80 text-lg"
             >
               <FaArrowRightLong />
             </IconButton>
@@ -79,15 +79,17 @@ export default function LoanCarousel() {
             return (
               <SwiperSlide
                 key={index}
-                className={`border h-52 xl:h-60 border-font/[5%] rounded-2xl ${
-                  (index + 1) % 2 === 0 ? "bg-purple-50" : "bg-green-50"
+                className={`border h-52 xl:h-60 border-font/[5%] dark:border-b-font-dark/[5%] rounded-2xl ${
+                  (index + 1) % 2 === 0
+                    ? "bg-purple-50 dark:bg-dark-700"
+                    : "bg-green-50 dark:bg-dark-600"
                 } pt-3 pb-5 px-4 flex flex-col justify-between`}
               >
                 <Box>
-                  <Text weight={"regular"} size={"1"} className="text-font/60">Loan Amount</Text>
+                  <Text weight={"regular"} size={"1"} className="text-font/60 dark:text-font-dark/60">Loan Amount</Text>
                   {/* Loan Amount */}
                   <Flex justify="between" align="center" width="100%">
-                    <Heading size={"7"} mt={"1"}>
+                    <Heading className={"text-font dark:text-font-dark"} size={"7"} mt={"1"}>
                       <CurrencyFormatter value={loan_amount} />
                     </Heading>
                     {<StatusBadge status={status} />}
@@ -97,7 +99,9 @@ export default function LoanCarousel() {
                   <Flex align={"end"} justify={"between"}>
                     <Box className="flex flex-col items-left gap-y-1">
                       <div className="flex items-center w-full">
-                        <Text size={"1"} className="text-font/90 italic mr-2 truncate">{displayedAddress}</Text>
+                        <Text size={"1"} className="text-font/90 dark:text-font-dark/90 italic mr-2 truncate">
+                          {displayedAddress}
+                        </Text>
                         <div className="flex-grow" />
                         {isAddressPresent && (
                           <a
@@ -106,17 +110,19 @@ export default function LoanCarousel() {
                             rel="noopener noreferrer"
                             className="flex-shrink-0"
                           >
-                            <FaExternalLinkAlt className="text-font/90" />
+                            <FaExternalLinkAlt className="text-font/90 dark:text-font-dark/90" />
                           </a>
                         )}
                       </div>
                       {/* Lenders Name */}
-                      <Text size="3" className="tracking-wider text-font/90 capitalize">{lender.name}</Text>
+                      <Text size="3" className="tracking-wider text-font/90 dark:text-font-dark/90 capitalize">
+                        {lender.name}
+                      </Text>
                     </Box>
                     <Box className="flex flex-col items-end gap-y-1">
-                      <Text size="1" className="tracking-wider text-font/90">Due on</Text>
+                      <Text size="1" className="tracking-wider text-font/90 dark:text-font-dark/90">Due on</Text>
                       {/* Due Date */}
-                      <Text size="1" weight={"medium"} className="tracking-wider text-font-dark">
+                      <Text size="1" weight={"medium"} className="tracking-wider text-font dark:text-font-dark">
                         {expiry.toLocaleDateString()}
                       </Text>
                     </Box>
