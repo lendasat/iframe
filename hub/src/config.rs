@@ -31,6 +31,7 @@ pub struct Config {
     pub moon_api_url: String,
     pub moon_webhook_url: String,
     pub moon_visa_product_id: Uuid,
+    pub sync_moon_tx: bool,
 }
 
 impl Config {
@@ -89,6 +90,11 @@ impl Config {
         let moon_webhook_url =
             std::env::var("MOON_WEBHOOK_URL").expect("MOON_WEBHOOK_URL must be set");
 
+        let sync_moon_tx = std::env::var("MOON_SYNC_TX").ok();
+        let sync_moon_tx = sync_moon_tx
+            .map(|sync| bool::from_str(sync.as_str()).unwrap_or_default())
+            .unwrap_or_default();
+
         let any_smtp_not_configured = smtp_host.is_none()
             || smtp_port.is_none()
             || smtp_user.is_none()
@@ -128,6 +134,7 @@ impl Config {
             moon_api_url,
             moon_webhook_url,
             moon_visa_product_id,
+            sync_moon_tx,
         }
     }
 }

@@ -9,6 +9,8 @@ use serde_json::Value;
 use serde_with::serde_as;
 use serde_with::DisplayFromStr;
 use std::fmt;
+use std::time::Duration;
+use std::time::Instant;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
@@ -117,6 +119,7 @@ pub struct GiftCardInfo {
 #[derive(Debug, Deserialize)]
 pub struct TransactionResponse {
     pub transactions: Vec<Transaction>,
+    pub pagination: Pagination,
 }
 
 #[derive(Debug, Deserialize, PartialEq, Clone)]
@@ -345,6 +348,19 @@ pub enum Currency {
     Btc,
 }
 
+#[derive(Clone, Copy, Serialize, Deserialize, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct Pagination {
+    total: u32,
+    last_page: u32,
+    prev_page: Option<u32>,
+    next_page: Option<u32>,
+    per_page: u32,
+    current_page: u32,
+    from: u32,
+    to: u32,
+}
+
 #[derive(Debug, Deserialize, Clone, PartialEq)]
 pub struct InvoicePayment {
     pub id: Uuid,
@@ -469,38 +485,65 @@ impl MoonCardClient {
         }
     }
 
-    pub async fn get_card_transactions(
+    pub async fn get_all_transactions(
         &self,
         card_id: Uuid,
-        current_page: u32,
+    ) -> Result<Vec<Transaction>, reqwest::Error> {
+        self.get_card_transactions(card_id, 1, 50).await
+    }
+
+    async fn get_card_transactions(
+        &self,
+        card_id: Uuid,
+        initial_page: u32,
         per_page: u32,
     ) -> Result<Vec<Transaction>, reqwest::Error> {
-        let url = format!(
-            "{}/card/{}/transactions?currentPage={}&perPage={}",
-            self.base_url, card_id, current_page, per_page
-        );
+        let mut current_page = initial_page;
+        let mut all_transactions = Vec::new();
 
-        let response = self
-            .client
-            .get(&url)
-            .header("x-api-key", &self.api_key)
-            .send()
-            .await?
-            .error_for_status();
-        // TODO: use inspect error instead
-        match response {
-            Ok(response) => {
-                let txs = response.json::<TransactionResponse>().await?.transactions;
-                Ok(txs)
+        loop {
+            let url = format!(
+                "{}/card/{}/transactions?currentPage={}&perPage={}",
+                self.base_url, card_id, current_page, per_page
+            );
+
+            let start = Instant::now();
+            let response = self
+                .client
+                .get(&url)
+                .header("x-api-key", &self.api_key)
+                .send()
+                .await?
+                .error_for_status()?;
+            let duration = start.elapsed();
+            tracing::debug!(
+                card_id = card_id.to_string(),
+                milliseconds = duration.as_millis(),
+                "Moon api call done"
+            );
+
+            let response = response.json::<TransactionResponse>().await?;
+            all_transactions.extend(response.transactions);
+
+            if response.pagination.next_page.is_none() {
+                break;
             }
-            Err(error) => {
-                tracing::error!(
-                    card_id = card_id.to_string(),
-                    "Failed at getting card transactions {error}"
-                );
-                Err(error)
-            }
+
+            let next_page = response.pagination.next_page.expect("to be some");
+            tracing::debug!(
+                card_id = card_id.to_string(),
+                current_page,
+                next_page,
+                loaded_tx = all_transactions.len(),
+                "More pages to load"
+            );
+
+            current_page = next_page;
+            // Try to avoid killing moon with too many request by waiting between calls a bit
+            tokio::time::sleep(Duration::from_millis(250)).await;
         }
+
+        Ok(all_transactions)
     }
 
     pub async fn generate_invoice(
@@ -575,7 +618,6 @@ impl MoonCardClient {
             }
         }
     }
-
     pub async fn register_webhook(&self) -> Result<(), reqwest::Error> {
         let url = format!("{}/webhook", self.base_url);
 

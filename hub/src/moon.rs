@@ -139,12 +139,17 @@ impl Manager {
         })
     }
 
+    pub async fn sync_transaction_history(&self) -> Result<()> {
+        let card_ids = db::moon::get_all_card_ids(&self.db).await?;
+        for card_id in card_ids.iter() {
+            let txs = self.get_transactions(*card_id).await?;
+            db::moon::insert_transactions(&self.db, txs).await?
+        }
+        Ok(())
+    }
+
     pub async fn get_transactions(&self, card_id: Uuid) -> Result<Vec<Transaction>> {
-        let transactions = self
-            .client
-            // TODO: implement pagination
-            .get_card_transactions(card_id, 1, 50)
-            .await?;
+        let transactions = self.client.get_all_transactions(card_id).await?;
 
         Ok(transactions)
     }
