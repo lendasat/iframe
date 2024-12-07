@@ -3,6 +3,7 @@ use axum::routing::post;
 use axum::Router;
 use hub::mempool::WsResponse;
 use mempool_mock::get_address_transactions;
+use mempool_mock::get_block_raw;
 use mempool_mock::get_block_tip_height;
 use mempool_mock::get_tx;
 use mempool_mock::handle_ws_upgrade;
@@ -37,6 +38,7 @@ async fn main() {
         .route("/api/address/:address/txs", get(get_address_transactions))
         .route("/api/blocks/tip/height", get(get_block_tip_height))
         .route("/api/tx/:txid", get(get_tx))
+        .route("/api/block/:height/raw", get(get_block_raw))
         .route("/api/tx", post(post_tx))
         .with_state(blockchain);
 

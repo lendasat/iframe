@@ -1,5 +1,6 @@
 #![allow(clippy::unwrap_used)]
 
+use axum::body::Bytes;
 use axum::extract::ws::Message;
 use axum::extract::ws::WebSocket;
 use axum::extract::Path;
@@ -7,7 +8,16 @@ use axum::extract::State;
 use axum::extract::WebSocketUpgrade;
 use axum::response::IntoResponse;
 use axum::Json;
+use bitcoin::absolute::LockTime;
+use bitcoin::consensus::serialize;
+use bitcoin::hashes::Hash;
+use bitcoin::transaction::Version;
 use bitcoin::Address;
+use bitcoin::Amount;
+use bitcoin::BlockHash;
+use bitcoin::CompactTarget;
+use bitcoin::TxMerkleNode;
+use bitcoin::TxOut;
 use bitcoin::Txid;
 use futures::SinkExt;
 use futures::StreamExt;
@@ -149,6 +159,49 @@ impl Blockchain {
 
         tracing::debug!(height = self.height, "New blockheight");
     }
+
+    pub fn get_block_raw(&self, height: u64) -> Option<bitcoin::block::Block> {
+        let transactions: Vec<Transaction> = self
+            .txs
+            .iter()
+            .filter(|tx| tx.status.block_height == Some(height))
+            .cloned()
+            .collect();
+        tracing::debug!("Found {} blocks at height: {}", transactions.len(), height);
+
+        let raw_block = bitcoin::block::Block {
+            header: bitcoin::block::Header {
+                version: bitcoin::block::Version::ONE,
+                prev_blockhash: BlockHash::all_zeros(),
+                merkle_root: TxMerkleNode::all_zeros(),
+                time: 0,
+                bits: CompactTarget::from_hex("0x000000").expect("valid hex"),
+                nonce: 0,
+            },
+            txdata: transactions
+                .iter()
+                .map(|tx| bitcoin::Transaction {
+                    version: Version::ONE,
+                    lock_time: LockTime::from_height(77777).unwrap(),
+                    input: vec![],
+                    output: tx
+                        .vout
+                        .iter()
+                        .map(|out| TxOut {
+                            value: Amount::from_sat(out.value),
+                            script_pubkey: out
+                                .scriptpubkey_address
+                                .clone()
+                                .assume_checked()
+                                .script_pubkey(),
+                        })
+                        .collect(),
+                })
+                .collect(),
+        };
+
+        Some(raw_block)
+    }
 }
 
 /// Mock of https://mempool.space/docs/api/rest#get-block-tip-height.
@@ -208,6 +261,29 @@ pub async fn get_tx(
     };
 
     Ok(Json(tx).into_response())
+}
+
+/// Mock of https://mempool.space/docs/api/rest#get-block-raw.
+#[instrument(skip(blockchain), ret)]
+pub async fn get_block_raw(
+    State(blockchain): State<Arc<RwLock<Blockchain>>>,
+    Path(height): Path<u64>,
+) -> Result<impl IntoResponse, (axum::http::StatusCode, String)> {
+    let blockchain = blockchain.read().unwrap();
+
+    let raw_block = match blockchain.get_block_raw(height) {
+        Some(block) => block,
+        None => {
+            return Err((
+                axum::http::StatusCode::NOT_FOUND,
+                "Block not found".to_string(),
+            ))
+        }
+    };
+
+    let serialized_block = serialize(&raw_block);
+
+    Ok(Bytes::from(serialized_block))
 }
 
 /// Internal API to add a transaction to the blockchain.
