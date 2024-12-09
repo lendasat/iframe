@@ -22,7 +22,7 @@ export const ContractRequested = ({
 }: ContractRequestedProps) => {
   return (
     <div>
-      <Heading weight={"medium"} size={"4"}>
+      <Heading className={"text-font dark:text-font-dark"} weight={"medium"} size={"4"}>
         Awaiting Your Remark...
       </Heading>
       <div className="d-flex gap-2 mt-5">
@@ -45,9 +45,9 @@ export const ContractRequested = ({
                   Approve
                 </Button>
               </Dialog.Trigger>
-              <Dialog.Content maxWidth="450px">
-                <Dialog.Title>Approval Contract</Dialog.Title>
-                <Dialog.Description size="2" mb="4">
+              <Dialog.Content maxWidth="450px" className={"bg-light dark:bg-dark"}>
+                <Dialog.Title className={"text-font dark:text-font-dark"}>Approval Contract</Dialog.Title>
+                <Dialog.Description size="2" mb="4" className={"text-font dark:text-font-dark"}>
                   Are you sure you want to approve this loan?
                 </Dialog.Description>
                 <Flex gap="3" mt="4" justify="end">
@@ -92,9 +92,9 @@ export const ContractRequested = ({
               Reject
             </Button>
           </Dialog.Trigger>
-          <Dialog.Content maxWidth="450px">
-            <Dialog.Title>Reject Contract</Dialog.Title>
-            <Dialog.Description size="2" mb="4">
+          <Dialog.Content maxWidth="450px" className={"bg-light dark:bg-dark"}>
+            <Dialog.Title className={"text-font dark:text-font-dark"}>Reject Contract</Dialog.Title>
+            <Dialog.Description size="2" mb="4" className={"text-font dark:text-font-dark"}>
               Are you sure you want to reject this loan?
             </Dialog.Description>
             <Flex gap="3" mt="4" justify="end">

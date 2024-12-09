@@ -108,13 +108,13 @@ export function ContractRepaid({
         handleSubmit={handleSubmitUnlockWalletModal}
       />
       <Container fluid>
-        <Heading size={"4"} weight={"medium"}>
+        <Heading className={"text-font dark:text-font-dark"} size={"4"} weight={"medium"}>
           Claim collateral
         </Heading>
         <Row className="mt-4">
           <Col className="text-center">
             <div className="d-flex justify-content-center align-items-center flex-column">
-              <p className="mt-2 text-break">
+              <p className="mt-2 text-break text-font dark:text-font-dark">
                 To claim the collateral you will have to provide your <strong>contract secret</strong>.
               </p>
             </div>

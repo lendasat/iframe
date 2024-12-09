@@ -34,11 +34,11 @@ export const LtvProgressBar: FC<LtvProgressBarProps> = ({ ltvRatio }) => {
           aria-valuemax={100}
         />
       </div>
-      <Text className="text-xs font-medium" weight={"medium"}>
+      <Text className="text-xs font-medium text-font dark:text-font-dark" weight={"medium"}>
         {isNan
           ? (
             <Spinner animation="border" role="status" variant="light" size="sm">
-              <span className="visually-hidden">Loading...</span>
+              <span className="visually-hidden text-font dark:text-font-dark">Loading...</span>
             </Spinner>
           )
           : <>{formattedValue}%</>}

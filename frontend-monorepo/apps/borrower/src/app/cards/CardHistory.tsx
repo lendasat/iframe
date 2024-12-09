@@ -46,10 +46,10 @@ export default function CardHistory({ cardId, lastFourCardDigits }: CardHistoryP
 
   return (
     <Box className="flex-1">
-      <Grid align={"center"} className="py-1 bg-purple-50 grid-cols-4 px-6 md:px-8">
+      <Grid align={"center"} className="py-1 bg-purple-50 grid-cols-4 px-6 md:px-8 dark:bg-purple-800/20">
         {headers.map((items, index) => (
           <Box key={index} className={` ${items.className}`}>
-            <Text size={"1"} weight={"medium"} className="text-font/50">{items.label}</Text>
+            <Text size={"1"} weight={"medium"} className="text-font/50 dark:text-font-dark/50">{items.label}</Text>
           </Box>
         ))}
       </Grid>
@@ -61,9 +61,9 @@ export default function CardHistory({ cardId, lastFourCardDigits }: CardHistoryP
             <Flex
               align={"center"}
               justify={"center"}
-              className="w-full py-1 px-2 rounded-md  bg-gray-100 border border-gray-200"
+              className="w-full py-1 px-2 rounded-md bg-gray-100 border border-gray-200 dark:bg-dark dark:border-dark"
             >
-              <Text size={"1"} weight={"medium"} className="text-gray-500">
+              <Text size={"1"} weight={"medium"} className="text-font dark:text-font-dark">
                 No transactions yet...
               </Text>
             </Flex>

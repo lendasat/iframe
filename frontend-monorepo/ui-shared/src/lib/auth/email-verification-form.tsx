@@ -35,16 +35,25 @@ export function EmailVerificationForm({ handleVerification, initialVerificationC
   };
 
   return (
-    <Box className="bg-gradient-to-tr from-60% to-100% from-[#F5F9FD] to-pink-700/5 py-20 pt-0 h-screen overflow-y-scroll flex items-center justify-center">
+    <Box className="bg-gradient-to-tr from-60% to-100% from-[#F5F9FD] to-pink-700/5 py-20 pt-0 h-screen overflow-y-scroll flex items-center justify-center dark:from-[#1a202c] dark:to-gray-900/70">
       <Grid align={"center"} className="overflow-hidden grid-cols-1 w-screen">
         <Box className="flex flex-col items-center p-5">
           {/* Logo */}
-          <Logo height={27} width={"auto"} className="w-fit invert" />
-          <Box mt={"6"} maxWidth={"550px"} width={"100%"} py={"6"} px={"6"} className="bg-white shadow-sm rounded-2xl">
+          <Logo height={27} width={"auto"} className="w-fit invert dark:invert-0" />
+          <Box
+            mt={"6"}
+            maxWidth={"550px"}
+            width={"100%"}
+            py={"6"}
+            px={"6"}
+            className="bg-light dark:bg-dark shadow-sm rounded-2xl"
+          >
             {/* Heading */}
             <Box className="text-center pb-4">
-              <Heading size={"7"} className="text-font-dark pb-2">Verify Email</Heading>
-              <Text size={"3"} className="text-font/70">Check your email for the verification code</Text>
+              <Heading size={"7"} className="text-font dark:text-font-dark pb-2">Verify Email</Heading>
+              <Text size={"3"} className="text-font/70 dark:text-font-dark/70">
+                Check your email for the verification code
+              </Text>
             </Box>
 
             {/* Form */}
@@ -54,7 +63,7 @@ export function EmailVerificationForm({ handleVerification, initialVerificationC
                   placeholder="000000"
                   value={verificationCode}
                   maxLength={6}
-                  className="w-full text-center text-gray-500 text-2xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full text-center text-font dark:text-font-dark bg-light dark:bg-dark text-2xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                   onChange={(e) => setVerificationCode(e.target.value)}
                 />
               </Box>
@@ -100,8 +109,13 @@ export function EmailVerificationForm({ handleVerification, initialVerificationC
 
             {/* Sign Up Routing */}
             <Box className="flex items-center gap-1 justify-center mt-16">
-              <Text as="label" size={"1"} weight={"medium"} className="text-font/70">Already have an account?</Text>
-              <Link to={"/login"} className="text-sm font-medium text-font-dark hover:text-purple-800">
+              <Text as="label" size={"1"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
+                Already have an account?
+              </Text>
+              <Link
+                to={"/login"}
+                className="text-sm font-medium text-font dark:text-font-dark hover:text-purple-800 dark:hover:text-purple-300"
+              >
                 Sign in
               </Link>
             </Box>

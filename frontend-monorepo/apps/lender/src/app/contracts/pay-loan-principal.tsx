@@ -40,7 +40,7 @@ const RepaymentDetails = ({ contract, onPrincipalGiven, isLoading, txid, setTxId
     <Container fluid>
       <Row>
         <Col>
-          <Heading>Payout Details</Heading>
+          <Heading className={"text-font dark:text-font-dark"}>Payout Details</Heading>
         </Col>
       </Row>
 
@@ -53,7 +53,7 @@ const RepaymentDetails = ({ contract, onPrincipalGiven, isLoading, txid, setTxId
             >
               <QRCode value={contract.borrower_loan_address} size={200} renderAs={"svg"} />
             </div>
-            <p className="mt-2 text-break">
+            <p className="mt-2 text-break text-font dark:text-font-dark">
               Please send <strong>{formatCurrency(contract.loan_amount)}</strong> ({contract.loan_asset_type} on{" "}
               {contract.loan_asset_chain}) to:
             </p>
@@ -64,10 +64,10 @@ const RepaymentDetails = ({ contract, onPrincipalGiven, isLoading, txid, setTxId
                 className="ms-2"
                 onClick={() => handleCopy(contract.borrower_loan_address)}
               >
-                <FontAwesomeIcon icon={faCopy} />
+                <FontAwesomeIcon icon={faCopy} className={"text-font dark:text-font-dark"} />
               </Button>
             </div>
-            {copied && <small className="text-success">Copied to clipboard!</small>}
+            {copied && <small className="text-success text-font dark:text-font-dark">Copied to clipboard!</small>}
           </div>
         </Col>
       </Row>
@@ -83,12 +83,13 @@ const RepaymentDetails = ({ contract, onPrincipalGiven, isLoading, txid, setTxId
 
       <Row className="mt-3">
         <Col>
-          <label htmlFor="txid">Transaction ID:</label>
+          <label className={"text-font dark:text-font-dark"} htmlFor="txid">Transaction ID:</label>
           <input
             id="txid"
             type="text"
             value={txid}
             onChange={(e) => setTxId(e.target.value)}
+            className={"text-font dark:text-font-dark bg-light dark:bg-dark"}
             placeholder="Enter transaction ID"
           />
         </Col>

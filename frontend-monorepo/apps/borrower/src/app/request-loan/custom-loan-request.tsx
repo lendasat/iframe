@@ -124,35 +124,36 @@ export default function CustomRequest() {
         height: innerHeight - 120,
       }}
     >
-      <Grid className="md:grid-cols-2 bg-gradient-to-b from-white gap-10 via-white/80 to-white/0 p-6 md:p-8">
+      <Grid className="md:grid-cols-2 bg-gradient-to-b from-white gap-10 via-white/80 to-white/0 dark:from-dark dark:via-dark/80 dark:to-dark/0 p-6 md:p-8">
         <Box>
           <Box className="max-w-md w-full" mx={"auto"}>
             <Box mb={"8"}>
-              <Heading as="h3" weight={"medium"} size={"8"} className="text-font-dark">
+              <Heading as="h3" weight={"medium"} size={"8"} className="text-font dark:text-font-dark">
                 Request a loan
               </Heading>
-              <Text size={"2"} color="gray" weight={"medium"}>
+              <Text size={"2"} className={"text-font/50 dark:text-font-dark/50"} weight={"medium"}>
                 Choose your own terms.
               </Text>
             </Box>
 
             {/* Ticket Form */}
             <Form className="space-y-4" onSubmit={handleSubmit}>
-              <Text as="p" weight={"medium"} size={"3"} className="text-font">Loan details</Text>
+              <Text as="p" weight={"medium"} size={"3"} className="text-font dark:text-font-dark">Loan details</Text>
 
               {/* Loan Amount */}
               <Box className="space-y-1">
-                <Text className="text-font/70" as="label" size={"2"} weight={"medium"}>Amount to borrow</Text>
+                <Text className="text-font/70 dark:text-font-dark/70" as="label" size={"2"} weight={"medium"}>
+                  Amount to borrow
+                </Text>
                 <TextField.Root
                   size={"3"}
                   variant="surface"
                   type="number"
-                  color="gray"
                   min={1000}
                   value={loanAmount}
                   onChange={(e) => setLoanAmount(parseFloat(e.target.value))}
                   disabled={isDone}
-                  className="w-full rounded-lg text-sm text-font"
+                  className="w-full rounded-lg text-sm text-font dark:text-font-dark"
                 >
                   <TextField.Slot>
                     <Text size={"3"} weight={"medium"}>$</Text>
@@ -163,23 +164,24 @@ export default function CustomRequest() {
               {/* Loan Duration */}
               <Box className="space-y-1">
                 <Flex align={"center"} justify={"between"} pr={"2"}>
-                  <Text className="text-font/70" as="label" size={"2"} weight={"medium"}>Duration</Text>
+                  <Text className="text-font/70 dark:text-font-dark/70" as="label" size={"2"} weight={"medium"}>
+                    Duration
+                  </Text>
                 </Flex>
                 <TextField.Root
                   size={"3"}
                   variant="surface"
                   type="number"
-                  color="gray"
                   min={minDuration}
                   max={maxDuration}
                   value={duration}
                   onChange={(e) => setDuration(parseFloat(e.target.value))}
                   disabled={isDone}
-                  className="w-full rounded-lg text-sm text-font"
+                  className="w-full rounded-lg text-sm text-font dark:text-font-dark"
                 >
                   <TextField.Slot className="pl-0" />
                   <TextField.Slot>
-                    <Text size={"2"} color="gray" weight={"medium"}>
+                    <Text size={"2"} className={"text-font  dark:text-font-dark"} weight={"medium"}>
                       {duration > 1 ? "months" : "month"}
                     </Text>
                   </TextField.Slot>
@@ -188,7 +190,9 @@ export default function CustomRequest() {
 
               {/* Stable Coin */}
               <Box className="space-y-1">
-                <Text className="text-font/70" as="label" size={"2"} weight={"medium"}>Coin</Text>
+                <Text className="text-font/70 dark:text-font-dark/70" as="label" size={"2"} weight={"medium"}>
+                  Coin
+                </Text>
                 <StableCoinDropdown
                   coins={StableCoinHelper.all()}
                   defaultCoin={stableCoin}
@@ -200,23 +204,24 @@ export default function CustomRequest() {
               {/* Interest Rate */}
               <Box className="space-y-1">
                 <Flex align={"center"} justify={"between"} pr={"2"}>
-                  <Text className="text-font/70" as="label" size={"2"} weight={"medium"}>Interest rate</Text>
+                  <Text className="text-font/70 dark:text-font-dark/70" as="label" size={"2"} weight={"medium"}>
+                    Interest rate
+                  </Text>
                 </Flex>
                 <TextField.Root
                   size={"3"}
                   variant="surface"
                   type="number"
-                  color="gray"
                   min={minInterestRate}
                   max={maxInterestRate}
                   value={interest}
                   onChange={(e) => setInterest(parseFloat(e.target.value))}
                   disabled={isDone}
-                  className="w-full rounded-lg text-sm text-font"
+                  className="w-full rounded-lg text-sm text-font dark:text-font-dark"
                 >
                   <TextField.Slot className="pl-0" />
                   <TextField.Slot>
-                    <Text size={"2"} color="gray" weight={"medium"}>
+                    <Text size={"2"} className={"text-font dark:text-font-dark"} weight={"medium"}>
                       %
                     </Text>
                   </TextField.Slot>
@@ -227,25 +232,26 @@ export default function CustomRequest() {
               <Box className="space-y-1">
                 <Flex align={"center"} justify={"between"} pr={"2"}>
                   <LtvInfoLabel>
-                    <Text className="text-font/70" as="label" size={"2"} weight={"medium"}>LTV</Text>
-                    <FaInfoCircle color={"gray"} />
+                    <Text className="text-font/70 dark:text-font-dark/70" as="label" size={"2"} weight={"medium"}>
+                      LTV
+                    </Text>
+                    <FaInfoCircle className={"text-font dark:text-font-dark"} />
                   </LtvInfoLabel>
                 </Flex>
                 <TextField.Root
                   size={"3"}
                   variant="surface"
                   type="number"
-                  color="gray"
                   min={minLtv}
                   max={maxLtv}
                   value={ltv}
                   onChange={(e) => setLtv(parseFloat(e.target.value))}
                   disabled={isDone}
-                  className="w-full rounded-lg text-sm text-font"
+                  className="w-full rounded-lg text-sm text-font dark:text-font-dark"
                 >
                   <TextField.Slot className="pl-0" />
                   <TextField.Slot>
-                    <Text size={"2"} color="gray" weight={"medium"}>
+                    <Text size={"2"} className={"text-font dark:text-font-dark"} weight={"medium"}>
                       %
                     </Text>
                   </TextField.Slot>
@@ -292,46 +298,52 @@ export default function CustomRequest() {
 
         <Box className="flex flex-col items-center justify-center">
           {/* Ticket */}
-          <Box minWidth={"350px"} className="bg-purple-50/80 px-5 shadow-sm">
-            <Box className="h-40 relative after:absolute before:absolute after:h-6 after:w-6
-            after:rounded-full after:bg-[#fdfdfc] md:after:bg-white after:-bottom-3 after:-left-8 before:h-6 before:w-6
-            before:rounded-full before:bg-[#fdfbfb] md:before:bg-white before:-bottom-3 before:-right-8 flex flex-col gap-2 items-center
-            justify-center py-5 border-b border-font/30 border-dashed">
-              <Heading size={"8"} className="text-center">
+          <Box minWidth={"350px"} className="bg-purple-50/80 dark:bg-dark-600 px-5 shadow-sm">
+            <Box
+              className={`h-40 relative after:absolute before:absolute after:h-6 after:w-6
+                        after:rounded-full after:bg-[#fdfdfc] md:after:bg-white dark:after:bg-dark 
+                        after:-bottom-3 after:-left-8 before:h-6 before:w-6 before:rounded-full 
+                        before:bg-[#fdfbfb] md:before:bg-white dark:before:bg-dark before:-bottom-3 
+                        before:-right-8 flex flex-col gap-2 items-center justify-center py-5 border-b 
+                        border-font/30 dark:border-font-dark/30 border-dashed`}
+            >
+              <Heading size={"8"} className="text-center text-font dark:text-font-dark">
                 {formatCurrency(loanAmount)}
               </Heading>
               {isDone ? <Badge size={"3"} color="green">Sent</Badge> : <Badge size={"3"} color="gray">Draft</Badge>}
             </Box>
-            <Text as="p" weight={"medium"} size={"3"} className="text-font/80 my-5">Details</Text>
+            <Text as="p" weight={"medium"} size={"3"} className="text-font/80 dark:text-font-dark/80 my-5">
+              Details
+            </Text>
             <Box className="space-y-5 pb-8">
-              <Separator size={"4"} className="bg-font/5" />
+              <Separator size={"4"} className="bg-font/5 dark:bg-font-dark/5" />
               <Flex justify={"between"} align={"center"}>
-                <Text className="text-xs font-medium text-font/60">Duration</Text>
-                <Text className="text-[13px] font-semibold text-black/70 capitalize">
+                <Text className="text-xs font-medium text-font/60 dark:text-font-dark/60">Duration</Text>
+                <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
                   {duration} {duration > 1 ? "months" : "month"}
                 </Text>
               </Flex>
-              <Separator size={"4"} className="bg-font/5" />
+              <Separator size={"4"} className="bg-font/5 dark:bg-font-dark/5" />
               <Flex justify={"between"} align={"center"}>
-                <Text className="text-xs font-medium text-font/60">Coin</Text>
-                <Text className="text-[13px] font-semibold text-black/70 capitalize">
+                <Text className="text-xs font-medium text-font/60 dark:text-font-dark/60">Coin</Text>
+                <Text className="text-[13px] font-semibold text-black/70 dark:text-font-dark/70 capitalize">
                   {stableCoin != null ? StableCoinHelper.print(stableCoin) : ""}
                 </Text>
               </Flex>
-              <Separator size={"4"} className="bg-font/5" />
+              <Separator size={"4"} className="bg-font/5 dark:bg-font-dark/5" />
               <Flex justify={"between"} align={"center"}>
-                <Text className="text-xs font-medium text-font/60">Interest</Text>
-                <Text className="text-[13px] font-semibold text-black/70 capitalize">
+                <Text className="text-xs font-medium text-font/60 dark:text-font-dark/60">Interest</Text>
+                <Text className="text-[13px] font-semibold text-black/70 dark:text-font-dark/70 capitalize">
                   {interest}%
                 </Text>
               </Flex>
-              <Separator size={"4"} className="bg-font/5" />
+              <Separator size={"4"} className="bg-font/5 dark:bg-font-dark/5" />
               <Flex justify={"between"} align={"center"}>
                 <LtvInfoLabel>
-                  <Text className="text-xs font-medium text-font/60">LTV ratio</Text>
-                  <FaInfoCircle color={"gray"} />
+                  <Text className="text-xs font-medium text-font/60 dark:text-font-dark/60">LTV ratio</Text>
+                  <FaInfoCircle className={"text-font dark:text-font-dark"} />
                 </LtvInfoLabel>
-                <Text className="text-[13px] font-semibold text-black/70 capitalize">
+                <Text className="text-[13px] font-semibold text-black/70 dark:text-font-dark/70 capitalize">
                   {ltv}%
                 </Text>
               </Flex>

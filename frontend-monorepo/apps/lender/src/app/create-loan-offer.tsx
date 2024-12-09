@@ -129,28 +129,31 @@ const CreateLoanOffer: FC = () => {
         }}
       >
         <Box className="lg:grid lg:grid-cols-7 xl:grid-cols-6 w-full">
-          <Box className="py-7 lg:pb-14 md:col-span-4 bg-gradient-to-br from-white/0 to-white border-r border-font/10 space-y-5">
+          <Box className="py-7 lg:pb-14 md:col-span-4 bg-gradient-to-br from-white/0 to-white border-r border-font/10 space-y-5 dark:from-dark/0 dark:to-dark dark:border-font-dark/10">
             <Box className="px-6 md:px-8">
-              <Heading size={"7"} className="text-font">
+              <Heading size={"7"} className="text-font dark:text-font-dark">
                 Create an Offer
               </Heading>
-              <Text size={"2"} className="text-font/60">Create a loan on your own terms.</Text>
+              <Text size={"2"} className="text-font/60 dark:text-font-dark/60">Create a loan on your own terms.</Text>
             </Box>
 
             <Separator size={"4"} my={"5"} className="opacity-50" />
 
             <Box className="px-6 md:px-8">
-              <Box width={"100%"} className="border border-font/10 rounded-xl py-10 px-6 md:px-8 space-y-6">
+              <Box
+                width={"100%"}
+                className="border border-font/10 dark:border-font-dark/10 rounded-xl py-10 px-6 md:px-8 space-y-6"
+              >
                 {/* Amount */}
                 <Box className="space-y-1">
-                  <Text as="label" size={"2"} weight={"medium"} className="text-font/60">
+                  <Text as="label" size={"2"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">
                     Amount to Lend
                   </Text>
                   <Flex align={"center"} gap={"15px"}>
                     <TextField.Root
                       size="3"
                       color="purple"
-                      className="flex-1 text-sm rounded-lg"
+                      className="flex-1 text-sm rounded-lg text-font dark:text-font-dark"
                       type="number"
                       placeholder="Min Amount"
                       value={loanAmount.min}
@@ -162,7 +165,7 @@ const CreateLoanOffer: FC = () => {
                     <TextField.Root
                       size="3"
                       type="number"
-                      className="flex-1 text-sm rounded-lg"
+                      className="flex-1 text-sm rounded-lg text-font dark:text-font-dark"
                       color="purple"
                       placeholder="Max Amount"
                       value={loanAmount.max}
@@ -174,14 +177,16 @@ const CreateLoanOffer: FC = () => {
 
                 {/* Duration */}
                 <Box className="space-y-1">
-                  <Text as="label" size={"2"} weight={"medium"} className="text-font/60">
+                  <Text as="label" size={"2"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">
                     Duration
                   </Text>
-                  <Text as="span" className="text-font/50" weight={"medium"} size={"1"}>(Months)</Text>
+                  <Text as="span" className="text-font/50 dark:text-font-dark/50" weight={"medium"} size={"1"}>
+                    (Months)
+                  </Text>
                   <Flex align={"center"} gap={"15px"}>
                     <TextField.Root
                       size="3"
-                      className="flex-1 text-sm rounded-lg"
+                      className="flex-1 text-sm rounded-lg text-font dark:text-font-dark"
                       type="number"
                       color="purple"
                       placeholder="Min Duration"
@@ -194,7 +199,7 @@ const CreateLoanOffer: FC = () => {
                     <TextField.Root
                       size="3"
                       type="number"
-                      className="flex-1 text-sm rounded-lg"
+                      className="flex-1 text-sm rounded-lg text-font dark:text-font-dark"
                       placeholder="Max Duration"
                       value={loanDuration.max}
                       onChange={(e) => setLoanDuration({ ...loanDuration, max: Number(e.target.value) })}
@@ -205,8 +210,8 @@ const CreateLoanOffer: FC = () => {
                 {/* LTV */}
                 <Box className="space-y-1">
                   <LtvInfoLabel>
-                    <Flex align={"center"} gap={"2"} className="text-font-dark">
-                      <Text as="label" size={"2"} weight={"medium"} className="text-font/60">
+                    <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
+                      <Text as="label" size={"2"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">
                         Loan to value (LTV)
                       </Text>
                       <FaInfoCircle />
@@ -214,7 +219,7 @@ const CreateLoanOffer: FC = () => {
                   </LtvInfoLabel>
                   <TextField.Root
                     size="3"
-                    className="flex-1 text-sm rounded-lg"
+                    className="flex-1 text-sm rounded-lg text-font dark:text-font-dark"
                     type="number"
                     placeholder="LTV (1-70%)"
                     color="purple"
@@ -234,8 +239,8 @@ const CreateLoanOffer: FC = () => {
                 {/* Interest Rate */}
                 <Box className="space-y-1">
                   <AprInfoLabel>
-                    <Flex align={"center"} gap={"2"} className="text-font-dark">
-                      <Text as="label" size={"2"} weight={"medium"} className="text-font/60">
+                    <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
+                      <Text as="label" size={"2"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">
                         Interest Rate (APR)
                       </Text>
                       <FaInfoCircle />
@@ -244,7 +249,7 @@ const CreateLoanOffer: FC = () => {
 
                   <TextField.Root
                     size="3"
-                    className="flex-1 text-sm rounded-lg"
+                    className="flex-1 text-sm rounded-lg text-font dark:text-font-dark"
                     type="number"
                     placeholder="Interest Rate"
                     color="purple"
@@ -263,7 +268,7 @@ const CreateLoanOffer: FC = () => {
 
                 {/* Stable Coin */}
                 <Box className="space-y-1">
-                  <Text as="label" size={"2"} weight={"medium"} className="text-font/60">
+                  <Text as="label" size={"2"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">
                     Stable Coins
                   </Text>
                   <Flex align={"center"} gap={"3"} wrap={"wrap"}>
@@ -297,7 +302,7 @@ const CreateLoanOffer: FC = () => {
 
                 {/* Repayment Address */}
                 <Box className="space-y-1">
-                  <Text as="label" size={"2"} weight={"medium"} className="text-font/60">
+                  <Text as="label" size={"2"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">
                     Loan Repayment Address
                   </Text>
                   <LoanAddressInputField
@@ -341,24 +346,24 @@ const CreateLoanOffer: FC = () => {
             </Box>
           </Box>
           <Box className="flex flex-col justify-center px-6 lg:col-span-3 xl:col-span-2 py-12">
-            <Text size={"2"} weight={"medium"} className="text-center text-font/50">
+            <Text size={"2"} weight={"medium"} className="text-center text-font/50 dark:text-font-dark/50">
               Lending Summary
             </Text>
-            <Heading size={"7"} className={"text-center text-font-dark"}>Borrowers will see</Heading>
+            <Heading size={"7"} className={"text-center text-font dark:text-font-dark"}>Borrowers will see</Heading>
             <Box className="my-10">
-              <Text size={"2"} weight={"medium"} className="text-font/70">
+              <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
                 Loan Information
               </Text>
-              <Separator size={"4"} color={"gray"} mt={"4"} className="opacity-50" />
+              <Separator size={"4"} mt={"4"} className="opacity-50 text-font dark:text-font-dark" />
               <Flex align={"center"} justify={"between"} my={"4"}>
-                <Text as="label" size={"2"} className="text-font/50">Amount</Text>
-                <Text size={"2"} className="text-font-dark/80 font-semibold">
+                <Text as="label" size={"2"} className="text-font/50 dark:text-font-dark/50">Amount</Text>
+                <Text size={"2"} className="text-font/80 dark:text-font-dark/80 font-semibold">
                   {formatCurrency(loanAmount.min)} - {formatCurrency(loanAmount.max)}
                 </Text>
               </Flex>
               <Separator size={"4"} color={"gray"} className="opacity-50" />
               <Flex align={"center"} justify={"between"} my={"4"}>
-                <Text as="label" size={"2"} className="text-font/50">Duration</Text>
+                <Text as="label" size={"2"} className="text-font/50 dark:text-font-dark/50">Duration</Text>
                 <Text size={"2"} className="text-font-dark/80 font-semibold">
                   {loanDuration.min} ~ {loanDuration.max} Months
                 </Text>
@@ -366,8 +371,8 @@ const CreateLoanOffer: FC = () => {
               <Separator size={"4"} color={"gray"} className="opacity-50" />
               <Flex align={"center"} justify={"between"} my={"4"}>
                 <LtvInfoLabel>
-                  <Flex align={"center"} gap={"2"} className="text-font-dark">
-                    <Text as="label" size={"2"} className="text-font/50">LTV</Text>
+                  <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
+                    <Text as="label" size={"2"} className="text-font/50 dark:text-font-dark/50">LTV</Text>
                     <FaInfoCircle />
                   </Flex>
                 </LtvInfoLabel>
@@ -377,8 +382,8 @@ const CreateLoanOffer: FC = () => {
               <Separator size={"4"} color={"gray"} className="opacity-50" />
               <Flex align={"center"} justify={"between"} my={"4"}>
                 <AprInfoLabel>
-                  <Flex align={"center"} gap={"2"} className="text-font-dark">
-                    <Text as="label" size={"2"} className="text-font/50">Interest Rate</Text>
+                  <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
+                    <Text as="label" size={"2"} className="text-font/50 dark:text-font-dark/50">Interest Rate</Text>
                     <FaInfoCircle />
                   </Flex>
                 </AprInfoLabel>
@@ -387,32 +392,34 @@ const CreateLoanOffer: FC = () => {
               </Flex>
               <Separator size={"4"} color={"gray"} className="opacity-50" />
               <Flex align={"center"} justify={"between"} my={"4"}>
-                <Text as="label" size={"2"} className="text-font/50">Preferred Coin</Text>
-                <Text size={"2"} className="text-font-dark/80 font-semibold">
+                <Text as="label" size={"2"} className="text-font/50 dark:text-font-dark/50">Preferred Coin</Text>
+                <Text size={"2"} className="text-font/80 dark:text-font-dark/80 font-semibold">
                   {selectedCoin ? StableCoinHelper.print(selectedCoin) : ""}
                 </Text>
               </Flex>
             </Box>
 
             <Box className="my-4">
-              <Text size={"2"} weight={"medium"} className="text-font/70">
+              <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
                 Lenders Information
               </Text>
               <Separator size={"4"} color={"gray"} mt={"4"} className="opacity-50" />
               <Flex align={"center"} justify={"between"} my={"4"}>
-                <Text as="label" size={"2"} className="text-font/50">Lender</Text>
-                <Text size={"2"} className="text-font-dark/80 font-semibold capitalize">{user?.name}</Text>
+                <Text as="label" size={"2"} className="text-font/50 dark:text-font-dark/50">Lender</Text>
+                <Text size={"2"} className="text-font/80 dark:text-font-dark/80 font-semibold capitalize">
+                  {user?.name}
+                </Text>
               </Flex>
             </Box>
 
             <Box className="my-4">
-              <Text size={"2"} weight={"medium"} className="text-font/70">
+              <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
                 Refunding Information
               </Text>
               <Separator size={"4"} color={"gray"} mt={"4"} className="opacity-50" />
               <Flex align={"center"} justify={"between"} my={"4"}>
-                <Text as="label" size={"2"} className="text-font/50">Wallet Address</Text>
-                <Text size={"1"} className="text-font-dark/80 font-semibold capitalize">
+                <Text as="label" size={"2"} className="text-font/50 dark:text-font-dark/50">Wallet Address</Text>
+                <Text size={"1"} className="text-font/80 dark:text-font-dark/80 font-semibold capitalize">
                   {loanRepaymentAddress ? loanRepaymentAddress.slice(0, 14) + "..." : ""}
                 </Text>
               </Flex>

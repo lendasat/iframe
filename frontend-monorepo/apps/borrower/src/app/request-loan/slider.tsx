@@ -40,13 +40,13 @@ export const Slider = ({ min, max, init, step, suffix, reset, onChange }: Slider
 
       <div className="d-flex justify-content-between">
         <span>
-          <small className="text-xs font-medium">min: {min}</small>
+          <small className="text-xs font-medium dark:text-white">min: {min}</small>
         </span>
         <span>
-          <small className="text-sm font-medium">{value}{suffix}</small>
+          <small className="text-sm font-medium dark:text-white">{value}{suffix}</small>
         </span>
         <span>
-          <small className="text-xs font-medium">max: {max}</small>
+          <small className="text-xs font-medium dark:text-white">max: {max}</small>
         </span>
       </div>
     </div>

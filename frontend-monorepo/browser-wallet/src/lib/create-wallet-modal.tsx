@@ -67,9 +67,12 @@ export function CreateWalletModal({ show, handleClose, handleSubmit }: WalletMod
 
   return (
     <Modal show={show} onHide={handleClose} centered>
-      <Box className="px-4 pt-7">
+      <Box className="px-4 pt-7 bg-white dark:bg-dark rounded-2">
         <Box>
-          <Heading as="h2" className="text-xl md:text-2xl lg:text-3xl font-semibold text-center text-font-dark mb-7">
+          <Heading
+            as="h2"
+            className="text-xl md:text-2xl lg:text-3xl font-semibold text-center text-font dark:text-font-dark mb-7"
+          >
             Create Contract Secret
           </Heading>
         </Box>
@@ -79,9 +82,9 @@ export function CreateWalletModal({ show, handleClose, handleSubmit }: WalletMod
               ? (
                 <Alert variant={"info"} className="flex items-start gap-2">
                   <Box>
-                    <FontAwesomeIcon icon={faInfoCircle} />
+                    <FontAwesomeIcon icon={faInfoCircle} className={"text-font dark:text-font-dark"} />
                   </Box>
-                  <Text>
+                  <Text className={"text-font dark:text-font-dark"}>
                     Please enter a secret for your contracts. Keep this password safe. You will need it when unlocking
                     your funds.
                   </Text>
@@ -92,9 +95,9 @@ export function CreateWalletModal({ show, handleClose, handleSubmit }: WalletMod
               && (
                 <Alert variant={"danger"} className="flex items-start gap-2">
                   <Box>
-                    <FontAwesomeIcon icon={faInfoCircle} />
+                    <FontAwesomeIcon icon={faInfoCircle} className={"text-font dark:text-font-dark"} />
                   </Box>
-                  <Text>{error}</Text>
+                  <Text className={"text-font dark:text-font-dark"}>{error}</Text>
                 </Alert>
               )}
           </Flex>

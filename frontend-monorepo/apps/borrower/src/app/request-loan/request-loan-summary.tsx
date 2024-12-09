@@ -248,7 +248,7 @@ export function RequestLoanSummaryInner({ loanOffer, loanFilter }: RequestLoanSu
             <Link to="/request-loan">
               <IoIosArrowRoundBack size={30} />
             </Link>
-            <Heading size={"8"} className="text-font-dark">Details</Heading>
+            <Heading size={"8"} className="text-font dark:text-font-dark">Details</Heading>
             <Badge variant="soft" size={"2"} color="gray" radius="medium">
               Draft
             </Badge>

@@ -41,8 +41,8 @@ const RequestLoanWizard = () => {
     >
       {/* Heading */}
       <Box className="text-center">
-        <Heading size={"7"}>Request Loan</Heading>
-        <Text size={"2"} weight={"medium"} className="text-font/45">
+        <Heading className={"text-font dark:text-font-dark"} size={"7"}>Request Loan</Heading>
+        <Text size={"2"} weight={"medium"} className="text-font/45 dark:text-font-dark/45">
           Get your first loan with two easy steps.
         </Text>
       </Box>
@@ -52,17 +52,23 @@ const RequestLoanWizard = () => {
         {steps.map((step, index) => (
           <Flex key={index} align={"center"}>
             <Flex
-              className={`border rounded-full ${currentStepIndex === index ? "border-purple-800" : ""} ${
-                currentStepIndex > index ? "border-font-dark" : "border-font/10"
-              } p-2.5`}
+              className={`border rounded-full ${
+                currentStepIndex === index ? "border-purple-800 dark:border-purple-300" : "dark:border-font-dark/10"
+              } ${currentStepIndex > index ? "border-font/50 dark:border-font-dark/50" : "border-font/10 "} p-2.5`}
               align={"center"}
               gap={"2"}
             >
               <Flex
                 align={"center"}
                 justify={"center"}
-                className={`h-5 w-5 ${currentStepIndex === index ? "border-purple-800 text-purple-800" : ""} ${
-                  currentStepIndex > index ? "text-font-dark" : "md:border border-font/10 text-font/50"
+                className={`h-5 w-5 ${
+                  currentStepIndex === index
+                    ? "border-purple-800 text-purple-800 dark:border-purple-300 dark:text-purple-300"
+                    : "dark:border-font-dark/10"
+                } ${
+                  currentStepIndex > index
+                    ? "text-font/50 dark:text-font-dark/50"
+                    : "md:border border-font/10 text-font/50 dark:text-font-dark/50"
                 } rounded-full`}
               >
                 {currentStepIndex > index
@@ -85,8 +91,16 @@ const RequestLoanWizard = () => {
                 size={"2"}
                 weight={"medium"}
                 className={`hidden
-                 ${currentStepIndex === index ? "border-purple-800 text-purple-800" : ""}
-                 ${currentStepIndex > index ? "text-font-dark" : "text-font/50"} md:block`}
+                 ${
+                  currentStepIndex === index
+                    ? "border-purple-800 text-purple-800 dark:border-purple-300 dark:text-purple-300"
+                    : ""
+                }
+                 ${
+                  currentStepIndex > index
+                    ? "text-font/50 dark:text-font-dark/50"
+                    : "text-font/50 dark:text-font-dark/50"
+                } md:block`}
               >
                 {currentStepIndex > index
                   ? (
@@ -99,7 +113,9 @@ const RequestLoanWizard = () => {
             </Flex>
             {steps.length !== index + 1 && (
               <Separator
-                className={currentStepIndex === index ? "border-font-dark" : "border-font/50"}
+                className={currentStepIndex === index
+                  ? "border-font dark:border-font-dark"
+                  : "border-font/50 dark:border-font-dark/50"}
                 size={{
                   initial: "2",
                   lg: "3",

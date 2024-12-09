@@ -14,9 +14,12 @@ interface AddCollateralProps {
 export function AddCollateralModal({ show, address, handleClose }: AddCollateralProps) {
   return (
     <Modal show={show} onHide={handleClose} centered>
-      <Box className="px-4 pt-7">
+      <Box className="px-4 pt-7 bg-white dark:bg-dark-700 rounded-2">
         <Box>
-          <Heading as="h2" className="text-xl md:text-2xl lg:text-3xl font-semibold text-center text-font-dark mb-7">
+          <Heading
+            as="h2"
+            className="text-xl md:text-2xl lg:text-3xl font-semibold text-center text-font dark:text-font-dark mb-7"
+          >
             Add Collateral
           </Heading>
         </Box>
@@ -35,7 +38,7 @@ export function AddCollateralModal({ show, address, handleClose }: AddCollateral
         <Box className="mb-4">
           <div className="d-flex justify-content-center align-items-center flex-column">
             <QRCode value={address} size={200} />
-            <p className="mt-2 text-break text-center">
+            <p className="mt-2 text-break text-center text-font dark:text-font-dark">
               <strong className="small">bitcoin:{address}</strong>
             </p>
           </div>

@@ -37,7 +37,7 @@ export function CollateralSeenOrConfirmed({
               value={contract.borrower_loan_address}
               disabled
               readOnly
-              className="bg-white"
+              className="bg-white dark:bg-dark-700 text-font dark:text-font-dark"
             />
           </InputGroup>
         </>
@@ -48,13 +48,13 @@ export function CollateralSeenOrConfirmed({
   return (
     <Container fluid>
       <Row>
-        <h4>{contractStatusToLabelString(contract.status)}</h4>
+        <h4 className={"text-font dark:text-font-dark"}>{contractStatusToLabelString(contract.status)}</h4>
       </Row>
 
       <Row className="mt-4">
         <Col className="text-center">
           <div className="d-flex justify-content-center align-items-center flex-column">
-            <p className="mt-2 text-break">
+            <p className="mt-2 text-break text-font dark:text-font-dark">
               <strong>{collateral} BTC</strong> are locked in <strong>{collateralAddress}</strong>.
               {/*  TODO: add transaction id*/}
             </p>
@@ -64,9 +64,9 @@ export function CollateralSeenOrConfirmed({
       <Row className="justify-content-between mt-4">
         <Callout.Root color={"teal"}>
           <Callout.Icon>
-            <FaInfoCircle size={"18"} />
+            <FaInfoCircle className={"text-font dark:text-font-dark"} size={"18"} />
           </Callout.Icon>
-          <Callout.Text>
+          <Callout.Text className={"text-font dark:text-font-dark"}>
             {info}
           </Callout.Text>
         </Callout.Root>

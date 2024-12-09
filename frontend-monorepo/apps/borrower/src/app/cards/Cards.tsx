@@ -56,7 +56,7 @@ export default function Cards() {
       <Box
         className={` p-4 ${
           activeCard ? " " : "hidden md:block"
-        } md:px-8 space-y-4 border-r border-font/10 bg-white h-full`}
+        } md:px-8 space-y-4 border-r border-font/10 bg-light dark:bg-dark-700 h-full`}
       >
         <Skeleton loading={!activeCard}>
           <Swiper
@@ -88,12 +88,14 @@ export default function Cards() {
         <Box className="pt-5 space-y-4">
           <Grid className="grid-cols-2 gap-2">
             <Skeleton loading={!activeCard} className="flex items-center justify-between">
-              <Box className="min-h-[150px] w-full border border-font/10 flex flex-col items-center justify-center gap-1.5 text-font rounded-2xl">
-                <Box className={`h-12 w-12 bg-purple-50 rounded-xl place-items-center flex justify-center`}>
+              <Box className="min-h-[150px] w-full border border-font/10 flex flex-col items-center justify-center gap-1.5 text-font rounded-2xl dark:border-dark dark:bg-dark-600">
+                <Box
+                  className={`h-12 w-12 bg-purple-50 rounded-xl place-items-center flex justify-center dark:bg-purple-800/20`}
+                >
                   <IoWallet size={"24"} />
                 </Box>
-                <Text size={"1"} weight={"medium"}>Available Balance</Text>
-                <Heading size={"2"}>
+                <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>Available Balance</Text>
+                <Heading className={"text-font dark:text-font-dark"} size={"2"}>
                   <Skeleton loading={!activeCard}>
                     {activeCard && <CurrencyFormatter value={activeCard.available_balance} />}
                   </Skeleton>
@@ -102,12 +104,14 @@ export default function Cards() {
             </Skeleton>
 
             <Skeleton loading={!activeCard} className="flex items-center justify-between">
-              <Box className="min-h-[150px] w-full border border-font/10 flex flex-col items-center justify-center gap-1.5 text-font rounded-2xl">
-                <Box className={`h-12 w-12 bg-purple-50 rounded-xl place-items-center flex justify-center`}>
+              <Box className="min-h-[150px] w-full border border-font/10 flex flex-col items-center justify-center gap-1.5 text-font rounded-2xl dark:border-dark dark:bg-dark-600">
+                <Box
+                  className={`h-12 w-12 bg-purple-50 rounded-xl place-items-center flex justify-center dark:bg-purple-800/20`}
+                >
                   <IoWallet size={"24"} />
                 </Box>
-                <Text size={"1"} weight={"medium"}>Balance</Text>
-                <Heading size={"2"}>
+                <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>Balance</Text>
+                <Heading className={"text-font dark:text-font-dark"} size={"2"}>
                   <Skeleton loading={!activeCard}>
                     {activeCard && <CurrencyFormatter value={activeCard.balance} />}
                   </Skeleton>
@@ -119,14 +123,14 @@ export default function Cards() {
           <Box className="space-y-1">
             <Skeleton loading={!activeCard}>
               <Flex align={"center"} justify={"between"}>
-                <Heading as="h4" size={"3"} weight={"medium"}>
+                <Heading className={"text-font dark:text-font-dark"} as="h4" size={"3"} weight={"medium"}>
                   Card Details
                 </Heading>
                 <Button
                   onClick={() => setVisible(!visible)}
                   disabled={!activeCard}
                   variant="ghost"
-                  className="hover:bg-transparent text-xs font-medium text-purple-800"
+                  className="hover:bg-transparent text-xs font-medium text-purple-800 dark:text-purple-300"
                 >
                   {!visible ? " Show" : "Hide"}
                   {"   "}
@@ -135,8 +139,8 @@ export default function Cards() {
             </Skeleton>
 
             <Skeleton loading={!activeCard}>
-              <Text size={"1"} weight={"medium"} className="text-font/60">Card Number</Text>
-              <Text as="p" weight={"medium"}>
+              <Text size={"1"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">Card Number</Text>
+              <Text className={"text-font dark:text-font-dark"} as="p" weight={"medium"}>
                 <Skeleton loading={!activeCard}>
                   {visible ? formatCreditCardNumber(activeCard.pan) : "******"}
                 </Skeleton>
@@ -145,16 +149,16 @@ export default function Cards() {
             <Skeleton loading={!activeCard}>
               <Flex justify={"between"}>
                 <Box>
-                  <Text size={"1"} weight={"medium"} className="text-font/60">Expiry</Text>
-                  <Text as="p" weight={"medium"}>
+                  <Text size={"1"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">Expiry</Text>
+                  <Text className={"text-font dark:text-font-dark"} as="p" weight={"medium"}>
                     <Skeleton loading={!activeCard}>
                       {visible ? activeCard.expiration : "****"}
                     </Skeleton>
                   </Text>
                 </Box>
                 <Box>
-                  <Text size={"1"} weight={"medium"} className="text-font/60">CVV</Text>
-                  <Text as="p" weight={"medium"}>
+                  <Text size={"1"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">CVV</Text>
+                  <Text className={"text-font dark:text-font-dark"} as="p" weight={"medium"}>
                     <Skeleton loading={!activeCard}>
                       {visible ? activeCard.cvv : "****"}
                     </Skeleton>
@@ -181,7 +185,7 @@ export default function Cards() {
         {activeCard
           && (
             <Box className="px-6 md:px-8">
-              <Heading>
+              <Heading className={"text-font dark:text-font-dark"}>
                 Transactions
               </Heading>
             </Box>
@@ -191,10 +195,14 @@ export default function Cards() {
         {!activeCard
           ? (
             <Box className="text-center">
-              <Text as="p" weight={"medium"}>
+              <Text as="p" className={"text-font dark:text-font-dark"} weight={"medium"}>
                 Why no credit card yet?!
               </Text>
-              <img src={NoCreditCard} alt="Credit Card" className="h-40 w-auto mb-3" />
+              <img
+                src={NoCreditCard}
+                alt="Credit Card"
+                className="h-40 w-auto mb-3"
+              />
               <Link to={"/requests"} className="text-font/70 hover:text-purple-800">
                 <Button
                   variant="soft"

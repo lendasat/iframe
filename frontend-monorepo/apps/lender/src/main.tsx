@@ -10,6 +10,7 @@ import { mainnet } from "viem/chains";
 import { WagmiProvider } from "wagmi";
 import App from "./app/app";
 import "@rainbow-me/rainbowkit/styles.css";
+import { ThemeProvider } from "@frontend-monorepo/ui-shared";
 
 const config = getDefaultConfig({
   appName: "Lendasat",
@@ -34,7 +35,9 @@ root.render(
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider>
           <Theme>
-            <RouterProvider router={router} />
+            <ThemeProvider>
+              <RouterProvider router={router} />
+            </ThemeProvider>
           </Theme>
         </RainbowKitProvider>
       </QueryClientProvider>

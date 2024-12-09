@@ -155,7 +155,6 @@ function MainLayoutComponents() {
       <Layout
         user={user}
         menuItems={menuItems}
-        theme={"light"}
         backendVersion={backendVersion}
         logout={logout}
       >

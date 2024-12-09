@@ -71,7 +71,7 @@ function LoanOffersComponent({ loanOffers, onRequest, isLoading }: LoanOffersCom
             <Text
               size={"1"}
               weight={"medium"}
-              className="text-black/50"
+              className="text-font/50 dark:text-font-dark/50"
             >
               Lender
             </Text>
@@ -87,19 +87,27 @@ function LoanOffersComponent({ loanOffers, onRequest, isLoading }: LoanOffersCom
                   weight={"medium"}
                   className={SortHelper.getIcon(amountSort) === faChevronUp
                       || SortHelper.getIcon(amountSort) === faChevronDown
-                    ? "text-black"
-                    : "text-black/40"}
+                    ? "text-font dark:text-font-dark"
+                    : "text-font/40 dark:text-font-dark/40"}
                 >
                   Amount
                 </Text>
                 <Box>
                   <IoCaretUp
                     className={`text-[10px] -mb-1
-                    ${SortHelper.getIcon(amountSort) === faChevronUp ? "text-black" : "text-black/40"}`}
+                    ${
+                      SortHelper.getIcon(amountSort) === faChevronUp
+                        ? "text-font dark:text-font-dark"
+                        : "text-font/40 dark:text-font-dark/40"
+                    }`}
                   />
                   <IoCaretDownOutline
                     className={`text-[10px] -mt-1
-                      ${SortHelper.getIcon(amountSort) === faChevronDown ? "text-black" : "text-black/40"}`}
+                      ${
+                      SortHelper.getIcon(amountSort) === faChevronDown
+                        ? "text-font dark:text-font-dark"
+                        : "text-font/40 dark:text-font-dark/40"
+                    }`}
                   />
                 </Box>
               </Flex>
@@ -117,19 +125,27 @@ function LoanOffersComponent({ loanOffers, onRequest, isLoading }: LoanOffersCom
                   color="gray"
                   className={SortHelper.getIcon(durationSort) === faChevronUp
                       || SortHelper.getIcon(durationSort) === faChevronDown
-                    ? "text-black"
-                    : "text-black/40"}
+                    ? "text-font dark:text-font-dark"
+                    : "text-font/40 dark:text-font-dark/40"}
                 >
                   Duration
                 </Text>
                 <Box>
                   <IoCaretUp
                     className={`text-[10px] -mb-1
-                    ${SortHelper.getIcon(durationSort) === faChevronUp ? "text-black" : "text-black/40"}`}
+                    ${
+                      SortHelper.getIcon(durationSort) === faChevronUp
+                        ? "text-font dark:text-font-dark"
+                        : "text-font/40 dark:text-font-dark/40"
+                    }`}
                   />
                   <IoCaretDownOutline
                     className={`text-[10px] -mt-1
-                      ${SortHelper.getIcon(durationSort) === faChevronDown ? "text-black" : "text-black/40"}`}
+                      ${
+                      SortHelper.getIcon(durationSort) === faChevronDown
+                        ? "text-font dark:text-font-dark"
+                        : "text-font/40 dark:text-font-dark/40"
+                    }`}
                   />
                 </Box>
               </Flex>
@@ -145,25 +161,32 @@ function LoanOffersComponent({ loanOffers, onRequest, isLoading }: LoanOffersCom
                   <Text
                     size={"1"}
                     weight={"medium"}
-                    color="gray"
                     className={SortHelper.getIcon(ltvSort) === faChevronUp
                         || SortHelper.getIcon(ltvSort) === faChevronDown
-                      ? "text-black"
-                      : "text-black/40"}
+                      ? "text-font dark:text-font-dark"
+                      : "text-font/40 dark:text-font-dark/40"}
                   >
                     LTV
                   </Text>
-                  <FaInfoCircle color={"gray"} />
+                  <FaInfoCircle className={"text-font dark:text-font-dark"} />
                 </LtvInfoLabel>
 
                 <Box>
                   <IoCaretUp
                     className={`text-[10px] -mb-1
-                    ${SortHelper.getIcon(ltvSort) === faChevronUp ? "text-black" : "text-black/40"}`}
+                    ${
+                      SortHelper.getIcon(ltvSort) === faChevronUp
+                        ? "text-font dark:text-font-dark"
+                        : "text-font/40 dark:text-font-dark/40"
+                    }`}
                   />
                   <IoCaretDownOutline
                     className={`text-[10px] -mt-1
-                      ${SortHelper.getIcon(ltvSort) === faChevronDown ? "text-black" : "text-black/40"}`}
+                      ${
+                      SortHelper.getIcon(ltvSort) === faChevronDown
+                        ? "text-font dark:text-font-dark"
+                        : "text-font/40 dark:text-font-dark/40"
+                    }`}
                   />
                 </Box>
               </Flex>
@@ -176,30 +199,38 @@ function LoanOffersComponent({ loanOffers, onRequest, isLoading }: LoanOffersCom
             >
               <Flex gap={"1"}>
                 <AprInfoLabel>
-                  <Flex align={"center"} gap={"2"} className="text-font-dark">
+                  <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
                     <Text
                       size={"1"}
                       weight={"medium"}
                       color="gray"
                       className={SortHelper.getIcon(interestSort) === faChevronUp
                           || SortHelper.getIcon(interestSort) === faChevronDown
-                        ? "text-black"
-                        : "text-black/40"}
+                        ? "text-font dark:text-font-dark"
+                        : "text-font/40 dark:text-font-dark/40"}
                     >
                       Interest Rate/APR
                     </Text>
-                    <FaInfoCircle color={"gray"} />
+                    <FaInfoCircle className={"text-font dark:text-font-dark"} />
                   </Flex>
                 </AprInfoLabel>
 
                 <Box>
                   <IoCaretUp
                     className={`text-[10px] -mb-1
-                    ${SortHelper.getIcon(interestSort) === faChevronUp ? "text-black" : "text-black/40"}`}
+                    ${
+                      SortHelper.getIcon(interestSort) === faChevronUp
+                        ? "text-font dark:text-font-dark"
+                        : "text-font/40 dark:text-font-dark/40"
+                    }`}
                   />
                   <IoCaretDownOutline
                     className={`text-[10px] -mt-1
-                      ${SortHelper.getIcon(interestSort) === faChevronDown ? "text-black" : "text-black/40"}`}
+                      ${
+                      SortHelper.getIcon(interestSort) === faChevronDown
+                        ? "text-font dark:text-font-dark"
+                        : "text-font/40 dark:text-font-dark/40"
+                    }`}
                   />
                 </Box>
               </Flex>
@@ -209,7 +240,7 @@ function LoanOffersComponent({ loanOffers, onRequest, isLoading }: LoanOffersCom
             <Text
               size={"1"}
               weight={"medium"}
-              className="text-black/50"
+              className="text-font/50 dark:text-font-dark/50"
             >
               Coin
             </Text>
@@ -217,7 +248,7 @@ function LoanOffersComponent({ loanOffers, onRequest, isLoading }: LoanOffersCom
           <Box className="mb-1 hidden xl:block" />
         </Grid>
 
-        <PiWarningOctagon className="opacity-40 text-black xl:hidden" />
+        <PiWarningOctagon className="opacity-40 text-font dark:text-font-dark xl:hidden" />
       </Box>
       <Box
         style={{
@@ -257,11 +288,8 @@ const Loading = () => {
   return (
     <div className="flex items-center justify-center bg-gray-100">
       <div className="text-center">
-        <Spinner
-          className="animate-spin mx-auto mb-4 text-blue-500"
-          size={48}
-        />
-        <p className="text-gray-600 text-lg">
+        <Spinner className="animate-spin mx-auto mb-4 text-blue-500 dark:text-blue-300" size={48} />
+        <p className="text-font text-lg dark:text-font-dark">
           Loading...
         </p>
       </div>

@@ -58,7 +58,7 @@ export const OpenContracts = ({ contracts }: OpenContractsProps) => {
     <Box>
       <Box className="px-6 md:px-8 py-4">
         <Flex align={"center"} justify={"between"}>
-          <Heading size={"6"}>My Contracts</Heading>
+          <Heading className={"text-font dark:text-font-dark"} size={"6"}>My Contracts</Heading>
           <Button asChild color="purple" className="text-sm" size={"3"}>
             <Link to={"/create-loan-offer"}>
               New Proposal
@@ -67,14 +67,14 @@ export const OpenContracts = ({ contracts }: OpenContractsProps) => {
         </Flex>
       </Box>
 
-      <Flex align={"center"} className="bg-active-nav/15 pr-8 border-b border-font/5">
+      <Flex align={"center"} className="bg-active-nav/15 pr-8 border-b border-font/5 dark:border-dark">
         <Box className="w-[45px] xl:w-[80px] text-center py-1">
-          <Text size={"1"} weight={"medium"} className="text-font/50">S/N</Text>
+          <Text size={"1"} weight={"medium"} className="text-font/50 dark:text-font-dark/50">S/N</Text>
         </Box>
         <Grid className="grid-cols-3 md:grid-cols-5 xl:grid-cols-7 flex-grow">
           {headers.map((header, index) => (
             <Box key={index} className={header.className}>
-              <Text className="text-font/50" size={"1"} weight={"medium"}>{header.label}</Text>
+              <Text className="text-font/50 dark:text-font-dark/50" size={"1"} weight={"medium"}>{header.label}</Text>
             </Box>
           ))}
         </Grid>
@@ -111,26 +111,28 @@ export const OpenContracts = ({ contracts }: OpenContractsProps) => {
             <Flex
               key={index}
               align={"center"}
-              className={`border-b ${(index + 1) % 2 === 0 ? "bg-white/50" : "bg-transparent"} border-black/5 pr-3`}
+              className={`border-b ${
+                (index + 1) % 2 === 0 ? "bg-light/50 dark:bg-dark/50" : "bg-transparent"
+              } border-black/5 dark:border-dark pr-3`}
             >
-              <Box className="w-[45px] xl:w-[80px] text-center py-5 border-r">
-                <Text size={"1"} weight={"medium"} className="text-font/50">{index + 1}</Text>
+              <Box className="w-[45px] xl:w-[80px] text-center py-5 border-r dark:border-dark">
+                <Text size={"1"} weight={"medium"} className="text-font/50 dark:text-font-dark/50">{index + 1}</Text>
               </Box>
               <Grid className="grid-cols-3 pr-2 flex-grow md:grid-cols-5 xl:grid-cols-7 items-center text-font">
                 <Box className="text-center">
-                  <Text size={"1"} weight={"medium"}>
+                  <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
                     <CurrencyFormatter value={contract.loan_amount} />
                   </Text>
                 </Box>
 
                 <Box className="justify-center text-center">
-                  <Text size={"1"} weight={"medium"}>
+                  <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
                     {contract.duration_months} months
                   </Text>
                 </Box>
 
                 <Box className="hidden md:flex justify-center">
-                  <Text size={"1"} weight={"medium"}>
+                  <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
                     {(contract.interest_rate * 100).toFixed(2)}%
                   </Text>
                 </Box>
@@ -140,7 +142,7 @@ export const OpenContracts = ({ contracts }: OpenContractsProps) => {
                 </Box>
 
                 <Box className="flex justify-center">
-                  <Text size={"1"} weight={"medium"}>
+                  <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
                     {collateral_btc} BTC
                   </Text>
                 </Box>
@@ -164,7 +166,7 @@ export const OpenContracts = ({ contracts }: OpenContractsProps) => {
                   <Button
                     size={"3"}
                     variant="solid"
-                    className="bg-btn text-white rounded-lg"
+                    className="bg-btn text-white dark:bg-dark-600 rounded-lg"
                     onClick={() => navigate(`${contract.id}`)}
                   >
                     <Text
@@ -180,7 +182,7 @@ export const OpenContracts = ({ contracts }: OpenContractsProps) => {
               {/* Responsive Dropdown */}
               <DropdownMenu.Root>
                 <DropdownMenu.Trigger>
-                  <Button variant="ghost" className="xl:hidden text-font hover:bg-transparent">
+                  <Button variant="ghost" className="xl:hidden text-font dark:text-font-dark hover:bg-transparent">
                     <BsThreeDotsVertical />
                   </Button>
                 </DropdownMenu.Trigger>
@@ -267,7 +269,7 @@ export const OpenContracts = ({ contracts }: OpenContractsProps) => {
                       <Button
                         size={"3"}
                         variant="solid"
-                        className="bg-btn text-white w-full active:scale-90"
+                        className="bg-btn text-white dark:bg-dark-600 w-full active:scale-90"
                         onClick={() => navigate(`${contract.id}`)}
                       >
                         <Text

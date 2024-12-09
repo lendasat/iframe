@@ -26,10 +26,10 @@ export default function OffersNav(props: FilterOption) {
           <Button
             variant="outline"
             onClick={() => setOffCanvas(!offCanvas)}
-            className="flex items-center gap-1 rounded border text-font-dark justify-center font-medium hover:bg-purple-800/5 transition-colors ease-linear duration-200 shadow-none"
+            className="flex items-center gap-1 rounded border text-font justify-center font-medium hover:bg-purple-800/5 dark:text-white dark:border-dark dark:hover:bg-purple-600/10 transition-colors ease-linear duration-200 shadow-none"
           >
             <RiFilter2Line className="text-sm" />
-            <Text size={"1"} className="text-black font-semibold">
+            <Text size={"1"} className="font-text dark:font-text-dark font-semibold">
               Filter
             </Text>
           </Button>
@@ -40,10 +40,10 @@ export default function OffersNav(props: FilterOption) {
             scroll={true}
             placement="end"
             backdrop={false}
-            className="max-w-80 pt-5 z-30"
+            className="max-w-80 pt-5 z-30 bg-white-50 dark:bg-dark-700 text-font dark:text-font-dark"
           >
             <Box className="px-4 pb-4 flex items-center justify-between">
-              <Text className="text-lg font-semibold">
+              <Text className="text-lg font-semibold text-font dark:text-font-dark">
                 Filter
               </Text>
               <LiaTimesSolid onClick={() => setOffCanvas(false)} />
@@ -58,11 +58,11 @@ export default function OffersNav(props: FilterOption) {
         <Box>
           <Button
             asChild
-            className="flex items-center gap-1 rounded bg-purple-800/10 transition-colors ease-out duration-300 group/request"
+            className="flex items-center gap-1 rounded bg-purple-800/10 dark:bg-purple-700/10 transition-colors ease-out duration-300 group/request"
           >
             <Link to={"/custom-request"}>
-              <IoAddOutline className="text-xl group-hover/request:rotate-180 transition-transform ease-linear text-base duration-300" />
-              <Text size={"1"} className="text-purple-800 font-semibold">
+              <IoAddOutline className="text-xl group-hover/request:rotate-180 transition-transform ease-linear text-base duration-300 dark:text-white" />
+              <Text size={"1"} className="text-purple-800 font-semibold dark:text-purple-300">
                 Customize a Request
               </Text>
             </Link>

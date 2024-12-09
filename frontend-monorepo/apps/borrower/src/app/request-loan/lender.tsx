@@ -16,7 +16,7 @@ export function Lender({ name, id }: LenderProfile) {
             as="h6"
             weight={"medium"}
             size={"3"}
-            className="capitalize hidden xl:block"
+            className="capitalize hidden xl:block text-font dark:text-font-dark"
           >
             {name}
           </Heading>

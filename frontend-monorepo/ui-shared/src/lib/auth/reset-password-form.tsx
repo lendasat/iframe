@@ -1,10 +1,11 @@
 import { faCheckCircle, faX } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { Box, Grid, Heading, Text } from "@radix-ui/themes";
 import type { ChangeEvent, FormEvent } from "react";
 import { useState } from "react";
-import { Button, Col, Container, Form, InputGroup, Row } from "react-bootstrap";
+import { Button, Form, InputGroup } from "react-bootstrap";
 import { Link } from "react-router-dom";
-import { ReactComponent as Logo } from "../lendasat_white_bg.svg";
+import { ReactComponent as Logo } from "./../assets/lendasat_svg_logo.svg";
 
 interface ResetPasswordFormProps {
   handleSubmit: (password: string, confirmPassword: string) => Promise<string>;
@@ -48,25 +49,33 @@ export function ResetPasswordForm({ handleSubmit, loginUrl }: ResetPasswordFormP
   };
 
   return (
-    <Container className="d-flex flex-column justify-content-center align-items-center vh-100">
-      <Row className="w-100">
-        <Col className="d-flex justify-content-center">
-          <div className="p-4 rounded border border-primary" style={{ backgroundColor: "#f8f9fa" }}>
-            <Logo height={80} width={400} className="mb-4 d-block mx-auto" />
+    <Box className="bg-gradient-to-tr from-60% to-100% from-[#F5F9FD] to-pink-700/5 py-20 pt-0 h-screen overflow-y-scroll flex items-center justify-center dark:from-[#1a202c] dark:to-gray-900/70">
+      <Grid align={"center"} className="overflow-hidden grid-cols-1 w-screen">
+        <Box className="flex flex-col items-center p-5">
+          {/* Logo */}
+          <Logo height={27} width={"auto"} className="w-fit invert dark:invert-0" />
 
-            {(!error && !success)
-              ? <div className="alert alert-info">Please enter your new password</div>
-              : ""}
-
-            {error && <div className="alert alert-danger">{error}</div>}
-            {success && <div className="alert alert-success">{success}</div>}
+          <Box
+            mt={"6"}
+            maxWidth={"550px"}
+            width={"100%"}
+            py={"6"}
+            px={"6"}
+            className="bg-light dark:bg-dark shadow-sm rounded-2xl"
+          >
+            <Box className="text-center pb-4">
+              <Heading size={"7"} className="text-font dark:text-font-dark pb-2">Reset your password</Heading>
+              <Text size={"3"} className="text-font/70 dark:text-font-dark/70">
+                Please enter your new password
+              </Text>
+            </Box>
 
             <Form onSubmit={onSubmit}>
               <Form.Group controlId="formBasicPassword" className="mb-3">
                 <Form.Control
                   type="Password"
                   placeholder="Password"
-                  className="p-3"
+                  className="p-3 text-font bg-light dark:text-font-dark dark:bg-dark"
                   style={{ width: "100%" }}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -75,13 +84,13 @@ export function ResetPasswordForm({ handleSubmit, loginUrl }: ResetPasswordFormP
               </Form.Group>
 
               <Form.Group controlId="formBasicPassword" className="mb-3">
-                <InputGroup className="mb-3">
+                <InputGroup className="mb-3 text-font dark:text-font-dark">
                   <Form.Control
                     type={"Password"}
                     placeholder={"Confirm password"}
                     value={confirmPassword}
                     onChange={onConfirmPasswordChange}
-                    className="p-3"
+                    className="p-3 text-font bg-light dark:text-font-dark dark:bg-dark"
                     disabled={changeComplete}
                   />
                   {
@@ -92,26 +101,31 @@ export function ResetPasswordForm({ handleSubmit, loginUrl }: ResetPasswordFormP
                     </div>
                   }
                 </InputGroup>
+                <InputGroup>
+                  {error && <div className="alert alert-danger w-100">{error}</div>}
+                  {success && <div className="alert alert-success w-100">{success}</div>}
+                </InputGroup>
+                <InputGroup>
+                  {success
+                    ? (
+                      <Link to={loginUrl} className={`text-decoration-none}`}>
+                        <Button variant="primary" className="w-100 p-2">
+                          {"To Login"}
+                        </Button>
+                      </Link>
+                    )
+                    : (
+                      <Button variant="primary" type="submit" className="w-100 p-2" disabled={isLoading}>
+                        {isLoading ? "Loading…" : "Submit"}
+                      </Button>
+                    )}
+                </InputGroup>
               </Form.Group>
-
-              {success
-                ? (
-                  <Link to={loginUrl} className={`text-decoration-none}`}>
-                    <Button variant="primary" className="w-100 p-2">
-                      {"To Login"}
-                    </Button>
-                  </Link>
-                )
-                : (
-                  <Button variant="primary" type="submit" className="w-100 p-2" disabled={isLoading}>
-                    {isLoading ? "Loading…" : "Submit"}
-                  </Button>
-                )}
             </Form>
-          </div>
-        </Col>
-      </Row>
-    </Container>
+          </Box>
+        </Box>
+      </Grid>
+    </Box>
   );
 }
 

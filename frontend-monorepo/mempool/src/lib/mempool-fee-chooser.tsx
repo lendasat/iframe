@@ -94,48 +94,57 @@ export const FeeSelector = ({ onSelectFee }: FeeSelectorProps) => {
 
   return (
     <div>
-      <h1>Select Fee Rate</h1>
+      <h1 className={"text-font dark:text-font-dark"}>Select Fee Rate</h1>
       {recommendedFees
         ? (
           <Form>
             <ButtonGroup className="d-flex justify-content-between">
               <Button
-                variant={selectedFeeType === "fast" ? "primary" : "outline-primary"}
+                variant={selectedFeeType === "fast"
+                  ? "primary dark:bg-dark-700 dark:border-dark"
+                  : "outline-primary dark:bg-dark dark:border-dark dark:hover:bg-dark-600"}
                 onClick={() => handleFeeSelection("fast")}
               >
-                <Row>
+                <Row className={"dark:text-font-dark"}>
                   <p>Fast (~10m)</p>
                   <p>({recommendedFees.fastestFee} sat/vB)</p>
                 </Row>
               </Button>
               <Button
-                variant={selectedFeeType === "medium" ? "primary" : "outline-primary"}
+                variant={selectedFeeType === "medium"
+                  ? "primary dark:bg-dark-700 dark:border-dark"
+                  : "outline-primary dark:bg-dark dark:border-dark dark:hover:bg-dark-600"}
                 onClick={() => handleFeeSelection("medium")}
               >
-                <Row>
+                <Row className={"dark:text-font-dark"}>
                   <p>Medium (~60m)</p>
                   <p>({recommendedFees.hourFee} sat/vB)</p>
                 </Row>
               </Button>
               <Button
-                variant={selectedFeeType === "slow" ? "primary" : "outline-primary"}
+                variant={selectedFeeType === "slow"
+                  ? "primary dark:bg-dark-700 dark:border-dark"
+                  : "outline-primary dark:bg-dark dark:border-dark dark:hover:bg-dark-600"}
                 onClick={() => handleFeeSelection("slow")}
               >
-                <Row>
+                <Row className={"dark:text-font-dark"}>
                   <p>Slow (~1d)</p>
                   <p>({recommendedFees.economyFee} sat/vB)</p>
                 </Row>
               </Button>
               <Button
-                variant={selectedFeeType === "custom" ? "primary" : "outline-primary"}
+                variant={selectedFeeType === "custom"
+                  ? "primary dark:bg-dark-700 dark:border-dark"
+                  : "outline-primary dark:bg-dark dark:border-dark dark:hover:bg-dark-600"}
                 onClick={() => handleFeeSelection("custom")}
               >
-                <p>Custom</p>
+                <p className={"dark:text-font-dark"}>Custom</p>
                 <Form.Group className="mt-3">
                   <Form.Control
                     type="number"
                     placeholder="Enter custom fee (sat/vB)"
                     value={customFee}
+                    className={"dark:bg-dark dark:text-font-dark"}
                     onChange={handleCustomFeeChange}
                   />
                 </Form.Group>

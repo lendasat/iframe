@@ -366,7 +366,7 @@ export const Step2PickOffer = () => {
     <Grid className="md:grid-cols-2 h-full">
       <Box className="p-6 md:p-8 ">
         <Box>
-          <Heading as="h3" size={"6"} className="font-semibold text-font-dark">
+          <Heading as="h3" size={"6"} className="font-semibold text-font dark:text-font-dark">
             Find a loan offer
           </Heading>
         </Box>
@@ -374,7 +374,7 @@ export const Step2PickOffer = () => {
           <Form className="space-y-4" onSubmit={onShowOfferClick}>
             {/* Loan Amount */}
             <Box className="space-y-1">
-              <Text className="text-font/70" as="label" size={"2"} weight={"medium"}>
+              <Text className="text-font/70 dark:text-font-dark/70" as="label" size={"2"} weight={"medium"}>
                 How much do you wish to borrow?
               </Text>
               <TextField.Root
@@ -385,7 +385,7 @@ export const Step2PickOffer = () => {
                 min={1}
                 value={loanAmountStringInput}
                 onChange={onLoanAmountChange}
-                className="w-full rounded-lg text-sm text-font"
+                className="w-full rounded-lg text-sm text-font dark:text-font-dark"
               >
                 <TextField.Slot>
                   <Text size={"3"} weight={"medium"}>$</Text>
@@ -395,7 +395,7 @@ export const Step2PickOffer = () => {
 
             {/* Loan Duration */}
             <Box className="space-y-1">
-              <Text className="text-font/70" as="label" size={"2"} weight={"medium"}>
+              <Text className="text-font/70 dark:text-font-dark/70" as="label" size={"2"} weight={"medium"}>
                 For how long do you want to borrow?
               </Text>
               <TextField.Root
@@ -407,7 +407,7 @@ export const Step2PickOffer = () => {
                 max={maxRepaymentTime}
                 value={loanDurationString}
                 onChange={onLoanDurationChange}
-                className="w-full rounded-lg text-sm text-font"
+                className="w-full rounded-lg text-sm text-font dark:text-font-dark"
               >
                 <TextField.Slot className="pl-0" />
                 <TextField.Slot>
@@ -433,7 +433,7 @@ export const Step2PickOffer = () => {
                 {/* Stable Coin */ !coinSelectHidden
                   && (
                     <Box className="space-y-1">
-                      <Text className="text-font/70" as="label" size={"2"} weight={"medium"}>
+                      <Text className="text-font/70 dark:text-font-dark/70" as="label" size={"2"} weight={"medium"}>
                         What stable coin do you need?
                       </Text>
                       <StableCoinDropdown
@@ -448,8 +448,8 @@ export const Step2PickOffer = () => {
                 {/* Interest Rate */}
                 <Box className="space-y-1">
                   <AprInfoLabel>
-                    <Flex align={"center"} gap={"2"} className="text-font-dark">
-                      <Text className="text-font/70" as="label" size={"2"} weight={"medium"}>
+                    <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
+                      <Text className="text-font/70 dark:text-font-dark/70" as="label" size={"2"} weight={"medium"}>
                         What's your preferred interest rate?
                       </Text>
                       <FaInfoCircle />
@@ -465,7 +465,7 @@ export const Step2PickOffer = () => {
                     max={100}
                     value={maxInterest ? (maxInterest * 100).toFixed(0) : ""}
                     onChange={onMaxInterestChange}
-                    className="w-full rounded-lg text-sm text-font"
+                    className="w-full rounded-lg text-sm text-font dark:text-font-dark"
                   >
                     <TextField.Slot className="pl-0" />
                     <TextField.Slot>
@@ -478,9 +478,9 @@ export const Step2PickOffer = () => {
 
                 {/* LTV Rate */}
                 <Box className="space-y-1">
-                  <Text className="text-font/70" as="label" size={"2"} weight={"medium"}>
+                  <Text className="text-font/70 dark:text-font-dark/70" as="label" size={"2"} weight={"medium"}>
                     <LtvInfoLabel>
-                      <Text as="label" className="text-sm font-medium text-font">
+                      <Text as="label" className="text-sm font-medium text-font dark:text-font-dark">
                         What's your preferred loan-to-value ratio?
                       </Text>
                       <FaInfoCircle color={"gray"} />
@@ -495,7 +495,7 @@ export const Step2PickOffer = () => {
                     max={90}
                     value={ltv ? `${(ltv * 100).toFixed(0)}` : ""}
                     onChange={onLtvChange}
-                    className="w-full rounded-lg text-sm text-font"
+                    className="w-full rounded-lg text-sm text-font dark:text-font-dark"
                   >
                     <TextField.Slot className="pl-0" />
                     <TextField.Slot>
@@ -548,11 +548,11 @@ export const Step2PickOffer = () => {
         </Box>
       </Box>
       <Box className="flex flex-col items-center justify-center p-6 md:p-8">
-        <Box className="flex flex-col items-center h-full w-full border border-font/10 bg-white max-w-lg rounded-3xl pt-10">
+        <Box className="flex flex-col items-center h-full w-full border border-font/10 bg-white max-w-lg rounded-3xl pt-10 dark:border-dark dark:bg-dark-700 dark:text-white">
           {bestOffer
             ? (
               <>
-                <Heading size="4" mb="4" className="font-normal">
+                <Heading size="4" mb="4" className="text-font dark:text-font-dark">
                   Best match to borrow <strong>{formatCurrency(loanAmount || 0)}</strong> for{" "}
                   <strong>{loanDuration}</strong> months
                 </Heading>
@@ -595,7 +595,7 @@ export const Step2PickOffer = () => {
                   alt="No Result"
                   className="max-w-xs"
                 />
-                <Text className="text-font/90" size={"2"} weight={"medium"}>
+                <Text className="text-font/90 dark:text-font-dark/90" size={"2"} weight={"medium"}>
                   No offers found for these inputs...
                 </Text>
                 {offerWithSmallestAmount
@@ -724,16 +724,16 @@ const LoanSearched = (props: SearchParams) => {
       <Box>
         <Box className="px-6 py-4 space-y-3">
           <Flex justify={"between"} align={"center"}>
-            <Text className="text-xs font-medium text-font/60">Lender</Text>
-            <Text className="text-[13px] font-semibold text-black/70 capitalize">
+            <Text className="text-xs font-medium text-font/60 dark:text-font-dark/60">Lender</Text>
+            <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
               {props.lender}
             </Text>
           </Flex>
           <Separator size={"4"} />
           <Flex justify={"between"} align={"center"}>
             <AprInfoLabel>
-              <Flex align={"center"} gap={"2"} className="text-font-dark">
-                <Text className="text-xs font-medium text-font/60">
+              <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
+                <Text className="text-xs font-medium text-font/60 dark:text-font-dark/60">
                   Interest
                 </Text>
                 <FaInfoCircle />
@@ -741,10 +741,10 @@ const LoanSearched = (props: SearchParams) => {
             </AprInfoLabel>
 
             <div className="flex flex-col">
-              <Text className="text-[13px] font-semibold text-black/70 capitalize">
+              <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
                 {(props.interest * 100).toFixed(1)}% per year
               </Text>
-              <Text className="text-[11px] text-black/50 mt-0.5 self-end">
+              <Text className="text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-end">
                 ≈ {formatCurrency(actualInterestUsdAmount, 1, 1)} in total
               </Text>
             </div>
@@ -752,18 +752,18 @@ const LoanSearched = (props: SearchParams) => {
           <Separator size={"4"} />
           <Flex justify={"between"} align={"center"}>
             <LtvInfoLabel>
-              <Flex align={"center"} gap={"2"} className="text-font-dark">
-                <Text className="text-xs font-medium text-font/60">
+              <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
+                <Text className="text-xs font-medium text-font/60 dark:text-font-dark/60">
                   Needed collateral ({(props.ltv * 100).toFixed(0)}% LTV)
                 </Text>
                 <FaInfoCircle />
               </Flex>
             </LtvInfoLabel>
             <div className="flex flex-col">
-              <Text className="text-[13px] font-semibold text-black/70 capitalize">
+              <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
                 {collateralAmountBtc.toFixed(8)} BTC
               </Text>
-              <Text className="text-[11px] text-black/50 mt-0.5 self-end">
+              <Text className="text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-end">
                 ≈ {formatCurrency(collateralUsdAmount)}
               </Text>
             </div>
@@ -772,8 +772,8 @@ const LoanSearched = (props: SearchParams) => {
             <>
               <Separator size={"4"} />
               <Flex justify={"between"} align={"center"}>
-                <Text className="text-xs font-medium text-font/60">Coin</Text>
-                <Text className="text-[13px] font-semibold text-black/70 capitalize">
+                <Text className="text-xs font-medium text-font/60 dark:text-font-dark/60">Coin</Text>
+                <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
                   {StableCoinHelper.print(props.coin)}
                 </Text>
               </Flex>
@@ -790,7 +790,11 @@ const LoanSearched = (props: SearchParams) => {
                     description={"The Bitcoin address where you want your collateral returned upon loan repayment."}
                   >
                     <Flex gap={"2"} align={"center"}>
-                      <Text size={"2"} weight={"medium"} className={"text-xs font-medium text-font/60"}>
+                      <Text
+                        size={"2"}
+                        weight={"medium"}
+                        className={"text-xs font-medium text-font/60 dark:text-font-dark/60"}
+                      >
                         Collateral Refund Address
                       </Text>
                       <FaInfoCircle />
@@ -800,9 +804,8 @@ const LoanSearched = (props: SearchParams) => {
                   {bitcoinAddressInputError && <span className="text-red-500 text-sm">{bitcoinAddressInputError}</span>}
                 </div>
                 <TextField.Root
-                  className="w-full font-semibold text-sm border-0"
+                  className="w-full font-semibold text-sm border-0 text-font dark:text-font-dark"
                   size={"3"}
-                  color="gray"
                   type="text"
                   value={props.btcAddress}
                   onChange={(e) => onBitcoinAddressChange(e.target.value)}
@@ -815,7 +818,9 @@ const LoanSearched = (props: SearchParams) => {
                   <>
                     <Separator size={"4"} />
                     <Flex direction={"column"} align={"start"} gap={"2"}>
-                      <Text as="label" size={"2"} weight={"medium"}>Wallet Address</Text>
+                      <Text as="label" className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
+                        Wallet Address
+                      </Text>
                       <LoanAddressInputField
                         loanAddress={props.loanAddress ?? ""}
                         setLoanAddress={props.setLoanAddress}

@@ -134,7 +134,7 @@ export function StableCoinDropdown({
         >
           <Select.Trigger
             variant={"surface"}
-            className="shadow-none focus-visible:outline-none p-3 outline-none h-10 font-normal text-sm border rounded-lg w-full max-w-full"
+            className="shadow-none focus-visible:outline-none p-3 outline-none h-10 text-font dark:text-font-dark text-sm border rounded-lg w-full max-w-full dark:bg-dark-700"
           />
 
           <Select.Content highContrast color="purple" className="font-normal text-sm z-50">
@@ -151,7 +151,7 @@ export function StableCoinDropdown({
         variant="outline"
         onClick={handleClear}
         aria-label="Clear selection"
-        className="flex-shrink-0"
+        className="flex-shrink-0 text-font dark:text-font-dark"
       >
         <MdOutlineClear size={"16px"} />
       </Button>

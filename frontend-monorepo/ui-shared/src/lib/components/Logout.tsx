@@ -18,15 +18,15 @@ export default function Logout({ logout }: LogoutProps) {
     <AlertDialog.Root>
       <AlertDialog.Trigger>
         <MenuItem
-          component={<Link className="capitalize text-font/90" />}
+          component={<Link className="capitalize text-font/90 dark:text-font-dark/90" />}
           icon={<TbLogout2 size={18} />}
         >
           Logout
         </MenuItem>
       </AlertDialog.Trigger>
-      <AlertDialog.Content maxWidth="450px">
-        <AlertDialog.Title>Confirm Logout</AlertDialog.Title>
-        <AlertDialog.Description size="2">
+      <AlertDialog.Content maxWidth="450px" className={"bg-white dark:bg-dark"}>
+        <AlertDialog.Title className={"text-font dark:text-font-dark"}>Confirm Logout</AlertDialog.Title>
+        <AlertDialog.Description size="2" className={"text-font dark:text-font-dark"}>
           Are you sure? This session will no longer be accessible and any existing sessions will be expired.
         </AlertDialog.Description>
 
