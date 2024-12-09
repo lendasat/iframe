@@ -1,5 +1,6 @@
 import { MoonIcon, SunIcon } from "@radix-ui/react-icons";
 import { type FC, useEffect, useState } from "react";
+import { getPreferredTheme } from "./theme-provider";
 
 interface ThemeSwitchProps {
   className?: string;
@@ -14,8 +15,15 @@ const ThemeSwitch: FC<ThemeSwitchProps> = ({ className }) => {
 
   // Apply saved theme from localStorage on mount
   useEffect(() => {
-    const savedTheme = localStorage.getItem("theme") || "light";
+    // Order of theme preferences.
+    // 1. What the user has selected in the app.
+    // 2. Set in the system settings.
+    // 3. Default light mode.
+    const savedTheme = localStorage.getItem("theme") || getPreferredTheme() || "light";
     setTheme(savedTheme);
+    // remove both light and dark classes so that only the saved theme is really used.
+    document.documentElement.classList.remove("light");
+    document.documentElement.classList.remove("dark");
     document.documentElement.classList.add(savedTheme);
   }, []);
 
