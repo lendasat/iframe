@@ -13,6 +13,7 @@ import { Menu, MenuItem, Sidebar } from "react-pro-sidebar";
 import { Link, NavLink } from "react-router-dom";
 import Logout from "./components/Logout";
 import { SidebarHeader } from "./components/SidebarHeader";
+import ThemeSwitch from "./components/theme-switch";
 
 interface GroupProps {
   label: string;
@@ -220,6 +221,7 @@ export const Layout: FC<LayoutProps> = ({ children, menuItems, backendVersion, u
               >
                 <IoIosNotificationsOutline size={"20"} />
               </Link>
+              <ThemeSwitch className="h-9 w-9 bg-white/70 text-font/80 border border-white rounded-full flex items-center justify-center  hover:bg-white hover:border-black/10 hover:text-font transition-colors ease-in duration-200" />
             </Flex>
           </Box>
         </Box>

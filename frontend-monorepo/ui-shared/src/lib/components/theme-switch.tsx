@@ -1,10 +1,15 @@
-import * as Switch from "@radix-ui/react-switch";
+import { MoonIcon, SunIcon } from "@radix-ui/react-icons";
 import { type FC, useEffect, useState } from "react";
+
+interface ThemeSwitchProps {
+  className?: string;
+}
+
 /*
-A switch which allows you to switch between light and dark mode. This is very convenient to test dark mode theme topics.
-Note, you will have to update the tailwind.config.js to use darkMode: 'class'.
+A switch which allows you to switch between light and dark mode.
+Note, you will have to set `darkMode: 'class'` in `tailwind.config.js` for this to work.
  */
-const ThemeSwitch: FC = () => {
+const ThemeSwitch: FC<ThemeSwitchProps> = ({ className }) => {
   const [theme, setTheme] = useState("light");
 
   // Apply saved theme from localStorage on mount
@@ -23,19 +28,9 @@ const ThemeSwitch: FC = () => {
   };
 
   return (
-    <div className="flex items-center space-x-3">
-      <Switch.Root
-        className="w-12 h-6 bg-gray-300 bg-white-700 rounded-full relative flex items-center"
-        checked={theme === "dark"}
-        onCheckedChange={toggleTheme}
-      >
-        <Switch.Thumb
-          className={`w-6 h-6 bg-white bg-gray-900 rounded-full transform transition-transform ${
-            theme === "dark" ? "translate-x-6" : "translate-x-0"
-          }`}
-        />
-      </Switch.Root>
-    </div>
+    <button onClick={toggleTheme} className={className} aria-label="Toggle theme">
+      {theme === "light" ? <MoonIcon /> : <SunIcon />}
+    </button>
   );
 };
 
