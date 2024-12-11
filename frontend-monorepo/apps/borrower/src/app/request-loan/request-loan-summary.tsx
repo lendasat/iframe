@@ -367,7 +367,7 @@ export function RequestLoanSummaryInner({ loanOffer, loanFilter }: RequestLoanSu
                       </Text>
                     </Flex>
                     <Flex justify={"between"} align={"center"}>
-                      <Text className="text-xs font-medium text-font/60">APR</Text>
+                      <Text className="text-xs font-medium text-font/60">Interest Rate</Text>
                       <Text className="text-[13px] font-semibold text-black/70 capitalize">
                         {(loanOffer.interest_rate * 100).toFixed(2)}%
                       </Text>

@@ -6,8 +6,8 @@ import { Integration, useBorrowerHttpClient } from "@frontend-monorepo/http-clie
 import type { LoanOffer } from "@frontend-monorepo/http-client-borrower";
 import {
   AbbreviationExplanationInfo,
-  AprInfoLabel,
   formatCurrency,
+  InterestRateInfoLabel,
   LoanAddressInputField,
   LtvInfoLabel,
   StableCoin,
@@ -447,14 +447,14 @@ export const Step2PickOffer = () => {
 
                 {/* Interest Rate */}
                 <Box className="space-y-1">
-                  <AprInfoLabel>
+                  <InterestRateInfoLabel>
                     <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
                       <Text className="text-font/70 dark:text-font-dark/70" as="label" size={"2"} weight={"medium"}>
                         What's your preferred interest rate?
                       </Text>
                       <FaInfoCircle />
                     </Flex>
-                  </AprInfoLabel>
+                  </InterestRateInfoLabel>
 
                   <TextField.Root
                     size={"3"}
@@ -731,14 +731,14 @@ const LoanSearched = (props: SearchParams) => {
           </Flex>
           <Separator size={"4"} />
           <Flex justify={"between"} align={"center"}>
-            <AprInfoLabel>
+            <InterestRateInfoLabel>
               <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
                 <Text className="text-xs font-medium text-font/60 dark:text-font-dark/60">
                   Interest
                 </Text>
                 <FaInfoCircle />
               </Flex>
-            </AprInfoLabel>
+            </InterestRateInfoLabel>
 
             <div className="flex flex-col">
               <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">

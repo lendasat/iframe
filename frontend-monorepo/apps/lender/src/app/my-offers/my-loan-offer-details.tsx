@@ -351,7 +351,7 @@ function MyLoanOfferDetails() {
                                 weight={"medium"}
                                 className="text-font/70 dark:text-font-dark/70"
                               >
-                                APR
+                                Interest Rate
                               </Text>
                               <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
                                 {(offer.interest_rate * 100).toFixed(2)}%
