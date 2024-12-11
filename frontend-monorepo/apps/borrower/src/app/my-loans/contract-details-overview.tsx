@@ -12,6 +12,7 @@ import {
   formatCurrency,
   InterestRateInfoLabel,
   LtvInfoLabel,
+  RefundAddressInfoLabel,
   StableCoinHelper,
   usePrice,
 } from "@frontend-monorepo/ui-shared";
@@ -422,6 +423,34 @@ function ContractDetails({ contract }: DetailsProps) {
               ≈ {formatCurrency(actualInterestUsdAmount, 1, 1)} in total
             </Text>
           </div>
+        </Flex>
+        <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
+
+        <Flex gap={"5"} align={"start"} justify={"between"}>
+          <RefundAddressInfoLabel>
+            <Flex align={"center"} gap={"2"}>
+              <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
+                Collateral Refund Address
+              </Text>
+              <FaInfoCircle className={"text-font dark:text-font-dark"} />
+            </Flex>
+          </RefundAddressInfoLabel>
+          {contractIdCopied
+            ? (
+              <Text size={"2"} className="font-medium text-font dark:text-font-dark" color="green">
+                Copied
+              </Text>
+            )
+            : (
+              <Text
+                onClick={() => handleCopy(contract.id)}
+                size={"2"}
+                weight={"medium"}
+                className="text-end cursor-copy hover:opacity-70 flex items-center gap-1 text-font dark:text-font-dark"
+              >
+                {formatId(contract.borrower_btc_address)} <FaCopy />
+              </Text>
+            )}
         </Flex>
         <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
         <AdditionalDetail contract={contract} />
