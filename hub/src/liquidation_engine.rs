@@ -292,6 +292,7 @@ async fn liquidate_contract(
             "Failed updating liquidation status to liquidated {err:#}"
         )
     }
+
     if let Err(err) = send_email(
         db,
         contract,
@@ -318,6 +319,11 @@ async fn send_email(
         .await?
         .context("user not found")?;
 
+    let contract_url = format!(
+        "{}/my-contracts/{}",
+        config.lender_frontend_origin, contract.id
+    );
+
     let email = Email::new(config);
 
     match status {
@@ -326,7 +332,13 @@ async fn send_email(
         }
         LiquidationStatus::FirstMarginCall | LiquidationStatus::SecondMarginCall => {
             if let Err(err) = email
-                .send_user_about_margin_call(user, contract.clone(), price, current_ltv)
+                .send_user_about_margin_call(
+                    user,
+                    contract.clone(),
+                    price,
+                    current_ltv,
+                    contract_url,
+                )
                 .await
             {
                 bail!("Failed sending email {err:#}")
@@ -334,7 +346,7 @@ async fn send_email(
         }
         LiquidationStatus::Liquidated => {
             if let Err(err) = email
-                .send_user_about_liquidation_notice(user, contract.clone(), price)
+                .send_user_about_liquidation_notice(user, contract.clone(), price, contract_url)
                 .await
             {
                 bail!("Failed sending email {err:#}")
