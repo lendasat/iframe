@@ -2,7 +2,7 @@ import type { FC } from "react";
 
 export const formatCurrency = (value: number, minFraction?: number, maxFraction?: number) => {
   let minimumFractionDigits = minFraction || 0;
-  let maximumFractionDigits = maxFraction || 0;
+  let maximumFractionDigits = maxFraction || 2;
   if (minFraction && !maxFraction) {
     maximumFractionDigits = minFraction;
   }
