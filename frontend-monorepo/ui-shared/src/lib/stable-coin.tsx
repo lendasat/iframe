@@ -53,6 +53,25 @@ export class StableCoinHelper {
     }
   }
 
+  static toContractUrl(stableCoin: StableCoin) {
+    switch (stableCoin) {
+      case StableCoin.USDC_SN:
+        return "https://starkscan.co/token/0x053c91253bc9682c04929ca02ed00b3e423f6710d2ee7e0d5ebb06f3ecf368a8";
+      case StableCoin.USDT_SN:
+        return "https://starkscan.co/token/0x068f5c6a61780768455de69077e07e89787839bf8166decfbf92b645209c0fb8";
+      case StableCoin.USDC_POL:
+        return "https://polygonscan.com/token/0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359";
+      case StableCoin.USDT_POL:
+        return "https://polygonscan.com/token/0xc2132d05d31c914a87c6611c10748aeb04b58e8f";
+      case StableCoin.USDC_ETH:
+        return "https://etherscan.io/token/0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48";
+      case StableCoin.USDT_ETH:
+        return "https://etherscan.io/token/0xdac17f958d2ee523a2206206994597c13d831ec7";
+      default:
+        return "";
+    }
+  }
+
   static all(): StableCoin[] {
     return [
       StableCoin.USDT_SN,

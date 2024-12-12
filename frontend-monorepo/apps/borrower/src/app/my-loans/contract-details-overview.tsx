@@ -135,6 +135,7 @@ function Details({ contract }: DetailsProps) {
           collateralBtc={collateralBtc}
           contractAddress={contractAddress || ""}
           totalCollateral={totalCollateral}
+          interestAmount={accruedInterest}
           totalRepaymentAmount={totalRepaymentAmount}
           loanOriginatorFee={originationFeeBtc}
           loanOriginatorFeeUsd={loanOriginatorFeeUsd}
@@ -345,7 +346,7 @@ function ContractDetails({ contract }: DetailsProps) {
             {durationMonths} months
           </Text>
         </Flex>
-        <Separator size={"4"} className="bg-font/10" />
+        <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
 
         <Flex gap={"5"} align={"start"} justify={"between"}>
           <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
@@ -617,6 +618,7 @@ interface ContractStatusDetailsProps {
   collateralBtc: number;
   totalCollateral: string;
   contractAddress: string;
+  interestAmount: number;
   totalRepaymentAmount: number;
   loanOriginatorFee: number;
   loanOriginatorFeeUsd: string;
@@ -627,6 +629,7 @@ const ContractStatusDetails = ({
   collateralBtc,
   totalCollateral,
   contractAddress,
+  interestAmount,
   totalRepaymentAmount,
   loanOriginatorFee,
   loanOriginatorFeeUsd,
@@ -653,14 +656,24 @@ const ContractStatusDetails = ({
           contract={contract}
         />
       );
-    case ContractStatus.PrincipalGiven:
+    case ContractStatus.PrincipalGiven: {
+      const coin = StableCoinHelper.mapFromBackend(
+        contract.loan_asset_chain,
+        contract.loan_asset_type,
+      );
+
       return (
         <ContractPrincipalGiven
+          loanAmount={contract.loan_amount}
+          interestAmount={interestAmount}
           repaymentAddress={contract.loan_repayment_address}
           totalRepaymentAmount={totalRepaymentAmount}
           contractId={contract.id}
+          expiry={contract.expiry}
+          coin={coin}
         />
       );
+    }
     case ContractStatus.RepaymentProvided:
       return <ContractPrincipalRepaid />;
     case ContractStatus.RepaymentConfirmed:
