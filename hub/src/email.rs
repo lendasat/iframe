@@ -171,7 +171,7 @@ impl Email {
         let template_name = "start_dispute";
         let handlebars = Self::prepare_template(template_name)?;
 
-        let subject = format!("Dispute started {} ", dispute_id);
+        let subject = format!("You have started a dispute - {}", dispute_id);
 
         let data = serde_json::json!({
             "first_name": &user.name,
@@ -227,6 +227,7 @@ impl Email {
         contract: Contract,
         price: Decimal,
         current_ltv: Decimal,
+        contract_url: String,
     ) -> Result<()> {
         let template_name = "margin_call";
 
@@ -265,13 +266,13 @@ impl Email {
             "collateral_value_usd": collateral_value_usd,
             "current_ltv": current_ltv,
             "liquidation_price": liquidation_price,
-
+            "contract_url": contract_url
         });
 
         let content_template = handlebars.render(template_name, &data)?;
 
         self.send_email(
-            format!("Margin call {}", contract.id).as_str(),
+            "You have received a margin call",
             user.name.as_str(),
             user.email.as_str(),
             content_template,
@@ -284,6 +285,7 @@ impl Email {
         user: User,
         contract: Contract,
         price: Decimal,
+        contract_url: String,
     ) -> Result<()> {
         let template_name = "liquidated";
 
@@ -301,12 +303,13 @@ impl Email {
             "contract_id": contract.id,
             "latest_price": price,
             "liquidation_price": liquidation_price,
+            "contract_url": contract_url
         });
 
         let content_template = handlebars.render(template_name, &data)?;
 
         self.send_email(
-            "Liquidation Notice: Your position has been liquidated",
+            "Your contract has been liquidated",
             user.name.as_str(),
             user.email.as_str(),
             content_template,
@@ -327,7 +330,7 @@ impl Email {
         let content_template = handlebars.render(template_name, &data)?;
 
         self.send_email(
-            "New loan request",
+            "You have received a new loan request",
             lender.name.as_str(),
             lender.email.as_str(),
             content_template,
@@ -348,7 +351,7 @@ impl Email {
         let content_template = handlebars.render(template_name, &data)?;
 
         self.send_email(
-            "New loan request approved",
+            "Your loan request has been approved",
             lender.name.as_str(),
             lender.email.as_str(),
             content_template,
@@ -369,7 +372,7 @@ impl Email {
         let content_template = handlebars.render(template_name, &data)?;
 
         self.send_email(
-            "New loan request declined",
+            "Your loan request has been declined",
             lender.name.as_str(),
             lender.email.as_str(),
             content_template,
@@ -390,7 +393,7 @@ impl Email {
         let content_template = handlebars.render(template_name, &data)?;
 
         self.send_email(
-            "New loan has been funded",
+            "The borrower has deposited the collateral",
             user.name.as_str(),
             user.email.as_str(),
             content_template,
@@ -411,7 +414,7 @@ impl Email {
         let content_template = handlebars.render(template_name, &data)?;
 
         self.send_email(
-            "New loan amount has been paid out",
+            "Your loan has been paid out",
             user.name.as_str(),
             user.email.as_str(),
             content_template,
@@ -432,7 +435,7 @@ impl Email {
         let content_template = handlebars.render(template_name, &data)?;
 
         self.send_email(
-            "Lendasat: Visa Card Ready!",
+            "Your debit card has been funded",
             user.name.as_str(),
             user.email.as_str(),
             content_template,
