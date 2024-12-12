@@ -3,16 +3,17 @@ import { Link as RadixLink } from "@radix-ui/themes/dist/cjs/components/link";
 import type { ReactNode } from "react";
 import AbbreviationExplanationInfo from "./abbreviation-explanation-info";
 
-export interface AprInfoLabelProps {
+export interface InterestRateInfoLabelProps {
   children?: ReactNode;
 }
 
-export function AprInfoLabel({ children }: AprInfoLabelProps) {
+export function InterestRateInfoLabel({ children }: InterestRateInfoLabelProps) {
   return (
     <AbbreviationExplanationInfo
-      header={"Annual Percentage Rate"}
-      subHeader={"APR"}
-      description={"The APR (Annual Percentage Rate) / Interest Rate is charged on the loan amount that the borrower agrees to pay in addition to the principal by the maturity date. It determines the total interest cost over the loan term."}
+      header={"Yearly Interest Rate"}
+      description={`The yearly interest rate is used to calculate the total interest cost over the loan term.
+For example, given a $1000 loan and a yearly interest rate of 12%, the monthly interest rate is 1%.
+For a loan duration of 5 months, this amounts to $50 interest. Thus the borrower owes a total of $1050.`}
     >
       <RadixLink
         href="https://lendasat.notion.site/Frequently-Asked-Questions-100d2f24d4cf800e83bbca7cff3bb707"
@@ -26,4 +27,4 @@ export function AprInfoLabel({ children }: AprInfoLabelProps) {
   );
 }
 
-export default AprInfoLabel;
+export default InterestRateInfoLabel;

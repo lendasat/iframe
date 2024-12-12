@@ -11,9 +11,9 @@ import {
   useLenderHttpClient,
 } from "@frontend-monorepo/http-client-lender";
 import {
-  AprInfoLabel,
   CurrencyFormatter,
   formatCurrency,
+  InterestRateInfoLabel,
   LtvInfoLabel,
   StableCoinHelper,
 } from "@frontend-monorepo/ui-shared";
@@ -296,14 +296,14 @@ function ContractDetails({ contract }: DetailsProps) {
           <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
 
           <Flex gap={"5"} align={"start"} justify={"between"}>
-            <AprInfoLabel>
+            <InterestRateInfoLabel>
               <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dar">
                 <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
-                  Interest Rate (APR)
+                  Interest Rate
                 </Text>
                 <FaInfoCircle className={"text-font dark:text-font-dark"} />
               </Flex>
-            </AprInfoLabel>
+            </InterestRateInfoLabel>
 
             <div className="flex flex-col">
               <Text className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>

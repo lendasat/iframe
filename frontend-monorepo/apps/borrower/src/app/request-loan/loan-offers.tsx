@@ -1,7 +1,7 @@
 import type { IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import { faChevronDown, faChevronUp, faMinus } from "@fortawesome/free-solid-svg-icons";
 import type { LoanOffer } from "@frontend-monorepo/http-client-borrower";
-import { AprInfoLabel, LtvInfoLabel } from "@frontend-monorepo/ui-shared";
+import { InterestRateInfoLabel, LtvInfoLabel } from "@frontend-monorepo/ui-shared";
 import { Box, Button, Flex, Grid, Spinner, Text } from "@radix-ui/themes";
 import { useState } from "react";
 import { FaInfoCircle } from "react-icons/fa";
@@ -198,7 +198,7 @@ function LoanOffersComponent({ loanOffers, onRequest, isLoading }: LoanOffersCom
               className="bg-transparent px-0"
             >
               <Flex gap={"1"}>
-                <AprInfoLabel>
+                <InterestRateInfoLabel>
                   <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
                     <Text
                       size={"1"}
@@ -209,11 +209,11 @@ function LoanOffersComponent({ loanOffers, onRequest, isLoading }: LoanOffersCom
                         ? "text-font dark:text-font-dark"
                         : "text-font/40 dark:text-font-dark/40"}
                     >
-                      Interest Rate/APR
+                      Interest Rate
                     </Text>
                     <FaInfoCircle className={"text-font dark:text-font-dark"} />
                   </Flex>
-                </AprInfoLabel>
+                </InterestRateInfoLabel>
 
                 <Box>
                   <IoCaretUp

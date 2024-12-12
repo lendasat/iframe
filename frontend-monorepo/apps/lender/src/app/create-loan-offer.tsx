@@ -2,8 +2,8 @@ import type { CreateLoanOfferRequest } from "@frontend-monorepo/http-client-lend
 import { LoanAssetChain, LoanAssetType, useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
 import { useAuth } from "@frontend-monorepo/http-client-lender";
 import {
-  AprInfoLabel,
   formatCurrency,
+  InterestRateInfoLabel,
   LoanAddressInputField,
   LtvInfoLabel,
   parseStableCoin,
@@ -238,14 +238,14 @@ const CreateLoanOffer: FC = () => {
 
                 {/* Interest Rate */}
                 <Box className="space-y-1">
-                  <AprInfoLabel>
+                  <InterestRateInfoLabel>
                     <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
                       <Text as="label" size={"2"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">
-                        Interest Rate (APR)
+                        Interest Rate
                       </Text>
                       <FaInfoCircle />
                     </Flex>
-                  </AprInfoLabel>
+                  </InterestRateInfoLabel>
 
                   <TextField.Root
                     size="3"
@@ -381,12 +381,12 @@ const CreateLoanOffer: FC = () => {
               </Flex>
               <Separator size={"4"} color={"gray"} className="opacity-50" />
               <Flex align={"center"} justify={"between"} my={"4"}>
-                <AprInfoLabel>
+                <InterestRateInfoLabel>
                   <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
                     <Text as="label" size={"2"} className="text-font/50 dark:text-font-dark/50">Interest Rate</Text>
                     <FaInfoCircle />
                   </Flex>
-                </AprInfoLabel>
+                </InterestRateInfoLabel>
 
                 <Text size={"2"} className="text-font-dark/80 font-semibold">{interest.toFixed(2)}%</Text>
               </Flex>

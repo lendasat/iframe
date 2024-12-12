@@ -20,7 +20,7 @@ export function AbbreviationExplanationInfo(
         <HoverCard.Trigger>
           {children}
         </HoverCard.Trigger>
-        <HoverCard.Content className={"bg-light dark:bg-dark"} maxWidth="300px">
+        <HoverCard.Content className={"bg-light dark:bg-dark"} maxWidth="40vw">
           <Flex gap="4">
             <Box width="64px" height="64px">
               <FaInfoCircle size={"40px"} className={"text-font dark:text-font-dark"} />
@@ -35,6 +35,7 @@ export function AbbreviationExplanationInfo(
               <Text className={"text-font dark:text-font-dark"} as="div" size="2">
                 {description}
               </Text>
+              <div className="mb-2"></div>
 
               <RadixLink
                 href="https://lendasat.notion.site/Frequently-Asked-Questions-100d2f24d4cf800e83bbca7cff3bb707"
