@@ -17,7 +17,7 @@ export const FeeSelector = ({ onSelectFee }: FeeSelectorProps) => {
     minimumFee: 1,
   });
   const [selectedFeeType, setSelectedFeeType] = useState<string>("fast");
-  const [customFee, setCustomFee] = useState<string>("1");
+  const [customFee, setCustomFee] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -94,20 +94,20 @@ export const FeeSelector = ({ onSelectFee }: FeeSelectorProps) => {
 
   return (
     <div>
-      <h1 className={"text-font dark:text-font-dark"}>Select Fee Rate</h1>
+      <h1 className={"font-bold text-font dark:text-font-dark"}>Pick your fee rate</h1>
       {recommendedFees
         ? (
-          <Form>
+          <Form className="mt-4">
             <ButtonGroup className="d-flex justify-content-between">
               <Button
-                variant={selectedFeeType === "fast"
+                variant={selectedFeeType === "slow"
                   ? "primary dark:bg-dark-700 dark:border-dark"
                   : "outline-primary dark:bg-dark dark:border-dark dark:hover:bg-dark-600"}
-                onClick={() => handleFeeSelection("fast")}
+                onClick={() => handleFeeSelection("slow")}
               >
                 <Row className={"dark:text-font-dark"}>
-                  <p>Fast (~10m)</p>
-                  <p>({recommendedFees.fastestFee} sat/vB)</p>
+                  <p>Slow (~1d)</p>
+                  <p>{recommendedFees.economyFee} sat/vB</p>
                 </Row>
               </Button>
               <Button
@@ -118,20 +118,21 @@ export const FeeSelector = ({ onSelectFee }: FeeSelectorProps) => {
               >
                 <Row className={"dark:text-font-dark"}>
                   <p>Medium (~60m)</p>
-                  <p>({recommendedFees.hourFee} sat/vB)</p>
+                  <p>{recommendedFees.hourFee} sat/vB</p>
                 </Row>
               </Button>
               <Button
-                variant={selectedFeeType === "slow"
+                variant={selectedFeeType === "fast"
                   ? "primary dark:bg-dark-700 dark:border-dark"
                   : "outline-primary dark:bg-dark dark:border-dark dark:hover:bg-dark-600"}
-                onClick={() => handleFeeSelection("slow")}
+                onClick={() => handleFeeSelection("fast")}
               >
                 <Row className={"dark:text-font-dark"}>
-                  <p>Slow (~1d)</p>
-                  <p>({recommendedFees.economyFee} sat/vB)</p>
+                  <p>Fast (~10m)</p>
+                  <p>{recommendedFees.fastestFee} sat/vB</p>
                 </Row>
               </Button>
+
               <Button
                 variant={selectedFeeType === "custom"
                   ? "primary dark:bg-dark-700 dark:border-dark"
@@ -144,7 +145,7 @@ export const FeeSelector = ({ onSelectFee }: FeeSelectorProps) => {
                     type="number"
                     placeholder="Enter custom fee (sat/vB)"
                     value={customFee}
-                    className={"dark:bg-dark dark:text-font-dark"}
+                    className={"dark:bg-dark dark:text-font-dark dark:placeholder-gray-500"}
                     onChange={handleCustomFeeChange}
                   />
                 </Form.Group>

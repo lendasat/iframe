@@ -109,11 +109,11 @@ export function ContractRepaid({
       />
       <Container fluid>
         <Heading className={"text-font dark:text-font-dark"} size={"4"} weight={"medium"}>
-          Claim collateral
+          Claim Collateral
         </Heading>
         <Row className="mt-4">
-          <Col className="text-center">
-            <div className="d-flex justify-content-center align-items-center flex-column">
+          <Col>
+            <div className="d-flex flex-column">
               <p className="mt-2 text-break text-font dark:text-font-dark">
                 To claim the collateral you will have to provide your <strong>contract secret</strong>.
               </p>
@@ -122,9 +122,9 @@ export function ContractRepaid({
         </Row>
         <Row className="mt-2">
           <Col>
-            <Alert className="text-center" variant="info">
+            <Alert variant="info">
               <FontAwesomeIcon icon={faInfoCircle} /> The <strong>{collateralBtc} BTC</strong>{"  "}
-              collateral will be sent to this address: <strong>{refundAddress}</strong>.
+              collateral will be sent to your collateral refund address: <strong>{refundAddress}</strong>.
             </Alert>
           </Col>
         </Row>
