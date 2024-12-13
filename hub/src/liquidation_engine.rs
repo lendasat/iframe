@@ -323,13 +323,15 @@ async fn send_email(
     current_ltv: Decimal,
     status: LiquidationStatus,
 ) -> Result<()> {
-    let user = db::borrowers::get_user_by_id(pool, contract.borrower_id.as_str())
+    let contract_id = &contract.id;
+
+    let borrower = db::borrowers::get_user_by_id(pool, contract.borrower_id.as_str())
         .await?
-        .context("user not found")?;
+        .context("borrower not found")?;
 
     let contract_url = format!(
-        "{}/my-contracts/{}",
-        config.lender_frontend_origin, contract.id
+        "{}/my-contracts/{contract_id}",
+        config.lender_frontend_origin
     );
 
     let email = Email::new(config);
@@ -341,18 +343,38 @@ async fn send_email(
         LiquidationStatus::FirstMarginCall | LiquidationStatus::SecondMarginCall => {
             email
                 .send_user_about_margin_call(
-                    user,
+                    borrower,
                     contract.clone(),
                     price,
                     current_ltv,
-                    contract_url,
+                    &contract_url,
                 )
                 .await?;
         }
         LiquidationStatus::Liquidated => {
-            email
-                .send_user_about_liquidation_notice(user, contract.clone(), price, contract_url)
-                .await?;
+            if let Err(e) = email
+                .send_liquidation_notice_borrower(borrower, contract.clone(), price, &contract_url)
+                .await
+            {
+                tracing::error!(
+                    contract_id,
+                    "Failed to send liquidation email to borrower: {e:#}"
+                )
+            };
+
+            let lender = db::lenders::get_user_by_id(pool, contract.lender_id.as_str())
+                .await?
+                .context("lender not found")?;
+
+            if let Err(e) = email
+                .send_liquidation_notice_lender(lender, contract.clone(), &contract_url)
+                .await
+            {
+                tracing::error!(
+                    contract_id,
+                    "Failed to send liquidation email to lender: {e:#}"
+                )
+            };
         }
     }
 

@@ -227,7 +227,7 @@ impl Email {
         contract: Contract,
         price: Decimal,
         current_ltv: Decimal,
-        contract_url: String,
+        contract_url: &str,
     ) -> Result<()> {
         let template_name = "margin_call";
 
@@ -280,14 +280,14 @@ impl Email {
         .await
     }
 
-    pub async fn send_user_about_liquidation_notice(
+    pub async fn send_liquidation_notice_borrower(
         &self,
-        user: User,
+        borrower: User,
         contract: Contract,
         price: Decimal,
-        contract_url: String,
+        contract_url: &str,
     ) -> Result<()> {
-        let template_name = "liquidated";
+        let template_name = "liquidated_borrower";
 
         let handlebars = Self::prepare_template(template_name)?;
 
@@ -299,7 +299,7 @@ impl Email {
         let price = price.round_dp(2).to_string();
 
         let data = serde_json::json!({
-            "first_name": user.name.as_str(),
+            "first_name": borrower.name.as_str(),
             "contract_id": contract.id,
             "latest_price": price,
             "liquidation_price": liquidation_price,
@@ -310,8 +310,35 @@ impl Email {
 
         self.send_email(
             "Your contract has been liquidated",
-            user.name.as_str(),
-            user.email.as_str(),
+            borrower.name.as_str(),
+            borrower.email.as_str(),
+            content_template,
+        )
+        .await
+    }
+
+    pub async fn send_liquidation_notice_lender(
+        &self,
+        lender: User,
+        contract: Contract,
+        contract_url: &str,
+    ) -> Result<()> {
+        let template_name = "liquidated_lender";
+
+        let handlebars = Self::prepare_template(template_name)?;
+
+        let data = serde_json::json!({
+            "first_name": lender.name.as_str(),
+            "contract_id": contract.id,
+            "contract_url": contract_url
+        });
+
+        let content_template = handlebars.render(template_name, &data)?;
+
+        self.send_email(
+            "Time to liquidate the borrower's collateral",
+            lender.name.as_str(),
+            lender.email.as_str(),
             content_template,
         )
         .await
