@@ -325,15 +325,16 @@ pub enum ContractStatus {
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
 pub enum LiquidationStatus {
-    /// Contract is in a healthy state
+    /// Contract is in a healthy state.
     Healthy,
-    /// Contract got liquidated
-    Liquidated,
-    /// Second margin call: the user still has time to add more collateral before getting
+    /// First margin call: the borrower still has time to add more collateral before getting
     /// liquidated
-    SecondMarginCall,
-    /// First margin call: the user still has time to add more collateral before getting liquidated
     FirstMarginCall,
+    /// Second margin call: the borrower still has time to add more collateral before getting
+    /// liquidated, but it's getting closer.
+    SecondMarginCall,
+    /// Contract got liquidated.
+    Liquidated,
 }
 
 /// A record of all the one-time email messages sent for a particular contract.
