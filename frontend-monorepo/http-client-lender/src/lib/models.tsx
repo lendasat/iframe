@@ -126,8 +126,6 @@ export function contractStatusToLabelString(status: ContractStatus): string {
       return "Contract Cancelled";
     case ContractStatus.RequestExpired:
       return "Contract Expired";
-    default:
-      return "Unknown Status";
   }
 }
 

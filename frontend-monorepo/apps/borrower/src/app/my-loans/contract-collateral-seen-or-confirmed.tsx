@@ -27,7 +27,6 @@ export function CollateralSeenOrConfirmed({
       );
       break;
     case Integration.StableCoin:
-    default:
       info = (
         <>
           Your loan amount of {formatCurrency(contract.loan_amount)} will be sent to this address.

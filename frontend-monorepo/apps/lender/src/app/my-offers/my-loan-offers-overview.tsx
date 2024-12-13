@@ -46,22 +46,23 @@ function MyLoanOffersOverview() {
 
 function sortOffers(offers: LoanOffer[], sortBy: TableSortBy): LoanOffer[] {
   return offers.sort((a, b) => {
+    let n;
     switch (sortBy) {
       case TableSortBy.Amount:
-        return a.loan_amount_min - b.loan_amount_min;
-
+        n = a.loan_amount_min - b.loan_amount_min;
+        break;
       case TableSortBy.Ltv:
-        return a.min_ltv - b.min_ltv;
-
+        n = a.min_ltv - b.min_ltv;
+        break;
       case TableSortBy.Duration:
-        return a.duration_months_min - b.duration_months_min;
-
+        n = a.duration_months_min - b.duration_months_min;
+        break;
       case TableSortBy.Interest:
-        return a.interest_rate - b.interest_rate;
-
-      default:
-        return 0;
+        n = a.interest_rate - b.interest_rate;
+        break;
     }
+
+    return n;
   });
 }
 

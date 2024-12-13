@@ -59,7 +59,7 @@ export const actionFromStatus = (status: ContractStatus) => {
     case ContractStatus.DisputeLenderResolved:
     case ContractStatus.Closed:
     case ContractStatus.Closing:
-    default:
+    case ContractStatus.Cancelled:
       return "Details";
   }
 };

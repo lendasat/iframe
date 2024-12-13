@@ -128,7 +128,6 @@ export const Step2PickOffer = () => {
       break;
     case LoanProductOption.BitrefillDebitCard:
     case LoanProductOption.BringinBankAccount:
-    default:
       validCoins = [];
   }
 

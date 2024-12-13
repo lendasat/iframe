@@ -218,7 +218,6 @@ function ContractDetails({ contract }: DetailsProps) {
     case ContractStatus.Closed:
     case ContractStatus.Cancelled:
     case ContractStatus.RequestExpired:
-    default:
       canAddExtraCollateral = false;
       break;
   }
@@ -607,8 +606,7 @@ const AdditionalDetail = ({ contract }: AdditionalDetailsProps) => {
     case ContractStatus.DisputeLenderStarted:
     case ContractStatus.DisputeBorrowerResolved:
     case ContractStatus.DisputeLenderResolved:
-    default:
-      // TODO
+    case ContractStatus.Cancelled:
       return "";
   }
 };
@@ -682,7 +680,11 @@ const ContractStatusDetails = ({
     case ContractStatus.Closing:
     case ContractStatus.Rejected:
     case ContractStatus.RequestExpired:
-    default:
+    case ContractStatus.DisputeBorrowerStarted:
+    case ContractStatus.DisputeLenderStarted:
+    case ContractStatus.DisputeBorrowerResolved:
+    case ContractStatus.DisputeLenderResolved:
+    case ContractStatus.Cancelled:
       return "";
   }
 };

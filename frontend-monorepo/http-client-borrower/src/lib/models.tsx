@@ -52,9 +52,6 @@ export function contractStatusToLabelString(status: ContractStatus): string {
       return "Contract Cancelled";
     case ContractStatus.RequestExpired:
       return "Request Expired";
-    default:
-      console.log(status);
-      return "Unknown Status";
   }
 }
 
