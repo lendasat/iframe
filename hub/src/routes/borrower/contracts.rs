@@ -321,6 +321,35 @@ async fn put_repayment_provided(
     .await
     .map_err(Error::Database)?;
 
+    let loan_url = format!(
+        "{}/my-contracts/{}",
+        data.config.lender_frontend_origin.to_owned(),
+        contract.id
+    );
+
+    let email = Email::new(data.config.clone());
+
+    if let Err(e) = async {
+        let lender = db::lenders::get_user_by_id(&data.db, &contract.lender_id)
+            .await?
+            .context("Failed to find lender")?;
+
+        email
+            .send_loan_repaid(lender, loan_url.as_str())
+            .await
+            .context("Failed to send loan repaid email")?;
+
+        db::contract_emails::mark_loan_repaid_as_sent(&data.db, &contract.id)
+            .await
+            .context("Failed to mark loan repaid email as sent")?;
+
+        anyhow::Ok(())
+    }
+    .await
+    {
+        tracing::error!("Failed at notifying lender about loan repayment: {e:#}");
+    }
+
     Ok(())
 }
 
