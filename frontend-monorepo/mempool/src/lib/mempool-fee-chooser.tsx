@@ -94,7 +94,7 @@ export const FeeSelector = ({ onSelectFee }: FeeSelectorProps) => {
 
   return (
     <div>
-      <h1 className={"font-bold text-font dark:text-font-dark"}>Pick your fee rate</h1>
+      <h1 className={"font-bold text-font dark:text-font-dark"}>Transaction Fee Rate</h1>
       {recommendedFees
         ? (
           <Form className="mt-4">
@@ -145,7 +145,7 @@ export const FeeSelector = ({ onSelectFee }: FeeSelectorProps) => {
                     type="number"
                     placeholder="Enter custom fee (sat/vB)"
                     value={customFee}
-                    className={"dark:bg-dark dark:text-font-dark dark:placeholder-gray-500"}
+                    className={"dark:bg-dark dark:text-font-dark dark:placeholder:text-font-dark/60"}
                     onChange={handleCustomFeeChange}
                   />
                 </Form.Group>

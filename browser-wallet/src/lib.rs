@@ -1,3 +1,4 @@
+use bitcoin::Address;
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
 
@@ -108,12 +109,83 @@ pub fn sign_claim_psbt(
     psbt: String,
     collateral_descriptor: String,
     own_pk: String,
-) -> Result<String, JsValue> {
-    map_err_to_js!(browser_wallet::sign_claim_psbt(
+) -> Result<SignedTransaction, JsValue> {
+    let (tx, outputs, params) = map_err_to_js!(browser_wallet::sign_claim_psbt(
         &psbt,
         &collateral_descriptor,
         &own_pk
-    ))
+    ))?;
+
+    let outputs = map_err_to_js!(outputs
+        .into_iter()
+        .map(|o| {
+            Ok(TxOut {
+                value: o.value.to_sat(),
+                address: Address::from_script(&o.script_pubkey, &params)?.to_string(),
+            })
+        })
+        .collect::<anyhow::Result<Vec<_>>>())?;
+
+    Ok(SignedTransaction { tx, outputs })
+}
+
+#[wasm_bindgen]
+pub fn sign_liquidation_psbt(
+    psbt: String,
+    collateral_descriptor: String,
+    own_pk: String,
+) -> Result<SignedTransaction, JsValue> {
+    let (tx, outputs, params) = map_err_to_js!(browser_wallet::sign_liquidation_psbt(
+        &psbt,
+        &collateral_descriptor,
+        &own_pk
+    ))?;
+
+    let outputs = map_err_to_js!(outputs
+        .into_iter()
+        .map(|o| {
+            Ok(TxOut {
+                value: o.value.to_sat(),
+                address: Address::from_script(&o.script_pubkey, &params)?.to_string(),
+            })
+        })
+        .collect::<anyhow::Result<Vec<_>>>())?;
+
+    Ok(SignedTransaction { tx, outputs })
+}
+
+#[wasm_bindgen]
+pub struct SignedTransaction {
+    tx: String,
+    outputs: Vec<TxOut>,
+}
+
+#[wasm_bindgen]
+impl SignedTransaction {
+    #[wasm_bindgen(getter)]
+    pub fn tx(&self) -> String {
+        self.tx.clone()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn outputs(&self) -> Vec<TxOut> {
+        self.outputs.clone()
+    }
+}
+
+#[wasm_bindgen]
+#[derive(Clone)]
+pub struct TxOut {
+    pub value: u64,
+    address: String,
+}
+
+#[wasm_bindgen]
+impl TxOut {
+    #[wasm_bindgen(getter)]
+    pub fn address(&self) -> String {
+        self.address.clone()
+    }
 }
 
 #[wasm_bindgen]

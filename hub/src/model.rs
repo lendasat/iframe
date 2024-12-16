@@ -303,7 +303,9 @@ pub enum ContractStatus {
     RepaymentProvided,
     /// The principal + interest has been repaid to the lender and confirmed by the lender
     RepaymentConfirmed,
-    /// The collateral claim tx has been broadcasted but not confirmed yet.
+    /// The borrower failed to pay back the loan before expiry.
+    Defaulted,
+    /// The collateral claim TX has been broadcasted but not confirmed yet.
     Closing,
     /// The loan has been repaid, somehow.
     Closed,
@@ -400,6 +402,7 @@ pub mod db {
         PrincipalGiven,
         RepaymentProvided,
         RepaymentConfirmed,
+        Defaulted,
         Closing,
         Closed,
         Cancelled,
@@ -499,6 +502,7 @@ impl From<db::ContractStatus> for ContractStatus {
             db::ContractStatus::PrincipalGiven => Self::PrincipalGiven,
             db::ContractStatus::RepaymentProvided => Self::RepaymentProvided,
             db::ContractStatus::RepaymentConfirmed => Self::RepaymentConfirmed,
+            db::ContractStatus::Defaulted => Self::Defaulted,
             db::ContractStatus::Closing => Self::Closing,
             db::ContractStatus::Closed => Self::Closed,
             db::ContractStatus::Rejected => Self::Rejected,
@@ -618,6 +622,7 @@ impl From<ContractStatus> for db::ContractStatus {
             ContractStatus::PrincipalGiven => Self::PrincipalGiven,
             ContractStatus::RepaymentProvided => Self::RepaymentProvided,
             ContractStatus::RepaymentConfirmed => Self::RepaymentConfirmed,
+            ContractStatus::Defaulted => Self::Defaulted,
             ContractStatus::Closing => Self::Closing,
             ContractStatus::Closed => Self::Closed,
             ContractStatus::Rejected => Self::Rejected,

@@ -71,7 +71,7 @@ export function ContractRepaid({
 
     console.log("Posting signed claim TX");
 
-    const txid = await postClaimTx(contract.id, claimTx);
+    const txid = await postClaimTx(contract.id, claimTx.tx);
 
     alert(`Collateral claim transaction ${txid} was published!`);
 

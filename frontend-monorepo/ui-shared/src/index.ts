@@ -18,3 +18,4 @@ export * from './lib/usd';
 export * from './lib/price-context';
 export * from './lib/stable-coin';
 export * from './lib/components/theme-provider';
+export * from './lib/components/TransactionList';

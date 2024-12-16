@@ -15,6 +15,7 @@ export function collateralForStatus(status: ContractStatus, initial: number, act
     case ContractStatus.PrincipalGiven:
     case ContractStatus.RepaymentProvided:
     case ContractStatus.RepaymentConfirmed:
+    case ContractStatus.Defaulted:
     case ContractStatus.Closing:
     case ContractStatus.Closed:
     case ContractStatus.DisputeBorrowerStarted:

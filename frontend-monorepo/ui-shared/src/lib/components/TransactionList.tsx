@@ -1,11 +1,12 @@
 import type { Contract, LoanTransaction } from "@frontend-monorepo/http-client-borrower";
 import { LoanAssetChain, TransactionType } from "@frontend-monorepo/http-client-borrower";
-import { NotificationToast } from "@frontend-monorepo/ui-shared";
 import { Box, Flex } from "@radix-ui/themes";
 import type { FC } from "react";
 import { useState } from "react";
+import { Col, Row } from "react-bootstrap";
 import { FaCheckCircle } from "react-icons/fa";
 import { FaCopy, FaLink } from "react-icons/fa6";
+import { NotificationToast } from "./NotificationToast";
 
 interface TransactionLinkProps {
   transaction: LoanTransaction;
@@ -13,7 +14,6 @@ interface TransactionLinkProps {
 }
 
 function TransactionLink({ transaction, loanAssetChain }: TransactionLinkProps) {
-  // TODO add prefix for loan chain
   let urlPrefix = "";
   const [copied, setCopied] = useState(false);
 
@@ -76,7 +76,7 @@ function TransactionLink({ transaction, loanAssetChain }: TransactionLinkProps) 
       <Box
         onClick={() => handleCopy(transaction.txid)}
       >
-        <NotificationToast description={transaction.txid} title={"Transaction id copied"}>
+        <NotificationToast description={transaction.txid} title={"Transaction ID copied"}>
           {copied
             ? <FaCheckCircle className={"text-font dark:text-font-dark"} />
             : <FaCopy className={"text-font dark:text-font-dark"} />}
@@ -91,28 +91,54 @@ interface TransactionListProps {
   transactionType: TransactionType;
 }
 
-const TransactionList: FC<TransactionListProps> = ({ contract, transactionType }) => {
+export const TransactionList: FC<TransactionListProps> = ({ contract, transactionType }) => {
   const filteredTransactions = contract.transactions.filter(
     (transaction) => transaction.transaction_type === transactionType,
   );
 
   const loanAssetChain = contract.loan_asset_chain;
 
+  let transactionName;
+  switch (transactionType) {
+    case TransactionType.Funding:
+      transactionName = "Funding";
+      break;
+    case TransactionType.PrincipalGiven:
+      transactionName = "Principal";
+      break;
+    case TransactionType.PrincipalRepaid:
+      transactionName = "Principal repayment";
+      break;
+    case TransactionType.ClaimCollateral:
+      transactionName = "Collateral claim";
+      break;
+    case TransactionType.Liquidation:
+      transactionName = "Liquidation";
+      break;
+    case TransactionType.Dispute:
+      transactionName = "Dispute";
+      break;
+  }
+
   return (
-    <div>
-      <ul>
-        {filteredTransactions.length > 0
-          ? (
-            filteredTransactions.map((transaction) => (
-              <li key={transaction.txid} style={{ display: "flex", justifyContent: "flex-end", alignItems: "center" }}>
-                <TransactionLink transaction={transaction} loanAssetChain={loanAssetChain} />
-              </li>
-            ))
-          )
-          : <li class={"text-font dark:text-font-dark"}>No transaction yet</li>}
-      </ul>
-    </div>
+    filteredTransactions.length > 0 && (
+      <Row className="justify-content-between border-b dark:border-dark mt-2">
+        <Col className={"text-font/70 dark:text-font-dark/70"}>{transactionName} transaction</Col>
+        <Col className="text-end mb-2">
+          <div>
+            <ul>
+              {filteredTransactions.map((transaction: LoanTransaction) => (
+                <li
+                  key={transaction.txid}
+                  style={{ display: "flex", justifyContent: "flex-end", alignItems: "center" }}
+                >
+                  <TransactionLink transaction={transaction} loanAssetChain={loanAssetChain} />
+                </li>
+              ))}
+            </ul>
+          </div>
+        </Col>
+      </Row>
+    )
   );
 };
-
-export default TransactionList;

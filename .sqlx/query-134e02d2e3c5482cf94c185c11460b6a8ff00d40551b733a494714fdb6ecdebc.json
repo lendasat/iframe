@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            integration as \"integration: crate::model::db::Integration\",\n            lender_xpub,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            contract_version,\n            created_at,\n            updated_at\n        FROM contracts\n        WHERE status NOT IN ($1, $2, $3, $4, $5)\n        ",
+  "query": "\n        SELECT\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            integration as \"integration: crate::model::db::Integration\",\n            lender_xpub,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            contract_version,\n            created_at,\n            updated_at\n        FROM contracts\n        WHERE status NOT IN ($1, $2, $3, $4, $5, $6, $7, $8) and liquidation_status NOT in ($9)\n        ",
   "describe": {
     "columns": [
       {
@@ -292,6 +292,97 @@
               ]
             }
           }
+        },
+        {
+          "Custom": {
+            "name": "contract_status",
+            "kind": {
+              "Enum": [
+                "Requested",
+                "Approved",
+                "CollateralSeen",
+                "CollateralConfirmed",
+                "PrincipalGiven",
+                "RepaymentProvided",
+                "RepaymentConfirmed",
+                "Closing",
+                "Closed",
+                "Rejected",
+                "DisputeBorrowerStarted",
+                "DisputeLenderStarted",
+                "DisputeBorrowerResolved",
+                "DisputeLenderResolved",
+                "Cancelled",
+                "RequestExpired",
+                "Defaulted"
+              ]
+            }
+          }
+        },
+        {
+          "Custom": {
+            "name": "contract_status",
+            "kind": {
+              "Enum": [
+                "Requested",
+                "Approved",
+                "CollateralSeen",
+                "CollateralConfirmed",
+                "PrincipalGiven",
+                "RepaymentProvided",
+                "RepaymentConfirmed",
+                "Closing",
+                "Closed",
+                "Rejected",
+                "DisputeBorrowerStarted",
+                "DisputeLenderStarted",
+                "DisputeBorrowerResolved",
+                "DisputeLenderResolved",
+                "Cancelled",
+                "RequestExpired",
+                "Defaulted"
+              ]
+            }
+          }
+        },
+        {
+          "Custom": {
+            "name": "contract_status",
+            "kind": {
+              "Enum": [
+                "Requested",
+                "Approved",
+                "CollateralSeen",
+                "CollateralConfirmed",
+                "PrincipalGiven",
+                "RepaymentProvided",
+                "RepaymentConfirmed",
+                "Closing",
+                "Closed",
+                "Rejected",
+                "DisputeBorrowerStarted",
+                "DisputeLenderStarted",
+                "DisputeBorrowerResolved",
+                "DisputeLenderResolved",
+                "Cancelled",
+                "RequestExpired",
+                "Defaulted"
+              ]
+            }
+          }
+        },
+        {
+          "Custom": {
+            "name": "liquidation_status",
+            "kind": {
+              "Enum": [
+                "Healthy",
+                "FirstMarginCall",
+                "SecondMarginCall",
+                "Liquidated"
+              ]
+            }
+          }
         }
       ]
     },
@@ -320,5 +411,5 @@
       false
     ]
   },
-  "hash": "526b4783d01a8b3d36fb0284ff095bedf89d0468f77c099e740a63eb6454f9ed"
+  "hash": "134e02d2e3c5482cf94c185c11460b6a8ff00d40551b733a494714fdb6ecdebc"
 }

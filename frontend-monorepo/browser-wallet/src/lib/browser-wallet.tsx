@@ -10,6 +10,7 @@ import init, {
   load_wallet,
   new_wallet,
   sign_claim_psbt,
+  sign_liquidation_psbt,
 } from "browser-wallet";
 import { md5 } from "hash-wasm";
 
@@ -21,7 +22,8 @@ interface WalletContextType {
   loadWallet: (passphrase: string) => Promise<void>;
   getMnemonic: () => string;
   getNextPublicKey: () => string;
-  signClaimPsbt: (psbt: string, collateralDescriptor: string, borrowerPk: string) => Promise<string>;
+  signClaimPsbt: (psbt: string, collateralDescriptor: string, borrowerPk: string) => Promise<SignedTransaction>;
+  signLiquidationPsbt: (psbt: string, collateralDescriptor: string, borrowerPk: string) => Promise<SignedTransaction>;
   getXpub: () => Promise<string>;
 }
 
@@ -104,6 +106,18 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
     }
   };
 
+  const signLiquidationPsbt = async (
+    psbt: string,
+    collateralDescriptor: string,
+    lenderPk: string,
+  ): Promise<SignedTransaction> => {
+    if (isInitialized && isWalletLoaded) {
+      return sign_liquidation_psbt(psbt, collateralDescriptor, lenderPk);
+    } else {
+      throw Error("Wallet not initialized");
+    }
+  };
+
   const getXpub = async () => {
     if (!isInitialized) {
       throw Error("Wallet not initialized");
@@ -126,10 +140,21 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
     getMnemonic,
     getNextPublicKey,
     signClaimPsbt,
+    signLiquidationPsbt,
     getXpub,
   };
 
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
 };
+
+interface SignedTransaction {
+  tx: string;
+  outputs: TxOut[];
+}
+
+interface TxOut {
+  address: string;
+  value: number;
+}
 
 export default WalletProvider;

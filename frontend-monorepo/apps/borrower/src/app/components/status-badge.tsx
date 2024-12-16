@@ -56,10 +56,6 @@ export function StatusBadge({ status }: StatusBadgeProps) {
       color = "green";
       label = "Principal Given";
       break;
-    case ContractStatus.Closing:
-      color = "gray";
-      label = "Closing";
-      break;
     case ContractStatus.RepaymentProvided:
       color = "gray";
       label = "Repayment Provided";
@@ -67,6 +63,14 @@ export function StatusBadge({ status }: StatusBadgeProps) {
     case ContractStatus.RepaymentConfirmed:
       color = "gray";
       label = "Repayment Confirmed";
+      break;
+    case ContractStatus.Closing:
+      color = "gray";
+      label = "Closing";
+      break;
+    case ContractStatus.Defaulted:
+      color = "red";
+      label = "Defaulted";
       break;
     case ContractStatus.Closed:
       color = "gray";

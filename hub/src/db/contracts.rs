@@ -16,6 +16,7 @@ use rust_decimal::Decimal;
 use sqlx::Pool;
 use sqlx::Postgres;
 use std::cmp::Ordering;
+use time::OffsetDateTime;
 use uuid::Uuid;
 
 pub async fn load_contracts_by_borrower_id(
@@ -447,7 +448,7 @@ pub async fn accept_contract_request(
             updated_at
         "#,
         db::ContractStatus::Approved as db::ContractStatus,
-        time::OffsetDateTime::now_utc(),
+        OffsetDateTime::now_utc(),
         contract_address.to_string(),
         contract_index as i32,
         lender_xpub.to_string(),
@@ -497,7 +498,7 @@ pub async fn mark_contract_as_principal_given(
             updated_at
         "#,
         db::ContractStatus::PrincipalGiven as db::ContractStatus,
-        time::OffsetDateTime::now_utc(),
+        OffsetDateTime::now_utc(),
         contract_id,
     )
     .fetch_one(pool)
@@ -558,7 +559,7 @@ async fn update_contract_state(
             updated_at
         "#,
         new_status as db::ContractStatus,
-        time::OffsetDateTime::now_utc(),
+        OffsetDateTime::now_utc(),
         contract_id,
     )
     .fetch_one(pool)
@@ -606,7 +607,7 @@ pub async fn mark_contract_as_cancelled(
             updated_at
         "#,
         db::ContractStatus::Cancelled as db::ContractStatus,
-        time::OffsetDateTime::now_utc(),
+        OffsetDateTime::now_utc(),
         borrower_id,
         contract_id,
     )
@@ -650,7 +651,7 @@ pub async fn mark_contract_as_closed(pool: &Pool<Postgres>, contract_id: &str) -
             updated_at
         "#,
         db::ContractStatus::Closed as db::ContractStatus,
-        time::OffsetDateTime::now_utc(),
+        OffsetDateTime::now_utc(),
         contract_id,
     )
     .fetch_one(pool)
@@ -696,7 +697,7 @@ pub async fn mark_contract_as_closing(
             updated_at
         "#,
         db::ContractStatus::Closing as db::ContractStatus,
-        time::OffsetDateTime::now_utc(),
+        OffsetDateTime::now_utc(),
         contract_id,
     )
     .fetch_one(pool)
@@ -743,7 +744,7 @@ pub async fn reject_contract_request(
             updated_at
         "#,
         db::ContractStatus::Rejected as db::ContractStatus,
-        time::OffsetDateTime::now_utc(),
+        OffsetDateTime::now_utc(),
         lender_id,
         contract_id
     )
@@ -791,7 +792,7 @@ pub(crate) async fn mark_liquidation_state_as(
             updated_at
         "#,
         status as db::LiquidationStatus,
-        time::OffsetDateTime::now_utc(),
+        OffsetDateTime::now_utc(),
         contract_id,
     )
     .fetch_one(pool)
@@ -838,7 +839,7 @@ pub(crate) async fn mark_contract_as(
             updated_at
         "#,
         status as db::ContractStatus,
-        time::OffsetDateTime::now_utc(),
+        OffsetDateTime::now_utc(),
         contract_id,
     )
     .fetch_one(&mut **transaction)
@@ -877,7 +878,7 @@ pub(crate) async fn load_open_not_liquidated_contracts(
             created_at,
             updated_at
         FROM contracts
-        WHERE status NOT IN ($1, $2, $3, $4, $5, $6, $7) and liquidation_status NOT in ($8)
+        WHERE status NOT IN ($1, $2, $3, $4, $5, $6, $7, $8) and liquidation_status NOT in ($9)
         "#,
         db::ContractStatus::Requested as db::ContractStatus,
         db::ContractStatus::Approved as db::ContractStatus,
@@ -886,6 +887,7 @@ pub(crate) async fn load_open_not_liquidated_contracts(
         db::ContractStatus::Rejected as db::ContractStatus,
         db::ContractStatus::Cancelled as db::ContractStatus,
         db::ContractStatus::RequestExpired as db::ContractStatus,
+        db::ContractStatus::Defaulted as db::ContractStatus,
         db::LiquidationStatus::Liquidated as db::LiquidationStatus,
     )
     .fetch_all(pool)
@@ -897,6 +899,40 @@ pub(crate) async fn load_open_not_liquidated_contracts(
         .collect::<Vec<Contract>>();
 
     Ok(contracts)
+}
+
+/// Marks expired active contracts (the principal was disbursed, but the loan was not repaid) as
+/// `Defaulted`.
+pub(crate) async fn default_expired_contracts(pool: &Pool<Postgres>) -> Result<Vec<String>> {
+    // TODO: We should "start the timer" from the time the principal is disbursed, not from the time
+    // the contract is created in the database.
+    let rows = sqlx::query!(
+        r#"
+            UPDATE
+                contracts
+            SET
+                status = $1, updated_at = $2
+            WHERE
+                created_at + (duration_months * INTERVAL '1 month') <= $2 AND
+                status NOT IN ($3, $4, $5, $6, $7, $8, $9, $1)
+            RETURNING id;
+        "#,
+        db::ContractStatus::Defaulted as db::ContractStatus,
+        OffsetDateTime::now_utc(),
+        db::ContractStatus::Requested as db::ContractStatus,
+        db::ContractStatus::Approved as db::ContractStatus,
+        db::ContractStatus::Closing as db::ContractStatus,
+        db::ContractStatus::Closed as db::ContractStatus,
+        db::ContractStatus::Rejected as db::ContractStatus,
+        db::ContractStatus::Cancelled as db::ContractStatus,
+        db::ContractStatus::RequestExpired as db::ContractStatus,
+    )
+    .fetch_all(pool)
+    .await?;
+
+    let contract_ids = rows.into_iter().map(|row| row.id).collect();
+
+    Ok(contract_ids)
 }
 
 /// Update the collateral of the [`Contract`] in the database.
@@ -957,6 +993,7 @@ pub async fn update_collateral(
                     | ContractStatus::PrincipalGiven
                     | ContractStatus::RepaymentProvided
                     | ContractStatus::RepaymentConfirmed
+                    | ContractStatus::Defaulted
                     | ContractStatus::Closing
                     | ContractStatus::Closed
                     | ContractStatus::Rejected
@@ -1049,7 +1086,7 @@ pub async fn update_collateral(
         "#,
         updated_collateral_sats as i64,
         new_status as db::ContractStatus,
-        time::OffsetDateTime::now_utc(),
+        OffsetDateTime::now_utc(),
         contract_id,
     )
     .fetch_one(pool)
@@ -1063,8 +1100,7 @@ pub(crate) async fn expire_requested_contracts(
     pool: &Pool<Postgres>,
     expiry_in_hours: i64,
 ) -> Result<Vec<String>> {
-    let expiration_threshold =
-        time::OffsetDateTime::now_utc() - time::Duration::hours(expiry_in_hours);
+    let expiration_threshold = OffsetDateTime::now_utc() - time::Duration::hours(expiry_in_hours);
 
     let rows = sqlx::query!(
         r#"
@@ -1077,7 +1113,7 @@ pub(crate) async fn expire_requested_contracts(
                 created_at <= $2
             RETURNING id;
         "#,
-        time::OffsetDateTime::now_utc(),
+        OffsetDateTime::now_utc(),
         expiration_threshold
     )
     .fetch_all(pool)
@@ -1086,4 +1122,44 @@ pub(crate) async fn expire_requested_contracts(
     let contract_ids = rows.into_iter().map(|row| row.id).collect();
 
     Ok(contract_ids)
+}
+
+pub(crate) async fn check_if_contract_belongs_to_borrower(
+    pool: &Pool<Postgres>,
+    contract_id: &str,
+    borrower_id: &str,
+) -> Result<bool> {
+    let row = sqlx::query!(
+        r#"
+            SELECT EXISTS (
+                SELECT 1 FROM contracts WHERE id = $1 AND borrower_id = $2
+            ) AS entry_exists;
+        "#,
+        contract_id,
+        borrower_id,
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(row.entry_exists.unwrap_or(false))
+}
+
+pub(crate) async fn check_if_contract_belongs_to_lender(
+    pool: &Pool<Postgres>,
+    contract_id: &str,
+    lender_id: &str,
+) -> Result<bool> {
+    let row = sqlx::query!(
+        r#"
+            SELECT EXISTS (
+                SELECT 1 FROM contracts WHERE id = $1 AND lender_id = $2
+            ) AS entry_exists;
+        "#,
+        contract_id,
+        lender_id,
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(row.entry_exists.unwrap_or(false))
 }

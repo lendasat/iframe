@@ -429,6 +429,7 @@ const actionFromStatus = (status: ContractStatus) => {
     case ContractStatus.DisputeLenderStarted:
     case ContractStatus.DisputeBorrowerResolved:
     case ContractStatus.DisputeLenderResolved:
+    case ContractStatus.Defaulted:
     case ContractStatus.Closed:
     case ContractStatus.Closing:
     case ContractStatus.Cancelled:

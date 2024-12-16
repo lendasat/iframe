@@ -47,6 +47,8 @@ export const actionFromStatus = (status: ContractStatus) => {
       return "Pay out principal";
     case ContractStatus.RepaymentProvided:
       return "Confirm repayment";
+    case ContractStatus.Defaulted:
+      return "Liquidate collateral";
     case ContractStatus.Approved:
     case ContractStatus.Rejected:
     case ContractStatus.RequestExpired:
