@@ -100,7 +100,7 @@ async fn check_margin_call_or_liquidation(
                                 current_ltv,
                             )
                             .await;
-                        } else if current_ltv >= LTV_THRESHOLD_MARGIN_CALL_1 {
+                        } else if current_ltv >= LTV_THRESHOLD_MARGIN_CALL_2 {
                             second_margin_call(
                                 db,
                                 &contract,
@@ -109,7 +109,7 @@ async fn check_margin_call_or_liquidation(
                                 current_ltv,
                             )
                             .await
-                        } else if current_ltv >= LTV_THRESHOLD_MARGIN_CALL_2 {
+                        } else if current_ltv >= LTV_THRESHOLD_MARGIN_CALL_1 {
                             first_margin_call_contract(
                                 db,
                                 &contract,
