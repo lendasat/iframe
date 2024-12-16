@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        INSERT INTO contract_emails (\n            contract_id\n        ) VALUES ($1)\n        RETURNING\n            contract_id,\n            loan_request_sent,\n            loan_request_approved_sent,\n            loan_request_rejected_sent,\n            collateral_funded_sent,\n            loan_paid_out_sent\n        ",
+  "query": "\n        INSERT INTO contract_emails (\n            contract_id\n        ) VALUES ($1)\n        RETURNING\n            contract_id,\n            loan_request_sent,\n            loan_request_approved_sent,\n            loan_request_rejected_sent,\n            collateral_funded_sent,\n            loan_paid_out_sent,\n            loan_repaid_sent\n        ",
   "describe": {
     "columns": [
       {
@@ -32,6 +32,11 @@
         "ordinal": 5,
         "name": "loan_paid_out_sent",
         "type_info": "Bool"
+      },
+      {
+        "ordinal": 6,
+        "name": "loan_repaid_sent",
+        "type_info": "Bool"
       }
     ],
     "parameters": {
@@ -45,8 +50,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "3684a4812bbdff2a88fd44d2291a22c90427b134b40eccb0a7ab72f590fb14c5"
+  "hash": "b38085874ff5317e6b59407bed73a21af2b942fd40a2a4e19ac9a9f812c7136f"
 }

@@ -450,6 +450,7 @@ pub mod db {
         pub loan_request_rejected_sent: bool,
         pub collateral_funded_sent: bool,
         pub loan_paid_out_sent: bool,
+        pub loan_repaid_sent: bool,
     }
 }
 
