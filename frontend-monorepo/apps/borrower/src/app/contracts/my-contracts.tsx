@@ -3,9 +3,9 @@ import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import { Box } from "@radix-ui/themes";
 import { Suspense } from "react";
 import { Await } from "react-router-dom";
-import ContractsComponent from "./loans";
+import ContractList from "./ContractList";
 
-function MyLoans() {
+function MyContracts() {
   const { getContracts } = useBorrowerHttpClient();
 
   return (
@@ -15,7 +15,7 @@ function MyLoans() {
         errorElement={<div className={"text-font dark:text-font-dark"}>Could not load contracts</div>}
         children={(contracts: Awaited<Contract[]>) => (
           <Box>
-            <ContractsComponent loans={contracts} />
+            <ContractList contracts={contracts} />
           </Box>
         )}
       />
@@ -23,4 +23,4 @@ function MyLoans() {
   );
 }
 
-export default MyLoans;
+export default MyContracts;
