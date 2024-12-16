@@ -76,7 +76,7 @@ export const StableCoinDescriptionDialog = ({
               <FaInfoCircle />
             </Callout.Icon>
             <Callout.Text>
-              During the closed beta we will be using a 2-of-3 multisig contract instead of a DLCs The keys are
+              During the closed beta we will be using a 2-of-3 multisig contract instead of a DLC. The keys are
               distributed among the borrower, the lender and Lendasat.
             </Callout.Text>
           </Callout.Root>
