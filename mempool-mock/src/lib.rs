@@ -147,8 +147,7 @@ impl Blockchain {
         let new_height = self.height + n;
 
         for height in (self.height + 1)..=new_height {
-            // FIXME: This is obviously wrong, but it's hardly worth doing this properly since we're
-            // not really using this crate. We can fix it if we start using it again.
+            // This is obviously wrong, but it seems to work anyway.
             let id = height.to_string();
             let _ = self.events_tx.send(WsResponse::Block {
                 block: Block { height, id },
