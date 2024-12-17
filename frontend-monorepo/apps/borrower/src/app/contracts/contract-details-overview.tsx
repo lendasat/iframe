@@ -3,7 +3,6 @@ import {
   ContractStatus,
   contractStatusToLabelString,
   LiquidationStatus,
-  TransactionType,
   useAuth,
   useBorrowerHttpClient,
 } from "@frontend-monorepo/http-client-borrower";
@@ -16,7 +15,7 @@ import {
   StableCoinHelper,
   usePrice,
 } from "@frontend-monorepo/ui-shared";
-import { TransactionList } from "@frontend-monorepo/ui-shared";
+import { TransactionList, TransactionType } from "@frontend-monorepo/ui-shared";
 import { Badge, Box, Button, Callout, Flex, Grid, Heading, IconButton, Separator, Text } from "@radix-ui/themes";
 import { Suspense, useState } from "react";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
@@ -72,7 +71,9 @@ function Details({ contract }: DetailsProps) {
   const collateralSats = collateralForStatus(
     contract.status,
     contract.initial_collateral_sats,
-    contract.collateral_sats,
+    // The field `collateral_sats` includes the origination fee. But here we want to use the
+    // collateral as it pertains to the contract between borrower and lender.
+    contract.collateral_sats - contract.origination_fee_sats,
   );
   const collateralBtc = collateralSats / 100000000;
 
@@ -164,8 +165,12 @@ function ContractDetails({ contract }: DetailsProps) {
   const collateral = collateralForStatus(
     contract.status,
     contract.initial_collateral_sats,
-    contract.collateral_sats,
+    // The field `collateral_sats` includes the origination fee. But here we want to use the
+    // collateral as it pertains to the contract between borrower and lender.
+    contract.collateral_sats - contract.origination_fee_sats,
   );
+
+  // TODO: This is incorrect. The collateral can change throughout the lifetime of the loan.
   const collateralBtc = collateral / 100000000;
   const loanAmount = contract.loan_amount;
   const interestRate = contract.interest_rate;
@@ -531,6 +536,8 @@ const ContractStatusDetails = ({
   loanOriginatorFee,
   loanOriginatorFeeUsd,
 }: ContractStatusDetailsProps) => {
+  console.log(totalCollateral);
+
   switch (contract.status) {
     case ContractStatus.Requested:
       return <ContractRequested createdAt={contract.created_at} contractId={contract.id} />;

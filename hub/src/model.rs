@@ -5,6 +5,7 @@ use argon2::PasswordVerifier;
 use bitcoin::address::NetworkUnchecked;
 use bitcoin::bip32::Xpub;
 use bitcoin::Address;
+use bitcoin::Amount;
 use bitcoin::PublicKey;
 use rust_decimal::Decimal;
 use serde::Deserialize;
@@ -231,7 +232,8 @@ pub struct Contract {
     /// afterwards. You almost certainly want to use `collateral_sats` instead.
     pub initial_collateral_sats: u64,
     pub origination_fee_sats: u64,
-    /// The current amount of confirmed collateral in the loan contract.
+    /// The current amount of confirmed collateral in the loan contract, _including_ the
+    /// origination fee.
     ///
     /// We have decided to not persist the collateral outputs to make the implementation simpler.
     /// This may come back to bite us.
@@ -782,4 +784,12 @@ impl FilteredUser {
             updated_at: updated_at_utc,
         }
     }
+}
+
+#[derive(Debug)]
+pub struct ManualCollateralRecovery {
+    pub id: i64,
+    pub contract_id: String,
+    pub lender_amount: Amount,
+    pub created_at: OffsetDateTime,
 }

@@ -11,21 +11,21 @@ import { Alert, Button, Col, Container, Form, Modal, Row } from "react-bootstrap
 import { IoInformationCircleOutline } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
 
-interface ContractDefaultedProps {
+interface ContractRecoveryProps {
   contract: Contract;
 }
 
-export function ContractDefaulted({
+export function ContractRecovery({
   contract,
-}: ContractDefaultedProps) {
-  const { getLiquidationPsbt, postLiquidationTx } = useLenderHttpClient();
+}: ContractRecoveryProps) {
+  const { getRecoveryPsbt, postLiquidationTx } = useLenderHttpClient();
   const navigate = useNavigate();
 
   const [selectedFee, setSelectedFee] = useState(1);
   const [address, setAddress] = useState("");
 
   const [showModal, setShowModal] = useState(false);
-  const [liquidationTx, setLiquidationTx] = useState<SignedTransaction | null>(null);
+  const [tx, setTx] = useState<SignedTransaction | null>(null);
 
   const [showUnlockWalletModal, setShowUnlockWalletModal] = useState(false);
 
@@ -36,16 +36,16 @@ export function ContractDefaulted({
 
   const { isWalletLoaded, signLiquidationPsbt } = useWallet();
 
-  const liquidateCollateralIfWalletLoaded = async () => {
+  const recoverCollateralIfWalletLoaded = async () => {
     try {
       if (!isWalletLoaded) {
         handleOpenUnlockWalletModal();
         return;
       } else {
-        await liquidateCollateral();
+        await recoverCollateral();
       }
     } catch (err) {
-      console.error("Failed to liquidate collateral", err);
+      console.error("Failed to recover collateral", err);
       throw err;
     }
   };
@@ -62,16 +62,16 @@ export function ContractDefaulted({
     }
   };
 
-  const liquidateCollateral = async () => {
-    console.log("Getting liquidation PSBT");
+  const recoverCollateral = async () => {
+    console.log("Getting recovery PSBT");
 
     if (address === "") {
-      throw Error("Missing liquidation address");
+      throw Error("Missing lender address");
     }
 
-    const res = await getLiquidationPsbt(contract.id, selectedFee, address);
+    const res = await getRecoveryPsbt(contract.id, selectedFee, address);
 
-    console.log(`Signing liquidation PSBT: ${JSON.stringify(res)}`);
+    console.log(`Signing recovery PSBT: ${JSON.stringify(res)}`);
 
     const tx = await signLiquidationPsbt(
       res.psbt,
@@ -79,9 +79,9 @@ export function ContractDefaulted({
       res.lender_pk,
     );
 
-    console.log("Signed liquidation PSBT");
+    console.log("Signed recovery PSBT");
 
-    setLiquidationTx(tx);
+    setTx(tx);
     setShowModal(true);
   };
 
@@ -89,20 +89,20 @@ export function ContractDefaulted({
     setShowModal(false);
 
     try {
-      if (liquidationTx == null) {
-        throw Error("Missing liquidation TX");
+      if (tx == null) {
+        throw Error("Missing recovery TX");
       }
 
-      console.log("Posting signed liquidation TX");
+      console.log("Posting signed recovery TX");
 
-      const txid = await postLiquidationTx(contract.id, liquidationTx.tx);
+      const txid = await postLiquidationTx(contract.id, tx.tx);
 
-      alert(`Liquidation transaction ${txid} was published!`);
+      alert(`Collateral recovery transaction ${txid} was published!`);
 
       navigate("/my-contracts");
     } catch (err) {
-      console.error("Failed to post liquidation TX", err);
-      setError(`Failed to post liquidation TX: ${err}`);
+      console.error("Failed to post recovery TX", err);
+      setError(`Failed to post recovery TX: ${err}`);
     }
   };
 
@@ -110,15 +110,15 @@ export function ContractDefaulted({
     handleCloseUnlockWalletModal();
   };
 
-  const onUnlockOrLiquidate = async () => {
+  const onUnlockOrRecoverCollateral = async () => {
     setError("");
 
     if (isWalletLoaded) {
       try {
-        await liquidateCollateralIfWalletLoaded();
+        await recoverCollateralIfWalletLoaded();
       } catch (e) {
         const err = e as Error;
-        setError(`Failed to liquidate collateral: ${err.message}`);
+        setError(`Failed to recover collateral: ${err.message}`);
       }
     } else {
       try {
@@ -132,7 +132,7 @@ export function ContractDefaulted({
 
   const handleFormSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    onUnlockOrLiquidate();
+    onUnlockOrRecoverCollateral();
   };
 
   return (
@@ -142,23 +142,23 @@ export function ContractDefaulted({
         handleClose={handleCloseUnlockWalletModal}
         handleSubmit={handleSubmitUnlockWalletModal}
       />
-      {liquidationTx && (
+      {tx && (
         <ConfirmationModal
           show={showModal}
           handleClose={() => setShowModal(false)}
           handleConfirm={handleConfirm}
-          liquidationTx={liquidationTx}
+          tx={tx}
         />
       )}
       <Container fluid>
         <Heading className={"text-font dark:text-font-dark"} size={"4"} weight={"medium"}>
-          Liquidate Collateral
+          Recover Collateral
         </Heading>
         <Row className="mt-4">
           <Col>
             <div className="d-flex flex-column">
               <p className="mt-2 text-break text-font dark:text-font-dark">
-                To liquidate the collateral you will have to provide your <strong>contract secret</strong>.
+                To recover the collateral you will have to provide your <strong>contract secret</strong>.
               </p>
             </div>
           </Col>
@@ -167,7 +167,8 @@ export function ContractDefaulted({
           <Col>
             <Alert variant="info">
               <FontAwesomeIcon icon={faInfoCircle} />{" "}
-              Your share of the collateral will be sent to the Bitcoin address you choose.
+              If the borrower has yet to pay back the loan, your share of the collateral will be sent to the Bitcoin
+              address you choose.
             </Alert>
           </Col>
         </Row>
@@ -176,7 +177,7 @@ export function ContractDefaulted({
             <Row className="mt-2">
               <Col>
                 <Form.Label className={"font-bold text-font dark:text-font-dark"}>
-                  Liquidation Address
+                  Your Bitcoin Address
                 </Form.Label>
                 <Form.Control
                   type="text"
@@ -229,10 +230,10 @@ type ConfirmationModalProps = {
   show: boolean;
   handleClose: () => void;
   handleConfirm: () => void;
-  liquidationTx: SignedTransaction;
+  tx: SignedTransaction;
 };
 
-const ConfirmationModal = ({ show, handleClose, handleConfirm, liquidationTx }: ConfirmationModalProps) => {
+const ConfirmationModal = ({ show, handleClose, handleConfirm, tx }: ConfirmationModalProps) => {
   const formatter = new Intl.NumberFormat("en-US");
 
   return (
@@ -244,7 +245,7 @@ const ConfirmationModal = ({ show, handleClose, handleConfirm, liquidationTx }: 
               as="h2"
               className="text-xl md:text-2xl lg:text-4xl font-semibold text-center text-font dark:text-font-dark mb-7"
             >
-              Confirm Liquidation
+              Confirm Collateral Recovery
             </Heading>
           </Box>
           <Box className="mb-3">
@@ -254,7 +255,8 @@ const ConfirmationModal = ({ show, handleClose, handleConfirm, liquidationTx }: 
                   <FontAwesomeIcon icon={faInfoCircle} />
                 </Box>
                 <Text>
-                  Please verify that the liquidation transaction pays the expected amount to your chosen address.
+                  Make sure that you agree with the transaction before confirming. Keep in mind that Lendasat may return
+                  a transaction that does not pay to you if the borrower has already paid back the loan.
                 </Text>
               </Alert>
             </Flex>
@@ -263,7 +265,7 @@ const ConfirmationModal = ({ show, handleClose, handleConfirm, liquidationTx }: 
             <Flex className="flex flex-col gap-3 dark:text-font-dark">
               <Text>Sending:</Text>
               <ul className="list-disc list-inside pl-5">
-                {liquidationTx.outputs.map((o, index) => (
+                {tx.outputs.map((o, index) => (
                   <li key={index} className="whitespace-nowrap overflow-hidden text-ellipsis">
                     <strong>{formatter.format(o.value)}</strong> sats to <em>{o.address}</em>.
                   </li>

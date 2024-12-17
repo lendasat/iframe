@@ -4,7 +4,13 @@ import type { Dispute, LenderProfile } from "@frontend-monorepo/http-client-borr
 import type { AxiosResponse } from "axios";
 import axios from "axios";
 import { createContext, useContext } from "react";
-import type { Contract, CreateLoanOfferRequest, GetLiquidationPsbtResponse, LoanOffer } from "./models";
+import type {
+  Contract,
+  CreateLoanOfferRequest,
+  GetLiquidationPsbtResponse,
+  GetRecoveryPsbtResponse,
+  LoanOffer,
+} from "./models";
 import { parseRFC3339Date } from "./utils";
 
 // Interface for the raw data received from the API
@@ -238,6 +244,33 @@ export class HttpClientLender extends BaseHttpClient {
     }
   }
 
+  async getRecoveryPsbt(id: string, feeRate: number, address: string): Promise<GetRecoveryPsbtResponse> {
+    try {
+      const res: AxiosResponse<GetRecoveryPsbtResponse> = await this.httpClient.get(
+        `/api/contracts/${id}/recovery-psbt`,
+        {
+          params: {
+            fee_rate: feeRate,
+            address: address,
+          },
+        },
+      );
+      return res.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message ? JSON.stringify(error.response.data.message) : error.response.data;
+        console.error(
+          `Failed to fetch recovery PSBT: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Failed to fetch recovery PSBT ${JSON.stringify(error)}`);
+      }
+    }
+  }
+
   async startDispute(contract_id: string, reason: string, comment: string): Promise<Dispute> {
     try {
       const response: AxiosResponse<Dispute> = await this.httpClient.post(`/api/disputes`, {
@@ -406,6 +439,7 @@ type LenderHttpClientContextType = Pick<
   | "deleteLoanOffer"
   | "getLiquidationPsbt"
   | "postLiquidationTx"
+  | "getRecoveryPsbt"
 >;
 
 export const LenderHttpClientContext = createContext<LenderHttpClientContextType | undefined>(undefined);
@@ -456,6 +490,7 @@ export const HttpClientLenderProvider: React.FC<HttpClientProviderProps> = ({ ch
     deleteLoanOffer: httpClient.deleteLoanOffer.bind(httpClient),
     getLiquidationPsbt: httpClient.getLiquidationPsbt.bind(httpClient),
     postLiquidationTx: httpClient.postLiquidationTx.bind(httpClient),
+    getRecoveryPsbt: httpClient.getRecoveryPsbt.bind(httpClient),
   };
 
   return (

@@ -30,7 +30,7 @@ function MyAccount() {
   const layout = window;
 
   // Format date options
-  const options = {
+  const options: Intl.DateTimeFormatOptions = {
     weekday: "short",
     year: "numeric",
     month: "long",

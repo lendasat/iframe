@@ -27,6 +27,12 @@ lint-frontend:
     cd frontend-monorepo
     npx nx run-many --target=lint --all --skipNxCache -- --max-warnings 0
 
+check-frontend:
+    #!/usr/bin/env bash
+    set -euxo pipefail
+    cd frontend-monorepo
+    npx tsc --project tsconfig.base.json --jsx react-jsx --noEmit
+
 ## ------------------------
 ## Test functions
 ## ------------------------

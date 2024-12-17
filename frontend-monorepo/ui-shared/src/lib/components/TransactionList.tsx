@@ -1,11 +1,12 @@
-import type { Contract, LoanTransaction } from "@frontend-monorepo/http-client-borrower";
-import { LoanAssetChain, TransactionType } from "@frontend-monorepo/http-client-borrower";
 import { Box, Flex } from "@radix-ui/themes";
 import type { FC } from "react";
 import { useState } from "react";
 import { Col, Row } from "react-bootstrap";
 import { FaCheckCircle } from "react-icons/fa";
 import { FaCopy, FaLink } from "react-icons/fa6";
+import type { LoanTransaction } from "../models";
+import { TransactionType } from "../models";
+import { LoanAssetChain } from "../models";
 import { NotificationToast } from "./NotificationToast";
 
 interface TransactionLinkProps {
@@ -89,6 +90,11 @@ function TransactionLink({ transaction, loanAssetChain }: TransactionLinkProps) 
 interface TransactionListProps {
   contract: Contract;
   transactionType: TransactionType;
+}
+
+interface Contract {
+  loan_asset_chain: LoanAssetChain;
+  transactions: LoanTransaction[];
 }
 
 export const TransactionList: FC<TransactionListProps> = ({ contract, transactionType }) => {

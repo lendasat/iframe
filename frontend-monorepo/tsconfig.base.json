@@ -14,6 +14,9 @@
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
     "paths": {
       "@frontend-monorepo/base-http-client": ["base-http-client/src/index.ts"],
       "@frontend-monorepo/browser-wallet": ["browser-wallet/src/index.ts"],

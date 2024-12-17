@@ -119,7 +119,6 @@ function MainLayoutComponents() {
       <Layout
         user={user}
         menuItems={menuItems}
-        theme={"light"}
         backendVersion={version}
         logout={logout}
       >

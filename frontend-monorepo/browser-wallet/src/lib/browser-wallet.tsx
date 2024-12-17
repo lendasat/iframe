@@ -1,6 +1,3 @@
-import type { ReactNode } from "react";
-import { createContext, useContext, useEffect, useState } from "react";
-
 import init, {
   does_wallet_exist,
   get_mnemonic,
@@ -12,7 +9,10 @@ import init, {
   sign_claim_psbt,
   sign_liquidation_psbt,
 } from "browser-wallet";
+import type { SignedTransaction } from "browser-wallet";
 import { md5 } from "hash-wasm";
+import type { ReactNode } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 
 interface WalletContextType {
   isInitialized: boolean;
@@ -110,7 +110,7 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
     psbt: string,
     collateralDescriptor: string,
     lenderPk: string,
-  ): Promise<SignedTransaction> => {
+  ) => {
     if (isInitialized && isWalletLoaded) {
       return sign_liquidation_psbt(psbt, collateralDescriptor, lenderPk);
     } else {
@@ -146,15 +146,5 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
 
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
 };
-
-interface SignedTransaction {
-  tx: string;
-  outputs: TxOut[];
-}
-
-interface TxOut {
-  address: string;
-  value: number;
-}
 
 export default WalletProvider;

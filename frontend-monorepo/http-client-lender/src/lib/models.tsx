@@ -1,3 +1,5 @@
+import type { LoanAssetChain, LoanAssetType, LoanTransaction } from "@frontend-monorepo/ui-shared";
+
 export enum ContractStatus {
   Requested = "Requested",
   Approved = "Approved",
@@ -47,17 +49,7 @@ export interface Contract {
   transactions: LoanTransaction[];
   loan_asset_type: LoanAssetType;
   loan_asset_chain: LoanAssetChain;
-}
-
-export enum LoanAssetType {
-  Usdc = "Usdc",
-  Usdt = "Usdt",
-}
-
-export enum LoanAssetChain {
-  Ethereum = "Ethereum",
-  Polygon = "Polygon",
-  Starknet = "Starknet",
+  can_recover_collateral_manually: boolean;
 }
 
 export interface CreateLoanOfferRequest {
@@ -178,14 +170,13 @@ export enum TransactionType {
   ClaimCollateral = "ClaimCollateral",
 }
 
-export interface LoanTransaction {
-  txid: string;
-  contract_id: string;
-  transaction_type: TransactionType;
-  timestamp: Date;
+export interface GetLiquidationPsbtResponse {
+  psbt: string;
+  collateral_descriptor: string;
+  lender_pk: string;
 }
 
-export interface GetLiquidationPsbtResponse {
+export interface GetRecoveryPsbtResponse {
   psbt: string;
   collateral_descriptor: string;
   lender_pk: string;

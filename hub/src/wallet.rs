@@ -441,7 +441,12 @@ impl Wallet {
             Amount::from_sat(collateral_outputs.iter().fold(0, |acc, (_, a)| acc + a));
         let borrower_amount = total_collateral_amount
             .checked_sub(origination_fee + lender_amount + tx_fee)
-            .unwrap_or_default();
+            .with_context(|| {
+                format!(
+                    "Collateral ({total_collateral_amount}) cannot cover lender amount \
+                     ({lender_amount}) origination_fee ({origination_fee}) and TX fee {tx_fee}"
+                )
+            })?;
 
         let borrower_output = TxOut {
             value: borrower_amount,
@@ -464,7 +469,7 @@ impl Wallet {
 
         let output = vec![borrower_output, lender_output, origination_fee_output];
 
-        // Any output that would bew below `MIN_TX_OUTPUT_VALUE` goes towards the transaction fee
+        // Any output that would be below `MIN_TX_OUTPUT_VALUE` goes towards the transaction fee
         // instead.
         let output = output
             .into_iter()

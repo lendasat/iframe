@@ -26,6 +26,7 @@ import { IoMdCloudDownload } from "react-icons/io";
 import { Await, useNavigate, useParams } from "react-router-dom";
 import { ExpandableDisputeCard } from "../disputes/dispute-card";
 import { ContractDefaulted } from "./contract-defaulted";
+import { ContractRecovery } from "./contract-recovery";
 import { ContractRequested } from "./contract-requested";
 import { downloadLocalStorage } from "./download-local-storage";
 import RepaymentDetails from "./pay-loan-principal";
@@ -480,6 +481,10 @@ const ContractStatusDetails = ({
   };
   const handleCloseCreateWalletModal = () => setShowCreateWalletModal(false);
 
+  if (contract.can_recover_collateral_manually) {
+    return <ContractRecovery contract={contract} />;
+  }
+
   switch (contract.status) {
     case ContractStatus.Requested:
       return (
@@ -558,7 +563,7 @@ const ContractStatusDetails = ({
         </Alert>
       );
     case ContractStatus.Defaulted:
-      return <ContractDefaulted contract={contract} collateralBtc={10} />;
+      return <ContractDefaulted contract={contract} />;
     case ContractStatus.Closed:
     case ContractStatus.Closing:
     case ContractStatus.Rejected:

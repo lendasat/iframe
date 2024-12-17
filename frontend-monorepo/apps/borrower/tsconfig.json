@@ -8,7 +8,7 @@
     "types": ["vite/client"]
   },
   "files": [],
-  "include": [],
+  "include": ["vite-env.d.ts"],
   "references": [
     {
       "path": "./tsconfig.app.json"
