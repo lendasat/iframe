@@ -982,6 +982,44 @@ async fn post_liquidation_tx(
         tracing::error!("Failed to mark contract as closing: {e:#}");
     };
 
+    let email = Email::new(data.config.clone());
+
+    if let Err(e) = async {
+        let contract = db::contracts::load_contract_by_contract_id_and_lender_id(
+            &data.db,
+            contract_id.as_str(),
+            &user.id,
+        )
+        .await
+        .context("Contract not found")?;
+
+        let borrower = db::borrowers::get_user_by_id(&data.db, contract.borrower_id.as_str())
+            .await?
+            .context("Borrower not found")?;
+
+        let loan_url = format!(
+            "{}/my-contracts/{}",
+            data.config.borrower_frontend_origin.to_owned(),
+            contract_id
+        );
+        email
+            .send_loan_liquidated_after_default(borrower, loan_url.as_str())
+            .await
+            .context("Failed to send defaulted-loan-liquidated email")?;
+
+        db::contract_emails::mark_defaulted_loan_liquidated_as_sent(&data.db, &contract.id)
+            .await
+            .context("Failed to mark defaulted-loan-liquidated email as sent")?;
+
+        anyhow::Ok(())
+    }
+    .await
+    {
+        tracing::error!(
+            "Failed at notifying borrower about loan liquidation due to default: {e:#}"
+        );
+    }
+
     Ok(claim_txid.to_string())
 }
 

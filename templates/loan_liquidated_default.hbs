@@ -1,0 +1,47 @@
+{{#> base}}
+<table role="presentation" class="main">
+    <!-- START MAIN CONTENT AREA -->
+    <tr>
+        <td class="wrapper">
+            <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td>
+                        <p>Hi {{first_name}},</p>
+
+                        <p>We regret to inform you that you have defaulted on your loan.</p>
+
+                        <p>
+                          As such, the lender was able to liquidate your loan for their share of the collateral.
+                          Any remaining sats have been sent to your refund address.
+                          You can visit your contract details page for more info.
+                        </p>
+
+                        <table role="presentation" border="0" cellpadding="0" cellspacing="0" class="btn btn-primary">
+                            <tbody>
+                                <tr>
+                                    <td align="left">
+                                        <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+                                            <tbody>
+                                                <tr>
+                                                    <td>
+                                                        <a href="{{url}}" target="_blank">Take me to my contract</a>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p>Thank you,</p>
+
+                        <p>The Lendasat Team</p>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+
+    <!-- END MAIN CONTENT AREA -->
+</table>
+{{/base}}

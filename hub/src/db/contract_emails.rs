@@ -174,3 +174,23 @@ pub async fn mark_loan_repaid_as_sent(pool: &Pool<Postgres>, contract_id: &str) 
 
     Ok(())
 }
+
+pub async fn mark_defaulted_loan_liquidated_as_sent(
+    pool: &Pool<Postgres>,
+    contract_id: &str,
+) -> Result<()> {
+    let contract_id = contract_id.to_string();
+
+    sqlx::query!(
+        r#"
+        UPDATE contract_emails
+        SET defaulted_loan_liquidated_sent = true
+        WHERE contract_id = $1
+        "#,
+        contract_id,
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
