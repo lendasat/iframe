@@ -513,9 +513,13 @@ pub async fn put_principal_given(
         .await
         .context("Failed to load contract request")?;
 
-        db::contracts::mark_contract_as_principal_given(&data.db, contract_id.as_str())
-            .await
-            .context("Failed to mark contract as repaid")?;
+        db::contracts::mark_contract_as_principal_given(
+            &data.db,
+            contract_id.as_str(),
+            contract.duration_months,
+        )
+        .await
+        .context("Failed to mark contract as repaid")?;
 
         db::transactions::insert_principal_given_txid(
             &data.db,

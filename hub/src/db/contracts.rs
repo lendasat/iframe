@@ -1,4 +1,5 @@
 use crate::db::contract_emails;
+use crate::expiry::expiry_date;
 use crate::model::db;
 use crate::model::Contract;
 use crate::model::ContractStatus;
@@ -320,7 +321,7 @@ pub async fn insert_contract_request(
     let contract_version = contract_version as i32;
 
     let created_at = OffsetDateTime::now_utc();
-    let expiry_date = created_at + time::Duration::days(duration_months as i64 * 30);
+    let expiry_date = expiry_date(created_at, duration_months as u64);
 
     let lender_id_row = sqlx::query!(
         r#"
@@ -479,15 +480,24 @@ pub async fn accept_contract_request(
 pub async fn mark_contract_as_principal_given(
     pool: &Pool<Postgres>,
     contract_id: &str,
+    duration_months: i32,
 ) -> Result<Contract> {
+    let updated_at = OffsetDateTime::now_utc();
+
+    // We update the expiry to ensure that the loan lasts long enough. We could be even more precise
+    // if we checked the confirmation time of the principal transaction, but this is probably good
+    // enough.
+    let expiry_date = expiry_date(updated_at, duration_months as u64);
+
     let contract = sqlx::query_as!(
         db::Contract,
         r#"
         UPDATE contracts
         SET
             status = $1,
-            updated_at = $2
-        WHERE id = $3
+            expiry_date = $2,
+            updated_at = $3
+        WHERE id = $4
         RETURNING
             id,
             lender_id,
@@ -514,7 +524,8 @@ pub async fn mark_contract_as_principal_given(
             updated_at
         "#,
         db::ContractStatus::PrincipalGiven as db::ContractStatus,
-        OffsetDateTime::now_utc(),
+        expiry_date,
+        updated_at,
         contract_id,
     )
     .fetch_one(pool)
