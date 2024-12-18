@@ -26,9 +26,9 @@ export enum ContractStatus {
 export function contractStatusToLabelString(status: ContractStatus): string {
   switch (status) {
     case ContractStatus.Requested:
-      return "Contract Requested";
+      return "Requested";
     case ContractStatus.Approved:
-      return "Contract Approved";
+      return "Approved";
     case ContractStatus.CollateralSeen:
       return "Collateral Seen";
     case ContractStatus.CollateralConfirmed:
@@ -36,27 +36,27 @@ export function contractStatusToLabelString(status: ContractStatus): string {
     case ContractStatus.PrincipalGiven:
       return "Principal Disbursed";
     case ContractStatus.RepaymentProvided:
-      return "Loan Repayment Provided";
+      return "Repayment Provided";
     case ContractStatus.RepaymentConfirmed:
-      return "Loan Repayment Confirmed";
+      return "Repayment Confirmed";
     case ContractStatus.Undercollateralized:
-      return "Contract Undercollateralized";
+      return "Undercollateralized";
     case ContractStatus.Defaulted:
-      return "Contract Defaulted";
+      return "Defaulted";
     case ContractStatus.Closing:
-      return "Contract Closing";
+      return "Closing";
     case ContractStatus.Closed:
-      return "Contract Closed";
+      return "Closed";
     case ContractStatus.Rejected:
-      return "Contract Rejected";
+      return "Rejected";
     case ContractStatus.DisputeBorrowerStarted:
     case ContractStatus.DisputeLenderStarted:
-      return "Dispute in progress";
+      return "Dispute Open";
     case ContractStatus.DisputeBorrowerResolved:
     case ContractStatus.DisputeLenderResolved:
       return "Dispute Resolved";
     case ContractStatus.Cancelled:
-      return "Contract Cancelled";
+      return "Cancelled";
     case ContractStatus.RequestExpired:
       return "Request Expired";
   }
