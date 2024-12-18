@@ -40,6 +40,7 @@ interface LayoutProps {
 export interface User {
   name: string;
   email: string;
+  verified: boolean;
 }
 
 export const Layout: FC<LayoutProps> = ({ children, menuItems, backendVersion, user, logout }) => {

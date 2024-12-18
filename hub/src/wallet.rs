@@ -32,7 +32,7 @@ use sqlx::Postgres;
 use std::str::FromStr;
 
 /// Everything below this value is counted as dust. Based on segwit and 1 input and 1 output
-const MIN_TX_OUTPUT_SIZE: u64 = 294;
+const MIN_TX_OUTPUT_VALUE: u64 = 294;
 
 pub struct Wallet {
     hub_xpriv: Xpriv,
@@ -155,7 +155,7 @@ impl Wallet {
         // instead credit it to the other party
         let outputs = target_outputs
             .into_iter()
-            .filter(|(_, amount)| amount >= &MIN_TX_OUTPUT_SIZE)
+            .filter(|(_, amount)| amount >= &MIN_TX_OUTPUT_VALUE)
             .collect::<Vec<_>>();
 
         let tx_fee_per_output = tx_fee / outputs.len() as u64;
@@ -172,7 +172,7 @@ impl Wallet {
                         "Ignoring output as tx fee would render output too small"
                     );
                     None
-                } else if amount - tx_fee_per_output < MIN_TX_OUTPUT_SIZE {
+                } else if amount - tx_fee_per_output < MIN_TX_OUTPUT_VALUE {
                     tracing::warn!(
                         address = address.assume_checked().to_string(),
                         amount,
@@ -318,12 +318,12 @@ impl Wallet {
             script_pubkey: ScriptBuf::from_bytes(new_address.address.script_pubkey().to_bytes()),
         };
 
-        let output = if claim_output.value.to_sat() < MIN_TX_OUTPUT_SIZE {
+        let output = if claim_output.value.to_sat() < MIN_TX_OUTPUT_VALUE {
             vec![TxOut {
                 value: origination_fee_output.value + claim_output.value,
                 script_pubkey: origination_fee_output.script_pubkey,
             }]
-        } else if origination_fee_output.value.to_sat() < MIN_TX_OUTPUT_SIZE {
+        } else if origination_fee_output.value.to_sat() < MIN_TX_OUTPUT_VALUE {
             vec![TxOut {
                 value: claim_output.value + origination_fee_output.value,
                 script_pubkey: claim_output.script_pubkey,
@@ -400,6 +400,150 @@ impl Wallet {
         Ok((claim_psbt, collateral_descriptor))
     }
 
+    #[allow(clippy::too_many_arguments)]
+    pub fn create_liquidation_psbt(
+        &mut self,
+        borrower_pk: PublicKey,
+        lender_xpub: &Xpub,
+        contract_index: u32,
+        collateral_outputs: Vec<(OutPoint, u64)>,
+        origination_fee: Amount,
+        lender_amount: Amount,
+        lender_address: Address,
+        borrower_btc_address: Address,
+        fee_rate_spvb: u64,
+        contract_version: ContractVersion,
+    ) -> Result<(Psbt, Descriptor<PublicKey>, PublicKey)> {
+        let (hub_kp, fallback_pk) = self.get_keys_for_index(contract_index)?;
+
+        let lender_pk = derive_lender_pk(
+            lender_xpub,
+            contract_index,
+            self.hub_xpriv.network.is_mainnet(),
+        )?;
+
+        let mut inputs = Vec::new();
+        for (outpoint, _) in collateral_outputs.iter() {
+            let input = TxIn {
+                previous_output: *outpoint,
+                ..Default::default()
+            };
+
+            inputs.push(input)
+        }
+
+        // FIXME: Incorrect arbitrary value!
+        let tx_weight_vb = 200 + (collateral_outputs.len() as u64) * 50;
+
+        let tx_fee = Amount::from_sat(tx_weight_vb * fee_rate_spvb);
+
+        let total_collateral_amount =
+            Amount::from_sat(collateral_outputs.iter().fold(0, |acc, (_, a)| acc + a));
+        let borrower_amount = total_collateral_amount
+            .checked_sub(origination_fee + lender_amount + tx_fee)
+            .with_context(|| {
+                format!(
+                    "Collateral ({total_collateral_amount}) cannot cover lender amount \
+                     ({lender_amount}) origination_fee ({origination_fee}) and TX fee {tx_fee}"
+                )
+            })?;
+
+        let borrower_output = TxOut {
+            value: borrower_amount,
+            script_pubkey: borrower_btc_address.script_pubkey(),
+        };
+
+        let lender_output = TxOut {
+            value: lender_amount,
+            script_pubkey: lender_address.script_pubkey(),
+        };
+
+        let origination_fee_output = {
+            let address = self.hub_fee_wallet.get_new_address()?;
+
+            TxOut {
+                value: origination_fee,
+                script_pubkey: ScriptBuf::from_bytes(address.address.script_pubkey().to_bytes()),
+            }
+        };
+
+        let output = vec![borrower_output, lender_output, origination_fee_output];
+
+        // Any output that would be below `MIN_TX_OUTPUT_VALUE` goes towards the transaction fee
+        // instead.
+        let output = output
+            .into_iter()
+            .filter(|o| o.value.to_sat() >= MIN_TX_OUTPUT_VALUE)
+            .collect::<Vec<_>>();
+
+        let unsigned_claim_tx = Transaction {
+            version: Version::TWO,
+            lock_time: LockTime::ZERO,
+            input: inputs,
+            output,
+        };
+
+        // All collateral outputs share the same script.
+        let hub_pk = PublicKey::new(hub_kp.public_key());
+        let collateral_descriptor = match contract_version {
+            ContractVersion::TwoOfFour => two_of_four_collateral_contract_descriptor(
+                borrower_pk,
+                hub_pk,
+                fallback_pk,
+                lender_pk,
+            )?,
+            ContractVersion::TwoOfThree => {
+                two_of_three_collateral_contract_descriptor(borrower_pk, hub_pk, lender_pk)?
+            }
+        };
+        let witness_script = collateral_descriptor.script_code()?;
+
+        let mut inputs = Vec::new();
+
+        // The order is important.
+        for (i, (_, amount_sats)) in collateral_outputs.iter().enumerate() {
+            let witness_script = witness_script.clone();
+            let amount_sats = Amount::from_sat(*amount_sats);
+
+            let sighash = SighashCache::new(&unsigned_claim_tx).p2wsh_signature_hash(
+                i,
+                &witness_script,
+                amount_sats,
+                EcdsaSighashType::All,
+            )?;
+
+            let mut input = psbt::Input {
+                witness_utxo: Some(TxOut {
+                    value: amount_sats,
+                    script_pubkey: collateral_descriptor.script_pubkey(),
+                }),
+                sighash_type: Some(PsbtSighashType::from_str("SIGHASH_ALL").expect("valid")),
+                witness_script: Some(witness_script),
+                ..Default::default()
+            };
+
+            let secp = Secp256k1::new();
+            let hub_sk = hub_kp.secret_key();
+            let sig = secp.sign_ecdsa(&sighash.into(), &hub_sk);
+
+            input.partial_sigs.insert(
+                hub_pk,
+                bitcoin::ecdsa::Signature {
+                    signature: sig,
+                    sighash_type: EcdsaSighashType::All,
+                },
+            );
+
+            inputs.push(input);
+        }
+
+        let mut psbt = Psbt::from_unsigned_tx(unsigned_claim_tx)?;
+
+        psbt.inputs = inputs;
+
+        Ok((psbt, collateral_descriptor, lender_pk))
+    }
+
     fn get_keys_for_index(&self, index: u32) -> Result<(Keypair, PublicKey)> {
         let secp = Secp256k1::new();
 
@@ -460,6 +604,10 @@ impl Wallet {
         let hub_pk = PublicKey::new(hub_kp.public_key());
 
         Ok((hub_pk, fallback_pk, index))
+    }
+
+    pub fn network(&self) -> Network {
+        self.network
     }
 }
 

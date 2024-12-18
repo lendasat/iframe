@@ -1,10 +1,9 @@
 import { render } from "@testing-library/react";
-
-import BrowserWallet from "./browser-wallet";
+import { WalletProvider } from "./browser-wallet";
 
 describe("BrowserWallet", () => {
   it("should render successfully", () => {
-    const { baseElement } = render(<BrowserWallet />);
+    const { baseElement } = render(<WalletProvider children={""} email="borrower@lendasat.com" />);
     expect(baseElement).toBeTruthy();
   });
 });

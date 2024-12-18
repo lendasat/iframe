@@ -288,7 +288,7 @@ const Loading = () => {
   return (
     <div className="flex items-center justify-center bg-gray-100">
       <div className="text-center">
-        <Spinner className="animate-spin mx-auto mb-4 text-blue-500 dark:text-blue-300" size={48} />
+        <Spinner className="animate-spin mx-auto mb-4 text-blue-500 dark:text-blue-300" size={"3"} />
         <p className="text-font text-lg dark:text-font-dark">
           Loading...
         </p>

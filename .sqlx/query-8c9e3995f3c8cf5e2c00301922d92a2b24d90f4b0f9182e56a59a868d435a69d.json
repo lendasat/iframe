@@ -116,7 +116,8 @@
                 "DisputeBorrowerResolved",
                 "DisputeLenderResolved",
                 "Cancelled",
-                "RequestExpired"
+                "RequestExpired",
+                "Defaulted"
               ]
             }
           }
@@ -183,7 +184,8 @@
                 "DisputeBorrowerResolved",
                 "DisputeLenderResolved",
                 "Cancelled",
-                "RequestExpired"
+                "RequestExpired",
+                "Defaulted"
               ]
             }
           }

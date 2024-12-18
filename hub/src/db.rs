@@ -12,6 +12,7 @@ pub mod invite_code;
 pub mod lenders;
 pub mod loan_offers;
 pub mod loan_requests;
+pub mod manual_collateral_recovery;
 pub mod moon;
 pub mod transactions;
 pub mod user_logins;

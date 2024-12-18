@@ -1,3 +1,4 @@
+use crate::bitmex_index_price_rest::get_bitmex_index_price;
 use crate::db;
 use crate::email::Email;
 use crate::mempool;
@@ -41,8 +42,6 @@ use rust_decimal::Decimal;
 use serde::Deserialize;
 use serde::Serialize;
 use std::sync::Arc;
-use time::ext::NumericalDuration;
-use time::format_description;
 use time::OffsetDateTime;
 use tracing::instrument;
 use uuid::Uuid;
@@ -423,14 +422,25 @@ async fn get_claim_collateral_psbt(
 // We don't need the borrower to publish the claim TX through the hub, but it is convenient to be
 // able to move the contract state forward. Eventually we could remove this and publish from the
 // borrower client.
-#[instrument(skip(data, _user), err(Debug), ret)]
+#[instrument(skip(data, user), err(Debug), ret)]
 async fn post_claim_tx(
     State(data): State<Arc<AppState>>,
-    // TODO: Make sure that this API is called by the _right_ user.
-    Extension(_user): Extension<User>,
+    Extension(user): Extension<User>,
     Path(contract_id): Path<String>,
     AppJson(body): AppJson<ClaimTx>,
 ) -> Result<String, Error> {
+    let belongs_to_borrower = db::contracts::check_if_contract_belongs_to_borrower(
+        &data.db,
+        contract_id.as_str(),
+        &user.id,
+    )
+    .await
+    .map_err(Error::Database)?;
+
+    if !belongs_to_borrower {
+        return Err(Error::NotYourContract);
+    }
+
     let signed_claim_tx_str = body.tx;
     let signed_claim_tx: Transaction =
         bitcoin::consensus::encode::deserialize_hex(&signed_claim_tx_str)
@@ -519,48 +529,6 @@ pub struct ClaimTx {
 #[derive(Debug, Deserialize)]
 pub struct PrincipalRepaidQueryParam {
     pub txid: String,
-}
-
-async fn get_bitmex_index_price(timestamp: OffsetDateTime) -> anyhow::Result<Decimal> {
-    #[derive(serde::Deserialize, Debug)]
-    #[serde(rename_all = "camelCase")]
-    struct Index {
-        #[serde(with = "time::serde::rfc3339")]
-        #[serde(rename = "timestamp")]
-        _timestamp: OffsetDateTime,
-        last_price: f64,
-        #[serde(rename = "reference")]
-        _reference: String,
-    }
-
-    let time_format = format_description::parse("[year]-[month]-[day] [hour]:[minute]")?;
-
-    // Ideally we get the price indicated by `timestamp`, but if it is not available we are happy to
-    // take a price up to 1 minute in the past.
-    let start_time = (timestamp - 1.minutes()).format(&time_format)?;
-    let end_time = timestamp.format(&time_format)?;
-
-    let mut url = reqwest::Url::parse("https://www.bitmex.com/api/v1/instrument/compositeIndex")?;
-    url.query_pairs_mut()
-        .append_pair("symbol", ".BXBT")
-        .append_pair(
-            "filter",
-            // The `reference` is set to `BMI` to get the _composite_ index.
-
-            &format!("{{\"symbol\": \".BXBT\", \"startTime\": \"{start_time}\", \"endTime\": \"{end_time}\", \"reference\": \"BMI\"}}"),
-        )
-        .append_pair("columns", "lastPrice,timestamp,reference")
-        // Reversed to get the latest one.
-        .append_pair("reverse", "true")
-        // Only need one index.
-        .append_pair("count", "1");
-
-    let indices = reqwest::get(url).await?.json::<Vec<Index>>().await?;
-    let index = &indices[0];
-
-    let index_price = Decimal::try_from(index.last_price)?;
-
-    Ok(index_price)
 }
 
 fn calculate_origination_fee(
@@ -708,6 +676,9 @@ enum Error {
     TrackClaimTx(anyhow::Error),
     /// Failed to post claim-collateral transaction.
     PostClaimTx(anyhow::Error),
+    /// The borrower is trying to interact with a contract that is not theirs, according to our
+    /// records.
+    NotYourContract,
 }
 
 impl From<JsonRejection> for Error {
@@ -901,6 +872,7 @@ impl IntoResponse for Error {
                     "Something went wrong".to_owned(),
                 )
             }
+            Error::NotYourContract => (StatusCode::NOT_FOUND, "Contract not found".to_owned()),
         };
 
         (status, AppJson(ErrorResponse { message })).into_response()

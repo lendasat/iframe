@@ -1,6 +1,3 @@
-import type { ReactNode } from "react";
-import { createContext, useContext, useEffect, useState } from "react";
-
 import init, {
   does_wallet_exist,
   get_mnemonic,
@@ -10,8 +7,12 @@ import init, {
   load_wallet,
   new_wallet,
   sign_claim_psbt,
+  sign_liquidation_psbt,
 } from "browser-wallet";
+import type { SignedTransaction } from "browser-wallet";
 import { md5 } from "hash-wasm";
+import type { ReactNode } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 
 interface WalletContextType {
   isInitialized: boolean;
@@ -21,7 +22,8 @@ interface WalletContextType {
   loadWallet: (passphrase: string) => Promise<void>;
   getMnemonic: () => string;
   getNextPublicKey: () => string;
-  signClaimPsbt: (psbt: string, collateralDescriptor: string, borrowerPk: string) => Promise<string>;
+  signClaimPsbt: (psbt: string, collateralDescriptor: string, borrowerPk: string) => Promise<SignedTransaction>;
+  signLiquidationPsbt: (psbt: string, collateralDescriptor: string, borrowerPk: string) => Promise<SignedTransaction>;
   getXpub: () => Promise<string>;
 }
 
@@ -104,6 +106,18 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
     }
   };
 
+  const signLiquidationPsbt = async (
+    psbt: string,
+    collateralDescriptor: string,
+    lenderPk: string,
+  ) => {
+    if (isInitialized && isWalletLoaded) {
+      return sign_liquidation_psbt(psbt, collateralDescriptor, lenderPk);
+    } else {
+      throw Error("Wallet not initialized");
+    }
+  };
+
   const getXpub = async () => {
     if (!isInitialized) {
       throw Error("Wallet not initialized");
@@ -126,6 +140,7 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
     getMnemonic,
     getNextPublicKey,
     signClaimPsbt,
+    signLiquidationPsbt,
     getXpub,
   };
 

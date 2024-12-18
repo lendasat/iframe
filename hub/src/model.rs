@@ -5,6 +5,7 @@ use argon2::PasswordVerifier;
 use bitcoin::address::NetworkUnchecked;
 use bitcoin::bip32::Xpub;
 use bitcoin::Address;
+use bitcoin::Amount;
 use bitcoin::PublicKey;
 use rust_decimal::Decimal;
 use serde::Deserialize;
@@ -231,7 +232,8 @@ pub struct Contract {
     /// afterwards. You almost certainly want to use `collateral_sats` instead.
     pub initial_collateral_sats: u64,
     pub origination_fee_sats: u64,
-    /// The current amount of confirmed collateral in the loan contract.
+    /// The current amount of confirmed collateral in the loan contract, _including_ the
+    /// origination fee.
     ///
     /// We have decided to not persist the collateral outputs to make the implementation simpler.
     /// This may come back to bite us.
@@ -303,7 +305,9 @@ pub enum ContractStatus {
     RepaymentProvided,
     /// The principal + interest has been repaid to the lender and confirmed by the lender
     RepaymentConfirmed,
-    /// The collateral claim tx has been broadcasted but not confirmed yet.
+    /// The borrower failed to pay back the loan before expiry.
+    Defaulted,
+    /// The collateral claim TX has been broadcasted but not confirmed yet.
     Closing,
     /// The loan has been repaid, somehow.
     Closed,
@@ -325,15 +329,16 @@ pub enum ContractStatus {
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
 pub enum LiquidationStatus {
-    /// Contract is in a healthy state
+    /// Contract is in a healthy state.
     Healthy,
-    /// Contract got liquidated
-    Liquidated,
-    /// Second margin call: the user still has time to add more collateral before getting
+    /// First margin call: the borrower still has time to add more collateral before getting
     /// liquidated
-    SecondMarginCall,
-    /// First margin call: the user still has time to add more collateral before getting liquidated
     FirstMarginCall,
+    /// Second margin call: the borrower still has time to add more collateral before getting
+    /// liquidated, but it's getting closer.
+    SecondMarginCall,
+    /// Contract got liquidated.
+    Liquidated,
 }
 
 /// A record of all the one-time email messages sent for a particular contract.
@@ -399,6 +404,7 @@ pub mod db {
         PrincipalGiven,
         RepaymentProvided,
         RepaymentConfirmed,
+        Defaulted,
         Closing,
         Closed,
         Cancelled,
@@ -498,6 +504,7 @@ impl From<db::ContractStatus> for ContractStatus {
             db::ContractStatus::PrincipalGiven => Self::PrincipalGiven,
             db::ContractStatus::RepaymentProvided => Self::RepaymentProvided,
             db::ContractStatus::RepaymentConfirmed => Self::RepaymentConfirmed,
+            db::ContractStatus::Defaulted => Self::Defaulted,
             db::ContractStatus::Closing => Self::Closing,
             db::ContractStatus::Closed => Self::Closed,
             db::ContractStatus::Rejected => Self::Rejected,
@@ -617,6 +624,7 @@ impl From<ContractStatus> for db::ContractStatus {
             ContractStatus::PrincipalGiven => Self::PrincipalGiven,
             ContractStatus::RepaymentProvided => Self::RepaymentProvided,
             ContractStatus::RepaymentConfirmed => Self::RepaymentConfirmed,
+            ContractStatus::Defaulted => Self::Defaulted,
             ContractStatus::Closing => Self::Closing,
             ContractStatus::Closed => Self::Closed,
             ContractStatus::Rejected => Self::Rejected,
@@ -776,4 +784,12 @@ impl FilteredUser {
             updated_at: updated_at_utc,
         }
     }
+}
+
+#[derive(Debug)]
+pub struct ManualCollateralRecovery {
+    pub id: i64,
+    pub contract_id: String,
+    pub lender_amount: Amount,
+    pub created_at: OffsetDateTime,
 }

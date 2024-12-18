@@ -13,13 +13,13 @@ import Login from "./auth/login";
 import Logout from "./auth/logout";
 import Registration from "./auth/registration";
 import ResetPassword from "./auth/reset-password";
+import ContractDetailsOverview from "./contracts/contract-details-overview";
+import MyContracts from "./contracts/my-contracts";
 import DashBoard from "./dashboard/dash-board";
 import ResolveDispute from "./disputes/dispute";
 import ErrorBoundary from "./ErrorBoundary";
 import History from "./History";
 import MyAccount from "./my-account";
-import ContractDetailsOverview from "./my-loans/contract-details-overview";
-import MyLoans from "./my-loans/my-loans";
 import Profile from "./profile";
 import RequestLoan from "./request-loan/request-loan";
 import { RequestLoanSummary } from "./request-loan/request-loan-summary";
@@ -169,7 +169,7 @@ function MainLayoutComponents() {
           >
             <Route index element={<DashBoard />} />
             <Route path="/my-contracts">
-              <Route index element={<MyLoans />} />
+              <Route index element={<MyContracts />} />
               <Route path={":id"} element={<ContractDetailsOverview />} />
             </Route>
             <Route path="/requests/*" element={<RequestLoanWizard />} />

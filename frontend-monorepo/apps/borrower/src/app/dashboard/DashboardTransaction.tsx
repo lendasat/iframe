@@ -55,7 +55,7 @@ function NotificationComponent(props: LoansNotificationSectionProps) {
   return (
     <div className="h-56 overflow-y-auto">
       {loans.sort((a, b) => {
-        return (b.created_at - a.created_at);
+        return (b.created_at.getTime() - a.created_at.getTime());
       }).slice(0, 3).map((loan, index) => {
         const { lender, status, created_at, loan_amount } = loan;
         return (

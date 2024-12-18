@@ -147,19 +147,23 @@ pub fn get_pk() -> Result<PublicKey> {
         }
     };
 
-    let kp = get_kp(wallet, KEY_INDEX)?;
+    let kp = get_hardened_kp(wallet, KEY_INDEX)?;
     let pk = PublicKey::new(kp.public_key());
 
     Ok(pk)
 }
 
-fn get_kp(wallet: &Wallet, index: u32) -> Result<Keypair> {
-    let kp = get_kp_for_network(wallet, index, wallet.xprv.network)?;
+fn get_hardened_kp(wallet: &Wallet, index: u32) -> Result<Keypair> {
+    let kp = get_hardened_kp_for_network(wallet, index, wallet.xprv.network)?;
 
     Ok(kp)
 }
 
-fn get_kp_for_network(wallet: &Wallet, index: u32, network: NetworkKind) -> Result<Keypair> {
+fn get_hardened_kp_for_network(
+    wallet: &Wallet,
+    index: u32,
+    network: NetworkKind,
+) -> Result<Keypair> {
     let network_index = if network.is_mainnet() {
         ChildNumber::from_hardened_idx(0).expect("infallible")
     } else {
@@ -184,6 +188,30 @@ fn get_kp_for_network(wallet: &Wallet, index: u32, network: NetworkKind) -> Resu
     Ok(kp)
 }
 
+fn get_normal_kp_for_network(wallet: &Wallet, index: u32, network: NetworkKind) -> Result<Keypair> {
+    let network_index = if network.is_mainnet() {
+        ChildNumber::from_normal_idx(0).expect("infallible")
+    } else {
+        ChildNumber::from_normal_idx(1).expect("infallible")
+    };
+
+    let path = [
+        ChildNumber::from_normal_idx(586).expect("infallible"),
+        network_index,
+        ChildNumber::from_normal_idx(index).expect("infallible"),
+    ];
+
+    let sk = wallet
+        .xprv
+        .derive_priv(&Secp256k1::new(), &path)?
+        .private_key;
+
+    let kp = Keypair::from_secret_key(&Secp256k1::new(), &sk);
+
+    Ok(kp)
+}
+
+/// Used by borrowers.
 pub fn sign_claim_psbt(
     mut psbt: Psbt,
     collateral_descriptor: Descriptor<PublicKey>,
@@ -197,7 +225,7 @@ pub fn sign_claim_psbt(
         }
     };
 
-    let kp = find_kp_for_pk(wallet, &own_pk).context("Could not find keypair to sign")?;
+    let kp = find_kp_for_borrower_pk(wallet, &own_pk).context("Could not find keypair to sign")?;
     let sk = kp.secret_key();
     let pk = PublicKey::new(kp.public_key());
 
@@ -236,11 +264,63 @@ pub fn sign_claim_psbt(
     Ok(tx)
 }
 
+/// Used by lenders.
+pub fn sign_liquidation_psbt(
+    mut psbt: Psbt,
+    collateral_descriptor: Descriptor<PublicKey>,
+    own_pk: PublicKey,
+) -> Result<Transaction> {
+    let guard = WALLET.lock().expect("to get lock");
+    let wallet = match *guard {
+        Some(ref wallet) => wallet,
+        None => {
+            bail!("Can't get keypair if wallet is not loaded");
+        }
+    };
+
+    let kp = find_kp_for_lender_pk(wallet, &own_pk).context("Could not find keypair to sign")?;
+    let sk = kp.secret_key();
+
+    let secp = Secp256k1::new();
+    for (i, input) in psbt.inputs.iter_mut().enumerate() {
+        let collateral_amount = input.clone().witness_utxo.context("No witness UTXO")?.value;
+
+        let sighash = SighashCache::new(&psbt.unsigned_tx)
+            .p2wsh_signature_hash(
+                i,
+                &collateral_descriptor
+                    .script_code()
+                    .context("No script code")?,
+                collateral_amount,
+                EcdsaSighashType::All,
+            )
+            .context("Can't produce sighash cache")?;
+
+        let sig = secp.sign_ecdsa(&sighash.into(), &sk);
+
+        input.partial_sigs.insert(
+            own_pk,
+            bitcoin::ecdsa::Signature {
+                signature: sig,
+                sighash_type: EcdsaSighashType::All,
+            },
+        );
+    }
+
+    let psbt = psbt
+        .finalize(&secp)
+        .map_err(|e| anyhow!("Failed to finalize PSBT: {e:?}"))?;
+
+    let tx = psbt.extract(&secp).context("Could not extract signed TX")?;
+
+    Ok(tx)
+}
+
 /// Find the [`KeyPair`] corresponding to the given [`PublicKey`].
 ///
 /// This builds on the assumption that the [`PublicKey`] was derived from the [`Wallet`]'s
 /// [`Xpriv`].
-fn find_kp_for_pk(wallet: &Wallet, pk: &PublicKey) -> Result<Keypair> {
+fn find_kp_for_borrower_pk(wallet: &Wallet, pk: &PublicKey) -> Result<Keypair> {
     // We have to try both network types no matter what, because we had a bug that would derive the
     // `Xpriv` using the wrong network. Since we use the `Xpriv`'s network as part of the derivation
     // path, we can end up missing the correct keypair if we don't try both.
@@ -253,7 +333,7 @@ fn find_kp_for_pk(wallet: &Wallet, pk: &PublicKey) -> Result<Keypair> {
     for i in 0..n {
         for network in networks {
             log::info!("Looking for keypair matching public key {pk}; trying index {i} and network {network:?}");
-            let kp = get_kp_for_network(wallet, i, network).context("No kp for index")?;
+            let kp = get_hardened_kp_for_network(wallet, i, network).context("No kp for index")?;
 
             if kp.public_key() == pk.inner {
                 log::info!(
@@ -262,6 +342,46 @@ fn find_kp_for_pk(wallet: &Wallet, pk: &PublicKey) -> Result<Keypair> {
 
                 return Ok(kp);
             }
+        }
+    }
+
+    bail!("Could not find keypair for public key {pk} after {n} iterations");
+}
+
+pub fn consensus_params() -> Result<bitcoin::params::Params> {
+    let guard = WALLET.lock().expect("to get lock");
+    let wallet = match *guard {
+        Some(ref wallet) => wallet,
+        None => {
+            bail!("Wallet is not loaded");
+        }
+    };
+
+    let params = match wallet.network {
+        Network::Bitcoin => bitcoin::params::Params::BITCOIN,
+        Network::Testnet => bitcoin::params::Params::TESTNET,
+        Network::Signet => bitcoin::params::Params::SIGNET,
+        Network::Regtest => bitcoin::params::Params::REGTEST,
+        _ => unreachable!("Unsupported network"),
+    };
+
+    Ok(params)
+}
+
+/// Find the [`KeyPair`] corresponding to the given [`PublicKey`].
+///
+/// This builds on the assumption that the [`PublicKey`] was derived from the [`Wallet`]'s [`Xpub`].
+fn find_kp_for_lender_pk(wallet: &Wallet, pk: &PublicKey) -> Result<Keypair> {
+    let n = 100;
+    for i in 0..n {
+        log::info!("Looking for keypair matching public key {pk}; trying index {i}");
+        let kp = get_normal_kp_for_network(wallet, i, wallet.network.into())
+            .context("No kp for index")?;
+
+        if kp.public_key() == pk.inner {
+            log::info!("Found keypair matching public key {pk} at index {i}");
+
+            return Ok(kp);
         }
     }
 

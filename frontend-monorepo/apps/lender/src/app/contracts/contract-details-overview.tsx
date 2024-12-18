@@ -17,14 +17,16 @@ import {
   LtvInfoLabel,
   StableCoinHelper,
 } from "@frontend-monorepo/ui-shared";
+import { TransactionList } from "@frontend-monorepo/ui-shared";
 import { Badge, Box, Button, Callout, Flex, Grid, Heading, Separator, Text } from "@radix-ui/themes";
 import { Suspense, useState } from "react";
 import { Alert, Col, Row, Spinner } from "react-bootstrap";
 import { FaCopy, FaInfoCircle } from "react-icons/fa";
 import { IoMdCloudDownload } from "react-icons/io";
 import { Await, useNavigate, useParams } from "react-router-dom";
-import TransactionList from "../components/transaction-list";
 import { ExpandableDisputeCard } from "../disputes/dispute-card";
+import { ContractDefaulted } from "./contract-defaulted";
+import { ContractRecovery } from "./contract-recovery";
 import { ContractRequested } from "./contract-requested";
 import { downloadLocalStorage } from "./download-local-storage";
 import RepaymentDetails from "./pay-loan-principal";
@@ -376,212 +378,30 @@ interface AdditionalDetailsProps {
 }
 
 const AdditionalDetail = ({ contract }: AdditionalDetailsProps) => {
-  const fundingTransaction = contract.transactions.find(
-    (tx) => tx.transaction_type === TransactionType.Funding,
-  );
-  const claimTransaction = contract.transactions.find(
-    (tx) => tx.transaction_type === TransactionType.ClaimCollateral,
-  );
-  const principalRepaidTransaction = contract.transactions.find(
-    (tx) => tx.transaction_type === TransactionType.PrincipalRepaid,
-  );
-  const principalGivenTransaction = contract.transactions.find(
-    (tx) => tx.transaction_type === TransactionType.PrincipalGiven,
-  );
-
-  let fundingTxDetails;
-  if (fundingTransaction) {
-    fundingTxDetails = (
+  return (
+    <>
       <TransactionList
         contract={contract}
         transactionType={TransactionType.Funding}
       />
-    );
-  }
-
-  let claimTransactionDetails;
-  if (claimTransaction) {
-    claimTransactionDetails = (
-      <TransactionList
-        contract={contract}
-        transactionType={TransactionType.ClaimCollateral}
-      />
-    );
-  }
-
-  let principalRepaidDetails;
-  if (principalRepaidTransaction) {
-    principalRepaidDetails = (
-      <TransactionList
-        contract={contract}
-        transactionType={TransactionType.PrincipalRepaid}
-      />
-    );
-  }
-
-  let principalGivenDetails;
-  if (principalGivenTransaction) {
-    principalGivenDetails = (
       <TransactionList
         contract={contract}
         transactionType={TransactionType.PrincipalGiven}
       />
-    );
-  }
-
-  switch (contract.status) {
-    case ContractStatus.Requested:
-      break;
-    case ContractStatus.Approved:
-      break;
-    case ContractStatus.CollateralSeen:
-    case ContractStatus.CollateralConfirmed:
-      return (
-        <Box className="space-y-5">
-          <Flex gap={"5"} align={"start"} justify={"between"}>
-            <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
-              Funding transaction
-            </Text>
-            <Text size={"2"} weight={"medium"} className={"text-font dark:text-font-dark"}>
-              {fundingTxDetails}
-            </Text>
-          </Flex>
-          <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
-        </Box>
-      );
-    case ContractStatus.PrincipalGiven:
-      return (
-        <>
-          <Box className="space-y-5">
-            <Flex gap={"5"} align={"start"} justify={"between"}>
-              <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
-                Funding transaction
-              </Text>
-              <Text size={"2"} weight={"medium"} className={"text-font dark:text-font-dark"}>
-                {fundingTxDetails}
-              </Text>
-            </Flex>
-            <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
-          </Box>
-
-          <Box className="space-y-5">
-            <Flex gap={"5"} align={"start"} justify={"between"}>
-              <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
-                Principal transaction
-              </Text>
-              <Text size={"2"} weight={"medium"} className={"text-font dark:text-font-dark"}>
-                {principalGivenDetails}
-              </Text>
-            </Flex>
-            <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
-          </Box>
-        </>
-      );
-    case ContractStatus.RepaymentProvided:
-    case ContractStatus.RepaymentConfirmed:
-      return (
-        <>
-          <Box className="space-y-5">
-            <Flex gap={"5"} align={"start"} justify={"between"}>
-              <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
-                Funding transaction
-              </Text>
-              <Text size={"2"} weight={"medium"} className={"text-font dark:text-font-dark"}>
-                {fundingTxDetails}
-              </Text>
-            </Flex>
-            <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
-          </Box>
-
-          <Box className="space-y-5">
-            <Flex gap={"5"} align={"start"} justify={"between"}>
-              <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
-                Principal transaction
-              </Text>
-              <Text size={"2"} weight={"medium"} className={"text-font dark:text-font-dark"}>
-                {principalGivenDetails}
-              </Text>
-            </Flex>
-            <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
-          </Box>
-
-          <Box className="space-y-5">
-            <Flex gap={"5"} align={"start"} justify={"between"}>
-              <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
-                Principal repayment transaction
-              </Text>
-              <Text size={"2"} weight={"medium"} className={"text-font dark:text-font-dark"}>
-                {principalRepaidDetails}
-              </Text>
-            </Flex>
-            <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
-          </Box>
-        </>
-      );
-    case ContractStatus.Closing:
-    case ContractStatus.Closed:
-      return (
-        <>
-          <Box className="space-y-5">
-            <Flex gap={"5"} align={"start"} justify={"between"}>
-              <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
-                Funding transaction
-              </Text>
-              <Text size={"2"} weight={"medium"} className={"text-font dark:text-font-dark"}>
-                {fundingTxDetails}
-              </Text>
-            </Flex>
-            <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
-          </Box>
-
-          <Box className="space-y-5">
-            <Flex gap={"5"} align={"start"} justify={"between"}>
-              <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
-                Principal transaction
-              </Text>
-              <Text size={"2"} weight={"medium"} className={"text-font dark:text-font-dark"}>
-                {principalGivenDetails}
-              </Text>
-            </Flex>
-            <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
-          </Box>
-
-          <Box className="space-y-5">
-            <Flex gap={"5"} align={"start"} justify={"between"}>
-              <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
-                Principal repayment transaction
-              </Text>
-              <Text size={"2"} weight={"medium"} className={"text-font dark:text-font-dark"}>
-                {principalRepaidDetails}
-              </Text>
-            </Flex>
-            <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
-          </Box>
-
-          <Box className="space-y-5">
-            <Flex gap={"5"} align={"start"} justify={"between"}>
-              <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
-                Collateral claim transaction
-              </Text>
-              <Text size={"2"} weight={"medium"} className={"text-font dark:text-font-dark"}>
-                {claimTransactionDetails}
-              </Text>
-            </Flex>
-            <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
-          </Box>
-        </>
-      );
-    case ContractStatus.Rejected:
-    case ContractStatus.DisputeBorrowerStarted:
-    case ContractStatus.DisputeLenderStarted:
-    case ContractStatus.DisputeBorrowerResolved:
-    case ContractStatus.DisputeLenderResolved:
-    case ContractStatus.Cancelled:
-    case ContractStatus.RequestExpired:
-    default:
-      // TODO
-      return <Text className={"text-font dark:text-font-dark"}>Details</Text>;
-  }
+      <TransactionList
+        contract={contract}
+        transactionType={TransactionType.PrincipalRepaid}
+      />
+      <TransactionList
+        contract={contract}
+        transactionType={TransactionType.ClaimCollateral}
+      />
+      <TransactionList
+        contract={contract}
+        transactionType={TransactionType.Liquidation}
+      />
+    </>
+  );
 };
 
 interface ContractStatusDetailsProps {
@@ -661,6 +481,10 @@ const ContractStatusDetails = ({
   };
   const handleCloseCreateWalletModal = () => setShowCreateWalletModal(false);
 
+  if (contract.can_recover_collateral_manually) {
+    return <ContractRecovery contract={contract} />;
+  }
+
   switch (contract.status) {
     case ContractStatus.Requested:
       return (
@@ -738,12 +562,16 @@ const ContractStatusDetails = ({
           Waiting for user to withdraw funds.
         </Alert>
       );
+    case ContractStatus.Defaulted:
+      return <ContractDefaulted contract={contract} />;
     case ContractStatus.Closed:
     case ContractStatus.Closing:
     case ContractStatus.Rejected:
     case ContractStatus.Cancelled:
     case ContractStatus.RequestExpired:
-    default:
-      return "";
+    case ContractStatus.DisputeBorrowerStarted:
+    case ContractStatus.DisputeLenderStarted:
+    case ContractStatus.DisputeBorrowerResolved:
+    case ContractStatus.DisputeLenderResolved:
   }
 };

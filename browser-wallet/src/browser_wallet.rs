@@ -5,6 +5,7 @@ use crate::wallet;
 use anyhow::Context;
 use anyhow::Result;
 use bitcoin::Psbt;
+use bitcoin::TxOut;
 
 const STORAGE_KEY_PREFIX: &str = "wallet";
 
@@ -132,7 +133,11 @@ pub fn get_next_pk() -> Result<String> {
     Ok(pk.to_string())
 }
 
-pub fn sign_claim_psbt(psbt: &str, collateral_descriptor: &str, own_pk: &str) -> Result<String> {
+pub fn sign_claim_psbt(
+    psbt: &str,
+    collateral_descriptor: &str,
+    own_pk: &str,
+) -> Result<(String, Vec<TxOut>, bitcoin::params::Params)> {
     let psbt = hex::decode(psbt)?;
     let psbt = Psbt::deserialize(&psbt)?;
 
@@ -141,11 +146,39 @@ pub fn sign_claim_psbt(psbt: &str, collateral_descriptor: &str, own_pk: &str) ->
     let own_pk = own_pk.parse()?;
 
     let tx = wallet::sign_claim_psbt(psbt, collateral_descriptor, own_pk)?;
+
+    let outputs = tx.output.clone();
+    let params = wallet::consensus_params()?;
+
     let tx = bitcoin::consensus::encode::serialize_hex(&tx);
 
     log::debug!("Signed claim TX: {tx}");
 
-    Ok(tx)
+    Ok((tx, outputs, params))
+}
+
+pub fn sign_liquidation_psbt(
+    psbt: &str,
+    collateral_descriptor: &str,
+    own_pk: &str,
+) -> Result<(String, Vec<TxOut>, bitcoin::params::Params)> {
+    let psbt = hex::decode(psbt)?;
+    let psbt = Psbt::deserialize(&psbt)?;
+
+    let collateral_descriptor = collateral_descriptor.parse()?;
+
+    let own_pk = own_pk.parse()?;
+
+    let tx = wallet::sign_liquidation_psbt(psbt, collateral_descriptor, own_pk)?;
+
+    let outputs = tx.output.clone();
+    let params = wallet::consensus_params()?;
+
+    let tx = bitcoin::consensus::encode::serialize_hex(&tx);
+
+    log::debug!("Signed claim TX: {tx}");
+
+    Ok((tx, outputs, params))
 }
 
 /// Check if the browser's local storage already has the encrypted wallet data.

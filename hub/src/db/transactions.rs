@@ -65,6 +65,21 @@ pub async fn insert_claim_txid(
     Ok(loan_tx)
 }
 
+pub async fn insert_liquidation_txid(
+    db_pool: &PgPool,
+    contract_id: &str,
+    txid: &Txid,
+) -> Result<LoanTransaction> {
+    let loan_tx = insert(
+        db_pool,
+        contract_id,
+        txid.to_string().as_str(),
+        TransactionType::Liquidation,
+    )
+    .await?;
+    Ok(loan_tx)
+}
+
 pub async fn insert_dispute_txid(
     db_pool: &PgPool,
     contract_id: &str,
@@ -113,7 +128,7 @@ async fn inner_insert(
         r#"
             INSERT INTO transactions (txid, contract_id, transaction_type)
             VALUES ($1, $2, $3)
-            RETURNING 
+            RETURNING
                 id,
                 txid,
                 contract_id,
@@ -139,7 +154,7 @@ async fn find_transaction_by_id(
         LoanTransaction,
         r#"
             SELECT
-                id, 
+                id,
                 txid,
                 contract_id,
                 transaction_type as "transaction_type: crate::model::TransactionType",
@@ -163,7 +178,7 @@ pub async fn get_all_for_contract_id(
     let records = sqlx::query_as!(
         LoanTransaction,
         r#"
-            SELECT 
+            SELECT
                 id,
                 txid,
                 contract_id,

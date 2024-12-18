@@ -250,6 +250,7 @@ export class HttpClientBorrower extends BaseHttpClient {
       }
     }
   }
+
   async getClaimDisputeCollateralPsbt(disputeId: string, feeRate: number): Promise<ClaimCollateralPsbtResponse> {
     try {
       const res: AxiosResponse<ClaimCollateralPsbtResponse> = await this.httpClient.get(

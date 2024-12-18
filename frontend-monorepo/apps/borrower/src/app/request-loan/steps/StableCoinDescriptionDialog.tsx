@@ -38,8 +38,7 @@ export const StableCoinDescriptionDialog = ({
         <Button
           variant="soft"
           size={"3"}
-          color={isSelected ? "purple-500 dark:purple-300" : "gray-500 dark:gray-300"}
-          className="w-full"
+          className={`"w-full" ${isSelected ? "purple-500 dark:purple-300" : "gray-500 dark:gray-300"}`}
           disabled={disabled}
           onClick={() => onOpening()}
         >
@@ -76,7 +75,7 @@ export const StableCoinDescriptionDialog = ({
               <FaInfoCircle />
             </Callout.Icon>
             <Callout.Text>
-              During the closed beta we will be using a 2-of-3 multisig contract instead of a DLCs The keys are
+              During the closed beta we will be using a 2-of-3 multisig contract instead of a DLC. The keys are
               distributed among the borrower, the lender and Lendasat.
             </Callout.Text>
           </Callout.Root>

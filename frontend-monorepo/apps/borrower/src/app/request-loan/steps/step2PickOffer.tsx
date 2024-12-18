@@ -128,7 +128,6 @@ export const Step2PickOffer = () => {
       break;
     case LoanProductOption.BitrefillDebitCard:
     case LoanProductOption.BringinBankAccount:
-    default:
       validCoins = [];
   }
 
@@ -709,6 +708,8 @@ const LoanSearched = (props: SearchParams) => {
   const actualInterest = props.interest / (12 / props.duration);
   const actualInterestUsdAmount = props.amount * actualInterest;
 
+  const confirmOfferButtonEnabled = walletSecretConfirmed && bitcoinAddressInputError === "";
+
   return (
     <>
       <CreateWalletModal
@@ -873,9 +874,9 @@ const LoanSearched = (props: SearchParams) => {
                 <Button
                   size={"3"}
                   variant="solid"
-                  className={`text-white ${walletSecretConfirmed ? "bg-purple-950" : "bg-gray-400"}`}
+                  className={`text-white ${confirmOfferButtonEnabled ? "bg-purple-950" : "bg-gray-400"}`}
                   onClick={props.onOfferConfirmed}
-                  disabled={!walletSecretConfirmed}
+                  disabled={!confirmOfferButtonEnabled}
                   loading={props.isLoading}
                 >
                   <Text

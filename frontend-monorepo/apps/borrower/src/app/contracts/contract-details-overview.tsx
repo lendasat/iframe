@@ -3,7 +3,6 @@ import {
   ContractStatus,
   contractStatusToLabelString,
   LiquidationStatus,
-  TransactionType,
   useAuth,
   useBorrowerHttpClient,
 } from "@frontend-monorepo/http-client-borrower";
@@ -16,9 +15,10 @@ import {
   StableCoinHelper,
   usePrice,
 } from "@frontend-monorepo/ui-shared";
+import { TransactionList, TransactionType } from "@frontend-monorepo/ui-shared";
 import { Badge, Box, Button, Callout, Flex, Grid, Heading, IconButton, Separator, Text } from "@radix-ui/themes";
 import { Suspense, useState } from "react";
-import { Col, OverlayTrigger, Row, Tooltip } from "react-bootstrap";
+import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import { FaInfoCircle } from "react-icons/fa";
 import { FaCopy } from "react-icons/fa6";
 import { IoMdCloudDownload } from "react-icons/io";
@@ -27,13 +27,13 @@ import { AddCollateralModal } from "./add-collateral-modal";
 import { collateralForStatus } from "./collateralForStatus";
 import { CollateralContractDetails } from "./collateralize-contract";
 import { CollateralSeenOrConfirmed } from "./contract-collateral-seen-or-confirmed";
+import { ContractDefaulted } from "./contract-defaulted";
 import { ContractPrincipalGiven } from "./contract-principal-given";
 import { ContractPrincipalRepaid } from "./contract-principal-repaid";
 import { ContractRepaid } from "./contract-repaid";
 import { ContractRequested } from "./contract-requested";
 import { ExpandableDisputeCard } from "./dispute-card";
 import { downloadLocalStorage } from "./download-local-storage";
-import TransactionList from "./transaction-list";
 
 function ContractDetailsOverview() {
   const { innerHeight } = window;
@@ -71,7 +71,9 @@ function Details({ contract }: DetailsProps) {
   const collateralSats = collateralForStatus(
     contract.status,
     contract.initial_collateral_sats,
-    contract.collateral_sats,
+    // The field `collateral_sats` includes the origination fee. But here we want to use the
+    // collateral as it pertains to the contract between borrower and lender.
+    contract.collateral_sats - contract.origination_fee_sats,
   );
   const collateralBtc = collateralSats / 100000000;
 
@@ -163,8 +165,12 @@ function ContractDetails({ contract }: DetailsProps) {
   const collateral = collateralForStatus(
     contract.status,
     contract.initial_collateral_sats,
-    contract.collateral_sats,
+    // The field `collateral_sats` includes the origination fee. But here we want to use the
+    // collateral as it pertains to the contract between borrower and lender.
+    contract.collateral_sats - contract.origination_fee_sats,
   );
+
+  // TODO: This is incorrect. The collateral can change throughout the lifetime of the loan.
   const collateralBtc = collateral / 100000000;
   const loanAmount = contract.loan_amount;
   const interestRate = contract.interest_rate;
@@ -214,11 +220,11 @@ function ContractDetails({ contract }: DetailsProps) {
     case ContractStatus.Rejected:
     case ContractStatus.RepaymentProvided:
     case ContractStatus.RepaymentConfirmed:
+    case ContractStatus.Defaulted:
     case ContractStatus.Closing:
     case ContractStatus.Closed:
     case ContractStatus.Cancelled:
     case ContractStatus.RequestExpired:
-    default:
       canAddExtraCollateral = false;
       break;
   }
@@ -483,134 +489,30 @@ interface AdditionalDetailsProps {
 }
 
 const AdditionalDetail = ({ contract }: AdditionalDetailsProps) => {
-  switch (contract.status) {
-    case ContractStatus.Requested:
-      break;
-    case ContractStatus.Approved:
-      break;
-    case ContractStatus.CollateralSeen:
-    case ContractStatus.CollateralConfirmed:
-      return (
-        <Row className="justify-content-between border-b dark:border-dark mt-2">
-          <Col className={"text-font/70 dark:text-font-dark/70"}>Funding transaction</Col>
-          <Col className="text-end mb-2">
-            <TransactionList
-              contract={contract}
-              transactionType={TransactionType.Funding}
-            />
-          </Col>
-        </Row>
-      );
-    case ContractStatus.PrincipalGiven:
-      return (
-        <>
-          <Row className="justify-content-between border-b dark:border-dark mt-2">
-            <Col className={"text-font/70 dark:text-font-dark/70"}>Funding transaction</Col>
-            <Col className="text-end mb-2">
-              <Col className="text-end mb-2">
-                <TransactionList
-                  contract={contract}
-                  transactionType={TransactionType.Funding}
-                />
-              </Col>
-            </Col>
-          </Row>
-          <Row className="justify-content-between border-b dark:border-dark mt-2">
-            <Col className={"text-font/70 dark:text-font-dark/70"}>Principal transaction</Col>
-            <Col className="text-end mb-2">
-              <TransactionList
-                contract={contract}
-                transactionType={TransactionType.PrincipalGiven}
-              />
-            </Col>
-          </Row>
-        </>
-      );
-    case ContractStatus.RepaymentProvided:
-    case ContractStatus.RepaymentConfirmed:
-      return (
-        <>
-          <Row className="justify-content-between border-b dark:border-dark mt-2">
-            <Col className={"text-font/70 dark:text-font-dark/70"}>Funding transaction</Col>
-            <Col className="text-end mb-2">
-              <TransactionList
-                contract={contract}
-                transactionType={TransactionType.Funding}
-              />
-            </Col>
-          </Row>
-          <Row className="justify-content-between border-b dark:border-dark mt-2">
-            <Col className={"text-font/70 dark:text-font-dark/70"}>Principal transaction</Col>
-            <Col className="text-end mb-2">
-              <TransactionList
-                contract={contract}
-                transactionType={TransactionType.PrincipalGiven}
-              />
-            </Col>
-          </Row>
-          <Row className="justify-content-between border-b dark:border-dark mt-2">
-            <Col className={"text-font/70 dark:text-font-dark/70"}>Principal repayment transaction</Col>
-            <Col className="text-end mb-2">
-              <TransactionList
-                contract={contract}
-                transactionType={TransactionType.PrincipalRepaid}
-              />
-            </Col>
-          </Row>
-        </>
-      );
-    case ContractStatus.Closing:
-    case ContractStatus.Closed:
-      return (
-        <>
-          <Row className="justify-content-between border-b dark:border-dark mt-2">
-            <Col className={"text-font/70 dark:text-font-dark/70"}>Funding transaction</Col>
-            <Col className="text-end mb-2">
-              <TransactionList
-                contract={contract}
-                transactionType={TransactionType.Funding}
-              />
-            </Col>
-          </Row>
-          <Row className="justify-content-between border-b dark:border-dark mt-2">
-            <Col className={"text-font/70 dark:text-font-dark/70"}>Principal transaction</Col>
-            <Col className="text-end mb-2">
-              <TransactionList
-                contract={contract}
-                transactionType={TransactionType.PrincipalGiven}
-              />
-            </Col>
-          </Row>
-          <Row className="justify-content-between border-b dark:border-dark mt-2">
-            <Col className={"text-font/70 dark:text-font-dark/70"}>Principal repayment transaction</Col>
-            <Col className="text-end mb-2">
-              <TransactionList
-                contract={contract}
-                transactionType={TransactionType.PrincipalRepaid}
-              />
-            </Col>
-          </Row>
-          <Row className="justify-content-between mt-2">
-            <Col className={"text-font/70 dark:text-font-dark/70"}>Collateral claim transaction</Col>
-            <Col className="text-end mb-2">
-              <TransactionList
-                contract={contract}
-                transactionType={TransactionType.ClaimCollateral}
-              />
-            </Col>
-          </Row>
-        </>
-      );
-    case ContractStatus.Rejected:
-    case ContractStatus.RequestExpired:
-    case ContractStatus.DisputeBorrowerStarted:
-    case ContractStatus.DisputeLenderStarted:
-    case ContractStatus.DisputeBorrowerResolved:
-    case ContractStatus.DisputeLenderResolved:
-    default:
-      // TODO
-      return "";
-  }
+  return (
+    <>
+      <TransactionList
+        contract={contract}
+        transactionType={TransactionType.Funding}
+      />
+      <TransactionList
+        contract={contract}
+        transactionType={TransactionType.PrincipalGiven}
+      />
+      <TransactionList
+        contract={contract}
+        transactionType={TransactionType.PrincipalRepaid}
+      />
+      <TransactionList
+        contract={contract}
+        transactionType={TransactionType.ClaimCollateral}
+      />
+      <TransactionList
+        contract={contract}
+        transactionType={TransactionType.Liquidation}
+      />
+    </>
+  );
 };
 
 interface ContractStatusDetailsProps {
@@ -634,6 +536,8 @@ const ContractStatusDetails = ({
   loanOriginatorFee,
   loanOriginatorFeeUsd,
 }: ContractStatusDetailsProps) => {
+  console.log(totalCollateral);
+
   switch (contract.status) {
     case ContractStatus.Requested:
       return <ContractRequested createdAt={contract.created_at} contractId={contract.id} />;
@@ -678,11 +582,17 @@ const ContractStatusDetails = ({
       return <ContractPrincipalRepaid />;
     case ContractStatus.RepaymentConfirmed:
       return <ContractRepaid contract={contract} collateralBtc={collateralBtc} />;
+    case ContractStatus.Defaulted:
+      return <ContractDefaulted />;
     case ContractStatus.Closed:
     case ContractStatus.Closing:
     case ContractStatus.Rejected:
     case ContractStatus.RequestExpired:
-    default:
+    case ContractStatus.DisputeBorrowerStarted:
+    case ContractStatus.DisputeLenderStarted:
+    case ContractStatus.DisputeBorrowerResolved:
+    case ContractStatus.DisputeLenderResolved:
+    case ContractStatus.Cancelled:
       return "";
   }
 };

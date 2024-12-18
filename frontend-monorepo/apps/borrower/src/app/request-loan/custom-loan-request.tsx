@@ -1,9 +1,9 @@
 import { faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import type { PostLoanRequest } from "@frontend-monorepo/http-client-borrower";
-import { LoanAssetChain, LoanAssetType, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
+import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import { LtvInfoLabel, StableCoin, StableCoinDropdown, StableCoinHelper } from "@frontend-monorepo/ui-shared";
-import { formatCurrency } from "@frontend-monorepo/ui-shared";
+import { formatCurrency, LoanAssetChain, LoanAssetType } from "@frontend-monorepo/ui-shared";
 import {
   Badge,
   Box,
@@ -301,10 +301,10 @@ export default function CustomRequest() {
           <Box minWidth={"350px"} className="bg-purple-50/80 dark:bg-dark-600 px-5 shadow-sm">
             <Box
               className={`h-40 relative after:absolute before:absolute after:h-6 after:w-6
-                        after:rounded-full after:bg-[#fdfdfc] md:after:bg-white dark:after:bg-dark 
-                        after:-bottom-3 after:-left-8 before:h-6 before:w-6 before:rounded-full 
-                        before:bg-[#fdfbfb] md:before:bg-white dark:before:bg-dark before:-bottom-3 
-                        before:-right-8 flex flex-col gap-2 items-center justify-center py-5 border-b 
+                        after:rounded-full after:bg-[#fdfdfc] md:after:bg-white dark:after:bg-dark
+                        after:-bottom-3 after:-left-8 before:h-6 before:w-6 before:rounded-full
+                        before:bg-[#fdfbfb] md:before:bg-white dark:before:bg-dark before:-bottom-3
+                        before:-right-8 flex flex-col gap-2 items-center justify-center py-5 border-b
                         border-font/30 dark:border-font-dark/30 border-dashed`}
             >
               <Heading size={"8"} className="text-center text-font dark:text-font-dark">

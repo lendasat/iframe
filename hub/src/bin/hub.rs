@@ -4,7 +4,8 @@ use axum::extract::ws::Message;
 use descriptor_wallet::DescriptorWallet;
 use hub::bitmex_index_pricefeed::subscribe_index_price;
 use hub::config::Config;
-use hub::cron_scheduler;
+use hub::contract_default::add_contract_default_job;
+use hub::contract_request_expiry::add_contract_request_expiry_job;
 use hub::db::connect_to_db;
 use hub::db::run_migration;
 use hub::liquidation_engine::monitor_positions;
@@ -163,12 +164,15 @@ async fn main() -> Result<()> {
     tokio::spawn(register_webhook_in_thread(moon_client));
 
     let sched = JobScheduler::new().await?;
-    cron_scheduler::add_jobs(&sched, db).await?;
+
+    add_contract_request_expiry_job(&sched, db.clone()).await?;
+    add_contract_default_job(&sched, db).await?;
+
     sched.start().await?;
 
     let _ = tokio::join!(borrower_handle, lender_handle);
 
-    tracing::info!("Servers stopped");
+    tracing::info!("Hub has stopped");
 
     Ok(())
 }

@@ -1,12 +1,15 @@
+import type { LoanAssetChain, LoanAssetType, LoanTransaction } from "@frontend-monorepo/ui-shared";
+
 export enum ContractStatus {
   Requested = "Requested",
   Approved = "Approved",
   CollateralSeen = "CollateralSeen",
   CollateralConfirmed = "CollateralConfirmed",
   PrincipalGiven = "PrincipalGiven",
-  Closing = "Closing",
   RepaymentProvided = "RepaymentProvided",
   RepaymentConfirmed = "RepaymentConfirmed",
+  Defaulted = "Defaulted",
+  Closing = "Closing",
   Closed = "Closed",
   Rejected = "Rejected",
   DisputeBorrowerStarted = "DisputeBorrowerStarted",
@@ -46,17 +49,7 @@ export interface Contract {
   transactions: LoanTransaction[];
   loan_asset_type: LoanAssetType;
   loan_asset_chain: LoanAssetChain;
-}
-
-export enum LoanAssetType {
-  Usdc = "Usdc",
-  Usdt = "Usdt",
-}
-
-export enum LoanAssetChain {
-  Ethereum = "Ethereum",
-  Polygon = "Polygon",
-  Starknet = "Starknet",
+  can_recover_collateral_manually: boolean;
 }
 
 export interface CreateLoanOfferRequest {
@@ -106,12 +99,14 @@ export function contractStatusToLabelString(status: ContractStatus): string {
       return "Collateral Confirmed";
     case ContractStatus.PrincipalGiven:
       return "Principal Disbursed";
-    case ContractStatus.Closing:
-      return "Contract Closing";
     case ContractStatus.RepaymentProvided:
       return "Loan Repayment Provided";
     case ContractStatus.RepaymentConfirmed:
       return "Loan Repayment Confirmed";
+    case ContractStatus.Defaulted:
+      return "Contract Defaulted";
+    case ContractStatus.Closing:
+      return "Contract Closing";
     case ContractStatus.Closed:
       return "Contract Closed";
     case ContractStatus.Rejected:
@@ -126,8 +121,6 @@ export function contractStatusToLabelString(status: ContractStatus): string {
       return "Contract Cancelled";
     case ContractStatus.RequestExpired:
       return "Contract Expired";
-    default:
-      return "Unknown Status";
   }
 }
 
@@ -177,9 +170,14 @@ export enum TransactionType {
   ClaimCollateral = "ClaimCollateral",
 }
 
-export interface LoanTransaction {
-  txid: string;
-  contract_id: string;
-  transaction_type: TransactionType;
-  timestamp: Date;
+export interface GetLiquidationPsbtResponse {
+  psbt: string;
+  collateral_descriptor: string;
+  lender_pk: string;
+}
+
+export interface GetRecoveryPsbtResponse {
+  psbt: string;
+  collateral_descriptor: string;
+  lender_pk: string;
 }

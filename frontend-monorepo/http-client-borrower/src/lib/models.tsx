@@ -1,5 +1,6 @@
 import { LoanProductOption } from "@frontend-monorepo/base-http-client";
 import type { LoanFeature } from "@frontend-monorepo/base-http-client";
+import type { LoanAssetChain, LoanAssetType, LoanTransaction } from "@frontend-monorepo/ui-shared";
 
 export enum ContractStatus {
   Requested = "Requested",
@@ -7,9 +8,10 @@ export enum ContractStatus {
   CollateralSeen = "CollateralSeen",
   CollateralConfirmed = "CollateralConfirmed",
   PrincipalGiven = "PrincipalGiven",
-  Closing = "Closing",
   RepaymentProvided = "RepaymentProvided",
   RepaymentConfirmed = "RepaymentConfirmed",
+  Defaulted = "Defaulted",
+  Closing = "Closing",
   Closed = "Closed",
   Rejected = "Rejected",
   DisputeBorrowerStarted = "DisputeBorrowerStarted",
@@ -32,12 +34,14 @@ export function contractStatusToLabelString(status: ContractStatus): string {
       return "Collateral Confirmed";
     case ContractStatus.PrincipalGiven:
       return "Principal Disbursed";
-    case ContractStatus.Closing:
-      return "Contract Closing";
     case ContractStatus.RepaymentProvided:
       return "Loan Repayment Provided";
     case ContractStatus.RepaymentConfirmed:
       return "Loan Repayment Confirmed";
+    case ContractStatus.Defaulted:
+      return "Contract Defaulted";
+    case ContractStatus.Closing:
+      return "Contract Closing";
     case ContractStatus.Closed:
       return "Contract Closed";
     case ContractStatus.Rejected:
@@ -52,9 +56,6 @@ export function contractStatusToLabelString(status: ContractStatus): string {
       return "Contract Cancelled";
     case ContractStatus.RequestExpired:
       return "Request Expired";
-    default:
-      console.log(status);
-      return "Unknown Status";
   }
 }
 
@@ -110,17 +111,6 @@ export interface Contract {
   borrower_loan_address: string;
   transactions: LoanTransaction[];
   integration: Integration;
-}
-
-export enum LoanAssetType {
-  Usdc = "Usdc",
-  Usdt = "Usdt",
-}
-
-export enum LoanAssetChain {
-  Ethereum = "Ethereum",
-  Polygon = "Polygon",
-  Starknet = "Starknet",
 }
 
 export interface ClaimCollateralPsbtResponse {
@@ -188,22 +178,6 @@ export interface Dispute {
   status: DisputeStatus;
   created_at: Date;
   updated_at: Date;
-}
-
-export enum TransactionType {
-  Funding = "Funding",
-  Dispute = "Dispute",
-  PrincipalGiven = "PrincipalGiven",
-  PrincipalRepaid = "PrincipalRepaid",
-  Liquidation = "Liquidation",
-  ClaimCollateral = "ClaimCollateral",
-}
-
-export interface LoanTransaction {
-  txid: string;
-  contract_id: string;
-  transaction_type: TransactionType;
-  timestamp: Date;
 }
 
 export interface OriginationFee {

@@ -1,8 +1,8 @@
-import { useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
+import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
 import { ForgotPasswordForm } from "@frontend-monorepo/ui-shared";
 
 function ForgotPassword() {
-  const { forgotPassword } = useLenderHttpClient();
+  const { forgotPassword } = useBaseHttpClient();
 
   const handleLogin = async (email: string) => {
     return await forgotPassword(email);

@@ -18,16 +18,16 @@ import { FaInfoCircle } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import { collateralForStatus } from "./collateralForStatus";
 
-interface LoansComponentProps {
-  loans: Contract[];
+interface ContractListProps {
+  contracts: Contract[];
 }
 
-function ContractsComponent({ loans }: LoansComponentProps) {
+function ContractList({ contracts }: ContractListProps) {
   const { latestPrice } = usePrice();
   const navigate = useNavigate();
 
-  if (loans.length === 0) {
-    return <p className={"text-font dark:text-font-dark"}>You don't have any loans yet.</p>;
+  if (contracts.length === 0) {
+    return <p className={"text-font dark:text-font-dark"}>You do not have any contracts yet.</p>;
   }
 
   const amount_col = {
@@ -171,10 +171,10 @@ function ContractsComponent({ loans }: LoansComponentProps) {
           height: innerHeight * 0.4,
         }}
       >
-        {loans.filter((loan) => {
-          return loan.status !== ContractStatus.Closed && loan.status !== ContractStatus.Closing
-            && loan.status !== ContractStatus.Rejected && loan.status !== ContractStatus.RequestExpired;
-        }).map((loan, index) => {
+        {contracts.filter((contract) => {
+          return contract.status !== ContractStatus.Closed && contract.status !== ContractStatus.Closing
+            && contract.status !== ContractStatus.Rejected && contract.status !== ContractStatus.RequestExpired;
+        }).map((contract, index) => {
           const {
             id,
             loan_amount,
@@ -184,7 +184,7 @@ function ContractsComponent({ loans }: LoansComponentProps) {
             status,
             liquidation_status,
             collateral_sats,
-          } = loan;
+          } = contract;
 
           const collateral_btc = collateralForStatus(status, initial_collateral_sats, collateral_sats) / 100000000;
 
@@ -205,7 +205,7 @@ function ContractsComponent({ loans }: LoansComponentProps) {
             contractStatusLabel = "Liquidated";
           }
 
-          if (loan.status === ContractStatus.Closed) {
+          if (contract.status === ContractStatus.Closed) {
             return null;
           }
 
@@ -401,8 +401,8 @@ function ContractsComponent({ loans }: LoansComponentProps) {
         })}
       </Box>
 
-      <ClosedLoans
-        loans={loans}
+      <ClosedContracts
+        contracts={contracts}
         header={headerClosed}
         latestPrice={latestPrice}
       />
@@ -410,7 +410,7 @@ function ContractsComponent({ loans }: LoansComponentProps) {
   );
 }
 
-export default ContractsComponent;
+export default ContractList;
 
 const actionFromStatus = (status: ContractStatus) => {
   switch (status) {
@@ -429,14 +429,15 @@ const actionFromStatus = (status: ContractStatus) => {
     case ContractStatus.DisputeLenderStarted:
     case ContractStatus.DisputeBorrowerResolved:
     case ContractStatus.DisputeLenderResolved:
+    case ContractStatus.Defaulted:
     case ContractStatus.Closed:
     case ContractStatus.Closing:
-    default:
+    case ContractStatus.Cancelled:
       return "Details";
   }
 };
 
-interface ClosedPorps {
+interface ClosedProps {
   header: ({
     label: string;
     md: number;
@@ -446,11 +447,11 @@ interface ClosedPorps {
     md: number;
     className: string;
   })[];
-  loans: Contract[];
+  contracts: Contract[];
   latestPrice: number;
 }
 
-const ClosedLoans = ({ header, loans, latestPrice }: ClosedPorps) => {
+const ClosedContracts = ({ header, contracts }: ClosedProps) => {
   const { innerHeight } = window;
   const navigate = useNavigate();
   return (
@@ -483,10 +484,10 @@ const ClosedLoans = ({ header, loans, latestPrice }: ClosedPorps) => {
           height: innerHeight * 0.25,
         }}
       >
-        {loans.filter((loan) => {
-          return loan.status === ContractStatus.Closed || loan.status === ContractStatus.Closing
-            || loan.status === ContractStatus.Rejected || loan.status === ContractStatus.RequestExpired;
-        }).map((loan, index) => {
+        {contracts.filter((contract) => {
+          return contract.status === ContractStatus.Closed || contract.status === ContractStatus.Closing
+            || contract.status === ContractStatus.Rejected || contract.status === ContractStatus.RequestExpired;
+        }).map((contract, index) => {
           const {
             id,
             loan_amount,
@@ -498,7 +499,7 @@ const ClosedLoans = ({ header, loans, latestPrice }: ClosedPorps) => {
             collateral_sats,
             loan_asset_chain,
             loan_asset_type,
-          } = loan;
+          } = contract;
 
           const collateral_btc = collateralForStatus(status, initial_collateral_sats, collateral_sats) / 100000000;
 
@@ -521,9 +522,6 @@ const ClosedLoans = ({ header, loans, latestPrice }: ClosedPorps) => {
             loan_asset_chain,
             loan_asset_type,
           );
-          // if (loan.status !== ContractStatus.Closed) {
-          //   return null;
-          // }
 
           const updatedAtDateString = updated_at ? new Date(updated_at).toLocaleDateString() : "";
 

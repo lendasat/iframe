@@ -38,9 +38,8 @@ export const PayWithMoonDescriptionDialog = ({
         <Button
           variant="soft"
           size={"3"}
-          color={isSelected ? "purple-500 dark:purple-300" : "gray-500 dark:gray-300"}
+          className={`"w-full" ${isSelected ? "purple-500 dark:purple-300" : "gray-500 dark:gray-300"}`}
           disabled={disabled}
-          className="w-full"
           onClick={disabled ? undefined : () => onOpening()}
         >
           {isSelected ? "Selected" : "Select"}
@@ -97,7 +96,7 @@ export const PayWithMoonDescriptionDialog = ({
                   <FaInfoCircle />
                 </Callout.Icon>
                 <Callout.Text className={"dark:text-font-dark"}>
-                  During the closed beta we will be using a 2-of-3 multisig contract instead of a DLCs The keys are
+                  During the closed beta we will be using a 2-of-3 multisig contract instead of a DLC. The keys are
                   distributed among the borrower, the lender and Lendasat.
                 </Callout.Text>
               </Callout.Root>

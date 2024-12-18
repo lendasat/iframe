@@ -39,9 +39,10 @@ export const Step1PickOption = ({ onSelect, selectedOption }: Step1Props) => {
   return (
     <Box className="py-6 md:py-8 grid md:grid-cols-2 xl:grid-cols-3 gap-5 px-6 md:px-8 xl:px-8">
       {enabledFeatures.map((option, index) => {
+        let component;
         switch (option) {
           case LoanProductOption.PayWithMoonDebitCard:
-            return (
+            component = (
               <ProductOptionComponent
                 onSelect={onSelect}
                 option={option}
@@ -53,9 +54,9 @@ export const Step1PickOption = ({ onSelect, selectedOption }: Step1Props) => {
                 // image={<img src={Moon} alt="PayWithMoon" className="max-h-full max-w-full" />}
               />
             );
-
+            break;
           case LoanProductOption.BringinBankAccount:
-            return (
+            component = (
               <ProductOptionComponent
                 onSelect={onSelect}
                 option={option}
@@ -66,8 +67,9 @@ export const Step1PickOption = ({ onSelect, selectedOption }: Step1Props) => {
                 image={<img src={Sepa} alt="SEPA" />}
               />
             );
+            break;
           case LoanProductOption.BitrefillDebitCard:
-            return (
+            component = (
               <ProductOptionComponent
                 onSelect={onSelect}
                 option={option}
@@ -78,9 +80,9 @@ export const Step1PickOption = ({ onSelect, selectedOption }: Step1Props) => {
                 image={<img src={Bitrefil} alt="Bitrefil" />}
               />
             );
+            break;
           case LoanProductOption.StableCoins:
-          default:
-            return (
+            component = (
               <ProductOptionComponent
                 onSelect={onSelect}
                 option={option}
@@ -91,7 +93,10 @@ export const Step1PickOption = ({ onSelect, selectedOption }: Step1Props) => {
                 image={<img src={Defi} alt="Defi" className="max-h-full max-w-full" />}
               />
             );
+            break;
         }
+
+        return component;
       })}
     </Box>
   );
@@ -170,7 +175,6 @@ const LoanOptionsDescriptionDialog = ({
         </div>
       );
     case LoanProductOption.StableCoins:
-    default:
       return (
         <div className="flex flex-col gap-3 w-full">
           <div className="flex justify-center w-full">
@@ -184,5 +188,7 @@ const LoanOptionsDescriptionDialog = ({
           </div>
         </div>
       );
+    case LoanProductOption.BringinBankAccount:
+    case LoanProductOption.BitrefillDebitCard:
   }
 };

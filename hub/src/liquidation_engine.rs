@@ -9,7 +9,6 @@ use crate::utils::calculate_ltv;
 use crate::LTV_THRESHOLD_LIQUIDATION;
 use crate::LTV_THRESHOLD_MARGIN_CALL_1;
 use crate::LTV_THRESHOLD_MARGIN_CALL_2;
-use anyhow::bail;
 use anyhow::Context;
 use anyhow::Result;
 use rust_decimal::prelude::FromPrimitive;
@@ -21,9 +20,9 @@ use time::Duration;
 use time::OffsetDateTime;
 use tokio::sync::mpsc::Receiver;
 
-/// We don't want to check on every price update as this would be too often. Instead, we collect
-/// all price updates in this interval and calculate the average. Meaning, only if the price was
-/// below the liquidation/margin call threshold/ for this time, we do something.
+/// We don't want to check on every price update as this would be too often. Instead, we collect all
+/// price updates in this interval and calculate the average. Meaning, only if the price was below
+/// the liquidation/margin call threshold for this time, we do something.
 const TIME_BETWEEN_PRICE_CHECKS: i64 = 5;
 
 pub async fn monitor_positions(
@@ -67,14 +66,15 @@ async fn check_margin_call_or_liquidation(
     latest_price: Decimal,
     config: Config,
 ) {
-    // TODO: for performance reasons we should not constantly load from DB but use some form of
-    // in-memory cache
+    // TODO: For performance reasons, we should not constantly load from the DB but use some form of
+    // in-memory cache instead.
     match db::contracts::load_open_not_liquidated_contracts(db).await {
         Ok(contracts) => {
             for contract in contracts {
                 if contract.collateral_sats == 0 {
-                    // contracts which have not been funded do not have a collateral set, hence we
-                    // do not need to liquidate them
+                    // Contracts which have not been funded do not have a collateral set, hence we
+                    // do not need to liquidate them. At the same time, we should not get here
+                    // because we are filtering out contracts that have not been funded.
                     continue;
                 }
 
@@ -100,7 +100,7 @@ async fn check_margin_call_or_liquidation(
                                 current_ltv,
                             )
                             .await;
-                        } else if current_ltv >= LTV_THRESHOLD_MARGIN_CALL_1 {
+                        } else if current_ltv >= LTV_THRESHOLD_MARGIN_CALL_2 {
                             second_margin_call(
                                 db,
                                 &contract,
@@ -109,7 +109,7 @@ async fn check_margin_call_or_liquidation(
                                 current_ltv,
                             )
                             .await
-                        } else if current_ltv >= LTV_THRESHOLD_MARGIN_CALL_2 {
+                        } else if current_ltv >= LTV_THRESHOLD_MARGIN_CALL_1 {
                             first_margin_call_contract(
                                 db,
                                 &contract,
@@ -125,7 +125,7 @@ async fn check_margin_call_or_liquidation(
                     Err(error) => {
                         tracing::error!(
                             contract_id = contract.id,
-                            "Failed at calculating current ltv {error:#}"
+                            "Failed at calculating current LTV: {error:#}"
                         );
                     }
                 }
@@ -138,31 +138,31 @@ async fn check_margin_call_or_liquidation(
 }
 
 async fn healthy_state(db: &Pool<Postgres>, contract: &Contract) {
+    let contract_id = &contract.id;
+
     if contract.liquidation_status == model::LiquidationStatus::Liquidated {
-        tracing::debug!(
-            contract_id = contract.id,
+        tracing::trace!(
+            contract_id,
             "Contract already liquidated, there is no way back"
         );
         return;
     }
+
     if contract.liquidation_status == model::LiquidationStatus::Healthy {
         tracing::trace!(
-            contract_id = contract.id,
-            "Contract is healthy, there is nothing todo here"
+            contract_id,
+            "Contract is healthy, there is nothing to do here"
         );
         return;
     }
-    tracing::info!(contract_id = contract.id, "Marking contract as healthy");
 
-    if let Err(err) = db::contracts::mark_liquidation_state_as(
-        db,
-        contract.id.as_str(),
-        LiquidationStatus::Healthy,
-    )
-    .await
+    tracing::debug!(contract_id, "Marking contract as healthy");
+
+    if let Err(err) =
+        db::contracts::mark_liquidation_state_as(db, contract_id, LiquidationStatus::Healthy).await
     {
         tracing::error!(
-            contract_id = contract.id,
+            contract_id,
             "Failed updating liquidation status to healthy {err:#}"
         )
     }
@@ -175,30 +175,33 @@ async fn first_margin_call_contract(
     price: Decimal,
     current_ltv: Decimal,
 ) {
-    if contract.liquidation_status == model::LiquidationStatus::Liquidated
-        || contract.liquidation_status == model::LiquidationStatus::SecondMarginCall
-        || contract.liquidation_status == model::LiquidationStatus::FirstMarginCall
+    let contract_id = &contract.id;
+    let liquidation_status = contract.liquidation_status;
+
+    if liquidation_status == model::LiquidationStatus::Liquidated
+        || liquidation_status == model::LiquidationStatus::SecondMarginCall
+        || liquidation_status == model::LiquidationStatus::FirstMarginCall
     {
-        tracing::debug!(
-            contract_id = contract.id,
-            "Contract already in a later state"
+        tracing::trace!(
+            contract_id,
+            ?liquidation_status,
+            "Contract already further along than first-margin-call"
         );
         return;
     }
-    tracing::info!(
-        contract_id = contract.id,
-        "Marking contract for first margin call"
-    );
+
+    tracing::debug!(contract_id, "Marking contract as first-margin-call");
+
     if let Err(err) = db::contracts::mark_liquidation_state_as(
         db,
-        contract.id.as_str(),
+        contract_id,
         LiquidationStatus::FirstMarginCall,
     )
     .await
     {
         tracing::error!(
-            contract_id = contract.id,
-            "Failed updating liquidation status to first margin call{err:#}"
+            contract_id,
+            "Failed to mark contract as first-margin-call: {err:#}"
         )
     }
 
@@ -212,7 +215,10 @@ async fn first_margin_call_contract(
     )
     .await
     {
-        tracing::error!(contract_id = contract.id, "Failed at sending email {err:#}")
+        tracing::error!(
+            contract_id,
+            "Failed to send first-margin-call email: {err:#}"
+        )
     }
 }
 
@@ -223,30 +229,32 @@ async fn second_margin_call(
     latest_price: Decimal,
     current_ltv: Decimal,
 ) {
-    if contract.liquidation_status == model::LiquidationStatus::Liquidated
-        || contract.liquidation_status == model::LiquidationStatus::SecondMarginCall
+    let contract_id = &contract.id;
+    let liquidation_status = contract.liquidation_status;
+
+    if liquidation_status == model::LiquidationStatus::Liquidated
+        || liquidation_status == model::LiquidationStatus::SecondMarginCall
     {
-        tracing::debug!(
-            contract_id = contract.id,
-            "Contract already in a later state"
+        tracing::trace!(
+            contract_id,
+            ?liquidation_status,
+            "Contract already further along than second-margin-call"
         );
         return;
     }
-    tracing::info!(
-        contract_id = contract.id,
-        "Marking contract for second margin call"
-    );
+
+    tracing::debug!(contract_id, "Marking contract as second margin call");
 
     if let Err(err) = db::contracts::mark_liquidation_state_as(
         db,
-        contract.id.as_str(),
+        contract_id,
         LiquidationStatus::SecondMarginCall,
     )
     .await
     {
         tracing::error!(
-            contract_id = contract.id,
-            "Failed updating liquidation status to second margin call{err:#}"
+            contract_id,
+            "Failed to mark contract as second-margin-call: {err:#}"
         )
     }
 
@@ -260,7 +268,10 @@ async fn second_margin_call(
     )
     .await
     {
-        tracing::error!(contract_id = contract.id, "Failed at sending email {err:#}")
+        tracing::error!(
+            contract_id,
+            "Failed to send second-margin-call email: {err:#}"
+        )
     }
 }
 
@@ -271,25 +282,22 @@ async fn liquidate_contract(
     latest_price: Decimal,
     current_ltv: Decimal,
 ) {
+    let contract_id = &contract.id;
+
     if contract.liquidation_status == model::LiquidationStatus::Liquidated {
-        tracing::debug!(contract_id = contract.id, "Contract already liquidated");
+        tracing::trace!(contract_id, "Contract already liquidated");
         return;
     }
 
-    tracing::info!(
-        contract_id = contract.id,
-        "Marking contract for being liquidated"
-    );
-    if let Err(err) = db::contracts::mark_liquidation_state_as(
-        db,
-        contract.id.as_str(),
-        LiquidationStatus::Liquidated,
-    )
-    .await
+    tracing::debug!(contract_id, "Marking contract as liquidated");
+
+    if let Err(err) =
+        db::contracts::mark_liquidation_state_as(db, contract_id, LiquidationStatus::Liquidated)
+            .await
     {
         tracing::error!(
-            contract_id = contract.id,
-            "Failed updating liquidation status to liquidated {err:#}"
+            contract_id,
+            "Failed to mark contract as liquidated: {err:#}"
         )
     }
 
@@ -303,7 +311,7 @@ async fn liquidate_contract(
     )
     .await
     {
-        tracing::error!(contract_id = contract.id, "Failed at sending email {err:#}")
+        tracing::error!(contract_id, "Failed to send liquidation email: {err:#}")
     }
 }
 
@@ -315,42 +323,58 @@ async fn send_email(
     current_ltv: Decimal,
     status: LiquidationStatus,
 ) -> Result<()> {
-    let user = db::borrowers::get_user_by_id(pool, contract.borrower_id.as_str())
+    let contract_id = &contract.id;
+
+    let borrower = db::borrowers::get_user_by_id(pool, contract.borrower_id.as_str())
         .await?
-        .context("user not found")?;
+        .context("borrower not found")?;
 
     let contract_url = format!(
-        "{}/my-contracts/{}",
-        config.lender_frontend_origin, contract.id
+        "{}/my-contracts/{contract_id}",
+        config.lender_frontend_origin
     );
 
     let email = Email::new(config);
 
     match status {
         LiquidationStatus::Healthy => {
-            //none
+            // We don't send emails about this.
         }
         LiquidationStatus::FirstMarginCall | LiquidationStatus::SecondMarginCall => {
-            if let Err(err) = email
+            email
                 .send_user_about_margin_call(
-                    user,
+                    borrower,
                     contract.clone(),
                     price,
                     current_ltv,
-                    contract_url,
+                    &contract_url,
                 )
-                .await
-            {
-                bail!("Failed sending email {err:#}")
-            }
+                .await?;
         }
         LiquidationStatus::Liquidated => {
-            if let Err(err) = email
-                .send_user_about_liquidation_notice(user, contract.clone(), price, contract_url)
+            if let Err(e) = email
+                .send_liquidation_notice_borrower(borrower, contract.clone(), price, &contract_url)
                 .await
             {
-                bail!("Failed sending email {err:#}")
-            }
+                tracing::error!(
+                    contract_id,
+                    "Failed to send liquidation email to borrower: {e:#}"
+                )
+            };
+
+            let lender = db::lenders::get_user_by_id(pool, contract.lender_id.as_str())
+                .await?
+                .context("lender not found")?;
+
+            if let Err(e) = email
+                .send_liquidation_notice_lender(lender, contract.clone(), &contract_url)
+                .await
+            {
+                tracing::error!(
+                    contract_id,
+                    "Failed to send liquidation email to lender: {e:#}"
+                )
+            };
         }
     }
 

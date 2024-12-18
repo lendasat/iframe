@@ -10,28 +10,33 @@ const CONTRACT_REQUEST_TIMEOUT: i64 = 24;
 
 // We don't want the doc block below to be auto-formatted.
 #[rustfmt::skip]
-/// A cron syntax for sending notifications about the rollover window being open.
+/// Cron syntax for checking if contract requests have expired.
 ///
 /// The format is:
 /// sec   min   hour   day of month   month   day of week   year
 /// *     *     *      *              *       *             *
 ///
-/// Meaning, this one runs every 30 minutes
+/// Meaning this one runs every 30 minutes.
 const CHECK_CONTRACT_REQUESTS_EXPIRED_SCHEDULER: &str = "0 0/30 * * * *";
 
-pub async fn add_jobs(scheduler: &JobScheduler, database: Pool<Postgres>) -> Result<()> {
+pub async fn add_contract_request_expiry_job(
+    scheduler: &JobScheduler,
+    database: Pool<Postgres>,
+) -> Result<()> {
     let database = database.clone();
     let check_for_expiring_contracts_job =
-        create_contract_expiry_check(scheduler, database).await?;
+        create_contract_request_expiry_check(scheduler, database).await?;
     let uuid = scheduler.add(check_for_expiring_contracts_job).await?;
+
     tracing::debug!(
         job_id = uuid.to_string(),
-        "Started new cron job to check for expiring contract requests"
+        "Started new cron job to check if contract requests have expired"
     );
+
     Ok(())
 }
 
-async fn create_contract_expiry_check(
+async fn create_contract_request_expiry_check(
     scheduler: &JobScheduler,
     database: Pool<Postgres>,
 ) -> Result<Job, JobSchedulerError> {
@@ -53,26 +58,28 @@ async fn create_contract_expiry_check(
                             tracing::info!(contract_id, "Contract request expired");
                         }),
                         Err(err) => {
-                            tracing::error!("Failed loading contracts {err:#}");
+                            tracing::error!("Failed expire contract requests: {err:#}");
                         }
                     }
                 }
             })
         },
     )?;
+
     check_for_expiring_contracts_job
         .on_removed_notification_add(
             scheduler,
             Box::new(|job_id, notification_id, type_of_notification| {
                 Box::pin(async move {
-                    tracing::warn!(
+                    tracing::error!(
                         job_id = job_id.to_string(),
-                        "Cron job to check for expiring contracts was removed, notification {:?} ran ({:?})",
+                        "Cron job to check if contract requests have expired was removed, notification {:?} ran ({:?})",
                         notification_id, type_of_notification
                     );
                 })
             }),
         )
         .await?;
+
     Ok(check_for_expiring_contracts_job)
 }
