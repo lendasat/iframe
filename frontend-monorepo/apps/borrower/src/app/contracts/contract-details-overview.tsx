@@ -538,8 +538,6 @@ const ContractStatusDetails = ({
   loanOriginatorFee,
   loanOriginatorFeeUsd,
 }: ContractStatusDetailsProps) => {
-  console.log(totalCollateral);
-
   switch (contract.status) {
     case ContractStatus.Requested:
       return <ContractRequested createdAt={contract.created_at} contractId={contract.id} />;
