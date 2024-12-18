@@ -10,6 +10,7 @@ use crate::model::LoanAssetChain;
 use crate::model::LoanAssetType;
 use crate::model::LoanTransaction;
 use crate::model::ManualCollateralRecovery;
+use crate::model::TransactionType;
 use crate::model::User;
 use crate::routes::lender::auth::jwt_auth;
 use crate::routes::AppState;
@@ -212,17 +213,12 @@ pub async fn get_active_contracts(
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
             })?;
 
-        // TODO: Do this better tomorrow.
-        let expiry =
-            contract.created_at + time::Duration::weeks((contract.duration_months * 4) as i64);
-
         let asset_chain = offer.loan_asset_chain;
         let asset_type = offer.loan_asset_type;
 
-        let mut repaid_at = None;
-        if contract.status == ContractStatus::Closed || contract.status == ContractStatus::Closing {
-            repaid_at = Some(contract.updated_at);
-        }
+        let repaid_at = transactions.iter().find_map(|tx| {
+            matches!(tx.transaction_type, TransactionType::PrincipalRepaid).then_some(tx.timestamp)
+        });
 
         let can_recover_collateral_manually =
             db::manual_collateral_recovery::load_manual_collateral_recovery(&data.db, &contract.id)
@@ -261,7 +257,7 @@ pub async fn get_active_contracts(
             updated_at: contract.updated_at,
             repaid_at,
             transactions,
-            expiry,
+            expiry: contract.expiry_date,
             loan_asset_chain: asset_chain,
             loan_asset_type: asset_type,
             can_recover_collateral_manually,
@@ -333,9 +329,6 @@ pub async fn get_contract(
             (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
         })?;
 
-    // TODO: Do this better tomorrow.
-    let expiry = contract.created_at + time::Duration::weeks((contract.duration_months * 4) as i64);
-
     let asset_chain = offer.loan_asset_chain;
     let asset_type = offer.loan_asset_type;
 
@@ -380,7 +373,7 @@ pub async fn get_contract(
         created_at: contract.created_at,
         repaid_at,
         transactions,
-        expiry,
+        expiry: contract.expiry_date,
         loan_asset_chain: asset_chain,
         loan_asset_type: asset_type,
         updated_at: contract.updated_at,
@@ -520,9 +513,13 @@ pub async fn put_principal_given(
         .await
         .context("Failed to load contract request")?;
 
-        db::contracts::mark_contract_as_principal_given(&data.db, contract_id.as_str())
-            .await
-            .context("Failed to mark contract as repaid")?;
+        db::contracts::mark_contract_as_principal_given(
+            &data.db,
+            contract_id.as_str(),
+            contract.duration_months,
+        )
+        .await
+        .context("Failed to mark contract as repaid")?;
 
         db::transactions::insert_principal_given_txid(
             &data.db,
@@ -613,9 +610,6 @@ pub async fn put_principal_given(
             (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
         })?;
 
-    // TODO: Do this better tomorrow. No idea where this comment came from, but I'll leave it 😅
-    let expiry = contract.created_at + time::Duration::weeks((contract.duration_months * 4) as i64);
-
     let asset_chain = offer.loan_asset_chain;
     let asset_type = offer.loan_asset_type;
 
@@ -656,7 +650,7 @@ pub async fn put_principal_given(
         updated_at: contract.updated_at,
         repaid_at: None,
         transactions,
-        expiry,
+        expiry: contract.expiry_date,
         loan_asset_chain: asset_chain,
         loan_asset_type: asset_type,
         can_recover_collateral_manually,
@@ -987,6 +981,44 @@ async fn post_liquidation_tx(
     if let Err(e) = db::contracts::mark_contract_as_closing(&data.db, contract_id.as_str()).await {
         tracing::error!("Failed to mark contract as closing: {e:#}");
     };
+
+    let email = Email::new(data.config.clone());
+
+    if let Err(e) = async {
+        let contract = db::contracts::load_contract_by_contract_id_and_lender_id(
+            &data.db,
+            contract_id.as_str(),
+            &user.id,
+        )
+        .await
+        .context("Contract not found")?;
+
+        let borrower = db::borrowers::get_user_by_id(&data.db, contract.borrower_id.as_str())
+            .await?
+            .context("Borrower not found")?;
+
+        let loan_url = format!(
+            "{}/my-contracts/{}",
+            data.config.borrower_frontend_origin.to_owned(),
+            contract_id
+        );
+        email
+            .send_loan_liquidated_after_default(borrower, loan_url.as_str())
+            .await
+            .context("Failed to send defaulted-loan-liquidated email")?;
+
+        db::contract_emails::mark_defaulted_loan_liquidated_as_sent(&data.db, &contract.id)
+            .await
+            .context("Failed to mark defaulted-loan-liquidated email as sent")?;
+
+        anyhow::Ok(())
+    }
+    .await
+    {
+        tracing::error!(
+            "Failed at notifying borrower about loan liquidation due to default: {e:#}"
+        );
+    }
 
     Ok(claim_txid.to_string())
 }

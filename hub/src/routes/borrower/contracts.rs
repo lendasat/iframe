@@ -12,6 +12,7 @@ use crate::model::LoanAssetChain;
 use crate::model::LoanAssetType;
 use crate::model::LoanTransaction;
 use crate::model::PsbtQueryParams;
+use crate::model::TransactionType;
 use crate::model::User;
 use crate::routes::borrower::auth::jwt_auth;
 use crate::routes::AppState;
@@ -574,8 +575,6 @@ async fn map_to_api_contract(
         .map_err(Error::Database)?
         .ok_or(Error::MissingLoanOffer)?;
 
-    let expiry = contract.expiry();
-
     let lender = db::lenders::get_user_by_id(&data.db, &contract.lender_id)
         .await
         .map_err(Error::Database)?
@@ -585,10 +584,9 @@ async fn map_to_api_contract(
         .await
         .map_err(Error::Database)?;
 
-    let mut repaid_at = None;
-    if contract.status == ContractStatus::Closed || contract.status == ContractStatus::Closing {
-        repaid_at = Some(contract.updated_at);
-    }
+    let repaid_at = transactions.iter().find_map(|tx| {
+        matches!(tx.transaction_type, TransactionType::PrincipalRepaid).then_some(tx.timestamp)
+    });
 
     let contract = Contract {
         id: contract.id,
@@ -616,7 +614,7 @@ async fn map_to_api_contract(
         created_at: contract.created_at,
         updated_at: contract.updated_at,
         repaid_at,
-        expiry,
+        expiry: contract.expiry_date,
         liquidation_status: contract.liquidation_status,
         transactions,
         integration: contract.integration,

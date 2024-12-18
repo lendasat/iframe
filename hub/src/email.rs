@@ -490,4 +490,25 @@ impl Email {
         )
         .await
     }
+
+    pub async fn send_loan_liquidated_after_default(&self, user: User, url: &str) -> Result<()> {
+        let template_name = "loan_liquidated_default";
+        let handlebars = Self::prepare_template(template_name)?;
+
+        let data = serde_json::json!({
+            "first_name": &user.name,
+            "subject": &template_name,
+            "url": url
+        });
+
+        let content_template = handlebars.render(template_name, &data)?;
+
+        self.send_email(
+            "Your defaulted loan was liquidated",
+            user.name.as_str(),
+            user.email.as_str(),
+            content_template,
+        )
+        .await
+    }
 }

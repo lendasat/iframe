@@ -241,6 +241,7 @@ pub struct Contract {
     #[serde(with = "rust_decimal::serde::float")]
     pub loan_amount: Decimal,
     pub duration_months: i32,
+    pub expiry_date: OffsetDateTime,
     pub borrower_btc_address: Address<NetworkUnchecked>,
     pub borrower_pk: PublicKey,
     pub borrower_loan_address: String,
@@ -255,21 +256,6 @@ pub struct Contract {
     pub created_at: OffsetDateTime,
     #[serde(with = "time::serde::rfc3339")]
     pub updated_at: OffsetDateTime,
-}
-
-impl Contract {
-    pub fn expiry(&self) -> OffsetDateTime {
-        // TODO: We should calculate the expiry from the time the borrower gets the principal. Atm
-        // we are using the contract request creation time as the starting point, which is
-        // incorrect.
-        let loan_start = self.created_at;
-
-        // TODO: We are using 30-day months here. This means that a year-long loan actually lasts
-        // 360 days. Is that acceptable?
-        let duration_days = (self.duration_months * 30) as i64;
-
-        loan_start + time::Duration::days(duration_days)
-    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -378,6 +364,7 @@ pub mod db {
         pub collateral_sats: i64,
         pub loan_amount: Decimal,
         pub duration_months: i32,
+        pub expiry_date: OffsetDateTime,
         pub borrower_btc_address: String,
         pub borrower_pk: String,
         pub borrower_loan_address: String,
@@ -473,6 +460,7 @@ impl From<db::Contract> for Contract {
             collateral_sats: value.collateral_sats as u64,
             loan_amount: value.loan_amount,
             duration_months: value.duration_months,
+            expiry_date: value.expiry_date,
             borrower_btc_address: Address::from_str(&value.borrower_btc_address)
                 .expect("valid address"),
             borrower_pk: PublicKey::from_str(&value.borrower_pk).expect("valid pk"),
@@ -596,6 +584,7 @@ impl From<Contract> for db::Contract {
             collateral_sats: value.collateral_sats as i64,
             loan_amount: value.loan_amount,
             duration_months: value.duration_months,
+            expiry_date: value.expiry_date,
             borrower_btc_address: value.borrower_btc_address.assume_checked().to_string(),
             borrower_pk: value.borrower_pk.to_string(),
             borrower_loan_address: value.borrower_loan_address,

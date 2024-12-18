@@ -1,164 +1,12 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            integration as \"integration: crate::model::db::Integration\",\n            lender_xpub,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            contract_version,\n            created_at,\n            updated_at\n        FROM contracts\n        WHERE status NOT IN ($1, $2, $3, $4, $5, $6, $7, $8) and liquidation_status NOT in ($9)\n        ",
+  "query": "\n            UPDATE\n                contracts\n            SET\n                status = $1, updated_at = $2\n            WHERE\n                expiry_date <= $2 AND\n                status NOT IN ($3, $4, $5, $6, $7, $8, $9, $1)\n            RETURNING id;\n        ",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
         "name": "id",
         "type_info": "Bpchar"
-      },
-      {
-        "ordinal": 1,
-        "name": "lender_id",
-        "type_info": "Bpchar"
-      },
-      {
-        "ordinal": 2,
-        "name": "borrower_id",
-        "type_info": "Bpchar"
-      },
-      {
-        "ordinal": 3,
-        "name": "loan_id",
-        "type_info": "Bpchar"
-      },
-      {
-        "ordinal": 4,
-        "name": "initial_ltv",
-        "type_info": "Numeric"
-      },
-      {
-        "ordinal": 5,
-        "name": "initial_collateral_sats",
-        "type_info": "Int8"
-      },
-      {
-        "ordinal": 6,
-        "name": "origination_fee_sats",
-        "type_info": "Int8"
-      },
-      {
-        "ordinal": 7,
-        "name": "collateral_sats",
-        "type_info": "Int8"
-      },
-      {
-        "ordinal": 8,
-        "name": "loan_amount",
-        "type_info": "Numeric"
-      },
-      {
-        "ordinal": 9,
-        "name": "borrower_btc_address",
-        "type_info": "Text"
-      },
-      {
-        "ordinal": 10,
-        "name": "borrower_pk",
-        "type_info": "Bpchar"
-      },
-      {
-        "ordinal": 11,
-        "name": "borrower_loan_address",
-        "type_info": "Text"
-      },
-      {
-        "ordinal": 12,
-        "name": "integration: crate::model::db::Integration",
-        "type_info": {
-          "Custom": {
-            "name": "integration",
-            "kind": {
-              "Enum": [
-                "PayWithMoon",
-                "StableCoin"
-              ]
-            }
-          }
-        }
-      },
-      {
-        "ordinal": 13,
-        "name": "lender_xpub",
-        "type_info": "Text"
-      },
-      {
-        "ordinal": 14,
-        "name": "contract_address",
-        "type_info": "Text"
-      },
-      {
-        "ordinal": 15,
-        "name": "contract_index",
-        "type_info": "Int4"
-      },
-      {
-        "ordinal": 16,
-        "name": "status: crate::model::db::ContractStatus",
-        "type_info": {
-          "Custom": {
-            "name": "contract_status",
-            "kind": {
-              "Enum": [
-                "Requested",
-                "Approved",
-                "CollateralSeen",
-                "CollateralConfirmed",
-                "PrincipalGiven",
-                "RepaymentProvided",
-                "RepaymentConfirmed",
-                "Closing",
-                "Closed",
-                "Rejected",
-                "DisputeBorrowerStarted",
-                "DisputeLenderStarted",
-                "DisputeBorrowerResolved",
-                "DisputeLenderResolved",
-                "Cancelled",
-                "RequestExpired",
-                "Defaulted"
-              ]
-            }
-          }
-        }
-      },
-      {
-        "ordinal": 17,
-        "name": "liquidation_status: crate::model::db::LiquidationStatus",
-        "type_info": {
-          "Custom": {
-            "name": "liquidation_status",
-            "kind": {
-              "Enum": [
-                "Healthy",
-                "FirstMarginCall",
-                "SecondMarginCall",
-                "Liquidated"
-              ]
-            }
-          }
-        }
-      },
-      {
-        "ordinal": 18,
-        "name": "duration_months",
-        "type_info": "Int4"
-      },
-      {
-        "ordinal": 19,
-        "name": "contract_version",
-        "type_info": "Int4"
-      },
-      {
-        "ordinal": 20,
-        "name": "created_at",
-        "type_info": "Timestamptz"
-      },
-      {
-        "ordinal": 21,
-        "name": "updated_at",
-        "type_info": "Timestamptz"
       }
     ],
     "parameters": {
@@ -189,6 +37,7 @@
             }
           }
         },
+        "Timestamptz",
         {
           "Custom": {
             "name": "contract_status",
@@ -367,19 +216,6 @@
                 "Cancelled",
                 "RequestExpired",
                 "Defaulted"
-              ]
-            }
-          }
-        },
-        {
-          "Custom": {
-            "name": "liquidation_status",
-            "kind": {
-              "Enum": [
-                "Healthy",
-                "FirstMarginCall",
-                "SecondMarginCall",
-                "Liquidated"
               ]
             }
           }
@@ -387,29 +223,8 @@
       ]
     },
     "nullable": [
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      true,
-      true,
-      true,
-      false,
-      false,
-      false,
-      false,
-      false,
       false
     ]
   },
-  "hash": "134e02d2e3c5482cf94c185c11460b6a8ff00d40551b733a494714fdb6ecdebc"
+  "hash": "0b619ee263b0a2099f0fbe482d75b892dbf9a5c3f65eb202f0dbb294b7804b2a"
 }

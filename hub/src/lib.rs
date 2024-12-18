@@ -9,6 +9,7 @@ pub mod contract_default;
 pub mod contract_request_expiry;
 pub mod db;
 pub mod email;
+pub mod expiry;
 pub mod liquidation_engine;
 pub mod logger;
 pub mod mempool;

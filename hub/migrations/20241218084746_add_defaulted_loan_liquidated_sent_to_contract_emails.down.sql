@@ -1,0 +1,1 @@
+ALTER TABLE contract_emails DROP COLUMN defaulted_loan_liquidated_sent;
