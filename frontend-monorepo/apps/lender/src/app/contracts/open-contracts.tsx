@@ -3,7 +3,7 @@ import { type Contract, contractStatusToLabelString, LiquidationStatus } from "@
 import { CurrencyFormatter, LtvProgressBar, usePrice } from "@frontend-monorepo/ui-shared";
 import { Badge, Box, Button, DropdownMenu, Flex, Grid, Heading, Text } from "@radix-ui/themes";
 import { BsThreeDotsVertical } from "react-icons/bs";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { actionFromStatus } from "./my-contracts";
 
 interface OpenContractsProps {
@@ -59,11 +59,6 @@ export const OpenContracts = ({ contracts }: OpenContractsProps) => {
       <Box className="px-6 md:px-8 py-4">
         <Flex align={"center"} justify={"between"}>
           <Heading className={"text-font dark:text-font-dark"} size={"6"}>My Contracts</Heading>
-          <Button asChild color="purple" className="text-sm" size={"3"}>
-            <Link to={"/create-loan-offer"}>
-              New Proposal
-            </Link>
-          </Button>
         </Flex>
       </Box>
 
