@@ -68,6 +68,10 @@ export function StatusBadge({ status }: StatusBadgeProps) {
       color = "gray";
       label = "Closing";
       break;
+    case ContractStatus.Undercollateralized:
+      color = "red";
+      label = "Undercollateralized";
+      break;
     case ContractStatus.Defaulted:
       color = "red";
       label = "Defaulted";

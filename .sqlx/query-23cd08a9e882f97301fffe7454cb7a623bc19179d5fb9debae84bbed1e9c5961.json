@@ -117,7 +117,8 @@
                 "DisputeLenderResolved",
                 "Cancelled",
                 "RequestExpired",
-                "Defaulted"
+                "Defaulted",
+                "Undercollateralized"
               ]
             }
           }
@@ -190,7 +191,8 @@
                 "DisputeLenderResolved",
                 "Cancelled",
                 "RequestExpired",
-                "Defaulted"
+                "Defaulted",
+                "Undercollateralized"
               ]
             }
           }

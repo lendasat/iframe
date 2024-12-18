@@ -787,7 +787,10 @@ async fn get_liquidation_psbt(
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
     })?;
 
-    if contract.status != ContractStatus::Defaulted {
+    if !matches!(
+        contract.status,
+        ContractStatus::Defaulted | ContractStatus::Undercollateralized
+    ) {
         let error_response = ErrorResponse {
             message: format!("Cannot liquidate contract in state: {:?}", contract.status),
         };

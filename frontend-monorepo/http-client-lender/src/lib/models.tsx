@@ -8,6 +8,7 @@ export enum ContractStatus {
   PrincipalGiven = "PrincipalGiven",
   RepaymentProvided = "RepaymentProvided",
   RepaymentConfirmed = "RepaymentConfirmed",
+  Undercollateralized = "Undercollateralized",
   Defaulted = "Defaulted",
   Closing = "Closing",
   Closed = "Closed",
@@ -103,6 +104,8 @@ export function contractStatusToLabelString(status: ContractStatus): string {
       return "Loan Repayment Provided";
     case ContractStatus.RepaymentConfirmed:
       return "Loan Repayment Confirmed";
+    case ContractStatus.Undercollateralized:
+      return "Contract Undercollateralized";
     case ContractStatus.Defaulted:
       return "Contract Defaulted";
     case ContractStatus.Closing:

@@ -28,6 +28,7 @@ import { ExpandableDisputeCard } from "../disputes/dispute-card";
 import { ContractDefaulted } from "./contract-defaulted";
 import { ContractRecovery } from "./contract-recovery";
 import { ContractRequested } from "./contract-requested";
+import { ContractUndercollateralized } from "./contract-undercollateralized";
 import { downloadLocalStorage } from "./download-local-storage";
 import RepaymentDetails from "./pay-loan-principal";
 
@@ -562,6 +563,8 @@ const ContractStatusDetails = ({
           Waiting for user to withdraw funds.
         </Alert>
       );
+    case ContractStatus.Undercollateralized:
+      return <ContractUndercollateralized contract={contract} />;
     case ContractStatus.Defaulted:
       return <ContractDefaulted contract={contract} />;
     case ContractStatus.Closed:

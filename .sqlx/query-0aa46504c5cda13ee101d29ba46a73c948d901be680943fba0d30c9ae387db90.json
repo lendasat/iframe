@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT \n            id,\n            contract_id,\n            borrower_id,\n            lender_id,\n            lender_payout_sats,\n            borrower_payout_sats,\n            comment,\n            status as \"status: crate::model::DisputeStatus\",\n            created_at,\n            updated_at\n        FROM \n            DISPUTES\n        WHERE \n            id = $1 and borrower_id = $2\n        ",
+  "query": "\n        INSERT INTO DISPUTES (\n            id,\n            contract_id,\n            borrower_id,\n            lender_id,\n            comment,\n            status\n        )\n        VALUES(\n            $1,\n            $2,\n            $3,\n            $4,\n            $5,\n            $6\n        )\n        RETURNING\n            id,\n            contract_id,\n            borrower_id,\n            lender_id,\n            comment,\n            lender_payout_sats,\n            borrower_payout_sats,\n            status as \"status: crate::model::DisputeStatus\",\n            created_at,\n            updated_at\n        ",
   "describe": {
     "columns": [
       {
@@ -25,18 +25,18 @@
       },
       {
         "ordinal": 4,
+        "name": "comment",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
         "name": "lender_payout_sats",
         "type_info": "Int8"
       },
       {
-        "ordinal": 5,
+        "ordinal": 6,
         "name": "borrower_payout_sats",
         "type_info": "Int8"
-      },
-      {
-        "ordinal": 6,
-        "name": "comment",
-        "type_info": "Varchar"
       },
       {
         "ordinal": 7,
@@ -69,7 +69,23 @@
     "parameters": {
       "Left": [
         "Bpchar",
-        "Bpchar"
+        "Bpchar",
+        "Bpchar",
+        "Bpchar",
+        "Varchar",
+        {
+          "Custom": {
+            "name": "dispute_status",
+            "kind": {
+              "Enum": [
+                "StartedBorrower",
+                "StartedLender",
+                "ResolvedBorrower",
+                "ResolvedLender"
+              ]
+            }
+          }
+        }
       ]
     },
     "nullable": [
@@ -77,13 +93,13 @@
       false,
       false,
       false,
-      true,
-      true,
       false,
+      true,
+      true,
       false,
       false,
       false
     ]
   },
-  "hash": "a1db050a31bed7017b60bcc9408cc2fe1d81f678ee5ba5431bf25a26c885e92c"
+  "hash": "0aa46504c5cda13ee101d29ba46a73c948d901be680943fba0d30c9ae387db90"
 }
