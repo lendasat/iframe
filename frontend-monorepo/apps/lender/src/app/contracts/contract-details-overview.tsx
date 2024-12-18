@@ -338,16 +338,16 @@ function ContractDetails({ contract }: DetailsProps) {
             </Button>
           </Flex>
 
-          {errorAlt && (
-            <Callout.Root color="red">
-              <Callout.Icon>
-                <FontAwesomeIcon
-                  icon={faExclamationCircle}
-                  className="h-4 w-4"
-                />
-              </Callout.Icon>
-              <Callout.Text>{errorAlt}</Callout.Text>
-            </Callout.Root>
+          {displayDispute && (
+            <Box>
+              <ExpandableDisputeCard
+                info={info}
+                onStartDispute={onStartDispute}
+                startingDisputeLoading={startingDisputeLoading}
+                error={error}
+                disputeInProgress={disputeInProgress}
+              />
+            </Box>
           )}
         </Box>
       </Box>
@@ -358,16 +358,16 @@ function ContractDetails({ contract }: DetailsProps) {
           onSuccess={onSuccess}
         />
 
-        {displayDispute && (
-          <Box>
-            <ExpandableDisputeCard
-              info={info}
-              onStartDispute={onStartDispute}
-              startingDisputeLoading={startingDisputeLoading}
-              error={error}
-              disputeInProgress={disputeInProgress}
-            />
-          </Box>
+        {errorAlt && (
+          <Callout.Root color="red">
+            <Callout.Icon>
+              <FontAwesomeIcon
+                icon={faExclamationCircle}
+                className="h-4 w-4"
+              />
+            </Callout.Icon>
+            <Callout.Text>{errorAlt}</Callout.Text>
+          </Callout.Root>
         )}
       </Box>
     </Grid>
@@ -528,7 +528,7 @@ const ContractStatusDetails = ({
       return (
         <Alert variant="info">
           <FontAwesomeIcon icon={faInfoCircle} className="h-4 w-4 mr-2" />
-          Please wait until the borrower repays the loan
+          Please wait until the borrower repays the loan.
         </Alert>
       );
     case ContractStatus.RepaymentProvided:
