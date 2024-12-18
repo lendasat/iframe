@@ -10,6 +10,7 @@ use crate::model::LoanAssetChain;
 use crate::model::LoanAssetType;
 use crate::model::LoanTransaction;
 use crate::model::ManualCollateralRecovery;
+use crate::model::TransactionType;
 use crate::model::User;
 use crate::routes::lender::auth::jwt_auth;
 use crate::routes::AppState;
@@ -215,10 +216,9 @@ pub async fn get_active_contracts(
         let asset_chain = offer.loan_asset_chain;
         let asset_type = offer.loan_asset_type;
 
-        let mut repaid_at = None;
-        if contract.status == ContractStatus::Closed || contract.status == ContractStatus::Closing {
-            repaid_at = Some(contract.updated_at);
-        }
+        let repaid_at = transactions.iter().find_map(|tx| {
+            matches!(tx.transaction_type, TransactionType::PrincipalRepaid).then_some(tx.timestamp)
+        });
 
         let can_recover_collateral_manually =
             db::manual_collateral_recovery::load_manual_collateral_recovery(&data.db, &contract.id)

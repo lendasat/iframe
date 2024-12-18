@@ -12,6 +12,7 @@ use crate::model::LoanAssetChain;
 use crate::model::LoanAssetType;
 use crate::model::LoanTransaction;
 use crate::model::PsbtQueryParams;
+use crate::model::TransactionType;
 use crate::model::User;
 use crate::routes::borrower::auth::jwt_auth;
 use crate::routes::AppState;
@@ -583,10 +584,9 @@ async fn map_to_api_contract(
         .await
         .map_err(Error::Database)?;
 
-    let mut repaid_at = None;
-    if contract.status == ContractStatus::Closed || contract.status == ContractStatus::Closing {
-        repaid_at = Some(contract.updated_at);
-    }
+    let repaid_at = transactions.iter().find_map(|tx| {
+        matches!(tx.transaction_type, TransactionType::PrincipalRepaid).then_some(tx.timestamp)
+    });
 
     let contract = Contract {
         id: contract.id,
