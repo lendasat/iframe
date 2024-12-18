@@ -70,7 +70,7 @@ export const ClosedContracts = ({ contracts }: ClosedContractsProps) => {
         }}
       >
         {contracts.length === 0
-          && <p className={"text-font dark:text-font-dark"}>You don't have any closed contracts.</p>}
+          && <p className={"text-font dark:text-font-dark"}>You do not have any closed contracts.</p>}
 
         {contracts.map((contract, index) => {
           const collateral_btc = contract.initial_collateral_sats / 100000000;
