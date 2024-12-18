@@ -46,6 +46,7 @@ pub async fn load_contracts_by_borrower_id(
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
             duration_months,
+            expiry_date,
             contract_version,
             created_at,
             updated_at
@@ -92,6 +93,7 @@ pub async fn load_contracts_by_lender_id(
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
             duration_months,
+            expiry_date,
             contract_version,
             created_at,
             updated_at
@@ -135,6 +137,7 @@ async fn load_contract(pool: &Pool<Postgres>, contract_id: &str) -> Result<Contr
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
             duration_months,
+            expiry_date,
             contract_version,
             created_at,
             updated_at
@@ -177,6 +180,7 @@ pub async fn load_contract_by_contract_id_and_borrower_id(
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
             duration_months,
+            expiry_date,
             contract_version,
             created_at,
             updated_at
@@ -221,6 +225,7 @@ pub async fn load_contract_by_contract_id_and_lender_id(
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
             duration_months,
+            expiry_date,
             contract_version,
             created_at,
             updated_at
@@ -261,6 +266,7 @@ pub async fn load_open_contracts(pool: &Pool<Postgres>) -> Result<Vec<Contract>>
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
             duration_months,
+            expiry_date,
             contract_version,
             created_at,
             updated_at
@@ -313,6 +319,9 @@ pub async fn insert_contract_request(
     let integration = db::Integration::from(integration);
     let contract_version = contract_version as i32;
 
+    let created_at = OffsetDateTime::now_utc();
+    let expiry_date = created_at + time::Duration::days(duration_months as i64 * 30);
+
     let lender_id_row = sqlx::query!(
         r#"
         SELECT lender_id
@@ -348,8 +357,10 @@ pub async fn insert_contract_request(
             integration,
             contract_address,
             contract_index,
-            contract_version
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+            contract_version,
+            created_at,
+            expiry_date
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
         RETURNING
             id,
             lender_id,
@@ -370,6 +381,7 @@ pub async fn insert_contract_request(
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
             duration_months,
+            expiry_date,
             contract_version,
             created_at,
             updated_at
@@ -393,6 +405,8 @@ pub async fn insert_contract_request(
         None as Option<String>,
         None as Option<i32>,
         contract_version,
+        created_at,
+        expiry_date
     )
     .fetch_one(&mut *db_tx)
         .await?;
@@ -443,6 +457,7 @@ pub async fn accept_contract_request(
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
             duration_months,
+            expiry_date,
             contract_version,
             created_at,
             updated_at
@@ -493,6 +508,7 @@ pub async fn mark_contract_as_principal_given(
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
             duration_months,
+            expiry_date,
             contract_version,
             created_at,
             updated_at
@@ -554,6 +570,7 @@ async fn update_contract_state(
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
             duration_months,
+            expiry_date,
             contract_version,
             created_at,
             updated_at
@@ -602,6 +619,7 @@ pub async fn mark_contract_as_cancelled(
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
             duration_months,
+            expiry_date,
             contract_version,
             created_at,
             updated_at
@@ -646,6 +664,7 @@ pub async fn mark_contract_as_closed(pool: &Pool<Postgres>, contract_id: &str) -
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
             duration_months,
+            expiry_date,
             contract_version,
             created_at,
             updated_at
@@ -692,6 +711,7 @@ pub async fn mark_contract_as_closing(
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
             duration_months,
+            expiry_date,
             contract_version,
             created_at,
             updated_at
@@ -739,6 +759,7 @@ pub async fn reject_contract_request(
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
             duration_months,
+            expiry_date,
             contract_version,
             created_at,
             updated_at
@@ -787,6 +808,7 @@ pub(crate) async fn mark_liquidation_state_as(
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
             duration_months,
+            expiry_date,
             contract_version,
             created_at,
             updated_at
@@ -834,6 +856,7 @@ pub(crate) async fn mark_contract_as(
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
             duration_months,
+            expiry_date,
             contract_version,
             created_at,
             updated_at
@@ -874,6 +897,7 @@ pub(crate) async fn load_open_not_liquidated_contracts(
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
             duration_months,
+            expiry_date,
             contract_version,
             created_at,
             updated_at
@@ -913,7 +937,7 @@ pub(crate) async fn default_expired_contracts(pool: &Pool<Postgres>) -> Result<V
             SET
                 status = $1, updated_at = $2
             WHERE
-                created_at + (duration_months * INTERVAL '1 month') <= $2 AND
+                expiry_date <= $2 AND
                 status NOT IN ($3, $4, $5, $6, $7, $8, $9, $1)
             RETURNING id;
         "#,
@@ -1080,6 +1104,7 @@ pub async fn update_collateral(
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
             duration_months,
+            expiry_date,
             contract_version,
             created_at,
             updated_at

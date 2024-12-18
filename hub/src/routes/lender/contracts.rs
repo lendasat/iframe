@@ -212,10 +212,6 @@ pub async fn get_active_contracts(
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
             })?;
 
-        // TODO: Do this better tomorrow.
-        let expiry =
-            contract.created_at + time::Duration::weeks((contract.duration_months * 4) as i64);
-
         let asset_chain = offer.loan_asset_chain;
         let asset_type = offer.loan_asset_type;
 
@@ -261,7 +257,7 @@ pub async fn get_active_contracts(
             updated_at: contract.updated_at,
             repaid_at,
             transactions,
-            expiry,
+            expiry: contract.expiry_date,
             loan_asset_chain: asset_chain,
             loan_asset_type: asset_type,
             can_recover_collateral_manually,
@@ -333,9 +329,6 @@ pub async fn get_contract(
             (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
         })?;
 
-    // TODO: Do this better tomorrow.
-    let expiry = contract.created_at + time::Duration::weeks((contract.duration_months * 4) as i64);
-
     let asset_chain = offer.loan_asset_chain;
     let asset_type = offer.loan_asset_type;
 
@@ -380,7 +373,7 @@ pub async fn get_contract(
         created_at: contract.created_at,
         repaid_at,
         transactions,
-        expiry,
+        expiry: contract.expiry_date,
         loan_asset_chain: asset_chain,
         loan_asset_type: asset_type,
         updated_at: contract.updated_at,
@@ -613,9 +606,6 @@ pub async fn put_principal_given(
             (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
         })?;
 
-    // TODO: Do this better tomorrow. No idea where this comment came from, but I'll leave it 😅
-    let expiry = contract.created_at + time::Duration::weeks((contract.duration_months * 4) as i64);
-
     let asset_chain = offer.loan_asset_chain;
     let asset_type = offer.loan_asset_type;
 
@@ -656,7 +646,7 @@ pub async fn put_principal_given(
         updated_at: contract.updated_at,
         repaid_at: None,
         transactions,
-        expiry,
+        expiry: contract.expiry_date,
         loan_asset_chain: asset_chain,
         loan_asset_type: asset_type,
         can_recover_collateral_manually,

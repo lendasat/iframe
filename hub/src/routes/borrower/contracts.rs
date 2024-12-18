@@ -574,8 +574,6 @@ async fn map_to_api_contract(
         .map_err(Error::Database)?
         .ok_or(Error::MissingLoanOffer)?;
 
-    let expiry = contract.expiry();
-
     let lender = db::lenders::get_user_by_id(&data.db, &contract.lender_id)
         .await
         .map_err(Error::Database)?
@@ -616,7 +614,7 @@ async fn map_to_api_contract(
         created_at: contract.created_at,
         updated_at: contract.updated_at,
         repaid_at,
-        expiry,
+        expiry: contract.expiry_date,
         liquidation_status: contract.liquidation_status,
         transactions,
         integration: contract.integration,

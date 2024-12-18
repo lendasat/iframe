@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        UPDATE contracts\n        SET status = $1,\n            updated_at = $2\n        WHERE lender_id = $3\n          AND id = $4\n        RETURNING\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            integration as \"integration: crate::model::db::Integration\",\n            lender_xpub,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            contract_version,\n            created_at,\n            updated_at\n        ",
+  "query": "\n        UPDATE contracts\n        SET\n            status = $1,\n            updated_at = $2\n        WHERE id = $3\n        RETURNING\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            integration as \"integration: crate::model::db::Integration\",\n            lender_xpub,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            expiry_date,\n            contract_version,\n            created_at,\n            updated_at\n        ",
   "describe": {
     "columns": [
       {
@@ -147,16 +147,21 @@
       },
       {
         "ordinal": 19,
+        "name": "expiry_date",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 20,
         "name": "contract_version",
         "type_info": "Int4"
       },
       {
-        "ordinal": 20,
+        "ordinal": 21,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 21,
+        "ordinal": 22,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -190,7 +195,6 @@
           }
         },
         "Timestamptz",
-        "Bpchar",
         "Bpchar"
       ]
     },
@@ -216,8 +220,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "653f34af4d2cdddafa2260e35eba76e3a1e3e33bbf833bf1c16518af8e942732"
+  "hash": "7447501e12bc97c7eec917872923d920ae14a286e47c2d36aeffc3c468f7c867"
 }

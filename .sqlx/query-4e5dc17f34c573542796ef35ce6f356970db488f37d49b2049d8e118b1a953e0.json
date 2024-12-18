@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        INSERT INTO contracts (\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            duration_months,\n            status,\n            liquidation_status,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            integration,\n            contract_address,\n            contract_index,\n            contract_version\n        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)\n        RETURNING\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            integration as \"integration: crate::model::db::Integration\",\n            lender_xpub,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            contract_version,\n            created_at,\n            updated_at\n        ",
+  "query": "\n        SELECT\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            integration as \"integration: crate::model::db::Integration\",\n            lender_xpub,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            expiry_date,\n            contract_version,\n            created_at,\n            updated_at\n        FROM contracts\n        where id = $1 AND\n        borrower_id = $2\n        ",
   "describe": {
     "columns": [
       {
@@ -147,16 +147,21 @@
       },
       {
         "ordinal": 19,
+        "name": "expiry_date",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 20,
         "name": "contract_version",
         "type_info": "Int4"
       },
       {
-        "ordinal": 20,
+        "ordinal": 21,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 21,
+        "ordinal": 22,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -164,71 +169,7 @@
     "parameters": {
       "Left": [
         "Bpchar",
-        "Bpchar",
-        "Bpchar",
-        "Bpchar",
-        "Numeric",
-        "Int8",
-        "Int8",
-        "Int8",
-        "Numeric",
-        "Int4",
-        {
-          "Custom": {
-            "name": "contract_status",
-            "kind": {
-              "Enum": [
-                "Requested",
-                "Approved",
-                "CollateralSeen",
-                "CollateralConfirmed",
-                "PrincipalGiven",
-                "RepaymentProvided",
-                "RepaymentConfirmed",
-                "Closing",
-                "Closed",
-                "Rejected",
-                "DisputeBorrowerStarted",
-                "DisputeLenderStarted",
-                "DisputeBorrowerResolved",
-                "DisputeLenderResolved",
-                "Cancelled",
-                "RequestExpired",
-                "Defaulted"
-              ]
-            }
-          }
-        },
-        {
-          "Custom": {
-            "name": "liquidation_status",
-            "kind": {
-              "Enum": [
-                "Healthy",
-                "FirstMarginCall",
-                "SecondMarginCall",
-                "Liquidated"
-              ]
-            }
-          }
-        },
-        "Text",
-        "Bpchar",
-        "Text",
-        {
-          "Custom": {
-            "name": "integration",
-            "kind": {
-              "Enum": [
-                "PayWithMoon",
-                "StableCoin"
-              ]
-            }
-          }
-        },
-        "Text",
-        "Int4",
-        "Int4"
+        "Bpchar"
       ]
     },
     "nullable": [
@@ -253,8 +194,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "6ff845e2fbd3de0d13a8565bd2e1d360a41218b8d31c242fa95192a71cdda643"
+  "hash": "4e5dc17f34c573542796ef35ce6f356970db488f37d49b2049d8e118b1a953e0"
 }
