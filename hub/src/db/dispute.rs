@@ -34,8 +34,8 @@ pub async fn start_new_dispute_borrower(
     .context("Failed inserting new dispute.")?;
 
     if !dispute_already_started {
-        db::contracts::mark_contract_as(
-            &mut transaction,
+        db::contracts::mark_contract_state_as(
+            &mut *transaction,
             contract_id,
             ContractStatus::DisputeBorrowerStarted,
         )
@@ -73,8 +73,8 @@ pub async fn start_new_dispute_lender(
     .context("Failed inserting new dispute.")?;
 
     if !dispute_already_started {
-        db::contracts::mark_contract_as(
-            &mut transaction,
+        db::contracts::mark_contract_state_as(
+            &mut *transaction,
             contract_id,
             ContractStatus::DisputeLenderStarted,
         )
@@ -107,7 +107,7 @@ async fn insert_new_dispute(
             comment,
             status
         )
-        VALUES(   
+        VALUES(
             $1,
             $2,
             $3,
@@ -115,12 +115,12 @@ async fn insert_new_dispute(
             $5,
             $6
         )
-        RETURNING 
+        RETURNING
             id,
-            contract_id, 
-            borrower_id, 
-            lender_id, 
-            comment, 
+            contract_id,
+            borrower_id,
+            lender_id,
+            comment,
             lender_payout_sats,
             borrower_payout_sats,
             status as "status: crate::model::DisputeStatus",
@@ -147,7 +147,7 @@ pub(crate) async fn load_disputes_by_borrower_and_dispute_id(
     let disputes = sqlx::query_as!(
         Dispute,
         r#"
-        SELECT 
+        SELECT
             id,
             contract_id,
             borrower_id,
@@ -158,9 +158,9 @@ pub(crate) async fn load_disputes_by_borrower_and_dispute_id(
             status as "status: crate::model::DisputeStatus",
             created_at,
             updated_at
-        FROM 
+        FROM
             DISPUTES
-        WHERE 
+        WHERE
             id = $1 and borrower_id = $2
         "#,
         dispute_id,
@@ -180,7 +180,7 @@ pub(crate) async fn load_disputes_by_borrower_and_contract_id(
     let disputes = sqlx::query_as!(
         Dispute,
         r#"
-        SELECT 
+        SELECT
             id,
             contract_id,
             borrower_id,
@@ -191,9 +191,9 @@ pub(crate) async fn load_disputes_by_borrower_and_contract_id(
             status as "status: crate::model::DisputeStatus",
             created_at,
             updated_at
-        FROM 
+        FROM
             DISPUTES
-        WHERE 
+        WHERE
             contract_id = $1 and borrower_id = $2
         "#,
         contract_id,
@@ -212,7 +212,7 @@ pub(crate) async fn load_disputes_by_lender(
     let disputes = sqlx::query_as!(
         Dispute,
         r#"
-        SELECT 
+        SELECT
             id,
             contract_id,
             borrower_id,
@@ -223,9 +223,9 @@ pub(crate) async fn load_disputes_by_lender(
             status as "status: crate::model::DisputeStatus",
             created_at,
             updated_at
-        FROM 
+        FROM
             DISPUTES
-        WHERE 
+        WHERE
             lender_id = $1
         "#,
         lender_id
@@ -243,7 +243,7 @@ pub(crate) async fn load_disputes_by_borrower(
     let disputes = sqlx::query_as!(
         Dispute,
         r#"
-        SELECT 
+        SELECT
             id,
             contract_id,
             borrower_id,
@@ -254,9 +254,9 @@ pub(crate) async fn load_disputes_by_borrower(
             status as "status: crate::model::DisputeStatus",
             created_at,
             updated_at
-        FROM 
+        FROM
             DISPUTES
-        WHERE 
+        WHERE
             borrower_id = $1
         "#,
         borrower_id
@@ -275,7 +275,7 @@ pub(crate) async fn load_disputes_by_lender_and_dispute_id(
     let disputes = sqlx::query_as!(
         Dispute,
         r#"
-        SELECT 
+        SELECT
             id,
             contract_id,
             borrower_id,
@@ -286,9 +286,9 @@ pub(crate) async fn load_disputes_by_lender_and_dispute_id(
             status as "status: crate::model::DisputeStatus",
             created_at,
             updated_at
-        FROM 
+        FROM
             DISPUTES
-        WHERE 
+        WHERE
             id = $1 and lender_id = $2
         "#,
         dispute_id,
@@ -308,7 +308,7 @@ pub(crate) async fn load_disputes_by_lender_and_contract_id(
     let dispute = sqlx::query_as!(
         Dispute,
         r#"
-        SELECT 
+        SELECT
             id,
             contract_id,
             borrower_id,
@@ -319,9 +319,9 @@ pub(crate) async fn load_disputes_by_lender_and_contract_id(
             status as "status: crate::model::DisputeStatus",
             created_at,
             updated_at
-        FROM 
+        FROM
             DISPUTES
-        WHERE 
+        WHERE
             contract_id = $1 and lender_id = $2
         "#,
         contract_id,

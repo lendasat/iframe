@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            integration as \"integration: crate::model::db::Integration\",\n            lender_xpub,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            expiry_date,\n            contract_version,\n            created_at,\n            updated_at\n        FROM contracts\n        WHERE status NOT IN ($1, $2, $3, $4, $5, $6, $7, $8) and liquidation_status NOT in ($9)\n        ",
+  "query": "\n        SELECT\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            integration as \"integration: crate::model::db::Integration\",\n            lender_xpub,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            expiry_date,\n            contract_version,\n            created_at,\n            updated_at\n        FROM contracts\n        WHERE status NOT IN ($1, $2, $3, $4, $5, $6, $7, $8, $9) and liquidation_status NOT in ($10)\n        ",
   "describe": {
     "columns": [
       {
@@ -117,7 +117,8 @@
                 "DisputeLenderResolved",
                 "Cancelled",
                 "RequestExpired",
-                "Defaulted"
+                "Defaulted",
+                "Undercollateralized"
               ]
             }
           }
@@ -189,7 +190,8 @@
                 "DisputeLenderResolved",
                 "Cancelled",
                 "RequestExpired",
-                "Defaulted"
+                "Defaulted",
+                "Undercollateralized"
               ]
             }
           }
@@ -215,7 +217,8 @@
                 "DisputeLenderResolved",
                 "Cancelled",
                 "RequestExpired",
-                "Defaulted"
+                "Defaulted",
+                "Undercollateralized"
               ]
             }
           }
@@ -241,7 +244,8 @@
                 "DisputeLenderResolved",
                 "Cancelled",
                 "RequestExpired",
-                "Defaulted"
+                "Defaulted",
+                "Undercollateralized"
               ]
             }
           }
@@ -267,7 +271,8 @@
                 "DisputeLenderResolved",
                 "Cancelled",
                 "RequestExpired",
-                "Defaulted"
+                "Defaulted",
+                "Undercollateralized"
               ]
             }
           }
@@ -293,7 +298,8 @@
                 "DisputeLenderResolved",
                 "Cancelled",
                 "RequestExpired",
-                "Defaulted"
+                "Defaulted",
+                "Undercollateralized"
               ]
             }
           }
@@ -319,7 +325,8 @@
                 "DisputeLenderResolved",
                 "Cancelled",
                 "RequestExpired",
-                "Defaulted"
+                "Defaulted",
+                "Undercollateralized"
               ]
             }
           }
@@ -345,7 +352,8 @@
                 "DisputeLenderResolved",
                 "Cancelled",
                 "RequestExpired",
-                "Defaulted"
+                "Defaulted",
+                "Undercollateralized"
               ]
             }
           }
@@ -371,7 +379,35 @@
                 "DisputeLenderResolved",
                 "Cancelled",
                 "RequestExpired",
-                "Defaulted"
+                "Defaulted",
+                "Undercollateralized"
+              ]
+            }
+          }
+        },
+        {
+          "Custom": {
+            "name": "contract_status",
+            "kind": {
+              "Enum": [
+                "Requested",
+                "Approved",
+                "CollateralSeen",
+                "CollateralConfirmed",
+                "PrincipalGiven",
+                "RepaymentProvided",
+                "RepaymentConfirmed",
+                "Closing",
+                "Closed",
+                "Rejected",
+                "DisputeBorrowerStarted",
+                "DisputeLenderStarted",
+                "DisputeBorrowerResolved",
+                "DisputeLenderResolved",
+                "Cancelled",
+                "RequestExpired",
+                "Defaulted",
+                "Undercollateralized"
               ]
             }
           }
@@ -417,5 +453,5 @@
       false
     ]
   },
-  "hash": "da6e855f80d705dd76110d6084f95521fb6e3c4543d1339f21b81926b9b24448"
+  "hash": "60a153e8f065dea2f859eef85853bf704e863c1909546f537fc5336dba8d8cd3"
 }

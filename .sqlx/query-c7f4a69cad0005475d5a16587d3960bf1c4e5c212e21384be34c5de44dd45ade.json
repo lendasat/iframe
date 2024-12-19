@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT \n            id,\n            contract_id,\n            borrower_id,\n            lender_id,\n            lender_payout_sats,\n            borrower_payout_sats,\n            comment,\n            status as \"status: crate::model::DisputeStatus\",\n            created_at,\n            updated_at\n        FROM \n            DISPUTES\n        WHERE \n            id = $1 and lender_id = $2\n        ",
+  "query": "\n        SELECT\n            id,\n            contract_id,\n            borrower_id,\n            lender_id,\n            lender_payout_sats,\n            borrower_payout_sats,\n            comment,\n            status as \"status: crate::model::DisputeStatus\",\n            created_at,\n            updated_at\n        FROM\n            DISPUTES\n        WHERE\n            contract_id = $1 and borrower_id = $2\n        ",
   "describe": {
     "columns": [
       {
@@ -85,5 +85,5 @@
       false
     ]
   },
-  "hash": "dd6ead17affe02f54d9144e6db7a7bd92f57511a1f6659fa7a38b61490b2c93d"
+  "hash": "c7f4a69cad0005475d5a16587d3960bf1c4e5c212e21384be34c5de44dd45ade"
 }

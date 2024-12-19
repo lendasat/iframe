@@ -86,7 +86,7 @@ export const OpenContracts = ({ contracts }: OpenContractsProps) => {
         }}
       >
         {contracts.length === 0
-          && <p>You don't have any open contracts.</p>}
+          && <p>You do not have any open contracts.</p>}
 
         {contracts.map((contract, index) => {
           const collateral_btc = contract.initial_collateral_sats / 100000000;

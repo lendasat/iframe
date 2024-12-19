@@ -291,6 +291,8 @@ pub enum ContractStatus {
     RepaymentProvided,
     /// The principal + interest has been repaid to the lender and confirmed by the lender
     RepaymentConfirmed,
+    /// The loan is not sufficiently collateralized, so it can be liquidated by the lender.
+    Undercollateralized,
     /// The borrower failed to pay back the loan before expiry.
     Defaulted,
     /// The collateral claim TX has been broadcasted but not confirmed yet.
@@ -391,6 +393,7 @@ pub mod db {
         PrincipalGiven,
         RepaymentProvided,
         RepaymentConfirmed,
+        Undercollateralized,
         Defaulted,
         Closing,
         Closed,
@@ -492,6 +495,7 @@ impl From<db::ContractStatus> for ContractStatus {
             db::ContractStatus::PrincipalGiven => Self::PrincipalGiven,
             db::ContractStatus::RepaymentProvided => Self::RepaymentProvided,
             db::ContractStatus::RepaymentConfirmed => Self::RepaymentConfirmed,
+            db::ContractStatus::Undercollateralized => Self::Undercollateralized,
             db::ContractStatus::Defaulted => Self::Defaulted,
             db::ContractStatus::Closing => Self::Closing,
             db::ContractStatus::Closed => Self::Closed,
@@ -613,6 +617,7 @@ impl From<ContractStatus> for db::ContractStatus {
             ContractStatus::PrincipalGiven => Self::PrincipalGiven,
             ContractStatus::RepaymentProvided => Self::RepaymentProvided,
             ContractStatus::RepaymentConfirmed => Self::RepaymentConfirmed,
+            ContractStatus::Undercollateralized => Self::Undercollateralized,
             ContractStatus::Defaulted => Self::Defaulted,
             ContractStatus::Closing => Self::Closing,
             ContractStatus::Closed => Self::Closed,

@@ -32,6 +32,7 @@ import { ContractPrincipalGiven } from "./contract-principal-given";
 import { ContractPrincipalRepaid } from "./contract-principal-repaid";
 import { ContractRepaid } from "./contract-repaid";
 import { ContractRequested } from "./contract-requested";
+import { ContractUndercollateralized } from "./contract-undercollateralized";
 import { ExpandableDisputeCard } from "./dispute-card";
 import { downloadLocalStorage } from "./download-local-storage";
 
@@ -220,6 +221,7 @@ function ContractDetails({ contract }: DetailsProps) {
     case ContractStatus.Rejected:
     case ContractStatus.RepaymentProvided:
     case ContractStatus.RepaymentConfirmed:
+    case ContractStatus.Undercollateralized:
     case ContractStatus.Defaulted:
     case ContractStatus.Closing:
     case ContractStatus.Closed:
@@ -536,8 +538,6 @@ const ContractStatusDetails = ({
   loanOriginatorFee,
   loanOriginatorFeeUsd,
 }: ContractStatusDetailsProps) => {
-  console.log(totalCollateral);
-
   switch (contract.status) {
     case ContractStatus.Requested:
       return <ContractRequested createdAt={contract.created_at} contractId={contract.id} />;
@@ -582,6 +582,8 @@ const ContractStatusDetails = ({
       return <ContractPrincipalRepaid />;
     case ContractStatus.RepaymentConfirmed:
       return <ContractRepaid contract={contract} collateralBtc={collateralBtc} />;
+    case ContractStatus.Undercollateralized:
+      return <ContractUndercollateralized />;
     case ContractStatus.Defaulted:
       return <ContractDefaulted />;
     case ContractStatus.Closed:

@@ -250,7 +250,7 @@ async fn cancel_contract_request(
         });
     }
 
-    db::contracts::mark_contract_as_cancelled(&data.db, contract_id.as_str(), user.id.as_str())
+    db::contracts::mark_contract_as_cancelled(&data.db, contract_id.as_str())
         .await
         .map_err(Error::Database)?;
 

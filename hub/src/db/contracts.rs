@@ -7,7 +7,6 @@ use crate::model::ContractVersion;
 use crate::model::Integration;
 use anyhow::bail;
 use anyhow::Context;
-use anyhow::Error;
 use anyhow::Result;
 use bitcoin::address::NetworkUnchecked;
 use bitcoin::bip32::Xpub;
@@ -538,203 +537,39 @@ pub async fn mark_contract_as_repayment_provided(
     pool: &Pool<Postgres>,
     contract_id: &str,
 ) -> Result<Contract> {
-    update_contract_state(pool, contract_id, db::ContractStatus::RepaymentProvided).await
+    mark_contract_state_as(pool, contract_id, db::ContractStatus::RepaymentProvided).await
 }
 
 pub async fn mark_contract_as_repayment_confirmed(
     pool: &Pool<Postgres>,
     contract_id: &str,
 ) -> Result<Contract> {
-    update_contract_state(pool, contract_id, db::ContractStatus::RepaymentConfirmed).await
-}
-
-async fn update_contract_state(
-    pool: &Pool<Postgres>,
-    contract_id: &str,
-    new_status: db::ContractStatus,
-) -> Result<Contract, Error> {
-    let contract = sqlx::query_as!(
-        db::Contract,
-        r#"
-        UPDATE contracts
-        SET
-            status = $1,
-            updated_at = $2
-        WHERE id = $3
-        RETURNING
-            id,
-            lender_id,
-            borrower_id,
-            loan_id,
-            initial_ltv,
-            initial_collateral_sats,
-            origination_fee_sats,
-            collateral_sats,
-            loan_amount,
-            borrower_btc_address,
-            borrower_pk,
-            borrower_loan_address,
-            integration as "integration: crate::model::db::Integration",
-            lender_xpub,
-            contract_address,
-            contract_index,
-            status as "status: crate::model::db::ContractStatus",
-            liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
-            duration_months,
-            expiry_date,
-            contract_version,
-            created_at,
-            updated_at
-        "#,
-        new_status as db::ContractStatus,
-        OffsetDateTime::now_utc(),
-        contract_id,
-    )
-    .fetch_one(pool)
-    .await?;
-
-    Ok(contract.into())
+    mark_contract_state_as(pool, contract_id, db::ContractStatus::RepaymentConfirmed).await
 }
 
 pub async fn mark_contract_as_cancelled(
     pool: &Pool<Postgres>,
     contract_id: &str,
-    borrower_id: &str,
 ) -> Result<Contract> {
-    let contract = sqlx::query_as!(
-        db::Contract,
-        r#"
-        UPDATE contracts
-        SET
-            status = $1,
-            updated_at = $2,
-            borrower_id = $3
-        WHERE id = $4
-        RETURNING
-            id,
-            lender_id,
-            borrower_id,
-            loan_id,
-            initial_ltv,
-            initial_collateral_sats,
-            origination_fee_sats,
-            collateral_sats,
-            loan_amount,
-            borrower_btc_address,
-            borrower_pk,
-            borrower_loan_address,
-            integration as "integration: crate::model::db::Integration",
-            lender_xpub,
-            contract_address,
-            contract_index,
-            status as "status: crate::model::db::ContractStatus",
-            liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
-            duration_months,
-            expiry_date,
-            contract_version,
-            created_at,
-            updated_at
-        "#,
-        db::ContractStatus::Cancelled as db::ContractStatus,
-        OffsetDateTime::now_utc(),
-        borrower_id,
-        contract_id,
-    )
-    .fetch_one(pool)
-    .await?;
-
-    Ok(contract.into())
+    mark_contract_state_as(pool, contract_id, db::ContractStatus::Cancelled).await
 }
 
 pub async fn mark_contract_as_closed(pool: &Pool<Postgres>, contract_id: &str) -> Result<Contract> {
-    let contract = sqlx::query_as!(
-        db::Contract,
-        r#"
-        UPDATE contracts
-        SET
-            status = $1,
-            updated_at = $2
-        WHERE id = $3
-        RETURNING
-            id,
-            lender_id,
-            borrower_id,
-            loan_id,
-            initial_ltv,
-            initial_collateral_sats,
-            origination_fee_sats,
-            collateral_sats,
-            loan_amount,
-            borrower_btc_address,
-            borrower_pk,
-            borrower_loan_address,
-            integration as "integration: crate::model::db::Integration",
-            lender_xpub,
-            contract_address,
-            contract_index,
-            status as "status: crate::model::db::ContractStatus",
-            liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
-            duration_months,
-            expiry_date,
-            contract_version,
-            created_at,
-            updated_at
-        "#,
-        db::ContractStatus::Closed as db::ContractStatus,
-        OffsetDateTime::now_utc(),
-        contract_id,
-    )
-    .fetch_one(pool)
-    .await?;
-
-    Ok(contract.into())
+    mark_contract_state_as(pool, contract_id, db::ContractStatus::Closed).await
 }
 
 pub async fn mark_contract_as_closing(
     pool: &Pool<Postgres>,
     contract_id: &str,
 ) -> Result<Contract> {
-    let contract = sqlx::query_as!(
-        db::Contract,
-        r#"
-        UPDATE contracts
-        SET
-            status = $1,
-            updated_at = $2
-        WHERE id = $3
-        RETURNING
-            id,
-            lender_id,
-            borrower_id,
-            loan_id,
-            initial_ltv,
-            initial_collateral_sats,
-            origination_fee_sats,
-            collateral_sats,
-            loan_amount,
-            borrower_btc_address,
-            borrower_pk,
-            borrower_loan_address,
-            integration as "integration: crate::model::db::Integration",
-            lender_xpub,
-            contract_address,
-            contract_index,
-            status as "status: crate::model::db::ContractStatus",
-            liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
-            duration_months,
-            expiry_date,
-            contract_version,
-            created_at,
-            updated_at
-        "#,
-        db::ContractStatus::Closing as db::ContractStatus,
-        OffsetDateTime::now_utc(),
-        contract_id,
-    )
-    .fetch_one(pool)
-    .await?;
+    mark_contract_state_as(pool, contract_id, db::ContractStatus::Closing).await
+}
 
-    Ok(contract.into())
+pub async fn mark_contract_as_undercollateralized(
+    pool: &Pool<Postgres>,
+    contract_id: &str,
+) -> Result<Contract> {
+    mark_contract_state_as(pool, contract_id, db::ContractStatus::Undercollateralized).await
 }
 
 pub async fn reject_contract_request(
@@ -834,11 +669,14 @@ pub(crate) async fn mark_liquidation_state_as(
     Ok(contract.into())
 }
 
-pub(crate) async fn mark_contract_as(
-    transaction: &mut sqlx::Transaction<'_, Postgres>,
+pub(crate) async fn mark_contract_state_as<'a, E>(
+    pool: E,
     contract_id: &str,
     status: db::ContractStatus,
-) -> Result<Contract> {
+) -> Result<Contract>
+where
+    E: sqlx::Executor<'a, Database = Postgres>,
+{
     let contract = sqlx::query_as!(
         db::Contract,
         r#"
@@ -876,7 +714,7 @@ pub(crate) async fn mark_contract_as(
         OffsetDateTime::now_utc(),
         contract_id,
     )
-    .fetch_one(&mut **transaction)
+    .fetch_one(pool)
     .await?;
 
     Ok(contract.into())
@@ -913,7 +751,7 @@ pub(crate) async fn load_open_not_liquidated_contracts(
             created_at,
             updated_at
         FROM contracts
-        WHERE status NOT IN ($1, $2, $3, $4, $5, $6, $7, $8) and liquidation_status NOT in ($9)
+        WHERE status NOT IN ($1, $2, $3, $4, $5, $6, $7, $8, $9) and liquidation_status NOT in ($10)
         "#,
         db::ContractStatus::Requested as db::ContractStatus,
         db::ContractStatus::Approved as db::ContractStatus,
@@ -923,6 +761,7 @@ pub(crate) async fn load_open_not_liquidated_contracts(
         db::ContractStatus::Cancelled as db::ContractStatus,
         db::ContractStatus::RequestExpired as db::ContractStatus,
         db::ContractStatus::Defaulted as db::ContractStatus,
+        db::ContractStatus::Undercollateralized as db::ContractStatus,
         db::LiquidationStatus::Liquidated as db::LiquidationStatus,
     )
     .fetch_all(pool)
@@ -1028,6 +867,7 @@ pub async fn update_collateral(
                     | ContractStatus::PrincipalGiven
                     | ContractStatus::RepaymentProvided
                     | ContractStatus::RepaymentConfirmed
+                    | ContractStatus::Undercollateralized
                     | ContractStatus::Defaulted
                     | ContractStatus::Closing
                     | ContractStatus::Closed

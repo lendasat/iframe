@@ -38,7 +38,7 @@ export default function LoanCarousel() {
       return (
         <Box className="h-60 flex flex-col items-center justify-center">
           <img src={CreditCard} alt="credit card" className="max-w-40" />
-          <Text className="text-font/50 dark:text-font-dark/50" size={"1"}>You currently don't have any loans</Text>
+          <Text className="text-font/50 dark:text-font-dark/50" size={"1"}>You do not have any loans currently</Text>
         </Box>
       );
     }

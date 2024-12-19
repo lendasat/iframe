@@ -289,7 +289,16 @@ async fn liquidate_contract(
         return;
     }
 
-    tracing::debug!(contract_id, "Marking contract as liquidated");
+    tracing::info!(contract_id, "Marking contract as undercollateralized");
+
+    if let Err(err) = db::contracts::mark_contract_as_undercollateralized(db, contract_id).await {
+        tracing::error!(
+            contract_id,
+            "Failed to mark contract as undercollateralized: {err:#}"
+        )
+    }
+
+    tracing::debug!(contract_id, "Updating liquidation status to liquidated");
 
     if let Err(err) =
         db::contracts::mark_liquidation_state_as(db, contract_id, LiquidationStatus::Liquidated)
@@ -297,7 +306,7 @@ async fn liquidate_contract(
     {
         tracing::error!(
             contract_id,
-            "Failed to mark contract as liquidated: {err:#}"
+            "Failed to update liquidation status to liquidated: {err:#}"
         )
     }
 
