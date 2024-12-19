@@ -3,8 +3,7 @@ import { ContractStatus, useLenderHttpClient } from "@frontend-monorepo/http-cli
 import { Box } from "@radix-ui/themes";
 import { Suspense } from "react";
 import { Await } from "react-router-dom";
-import { ClosedContracts } from "./closed-contracts";
-import { OpenContracts } from "./open-contracts";
+import { AllContracts } from "./all-contracts";
 
 function MyContracts() {
   const { getContracts } = useLenderHttpClient();
@@ -15,23 +14,8 @@ function MyContracts() {
         resolve={getContracts()}
         errorElement={<div className={"text-font dark:text-font-dark"}>Could not load contracts</div>}
         children={(contracts: Awaited<Contract[]>) => (
-          <Box className="h-screen flex flex-col">
-            <Box className="flex-1 max-h-1/2 overflow-auto">
-              <OpenContracts
-                contracts={contracts.filter((loan) =>
-                  loan.status !== ContractStatus.Closed && loan.status !== ContractStatus.Cancelled
-                  && loan.status !== ContractStatus.RequestExpired
-                )}
-              />
-            </Box>
-            <Box className="flex-1 max-h-1/2 overflow-auto">
-              <ClosedContracts
-                contracts={contracts.filter((loan) =>
-                  loan.status === ContractStatus.Closed || loan.status === ContractStatus.Cancelled
-                  || loan.status === ContractStatus.RequestExpired
-                )}
-              />
-            </Box>
+          <Box className="h-screen flex-1 max-h-1/2 overflow-auto flex-col pb-5">
+            <AllContracts contracts={contracts} />
           </Box>
         )}
       />

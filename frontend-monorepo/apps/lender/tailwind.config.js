@@ -1,5 +1,6 @@
 const { createGlobPatternsForDependencies } = require('@nx/react/tailwind');
 const { join } = require('path');
+const { blackA, violet } = require("@radix-ui/colors");
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
@@ -30,6 +31,8 @@ module.exports = {
         'dashboard-dark': '#1A202C',
         'active-nav': '#CDC3FF',
         btn: '#21212F',
+        ...blackA,
+        ...violet,
       },
     },
   },
