@@ -80,14 +80,14 @@ export function MyLoanOfferComponent({ loanOffer }: LoanOfferProps) {
         <DropdownMenu.Trigger>
           <Button
             variant="ghost"
-            className="xl:hidden text-font hover:bg-transparent"
+            className="xl:hidden text-font dark:text-font-dark hover:bg-transparent"
           >
             <BsThreeDotsVertical />
           </Button>
         </DropdownMenu.Trigger>
-        <DropdownMenu.Content>
+        <DropdownMenu.Content className={"bg-light dark:bg-dark"}>
           <Box width={"100%"} minWidth={"300px"} p={"3"}>
-            <Heading as="h6" weight={"medium"}>
+            <Heading className={"text-font dark:text-font-dark"} as="h6" weight={"medium"}>
               More Information
             </Heading>
           </Box>
@@ -101,20 +101,20 @@ export function MyLoanOfferComponent({ loanOffer }: LoanOfferProps) {
             <Flex direction={"column"} gap={"4"} align={"start"}>
               <Box>
                 <Flex align={"center"} gap={"3"}>
-                  <Text size={"2"} weight={"medium"}>
+                  <Text className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
                     From:
                   </Text>
-                  <Text className="capitalize" size={"1"}>
+                  <Text className="capitalize text-font dark:text-font-dark" size={"1"}>
                     {loanOffer.id}
                   </Text>
                 </Flex>
               </Box>
               <Box>
                 <Flex align={"center"} gap={"2"}>
-                  <Text size={"2"} weight={"medium"}>
+                  <Text className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
                     Amount:
                   </Text>
-                  <Text className="capitalize" size={"2"}>
+                  <Text className="capitalize text-font dark:text-font-dark" size={"2"}>
                     <CurrencyFormatter value={loanOffer.loan_amount_min} /> -{" "}
                     <CurrencyFormatter value={loanOffer.loan_amount_max} />
                   </Text>
@@ -122,40 +122,40 @@ export function MyLoanOfferComponent({ loanOffer }: LoanOfferProps) {
               </Box>
               <Box>
                 <Flex align={"center"} gap={"2"}>
-                  <Text size={"2"} weight={"medium"}>
+                  <Text className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
                     Duration:
                   </Text>
-                  <Text className="capitalize" size={"2"}>
+                  <Text className="capitalize text-font dark:text-font-dark" size={"2"}>
                     {loanOffer.duration_months_min} - {loanOffer.duration_months_max} months
                   </Text>
                 </Flex>
               </Box>
               <Box>
                 <Flex align={"center"} gap={"2"}>
-                  <Text size={"2"} weight={"medium"}>
+                  <Text className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
                     LTV rate:
                   </Text>
-                  <Text className="capitalize" size={"2"}>
+                  <Text className="capitalize text-font dark:text-font-dark" size={"2"}>
                     {(loanOffer.min_ltv * 100).toFixed(2)}%
                   </Text>
                 </Flex>
               </Box>
               <Box>
                 <Flex align={"center"} gap={"2"}>
-                  <Text size={"2"} weight={"medium"}>
+                  <Text className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
                     Interest:
                   </Text>
-                  <Text className="capitalize" size={"2"}>
+                  <Text className="capitalize text-font dark:text-font-dark" size={"2"}>
                     {(loanOffer.interest_rate * 100).toFixed(2)}%
                   </Text>
                 </Flex>
               </Box>
               <Box>
                 <Flex align={"center"} gap={"2"}>
-                  <Text size={"2"} weight={"medium"}>
+                  <Text className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
                     Coin:
                   </Text>
-                  <Text className="capitalize" size={"2"}>
+                  <Text className="capitalize text-font dark:text-font-dark" size={"2"}>
                     <Badge color="purple" size={"2"}>
                       {StableCoinHelper.print(coin)}
                     </Badge>
@@ -164,10 +164,10 @@ export function MyLoanOfferComponent({ loanOffer }: LoanOfferProps) {
               </Box>
               <Box>
                 <Flex align={"center"} gap={"2"}>
-                  <Text size={"2"} weight={"medium"}>
+                  <Text className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
                     Status:
                   </Text>
-                  <Text className="capitalize" size={"2"}>
+                  <Text className="capitalize text-font dark:text-font-dark" size={"2"}>
                     <StatusBadge offer={loanOffer} />
                   </Text>
                 </Flex>
@@ -175,7 +175,7 @@ export function MyLoanOfferComponent({ loanOffer }: LoanOfferProps) {
               <Button
                 size={"3"}
                 variant="solid"
-                className="bg-btn text-white w-full active:scale-90"
+                className="bg-btn dark:bg-dark-600 text-white w-full active:scale-90"
                 onClick={() => {
                   navigate(`/my-offers/${loanOffer.id}`);
                 }}
