@@ -1,7 +1,6 @@
 import type { LoanOffer } from "@frontend-monorepo/http-client-borrower";
 import { CurrencyFormatter, StableCoinHelper } from "@frontend-monorepo/ui-shared";
 import { Badge, Box, Button, DropdownMenu, Flex, Grid, Heading, Text } from "@radix-ui/themes";
-import { useState } from "react";
 import { BsThreeDotsVertical } from "react-icons/bs";
 import { Lender } from "./lender";
 
@@ -12,7 +11,6 @@ interface LoanOfferProps {
 
 export function LoanOfferComponent({ loanOffer, onRequest }: LoanOfferProps) {
   const coin = StableCoinHelper.mapFromBackend(loanOffer.loan_asset_chain, loanOffer.loan_asset_type);
-  const [loadingState, setLoadingState] = useState<boolean>(false);
   return (
     <Box className="pl-5 pr-6 md:pl-7 md:pr-8 py-3 border-b border-black/5 flex md:gap-2 items-center dark:border-dark">
       <Grid className="grid-cols-4 md:grid-cols-6 xl:grid-cols-7 items-center grow text-font dark:text-font-dark">
@@ -127,20 +125,6 @@ export function LoanOfferComponent({ loanOffer, onRequest }: LoanOfferProps) {
                   </Text>
                 </Flex>
               </Box>
-              <Button
-                size={"3"}
-                loading={loadingState}
-                variant="solid"
-                className="bg-btn text-white w-full active:scale-90"
-                onClick={() => {
-                  setLoadingState(true);
-                  setTimeout(() => {
-                    setLoadingState(false);
-                    onRequest(loanOffer);
-                  }, 1000);
-                }}
-              >
-              </Button>
             </Flex>
           </Box>
         </DropdownMenu.Content>
