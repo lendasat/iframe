@@ -98,7 +98,6 @@ const BorrowerAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) =>
 
   const checkAuthStatus = useCallback(async () => {
     try {
-      console.log(`Checking status if logged in`);
       await check();
     } catch (error) {
       console.log(`Checking status: failed`);

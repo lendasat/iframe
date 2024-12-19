@@ -2,9 +2,11 @@ import type { LoginResponse, User, Version } from "@frontend-monorepo/base-http-
 import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
 import axios from "axios";
 import type { FC, ReactNode } from "react";
+import { useCallback } from "react";
 import { createContext, useContext, useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { SemVer } from "semver";
-import { HttpClientLenderProvider } from "./http-client-lender";
+import { allowedPagesWithoutLogin, HttpClientLenderProvider } from "./http-client-lender";
 
 interface AuthContextType {
   user: User | null;
@@ -64,13 +66,61 @@ export const AuthProviderLender: FC<AuthProviderProps> = ({ children, baseUrl })
 };
 
 const LenderAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [backendVersion, setBackendVersion] = useState<Version>({
     version: new SemVer("0.0.0"),
     commit_hash: "unknown",
   });
-  const { me, login: baseLogin, logout: baseLogout, getVersion } = useBaseHttpClient();
+  const { me, login: baseLogin, logout: baseLogout, getVersion, check } = useBaseHttpClient();
+
+  const handle401 = useCallback(() => {
+    setUser(null);
+
+    if (allowedPagesWithoutLogin(location.pathname)) {
+      console.log(`User can stay ${location.pathname}`);
+      return;
+    }
+
+    navigate("/login", {
+      state: {
+        returnUrl: window.location.pathname,
+      },
+    });
+  }, [navigate, location]);
+
+  const checkAuthStatus = useCallback(async () => {
+    try {
+      await check();
+    } catch (error) {
+      console.log(`Checking status: failed`);
+      if (axios.isAxiosError(error) && error.response) {
+        if (error.response.status === 401) {
+          handle401();
+        } else {
+          const message = error.response.data.message;
+          console.error(
+            `Failed to check login status: http: ${error.response?.status} and response: ${
+              JSON.stringify(error.response?.data)
+            }`,
+          );
+          throw new Error(message);
+        }
+      } else {
+        throw new Error(`Failed to check login status: http: ${JSON.stringify(error)}`);
+      }
+    }
+  }, [check, handle401]);
+
+  // Background session check
+  useEffect(() => {
+    checkAuthStatus();
+    const intervalId = setInterval(checkAuthStatus, 5 * 60 * 1000);
+    return () => clearInterval(intervalId);
+  }, [checkAuthStatus]);
 
   useEffect(() => {
     const initializeAuth = async () => {

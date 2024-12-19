@@ -25,6 +25,14 @@ interface RawDispute extends Omit<Dispute, "created_at" | "updated_at"> {
   updated_at: string;
 }
 
+export function allowedPagesWithoutLogin(location: string) {
+  // These need to be aligned with the routes in app.tsx
+  return location.includes(`login`) || location.includes(`registration`)
+    || location.includes(`forgotpassword`) || location.includes(`resetpassword`)
+    || location.includes(`verifyemail`) || location.includes(`logout`)
+    || location.includes(`error`);
+}
+
 export class HttpClientLender extends BaseHttpClient {
   async postLoanOffer(offer: CreateLoanOfferRequest): Promise<LoanOffer | undefined> {
     try {
