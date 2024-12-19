@@ -32,7 +32,7 @@ jobs:
       - uses: extractions/setup-just@v2
 
       - name: Install cargo edit
-        uses: stellar/binaries@v33
+        uses: stellar/binaries@v13
         with:
           name: cargo-edit
           version: 0.13.0
