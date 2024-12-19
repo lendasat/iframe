@@ -37,18 +37,29 @@ const DeclinedTransaction = ({ declineData, lastFourCardDigits }: DeclinedTransa
     <Grid className="grid-cols-4 px-4 py-2" align={"center"}>
       <Box>
         <Flex align={"center"} gap={"2"}>
-          <Flex align={"center"} justify={"center"} className="w-10 h-10 rounded-full bg-purple-50">
+          <Flex
+            align={"center"}
+            justify={"center"}
+            className="w-10 h-10 rounded-full bg-purple-50 dark:bg-dark-600 text-font dark:text-font-dark"
+          >
             <AiOutlineStop size={"24"} />
           </Flex>
           <Box>
-            <Heading size={"2"} weight={"medium"} className="capitalize hidden md:inline-block">
+            <Heading
+              size={"2"}
+              weight={"medium"}
+              className="capitalize hidden md:inline-block text-font dark:text-font-dark"
+            >
               {declineData.merchant}
             </Heading>
             <Flex align={"center"} gap={"2"}>
-              <Text size={"1"}>**** {lastFourCardDigits}</Text>
+              <Text className={"text-font dark:text-font-dark"} size={"1"}>**** {lastFourCardDigits}</Text>
             </Flex>
             <Flex align={"center"} gap={"2"}>
-              <Text size={"1"}>{"Reason: "}{declineData.customer_friendly_description}</Text>
+              <Text className={"text-font dark:text-font-dark"} size={"1"}>
+                {"Reason: "}
+                {declineData.customer_friendly_description}
+              </Text>
             </Flex>
           </Box>
         </Flex>
@@ -62,16 +73,16 @@ const DeclinedTransaction = ({ declineData, lastFourCardDigits }: DeclinedTransa
       </Box>
 
       <Box className="text-center">
-        <Text size={"1"} weight={"medium"}>
+        <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
           <CurrencyFormatter value={declineData.amount} minFraction={2} />
         </Text>
       </Box>
 
       <Box className="text-left">
-        <Text as="p" weight={"medium"} size={"1"}>
+        <Text className={"text-font dark:text-font-dark"} as="p" weight={"medium"} size={"1"}>
           {formatDateAsDayAndMonth(date)}
         </Text>
-        <Text size={"1"} className="text-font/50" weight={"medium"}>
+        <Text size={"1"} className="text-font/50 dark:text-font-dark/50" weight={"medium"}>
           {formatDateAsTime(date)}
         </Text>
       </Box>
@@ -95,17 +106,25 @@ const CardTransaction = ({ transaction, lastFourCardDigits }: CardTransactionPro
     <Grid className="grid-cols-4 px-4 py-2" align={"center"}>
       <Box>
         <Flex align={"center"} gap={"2"}>
-          <Flex align={"center"} justify={"center"} className="w-10 h-10 rounded-full bg-purple-50">
+          <Flex
+            align={"center"}
+            justify={"center"}
+            className="w-10 h-10 rounded-full bg-purple-50 dark:bg-dark-600 text-font dark:text-font-dark"
+          >
             {transaction.amount < 0
               ? <GoArrowDownLeft size={"24"} />
               : <GoArrowUpRight size={"24"} />}
           </Flex>
           <Box>
-            <Heading size={"2"} weight={"medium"} className="capitalize hidden md:inline-block">
+            <Heading
+              size={"2"}
+              weight={"medium"}
+              className="capitalize text-font dark:text-font-dark hidden md:inline-block"
+            >
               {transaction.merchant}
             </Heading>
             <Flex align={"center"} gap={"2"}>
-              <Text size={"1"}>**** {lastFourCardDigits}</Text>
+              <Text className={"text-font dark:text-font-dark"} size={"1"}>**** {lastFourCardDigits}</Text>
             </Flex>
           </Box>
         </Flex>
@@ -129,19 +148,19 @@ const CardTransaction = ({ transaction, lastFourCardDigits }: CardTransactionPro
       </Box>
 
       <Box className="text-center">
-        <Text size={"1"} weight={"medium"}>
+        <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
           <CurrencyFormatter value={transaction.amount} minFraction={2} maxFraction={2} />
         </Text>
-        <Text size={"1"} weight={"light"}>
+        <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"light"}>
           {" "}(+<CurrencyFormatter value={totalFees} minFraction={2} maxFraction={2} /> Fee)
         </Text>
       </Box>
 
       <Box className="text-left">
-        <Text as="p" weight={"medium"} size={"1"}>
+        <Text className={"text-font dark:text-font-dark"} as="p" weight={"medium"} size={"1"}>
           {formatDateAsDayAndMonth(date)}
         </Text>
-        <Text size={"1"} className="text-font/50" weight={"medium"}>
+        <Text size={"1"} className="text-font/50 dark:text-font-dark/50" weight={"medium"}>
           {formatDateAsTime(date)}
         </Text>
       </Box>
