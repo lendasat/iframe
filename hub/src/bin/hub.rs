@@ -149,7 +149,7 @@ async fn main() -> Result<()> {
     .await?;
 
     let lender_server = spawn_lender_server(
-        config,
+        config.clone(),
         wallet,
         db.clone(),
         mempool_addr,
@@ -168,7 +168,7 @@ async fn main() -> Result<()> {
 
     add_contract_request_expiry_job(&sched, db.clone()).await?;
     add_contract_default_job(&sched, db.clone()).await?;
-    add_contract_close_to_expiry_job(&sched, db).await?;
+    add_contract_close_to_expiry_job(&sched, config, db).await?;
 
     sched.start().await?;
 
