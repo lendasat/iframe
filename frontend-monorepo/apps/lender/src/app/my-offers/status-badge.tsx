@@ -46,6 +46,14 @@ export function StatusBadge({ offer }: StatusBadgeProps) {
       break;
   }
 
+  if (offer.loan_amount_reserve_remaining < offer.loan_amount_min) {
+    return (
+      <Badge variant="soft" size={"2"} color={"red"} radius="medium">
+        {LoanOfferStatus.Unavailable} (depleted)
+      </Badge>
+    );
+  }
+
   return (
     <Badge variant="soft" size={"2"} color={color} radius="medium">
       {offer.status}

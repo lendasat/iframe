@@ -59,6 +59,7 @@ export interface CreateLoanOfferRequest {
   interest_rate: number;
   loan_amount_min: number;
   loan_amount_max: number;
+  loan_amount_reserve: number;
   duration_months_min: number;
   duration_months_max: number;
   loan_asset_type: LoanAssetType;
@@ -79,6 +80,8 @@ export interface LoanOffer {
   interest_rate: number;
   loan_amount_min: number;
   loan_amount_max: number;
+  loan_amount_reserve: number;
+  loan_amount_reserve_remaining: number;
   duration_months_min: number;
   duration_months_max: number;
   loan_asset_type: string;

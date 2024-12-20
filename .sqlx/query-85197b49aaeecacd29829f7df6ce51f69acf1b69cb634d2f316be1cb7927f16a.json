@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        INSERT INTO loan_offers (\n          id,\n          lender_id,\n          name,\n          min_ltv,\n          interest_rate,\n          loan_amount_min,\n          loan_amount_max,\n          duration_months_min,\n          duration_months_max,\n          loan_asset_type,\n          loan_asset_chain,\n          status,\n          loan_repayment_address\n        )\n        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)\n        RETURNING\n          id,\n          lender_id,\n          name,\n          min_ltv,\n          interest_rate,\n          loan_amount_min,\n          loan_amount_max,\n          duration_months_min,\n          duration_months_max,\n          loan_asset_type AS \"loan_asset_type: crate::model::LoanAssetType\",\n          loan_asset_chain AS \"loan_asset_chain: crate::model::LoanAssetChain\",\n          status AS \"status: crate::model::LoanOfferStatus\",\n          loan_repayment_address,\n          created_at,\n          updated_at\n        ",
+  "query": "\n        SELECT\n            lo.id,\n            lo.lender_id,\n            lo.name,\n            lo.min_ltv,\n            lo.interest_rate,\n            lo.loan_amount_min,\n            lo.loan_amount_max,\n            lo.duration_months_min,\n            lo.duration_months_max,\n            lo.loan_amount_reserve,\n            COALESCE(\n                lo.loan_amount_reserve - COALESCE(\n                    SUM(\n                        CASE \n                            WHEN c.status NOT IN ('Cancelled', 'RequestExpired') \n                            THEN c.loan_amount \n                            ELSE 0 \n                        END\n                    ), \n                    0\n                ), \n                lo.loan_amount_reserve\n            ) AS loan_amount_reserve_remaining,\n            lo.loan_asset_type AS \"loan_asset_type: LoanAssetType\",\n            lo.loan_asset_chain AS \"loan_asset_chain: LoanAssetChain\",\n            lo.status AS \"status: LoanOfferStatus\",\n            lo.loan_repayment_address,\n            lo.created_at,\n            lo.updated_at\n        FROM loan_offers lo\n            LEFT JOIN \n                contracts c ON lo.id = c.loan_id\n        WHERE lo.id = $1\n        GROUP BY \n            lo.id\n    ",
   "describe": {
     "columns": [
       {
@@ -50,7 +50,17 @@
       },
       {
         "ordinal": 9,
-        "name": "loan_asset_type: crate::model::LoanAssetType",
+        "name": "loan_amount_reserve",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 10,
+        "name": "loan_amount_reserve_remaining",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 11,
+        "name": "loan_asset_type: LoanAssetType",
         "type_info": {
           "Custom": {
             "name": "loan_asset_type",
@@ -58,38 +68,6 @@
               "Enum": [
                 "Usdc",
                 "Usdt"
-              ]
-            }
-          }
-        }
-      },
-      {
-        "ordinal": 10,
-        "name": "loan_asset_chain: crate::model::LoanAssetChain",
-        "type_info": {
-          "Custom": {
-            "name": "loan_asset_chain",
-            "kind": {
-              "Enum": [
-                "Ethereum",
-                "Starknet",
-                "Polygon"
-              ]
-            }
-          }
-        }
-      },
-      {
-        "ordinal": 11,
-        "name": "status: crate::model::LoanOfferStatus",
-        "type_info": {
-          "Custom": {
-            "name": "loan_offer_status",
-            "kind": {
-              "Enum": [
-                "Available",
-                "Unavailable",
-                "Deleted"
               ]
             }
           }
@@ -97,43 +75,8 @@
       },
       {
         "ordinal": 12,
-        "name": "loan_repayment_address",
-        "type_info": "Varchar"
-      },
-      {
-        "ordinal": 13,
-        "name": "created_at",
-        "type_info": "Timestamptz"
-      },
-      {
-        "ordinal": 14,
-        "name": "updated_at",
-        "type_info": "Timestamptz"
-      }
-    ],
-    "parameters": {
-      "Left": [
-        "Bpchar",
-        "Bpchar",
-        "Varchar",
-        "Numeric",
-        "Numeric",
-        "Numeric",
-        "Numeric",
-        "Int4",
-        "Int4",
-        {
-          "Custom": {
-            "name": "loan_asset_type",
-            "kind": {
-              "Enum": [
-                "Usdc",
-                "Usdt"
-              ]
-            }
-          }
-        },
-        {
+        "name": "loan_asset_chain: LoanAssetChain",
+        "type_info": {
           "Custom": {
             "name": "loan_asset_chain",
             "kind": {
@@ -144,8 +87,12 @@
               ]
             }
           }
-        },
-        {
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "status: LoanOfferStatus",
+        "type_info": {
           "Custom": {
             "name": "loan_offer_status",
             "kind": {
@@ -156,8 +103,27 @@
               ]
             }
           }
-        },
-        "Varchar"
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "loan_repayment_address",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 15,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 16,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bpchar"
       ]
     },
     "nullable": [
@@ -171,6 +137,8 @@
       false,
       false,
       false,
+      null,
+      false,
       false,
       false,
       false,
@@ -178,5 +146,5 @@
       false
     ]
   },
-  "hash": "94cae09a515f1cdc6f9b091ef81a33174123fe57297521eaf78e516813d0d524"
+  "hash": "85197b49aaeecacd29829f7df6ce51f69acf1b69cb634d2f316be1cb7927f16a"
 }

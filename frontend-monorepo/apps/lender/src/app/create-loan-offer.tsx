@@ -35,6 +35,7 @@ const CreateLoanOffer: FC = () => {
   const layout = window;
   const { user } = useAuth();
   const [loanAmount, setLoanAmount] = useState<LoanAmount>({ min: 1000, max: 100000 });
+  const [loanReserve, setLoanReserve] = useState(loanAmount.max);
   const [loanDuration, setLoanDuration] = useState<LoanDuration>({ min: 1, max: 12 });
   const [ltv, setLtv] = useState<number>(50);
   const [interest, setInterest] = useState<number>(12);
@@ -87,6 +88,7 @@ const CreateLoanOffer: FC = () => {
       interest_rate: interest / 100,
       loan_amount_min: loanAmount.min,
       loan_amount_max: loanAmount.max,
+      loan_amount_reserve: loanReserve,
       duration_months_min: loanDuration.min,
       duration_months_max: loanDuration.max,
       loan_asset_type: assetType,
@@ -99,26 +101,29 @@ const CreateLoanOffer: FC = () => {
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
 
+    if (loanReserve < loanAmount.max) {
+      setError("Loan reserve cannot be smaller than max loan amount.");
+      return;
+    }
+
+    setError("");
+
     const data = mapToCreateLoanOfferSchema();
 
     try {
       setLoading(true);
-      setTimeout(async () => {
-        setLoading(false);
-        const res = await postLoanOffer(data);
-        console.log(res);
-        if (res !== undefined) {
-          navigate(`/my-offers/${res.id}`);
-        } else {
-          console.error(res);
-        }
-      }, 2000);
+      const res = await postLoanOffer(data);
+      if (res !== undefined) {
+        navigate(`/my-offers/${res.id}`);
+      } else {
+        console.error(res);
+        setError(`Could not create loan offer.`);
+      }
     } catch (e) {
-      setTimeout(() => {
-        setLoading(false);
-        console.error(e);
-        setError(`Failed creating offer ${JSON.stringify(e)}`);
-      }, 2000);
+      console.error(e);
+      setError(`Failed creating offer ${e}`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -175,6 +180,28 @@ const CreateLoanOffer: FC = () => {
                       onChange={(e) => setLoanAmount({ ...loanAmount, max: Number(e.target.value) })}
                     />
                   </Flex>
+                </Box>
+
+                {/* Reserve */}
+                <Box className="space-y-1">
+                  <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
+                    <Text as="label" size={"2"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">
+                      Reserve (max amount across all requests for this offer)
+                    </Text>
+                  </Flex>
+
+                  <TextField.Root
+                    size="3"
+                    className="flex-1 text-sm rounded-lg text-font dark:text-font-dark"
+                    type="number"
+                    placeholder="Loan Reserve"
+                    color="purple"
+                    value={loanReserve}
+                    min={loanAmount.max}
+                    step={1}
+                    onChange={(e) => setLoanReserve(Number(e.target.value))}
+                  >
+                  </TextField.Root>
                 </Box>
 
                 {/* Duration */}
