@@ -1000,6 +1000,47 @@ pub(crate) async fn expire_requested_contracts(
     Ok(contract_ids)
 }
 
+#[derive(Debug)]
+pub struct ContractInfo {
+    pub contract_id: String,
+    pub borrower_id: String,
+    pub expiry_date: OffsetDateTime,
+}
+
+/// Fetches contracts with `PrincipalGiven` status that are due to expire within the next 3 days.
+pub(crate) async fn close_to_expiry_contracts(
+    pool: &Pool<Postgres>,
+) -> Result<Vec<ContractInfo>, sqlx::Error> {
+    let due_date_start = OffsetDateTime::now_utc();
+    let due_date_end = OffsetDateTime::now_utc() + time::Duration::days(3);
+
+    let rows = sqlx::query!(
+        r#"
+            SELECT id, borrower_id, expiry_date
+            FROM contracts
+            WHERE
+                status = 'PrincipalGiven' AND
+                expiry_date > $1 AND
+                expiry_date <= $2
+        "#,
+        due_date_start,
+        due_date_end,
+    )
+    .fetch_all(pool)
+    .await?;
+
+    let contracts_info = rows
+        .into_iter()
+        .map(|row| ContractInfo {
+            contract_id: row.id,
+            borrower_id: row.borrower_id,
+            expiry_date: row.expiry_date,
+        })
+        .collect();
+
+    Ok(contracts_info)
+}
+
 pub(crate) async fn check_if_contract_belongs_to_borrower(
     pool: &Pool<Postgres>,
     contract_id: &str,
