@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            id,\n            balance,\n            available_balance,\n            expiration,\n            pan,\n            cvv,\n            support_token,\n            product_id,\n            end_customer_id,\n            contract_id,\n            borrower_id\n        FROM moon_cards\n        where borrower_id = $1\n        ",
+  "query": "\n        SELECT\n            id,\n            balance,\n            available_balance,\n            expiration,\n            pan,\n            cvv,\n            support_token,\n            product_id,\n            end_customer_id,\n            borrower_id\n        FROM moon_cards\n        where borrower_id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -50,11 +50,6 @@
       },
       {
         "ordinal": 9,
-        "name": "contract_id",
-        "type_info": "Bpchar"
-      },
-      {
-        "ordinal": 10,
         "name": "borrower_id",
         "type_info": "Bpchar"
       }
@@ -74,9 +69,8 @@
       false,
       false,
       false,
-      false,
       false
     ]
   },
-  "hash": "24d6550463a496a5c3244a7b439c317668fd67eb0942638ed3e92fd0091de280"
+  "hash": "96c86d23a40c550176abcb74711eb112b7775fe05e5ac304ced78ebf1b07301f"
 }

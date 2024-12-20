@@ -402,7 +402,7 @@ export class HttpClientBorrower extends BaseHttpClient {
     }
   }
 
-  async getCardTransactions(cardId: number): Promise<CardTransaction[]> {
+  async getCardTransactions(cardId: string): Promise<CardTransaction[]> {
     try {
       const transactionResponse: AxiosResponse<CardTransaction[]> = await this.httpClient.get(
         `/api/transaction/${cardId}`,

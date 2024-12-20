@@ -4,7 +4,7 @@ import { useAsync } from "react-use";
 import HistoryComponent from "./HistoryComponent";
 
 interface CardHistoryProps {
-  cardId: number;
+  cardId: string;
   lastFourCardDigits: string;
 }
 

@@ -10,20 +10,20 @@ interface CredtCardProps {
 }
 
 interface CardNumberProps {
-  number: number;
+  pan: string;
   visible?: boolean;
   setVisible: (value: ((prevState: boolean) => boolean) | boolean) => void;
 }
 
-const CardNumber = ({ number, visible, setVisible }: CardNumberProps) => {
-  let groups = number.toString().match(/.{1,4}/g) || [];
+const CardNumber = ({ pan, visible, setVisible }: CardNumberProps) => {
+  let groups = pan.match(/.{1,4}/g) || [];
   if (!visible) {
     groups = ["****", "****", "****", groups[3]];
   }
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(number.toString());
+      await navigator.clipboard.writeText(pan);
       setVisible(!visible);
     } catch (err) {
       console.error("Failed to copy text: ", err);
@@ -62,14 +62,14 @@ const ExpirationDate = ({ expiry, visible }: ExpirationDateProps) => {
 };
 
 interface CvvProps {
-  cvv: number;
+  cvv: string;
   visible: boolean | undefined;
 }
 
 const Cvv = ({ cvv, visible }: CvvProps) => {
   let formatted = "***";
   if (visible) {
-    formatted = cvv.toString();
+    formatted = cvv;
   }
 
   return (
@@ -88,7 +88,7 @@ export default function CreditCard({ card, visible, setVisible }: CredtCardProps
           <MoonCard className="object-cover w-full h-full" />
         </div>
         <div className="absolute bottom-10 left-3 transform -translate-y-1/2 text-white text-center p-2 rounded">
-          <CardNumber number={card.pan} visible={visible} setVisible={setVisible}></CardNumber>
+          <CardNumber pan={card.pan} visible={visible} setVisible={setVisible}></CardNumber>
         </div>
         <div className="absolute bottom-4 left-3 text-white text-center p-2 rounded">
           <ExpirationDate expiry={card.expiration} visible={visible} />

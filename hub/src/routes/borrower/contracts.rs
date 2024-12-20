@@ -113,7 +113,7 @@ async fn post_contract_request(
         .ok_or(Error::MissingLoanOffer)?;
 
     let contract_id = Uuid::new_v4();
-    let lender_id = offer.lender_id.as_str();
+    let lender_id = offer.lender_id;
     let (borrower_loan_address, moon_invoice) = match body.integration {
         Integration::StableCoin => match body.borrower_loan_address {
             Some(borrower_loan_address) => (borrower_loan_address, None),
@@ -129,20 +129,26 @@ async fn post_contract_request(
                 });
             }
 
-            let cards = db::moon::get_borrower_cards(&data.db, user.id.as_str())
-                .await
-                .map_err(Error::Database)?;
+            let card_id = match body.moon_card_id {
+                Some(id) => id,
+                None => {
+                    let card = data
+                        .moon
+                        .create_card(user.id.clone())
+                        .await
+                        .map_err(Error::MoonCardGeneration)?;
 
-            if !cards.is_empty() {
-                return Err(Error::OneMoonCardAllowed);
-            }
+                    card.id
+                }
+            };
 
             let invoice = data
                 .moon
                 .generate_invoice(
                     body.loan_amount,
                     contract_id.to_string(),
-                    lender_id.to_string(),
+                    card_id,
+                    lender_id.clone(),
                     user.id.as_str(),
                 )
                 .await
@@ -175,7 +181,7 @@ async fn post_contract_request(
         &data.db,
         contract_id,
         user.id.as_str(),
-        lender_id,
+        lender_id.as_str(),
         &body.loan_id,
         min_ltv,
         initial_collateral.to_sat(),
@@ -684,8 +690,8 @@ enum Error {
         chain: LoanAssetChain,
         asset: LoanAssetType,
     },
-    /// Each user can only have one Moon card for now.
-    OneMoonCardAllowed,
+    /// Failed to create Moon card.
+    MoonCardGeneration(anyhow::Error),
     /// Failed to generate Moon invoice.
     MoonInvoiceGeneration(anyhow::Error),
     /// Failed to get opening price from BitMEX.
@@ -798,10 +804,14 @@ impl IntoResponse for Error {
                      on chain {chain:?}. Moon only supports USDC on Polygon"
                 ),
             ),
-            Error::OneMoonCardAllowed => (
-                StatusCode::BAD_REQUEST,
-                "Only one Moon card allowed per user".to_owned(),
-            ),
+            Error::MoonCardGeneration(e) => {
+                tracing::error!("Failed to generate Moon card: {e:#}");
+
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
             Error::MoonInvoiceGeneration(e) => {
                 tracing::error!("Failed to generate Moon invoice: {e:#}");
 

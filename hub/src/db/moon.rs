@@ -22,9 +22,8 @@ pub async fn insert_card(pool: &Pool<Postgres>, card: moon::Card) -> Result<()> 
             support_token,
             product_id,
             end_customer_id,
-            contract_id,
             borrower_id
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         "#,
         card.id.to_string(),
         card.balance,
@@ -35,7 +34,6 @@ pub async fn insert_card(pool: &Pool<Postgres>, card: moon::Card) -> Result<()> 
         card.support_token,
         card.product_id.to_string(),
         card.end_customer_id,
-        card.contract_id,
         card.borrower_id,
     )
     .execute(pool)
@@ -61,7 +59,6 @@ pub async fn get_borrower_cards(
             support_token,
             product_id,
             end_customer_id,
-            contract_id,
             borrower_id
         FROM moon_cards
         where borrower_id = $1
@@ -108,7 +105,6 @@ pub async fn get_card_by_id(pool: &Pool<Postgres>, card_id: &str) -> Result<Opti
             support_token,
             product_id,
             end_customer_id,
-            contract_id,
             borrower_id
         FROM moon_cards
         where id = $1
@@ -130,14 +126,16 @@ pub async fn insert_moon_invoice(pool: &Pool<Postgres>, invoice: &moon::Invoice)
             address,
             usd_amount_owed,
             contract_id,
+            card_id,
             lender_id,
             borrower_id
-        ) VALUES ($1, $2, $3, $4, $5, $6)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7)
         "#,
         id,
         invoice.address,
         invoice.usd_amount_owed,
         invoice.contract_id,
+        invoice.card_id.map(|c| c.to_string()),
         invoice.lender_id,
         invoice.borrower_id,
     )
@@ -153,6 +151,7 @@ pub struct MoonInvoice {
     pub address: String,
     pub usd_amount_owed: Decimal,
     pub contract_id: String,
+    pub card_id: Option<String>,
     pub lender_id: String,
     pub borrower_id: String,
     pub is_paid: bool,
@@ -172,6 +171,7 @@ pub async fn get_invoice_by_id(
             address,
             usd_amount_owed,
             contract_id,
+            card_id,
             lender_id,
             borrower_id,
             is_paid,
@@ -254,43 +254,6 @@ pub async fn insert_moon_invoice_payment(
     .await?;
 
     Ok(())
-}
-
-pub async fn assign_contract_to_card(
-    pool: &Pool<Postgres>,
-    card_id: Uuid,
-    contract_id: String,
-) -> Result<()> {
-    sqlx::query!(
-        r#"
-           INSERT INTO card_contract_assignments (card_id, contract_id)
-           VALUES ($1, $2)
-           "#,
-        card_id.to_string(),
-        contract_id
-    )
-    .execute(pool)
-    .await?;
-
-    Ok(())
-}
-
-pub async fn get_card_id_by_contract(
-    pool: &Pool<Postgres>,
-    contract_id: &str,
-) -> Result<Option<Uuid>> {
-    let record = sqlx::query!(
-        r#"
-           SELECT card_id
-           FROM card_contract_assignments
-           WHERE contract_id = $1
-           "#,
-        contract_id
-    )
-    .fetch_optional(pool)
-    .await?;
-
-    Ok(record.map(|r| Uuid::from_str(r.card_id.as_str()).expect("to be uuid")))
 }
 
 #[derive(Debug)]
@@ -538,8 +501,8 @@ async fn insert_transaction_data(
                     amount,
                     fee_description
                 ) VALUES ($1, $2, $3, $4)
-                ON CONFLICT (transaction_id, fee_type) 
-                DO UPDATE SET 
+                ON CONFLICT (transaction_id, fee_type)
+                DO UPDATE SET
                     amount = EXCLUDED.amount,
                     fee_description = EXCLUDED.fee_description
             "#,
@@ -564,7 +527,7 @@ async fn load_transaction_data_by_card_id(
     let transaction_data: Vec<TransactionData> = sqlx::query_as!(
         TransactionData,
         r#"
-        SELECT 
+        SELECT
             transaction_id,
             card_public_id,
             transaction_status AS "transaction_status: TransactionStatus",
@@ -593,7 +556,7 @@ async fn load_transaction_data_by_card_id(
         let fee_data: Vec<Fee> = sqlx::query_as!(
             Fee,
             r#"
-        SELECT 
+        SELECT
             fee_type,
             amount,
             fee_description,
@@ -724,7 +687,7 @@ async fn read_decline_data_by_card_id(
     let decline_data: Vec<DeclineData> = sqlx::query_as!(
         DeclineData,
         r#"
-        SELECT 
+        SELECT
             message_id,
             datetime,
             merchant,

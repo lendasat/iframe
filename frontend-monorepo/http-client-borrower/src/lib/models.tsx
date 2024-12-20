@@ -113,6 +113,7 @@ export interface ContractRequest {
   borrower_pk: string;
   borrower_loan_address?: string;
   integration: Integration;
+  moon_card_id?: string;
 }
 
 export interface Contract {
@@ -238,11 +239,11 @@ export function findBestOriginationFee(
 }
 
 export interface UserCardDetail {
-  id: number;
+  id: string;
   balance: number;
   available_balance: number;
-  pan: number;
-  cvv: number;
+  pan: string;
+  cvv: string;
   expiration: string;
 }
 

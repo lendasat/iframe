@@ -129,6 +129,7 @@ mod tests {
                 "0x055098f73c89ca554f98c0298ce900235d2e1b4205a7ca629ae017518521c2c3".to_string(),
             ),
             integration: Integration::StableCoin,
+            moon_card_id: None,
         };
 
         let res = borrower
@@ -468,6 +469,7 @@ mod tests {
             borrower_loan_address: None,
             // The borrower wants to get a Moon card with their stable coins.
             integration: Integration::PayWithMoon,
+            moon_card_id: None,
         };
 
         let res = borrower

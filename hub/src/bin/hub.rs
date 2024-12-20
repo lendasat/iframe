@@ -1,6 +1,7 @@
 use anyhow::Context;
 use anyhow::Result;
 use axum::extract::ws::Message;
+use bitcoin::Network;
 use descriptor_wallet::DescriptorWallet;
 use hub::bitmex_index_pricefeed::subscribe_index_price;
 use hub::config::Config;
@@ -159,7 +160,7 @@ async fn main() -> Result<()> {
     let lender_handle = tokio::spawn(lender_server);
 
     // We need the borrower server to be started already for this.
-    tokio::spawn(register_webhook_in_thread(moon_client));
+    tokio::spawn(register_webhook_in_thread(moon_client, network));
 
     let sched = JobScheduler::new().await?;
 
@@ -176,12 +177,27 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn register_webhook_in_thread(moon_client: Arc<moon::Manager>) -> Result<()> {
+async fn register_webhook_in_thread(
+    moon_client: Arc<moon::Manager>,
+    network: Network,
+) -> Result<()> {
     // We wait for 5 seconds to
     tokio::time::sleep(std::time::Duration::from_secs(5)).await;
 
     // Call the register_webhook function
-    moon_client.register_webhook().await?;
+    let res = moon_client.register_webhook().await;
+
+    if let Err(e) = res {
+        match network {
+            // In production, we must ensure that the Moon webhook is registered.
+            Network::Bitcoin => panic!("Failed to register Moon webhook: {e}"),
+            // When testing, depending on the environment it may be complicated to register the Moon
+            // webhook.
+            _ => {
+                tracing::warn!("Failed to register Moon webhook: {e}");
+            }
+        }
+    }
 
     Ok(())
 }
