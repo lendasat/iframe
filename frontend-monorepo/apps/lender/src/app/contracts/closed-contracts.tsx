@@ -156,13 +156,13 @@ export const ClosedContracts = ({ contracts }: ClosedContractsProps) => {
               {/* Responsive Dropdown */}
               <DropdownMenu.Root>
                 <DropdownMenu.Trigger>
-                  <Button variant="ghost" className="xl:hidden text-font hover:bg-transparent">
+                  <Button variant="ghost" className="xl:hidden text-font dark:text-font-dark hover:bg-transparent">
                     <BsThreeDotsVertical />
                   </Button>
                 </DropdownMenu.Trigger>
-                <DropdownMenu.Content>
+                <DropdownMenu.Content className={"bg-light dark:bg-dark"}>
                   <Box width={"100%"} minWidth={"300px"} p={"3"}>
-                    <Heading as="h6" weight={"medium"}>
+                    <Heading className={"text-font dark:text-font-dark"} as="h6" weight={"medium"}>
                       More Information
                     </Heading>
                   </Box>
@@ -243,12 +243,12 @@ export const ClosedContracts = ({ contracts }: ClosedContractsProps) => {
                       <Button
                         size={"3"}
                         variant="solid"
-                        className="bg-btn text-white w-full active:scale-90"
+                        className="bg-btn dark:bg-dark-600 text-white w-full active:scale-90"
                         onClick={() => navigate(`${contract.id}`)}
                       >
                         <Text
                           size={"2"}
-                          className="font-semibold text-font dark:text-font-dark"
+                          className="font-semibold"
                         >
                           {actionFromStatus(contract.status)}
                         </Text>

@@ -284,13 +284,13 @@ function ContractList({ contracts }: ContractListProps) {
               {/* Responsive Dropdown */}
               <DropdownMenu.Root>
                 <DropdownMenu.Trigger>
-                  <Button variant="ghost" className="xl:hidden text-font hover:bg-transparent">
+                  <Button variant="ghost" className="xl:hidden text-font dark:text-font-dark hover:bg-transparent">
                     <BsThreeDotsVertical />
                   </Button>
                 </DropdownMenu.Trigger>
-                <DropdownMenu.Content>
+                <DropdownMenu.Content className={"bg-light dark:bg-dark"}>
                   <Box width={"100%"} minWidth={"300px"} p={"3"}>
-                    <Heading as="h6" weight={"medium"}>
+                    <Heading className={"text-font dark:text-font-dark"} as="h6" weight={"medium"}>
                       More Information
                     </Heading>
                   </Box>
@@ -299,20 +299,20 @@ function ContractList({ contracts }: ContractListProps) {
                     <Flex direction={"column"} gap={"4"} align={"start"}>
                       <Box width={"100%"}>
                         <Flex align={"center"} justify={"between"} gap={"3"}>
-                          <Text size={"3"} weight={"medium"}>
+                          <Text className={"text-font dark:text-font-dark"} size={"3"} weight={"medium"}>
                             Amount
                           </Text>
-                          <Text size={"3"}>
+                          <Text className={"text-font dark:text-font-dark"} size={"3"}>
                             <CurrencyFormatter value={loan_amount} />
                           </Text>
                         </Flex>
                       </Box>
                       <Box width={"100%"}>
                         <Flex align={"center"} justify={"between"} gap={"3"}>
-                          <Text size={"3"} weight={"medium"}>
+                          <Text className={"text-font dark:text-font-dark"} size={"3"} weight={"medium"}>
                             Expiry date:
                           </Text>
-                          <Text className="capitalize" size={"3"}>
+                          <Text className="capitalize text-font dark:text-font-dark" size={"3"}>
                             {expiry.toLocaleDateString()}
                           </Text>
                         </Flex>
@@ -320,8 +320,8 @@ function ContractList({ contracts }: ContractListProps) {
                       <Box width={"100%"}>
                         <Flex align={"center"} justify={"between"} gap={"3"}>
                           <LtvInfoLabel>
-                            <Flex align={"center"} gap={"2"} className="text-font-dark">
-                              <Text size={"3"} weight={"medium"}>
+                            <Flex align={"center"} gap={"2"}>
+                              <Text className={"text-font dark:text-font-dark"} size={"3"} weight={"medium"}>
                                 LTV ratio
                               </Text>
                               <FaInfoCircle />
@@ -335,35 +335,35 @@ function ContractList({ contracts }: ContractListProps) {
                       <Box width={"100%"}>
                         <Flex align={"center"} justify={"between"} gap={"3"}>
                           <InterestRateInfoLabel>
-                            <Flex align={"center"} gap={"2"} className="text-font-dark">
-                              <Text size={"3"} weight={"medium"}>
+                            <Flex align={"center"} gap={"2"}>
+                              <Text className={"text-font dark:text-font-dark"} size={"3"} weight={"medium"}>
                                 Interest:
                               </Text>
                               <FaInfoCircle />
                             </Flex>
                           </InterestRateInfoLabel>
 
-                          <Text className="capitalize" size={"3"}>
+                          <Text className="capitalize text-font dark:text-font-dark" size={"3"}>
                             {(interest_rate * 100).toFixed(2)}%
                           </Text>
                         </Flex>
                       </Box>
                       <Box width={"100%"}>
                         <Flex align={"center"} justify={"between"} gap={"3"}>
-                          <Text size={"3"} weight={"medium"}>
+                          <Text className={"text-font dark:text-font-dark"} size={"3"} weight={"medium"}>
                             Collateral:
                           </Text>
-                          <Text className="capitalize" size={"3"}>
+                          <Text className="capitalize text-font dark:text-font-dark" size={"3"}>
                             {collateral_btc} BTC
                           </Text>
                         </Flex>
                       </Box>
                       <Box width={"100%"}>
                         <Flex align={"center"} justify={"between"} gap={"3"}>
-                          <Text size={"3"} weight={"medium"}>
+                          <Text className={"text-font dark:text-font-dark"} size={"3"} weight={"medium"}>
                             Status:
                           </Text>
-                          <Text className="capitalize" size={"3"}>
+                          <Text className="capitalize text-font dark:text-font-dark" size={"3"}>
                             <Badge
                               color={status === ContractStatus.Requested
                                 ? "amber"
@@ -382,7 +382,7 @@ function ContractList({ contracts }: ContractListProps) {
                       <Button
                         size={"3"}
                         variant="solid"
-                        className="bg-btn text-white w-full active:scale-90"
+                        className="bg-btn dark:bg-dark-600 text-white w-full active:scale-90"
                         onClick={() => navigate(`${id}`)}
                       >
                         <Text

@@ -646,9 +646,9 @@ export const AllContracts = ({ contracts: unfilteredContracts }: OpenContractsPr
                               <BsThreeDotsVertical />
                             </Button>
                           </DropdownMenu.Trigger>
-                          <DropdownMenu.Content>
+                          <DropdownMenu.Content className={"bg-light dark:bg-dark"}>
                             <Box width={"100%"} minWidth={"300px"} p={"3"}>
-                              <Heading as="h6" weight={"medium"}>
+                              <Heading className={"text-font dark:text-font-dark"} as="h6" weight={"medium"}>
                                 More Information
                               </Heading>
                             </Box>
@@ -657,27 +657,27 @@ export const AllContracts = ({ contracts: unfilteredContracts }: OpenContractsPr
                               <Flex direction={"column"} gap={"4"} align={"start"}>
                                 <Box width={"100%"}>
                                   <Flex align={"center"} justify={"between"} gap={"3"}>
-                                    <Text size={"3"} weight={"medium"}>
+                                    <Text className={"text-font dark:text-font-dark"} size={"3"} weight={"medium"}>
                                       Amount
                                     </Text>
-                                    <Text size={"3"}>
+                                    <Text className={"text-font dark:text-font-dark"} size={"3"}>
                                       <CurrencyFormatter value={contract.loan_amount} />
                                     </Text>
                                   </Flex>
                                 </Box>
                                 <Box width={"100%"}>
                                   <Flex align={"center"} justify={"between"} gap={"3"}>
-                                    <Text size={"3"} weight={"medium"}>
+                                    <Text className={"text-font dark:text-font-dark"} size={"3"} weight={"medium"}>
                                       Duration:
                                     </Text>
-                                    <Text className="capitalize" size={"3"}>
+                                    <Text className="capitalize text-font dark:text-font-dark" size={"3"}>
                                       {contract.duration_months} months
                                     </Text>
                                   </Flex>
                                 </Box>
                                 <Box width={"100%"}>
                                   <Flex align={"center"} justify={"between"} gap={"3"}>
-                                    <Text size={"3"} weight={"medium"}>
+                                    <Text className={"text-font dark:text-font-dark"} size={"3"} weight={"medium"}>
                                       LTV rate:
                                     </Text>
                                     <Box minWidth={"150px"}>
@@ -687,30 +687,30 @@ export const AllContracts = ({ contracts: unfilteredContracts }: OpenContractsPr
                                 </Box>
                                 <Box width={"100%"}>
                                   <Flex align={"center"} justify={"between"} gap={"3"}>
-                                    <Text size={"3"} weight={"medium"}>
+                                    <Text className={"text-font dark:text-font-dark"} size={"3"} weight={"medium"}>
                                       Interest:
                                     </Text>
-                                    <Text className="capitalize" size={"3"}>
+                                    <Text className="capitalize text-font dark:text-font-dark" size={"3"}>
                                       TODO
                                     </Text>
                                   </Flex>
                                 </Box>
                                 <Box width={"100%"}>
                                   <Flex align={"center"} justify={"between"} gap={"3"}>
-                                    <Text size={"3"} weight={"medium"}>
+                                    <Text className={"text-font dark:text-font-dark"} size={"3"} weight={"medium"}>
                                       Collateral:
                                     </Text>
-                                    <Text className="capitalize" size={"3"}>
+                                    <Text className="capitalize text-font dark:text-font-dark" size={"3"}>
                                       {collateral_btc} BTC
                                     </Text>
                                   </Flex>
                                 </Box>
                                 <Box width={"100%"}>
                                   <Flex align={"center"} justify={"between"} gap={"3"}>
-                                    <Text size={"3"} weight={"medium"}>
+                                    <Text className={"text-font dark:text-font-dark"} size={"3"} weight={"medium"}>
                                       Status:
                                     </Text>
-                                    <Text className="capitalize" size={"3"}>
+                                    <Text className="capitalize text-font dark:text-font-dark" size={"3"}>
                                       <Badge
                                         color={contract.status === ContractStatus.Requested
                                           ? "amber"
