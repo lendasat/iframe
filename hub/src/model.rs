@@ -104,6 +104,7 @@ pub struct CreateLoanOfferSchema {
     pub interest_rate: Decimal,
     pub loan_amount_min: Decimal,
     pub loan_amount_max: Decimal,
+    pub loan_amount_reserve: Decimal,
     pub duration_months_min: i32,
     pub duration_months_max: i32,
     pub loan_asset_type: LoanAssetType,
@@ -155,6 +156,10 @@ pub struct LoanOffer {
     pub loan_amount_min: Decimal,
     #[serde(with = "rust_decimal::serde::float")]
     pub loan_amount_max: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
+    pub loan_amount_reserve: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
+    pub loan_amount_reserve_remaining: Decimal,
     pub duration_months_min: i32,
     pub duration_months_max: i32,
     pub loan_asset_type: LoanAssetType,

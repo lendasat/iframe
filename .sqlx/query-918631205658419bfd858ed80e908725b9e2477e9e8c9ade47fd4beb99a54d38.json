@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            id,\n            lender_id,\n            name,\n            min_ltv,\n            interest_rate,\n            loan_amount_min,\n            loan_amount_max,\n            duration_months_min,\n            duration_months_max,\n            loan_asset_type AS \"loan_asset_type: crate::model::LoanAssetType\",\n            loan_asset_chain AS \"loan_asset_chain: crate::model::LoanAssetChain\",\n            status AS \"status: crate::model::LoanOfferStatus\",\n            loan_repayment_address,\n            created_at,\n            updated_at\n        FROM loan_offers\n        WHERE lender_id = $1 and id = $2\n        ",
+  "query": "\n        SELECT\n            lo.id,\n            lo.lender_id,\n            lo.name,\n            lo.min_ltv,\n            lo.interest_rate,\n            lo.loan_amount_min,\n            lo.loan_amount_max,\n            lo.duration_months_min,\n            lo.duration_months_max,\n            lo.loan_amount_reserve,\n            COALESCE(\n                lo.loan_amount_reserve - COALESCE(\n                    SUM(\n                        CASE \n                            WHEN c.status NOT IN ('Cancelled', 'RequestExpired') \n                            THEN c.loan_amount \n                            ELSE 0 \n                        END\n                    ), \n                    0\n                ), \n                lo.loan_amount_reserve\n            ) AS loan_amount_reserve_remaining,\n            lo.loan_asset_type AS \"loan_asset_type: LoanAssetType\",\n            lo.loan_asset_chain AS \"loan_asset_chain: LoanAssetChain\",\n            lo.status AS \"status: LoanOfferStatus\",\n            lo.loan_repayment_address,\n            lo.created_at,\n            lo.updated_at\n        FROM loan_offers lo\n            LEFT JOIN \n                contracts c ON lo.id = c.loan_id\n        WHERE lo.status = 'Available'\n        GROUP BY \n            lo.id\n        ",
   "describe": {
     "columns": [
       {
@@ -50,7 +50,17 @@
       },
       {
         "ordinal": 9,
-        "name": "loan_asset_type: crate::model::LoanAssetType",
+        "name": "loan_amount_reserve",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 10,
+        "name": "loan_amount_reserve_remaining",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 11,
+        "name": "loan_asset_type: LoanAssetType",
         "type_info": {
           "Custom": {
             "name": "loan_asset_type",
@@ -64,8 +74,8 @@
         }
       },
       {
-        "ordinal": 10,
-        "name": "loan_asset_chain: crate::model::LoanAssetChain",
+        "ordinal": 12,
+        "name": "loan_asset_chain: LoanAssetChain",
         "type_info": {
           "Custom": {
             "name": "loan_asset_chain",
@@ -80,8 +90,8 @@
         }
       },
       {
-        "ordinal": 11,
-        "name": "status: crate::model::LoanOfferStatus",
+        "ordinal": 13,
+        "name": "status: LoanOfferStatus",
         "type_info": {
           "Custom": {
             "name": "loan_offer_status",
@@ -96,26 +106,23 @@
         }
       },
       {
-        "ordinal": 12,
+        "ordinal": 14,
         "name": "loan_repayment_address",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 13,
+        "ordinal": 15,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 14,
+        "ordinal": 16,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
-      "Left": [
-        "Bpchar",
-        "Bpchar"
-      ]
+      "Left": []
     },
     "nullable": [
       false,
@@ -128,6 +135,8 @@
       false,
       false,
       false,
+      null,
+      false,
       false,
       false,
       false,
@@ -135,5 +144,5 @@
       false
     ]
   },
-  "hash": "5d3ac628dac454ff1daf240bd1aed1fa463b2e42e0ee37f398de3596520ff6fc"
+  "hash": "918631205658419bfd858ed80e908725b9e2477e9e8c9ade47fd4beb99a54d38"
 }
