@@ -117,6 +117,7 @@ const CreateLoanOffer: FC = () => {
         navigate(`/my-offers/${res.id}`);
       } else {
         console.error(res);
+        setError(`Could not create loan offer.`);
       }
     } catch (e) {
       console.error(e);
