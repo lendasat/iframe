@@ -23,7 +23,7 @@ pub async fn add_contract_default_job(
 ) -> Result<()> {
     let database = database.clone();
     let check_for_expiring_contracts_job =
-        create_contract_request_expiry_check(scheduler, database).await?;
+        create_contract_expiry_check(scheduler, database).await?;
     let uuid = scheduler.add(check_for_expiring_contracts_job).await?;
 
     tracing::debug!(
@@ -34,7 +34,7 @@ pub async fn add_contract_default_job(
     Ok(())
 }
 
-async fn create_contract_request_expiry_check(
+async fn create_contract_expiry_check(
     scheduler: &JobScheduler,
     db: Pool<Postgres>,
 ) -> Result<Job, JobSchedulerError> {
