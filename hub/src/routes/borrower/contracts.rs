@@ -187,6 +187,7 @@ async fn post_contract_request(
         borrower_loan_address.as_str(),
         body.integration,
         ContractVersion::TwoOfThree,
+        offer.auto_accept,
     )
     .await
     .map_err(Error::Database)?;
@@ -200,7 +201,7 @@ async fn post_contract_request(
             .map_err(Error::Database)?;
     }
 
-    let loan_url = format!(
+    let lender_loan_url = format!(
         "{}/my-contracts/{}",
         data.config.lender_frontend_origin.to_owned(),
         contract.id
@@ -213,14 +214,54 @@ async fn post_contract_request(
             .await?
             .context("Failed to find lender")?;
 
-        email
-            .send_new_loan_request(lender, loan_url.as_str())
-            .await
-            .context("Failed to send loan-request email")?;
+        let lender_id = lender.id.clone();
+        let borrower_id = user.id.clone();
+        if offer.auto_accept {
+            email
+                .send_notification_about_auto_accepted_loan(lender, lender_loan_url.as_str())
+                .await
+                .context("Failed to send loan-auto-accept email")?;
 
-        db::contract_emails::mark_loan_request_as_sent(&data.db, &contract.id)
-            .await
-            .context("Failed to mark loan-request email as sent")?;
+            let borrower_loan_url = format!(
+                "{}/my-contracts/{}",
+                data.config.borrower_frontend_origin.to_owned(),
+                contract.id
+            );
+
+            db::contract_emails::mark_auto_accept_email_as_sent(&data.db, &contract.id)
+                .await
+                .context("Failed to mark loan-auto-accept email as sent")?;
+
+            email
+                .send_loan_request_approved(user, borrower_loan_url.as_str())
+                .await
+                .context("Failed to send loan-auto-accept email")?;
+
+            db::contract_emails::mark_loan_request_approved_as_sent(&data.db, &contract.id)
+                .await
+                .context("Failed to mark loan-auto-accept email as sent")?;
+            tracing::info!(
+                contract_id = contract_id.to_string(),
+                borrower_id,
+                lender_id,
+                "Contract request has been automatically approved"
+            );
+        } else {
+            email
+                .send_new_loan_request(lender, lender_loan_url.as_str())
+                .await
+                .context("Failed to send loan-request email")?;
+
+            db::contract_emails::mark_loan_request_as_sent(&data.db, &contract.id)
+                .await
+                .context("Failed to mark loan-request email as sent")?;
+            tracing::info!(
+                contract_id = contract_id.to_string(),
+                borrower_id,
+                lender_id,
+                "Contract request notification sent"
+            );
+        }
 
         anyhow::Ok(())
     }

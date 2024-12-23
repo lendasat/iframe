@@ -93,6 +93,7 @@ mod tests {
             loan_asset_chain: Ethereum,
             loan_repayment_address:
                 "0x055098f73c89ca554f98c0298ce900235d2e1b4205a7ca629ae017518521c2c3".to_string(),
+            auto_accept: false,
         };
 
         let res = lender
@@ -435,6 +436,7 @@ mod tests {
             loan_asset_chain: Ethereum,
             loan_repayment_address:
                 "0x055098f73c89ca554f98c0298ce900235d2e1b4205a7ca629ae017518521c2c3".to_string(),
+            auto_accept: false,
         };
 
         let res = lender

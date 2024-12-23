@@ -26,7 +26,8 @@ where
             loan_request_rejected_sent,
             collateral_funded_sent,
             loan_paid_out_sent,
-            loan_repaid_sent
+            loan_repaid_sent,
+            loan_auto_accept_notification_sent
         "#,
         contract_id,
     )
@@ -52,7 +53,8 @@ pub async fn load_contract_emails(
             loan_request_rejected_sent,
             collateral_funded_sent,
             loan_paid_out_sent,
-            loan_repaid_sent
+            loan_repaid_sent,
+            loan_auto_accept_notification_sent
         FROM contract_emails
         WHERE contract_id = $1
         "#,
@@ -91,6 +93,26 @@ pub async fn mark_loan_request_as_sent(pool: &Pool<Postgres>, contract_id: &str)
         r#"
         UPDATE contract_emails
         SET loan_request_sent = true
+        WHERE contract_id = $1
+        "#,
+        contract_id,
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+pub async fn mark_auto_accept_email_as_sent(
+    pool: &Pool<Postgres>,
+    contract_id: &str,
+) -> Result<()> {
+    let contract_id = contract_id.to_string();
+
+    sqlx::query!(
+        r#"
+        UPDATE contract_emails
+        SET loan_auto_accept_notification_sent = true
         WHERE contract_id = $1
         "#,
         contract_id,

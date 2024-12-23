@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            contract_id,\n            loan_request_sent,\n            loan_request_approved_sent,\n            loan_request_rejected_sent,\n            collateral_funded_sent,\n            loan_paid_out_sent,\n            loan_repaid_sent\n        FROM contract_emails\n        WHERE contract_id = $1\n        ",
+  "query": "\n        SELECT\n            contract_id,\n            loan_request_sent,\n            loan_request_approved_sent,\n            loan_request_rejected_sent,\n            collateral_funded_sent,\n            loan_paid_out_sent,\n            loan_repaid_sent,\n            loan_auto_accept_notification_sent\n        FROM contract_emails\n        WHERE contract_id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -37,6 +37,11 @@
         "ordinal": 6,
         "name": "loan_repaid_sent",
         "type_info": "Bool"
+      },
+      {
+        "ordinal": 7,
+        "name": "loan_auto_accept_notification_sent",
+        "type_info": "Bool"
       }
     ],
     "parameters": {
@@ -51,8 +56,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "59dfc0fb223170575e03b8d8b5b8b04f34b0c125c11b674585dea9e4f6e5eda9"
+  "hash": "1a4a3e0973b6f76b83cdb92e0663e27ec3d4ff4d898e9f0416ab941a5ca77670"
 }

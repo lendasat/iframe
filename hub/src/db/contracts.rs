@@ -307,6 +307,7 @@ pub async fn insert_contract_request(
     borrower_loan_address: &str,
     integration: Integration,
     contract_version: ContractVersion,
+    auto_accepted: bool,
 ) -> Result<Contract> {
     let mut db_tx = pool
         .begin()
@@ -322,6 +323,12 @@ pub async fn insert_contract_request(
 
     let created_at = OffsetDateTime::now_utc();
     let expiry_date = expiry_date(created_at, duration_months as u64);
+
+    let status = if auto_accepted {
+        db::ContractStatus::Approved
+    } else {
+        db::ContractStatus::Requested
+    };
 
     let contract = sqlx::query_as!(
         db::Contract,
@@ -384,7 +391,7 @@ pub async fn insert_contract_request(
         collateral_sats,
         loan_amount,
         duration_months,
-        db::ContractStatus::Requested as db::ContractStatus,
+        status as db::ContractStatus,
         db::LiquidationStatus::Healthy as db::LiquidationStatus,
         borrower_btc_address.assume_checked().to_string(),
         borrower_pk.to_string(),
