@@ -5,6 +5,7 @@ pub mod bitmex_index_price_rest;
 pub mod bitmex_index_pricefeed;
 pub mod bitmex_ws_client;
 pub mod config;
+pub mod contract_close_to_expiry;
 pub mod contract_default;
 pub mod contract_request_expiry;
 pub mod db;
