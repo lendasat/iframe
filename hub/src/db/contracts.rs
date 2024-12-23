@@ -16,6 +16,7 @@ use rust_decimal::Decimal;
 use sqlx::Pool;
 use sqlx::Postgres;
 use std::cmp::Ordering;
+use time::format_description;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
@@ -1005,6 +1006,17 @@ pub struct ContractInfo {
     pub contract_id: String,
     pub borrower_id: String,
     pub expiry_date: OffsetDateTime,
+}
+
+impl ContractInfo {
+    pub fn formatted_expiry_date(&self) -> String {
+        let format = format_description::well_known::Rfc3339;
+
+        self.expiry_date
+            .to_offset(time::UtcOffset::UTC)
+            .format(&format)
+            .expect("valid expiry date")
+    }
 }
 
 /// Fetches contracts with `PrincipalGiven` status that are due to expire within the next 3 days.

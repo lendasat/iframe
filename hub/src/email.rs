@@ -449,13 +449,19 @@ impl Email {
         .await
     }
 
-    pub async fn send_close_to_expiry_contract(&self, user: User, url: &str) -> Result<()> {
+    pub async fn send_close_to_expiry_contract(
+        &self,
+        user: User,
+        expiry_date: &str,
+        url: &str,
+    ) -> Result<()> {
         let template_name = "loan_close_to_expiry";
         let handlebars = Self::prepare_template(template_name)?;
 
         let data = serde_json::json!({
             "first_name": &user.name,
             "subject": &template_name,
+            "expiry_date": &expiry_date,
             "url": url
         });
 

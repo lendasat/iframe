@@ -82,6 +82,7 @@ async fn create_contract_close_to_expiry_check(
                                                 if let Err(e) = email
                                                     .send_close_to_expiry_contract(
                                                         borrower,
+                                                        &contract_info.formatted_expiry_date(),
                                                         loan_url.as_str(),
                                                     )
                                                     .await
