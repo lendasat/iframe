@@ -538,4 +538,46 @@ impl Email {
         )
         .await
     }
+
+    pub async fn send_loan_defaulted_lender(&self, user: User, url: &str) -> Result<()> {
+        let template_name = "loan_defaulted_lender";
+        let handlebars = Self::prepare_template(template_name)?;
+
+        let data = serde_json::json!({
+            "first_name": &user.name,
+            "subject": &template_name,
+            "url": url
+        });
+
+        let content_template = handlebars.render(template_name, &data)?;
+
+        self.send_email(
+            "Your loan expired without repayment",
+            user.name.as_str(),
+            user.email.as_str(),
+            content_template,
+        )
+        .await
+    }
+
+    pub async fn send_loan_defaulted_borrower(&self, user: User, url: &str) -> Result<()> {
+        let template_name = "loan_defaulted_borrower";
+        let handlebars = Self::prepare_template(template_name)?;
+
+        let data = serde_json::json!({
+            "first_name": &user.name,
+            "subject": &template_name,
+            "url": url
+        });
+
+        let content_template = handlebars.render(template_name, &data)?;
+
+        self.send_email(
+            "Your loan expired without repayment",
+            user.name.as_str(),
+            user.email.as_str(),
+            content_template,
+        )
+        .await
+    }
 }

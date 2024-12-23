@@ -776,9 +776,18 @@ pub(crate) async fn load_open_not_liquidated_contracts(
     Ok(contracts)
 }
 
+#[derive(Clone)]
+pub struct DefaultedContract {
+    pub contract_id: String,
+    pub borrower_id: String,
+    pub lender_id: String,
+}
+
 /// Marks expired active contracts (the principal was disbursed, but the loan was not repaid) as
 /// `Defaulted`.
-pub(crate) async fn default_expired_contracts(pool: &Pool<Postgres>) -> Result<Vec<String>> {
+pub(crate) async fn default_expired_contracts(
+    pool: &Pool<Postgres>,
+) -> Result<Vec<DefaultedContract>> {
     // TODO: We should "start the timer" from the time the principal is disbursed, not from the time
     // the contract is created in the database.
     let rows = sqlx::query!(
@@ -790,7 +799,7 @@ pub(crate) async fn default_expired_contracts(pool: &Pool<Postgres>) -> Result<V
             WHERE
                 expiry_date <= $2 AND
                 status NOT IN ($3, $4, $5, $6, $7, $8, $9, $1)
-            RETURNING id;
+            RETURNING id, borrower_id, lender_id;
         "#,
         db::ContractStatus::Defaulted as db::ContractStatus,
         OffsetDateTime::now_utc(),
@@ -805,9 +814,16 @@ pub(crate) async fn default_expired_contracts(pool: &Pool<Postgres>) -> Result<V
     .fetch_all(pool)
     .await?;
 
-    let contract_ids = rows.into_iter().map(|row| row.id).collect();
+    let contracts = rows
+        .into_iter()
+        .map(|row| DefaultedContract {
+            contract_id: row.id,
+            borrower_id: row.borrower_id,
+            lender_id: row.lender_id,
+        })
+        .collect();
 
-    Ok(contract_ids)
+    Ok(contracts)
 }
 
 /// Update the collateral of the [`Contract`] in the database.
