@@ -57,7 +57,9 @@ async fn create_contract_close_to_expiry_check(
                         Ok(contracts) => {
                             for contract_info in contracts {
                                 tracing::info!(
-                                    ?contract_info,
+                                    contract_id=contract_info.contract_id,
+                                    borrower_id=contract_info.borrower_id,
+                                    expiry_date=%contract_info.expiry_date,
                                     "Notifying borrower about contract that is about to expire."
                                 );
 
@@ -87,15 +89,20 @@ async fn create_contract_close_to_expiry_check(
                                                     )
                                                     .await
                                                 {
-                                                    tracing::error!(?contract_info, "Failed to send email about close to expiry contract. Error: {e:#}");
+                                                    tracing::error!(
+                                                        contract_id=contract_info.contract_id,
+                                                        borrower_id=contract_info.borrower_id,
+                                                        "Failed to send email about close to expiry contract. Error: {e:#}");
                                                 }
                                             }
                                             Ok(None) => tracing::error!(
-                                                ?contract_info,
+                                                contract_id = contract_info.contract_id,
+                                                borrower_id = contract_info.borrower_id,
                                                 "Couldn't find borrower."
                                             ),
                                             Err(e) => tracing::error!(
-                                                ?contract_info,
+                                                contract_id = contract_info.contract_id,
+                                                borrower_id = contract_info.borrower_id,
                                                 "Failed to get borrower by id. Error: {e:#}"
                                             ),
                                         }

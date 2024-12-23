@@ -1001,7 +1001,6 @@ pub(crate) async fn expire_requested_contracts(
     Ok(contract_ids)
 }
 
-#[derive(Debug)]
 pub struct ContractInfo {
     pub contract_id: String,
     pub borrower_id: String,
