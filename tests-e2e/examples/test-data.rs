@@ -180,6 +180,7 @@ async fn create_loan_request(
         pool,
         id,
         borrower_id,
+        offer.lender_id.as_str(),
         offer.id.as_str(),
         initial_ltv,
         initial_collateral_sats.to_u64().expect("to fit"),

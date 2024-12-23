@@ -295,6 +295,7 @@ pub async fn insert_contract_request(
     pool: &Pool<Postgres>,
     id: Uuid,
     borrower_id: &str,
+    lender_id: &str,
     loan_id: &str,
     initial_ltv: Decimal,
     initial_collateral_sats: u64,
@@ -321,19 +322,6 @@ pub async fn insert_contract_request(
 
     let created_at = OffsetDateTime::now_utc();
     let expiry_date = expiry_date(created_at, duration_months as u64);
-
-    let lender_id_row = sqlx::query!(
-        r#"
-        SELECT lender_id
-        FROM loan_offers
-        WHERE id = $1
-        "#,
-        loan_id
-    )
-    .fetch_one(&mut *db_tx)
-    .await?;
-
-    let lender_id = lender_id_row.lender_id;
 
     let contract = sqlx::query_as!(
         db::Contract,

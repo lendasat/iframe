@@ -113,6 +113,7 @@ async fn post_contract_request(
         .ok_or(Error::MissingLoanOffer)?;
 
     let contract_id = Uuid::new_v4();
+    let lender_id = offer.lender_id.as_str();
     let (borrower_loan_address, moon_invoice) = match body.integration {
         Integration::StableCoin => match body.borrower_loan_address {
             Some(borrower_loan_address) => (borrower_loan_address, None),
@@ -141,7 +142,7 @@ async fn post_contract_request(
                 .generate_invoice(
                     body.loan_amount,
                     contract_id.to_string(),
-                    offer.lender_id,
+                    lender_id.to_string(),
                     user.id.as_str(),
                 )
                 .await
@@ -174,6 +175,7 @@ async fn post_contract_request(
         &data.db,
         contract_id,
         user.id.as_str(),
+        lender_id,
         &body.loan_id,
         min_ltv,
         initial_collateral.to_sat(),
