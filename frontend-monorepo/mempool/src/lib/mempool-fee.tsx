@@ -1,5 +1,6 @@
-import React, { createContext, ReactNode, useContext, useEffect, useState } from "react";
-import MempoolClient, { RecommendedFees } from "./mempool-client";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import type { ReactNode } from "react";
+import MempoolClient, { type RecommendedFees } from "./mempool-client";
 
 interface FeeContextType {
   recommendedFees: RecommendedFees | undefined;
@@ -16,15 +17,15 @@ interface FeeProviderProps {
 }
 
 // Provider component
-export const FeeProvider: React.FC<FeeProviderProps> = ({
+export const FeeProvider = ({
   children,
   mempoolUrl,
-}) => {
+}: FeeProviderProps) => {
   const [recommendedFees, setRecommendedFees] = useState<RecommendedFees>();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  const fetchFees = async () => {
+  const fetchFees = useCallback(async () => {
     const client = new MempoolClient(mempoolUrl);
     try {
       setIsLoading(true);
@@ -37,12 +38,12 @@ export const FeeProvider: React.FC<FeeProviderProps> = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [mempoolUrl]);
 
   // Initial fetch
   useEffect(() => {
     fetchFees();
-  }, [mempoolUrl]);
+  }, [fetchFees]);
 
   const value = {
     recommendedFees,

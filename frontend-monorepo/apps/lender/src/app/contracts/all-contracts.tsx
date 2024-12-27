@@ -33,6 +33,7 @@ type ContractStatusFilterKey =
   | "closing"
   | "rejected"
   | "expired"
+  | "defaulted"
   | "canceled"
   | "dispute";
 
@@ -111,6 +112,7 @@ export const AllContracts = ({ contracts: unfilteredContracts }: OpenContractsPr
     expired: false,
     canceled: false,
     dispute: true,
+    defaulted: true,
   });
 
   const [sortByColumn, setSortByColumn] = useState<ColumnFilterKey>("updatedAt");
@@ -156,6 +158,8 @@ export const AllContracts = ({ contracts: unfilteredContracts }: OpenContractsPr
         return contractStatusFilter["canceled"];
       case ContractStatus.RequestExpired:
         return contractStatusFilter["expired"];
+      case ContractStatus.Defaulted:
+        return contractStatusFilter["defaulted"];
       default:
         return contractStatusFilter["expired"];
     }
@@ -484,6 +488,17 @@ export const AllContracts = ({ contracts: unfilteredContracts }: OpenContractsPr
                               <Text>Disputes</Text>
                             </Flex>
                           </DropdownMenu.Item>
+                          <DropdownMenu.Item
+                            onSelect={(e) => e.preventDefault()}
+                          >
+                            <Flex gap="2" align="center">
+                              <Checkbox
+                                checked={contractStatusFilter["defaulted"]}
+                                onCheckedChange={() => toggleContractStatusFilter("defaulted")}
+                              />
+                              <Text>Defaulted</Text>
+                            </Flex>
+                          </DropdownMenu.Item>
                         </DropdownMenu.Content>
                       </DropdownMenu.Root>
                     </Flex>
@@ -613,8 +628,10 @@ export const AllContracts = ({ contracts: unfilteredContracts }: OpenContractsPr
                               ? "amber"
                               : contract.status === ContractStatus.Approved
                               ? "green"
-                              : contract.status === ContractStatus.Rejected
+                              : contract.status === ContractStatus.Defaulted
                               ? "red"
+                              : contract.status === ContractStatus.Rejected
+                              ? "orange"
                               : "gray"}
                             size={"2"}
                           >

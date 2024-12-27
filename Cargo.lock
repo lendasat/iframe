@@ -1817,6 +1817,7 @@ dependencies = [
  "rust_decimal_macros",
  "serde",
  "serde_json",
+ "sideshift",
  "sqlx",
  "temp-dir",
  "time",

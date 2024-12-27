@@ -1,12 +1,8 @@
 use crate::config::Config;
-use crate::mempool;
-use crate::moon;
 use crate::routes::price_feed_ws;
 use crate::routes::profiles;
 use crate::routes::AppState;
-use crate::wallet::Wallet;
 use anyhow::Result;
-use axum::extract::ws::Message;
 use axum::http::header::ACCEPT;
 use axum::http::header::ACCESS_CONTROL_ALLOW_HEADERS;
 use axum::http::header::ACCESS_CONTROL_ALLOW_ORIGIN;
@@ -19,12 +15,8 @@ use axum::Router;
 pub use contracts::ClaimCollateralPsbt;
 pub use contracts::ClaimTx;
 pub use contracts::Contract;
-use sqlx::Pool;
-use sqlx::Postgres;
 use std::net::SocketAddr;
 use std::sync::Arc;
-use tokio::sync::mpsc;
-use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
 use tower_http::cors::CorsLayer;
 use tower_http::services::ServeDir;
@@ -41,21 +33,8 @@ pub(crate) mod version;
 
 pub async fn spawn_borrower_server(
     config: Config,
-    wallet: Arc<Mutex<Wallet>>,
-    db: Pool<Postgres>,
-    mempool: xtra::Address<mempool::Actor>,
-    connections: Arc<Mutex<Vec<mpsc::UnboundedSender<Message>>>>,
-    moon_client: Arc<moon::Manager>,
+    app_state: Arc<AppState>,
 ) -> Result<JoinHandle<()>> {
-    let app_state = Arc::new(AppState {
-        db,
-        wallet,
-        config: config.clone(),
-        mempool,
-        connections,
-        moon: moon_client,
-    });
-
     let app = Router::new()
         .merge(health_check::router())
         .merge(auth::router(app_state.clone()))

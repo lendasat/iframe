@@ -14,6 +14,7 @@ pub mod loan_offers;
 pub mod loan_requests;
 pub mod manual_collateral_recovery;
 pub mod moon;
+pub(crate) mod sideshift;
 pub mod transactions;
 pub mod user_logins;
 pub mod wallet_backups;

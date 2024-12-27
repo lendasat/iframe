@@ -182,6 +182,14 @@ export interface GetLiquidationPsbtResponse {
   lender_pk: string;
 }
 
+export interface LiquidationToStableCoinPsbt {
+  psbt: string;
+  collateral_descriptor: string;
+  lender_pk: string;
+  settle_address: string;
+  settle_amount: number;
+}
+
 export interface GetRecoveryPsbtResponse {
   psbt: string;
   collateral_descriptor: string;

@@ -27,7 +27,7 @@ pub enum ApiError {
     Request(#[from] reqwest::Error),
 }
 
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
 #[serde(rename_all = "UPPERCASE")]
 pub enum Coin {
     Usdc,
@@ -51,21 +51,22 @@ impl fmt::Display for Coin {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum BitcoinNetwork {
     Bitcoin,
 }
 
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum EthereumNetwork {
-    Mainnet,
+    /// Ethereum main chain
+    Ethereum,
     Aribtrum,
     Polygon,
 }
 
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
 #[serde(untagged)]
 pub enum Network {
     Ethereum(EthereumNetwork),
@@ -75,8 +76,8 @@ pub enum Network {
 impl fmt::Display for Network {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Network::Ethereum(EthereumNetwork::Mainnet) => {
-                write!(f, "mainnet")
+            Network::Ethereum(EthereumNetwork::Ethereum) => {
+                write!(f, "ethereum")
             }
             Network::Bitcoin(BitcoinNetwork::Bitcoin) => {
                 write!(f, "bitcoin")
@@ -91,6 +92,7 @@ impl fmt::Display for Network {
     }
 }
 
+#[derive(Clone)]
 pub struct SideShiftClient {
     secret: String,
     affiliate_id: String,
@@ -114,7 +116,7 @@ pub struct Pair {
     pub settle_network: Network,
 }
 
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum ShiftKind {
     /// A fixed rate shift
@@ -128,7 +130,7 @@ pub enum ShiftKind {
     Variable,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub enum ShiftStatus {
     /// Waiting for deposit
@@ -185,7 +187,7 @@ pub enum ShiftStatus {
     Multiple,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Quote {
     pub id: Uuid,
@@ -241,7 +243,7 @@ pub struct FixedShift {
 }
 
 /// Represents the status of a shift.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct FixedShiftStatus {
     pub id: String,

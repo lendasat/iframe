@@ -17,6 +17,7 @@ pub mod mempool;
 pub mod model;
 pub mod moon;
 pub mod routes;
+pub mod sideshift;
 pub mod utils;
 pub mod wallet;
 

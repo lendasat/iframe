@@ -15,6 +15,7 @@ use hub::mempool;
 use hub::moon;
 use hub::routes::borrower::spawn_borrower_server;
 use hub::routes::lender::spawn_lender_server;
+use hub::routes::AppState;
 use hub::wallet::Wallet;
 use std::backtrace::Backtrace;
 use std::sync::Arc;
@@ -138,25 +139,21 @@ async fn main() -> Result<()> {
         tracing::debug!("Sync moon tx is disabled");
     }
 
-    let borrower_server = spawn_borrower_server(
-        config.clone(),
-        wallet.clone(),
-        db.clone(),
-        mempool_addr.clone(),
-        broadcast_state.clone(),
-        moon_client.clone(),
-    )
-    .await?;
+    let sideshift = Arc::new(hub::sideshift::Shifter::new(db.clone(), config.clone()));
 
-    let lender_server = spawn_lender_server(
-        config.clone(),
-        wallet,
-        db.clone(),
-        mempool_addr,
-        broadcast_state,
-        moon_client.clone(),
-    )
-    .await?;
+    let app_state = Arc::new(AppState {
+        db: db.clone(),
+        wallet: wallet.clone(),
+        config: config.clone(),
+        mempool: mempool_addr,
+        connections: broadcast_state.clone(),
+        moon: moon_client.clone(),
+        sideshift,
+    });
+
+    let borrower_server = spawn_borrower_server(config.clone(), app_state.clone()).await?;
+
+    let lender_server = spawn_lender_server(config.clone(), app_state).await?;
 
     let borrower_handle = tokio::spawn(borrower_server);
     let lender_handle = tokio::spawn(lender_server);
