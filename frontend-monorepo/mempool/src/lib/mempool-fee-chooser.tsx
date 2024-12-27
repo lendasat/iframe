@@ -1,42 +1,21 @@
-import type { ChangeEvent } from "react";
+import { ChangeEvent } from "react";
 import { useEffect, useState } from "react";
 import { Button, ButtonGroup, Form, Row, Spinner } from "react-bootstrap";
-import type { RecommendedFees } from "./mempool-client";
-import MempoolClient from "./mempool-client";
+import { useFees } from "./mempool-fee";
 
 interface FeeSelectorProps {
   onSelectFee: (fee: number) => void;
 }
 
 export const FeeSelector = ({ onSelectFee }: FeeSelectorProps) => {
-  const [recommendedFees, setRecommendedFees] = useState<RecommendedFees>({
-    economyFee: 1,
-    fastestFee: 1,
-    halfHourFee: 1,
-    hourFee: 1,
-    minimumFee: 1,
-  });
-  const [selectedFeeType, setSelectedFeeType] = useState<string>("fast");
-  const [customFee, setCustomFee] = useState<string>("");
-  const [isLoading, setIsLoading] = useState(true);
+  const { recommendedFees, isLoading, refreshFees } = useFees();
 
   useEffect(() => {
-    const fetchFees = async () => {
-      const client = new MempoolClient(import.meta.env.VITE_MEMPOOL_REST_URL);
-      try {
-        const fees = await client.getRecommendedFees();
-        setRecommendedFees(fees);
+    refreshFees();
+  }, []);
 
-        onSelectFee(fees.fastestFee);
-      } catch (error) {
-        console.error("Error fetching recommended fees:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchFees();
-  }, [onSelectFee]);
+  const [selectedFeeType, setSelectedFeeType] = useState<string>("fast");
+  const [customFee, setCustomFee] = useState<string>("");
 
   const handleFeeSelection = (feeType: string) => {
     if (selectedFeeType === feeType) {
