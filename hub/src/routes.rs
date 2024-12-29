@@ -14,6 +14,7 @@ pub mod borrower;
 pub mod lender;
 pub mod price_feed_ws;
 pub(crate) mod profiles;
+mod user_connection_details_middleware;
 
 #[derive(Debug, Serialize)]
 pub struct ErrorResponse {
