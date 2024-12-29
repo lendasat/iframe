@@ -1,4 +1,5 @@
 use crate::bitmex_index_price_rest::get_bitmex_index_price;
+use crate::contract_liquidation;
 use crate::db;
 use crate::email::Email;
 use crate::mempool;
@@ -839,16 +840,9 @@ async fn get_liquidation_to_bitcoin_psbt(
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
     })?;
 
-    let contract_address = contract.contract_address.ok_or_else(|| {
+    let contract_address = contract.contract_address.clone().ok_or_else(|| {
         let error_response = ErrorResponse {
             message: "Database error: missing contract address".to_string(),
-        };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?;
-
-    let lender_xpub = contract.lender_xpub.ok_or_else(|| {
-        let error_response = ErrorResponse {
-            message: "Database error: missing lender Xpub".to_string(),
         };
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
     })?;
@@ -866,8 +860,6 @@ async fn get_liquidation_to_bitcoin_psbt(
 
         return Err((StatusCode::INTERNAL_SERVER_ERROR, Json(error_response)));
     }
-
-    let origination_fee = Amount::from_sat(contract.origination_fee_sats);
 
     let price = get_bitmex_index_price(OffsetDateTime::now_utc())
         .await
@@ -891,25 +883,22 @@ async fn get_liquidation_to_bitcoin_psbt(
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
     })?;
 
-    let (psbt, collateral_descriptor, lender_pk) = wallet
-        .create_liquidation_psbt(
-            contract.borrower_pk,
-            &lender_xpub,
-            contract_index,
-            collateral_outputs,
-            origination_fee,
-            lender_amount,
-            lender_address,
-            contract.borrower_btc_address.assume_checked(),
-            query_params.fee_rate,
-            contract.contract_version,
+    let (collateral_descriptor, lender_pk, psbt) = contract_liquidation::prepare_liquidation_psbt(
+        &mut wallet,
+        contract,
+        lender_address.as_unchecked().clone(),
+        lender_amount,
+        contract_index,
+        data.mempool.clone(),
+        query_params.fee_rate,
+    )
+    .await
+    .map_err(|err| {
+        error_response(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("{err:#}").as_str(),
         )
-        .map_err(|e| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {e:#}"),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
+    })?;
 
     let psbt = psbt.serialize_hex();
 
@@ -958,7 +947,6 @@ async fn post_liquidation_to_stablecoin_psbt(
         Some(ip) => ip.to_string(),
     };
 
-    let mut wallet = data.wallet.lock().await;
     let contract = db::contracts::load_contract_by_contract_id_and_lender_id(
         &data.db,
         contract_id.as_str(),
@@ -1031,54 +1019,23 @@ async fn post_liquidation_to_stablecoin_psbt(
         )
     })?;
 
-    let contract_address = contract.contract_address.ok_or_else(|| {
+    let mut wallet = data.wallet.lock().await;
+    let (collateral_descriptor, lender_pk, psbt) = contract_liquidation::prepare_liquidation_psbt(
+        &mut wallet,
+        contract,
+        shift_address,
+        lender_amount,
+        contract_index,
+        data.mempool.clone(),
+        body.fee_rate_sats_vbyte,
+    )
+    .await
+    .map_err(|err| {
         error_response(
             StatusCode::INTERNAL_SERVER_ERROR,
-            "Database error: missing contract address",
+            format!("{err:#}").as_str(),
         )
     })?;
-
-    let lender_xpub = contract.lender_xpub.ok_or_else(|| {
-        error_response(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "Database error: missing lender Xpub",
-        )
-    })?;
-
-    let collateral_outputs = data
-        .mempool
-        .send(mempool::GetCollateralOutputs(contract_address))
-        .await
-        .expect("actor to be alive");
-
-    if collateral_outputs.is_empty() {
-        return Err(error_response(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "Database error: missing collateral outputs",
-        ));
-    }
-
-    let origination_fee = Amount::from_sat(contract.origination_fee_sats);
-
-    let (psbt, collateral_descriptor, lender_pk) = wallet
-        .create_liquidation_psbt(
-            contract.borrower_pk,
-            &lender_xpub,
-            contract_index,
-            collateral_outputs,
-            origination_fee,
-            lender_amount,
-            shift_address.assume_checked(),
-            contract.borrower_btc_address.assume_checked(),
-            body.fee_rate_sats_vbyte,
-            contract.contract_version,
-        )
-        .map_err(|e| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {e:#}"),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
 
     let psbt = psbt.serialize_hex();
 

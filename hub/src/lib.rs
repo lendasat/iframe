@@ -7,6 +7,7 @@ pub mod bitmex_ws_client;
 pub mod config;
 pub mod contract_close_to_expiry;
 pub mod contract_default;
+mod contract_liquidation;
 pub mod contract_request_expiry;
 pub mod db;
 pub mod email;
