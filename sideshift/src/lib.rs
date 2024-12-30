@@ -425,7 +425,7 @@ impl SideShiftClient {
             .client
             .post(&url)
             .header("x-sideshift-secret", &self.secret)
-            .header("x-user-ip", user_ip)
+            .header("x-user-ip", &user_ip)
             .json(&body)
             .send()
             .await?;
@@ -436,6 +436,7 @@ impl SideShiftClient {
             tracing::error!(
                 status_code = status_code.as_u16(),
                 message = error.error.message,
+                user_ip,
                 "Failed at creating quote"
             );
             return Err(ApiError::Api(error.error.message));

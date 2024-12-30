@@ -121,9 +121,12 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
                 jwt_auth::auth,
             )),
         )
-        .layer(tower::ServiceBuilder::new().layer(middleware::from_fn(
-            user_connection_details_middleware::ip_user_agent,
-        )))
+        .layer(
+            tower::ServiceBuilder::new().layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                user_connection_details_middleware::ip_user_agent,
+            )),
+        )
         .with_state(app_state)
 }
 

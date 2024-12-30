@@ -36,6 +36,7 @@ pub struct Config {
     pub sideshift_base_url: String,
     pub sideshift_affiliate_id: String,
     pub sideshift_commision_rate: Option<Decimal>,
+    pub fake_client_ip: Option<String>,
 }
 
 impl Config {
@@ -114,6 +115,7 @@ impl Config {
         let sideshift_commision_rate = std::env::var("SIDESHIFT_COMMISSION_RATE").ok();
         let sideshift_commision_rate = sideshift_commision_rate
             .map(|rate| Decimal::from_str(rate.as_str()).expect("to be a decimal"));
+        let fake_client_ip = std::env::var("FAKE_CLIENT_IP").ok();
 
         Config {
             database_url,
@@ -154,6 +156,7 @@ impl Config {
             sideshift_base_url,
             sideshift_affiliate_id,
             sideshift_commision_rate,
+            fake_client_ip,
         }
     }
 }
