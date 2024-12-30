@@ -17,7 +17,7 @@ interface OpenContractsProps {
 type ColumnFilterKey =
   | "updatedAt"
   | "amount"
-  | "duration"
+  | "expiry"
   | "interest"
   | "ltv"
   | "collateral"
@@ -93,7 +93,7 @@ export const AllContracts = ({ contracts: unfilteredContracts }: OpenContractsPr
   const [shownColumns, setShownColumns] = useState<ColumnFilter>({
     updatedAt: true,
     amount: true,
-    duration: true,
+    expiry: true,
     interest: true,
     ltv: true,
     collateral: true,
@@ -168,8 +168,8 @@ export const AllContracts = ({ contracts: unfilteredContracts }: OpenContractsPr
       case "amount":
         dif = a.loan_amount - b.loan_amount;
         break;
-      case "duration":
-        dif = a.duration_months - b.duration_months;
+      case "expiry":
+        dif = a.expiry.getTime() - b.expiry.getTime();
         break;
       case "interest":
         dif = a.interest_rate - b.interest_rate;
@@ -224,10 +224,10 @@ export const AllContracts = ({ contracts: unfilteredContracts }: OpenContractsPr
                 >
                   <Flex gap="2" align="center">
                     <Checkbox
-                      checked={shownColumns["duration"]}
-                      onCheckedChange={() => toggleFilterOutContractDetails("duration")}
+                      checked={shownColumns["expiry"]}
+                      onCheckedChange={() => toggleFilterOutContractDetails("expiry")}
                     />
-                    <Text>Duration</Text>
+                    <Text>Expiry</Text>
                   </Flex>
                 </DropdownMenu.Item>
                 <DropdownMenu.Item
@@ -297,7 +297,7 @@ export const AllContracts = ({ contracts: unfilteredContracts }: OpenContractsPr
                     />
                   </Table.ColumnHeaderCell>
                 )}
-              {shownColumns["duration"]
+              {shownColumns["expiry"]
                 && (
                   <Table.ColumnHeaderCell className={"text-font dark:text-font-dark"}>
                     <Box className="hidden md:flex">
@@ -305,9 +305,9 @@ export const AllContracts = ({ contracts: unfilteredContracts }: OpenContractsPr
                         toggleSortByColumn={toggleSortByColumn}
                         sortByColumn={sortByColumn}
                         sortAsc={sortAsc}
-                        currentColumn={"duration"}
-                        label={"Duration"}
-                        key={"duration"}
+                        currentColumn={"expiry"}
+                        label={"Expiry"}
+                        key={"expiry"}
                       />
                     </Box>
                   </Table.ColumnHeaderCell>
@@ -566,12 +566,16 @@ export const AllContracts = ({ contracts: unfilteredContracts }: OpenContractsPr
                         </Text>
                       </Table.RowHeaderCell>
                     )}
-                  {shownColumns["duration"]
+                  {shownColumns["expiry"]
                     && (
                       <Table.Cell>
                         <Box className="hidden md:flex">
                           <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
-                            {contract.duration_months} months
+                            {contract.expiry?.toLocaleDateString([], {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            })}
                           </Text>
                         </Box>
                       </Table.Cell>
@@ -668,10 +672,14 @@ export const AllContracts = ({ contracts: unfilteredContracts }: OpenContractsPr
                                 <Box width={"100%"}>
                                   <Flex align={"center"} justify={"between"} gap={"3"}>
                                     <Text className={"text-font dark:text-font-dark"} size={"3"} weight={"medium"}>
-                                      Duration:
+                                      Expiry:
                                     </Text>
                                     <Text className="capitalize text-font dark:text-font-dark" size={"3"}>
-                                      {contract.duration_months} months
+                                      {contract.expiry.toLocaleDateString([], {
+                                        day: "numeric",
+                                        month: "short",
+                                        year: "numeric",
+                                      })}
                                     </Text>
                                   </Flex>
                                 </Box>

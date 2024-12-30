@@ -277,6 +277,20 @@ function ContractDetails({ contract }: DetailsProps) {
 
           <Flex gap={"5"} align={"start"} justify={"between"}>
             <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
+              Expiry
+            </Text>
+            <Text className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
+              {contract.expiry.toLocaleDateString([], {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              })}
+            </Text>
+          </Flex>
+          <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
+
+          <Flex gap={"5"} align={"start"} justify={"between"}>
+            <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
               Collateral
             </Text>
             <Text className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>

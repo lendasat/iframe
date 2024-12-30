@@ -14,9 +14,10 @@ import type {
 import { parseRFC3339Date } from "./utils";
 
 // Interface for the raw data received from the API
-interface RawContract extends Omit<Contract, "created_at" | "repaid_at" | "updated_at"> {
+interface RawContract extends Omit<Contract, "created_at" | "repaid_at" | "updated_at" | "expiry"> {
   created_at: string;
   updated_at: string;
+  expiry: string;
   repaid_at?: string;
 }
 
@@ -78,11 +79,17 @@ export class HttpClientLender extends BaseHttpClient {
           repaidAt = parsed;
         }
 
+        const expiry = parseRFC3339Date(contract.expiry);
+        if (expiry === undefined) {
+          throw new Error("Invalid date");
+        }
+
         return {
           ...contract,
           created_at: createdAt,
           updated_at: updated_at,
           repaid_at: repaidAt,
+          expiry: expiry,
         };
       });
     } catch (error) {
@@ -116,11 +123,17 @@ export class HttpClientLender extends BaseHttpClient {
         throw new Error("Invalid date");
       }
 
+      const expiry = parseRFC3339Date(contract.expiry);
+      if (expiry == null) {
+        throw new Error("Invalid date");
+      }
+
       return {
         ...contract,
         created_at: createdAt,
         updated_at: updated_at,
         repaid_at: repaid_at,
+        expiry: expiry,
       };
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
