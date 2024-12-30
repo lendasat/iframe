@@ -218,7 +218,7 @@ export const Layout: FC<LayoutProps> = ({ children, menuItems, backendVersion, u
               </Link>
               <Link
                 className="h-9 w-9 bg-white/70 text-font/80 border border-white rounded-full flex items-center justify-center  hover:bg-white hover:border-black/10 hover:text-font transition-colors ease-in duration-200"
-                to={"/history"}
+                to={"/"}
               >
                 <IoIosNotificationsOutline size={"20"} />
               </Link>

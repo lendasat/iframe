@@ -1,6 +1,8 @@
 import { ContractStatus, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
-import { formatCurrency } from "@frontend-monorepo/ui-shared";
+import type { Contract } from "@frontend-monorepo/http-client-borrower";
+import { formatCurrency, usePrice } from "@frontend-monorepo/ui-shared";
 import { Box, Button, Grid, Heading, Skeleton, Tabs, Text } from "@radix-ui/themes";
+import { useState } from "react";
 import type { HTMLAttributeAnchorTarget } from "react";
 import type { IconType } from "react-icons";
 import { BsBank, BsTicketPerforatedFill } from "react-icons/bs";
@@ -8,35 +10,159 @@ import { IoWalletOutline } from "react-icons/io5";
 import { RiCustomerService2Fill } from "react-icons/ri";
 import { Link } from "react-router-dom";
 import { useAsync } from "react-use";
+import type { ColumnFilter, ColumnFilterKey, ContractStatusFilter } from "../contracts/contract-details-table";
+import { ContractDetailsTable } from "../contracts/contract-details-table";
+
+interface ContractOverviewProps {
+  contracts: Contract[];
+  contractStatusFilter: ContractStatusFilter;
+}
+
+const ContractOverview = ({ contracts: unfilteredContracts, contractStatusFilter }: ContractOverviewProps) => {
+  const { latestPrice } = usePrice();
+
+  const shownColumns: ColumnFilter = {
+    updatedAt: true,
+    amount: true,
+    expiry: true,
+    interest: true,
+    ltv: true,
+    collateral: true,
+    status: true,
+    action: true,
+  };
+
+  const [sortByColumn, setSortByColumn] = useState<ColumnFilterKey>("updatedAt");
+  const [sortAsc, setSortAsc] = useState(false);
+
+  const contracts = unfilteredContracts.filter((contract) => {
+    switch (contract.status) {
+      case ContractStatus.Requested:
+        return contractStatusFilter["requested"];
+      case ContractStatus.Approved:
+        return contractStatusFilter["approved"];
+      case ContractStatus.CollateralSeen:
+        return contractStatusFilter["collateralSeen"];
+      case ContractStatus.CollateralConfirmed:
+        return contractStatusFilter["opening"];
+      case ContractStatus.PrincipalGiven:
+        return contractStatusFilter["open"];
+      case ContractStatus.Closing:
+        return contractStatusFilter["closing"];
+      case ContractStatus.RepaymentProvided:
+        return contractStatusFilter["repaymentProvided"];
+      case ContractStatus.RepaymentConfirmed:
+        return contractStatusFilter["repaymentConfirmed"];
+      case ContractStatus.Closed:
+        return contractStatusFilter["closed"];
+      case ContractStatus.Rejected:
+        return contractStatusFilter["rejected"];
+      case ContractStatus.DisputeBorrowerStarted:
+      case ContractStatus.DisputeLenderStarted:
+      case ContractStatus.DisputeBorrowerResolved:
+      case ContractStatus.DisputeLenderResolved:
+        return contractStatusFilter["dispute"];
+      case ContractStatus.Cancelled:
+        return contractStatusFilter["canceled"];
+      case ContractStatus.RequestExpired:
+        return contractStatusFilter["expired"];
+      default:
+        return contractStatusFilter["expired"];
+    }
+  }).sort((a, b) => {
+    let dif;
+    switch (sortByColumn) {
+      case "updatedAt":
+        dif = a.updated_at.getTime() - b.updated_at.getTime();
+        break;
+      case "amount":
+        dif = a.loan_amount - b.loan_amount;
+        break;
+      case "expiry":
+        dif = a.expiry.getTime() - b.expiry.getTime();
+        break;
+      case "interest":
+        dif = a.interest_rate - b.interest_rate;
+        break;
+      case "ltv":
+        // TODO: this is wrong, we should calculate the current LTV
+        dif = a.initial_ltv - b.initial_ltv;
+        break;
+      case "collateral":
+        dif = a.collateral_sats - b.collateral_sats;
+        break;
+      case "status":
+      case "action":
+      default:
+        dif = a.status.localeCompare(b.status);
+        break;
+    }
+    return sortAsc ? dif : -dif;
+  });
+
+  function toggleSortByColumn(column: ColumnFilterKey) {
+    setSortByColumn(column);
+    setSortAsc(!sortAsc);
+  }
+
+  return (
+    <Box className="py-4">
+      <ContractDetailsTable
+        shownColumns={shownColumns}
+        toggleSortByColumn={toggleSortByColumn}
+        sortByColumn={sortByColumn}
+        sortAsc={sortAsc}
+        contractStatusFilter={contractStatusFilter}
+        onCheckedChange={() => {
+          // ignored
+        }}
+        contracts={contracts}
+        latestPrice={latestPrice}
+        isToggleFilterShown={false}
+      />
+    </Box>
+  );
+};
 
 function DashBoard() {
   const { innerHeight } = window;
   const { getContracts } = useBorrowerHttpClient();
 
-  const { loading, value } = useAsync(async () => {
+  const { loading, value: maybeContracts } = useAsync(async () => {
     return await getContracts();
   }, []);
 
-  const totalLoanAmount = value
-    ? value
+  const contracts = maybeContracts || [];
+
+  const totalLoanAmount = contracts
+    ? contracts
       .filter((loan) => loan.status === ContractStatus.PrincipalGiven)
       .map((loan) => loan.loan_amount)
       .reduce((sum, amount) => sum + amount, 0)
     : 0;
 
   // All the loans that were at least approved by the lender.
-  const totalLoans = value?.filter((loan) =>
+  const totalLoans = contracts?.filter((loan) =>
     loan.status !== ContractStatus.Rejected && loan.status !== ContractStatus.RequestExpired
     && loan.status !== ContractStatus.Cancelled
   ).length;
 
-  const totalActiveLoans = value?.filter((loan) =>
-    loan.status !== ContractStatus.Requested && loan.status !== ContractStatus.Approved
-    && loan.status !== ContractStatus.CollateralSeen && loan.status !== ContractStatus.Rejected
-    && loan.status !== ContractStatus.RequestExpired && loan.status !== ContractStatus.Cancelled
-    && loan.status !== ContractStatus.Closed && loan.status !== ContractStatus.Closing
-  ).length;
+  const totalActiveLoans =
+    contracts.filter((loan) =>
+      loan.status !== ContractStatus.Requested && loan.status !== ContractStatus.Approved
+      && loan.status !== ContractStatus.CollateralSeen && loan.status !== ContractStatus.Rejected
+      && loan.status !== ContractStatus.RequestExpired && loan.status !== ContractStatus.Cancelled
+      && loan.status !== ContractStatus.Closed && loan.status !== ContractStatus.Closing
+    ).length;
 
+  const contractsWithActionNeeded = contracts.filter((loan) =>
+    loan.status === ContractStatus.Approved
+    || loan.status === ContractStatus.RepaymentConfirmed
+  );
+  console.log(`contractsWithActionNeeded: ${JSON.stringify(contractsWithActionNeeded)}`);
+  const needsAction = contractsWithActionNeeded.length > 0;
+
+  console.log(`needsAction : ${needsAction}`);
   return (
     <Box
       className="flex flex-col overflow-y-scroll p-4 dark:bg-dark"
@@ -152,26 +278,109 @@ function DashBoard() {
           className="bg-white dark:bg-dark-700 rounded-2xl p-5 min-h-72 h-full"
         >
           <Text as="p" weight={"medium"} className="text-font dark:text-font-dark" size={"3"}>Contracts</Text>
-          <Tabs.Root defaultValue="open">
+
+          <Tabs.Root defaultValue={!needsAction ? "actionNeeded" : "open"}>
             <Tabs.List size="2" color="blue">
-              <Tabs.Trigger value="open">
-                Open
+              <Tabs.Trigger
+                value="actionNeeded"
+                className={`px-4 py-2 rounded-t-lg relative ${
+                  needsAction ? "animate-pulse bg-red-100 dark:bg-red-900/30" : ""
+                } transition-colors`}
+              >
+                {needsAction && (
+                  <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75">
+                    </span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                  </span>
+                )}
+                Action Required
               </Tabs.Trigger>
-              <Tabs.Trigger value="closed" disabled={true}>Closed</Tabs.Trigger>
-              <Tabs.Trigger value="all" disabled={true}>All</Tabs.Trigger>
+              <Tabs.Trigger value="open">Open</Tabs.Trigger>
+              <Tabs.Trigger value="closed">Closed</Tabs.Trigger>
+              <Tabs.Trigger value="all">All</Tabs.Trigger>
             </Tabs.List>
-
-            <Box pt="3">
-              <Tabs.Content value="open">
-                <Text size="2">Open contracts</Text>
+            <Box>
+              <Tabs.Content value="actionNeeded">
+                <ContractOverview
+                  contracts={contracts}
+                  contractStatusFilter={{
+                    requested: false,
+                    approved: true,
+                    collateralSeen: false,
+                    opening: false,
+                    open: false,
+                    closing: false,
+                    closed: false,
+                    repaymentProvided: false,
+                    repaymentConfirmed: true,
+                    rejected: false,
+                    expired: false,
+                    canceled: false,
+                    dispute: false,
+                  }}
+                />
               </Tabs.Content>
-
+              <Tabs.Content value="open">
+                <ContractOverview
+                  contracts={contracts}
+                  contractStatusFilter={{
+                    requested: true,
+                    approved: true,
+                    collateralSeen: true,
+                    opening: true,
+                    open: true,
+                    closing: false,
+                    closed: false,
+                    repaymentProvided: false,
+                    repaymentConfirmed: false,
+                    rejected: false,
+                    expired: false,
+                    canceled: false,
+                    dispute: false,
+                  }}
+                />
+              </Tabs.Content>
               <Tabs.Content value="closed">
-                <Text size="2">Closed contracts</Text>
+                <ContractOverview
+                  contracts={contracts}
+                  contractStatusFilter={{
+                    requested: false,
+                    approved: false,
+                    collateralSeen: false,
+                    opening: false,
+                    open: false,
+                    closing: true,
+                    closed: true,
+                    repaymentProvided: false,
+                    repaymentConfirmed: false,
+                    rejected: true,
+                    expired: true,
+                    canceled: true,
+                    dispute: true,
+                  }}
+                />
               </Tabs.Content>
 
               <Tabs.Content value="all">
-                <Text size="2">All contracts</Text>
+                <ContractOverview
+                  contracts={contracts}
+                  contractStatusFilter={{
+                    requested: true,
+                    approved: true,
+                    collateralSeen: true,
+                    opening: true,
+                    open: true,
+                    closing: true,
+                    closed: true,
+                    repaymentProvided: true,
+                    repaymentConfirmed: true,
+                    rejected: true,
+                    expired: true,
+                    canceled: true,
+                    dispute: true,
+                  }}
+                />
               </Tabs.Content>
             </Box>
           </Tabs.Root>
