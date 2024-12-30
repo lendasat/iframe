@@ -178,13 +178,15 @@ export const ContractDetailsTable = ({
           {shownColumns["collateral"]
             && (
               <Table.ColumnHeaderCell className={"text-font dark:text-font-dark"}>
-                <ColumnHeader
-                  toggleSortByColumn={toggleSortByColumn}
-                  sortByColumn={sortByColumn}
-                  sortAsc={sortAsc}
-                  currentColumn={"collateral"}
-                  label={"Collateral"}
-                />
+                <Box className={"hidden md:flex"}>
+                  <ColumnHeader
+                    toggleSortByColumn={toggleSortByColumn}
+                    sortByColumn={sortByColumn}
+                    sortAsc={sortAsc}
+                    currentColumn={"collateral"}
+                    label={"Collateral"}
+                  />
+                </Box>
               </Table.ColumnHeaderCell>
             )}
           {shownColumns["status"]
@@ -426,7 +428,7 @@ export const ContractDetailsTable = ({
               {shownColumns["collateral"]
                 && (
                   <Table.Cell>
-                    <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
+                    <Text className={"text-font dark:text-font-dark hidden md:flex"} size={"1"} weight={"medium"}>
                       {collateral_btc} BTC
                     </Text>
                   </Table.Cell>
