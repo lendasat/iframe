@@ -1,6 +1,7 @@
 import { ContractStatus, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import type { Contract } from "@frontend-monorepo/http-client-borrower";
 import { formatCurrency, usePrice } from "@frontend-monorepo/ui-shared";
+import { ExternalLinkIcon } from "@radix-ui/react-icons";
 import { Box, Button, Grid, Heading, Skeleton, Tabs, Text } from "@radix-ui/themes";
 import { useState } from "react";
 import type { HTMLAttributeAnchorTarget } from "react";
@@ -8,7 +9,7 @@ import type { IconType } from "react-icons";
 import { BsBank, BsTicketPerforatedFill } from "react-icons/bs";
 import { IoWalletOutline } from "react-icons/io5";
 import { RiCustomerService2Fill } from "react-icons/ri";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAsync } from "react-use";
 import type { ColumnFilter, ColumnFilterKey, ContractStatusFilter } from "../contracts/contract-details-table";
 import { ContractDetailsTable } from "../contracts/contract-details-table";
@@ -127,6 +128,7 @@ const ContractOverview = ({ contracts: unfilteredContracts, contractStatusFilter
 function DashBoard() {
   const { innerHeight } = window;
   const { getContracts } = useBorrowerHttpClient();
+  const navigate = useNavigate();
 
   const { loading, value: maybeContracts } = useAsync(async () => {
     return await getContracts();
@@ -280,25 +282,34 @@ function DashBoard() {
           <Text as="p" weight={"medium"} className="text-font dark:text-font-dark" size={"3"}>Contracts</Text>
 
           <Tabs.Root defaultValue={!needsAction ? "actionNeeded" : "open"}>
-            <Tabs.List size="2" color="blue">
-              <Tabs.Trigger
-                value="actionNeeded"
-                className={`px-4 py-2 rounded-t-lg relative ${
-                  needsAction ? "animate-pulse bg-red-100 dark:bg-red-900/30" : ""
-                } transition-colors`}
-              >
-                {needsAction && (
-                  <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75">
+            <Tabs.List size="2" color="blue" className="flex justify-between">
+              <div className="flex">
+                <Tabs.Trigger
+                  value="actionNeeded"
+                  className={`px-4 py-2 rounded-t-lg relative ${
+                    needsAction ? "animate-pulse bg-red-100 dark:bg-red-900/30" : ""
+                  } transition-colors`}
+                >
+                  {needsAction && (
+                    <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75">
+                      </span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
                     </span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                  </span>
-                )}
-                Action Required
+                  )}
+                  Action Required
+                </Tabs.Trigger>
+                <Tabs.Trigger value="open">Open</Tabs.Trigger>
+                <Tabs.Trigger value="closed">Closed</Tabs.Trigger>
+              </div>
+              <Tabs.Trigger value="all" onClick={() => navigate("/my-contracts")}>
+                <div className="flex items-center gap-1">
+                  <Text size={"3"} weight={"bold"}>
+                    All
+                  </Text>
+                  <ExternalLinkIcon />
+                </div>
               </Tabs.Trigger>
-              <Tabs.Trigger value="open">Open</Tabs.Trigger>
-              <Tabs.Trigger value="closed">Closed</Tabs.Trigger>
-              <Tabs.Trigger value="all">All</Tabs.Trigger>
             </Tabs.List>
             <Box>
               <Tabs.Content value="actionNeeded">
@@ -363,24 +374,7 @@ function DashBoard() {
               </Tabs.Content>
 
               <Tabs.Content value="all">
-                <ContractOverview
-                  contracts={contracts}
-                  contractStatusFilter={{
-                    requested: true,
-                    approved: true,
-                    collateralSeen: true,
-                    opening: true,
-                    open: true,
-                    closing: true,
-                    closed: true,
-                    repaymentProvided: true,
-                    repaymentConfirmed: true,
-                    rejected: true,
-                    expired: true,
-                    canceled: true,
-                    dispute: true,
-                  }}
-                />
+                {/*// should redirect automatically*/}
               </Tabs.Content>
             </Box>
           </Tabs.Root>
