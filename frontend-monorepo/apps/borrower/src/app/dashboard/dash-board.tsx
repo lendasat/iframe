@@ -22,11 +22,7 @@ function DashBoard() {
 
   const totalLoanAmount = value
     ? value
-      .filter((loan) =>
-        loan.status !== ContractStatus.Requested && loan.status !== ContractStatus.Approved
-        && loan.status !== ContractStatus.CollateralSeen && loan.status !== ContractStatus.Rejected
-        && loan.status !== ContractStatus.RequestExpired && loan.status !== ContractStatus.Cancelled
-      )
+      .filter((loan) => loan.status === ContractStatus.PrincipalGiven)
       .map((loan) => loan.loan_amount)
       .reduce((sum, amount) => sum + amount, 0)
     : 0;
@@ -51,7 +47,7 @@ function DashBoard() {
     >
       <Grid className="md:grid-cols-2 md:grid-rows-2 xl:grid-cols-[minmax(350px,_1fr)_minmax(450px,_1fr)_minmax(300px,_1fr)] gap-5">
         <Box className="md:bg-gradient-to-b from-white to-white/10 dark:from-dark-700 dark:to-dark-700/10 backdrop-blur rounded-2xl p-5 md:row-span-2">
-          <Text as="p" weight={"medium"} className="text-font dark:text-font-dark" size={"3"}>Total Borrowed</Text>
+          <Text as="p" weight={"medium"} className="text-font dark:text-font-dark" size={"3"}>Open Contracts</Text>
           {/* Total Loan Received */}
           <Heading size={"8"} mt={"3"} className="text-font dark:text-font-dark">
             {loading ? <Skeleton>$756,809.32</Skeleton> : formatCurrency(totalLoanAmount)}
