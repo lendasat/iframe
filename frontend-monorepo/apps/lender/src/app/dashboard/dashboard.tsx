@@ -1,11 +1,40 @@
+import { ContractStatus, useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
 import { formatCurrency } from "@frontend-monorepo/ui-shared";
 import { Box, Button, Flex, Grid, Heading, Text } from "@radix-ui/themes";
 import { useState } from "react";
+import { useAsync } from "react-use";
 import DashboardContracts from "./dashoard-contracts";
 
 function Dashboard() {
   const { innerHeight } = window;
   const [chartNav, setChartNav] = useState<string>("Earning");
+
+  const { getContracts } = useLenderHttpClient();
+
+  const { value: maybeContracts } = useAsync(async () => {
+    return await getContracts();
+  }, []);
+
+  const contracts = maybeContracts || [];
+
+  const openContracts = contracts
+    .filter((contract) => contract.status === ContractStatus.PrincipalGiven);
+
+  const numberOfOpenContracts = openContracts.length;
+  const totalLoanAmount = openContracts
+    .reduce((sum, contract) => sum + contract.loan_amount, 0);
+  const totalOpenInterest = openContracts.reduce((sum, contract) =>
+    sum + (
+      contract.loan_amount * (contract.interest_rate / 12 * contract.duration_months)
+    ), 0);
+
+  const totalClosedInterest = contracts.filter((contract) =>
+    contract.status === ContractStatus.Closed || contract.status === ContractStatus.Closing
+  ).reduce((sum, contract) =>
+    sum + (
+      contract.loan_amount * (contract.interest_rate / 12 * contract.duration_months)
+    ), 0);
+
   return (
     <Box
       className="flex flex-col overflow-y-scroll p-4 md:p-8 dark:bg-dark"
@@ -16,27 +45,27 @@ function Dashboard() {
           <QuickBoards
             color="orange"
             label="Total Assets in Open Loan"
-            value={1000000}
+            value={totalLoanAmount}
           />
           <QuickBoards
             color="green"
             label="Number of Active Loans"
-            value={3}
+            value={numberOfOpenContracts}
             numbers={true}
           />
           <QuickBoards
             color="purple"
-            label="Open Intrest"
-            value={3102}
+            label="Open Interest"
+            value={totalOpenInterest}
           />
           <QuickBoards
             color="brown"
             label="Earned Interest"
-            value={1243}
+            value={totalClosedInterest}
           />
         </Grid>
 
-        <DashboardContracts />
+        <DashboardContracts contracts={contracts} />
 
         <Box className="min-h-96 border-b space-y-4">
           <Flex align={"center"} justify={"between"} wrap={"wrap"} gap={"2"}>
