@@ -14,11 +14,6 @@ import { IoCaretDownOutline, IoCaretUp } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
 import { actionFromStatus } from "./my-contracts";
 
-interface OpenContractsProps {
-  contracts: Contract[];
-  header?: boolean;
-}
-
 type ColumnFilterKey =
   | "updatedAt"
   | "amount"
@@ -92,6 +87,11 @@ const ColumnHeader = ({ toggleSortByColumn, sortByColumn, currentColumn, sortAsc
     </Flex>
   </Button>
 );
+
+interface OpenContractsProps {
+  contracts: Contract[];
+  header?: boolean;
+}
 
 export const AllContracts = ({ contracts: unfilteredContracts, header }: OpenContractsProps) => {
   const { latestPrice } = usePrice();
@@ -524,21 +524,6 @@ export const AllContracts = ({ contracts: unfilteredContracts, header }: OpenCon
                     </Flex>
                   </Table.ColumnHeaderCell>
                 )}
-              {shownColumns["action"]
-                && (
-                  <Table.ColumnHeaderCell className={"text-font dark:text-font-dark"}>
-                    <Box className="hidden md:flex">
-                      <ColumnHeader
-                        toggleSortByColumn={toggleSortByColumn}
-                        sortByColumn={sortByColumn}
-                        sortAsc={sortAsc}
-                        currentColumn={"action"}
-                        key={"action"}
-                        label={"Action"}
-                      />
-                    </Box>
-                  </Table.ColumnHeaderCell>
-                )}
               {shownColumns["updatedAt"]
                 && (
                   <Table.ColumnHeaderCell className={"text-font dark:text-font-dark"}>
@@ -550,6 +535,22 @@ export const AllContracts = ({ contracts: unfilteredContracts, header }: OpenCon
                         currentColumn={"updatedAt"}
                         key={"updatedAt"}
                         label={"Last Update"}
+                      />
+                    </Box>
+                  </Table.ColumnHeaderCell>
+                )}
+
+              {shownColumns["action"]
+                && (
+                  <Table.ColumnHeaderCell className={"text-font dark:text-font-dark"}>
+                    <Box className="hidden md:flex">
+                      <ColumnHeader
+                        toggleSortByColumn={toggleSortByColumn}
+                        sortByColumn={sortByColumn}
+                        sortAsc={sortAsc}
+                        currentColumn={"action"}
+                        key={"action"}
+                        label={"Action"}
                       />
                     </Box>
                   </Table.ColumnHeaderCell>
@@ -660,6 +661,17 @@ export const AllContracts = ({ contracts: unfilteredContracts, header }: OpenCon
                         </Box>
                       </Table.Cell>
                     )}
+                  {shownColumns["updatedAt"]
+                    && (
+                      <Table.RowHeaderCell>
+                        <Box className="hidden md:flex">
+                          <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
+                            {formatDistance(contract.updated_at, new Date(), { addSuffix: true })}
+                          </Text>
+                        </Box>
+                      </Table.RowHeaderCell>
+                    )}
+
                   {shownColumns["action"]
                     && (
                       <Table.Cell>
@@ -668,7 +680,7 @@ export const AllContracts = ({ contracts: unfilteredContracts, header }: OpenCon
                             size={"2"}
                             variant="solid"
                             className="bg-btn text-white dark:bg-dark-600 rounded-lg"
-                            onClick={() => navigate(`${contract.id}`)}
+                            onClick={() => navigate(`/my-contracts/${contract.id}`)}
                           >
                             <Text
                               size={"1"}
@@ -789,16 +801,6 @@ export const AllContracts = ({ contracts: unfilteredContracts, header }: OpenCon
                           </DropdownMenu.Content>
                         </DropdownMenu.Root>
                       </Table.Cell>
-                    )}
-                  {shownColumns["updatedAt"]
-                    && (
-                      <Table.RowHeaderCell>
-                        <Box className="hidden md:flex">
-                          <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
-                            {formatDistance(contract.updated_at, new Date(), { addSuffix: true })}
-                          </Text>
-                        </Box>
-                      </Table.RowHeaderCell>
                     )}
                 </Table.Row>
               );
