@@ -16,6 +16,7 @@ import { actionFromStatus } from "./my-contracts";
 
 interface OpenContractsProps {
   contracts: Contract[];
+  header?: boolean;
 }
 
 type ColumnFilterKey =
@@ -92,7 +93,7 @@ const ColumnHeader = ({ toggleSortByColumn, sortByColumn, currentColumn, sortAsc
   </Button>
 );
 
-export const AllContracts = ({ contracts: unfilteredContracts }: OpenContractsProps) => {
+export const AllContracts = ({ contracts: unfilteredContracts, header }: OpenContractsProps) => {
   const { latestPrice } = usePrice();
   const navigate = useNavigate();
 
@@ -220,7 +221,7 @@ export const AllContracts = ({ contracts: unfilteredContracts }: OpenContractsPr
 
   return (
     <Box className={"pb-20"}>
-      <Box className="px-6 md:px-8 py-4">
+      <Box className={header ? "hidden" : "px-6 md:px-8 py-4"}>
         <Flex gap={"1"} align={"center"}>
           <Heading className={"text-font dark:text-font-dark"} size={"6"}>My Contracts</Heading>
           <Flex className={"justify-center"}>
@@ -303,8 +304,8 @@ export const AllContracts = ({ contracts: unfilteredContracts }: OpenContractsPr
         </Flex>
       </Box>
 
-      <Box className="px-6 md:px-8 py-4">
-        <Table.Root variant="surface" size={"2"} layout={"auto"}>
+      <Box className={header ? "" : "px-6 md:px-8 py-4"}>
+        <Table.Root variant="surface" size={"2"} layout={"auto"} className={header ? "border-0" : ""}>
           <Table.Header>
             <Table.Row>
               {shownColumns["amount"]

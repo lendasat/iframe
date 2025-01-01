@@ -24,6 +24,7 @@ import { IoCreateOutline, IoWalletOutline } from "react-icons/io5";
 import { LuActivity, LuSettings } from "react-icons/lu";
 import ErrorBoundary from "./auth/ErrorBoundary";
 import VerifyEmailForm from "./auth/verifyEmailForm";
+import Dashboard from "./dashboard/dashboard";
 import MyLoanOfferDetails from "./my-offers/my-loan-offer-details";
 import MyLoanOffersOverview from "./my-offers/my-loan-offers-overview";
 
@@ -132,6 +133,7 @@ function MainLayoutComponents() {
               </div>
             }
           >
+            <Route index element={<Dashboard />} />
             <Route path="/create-loan-offer" element={<CreateLoanOffer />} />
             <Route path="/my-contracts">
               <Route index element={<MyContracts />} />
@@ -145,6 +147,7 @@ function MainLayoutComponents() {
             <Route path="/setting" element={<MyAccount />} />
           </Route>
           <Route path="/logout" element={<Logout />} />
+          <Route path="*" element={<Dashboard />} />
         </Routes>
       </Layout>
     </WalletProvider>
