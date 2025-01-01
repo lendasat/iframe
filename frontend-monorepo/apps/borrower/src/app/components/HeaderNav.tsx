@@ -8,7 +8,7 @@ export default function HeaderNav() {
   return (
     <div className="items-center gap-3 flex">
       <Link
-        to={"/history"}
+        to={"/"}
         className="h-10 w-10 border hover:border-font-dark hover:text-black flex items-center justify-center rounded transition-colors ease-in duration-300"
       >
         <IoNotifications className="text-xl text-font" />

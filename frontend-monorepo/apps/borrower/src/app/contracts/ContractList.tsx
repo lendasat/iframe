@@ -1,4 +1,5 @@
 import {
+  actionFromStatus,
   ContractStatus,
   contractStatusToLabelString,
   LiquidationStatus,
@@ -411,32 +412,6 @@ function ContractList({ contracts }: ContractListProps) {
 }
 
 export default ContractList;
-
-const actionFromStatus = (status: ContractStatus) => {
-  switch (status) {
-    case ContractStatus.Approved:
-      return "Fund it now";
-    case ContractStatus.RepaymentConfirmed:
-      return "Withdraw collateral";
-    case ContractStatus.Requested:
-    case ContractStatus.Rejected:
-    case ContractStatus.RequestExpired:
-    case ContractStatus.CollateralSeen:
-    case ContractStatus.CollateralConfirmed:
-    case ContractStatus.PrincipalGiven:
-    case ContractStatus.RepaymentProvided:
-    case ContractStatus.DisputeBorrowerStarted:
-    case ContractStatus.DisputeLenderStarted:
-    case ContractStatus.DisputeBorrowerResolved:
-    case ContractStatus.DisputeLenderResolved:
-    case ContractStatus.Undercollateralized:
-    case ContractStatus.Defaulted:
-    case ContractStatus.Closed:
-    case ContractStatus.Closing:
-    case ContractStatus.Cancelled:
-      return "Details";
-  }
-};
 
 interface ClosedProps {
   header: ({
