@@ -93,6 +93,34 @@ export interface LoanOffer {
   updated_at: string;
 }
 
+export const actionFromStatus = (status: ContractStatus) => {
+  switch (status) {
+    case ContractStatus.Requested:
+      return "Approve or Reject";
+    case ContractStatus.CollateralConfirmed:
+      return "Pay out principal";
+    case ContractStatus.RepaymentProvided:
+      return "Confirm repayment";
+    case ContractStatus.Undercollateralized:
+    case ContractStatus.Defaulted:
+      return "Liquidate collateral";
+    case ContractStatus.Approved:
+    case ContractStatus.Rejected:
+    case ContractStatus.RequestExpired:
+    case ContractStatus.CollateralSeen:
+    case ContractStatus.PrincipalGiven:
+    case ContractStatus.RepaymentConfirmed:
+    case ContractStatus.DisputeBorrowerStarted:
+    case ContractStatus.DisputeLenderStarted:
+    case ContractStatus.DisputeBorrowerResolved:
+    case ContractStatus.DisputeLenderResolved:
+    case ContractStatus.Closed:
+    case ContractStatus.Closing:
+    case ContractStatus.Cancelled:
+      return "Details";
+  }
+};
+
 export function contractStatusToLabelString(status: ContractStatus): string {
   switch (status) {
     case ContractStatus.Requested:

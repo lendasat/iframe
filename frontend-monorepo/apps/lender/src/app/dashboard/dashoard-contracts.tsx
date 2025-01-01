@@ -1,9 +1,9 @@
-import { Contract, useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
-import { Box, Button, Heading, Tabs, Text } from "@radix-ui/themes";
-import React, { Suspense, useState } from "react";
-import { Await } from "react-router-dom";
-import { useAsync } from "react-use";
-import { AllContracts } from "../contracts/all-contracts";
+import { ContractStatus } from "@frontend-monorepo/http-client-borrower";
+import { Contract } from "@frontend-monorepo/http-client-lender";
+import { usePrice } from "@frontend-monorepo/ui-shared";
+import { Box, Heading, Tabs, Text } from "@radix-ui/themes";
+import React, { useState } from "react";
+import { ColumnFilterKey, ContractDetailsTable, ContractStatusFilter } from "../contracts/contract-details-table";
 
 interface TabHeaderProps {
   thisIndex: string;
@@ -36,7 +36,101 @@ export interface DashboardContractsProps {
   contracts: Contract[];
 }
 
+const filterContracts = (unfilteredContracts: Contract[], contractStatusFilter: ContractStatusFilter) => {
+  return unfilteredContracts.filter((contract) => {
+    switch (contract.status) {
+      case ContractStatus.Requested:
+        return contractStatusFilter["requested"];
+      case ContractStatus.Approved:
+        return contractStatusFilter["approved"];
+      case ContractStatus.CollateralSeen:
+        return contractStatusFilter["collateralSeen"];
+      case ContractStatus.CollateralConfirmed:
+        return contractStatusFilter["opening"];
+      case ContractStatus.PrincipalGiven:
+        return contractStatusFilter["open"];
+      case ContractStatus.Closing:
+        return contractStatusFilter["closing"];
+      case ContractStatus.RepaymentProvided:
+        return contractStatusFilter["repaymentProvided"];
+      case ContractStatus.RepaymentConfirmed:
+        return contractStatusFilter["repaymentConfirmed"];
+      case ContractStatus.Closed:
+        return contractStatusFilter["closed"];
+      case ContractStatus.Rejected:
+        return contractStatusFilter["rejected"];
+      case ContractStatus.DisputeBorrowerStarted:
+      case ContractStatus.DisputeLenderStarted:
+      case ContractStatus.DisputeBorrowerResolved:
+      case ContractStatus.DisputeLenderResolved:
+        return contractStatusFilter["dispute"];
+      case ContractStatus.Cancelled:
+        return contractStatusFilter["canceled"];
+      case ContractStatus.RequestExpired:
+        return contractStatusFilter["expired"];
+      default:
+        return contractStatusFilter["expired"];
+    }
+  });
+};
+
 export default function DashboardContracts({ contracts }: DashboardContractsProps) {
+  const { latestPrice } = usePrice();
+
+  const [sortByColumn, setSortByColumn] = useState<ColumnFilterKey>("updatedAt");
+  const [sortAsc, setSortAsc] = useState(false);
+
+  function toggleSortByColumn(column: ColumnFilterKey) {
+    setSortByColumn(column);
+    setSortAsc(!sortAsc);
+  }
+
+  const shownColumns = {
+    updatedAt: true,
+    amount: true,
+    expiry: true,
+    interest: true,
+    ltv: true,
+    collateral: true,
+    status: true,
+    action: true,
+  };
+
+  const allStatusFalse = {
+    requested: false,
+    approved: false,
+    collateralSeen: false,
+    opening: false,
+    open: false,
+    closing: false,
+    closed: false,
+    repaymentProvided: false,
+    repaymentConfirmed: false,
+    rejected: false,
+    expired: false,
+    canceled: false,
+    dispute: false,
+  };
+
+  const statusFilterActionRequired = {
+    ...allStatusFalse,
+    requested: true,
+    opening: true,
+    collateralSeen: true,
+    repaymentProvided: true,
+    dispute: true,
+  };
+
+  const statusFilterOpen = {
+    ...allStatusFalse,
+    open: true,
+  };
+  const statusFilterClosed = {
+    ...allStatusFalse,
+    closing: true,
+    closed: true,
+  };
+
   return (
     <Box className="space-y-3">
       <Tabs.Root defaultValue="open" className={"flex flex-col"}>
@@ -56,22 +150,49 @@ export default function DashboardContracts({ contracts }: DashboardContractsProp
 
         <Box className="max-h-96 rounded-xl overflow-auto">
           <Tabs.Content value="actionRequired">
-            <AllContracts
-              header
-              contracts={[]}
+            <ContractDetailsTable
+              contractStatusFilter={statusFilterActionRequired}
+              contracts={filterContracts(contracts, statusFilterActionRequired)}
+              isToggleFilterShown={false}
+              latestPrice={latestPrice}
+              onCheckedChange={() => {
+                // ignored
+              }}
+              shownColumns={shownColumns}
+              sortAsc={sortAsc}
+              sortByColumn={sortByColumn}
+              toggleSortByColumn={toggleSortByColumn}
             />
           </Tabs.Content>
           <Tabs.Content value="open">
-            <AllContracts
-              header
-              contracts={contracts}
+            <ContractDetailsTable
+              contractStatusFilter={statusFilterOpen}
+              contracts={filterContracts(contracts, statusFilterOpen)}
+              isToggleFilterShown={false}
+              latestPrice={latestPrice}
+              onCheckedChange={() => {
+                // ignored
+              }}
+              shownColumns={shownColumns}
+              sortAsc={sortAsc}
+              sortByColumn={sortByColumn}
+              toggleSortByColumn={toggleSortByColumn}
             />
           </Tabs.Content>
 
           <Tabs.Content value="closed">
-            <AllContracts
-              header
-              contracts={contracts}
+            <ContractDetailsTable
+              contractStatusFilter={statusFilterClosed}
+              contracts={filterContracts(contracts, statusFilterClosed)}
+              isToggleFilterShown={false}
+              latestPrice={latestPrice}
+              onCheckedChange={() => {
+                // ignored
+              }}
+              shownColumns={shownColumns}
+              sortAsc={sortAsc}
+              sortByColumn={sortByColumn}
+              toggleSortByColumn={toggleSortByColumn}
             />
           </Tabs.Content>
         </Box>

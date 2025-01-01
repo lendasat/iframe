@@ -1,9 +1,6 @@
-import {
-  type Contract,
-  ContractStatus,
-  contractStatusToLabelString,
-  LiquidationStatus,
-} from "@frontend-monorepo/http-client-lender";
+import { ContractStatus } from "@frontend-monorepo/http-client-lender";
+import { type Contract, contractStatusToLabelString, LiquidationStatus } from "@frontend-monorepo/http-client-lender";
+import { actionFromStatus } from "@frontend-monorepo/http-client-lender";
 import { CurrencyFormatter, LtvProgressBar, usePrice } from "@frontend-monorepo/ui-shared";
 import { InfoCircledIcon, MixerHorizontalIcon } from "@radix-ui/react-icons";
 import { Badge, Box, Button, Callout, Checkbox, DropdownMenu, Flex, Heading, Table, Text } from "@radix-ui/themes";
@@ -12,7 +9,6 @@ import { useState } from "react";
 import { BsThreeDotsVertical } from "react-icons/bs";
 import { IoCaretDownOutline, IoCaretUp } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
-import { actionFromStatus } from "./my-contracts";
 
 type ColumnFilterKey =
   | "updatedAt"
