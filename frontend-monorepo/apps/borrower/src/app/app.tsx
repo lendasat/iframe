@@ -26,6 +26,7 @@ import { RequestLoanSummary } from "./request-loan/request-loan-summary";
 import "../assets/styles.css";
 import type { User } from "@frontend-monorepo/base-http-client";
 import { LoanProductOption } from "@frontend-monorepo/base-http-client";
+import { FeeProvider } from "@frontend-monorepo/mempool";
 import { FiHome } from "react-icons/fi";
 import { GoGitPullRequest } from "react-icons/go";
 import { HiOutlineSupport } from "react-icons/hi";
@@ -211,7 +212,9 @@ function App() {
     <AuthProviderBorrower baseUrl={baseUrl}>
       <AuthIsSignedIn>
         <PriceProvider url={baseUrl}>
-          <MainLayoutComponents />
+          <FeeProvider mempoolUrl={import.meta.env.VITE_MEMPOOL_REST_URL}>
+            <MainLayoutComponents />
+          </FeeProvider>
         </PriceProvider>
       </AuthIsSignedIn>
       <AuthIsNotSignedIn>

@@ -9,6 +9,7 @@ import type {
   CreateLoanOfferRequest,
   GetLiquidationPsbtResponse,
   GetRecoveryPsbtResponse,
+  LiquidationToStableCoinPsbt,
   LoanOffer,
 } from "./models";
 import { parseRFC3339Date } from "./utils";
@@ -218,7 +219,7 @@ export class HttpClientLender extends BaseHttpClient {
     }
   }
 
-  async getLiquidationPsbt(id: string, feeRate: number, address: string): Promise<GetLiquidationPsbtResponse> {
+  async getLiquidationToBitcoinPsbt(id: string, feeRate: number, address: string): Promise<GetLiquidationPsbtResponse> {
     try {
       const res: AxiosResponse<GetLiquidationPsbtResponse> = await this.httpClient.get(
         `/api/contracts/${id}/liquidation-psbt`,
@@ -227,6 +228,35 @@ export class HttpClientLender extends BaseHttpClient {
             fee_rate: feeRate,
             address: address,
           },
+        },
+      );
+      return res.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message ? JSON.stringify(error.response.data.message) : error.response.data;
+        console.error(
+          `Failed to fetch liquidation PSBT: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Failed to fetch liquidation PSBT ${JSON.stringify(error)}`);
+      }
+    }
+  }
+
+  async getLiquidationToStablecoinPsbt(
+    id: string,
+    feeRate: number,
+    bitcoinRefundAddress: string,
+  ): Promise<LiquidationToStableCoinPsbt> {
+    try {
+      const res: AxiosResponse<LiquidationToStableCoinPsbt> = await this.httpClient.post(
+        `/api/contracts/${id}/liquidation-to-stablecoin-psbt`,
+        {
+          fee_rate_sats_vbyte: feeRate,
+          bitcoin_refund_address: bitcoinRefundAddress,
         },
       );
       return res.data;
@@ -458,7 +488,8 @@ type LenderHttpClientContextType = Pick<
   | "getMyLoanOffers"
   | "getMyLoanOffer"
   | "deleteLoanOffer"
-  | "getLiquidationPsbt"
+  | "getLiquidationToBitcoinPsbt"
+  | "getLiquidationToStablecoinPsbt"
   | "postLiquidationTx"
   | "getRecoveryPsbt"
 >;
@@ -509,7 +540,8 @@ export const HttpClientLenderProvider: React.FC<HttpClientProviderProps> = ({ ch
     getMyLoanOffers: httpClient.getMyLoanOffers.bind(httpClient),
     getMyLoanOffer: httpClient.getMyLoanOffer.bind(httpClient),
     deleteLoanOffer: httpClient.deleteLoanOffer.bind(httpClient),
-    getLiquidationPsbt: httpClient.getLiquidationPsbt.bind(httpClient),
+    getLiquidationToBitcoinPsbt: httpClient.getLiquidationToBitcoinPsbt.bind(httpClient),
+    getLiquidationToStablecoinPsbt: httpClient.getLiquidationToStablecoinPsbt.bind(httpClient),
     postLiquidationTx: httpClient.postLiquidationTx.bind(httpClient),
     getRecoveryPsbt: httpClient.getRecoveryPsbt.bind(httpClient),
   };

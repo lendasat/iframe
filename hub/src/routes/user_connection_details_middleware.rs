@@ -1,5 +1,7 @@
+use crate::routes::AppState;
 use axum::body::Body;
 use axum::extract::ConnectInfo;
+use axum::extract::State;
 use axum::http::header::USER_AGENT;
 use axum::http::Request;
 use axum::http::StatusCode;
@@ -7,6 +9,7 @@ use axum::middleware::Next;
 use axum::response::IntoResponse;
 use axum::Json;
 use std::net::SocketAddr;
+use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct UserConnectionDetails {
@@ -16,6 +19,7 @@ pub struct UserConnectionDetails {
 
 /// Middleware which extracts the ip address and user agent of the requestor
 pub async fn ip_user_agent(
+    State(data): State<Arc<AppState>>,
     mut req: Request<Body>,
     next: Next,
 ) -> Result<impl IntoResponse, (StatusCode, Json<String>)> {
@@ -24,22 +28,28 @@ pub async fn ip_user_agent(
         .get("X-Real-IP")
         .and_then(|value| value.to_str().ok());
 
-    let ip = match nginx_ip {
-        Some(ip) => Some(ip.to_string()),
-        None => {
-            tracing::trace!(
-                target : "nginx",
-                "Request did not include nginx header. Fallback to request IP"
-            );
+    // In some cases we need to fake the user's ip address. For example, if testing locally.
+    // It's bad that we need this, but I couldn't find another way.
+    let ip = if let Some(ip) = data.config.fake_client_ip.clone() {
+        Some(ip)
+    } else {
+        match nginx_ip {
+            Some(ip) => Some(ip.to_string()),
+            None => {
+                tracing::trace!(
+                    target : "nginx",
+                    "Request did not include nginx header. Fallback to request IP"
+                );
 
-            // NOTE: Extract IP address from the request. This will not work if behind nginx as we
-            // will always receive 127.0.0.1 as address
-            let ip = req
-                .extensions()
-                .get::<ConnectInfo<SocketAddr>>()
-                .map(|ci| ci.0);
+                // NOTE: Extract IP address from the request. This will not work if behind nginx as
+                // we will always receive 127.0.0.1 as address
+                let ip = req
+                    .extensions()
+                    .get::<ConnectInfo<SocketAddr>>()
+                    .map(|ci| ci.0);
 
-            ip.map(|ip| ip.ip().to_string())
+                ip.map(|ip| ip.ip().to_string())
+            }
         }
     };
 

@@ -32,6 +32,11 @@ pub struct Config {
     pub moon_webhook_url: String,
     pub moon_visa_product_id: Uuid,
     pub sync_moon_tx: bool,
+    pub sideshift_secret: String,
+    pub sideshift_base_url: String,
+    pub sideshift_affiliate_id: String,
+    pub sideshift_commision_rate: Option<Decimal>,
+    pub fake_client_ip: Option<String>,
 }
 
 impl Config {
@@ -100,6 +105,18 @@ impl Config {
             || smtp_user.is_none()
             || smtp_pass.is_none()
             || smtp_from.is_none();
+
+        let sideshift_secret =
+            std::env::var("SIDESHIFT_SECRET").expect("SIDESHIFT_SECRET must be set");
+        let sideshift_affiliate_id =
+            std::env::var("SIDESHIFT_AFFILIATE_ID").expect("SIDESHIFT_AFFILIATE_ID must be set");
+        let sideshift_base_url =
+            std::env::var("SIDESHIFT_API_BASE_URL").expect("SIDESHIFT_API_BASE_URL must be set");
+        let sideshift_commision_rate = std::env::var("SIDESHIFT_COMMISSION_RATE").ok();
+        let sideshift_commision_rate = sideshift_commision_rate
+            .map(|rate| Decimal::from_str(rate.as_str()).expect("to be a decimal"));
+        let fake_client_ip = std::env::var("FAKE_CLIENT_IP").ok();
+
         Config {
             database_url,
             mempool_rest_url,
@@ -135,6 +152,11 @@ impl Config {
             moon_webhook_url,
             moon_visa_product_id,
             sync_moon_tx,
+            sideshift_secret,
+            sideshift_base_url,
+            sideshift_affiliate_id,
+            sideshift_commision_rate,
+            fake_client_ip,
         }
     }
 }

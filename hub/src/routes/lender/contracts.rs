@@ -1,4 +1,5 @@
 use crate::bitmex_index_price_rest::get_bitmex_index_price;
+use crate::contract_liquidation;
 use crate::db;
 use crate::email::Email;
 use crate::mempool;
@@ -13,6 +14,8 @@ use crate::model::ManualCollateralRecovery;
 use crate::model::TransactionType;
 use crate::model::User;
 use crate::routes::lender::auth::jwt_auth;
+use crate::routes::user_connection_details_middleware;
+use crate::routes::user_connection_details_middleware::UserConnectionDetails;
 use crate::routes::AppState;
 use crate::routes::ErrorResponse;
 use anyhow::anyhow;
@@ -92,10 +95,16 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
         )
         .route(
             "/api/contracts/:id/liquidation-psbt",
-            get(get_liquidation_psbt).route_layer(middleware::from_fn_with_state(
+            get(get_liquidation_to_bitcoin_psbt).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
                 jwt_auth::auth,
             )),
+        )
+        .route(
+            "/api/contracts/:id/liquidation-to-stablecoin-psbt",
+            post(post_build_liquidation_to_stablecoin_psbt).route_layer(
+                middleware::from_fn_with_state(app_state.clone(), jwt_auth::auth),
+            ),
         )
         .route(
             "/api/contracts/:id/broadcast-liquidation",
@@ -109,6 +118,12 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
             get(get_manual_recovery_psbt).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
                 jwt_auth::auth,
+            )),
+        )
+        .layer(
+            tower::ServiceBuilder::new().layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                user_connection_details_middleware::ip_user_agent,
             )),
         )
         .with_state(app_state)
@@ -740,7 +755,13 @@ pub async fn put_confirm_repayment(
 }
 
 #[derive(Deserialize)]
-pub struct PsbtQueryParams {
+pub enum LiquidationType {
+    Bitcoin,
+    StableCoin,
+}
+
+#[derive(Deserialize)]
+pub struct LiquidationPsbtQueryParams {
     /// Fee rate in sats/vbyte.
     pub fee_rate: u64,
     /// Where to send the lender's share of the liquidation.
@@ -755,11 +776,11 @@ pub struct LiquidationPsbt {
 }
 
 #[instrument(skip_all, fields(lender_id = user.id, contract_id), err(Debug), ret)]
-async fn get_liquidation_psbt(
+async fn get_liquidation_to_bitcoin_psbt(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<User>,
     Path(contract_id): Path<String>,
-    query_params: Query<PsbtQueryParams>,
+    query_params: Query<LiquidationPsbtQueryParams>,
 ) -> Result<Json<LiquidationPsbt>, (StatusCode, Json<ErrorResponse>)> {
     let mut wallet = data.wallet.lock().await;
 
@@ -821,16 +842,9 @@ async fn get_liquidation_psbt(
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
     })?;
 
-    let contract_address = contract.contract_address.ok_or_else(|| {
+    let contract_address = contract.contract_address.clone().ok_or_else(|| {
         let error_response = ErrorResponse {
             message: "Database error: missing contract address".to_string(),
-        };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?;
-
-    let lender_xpub = contract.lender_xpub.ok_or_else(|| {
-        let error_response = ErrorResponse {
-            message: "Database error: missing lender Xpub".to_string(),
         };
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
     })?;
@@ -848,8 +862,6 @@ async fn get_liquidation_psbt(
 
         return Err((StatusCode::INTERNAL_SERVER_ERROR, Json(error_response)));
     }
-
-    let origination_fee = Amount::from_sat(contract.origination_fee_sats);
 
     let price = get_bitmex_index_price(OffsetDateTime::now_utc())
         .await
@@ -873,25 +885,22 @@ async fn get_liquidation_psbt(
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
     })?;
 
-    let (psbt, collateral_descriptor, lender_pk) = wallet
-        .create_liquidation_psbt(
-            contract.borrower_pk,
-            &lender_xpub,
-            contract_index,
-            collateral_outputs,
-            origination_fee,
-            lender_amount,
-            lender_address,
-            contract.borrower_btc_address.assume_checked(),
-            query_params.fee_rate,
-            contract.contract_version,
+    let (collateral_descriptor, lender_pk, psbt) = contract_liquidation::prepare_liquidation_psbt(
+        &mut wallet,
+        contract,
+        lender_address.as_unchecked().clone(),
+        lender_amount,
+        contract_index,
+        data.mempool.clone(),
+        query_params.fee_rate,
+    )
+    .await
+    .map_err(|err| {
+        error_response(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("{err:#}").as_str(),
         )
-        .map_err(|e| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {e:#}"),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
+    })?;
 
     let psbt = psbt.serialize_hex();
 
@@ -899,6 +908,145 @@ async fn get_liquidation_psbt(
         psbt,
         collateral_descriptor,
         lender_pk,
+    };
+
+    Ok(Json(res))
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct LiquidationToStablecoinPsbtQueryParams {
+    // TODO: can we use bitcoin::Address here?
+    bitcoin_refund_address: String,
+    fee_rate_sats_vbyte: u64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct LiquidationToStableCoinPsbt {
+    pub psbt: String,
+    pub collateral_descriptor: Descriptor<PublicKey>,
+    pub lender_pk: PublicKey,
+    pub settle_address: String,
+    #[serde(with = "rust_decimal::serde::float")]
+    pub settle_amount: Decimal,
+}
+
+#[instrument(skip_all, fields(lender_id = user.id, contract_id), err(Debug), ret)]
+async fn post_build_liquidation_to_stablecoin_psbt(
+    State(data): State<Arc<AppState>>,
+    Path(contract_id): Path<String>,
+    Extension(user): Extension<User>,
+    Extension(connection_details): Extension<UserConnectionDetails>,
+    Json(body): Json<LiquidationToStablecoinPsbtQueryParams>,
+) -> Result<Json<LiquidationToStableCoinPsbt>, (StatusCode, Json<ErrorResponse>)> {
+    let lender_ip = match connection_details.ip {
+        None => {
+            return Err(error_response(
+                StatusCode::UNAVAILABLE_FOR_LEGAL_REASONS,
+                "Request IP required",
+            ));
+        }
+        Some(ip) => ip.to_string(),
+    };
+
+    let contract = db::contracts::load_contract_by_contract_id_and_lender_id(
+        &data.db,
+        contract_id.as_str(),
+        &user.id,
+    )
+    .await
+    .map_err(|e| {
+        error_response(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Database error: {e:#}").as_str(),
+        )
+    })?;
+
+    if !matches!(
+        contract.status,
+        ContractStatus::Defaulted | ContractStatus::Undercollateralized
+    ) {
+        return Err(error_response(
+            StatusCode::BAD_REQUEST,
+            format!("Cannot liquidate contract in state: {:?}", contract.status).as_str(),
+        ));
+    }
+
+    tracing::info!("Contract will be liquidated to stable coins");
+    let offer = db::loan_offers::loan_by_id(&data.db, contract.loan_id.as_str())
+        .await
+        .map_err(|err| {
+            tracing::error!(
+                contract_id,
+                loan_id = contract.loan_id,
+                "Failed loading offer for contract {err:#}"
+            );
+            error_response(StatusCode::INTERNAL_SERVER_ERROR, "Database error")
+        })?
+        .ok_or_else(|| {
+            tracing::error!(contract_id, "Failed loading offer for contract");
+            error_response(StatusCode::BAD_REQUEST, "Invalid contract id")
+        })?;
+
+    let lender_amount = contract.loan_amount
+        + calculate_interest(
+            contract.loan_amount,
+            offer.interest_rate,
+            contract.duration_months as u32,
+        );
+
+    let (shift_address, lender_amount, settle_address, settle_amount) = data
+        .sideshift
+        .create_shift(
+            offer.loan_asset_type,
+            offer.loan_asset_chain,
+            lender_amount,
+            contract_id.to_string(),
+            lender_ip.to_string(),
+            body.bitcoin_refund_address.clone(),
+            offer.loan_repayment_address.clone(),
+        )
+        .await
+        .map_err(|err| {
+            tracing::error!(contract_id, "Failed creating shift {err:#}");
+            error_response(
+                StatusCode::SERVICE_UNAVAILABLE,
+                format!("Service unavailable {err:#}").as_str(),
+            )
+        })?;
+
+    let contract_index = contract.contract_index.ok_or_else(|| {
+        error_response(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Database error: missing contract index",
+        )
+    })?;
+
+    let mut wallet = data.wallet.lock().await;
+    let (collateral_descriptor, lender_pk, psbt) = contract_liquidation::prepare_liquidation_psbt(
+        &mut wallet,
+        contract,
+        shift_address,
+        lender_amount,
+        contract_index,
+        data.mempool.clone(),
+        body.fee_rate_sats_vbyte,
+    )
+    .await
+    .map_err(|err| {
+        error_response(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("{err:#}").as_str(),
+        )
+    })?;
+
+    let psbt = psbt.serialize_hex();
+
+    let res = LiquidationToStableCoinPsbt {
+        psbt,
+        collateral_descriptor,
+        lender_pk,
+        settle_address,
+        settle_amount,
     };
 
     Ok(Json(res))
@@ -1032,10 +1180,8 @@ fn calculate_lender_liquidation_amount(
     duration_months: u32,
     price: Decimal,
 ) -> anyhow::Result<Amount> {
-    let monthly_interest_rate = yearly_interest_rate / dec!(12);
-
-    let interest_usd = loan_amount_usd * monthly_interest_rate * Decimal::from(duration_months);
-    let owed_amount_usd = loan_amount_usd + interest_usd;
+    let owed_amount_usd = loan_amount_usd
+        + calculate_interest(loan_amount_usd, yearly_interest_rate, duration_months);
 
     let owed_amount_btc = owed_amount_usd
         .checked_div(price)
@@ -1046,6 +1192,18 @@ fn calculate_lender_liquidation_amount(
     let owed_amount = Amount::from_btc(owed_amount_btc).expect("to fit");
 
     Ok(owed_amount)
+}
+
+/// Calculates the interest for the provided `duration_months`.
+///
+/// Note: does not compound interest
+fn calculate_interest(
+    loan_amount_usd: Decimal,
+    yearly_interest_rate: Decimal,
+    duration_months: u32,
+) -> Decimal {
+    let monthly_interest_rate = yearly_interest_rate / dec!(12);
+    loan_amount_usd * monthly_interest_rate * Decimal::from(duration_months)
 }
 
 #[derive(Debug, Serialize)]
@@ -1060,7 +1218,7 @@ async fn get_manual_recovery_psbt(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<User>,
     Path(contract_id): Path<String>,
-    query_params: Query<PsbtQueryParams>,
+    query_params: Query<LiquidationPsbtQueryParams>,
 ) -> Result<Json<ManualRecoveryPsbt>, (StatusCode, Json<ErrorResponse>)> {
     let mut wallet = data.wallet.lock().await;
 
@@ -1173,6 +1331,15 @@ async fn get_manual_recovery_psbt(
     Ok(Json(res))
 }
 
+fn error_response(status: StatusCode, message: &str) -> (StatusCode, Json<ErrorResponse>) {
+    (
+        status,
+        Json(ErrorResponse {
+            message: message.to_string(),
+        }),
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1222,5 +1389,26 @@ mod tests {
         );
 
         assert!(res.is_err())
+    }
+
+    #[test]
+    fn test_calculate_interest() {
+        let loan_amount_usd = dec!(1_000);
+        let yearly_interest_rate = dec!(0.12);
+
+        let duration_months = 3;
+        let amount = calculate_interest(loan_amount_usd, yearly_interest_rate, duration_months);
+
+        assert_eq!(amount, dec!(30));
+
+        let duration_months = 12;
+        let amount = calculate_interest(loan_amount_usd, yearly_interest_rate, duration_months);
+
+        assert_eq!(amount, dec!(120));
+
+        let duration_months = 15;
+        let amount = calculate_interest(loan_amount_usd, yearly_interest_rate, duration_months);
+
+        assert_eq!(amount, dec!(150));
     }
 }

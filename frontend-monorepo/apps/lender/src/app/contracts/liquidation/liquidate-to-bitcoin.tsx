@@ -2,23 +2,24 @@ import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { UnlockWalletModal, useWallet } from "@frontend-monorepo/browser-wallet";
 import { useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
-import type { Contract } from "@frontend-monorepo/http-client-lender";
 import { FeeSelector } from "@frontend-monorepo/mempool";
-import { Box, Callout, Flex, Heading, Text } from "@radix-ui/themes";
+import { Box, Button, Callout, Flex, Heading, Text } from "@radix-ui/themes";
+import { Network, validate } from "bitcoin-address-validation";
 import type { SignedTransaction } from "browser-wallet";
 import { useState } from "react";
-import { Alert, Button, Col, Container, Form, Modal, Row } from "react-bootstrap";
+import { Alert, Col, Form, Modal, Row } from "react-bootstrap";
 import { IoInformationCircleOutline } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
 
-interface ContractUndercollateralizedProps {
-  contract: Contract;
+export interface LiquidateToBitcoinProps {
+  contractId: string;
 }
 
-export function ContractUndercollateralized({
-  contract,
-}: ContractUndercollateralizedProps) {
+export function LiquidateToBitcoin({
+  contractId,
+}: LiquidateToBitcoinProps) {
   const { getLiquidationToBitcoinPsbt, postLiquidationTx } = useLenderHttpClient();
+  const { isWalletLoaded, signLiquidationPsbt } = useWallet();
   const navigate = useNavigate();
 
   const [selectedFee, setSelectedFee] = useState(1);
@@ -26,15 +27,30 @@ export function ContractUndercollateralized({
 
   const [showModal, setShowModal] = useState(false);
   const [liquidationTx, setLiquidationTx] = useState<SignedTransaction | null>(null);
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const [showUnlockWalletModal, setShowUnlockWalletModal] = useState(false);
-
-  const [error, setError] = useState("");
 
   const handleCloseUnlockWalletModal = () => setShowUnlockWalletModal(false);
   const handleOpenUnlockWalletModal = () => setShowUnlockWalletModal(true);
 
-  const { isWalletLoaded, signLiquidationPsbt } = useWallet();
+  const onBitcoinAddressChange = (address: string) => {
+    let network = Network.mainnet;
+    if (import.meta.env.VITE_BITCOIN_NETWORK === "signet") {
+      network = Network.testnet;
+    } else if (import.meta.env.VITE_BITCOIN_NETWORK === "regtest") {
+      network = Network.regtest;
+    }
+
+    const valid = validate(address, network);
+    if (!valid) {
+      setError("Invalid liquidation address");
+    } else {
+      setError("");
+    }
+    setAddress(address);
+  };
 
   const liquidateCollateralIfWalletLoaded = async () => {
     try {
@@ -69,7 +85,7 @@ export function ContractUndercollateralized({
       throw Error("Missing liquidation address");
     }
 
-    const res = await getLiquidationToBitcoinPsbt(contract.id, selectedFee, address);
+    const res = await getLiquidationToBitcoinPsbt(contractId, selectedFee, address);
 
     console.log(`Signing liquidation PSBT: ${JSON.stringify(res)}`);
 
@@ -90,12 +106,13 @@ export function ContractUndercollateralized({
 
     try {
       if (liquidationTx == null) {
-        throw Error("Missing liquidation TX");
+        setError(`Missing liquidation TX`);
+        return;
       }
 
       console.log("Posting signed liquidation TX");
 
-      const txid = await postLiquidationTx(contract.id, liquidationTx.tx);
+      const txid = await postLiquidationTx(contractId, liquidationTx.tx);
 
       alert(`Liquidation transaction ${txid} was published!`);
 
@@ -112,7 +129,6 @@ export function ContractUndercollateralized({
 
   const onUnlockOrLiquidate = async () => {
     setError("");
-
     if (isWalletLoaded) {
       try {
         await liquidateCollateralIfWalletLoaded();
@@ -130,9 +146,12 @@ export function ContractUndercollateralized({
     }
   };
 
-  const handleFormSubmit = (event: React.FormEvent) => {
+  const handleFormSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    onUnlockOrLiquidate();
+
+    setIsLoading(true);
+    await onUnlockOrLiquidate();
+    setIsLoading(false);
   };
 
   return (
@@ -150,77 +169,67 @@ export function ContractUndercollateralized({
           liquidationTx={liquidationTx}
         />
       )}
-      <Container fluid>
-        <Heading className={"text-font dark:text-font-dark"} size={"4"} weight={"medium"}>
-          Liquidate Collateral
-        </Heading>
-        <Row className="mt-4">
-          <Col>
-            <div className="d-flex flex-column">
-              <p className="mt-2 text-break text-font dark:text-font-dark">
-                To liquidate the collateral you will have to provide your <strong>contract secret</strong>.
-              </p>
-            </div>
-          </Col>
-        </Row>
-        <Row className="mt-2">
-          <Col>
-            <Alert variant="info">
-              <FontAwesomeIcon icon={faInfoCircle} />{" "}
-              Your share of the collateral will be sent to the Bitcoin address you choose.
-            </Alert>
-          </Col>
-        </Row>
-        <Form onSubmit={handleFormSubmit}>
-          <Form.Group controlId="formAddress" className="mb-3">
-            <Row className="mt-2">
-              <Col>
-                <Form.Label className={"font-bold text-font dark:text-font-dark"}>
-                  Liquidation Address
-                </Form.Label>
-                <Form.Control
-                  type="text"
-                  placeholder="Enter your Bitcoin address"
-                  className="p-3 bg-light dark:bg-dark text-font dark:text-font-dark dark:placeholder-gray-500"
-                  style={{
-                    width: "100%",
-                  }}
-                  value={address}
-                  required={true}
-                  onChange={(e) => setAddress(e.target.value)}
-                />
+      <Row className="mt-2">
+        <Col>
+          <Alert variant="info">
+            <FontAwesomeIcon icon={faInfoCircle} />{" "}
+            Your share of the collateral will be sent to the Bitcoin address you choose.
+          </Alert>
+        </Col>
+      </Row>
+      <Form onSubmit={handleFormSubmit}>
+        <Form.Group controlId="formAddress" className="mb-3">
+          <Row className="mt-2">
+            <Col>
+              <Form.Label className={"font-bold text-font dark:text-font-dark"} column={false}>
+                Liquidation Address
+              </Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="Enter your Bitcoin address"
+                className="p-3 bg-light dark:bg-dark text-font dark:text-font-dark dark:placeholder-gray-500"
+                style={{
+                  width: "100%",
+                }}
+                value={address}
+                required={true}
+                onChange={(c) => {
+                  c.preventDefault();
+                  onBitcoinAddressChange(c.target.value);
+                }}
+              />
+            </Col>
+          </Row>
+          <Row className="mt-2">
+            <FeeSelector onSelectFee={setSelectedFee}></FeeSelector>
+          </Row>
+          <Row className="justify-content-between mt-4">
+            <Row className="mt-1">
+              <Col className="d-grid">
+                <Button
+                  type="submit"
+                  loading={isLoading}
+                  size={"3"}
+                >
+                  {isWalletLoaded ? "Liquidate" : "Unlock Contract"}
+                </Button>
+                {error && (
+                  <Col className="d-grid mt-4">
+                    <Callout.Root color="tomato">
+                      <Callout.Icon>
+                        <IoInformationCircleOutline />
+                      </Callout.Icon>
+                      <Callout.Text>
+                        {error}
+                      </Callout.Text>
+                    </Callout.Root>
+                  </Col>
+                )}
               </Col>
             </Row>
-            <Row className="mt-2">
-              <FeeSelector onSelectFee={setSelectedFee}></FeeSelector>
-            </Row>
-            <Row className="justify-content-between mt-4">
-              <Row className="mt-1">
-                <Col className="d-grid">
-                  <Button
-                    type="submit"
-                    variant="primary"
-                  >
-                    {isWalletLoaded ? "Liquidate" : "Unlock Contract"}
-                  </Button>
-                  {error && (
-                    <Col className="d-grid mt-4">
-                      <Callout.Root color="tomato">
-                        <Callout.Icon>
-                          <IoInformationCircleOutline />
-                        </Callout.Icon>
-                        <Callout.Text>
-                          {error}
-                        </Callout.Text>
-                      </Callout.Root>
-                    </Col>
-                  )}
-                </Col>
-              </Row>
-            </Row>
-          </Form.Group>
-        </Form>
-      </Container>
+          </Row>
+        </Form.Group>
+      </Form>
     </>
   );
 }

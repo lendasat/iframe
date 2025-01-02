@@ -1,5 +1,9 @@
-import { ContractStatus } from "@frontend-monorepo/http-client-borrower";
-import { type Contract, contractStatusToLabelString, LiquidationStatus } from "@frontend-monorepo/http-client-lender";
+import {
+  type Contract,
+  ContractStatus,
+  contractStatusToLabelString,
+  LiquidationStatus,
+} from "@frontend-monorepo/http-client-lender";
 import { CurrencyFormatter, LtvProgressBar, usePrice } from "@frontend-monorepo/ui-shared";
 import { InfoCircledIcon, MixerHorizontalIcon } from "@radix-ui/react-icons";
 import { Badge, Box, Button, Callout, Checkbox, DropdownMenu, Flex, Heading, Table, Text } from "@radix-ui/themes";
@@ -33,6 +37,8 @@ type ContractStatusFilterKey =
   | "closing"
   | "rejected"
   | "expired"
+  | "defaulted"
+  | "undercollateralized"
   | "canceled"
   | "dispute";
 
@@ -111,6 +117,8 @@ export const AllContracts = ({ contracts: unfilteredContracts }: OpenContractsPr
     expired: false,
     canceled: false,
     dispute: true,
+    defaulted: true,
+    undercollateralized: true,
   });
 
   const [sortByColumn, setSortByColumn] = useState<ColumnFilterKey>("updatedAt");
@@ -130,35 +138,50 @@ export const AllContracts = ({ contracts: unfilteredContracts }: OpenContractsPr
   };
 
   const contracts = unfilteredContracts.filter((contract) => {
+    let filtered = false;
     switch (contract.status) {
       case ContractStatus.Requested:
-        return contractStatusFilter["requested"];
+        filtered = contractStatusFilter["requested"];
+        break;
       case ContractStatus.Approved:
       case ContractStatus.CollateralSeen:
       case ContractStatus.CollateralConfirmed:
-        return contractStatusFilter["opening"];
+        filtered = contractStatusFilter["opening"];
+        break;
       case ContractStatus.PrincipalGiven:
-        return contractStatusFilter["open"];
+        filtered = contractStatusFilter["open"];
+        break;
       case ContractStatus.Closing:
       case ContractStatus.RepaymentProvided:
       case ContractStatus.RepaymentConfirmed:
-        return contractStatusFilter["closing"];
+        filtered = contractStatusFilter["closing"];
+        break;
       case ContractStatus.Closed:
-        return contractStatusFilter["closed"];
+        filtered = contractStatusFilter["closed"];
+        break;
       case ContractStatus.Rejected:
-        return contractStatusFilter["rejected"];
+        filtered = contractStatusFilter["rejected"];
+        break;
       case ContractStatus.DisputeBorrowerStarted:
       case ContractStatus.DisputeLenderStarted:
       case ContractStatus.DisputeBorrowerResolved:
       case ContractStatus.DisputeLenderResolved:
-        return contractStatusFilter["dispute"];
+        filtered = contractStatusFilter["dispute"];
+        break;
       case ContractStatus.Cancelled:
-        return contractStatusFilter["canceled"];
+        filtered = contractStatusFilter["canceled"];
+        break;
       case ContractStatus.RequestExpired:
-        return contractStatusFilter["expired"];
-      default:
-        return contractStatusFilter["expired"];
+        filtered = contractStatusFilter["expired"];
+        break;
+      case ContractStatus.Defaulted:
+        filtered = contractStatusFilter["defaulted"];
+        break;
+      case ContractStatus.Undercollateralized:
+        filtered = contractStatusFilter["undercollateralized"];
+        break;
     }
+    return filtered;
   }).sort((a, b) => {
     let dif;
     switch (sortByColumn) {
@@ -484,6 +507,17 @@ export const AllContracts = ({ contracts: unfilteredContracts }: OpenContractsPr
                               <Text>Disputes</Text>
                             </Flex>
                           </DropdownMenu.Item>
+                          <DropdownMenu.Item
+                            onSelect={(e) => e.preventDefault()}
+                          >
+                            <Flex gap="2" align="center">
+                              <Checkbox
+                                checked={contractStatusFilter["defaulted"]}
+                                onCheckedChange={() => toggleContractStatusFilter("defaulted")}
+                              />
+                              <Text>Defaulted</Text>
+                            </Flex>
+                          </DropdownMenu.Item>
                         </DropdownMenu.Content>
                       </DropdownMenu.Root>
                     </Flex>
@@ -613,8 +647,10 @@ export const AllContracts = ({ contracts: unfilteredContracts }: OpenContractsPr
                               ? "amber"
                               : contract.status === ContractStatus.Approved
                               ? "green"
-                              : contract.status === ContractStatus.Rejected
+                              : contract.status === ContractStatus.Defaulted
                               ? "red"
+                              : contract.status === ContractStatus.Rejected
+                              ? "orange"
                               : "gray"}
                             size={"2"}
                           >

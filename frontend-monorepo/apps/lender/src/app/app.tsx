@@ -17,6 +17,7 @@ import CreateLoanOffer from "./create-loan-offer";
 import ResolveDispute from "./disputes/dispute";
 import MyAccount from "./my-account";
 import "../assets/styles.css";
+import { FeeProvider } from "@frontend-monorepo/mempool";
 import { FiHome } from "react-icons/fi";
 import { HiOutlineSupport } from "react-icons/hi";
 import { IoCreateOutline, IoWalletOutline } from "react-icons/io5";
@@ -158,23 +159,25 @@ function App() {
 
   return (
     <PriceProvider url={baseUrl}>
-      <AuthProviderLender baseUrl={baseUrl}>
-        <AuthIsSignedIn>
-          <MainLayoutComponents />
-        </AuthIsSignedIn>
-        <AuthIsNotSignedIn>
-          <Routes>
-            <Route index element={<Login />} />
-            <Route path="/registration" element={<Registration />} />
-            <Route path="/forgotpassword" element={<ForgotPassword />} />
-            <Route path="/resetpassword/:token" element={<ResetPassword />} />
-            <Route path="/verifyemail/:token?" element={<VerifyEmailForm />} />
-            <Route path="/logout" element={<Logout />} />
-            <Route path="/login/:status?" element={<Login />} />
-            <Route path="/error" element={<ErrorBoundary />} />
-          </Routes>
-        </AuthIsNotSignedIn>
-      </AuthProviderLender>
+      <FeeProvider mempoolUrl={import.meta.env.VITE_MEMPOOL_REST_URL}>
+        <AuthProviderLender baseUrl={baseUrl}>
+          <AuthIsSignedIn>
+            <MainLayoutComponents />
+          </AuthIsSignedIn>
+          <AuthIsNotSignedIn>
+            <Routes>
+              <Route index element={<Login />} />
+              <Route path="/registration" element={<Registration />} />
+              <Route path="/forgotpassword" element={<ForgotPassword />} />
+              <Route path="/resetpassword/:token" element={<ResetPassword />} />
+              <Route path="/verifyemail/:token?" element={<VerifyEmailForm />} />
+              <Route path="/logout" element={<Logout />} />
+              <Route path="/login/:status?" element={<Login />} />
+              <Route path="/error" element={<ErrorBoundary />} />
+            </Routes>
+          </AuthIsNotSignedIn>
+        </AuthProviderLender>
+      </FeeProvider>
     </PriceProvider>
   );
 }

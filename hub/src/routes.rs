@@ -1,6 +1,7 @@
 use crate::config::Config;
 use crate::mempool;
 use crate::moon;
+use crate::sideshift;
 use crate::wallet::Wallet;
 use axum::extract::ws::Message;
 use serde::Serialize;
@@ -22,10 +23,11 @@ pub struct ErrorResponse {
 }
 
 pub struct AppState {
-    db: Pool<Postgres>,
-    wallet: Arc<Mutex<Wallet>>,
-    config: Config,
-    mempool: xtra::Address<mempool::Actor>,
-    connections: Arc<Mutex<Vec<mpsc::UnboundedSender<Message>>>>,
-    moon: Arc<moon::Manager>,
+    pub db: Pool<Postgres>,
+    pub wallet: Arc<Mutex<Wallet>>,
+    pub config: Config,
+    pub mempool: xtra::Address<mempool::Actor>,
+    pub connections: Arc<Mutex<Vec<mpsc::UnboundedSender<Message>>>>,
+    pub moon: Arc<moon::Manager>,
+    pub sideshift: Arc<sideshift::Shifter>,
 }
