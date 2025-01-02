@@ -66,6 +66,7 @@ export interface CreateLoanOfferRequest {
   loan_asset_chain: LoanAssetChain;
   loan_repayment_address: string;
   auto_accept: boolean;
+  lender_xpub: string;
 }
 
 export enum LoanOfferStatus {

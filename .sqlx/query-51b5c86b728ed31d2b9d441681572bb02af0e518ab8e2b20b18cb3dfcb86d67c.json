@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        UPDATE contracts\n        SET status = $1,\n            updated_at = $2,\n            contract_address = $3,\n            contract_index = $4,\n            lender_xpub = $5\n        WHERE lender_id = $6\n          AND id = $7\n        RETURNING\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            integration as \"integration: crate::model::db::Integration\",\n            lender_xpub,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            expiry_date,\n            contract_version,\n            created_at,\n            updated_at\n        ",
+  "query": "\n        UPDATE contracts\n        SET status = $1,\n            updated_at = $2,\n            contract_address = $3,\n            contract_index = $4\n        WHERE lender_id = $5\n          AND id = $6\n        RETURNING\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            integration as \"integration: crate::model::db::Integration\",\n            lender_xpub,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            expiry_date,\n            contract_version,\n            created_at,\n            updated_at\n        ",
   "describe": {
     "columns": [
       {
@@ -199,7 +199,6 @@
         "Timestamptz",
         "Text",
         "Int4",
-        "Text",
         "Bpchar",
         "Bpchar"
       ]
@@ -230,5 +229,5 @@
       false
     ]
   },
-  "hash": "77f765e6db51b35bbc70c056f8f92d05cf9f35962d0c3b859ba10234b36c916f"
+  "hash": "51b5c86b728ed31d2b9d441681572bb02af0e518ab8e2b20b18cb3dfcb86d67c"
 }

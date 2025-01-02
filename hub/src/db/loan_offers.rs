@@ -26,18 +26,19 @@ pub(crate) async fn load_all_available_loan_offers(
             lo.duration_months_min,
             lo.duration_months_max,
             lo.loan_amount_reserve,
+            lo.lender_xpub,
             lo.auto_accept,
             COALESCE(
                 lo.loan_amount_reserve - COALESCE(
                     SUM(
-                        CASE 
-                            WHEN c.status NOT IN ('Cancelled', 'RequestExpired') 
-                            THEN c.loan_amount 
-                            ELSE 0 
+                        CASE
+                            WHEN c.status NOT IN ('Cancelled', 'RequestExpired')
+                            THEN c.loan_amount
+                            ELSE 0
                         END
-                    ), 
+                    ),
                     0
-                ), 
+                ),
                 lo.loan_amount_reserve
             ) AS loan_amount_reserve_remaining,
             lo.loan_asset_type AS "loan_asset_type: LoanAssetType",
@@ -47,10 +48,10 @@ pub(crate) async fn load_all_available_loan_offers(
             lo.created_at,
             lo.updated_at
         FROM loan_offers lo
-            LEFT JOIN 
+            LEFT JOIN
                 contracts c ON lo.id = c.loan_id
         WHERE lo.status = 'Available'
-        GROUP BY 
+        GROUP BY
             lo.id
         "#,
     )
@@ -94,6 +95,7 @@ pub(crate) async fn load_all_available_loan_offers(
                 created_at: row.created_at,
                 updated_at: row.updated_at,
                 auto_accept: row.auto_accept,
+                lender_xpub: row.lender_xpub,
             })
         })
         .collect();
@@ -121,14 +123,14 @@ pub async fn load_all_loan_offers_by_lender(
             COALESCE(
                 lo.loan_amount_reserve - COALESCE(
                     SUM(
-                        CASE 
-                            WHEN c.status NOT IN ('Cancelled', 'RequestExpired') 
-                            THEN c.loan_amount 
-                            ELSE 0 
+                        CASE
+                            WHEN c.status NOT IN ('Cancelled', 'RequestExpired')
+                            THEN c.loan_amount
+                            ELSE 0
                         END
-                    ), 
+                    ),
                     0
-                ), 
+                ),
                 lo.loan_amount_reserve
             ) AS loan_amount_reserve_remaining,
             lo.loan_asset_type AS "loan_asset_type: LoanAssetType",
@@ -136,13 +138,14 @@ pub async fn load_all_loan_offers_by_lender(
             lo.status AS "status: LoanOfferStatus",
             lo.loan_repayment_address,
             lo.auto_accept,
+            lo.lender_xpub,
             lo.created_at,
             lo.updated_at
         FROM loan_offers lo
-            LEFT JOIN 
+            LEFT JOIN
                 contracts c ON lo.id = c.loan_id
         WHERE lo.lender_id = $1
-        GROUP BY 
+        GROUP BY
             lo.id
         "#,
         lender_id
@@ -179,6 +182,7 @@ pub async fn load_all_loan_offers_by_lender(
                 created_at: row.created_at,
                 updated_at: row.updated_at,
                 auto_accept: row.auto_accept,
+                lender_xpub: row.lender_xpub,
             }
         })
         .collect();
@@ -206,14 +210,14 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
             COALESCE(
                 lo.loan_amount_reserve - COALESCE(
                     SUM(
-                        CASE 
-                            WHEN c.status NOT IN ('Cancelled', 'RequestExpired') 
-                            THEN c.loan_amount 
-                            ELSE 0 
+                        CASE
+                            WHEN c.status NOT IN ('Cancelled', 'RequestExpired')
+                            THEN c.loan_amount
+                            ELSE 0
                         END
-                    ), 
+                    ),
                     0
-                ), 
+                ),
                 lo.loan_amount_reserve
             ) AS loan_amount_reserve_remaining,
             lo.loan_asset_type AS "loan_asset_type: LoanAssetType",
@@ -221,13 +225,14 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
             lo.status AS "status: LoanOfferStatus",
             lo.loan_repayment_address,
             lo.auto_accept,
+            lo.lender_xpub,
             lo.created_at,
             lo.updated_at
         FROM loan_offers lo
-            LEFT JOIN 
+            LEFT JOIN
                 contracts c ON lo.id = c.loan_id
-        WHERE lo.lender_id = $1 and lo.id = $2 
-        GROUP BY 
+        WHERE lo.lender_id = $1 and lo.id = $2
+        GROUP BY
             lo.id
         "#,
         lender_id,
@@ -261,6 +266,7 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
         created_at: row.created_at,
         updated_at: row.updated_at,
         auto_accept: row.auto_accept,
+        lender_xpub: row.lender_xpub,
     };
 
     Ok(loan_offer)
@@ -274,7 +280,7 @@ pub async fn mark_as_deleted_by_lender_and_offer_id(
     sqlx::query_as!(
         LoanOffer,
         r#"
-        UPDATE loan_offers set 
+        UPDATE loan_offers set
             status = $1,
             updated_at = $2
         WHERE lender_id = $3 and id = $4
@@ -316,9 +322,10 @@ pub async fn insert_loan_offer(
           loan_asset_chain,
           status,
           loan_repayment_address,
-          auto_accept
+          auto_accept,
+          lender_xpub
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
         RETURNING
           id,
           lender_id,
@@ -336,6 +343,7 @@ pub async fn insert_loan_offer(
           status AS "status: crate::model::LoanOfferStatus",
           loan_repayment_address,
           auto_accept,
+          lender_xpub,
           created_at,
           updated_at
         "#,
@@ -353,7 +361,8 @@ pub async fn insert_loan_offer(
         offer.loan_asset_chain as LoanAssetChain,
         status as LoanOfferStatus,
         offer.loan_repayment_address,
-        offer.auto_accept
+        offer.auto_accept,
+        Some(offer.lender_xpub.to_string()),
     )
     .fetch_one(pool)
     .await?;
@@ -378,14 +387,14 @@ pub(crate) async fn loan_by_id(pool: &Pool<Postgres>, loan_id: &str) -> Result<O
             COALESCE(
                 lo.loan_amount_reserve - COALESCE(
                     SUM(
-                        CASE 
-                            WHEN c.status NOT IN ('Cancelled', 'RequestExpired') 
-                            THEN c.loan_amount 
-                            ELSE 0 
+                        CASE
+                            WHEN c.status NOT IN ('Cancelled', 'RequestExpired')
+                            THEN c.loan_amount
+                            ELSE 0
                         END
-                    ), 
+                    ),
                     0
-                ), 
+                ),
                 lo.loan_amount_reserve
             ) AS loan_amount_reserve_remaining,
             lo.loan_asset_type AS "loan_asset_type: LoanAssetType",
@@ -393,13 +402,14 @@ pub(crate) async fn loan_by_id(pool: &Pool<Postgres>, loan_id: &str) -> Result<O
             lo.status AS "status: LoanOfferStatus",
             lo.loan_repayment_address,
             lo.auto_accept,
+            lo.lender_xpub,
             lo.created_at,
             lo.updated_at
         FROM loan_offers lo
-            LEFT JOIN 
+            LEFT JOIN
                 contracts c ON lo.id = c.loan_id
         WHERE lo.id = $1
-        GROUP BY 
+        GROUP BY
             lo.id
     "#,
         loan_id
@@ -434,6 +444,7 @@ pub(crate) async fn loan_by_id(pool: &Pool<Postgres>, loan_id: &str) -> Result<O
             created_at: row.created_at,
             updated_at: row.updated_at,
             auto_accept: row.auto_accept,
+            lender_xpub: row.lender_xpub,
         };
 
         Ok(Some(loan_offer))

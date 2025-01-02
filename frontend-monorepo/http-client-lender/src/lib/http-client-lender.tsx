@@ -151,9 +151,9 @@ export class HttpClientLender extends BaseHttpClient {
     }
   }
 
-  async approveContract(id: string, xpub: string): Promise<void> {
+  async approveContract(id: string): Promise<void> {
     try {
-      await this.httpClient.put(`/api/contracts/${id}/approve?xpub=${xpub}`);
+      await this.httpClient.put(`/api/contracts/${id}/approve`);
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         const message = JSON.stringify(error.response?.data);

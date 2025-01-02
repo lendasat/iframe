@@ -307,8 +307,8 @@ pub async fn insert_contract_request(
     borrower_pk: PublicKey,
     borrower_loan_address: &str,
     integration: Integration,
+    lender_xpub: Xpub,
     contract_version: ContractVersion,
-    auto_accepted: bool,
 ) -> Result<Contract> {
     let mut db_tx = pool
         .begin()
@@ -325,11 +325,7 @@ pub async fn insert_contract_request(
     let created_at = OffsetDateTime::now_utc();
     let expiry_date = expiry_date(created_at, duration_months as u64);
 
-    let status = if auto_accepted {
-        db::ContractStatus::Approved
-    } else {
-        db::ContractStatus::Requested
-    };
+    let status = db::ContractStatus::Requested;
 
     let contract = sqlx::query_as!(
         db::Contract,
@@ -351,12 +347,13 @@ pub async fn insert_contract_request(
             borrower_pk,
             borrower_loan_address,
             integration,
+            lender_xpub,
             contract_address,
             contract_index,
             contract_version,
             created_at,
             expiry_date
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
         RETURNING
             id,
             lender_id,
@@ -398,6 +395,7 @@ pub async fn insert_contract_request(
         borrower_pk.to_string(),
         borrower_loan_address,
         integration as db::Integration,
+        lender_xpub.to_string(),
         None as Option<String>,
         None as Option<i32>,
         contract_version,
@@ -420,7 +418,6 @@ pub async fn accept_contract_request(
     contract_id: &str,
     contract_address: Address,
     contract_index: u32,
-    lender_xpub: Xpub,
 ) -> Result<Contract> {
     let contract = sqlx::query_as!(
         db::Contract,
@@ -429,10 +426,9 @@ pub async fn accept_contract_request(
         SET status = $1,
             updated_at = $2,
             contract_address = $3,
-            contract_index = $4,
-            lender_xpub = $5
-        WHERE lender_id = $6
-          AND id = $7
+            contract_index = $4
+        WHERE lender_id = $5
+          AND id = $6
         RETURNING
             id,
             lender_id,
@@ -462,7 +458,6 @@ pub async fn accept_contract_request(
         OffsetDateTime::now_utc(),
         contract_address.to_string(),
         contract_index as i32,
-        lender_xpub.to_string(),
         lender_id,
         contract_id
     )
