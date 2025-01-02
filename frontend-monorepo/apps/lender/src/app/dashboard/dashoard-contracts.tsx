@@ -165,7 +165,7 @@ export default function DashboardContracts({ contracts }: DashboardContractsProp
           </Tabs.List>
         </Box>
 
-        <Box className="max-h-96 rounded-xl overflow-auto">
+        <Box className="max-h-96 overflow-auto">
           <Tabs.Content value={"actionRequired"}>
             <ContractDetailsTable
               contractStatusFilter={statusFilterActionRequired}
