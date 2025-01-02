@@ -24,6 +24,7 @@ module.exports = {
         dark: '#1f2937', // dark-800
         'dark-700': '#374151',
         'dark-600': '#44505f',
+        'dark-500': '#273345',
         font: '#000000',
         'font-dark': '#EAEAEA',
         color: '#623AB0',
