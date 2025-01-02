@@ -289,24 +289,10 @@ async fn post_contract_request(
                 .await
                 .context("Failed to send loan-auto-accept email")?;
 
-            let borrower_loan_url = format!(
-                "{}/my-contracts/{}",
-                data.config.borrower_frontend_origin.to_owned(),
-                contract.id
-            );
-
             db::contract_emails::mark_auto_accept_email_as_sent(&data.db, &contract.id)
                 .await
                 .context("Failed to mark loan-auto-accept email as sent")?;
 
-            email
-                .send_loan_request_approved(user, borrower_loan_url.as_str())
-                .await
-                .context("Failed to send loan-auto-accept email")?;
-
-            db::contract_emails::mark_loan_request_approved_as_sent(&data.db, &contract.id)
-                .await
-                .context("Failed to mark loan-auto-accept email as sent")?;
             tracing::info!(
                 contract_id = contract_id.to_string(),
                 borrower_id,
