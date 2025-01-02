@@ -161,10 +161,8 @@ function DashBoard() {
     loan.status === ContractStatus.Approved
     || loan.status === ContractStatus.RepaymentConfirmed
   );
-  console.log(`contractsWithActionNeeded: ${JSON.stringify(contractsWithActionNeeded)}`);
   const needsAction = contractsWithActionNeeded.length > 0;
 
-  console.log(`needsAction : ${needsAction}`);
   return (
     <Box
       className="flex flex-col overflow-y-scroll p-4 dark:bg-dark"

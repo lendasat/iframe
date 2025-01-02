@@ -64,7 +64,6 @@ function Dashboard() {
         </Grid>
 
         <DashboardContracts contracts={contracts} />
-
       </Box>
     </Box>
   );

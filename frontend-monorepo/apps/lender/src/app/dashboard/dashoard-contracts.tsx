@@ -9,9 +9,10 @@ import { ContractDetailsTable } from "../contracts/contract-details-table";
 interface TabHeaderProps {
   thisIndex: string;
   label: string;
+  needsAction?: boolean;
 }
 
-export function TabHeader({ thisIndex, label }: TabHeaderProps) {
+export function TabHeader({ thisIndex, label, needsAction }: TabHeaderProps) {
   return (
     <Tabs.Trigger
       className={`text-[13px] font-medium px-6 max-h-9 rounded-lg bg-transparent text-font/60 dark:text-font-dark/60"
@@ -19,6 +20,7 @@ export function TabHeader({ thisIndex, label }: TabHeaderProps) {
       data-[state=active]:text-white
       data-[state=inactive]:dark:text-gray-400
       data-[state=active]:dark:text-white
+      ${needsAction ? "animate-pulse bg-red-100 dark:bg-red-900/30" : ""}
       }`}
       value={thisIndex}
     >
@@ -27,6 +29,13 @@ export function TabHeader({ thisIndex, label }: TabHeaderProps) {
         weight={"medium"}
         className={`break-all`}
       >
+        {needsAction && (
+          <span className="absolute -top-1 -right-1 flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75">
+            </span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+          </span>
+        )}
         {label}
       </Text>
     </Tabs.Trigger>
@@ -132,9 +141,16 @@ export default function DashboardContracts({ contracts }: DashboardContractsProp
     closed: true,
   };
 
+  const contractsWithActionNeeded = contracts.filter((loan) =>
+    loan.status === ContractStatus.Requested
+    || loan.status === ContractStatus.Defaulted
+    || loan.status === ContractStatus.RepaymentProvided
+  );
+  const needsAction = contractsWithActionNeeded.length > 0;
+
   return (
     <Box className="space-y-3">
-      <Tabs.Root defaultValue="open" className={"flex flex-col"}>
+      <Tabs.Root defaultValue={needsAction ? "actionRequired" : "open"} className={"flex flex-col"}>
         <Box className="space-y-2 flex items-center justify-between flex-wrap">
           <Heading className="text-black dark:text-white">
             Contracts
@@ -143,14 +159,14 @@ export default function DashboardContracts({ contracts }: DashboardContractsProp
             className="bg-white dark:bg-dark-500 flex items-center gap-1 p-1 rounded-xl border dark:border-dark-600 shrink-0 "
             color={undefined}
           >
-            <TabHeader thisIndex={"actionRequired"} label={"Action Required"} />
+            <TabHeader needsAction={needsAction} thisIndex={"actionRequired"} label={"Action Required"} />
             <TabHeader thisIndex={"open"} label={"Open"} />
             <TabHeader thisIndex={"closed"} label={"Closed"} />
           </Tabs.List>
         </Box>
 
         <Box className="max-h-96 rounded-xl overflow-auto">
-          <Tabs.Content value="actionRequired">
+          <Tabs.Content value={"actionRequired"}>
             <ContractDetailsTable
               contractStatusFilter={statusFilterActionRequired}
               contracts={filterContracts(contracts, statusFilterActionRequired)}
