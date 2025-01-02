@@ -120,6 +120,8 @@ export default function DashboardContracts({ contracts }: DashboardContractsProp
     expired: false,
     canceled: false,
     dispute: false,
+    defaulted: false,
+    undercollateralized: false,
   };
 
   const statusFilterActionRequired = {
@@ -129,6 +131,7 @@ export default function DashboardContracts({ contracts }: DashboardContractsProp
     collateralSeen: true,
     repaymentProvided: true,
     dispute: true,
+    undercollateralized: true,
   };
 
   const statusFilterOpen = {
