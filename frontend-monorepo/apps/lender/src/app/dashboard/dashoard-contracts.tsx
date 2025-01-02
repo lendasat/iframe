@@ -1,16 +1,17 @@
 import { ContractStatus } from "@frontend-monorepo/http-client-borrower";
-import { Contract } from "@frontend-monorepo/http-client-lender";
+import type { Contract } from "@frontend-monorepo/http-client-lender";
 import { usePrice } from "@frontend-monorepo/ui-shared";
 import { Box, Heading, Tabs, Text } from "@radix-ui/themes";
-import React, { useState } from "react";
-import { ColumnFilterKey, ContractDetailsTable, ContractStatusFilter } from "../contracts/contract-details-table";
+import { useState } from "react";
+import type { ColumnFilterKey, ContractStatusFilter } from "../contracts/contract-details-table";
+import { ContractDetailsTable } from "../contracts/contract-details-table";
 
 interface TabHeaderProps {
   thisIndex: string;
   label: string;
 }
 
-function TabHeader({ thisIndex, label }: TabHeaderProps) {
+export function TabHeader({ thisIndex, label }: TabHeaderProps) {
   return (
     <Tabs.Trigger
       className={`text-[13px] font-medium px-6 max-h-9 rounded-lg bg-transparent text-font/60 dark:text-font-dark/60"

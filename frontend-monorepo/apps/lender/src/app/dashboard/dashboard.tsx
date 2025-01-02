@@ -1,13 +1,12 @@
 import { ContractStatus, useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
 import { formatCurrency } from "@frontend-monorepo/ui-shared";
-import { Box, Button, Flex, Grid, Heading, Text } from "@radix-ui/themes";
-import { useState } from "react";
+import { Box, Flex, Grid, Heading, Text } from "@radix-ui/themes";
 import { useAsync } from "react-use";
+import { Charts } from "./charts";
 import DashboardContracts from "./dashoard-contracts";
 
 function Dashboard() {
   const { innerHeight } = window;
-  const [chartNav, setChartNav] = useState<string>("Earning");
 
   const { getContracts } = useLenderHttpClient();
 
@@ -67,32 +66,7 @@ function Dashboard() {
 
         <DashboardContracts contracts={contracts} />
 
-        <Box className="min-h-96 border-b space-y-4">
-          <Flex align={"center"} justify={"between"} wrap={"wrap"} gap={"2"}>
-            <Heading className="text-black dark:text-white">
-              Peformace Chart
-            </Heading>
-            <Box className="bg-white dark:bg-dark-500 flex items-center gap-1 p-1 rounded-xl">
-              {["Earning", "Interest"].map((navs, index) => (
-                <Button
-                  size={"3"}
-                  key={index}
-                  onClick={() => setChartNav(navs)}
-                  className={`text-[13px] font-normal ${
-                    chartNav == navs ? "bg-purple-800" : "bg-transparent text-font/60 dark:text-font-dark/60"
-                  } px-6 max-h-9 rounded-lg`}
-                >
-                  {navs}
-                </Button>
-              ))}
-            </Box>
-          </Flex>
-          <Box className="flex items-center justify-center">
-            <Heading size={"8"}>
-              Chart Section
-            </Heading>
-          </Box>
-        </Box>
+        <Charts />
       </Box>
     </Box>
   );
