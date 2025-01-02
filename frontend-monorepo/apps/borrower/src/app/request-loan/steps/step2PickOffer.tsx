@@ -607,7 +607,7 @@ export const Step2PickOffer = () => {
                     offerPicked={offerPicked}
                     setOfferPicked={() => setOfferPicked(true)}
                     needMoonCard={needMoonCard}
-                    moonCards={moonCards}
+                    moonCards={moonCards ?? []}
                     setMoonCardId={setMoonCardId}
                     error={error}
                     setError={setError}
@@ -864,6 +864,7 @@ const LoanSearched = (props: SearchParams) => {
                       <MoonCardDropdown
                         cards={props.moonCards}
                         onSelect={props.setMoonCardId}
+                        loanAmount={props.amount}
                       />
                     </Flex>
                     <Separator size={"4"} />

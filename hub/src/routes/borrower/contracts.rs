@@ -14,6 +14,7 @@ use crate::model::LoanTransaction;
 use crate::model::PsbtQueryParams;
 use crate::model::TransactionType;
 use crate::model::User;
+use crate::moon::MOON_CARD_MAX_BALANCE;
 use crate::routes::borrower::auth::jwt_auth;
 use crate::routes::user_connection_details_middleware;
 use crate::routes::user_connection_details_middleware::UserConnectionDetails;
@@ -139,7 +140,24 @@ async fn post_contract_request(
             }
 
             let card_id = match body.moon_card_id {
-                Some(id) => {
+                // This is a top-up.
+                Some(card_id) => {
+                    let loan_amount = body.loan_amount;
+
+                    let card = db::moon::get_card_by_id(&data.db, &card_id.to_string())
+                        .await
+                        .map_err(Error::Database)?
+                        .ok_or(Error::CannotTopUpNonexistentCard)?;
+
+                    let current_balance = card.balance;
+                    if current_balance + loan_amount > MOON_CARD_MAX_BALANCE {
+                        return Err(Error::CannotTopUpOverLimit {
+                            current_balance,
+                            loan_amount,
+                            limit: MOON_CARD_MAX_BALANCE,
+                        });
+                    }
+
                     let client_ip = connection_details
                         .ip
                         .ok_or(Error::CannotTopUpMoonCardWithoutIp)?;
@@ -149,9 +167,10 @@ async fn post_contract_request(
                     if is_us_ip {
                         return Err(Error::CannotTopUpMoonCardFromUs);
                     } else {
-                        id
+                        card_id
                     }
                 }
+                // This is a new card.
                 None => {
                     let card = data
                         .moon
@@ -711,6 +730,14 @@ enum Error {
         chain: LoanAssetChain,
         asset: LoanAssetType,
     },
+    /// The Moon card that the borrower is trying to top up does not exist.
+    CannotTopUpNonexistentCard,
+    /// The attempt to top up the card would push the balance over the limit.
+    CannotTopUpOverLimit {
+        current_balance: Decimal,
+        loan_amount: Decimal,
+        limit: Decimal,
+    },
     /// Moon cards cannot be topped up if we don't know the client IP.
     CannotTopUpMoonCardWithoutIp,
     /// Failed to get country code of IP from GeoJS.
@@ -829,6 +856,20 @@ impl IntoResponse for Error {
                 format!(
                     "Cannot create loan request for Moon card with asset {asset:?} \
                      on chain {chain:?}. Moon only supports USDC on Polygon"
+                ),
+            ),
+            Error::CannotTopUpNonexistentCard => {
+                (StatusCode::NOT_FOUND, "Card not found".to_owned())
+            }
+            Error::CannotTopUpOverLimit {
+                current_balance,
+                loan_amount,
+                limit,
+            } => (
+                StatusCode::BAD_REQUEST,
+                format!(
+                    "Invalid Moon card top-up request: current balance ({current_balance}) \
+                     + loan amount ({loan_amount}) > limit ({limit})"
                 ),
             ),
             Error::CannotTopUpMoonCardWithoutIp => (

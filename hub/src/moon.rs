@@ -14,6 +14,8 @@ use sqlx::Postgres;
 use std::str::FromStr;
 use uuid::Uuid;
 
+pub const MOON_CARD_MAX_BALANCE: Decimal = dec!(5_000);
+
 /// Information about a Moon card.
 ///
 /// The only things that can change is the `available_balance`.

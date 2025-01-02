@@ -5,9 +5,11 @@ import { useState } from "react";
 export function MoonCardDropdown({
   onSelect,
   cards,
+  loanAmount,
 }: {
   onSelect: (cardId?: string) => void;
   cards: UserCardDetail[];
+  loanAmount: number;
 }) {
   // The card is identified by the card number.
   const [selectedCard, setSelectedCard] = useState<string>("New card");
@@ -20,6 +22,11 @@ export function MoonCardDropdown({
     setSelectedCard(selectedValue ? selectedValue.id : "New card");
     onSelect(selectedValue ? selectedValue.id : undefined);
   };
+
+  // The maximum balance on a card is 5000 USD.
+  const filteredCards = cards.filter((card: UserCardDetail) => {
+    return card.balance + loanAmount <= 5000;
+  });
 
   return (
     <div className="flex items-center space-x-2 max-w-full">
@@ -35,7 +42,7 @@ export function MoonCardDropdown({
 
           <Select.Content highContrast color="purple" className="font-normal text-sm z-50">
             <Select.Item value="New card">Create New</Select.Item>
-            {cards.map((card: UserCardDetail) => (
+            {filteredCards.map((card: UserCardDetail) => (
               <Select.Item key={card.id} value={card.id}>
                 **** **** **** {card.pan.slice(-4)}
               </Select.Item>
