@@ -918,7 +918,6 @@ async fn get_liquidation_to_bitcoin_psbt(
 pub struct LiquidationToStablecoinPsbtQueryParams {
     // TODO: can we use bitcoin::Address here?
     bitcoin_refund_address: String,
-    // fee rate in sats/vbyte
     fee_rate_sats_vbyte: u64,
 }
 
