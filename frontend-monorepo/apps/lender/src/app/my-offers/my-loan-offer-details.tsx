@@ -2,6 +2,8 @@ import { faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { LoanOfferStatus, useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
 import { formatCurrency, StableCoin, StableCoinHelper } from "@frontend-monorepo/ui-shared";
+import * as Checkbox from "@radix-ui/react-checkbox";
+import { CheckIcon } from "@radix-ui/react-icons";
 import { Box, Button, Callout, Dialog, Flex, Grid, Heading, Separator, Text, TextField } from "@radix-ui/themes";
 import { useState } from "react";
 import { FaPenNib } from "react-icons/fa";
@@ -170,6 +172,34 @@ function MyLoanOfferDetails() {
                   </Text>
                 </TextField.Slot>
               </TextField.Root>
+            </Box>
+
+            {/* Auto Accept */}
+            <Box className="space-y-1">
+              <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
+                <Text as="label" size={"2"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">
+                  Auto Accept within Reserve
+                </Text>
+              </Flex>
+
+              <div className="flex items-center">
+                <Checkbox.Root
+                  className="flex size-[25px] appearance-none items-center justify-center rounded shadow-[0_2px_10px] shadow-blackA4 outline-none hover:bg-violet3 focus:shadow-[0_0_0_2px_black]"
+                  checked={offer.auto_accept}
+                  disabled={true}
+                  id={"c1"}
+                >
+                  <Checkbox.Indicator className="text-violet11">
+                    <CheckIcon />
+                  </Checkbox.Indicator>
+                </Checkbox.Root>
+                <label
+                  className="text-font/60 dark:text-font-dark/60"
+                  htmlFor="c1"
+                >
+                  Auto accept requests within Loan Reserve
+                </label>
+              </div>
             </Box>
 
             {/* Duration */}

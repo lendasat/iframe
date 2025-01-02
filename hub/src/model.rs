@@ -110,6 +110,7 @@ pub struct CreateLoanOfferSchema {
     pub loan_asset_type: LoanAssetType,
     pub loan_asset_chain: LoanAssetChain,
     pub loan_repayment_address: String,
+    pub auto_accept: bool,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -170,6 +171,7 @@ pub struct LoanOffer {
     pub created_at: OffsetDateTime,
     #[serde(with = "time::serde::rfc3339")]
     pub updated_at: OffsetDateTime,
+    pub auto_accept: bool,
 }
 
 #[derive(Debug, Deserialize, sqlx::Type, Serialize, Clone, PartialEq)]
@@ -350,6 +352,9 @@ pub struct ContractEmails {
     pub collateral_funded_sent: bool,
     /// Whether the loan-paid-out email was sent to the borrower.
     pub loan_paid_out_sent: bool,
+    /// Whether an email was sent to the lender telling him that the contract has been auto
+    /// approved.
+    pub loan_auto_accept_notification_sent: bool,
 }
 
 pub mod db {
@@ -452,6 +457,7 @@ pub mod db {
         pub collateral_funded_sent: bool,
         pub loan_paid_out_sent: bool,
         pub loan_repaid_sent: bool,
+        pub loan_auto_accept_notification_sent: bool,
     }
 }
 
@@ -657,6 +663,7 @@ impl From<db::ContractEmails> for ContractEmails {
             loan_request_rejected_sent: value.loan_request_rejected_sent,
             collateral_funded_sent: value.collateral_funded_sent,
             loan_paid_out_sent: value.loan_paid_out_sent,
+            loan_auto_accept_notification_sent: value.loan_auto_accept_notification_sent,
         }
     }
 }

@@ -180,6 +180,7 @@ async fn create_loan_request(
         pool,
         id,
         borrower_id,
+        offer.lender_id.as_str(),
         offer.id.as_str(),
         initial_ltv,
         initial_collateral_sats.to_u64().expect("to fit"),
@@ -193,6 +194,7 @@ async fn create_loan_request(
         "0x34e3f03F5efFaF7f70Bb1FfC50274697096ebe9d",
         Integration::StableCoin,
         ContractVersion::TwoOfThree,
+        false,
     )
     .await
 }
@@ -219,6 +221,7 @@ async fn create_loan_offers(pool: &Pool<Postgres>, lender_id: &str) -> Result<Ve
             loan_asset_type: LoanAssetType::Usdt,
             loan_asset_chain: LoanAssetChain::Ethereum,
             loan_repayment_address: "0x34e3f03F5efFaF7f70Bb1FfC50274697096ebe9d".to_string(),
+            auto_accept: true,
         },
         lender_id,
     )
@@ -238,6 +241,7 @@ async fn create_loan_offers(pool: &Pool<Postgres>, lender_id: &str) -> Result<Ve
             loan_asset_type: LoanAssetType::Usdc,
             loan_asset_chain: LoanAssetChain::Polygon,
             loan_repayment_address: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619".to_string(),
+            auto_accept: true,
         },
         lender_id,
     )

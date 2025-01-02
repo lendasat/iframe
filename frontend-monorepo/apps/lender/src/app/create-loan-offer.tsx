@@ -12,6 +12,8 @@ import {
   StableCoin,
   StableCoinHelper,
 } from "@frontend-monorepo/ui-shared";
+import * as Checkbox from "@radix-ui/react-checkbox";
+import { CheckIcon } from "@radix-ui/react-icons";
 import { Box, Button, Callout, Flex, Heading, Separator, Spinner, Text, TextField } from "@radix-ui/themes";
 import type { FC, FormEvent } from "react";
 import { useState } from "react";
@@ -36,6 +38,7 @@ const CreateLoanOffer: FC = () => {
   const { user } = useAuth();
   const [loanAmount, setLoanAmount] = useState<LoanAmount>({ min: 1000, max: 100000 });
   const [loanReserve, setLoanReserve] = useState(loanAmount.max);
+  const [autoAccept, setAutoAccept] = useState(true);
   const [loanDuration, setLoanDuration] = useState<LoanDuration>({ min: 1, max: 12 });
   const [ltv, setLtv] = useState<number>(50);
   const [interest, setInterest] = useState<number>(12);
@@ -94,6 +97,7 @@ const CreateLoanOffer: FC = () => {
       loan_asset_type: assetType,
       loan_asset_chain: assetChain,
       loan_repayment_address: loanRepaymentAddress,
+      auto_accept: autoAccept,
     };
   };
   const navigate = useNavigate();
@@ -199,9 +203,39 @@ const CreateLoanOffer: FC = () => {
                     value={loanReserve}
                     min={loanAmount.max}
                     step={1}
-                    onChange={(e) => setLoanReserve(Number(e.target.value))}
+                    onChange={(e) => {
+                      setLoanReserve(Number(e.target.value));
+                      setAutoAccept(true);
+                    }}
                   >
                   </TextField.Root>
+                </Box>
+
+                {/* Auto Accept */}
+                <Box className="space-y-1">
+                  <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
+                    <Text as="label" size={"2"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">
+                      Auto Accept (Requests within Loan Reserve will be automatically accepted)
+                    </Text>
+                  </Flex>
+
+                  <div className="flex items-center">
+                    <Checkbox.Root
+                      className="flex size-[25px] appearance-none items-center justify-center rounded bg-white dark:bg-gray-300 shadow-[0_2px_10px] shadow-blackA4 outline-none hover:bg-violet3 focus:shadow-[0_0_0_2px_black]"
+                      checked={autoAccept}
+                      onCheckedChange={(checked) => setAutoAccept(checked === true)}
+                    >
+                      <Checkbox.Indicator className="text-violet11">
+                        <CheckIcon />
+                      </Checkbox.Indicator>
+                    </Checkbox.Root>
+                    <label
+                      className="pl-[15px] text-[15px] dark:text-font-dark/60"
+                      htmlFor="c1"
+                    >
+                      Auto accept requests within Loan Reserve
+                    </label>
+                  </div>
                 </Box>
 
                 {/* Duration */}

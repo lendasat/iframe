@@ -65,6 +65,7 @@ export interface CreateLoanOfferRequest {
   loan_asset_type: LoanAssetType;
   loan_asset_chain: LoanAssetChain;
   loan_repayment_address: string;
+  auto_accept: boolean;
 }
 
 export enum LoanOfferStatus {
@@ -87,6 +88,7 @@ export interface LoanOffer {
   loan_asset_type: string;
   loan_asset_chain: string;
   status: LoanOfferStatus;
+  auto_accept: boolean;
   created_at: string;
   updated_at: string;
 }

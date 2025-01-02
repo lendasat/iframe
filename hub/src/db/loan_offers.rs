@@ -26,6 +26,7 @@ pub(crate) async fn load_all_available_loan_offers(
             lo.duration_months_min,
             lo.duration_months_max,
             lo.loan_amount_reserve,
+            lo.auto_accept,
             COALESCE(
                 lo.loan_amount_reserve - COALESCE(
                     SUM(
@@ -92,6 +93,7 @@ pub(crate) async fn load_all_available_loan_offers(
                 loan_repayment_address: row.loan_repayment_address,
                 created_at: row.created_at,
                 updated_at: row.updated_at,
+                auto_accept: row.auto_accept,
             })
         })
         .collect();
@@ -133,6 +135,7 @@ pub async fn load_all_loan_offers_by_lender(
             lo.loan_asset_chain AS "loan_asset_chain: LoanAssetChain",
             lo.status AS "status: LoanOfferStatus",
             lo.loan_repayment_address,
+            lo.auto_accept,
             lo.created_at,
             lo.updated_at
         FROM loan_offers lo
@@ -175,6 +178,7 @@ pub async fn load_all_loan_offers_by_lender(
                 loan_repayment_address: row.loan_repayment_address,
                 created_at: row.created_at,
                 updated_at: row.updated_at,
+                auto_accept: row.auto_accept,
             }
         })
         .collect();
@@ -216,6 +220,7 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
             lo.loan_asset_chain AS "loan_asset_chain: LoanAssetChain",
             lo.status AS "status: LoanOfferStatus",
             lo.loan_repayment_address,
+            lo.auto_accept,
             lo.created_at,
             lo.updated_at
         FROM loan_offers lo
@@ -255,6 +260,7 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
         loan_repayment_address: row.loan_repayment_address,
         created_at: row.created_at,
         updated_at: row.updated_at,
+        auto_accept: row.auto_accept,
     };
 
     Ok(loan_offer)
@@ -309,9 +315,10 @@ pub async fn insert_loan_offer(
           loan_asset_type,
           loan_asset_chain,
           status,
-          loan_repayment_address
+          loan_repayment_address,
+          auto_accept
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
         RETURNING
           id,
           lender_id,
@@ -328,6 +335,7 @@ pub async fn insert_loan_offer(
           loan_asset_chain AS "loan_asset_chain: crate::model::LoanAssetChain",
           status AS "status: crate::model::LoanOfferStatus",
           loan_repayment_address,
+          auto_accept,
           created_at,
           updated_at
         "#,
@@ -344,7 +352,8 @@ pub async fn insert_loan_offer(
         offer.loan_asset_type as LoanAssetType,
         offer.loan_asset_chain as LoanAssetChain,
         status as LoanOfferStatus,
-        offer.loan_repayment_address
+        offer.loan_repayment_address,
+        offer.auto_accept
     )
     .fetch_one(pool)
     .await?;
@@ -383,6 +392,7 @@ pub(crate) async fn loan_by_id(pool: &Pool<Postgres>, loan_id: &str) -> Result<O
             lo.loan_asset_chain AS "loan_asset_chain: LoanAssetChain",
             lo.status AS "status: LoanOfferStatus",
             lo.loan_repayment_address,
+            lo.auto_accept,
             lo.created_at,
             lo.updated_at
         FROM loan_offers lo
@@ -423,6 +433,7 @@ pub(crate) async fn loan_by_id(pool: &Pool<Postgres>, loan_id: &str) -> Result<O
             loan_repayment_address: row.loan_repayment_address,
             created_at: row.created_at,
             updated_at: row.updated_at,
+            auto_accept: row.auto_accept,
         };
 
         Ok(Some(loan_offer))

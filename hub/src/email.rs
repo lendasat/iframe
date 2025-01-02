@@ -386,6 +386,31 @@ impl Email {
         .await
     }
 
+    pub async fn send_notification_about_auto_accepted_loan(
+        &self,
+        lender: User,
+        url: &str,
+    ) -> Result<()> {
+        let template_name = "loan_request_auto_approved";
+        let handlebars = Self::prepare_template(template_name)?;
+
+        let data = serde_json::json!({
+            "first_name": &lender.name,
+            "subject": &template_name,
+            "url": url
+        });
+
+        let content_template = handlebars.render(template_name, &data)?;
+
+        self.send_email(
+            "Your loan request has been approved",
+            lender.name.as_str(),
+            lender.email.as_str(),
+            content_template,
+        )
+        .await
+    }
+
     pub async fn send_loan_request_rejected(&self, lender: User, url: &str) -> Result<()> {
         let template_name = "loan_request_rejected";
         let handlebars = Self::prepare_template(template_name)?;
