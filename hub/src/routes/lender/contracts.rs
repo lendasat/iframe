@@ -102,7 +102,7 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
         )
         .route(
             "/api/contracts/:id/liquidation-to-stablecoin-psbt",
-            post(post_liquidation_to_stablecoin_psbt).route_layer(middleware::from_fn_with_state(
+            post(post_build_liquidation_to_stablecoin_psbt).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
                 jwt_auth::auth,
             )),
@@ -932,7 +932,7 @@ pub struct LiquidationToStableCoinPsbt {
 }
 
 #[instrument(skip_all, fields(lender_id = user.id, contract_id), err(Debug), ret)]
-async fn post_liquidation_to_stablecoin_psbt(
+async fn post_build_liquidation_to_stablecoin_psbt(
     State(data): State<Arc<AppState>>,
     Path(contract_id): Path<String>,
     Extension(user): Extension<User>,
