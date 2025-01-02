@@ -99,12 +99,6 @@ const QuickBoards = ({ color, label, value, numbers }: QuickBoardsType) => {
           </Heading>
         </Box>
       </Flex>
-      <Flex className="px-4" align={"center"} gap={"2"}>
-        {/* would be replaced with an area chart showing daily change in value */}
-        <Text size={"2"} weight={"regular"} className="text-black dark:text-white">
-          Area Chart
-        </Text>
-      </Flex>
     </Box>
   );
 };
