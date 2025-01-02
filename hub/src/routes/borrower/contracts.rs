@@ -14,7 +14,10 @@ use crate::model::LoanTransaction;
 use crate::model::PsbtQueryParams;
 use crate::model::TransactionType;
 use crate::model::User;
+use crate::moon::MOON_CARD_MAX_BALANCE;
 use crate::routes::borrower::auth::jwt_auth;
+use crate::routes::user_connection_details_middleware;
+use crate::routes::user_connection_details_middleware::UserConnectionDetails;
 use crate::routes::AppState;
 use anyhow::Context;
 use axum::extract::rejection::JsonRejection;
@@ -98,6 +101,12 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
                 jwt_auth::auth,
             )),
         )
+        .layer(
+            tower::ServiceBuilder::new().layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                user_connection_details_middleware::ip_user_agent,
+            )),
+        )
         .with_state(app_state)
 }
 
@@ -105,6 +114,7 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
 async fn post_contract_request(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<User>,
+    Extension(connection_details): Extension<UserConnectionDetails>,
     AppJson(body): AppJson<ContractRequestSchema>,
 ) -> Result<AppJson<Contract>, Error> {
     let offer = db::loan_offers::loan_by_id(&data.db, &body.loan_id)
@@ -113,7 +123,7 @@ async fn post_contract_request(
         .ok_or(Error::MissingLoanOffer)?;
 
     let contract_id = Uuid::new_v4();
-    let lender_id = offer.lender_id.as_str();
+    let lender_id = offer.lender_id;
     let (borrower_loan_address, moon_invoice) = match body.integration {
         Integration::StableCoin => match body.borrower_loan_address {
             Some(borrower_loan_address) => (borrower_loan_address, None),
@@ -129,20 +139,56 @@ async fn post_contract_request(
                 });
             }
 
-            let cards = db::moon::get_borrower_cards(&data.db, user.id.as_str())
-                .await
-                .map_err(Error::Database)?;
+            let card_id = match body.moon_card_id {
+                // This is a top-up.
+                Some(card_id) => {
+                    let loan_amount = body.loan_amount;
 
-            if !cards.is_empty() {
-                return Err(Error::OneMoonCardAllowed);
-            }
+                    let card = db::moon::get_card_by_id(&data.db, &card_id.to_string())
+                        .await
+                        .map_err(Error::Database)?
+                        .ok_or(Error::CannotTopUpNonexistentCard)?;
+
+                    let current_balance = card.balance;
+                    if current_balance + loan_amount > MOON_CARD_MAX_BALANCE {
+                        return Err(Error::CannotTopUpOverLimit {
+                            current_balance,
+                            loan_amount,
+                            limit: MOON_CARD_MAX_BALANCE,
+                        });
+                    }
+
+                    let client_ip = connection_details
+                        .ip
+                        .ok_or(Error::CannotTopUpMoonCardWithoutIp)?;
+
+                    let is_us_ip = is_us_ip(&client_ip).await.map_err(Error::GeoJs)?;
+
+                    if is_us_ip {
+                        return Err(Error::CannotTopUpMoonCardFromUs);
+                    } else {
+                        card_id
+                    }
+                }
+                // This is a new card.
+                None => {
+                    let card = data
+                        .moon
+                        .create_card(user.id.clone())
+                        .await
+                        .map_err(Error::MoonCardGeneration)?;
+
+                    card.id
+                }
+            };
 
             let invoice = data
                 .moon
                 .generate_invoice(
                     body.loan_amount,
                     contract_id.to_string(),
-                    lender_id.to_string(),
+                    card_id,
+                    lender_id.clone(),
                     user.id.as_str(),
                 )
                 .await
@@ -175,7 +221,7 @@ async fn post_contract_request(
         &data.db,
         contract_id,
         user.id.as_str(),
-        lender_id,
+        lender_id.as_str(),
         &body.loan_id,
         min_ltv,
         initial_collateral.to_sat(),
@@ -684,8 +730,22 @@ enum Error {
         chain: LoanAssetChain,
         asset: LoanAssetType,
     },
-    /// Each user can only have one Moon card for now.
-    OneMoonCardAllowed,
+    /// The Moon card that the borrower is trying to top up does not exist.
+    CannotTopUpNonexistentCard,
+    /// The attempt to top up the card would push the balance over the limit.
+    CannotTopUpOverLimit {
+        current_balance: Decimal,
+        loan_amount: Decimal,
+        limit: Decimal,
+    },
+    /// Moon cards cannot be topped up if we don't know the client IP.
+    CannotTopUpMoonCardWithoutIp,
+    /// Failed to get country code of IP from GeoJS.
+    GeoJs(anyhow::Error),
+    /// Moon cards cannot be topped up from the US.
+    CannotTopUpMoonCardFromUs,
+    /// Failed to create Moon card.
+    MoonCardGeneration(anyhow::Error),
     /// Failed to generate Moon invoice.
     MoonInvoiceGeneration(anyhow::Error),
     /// Failed to get opening price from BitMEX.
@@ -798,10 +858,44 @@ impl IntoResponse for Error {
                      on chain {chain:?}. Moon only supports USDC on Polygon"
                 ),
             ),
-            Error::OneMoonCardAllowed => (
+            Error::CannotTopUpNonexistentCard => {
+                (StatusCode::NOT_FOUND, "Card not found".to_owned())
+            }
+            Error::CannotTopUpOverLimit {
+                current_balance,
+                loan_amount,
+                limit,
+            } => (
                 StatusCode::BAD_REQUEST,
-                "Only one Moon card allowed per user".to_owned(),
+                format!(
+                    "Invalid Moon card top-up request: current balance ({current_balance}) \
+                     + loan amount ({loan_amount}) > limit ({limit})"
+                ),
             ),
+            Error::CannotTopUpMoonCardWithoutIp => (
+                StatusCode::UNAVAILABLE_FOR_LEGAL_REASONS,
+                "Request IP required".to_owned(),
+            ),
+            Error::GeoJs(e) => {
+                tracing::error!("Failed to top up Moon card: {e:#}");
+
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
+            Error::CannotTopUpMoonCardFromUs => (
+                StatusCode::UNAVAILABLE_FOR_LEGAL_REASONS,
+                "Cannot top up Moon card from the US".to_owned(),
+            ),
+            Error::MoonCardGeneration(e) => {
+                tracing::error!("Failed to generate Moon card: {e:#}");
+
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
             Error::MoonInvoiceGeneration(e) => {
                 tracing::error!("Failed to generate Moon invoice: {e:#}");
 
@@ -918,4 +1012,24 @@ impl IntoResponse for Error {
 
         (status, AppJson(ErrorResponse { message })).into_response()
     }
+}
+
+async fn is_us_ip(ip: &str) -> anyhow::Result<bool> {
+    #[derive(Deserialize)]
+    struct GeoInfo {
+        country: Option<String>,
+    }
+
+    // Local development address can be ignored.
+    if ip == "127.0.0.1" {
+        return Ok(false);
+    }
+
+    let url = format!("https://get.geojs.io/v1/ip/country/{ip}.json");
+    let response = reqwest::get(&url).await?;
+    let geo_info: GeoInfo = response.json().await?;
+
+    let country_code = geo_info.country.context("Missing country code")?;
+
+    Ok(country_code == "US")
 }

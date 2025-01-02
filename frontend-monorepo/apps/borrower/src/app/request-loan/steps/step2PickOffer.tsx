@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { LoanProductOption } from "@frontend-monorepo/base-http-client";
 import { CreateWalletModal, UnlockWalletModal, useWallet } from "@frontend-monorepo/browser-wallet";
 import { Integration, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
-import type { LoanOffer } from "@frontend-monorepo/http-client-borrower";
+import type { LoanOffer, UserCardDetail } from "@frontend-monorepo/http-client-borrower";
 import {
   AbbreviationExplanationInfo,
   formatCurrency,
@@ -16,6 +16,7 @@ import {
   usePrice,
 } from "@frontend-monorepo/ui-shared";
 import { Box, Button, Callout, Flex, Grid, Heading, Separator, Spinner, Text, TextField } from "@radix-ui/themes";
+import axios from "axios";
 import { Network, validate } from "bitcoin-address-validation";
 import { useCallback, useEffect, useState } from "react";
 import type { ChangeEvent } from "react";
@@ -25,6 +26,7 @@ import { FaInfo } from "react-icons/fa6";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAsync } from "react-use";
 import EmptyResult from "../../../assets/search.png";
+import { MoonCardDropdown } from "./MoonCardDropdown";
 
 interface OfferFilter {
   loanAmount?: number;
@@ -99,6 +101,18 @@ function findSmallestLoanOffer(loanOffers: LoanOffer[]): LoanOffer | undefined {
   );
 }
 
+async function isInUS(): Promise<boolean> {
+  try {
+    const response = await axios.get("https://get.geojs.io/v1/ip/country.json");
+    const data = response.data;
+
+    return data.country === "US";
+  } catch (error) {
+    console.error("Error fetching geo-location data:", error);
+    return true; // Default to true in case of an error
+  }
+}
+
 export const Step2PickOffer = () => {
   const { getNextPublicKey } = useWallet();
   const { getLoanOffers, postContractRequest } = useBorrowerHttpClient();
@@ -116,6 +130,21 @@ export const Step2PickOffer = () => {
   let validCoins: StableCoin[];
   let integration = Integration.StableCoin;
   let coinSelectHidden = false;
+
+  const { getUserCards } = useBorrowerHttpClient();
+  const { value: moonCards, error: userCardsError } = useAsync(async () => {
+    // Users located in the US cannot top up cards.
+    if (await isInUS()) {
+      return [];
+    } else {
+      return getUserCards();
+    }
+  });
+
+  if (userCardsError) {
+    console.error(`Failed fetching credit cards: ${userCardsError}`);
+  }
+
   switch (selectedOption) {
     case LoanProductOption.StableCoins:
       validCoins = StableCoinHelper.all();
@@ -134,6 +163,8 @@ export const Step2PickOffer = () => {
   // We do not need the borrower to provide a loan address if they want to create a Pay with Moon
   // card with their loan.
   const needLoanAddress = integration !== Integration.PayWithMoon;
+
+  const needMoonCard = integration === Integration.PayWithMoon;
 
   const [advanceSearch, setAdvanceSearch] = useState<boolean>(false);
   const [bestOffer, setBestOffer] = useState<LoanOffer | undefined>();
@@ -164,6 +195,7 @@ export const Step2PickOffer = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [offerPicked, setOfferPicked] = useState<boolean>(false);
+  const [moonCardId, setMoonCardId] = useState<string | undefined>(undefined);
 
   const { loading, value: maybeAvailableOffers, error: loadingError } = useAsync(async () => {
     return getLoanOffers();
@@ -317,6 +349,7 @@ export const Step2PickOffer = () => {
         borrower_pk: borrowerPk,
         borrower_loan_address: loanAddress,
         integration: integration,
+        moon_card_id: moonCardId,
       });
 
       if (res !== undefined) {
@@ -573,6 +606,9 @@ export const Step2PickOffer = () => {
                     setBtcAddress={setBtcAddress}
                     offerPicked={offerPicked}
                     setOfferPicked={() => setOfferPicked(true)}
+                    needMoonCard={needMoonCard}
+                    moonCards={moonCards ?? []}
+                    setMoonCardId={setMoonCardId}
                     error={error}
                     setError={setError}
                     onOfferConfirmed={async () => {
@@ -636,6 +672,9 @@ interface SearchParams {
   setLoanAddress: (val: string) => void;
   btcAddress: string;
   setBtcAddress: (val: string) => void;
+  needMoonCard: boolean;
+  moonCards: UserCardDetail[];
+  setMoonCardId: (val?: string) => void;
   setError: (val: string) => void;
   error: string;
   isLoading: boolean;
@@ -786,7 +825,7 @@ const LoanSearched = (props: SearchParams) => {
               <Flex direction={"column"} align={"start"} gap={"2"}>
                 <div className="flex items-center gap-2">
                   <AbbreviationExplanationInfo
-                    header={"Collateral Return Address"}
+                    header={"Collateral Refund Address"}
                     subHeader={""}
                     description={"The Bitcoin address where you want your collateral returned upon loan repayment."}
                   >
@@ -814,6 +853,24 @@ const LoanSearched = (props: SearchParams) => {
                   <TextField.Slot className="p-1.5" />
                 </TextField.Root>
               </Flex>
+              {props.needMoonCard
+                ? (
+                  <>
+                    <Separator size={"4"} />
+                    <Flex direction={"column"} align={"start"} gap={"2"}>
+                      <Text as="label" className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
+                        Choose a card
+                      </Text>
+                      <MoonCardDropdown
+                        cards={props.moonCards}
+                        onSelect={props.setMoonCardId}
+                        loanAmount={props.amount}
+                      />
+                    </Flex>
+                    <Separator size={"4"} />
+                  </>
+                )
+                : null}
               {props.needLoanAddress
                 ? (
                   <>

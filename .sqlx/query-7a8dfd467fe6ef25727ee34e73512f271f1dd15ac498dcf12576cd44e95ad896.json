@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT \n            message_id,\n            datetime,\n            merchant,\n            customer_friendly_description,\n            amount,\n            card_public_id\n        FROM moon_transaction_decline_data\n        WHERE card_public_id = $1\n        ",
+  "query": "\n        SELECT\n            message_id,\n            datetime,\n            merchant,\n            customer_friendly_description,\n            amount,\n            card_public_id\n        FROM moon_transaction_decline_data\n        WHERE card_public_id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -48,5 +48,5 @@
       false
     ]
   },
-  "hash": "ca53e5bc31dbecb3d996e2f8ab92726f4fa5e7cb95d8ea1625c057c6a0f7fc8f"
+  "hash": "7a8dfd467fe6ef25727ee34e73512f271f1dd15ac498dcf12576cd44e95ad896"
 }

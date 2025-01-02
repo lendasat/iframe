@@ -618,6 +618,7 @@ impl MoonCardClient {
             }
         }
     }
+
     pub async fn register_webhook(&self) -> Result<(), reqwest::Error> {
         let url = format!("{}/webhook", self.base_url);
 

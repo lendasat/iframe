@@ -218,7 +218,7 @@ export default function Cards() {
           : (
             <CardHistory
               cardId={activeCard.id}
-              lastFourCardDigits={activeCard.pan.toString().substring(activeCard.pan.toString().length - 4)}
+              lastFourCardDigits={activeCard.pan.substring(activeCard.pan.length - 4)}
             />
           )}
       </Box>
@@ -227,8 +227,8 @@ export default function Cards() {
 }
 
 // Format Card Number
-export const formatCreditCardNumber = (number: number) => {
-  const numStr = number.toString().replace(/\D/g, "");
+export const formatCreditCardNumber = (pan: string) => {
+  const numStr = pan.replace(/\D/g, "");
   return numStr.replace(/(\d{4})(?=\d)/g, "$1 ");
 };
 

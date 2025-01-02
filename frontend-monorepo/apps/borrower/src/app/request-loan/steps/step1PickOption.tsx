@@ -1,5 +1,5 @@
 import { LoanProductOption } from "@frontend-monorepo/base-http-client";
-import { useAuth, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
+import { useAuth } from "@frontend-monorepo/http-client-borrower";
 import { Box, Flex, Text } from "@radix-ui/themes";
 import type { ReactElement } from "react";
 import Bitrefil from "../../../assets/bitrefil.png";
@@ -10,7 +10,6 @@ import "./../../components/scrollbar.css";
 import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Alert } from "react-bootstrap";
-import { useAsync } from "react-use";
 import { PayWithMoonDescriptionDialog } from "./PayWithMoonDescriptionDialog";
 import { StableCoinDescriptionDialog } from "./StableCoinDescriptionDialog";
 
@@ -21,20 +20,6 @@ interface Step1Props {
 
 export const Step1PickOption = ({ onSelect, selectedOption }: Step1Props) => {
   const { enabledFeatures } = useAuth();
-  const { getUserCards } = useBorrowerHttpClient();
-
-  const { loading, value, error } = useAsync(async () => {
-    if (enabledFeatures.includes(LoanProductOption.PayWithMoonDebitCard)) {
-      return getUserCards();
-    }
-    return [];
-  });
-
-  if (error) {
-    console.error(`Failed fetching credit cards ${error}`);
-  }
-
-  const hasAlreadyCard = loading ? true : value ? value.length > 0 : false;
 
   return (
     <Box className="py-6 md:py-8 grid md:grid-cols-2 xl:grid-cols-3 gap-5 px-6 md:px-8 xl:px-8">
@@ -49,7 +34,7 @@ export const Step1PickOption = ({ onSelect, selectedOption }: Step1Props) => {
                 selectedOption={selectedOption}
                 title={"Receive a Moon Visa® Card"}
                 key={index}
-                disabled={hasAlreadyCard}
+                disabled={false}
                 image={<MoonCard />}
                 // image={<img src={Moon} alt="PayWithMoon" className="max-h-full max-w-full" />}
               />
@@ -169,7 +154,7 @@ const LoanOptionsDescriptionDialog = ({
           {disabled && (
             <Alert variant="warning">
               <FontAwesomeIcon icon={faExclamationCircle} className="text-font dark:text-font-dark h-4 w-4 mr-2" />
-              You can only have one debit card at the moment.
+              Currently not available.
             </Alert>
           )}
         </div>

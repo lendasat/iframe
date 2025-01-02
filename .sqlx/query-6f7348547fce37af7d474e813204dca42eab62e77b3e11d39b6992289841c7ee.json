@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT \n            fee_type,\n            amount,\n            fee_description,\n            transaction_id\n        FROM moon_transaction_fees\n        WHERE transaction_id = $1\n        ",
+  "query": "\n        SELECT\n            fee_type,\n            amount,\n            fee_description,\n            transaction_id\n        FROM moon_transaction_fees\n        WHERE transaction_id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -36,5 +36,5 @@
       false
     ]
   },
-  "hash": "18f8aee173cd4e4b588180f6afb963bdcf49a3dcb17d63f4f977b94f8ee69c66"
+  "hash": "6f7348547fce37af7d474e813204dca42eab62e77b3e11d39b6992289841c7ee"
 }

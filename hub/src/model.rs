@@ -136,6 +136,9 @@ pub struct ContractRequestSchema {
     /// address.
     pub borrower_loan_address: Option<String>,
     pub integration: Integration,
+    /// If the `integration` field is set to `Integration::PayWithMoon`, this field indicates
+    /// whether the contract corresponds to a new card or an existing one.
+    pub moon_card_id: Option<Uuid>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, Copy)]
@@ -444,7 +447,6 @@ pub mod db {
         pub support_token: String,
         pub product_id: String,
         pub end_customer_id: String,
-        pub contract_id: String,
         pub borrower_id: String,
     }
 
@@ -562,7 +564,6 @@ impl From<db::MoonCard> for moon::Card {
             support_token: value.support_token,
             product_id: Uuid::from_str(&value.product_id).expect("uuid"),
             end_customer_id: value.end_customer_id,
-            contract_id: value.contract_id,
             borrower_id: value.borrower_id,
         }
     }
@@ -580,7 +581,6 @@ impl From<moon::Card> for db::MoonCard {
             support_token: value.support_token,
             product_id: value.product_id.to_string(),
             end_customer_id: value.end_customer_id,
-            contract_id: value.contract_id,
             borrower_id: value.borrower_id,
         }
     }

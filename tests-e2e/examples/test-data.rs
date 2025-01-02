@@ -55,10 +55,9 @@ async fn main() -> Result<()> {
 
     let offers = create_loan_offers(&pool, lender.id.as_str()).await?;
 
-    let (_requested_contract, approved_contract) =
-        create_sample_contracts(&pool, &borrower, &offers[0], lender.id.as_str()).await?;
+    create_sample_contracts(&pool, &borrower, &offers[0], lender.id.as_str()).await?;
 
-    create_sample_card(&pool, &borrower, &approved_contract).await?;
+    create_sample_card(&pool, &borrower).await?;
 
     Ok(())
 }
@@ -98,13 +97,9 @@ async fn create_sample_contracts(
     Ok((contract1, contract2))
 }
 
-async fn create_sample_card(
-    pool: &Pool<Postgres>,
-    borrower: &User,
-    contract: &Contract,
-) -> Result<Card> {
+async fn create_sample_card(pool: &Pool<Postgres>, borrower: &User) -> Result<Card> {
     let borrower_id = borrower.id.as_str();
-    let contract_id = contract.id.as_str();
+    let end_customer_id = Uuid::new_v4();
 
     let cards = db::moon::get_borrower_cards(pool, borrower_id).await?;
     if !cards.is_empty() {
@@ -127,13 +122,13 @@ async fn create_sample_card(
         cvv: "064".to_string(),
         support_token: "028084d792".to_string(),
         product_id: Uuid::from_str("8f1c611d-098d-4f61-b106-f7b6d344b1ae").expect("to be valid"),
-        end_customer_id: format!("{borrower_id}/{contract_id}"),
-        contract_id: contract_id.to_string(),
+        end_customer_id: end_customer_id.to_string(),
         borrower_id: borrower_id.to_string(),
     };
+
     tracing::debug!(
         card_id = card.id.to_string(),
-        "Inserting sample card into tdb"
+        "Inserting sample card into DB"
     );
 
     db::moon::insert_card(pool, card.clone()).await?;

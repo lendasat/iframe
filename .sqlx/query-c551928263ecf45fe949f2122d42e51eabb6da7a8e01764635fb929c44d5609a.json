@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            id,\n            address,\n            usd_amount_owed,\n            contract_id,\n            lender_id,\n            borrower_id,\n            is_paid,\n            created_at,\n            updated_at\n        FROM moon_invoices\n        WHERE id = $1\n        ",
+  "query": "\n        SELECT\n            id,\n            address,\n            usd_amount_owed,\n            contract_id,\n            card_id,\n            lender_id,\n            borrower_id,\n            is_paid,\n            created_at,\n            updated_at\n        FROM moon_invoices\n        WHERE id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -25,26 +25,31 @@
       },
       {
         "ordinal": 4,
-        "name": "lender_id",
+        "name": "card_id",
         "type_info": "Bpchar"
       },
       {
         "ordinal": 5,
-        "name": "borrower_id",
+        "name": "lender_id",
         "type_info": "Bpchar"
       },
       {
         "ordinal": 6,
+        "name": "borrower_id",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 7,
         "name": "is_paid",
         "type_info": "Bool"
       },
       {
-        "ordinal": 7,
+        "ordinal": 8,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 8,
+        "ordinal": 9,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -59,6 +64,7 @@
       false,
       false,
       false,
+      true,
       false,
       false,
       false,
@@ -66,5 +72,5 @@
       false
     ]
   },
-  "hash": "1981576ed561b51980e71ba5ba2b006b3deabc48ab944c1777fae0a59cf7d2b4"
+  "hash": "c551928263ecf45fe949f2122d42e51eabb6da7a8e01764635fb929c44d5609a"
 }

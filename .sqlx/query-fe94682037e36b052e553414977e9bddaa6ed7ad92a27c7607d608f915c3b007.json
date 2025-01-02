@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT \n            transaction_id,\n            card_public_id,\n            transaction_status AS \"transaction_status: TransactionStatus\",\n            datetime,\n            merchant,\n            amount,\n            ledger_currency,\n            amount_fees_in_ledger_currency,\n            amount_in_transaction_currency,\n            transaction_currency,\n            amount_fees_in_transaction_currency\n        FROM moon_transaction_data\n        WHERE card_public_id = $1\n        ",
+  "query": "\n        SELECT\n            transaction_id,\n            card_public_id,\n            transaction_status AS \"transaction_status: TransactionStatus\",\n            datetime,\n            merchant,\n            amount,\n            ledger_currency,\n            amount_fees_in_ledger_currency,\n            amount_in_transaction_currency,\n            transaction_currency,\n            amount_fees_in_transaction_currency\n        FROM moon_transaction_data\n        WHERE card_public_id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -93,5 +93,5 @@
       false
     ]
   },
-  "hash": "5fac4a2f2a84c70cc973d25448a9b155a43fd885bc0cd35ebef7890ba9c063f4"
+  "hash": "fe94682037e36b052e553414977e9bddaa6ed7ad92a27c7607d608f915c3b007"
 }
