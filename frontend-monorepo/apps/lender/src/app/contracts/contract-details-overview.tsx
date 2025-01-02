@@ -1,6 +1,5 @@
 import { faExclamationCircle, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { useWallet } from "@frontend-monorepo/browser-wallet";
 import type { Contract } from "@frontend-monorepo/http-client-lender";
 import {
   ContractStatus,
@@ -433,17 +432,12 @@ const ContractStatusDetails = ({
   const { approveContract, rejectContract, principalGiven, markPrincipalConfirmed } = useLenderHttpClient();
   const [isLoading, setIsLoading] = useState(false);
   const [txid, setTxid] = useState("");
-  const { getXpub, doesWalletExist } = useWallet();
-
-  const [showCreateWalletModal, setShowCreateWalletModal] = useState(false);
 
   const onContractApprove = async () => {
     try {
       setIsLoading(true);
 
-      const xpub = await getXpub();
-
-      await approveContract(contract.id, xpub);
+      await approveContract(contract.id);
       onSuccess();
     } catch (error) {
       onError(`${error}`);
@@ -486,16 +480,6 @@ const ContractStatusDetails = ({
     }
   };
 
-  const onCreateWalletButtonClick = async () => {
-    if (doesWalletExist) {
-      console.log("No need to create a wallet!");
-      return;
-    }
-
-    setShowCreateWalletModal(true);
-  };
-  const handleCloseCreateWalletModal = () => setShowCreateWalletModal(false);
-
   if (contract.can_recover_collateral_manually) {
     return <ContractRecovery contract={contract} />;
   }
@@ -504,12 +488,8 @@ const ContractStatusDetails = ({
     case ContractStatus.Requested:
       return (
         <ContractRequested
-          showCreateWalletModal={showCreateWalletModal}
-          handleCloseCreateWalletModal={handleCloseCreateWalletModal}
-          doesWalletExist={doesWalletExist}
           isLoading={isLoading}
           onContractApprove={onContractApprove}
-          onCreateWalletButtonClick={onCreateWalletButtonClick}
           onContractReject={onContractReject}
         />
       );

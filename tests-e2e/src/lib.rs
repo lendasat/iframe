@@ -80,6 +80,7 @@ mod tests {
         assert!(res.status().is_success());
 
         // 1. Lender creates loan offer.
+        let lender_xpub = "tpubD6NzVbkrYhZ4Yon2URjspXp7Y7DKaBaX1ZVMCEnhc8zCrj1AuJyLrhmAKFmnkqVULW6znfEMLvgukHBVJD4fukpVYre3dpHXmkbcpvtviro".parse().unwrap();
         let loan_offer = CreateLoanOfferSchema {
             name: "a fantastic loan".to_string(),
             min_ltv: dec!(0.5),
@@ -94,6 +95,7 @@ mod tests {
             loan_repayment_address:
                 "0x055098f73c89ca554f98c0298ce900235d2e1b4205a7ca629ae017518521c2c3".to_string(),
             auto_accept: false,
+            lender_xpub,
         };
 
         let res = lender
@@ -145,10 +147,9 @@ mod tests {
 
         // 3. Lender accepts contract request.
 
-        let xpub = "tpubD6NzVbkrYhZ4Yon2URjspXp7Y7DKaBaX1ZVMCEnhc8zCrj1AuJyLrhmAKFmnkqVULW6znfEMLvgukHBVJD4fukpVYre3dpHXmkbcpvtviro";
         let res = lender
             .put(format!(
-                "http://localhost:7338/api/contracts/{}/approve?xpub={xpub}",
+                "http://localhost:7338/api/contracts/{}/approve",
                 contract.id
             ))
             .send()
@@ -424,6 +425,7 @@ mod tests {
         assert!(res.status().is_success());
 
         // 1. Lender creates loan offer.
+        let lender_xpub = "tpubD6NzVbkrYhZ4Yon2URjspXp7Y7DKaBaX1ZVMCEnhc8zCrj1AuJyLrhmAKFmnkqVULW6znfEMLvgukHBVJD4fukpVYre3dpHXmkbcpvtviro".parse().unwrap();
         let loan_offer = CreateLoanOfferSchema {
             name: "a fantastic loan".to_string(),
             min_ltv: dec!(0.5),
@@ -438,6 +440,7 @@ mod tests {
             loan_repayment_address:
                 "0x055098f73c89ca554f98c0298ce900235d2e1b4205a7ca629ae017518521c2c3".to_string(),
             auto_accept: false,
+            lender_xpub,
         };
 
         let res = lender
@@ -485,10 +488,9 @@ mod tests {
 
         // 3. Lender accepts contract request.
 
-        let xpub = "tpubD6NzVbkrYhZ4Yon2URjspXp7Y7DKaBaX1ZVMCEnhc8zCrj1AuJyLrhmAKFmnkqVULW6znfEMLvgukHBVJD4fukpVYre3dpHXmkbcpvtviro";
         let res = lender
             .put(format!(
-                "http://localhost:7338/api/contracts/{}/approve?xpub={xpub}",
+                "http://localhost:7338/api/contracts/{}/approve",
                 contract.id
             ))
             .send()

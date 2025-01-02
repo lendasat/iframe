@@ -111,6 +111,7 @@ pub struct CreateLoanOfferSchema {
     pub loan_asset_chain: LoanAssetChain,
     pub loan_repayment_address: String,
     pub auto_accept: bool,
+    pub lender_xpub: Xpub,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -175,6 +176,7 @@ pub struct LoanOffer {
     #[serde(with = "time::serde::rfc3339")]
     pub updated_at: OffsetDateTime,
     pub auto_accept: bool,
+    pub lender_xpub: Option<String>,
 }
 
 #[derive(Debug, Deserialize, sqlx::Type, Serialize, Clone, PartialEq)]

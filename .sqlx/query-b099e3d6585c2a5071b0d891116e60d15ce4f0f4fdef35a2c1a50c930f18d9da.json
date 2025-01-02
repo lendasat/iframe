@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        INSERT INTO loan_offers (\n          id,\n          lender_id,\n          name,\n          min_ltv,\n          interest_rate,\n          loan_amount_min,\n          loan_amount_max,\n          loan_amount_reserve,\n          duration_months_min,\n          duration_months_max,\n          loan_asset_type,\n          loan_asset_chain,\n          status,\n          loan_repayment_address,\n          auto_accept\n        )\n        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)\n        RETURNING\n          id,\n          lender_id,\n          name,\n          min_ltv,\n          interest_rate,\n          loan_amount_min,\n          loan_amount_max,\n          loan_amount_reserve,\n          loan_amount_reserve as loan_amount_reserve_remaining,\n          duration_months_min,\n          duration_months_max,\n          loan_asset_type AS \"loan_asset_type: crate::model::LoanAssetType\",\n          loan_asset_chain AS \"loan_asset_chain: crate::model::LoanAssetChain\",\n          status AS \"status: crate::model::LoanOfferStatus\",\n          loan_repayment_address,\n          auto_accept,\n          created_at,\n          updated_at\n        ",
+  "query": "\n        INSERT INTO loan_offers (\n          id,\n          lender_id,\n          name,\n          min_ltv,\n          interest_rate,\n          loan_amount_min,\n          loan_amount_max,\n          loan_amount_reserve,\n          duration_months_min,\n          duration_months_max,\n          loan_asset_type,\n          loan_asset_chain,\n          status,\n          loan_repayment_address,\n          auto_accept,\n          lender_xpub\n        )\n        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)\n        RETURNING\n          id,\n          lender_id,\n          name,\n          min_ltv,\n          interest_rate,\n          loan_amount_min,\n          loan_amount_max,\n          loan_amount_reserve,\n          loan_amount_reserve as loan_amount_reserve_remaining,\n          duration_months_min,\n          duration_months_max,\n          loan_asset_type AS \"loan_asset_type: crate::model::LoanAssetType\",\n          loan_asset_chain AS \"loan_asset_chain: crate::model::LoanAssetChain\",\n          status AS \"status: crate::model::LoanOfferStatus\",\n          loan_repayment_address,\n          auto_accept,\n          lender_xpub,\n          created_at,\n          updated_at\n        ",
   "describe": {
     "columns": [
       {
@@ -117,11 +117,16 @@
       },
       {
         "ordinal": 16,
+        "name": "lender_xpub",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 17,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 17,
+        "ordinal": 18,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -174,7 +179,8 @@
           }
         },
         "Varchar",
-        "Bool"
+        "Bool",
+        "Text"
       ]
     },
     "nullable": [
@@ -194,9 +200,10 @@
       false,
       false,
       false,
+      true,
       false,
       false
     ]
   },
-  "hash": "318f70e236a7817bd7b4189e1b293a3644476075ee37dea28a0b72ed5b6ac924"
+  "hash": "b099e3d6585c2a5071b0d891116e60d15ce4f0f4fdef35a2c1a50c930f18d9da"
 }

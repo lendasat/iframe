@@ -1,9 +1,9 @@
+use crate::approve_contract::approve_contract;
 use crate::bitmex_index_price_rest::get_bitmex_index_price;
 use crate::contract_liquidation;
 use crate::db;
 use crate::email::Email;
 use crate::mempool;
-use crate::mempool::TrackContractFunding;
 use crate::model::ContractStatus;
 use crate::model::LiquidationStatus;
 use crate::model::LoanAssetChain;
@@ -33,7 +33,6 @@ use axum::Extension;
 use axum::Json;
 use axum::Router;
 use bitcoin::address::NetworkUnchecked;
-use bitcoin::bip32::Xpub;
 use bitcoin::Address;
 use bitcoin::Amount;
 use bitcoin::PublicKey;
@@ -397,99 +396,25 @@ pub async fn get_contract(
     Ok((StatusCode::OK, Json(contract)))
 }
 
-#[derive(Debug, Deserialize)]
-pub struct ApproveQueryParam {
-    pub xpub: Xpub,
-}
-
 #[instrument(skip(data, user), err(Debug))]
 pub async fn put_approve_contract(
     State(data): State<Arc<AppState>>,
     Path(contract_id): Path<String>,
-    query_params: Query<ApproveQueryParam>,
     Extension(user): Extension<User>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    async {
-        let contract = db::contracts::load_contract_by_contract_id_and_lender_id(
-            &data.db,
-            contract_id.as_str(),
-            &user.id,
-        )
-        .await
-        .context("Failed to load contract request")?;
-
-        let wallet = data.wallet.lock().await;
-
-        let lender_xpub = query_params.xpub;
-        let (contract_address, contract_index) = wallet
-            .contract_address(
-                contract.borrower_pk,
-                &lender_xpub,
-                contract.contract_version,
-            )
-            .await?;
-
-        let borrower = db::borrowers::get_user_by_id(&data.db, contract.borrower_id.as_str())
-            .await
-            .context("Failed loading borrower")?
-            .context("Borrower not found")?;
-
-        let mut db_tx = data
-            .db
-            .begin()
-            .await
-            .context("Failed to start db transaction")?;
-
-        let contract = db::contracts::accept_contract_request(
-            &mut db_tx,
-            user.id.as_str(),
-            contract_id.as_str(),
-            contract_address.clone(),
-            contract_index,
-            lender_xpub,
-        )
-        .await
-        .context("Failed to accept contract request")?;
-
-        data.mempool
-            .send(TrackContractFunding::new(contract_id, contract_address))
-            .await?
-            .context("Failed to track accepted contract")?;
-
-        let loan_url = format!(
-            "{}/my-contracts/{}",
-            data.config.borrower_frontend_origin.to_owned(),
-            contract.id
-        );
-        let email = Email::new(data.config.clone());
-
-        // We don't want to fail this upwards because the contract request has already been
-        // approved.
-        if let Err(e) = async {
-            email
-                .send_loan_request_approved(borrower, loan_url.as_str())
-                .await
-                .context("Failed to send loan-request-approved email")?;
-
-            db::contract_emails::mark_loan_request_approved_as_sent(&data.db, &contract.id)
-                .await
-                .context("Failed to mark loan-request-approved email as sent")?;
-
-            anyhow::Ok(())
-        }
-        .await
-        {
-            tracing::error!("Failed at notifying borrower about loan request approval: {e:#}");
-        }
-
-        db_tx.commit().await.context("Failed writing to db")?;
-
-        anyhow::Ok(())
-    }
+    let wallet = data.wallet.lock().await;
+    approve_contract(
+        &data.db,
+        wallet,
+        &data.mempool,
+        &data.config,
+        contract_id,
+        &user.id,
+    )
     .await
     .map_err(|e| {
         let error_response = ErrorResponse {
-            message: format!("Database error: {e:#}"),
+            message: format!("Database error: {e:?}"),
         };
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
     })?;

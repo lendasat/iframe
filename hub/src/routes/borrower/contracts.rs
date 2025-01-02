@@ -1,3 +1,5 @@
+use crate::approve_contract;
+use crate::approve_contract::approve_contract;
 use crate::bitmex_index_price_rest::get_bitmex_index_price;
 use crate::db;
 use crate::email::Email;
@@ -36,6 +38,7 @@ use axum::routing::put;
 use axum::Extension;
 use axum::Json;
 use axum::Router;
+use bitcoin::bip32::Xpub;
 use bitcoin::consensus::encode::FromHexError;
 use bitcoin::Amount;
 use bitcoin::PublicKey;
@@ -45,6 +48,7 @@ use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
 use serde::Deserialize;
 use serde::Serialize;
+use std::str::FromStr;
 use std::sync::Arc;
 use time::OffsetDateTime;
 use tracing::instrument;
@@ -217,6 +221,8 @@ async fn post_contract_request(
     let origination_fee = calculate_origination_fee(body.loan_amount, fee.fee, initial_price)
         .map_err(Error::OriginationFeeCalculation)?;
 
+    let lender_xpub = offer.lender_xpub.ok_or(Error::MissingLenderXpub)?;
+    let lender_xpub = Xpub::from_str(&lender_xpub).expect("valid lender Xpub");
     let contract = db::contracts::insert_contract_request(
         &data.db,
         contract_id,
@@ -232,8 +238,8 @@ async fn post_contract_request(
         body.borrower_pk,
         borrower_loan_address.as_str(),
         body.integration,
+        lender_xpub,
         ContractVersion::TwoOfThree,
-        offer.auto_accept,
     )
     .await
     .map_err(Error::Database)?;
@@ -245,6 +251,21 @@ async fn post_contract_request(
             .persist_invoice(&invoice)
             .await
             .map_err(Error::Database)?;
+    }
+
+    if offer.auto_accept {
+        let wallet = data.wallet.lock().await;
+
+        approve_contract(
+            &data.db,
+            wallet,
+            &data.mempool,
+            &data.config,
+            contract.id.clone(),
+            &lender_id,
+        )
+        .await
+        .map_err(Error::from)?;
     }
 
     let lender_loan_url = format!(
@@ -712,6 +733,26 @@ async fn map_to_api_contract(
     Ok(contract)
 }
 
+async fn is_us_ip(ip: &str) -> anyhow::Result<bool> {
+    #[derive(Deserialize)]
+    struct GeoInfo {
+        country: Option<String>,
+    }
+
+    // Local development address can be ignored.
+    if ip == "127.0.0.1" {
+        return Ok(false);
+    }
+
+    let url = format!("https://get.geojs.io/v1/ip/country/{ip}.json");
+    let response = reqwest::get(&url).await?;
+    let geo_info: GeoInfo = response.json().await?;
+
+    let country_code = geo_info.country.context("Missing country code")?;
+
+    Ok(country_code == "US")
+}
+
 /// All the errors related to the `contracts` REST API.
 #[derive(Debug)]
 enum Error {
@@ -765,8 +806,14 @@ enum Error {
     MissingContractIndex,
     /// Can't claim collateral without collateral address.
     MissingCollateralAddress,
-    /// Can't claim collateral without lender Xpub.
+    /// Can't do much of anything without lender Xpub.
     MissingLenderXpub,
+    /// Failed to generate contract address.
+    ContractAddress(anyhow::Error),
+    /// Referenced borrower does not exist.
+    MissingBorrower,
+    /// Failed to track accepted contract using Mempool API.
+    TrackContract(anyhow::Error),
     /// Can't find collateral outputs to claim.
     MissingCollateralOutputs,
     /// Failed to create claim-collateral PSBT.
@@ -968,6 +1015,30 @@ impl IntoResponse for Error {
                     "Something went wrong".to_owned(),
                 )
             }
+            Error::ContractAddress(e) => {
+                tracing::error!("Could not generate contract address: {e:#}");
+
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
+            Error::MissingBorrower => {
+                tracing::error!("Could not find referenced borrower");
+
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
+            Error::TrackContract(e) => {
+                tracing::error!("Failed to track accepted contract: {e:#}");
+
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
             Error::MissingCollateralOutputs => {
                 tracing::error!("Could not find collateral outputs to claim");
 
@@ -1014,22 +1085,14 @@ impl IntoResponse for Error {
     }
 }
 
-async fn is_us_ip(ip: &str) -> anyhow::Result<bool> {
-    #[derive(Deserialize)]
-    struct GeoInfo {
-        country: Option<String>,
+impl From<approve_contract::Error> for Error {
+    fn from(value: approve_contract::Error) -> Self {
+        match value {
+            approve_contract::Error::Database(e) => Error::Database(e),
+            approve_contract::Error::MissingLenderXpub => Error::MissingLenderXpub,
+            approve_contract::Error::ContractAddress(e) => Error::ContractAddress(e),
+            approve_contract::Error::MissingBorrower => Error::MissingBorrower,
+            approve_contract::Error::TrackContract(e) => Error::TrackContract(e),
+        }
     }
-
-    // Local development address can be ignored.
-    if ip == "127.0.0.1" {
-        return Ok(false);
-    }
-
-    let url = format!("https://get.geojs.io/v1/ip/country/{ip}.json");
-    let response = reqwest::get(&url).await?;
-    let geo_info: GeoInfo = response.json().await?;
-
-    let country_code = geo_info.country.context("Missing country code")?;
-
-    Ok(country_code == "US")
 }

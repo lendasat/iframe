@@ -85,10 +85,28 @@ async fn create_sample_contracts(
         let approved = approved.first().cloned().expect("to be one").clone();
         (requested, approved)
     } else {
-        let contract1 =
-            create_loan_request(pool, offer, offer.loan_amount_min, borrower.id.as_str()).await?;
-        let contract2 =
-            create_loan_request(pool, offer, offer.loan_amount_max, borrower.id.as_str()).await?;
+        let lender_xpub = offer
+            .lender_xpub
+            .clone()
+            .expect("lender Xpub")
+            .parse()
+            .expect("valid lender Xpub");
+        let contract1 = create_loan_request(
+            pool,
+            offer,
+            offer.loan_amount_min,
+            borrower.id.as_str(),
+            lender_xpub,
+        )
+        .await?;
+        let contract2 = create_loan_request(
+            pool,
+            offer,
+            offer.loan_amount_max,
+            borrower.id.as_str(),
+            lender_xpub,
+        )
+        .await?;
         (contract1, contract2)
     };
 
@@ -151,10 +169,8 @@ async fn accept_loan_request(
             .expect("to be a valid address")
             .assume_checked(),
         1,
-        Xpub::from_str("tpubDAenfwNu5GyCJWv8oqRAckdKMSUoZjgVF5p8WvQwHQeXjDhAHmGrPa4a4y2Fn7HF2nfCLefJanHV3ny1UY25MRVogizB2zRUdAo7Tr9XAjm")
-            .expect("valid xpub"),
     )
-        .await?;
+    .await?;
     transaction.commit().await?;
     Ok(contract)
 }
@@ -164,6 +180,7 @@ async fn create_loan_request(
     offer: &LoanOffer,
     loan_amount: Decimal,
     borrower_id: &str,
+    lender_xpub: Xpub,
 ) -> Result<Contract> {
     let id = Uuid::new_v4();
     let initial_ltv = dec!(0.5);
@@ -188,8 +205,8 @@ async fn create_loan_request(
             .expect("to be valid pk"),
         "0x34e3f03F5efFaF7f70Bb1FfC50274697096ebe9d",
         Integration::StableCoin,
+        lender_xpub,
         ContractVersion::TwoOfThree,
-        false,
     )
     .await
 }
@@ -202,6 +219,7 @@ async fn create_loan_offers(pool: &Pool<Postgres>, lender_id: &str) -> Result<Ve
         return Ok(offers);
     }
 
+    let lender_xpub = "tpubDAenfwNu5GyCJWv8oqRAckdKMSUoZjgVF5p8WvQwHQeXjDhAHmGrPa4a4y2Fn7HF2nfCLefJanHV3ny1UY25MRVogizB2zRUdAo7Tr9XAjm".parse().expect("valid Xpub");
     let eth_offer = db::loan_offers::insert_loan_offer(
         pool,
         CreateLoanOfferSchema {
@@ -217,6 +235,7 @@ async fn create_loan_offers(pool: &Pool<Postgres>, lender_id: &str) -> Result<Ve
             loan_asset_chain: LoanAssetChain::Ethereum,
             loan_repayment_address: "0x34e3f03F5efFaF7f70Bb1FfC50274697096ebe9d".to_string(),
             auto_accept: true,
+            lender_xpub,
         },
         lender_id,
     )
@@ -237,6 +256,7 @@ async fn create_loan_offers(pool: &Pool<Postgres>, lender_id: &str) -> Result<Ve
             loan_asset_chain: LoanAssetChain::Polygon,
             loan_repayment_address: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619".to_string(),
             auto_accept: true,
+            lender_xpub,
         },
         lender_id,
     )
