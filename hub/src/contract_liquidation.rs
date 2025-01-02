@@ -14,7 +14,7 @@ use tokio::sync::MutexGuard;
 pub async fn prepare_liquidation_psbt(
     wallet: &mut MutexGuard<'_, Wallet>,
     contract: crate::model::Contract,
-    shift_address: Address<NetworkUnchecked>,
+    address: Address<NetworkUnchecked>,
     lender_amount: Amount,
     contract_index: u32,
     mempool: xtra::Address<mempool::Actor>,
@@ -46,7 +46,7 @@ pub async fn prepare_liquidation_psbt(
         collateral_outputs,
         origination_fee,
         lender_amount,
-        shift_address.assume_checked(),
+        address.assume_checked(),
         contract.borrower_btc_address.assume_checked(),
         fee_rate_sats_per_vbyte,
         contract.contract_version,
