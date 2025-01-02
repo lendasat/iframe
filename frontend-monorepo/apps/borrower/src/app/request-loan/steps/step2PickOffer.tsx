@@ -16,6 +16,7 @@ import {
   usePrice,
 } from "@frontend-monorepo/ui-shared";
 import { Box, Button, Callout, Flex, Grid, Heading, Separator, Spinner, Text, TextField } from "@radix-ui/themes";
+import axios from "axios";
 import { Network, validate } from "bitcoin-address-validation";
 import { useCallback, useEffect, useState } from "react";
 import type { ChangeEvent } from "react";
@@ -100,6 +101,18 @@ function findSmallestLoanOffer(loanOffers: LoanOffer[]): LoanOffer | undefined {
   );
 }
 
+async function isInUS(): Promise<boolean> {
+  try {
+    const response = await axios.get("https://get.geojs.io/v1/ip/country.json");
+    const data = response.data;
+
+    return data.country === "US";
+  } catch (error) {
+    console.error("Error fetching geo-location data:", error);
+    return true; // Default to true in case of an error
+  }
+}
+
 export const Step2PickOffer = () => {
   const { getNextPublicKey } = useWallet();
   const { getLoanOffers, postContractRequest } = useBorrowerHttpClient();
@@ -120,7 +133,12 @@ export const Step2PickOffer = () => {
 
   const { getUserCards } = useBorrowerHttpClient();
   const { value: moonCards, error: userCardsError } = useAsync(async () => {
-    return getUserCards();
+    // Users located in the US cannot top up cards.
+    if (await isInUS()) {
+      return [];
+    } else {
+      return getUserCards();
+    }
   });
 
   if (userCardsError) {

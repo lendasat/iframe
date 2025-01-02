@@ -15,6 +15,8 @@ use crate::model::PsbtQueryParams;
 use crate::model::TransactionType;
 use crate::model::User;
 use crate::routes::borrower::auth::jwt_auth;
+use crate::routes::user_connection_details_middleware;
+use crate::routes::user_connection_details_middleware::UserConnectionDetails;
 use crate::routes::AppState;
 use anyhow::Context;
 use axum::extract::rejection::JsonRejection;
@@ -98,6 +100,12 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
                 jwt_auth::auth,
             )),
         )
+        .layer(
+            tower::ServiceBuilder::new().layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                user_connection_details_middleware::ip_user_agent,
+            )),
+        )
         .with_state(app_state)
 }
 
@@ -105,6 +113,7 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
 async fn post_contract_request(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<User>,
+    Extension(connection_details): Extension<UserConnectionDetails>,
     AppJson(body): AppJson<ContractRequestSchema>,
 ) -> Result<AppJson<Contract>, Error> {
     let offer = db::loan_offers::loan_by_id(&data.db, &body.loan_id)
@@ -130,7 +139,19 @@ async fn post_contract_request(
             }
 
             let card_id = match body.moon_card_id {
-                Some(id) => id,
+                Some(id) => {
+                    let client_ip = connection_details
+                        .ip
+                        .ok_or(Error::CannotTopUpMoonCardWithoutIp)?;
+
+                    let is_us_ip = is_us_ip(&client_ip).await.map_err(Error::GeoJs)?;
+
+                    if is_us_ip {
+                        return Err(Error::CannotTopUpMoonCardFromUs);
+                    } else {
+                        id
+                    }
+                }
                 None => {
                     let card = data
                         .moon
@@ -690,6 +711,12 @@ enum Error {
         chain: LoanAssetChain,
         asset: LoanAssetType,
     },
+    /// Moon cards cannot be topped up if we don't know the client IP.
+    CannotTopUpMoonCardWithoutIp,
+    /// Failed to get country code of IP from GeoJS.
+    GeoJs(anyhow::Error),
+    /// Moon cards cannot be topped up from the US.
+    CannotTopUpMoonCardFromUs,
     /// Failed to create Moon card.
     MoonCardGeneration(anyhow::Error),
     /// Failed to generate Moon invoice.
@@ -803,6 +830,22 @@ impl IntoResponse for Error {
                     "Cannot create loan request for Moon card with asset {asset:?} \
                      on chain {chain:?}. Moon only supports USDC on Polygon"
                 ),
+            ),
+            Error::CannotTopUpMoonCardWithoutIp => (
+                StatusCode::UNAVAILABLE_FOR_LEGAL_REASONS,
+                "Request IP required".to_owned(),
+            ),
+            Error::GeoJs(e) => {
+                tracing::error!("Failed to top up Moon card: {e:#}");
+
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
+            Error::CannotTopUpMoonCardFromUs => (
+                StatusCode::UNAVAILABLE_FOR_LEGAL_REASONS,
+                "Cannot top up Moon card from the US".to_owned(),
             ),
             Error::MoonCardGeneration(e) => {
                 tracing::error!("Failed to generate Moon card: {e:#}");
@@ -928,4 +971,24 @@ impl IntoResponse for Error {
 
         (status, AppJson(ErrorResponse { message })).into_response()
     }
+}
+
+async fn is_us_ip(ip: &str) -> anyhow::Result<bool> {
+    #[derive(Deserialize)]
+    struct GeoInfo {
+        country: Option<String>,
+    }
+
+    // Local development address can be ignored.
+    if ip == "127.0.0.1" {
+        return Ok(false);
+    }
+
+    let url = format!("https://get.geojs.io/v1/ip/country/{ip}.json");
+    let response = reqwest::get(&url).await?;
+    let geo_info: GeoInfo = response.json().await?;
+
+    let country_code = geo_info.country.context("Missing country code")?;
+
+    Ok(country_code == "US")
 }
