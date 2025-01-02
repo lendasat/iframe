@@ -2,7 +2,6 @@ import { ContractStatus, useLenderHttpClient } from "@frontend-monorepo/http-cli
 import { formatCurrency } from "@frontend-monorepo/ui-shared";
 import { Box, Flex, Grid, Heading, Text } from "@radix-ui/themes";
 import { useAsync } from "react-use";
-import { Charts } from "./charts";
 import DashboardContracts from "./dashoard-contracts";
 
 function Dashboard() {
@@ -66,7 +65,6 @@ function Dashboard() {
 
         <DashboardContracts contracts={contracts} />
 
-        <Charts />
       </Box>
     </Box>
   );
