@@ -38,6 +38,7 @@ export type ContractStatusFilterKey =
   | "rejected"
   | "expired"
   | "canceled"
+  | "defaulted"
   | "dispute";
 
 export type ContractStatusFilter = Record<ContractStatusFilterKey, boolean>;
@@ -301,6 +302,18 @@ export const ContractDetailsTable = ({
                             onCheckedChange={() => onCheckedChange("canceled")}
                           />
                           <Text>Canceled</Text>
+                        </Flex>
+                      </DropdownMenu.Item>
+
+                      <DropdownMenu.Item
+                        onSelect={(e) => e.preventDefault()}
+                      >
+                        <Flex gap="2" align="center">
+                          <Checkbox
+                            checked={contractStatusFilter["defaulted"]}
+                            onCheckedChange={() => onCheckedChange("defaulted")}
+                          />
+                          <Text>Defaulted</Text>
                         </Flex>
                       </DropdownMenu.Item>
 
