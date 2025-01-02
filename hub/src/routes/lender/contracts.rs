@@ -102,10 +102,9 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
         )
         .route(
             "/api/contracts/:id/liquidation-to-stablecoin-psbt",
-            post(post_build_liquidation_to_stablecoin_psbt).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_auth::auth,
-            )),
+            post(post_build_liquidation_to_stablecoin_psbt).route_layer(
+                middleware::from_fn_with_state(app_state.clone(), jwt_auth::auth),
+            ),
         )
         .route(
             "/api/contracts/:id/broadcast-liquidation",
@@ -988,11 +987,12 @@ async fn post_build_liquidation_to_stablecoin_psbt(
             error_response(StatusCode::BAD_REQUEST, "Invalid contract id")
         })?;
 
-    let lender_amount = calculate_interest(
-        contract.loan_amount,
-        offer.interest_rate,
-        contract.duration_months as u32,
-    );
+    let lender_amount = contract.loan_amount
+        + calculate_interest(
+            contract.loan_amount,
+            offer.interest_rate,
+            contract.duration_months as u32,
+        );
 
     let (shift_address, lender_amount, settle_address, settle_amount) = data
         .sideshift
@@ -1180,8 +1180,8 @@ fn calculate_lender_liquidation_amount(
     duration_months: u32,
     price: Decimal,
 ) -> anyhow::Result<Amount> {
-    let owed_amount_usd =
-        calculate_interest(loan_amount_usd, yearly_interest_rate, duration_months);
+    let owed_amount_usd = loan_amount_usd
+        + calculate_interest(loan_amount_usd, yearly_interest_rate, duration_months);
 
     let owed_amount_btc = owed_amount_usd
         .checked_div(price)
@@ -1194,14 +1194,16 @@ fn calculate_lender_liquidation_amount(
     Ok(owed_amount)
 }
 
+/// Calculates the interest for the provided `duration_months`.
+///
+/// Note: does not compound interest
 fn calculate_interest(
     loan_amount_usd: Decimal,
     yearly_interest_rate: Decimal,
     duration_months: u32,
 ) -> Decimal {
     let monthly_interest_rate = yearly_interest_rate / dec!(12);
-    let interest_usd = loan_amount_usd * monthly_interest_rate * Decimal::from(duration_months);
-    loan_amount_usd + interest_usd
+    loan_amount_usd * monthly_interest_rate * Decimal::from(duration_months)
 }
 
 #[derive(Debug, Serialize)]
@@ -1387,5 +1389,26 @@ mod tests {
         );
 
         assert!(res.is_err())
+    }
+
+    #[test]
+    fn test_calculate_interest() {
+        let loan_amount_usd = dec!(1_000);
+        let yearly_interest_rate = dec!(0.12);
+
+        let duration_months = 3;
+        let amount = calculate_interest(loan_amount_usd, yearly_interest_rate, duration_months);
+
+        assert_eq!(amount, dec!(30));
+
+        let duration_months = 12;
+        let amount = calculate_interest(loan_amount_usd, yearly_interest_rate, duration_months);
+
+        assert_eq!(amount, dec!(120));
+
+        let duration_months = 15;
+        let amount = calculate_interest(loan_amount_usd, yearly_interest_rate, duration_months);
+
+        assert_eq!(amount, dec!(150));
     }
 }
