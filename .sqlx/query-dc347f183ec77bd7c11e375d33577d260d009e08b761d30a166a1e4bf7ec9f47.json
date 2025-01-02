@@ -1,11 +1,21 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            UPDATE\n                contracts\n            SET\n                status = $1, updated_at = $2\n            WHERE\n                expiry_date <= $2 AND\n                status NOT IN ($3, $4, $5, $6, $7, $8, $9, $1)\n            RETURNING id;\n        ",
+  "query": "\n            UPDATE\n                contracts\n            SET\n                status = $1, updated_at = $2\n            WHERE\n                expiry_date <= $2 AND\n                status NOT IN ($3, $4, $5, $6, $7, $8, $9, $1)\n            RETURNING id, borrower_id, lender_id;\n        ",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
         "name": "id",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "borrower_id",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "lender_id",
         "type_info": "Bpchar"
       }
     ],
@@ -231,8 +241,10 @@
       ]
     },
     "nullable": [
+      false,
+      false,
       false
     ]
   },
-  "hash": "0b619ee263b0a2099f0fbe482d75b892dbf9a5c3f65eb202f0dbb294b7804b2a"
+  "hash": "dc347f183ec77bd7c11e375d33577d260d009e08b761d30a166a1e4bf7ec9f47"
 }

@@ -1,4 +1,8 @@
+use crate::config::Config;
 use crate::db;
+use crate::db::contracts::DefaultedContract;
+use crate::email::Email;
+use anyhow::Context;
 use anyhow::Result;
 use sqlx::Pool;
 use sqlx::Postgres;
@@ -19,11 +23,12 @@ const CHECK_CONTRACT_DEFAULT_SCHEDULER: &str = "0 0/30 * * * *";
 
 pub async fn add_contract_default_job(
     scheduler: &JobScheduler,
+    config: Config,
     database: Pool<Postgres>,
 ) -> Result<()> {
     let database = database.clone();
     let check_for_expiring_contracts_job =
-        create_contract_request_expiry_check(scheduler, database).await?;
+        create_contract_expiry_check(scheduler, config, database).await?;
     let uuid = scheduler.add(check_for_expiring_contracts_job).await?;
 
     tracing::debug!(
@@ -34,28 +39,71 @@ pub async fn add_contract_default_job(
     Ok(())
 }
 
-async fn create_contract_request_expiry_check(
+async fn create_contract_expiry_check(
     scheduler: &JobScheduler,
+    config: Config,
     db: Pool<Postgres>,
 ) -> Result<Job, JobSchedulerError> {
-    let mut check_for_expiring_contracts_job =
-        Job::new_async(CHECK_CONTRACT_DEFAULT_SCHEDULER, move |_uuid, _l| {
+    let mut check_for_expiring_contracts_job = Job::new_async(
+        CHECK_CONTRACT_DEFAULT_SCHEDULER,
+        move |_uuid, _l| {
             tracing::info!("Running job");
 
             Box::pin({
                 let db = db.clone();
+                let config = config.clone();
                 async move {
                     match db::contracts::default_expired_contracts(&db).await {
-                        Ok(contracts) => contracts.iter().for_each(|contract_id| {
-                            tracing::info!(contract_id, "Contract defaulted");
-                        }),
+                        Ok(contracts) => {
+                            for contract in contracts {
+                                tracing::info!(
+                                    contract_id = contract.contract_id,
+                                    lender_id = contract.lender_id,
+                                    borrower_id = contract.borrower_id,
+                                    "Notifying borrower and lender about defaulted contract."
+                                );
+
+                                tokio::spawn({
+                                    let config = config.clone();
+                                    let db = db.clone();
+                                    let contract = contract.clone();
+                                    async move {
+                                        if let Err(e) = notify_borrower_about_defaulted_loan(
+                                            db.clone(),
+                                            config.clone(),
+                                            contract.clone(),
+                                        )
+                                        .await
+                                        {
+                                            tracing::error!(
+                                                contract_id=contract.contract_id,
+                                                lender_id=contract.lender_id,
+                                                "Failed notify borrower about defaulted loan. Error: {e:#}");
+                                        }
+
+                                        if let Err(e) = notify_lender_about_defaulted_loan(
+                                            db.clone(),
+                                            config.clone(),
+                                            contract.clone(),
+                                        )
+                                        .await
+                                        {
+                                            tracing::error!(contract_id=contract.contract_id,
+                                                lender_id=contract.lender_id,
+                                                "Failed notify lender about defaulted loan. Error: {e:#}");
+                                        }
+                                    }
+                                });
+                            }
+                        }
                         Err(e) => {
                             tracing::error!("Failed to default expired contracts: {e:#}");
                         }
                     }
                 }
             })
-        })?;
+        },
+    )?;
 
     check_for_expiring_contracts_job
         .on_removed_notification_add(
@@ -73,4 +121,50 @@ async fn create_contract_request_expiry_check(
         .await?;
 
     Ok(check_for_expiring_contracts_job)
+}
+
+async fn notify_borrower_about_defaulted_loan(
+    db: Pool<Postgres>,
+    config: Config,
+    contract: DefaultedContract,
+) -> Result<()> {
+    let email = Email::new(config.clone());
+
+    let loan_url = format!(
+        "{}/my-contracts/{}",
+        config.borrower_frontend_origin, contract.contract_id
+    );
+
+    let borrower = db::borrowers::get_user_by_id(&db, contract.borrower_id.as_str())
+        .await?
+        .context("Could not find borrower")?;
+
+    email
+        .send_loan_defaulted_borrower(borrower, loan_url.as_str())
+        .await?;
+
+    Ok(())
+}
+
+async fn notify_lender_about_defaulted_loan(
+    db: Pool<Postgres>,
+    config: Config,
+    contract: DefaultedContract,
+) -> Result<()> {
+    let email = Email::new(config.clone());
+
+    let loan_url = format!(
+        "{}/my-contracts/{}",
+        config.lender_frontend_origin, contract.contract_id
+    );
+
+    let lender = db::lenders::get_user_by_id(&db, contract.lender_id.as_str())
+        .await?
+        .context("Could not find lender")?;
+
+    email
+        .send_loan_defaulted_lender(lender, loan_url.as_str())
+        .await?;
+
+    Ok(())
 }

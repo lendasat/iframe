@@ -165,7 +165,7 @@ async fn main() -> Result<()> {
     let sched = JobScheduler::new().await?;
 
     add_contract_request_expiry_job(&sched, db.clone()).await?;
-    add_contract_default_job(&sched, db.clone()).await?;
+    add_contract_default_job(&sched, config.clone(), db.clone()).await?;
     add_contract_close_to_expiry_job(&sched, config, db).await?;
 
     sched.start().await?;
