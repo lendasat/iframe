@@ -1,5 +1,9 @@
-import { ContractStatus } from "@frontend-monorepo/http-client-borrower";
-import { type Contract, contractStatusToLabelString, LiquidationStatus } from "@frontend-monorepo/http-client-lender";
+import {
+  type Contract,
+  ContractStatus,
+  contractStatusToLabelString,
+  LiquidationStatus,
+} from "@frontend-monorepo/http-client-lender";
 import { CurrencyFormatter, LtvProgressBar, usePrice } from "@frontend-monorepo/ui-shared";
 import { InfoCircledIcon, MixerHorizontalIcon } from "@radix-ui/react-icons";
 import { Badge, Box, Button, Callout, Checkbox, DropdownMenu, Flex, Heading, Table, Text } from "@radix-ui/themes";
@@ -34,6 +38,7 @@ type ContractStatusFilterKey =
   | "rejected"
   | "expired"
   | "defaulted"
+  | "undercollateralized"
   | "canceled"
   | "dispute";
 
@@ -113,6 +118,7 @@ export const AllContracts = ({ contracts: unfilteredContracts }: OpenContractsPr
     canceled: false,
     dispute: true,
     defaulted: true,
+    undercollateralized: true,
   });
 
   const [sortByColumn, setSortByColumn] = useState<ColumnFilterKey>("updatedAt");
@@ -132,37 +138,50 @@ export const AllContracts = ({ contracts: unfilteredContracts }: OpenContractsPr
   };
 
   const contracts = unfilteredContracts.filter((contract) => {
+    let filtered = false;
     switch (contract.status) {
       case ContractStatus.Requested:
-        return contractStatusFilter["requested"];
+        filtered = contractStatusFilter["requested"];
+        break;
       case ContractStatus.Approved:
       case ContractStatus.CollateralSeen:
       case ContractStatus.CollateralConfirmed:
-        return contractStatusFilter["opening"];
+        filtered = contractStatusFilter["opening"];
+        break;
       case ContractStatus.PrincipalGiven:
-        return contractStatusFilter["open"];
+        filtered = contractStatusFilter["open"];
+        break;
       case ContractStatus.Closing:
       case ContractStatus.RepaymentProvided:
       case ContractStatus.RepaymentConfirmed:
-        return contractStatusFilter["closing"];
+        filtered = contractStatusFilter["closing"];
+        break;
       case ContractStatus.Closed:
-        return contractStatusFilter["closed"];
+        filtered = contractStatusFilter["closed"];
+        break;
       case ContractStatus.Rejected:
-        return contractStatusFilter["rejected"];
+        filtered = contractStatusFilter["rejected"];
+        break;
       case ContractStatus.DisputeBorrowerStarted:
       case ContractStatus.DisputeLenderStarted:
       case ContractStatus.DisputeBorrowerResolved:
       case ContractStatus.DisputeLenderResolved:
-        return contractStatusFilter["dispute"];
+        filtered = contractStatusFilter["dispute"];
+        break;
       case ContractStatus.Cancelled:
-        return contractStatusFilter["canceled"];
+        filtered = contractStatusFilter["canceled"];
+        break;
       case ContractStatus.RequestExpired:
-        return contractStatusFilter["expired"];
+        filtered = contractStatusFilter["expired"];
+        break;
       case ContractStatus.Defaulted:
-        return contractStatusFilter["defaulted"];
-      default:
-        return contractStatusFilter["expired"];
+        filtered = contractStatusFilter["defaulted"];
+        break;
+      case ContractStatus.Undercollateralized:
+        filtered = contractStatusFilter["undercollateralized"];
+        break;
     }
+    return filtered;
   }).sort((a, b) => {
     let dif;
     switch (sortByColumn) {
