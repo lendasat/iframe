@@ -788,7 +788,7 @@ pub(crate) async fn default_expired_contracts(
                 status = $1, updated_at = $2
             WHERE
                 expiry_date <= $2 AND
-                status NOT IN ($3, $4, $5, $6, $7, $8, $9, $1)
+                status NOT IN ($3, $4, $5, $6, $7, $8, $9, $10, $11, $1)
             RETURNING id, borrower_id, lender_id;
         "#,
         db::ContractStatus::Defaulted as db::ContractStatus,
@@ -800,6 +800,8 @@ pub(crate) async fn default_expired_contracts(
         db::ContractStatus::Rejected as db::ContractStatus,
         db::ContractStatus::Cancelled as db::ContractStatus,
         db::ContractStatus::RequestExpired as db::ContractStatus,
+        db::ContractStatus::RepaymentProvided as db::ContractStatus,
+        db::ContractStatus::RepaymentConfirmed as db::ContractStatus,
     )
     .fetch_all(pool)
     .await?;
