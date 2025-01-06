@@ -34,7 +34,7 @@ export function contractStatusToLabelString(status: ContractStatus): string {
     case ContractStatus.CollateralConfirmed:
       return "Collateral Confirmed";
     case ContractStatus.PrincipalGiven:
-      return "Principal Disbursed";
+      return "Open";
     case ContractStatus.RepaymentProvided:
       return "Repayment Provided";
     case ContractStatus.RepaymentConfirmed:
