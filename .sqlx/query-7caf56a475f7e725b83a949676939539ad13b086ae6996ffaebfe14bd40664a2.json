@@ -118,7 +118,9 @@
                 "Cancelled",
                 "RequestExpired",
                 "Defaulted",
-                "Undercollateralized"
+                "Undercollateralized",
+                "RenewalRequested",
+                "Extended"
               ]
             }
           }

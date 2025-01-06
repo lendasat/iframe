@@ -231,7 +231,7 @@ impl xtra::Actor for Actor {
                             Some(ref contract_address) => contract_address,
                             None => {
                                 tracing::error!(
-                                    ?contract,
+                                    contract_id = contract.id,
                                     "Cannot track pending contract without contract address"
                                 );
                                 continue;
@@ -693,7 +693,10 @@ impl xtra::Handler<NewBlockHeight> for Actor {
                 )
                 .await
                 {
-                    tracing::error!("Failed at notifying lender about funded contract {err:?}");
+                    tracing::error!(
+                        contract_id = contract.id,
+                        "Failed at notifying lender about funded contract {err:?}"
+                    );
                 }
             }
         }

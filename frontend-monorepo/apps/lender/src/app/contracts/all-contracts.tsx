@@ -19,11 +19,13 @@ type ColumnFilter = Record<ColumnFilterKey, boolean>;
 
 type ContractStatusFilterKey =
   | "requested"
+  | "renewalRequested"
   | "approved"
   | "opening"
   | "open"
   | "closing"
   | "closed"
+  | "extended"
   | "rejected"
   | "expired"
   | "canceled"
@@ -57,16 +59,18 @@ export const AllContracts = ({ contracts: unfilteredContracts, header }: OpenCon
 
   const [contractStatusFilter, setContractStatusFilter] = useState<ContractStatusFilter>({
     requested: true,
+    renewalRequested: true,
     approved: true,
     opening: true,
     open: true,
-    closing: true,
-    closed: true,
+    closing: false,
+    closed: false,
+    extended: false,
     rejected: false,
     expired: false,
     canceled: false,
     collateralSeen: false,
-    repaymentProvided: false,
+    repaymentProvided: true,
     repaymentConfirmed: false,
     dispute: true,
     defaulted: true,
@@ -95,6 +99,9 @@ export const AllContracts = ({ contracts: unfilteredContracts, header }: OpenCon
       case ContractStatus.Requested:
         filtered = contractStatusFilter["requested"];
         break;
+      case ContractStatus.RenewalRequested:
+        filtered = contractStatusFilter["renewalRequested"];
+        break;
       case ContractStatus.Approved:
       case ContractStatus.CollateralSeen:
       case ContractStatus.CollateralConfirmed:
@@ -103,13 +110,18 @@ export const AllContracts = ({ contracts: unfilteredContracts, header }: OpenCon
       case ContractStatus.PrincipalGiven:
         filtered = contractStatusFilter["open"];
         break;
-      case ContractStatus.Closing:
       case ContractStatus.RepaymentProvided:
+        filtered = contractStatusFilter["repaymentProvided"];
+        break;
+      case ContractStatus.Closing:
       case ContractStatus.RepaymentConfirmed:
         filtered = contractStatusFilter["closing"];
         break;
       case ContractStatus.Closed:
         filtered = contractStatusFilter["closed"];
+        break;
+      case ContractStatus.Extended:
+        filtered = contractStatusFilter["extended"];
         break;
       case ContractStatus.Rejected:
         filtered = contractStatusFilter["rejected"];

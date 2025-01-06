@@ -68,7 +68,7 @@ function NotificationComponent(props: LoansNotificationSectionProps) {
 
               <Box className="flex flex-col items-end text-end gap-1">
                 <Badge
-                  color={status === ContractStatus.Requested
+                  color={status === ContractStatus.Requested || status === ContractStatus.RenewalRequested
                     ? "amber"
                     : status === ContractStatus.Approved
                     ? "green"

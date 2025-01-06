@@ -18,6 +18,7 @@ import {
   usePrice,
 } from "@frontend-monorepo/ui-shared";
 import { TransactionList, TransactionType } from "@frontend-monorepo/ui-shared";
+import { ExternalLinkIcon } from "@radix-ui/react-icons";
 import { Badge, Box, Button, Callout, Flex, Grid, Heading, IconButton, Separator, Text } from "@radix-ui/themes";
 import { Suspense, useState } from "react";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
@@ -220,6 +221,7 @@ function ContractDetails({ contract }: DetailsProps) {
       canAddExtraCollateral = true;
       break;
     case ContractStatus.Requested:
+    case ContractStatus.RenewalRequested:
     case ContractStatus.Approved:
     case ContractStatus.Rejected:
     case ContractStatus.RepaymentProvided:
@@ -228,6 +230,7 @@ function ContractDetails({ contract }: DetailsProps) {
     case ContractStatus.Defaulted:
     case ContractStatus.Closing:
     case ContractStatus.Closed:
+    case ContractStatus.Extended:
     case ContractStatus.Cancelled:
     case ContractStatus.RequestExpired:
       canAddExtraCollateral = false;
@@ -253,6 +256,9 @@ function ContractDetails({ contract }: DetailsProps) {
       console.error("Failed to copy text: ", err);
     }
   };
+
+  const hasParent = contract.extends_contract !== undefined && contract.extends_contract !== null;
+  const hasChild = contract.extended_by_contract !== undefined && contract.extended_by_contract !== null;
 
   return (
     <Box>
@@ -310,22 +316,64 @@ function ContractDetails({ contract }: DetailsProps) {
           <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
             Contract Status
           </Text>
-          <Text size={"2"} weight={"medium"}>
-            <Badge
-              color={contract.status === ContractStatus.Requested
-                ? "amber"
-                : contract.status === ContractStatus.Approved
-                ? "green"
-                : contract.status === ContractStatus.Rejected
-                ? "red"
-                : "gray"}
-              size={"2"}
-            >
-              {contractStatusLabel}
-            </Badge>
-          </Text>
+          <div className="flex flex-col">
+            <Text className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
+              <Badge
+                color={contract.status === ContractStatus.Requested
+                    || contract.status === ContractStatus.RenewalRequested
+                  ? "amber"
+                  : contract.status === ContractStatus.Approved
+                  ? "green"
+                  : contract.status === ContractStatus.Rejected
+                  ? "red"
+                  : "gray"}
+                size={"2"}
+              >
+                {contractStatusLabel}
+              </Badge>
+            </Text>
+          </div>
         </Flex>
         <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
+
+        {hasParent
+          && (
+            <>
+              <Flex gap={"5"} align={"center"} justify={"between"}>
+                <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
+                  Old contract
+                </Text>
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-1">
+                    <Text size={"2"}>
+                      <Link to={`/my-contracts/${contract.extends_contract}`}>Replaces</Link>
+                    </Text>
+                    <ExternalLinkIcon />
+                  </div>
+                </div>
+              </Flex>
+              <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
+            </>
+          )}
+        {hasChild
+          && (
+            <>
+              <Flex gap={"5"} align={"center"} justify={"between"}>
+                <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
+                  Replaced by
+                </Text>
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-1">
+                    <Text size={"2"}>
+                      <Link to={`/my-contracts/${contract.extended_by_contract}`}>Replaced by</Link>
+                    </Text>
+                    <ExternalLinkIcon />
+                  </div>
+                </div>
+              </Flex>
+              <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
+            </>
+          )}
 
         <Flex gap={"5"} align={"start"} justify={"between"}>
           <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
@@ -559,6 +607,7 @@ const ContractStatusDetails = ({
 }: ContractStatusDetailsProps) => {
   switch (contract.status) {
     case ContractStatus.Requested:
+    case ContractStatus.RenewalRequested:
       return <ContractRequested createdAt={contract.created_at} contractId={contract.id} />;
     case ContractStatus.Approved:
       return (
@@ -580,20 +629,11 @@ const ContractStatusDetails = ({
         />
       );
     case ContractStatus.PrincipalGiven: {
-      const coin = StableCoinHelper.mapFromBackend(
-        contract.loan_asset_chain,
-        contract.loan_asset_type,
-      );
-
       return (
         <ContractPrincipalGiven
-          loanAmount={contract.loan_amount}
           interestAmount={interestAmount}
-          repaymentAddress={contract.loan_repayment_address}
           totalRepaymentAmount={totalRepaymentAmount}
-          contractId={contract.id}
-          expiry={contract.expiry}
-          coin={coin}
+          contract={contract}
         />
       );
     }
@@ -606,6 +646,7 @@ const ContractStatusDetails = ({
     case ContractStatus.Defaulted:
       return <ContractDefaulted />;
     case ContractStatus.Closed:
+    case ContractStatus.Extended:
     case ContractStatus.Closing:
     case ContractStatus.Rejected:
     case ContractStatus.RequestExpired:

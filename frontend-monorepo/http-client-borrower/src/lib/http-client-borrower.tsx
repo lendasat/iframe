@@ -5,12 +5,13 @@ import axios from "axios";
 import type { ReactNode } from "react";
 import { createContext, useContext } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import type {
+import {
   CardTransaction,
   ClaimCollateralPsbtResponse,
   Contract,
   ContractRequest,
   Dispute,
+  ExtendPostLoanRequest,
   LenderProfile,
   LoanOffer,
   LoanRequest,
@@ -35,6 +36,24 @@ export class HttpClientBorrower extends BaseHttpClient {
   async getLoanOffers(): Promise<LoanOffer[] | undefined> {
     try {
       const response: AxiosResponse<LoanOffer[]> = await this.httpClient.get("/api/offers");
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to fetch loan offers: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not fetch loan offers ${JSON.stringify(error)}`);
+      }
+    }
+  }
+  async getLoanOffersByLender(lenderId: string): Promise<LoanOffer[]> {
+    try {
+      const response: AxiosResponse<LoanOffer[]> = await this.httpClient.get(`/api/offersbylender/${lenderId}`);
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
@@ -85,6 +104,28 @@ export class HttpClientBorrower extends BaseHttpClient {
         throw new Error(message);
       } else {
         throw new Error(`Could not post loan request: ${JSON.stringify(error)}`);
+      }
+    }
+  }
+
+  async postExtendLoanRequest(contractId: string, request: ExtendPostLoanRequest): Promise<LoanRequest | undefined> {
+    try {
+      const response: AxiosResponse<LoanRequest> = await this.httpClient.post(
+        `/api/contracts/${contractId}/extend`,
+        request,
+      );
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to post extend loan request: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not post extend loan request: ${JSON.stringify(error)}`);
       }
     }
   }
@@ -427,8 +468,10 @@ export class HttpClientBorrower extends BaseHttpClient {
 type BorrowerHttpClientContextType = Pick<
   HttpClientBorrower,
   | "getLoanOffers"
+  | "getLoanOffersByLender"
   | "getLoanOffer"
   | "postLoanRequest"
+  | "postExtendLoanRequest"
   | "postContractRequest"
   | "cancelContractRequest"
   | "getContracts"
@@ -506,8 +549,10 @@ export const HttpClientBorrowerProvider: React.FC<HttpClientProviderProps> = ({ 
 
   const borrowerClientFunctions: BorrowerHttpClientContextType = {
     getLoanOffers: httpClient.getLoanOffers.bind(httpClient),
+    getLoanOffersByLender: httpClient.getLoanOffersByLender.bind(httpClient),
     getLoanOffer: httpClient.getLoanOffer.bind(httpClient),
     postLoanRequest: httpClient.postLoanRequest.bind(httpClient),
+    postExtendLoanRequest: httpClient.postExtendLoanRequest.bind(httpClient),
     postContractRequest: httpClient.postContractRequest.bind(httpClient),
     cancelContractRequest: httpClient.cancelContractRequest.bind(httpClient),
     getContracts: httpClient.getContracts.bind(httpClient),

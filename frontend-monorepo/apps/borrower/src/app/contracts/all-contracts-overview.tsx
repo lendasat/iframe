@@ -15,7 +15,7 @@ function AllContractsOverview() {
         errorElement={<div className={"text-font dark:text-font-dark"}>Could not load contracts</div>}
         children={(contracts: Awaited<Contract[]>) => (
           <Box className="h-screen flex-1 max-h-1/2 overflow-auto flex-col pb-5">
-            <AllContracts contracts={contracts} isToggleFilterShown={true} />
+            <AllContracts contracts={contracts} />
           </Box>
         )}
       />

@@ -5,6 +5,7 @@ use crate::model::LoanOffer;
 use crate::model::LoanOfferStatus;
 use anyhow::Result;
 use rust_decimal::Decimal;
+use rust_decimal_macros::dec;
 use sqlx::Pool;
 use sqlx::Postgres;
 use std::str::FromStr;
@@ -101,6 +102,21 @@ pub(crate) async fn load_all_available_loan_offers(
         .collect();
 
     Ok(loan_offers)
+}
+
+pub async fn load_available_loan_offers_by_lender(
+    pool: &Pool<Postgres>,
+    lender_id: &str,
+) -> Result<Vec<LoanOffer>> {
+    // This can be optimized with a separate query but I was too lazy
+    let all_offers = load_all_loan_offers_by_lender(pool, lender_id).await?;
+    let available_offers = all_offers
+        .into_iter()
+        .filter(|offer| offer.loan_amount_reserve_remaining > dec!(0))
+        .filter(|offer| offer.status == LoanOfferStatus::Available)
+        .collect();
+
+    Ok(available_offers)
 }
 
 pub async fn load_all_loan_offers_by_lender(

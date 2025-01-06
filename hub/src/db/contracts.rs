@@ -1,4 +1,3 @@
-use crate::db::contract_emails;
 use crate::expiry::expiry_date;
 use crate::model::db;
 use crate::model::Contract;
@@ -7,6 +6,7 @@ use crate::model::ContractVersion;
 use crate::model::Integration;
 use anyhow::bail;
 use anyhow::Context;
+use anyhow::Error;
 use anyhow::Result;
 use bitcoin::address::NetworkUnchecked;
 use bitcoin::bip32::Xpub;
@@ -114,7 +114,7 @@ pub async fn load_contracts_by_lender_id(
     Ok(contracts)
 }
 
-async fn load_contract(pool: &Pool<Postgres>, contract_id: &str) -> Result<Contract> {
+pub async fn load_contract(pool: &Pool<Postgres>, contract_id: &str) -> Result<Contract> {
     let contract = sqlx::query_as!(
         db::Contract,
         r#"
@@ -272,9 +272,10 @@ pub async fn load_open_contracts(pool: &Pool<Postgres>) -> Result<Vec<Contract>>
             created_at,
             updated_at
         FROM contracts
-        WHERE status NOT IN ($1, $2, $3, $4, $5)
+        WHERE status NOT IN ($1, $2, $3, $4, $5, $6)
         "#,
         db::ContractStatus::Requested as db::ContractStatus,
+        db::ContractStatus::RenewalRequested as db::ContractStatus,
         db::ContractStatus::Closed as db::ContractStatus,
         db::ContractStatus::Rejected as db::ContractStatus,
         db::ContractStatus::Cancelled as db::ContractStatus,
@@ -292,7 +293,7 @@ pub async fn load_open_contracts(pool: &Pool<Postgres>) -> Result<Vec<Contract>>
 }
 
 #[allow(clippy::too_many_arguments)]
-pub async fn insert_contract_request(
+pub async fn insert_new_contract_request(
     pool: &Pool<Postgres>,
     id: Uuid,
     borrower_id: &str,
@@ -327,6 +328,131 @@ pub async fn insert_contract_request(
 
     let status = db::ContractStatus::Requested;
 
+    let contract = insert_contract_request(
+        &mut db_tx,
+        borrower_id,
+        lender_id,
+        loan_id,
+        &id,
+        initial_ltv,
+        loan_amount,
+        duration_months,
+        borrower_btc_address,
+        borrower_pk,
+        borrower_loan_address,
+        initial_collateral_sats,
+        origination_fee_sats,
+        collateral_sats,
+        integration,
+        contract_version,
+        created_at,
+        expiry_date,
+        status,
+        lender_xpub,
+        None,
+        None,
+    )
+    .await?;
+
+    db_tx.commit().await?;
+    Ok(contract)
+}
+
+#[allow(clippy::too_many_arguments)]
+pub async fn insert_extension_contract_request(
+    db_tx: &mut sqlx::Transaction<'_, Postgres>,
+    id: Uuid,
+    borrower_id: &str,
+    lender_id: &str,
+    loan_id: &str,
+    initial_ltv: Decimal,
+    initial_collateral_sats: u64,
+    collateral_sats: u64,
+    origination_fee_sats: u64,
+    loan_amount: Decimal,
+    duration_months: i32,
+    borrower_btc_address: Address<NetworkUnchecked>,
+    borrower_pk: PublicKey,
+    borrower_loan_address: &str,
+    integration: Integration,
+    contract_version: ContractVersion,
+    auto_accepted: bool,
+    lender_xpub: Xpub,
+    original_creation_date: OffsetDateTime,
+    contract_address: Option<Address<NetworkUnchecked>>,
+    contract_index: Option<u32>,
+) -> Result<Contract> {
+    let id = id.to_string();
+    let initial_collateral_sats = initial_collateral_sats as i64;
+    let collateral_sats = collateral_sats as i64;
+    let origination_fee_sats = origination_fee_sats as i64;
+    let integration = db::Integration::from(integration);
+    let contract_version = contract_version as i32;
+
+    let created_at = OffsetDateTime::now_utc();
+
+    let new_expiry_date = expiry_date(original_creation_date, duration_months as u64);
+
+    // if the contract can be automatically accepted we immediately go into
+    // `ContractStatus::PrincipalGiven` because the original contract has been funded already.
+    let status = if auto_accepted {
+        db::ContractStatus::PrincipalGiven
+    } else {
+        db::ContractStatus::RenewalRequested
+    };
+
+    insert_contract_request(
+        db_tx,
+        borrower_id,
+        lender_id,
+        loan_id,
+        &id,
+        initial_ltv,
+        loan_amount,
+        duration_months,
+        borrower_btc_address,
+        borrower_pk,
+        borrower_loan_address,
+        initial_collateral_sats,
+        origination_fee_sats,
+        collateral_sats,
+        integration,
+        contract_version,
+        created_at,
+        new_expiry_date,
+        status,
+        lender_xpub,
+        contract_address.map(|address| address.assume_checked().to_string()),
+        contract_index.map(|index| index as i32),
+    )
+    .await
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn insert_contract_request(
+    db_tx: &mut sqlx::Transaction<'_, Postgres>,
+    borrower_id: &str,
+    lender_id: &str,
+    loan_id: &str,
+    contract_id: &str,
+    initial_ltv: Decimal,
+    loan_amount: Decimal,
+    duration_months: i32,
+    borrower_btc_address: Address<NetworkUnchecked>,
+    borrower_pk: PublicKey,
+    borrower_loan_address: &str,
+    initial_collateral_sats: i64,
+    origination_fee_sats: i64,
+    collateral_sats: i64,
+    integration: db::Integration,
+    contract_version: i32,
+    created_at: OffsetDateTime,
+    expiry_date: OffsetDateTime,
+    status: db::ContractStatus,
+    lender_xpub: Xpub,
+    contract_address: Option<String>,
+    contract_index: Option<i32>,
+) -> Result<Contract, Error> {
     let contract = sqlx::query_as!(
         db::Contract,
         r#"
@@ -379,7 +505,7 @@ pub async fn insert_contract_request(
             created_at,
             updated_at
         "#,
-        id.as_str(),
+        contract_id,
         lender_id,
         borrower_id,
         loan_id,
@@ -396,18 +522,14 @@ pub async fn insert_contract_request(
         borrower_loan_address,
         integration as db::Integration,
         lender_xpub.to_string(),
-        None as Option<String>,
-        None as Option<i32>,
+        contract_address as Option<String>,
+        contract_index as Option<i32>,
         contract_version,
         created_at,
         expiry_date
     )
-    .fetch_one(&mut *db_tx)
+        .fetch_one(&mut **db_tx)
         .await?;
-
-    contract_emails::start_tracking_contract_emails(&mut *db_tx, &id).await?;
-
-    db_tx.commit().await?;
 
     Ok(contract.into())
 }
@@ -462,6 +584,61 @@ pub async fn accept_contract_request(
         contract_id
     )
     .fetch_one(&mut **transaction)
+    .await?;
+
+    Ok(contract.into())
+}
+
+/// Accepts a request to extend the contract
+///
+/// We jump right back into [`ContractStatus::PrincipalGiven`] because the contract is already
+/// funded etc.
+pub async fn accept_extend_contract_request(
+    pool: &Pool<Postgres>,
+    lender_id: &str,
+    contract_id: &str,
+) -> Result<Contract> {
+    let contract = sqlx::query_as!(
+        db::Contract,
+        r#"
+        UPDATE contracts
+        SET status = $1,
+            updated_at = $2
+        WHERE lender_id = $3
+          AND id = $4 
+          AND status = $5
+        RETURNING
+            id,
+            lender_id,
+            borrower_id,
+            loan_id,
+            initial_ltv,
+            initial_collateral_sats,
+            origination_fee_sats,
+            collateral_sats,
+            loan_amount,
+            borrower_btc_address,
+            borrower_pk,
+            borrower_loan_address,
+            integration as "integration: crate::model::db::Integration",
+            lender_xpub,
+            contract_address,
+            contract_index,
+            status as "status: crate::model::db::ContractStatus",
+            liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
+            duration_months,
+            expiry_date,
+            contract_version,
+            created_at,
+            updated_at
+        "#,
+        db::ContractStatus::PrincipalGiven as db::ContractStatus,
+        OffsetDateTime::now_utc(),
+        lender_id,
+        contract_id,
+        db::ContractStatus::RenewalRequested as db::ContractStatus,
+    )
+    .fetch_one(pool)
     .await?;
 
     Ok(contract.into())
@@ -543,6 +720,40 @@ pub async fn mark_contract_as_cancelled(
     contract_id: &str,
 ) -> Result<Contract> {
     mark_contract_state_as(pool, contract_id, db::ContractStatus::Cancelled).await
+}
+
+pub async fn mark_contract_as_extended<'a, E>(pool: E, contract_id: &str) -> Result<Contract>
+where
+    E: sqlx::Executor<'a, Database = Postgres>,
+{
+    mark_contract_state_as(pool, contract_id, db::ContractStatus::Extended).await
+}
+
+pub async fn cancel_extension<'a, E>(pool_executor: E, contract_id: &str) -> Result<()>
+where
+    E: sqlx::Executor<'a, Database = Postgres>,
+{
+    let rows_affected = sqlx::query!(
+        r#"
+    UPDATE contracts
+    SET
+        status = $1,
+        updated_at = $2
+    WHERE id = $3 AND status = $4
+    "#,
+        db::ContractStatus::PrincipalGiven as db::ContractStatus,
+        OffsetDateTime::now_utc(),
+        contract_id,
+        db::ContractStatus::Extended as db::ContractStatus,
+    )
+    .execute(pool_executor)
+    .await?
+    .rows_affected();
+
+    if rows_affected == 0 {
+        return Err(anyhow::anyhow!("Could not cancel contract extension"));
+    }
+    Ok(())
 }
 
 pub async fn mark_contract_as_closed(pool: &Pool<Postgres>, contract_id: &str) -> Result<Contract> {
@@ -852,7 +1063,7 @@ pub async fn update_collateral(
                 );
 
                 match contract.status {
-                    ContractStatus::Requested => {
+                    ContractStatus::Requested | ContractStatus::RenewalRequested => {
                         // This means that a contract's newly assigned address already has money in
                         // it. We can only get here if the _contract address_ was reused, which is a
                         // really bad idea.
@@ -880,6 +1091,7 @@ pub async fn update_collateral(
                     | ContractStatus::Defaulted
                     | ContractStatus::Closing
                     | ContractStatus::Closed
+                    | ContractStatus::Extended
                     | ContractStatus::Rejected
                     | ContractStatus::DisputeBorrowerStarted
                     | ContractStatus::DisputeLenderStarted

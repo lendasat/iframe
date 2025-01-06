@@ -60,10 +60,20 @@ pub async fn load_contract_emails(
         "#,
         contract_id,
     )
-    .fetch_one(pool)
+    .fetch_optional(pool)
     .await?;
 
-    Ok(contract_emails.into())
+    Ok(contract_emails
+        .map(ContractEmails::from)
+        .unwrap_or(ContractEmails {
+            contract_id: contract_id.to_string(),
+            loan_request_sent: false,
+            loan_request_approved_sent: false,
+            loan_request_rejected_sent: false,
+            collateral_funded_sent: false,
+            loan_paid_out_sent: false,
+            loan_auto_accept_notification_sent: false,
+        }))
 }
 
 pub async fn mark_collateral_funded_as_sent(

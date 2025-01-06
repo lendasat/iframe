@@ -6,6 +6,7 @@ use sqlx::Postgres;
 pub mod borrower_features;
 pub mod borrowers;
 pub mod contract_emails;
+pub mod contract_extensions;
 pub mod contracts;
 pub mod dispute;
 pub mod invite_code;
