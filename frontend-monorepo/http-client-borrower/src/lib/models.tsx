@@ -141,6 +141,7 @@ export interface Contract {
   borrower_loan_address: string;
   transactions: LoanTransaction[];
   integration: Integration;
+  liquidation_price: number;
 }
 
 export interface ClaimCollateralPsbtResponse {

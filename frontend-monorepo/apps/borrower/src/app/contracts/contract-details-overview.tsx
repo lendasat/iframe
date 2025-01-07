@@ -10,7 +10,9 @@ import {
   CurrencyFormatter,
   formatCurrency,
   InterestRateInfoLabel,
+  LiquidationPriceInfoLabel,
   LtvInfoLabel,
+  newFormatCurrency,
   RefundAddressInfoLabel,
   StableCoinHelper,
   usePrice,
@@ -190,6 +192,7 @@ function ContractDetails({ contract }: DetailsProps) {
   const firstMarginCall = contract.liquidation_status === LiquidationStatus.FirstMarginCall;
   const secondMarginCall = contract.liquidation_status === LiquidationStatus.SecondMarginCall;
   const liquidated = contract.liquidation_status === LiquidationStatus.Liquidated;
+  const liquidationPrice = contract.liquidation_price;
 
   let contractStatusLabel = contractStatusToLabelString(contract.status);
   if (firstMarginCall) {
@@ -412,6 +415,22 @@ function ContractDetails({ contract }: DetailsProps) {
           <Text className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
             {ltvPercentage}%
           </Text>
+        </Flex>
+        <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
+        <Flex justify={"between"} align={"center"}>
+          <LiquidationPriceInfoLabel>
+            <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
+              <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
+                Liquidation Price
+              </Text>
+              <FaInfoCircle />
+            </Flex>
+          </LiquidationPriceInfoLabel>
+          <div className="flex flex-col">
+            <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
+              {newFormatCurrency({ value: liquidationPrice, maxFraction: 0, minFraction: 1 })}
+            </Text>
+          </div>
         </Flex>
         <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
 
