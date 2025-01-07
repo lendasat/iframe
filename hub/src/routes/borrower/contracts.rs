@@ -21,6 +21,7 @@ use crate::routes::borrower::auth::jwt_auth;
 use crate::routes::user_connection_details_middleware;
 use crate::routes::user_connection_details_middleware::UserConnectionDetails;
 use crate::routes::AppState;
+use crate::utils::calculate_liquidation_price;
 use anyhow::Context;
 use axum::extract::rejection::JsonRejection;
 use axum::extract::FromRequest;
@@ -44,6 +45,7 @@ use bitcoin::Amount;
 use bitcoin::PublicKey;
 use bitcoin::Transaction;
 use miniscript::Descriptor;
+use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
 use serde::Deserialize;
@@ -603,6 +605,8 @@ pub struct Contract {
     pub liquidation_status: LiquidationStatus,
     pub transactions: Vec<LoanTransaction>,
     pub integration: Integration,
+    #[serde(with = "rust_decimal::serde::float")]
+    pub liquidation_price: Decimal,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -684,6 +688,16 @@ async fn map_to_api_contract(
         matches!(tx.transaction_type, TransactionType::PrincipalRepaid).then_some(tx.timestamp)
     });
 
+    let collateral = if contract.collateral_sats == 0 {
+        contract.initial_collateral_sats
+    } else {
+        contract.collateral_sats
+    };
+    let liquidation_price = calculate_liquidation_price(
+        contract.loan_amount,
+        Decimal::from_u64(collateral).expect("to fit"),
+    );
+
     let contract = Contract {
         id: contract.id,
         loan_amount: contract.loan_amount,
@@ -714,6 +728,7 @@ async fn map_to_api_contract(
         liquidation_status: contract.liquidation_status,
         transactions,
         integration: contract.integration,
+        liquidation_price,
     };
 
     Ok(contract)
