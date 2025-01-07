@@ -116,6 +116,7 @@ export const RepayContract = ({
               must pay back using the same asset you borrowed:{" "}
               <a
                 href={StableCoinHelper.toContractUrl(stableCoin)}
+                target={"_blank"}
                 className="text-blue-500 hover:underline hover:text-blue-700"
               >
                 {StableCoinHelper.print(stableCoin)}
