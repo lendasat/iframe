@@ -8,8 +8,10 @@ import {
   AbbreviationExplanationInfo,
   formatCurrency,
   InterestRateInfoLabel,
+  LiquidationPriceInfoLabel,
   LoanAddressInputField,
   LtvInfoLabel,
+  newFormatCurrency,
   StableCoin,
   StableCoinDropdown,
   StableCoinHelper,
@@ -691,6 +693,8 @@ const LoanSearched = (props: SearchParams) => {
 
   const collateralAmountBtc = props.amount / latestPrice / props.ltv;
   const collateralUsdAmount = props.amount / props.ltv;
+  // loan_amount / (collateral_sats / dec!(100_000_000) * LTV_THRESHOLD_LIQUIDATION)
+  const liquidationPrice = props.amount / collateralAmountBtc * 0.95;
 
   const [hideWalletConnectButton, setHideWalletConnectButton] = useState(false);
 
@@ -805,6 +809,22 @@ const LoanSearched = (props: SearchParams) => {
               </Text>
               <Text className="text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-end">
                 ≈ {formatCurrency(collateralUsdAmount)}
+              </Text>
+            </div>
+          </Flex>
+          <Separator size={"4"} />
+          <Flex justify={"between"} align={"center"}>
+            <LiquidationPriceInfoLabel>
+              <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
+                <Text className="text-xs font-medium text-font/60 dark:text-font-dark/60">
+                  Liquidation Price
+                </Text>
+                <FaInfoCircle />
+              </Flex>
+            </LiquidationPriceInfoLabel>
+            <div className="flex flex-col">
+              <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
+                {newFormatCurrency({ value: liquidationPrice, maxFraction: 0, minFraction: 1 })}
               </Text>
             </div>
           </Flex>

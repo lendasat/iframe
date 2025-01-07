@@ -18,6 +18,27 @@ export const formatCurrency = (value: number, minFraction?: number, maxFraction?
   }).format(value);
 };
 
+interface formatCurrencyProps {
+  value: number;
+  minFraction: number;
+  maxFraction: number;
+}
+
+export const newFormatCurrency = ({ maxFraction, minFraction, value }: formatCurrencyProps) => {
+  let minFractionDigits = minFraction;
+  if (minFraction > maxFraction) {
+    minFractionDigits = maxFraction;
+  }
+
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+
+    minimumFractionDigits: minFractionDigits,
+    maximumFractionDigits: maxFraction,
+  }).format(value);
+};
+
 interface CurrencyFormatterProps {
   value: number;
   minFraction?: number;

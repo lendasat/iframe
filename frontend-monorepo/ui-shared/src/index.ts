@@ -2,6 +2,7 @@ export * from './lib/components/loan-address-input-field';
 export * from './lib/components/NotificationToast';
 export * from './lib/components/abbreviation-explanation-info';
 export * from './lib/components/LtvInfoLabel';
+export * from './lib/components/LiquidationPriceInfoLabel';
 export * from './lib/components/InterestRateInfoLabel';
 export * from './lib/components/RefundAddressInfoLabel';
 export * from './lib/full-logo-white-bg';
