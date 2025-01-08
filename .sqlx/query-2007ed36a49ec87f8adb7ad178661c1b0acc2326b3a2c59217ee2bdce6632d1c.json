@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            UPDATE\n                contracts\n            SET\n                status = $1, updated_at = $2\n            WHERE\n                expiry_date <= $2 AND\n                status NOT IN ($3, $4, $5, $6, $7, $8, $9, $10, $11, $1)\n            RETURNING id, borrower_id, lender_id;\n        ",
+  "query": "\n            UPDATE\n                contracts\n            SET\n                status = $1, updated_at = $2\n            WHERE\n                expiry_date <= $2 AND\n                status NOT IN ($3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $1)\n            RETURNING id, borrower_id, lender_id;\n        ",
   "describe": {
     "columns": [
       {
@@ -311,6 +311,35 @@
               ]
             }
           }
+        },
+        {
+          "Custom": {
+            "name": "contract_status",
+            "kind": {
+              "Enum": [
+                "Requested",
+                "Approved",
+                "CollateralSeen",
+                "CollateralConfirmed",
+                "PrincipalGiven",
+                "RepaymentProvided",
+                "RepaymentConfirmed",
+                "Closing",
+                "Closed",
+                "Rejected",
+                "DisputeBorrowerStarted",
+                "DisputeLenderStarted",
+                "DisputeBorrowerResolved",
+                "DisputeLenderResolved",
+                "Cancelled",
+                "RequestExpired",
+                "Defaulted",
+                "Undercollateralized",
+                "RenewalRequested",
+                "Extended"
+              ]
+            }
+          }
         }
       ]
     },
@@ -320,5 +349,5 @@
       false
     ]
   },
-  "hash": "5565c051f7527e24a2725812f323d9f64ee0d3fabd9f62d35edffacd49931634"
+  "hash": "2007ed36a49ec87f8adb7ad178661c1b0acc2326b3a2c59217ee2bdce6632d1c"
 }

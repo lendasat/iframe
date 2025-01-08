@@ -272,11 +272,12 @@ pub async fn load_open_contracts(pool: &Pool<Postgres>) -> Result<Vec<Contract>>
             created_at,
             updated_at
         FROM contracts
-        WHERE status NOT IN ($1, $2, $3, $4, $5, $6)
+        WHERE status NOT IN ($1, $2, $3, $4, $5, $6, $7)
         "#,
         db::ContractStatus::Requested as db::ContractStatus,
         db::ContractStatus::RenewalRequested as db::ContractStatus,
         db::ContractStatus::Closed as db::ContractStatus,
+        db::ContractStatus::Extended as db::ContractStatus,
         db::ContractStatus::Rejected as db::ContractStatus,
         db::ContractStatus::Cancelled as db::ContractStatus,
         db::ContractStatus::RequestExpired as db::ContractStatus,
@@ -953,12 +954,13 @@ pub(crate) async fn load_open_not_liquidated_contracts(
             created_at,
             updated_at
         FROM contracts
-        WHERE status NOT IN ($1, $2, $3, $4, $5, $6, $7, $8, $9) and liquidation_status NOT in ($10)
+        WHERE status NOT IN ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) and liquidation_status NOT in ($11)
         "#,
         db::ContractStatus::Requested as db::ContractStatus,
         db::ContractStatus::Approved as db::ContractStatus,
         db::ContractStatus::Closing as db::ContractStatus,
         db::ContractStatus::Closed as db::ContractStatus,
+        db::ContractStatus::Extended as db::ContractStatus,
         db::ContractStatus::Rejected as db::ContractStatus,
         db::ContractStatus::Cancelled as db::ContractStatus,
         db::ContractStatus::RequestExpired as db::ContractStatus,
@@ -999,7 +1001,7 @@ pub(crate) async fn default_expired_contracts(
                 status = $1, updated_at = $2
             WHERE
                 expiry_date <= $2 AND
-                status NOT IN ($3, $4, $5, $6, $7, $8, $9, $10, $11, $1)
+                status NOT IN ($3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $1)
             RETURNING id, borrower_id, lender_id;
         "#,
         db::ContractStatus::Defaulted as db::ContractStatus,
@@ -1008,6 +1010,7 @@ pub(crate) async fn default_expired_contracts(
         db::ContractStatus::Approved as db::ContractStatus,
         db::ContractStatus::Closing as db::ContractStatus,
         db::ContractStatus::Closed as db::ContractStatus,
+        db::ContractStatus::Extended as db::ContractStatus,
         db::ContractStatus::Rejected as db::ContractStatus,
         db::ContractStatus::Cancelled as db::ContractStatus,
         db::ContractStatus::RequestExpired as db::ContractStatus,
@@ -1245,12 +1248,15 @@ pub(crate) async fn close_to_expiry_contracts(
     let due_date_start = OffsetDateTime::now_utc();
     let due_date_end = OffsetDateTime::now_utc() + time::Duration::days(3);
 
+    // A contract in `ExtensionRequested` is actually open and can expire, hence we need to check
+    // for it as well
     let rows = sqlx::query!(
         r#"
             SELECT id, borrower_id, expiry_date
             FROM contracts
             WHERE
-                status = 'PrincipalGiven' AND
+                status = 'PrincipalGiven' OR 
+                status = 'RenewalRequested' AND
                 expiry_date > $1 AND
                 expiry_date <= $2
         "#,
