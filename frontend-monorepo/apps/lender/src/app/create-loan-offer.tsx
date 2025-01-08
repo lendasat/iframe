@@ -98,6 +98,14 @@ const CreateLoanOffer: FC = () => {
         assetType = LoanAssetType.Usdc;
         assetChain = LoanAssetChain.Ethereum;
         break;
+      case StableCoin.USDC_SOL:
+        assetType = LoanAssetType.Usdc;
+        assetChain = LoanAssetChain.Solana;
+        break;
+      case StableCoin.USDT_SOL:
+        assetType = LoanAssetType.Usdt;
+        assetChain = LoanAssetChain.Solana;
+        break;
     }
 
     return {
@@ -359,7 +367,7 @@ const CreateLoanOffer: FC = () => {
                       Stable Coins
                     </Text>
                     <Flex align={"center"} gap={"3"} wrap={"wrap"}>
-                      {Object.keys(StableCoin).map((coin) => (
+                      {StableCoinHelper.all().map((coin) => (
                         <Button
                           key={coin}
                           variant="outline"
@@ -369,19 +377,7 @@ const CreateLoanOffer: FC = () => {
                           color={selectedCoin === coin ? "purple" : "gray"}
                           onClick={() => handleStableCoinChange(coin)}
                         >
-                          {coin === "USDT_SN"
-                            ? "USDT Starknet"
-                            : coin === "USDC_SN"
-                            ? "USDC Starknet"
-                            : coin === "USDT_POL"
-                            ? "USDT Polygon"
-                            : coin === "USDC_POL"
-                            ? "USDC Polygon"
-                            : coin === "USDT_ETH"
-                            ? "USDT Ethereum"
-                            : coin === "USDC_ETH"
-                            ? "USDC Ethereum"
-                            : ""}
+                          {StableCoinHelper.print(coin)}
                         </Button>
                       ))}
                     </Flex>

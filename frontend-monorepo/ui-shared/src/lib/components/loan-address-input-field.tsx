@@ -43,6 +43,8 @@ export function LoanAddressInputField({
 
   // WalletConnect extension only supports Ethereum and Ethereum-L2s... No Starknet
   const isStarknet = assetChain.toLowerCase() === "starknet";
+  // WalletConnect does not support Solana at this point of time
+  const isSolana = assetChain.toLowerCase() === "solana";
 
   return (
     <>
@@ -67,7 +69,7 @@ export function LoanAddressInputField({
         value={loanAddress}
         onChange={onInputChange}
       >
-        {!isStarknet && !hideButton && (
+        {!isStarknet && !isSolana && !hideButton && (
           <TextField.Slot side={"right"}>
             <ConnectButton.Custom>
               {({

@@ -1,7 +1,7 @@
 import { faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { LoanOfferStatus, useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
-import { formatCurrency, StableCoin, StableCoinHelper } from "@frontend-monorepo/ui-shared";
+import { formatCurrency, StableCoinHelper } from "@frontend-monorepo/ui-shared";
 import * as Checkbox from "@radix-ui/react-checkbox";
 import { CheckIcon } from "@radix-ui/react-icons";
 import { Box, Button, Callout, Dialog, Flex, Grid, Heading, Separator, Text, TextField } from "@radix-ui/themes";
@@ -70,27 +70,7 @@ function MyLoanOfferDetails() {
     offer.loan_asset_type,
   );
 
-  let coinLabel = "";
-  switch (initCoin) {
-    case StableCoin.USDT_SN:
-      coinLabel = "USDT - Starknet";
-      break;
-    case StableCoin.USDT_POL:
-      coinLabel = "USDT - Polygon";
-      break;
-    case StableCoin.USDT_ETH:
-      coinLabel = "USDT - Ethereum";
-      break;
-    case StableCoin.USDC_SN:
-      coinLabel = "USDC - Starknet";
-      break;
-    case StableCoin.USDC_POL:
-      coinLabel = "USDC - Polygon";
-      break;
-    case StableCoin.USDC_ETH:
-      coinLabel = "USDC - Ethereum";
-      break;
-  }
+  const coinLabel = StableCoinHelper.print(initCoin);
 
   return (
     <Box

@@ -40,6 +40,9 @@ function TransactionLink({ transaction, loanAssetChain }: TransactionLinkProps) 
       case LoanAssetChain.Starknet:
         urlPrefix = "https://starkscan.co/tx";
         break;
+      case LoanAssetChain.Solana:
+        urlPrefix = "https://solscan.io/tx";
+        break;
     }
   }
 

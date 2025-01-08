@@ -10,6 +10,8 @@ export enum StableCoin {
   USDC_POL = "USDC_POL",
   USDT_ETH = "USDT_ETH",
   USDC_ETH = "USDC_ETH",
+  USDC_SOL = "USDC_SOL",
+  USDT_SOL = "USDT_SOL",
 }
 
 export function parseStableCoin(value: string): StableCoin | undefined {
@@ -34,6 +36,10 @@ export class StableCoinHelper {
         return "USDT Ethereum";
       case StableCoin.USDC_ETH:
         return "USDC Ethereum";
+      case StableCoin.USDC_SOL:
+        return "USDT Solana";
+      case StableCoin.USDT_SOL:
+        return "USDC Solana";
     }
   }
 
@@ -48,6 +54,9 @@ export class StableCoinHelper {
       case StableCoin.USDC_ETH:
       case StableCoin.USDT_ETH:
         return "Ethereum";
+      case StableCoin.USDT_SOL:
+      case StableCoin.USDC_SOL:
+        return "Solana";
     }
   }
 
@@ -65,6 +74,10 @@ export class StableCoinHelper {
         return "https://etherscan.io/token/0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48";
       case StableCoin.USDT_ETH:
         return "https://etherscan.io/token/0xdac17f958d2ee523a2206206994597c13d831ec7";
+      case StableCoin.USDC_SOL:
+        return "https://solscan.io/token/EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+      case StableCoin.USDT_SOL:
+        return "https://solscan.io/token/Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB";
     }
   }
 
@@ -76,6 +89,8 @@ export class StableCoinHelper {
       StableCoin.USDC_ETH,
       StableCoin.USDT_POL,
       StableCoin.USDC_POL,
+      StableCoin.USDT_SOL,
+      StableCoin.USDC_SOL,
     ];
   }
 
@@ -97,6 +112,12 @@ export class StableCoinHelper {
         return StableCoin.USDC_POL;
       } else if (asset === "Usdt") {
         return StableCoin.USDT_POL;
+      }
+    } else if (chain === "Solana") {
+      if (asset === "Usdc") {
+        return StableCoin.USDC_SOL;
+      } else if (asset === "Usdt") {
+        return StableCoin.USDT_SOL;
       }
     }
     throw Error("Invalid chain or network provided");

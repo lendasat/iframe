@@ -23,4 +23,5 @@ export enum LoanAssetChain {
   Ethereum = "Ethereum",
   Polygon = "Polygon",
   Starknet = "Starknet",
+  Solana = "Solana",
 }
