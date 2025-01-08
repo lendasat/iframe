@@ -1022,28 +1022,27 @@ async fn map_to_api_contract(
             .map_err(|e| Error::Database(anyhow!(e)))?;
 
     let new_offer = offer;
-    let interest_rate =
-        if let (Some(parent_id), true) = (&parent_contract_id, child_contract.is_some()) {
-            let parent_contract = db::contracts::load_contract(&data.db, parent_id)
-                .await
-                .map_err(Error::Database)?;
-            let old_offer = db::loan_offers::loan_by_id(&data.db, parent_contract.loan_id.as_str())
-                .await
-                .map_err(Error::Database)?
-                .ok_or(Error::MissingLoanOffer {
-                    offer_id: parent_contract.loan_id,
-                })?;
+    let interest_rate = if let Some(parent_id) = &parent_contract_id {
+        let parent_contract = db::contracts::load_contract(&data.db, parent_id)
+            .await
+            .map_err(Error::Database)?;
+        let old_offer = db::loan_offers::loan_by_id(&data.db, parent_contract.loan_id.as_str())
+            .await
+            .map_err(Error::Database)?
+            .ok_or(Error::MissingLoanOffer {
+                offer_id: parent_contract.loan_id,
+            })?;
 
-            crate::contract_extension::calculate_new_interest_rate(
-                old_offer.interest_rate,
-                contract.duration_months,
-                new_offer.interest_rate,
-                contract.duration_months,
-            )
-            .map_err(crate::contract_extension::Error::InterestRateCalculation)?
-        } else {
-            new_offer.interest_rate
-        };
+        crate::contract_extension::calculate_new_interest_rate(
+            old_offer.interest_rate,
+            contract.duration_months,
+            new_offer.interest_rate,
+            contract.duration_months,
+        )
+        .map_err(crate::contract_extension::Error::InterestRateCalculation)?
+    } else {
+        new_offer.interest_rate
+    };
 
     // if the contract is extending another one, we need to fetch the old transactions as well.
     let transactions = if let Some(parent_id) = &parent_contract_id {
