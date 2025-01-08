@@ -7,6 +7,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { SemVer } from "semver";
 import { allowedPagesWithoutLogin, HttpClientLenderProvider } from "./http-client-lender";
+import { FeatureMapper, LenderFeatureFlags } from "./models";
 
 interface AuthContextType {
   user: User | null;
@@ -14,6 +15,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<LoginResponse>;
   logout: () => Promise<void>;
   backendVersion: Version;
+  enabledFeatures: LenderFeatureFlags[];
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -71,6 +73,7 @@ const LenderAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) => {
 
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [enabledFeatures, setEnabledFeatures] = useState<LenderFeatureFlags[]>([]);
   const [backendVersion, setBackendVersion] = useState<Version>({
     version: new SemVer("0.0.0"),
     commit_hash: "unknown",
@@ -128,6 +131,9 @@ const LenderAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) => {
         const currentUser = await me();
         if (currentUser) {
           setUser(currentUser.user);
+          const enabledFeatures = FeatureMapper.mapEnabledFeatures(currentUser.enabled_features);
+
+          setEnabledFeatures(enabledFeatures);
         } else {
           setUser(null);
         }
@@ -155,7 +161,16 @@ const LenderAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) => {
     setLoading(true);
     try {
       const loginResponse = await baseLogin(email, password);
+      const enabledFeatures = FeatureMapper.mapEnabledFeatures(loginResponse.enabled_features);
+
+      if (enabledFeatures) {
+        setEnabledFeatures(enabledFeatures);
+      } else {
+        setEnabledFeatures([]);
+      }
+
       const currentUser = await me();
+
       if (currentUser) {
         setUser(currentUser.user);
       } else {
@@ -188,7 +203,7 @@ const LenderAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, backendVersion }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, backendVersion, enabledFeatures }}>
       {children}
     </AuthContext.Provider>
   );

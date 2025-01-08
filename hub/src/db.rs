@@ -10,6 +10,7 @@ pub mod contract_extensions;
 pub mod contracts;
 pub mod dispute;
 pub mod invite_code;
+pub mod lender_features;
 pub mod lenders;
 pub mod loan_offers;
 pub mod loan_requests;

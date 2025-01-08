@@ -1,4 +1,5 @@
 use crate::db;
+use crate::model::lender_feature_flags;
 use crate::model::CreateLoanOfferSchema;
 use crate::model::User;
 use crate::routes::lender::auth;
@@ -77,6 +78,26 @@ pub async fn create_loan_offer(
             ),
         };
         return Err((StatusCode::BAD_REQUEST, Json(error_response)));
+    }
+
+    let features = db::lender_features::load_lender_features(&data.db, user.id.clone())
+        .await
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Database error: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
+
+    if features.iter().any(|feature| {
+        body.auto_accept
+            && feature.id == lender_feature_flags::AUTO_APPROVE_FEATURE_FLAG_ID
+            && !feature.is_enabled
+    }) {
+        let error_response = ErrorResponse {
+            message: "Auto approve feature is not enabled".to_string(),
+        };
+        return Err((StatusCode::UNAUTHORIZED, Json(error_response)));
     }
 
     let loan = db::loan_offers::insert_loan_offer(&data.db, body, user.id.as_str())

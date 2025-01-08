@@ -274,12 +274,19 @@ async fn insert_lender(pool: &Pool<Postgres>, network: &str) -> Result<User> {
         let maybe_user = db::lenders::get_user_by_email(pool, email)
             .await?
             .expect("expect to have user");
+        enable_lender_features(pool, maybe_user.id.as_str())
+            .await
+            .expect("to be able to enable feature");
         return Ok(maybe_user);
     }
     let user =
         db::lenders::register_user(pool, "alice the lender", email, "password123", None).await?;
     let verification_code = user.verification_code.clone().expect("to exist");
     db::lenders::verify_user(pool, verification_code.as_str()).await?;
+
+    enable_lender_features(pool, user.id.as_str())
+        .await
+        .expect("to be able to enable feature");
 
     // We can only have one wallet loaded at the time, hence, we need to unload any existing one
     wallet::unload_wallet();
@@ -308,14 +315,14 @@ async fn insert_borrower(pool: &Pool<Postgres>, network: &str) -> Result<User> {
         let maybe_user = db::borrowers::get_user_by_email(pool, email)
             .await?
             .expect("expect to have user");
-        enable_features(pool, maybe_user.id.as_str()).await?;
+        enable_borrower_features(pool, maybe_user.id.as_str()).await?;
         return Ok(maybe_user);
     }
     let user =
         db::borrowers::register_user(pool, "bob the borrower", email, "password123", None).await?;
     let verification_code = user.verification_code.clone().expect("to exist");
     db::borrowers::verify_user(pool, verification_code.as_str()).await?;
-    enable_features(pool, user.id.as_str()).await?;
+    enable_borrower_features(pool, user.id.as_str()).await?;
 
     // We can only have one wallet loaded at the time, hence, we need to unload any existing one
     wallet::unload_wallet();
@@ -336,8 +343,13 @@ async fn insert_borrower(pool: &Pool<Postgres>, network: &str) -> Result<User> {
     Ok(user)
 }
 
-async fn enable_features(pool: &Pool<Postgres>, user_id: &str) -> Result<()> {
+async fn enable_borrower_features(pool: &Pool<Postgres>, user_id: &str) -> Result<()> {
     db::borrower_features::enable_feature(pool, user_id, "pay_with_moon").await?;
+    Ok(())
+}
+
+async fn enable_lender_features(pool: &Pool<Postgres>, user_id: &str) -> Result<()> {
+    db::lender_features::enable_feature(pool, user_id, "auto_approve").await?;
     Ok(())
 }
 

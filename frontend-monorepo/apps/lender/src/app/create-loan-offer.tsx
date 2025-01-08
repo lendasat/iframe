@@ -1,7 +1,10 @@
 import { CreateWalletModal, useWallet } from "@frontend-monorepo/browser-wallet";
-import type { CreateLoanOfferRequest } from "@frontend-monorepo/http-client-lender";
-import { useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
-import { useAuth } from "@frontend-monorepo/http-client-lender";
+import {
+  CreateLoanOfferRequest,
+  LenderFeatureFlags,
+  useAuth,
+  useLenderHttpClient,
+} from "@frontend-monorepo/http-client-lender";
 import {
   formatCurrency,
   InterestRateInfoLabel,
@@ -21,7 +24,7 @@ import { useState } from "react";
 import { Form } from "react-bootstrap";
 import { FaInfoCircle } from "react-icons/fa";
 import { MdOutlineSwapCalls } from "react-icons/md";
-import { PiWarningCircle } from "react-icons/pi";
+import { PiInfo, PiWarningCircle } from "react-icons/pi";
 import { useNavigate } from "react-router-dom";
 
 export interface LoanDuration {
@@ -38,10 +41,14 @@ const CreateLoanOffer: FC = () => {
   const layout = window;
   const { user } = useAuth();
   const { doesWalletExist, getXpub } = useWallet();
+  const { enabledFeatures } = useAuth();
+
+  console.log(`${JSON.stringify(enabledFeatures)}`);
+  const autoApproveEnabled = enabledFeatures.includes(LenderFeatureFlags.AutoApproveLoanRequests);
 
   const [loanAmount, setLoanAmount] = useState<LoanAmount>({ min: 1000, max: 100000 });
   const [loanReserve, setLoanReserve] = useState(loanAmount.max);
-  const [autoAccept, setAutoAccept] = useState(true);
+  const [autoAccept, setAutoAccept] = useState(autoApproveEnabled);
   const [loanDuration, setLoanDuration] = useState<LoanDuration>({ min: 1, max: 12 });
   const [ltv, setLtv] = useState<number>(50);
   const [interest, setInterest] = useState<number>(12);
@@ -247,6 +254,7 @@ const CreateLoanOffer: FC = () => {
                       <Checkbox.Root
                         className="flex size-[25px] appearance-none items-center justify-center rounded bg-white dark:bg-gray-300 shadow-[0_2px_10px] shadow-blackA4 outline-none hover:bg-violet3 focus:shadow-[0_0_0_2px_black]"
                         checked={autoAccept}
+                        disabled={!autoApproveEnabled}
                         onCheckedChange={(checked) => setAutoAccept(checked === true)}
                       >
                         <Checkbox.Indicator className="text-violet11">
@@ -260,6 +268,18 @@ const CreateLoanOffer: FC = () => {
                         Auto accept requests within Loan Reserve
                       </label>
                     </div>
+                    {!autoApproveEnabled
+                      && (
+                        <Callout.Root color="orange">
+                          <Callout.Icon>
+                            <PiInfo />
+                          </Callout.Icon>
+
+                          <Callout.Text>
+                            {"You do not qualify for the auto approval feature yet. Please reach out to us via discord if you want it."}
+                          </Callout.Text>
+                        </Callout.Root>
+                      )}
                   </Box>
 
                   {/* Duration */}
@@ -467,7 +487,7 @@ const CreateLoanOffer: FC = () => {
                 <Separator size={"4"} color={"gray"} className="opacity-50" />
                 <Flex align={"center"} justify={"between"} my={"4"}>
                   <Text as="label" size={"2"} className="text-font/50 dark:text-font-dark/50">Duration</Text>
-                  <Text size={"2"} className="text-font-dark/80 font-semibold">
+                  <Text size={"2"} className="text-font/80 dark:text-font-dark/80 font-semibold">
                     {loanDuration.min} ~ {loanDuration.max} Months
                   </Text>
                 </Flex>
@@ -480,7 +500,9 @@ const CreateLoanOffer: FC = () => {
                     </Flex>
                   </LtvInfoLabel>
 
-                  <Text size={"2"} className="text-font-dark/80 font-semibold">{ltv.toFixed(2)}%</Text>
+                  <Text size={"2"} className="text-font/80 dark:text-font-dark/80 font-semibold">
+                    {ltv.toFixed(2)}%
+                  </Text>
                 </Flex>
                 <Separator size={"4"} color={"gray"} className="opacity-50" />
                 <Flex align={"center"} justify={"between"} my={"4"}>
@@ -491,7 +513,9 @@ const CreateLoanOffer: FC = () => {
                     </Flex>
                   </InterestRateInfoLabel>
 
-                  <Text size={"2"} className="text-font-dark/80 font-semibold">{interest.toFixed(2)}%</Text>
+                  <Text size={"2"} className="text-font/80 dark:text-font-dark/80 font-semibold">
+                    {interest.toFixed(2)}%
+                  </Text>
                 </Flex>
                 <Separator size={"4"} color={"gray"} className="opacity-50" />
                 <Flex align={"center"} justify={"between"} my={"4"}>
