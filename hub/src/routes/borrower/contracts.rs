@@ -217,7 +217,7 @@ async fn post_contract_request(
 
     let initial_price = get_bitmex_index_price(OffsetDateTime::now_utc())
         .await
-        .map_err(Error::BitMexOpeningPrice)?;
+        .map_err(Error::BitMexPrice)?;
 
     let min_ltv = offer.min_ltv;
     let initial_collateral = calculate_initial_collateral(body.loan_amount, min_ltv, initial_price)
@@ -805,7 +805,7 @@ async fn post_extend_contract_request(
 ) -> Result<AppJson<Contract>, Error> {
     let current_price = get_bitmex_index_price(OffsetDateTime::now_utc())
         .await
-        .map_err(Error::BitMexOpeningPrice)?;
+        .map_err(Error::BitMexPrice)?;
 
     let new_contract = crate::contract_extension::request_contract_extension(
         &data.db,
@@ -880,8 +880,8 @@ enum Error {
     MoonCardGeneration(anyhow::Error),
     /// Failed to generate Moon invoice.
     MoonInvoiceGeneration(anyhow::Error),
-    /// Failed to get opening price from BitMEX.
-    BitMexOpeningPrice(anyhow::Error),
+    /// Failed to get price from BitMEX.
+    BitMexPrice(anyhow::Error),
     /// Failed to calculate initial collateral.
     InitialCollateralCalculation(anyhow::Error),
     /// No origination fee configured.
@@ -1052,8 +1052,8 @@ impl IntoResponse for Error {
                     "Something went wrong".to_owned(),
                 )
             }
-            Error::BitMexOpeningPrice(e) => {
-                tracing::error!("Failed to get opening price from BitMEX: {e:#}");
+            Error::BitMexPrice(e) => {
+                tracing::error!("Failed to get price from BitMEX: {e:#}");
 
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
