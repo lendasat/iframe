@@ -308,6 +308,20 @@ export const ExtendContract = ({
     return (offer.loan_amount_min <= contract.loan_amount && offer.loan_amount_max >= contract.loan_amount);
   });
 
+  if (offers.length === 0) {
+    return (
+      <Callout.Root color={"orange"}>
+        <Callout.Icon>
+          <GoAlertFill />
+        </Callout.Icon>
+        <Callout.Text>
+          {/*TODO: in the future we could send a request for extension nevertheless*/}
+          {"The lender does not have any open offers or disabled extending contracts."}
+        </Callout.Text>
+      </Callout.Root>
+    );
+  }
+
   const maxAvailableMonths = Math.max(...offers.map((offer) => offer.duration_months_max));
   const minAvailableMonths = Math.min(...offers.map((offer) => offer.duration_months_min));
 
