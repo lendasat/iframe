@@ -1069,7 +1069,7 @@ pub async fn update_collateral(
                 );
 
                 match contract.status {
-                    ContractStatus::Requested | ContractStatus::RenewalRequested => {
+                    ContractStatus::Requested => {
                         // This means that a contract's newly assigned address already has money in
                         // it. We can only get here if the _contract address_ was reused, which is a
                         // really bad idea.
@@ -1091,6 +1091,7 @@ pub async fn update_collateral(
                     }
                     ContractStatus::CollateralConfirmed
                     | ContractStatus::PrincipalGiven
+                    | ContractStatus::RenewalRequested
                     | ContractStatus::RepaymentProvided
                     | ContractStatus::RepaymentConfirmed
                     | ContractStatus::Undercollateralized
