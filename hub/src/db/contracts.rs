@@ -1,3 +1,4 @@
+use crate::db::contract_emails;
 use crate::expiry::expiry_date;
 use crate::model::db;
 use crate::model::Contract;
@@ -531,6 +532,8 @@ async fn insert_contract_request(
     )
         .fetch_one(&mut **db_tx)
         .await?;
+
+    contract_emails::start_tracking_contract_emails(&mut **db_tx, contract_id).await?;
 
     Ok(contract.into())
 }
