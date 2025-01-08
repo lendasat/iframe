@@ -192,6 +192,7 @@ pub enum LoanAssetChain {
     Ethereum,
     Polygon,
     Starknet,
+    Solana,
 }
 
 #[derive(Debug, Deserialize, sqlx::Type, Serialize, Clone, PartialEq)]

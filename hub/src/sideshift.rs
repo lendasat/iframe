@@ -16,6 +16,7 @@ use sideshift::EthereumNetwork;
 use sideshift::Network;
 use sideshift::ShiftStatus;
 use sideshift::SideShiftClient;
+use sideshift::SolanaNetwork;
 use sqlx::Pool;
 use sqlx::Postgres;
 use std::str::FromStr;
@@ -143,8 +144,9 @@ impl Shifter {
         };
 
         let chain = match loan_asset_chain {
-            LoanAssetChain::Ethereum => EthereumNetwork::Ethereum,
-            LoanAssetChain::Polygon => EthereumNetwork::Polygon,
+            LoanAssetChain::Ethereum => Network::Ethereum(EthereumNetwork::Ethereum),
+            LoanAssetChain::Polygon => Network::Ethereum(EthereumNetwork::Polygon),
+            LoanAssetChain::Solana => Network::Solana(SolanaNetwork::Solana),
             LoanAssetChain::Starknet => {
                 bail!("Not supported by SideShift.ai");
             }
@@ -155,7 +157,7 @@ impl Shifter {
                 Coin::Btc,
                 coin,
                 Network::Bitcoin(BitcoinNetwork::Bitcoin),
-                Network::Ethereum(chain),
+                chain,
                 lender_ip,
                 None,
                 Some(amount),

@@ -80,6 +80,14 @@ export default function CustomRequest() {
         assetType = LoanAssetType.Usdc;
         assetChain = LoanAssetChain.Ethereum;
         break;
+      case StableCoin.USDC_SOL:
+        assetType = LoanAssetType.Usdc;
+        assetChain = LoanAssetChain.Solana;
+        break;
+      case StableCoin.USDT_SOL:
+        assetType = LoanAssetType.Usdt;
+        assetChain = LoanAssetChain.Solana;
+        break;
     }
 
     return {

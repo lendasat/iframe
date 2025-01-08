@@ -36,6 +36,13 @@ pub enum SideshiftEthereumNetwork {
     Polygon,
 }
 
+#[derive(sqlx::Type, Debug, Clone)]
+#[sqlx(type_name = "sideshift_ethereum_network")]
+pub enum SideshiftSolanaNetwork {
+    #[sqlx(rename = "solana")]
+    Solana,
+}
+
 // Composite type for network
 #[derive(sqlx::Type, Debug, Clone)]
 #[sqlx(type_name = "sideshift_network")]
@@ -43,6 +50,7 @@ pub struct SideshiftNetwork {
     pub network_type: String,
     pub ethereum_network: Option<SideshiftEthereumNetwork>,
     pub bitcoin_network: Option<SideshiftBitcoinNetwork>,
+    pub solana_network: Option<SideshiftSolanaNetwork>,
 }
 
 // Quote struct that matches your table
@@ -99,6 +107,7 @@ impl From<sideshift::Network> for SideshiftNetwork {
                     network_type: "ethereum".to_string(),
                     ethereum_network: Some(SideshiftEthereumNetwork::Arbitrum),
                     bitcoin_network: None,
+                    solana_network: None,
                 }
             }
             sideshift::Network::Ethereum(sideshift::EthereumNetwork::Ethereum) => {
@@ -106,17 +115,26 @@ impl From<sideshift::Network> for SideshiftNetwork {
                     network_type: "ethereum".to_string(),
                     ethereum_network: Some(SideshiftEthereumNetwork::Mainnet),
                     bitcoin_network: None,
+                    solana_network: None,
                 }
             }
             sideshift::Network::Ethereum(sideshift::EthereumNetwork::Polygon) => SideshiftNetwork {
                 network_type: "ethereum".to_string(),
                 ethereum_network: Some(SideshiftEthereumNetwork::Polygon),
                 bitcoin_network: None,
+                solana_network: None,
             },
             sideshift::Network::Bitcoin(sideshift::BitcoinNetwork::Bitcoin) => SideshiftNetwork {
                 network_type: "bitcoin".to_string(),
                 ethereum_network: None,
                 bitcoin_network: Some(SideshiftBitcoinNetwork::Bitcoin),
+                solana_network: None,
+            },
+            sideshift::Network::Solana(sideshift::SolanaNetwork::Solana) => SideshiftNetwork {
+                network_type: "solana".to_string(),
+                ethereum_network: None,
+                bitcoin_network: None,
+                solana_network: Some(SideshiftSolanaNetwork::Solana),
             },
         }
     }

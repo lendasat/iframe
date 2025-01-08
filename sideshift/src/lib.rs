@@ -67,10 +67,17 @@ pub enum EthereumNetwork {
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
+#[serde(rename_all = "lowercase")]
+pub enum SolanaNetwork {
+    Solana,
+}
+
+#[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
 #[serde(untagged)]
 pub enum Network {
     Ethereum(EthereumNetwork),
     Bitcoin(BitcoinNetwork),
+    Solana(SolanaNetwork),
 }
 
 impl fmt::Display for Network {
@@ -87,6 +94,9 @@ impl fmt::Display for Network {
             }
             Network::Ethereum(EthereumNetwork::Polygon) => {
                 write!(f, "polygon")
+            }
+            Network::Solana(SolanaNetwork::Solana) => {
+                write!(f, "solana")
             }
         }
     }
