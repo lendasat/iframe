@@ -1281,8 +1281,7 @@ pub(crate) async fn close_to_expiry_contracts(
             SELECT id, borrower_id, expiry_date
             FROM contracts
             WHERE
-                status = 'PrincipalGiven' OR 
-                status = 'RenewalRequested' AND
+                (status = 'PrincipalGiven' OR status = 'RenewalRequested') AND
                 expiry_date > $1 AND
                 expiry_date <= $2
         "#,

@@ -62,6 +62,19 @@
                       }
                     }
                   }
+                ],
+                [
+                  "solana_network",
+                  {
+                    "Custom": {
+                      "name": "sideshift_solana_network",
+                      "kind": {
+                        "Enum": [
+                          "mainnet"
+                        ]
+                      }
+                    }
+                  }
                 ]
               ]
             }
@@ -111,6 +124,19 @@
                       "kind": {
                         "Enum": [
                           "bitcoin"
+                        ]
+                      }
+                    }
+                  }
+                ],
+                [
+                  "solana_network",
+                  {
+                    "Custom": {
+                      "name": "sideshift_solana_network",
+                      "kind": {
+                        "Enum": [
+                          "mainnet"
                         ]
                       }
                     }

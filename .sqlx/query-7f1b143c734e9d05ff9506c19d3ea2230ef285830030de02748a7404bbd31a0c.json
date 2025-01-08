@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT id, borrower_id, expiry_date\n            FROM contracts\n            WHERE\n                status = 'PrincipalGiven' OR \n                status = 'RenewalRequested' AND\n                expiry_date > $1 AND\n                expiry_date <= $2\n        ",
+  "query": "\n            SELECT id, borrower_id, expiry_date\n            FROM contracts\n            WHERE\n                (status = 'PrincipalGiven' OR status = 'RenewalRequested') AND\n                expiry_date > $1 AND\n                expiry_date <= $2\n        ",
   "describe": {
     "columns": [
       {
@@ -31,5 +31,5 @@
       false
     ]
   },
-  "hash": "d95d70ecb82c829c7e47e454a0971b54d7d627b241236ebc368138002c1abbd0"
+  "hash": "7f1b143c734e9d05ff9506c19d3ea2230ef285830030de02748a7404bbd31a0c"
 }
