@@ -1,3 +1,4 @@
+use anyhow::Context;
 use bitcoin_units::Amount;
 use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
@@ -10,13 +11,17 @@ pub fn calculate_origination_fee(
     origination_fee_rate: Decimal,
     initial_price: Decimal,
 ) -> anyhow::Result<Amount> {
-    let fee_usd = loan_amount * origination_fee_rate;
-    let fee_btc = fee_usd / initial_price;
+    let fee_usd = loan_amount
+        .checked_mul(origination_fee_rate)
+        .context("failed multiplying amount and fee")?;
+    let fee_btc = fee_usd
+        .checked_div(initial_price)
+        .context("failed dividing by price")?;
 
     let fee_btc = fee_btc.round_dp(8);
-    let fee_btc = fee_btc.to_f64().expect("to fit");
+    let fee_btc = fee_btc.to_f64().context("didn't fit into f64")?;
 
-    Ok(Amount::from_btc(fee_btc).expect("to fit"))
+    Amount::from_btc(fee_btc).context("couldn't parse to Amount")
 }
 
 #[cfg(test)]
@@ -72,13 +77,13 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Division by zero")]
     fn test_zero_btc_price() {
         let loan_amount = dec!(50_000.0);
         let fee_rate = dec!(0.01);
         let btc_price = dec!(0);
 
-        let _result = calculate_origination_fee(loan_amount, fee_rate, btc_price).unwrap();
+        let result = calculate_origination_fee(loan_amount, fee_rate, btc_price);
+        assert!(result.is_err());
     }
 
     #[test]
