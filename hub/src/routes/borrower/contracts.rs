@@ -815,7 +815,7 @@ async fn post_extend_contract_request(
     Path(contract_id): Path<String>,
     AppJson(body): AppJson<ExtendContractRequestSchema>,
 ) -> Result<AppJson<Contract>, Error> {
-    let initial_price = get_bitmex_index_price(OffsetDateTime::now_utc())
+    let current_price = get_bitmex_index_price(OffsetDateTime::now_utc())
         .await
         .map_err(Error::BitMexOpeningPrice)?;
 
@@ -826,7 +826,7 @@ async fn post_extend_contract_request(
         body.loan_id.as_str(),
         user.id.as_str(),
         body.new_duration,
-        initial_price,
+        current_price,
     )
     .await
     .map_err(Error::from)?;
