@@ -8,7 +8,7 @@ import QRCode from "qrcode.react";
 import { type FormEvent, useState } from "react";
 import { Alert, Container, Form } from "react-bootstrap";
 import { FaInfoCircle } from "react-icons/fa";
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from "react-router-dom";
 
 interface RepayContractProps {
   contractId: string;
