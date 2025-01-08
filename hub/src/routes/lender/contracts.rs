@@ -1022,27 +1022,6 @@ async fn map_to_api_contract(
             .map_err(|e| Error::Database(anyhow!(e)))?;
 
     let new_offer = offer;
-    let interest_rate = if let Some(parent_id) = &parent_contract_id {
-        let parent_contract = db::contracts::load_contract(&data.db, parent_id)
-            .await
-            .map_err(Error::Database)?;
-        let old_offer = db::loan_offers::loan_by_id(&data.db, parent_contract.loan_id.as_str())
-            .await
-            .map_err(Error::Database)?
-            .ok_or(Error::MissingLoanOffer {
-                offer_id: parent_contract.loan_id,
-            })?;
-
-        crate::contract_extension::calculate_new_interest_rate(
-            old_offer.interest_rate,
-            contract.duration_months,
-            new_offer.interest_rate,
-            contract.duration_months,
-        )
-        .map_err(crate::contract_extension::Error::InterestRateCalculation)?
-    } else {
-        new_offer.interest_rate
-    };
 
     let contract = Contract {
         id: contract.id,
@@ -1051,7 +1030,7 @@ async fn map_to_api_contract(
         initial_collateral_sats: contract.initial_collateral_sats,
         origination_fee_sats: contract.origination_fee_sats,
         collateral_sats: contract.collateral_sats,
-        interest_rate,
+        interest_rate: contract.interest_rate,
         initial_ltv: contract.initial_ltv,
         loan_asset_type: new_offer.loan_asset_type,
         loan_asset_chain: new_offer.loan_asset_chain,

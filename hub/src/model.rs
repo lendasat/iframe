@@ -268,6 +268,8 @@ pub struct Contract {
     pub created_at: OffsetDateTime,
     #[serde(with = "time::serde::rfc3339")]
     pub updated_at: OffsetDateTime,
+    #[serde(with = "rust_decimal::serde::float")]
+    pub interest_rate: Decimal,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -397,6 +399,7 @@ pub mod db {
         pub status: ContractStatus,
         pub liquidation_status: LiquidationStatus,
         pub contract_version: i32,
+        pub interest_rate: Decimal,
         #[serde(with = "time::serde::rfc3339")]
         pub created_at: OffsetDateTime,
         #[serde(with = "time::serde::rfc3339")]
@@ -498,6 +501,7 @@ impl From<db::Contract> for Contract {
                 .contract_address
                 .map(|addr| addr.parse().expect("valid address")),
             contract_index: value.contract_index.map(|i| i as u32),
+            interest_rate: value.interest_rate,
             status: value.status.into(),
             liquidation_status: value.liquidation_status.into(),
             contract_version: ContractVersion::from(value.contract_version),
@@ -623,6 +627,7 @@ impl From<Contract> for db::Contract {
             status: value.status.into(),
             liquidation_status: value.liquidation_status.into(),
             contract_version: value.contract_version as i32,
+            interest_rate: value.interest_rate,
             created_at: value.created_at,
             updated_at: value.updated_at,
         }

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            integration as \"integration: crate::model::db::Integration\",\n            lender_xpub,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            expiry_date,\n            contract_version,\n            created_at,\n            updated_at\n        FROM contracts\n        where lender_id = $1\n        ",
+  "query": "\n        UPDATE contracts\n        SET status = $1,\n            updated_at = $2\n        WHERE lender_id = $3\n          AND id = $4\n        RETURNING\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            integration as \"integration: crate::model::db::Integration\",\n            lender_xpub,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            expiry_date,\n            contract_version,\n            interest_rate,\n            created_at,\n            updated_at\n        ",
   "describe": {
     "columns": [
       {
@@ -160,17 +160,53 @@
       },
       {
         "ordinal": 21,
+        "name": "interest_rate",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 22,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 22,
+        "ordinal": 23,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
+        {
+          "Custom": {
+            "name": "contract_status",
+            "kind": {
+              "Enum": [
+                "Requested",
+                "Approved",
+                "CollateralSeen",
+                "CollateralConfirmed",
+                "PrincipalGiven",
+                "RepaymentProvided",
+                "RepaymentConfirmed",
+                "Closing",
+                "Closed",
+                "Rejected",
+                "DisputeBorrowerStarted",
+                "DisputeLenderStarted",
+                "DisputeBorrowerResolved",
+                "DisputeLenderResolved",
+                "Cancelled",
+                "RequestExpired",
+                "Defaulted",
+                "Undercollateralized",
+                "RenewalRequested",
+                "Extended"
+              ]
+            }
+          }
+        },
+        "Timestamptz",
+        "Bpchar",
         "Bpchar"
       ]
     },
@@ -197,8 +233,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "cb04df855bc68bf934c030c849d4c718e1cb1f2a568730a506bfbbe405995abc"
+  "hash": "b352307a633e27288d73fed7e63a3419449981faada328f5c9079839f5410c01"
 }

@@ -207,6 +207,7 @@ async fn create_loan_request(
         Integration::StableCoin,
         lender_xpub,
         ContractVersion::TwoOfThree,
+        offer.interest_rate,
     )
     .await
 }

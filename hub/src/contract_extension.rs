@@ -37,7 +37,7 @@ pub async fn request_contract_extension(
     extended_duration: i32,
     current_price: Decimal,
 ) -> Result<Contract, Error> {
-    let contract = db::contracts::load_contract_by_contract_id_and_borrower_id(
+    let original_contract = db::contracts::load_contract_by_contract_id_and_borrower_id(
         pool,
         original_contract_id,
         borrower_id,
@@ -53,7 +53,7 @@ pub async fn request_contract_extension(
             offer_id: new_offer_id.to_string(),
         })?;
 
-    if contract.lender_id != new_offer.lender_id {
+    if original_contract.lender_id != new_offer.lender_id {
         // We do not support this at the moment
         return Err(Error::LoanOfferLenderMismatch);
     }
@@ -70,38 +70,52 @@ pub async fn request_contract_extension(
         .first()
         .ok_or(Error::MissingOriginationFee)?;
 
-    let new_origination_fee =
-        calculate_origination_fee(contract.loan_amount, new_origination_fee.fee, current_price)
-            .map_err(Error::OriginationFeeCalculation)?;
+    let new_origination_fee = calculate_origination_fee(
+        original_contract.loan_amount,
+        new_origination_fee.fee,
+        current_price,
+    )
+    .map_err(Error::OriginationFeeCalculation)?;
 
     // The origination fee of the new contract is the original origination fee + the origination fee
     // to extend the contract this is because the original contract has not beem paid back yet
     // and this is basically a new loan
-    let new_origination_fee = contract.origination_fee_sats + new_origination_fee.to_sat();
+    let new_origination_fee = original_contract.origination_fee_sats + new_origination_fee.to_sat();
 
-    let new_total_duration = extended_duration + contract.duration_months;
+    let interest_rate = calculate_new_interest_rate(
+        original_contract.interest_rate,
+        original_contract.duration_months,
+        new_offer.interest_rate,
+        extended_duration,
+    )
+    .map_err(Error::InterestRateCalculation)?;
+
+    let new_total_duration = extended_duration + original_contract.duration_months;
     let new_contract = db::contracts::insert_extension_contract_request(
         &mut db_tx,
         Uuid::new_v4(),
-        contract.borrower_id.as_str(),
-        contract.lender_id.as_str(),
+        original_contract.borrower_id.as_str(),
+        original_contract.lender_id.as_str(),
         new_offer.id.as_str(),
-        contract.initial_ltv,
-        contract.initial_collateral_sats,
-        contract.collateral_sats,
+        original_contract.initial_ltv,
+        original_contract.initial_collateral_sats,
+        original_contract.collateral_sats,
         new_origination_fee,
-        contract.loan_amount,
+        original_contract.loan_amount,
         new_total_duration,
-        contract.borrower_btc_address,
-        contract.borrower_pk,
-        contract.borrower_loan_address.as_str(),
-        contract.integration,
-        contract.contract_version,
+        original_contract.borrower_btc_address,
+        original_contract.borrower_pk,
+        original_contract.borrower_loan_address.as_str(),
+        original_contract.integration,
+        original_contract.contract_version,
         new_offer.auto_accept,
-        contract.lender_xpub.ok_or(Error::MissingLenderXpub)?,
-        contract.created_at,
-        contract.contract_address,
-        contract.contract_index,
+        original_contract
+            .lender_xpub
+            .ok_or(Error::MissingLenderXpub)?,
+        original_contract.created_at,
+        original_contract.contract_address,
+        original_contract.contract_index,
+        interest_rate,
     )
     .await
     .map_err(Error::Database)?;

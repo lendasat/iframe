@@ -50,6 +50,7 @@ pub async fn load_contracts_by_borrower_id(
             duration_months,
             expiry_date,
             contract_version,
+            interest_rate,
             created_at,
             updated_at
         FROM contracts
@@ -97,6 +98,7 @@ pub async fn load_contracts_by_lender_id(
             duration_months,
             expiry_date,
             contract_version,
+            interest_rate,
             created_at,
             updated_at
         FROM contracts
@@ -141,6 +143,7 @@ pub async fn load_contract(pool: &Pool<Postgres>, contract_id: &str) -> Result<C
             duration_months,
             expiry_date,
             contract_version,
+            interest_rate,
             created_at,
             updated_at
         FROM contracts
@@ -184,6 +187,7 @@ pub async fn load_contract_by_contract_id_and_borrower_id(
             duration_months,
             expiry_date,
             contract_version,
+            interest_rate,
             created_at,
             updated_at
         FROM contracts
@@ -229,6 +233,7 @@ pub async fn load_contract_by_contract_id_and_lender_id(
             duration_months,
             expiry_date,
             contract_version,
+            interest_rate,
             created_at,
             updated_at
         FROM contracts
@@ -270,6 +275,7 @@ pub async fn load_open_contracts(pool: &Pool<Postgres>) -> Result<Vec<Contract>>
             duration_months,
             expiry_date,
             contract_version,
+            interest_rate,
             created_at,
             updated_at
         FROM contracts
@@ -312,6 +318,7 @@ pub async fn insert_new_contract_request(
     integration: Integration,
     lender_xpub: Xpub,
     contract_version: ContractVersion,
+    interest_rate: Decimal,
 ) -> Result<Contract> {
     let mut db_tx = pool
         .begin()
@@ -353,6 +360,7 @@ pub async fn insert_new_contract_request(
         lender_xpub,
         None,
         None,
+        interest_rate,
     )
     .await?;
 
@@ -383,6 +391,7 @@ pub async fn insert_extension_contract_request(
     original_creation_date: OffsetDateTime,
     contract_address: Option<Address<NetworkUnchecked>>,
     contract_index: Option<u32>,
+    interest_rate: Decimal,
 ) -> Result<Contract> {
     let id = id.to_string();
     let initial_collateral_sats = initial_collateral_sats as i64;
@@ -426,6 +435,7 @@ pub async fn insert_extension_contract_request(
         lender_xpub,
         contract_address.map(|address| address.assume_checked().to_string()),
         contract_index.map(|index| index as i32),
+        interest_rate,
     )
     .await
 }
@@ -454,6 +464,7 @@ async fn insert_contract_request(
     lender_xpub: Xpub,
     contract_address: Option<String>,
     contract_index: Option<i32>,
+    interest_rate: Decimal,
 ) -> Result<Contract, Error> {
     let contract = sqlx::query_as!(
         db::Contract,
@@ -480,8 +491,9 @@ async fn insert_contract_request(
             contract_index,
             contract_version,
             created_at,
-            expiry_date
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
+            expiry_date,
+            interest_rate
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
         RETURNING
             id,
             lender_id,
@@ -504,6 +516,7 @@ async fn insert_contract_request(
             duration_months,
             expiry_date,
             contract_version,
+            interest_rate,
             created_at,
             updated_at
         "#,
@@ -528,7 +541,8 @@ async fn insert_contract_request(
         contract_index as Option<i32>,
         contract_version,
         created_at,
-        expiry_date
+        expiry_date,
+        interest_rate
     )
         .fetch_one(&mut **db_tx)
         .await?;
@@ -577,6 +591,7 @@ pub async fn accept_contract_request(
             duration_months,
             expiry_date,
             contract_version,
+            interest_rate,
             created_at,
             updated_at
         "#,
@@ -633,6 +648,7 @@ pub async fn accept_extend_contract_request(
             duration_months,
             expiry_date,
             contract_version,
+            interest_rate,
             created_at,
             updated_at
         "#,
@@ -691,6 +707,7 @@ pub async fn mark_contract_as_principal_given(
             duration_months,
             expiry_date,
             contract_version,
+            interest_rate,
             created_at,
             updated_at
         "#,
@@ -813,6 +830,7 @@ pub async fn reject_contract_request(
             duration_months,
             expiry_date,
             contract_version,
+            interest_rate,
             created_at,
             updated_at
         "#,
@@ -862,6 +880,7 @@ pub(crate) async fn mark_liquidation_state_as(
             duration_months,
             expiry_date,
             contract_version,
+            interest_rate,
             created_at,
             updated_at
         "#,
@@ -913,6 +932,7 @@ where
             duration_months,
             expiry_date,
             contract_version,
+            interest_rate,
             created_at,
             updated_at
         "#,
@@ -954,6 +974,7 @@ pub(crate) async fn load_open_not_liquidated_contracts(
             duration_months,
             expiry_date,
             contract_version,
+            interest_rate,
             created_at,
             updated_at
         FROM contracts
@@ -1185,6 +1206,7 @@ pub async fn update_collateral(
             duration_months,
             expiry_date,
             contract_version,
+            interest_rate,
             created_at,
             updated_at
         "#,
