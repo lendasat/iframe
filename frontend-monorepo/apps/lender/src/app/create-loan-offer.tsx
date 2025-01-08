@@ -487,7 +487,7 @@ const CreateLoanOffer: FC = () => {
                 <Separator size={"4"} color={"gray"} className="opacity-50" />
                 <Flex align={"center"} justify={"between"} my={"4"}>
                   <Text as="label" size={"2"} className="text-font/50 dark:text-font-dark/50">Duration</Text>
-                  <Text size={"2"} className="text-font-dark/80 font-semibold">
+                  <Text size={"2"} className="text-font/80 dark:text-font-dark/80 font-semibold">
                     {loanDuration.min} ~ {loanDuration.max} Months
                   </Text>
                 </Flex>
@@ -500,7 +500,9 @@ const CreateLoanOffer: FC = () => {
                     </Flex>
                   </LtvInfoLabel>
 
-                  <Text size={"2"} className="text-font-dark/80 font-semibold">{ltv.toFixed(2)}%</Text>
+                  <Text size={"2"} className="text-font/80 dark:text-font-dark/80 font-semibold">
+                    {ltv.toFixed(2)}%
+                  </Text>
                 </Flex>
                 <Separator size={"4"} color={"gray"} className="opacity-50" />
                 <Flex align={"center"} justify={"between"} my={"4"}>
@@ -511,7 +513,9 @@ const CreateLoanOffer: FC = () => {
                     </Flex>
                   </InterestRateInfoLabel>
 
-                  <Text size={"2"} className="text-font-dark/80 font-semibold">{interest.toFixed(2)}%</Text>
+                  <Text size={"2"} className="text-font/80 dark:text-font-dark/80 font-semibold">
+                    {interest.toFixed(2)}%
+                  </Text>
                 </Flex>
                 <Separator size={"4"} color={"gray"} className="opacity-50" />
                 <Flex align={"center"} justify={"between"} my={"4"}>
