@@ -117,7 +117,7 @@ pub async fn load_contracts_by_lender_id(
     Ok(contracts)
 }
 
-pub async fn load_contract(pool: &Pool<Postgres>, contract_id: &str) -> Result<Contract> {
+async fn load_contract(pool: &Pool<Postgres>, contract_id: &str) -> Result<Contract> {
     let contract = sqlx::query_as!(
         db::Contract,
         r#"
