@@ -8,7 +8,7 @@ import QRCode from "qrcode.react";
 import { type FormEvent, useState } from "react";
 import { Alert, Container, Form } from "react-bootstrap";
 import { FaInfoCircle } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from 'react-router-dom';
 
 interface RepayContractProps {
   contractId: string;
@@ -114,13 +114,13 @@ export const RepayContract = ({
               You are expected to pay back your loan by <strong>{format(expiry, "PPPP")}</strong>. Remember to{" "}
               <strong>pay back in full</strong>, with a single transaction; partial repayments are not supported. You
               must pay back using the same asset you borrowed:{" "}
-              <a
-                href={StableCoinHelper.toContractUrl(stableCoin)}
+              <Link
+                to={StableCoinHelper.toContractUrl(stableCoin)}
                 target={"_blank"}
                 className="text-blue-500 hover:underline hover:text-blue-700"
               >
                 {StableCoinHelper.print(stableCoin)}
-              </a>.
+              </Link>.
             </Callout.Text>
           </Callout.Root>
         </Box>
