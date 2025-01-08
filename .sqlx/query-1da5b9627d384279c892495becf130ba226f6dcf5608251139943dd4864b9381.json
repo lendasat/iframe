@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            integration as \"integration: crate::model::db::Integration\",\n            lender_xpub,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            expiry_date,\n            contract_version,\n            created_at,\n            updated_at\n        FROM contracts\n        WHERE status NOT IN ($1, $2, $3, $4, $5, $6, $7, $8, $9) and liquidation_status NOT in ($10)\n        ",
+  "query": "\n        SELECT\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            integration as \"integration: crate::model::db::Integration\",\n            lender_xpub,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            expiry_date,\n            contract_version,\n            interest_rate,\n            created_at,\n            updated_at\n        FROM contracts\n        WHERE status NOT IN ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) and liquidation_status NOT in ($11)\n        ",
   "describe": {
     "columns": [
       {
@@ -118,7 +118,9 @@
                 "Cancelled",
                 "RequestExpired",
                 "Defaulted",
-                "Undercollateralized"
+                "Undercollateralized",
+                "RenewalRequested",
+                "Extended"
               ]
             }
           }
@@ -158,11 +160,16 @@
       },
       {
         "ordinal": 21,
+        "name": "interest_rate",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 22,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 22,
+        "ordinal": 23,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -191,7 +198,9 @@
                 "Cancelled",
                 "RequestExpired",
                 "Defaulted",
-                "Undercollateralized"
+                "Undercollateralized",
+                "RenewalRequested",
+                "Extended"
               ]
             }
           }
@@ -218,7 +227,9 @@
                 "Cancelled",
                 "RequestExpired",
                 "Defaulted",
-                "Undercollateralized"
+                "Undercollateralized",
+                "RenewalRequested",
+                "Extended"
               ]
             }
           }
@@ -245,7 +256,9 @@
                 "Cancelled",
                 "RequestExpired",
                 "Defaulted",
-                "Undercollateralized"
+                "Undercollateralized",
+                "RenewalRequested",
+                "Extended"
               ]
             }
           }
@@ -272,7 +285,9 @@
                 "Cancelled",
                 "RequestExpired",
                 "Defaulted",
-                "Undercollateralized"
+                "Undercollateralized",
+                "RenewalRequested",
+                "Extended"
               ]
             }
           }
@@ -299,7 +314,9 @@
                 "Cancelled",
                 "RequestExpired",
                 "Defaulted",
-                "Undercollateralized"
+                "Undercollateralized",
+                "RenewalRequested",
+                "Extended"
               ]
             }
           }
@@ -326,7 +343,9 @@
                 "Cancelled",
                 "RequestExpired",
                 "Defaulted",
-                "Undercollateralized"
+                "Undercollateralized",
+                "RenewalRequested",
+                "Extended"
               ]
             }
           }
@@ -353,7 +372,9 @@
                 "Cancelled",
                 "RequestExpired",
                 "Defaulted",
-                "Undercollateralized"
+                "Undercollateralized",
+                "RenewalRequested",
+                "Extended"
               ]
             }
           }
@@ -380,7 +401,9 @@
                 "Cancelled",
                 "RequestExpired",
                 "Defaulted",
-                "Undercollateralized"
+                "Undercollateralized",
+                "RenewalRequested",
+                "Extended"
               ]
             }
           }
@@ -407,7 +430,38 @@
                 "Cancelled",
                 "RequestExpired",
                 "Defaulted",
-                "Undercollateralized"
+                "Undercollateralized",
+                "RenewalRequested",
+                "Extended"
+              ]
+            }
+          }
+        },
+        {
+          "Custom": {
+            "name": "contract_status",
+            "kind": {
+              "Enum": [
+                "Requested",
+                "Approved",
+                "CollateralSeen",
+                "CollateralConfirmed",
+                "PrincipalGiven",
+                "RepaymentProvided",
+                "RepaymentConfirmed",
+                "Closing",
+                "Closed",
+                "Rejected",
+                "DisputeBorrowerStarted",
+                "DisputeLenderStarted",
+                "DisputeBorrowerResolved",
+                "DisputeLenderResolved",
+                "Cancelled",
+                "RequestExpired",
+                "Defaulted",
+                "Undercollateralized",
+                "RenewalRequested",
+                "Extended"
               ]
             }
           }
@@ -450,8 +504,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "60a153e8f065dea2f859eef85853bf704e863c1909546f537fc5336dba8d8cd3"
+  "hash": "1da5b9627d384279c892495becf130ba226f6dcf5608251139943dd4864b9381"
 }

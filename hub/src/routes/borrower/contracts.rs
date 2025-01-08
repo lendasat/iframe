@@ -1,6 +1,7 @@
 use crate::approve_contract;
 use crate::approve_contract::approve_contract;
 use crate::bitmex_index_price_rest::get_bitmex_index_price;
+use crate::contract_requests;
 use crate::db;
 use crate::email::Email;
 use crate::mempool;
@@ -22,6 +23,7 @@ use crate::routes::user_connection_details_middleware;
 use crate::routes::user_connection_details_middleware::UserConnectionDetails;
 use crate::routes::AppState;
 use crate::utils::calculate_liquidation_price;
+use anyhow::anyhow;
 use anyhow::Context;
 use axum::extract::rejection::JsonRejection;
 use axum::extract::FromRequest;
@@ -107,6 +109,13 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
                 jwt_auth::auth,
             )),
         )
+        .route(
+            "/api/contracts/:id/extend",
+            post(post_extend_contract_request).route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                jwt_auth::auth,
+            )),
+        )
         .layer(
             tower::ServiceBuilder::new().layer(middleware::from_fn_with_state(
                 app_state.clone(),
@@ -126,7 +135,9 @@ async fn post_contract_request(
     let offer = db::loan_offers::loan_by_id(&data.db, &body.loan_id)
         .await
         .map_err(Error::Database)?
-        .ok_or(Error::MissingLoanOffer)?;
+        .ok_or(Error::MissingLoanOffer {
+            offer_id: body.loan_id.clone(),
+        })?;
 
     let contract_id = Uuid::new_v4();
     let lender_id = offer.lender_id;
@@ -206,7 +217,7 @@ async fn post_contract_request(
 
     let initial_price = get_bitmex_index_price(OffsetDateTime::now_utc())
         .await
-        .map_err(Error::BitMexOpeningPrice)?;
+        .map_err(Error::BitMexPrice)?;
 
     let min_ltv = offer.min_ltv;
     let initial_collateral = calculate_initial_collateral(body.loan_amount, min_ltv, initial_price)
@@ -220,12 +231,13 @@ async fn post_contract_request(
         .first()
         .ok_or(Error::MissingOriginationFee)?;
 
-    let origination_fee = calculate_origination_fee(body.loan_amount, fee.fee, initial_price)
-        .map_err(Error::OriginationFeeCalculation)?;
+    let origination_fee =
+        contract_requests::calculate_origination_fee(body.loan_amount, fee.fee, initial_price)
+            .map_err(Error::OriginationFeeCalculation)?;
 
     let lender_xpub = offer.lender_xpub.ok_or(Error::MissingLenderXpub)?;
     let lender_xpub = Xpub::from_str(&lender_xpub).expect("valid lender Xpub");
-    let contract = db::contracts::insert_contract_request(
+    let contract = db::contracts::insert_new_contract_request(
         &data.db,
         contract_id,
         user.id.as_str(),
@@ -242,6 +254,7 @@ async fn post_contract_request(
         body.integration,
         lender_xpub,
         ContractVersion::TwoOfThree,
+        offer.interest_rate,
     )
     .await
     .map_err(Error::Database)?;
@@ -342,10 +355,27 @@ async fn cancel_contract_request(
     .await
     .map_err(Error::Database)?;
 
-    if contract.status != ContractStatus::Requested {
+    if contract.status != ContractStatus::Requested
+        && contract.status != ContractStatus::RenewalRequested
+    {
         return Err(Error::InvalidCancelRequest {
             status: contract.status,
         });
+    }
+
+    // TODO(bonomat): make use of database transaction
+    if contract.status == ContractStatus::RenewalRequested {
+        let parent =
+            db::contract_extensions::get_parent_by_extended(&data.db, contract_id.as_str())
+                .await
+                .map_err(|e| Error::Database(anyhow!(e)))?
+                .ok_or(Error::MissingParentContract(contract_id.clone()))?;
+        db::contracts::cancel_extension(&data.db, parent.as_str())
+            .await
+            .map_err(Error::Database)?;
+        db::contract_extensions::delete_with_parent(&data.db, parent.as_str())
+            .await
+            .map_err(|e| Error::Database(anyhow!(e)))?;
     }
 
     db::contracts::mark_contract_as_cancelled(&data.db, contract_id.as_str())
@@ -607,6 +637,8 @@ pub struct Contract {
     pub integration: Integration,
     #[serde(with = "rust_decimal::serde::float")]
     pub liquidation_price: Decimal,
+    pub extends_contract: Option<String>,
+    pub extended_by_contract: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -630,20 +662,6 @@ pub struct ClaimTx {
 #[derive(Debug, Deserialize)]
 pub struct PrincipalRepaidQueryParam {
     pub txid: String,
-}
-
-fn calculate_origination_fee(
-    loan_amount: Decimal,
-    fee: Decimal,
-    initial_price: Decimal,
-) -> anyhow::Result<Amount> {
-    let fee_usd = loan_amount * fee;
-    let fee_btc = fee_usd / initial_price;
-
-    let fee_btc = fee_btc.round_dp(8);
-    let fee_btc = fee_btc.to_f64().expect("to fit");
-
-    Ok(Amount::from_btc(fee_btc).expect("to fit"))
 }
 
 fn calculate_initial_collateral(
@@ -673,7 +691,9 @@ async fn map_to_api_contract(
     let offer = db::loan_offers::loan_by_id(&data.db, &contract.loan_id)
         .await
         .map_err(Error::Database)?
-        .ok_or(Error::MissingLoanOffer)?;
+        .ok_or(Error::MissingLoanOffer {
+            offer_id: contract.loan_id,
+        })?;
 
     let lender = db::lenders::get_user_by_id(&data.db, &contract.lender_id)
         .await
@@ -698,6 +718,17 @@ async fn map_to_api_contract(
         Decimal::from_u64(collateral).expect("to fit"),
     );
 
+    let parent_contract_id =
+        db::contract_extensions::get_parent_by_extended(&data.db, contract.id.as_str())
+            .await
+            .map_err(|e| Error::Database(anyhow!(e)))?;
+    let child_contract =
+        db::contract_extensions::get_extended_by_parent(&data.db, contract.id.as_str())
+            .await
+            .map_err(|e| Error::Database(anyhow!(e)))?;
+
+    let new_offer = offer;
+
     let contract = Contract {
         id: contract.id,
         loan_amount: contract.loan_amount,
@@ -705,10 +736,10 @@ async fn map_to_api_contract(
         initial_collateral_sats: contract.initial_collateral_sats,
         origination_fee_sats: contract.origination_fee_sats,
         collateral_sats: contract.collateral_sats,
-        interest_rate: offer.interest_rate,
+        interest_rate: contract.interest_rate,
         initial_ltv: contract.initial_ltv,
-        loan_asset_type: offer.loan_asset_type,
-        loan_asset_chain: offer.loan_asset_chain,
+        loan_asset_type: new_offer.loan_asset_type,
+        loan_asset_chain: new_offer.loan_asset_chain,
         status: contract.status,
         borrower_pk: contract.borrower_pk,
         borrower_btc_address: contract.borrower_btc_address.assume_checked().to_string(),
@@ -716,7 +747,7 @@ async fn map_to_api_contract(
         contract_address: contract
             .contract_address
             .map(|c| c.assume_checked().to_string()),
-        loan_repayment_address: offer.loan_repayment_address,
+        loan_repayment_address: new_offer.loan_repayment_address,
         lender: LenderProfile {
             id: contract.lender_id,
             name: lender.name,
@@ -729,9 +760,45 @@ async fn map_to_api_contract(
         transactions,
         integration: contract.integration,
         liquidation_price,
+        extends_contract: parent_contract_id,
+        extended_by_contract: child_contract,
     };
 
     Ok(contract)
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ExtendContractRequestSchema {
+    pub loan_id: String,
+    pub new_duration: i32,
+}
+
+#[instrument(skip_all, err(Debug))]
+async fn post_extend_contract_request(
+    State(data): State<Arc<AppState>>,
+    Extension(user): Extension<User>,
+    Path(contract_id): Path<String>,
+    AppJson(body): AppJson<ExtendContractRequestSchema>,
+) -> Result<AppJson<Contract>, Error> {
+    let current_price = get_bitmex_index_price(OffsetDateTime::now_utc())
+        .await
+        .map_err(Error::BitMexPrice)?;
+
+    let new_contract = crate::contract_extension::request_contract_extension(
+        &data.db,
+        &data.config,
+        contract_id.as_str(),
+        body.loan_id.as_str(),
+        user.id.as_str(),
+        body.new_duration,
+        current_price,
+    )
+    .await
+    .map_err(Error::from)?;
+
+    let contract = map_to_api_contract(&data, new_contract).await?;
+
+    Ok(AppJson(contract))
 }
 
 async fn is_us_ip(ip: &str) -> anyhow::Result<bool> {
@@ -762,7 +829,7 @@ enum Error {
     /// Failed to interact with the database.
     Database(anyhow::Error),
     /// Referenced loan does not exist.
-    MissingLoanOffer,
+    MissingLoanOffer { offer_id: String },
     /// Referenced lender does not exist.
     MissingLender,
     /// Failed to provide borrower loan address for stablecoin loan.
@@ -790,16 +857,19 @@ enum Error {
     MoonCardGeneration(anyhow::Error),
     /// Failed to generate Moon invoice.
     MoonInvoiceGeneration(anyhow::Error),
-    /// Failed to get opening price from BitMEX.
-    BitMexOpeningPrice(anyhow::Error),
+    /// Failed to get price from BitMEX.
+    BitMexPrice(anyhow::Error),
     /// Failed to calculate initial collateral.
     InitialCollateralCalculation(anyhow::Error),
     /// No origination fee configured.
     MissingOriginationFee,
     /// Failed to calculate origination fee in sats.
     OriginationFeeCalculation(anyhow::Error),
+    /// Can't approve a contract request with a [`ContractStatus`] different to
+    /// [`ContractStatus::Requested`] or [`ContractStatus::RenewalRequested`].
+    InvalidApproveRequest { status: ContractStatus },
     /// Can't cancel a contract request with a [`ContractStatus`] different to
-    /// [`ContractStatus::Requested`].
+    /// [`ContractStatus::Requested`] or [`ContractStatus::RenewalRequested`].
     InvalidCancelRequest { status: ContractStatus },
     /// Can't claim collateral if principal has not been repaid.
     PrincipalNotRepaid,
@@ -828,6 +898,13 @@ enum Error {
     /// The borrower is trying to interact with a contract that is not theirs, according to our
     /// records.
     NotYourContract,
+    /// Loan extension was requested with an offer from a different lender which is currently not
+    /// supported
+    LoanOfferLenderMismatch,
+    /// We failed at calculating the interest rate. Cannot do much without this
+    InterestRateCalculation(anyhow::Error),
+    /// Can't cancel a extend contract request if the parent does not exist
+    MissingParentContract(String),
 }
 
 impl From<JsonRejection> for Error {
@@ -879,8 +956,8 @@ impl IntoResponse for Error {
                     "Something went wrong".to_owned(),
                 )
             }
-            Error::MissingLoanOffer => {
-                tracing::error!("Could not find referenced loan");
+            Error::MissingLoanOffer { offer_id } => {
+                tracing::error!(offer_id, "Could not find referenced loan offer");
 
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
@@ -952,8 +1029,8 @@ impl IntoResponse for Error {
                     "Something went wrong".to_owned(),
                 )
             }
-            Error::BitMexOpeningPrice(e) => {
-                tracing::error!("Failed to get opening price from BitMEX: {e:#}");
+            Error::BitMexPrice(e) => {
+                tracing::error!("Failed to get price from BitMEX: {e:#}");
 
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
@@ -1080,6 +1157,31 @@ impl IntoResponse for Error {
                 )
             }
             Error::NotYourContract => (StatusCode::NOT_FOUND, "Contract not found".to_owned()),
+            Error::LoanOfferLenderMismatch => (
+                StatusCode::BAD_REQUEST,
+                "Offer cannot be from a different lender".to_owned(),
+            ),
+            Error::InterestRateCalculation(e) => {
+                tracing::error!("Failed at calculating interest rate {e:#}");
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
+            Error::MissingParentContract(contract_id) => {
+                tracing::error!(
+                    contract_id,
+                    "Failed at cancelling contract extension request as contract was not extended"
+                );
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
+            Error::InvalidApproveRequest { status } => (
+                StatusCode::BAD_REQUEST,
+                format!("Cannot cancel a contract request with status {status:?}"),
+            ),
         };
 
         (status, AppJson(ErrorResponse { message })).into_response()
@@ -1094,6 +1196,31 @@ impl From<approve_contract::Error> for Error {
             approve_contract::Error::ContractAddress(e) => Error::ContractAddress(e),
             approve_contract::Error::MissingBorrower => Error::MissingBorrower,
             approve_contract::Error::TrackContract(e) => Error::TrackContract(e),
+            approve_contract::Error::InvalidApproveRequest { status } => {
+                Error::InvalidApproveRequest { status }
+            }
+        }
+    }
+}
+
+impl From<crate::contract_extension::Error> for Error {
+    fn from(value: crate::contract_extension::Error) -> Self {
+        match value {
+            crate::contract_extension::Error::Database(e) => Error::Database(e),
+            crate::contract_extension::Error::MissingLoanOffer { offer_id } => {
+                Error::MissingLoanOffer { offer_id }
+            }
+            crate::contract_extension::Error::LoanOfferLenderMismatch => {
+                Error::LoanOfferLenderMismatch
+            }
+            crate::contract_extension::Error::InterestRateCalculation(e) => {
+                Error::InterestRateCalculation(e)
+            }
+            crate::contract_extension::Error::MissingOriginationFee => Error::MissingOriginationFee,
+            crate::contract_extension::Error::OriginationFeeCalculation(e) => {
+                Error::OriginationFeeCalculation(e)
+            }
+            crate::contract_extension::Error::MissingLenderXpub => Error::MissingLenderXpub,
         }
     }
 }

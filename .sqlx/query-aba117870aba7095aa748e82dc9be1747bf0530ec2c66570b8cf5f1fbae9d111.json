@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT extended_contract_id\n            FROM contract_extensions\n        WHERE parent_contract_id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "extended_contract_id",
+        "type_info": "Bpchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bpchar"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "aba117870aba7095aa748e82dc9be1747bf0530ec2c66570b8cf5f1fbae9d111"
+}

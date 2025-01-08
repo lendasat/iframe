@@ -4,6 +4,7 @@ use crate::contract_liquidation;
 use crate::db;
 use crate::email::Email;
 use crate::mempool;
+use crate::model;
 use crate::model::ContractStatus;
 use crate::model::LiquidationStatus;
 use crate::model::LoanAssetChain;
@@ -19,12 +20,15 @@ use crate::routes::AppState;
 use crate::routes::ErrorResponse;
 use anyhow::anyhow;
 use anyhow::Context;
+use axum::extract::rejection::JsonRejection;
+use axum::extract::FromRequest;
 use axum::extract::Path;
 use axum::extract::Query;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::middleware;
 use axum::response::IntoResponse;
+use axum::response::Response;
 use axum::routing::delete;
 use axum::routing::get;
 use axum::routing::post;
@@ -160,6 +164,8 @@ pub struct Contract {
     pub loan_asset_chain: LoanAssetChain,
     pub loan_asset_type: LoanAssetType,
     pub can_recover_collateral_manually: bool,
+    pub extends_contract: Option<String>,
+    pub extended_by_contract: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -172,114 +178,19 @@ pub struct BorrowerProfile {
 pub async fn get_active_contracts(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<User>,
-) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+) -> Result<AppJson<Vec<Contract>>, Error> {
     let contracts = db::contracts::load_contracts_by_lender_id(&data.db, user.id.as_str())
         .await
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
+        .map_err(Error::Database)?;
 
     let mut contracts_2 = Vec::new();
     for contract in contracts {
-        let transactions =
-            db::transactions::get_all_for_contract_id(&data.db, contract.id.as_str())
-                .await
-                .map_err(|error| {
-                    let error_response = ErrorResponse {
-                        message: format!("Database error: {}", error),
-                    };
-                    (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-                })?;
-
-        let offer = db::loan_offers::loan_by_id(&data.db, &contract.loan_id)
-            .await
-            .map_err(|error| {
-                let error_response = ErrorResponse {
-                    message: format!("Database error: {}", error),
-                };
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-            })?
-            .context("No loan found for contract")
-            .map_err(|error| {
-                let error_response = ErrorResponse {
-                    message: format!("Illegal state error: {}", error),
-                };
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-            })?;
-
-        let borrower = db::borrowers::get_user_by_id(&data.db, &contract.borrower_id)
-            .await
-            .map_err(|error| {
-                let error_response = ErrorResponse {
-                    message: format!("Database error: {}", error),
-                };
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-            })?
-            .context("No lender found for contract")
-            .map_err(|error| {
-                let error_response = ErrorResponse {
-                    message: format!("Illegal state error: {}", error),
-                };
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-            })?;
-
-        let asset_chain = offer.loan_asset_chain;
-        let asset_type = offer.loan_asset_type;
-
-        let repaid_at = transactions.iter().find_map(|tx| {
-            matches!(tx.transaction_type, TransactionType::PrincipalRepaid).then_some(tx.timestamp)
-        });
-
-        let can_recover_collateral_manually =
-            db::manual_collateral_recovery::load_manual_collateral_recovery(&data.db, &contract.id)
-                .await
-                .map_err(|error| {
-                    let error_response = ErrorResponse {
-                        message: format!("Database error: {}", error),
-                    };
-                    (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-                })?
-                .is_some();
-
-        let contract = Contract {
-            collateral_sats: contract.collateral_sats,
-            id: contract.id,
-            loan_amount: contract.loan_amount,
-            duration_months: contract.duration_months,
-            initial_collateral_sats: contract.initial_collateral_sats,
-            origination_fee_sats: contract.origination_fee_sats,
-            interest_rate: offer.interest_rate,
-            initial_ltv: contract.initial_ltv,
-            status: contract.status,
-            liquidation_status: contract.liquidation_status,
-            borrower_pk: contract.borrower_pk,
-            borrower_btc_address: contract.borrower_btc_address.assume_checked().to_string(),
-            borrower_loan_address: contract.borrower_loan_address,
-            contract_address: contract
-                .contract_address
-                .map(|c| c.assume_checked().to_string()),
-            loan_repayment_address: offer.loan_repayment_address,
-            borrower: BorrowerProfile {
-                id: contract.borrower_id,
-                name: borrower.name,
-            },
-            created_at: contract.created_at,
-            updated_at: contract.updated_at,
-            repaid_at,
-            transactions,
-            expiry: contract.expiry_date,
-            loan_asset_chain: asset_chain,
-            loan_asset_type: asset_type,
-            can_recover_collateral_manually,
-        };
+        let contract = map_to_api_contract(&data, contract).await?;
 
         contracts_2.push(contract);
     }
 
-    Ok((StatusCode::OK, Json(contracts_2)))
+    Ok(AppJson(contracts_2))
 }
 
 #[instrument(skip_all, err(Debug))]
@@ -287,113 +198,18 @@ pub async fn get_contract(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<User>,
     Path(contract_id): Path<String>,
-) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+) -> Result<AppJson<Contract>, Error> {
     let contract = db::contracts::load_contract_by_contract_id_and_lender_id(
         &data.db,
         contract_id.as_str(),
         user.id.as_str(),
     )
     .await
-    .map_err(|error| {
-        let error_response = ErrorResponse {
-            message: format!("Database error: {}", error),
-        };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?;
+    .map_err(Error::Database)?;
 
-    let offer = db::loan_offers::loan_by_id(&data.db, &contract.loan_id)
-        .await
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?
-        .context("No loan found for contract")
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Illegal state error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
+    let contract = map_to_api_contract(&data, contract).await?;
 
-    let transactions = db::transactions::get_all_for_contract_id(&data.db, contract_id.as_str())
-        .await
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
-
-    let borrower = db::borrowers::get_user_by_id(&data.db, &contract.borrower_id)
-        .await
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?
-        .context("No lender found for contract")
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Illegal state error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
-
-    let asset_chain = offer.loan_asset_chain;
-    let asset_type = offer.loan_asset_type;
-
-    let mut repaid_at = None;
-    if contract.status == ContractStatus::Closed || contract.status == ContractStatus::Closing {
-        repaid_at = Some(contract.updated_at);
-    }
-
-    let can_recover_collateral_manually =
-        db::manual_collateral_recovery::load_manual_collateral_recovery(&data.db, &contract.id)
-            .await
-            .map_err(|error| {
-                let error_response = ErrorResponse {
-                    message: format!("Database error: {}", error),
-                };
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-            })?
-            .is_some();
-
-    let contract = Contract {
-        collateral_sats: contract.collateral_sats,
-        id: contract.id,
-        loan_amount: contract.loan_amount,
-        duration_months: contract.duration_months,
-        initial_collateral_sats: contract.initial_collateral_sats,
-        origination_fee_sats: contract.origination_fee_sats,
-        interest_rate: offer.interest_rate,
-        initial_ltv: contract.initial_ltv,
-        status: contract.status,
-        liquidation_status: contract.liquidation_status,
-        borrower_pk: contract.borrower_pk,
-        borrower_btc_address: contract.borrower_btc_address.assume_checked().to_string(),
-        borrower_loan_address: contract.borrower_loan_address,
-        contract_address: contract
-            .contract_address
-            .map(|c| c.assume_checked().to_string()),
-        loan_repayment_address: offer.loan_repayment_address,
-        borrower: BorrowerProfile {
-            id: borrower.id,
-            name: borrower.name,
-        },
-        created_at: contract.created_at,
-        repaid_at,
-        transactions,
-        expiry: contract.expiry_date,
-        loan_asset_chain: asset_chain,
-        loan_asset_type: asset_type,
-        updated_at: contract.updated_at,
-        can_recover_collateral_manually,
-    };
-
-    Ok((StatusCode::OK, Json(contract)))
+    Ok(AppJson(contract))
 }
 
 #[instrument(skip(data, user), err(Debug))]
@@ -433,7 +249,7 @@ pub async fn put_principal_given(
     Path(contract_id): Path<String>,
     query_params: Query<PrincipalGivenQueryParam>,
     Extension(user): Extension<User>,
-) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+) -> Result<AppJson<Contract>, Error> {
     let contract = async {
         let contract = db::contracts::load_contract_by_contract_id_and_lender_id(
             &data.db,
@@ -462,12 +278,7 @@ pub async fn put_principal_given(
         anyhow::Ok(contract)
     }
     .await
-    .map_err(|error| {
-        let error_response = ErrorResponse {
-            message: format!("Database error: {}", error),
-        };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?;
+    .map_err(Error::Database)?;
 
     // We don't want to fail this upwards because the contract request has been already
     // approved.
@@ -499,94 +310,9 @@ pub async fn put_principal_given(
         tracing::error!("Failed at notifying borrower about loan payout: {e:#}");
     }
 
-    let offer = db::loan_offers::loan_by_id(&data.db, &contract.loan_id)
-        .await
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?
-        .context("No loan found for contract")
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Illegal state error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
+    let contract = map_to_api_contract(&data, contract).await?;
 
-    let transactions = db::transactions::get_all_for_contract_id(&data.db, contract_id.as_str())
-        .await
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
-
-    let borrower = db::borrowers::get_user_by_id(&data.db, &contract.borrower_id)
-        .await
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?
-        .context("No lender found for contract")
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Illegal state error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
-
-    let asset_chain = offer.loan_asset_chain;
-    let asset_type = offer.loan_asset_type;
-
-    let can_recover_collateral_manually =
-        db::manual_collateral_recovery::load_manual_collateral_recovery(&data.db, &contract.id)
-            .await
-            .map_err(|error| {
-                let error_response = ErrorResponse {
-                    message: format!("Database error: {}", error),
-                };
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-            })?
-            .is_some();
-
-    let contract = Contract {
-        collateral_sats: contract.collateral_sats,
-        id: contract.id,
-        loan_amount: contract.loan_amount,
-        duration_months: contract.duration_months,
-        initial_collateral_sats: contract.initial_collateral_sats,
-        origination_fee_sats: contract.origination_fee_sats,
-        interest_rate: offer.interest_rate,
-        initial_ltv: contract.initial_ltv,
-        status: contract.status,
-        liquidation_status: contract.liquidation_status,
-        borrower_pk: contract.borrower_pk,
-        borrower_btc_address: contract.borrower_btc_address.assume_checked().to_string(),
-        borrower_loan_address: contract.borrower_loan_address,
-        contract_address: contract
-            .contract_address
-            .map(|c| c.assume_checked().to_string()),
-        loan_repayment_address: offer.loan_repayment_address,
-        borrower: BorrowerProfile {
-            id: borrower.id,
-            name: borrower.name,
-        },
-        created_at: contract.created_at,
-        updated_at: contract.updated_at,
-        repaid_at: None,
-        transactions,
-        expiry: contract.expiry_date,
-        loan_asset_chain: asset_chain,
-        loan_asset_type: asset_type,
-        can_recover_collateral_manually,
-    };
-
-    Ok(Json(contract))
+    Ok(AppJson(contract))
 }
 
 #[instrument(skip_all, err(Debug))]
@@ -1253,6 +979,237 @@ fn error_response(status: StatusCode, message: &str) -> (StatusCode, Json<ErrorR
             message: message.to_string(),
         }),
     )
+}
+
+/// Convert from a [`model::Contract`] to a [`crate::routes::borrower::Contract`].
+async fn map_to_api_contract(
+    data: &Arc<AppState>,
+    contract: model::Contract,
+) -> Result<Contract, Error> {
+    let offer = db::loan_offers::loan_by_id(&data.db, &contract.loan_id)
+        .await
+        .map_err(Error::Database)?
+        .ok_or(Error::MissingLoanOffer {
+            offer_id: contract.loan_id,
+        })?;
+
+    let borrower = db::borrowers::get_user_by_id(&data.db, &contract.borrower_id)
+        .await
+        .map_err(Error::Database)?
+        .ok_or(Error::MissingLender)?;
+
+    let transactions = db::transactions::get_all_for_contract_id(&data.db, contract.id.as_str())
+        .await
+        .map_err(Error::Database)?;
+
+    let repaid_at = transactions.iter().find_map(|tx| {
+        matches!(tx.transaction_type, TransactionType::PrincipalRepaid).then_some(tx.timestamp)
+    });
+
+    let can_recover_collateral_manually =
+        db::manual_collateral_recovery::load_manual_collateral_recovery(&data.db, &contract.id)
+            .await
+            .map_err(Error::Database)?
+            .is_some();
+
+    let parent_contract_id =
+        db::contract_extensions::get_parent_by_extended(&data.db, contract.id.as_str())
+            .await
+            .map_err(|e| Error::Database(anyhow!(e)))?;
+    let child_contract =
+        db::contract_extensions::get_extended_by_parent(&data.db, contract.id.as_str())
+            .await
+            .map_err(|e| Error::Database(anyhow!(e)))?;
+
+    let new_offer = offer;
+
+    let contract = Contract {
+        id: contract.id,
+        loan_amount: contract.loan_amount,
+        duration_months: contract.duration_months,
+        initial_collateral_sats: contract.initial_collateral_sats,
+        origination_fee_sats: contract.origination_fee_sats,
+        collateral_sats: contract.collateral_sats,
+        interest_rate: contract.interest_rate,
+        initial_ltv: contract.initial_ltv,
+        loan_asset_type: new_offer.loan_asset_type,
+        loan_asset_chain: new_offer.loan_asset_chain,
+        status: contract.status,
+        borrower_pk: contract.borrower_pk,
+        borrower_btc_address: contract.borrower_btc_address.assume_checked().to_string(),
+        borrower_loan_address: contract.borrower_loan_address,
+        contract_address: contract
+            .contract_address
+            .map(|c| c.assume_checked().to_string()),
+        loan_repayment_address: new_offer.loan_repayment_address,
+        borrower: BorrowerProfile {
+            id: borrower.id,
+            name: borrower.name,
+        },
+        created_at: contract.created_at,
+        updated_at: contract.updated_at,
+        repaid_at,
+        expiry: contract.expiry_date,
+        liquidation_status: contract.liquidation_status,
+        transactions,
+        extends_contract: parent_contract_id,
+        extended_by_contract: child_contract,
+        can_recover_collateral_manually,
+    };
+
+    Ok(contract)
+}
+
+/// All the errors related to the `contracts` REST API.
+#[derive(Debug)]
+enum Error {
+    /// The request body contained invalid JSON.
+    JsonRejection(JsonRejection),
+    /// Failed to interact with the database.
+    Database(anyhow::Error),
+    /// Referenced loan does not exist.
+    MissingLoanOffer { offer_id: String },
+    /// Referenced lender does not exist.
+    MissingLender,
+    /// Can't do much of anything without lender Xpub.
+    MissingLenderXpub,
+    /// Loan extension was requested with an offer from a different lender which is currently not
+    /// supported
+    LoanOfferLenderMissmatch,
+    /// We failed at calculating the interest rate. Cannot do much without this
+    InterestRateCalculation(anyhow::Error),
+    /// No origination fee configured.
+    MissingOriginationFee,
+    /// Failed to calculate origination fee in sats.
+    OriginationFeeCalculation(anyhow::Error),
+}
+
+impl From<JsonRejection> for Error {
+    fn from(rejection: JsonRejection) -> Self {
+        Self::JsonRejection(rejection)
+    }
+}
+
+/// Tell `axum` how [`AppError`] should be converted into a response.
+///
+/// This is also a convenient place to log errors.
+impl IntoResponse for Error {
+    fn into_response(self) -> Response {
+        /// How we want error responses to be serialized.
+        #[derive(Serialize)]
+        struct ErrorResponse {
+            message: String,
+        }
+
+        let (status, message) = match self {
+            Error::JsonRejection(rejection) => {
+                // This error is caused by bad user input so don't log it
+                (rejection.status(), rejection.body_text())
+            }
+            Error::Database(e) => {
+                // If we configure `tracing` properly, we don't need to add extra context here!
+                tracing::error!("Database error: {e:#}");
+
+                // Don't expose any details about the error to the client.
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
+            Error::MissingLoanOffer { offer_id } => {
+                tracing::error!(offer_id, "Could not find referenced loan offer");
+
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
+            Error::MissingLender => {
+                tracing::error!("Could not find referenced lender");
+
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
+            Error::MissingOriginationFee => {
+                tracing::error!("Missing origination fee");
+
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
+            Error::OriginationFeeCalculation(e) => {
+                tracing::error!("Failed to calculate origination fee: {e:#}");
+
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
+            Error::MissingLenderXpub => {
+                tracing::error!("Missing lender Xpub");
+
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
+            Error::LoanOfferLenderMissmatch => (
+                StatusCode::BAD_REQUEST,
+                "Offer cannot be from a different lender".to_owned(),
+            ),
+            Error::InterestRateCalculation(e) => {
+                tracing::error!("Failed at calculating interest rate {e:#}");
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
+        };
+
+        (status, AppJson(ErrorResponse { message })).into_response()
+    }
+}
+
+// Create our own JSON extractor by wrapping `axum::Json`. This makes it easy to override the
+// rejection and provide our own which formats errors to match our application.
+//
+// `axum::Json` responds with plain text if the input is invalid.
+#[derive(Debug, FromRequest)]
+#[from_request(via(Json), rejection(Error))]
+struct AppJson<T>(T);
+
+impl<T> IntoResponse for AppJson<T>
+where
+    Json<T>: IntoResponse,
+{
+    fn into_response(self) -> Response {
+        Json(self.0).into_response()
+    }
+}
+
+impl From<crate::contract_extension::Error> for Error {
+    fn from(value: crate::contract_extension::Error) -> Self {
+        match value {
+            crate::contract_extension::Error::Database(e) => Error::Database(e),
+            crate::contract_extension::Error::MissingLoanOffer { offer_id } => {
+                Error::MissingLoanOffer { offer_id }
+            }
+            crate::contract_extension::Error::LoanOfferLenderMismatch => {
+                Error::LoanOfferLenderMissmatch
+            }
+            crate::contract_extension::Error::InterestRateCalculation(e) => {
+                Error::InterestRateCalculation(e)
+            }
+            crate::contract_extension::Error::MissingOriginationFee => Error::MissingOriginationFee,
+            crate::contract_extension::Error::OriginationFeeCalculation(e) => {
+                Error::OriginationFeeCalculation(e)
+            }
+            crate::contract_extension::Error::MissingLenderXpub => Error::MissingLenderXpub,
+        }
+    }
 }
 
 #[cfg(test)]

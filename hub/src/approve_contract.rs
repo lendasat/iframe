@@ -3,6 +3,7 @@ use crate::db;
 use crate::email::Email;
 use crate::mempool;
 use crate::mempool::TrackContractFunding;
+use crate::model::ContractStatus;
 use crate::wallet::Wallet;
 use anyhow::Context;
 use sqlx::PgPool;
@@ -20,6 +21,8 @@ pub enum Error {
     MissingBorrower,
     /// Failed to track accepted contract using Mempool API.
     TrackContract(anyhow::Error),
+    /// The contract was in an invalid state
+    InvalidApproveRequest { status: ContractStatus },
 }
 
 pub async fn approve_contract(
@@ -37,6 +40,21 @@ pub async fn approve_contract(
     )
     .await
     .map_err(Error::Database)?;
+
+    if contract.status != ContractStatus::Requested
+        && contract.status != ContractStatus::RenewalRequested
+    {
+        return Err(Error::InvalidApproveRequest {
+            status: contract.status,
+        });
+    }
+
+    if contract.status == ContractStatus::RenewalRequested {
+        db::contracts::accept_extend_contract_request(db, lender_id, contract.id.as_str())
+            .await
+            .map_err(Error::Database)?;
+        return Ok(());
+    }
 
     let lender_xpub = contract.lender_xpub.ok_or(Error::MissingLenderXpub)?;
 

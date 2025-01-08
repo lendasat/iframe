@@ -194,3 +194,33 @@ pub async fn get_all_for_contract_id(
 
     Ok(records)
 }
+
+pub async fn duplicate_transactions<'a, E>(
+    tx: E,
+    parent_contract_id: &str,
+    new_contract_id: &str,
+) -> Result<i64>
+where
+    E: sqlx::Executor<'a, Database = Postgres>,
+{
+    // Insert duplicates with the new contract_id
+    let result = sqlx::query!(
+        r#"
+        INSERT INTO transactions (txid, transaction_type, timestamp, contract_id)
+        SELECT 
+            txid,
+            transaction_type,
+            timestamp,
+            $1 as contract_id
+        FROM transactions 
+        WHERE contract_id = $2
+        RETURNING id
+        "#,
+        new_contract_id,
+        parent_contract_id
+    )
+    .fetch_all(tx)
+    .await?;
+
+    Ok(result.len() as i64)
+}

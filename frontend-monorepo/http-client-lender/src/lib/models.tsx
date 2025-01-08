@@ -2,6 +2,7 @@ import type { LoanAssetChain, LoanAssetType, LoanTransaction } from "@frontend-m
 
 export enum ContractStatus {
   Requested = "Requested",
+  RenewalRequested = "RenewalRequested",
   Approved = "Approved",
   CollateralSeen = "CollateralSeen",
   CollateralConfirmed = "CollateralConfirmed",
@@ -12,6 +13,7 @@ export enum ContractStatus {
   Defaulted = "Defaulted",
   Closing = "Closing",
   Closed = "Closed",
+  Extended = "Extended",
   Rejected = "Rejected",
   DisputeBorrowerStarted = "DisputeBorrowerStarted",
   DisputeLenderStarted = "DisputeLenderStarted",
@@ -51,6 +53,8 @@ export interface Contract {
   loan_asset_type: LoanAssetType;
   loan_asset_chain: LoanAssetChain;
   can_recover_collateral_manually: boolean;
+  extends_contract?: string;
+  extended_by_contract?: string;
 }
 
 export interface CreateLoanOfferRequest {
@@ -95,16 +99,22 @@ export interface LoanOffer {
 }
 
 export const actionFromStatus = (status: ContractStatus) => {
+  let statusText = "";
   switch (status) {
+    case ContractStatus.RenewalRequested:
     case ContractStatus.Requested:
-      return "Approve or Reject";
+      statusText = "Approve or Reject";
+      break;
     case ContractStatus.CollateralConfirmed:
-      return "Pay out principal";
+      statusText = "Pay out principal";
+      break;
     case ContractStatus.RepaymentProvided:
-      return "Confirm repayment";
+      statusText = "Confirm repayment";
+      break;
     case ContractStatus.Undercollateralized:
     case ContractStatus.Defaulted:
-      return "Liquidate collateral";
+      statusText = "Liquidate collateral";
+      break;
     case ContractStatus.Approved:
     case ContractStatus.Rejected:
     case ContractStatus.RequestExpired:
@@ -116,49 +126,76 @@ export const actionFromStatus = (status: ContractStatus) => {
     case ContractStatus.DisputeBorrowerResolved:
     case ContractStatus.DisputeLenderResolved:
     case ContractStatus.Closed:
+    case ContractStatus.Extended:
     case ContractStatus.Closing:
     case ContractStatus.Cancelled:
-      return "Details";
+      statusText = "Details";
+      break;
   }
+  return statusText;
 };
 
 export function contractStatusToLabelString(status: ContractStatus): string {
+  let statusText = "";
   switch (status) {
     case ContractStatus.Requested:
-      return "Requested";
+      statusText = "Requested";
+      break;
+    case ContractStatus.RenewalRequested:
+      statusText = "Renewal Requested";
+      break;
     case ContractStatus.Approved:
-      return "Approved";
+      statusText = "Approved";
+      break;
     case ContractStatus.CollateralSeen:
-      return "Collateral Seen";
+      statusText = "Collateral Seen";
+      break;
     case ContractStatus.CollateralConfirmed:
-      return "Collateral Confirmed";
+      statusText = "Collateral Confirmed";
+      break;
     case ContractStatus.PrincipalGiven:
-      return "Principal Disbursed";
+      statusText = "Principal Disbursed";
+      break;
     case ContractStatus.RepaymentProvided:
-      return "Repayment Provided";
+      statusText = "Repayment Provided";
+      break;
     case ContractStatus.RepaymentConfirmed:
-      return "Repayment Confirmed";
+      statusText = "Repayment Confirmed";
+      break;
     case ContractStatus.Undercollateralized:
-      return "Undercollateralized";
+      statusText = "Undercollateralized";
+      break;
     case ContractStatus.Defaulted:
-      return "Defaulted";
+      statusText = "Defaulted";
+      break;
     case ContractStatus.Closing:
-      return "Closing";
+      statusText = "Closing";
+      break;
     case ContractStatus.Closed:
-      return "Closed";
+      statusText = "Closed";
+      break;
+    case ContractStatus.Extended:
+      statusText = "Extended";
+      break;
     case ContractStatus.Rejected:
-      return "Rejected";
+      statusText = "Rejected";
+      break;
     case ContractStatus.DisputeBorrowerStarted:
     case ContractStatus.DisputeLenderStarted:
-      return "Dispute Open";
+      statusText = "Dispute Open";
+      break;
     case ContractStatus.DisputeBorrowerResolved:
     case ContractStatus.DisputeLenderResolved:
-      return "Dispute Resolved";
+      statusText = "Dispute Resolved";
+      break;
     case ContractStatus.Cancelled:
-      return "Cancelled";
+      statusText = "Cancelled";
+      break;
     case ContractStatus.RequestExpired:
-      return "Request Expired";
+      statusText = "Request Expired";
+      break;
   }
+  return statusText;
 }
 
 export enum LiquidationStatus {

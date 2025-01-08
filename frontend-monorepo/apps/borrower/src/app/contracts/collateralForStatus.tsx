@@ -6,6 +6,7 @@ export function collateralForStatus(status: ContractStatus, initial: number, act
   let collateral_btc;
   switch (status) {
     case ContractStatus.Requested:
+    case ContractStatus.RenewalRequested:
     case ContractStatus.Approved:
     case ContractStatus.CollateralSeen:
     case ContractStatus.Rejected:
@@ -19,6 +20,7 @@ export function collateralForStatus(status: ContractStatus, initial: number, act
     case ContractStatus.Defaulted:
     case ContractStatus.Closing:
     case ContractStatus.Closed:
+    case ContractStatus.Extended:
     case ContractStatus.DisputeBorrowerStarted:
     case ContractStatus.DisputeLenderStarted:
     case ContractStatus.DisputeBorrowerResolved:

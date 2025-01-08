@@ -4,6 +4,7 @@ import type { LoanAssetChain, LoanAssetType, LoanTransaction } from "@frontend-m
 
 export enum ContractStatus {
   Requested = "Requested",
+  RenewalRequested = "RenewalRequested",
   Approved = "Approved",
   CollateralSeen = "CollateralSeen",
   CollateralConfirmed = "CollateralConfirmed",
@@ -14,6 +15,7 @@ export enum ContractStatus {
   Defaulted = "Defaulted",
   Closing = "Closing",
   Closed = "Closed",
+  Extended = "Extended",
   Rejected = "Rejected",
   DisputeBorrowerStarted = "DisputeBorrowerStarted",
   DisputeLenderStarted = "DisputeLenderStarted",
@@ -27,6 +29,8 @@ export function contractStatusToLabelString(status: ContractStatus): string {
   switch (status) {
     case ContractStatus.Requested:
       return "Requested";
+    case ContractStatus.RenewalRequested:
+      return "Renewal Requested";
     case ContractStatus.Approved:
       return "Approved";
     case ContractStatus.CollateralSeen:
@@ -34,7 +38,7 @@ export function contractStatusToLabelString(status: ContractStatus): string {
     case ContractStatus.CollateralConfirmed:
       return "Collateral Confirmed";
     case ContractStatus.PrincipalGiven:
-      return "Principal Disbursed";
+      return "Open";
     case ContractStatus.RepaymentProvided:
       return "Repayment Provided";
     case ContractStatus.RepaymentConfirmed:
@@ -47,6 +51,8 @@ export function contractStatusToLabelString(status: ContractStatus): string {
       return "Closing";
     case ContractStatus.Closed:
       return "Closed";
+    case ContractStatus.Extended:
+      return "Extended";
     case ContractStatus.Rejected:
       return "Rejected";
     case ContractStatus.DisputeBorrowerStarted:
@@ -69,6 +75,7 @@ export const actionFromStatus = (status: ContractStatus) => {
     case ContractStatus.RepaymentConfirmed:
       return "Withdraw collateral";
     case ContractStatus.Requested:
+    case ContractStatus.RenewalRequested:
     case ContractStatus.Rejected:
     case ContractStatus.RequestExpired:
     case ContractStatus.CollateralSeen:
@@ -82,6 +89,7 @@ export const actionFromStatus = (status: ContractStatus) => {
     case ContractStatus.Undercollateralized:
     case ContractStatus.Defaulted:
     case ContractStatus.Closed:
+    case ContractStatus.Extended:
     case ContractStatus.Closing:
     case ContractStatus.Cancelled:
       return "Details";
@@ -142,6 +150,8 @@ export interface Contract {
   transactions: LoanTransaction[];
   integration: Integration;
   liquidation_price: number;
+  extends_contract?: string;
+  extended_by_contract?: string;
 }
 
 export interface ClaimCollateralPsbtResponse {
@@ -171,6 +181,11 @@ export interface PostLoanRequest {
   duration_months: number;
   loan_asset_type: LoanAssetType;
   loan_asset_chain: LoanAssetChain;
+}
+
+export interface ExtendPostLoanRequest {
+  loan_id: string;
+  new_duration: number;
 }
 
 export interface LoanRequest {
@@ -275,9 +290,6 @@ export enum CardTransactionStatus {
   Refund = "Refund",
   Pending = "Pending",
 }
-
-// Needed for the Unknown variant
-export type CardTransactionStatusType = CardTransactionStatus | string;
 
 export type CardTransaction =
   | { type: "Card"; data: TransactionData }

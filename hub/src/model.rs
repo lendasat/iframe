@@ -194,7 +194,7 @@ pub enum LoanAssetChain {
     Starknet,
 }
 
-#[derive(Debug, Deserialize, sqlx::Type, Serialize, Clone)]
+#[derive(Debug, Deserialize, sqlx::Type, Serialize, Clone, PartialEq)]
 #[sqlx(type_name = "loan_offer_status")]
 pub enum LoanOfferStatus {
     Available,
@@ -268,6 +268,8 @@ pub struct Contract {
     pub created_at: OffsetDateTime,
     #[serde(with = "time::serde::rfc3339")]
     pub updated_at: OffsetDateTime,
+    #[serde(with = "rust_decimal::serde::float")]
+    pub interest_rate: Decimal,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -291,6 +293,9 @@ impl From<i32> for ContractVersion {
 pub enum ContractStatus {
     /// The borrower has sent a contract request based on a loan offer.
     Requested,
+    /// The borrower has sent a request to extend another contract. This state is to be used for
+    /// the new contract.
+    RenewalRequested,
     /// The lender has accepted the contract request.
     Approved,
     /// The collateral contract has been seen on the blockchain.
@@ -311,6 +316,8 @@ pub enum ContractStatus {
     Closing,
     /// The loan has been repaid, somehow.
     Closed,
+    /// The contract has been extended by a new one.
+    Extended,
     /// The contract request was rejected by the lender.
     Rejected,
     /// A dispute has been started by the borrower
@@ -392,6 +399,7 @@ pub mod db {
         pub status: ContractStatus,
         pub liquidation_status: LiquidationStatus,
         pub contract_version: i32,
+        pub interest_rate: Decimal,
         #[serde(with = "time::serde::rfc3339")]
         pub created_at: OffsetDateTime,
         #[serde(with = "time::serde::rfc3339")]
@@ -402,6 +410,7 @@ pub mod db {
     #[sqlx(type_name = "contract_status")]
     pub enum ContractStatus {
         Requested,
+        RenewalRequested,
         Approved,
         CollateralSeen,
         CollateralConfirmed,
@@ -412,6 +421,7 @@ pub mod db {
         Defaulted,
         Closing,
         Closed,
+        Extended,
         Cancelled,
         Rejected,
         DisputeBorrowerStarted,
@@ -491,6 +501,7 @@ impl From<db::Contract> for Contract {
                 .contract_address
                 .map(|addr| addr.parse().expect("valid address")),
             contract_index: value.contract_index.map(|i| i as u32),
+            interest_rate: value.interest_rate,
             status: value.status.into(),
             liquidation_status: value.liquidation_status.into(),
             contract_version: ContractVersion::from(value.contract_version),
@@ -504,6 +515,7 @@ impl From<db::ContractStatus> for ContractStatus {
     fn from(value: db::ContractStatus) -> Self {
         match value {
             db::ContractStatus::Requested => Self::Requested,
+            db::ContractStatus::RenewalRequested => Self::RenewalRequested,
             db::ContractStatus::Approved => Self::Approved,
             db::ContractStatus::CollateralSeen => Self::CollateralSeen,
             db::ContractStatus::CollateralConfirmed => Self::CollateralConfirmed,
@@ -514,6 +526,7 @@ impl From<db::ContractStatus> for ContractStatus {
             db::ContractStatus::Defaulted => Self::Defaulted,
             db::ContractStatus::Closing => Self::Closing,
             db::ContractStatus::Closed => Self::Closed,
+            db::ContractStatus::Extended => Self::Extended,
             db::ContractStatus::Rejected => Self::Rejected,
             db::ContractStatus::DisputeBorrowerStarted => Self::DisputeBorrowerStarted,
             db::ContractStatus::DisputeLenderStarted => Self::DisputeLenderStarted,
@@ -614,6 +627,7 @@ impl From<Contract> for db::Contract {
             status: value.status.into(),
             liquidation_status: value.liquidation_status.into(),
             contract_version: value.contract_version as i32,
+            interest_rate: value.interest_rate,
             created_at: value.created_at,
             updated_at: value.updated_at,
         }
@@ -624,6 +638,7 @@ impl From<ContractStatus> for db::ContractStatus {
     fn from(value: ContractStatus) -> Self {
         match value {
             ContractStatus::Requested => Self::Requested,
+            ContractStatus::RenewalRequested => Self::RenewalRequested,
             ContractStatus::Approved => Self::Approved,
             ContractStatus::CollateralSeen => Self::CollateralSeen,
             ContractStatus::CollateralConfirmed => Self::CollateralConfirmed,
@@ -634,6 +649,7 @@ impl From<ContractStatus> for db::ContractStatus {
             ContractStatus::Defaulted => Self::Defaulted,
             ContractStatus::Closing => Self::Closing,
             ContractStatus::Closed => Self::Closed,
+            ContractStatus::Extended => Self::Extended,
             ContractStatus::Rejected => Self::Rejected,
             ContractStatus::DisputeBorrowerStarted => Self::DisputeBorrowerStarted,
             ContractStatus::DisputeLenderStarted => Self::DisputeLenderStarted,

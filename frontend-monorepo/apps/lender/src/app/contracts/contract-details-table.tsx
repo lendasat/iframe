@@ -27,14 +27,17 @@ export type ColumnFilter = Record<ColumnFilterKey, boolean>;
 
 export type ContractStatusFilterKey =
   | "requested"
+  | "renewalRequested"
   | "approved"
   | "collateralSeen"
   | "opening"
   | "open"
   | "closed"
+  | "extended"
   | "closing"
   | "repaymentProvided"
   | "repaymentConfirmed"
+  | "undercollateralized"
   | "rejected"
   | "expired"
   | "canceled"
@@ -242,6 +245,18 @@ export const ContractDetailsTable = ({
                             onCheckedChange={() => onCheckedChange("open")}
                           />
                           <Text>Open</Text>
+                        </Flex>
+                      </DropdownMenu.Item>
+
+                      <DropdownMenu.Item
+                        onSelect={(e) => e.preventDefault()}
+                      >
+                        <Flex gap="2" align="center">
+                          <Checkbox
+                            checked={contractStatusFilter["repaymentProvided"]}
+                            onCheckedChange={() => onCheckedChange("repaymentProvided")}
+                          />
+                          <Text>Repayment provided</Text>
                         </Flex>
                       </DropdownMenu.Item>
 

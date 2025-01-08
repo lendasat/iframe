@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        UPDATE contracts\n        SET status = $1,\n            updated_at = $2\n        WHERE lender_id = $3\n          AND id = $4\n        RETURNING\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            integration as \"integration: crate::model::db::Integration\",\n            lender_xpub,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            expiry_date,\n            contract_version,\n            created_at,\n            updated_at\n        ",
+  "query": "\n        UPDATE contracts\n        SET\n            status = $1,\n            expiry_date = $2,\n            updated_at = $3\n        WHERE id = $4\n        RETURNING\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            integration as \"integration: crate::model::db::Integration\",\n            lender_xpub,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            expiry_date,\n            contract_version,\n            interest_rate,\n            created_at,\n            updated_at\n        ",
   "describe": {
     "columns": [
       {
@@ -118,7 +118,9 @@
                 "Cancelled",
                 "RequestExpired",
                 "Defaulted",
-                "Undercollateralized"
+                "Undercollateralized",
+                "RenewalRequested",
+                "Extended"
               ]
             }
           }
@@ -158,11 +160,16 @@
       },
       {
         "ordinal": 21,
+        "name": "interest_rate",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 22,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 22,
+        "ordinal": 23,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -191,13 +198,15 @@
                 "Cancelled",
                 "RequestExpired",
                 "Defaulted",
-                "Undercollateralized"
+                "Undercollateralized",
+                "RenewalRequested",
+                "Extended"
               ]
             }
           }
         },
         "Timestamptz",
-        "Bpchar",
+        "Timestamptz",
         "Bpchar"
       ]
     },
@@ -224,8 +233,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "9207a56147269d819576a7ecd3441488bb800369e7877bbde77898f2d6e8c42f"
+  "hash": "c13820f6e0309fd13ca6cfbf3411c54de2a10137df1c5e6bf4dc9b73303dea63"
 }

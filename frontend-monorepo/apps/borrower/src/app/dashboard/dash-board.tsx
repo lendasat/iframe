@@ -40,6 +40,8 @@ const ContractOverview = ({ contracts: unfilteredContracts, contractStatusFilter
     switch (contract.status) {
       case ContractStatus.Requested:
         return contractStatusFilter["requested"];
+      case ContractStatus.RenewalRequested:
+        return contractStatusFilter["renewalRequested"];
       case ContractStatus.Approved:
         return contractStatusFilter["approved"];
       case ContractStatus.CollateralSeen:
@@ -279,7 +281,7 @@ function DashBoard() {
         >
           <Text as="p" weight={"medium"} className="text-font dark:text-font-dark" size={"3"}>Contracts</Text>
 
-          <Tabs.Root defaultValue={!needsAction ? "actionNeeded" : "open"}>
+          <Tabs.Root defaultValue={needsAction ? "actionNeeded" : "open"}>
             <Tabs.List size="2" color="blue" className="flex justify-between">
               <div className="flex">
                 <Tabs.Trigger
@@ -315,18 +317,22 @@ function DashBoard() {
                   contracts={contracts}
                   contractStatusFilter={{
                     requested: false,
+                    renewalRequested: false,
                     approved: true,
                     collateralSeen: false,
                     opening: false,
                     open: false,
                     closing: false,
                     closed: false,
+                    extended: false,
                     repaymentProvided: false,
                     repaymentConfirmed: true,
                     rejected: false,
                     expired: false,
                     canceled: false,
                     dispute: false,
+                    defaulted: false,
+                    undercollateralized: false,
                   }}
                 />
               </Tabs.Content>
@@ -335,18 +341,22 @@ function DashBoard() {
                   contracts={contracts}
                   contractStatusFilter={{
                     requested: true,
+                    renewalRequested: true,
                     approved: true,
                     collateralSeen: true,
                     opening: true,
                     open: true,
                     closing: false,
                     closed: false,
+                    extended: false,
                     repaymentProvided: false,
                     repaymentConfirmed: false,
                     rejected: false,
                     expired: false,
                     canceled: false,
                     dispute: false,
+                    defaulted: false,
+                    undercollateralized: false,
                   }}
                 />
               </Tabs.Content>
@@ -355,18 +365,22 @@ function DashBoard() {
                   contracts={contracts}
                   contractStatusFilter={{
                     requested: false,
+                    renewalRequested: false,
                     approved: false,
                     collateralSeen: false,
                     opening: false,
                     open: false,
                     closing: true,
                     closed: true,
+                    extended: true,
                     repaymentProvided: false,
                     repaymentConfirmed: false,
                     rejected: true,
                     expired: true,
                     canceled: true,
                     dispute: true,
+                    defaulted: true,
+                    undercollateralized: true,
                   }}
                 />
               </Tabs.Content>

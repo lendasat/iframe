@@ -27,11 +27,15 @@ export type ColumnFilter = Record<ColumnFilterKey, boolean>;
 
 export type ContractStatusFilterKey =
   | "requested"
+  | "renewalRequested"
   | "approved"
   | "collateralSeen"
   | "opening"
   | "open"
+  | "undercollateralized"
+  | "defaulted"
   | "closed"
+  | "extended"
   | "closing"
   | "repaymentProvided"
   | "repaymentConfirmed"
@@ -439,6 +443,7 @@ export const ContractDetailsTable = ({
                     <Box className="hidden md:flex">
                       <Badge
                         color={contract.status === ContractStatus.Requested
+                            || contract.status === ContractStatus.RenewalRequested
                           ? "amber"
                           : contract.status === ContractStatus.Approved
                           ? "green"
@@ -562,6 +567,7 @@ export const ContractDetailsTable = ({
                                 <Text className="capitalize text-font dark:text-font-dark" size={"3"}>
                                   <Badge
                                     color={contract.status === ContractStatus.Requested
+                                        || contract.status === ContractStatus.RenewalRequested
                                       ? "amber"
                                       : contract.status === ContractStatus.Approved
                                       ? "green"

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            integration as \"integration: crate::model::db::Integration\",\n            lender_xpub,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            expiry_date,\n            contract_version,\n            created_at,\n            updated_at\n        FROM contracts\n        where borrower_id = $1\n        ",
+  "query": "\n        UPDATE contracts\n        SET\n            liquidation_status = $1,\n            updated_at = $2\n        WHERE id = $3\n        RETURNING\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            integration as \"integration: crate::model::db::Integration\",\n            lender_xpub,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            expiry_date,\n            contract_version,\n            interest_rate,\n            created_at,\n            updated_at\n        ",
   "describe": {
     "columns": [
       {
@@ -118,7 +118,9 @@
                 "Cancelled",
                 "RequestExpired",
                 "Defaulted",
-                "Undercollateralized"
+                "Undercollateralized",
+                "RenewalRequested",
+                "Extended"
               ]
             }
           }
@@ -158,17 +160,36 @@
       },
       {
         "ordinal": 21,
+        "name": "interest_rate",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 22,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 22,
+        "ordinal": 23,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
+        {
+          "Custom": {
+            "name": "liquidation_status",
+            "kind": {
+              "Enum": [
+                "Healthy",
+                "FirstMarginCall",
+                "SecondMarginCall",
+                "Liquidated"
+              ]
+            }
+          }
+        },
+        "Timestamptz",
         "Bpchar"
       ]
     },
@@ -195,8 +216,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "f3837fb0a3f060b96f4ef6dccb6f0219ea38a74b08aa67da6a33d150fe388de5"
+  "hash": "798873c0558b54757bc1175c8d7b1266bdef5726543393e39d6971995a6f0340"
 }

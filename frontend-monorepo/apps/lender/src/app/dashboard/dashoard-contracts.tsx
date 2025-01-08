@@ -1,4 +1,4 @@
-import { ContractStatus } from "@frontend-monorepo/http-client-borrower";
+import { ContractStatus } from "@frontend-monorepo/http-client-lender";
 import type { Contract } from "@frontend-monorepo/http-client-lender";
 import { usePrice } from "@frontend-monorepo/ui-shared";
 import { Box, Heading, Tabs, Text } from "@radix-ui/themes";
@@ -48,39 +48,64 @@ export interface DashboardContractsProps {
 
 const filterContracts = (unfilteredContracts: Contract[], contractStatusFilter: ContractStatusFilter) => {
   return unfilteredContracts.filter((contract) => {
+    let filtered = false;
     switch (contract.status) {
       case ContractStatus.Requested:
-        return contractStatusFilter["requested"];
+        filtered = contractStatusFilter["requested"];
+        break;
+      case ContractStatus.RenewalRequested:
+        filtered = contractStatusFilter["renewalRequested"];
+        break;
       case ContractStatus.Approved:
-        return contractStatusFilter["approved"];
+        filtered = contractStatusFilter["approved"];
+        break;
       case ContractStatus.CollateralSeen:
-        return contractStatusFilter["collateralSeen"];
+        filtered = contractStatusFilter["collateralSeen"];
+        break;
       case ContractStatus.CollateralConfirmed:
-        return contractStatusFilter["opening"];
+        filtered = contractStatusFilter["opening"];
+        break;
       case ContractStatus.PrincipalGiven:
-        return contractStatusFilter["open"];
+        filtered = contractStatusFilter["open"];
+        break;
       case ContractStatus.Closing:
-        return contractStatusFilter["closing"];
+        filtered = contractStatusFilter["closing"];
+        break;
       case ContractStatus.RepaymentProvided:
-        return contractStatusFilter["repaymentProvided"];
+        filtered = contractStatusFilter["repaymentProvided"];
+        break;
       case ContractStatus.RepaymentConfirmed:
-        return contractStatusFilter["repaymentConfirmed"];
+        filtered = contractStatusFilter["repaymentConfirmed"];
+        break;
+      case ContractStatus.Undercollateralized:
+        filtered = contractStatusFilter["undercollateralized"];
+        break;
+      case ContractStatus.Defaulted:
+        filtered = contractStatusFilter["defaulted"];
+        break;
       case ContractStatus.Closed:
-        return contractStatusFilter["closed"];
+        filtered = contractStatusFilter["closed"];
+        break;
+      case ContractStatus.Extended:
+        filtered = contractStatusFilter["extended"];
+        break;
       case ContractStatus.Rejected:
-        return contractStatusFilter["rejected"];
+        filtered = contractStatusFilter["rejected"];
+        break;
       case ContractStatus.DisputeBorrowerStarted:
       case ContractStatus.DisputeLenderStarted:
       case ContractStatus.DisputeBorrowerResolved:
       case ContractStatus.DisputeLenderResolved:
-        return contractStatusFilter["dispute"];
+        filtered = contractStatusFilter["dispute"];
+        break;
       case ContractStatus.Cancelled:
-        return contractStatusFilter["canceled"];
+        filtered = contractStatusFilter["canceled"];
+        break;
       case ContractStatus.RequestExpired:
-        return contractStatusFilter["expired"];
-      default:
-        return contractStatusFilter["expired"];
+        filtered = contractStatusFilter["expired"];
+        break;
     }
+    return filtered;
   });
 };
 
@@ -108,12 +133,14 @@ export default function DashboardContracts({ contracts }: DashboardContractsProp
 
   const allStatusFalse = {
     requested: false,
+    renewalRequested: false,
     approved: false,
     collateralSeen: false,
     opening: false,
     open: false,
     closing: false,
     closed: false,
+    extended: false,
     repaymentProvided: false,
     repaymentConfirmed: false,
     rejected: false,
@@ -127,6 +154,7 @@ export default function DashboardContracts({ contracts }: DashboardContractsProp
   const statusFilterActionRequired = {
     ...allStatusFalse,
     requested: true,
+    renewalRequested: true,
     opening: true,
     collateralSeen: true,
     repaymentProvided: true,
@@ -142,18 +170,19 @@ export default function DashboardContracts({ contracts }: DashboardContractsProp
     ...allStatusFalse,
     closing: true,
     closed: true,
+    extended: true,
   };
 
   const contractsWithActionNeeded = contracts.filter((loan) =>
-    loan.status === ContractStatus.Requested
-    || loan.status === ContractStatus.Defaulted
+    loan.status === ContractStatus.Requested || loan.status === ContractStatus.RenewalRequested
+    || loan.status === ContractStatus.Defaulted || loan.status === ContractStatus.CollateralConfirmed
     || loan.status === ContractStatus.RepaymentProvided
   );
   const needsAction = contractsWithActionNeeded.length > 0;
 
   return (
     <Box className="space-y-3">
-      <Tabs.Root defaultValue={needsAction ? "actionRequired" : "open"} className={"flex flex-col"}>
+      <Tabs.Root defaultValue={!needsAction ? "actionRequired" : "open"} className={"flex flex-col"}>
         <Box className="space-y-2 flex items-center justify-between flex-wrap">
           <Heading className="text-black dark:text-white">
             Contracts

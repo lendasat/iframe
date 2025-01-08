@@ -173,7 +173,8 @@ function ContractList({ contracts }: ContractListProps) {
         }}
       >
         {contracts.filter((contract) => {
-          return contract.status !== ContractStatus.Closed && contract.status !== ContractStatus.Closing
+          return contract.status !== ContractStatus.Cancelled && contract.status !== ContractStatus.Extended
+            && contract.status !== ContractStatus.Closed && contract.status !== ContractStatus.Closing
             && contract.status !== ContractStatus.Rejected && contract.status !== ContractStatus.RequestExpired;
         }).map((contract, index) => {
           const {
@@ -252,7 +253,7 @@ function ContractList({ contracts }: ContractListProps) {
 
                 <Box className="hidden md:flex justify-center ">
                   <Badge
-                    color={status === ContractStatus.Requested
+                    color={status === ContractStatus.Requested || contract.status === ContractStatus.RenewalRequested
                       ? "amber"
                       : status === ContractStatus.Approved
                       ? "green"
@@ -367,6 +368,7 @@ function ContractList({ contracts }: ContractListProps) {
                           <Text className="capitalize text-font dark:text-font-dark" size={"3"}>
                             <Badge
                               color={status === ContractStatus.Requested
+                                  || contract.status === ContractStatus.RenewalRequested
                                 ? "amber"
                                 : status === ContractStatus.Approved
                                 ? "green"
@@ -461,7 +463,8 @@ const ClosedContracts = ({ header, contracts }: ClosedProps) => {
         }}
       >
         {contracts.filter((contract) => {
-          return contract.status === ContractStatus.Closed || contract.status === ContractStatus.Closing
+          return contract.status === ContractStatus.Cancelled || contract.status === ContractStatus.Closed
+            || contract.status === ContractStatus.Closing || contract.status === ContractStatus.Extended
             || contract.status === ContractStatus.Rejected || contract.status === ContractStatus.RequestExpired;
         }).map((contract, index) => {
           const {
@@ -543,7 +546,7 @@ const ClosedContracts = ({ header, contracts }: ClosedProps) => {
 
                 <Box className="hidden md:flex justify-center ">
                   <Badge
-                    color={status === ContractStatus.Requested
+                    color={status === ContractStatus.Requested || contract.status === ContractStatus.RenewalRequested
                       ? "amber"
                       : status === ContractStatus.Approved
                       ? "green"
@@ -653,6 +656,7 @@ const ClosedContracts = ({ header, contracts }: ClosedProps) => {
                           <Text className="capitalize" size={"3"}>
                             <Badge
                               color={status === ContractStatus.Requested
+                                  || contract.status === ContractStatus.RenewalRequested
                                 ? "amber"
                                 : status === ContractStatus.Approved
                                 ? "green"
