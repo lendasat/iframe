@@ -1252,7 +1252,7 @@ pub(crate) async fn close_to_expiry_contracts(
     let due_date_start = OffsetDateTime::now_utc();
     let due_date_end = OffsetDateTime::now_utc() + time::Duration::days(3);
 
-    // A contract in `ExtensionRequested` is actually open and can expire, hence we need to check
+    // A contract in `RenewalRequested` is actually open and can expire, hence we need to check
     // for it as well
     let rows = sqlx::query!(
         r#"
