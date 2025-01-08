@@ -158,7 +158,7 @@ export function ContractUndercollateralized({
           <Col>
             <div className="d-flex flex-column">
               <p className="mt-2 text-break text-font dark:text-font-dark">
-                To liquidate the collateral you will have to provide your <strong>contract secret</strong>.
+                To liquidate the collateral you will have to provide your <strong>password</strong>.
               </p>
             </div>
           </Col>

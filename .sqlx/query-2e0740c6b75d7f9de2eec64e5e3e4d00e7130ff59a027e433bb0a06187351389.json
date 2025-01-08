@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        WITH inserted AS (\n            INSERT INTO borrowers (id, name, email, password, verification_code)\n            VALUES ($1, $2, $3, $4, $5)\n            RETURNING *\n        )\n        SELECT \n            b.*,\n            rb.referral_code as used_referral_code,\n            rcb.first_time_discount_rate_referee\n        FROM inserted b\n        LEFT JOIN referred_borrowers rb ON rb.referred_borrower_id = b.id\n        LEFT JOIN referral_codes_borrowers rcb ON rcb.code = rb.referral_code\n    ",
+  "query": "SELECT\n            id,\n            name,\n            email,\n            salt,\n            verifier,\n            password,\n            verified,\n            verification_code,\n            invite_code,\n            password_reset_token,\n            password_reset_at,\n            created_at,\n            updated_at\n        FROM lenders\n            WHERE password_reset_token = $1\n          AND password_reset_at > $2",
   "describe": {
     "columns": [
       {
@@ -20,57 +20,59 @@
       },
       {
         "ordinal": 3,
+        "name": "salt",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "verifier",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
         "name": "password",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 4,
+        "ordinal": 6,
         "name": "verified",
         "type_info": "Bool"
       },
       {
-        "ordinal": 5,
+        "ordinal": 7,
         "name": "verification_code",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 6,
+        "ordinal": 8,
+        "name": "invite_code",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 9,
         "name": "password_reset_token",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 7,
+        "ordinal": 10,
         "name": "password_reset_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 8,
+        "ordinal": 11,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 9,
+        "ordinal": 12,
         "name": "updated_at",
         "type_info": "Timestamptz"
-      },
-      {
-        "ordinal": 10,
-        "name": "used_referral_code",
-        "type_info": "Varchar"
-      },
-      {
-        "ordinal": 11,
-        "name": "first_time_discount_rate_referee",
-        "type_info": "Numeric"
       }
     ],
     "parameters": {
       "Left": [
-        "Bpchar",
-        "Varchar",
-        "Varchar",
-        "Varchar",
-        "Varchar"
+        "Text",
+        "Timestamptz"
       ]
     },
     "nullable": [
@@ -80,13 +82,14 @@
       false,
       false,
       true,
+      false,
+      true,
+      true,
       true,
       true,
       false,
-      false,
-      true,
-      true
+      false
     ]
   },
-  "hash": "59c18dd4534dd35f521673b61e5475b612e5c34a7e3d6168c59b9346f7593394"
+  "hash": "2e0740c6b75d7f9de2eec64e5e3e4d00e7130ff59a027e433bb0a06187351389"
 }

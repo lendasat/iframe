@@ -34,12 +34,23 @@ export function ContractPrincipalGiven({
         <Heading className={"text-font dark:text-font-dark"} size={"4"} weight={"medium"}>
           I want to
         </Heading>
-        <Select.Root value={action} onValueChange={(newValue) => setAction(newValue)}>
-          <Select.Trigger />
-          <Select.Content>
+        <Select.Root
+          value={action}
+          onValueChange={(newValue) => setAction(newValue)}
+        >
+          <Select.Trigger className={"text-font dark:text-font-dark"} />
+          <Select.Content className={"bg-white dark:bg-dark"}>
             <Select.Group>
-              <Select.Item value="repay">pay back the contract.</Select.Item>
-              <Select.Item value="extend">extend the contract.</Select.Item>
+              <Select.Item className={"text-font dark:text-font-dark"} value="repay">
+                <div className={"text-font dark:text-font-dark "}>
+                  pay back the contract.
+                </div>
+              </Select.Item>
+              <Select.Item className={"text-font dark:text-font-dark"} value="extend">
+                <div className={"text-font dark:text-font-dark"}>
+                  extend the contract.
+                </div>
+              </Select.Item>
             </Select.Group>
           </Select.Content>
         </Select.Root>
@@ -66,7 +77,7 @@ export function ContractPrincipalGiven({
         )}
       {action !== "extend" && action !== "repay"
         && (
-          <Callout.Root color={"green"}>
+          <Callout.Root>
             <Callout.Icon>
               <InfoCircledIcon />
             </Callout.Icon>

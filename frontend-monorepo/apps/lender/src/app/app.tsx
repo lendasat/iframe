@@ -11,6 +11,7 @@ import Login from "./auth/login";
 import Logout from "./auth/logout";
 import Registration from "./auth/registration";
 import ResetPassword from "./auth/reset-password";
+import UpgradeToPake from "./auth/upgrade-to-pake";
 import ContractDetailsOverview from "./contracts/contract-details-overview";
 import MyContracts from "./contracts/my-contracts";
 import CreateLoanOffer from "./create-loan-offer";
@@ -147,6 +148,7 @@ function MainLayoutComponents() {
             <Route path="/setting" element={<MyAccount />} />
           </Route>
           <Route path="/logout" element={<Logout />} />
+          <Route path="/resetpassword/:token/:email" element={<ResetPassword />} />
           <Route path="*" element={<Dashboard />} />
         </Routes>
       </Layout>
@@ -172,10 +174,11 @@ function App() {
               <Route index element={<Login />} />
               <Route path="/registration" element={<Registration />} />
               <Route path="/forgotpassword" element={<ForgotPassword />} />
-              <Route path="/resetpassword/:token" element={<ResetPassword />} />
+              <Route path="/resetpassword/:token/:email" element={<ResetPassword />} />
               <Route path="/verifyemail/:token?" element={<VerifyEmailForm />} />
               <Route path="/logout" element={<Logout />} />
               <Route path="/login/:status?" element={<Login />} />
+              <Route path="/upgrade-to-pake" element={<UpgradeToPake />} />
               <Route path="/error" element={<ErrorBoundary />} />
             </Routes>
           </AuthIsNotSignedIn>

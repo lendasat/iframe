@@ -1,11 +1,6 @@
 use crate::model::InviteCode;
 use crate::model::Lender;
-use anyhow::anyhow;
 use anyhow::Result;
-use argon2::password_hash::rand_core::OsRng;
-use argon2::password_hash::SaltString;
-use argon2::Argon2;
-use argon2::PasswordHasher;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
 use sqlx::Pool;
@@ -17,33 +12,88 @@ const VERIFICATION_CODE_LENGTH: usize = 6;
 /// Inserts a new user and returns said user
 ///
 /// Fails if user with provided email already exists
-pub async fn register_user(
-    pool: &Pool<Postgres>,
+pub async fn register_user<'a, E>(
+    pool: E,
     name: &str,
     email: &str,
-    password: &str,
+    salt: &str,
+    verifier: &str,
     invite_code: Option<InviteCode>,
-) -> Result<Lender> {
-    let hashed_password = generate_hashed_password(password)?;
+) -> Result<Lender>
+where
+    E: sqlx::Executor<'a, Database = Postgres>,
+{
     let verification_code = generate_random_string(VERIFICATION_CODE_LENGTH);
     let invite_code = invite_code.map(|code| code.id);
 
     let id = uuid::Uuid::new_v4().to_string();
     let user: Lender = sqlx::query_as!(
         Lender,
-        "INSERT INTO lenders (id, name, email, password, verification_code, invite_code)
-            VALUES ($1, $2, $3, $4, $5, $6)
+        "INSERT INTO lenders (id, name, email, salt, verifier, verification_code, invite_code)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
             RETURNING *",
         id,
         name,
         email.to_ascii_lowercase(),
-        hashed_password,
+        salt,
+        verifier,
         verification_code,
         invite_code,
     )
     .fetch_one(pool)
     .await?;
     Ok(user)
+}
+
+/// Insert the `salt` and `verifier` needed to authenticate a lender via PAKE.
+///
+/// Also erases the `password` (hash) from the lender row, since it will never be used for
+/// authentication again.
+///
+/// The upgrade can only happen if the `salt` and `verifier` columns are set to their default values
+/// of '0'. The default value indicates that the account was created before the upgrade to PAKE.
+pub async fn upgrade_to_pake<'a, E>(pool: E, email: &str, salt: &str, verifier: &str) -> Result<()>
+where
+    E: sqlx::Executor<'a, Database = Postgres>,
+{
+    sqlx::query!(
+        "UPDATE lenders
+        SET salt = $1,
+            verifier = $2,
+            password = null
+        WHERE email = $3 AND salt = '0' and verifier = '0'",
+        salt,
+        verifier,
+        email
+    )
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
+/// Replace `salt` and `verifier` needed to authenticate a lender via PAKE. This is used when the
+/// lender wants to change their password.
+pub async fn update_verifier_and_salt<'a, E>(
+    pool: E,
+    email: &str,
+    salt: &str,
+    verifier: &str,
+) -> Result<()>
+where
+    E: sqlx::Executor<'a, Database = Postgres>,
+{
+    sqlx::query!(
+        "UPDATE lenders
+        SET salt = $1,
+            verifier = $2
+        WHERE email = $3",
+        salt,
+        verifier,
+        email
+    )
+    .execute(pool)
+    .await?;
+    Ok(())
 }
 
 pub async fn user_exists(pool: &Pool<Postgres>, email: &str) -> Result<bool> {
@@ -101,7 +151,7 @@ pub async fn update_password_reset_token_for_user(
     email: &str,
 ) -> Result<()> {
     sqlx::query!(
-        "UPDATE lenders SET 
+        "UPDATE lenders SET
             password_reset_token = $1,
             password_reset_at = $2
         WHERE email = $3",
@@ -123,10 +173,12 @@ pub async fn get_user_by_rest_token(
 ) -> Result<Option<Lender>> {
     let maybe_user = sqlx::query_as!(
         Lender,
-        "SELECT 
+        "SELECT
             id,
             name,
             email,
+            salt,
+            verifier,
             password,
             verified,
             verification_code,
@@ -134,7 +186,7 @@ pub async fn get_user_by_rest_token(
             password_reset_token,
             password_reset_at,
             created_at,
-            updated_at 
+            updated_at
         FROM lenders
             WHERE password_reset_token = $1
           AND password_reset_at > $2",
@@ -144,38 +196,6 @@ pub async fn get_user_by_rest_token(
     .fetch_optional(pool)
     .await?;
     Ok(maybe_user)
-}
-
-pub async fn update_user_password(
-    pool: &Pool<Postgres>,
-    password: &str,
-    email: &str,
-) -> Result<()> {
-    let hashed_password = generate_hashed_password(password)?;
-    sqlx::query!(
-        "UPDATE lenders
-                SET password             = $1,
-                    password_reset_token = $2,
-                    password_reset_at    = $3
-                WHERE email = $4
-        ",
-        hashed_password,
-        Option::<String>::None,
-        Option::<OffsetDateTime>::None,
-        email.to_ascii_lowercase(),
-    )
-    .execute(pool)
-    .await?;
-    Ok(())
-}
-
-pub fn generate_hashed_password(password: &str) -> Result<String> {
-    let salt = SaltString::generate(&mut OsRng);
-    let hashed_password = Argon2::default()
-        .hash_password(password.as_bytes(), &salt)
-        .map(|hash| hash.to_string())
-        .map_err(|error| anyhow!("Failed hashing password {error}"))?;
-    Ok(hashed_password)
 }
 
 /// Generates a random alphanumeric string with length [`length`]

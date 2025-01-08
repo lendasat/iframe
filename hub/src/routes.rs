@@ -1,5 +1,7 @@
 use crate::config::Config;
 use crate::mempool;
+use crate::model;
+use crate::model::PakeServerData;
 use crate::moon;
 use crate::sideshift;
 use crate::wallet::Wallet;
@@ -7,6 +9,7 @@ use axum::extract::ws::Message;
 use serde::Serialize;
 use sqlx::Pool;
 use sqlx::Postgres;
+use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::mpsc;
 use tokio::sync::Mutex;
@@ -24,6 +27,7 @@ pub struct ErrorResponse {
 
 pub struct AppState {
     pub db: Pool<Postgres>,
+    pub pake_protocols: Arc<Mutex<HashMap<model::Email, PakeServerData>>>,
     pub wallet: Arc<Mutex<Wallet>>,
     pub config: Config,
     pub mempool: xtra::Address<mempool::Actor>,

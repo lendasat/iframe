@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        INSERT INTO lender_wallet_backups (\n            lender_id, \n            passphrase_hash, \n            mnemonic_ciphertext, \n            network, \n            xpub\n        )\n        VALUES ($1, $2, $3, $4, $5)\n        RETURNING id, lender_id, passphrase_hash, mnemonic_ciphertext, network, xpub, created_at\n        ",
+  "query": "\n            SELECT\n                id,\n                lender_id,\n                mnemonic_ciphertext,\n                network,\n                xpub,\n                created_at\n            FROM lender_wallet_backups\n            WHERE lender_id = $1\n            ORDER BY created_at DESC\n            ",
   "describe": {
     "columns": [
       {
@@ -15,37 +15,28 @@
       },
       {
         "ordinal": 2,
-        "name": "passphrase_hash",
-        "type_info": "Text"
-      },
-      {
-        "ordinal": 3,
         "name": "mnemonic_ciphertext",
         "type_info": "Text"
       },
       {
-        "ordinal": 4,
+        "ordinal": 3,
         "name": "network",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 5,
+        "ordinal": 4,
         "name": "xpub",
         "type_info": "Text"
       },
       {
-        "ordinal": 6,
+        "ordinal": 5,
         "name": "created_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
-        "Bpchar",
-        "Text",
-        "Text",
-        "Varchar",
-        "Text"
+        "Bpchar"
       ]
     },
     "nullable": [
@@ -54,9 +45,8 @@
       false,
       false,
       false,
-      false,
       false
     ]
   },
-  "hash": "cd05fd2b6e0079408c96ce8b2f1e27775b942144984a0566622d447ba0691585"
+  "hash": "71f4cee7d6e643dd358db1d3e530a7f3c7dd56727fe0269302e5cfd4c7bf2679"
 }

@@ -1,6 +1,6 @@
 import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
 import { RegistrationForm } from "@frontend-monorepo/ui-shared";
-import init, { new_wallet } from "browser-wallet";
+import init, { begin_registration, new_wallet } from "browser-wallet";
 import { md5 } from "hash-wasm";
 import { useNavigate } from "react-router-dom";
 
@@ -12,16 +12,17 @@ function Registration() {
     name: string,
     email: string,
     password: string,
-    contractSecret: string,
     inviteCode?: string,
   ) => {
     await init();
+
+    const registrationData = begin_registration(email, password);
+
     const network = import.meta.env.VITE_BITCOIN_NETWORK;
     const key = await md5(email);
-    const walletDetails = new_wallet(contractSecret, network, key);
+    const walletDetails = new_wallet(password, network, key);
 
-    await register(name, email, password, {
-      passphrase_hash: walletDetails.passphrase_hash,
+    await register(name, email, registrationData.verifier, registrationData.salt, {
       mnemonic_ciphertext: walletDetails.mnemonic_ciphertext,
       network: network,
       xpub: walletDetails.xpub,

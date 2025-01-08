@@ -1,3 +1,6 @@
+use crate::auth::Salt;
+use crate::auth::ServerProof;
+use crate::auth::B;
 use bitcoin::Address;
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
@@ -5,12 +8,12 @@ use wasm_bindgen::JsValue;
 mod browser_wallet;
 mod storage;
 
-// We make it public for the "e2e" tests.
+// We make them public for the "e2e" tests.
+pub mod auth;
 pub mod wallet;
 
 #[wasm_bindgen]
 pub struct WalletDetails {
-    passphrase_hash: String,
     mnemonic_ciphertext: String,
     network: String,
     xpub: String,
@@ -18,10 +21,6 @@ pub struct WalletDetails {
 
 #[wasm_bindgen]
 impl WalletDetails {
-    #[wasm_bindgen(getter)]
-    pub fn passphrase_hash(&self) -> String {
-        self.passphrase_hash.clone()
-    }
     #[wasm_bindgen(getter)]
     pub fn mnemonic_ciphertext(&self) -> String {
         self.mnemonic_ciphertext.clone()
@@ -39,7 +38,6 @@ impl WalletDetails {
 impl From<browser_wallet::WalletDetails> for WalletDetails {
     fn from(value: browser_wallet::WalletDetails) -> Self {
         WalletDetails {
-            passphrase_hash: value.passphrase_hash,
             mnemonic_ciphertext: value.mnemonic_ciphertext,
             network: value.network,
             xpub: value.xpub,
@@ -55,24 +53,34 @@ pub fn initialize() {
 
 #[wasm_bindgen]
 pub fn new_wallet(
-    passphrase: String,
+    password: String,
     network: String,
     key: String,
 ) -> Result<WalletDetails, JsValue> {
-    map_err_to_js!(browser_wallet::new(passphrase, network, key).map(WalletDetails::from))
+    map_err_to_js!(browser_wallet::new(password, None, network, key).map(WalletDetails::from))
+}
+
+#[wasm_bindgen]
+pub fn new_wallet_from_mnemonic(
+    password: String,
+    mnemonic: String,
+    network: String,
+    key: String,
+) -> Result<WalletDetails, JsValue> {
+    map_err_to_js!(
+        browser_wallet::new(password, Some(mnemonic), network, key).map(WalletDetails::from)
+    )
 }
 
 #[wasm_bindgen]
 pub fn restore_wallet(
     key: String,
-    passphrase_hash: String,
     mnemonic_ciphertext: String,
     xpub: String,
     network: String,
 ) -> Result<(), JsValue> {
     map_err_to_js!(browser_wallet::restore(
         key,
-        passphrase_hash,
         mnemonic_ciphertext,
         network,
         xpub
@@ -80,8 +88,38 @@ pub fn restore_wallet(
 }
 
 #[wasm_bindgen]
-pub fn load_wallet(passphrase: String, key: String) -> Result<(), JsValue> {
-    map_err_to_js!(browser_wallet::load(&passphrase, &key))
+pub fn upgrade_wallet(
+    key: String,
+    mnemonic_ciphertext: String,
+    network: String,
+    old_password: String,
+    new_password: String,
+) -> Result<WalletDetails, JsValue> {
+    map_err_to_js!(browser_wallet::upgrade_wallet(
+        key,
+        mnemonic_ciphertext,
+        network,
+        old_password,
+        new_password
+    )
+    .map(WalletDetails::from))
+}
+
+#[wasm_bindgen]
+pub fn change_wallet_encryption(
+    key: String,
+    old_password: String,
+    new_password: String,
+) -> Result<WalletDetails, JsValue> {
+    map_err_to_js!(
+        browser_wallet::change_wallet_encryption(key, old_password, new_password)
+            .map(WalletDetails::from)
+    )
+}
+
+#[wasm_bindgen]
+pub fn load_wallet(password: String, key: String) -> Result<(), JsValue> {
+    map_err_to_js!(browser_wallet::load(&password, &key))
 }
 
 #[wasm_bindgen]
@@ -100,8 +138,8 @@ pub fn get_mnemonic() -> Result<String, JsValue> {
 }
 
 #[wasm_bindgen]
-pub fn get_next_pk() -> Result<String, JsValue> {
-    map_err_to_js!(browser_wallet::get_next_pk())
+pub fn get_next_pk(key: String) -> Result<String, JsValue> {
+    map_err_to_js!(browser_wallet::get_next_pk(&key))
 }
 
 #[wasm_bindgen]
@@ -191,6 +229,85 @@ impl TxOut {
 #[wasm_bindgen]
 pub fn get_xpub(key: String) -> Result<String, JsValue> {
     map_err_to_js!(browser_wallet::get_xpub(&key))
+}
+
+#[wasm_bindgen]
+pub fn begin_registration(username: String, password: String) -> RegistrationData {
+    let (verifier, salt) = auth::begin_registration(username, password);
+
+    RegistrationData {
+        verifier: verifier.to_hex(),
+        salt: salt.to_hex(),
+    }
+}
+
+#[wasm_bindgen]
+#[derive(Clone)]
+pub struct RegistrationData {
+    verifier: String,
+    salt: String,
+}
+
+#[wasm_bindgen]
+impl RegistrationData {
+    #[wasm_bindgen(getter)]
+    pub fn verifier(&self) -> String {
+        self.verifier.clone()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn salt(&self) -> String {
+        self.salt.clone()
+    }
+}
+
+#[wasm_bindgen]
+pub fn process_login_response(
+    username: String,
+    password: String,
+    salt: String,
+    b_pub: String,
+) -> Result<VerificationData, JsValue> {
+    let salt = map_err_to_js!(Salt::try_from_hex(salt))?;
+    let b_pub = map_err_to_js!(B::try_from_hex(b_pub))?;
+
+    let (a_pub, client_proof) = map_err_to_js!(auth::process_login_response(
+        username, password, salt, b_pub
+    ))?;
+
+    Ok(VerificationData {
+        a_pub: a_pub.to_hex(),
+        client_proof: client_proof.to_hex(),
+    })
+}
+
+#[wasm_bindgen]
+#[derive(Clone)]
+pub struct VerificationData {
+    a_pub: String,
+    client_proof: String,
+}
+
+#[wasm_bindgen]
+impl VerificationData {
+    #[wasm_bindgen(getter)]
+    pub fn a_pub(&self) -> String {
+        self.a_pub.clone()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn client_proof(&self) -> String {
+        self.client_proof.clone()
+    }
+}
+
+#[wasm_bindgen]
+pub fn verify_server(server_proof: String) -> Result<bool, JsValue> {
+    let server_proof = map_err_to_js!(ServerProof::try_from_hex(server_proof))?;
+
+    let res = auth::verify_server(server_proof);
+
+    Ok(res.is_ok())
 }
 
 #[macro_export]

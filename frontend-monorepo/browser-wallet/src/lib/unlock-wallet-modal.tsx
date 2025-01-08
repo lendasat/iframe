@@ -62,7 +62,7 @@ export function UnlockWalletModal({ show, handleClose, handleSubmit }: WalletMod
               as="h2"
               className="text-xl md:text-2xl lg:text-4xl font-semibold text-center text-font dark:text-font-dark mb-7"
             >
-              Input Contract Secret
+              Input Password
             </Heading>
           </Box>
           <Box className="mb-3">
@@ -74,8 +74,7 @@ export function UnlockWalletModal({ show, handleClose, handleSubmit }: WalletMod
                       <FontAwesomeIcon icon={faInfoCircle} />
                     </Box>
                     <Text>
-                      Please provide your contract secret. You set the contract secret during registration. It is needed
-                      to access your encrypted contract data.
+                      Please provide your password. It is needed to access your encrypted contract data.
                     </Text>
                   </Alert>
                 )
@@ -95,7 +94,7 @@ export function UnlockWalletModal({ show, handleClose, handleSubmit }: WalletMod
             <TextField.Root
               variant="soft"
               className="py-3 px-4 rounded-lg border border-font/10 dark:border-font-dark/10 text-font dark:text-font-dark"
-              placeholder="Enter Contract Secret"
+              placeholder="Enter Password"
               type={passVisibility ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}

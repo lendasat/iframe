@@ -33,7 +33,7 @@ export function allowedPagesWithoutLogin(location: string) {
   return location.includes(`login`) || location.includes(`registration`)
     || location.includes(`forgotpassword`) || location.includes(`resetpassword`)
     || location.includes(`verifyemail`) || location.includes(`logout`)
-    || location.includes(`error`);
+    || location.includes(`error`) || location.includes(`upgrade-to-pake`);
 }
 
 export class HttpClientLender extends BaseHttpClient {
@@ -538,6 +538,10 @@ export const HttpClientLenderProvider: React.FC<HttpClientProviderProps> = ({ ch
   const baseClientFunctions: BaseHttpClientContextType = {
     register: httpClient.register.bind(httpClient),
     login: httpClient.login.bind(httpClient),
+    pakeLoginRequest: httpClient.pakeLoginRequest.bind(httpClient),
+    pakeVerifyRequest: httpClient.pakeVerifyRequest.bind(httpClient),
+    upgradeToPake: httpClient.upgradeToPake.bind(httpClient),
+    finishUpgradeToPake: httpClient.finishUpgradeToPake.bind(httpClient),
     logout: httpClient.logout.bind(httpClient),
     me: httpClient.me.bind(httpClient),
     forgotPassword: httpClient.forgotPassword.bind(httpClient),

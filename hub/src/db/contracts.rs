@@ -615,7 +615,7 @@ pub async fn accept_extend_contract_request(
        SET status = $1,
            updated_at = $2
        WHERE lender_id = $3
-         AND id = $4 
+         AND id = $4
          AND status = $5
        "#,
         db::ContractStatus::PrincipalGiven as db::ContractStatus,
@@ -884,7 +884,7 @@ pub(crate) async fn default_expired_contracts(
             UPDATE
                 contracts
             SET
-                status = $1, 
+                status = $1,
                 updated_at = $2
             WHERE
                 id IN (SELECT id FROM expired_open_contracts)
@@ -1225,4 +1225,40 @@ pub async fn load_latest_contract_stats(
     .await?;
 
     Ok(contract_stats)
+}
+
+pub async fn has_contracts_before_pake_borrower(
+    pool: &Pool<Postgres>,
+    borrower_id: &str,
+) -> Result<bool> {
+    let row = sqlx::query!(
+        r#"
+            SELECT EXISTS (
+                SELECT 1 FROM contracts WHERE borrower_id = $1 AND created_at < '2024-01-16'
+            ) AS entry_exists;
+        "#,
+        borrower_id,
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(row.entry_exists.unwrap_or(false))
+}
+
+pub async fn has_contracts_before_pake_lender(
+    pool: &Pool<Postgres>,
+    lender_id: &str,
+) -> Result<bool> {
+    let row = sqlx::query!(
+        r#"
+            SELECT EXISTS (
+                SELECT 1 FROM contracts WHERE lender_id = $1 AND created_at < '2024-01-16'
+            ) AS entry_exists;
+        "#,
+        lender_id,
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(row.entry_exists.unwrap_or(false))
 }

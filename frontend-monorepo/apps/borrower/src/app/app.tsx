@@ -32,6 +32,7 @@ import { GoGitPullRequest } from "react-icons/go";
 import { HiOutlineSupport } from "react-icons/hi";
 import { IoCardOutline, IoWalletOutline } from "react-icons/io5";
 import { LuActivity, LuSettings } from "react-icons/lu";
+import UpgradeToPake from "./auth/upgrade-to-pake";
 import VerifyEmailForm from "./auth/verifyEmailForm";
 import Cards from "./cards/Cards";
 import CustomRequest from "./request-loan/custom-loan-request";
@@ -192,7 +193,7 @@ function MainLayoutComponents() {
             <Route path="/request-loan/:id" element={<RequestLoanSummary />} />
             <Route path="/disputes/:id" element={<ResolveDispute />} />
             <Route path="/restricted" element={<RestrictedAccessPage />} />
-            <Route path="/resetpassword/:token" element={<ResetPassword />} />
+            <Route path="/resetpassword/:token/:email" element={<ResetPassword />} />
             <Route path="/error" element={<ErrorBoundary />} />
             <Route path="*" element={<DashBoard />} />
           </Route>
@@ -230,10 +231,11 @@ function App() {
             <Route index element={<Login />} />
             <Route path="/registration" element={<Registration />} />
             <Route path="/forgotpassword" element={<ForgotPassword />} />
-            <Route path="/resetpassword/:token" element={<ResetPassword />} />
+            <Route path="/resetpassword/:token/:email" element={<ResetPassword />} />
             <Route path="/verifyemail/:token?" element={<VerifyEmailForm />} />
             <Route path="/logout" element={<Logout />} />
             <Route path="/login/:status?" element={<Login />} />
+            <Route path="/upgrade-to-pake" element={<UpgradeToPake />} />
             <Route path="/error" element={<ErrorBoundary />} />
           </Route>
         </Routes>

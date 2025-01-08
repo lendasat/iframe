@@ -25,3 +25,8 @@ export enum LoanAssetChain {
   Starknet = "Starknet",
   Solana = "Solana",
 }
+
+export type OldPassword = { type: "oldPassword"; value: string };
+export type Mnemonic = { type: "mnemonic"; value: string };
+
+export type OldPasswordOrMnemonic = OldPassword | Mnemonic;

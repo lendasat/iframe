@@ -16,6 +16,8 @@ use std::str::FromStr;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
+pub type Email = String;
+
 #[derive(Debug, sqlx::FromRow)]
 pub struct InviteCode {
     pub id: i32,
@@ -27,8 +29,13 @@ pub struct InviteCode {
 pub struct Borrower {
     pub id: String,
     pub name: String,
-    pub email: String,
-    pub password: String,
+    pub email: Email,
+    /// A password (hash) may be stored if the user has yet to upgrade to PAKE.
+    ///
+    /// This is a legacy field.
+    pub password: Option<String>,
+    pub salt: String,
+    pub verifier: String,
     pub verified: bool,
     pub verification_code: Option<String>,
     pub used_referral_code: Option<String>,
@@ -45,7 +52,16 @@ pub struct Borrower {
 
 impl Borrower {
     pub fn check_password(&self, provided_password: &str) -> bool {
-        match PasswordHash::new(&self.password) {
+        let legacy_password_hash = match &self.password {
+            Some(p) => p,
+            None => {
+                tracing::error!(
+                    "User attempted to log in with legacy password after upgrading to PAKE"
+                );
+                return false;
+            }
+        };
+        match PasswordHash::new(legacy_password_hash) {
             Ok(parsed_hash) => Argon2::default()
                 .verify_password(provided_password.as_bytes(), &parsed_hash)
                 .map_or(false, |_| true),
@@ -66,8 +82,13 @@ impl Borrower {
 pub struct Lender {
     pub id: String,
     pub name: String,
-    pub email: String,
-    pub password: String,
+    pub email: Email,
+    /// A password (hash) may be stored if the user has yet to upgrade to PAKE.
+    ///
+    /// This is a legacy field.
+    pub password: Option<String>,
+    pub salt: String,
+    pub verifier: String,
     pub verified: bool,
     pub verification_code: Option<String>,
     pub invite_code: Option<i32>,
@@ -82,13 +103,23 @@ pub struct Lender {
 
 impl Lender {
     pub fn check_password(&self, provided_password: &str) -> bool {
-        match PasswordHash::new(&self.password) {
+        let legacy_password_hash = match &self.password {
+            Some(p) => p,
+            None => {
+                tracing::error!(
+                    "User attempted to log in with legacy password after upgrading to PAKE"
+                );
+                return false;
+            }
+        };
+        match PasswordHash::new(legacy_password_hash) {
             Ok(parsed_hash) => Argon2::default()
                 .verify_password(provided_password.as_bytes(), &parsed_hash)
                 .map_or(false, |_| true),
             Err(_) => false,
         }
     }
+
     pub(crate) fn name(&self) -> String {
         self.name.clone()
     }
@@ -109,9 +140,11 @@ pub struct TokenClaims {
 
 #[derive(Debug, Deserialize)]
 pub struct RegisterUserSchema {
+    /// Used as the user's unique identifier.
+    pub email: Email,
+    pub verifier: String,
+    pub salt: String,
     pub name: String,
-    pub email: String,
-    pub password: String,
     #[serde(deserialize_with = "empty_string_is_none")]
     pub invite_code: Option<String>,
     pub wallet_backup_data: WalletBackupData,
@@ -119,28 +152,68 @@ pub struct RegisterUserSchema {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct WalletBackupData {
-    pub passphrase_hash: String,
     pub mnemonic_ciphertext: String,
     pub network: String,
     pub xpub: String,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct LoginUserSchema {
-    pub email: String,
-    pub password: String,
+pub struct PakeLoginRequest {
+    pub email: Email,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct PakeLoginResponse {
+    pub salt: String,
+    pub b_pub: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct PakeServerData {
+    pub b: Vec<u8>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct PakeVerifyRequest {
+    pub email: Email,
+    pub a_pub: String,
+    pub client_proof: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpgradeToPakeRequest {
+    pub email: Email,
+    /// The password the user used before PAKE. This one must be verified against the password hash
+    /// stored in the database, one last time.
+    pub old_password: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct UpgradeToPakeResponse {
+    pub old_wallet_backup_data: WalletBackupData,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct FinishUpgradeToPakeRequest {
+    pub email: Email,
+    /// The password the user used before PAKE. This one must be verified against the password hash
+    /// stored in the database, one last time.
+    pub old_password: String,
+    pub verifier: String,
+    pub salt: String,
+    pub new_wallet_backup_data: WalletBackupData,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct ForgotPasswordSchema {
-    pub email: String,
+    pub email: Email,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct ResetPasswordSchema {
-    pub password: String,
-    #[serde(rename = "passwordConfirm")]
-    pub password_confirm: String,
+    pub verifier: String,
+    pub salt: String,
+    pub new_wallet_backup_data: WalletBackupData,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -173,7 +246,6 @@ pub struct CreateLoanRequestSchema {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ContractRequestSchema {
     pub loan_id: String,
-    // TODO: Reconsider this now!
     #[serde(with = "rust_decimal::serde::float")]
     pub loan_amount: Decimal,
     pub duration_months: i32,

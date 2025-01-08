@@ -130,7 +130,11 @@ export const FeeSelector = ({ onSelectFee }: FeeSelectorProps) => {
             </Button>
           </ButtonGroup>
         )
-        : <p>Failed to load recommended fees. Please try again later.</p>}
+        : (
+          <p className={"text-font dark:text-font-dark"}>
+            Failed to load recommended fees. Please try again later.
+          </p>
+        )}
     </div>
   );
 };

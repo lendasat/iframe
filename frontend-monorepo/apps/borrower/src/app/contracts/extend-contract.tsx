@@ -1,6 +1,6 @@
 import { faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { CreateWalletModal, UnlockWalletModal, useWallet } from "@frontend-monorepo/browser-wallet";
+import { UnlockWalletModal, useWallet } from "@frontend-monorepo/browser-wallet";
 import { Contract, LoanOffer, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import {
   formatCurrency,
@@ -62,45 +62,34 @@ interface SelectedLoanOfferProps {
 
 const SelectedLoanOffer = (props: SelectedLoanOfferProps) => {
   const navigate = useNavigate();
-  const { doesWalletExist, isWalletLoaded } = useWallet();
+  const { isWalletLoaded } = useWallet();
   const { latestPrice } = usePrice();
   const [error, setError] = useState("");
   const { postExtendLoanRequest } = useBorrowerHttpClient();
 
   const [walletSecretConfirmed, setWalletSecretConfirmed] = useState(isWalletLoaded);
   const [showUnlockWalletModal, setShowUnlockWalletModal] = useState(false);
-  const [showCreateWalletModal, setShowCreateWalletModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [newContractId, setNewContractId] = useState("");
   const [isFinalConfirmationDialogOpen, setIsFinalConfirmationDialogOpen] = useState(false);
 
   const handleCloseUnlockWalletModal = () => setShowUnlockWalletModal(false);
   const handleOpenUnlockWalletModal = () => setShowUnlockWalletModal(true);
-  const handleCloseCreateWalletModal = () => setShowCreateWalletModal(false);
-  const handleOpenCreateWalletModal = () => setShowCreateWalletModal(true);
 
-  const handleSubmitCreateWalletModal = async () => {
-    setWalletSecretConfirmed(true);
-    handleCloseCreateWalletModal();
-  };
   const handleSubmitUnlockWalletModal = async () => {
     setWalletSecretConfirmed(true);
     handleCloseUnlockWalletModal();
   };
 
-  const handleUnlockOrCreateWallet = async () => {
+  const UnlockWallet = async () => {
     try {
-      if (!doesWalletExist) {
-        handleOpenCreateWalletModal();
-        return;
-      }
       if (!isWalletLoaded) {
         handleOpenUnlockWalletModal();
         return;
       }
     } catch (error) {
-      console.log(`Unexpected error happened ${error}`);
-      setError(`Failed setting contract secret ${error}`);
+      console.log(`Unexpected error happened: ${error}`);
+      setError(`Failed unlocking wallet: ${error}`);
     }
   };
 
@@ -142,11 +131,6 @@ const SelectedLoanOffer = (props: SelectedLoanOfferProps) => {
         isOpen={isFinalConfirmationDialogOpen}
         setIsOpen={setIsFinalConfirmationDialogOpen}
         onConfirm={onFinalConfirmationDialogClose}
-      />
-      <CreateWalletModal
-        show={showCreateWalletModal}
-        handleClose={handleCloseCreateWalletModal}
-        handleSubmit={handleSubmitCreateWalletModal}
       />
       <UnlockWalletModal
         show={showUnlockWalletModal}
@@ -201,7 +185,7 @@ const SelectedLoanOffer = (props: SelectedLoanOfferProps) => {
               size={"3"}
               variant="solid"
               className={`text-white ${!walletSecretConfirmed ? "bg-purple-950" : "bg-gray-400"}`}
-              onClick={() => handleUnlockOrCreateWallet()}
+              onClick={() => UnlockWallet()}
               disabled={walletSecretConfirmed}
               loading={isLoading}
             >

@@ -6,6 +6,9 @@ mod tests {
     use bitcoin::hashes::Hash;
     use bitcoin::Psbt;
     use bitcoin::Txid;
+    use browser_wallet::auth::Salt;
+    use browser_wallet::auth::ServerProof;
+    use browser_wallet::auth::B;
     use hub::model::ContractRequestSchema;
     use hub::model::ContractStatus;
     use hub::model::CreateLoanOfferSchema;
@@ -13,7 +16,9 @@ mod tests {
     use hub::model::LoanAssetChain::Ethereum;
     use hub::model::LoanAssetType;
     use hub::model::LoanOffer;
-    use hub::model::LoginUserSchema;
+    use hub::model::PakeLoginRequest;
+    use hub::model::PakeLoginResponse;
+    use hub::model::PakeVerifyRequest;
     use hub::routes::borrower::ClaimCollateralPsbt;
     use hub::routes::borrower::ClaimTx;
     use hub::routes::borrower::Contract;
@@ -21,6 +26,7 @@ mod tests {
     use reqwest::cookie::Jar;
     use reqwest::Client;
     use rust_decimal_macros::dec;
+    use serde::Deserialize;
     use serde_json::json;
     use std::sync::Arc;
     use std::sync::Once;
@@ -39,45 +45,19 @@ mod tests {
         init_tracing();
 
         // 0. Log in borrower and lender.
-        let borrower_cookie_jar = Arc::new(Jar::default());
-        let borrower = Client::builder()
-            .cookie_provider(borrower_cookie_jar)
-            .build()
-            .unwrap();
+        let borrower = log_in(
+            7337,
+            "borrower@lendasat.com".to_string(),
+            "password123".to_string(),
+        )
+        .await;
 
-        let borrower_login = LoginUserSchema {
-            email: "borrower@lendasat.com".to_string(),
-            password: "password123".to_string(),
-        };
-
-        let res = borrower
-            .post("http://localhost:7337/api/auth/login")
-            .json(&borrower_login)
-            .send()
-            .await
-            .unwrap();
-
-        assert!(res.status().is_success());
-
-        let lender_cookie_jar = Arc::new(Jar::default());
-        let lender = Client::builder()
-            .cookie_provider(lender_cookie_jar)
-            .build()
-            .unwrap();
-
-        let lender_login = LoginUserSchema {
-            email: "lender@lendasat.com".to_string(),
-            password: "password123".to_string(),
-        };
-
-        let res = lender
-            .post("http://localhost:7338/api/auth/login")
-            .json(&lender_login)
-            .send()
-            .await
-            .unwrap();
-
-        assert!(res.status().is_success());
+        let lender = log_in(
+            7338,
+            "lender@lendasat.com".to_string(),
+            "password123".to_string(),
+        )
+        .await;
 
         // 1. Lender creates loan offer.
         let lender_xpub = "tpubD6NzVbkrYhZ4Yon2URjspXp7Y7DKaBaX1ZVMCEnhc8zCrj1AuJyLrhmAKFmnkqVULW6znfEMLvgukHBVJD4fukpVYre3dpHXmkbcpvtviro".parse().unwrap();
@@ -110,9 +90,16 @@ mod tests {
         let loan_offer: LoanOffer = res.json().await.unwrap();
 
         // 2. Borrower takes loan offer by creating a contract request.
-        browser_wallet::wallet::new_wallet("borrower", "regtest").unwrap();
+        let borrower_pk = {
+            let (_, network, xpub) =
+                browser_wallet::wallet::new_wallet("borrower", "regtest", None).unwrap();
 
-        let borrower_pk = browser_wallet::wallet::get_pk().unwrap();
+            browser_wallet::wallet::get_normal_pk_for_network(
+                &xpub.to_string(),
+                &network.to_string(),
+            )
+            .unwrap()
+        };
 
         let borrower_btc_address = "tb1quw75h0w26rcrdfar6knvkfazpwyzq4z8vqmt37"
             .parse()
@@ -384,45 +371,19 @@ mod tests {
         init_tracing();
 
         // 0. Log in borrower and lender.
-        let borrower_cookie_jar = Arc::new(Jar::default());
-        let borrower = Client::builder()
-            .cookie_provider(borrower_cookie_jar)
-            .build()
-            .unwrap();
+        let borrower = log_in(
+            7337,
+            "borrower@lendasat.com".to_string(),
+            "password123".to_string(),
+        )
+        .await;
 
-        let borrower_login = LoginUserSchema {
-            email: "borrower@lendasat.com".to_string(),
-            password: "password123".to_string(),
-        };
-
-        let res = borrower
-            .post("http://localhost:7337/api/auth/login")
-            .json(&borrower_login)
-            .send()
-            .await
-            .unwrap();
-
-        assert!(res.status().is_success());
-
-        let lender_cookie_jar = Arc::new(Jar::default());
-        let lender = Client::builder()
-            .cookie_provider(lender_cookie_jar)
-            .build()
-            .unwrap();
-
-        let lender_login = LoginUserSchema {
-            email: "lender@lendasat.com".to_string(),
-            password: "password123".to_string(),
-        };
-
-        let res = lender
-            .post("http://localhost:7338/api/auth/login")
-            .json(&lender_login)
-            .send()
-            .await
-            .unwrap();
-
-        assert!(res.status().is_success());
+        let lender = log_in(
+            7338,
+            "lender@lendasat.com".to_string(),
+            "password123".to_string(),
+        )
+        .await;
 
         // 1. Lender creates loan offer.
         let lender_xpub = "tpubD6NzVbkrYhZ4Yon2URjspXp7Y7DKaBaX1ZVMCEnhc8zCrj1AuJyLrhmAKFmnkqVULW6znfEMLvgukHBVJD4fukpVYre3dpHXmkbcpvtviro".parse().unwrap();
@@ -455,9 +416,17 @@ mod tests {
         let loan_offer: LoanOffer = res.json().await.unwrap();
 
         // 2. Borrower takes loan offer by creating a contract request.
-        browser_wallet::wallet::new_wallet("borrower", "regtest").unwrap();
 
-        let borrower_pk = browser_wallet::wallet::get_pk().unwrap();
+        let borrower_pk = {
+            let (_, network, xpub) =
+                browser_wallet::wallet::new_wallet("borrower", "regtest", None).unwrap();
+
+            browser_wallet::wallet::get_normal_pk_for_network(
+                &xpub.to_string(),
+                &network.to_string(),
+            )
+            .unwrap()
+        };
 
         let borrower_btc_address = "tb1quw75h0w26rcrdfar6knvkfazpwyzq4z8vqmt37"
             .parse()
@@ -626,6 +595,68 @@ mod tests {
         assert!(res.status().is_success());
     }
 
+    async fn log_in(port: u32, email: String, password: String) -> Client {
+        #[derive(Deserialize)]
+        struct PakeVerifyResponse {
+            pub server_proof: String,
+        }
+
+        let cookie_jar = Arc::new(Jar::default());
+        let client = Client::builder()
+            .cookie_provider(cookie_jar)
+            .build()
+            .unwrap();
+
+        let login_request = PakeLoginRequest {
+            email: email.clone(),
+        };
+
+        let res = client
+            .post(format!("http://localhost:{port}/api/auth/pake-login"))
+            .json(&login_request)
+            .send()
+            .await
+            .unwrap();
+
+        assert!(res.status().is_success());
+
+        let login_response: PakeLoginResponse = res.json().await.unwrap();
+
+        let (a_pub, client_proof) = browser_wallet::auth::process_login_response(
+            email.clone(),
+            password,
+            Salt::try_from_hex(login_response.salt).unwrap(),
+            B::try_from_hex(login_response.b_pub).unwrap(),
+        )
+        .unwrap();
+
+        let verify_payload = PakeVerifyRequest {
+            email: email.clone(),
+            a_pub: a_pub.to_hex(),
+            client_proof: client_proof.to_hex(),
+        };
+
+        let res = client
+            .post(format!("http://localhost:{port}/api/auth/pake-verify"))
+            .json(&verify_payload)
+            .send()
+            .await
+            .unwrap();
+
+        assert!(res.status().is_success());
+
+        let verify_response: PakeVerifyResponse = res.json().await.unwrap();
+
+        browser_wallet::auth::verify_server(
+            ServerProof::try_from_hex(verify_response.server_proof).unwrap(),
+        )
+        .unwrap();
+
+        tracing::debug!(email, "Logged in");
+
+        client
+    }
+
     async fn wait_until_contract_status(
         client: &Client,
         url: &str,
@@ -651,6 +682,10 @@ mod tests {
                 let current = match contracts.iter().find(|c| c.id == contract_id) {
                     Some(contract) => {
                         if contract.status == status {
+                            tracing::debug!(
+                                "Contract {contract_id} reached status {status:?}",
+                            );
+
                             return;
                         }
 

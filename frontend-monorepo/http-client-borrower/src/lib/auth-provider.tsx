@@ -1,7 +1,8 @@
-import type { LoginResponse, User, Version } from "@frontend-monorepo/base-http-client";
+import type { LoginResponseOrUpgrade, User, Version } from "@frontend-monorepo/base-http-client";
 import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
 import type { LoanProductOption } from "@frontend-monorepo/base-http-client";
 import axios from "axios";
+import { process_login_response, verify_server } from "browser-wallet";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import type { FC, ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -12,7 +13,7 @@ import { FeatureMapper } from "./models";
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<LoginResponse>;
+  login: (email: string, password: string) => Promise<LoginResponseOrUpgrade>;
   logout: () => Promise<void>;
   backendVersion: Version;
   enabledFeatures: LoanProductOption[];
@@ -79,7 +80,7 @@ const BorrowerAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) =>
   });
   const [loading, setLoading] = useState(true);
   const [enabledFeatures, setEnabledFeatures] = useState<LoanProductOption[]>([]);
-  const { me, login: baseLogin, logout: baseLogout, getVersion, check } = useBaseHttpClient();
+  const { me, pakeLoginRequest, pakeVerifyRequest, logout: baseLogout, getVersion, check } = useBaseHttpClient();
 
   const handle401 = useCallback(() => {
     setUser(null);
@@ -159,10 +160,29 @@ const BorrowerAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) =>
   const login = async (email: string, password: string) => {
     setLoading(true);
     try {
-      const loginResponse = await baseLogin(email, password);
-      const enabledFeatures = FeatureMapper.mapEnabledFeatures(loginResponse.enabled_features);
+      const pakeLoginResponse = await pakeLoginRequest(email);
 
-      const currentUser = loginResponse.user;
+      if ("must_upgrade_to_pake" in pakeLoginResponse) {
+        return { must_upgrade_to_pake: undefined };
+      }
+
+      const verificationData = process_login_response(email, password, pakeLoginResponse.salt, pakeLoginResponse.b_pub);
+
+      const pakeVerifyResponse = await pakeVerifyRequest(
+        email,
+        verificationData.a_pub,
+        verificationData.client_proof,
+      );
+
+      console.log(pakeVerifyResponse);
+
+      if (!verify_server(pakeVerifyResponse.server_proof)) {
+        throw new Error("failed to verify server proof");
+      }
+
+      const enabledFeatures = FeatureMapper.mapEnabledFeatures(pakeVerifyResponse.enabled_features);
+
+      const currentUser = pakeVerifyResponse.user;
 
       if (enabledFeatures) {
         setEnabledFeatures(enabledFeatures);
@@ -178,7 +198,7 @@ const BorrowerAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) =>
         const version = await getVersion();
         setBackendVersion(version);
       }
-      return loginResponse;
+      return pakeVerifyResponse;
     } catch (error) {
       console.error("Login failed:", error);
       throw error;

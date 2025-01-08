@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE borrowers\n        SET salt = $1,\n            verifier = $2,\n            password = null\n        WHERE email = $3 AND salt = '0' and verifier = '0'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "3f3b38b41caf43cfd9f0f3994a1e37a825a5d6003ac623003a29e8f238c6fbb7"
+}
