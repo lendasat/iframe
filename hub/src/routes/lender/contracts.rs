@@ -1044,18 +1044,6 @@ async fn map_to_api_contract(
         new_offer.interest_rate
     };
 
-    // if the contract is extending another one, we need to fetch the old transactions as well.
-    let transactions = if let Some(parent_id) = &parent_contract_id {
-        let mut old_txs = db::transactions::get_all_for_contract_id(&data.db, parent_id.as_str())
-            .await
-            .map_err(Error::Database)?;
-        let mut new_tx = transactions;
-        new_tx.append(&mut old_txs);
-        new_tx
-    } else {
-        transactions
-    };
-
     let contract = Contract {
         id: contract.id,
         loan_amount: contract.loan_amount,

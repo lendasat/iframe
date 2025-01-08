@@ -118,6 +118,14 @@ pub async fn request_contract_extension(
     .await
     .map_err(|e| Error::Database(anyhow!(e)))?;
 
+    db::transactions::duplicate_transactions(
+        &mut *db_tx,
+        original_contract_id,
+        new_contract.id.as_str(),
+    )
+    .await
+    .map_err(|e| Error::Database(anyhow!(e)))?;
+
     db_tx
         .commit()
         .await
