@@ -1218,7 +1218,7 @@ impl From<crate::contract_extension::Error> for Error {
             crate::contract_extension::Error::MissingLoanOffer { offer_id } => {
                 Error::MissingLoanOffer { offer_id }
             }
-            crate::contract_extension::Error::LoanOfferLenderMissmatch => {
+            crate::contract_extension::Error::LoanOfferLenderMismatch => {
                 Error::LoanOfferLenderMissmatch
             }
             crate::contract_extension::Error::InterestRateCalculation(e) => {

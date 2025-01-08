@@ -16,7 +16,7 @@ pub enum Error {
     /// Referenced loan does not exist.
     MissingLoanOffer { offer_id: String },
     /// Loan offer from different lenders
-    LoanOfferLenderMissmatch,
+    LoanOfferLenderMismatch,
     /// We failed at calculating interest rate
     InterestRateCalculation(anyhow::Error),
     /// No origination fee configured.
@@ -55,7 +55,7 @@ pub async fn request_contract_extension(
 
     if contract.lender_id != new_offer.lender_id {
         // We do not support this at the moment
-        return Err(Error::LoanOfferLenderMissmatch);
+        return Err(Error::LoanOfferLenderMismatch);
     }
 
     let mut db_tx = pool
