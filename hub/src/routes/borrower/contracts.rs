@@ -936,7 +936,7 @@ enum Error {
     NotYourContract,
     /// Loan extension was requested with an offer from a different lender which is currently not
     /// supported
-    LoanOfferLenderMissmatch,
+    LoanOfferLenderMismatch,
     /// We failed at calculating the interest rate. Cannot do much without this
     InterestRateCalculation(anyhow::Error),
     /// Can't cancel a extend contract request if the parent does not exist
@@ -1193,7 +1193,7 @@ impl IntoResponse for Error {
                 )
             }
             Error::NotYourContract => (StatusCode::NOT_FOUND, "Contract not found".to_owned()),
-            Error::LoanOfferLenderMissmatch => (
+            Error::LoanOfferLenderMismatch => (
                 StatusCode::BAD_REQUEST,
                 "Offer cannot be from a different lender".to_owned(),
             ),
@@ -1247,7 +1247,7 @@ impl From<crate::contract_extension::Error> for Error {
                 Error::MissingLoanOffer { offer_id }
             }
             crate::contract_extension::Error::LoanOfferLenderMissmatch => {
-                Error::LoanOfferLenderMissmatch
+                Error::LoanOfferLenderMismatch
             }
             crate::contract_extension::Error::InterestRateCalculation(e) => {
                 Error::InterestRateCalculation(e)

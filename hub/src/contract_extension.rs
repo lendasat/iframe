@@ -88,7 +88,6 @@ pub async fn request_contract_extension(
         new_offer.id.as_str(),
         contract.initial_ltv,
         contract.initial_collateral_sats,
-        // TODO: do we need to reduce this by the new origination fee? I guess so
         contract.collateral_sats,
         new_origination_fee,
         contract.loan_amount,
