@@ -1,3 +1,4 @@
+import { type LoanFeature } from "@frontend-monorepo/base-http-client";
 import type { LoanAssetChain, LoanAssetType, LoanTransaction } from "@frontend-monorepo/ui-shared";
 
 export enum ContractStatus {
@@ -262,4 +263,25 @@ export interface GetRecoveryPsbtResponse {
   psbt: string;
   collateral_descriptor: string;
   lender_pk: string;
+}
+
+// Warning: only change the string values if you know what you are doing.
+// They are linked to the database and if changed some features might stop
+// working.
+export enum LenderFeatureFlags {
+  AutoApproveLoanRequests = "auto_approve",
+}
+
+export class FeatureMapper {
+  private static readonly FEATURE_MAP: Record<string, LenderFeatureFlags> = {
+    [LenderFeatureFlags.AutoApproveLoanRequests]: LenderFeatureFlags.AutoApproveLoanRequests,
+    // Add other mappings once we use them
+  };
+
+  static mapEnabledFeatures(features: LoanFeature[]): LenderFeatureFlags[] {
+    return features.flatMap((feature) => {
+      const mappedFeature = this.FEATURE_MAP[feature.id];
+      return mappedFeature ? [mappedFeature] : [];
+    });
+  }
 }

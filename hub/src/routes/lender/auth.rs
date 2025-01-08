@@ -205,11 +205,18 @@ pub async fn register_user_handler(
     Ok(Json(user_response))
 }
 
+#[derive(Debug, Serialize)]
+pub struct LenderLoanFeature {
+    pub id: String,
+    pub name: String,
+}
+
 #[derive(Serialize)]
 struct LoginResponse {
     token: String,
     user: FilteredUser,
     wallet_backup_data: WalletBackupData,
+    enabled_features: Vec<LenderLoanFeature>,
 }
 
 #[instrument(skip_all, err(Debug, level = Level::DEBUG))]
@@ -291,12 +298,36 @@ pub async fn login_user_handler(
         xpub: wallet_backup.xpub,
     };
 
+    let features = db::lender_features::load_lender_features(&data.db, user.id.clone())
+        .await
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Database error: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
+
+    let enabled_features = features
+        .iter()
+        .filter_map(|f| {
+            if f.is_enabled {
+                Some(LenderLoanFeature {
+                    id: f.id.clone(),
+                    name: f.name.clone(),
+                })
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>();
+
     let filtered_user = FilteredUser::new_user(&user);
 
     let response = json!(LoginResponse {
         token,
         wallet_backup_data,
-        user: filtered_user
+        user: filtered_user,
+        enabled_features
     })
     .to_string();
 
@@ -510,12 +541,6 @@ pub async fn logout_handler() -> Result<impl IntoResponse, (StatusCode, Json<Err
 }
 
 #[derive(Debug, Serialize)]
-pub struct LenderLoanFeature {
-    pub id: String,
-    pub name: String,
-}
-
-#[derive(Debug, Serialize)]
 pub struct MeResponse {
     pub enabled_features: Vec<LenderLoanFeature>,
     pub user: FilteredUser,
@@ -523,14 +548,38 @@ pub struct MeResponse {
 
 #[instrument(skip_all, err(Debug, level = Level::DEBUG))]
 pub async fn get_me_handler(
+    State(data): State<Arc<AppState>>,
     Extension(user): Extension<User>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     let filtered_user = FilteredUser::new_user(&user);
+
+    let features = db::lender_features::load_lender_features(&data.db, user.id.clone())
+        .await
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Database error: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
+
+    let enabled_features = features
+        .iter()
+        .filter_map(|f| {
+            if f.is_enabled {
+                Some(LenderLoanFeature {
+                    id: f.id.clone(),
+                    name: f.name.clone(),
+                })
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>();
 
     Ok((
         StatusCode::OK,
         Json(MeResponse {
-            enabled_features: vec![],
+            enabled_features,
             user: filtered_user,
         }),
     ))

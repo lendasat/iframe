@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT \n            f.id,\n            f.name,\n            f.description,\n            COALESCE(bff.is_enabled, f.enabled) as \"is_enabled!: bool\"\n        FROM lender_features f\n        LEFT JOIN lender_feature_flags bff \n            ON bff.feature_id = f.id \n            AND bff.lender_id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "is_enabled!: bool",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bpchar"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      null
+    ]
+  },
+  "hash": "785b5f8d54fec1ff0d931f8bdf9c0d97bc4d6922a354916f3cbf895942ebc071"
+}

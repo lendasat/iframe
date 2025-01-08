@@ -817,3 +817,15 @@ pub struct ManualCollateralRecovery {
     pub lender_amount: Amount,
     pub created_at: OffsetDateTime,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct LenderFeatureFlag {
+    pub id: String,
+    pub name: String,
+    pub description: Option<String>,
+    pub is_enabled: bool,
+}
+
+pub mod lender_feature_flags {
+    pub const AUTO_APPROVE_FEATURE_FLAG_ID: &str = "auto_approve";
+}
