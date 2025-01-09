@@ -58,7 +58,8 @@
               "Enum": [
                 "Ethereum",
                 "Starknet",
-                "Polygon"
+                "Polygon",
+                "Solana"
               ]
             }
           }
