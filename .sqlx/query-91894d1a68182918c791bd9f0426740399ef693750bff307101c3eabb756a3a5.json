@@ -1,0 +1,88 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n               b.id,\n               b.name,\n               b.email,\n               b.password,\n               b.verified,\n               b.verification_code,\n               b.password_reset_token,\n               b.password_reset_at,\n               b.created_at,\n               b.updated_at,\n               rb.referral_code as \"used_referral_code?\",\n               CASE \n                   WHEN EXISTS (\n                    SELECT 1 FROM contracts c WHERE \n                        c.borrower_id = b.id AND\n                        status != 'RequestExpired' AND \n                        status != 'Rejected' \n                    ) THEN 0\n                 ELSE rcb.first_time_discount_rate_referee \n                END as \"first_time_discount_rate_referee?\"\n           FROM borrowers b\n           LEFT JOIN referred_borrowers rb ON rb.referred_borrower_id = b.id\n           LEFT JOIN referral_codes_borrowers rcb ON rcb.code = rb.referral_code\n           WHERE b.verification_code = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "email",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "password",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "verified",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 5,
+        "name": "verification_code",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "password_reset_token",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "password_reset_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 8,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 9,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 10,
+        "name": "used_referral_code?",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 11,
+        "name": "first_time_discount_rate_referee?",
+        "type_info": "Numeric"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "91894d1a68182918c791bd9f0426740399ef693750bff307101c3eabb756a3a5"
+}

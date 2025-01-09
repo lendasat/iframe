@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT \n            id,\n            name,\n            email,\n            password,\n            verified,\n            verification_code,\n            invite_code,\n            password_reset_token,\n            password_reset_at,\n            created_at,\n            updated_at\n        FROM borrowers \n            WHERE verification_code = $1",
+  "query": "SELECT \n           b.*,\n           rb.referral_code as \"used_referral_code?\",\n           CASE \n               WHEN EXISTS (\n                SELECT 1 FROM contracts c WHERE \n                    c.borrower_id = b.id AND\n                    status != 'RequestExpired' AND \n                    status != 'Rejected' \n                ) THEN 0\n               ELSE rcb.first_time_discount_rate_referee \n           END as \"first_time_discount_rate_referee?\"\n        FROM borrowers b\n            LEFT JOIN referred_borrowers rb ON rb.referred_borrower_id = b.id\n            LEFT JOIN referral_codes_borrowers rcb ON rcb.code = rb.referral_code\n            WHERE b.email = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -35,28 +35,33 @@
       },
       {
         "ordinal": 6,
-        "name": "invite_code",
-        "type_info": "Int4"
-      },
-      {
-        "ordinal": 7,
         "name": "password_reset_token",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 8,
+        "ordinal": 7,
         "name": "password_reset_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 9,
+        "ordinal": 8,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 10,
+        "ordinal": 9,
         "name": "updated_at",
         "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 10,
+        "name": "used_referral_code?",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 11,
+        "name": "first_time_discount_rate_referee?",
+        "type_info": "Numeric"
       }
     ],
     "parameters": {
@@ -73,10 +78,11 @@
       true,
       true,
       true,
-      true,
       false,
-      false
+      false,
+      false,
+      null
     ]
   },
-  "hash": "1af6e7713bf406f5e839776cbdca7730bf6d0ca6dbb04ffb441351eae3d4a612"
+  "hash": "bf965fa0996ebd2deab6c68d09ee7c3447ae501c14cfd1f8b0674f96d7a29d04"
 }

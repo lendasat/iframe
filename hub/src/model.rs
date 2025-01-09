@@ -36,7 +36,9 @@ pub struct Borrower {
     pub password: String,
     pub verified: bool,
     pub verification_code: Option<String>,
-    pub invite_code: Option<i32>,
+    pub used_referral_code: Option<String>,
+    pub personal_referral_code: Option<String>,
+    pub first_time_discount_rate_referee: Option<Decimal>,
     pub password_reset_token: Option<String>,
     #[serde(with = "time::serde::rfc3339::option")]
     pub password_reset_at: Option<OffsetDateTime>,

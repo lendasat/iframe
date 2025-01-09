@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n       INSERT INTO referral_codes_borrowers (\n           code,\n           referrer_id,\n           active,\n           first_time_discount_rate_referee,\n           first_time_commission_rate_referrer,\n           commission_rate_referrer\n       )\n       VALUES ($1, $2, true, $3, $4, $5)\n       ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Bpchar",
+        "Numeric",
+        "Numeric",
+        "Numeric"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "c1b388ea375599664f4258c59cc2b9d2034644441cbe9dc6c902413750467331"
+}

@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT EXISTS(\n            SELECT 1 \n            FROM referral_codes_borrowers \n            WHERE \n                code = $1 AND \n                active = true AND \n                expires_at > CURRENT_TIMESTAMP\n        )\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "exists",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "5004cf5cf8d8f4f1f664d6e9fcfcd40de5c83f9967b1f336cdbfca73b80add09"
+}

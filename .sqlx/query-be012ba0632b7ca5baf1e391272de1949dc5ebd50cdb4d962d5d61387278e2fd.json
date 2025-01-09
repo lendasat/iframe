@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT * FROM borrowers WHERE id = $1",
+  "query": "\n           SELECT \n               b.*,\n                rb.referral_code as \"used_referral_code?\",\n                CASE \n                   WHEN EXISTS (\n                    SELECT 1 FROM contracts c WHERE \n                        c.borrower_id = b.id AND\n                        status != 'RequestExpired' AND \n                        status != 'Rejected' \n                    ) THEN 0\n                ELSE rcb.first_time_discount_rate_referee \n           END as \"first_time_discount_rate_referee?\"\n           FROM borrowers b\n           LEFT JOIN referred_borrowers rb ON rb.referred_borrower_id = b.id\n           LEFT JOIN referral_codes_borrowers rcb ON rcb.code = rb.referral_code\n           WHERE b.id = $1\n       ",
   "describe": {
     "columns": [
       {
@@ -55,8 +55,13 @@
       },
       {
         "ordinal": 10,
-        "name": "invite_code",
-        "type_info": "Int4"
+        "name": "used_referral_code?",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 11,
+        "name": "first_time_discount_rate_referee?",
+        "type_info": "Numeric"
       }
     ],
     "parameters": {
@@ -75,8 +80,9 @@
       true,
       false,
       false,
-      true
+      false,
+      null
     ]
   },
-  "hash": "be4841a84b5c2c5d25644f1da58f9aebcf8997a957edfd05ba57c014eb6dd2bd"
+  "hash": "be012ba0632b7ca5baf1e391272de1949dc5ebd50cdb4d962d5d61387278e2fd"
 }

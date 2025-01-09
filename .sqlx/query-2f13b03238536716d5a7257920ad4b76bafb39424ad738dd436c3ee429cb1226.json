@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO borrowers (id, name, email, password, verification_code, invite_code)\n            VALUES ($1, $2, $3, $4, $5, $6)\n            RETURNING *",
+  "query": "SELECT\n           b.*,\n           rb.referral_code as \"used_referral_code?\",\n           CASE \n               WHEN EXISTS (\n                SELECT 1 FROM contracts c WHERE \n                    c.borrower_id = b.id AND\n                    status != 'RequestExpired' AND \n                    status != 'Rejected' \n                ) THEN 0\n               ELSE rcb.first_time_discount_rate_referee \n           END as \"first_time_discount_rate_referee?\"\n       FROM borrowers b\n           LEFT JOIN referred_borrowers rb ON rb.referred_borrower_id = b.id\n           LEFT JOIN referral_codes_borrowers rcb ON rcb.code = rb.referral_code\n           WHERE b.password_reset_token = $1\n           AND b.password_reset_at > $2",
   "describe": {
     "columns": [
       {
@@ -55,18 +55,19 @@
       },
       {
         "ordinal": 10,
-        "name": "invite_code",
-        "type_info": "Int4"
+        "name": "used_referral_code?",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 11,
+        "name": "first_time_discount_rate_referee?",
+        "type_info": "Numeric"
       }
     ],
     "parameters": {
       "Left": [
-        "Bpchar",
-        "Varchar",
-        "Varchar",
-        "Varchar",
-        "Varchar",
-        "Int4"
+        "Text",
+        "Timestamptz"
       ]
     },
     "nullable": [
@@ -80,8 +81,9 @@
       true,
       false,
       false,
-      true
+      false,
+      null
     ]
   },
-  "hash": "abd1d30671aca57a2a74cbcb415f66f7813aee87eb63d251887b0f60993b8d13"
+  "hash": "2f13b03238536716d5a7257920ad4b76bafb39424ad738dd436c3ee429cb1226"
 }

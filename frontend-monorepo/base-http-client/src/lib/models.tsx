@@ -5,6 +5,12 @@ export interface User {
   name: string;
   email: string;
   verified: boolean;
+  // TODO: this is for now borrower specific and it sucks that we share this type
+  // I'll leave this for now, because it looks like the only way to have a specific borrower and lender user
+  // is to duplicate the whole login logic
+  used_referral_code?: string;
+  personal_referral_code?: string;
+  first_time_discount_rate_referee?: number;
   created_at: Date;
 }
 

@@ -310,7 +310,10 @@ async fn insert_lender(pool: &Pool<Postgres>, network: &str) -> Result<Lender> {
 
 async fn insert_borrower(pool: &Pool<Postgres>, network: &str) -> Result<Borrower> {
     let email = "borrower@lendasat.com";
-    if db::borrowers::user_exists(pool, email).await? {
+    if db::borrowers::user_exists(pool, email)
+        .await
+        .context("Could not load borrower")?
+    {
         tracing::debug!("DB already contains the borrower, not inserting another one");
 
         let maybe_user = db::borrowers::get_user_by_email(pool, email)
@@ -319,8 +322,24 @@ async fn insert_borrower(pool: &Pool<Postgres>, network: &str) -> Result<Borrowe
         enable_borrower_features(pool, maybe_user.id.as_str()).await?;
         return Ok(maybe_user);
     }
-    let user =
-        db::borrowers::register_user(pool, "bob the borrower", email, "password123", None).await?;
+
+    let mut tx = pool.begin().await?;
+    let user = db::borrowers::register_user(&mut tx, "bob the borrower", email, "password123")
+        .await
+        .context("register user failed")?;
+    tx.commit().await?;
+
+    db::borrowers_referral_code::create_referral_code(
+        pool,
+        "demo",
+        user.id.as_str(),
+        dec!(0.5),
+        dec!(0.5),
+        dec!(0.25),
+    )
+    .await
+    .context("insert referral code failed")?;
+
     let verification_code = user.verification_code.clone().expect("to exist");
     db::borrowers::verify_user(pool, verification_code.as_str()).await?;
     enable_borrower_features(pool, user.id.as_str()).await?;

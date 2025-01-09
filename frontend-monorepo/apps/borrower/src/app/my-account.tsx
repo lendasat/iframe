@@ -1,6 +1,6 @@
 import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
 import { useAuth } from "@frontend-monorepo/http-client-borrower";
-import { Avatar, Box, Button, Callout, Flex, Heading, Spinner, Tabs, Text } from "@radix-ui/themes";
+import { Avatar, Badge, Box, Button, Callout, Flex, Heading, Spinner, Tabs, Text } from "@radix-ui/themes";
 import { useState } from "react";
 import { BiSolidError } from "react-icons/bi";
 import { GoVerified } from "react-icons/go";
@@ -37,6 +37,10 @@ function MyAccount() {
     day: "numeric",
   };
 
+  let discountRate = 0.00;
+  if (user?.first_time_discount_rate_referee) {
+    discountRate = user?.first_time_discount_rate_referee;
+  }
   return (
     <Box
       className="p-4 flex flex-col overflow-y-scroll"
@@ -176,7 +180,70 @@ function MyAccount() {
                               </Text>
                             </Flex>
                           </Box>
+                          <Box>
+                            <Flex direction={"column"} gap={"1"}>
+                              <Text
+                                as="label"
+                                weight={"medium"}
+                                size={"2"}
+                                className="text-font/50 dark:text-font-dark/50"
+                              >
+                                Used referral code
+                              </Text>
+                              <Text size={"3"} weight={"medium"} className="text-font dark:text-font-dark">
+                                <Badge size={"3"}>
+                                  {user.used_referral_code || "None"}
+                                </Badge>
+                              </Text>
+                            </Flex>
+                          </Box>
+
+                          <Box>
+                            <Flex direction={"column"} gap={"1"}>
+                              <Text
+                                as="label"
+                                weight={"medium"}
+                                size={"2"}
+                                className="text-font/50 dark:text-font-dark/50"
+                              >
+                                Current discount on origination fee
+                              </Text>
+                              <Text size={"3"} weight={"medium"} className="text-font dark:text-font-dark">
+                                {(discountRate * 100).toFixed(2)}%
+                              </Text>
+                            </Flex>
+                          </Box>
                         </Box>
+                      </Box>
+                      <Box>
+                        <Flex direction={"column"} gap={"1"}>
+                          <Text
+                            as="label"
+                            weight={"medium"}
+                            size={"2"}
+                            className="text-font/50 dark:text-font-dark/50"
+                          >
+                            Personal referral codes
+                          </Text>
+                          <Text size={"3"} weight={"medium"} className="text-font dark:text-font-dark">
+                            {user.personal_referral_code && (
+                              <Badge size={"3"}>
+                                {user.personal_referral_code}
+                              </Badge>
+                            )}
+                            {!user.personal_referral_code
+                              && (
+                                <Callout.Root color="orange">
+                                  <Callout.Icon>
+                                    <BiSolidError />
+                                  </Callout.Icon>
+                                  <Callout.Text>
+                                    {"You don't have a personal referral code yet. Reach out to us if you want to take part in the affiliation program"}
+                                  </Callout.Text>
+                                </Callout.Root>
+                              )}
+                          </Text>
+                        </Flex>
                       </Box>
                       {error && (
                         <Callout.Root color="red">
