@@ -13,6 +13,7 @@ mod contract_liquidation;
 pub mod contract_request_expiry;
 pub mod contract_requests;
 pub mod db;
+mod discounted_origination_fee;
 pub mod email;
 pub mod expiry;
 pub mod liquidation_engine;

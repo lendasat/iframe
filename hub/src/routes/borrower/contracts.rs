@@ -3,6 +3,7 @@ use crate::approve_contract::approve_contract;
 use crate::bitmex_index_price_rest::get_bitmex_index_price;
 use crate::contract_requests;
 use crate::db;
+use crate::discounted_origination_fee;
 use crate::email::Email;
 use crate::mempool;
 use crate::model;
@@ -225,15 +226,27 @@ async fn post_contract_request(
 
     // TODO: Choose origination fee based on loan parameters. For now we only have one origination
     // fee anyway.
-    let fee = data
+    let origination_fee = data
         .config
         .origination_fee
         .first()
         .ok_or(Error::MissingOriginationFee)?;
 
-    let origination_fee =
-        contract_requests::calculate_origination_fee(body.loan_amount, fee.fee, initial_price)
-            .map_err(Error::OriginationFeeCalculation)?;
+    // If the user has a discount code, we reduce the origination fee for him
+    let origination_fee = discounted_origination_fee::calculate_discounted_origination_rate(
+        &data.db,
+        origination_fee.fee,
+        user.id.as_str(),
+    )
+    .await
+    .map_err(Error::from)?;
+
+    let origination_fee_amount = contract_requests::calculate_origination_fee(
+        body.loan_amount,
+        origination_fee,
+        initial_price,
+    )
+    .map_err(Error::OriginationFeeCalculation)?;
 
     let lender_xpub = offer.lender_xpub.ok_or(Error::MissingLenderXpub)?;
     let lender_xpub = Xpub::from_str(&lender_xpub).expect("valid lender Xpub");
@@ -245,7 +258,7 @@ async fn post_contract_request(
         &body.loan_id,
         min_ltv,
         initial_collateral.to_sat(),
-        origination_fee.to_sat(),
+        origination_fee_amount.to_sat(),
         body.loan_amount,
         body.duration_months,
         body.borrower_btc_address,
@@ -905,6 +918,8 @@ enum Error {
     InterestRateCalculation(anyhow::Error),
     /// Can't cancel a extend contract request if the parent does not exist
     MissingParentContract(String),
+    /// Discounted origination fee rate was not valid
+    InvalidDiscountRate { fee: Decimal },
 }
 
 impl From<JsonRejection> for Error {
@@ -1182,6 +1197,14 @@ impl IntoResponse for Error {
                 StatusCode::BAD_REQUEST,
                 format!("Cannot cancel a contract request with status {status:?}"),
             ),
+            Error::InvalidDiscountRate { fee } => {
+                tracing::error!(fee = fee.to_string(), "Invalid origination fee discount");
+
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
         };
 
         (status, AppJson(ErrorResponse { message })).into_response()
@@ -1221,6 +1244,19 @@ impl From<crate::contract_extension::Error> for Error {
                 Error::OriginationFeeCalculation(e)
             }
             crate::contract_extension::Error::MissingLenderXpub => Error::MissingLenderXpub,
+        }
+    }
+}
+
+impl From<discounted_origination_fee::Error> for Error {
+    fn from(value: discounted_origination_fee::Error) -> Self {
+        match value {
+            discounted_origination_fee::Error::InvalidDiscountRate { fee } => {
+                Error::InvalidDiscountRate { fee }
+            }
+            discounted_origination_fee::Error::Database(sql_error) => {
+                Error::Database(anyhow!(sql_error))
+            }
         }
     }
 }

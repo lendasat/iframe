@@ -621,6 +621,8 @@ export const Step2PickOffer = () => {
                     }}
                     isLoading={isLoading}
                     coinSelectHidden={coinSelectHidden}
+                    // TODO: once we have multiple origination fees
+                    originationFee={bestOffer.origination_fee[0].fee}
                   />
                 </Box>
               </>
@@ -681,6 +683,7 @@ interface SearchParams {
   error: string;
   isLoading: boolean;
   coinSelectHidden: boolean;
+  originationFee: number;
 }
 
 // Loan Display Component
@@ -753,6 +756,9 @@ const LoanSearched = (props: SearchParams) => {
 
   const confirmOfferButtonEnabled = walletSecretConfirmed && bitcoinAddressInputError === "";
 
+  const originationFeeBtc = collateralAmountBtc * props.originationFee;
+  const originationFeeUsd = props.amount * props.originationFee;
+
   return (
     <>
       <CreateWalletModal
@@ -809,6 +815,23 @@ const LoanSearched = (props: SearchParams) => {
               </Text>
               <Text className="text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-end">
                 ≈ {formatCurrency(collateralUsdAmount)}
+              </Text>
+            </div>
+          </Flex>
+          <Separator size={"4"} />
+          <Flex justify={"between"} align={"center"}>
+            <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
+              <Text className="text-xs font-medium text-font/60 dark:text-font-dark/60">
+                Origination fee
+              </Text>
+              <FaInfoCircle />
+            </Flex>
+            <div className="flex flex-col">
+              <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
+                {originationFeeBtc.toFixed(8)} BTC
+              </Text>
+              <Text className="text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-end">
+                ≈ {formatCurrency(originationFeeUsd)}
               </Text>
             </div>
           </Flex>
