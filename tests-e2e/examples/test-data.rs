@@ -8,15 +8,16 @@ use hub::config::Config;
 use hub::db;
 use hub::db::wallet_backups::NewBorrowerWalletBackup;
 use hub::db::wallet_backups::NewLenderWalletBackup;
+use hub::model::Borrower;
 use hub::model::Contract;
 use hub::model::ContractStatus;
 use hub::model::ContractVersion;
 use hub::model::CreateLoanOfferSchema;
 use hub::model::Integration;
+use hub::model::Lender;
 use hub::model::LoanAssetChain;
 use hub::model::LoanAssetType;
 use hub::model::LoanOffer;
-use hub::model::User;
 use hub::moon::Card;
 use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
@@ -64,7 +65,7 @@ async fn main() -> Result<()> {
 
 async fn create_sample_contracts(
     pool: &Pool<Postgres>,
-    borrower: &User,
+    borrower: &Borrower,
     offer: &LoanOffer,
     lender_id: &str,
 ) -> Result<(Contract, Contract)> {
@@ -115,7 +116,7 @@ async fn create_sample_contracts(
     Ok((contract1, contract2))
 }
 
-async fn create_sample_card(pool: &Pool<Postgres>, borrower: &User) -> Result<Card> {
+async fn create_sample_card(pool: &Pool<Postgres>, borrower: &Borrower) -> Result<Card> {
     let borrower_id = borrower.id.as_str();
     let end_customer_id = Uuid::new_v4();
 
@@ -266,7 +267,7 @@ async fn create_loan_offers(pool: &Pool<Postgres>, lender_id: &str) -> Result<Ve
     Ok(vec![eth_offer, poly_offer])
 }
 
-async fn insert_lender(pool: &Pool<Postgres>, network: &str) -> Result<User> {
+async fn insert_lender(pool: &Pool<Postgres>, network: &str) -> Result<Lender> {
     let email = "lender@lendasat.com";
     if db::lenders::user_exists(pool, email).await? {
         tracing::debug!("DB already contains the lender, not inserting another one");
@@ -307,7 +308,7 @@ async fn insert_lender(pool: &Pool<Postgres>, network: &str) -> Result<User> {
     Ok(user)
 }
 
-async fn insert_borrower(pool: &Pool<Postgres>, network: &str) -> Result<User> {
+async fn insert_borrower(pool: &Pool<Postgres>, network: &str) -> Result<Borrower> {
     let email = "borrower@lendasat.com";
     if db::borrowers::user_exists(pool, email).await? {
         tracing::debug!("DB already contains the borrower, not inserting another one");

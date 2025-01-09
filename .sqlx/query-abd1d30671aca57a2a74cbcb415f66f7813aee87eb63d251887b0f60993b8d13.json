@@ -45,18 +45,18 @@
       },
       {
         "ordinal": 8,
-        "name": "invite_code",
-        "type_info": "Int4"
-      },
-      {
-        "ordinal": 9,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 10,
+        "ordinal": 9,
         "name": "updated_at",
         "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 10,
+        "name": "invite_code",
+        "type_info": "Int4"
       }
     ],
     "parameters": {
@@ -78,9 +78,9 @@
       true,
       true,
       true,
-      true,
       false,
-      false
+      false,
+      true
     ]
   },
   "hash": "abd1d30671aca57a2a74cbcb415f66f7813aee87eb63d251887b0f60993b8d13"

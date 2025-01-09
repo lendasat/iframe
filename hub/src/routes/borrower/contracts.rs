@@ -6,6 +6,7 @@ use crate::db;
 use crate::email::Email;
 use crate::mempool;
 use crate::model;
+use crate::model::Borrower;
 use crate::model::ContractRequestSchema;
 use crate::model::ContractStatus;
 use crate::model::ContractVersion;
@@ -16,7 +17,6 @@ use crate::model::LoanAssetType;
 use crate::model::LoanTransaction;
 use crate::model::PsbtQueryParams;
 use crate::model::TransactionType;
-use crate::model::User;
 use crate::moon::MOON_CARD_MAX_BALANCE;
 use crate::routes::borrower::auth::jwt_auth;
 use crate::routes::user_connection_details_middleware;
@@ -128,7 +128,7 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
 #[instrument(skip_all, err(Debug))]
 async fn post_contract_request(
     State(data): State<Arc<AppState>>,
-    Extension(user): Extension<User>,
+    Extension(user): Extension<Borrower>,
     Extension(connection_details): Extension<UserConnectionDetails>,
     AppJson(body): AppJson<ContractRequestSchema>,
 ) -> Result<AppJson<Contract>, Error> {
@@ -344,7 +344,7 @@ async fn post_contract_request(
 #[instrument(skip(data, user), err(Debug), ret)]
 async fn cancel_contract_request(
     State(data): State<Arc<AppState>>,
-    Extension(user): Extension<User>,
+    Extension(user): Extension<Borrower>,
     Path(contract_id): Path<String>,
 ) -> Result<(), Error> {
     let contract = db::contracts::load_contract_by_contract_id_and_borrower_id(
@@ -387,7 +387,7 @@ async fn cancel_contract_request(
 
 async fn get_contracts(
     State(data): State<Arc<AppState>>,
-    Extension(user): Extension<User>,
+    Extension(user): Extension<Borrower>,
 ) -> Result<AppJson<Vec<Contract>>, Error> {
     let contracts = db::contracts::load_contracts_by_borrower_id(&data.db, user.id.as_str())
         .await
@@ -405,7 +405,7 @@ async fn get_contracts(
 
 async fn get_contract(
     State(data): State<Arc<AppState>>,
-    Extension(user): Extension<User>,
+    Extension(user): Extension<Borrower>,
     Path(contract_id): Path<String>,
 ) -> Result<AppJson<Contract>, Error> {
     let contract = db::contracts::load_contract_by_contract_id_and_borrower_id(
@@ -426,7 +426,7 @@ async fn put_repayment_provided(
     State(data): State<Arc<AppState>>,
     Path(contract_id): Path<String>,
     query_params: Query<PrincipalRepaidQueryParam>,
-    Extension(user): Extension<User>,
+    Extension(user): Extension<Borrower>,
 ) -> Result<(), Error> {
     let contract = db::contracts::load_contract_by_contract_id_and_borrower_id(
         &data.db,
@@ -486,7 +486,7 @@ async fn put_repayment_provided(
 #[instrument(skip_all, fields(borrower_id = user.id, contract_id), err(Debug), ret)]
 async fn get_claim_collateral_psbt(
     State(data): State<Arc<AppState>>,
-    Extension(user): Extension<User>,
+    Extension(user): Extension<Borrower>,
     Path(contract_id): Path<String>,
     query_params: Query<PsbtQueryParams>,
 ) -> Result<AppJson<ClaimCollateralPsbt>, Error> {
@@ -554,7 +554,7 @@ async fn get_claim_collateral_psbt(
 #[instrument(skip(data, user), err(Debug), ret)]
 async fn post_claim_tx(
     State(data): State<Arc<AppState>>,
-    Extension(user): Extension<User>,
+    Extension(user): Extension<Borrower>,
     Path(contract_id): Path<String>,
     AppJson(body): AppJson<ClaimTx>,
 ) -> Result<String, Error> {
@@ -776,7 +776,7 @@ pub struct ExtendContractRequestSchema {
 #[instrument(skip_all, err(Debug))]
 async fn post_extend_contract_request(
     State(data): State<Arc<AppState>>,
-    Extension(user): Extension<User>,
+    Extension(user): Extension<Borrower>,
     Path(contract_id): Path<String>,
     AppJson(body): AppJson<ExtendContractRequestSchema>,
 ) -> Result<AppJson<Contract>, Error> {

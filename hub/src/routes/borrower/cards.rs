@@ -1,5 +1,5 @@
 use crate::db;
-use crate::model::User;
+use crate::model::Borrower;
 use crate::moon;
 use crate::routes::borrower::auth::jwt_auth;
 use crate::routes::AppState;
@@ -47,7 +47,7 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
 #[instrument(skip(data, user), err(Debug))]
 pub async fn get_cards(
     State(data): State<Arc<AppState>>,
-    Extension(user): Extension<User>,
+    Extension(user): Extension<Borrower>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     let cards = data
         .moon
@@ -232,7 +232,7 @@ impl From<pay_with_moon::DeclineData> for DeclineData {
 
 pub async fn get_card_transaction(
     State(data): State<Arc<AppState>>,
-    Extension(user): Extension<User>,
+    Extension(user): Extension<Borrower>,
     Path(card_id): Path<String>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     let uuid = Uuid::from_str(card_id.as_str()).map_err(|_| {

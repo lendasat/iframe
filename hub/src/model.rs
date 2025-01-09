@@ -23,8 +23,13 @@ pub struct InviteCode {
     pub active: bool,
 }
 
+pub trait User {
+    fn name(&self) -> String;
+    fn email(&self) -> String;
+}
+
 #[derive(Debug, Deserialize, sqlx::FromRow, Serialize, Clone)]
-pub struct User {
+pub struct Borrower {
     pub id: String,
     pub name: String,
     pub email: String,
@@ -41,7 +46,7 @@ pub struct User {
     pub updated_at: OffsetDateTime,
 }
 
-impl User {
+impl Borrower {
     pub fn check_password(&self, provided_password: &str) -> bool {
         match PasswordHash::new(&self.password) {
             Ok(parsed_hash) => Argon2::default()
@@ -49,6 +54,54 @@ impl User {
                 .map_or(false, |_| true),
             Err(_) => false,
         }
+    }
+}
+
+#[derive(Debug, Deserialize, sqlx::FromRow, Serialize, Clone)]
+pub struct Lender {
+    pub id: String,
+    pub name: String,
+    pub email: String,
+    pub password: String,
+    pub verified: bool,
+    pub verification_code: Option<String>,
+    pub invite_code: Option<i32>,
+    pub password_reset_token: Option<String>,
+    #[serde(with = "time::serde::rfc3339::option")]
+    pub password_reset_at: Option<OffsetDateTime>,
+    #[serde(with = "time::serde::rfc3339")]
+    pub created_at: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339")]
+    pub updated_at: OffsetDateTime,
+}
+
+impl Lender {
+    pub fn check_password(&self, provided_password: &str) -> bool {
+        match PasswordHash::new(&self.password) {
+            Ok(parsed_hash) => Argon2::default()
+                .verify_password(provided_password.as_bytes(), &parsed_hash)
+                .map_or(false, |_| true),
+            Err(_) => false,
+        }
+    }
+}
+
+impl User for Borrower {
+    fn name(&self) -> String {
+        self.name.clone()
+    }
+
+    fn email(&self) -> String {
+        self.email.clone()
+    }
+}
+impl User for Lender {
+    fn name(&self) -> String {
+        self.name.clone()
+    }
+
+    fn email(&self) -> String {
+        self.email.clone()
     }
 }
 
@@ -797,7 +850,7 @@ pub struct FilteredUser {
 }
 
 impl FilteredUser {
-    pub fn new_user(user: &User) -> Self {
+    pub fn new_user(user: &Borrower) -> Self {
         let created_at_utc = user.created_at;
         let updated_at_utc = user.updated_at;
         Self {

@@ -1,5 +1,5 @@
+use crate::model::Borrower;
 use crate::model::InviteCode;
-use crate::model::User;
 use anyhow::anyhow;
 use anyhow::Result;
 use argon2::password_hash::rand_core::OsRng;
@@ -23,14 +23,14 @@ pub async fn register_user(
     email: &str,
     password: &str,
     invite_code: Option<InviteCode>,
-) -> Result<User> {
+) -> Result<Borrower> {
     let hashed_password = generate_hashed_password(password)?;
     let verification_code = generate_random_string(VERIFICATION_CODE_LENGTH);
     let invite_code = invite_code.map(|code| code.id);
 
     let id = uuid::Uuid::new_v4().to_string();
-    let user: User = sqlx::query_as!(
-        User,
+    let user: Borrower = sqlx::query_as!(
+        Borrower,
         "INSERT INTO borrowers (id, name, email, password, verification_code, invite_code)
             VALUES ($1, $2, $3, $4, $5, $6)
             RETURNING *",
@@ -52,15 +52,15 @@ pub async fn user_exists(pool: &Pool<Postgres>, email: &str) -> Result<bool> {
     Ok(maybe_user.is_some())
 }
 
-pub async fn get_user_by_email(pool: &Pool<Postgres>, email: &str) -> Result<Option<User>> {
+pub async fn get_user_by_email(pool: &Pool<Postgres>, email: &str) -> Result<Option<Borrower>> {
     let email = email.to_ascii_lowercase();
-    let maybe_user = sqlx::query_as!(User, "SELECT * FROM borrowers WHERE email = $1", email)
+    let maybe_user = sqlx::query_as!(Borrower, "SELECT * FROM borrowers WHERE email = $1", email)
         .fetch_optional(pool)
         .await?;
     Ok(maybe_user)
 }
-pub async fn get_user_by_id(pool: &Pool<Postgres>, id: &str) -> Result<Option<User>> {
-    let maybe_user = sqlx::query_as!(User, "SELECT * FROM borrowers WHERE id = $1", id)
+pub async fn get_user_by_id(pool: &Pool<Postgres>, id: &str) -> Result<Option<Borrower>> {
+    let maybe_user = sqlx::query_as!(Borrower, "SELECT * FROM borrowers WHERE id = $1", id)
         .fetch_optional(pool)
         .await?;
     Ok(maybe_user)
@@ -69,10 +69,10 @@ pub async fn get_user_by_id(pool: &Pool<Postgres>, id: &str) -> Result<Option<Us
 pub async fn get_user_by_verification_code(
     pool: &Pool<Postgres>,
     verification_code: &str,
-) -> Result<Option<User>> {
+) -> Result<Option<Borrower>> {
     let verification_code = verification_code.to_ascii_lowercase();
     let maybe_user = sqlx::query_as!(
-        User,
+        Borrower,
         "SELECT 
             id,
             name,
@@ -133,9 +133,9 @@ pub async fn update_password_reset_token_for_user(
 pub async fn get_user_by_rest_token(
     pool: &Pool<Postgres>,
     password_reset_token: &str,
-) -> Result<Option<User>> {
+) -> Result<Option<Borrower>> {
     let maybe_user = sqlx::query_as!(
-        User,
+        Borrower,
         "SELECT *
             FROM borrowers
             WHERE password_reset_token = $1

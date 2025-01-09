@@ -11,11 +11,11 @@ use crate::db::lenders::verify_user;
 use crate::db::wallet_backups::NewLenderWalletBackup;
 use crate::email::Email;
 use crate::model::ForgotPasswordSchema;
+use crate::model::Lender;
 use crate::model::LoginUserSchema;
 use crate::model::RegisterUserSchema;
 use crate::model::ResetPasswordSchema;
 use crate::model::TokenClaims;
-use crate::model::User;
 use crate::model::WalletBackupData;
 use crate::routes::lender::auth::jwt_auth::auth;
 use crate::routes::AppState;
@@ -143,7 +143,7 @@ pub async fn register_user_handler(
         ));
     }
 
-    let user: User = register_user(
+    let user: Lender = register_user(
         &data.db,
         body.name.as_str(),
         body.email.as_str(),
@@ -224,7 +224,7 @@ pub async fn login_user_handler(
     State(data): State<Arc<AppState>>,
     Json(body): Json<LoginUserSchema>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let user: User = get_user_by_email(&data.db, body.email.as_str())
+    let user: Lender = get_user_by_email(&data.db, body.email.as_str())
         .await
         .map_err(|e| {
             let error_response = ErrorResponse {
@@ -349,7 +349,7 @@ pub async fn verify_email_handler(
     State(data): State<Arc<AppState>>,
     Path(verification_code): Path<String>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let user: User = get_user_by_verification_code(&data.db, verification_code.as_str())
+    let user: Lender = get_user_by_verification_code(&data.db, verification_code.as_str())
         .await
         .map_err(|e| {
             let error_response = ErrorResponse {
@@ -396,7 +396,7 @@ pub async fn forgot_password_handler(
     let success_message = "You will receive a password reset link via email.";
     let email_address = body.email.to_owned().to_ascii_lowercase();
 
-    let user: User = get_user_by_email(&data.db, body.email.as_str())
+    let user: Lender = get_user_by_email(&data.db, body.email.as_str())
         .await
         .map_err(|e| {
             let error_response = ErrorResponse {
@@ -475,7 +475,7 @@ pub async fn reset_password_handler(
         return Err((StatusCode::BAD_REQUEST, Json(error_response)));
     }
 
-    let user: User = get_user_by_rest_token(&data.db, password_reset_token.as_str())
+    let user: Lender = get_user_by_rest_token(&data.db, password_reset_token.as_str())
         .await
         .map_err(|e| {
             let error_response = ErrorResponse {
@@ -549,7 +549,7 @@ pub struct MeResponse {
 #[instrument(skip_all, err(Debug, level = Level::DEBUG))]
 pub async fn get_me_handler(
     State(data): State<Arc<AppState>>,
-    Extension(user): Extension<User>,
+    Extension(user): Extension<Lender>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     let filtered_user = FilteredUser::new_user(&user);
 
@@ -598,7 +598,7 @@ pub struct FilteredUser {
 }
 
 impl FilteredUser {
-    pub fn new_user(user: &User) -> Self {
+    pub fn new_user(user: &Lender) -> Self {
         let created_at_utc = user.created_at;
         let updated_at_utc = user.updated_at;
         Self {
@@ -630,7 +630,7 @@ pub struct ErrorResponse {
 
 #[instrument(skip_all, err(Debug, level = Level::DEBUG))]
 pub async fn check_auth_handler(
-    Extension(_user): Extension<User>,
+    Extension(_user): Extension<Lender>,
 ) -> Result<
     impl IntoResponse,
     (

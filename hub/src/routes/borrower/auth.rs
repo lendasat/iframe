@@ -10,15 +10,14 @@ use crate::db::borrowers::user_exists;
 use crate::db::borrowers::verify_user;
 use crate::db::wallet_backups::NewBorrowerWalletBackup;
 use crate::email::Email;
+use crate::model::Borrower;
 use crate::model::ForgotPasswordSchema;
 use crate::model::LoginUserSchema;
 use crate::model::RegisterUserSchema;
 use crate::model::ResetPasswordSchema;
 use crate::model::TokenClaims;
-use crate::model::User;
 use crate::model::WalletBackupData;
 use crate::routes::borrower::auth::jwt_auth::auth;
-use crate::routes::lender::auth::FilteredUser;
 use crate::routes::user_connection_details_middleware;
 use crate::routes::user_connection_details_middleware::UserConnectionDetails;
 use crate::routes::AppState;
@@ -152,7 +151,7 @@ pub async fn register_user_handler(
         ));
     }
 
-    let user: User = register_user(
+    let user: Borrower = register_user(
         &data.db,
         body.name.as_str(),
         body.email.as_str(),
@@ -228,12 +227,39 @@ pub struct LoginResponse {
     pub wallet_backup_data: WalletBackupData,
 }
 
+#[derive(Debug, Serialize)]
+pub struct FilteredUser {
+    pub id: String,
+    pub name: String,
+    pub email: String,
+    pub verified: bool,
+    #[serde(with = "time::serde::rfc3339")]
+    pub created_at: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339")]
+    pub updated_at: OffsetDateTime,
+}
+
+impl FilteredUser {
+    pub fn new_user(user: &Borrower) -> Self {
+        let created_at_utc = user.created_at;
+        let updated_at_utc = user.updated_at;
+        Self {
+            id: user.id.to_string(),
+            email: user.email.to_owned(),
+            name: user.name.to_owned(),
+            verified: user.verified,
+            created_at: created_at_utc,
+            updated_at: updated_at_utc,
+        }
+    }
+}
+
 pub async fn login_user_handler(
     State(data): State<Arc<AppState>>,
     Extension(connection_details): Extension<UserConnectionDetails>,
     Json(body): Json<LoginUserSchema>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let user: User = get_user_by_email(&data.db, body.email.as_str())
+    let user: Borrower = get_user_by_email(&data.db, body.email.as_str())
         .await
         .map_err(|e| {
             let error_response = ErrorResponse {
@@ -390,7 +416,7 @@ pub async fn verify_email_handler(
     State(data): State<Arc<AppState>>,
     Path(verification_code): Path<String>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let user: User = get_user_by_verification_code(&data.db, verification_code.as_str())
+    let user: Borrower = get_user_by_verification_code(&data.db, verification_code.as_str())
         .await
         .map_err(|e| {
             let error_response = ErrorResponse {
@@ -437,7 +463,7 @@ pub async fn forgot_password_handler(
     let success_message = "You will receive a password reset link via email.";
     let email_address = body.email.to_owned().to_ascii_lowercase();
 
-    let user: User = get_user_by_email(&data.db, body.email.as_str())
+    let user: Borrower = get_user_by_email(&data.db, body.email.as_str())
         .await
         .map_err(|e| {
             let error_response = ErrorResponse {
@@ -516,7 +542,7 @@ pub async fn reset_password_handler(
         return Err((StatusCode::BAD_REQUEST, Json(error_response)));
     }
 
-    let user: User = get_user_by_rest_token(&data.db, password_reset_token.as_str())
+    let user: Borrower = get_user_by_rest_token(&data.db, password_reset_token.as_str())
         .await
         .map_err(|e| {
             let error_response = ErrorResponse {
@@ -591,7 +617,7 @@ pub struct MeResponse {
 #[instrument(skip_all, err(Debug, level = Level::DEBUG))]
 pub async fn get_me_handler(
     State(data): State<Arc<AppState>>,
-    Extension(user): Extension<User>,
+    Extension(user): Extension<Borrower>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     let filtered_user = FilteredUser::new_user(&user);
 
@@ -636,7 +662,7 @@ pub async fn get_me_handler(
 
 #[instrument(skip_all, err(Debug, level = Level::DEBUG))]
 pub async fn check_auth_handler(
-    Extension(_user): Extension<User>,
+    Extension(_user): Extension<Borrower>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     Ok(())
 }

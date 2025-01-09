@@ -1,7 +1,7 @@
 use crate::db;
 use crate::email::Email;
 use crate::model::DisputeRequestBodySchema;
-use crate::model::User;
+use crate::model::Lender;
 use crate::routes::lender::auth::jwt_auth;
 use crate::routes::AppState;
 use crate::routes::ErrorResponse;
@@ -45,7 +45,7 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
 
 pub async fn get_all_disputes(
     State(data): State<Arc<AppState>>,
-    Extension(user): Extension<User>,
+    Extension(user): Extension<Lender>,
 ) -> anyhow::Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     let disputes = db::dispute::load_disputes_by_lender(&data.db, user.id.as_str())
         .await
@@ -60,7 +60,7 @@ pub async fn get_all_disputes(
 
 pub async fn get_disputes_by_id(
     State(data): State<Arc<AppState>>,
-    Extension(user): Extension<User>,
+    Extension(user): Extension<Lender>,
     Path(dispute_id): Path<String>,
 ) -> anyhow::Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     let disputes = db::dispute::load_disputes_by_lender_and_dispute_id(
@@ -87,7 +87,7 @@ pub async fn get_disputes_by_id(
 
 pub(crate) async fn create_dispute(
     State(data): State<Arc<AppState>>,
-    Extension(user): Extension<User>,
+    Extension(user): Extension<Lender>,
     Json(body): Json<DisputeRequestBodySchema>,
 ) -> anyhow::Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     let contract = db::contracts::load_contract_by_contract_id_and_lender_id(

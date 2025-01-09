@@ -6,13 +6,13 @@ use crate::email::Email;
 use crate::mempool;
 use crate::model;
 use crate::model::ContractStatus;
+use crate::model::Lender;
 use crate::model::LiquidationStatus;
 use crate::model::LoanAssetChain;
 use crate::model::LoanAssetType;
 use crate::model::LoanTransaction;
 use crate::model::ManualCollateralRecovery;
 use crate::model::TransactionType;
-use crate::model::User;
 use crate::routes::lender::auth::jwt_auth;
 use crate::routes::user_connection_details_middleware;
 use crate::routes::user_connection_details_middleware::UserConnectionDetails;
@@ -177,7 +177,7 @@ pub struct BorrowerProfile {
 #[instrument(skip_all, err(Debug))]
 pub async fn get_active_contracts(
     State(data): State<Arc<AppState>>,
-    Extension(user): Extension<User>,
+    Extension(user): Extension<Lender>,
 ) -> Result<AppJson<Vec<Contract>>, Error> {
     let contracts = db::contracts::load_contracts_by_lender_id(&data.db, user.id.as_str())
         .await
@@ -196,7 +196,7 @@ pub async fn get_active_contracts(
 #[instrument(skip_all, err(Debug))]
 pub async fn get_contract(
     State(data): State<Arc<AppState>>,
-    Extension(user): Extension<User>,
+    Extension(user): Extension<Lender>,
     Path(contract_id): Path<String>,
 ) -> Result<AppJson<Contract>, Error> {
     let contract = db::contracts::load_contract_by_contract_id_and_lender_id(
@@ -216,7 +216,7 @@ pub async fn get_contract(
 pub async fn put_approve_contract(
     State(data): State<Arc<AppState>>,
     Path(contract_id): Path<String>,
-    Extension(user): Extension<User>,
+    Extension(user): Extension<Lender>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     let wallet = data.wallet.lock().await;
     approve_contract(
@@ -248,7 +248,7 @@ pub async fn put_principal_given(
     State(data): State<Arc<AppState>>,
     Path(contract_id): Path<String>,
     query_params: Query<PrincipalGivenQueryParam>,
-    Extension(user): Extension<User>,
+    Extension(user): Extension<Lender>,
 ) -> Result<AppJson<Contract>, Error> {
     let contract = async {
         let contract = db::contracts::load_contract_by_contract_id_and_lender_id(
@@ -290,7 +290,7 @@ pub async fn put_principal_given(
         );
         let borrower = db::borrowers::get_user_by_id(&data.db, contract.borrower_id.as_str())
             .await?
-            .context("Borrower not found")?;
+            .context("Lender not found")?;
 
         let email = Email::new(data.config.clone());
 
@@ -319,7 +319,7 @@ pub async fn put_principal_given(
 pub async fn delete_reject_contract(
     State(data): State<Arc<AppState>>,
     Path(contract_id): Path<String>,
-    Extension(user): Extension<User>,
+    Extension(user): Extension<Lender>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     let contract =
         db::contracts::reject_contract_request(&data.db, user.id.as_str(), contract_id.as_str())
@@ -342,7 +342,7 @@ pub async fn delete_reject_contract(
 
         let borrower = db::borrowers::get_user_by_id(&data.db, contract.borrower_id.as_str())
             .await?
-            .context("Borrower not found")?;
+            .context("Lender not found")?;
 
         let email = Email::new(data.config.clone());
         email
@@ -368,7 +368,7 @@ pub async fn delete_reject_contract(
 pub async fn put_confirm_repayment(
     State(data): State<Arc<AppState>>,
     Path(contract_id): Path<String>,
-    Extension(user): Extension<User>,
+    Extension(user): Extension<Lender>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     async {
         let contract = db::contracts::load_contract_by_contract_id_and_lender_id(
@@ -419,7 +419,7 @@ pub struct LiquidationPsbt {
 #[instrument(skip_all, fields(lender_id = user.id, contract_id), err(Debug), ret)]
 async fn get_liquidation_to_bitcoin_psbt(
     State(data): State<Arc<AppState>>,
-    Extension(user): Extension<User>,
+    Extension(user): Extension<Lender>,
     Path(contract_id): Path<String>,
     query_params: Query<LiquidationPsbtQueryParams>,
 ) -> Result<Json<LiquidationPsbt>, (StatusCode, Json<ErrorResponse>)> {
@@ -559,7 +559,7 @@ pub struct LiquidationToStableCoinPsbt {
 async fn post_build_liquidation_to_stablecoin_psbt(
     State(data): State<Arc<AppState>>,
     Path(contract_id): Path<String>,
-    Extension(user): Extension<User>,
+    Extension(user): Extension<Lender>,
     Extension(connection_details): Extension<UserConnectionDetails>,
     Json(body): Json<LiquidationToStablecoinPsbtQueryParams>,
 ) -> Result<Json<LiquidationToStableCoinPsbt>, (StatusCode, Json<ErrorResponse>)> {
@@ -688,7 +688,7 @@ pub struct LiquidationTx {
 #[instrument(skip(data, user), err(Debug), ret)]
 async fn post_liquidation_tx(
     State(data): State<Arc<AppState>>,
-    Extension(user): Extension<User>,
+    Extension(user): Extension<Lender>,
     Path(contract_id): Path<String>,
     Json(body): Json<LiquidationTx>,
 ) -> Result<String, (StatusCode, Json<ErrorResponse>)> {
@@ -771,7 +771,7 @@ async fn post_liquidation_tx(
 
         let borrower = db::borrowers::get_user_by_id(&data.db, contract.borrower_id.as_str())
             .await?
-            .context("Borrower not found")?;
+            .context("Lender not found")?;
 
         let loan_url = format!(
             "{}/my-contracts/{}",
@@ -841,7 +841,7 @@ pub struct ManualRecoveryPsbt {
 #[instrument(skip_all, fields(lender_id = user.id, contract_id), err(Debug), ret)]
 async fn get_manual_recovery_psbt(
     State(data): State<Arc<AppState>>,
-    Extension(user): Extension<User>,
+    Extension(user): Extension<Lender>,
     Path(contract_id): Path<String>,
     query_params: Query<LiquidationPsbtQueryParams>,
 ) -> Result<Json<ManualRecoveryPsbt>, (StatusCode, Json<ErrorResponse>)> {

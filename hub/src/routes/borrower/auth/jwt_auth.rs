@@ -1,6 +1,6 @@
 use crate::db::borrowers::get_user_by_id;
+use crate::model::Borrower;
 use crate::model::TokenClaims;
-use crate::model::User;
 use crate::routes::borrower::auth::ErrorResponse;
 use crate::routes::borrower::AppState;
 use axum::body::Body;
@@ -58,7 +58,7 @@ pub async fn auth(
     })?
     .claims;
 
-    let user: Option<User> = match get_user_by_id(&data.db, claims.user_id.as_str()).await {
+    let borrower: Option<Borrower> = match get_user_by_id(&data.db, claims.user_id.as_str()).await {
         Ok(user) => user,
         Err(e) => {
             let json_error = ErrorResponse {
@@ -68,7 +68,7 @@ pub async fn auth(
         }
     };
 
-    let user = user.ok_or_else(|| {
+    let user = borrower.ok_or_else(|| {
         let json_error = ErrorResponse {
             message: "The user belonging to this token no longer exists".to_string(),
         };
