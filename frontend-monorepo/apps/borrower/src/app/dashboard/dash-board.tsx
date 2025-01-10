@@ -50,6 +50,8 @@ const ContractOverview = ({ contracts: unfilteredContracts, contractStatusFilter
         return contractStatusFilter["opening"];
       case ContractStatus.PrincipalGiven:
         return contractStatusFilter["open"];
+      case ContractStatus.Defaulted:
+        return contractStatusFilter["defaulted"];
       case ContractStatus.Closing:
         return contractStatusFilter["closing"];
       case ContractStatus.RepaymentProvided:
@@ -58,6 +60,8 @@ const ContractOverview = ({ contracts: unfilteredContracts, contractStatusFilter
         return contractStatusFilter["repaymentConfirmed"];
       case ContractStatus.Closed:
         return contractStatusFilter["closed"];
+      case ContractStatus.Extended:
+        return contractStatusFilter["extended"];
       case ContractStatus.Rejected:
         return contractStatusFilter["rejected"];
       case ContractStatus.DisputeBorrowerStarted:
@@ -68,8 +72,6 @@ const ContractOverview = ({ contracts: unfilteredContracts, contractStatusFilter
       case ContractStatus.Cancelled:
         return contractStatusFilter["canceled"];
       case ContractStatus.RequestExpired:
-        return contractStatusFilter["expired"];
-      default:
         return contractStatusFilter["expired"];
     }
   }).sort((a, b) => {
@@ -355,7 +357,7 @@ function DashBoard() {
                     expired: false,
                     canceled: false,
                     dispute: false,
-                    defaulted: false,
+                    defaulted: true,
                     undercollateralized: false,
                   }}
                 />
@@ -379,7 +381,7 @@ function DashBoard() {
                     expired: true,
                     canceled: true,
                     dispute: true,
-                    defaulted: true,
+                    defaulted: false,
                     undercollateralized: true,
                   }}
                 />
