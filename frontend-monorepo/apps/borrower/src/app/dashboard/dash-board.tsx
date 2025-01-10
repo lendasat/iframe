@@ -37,41 +37,64 @@ const ContractOverview = ({ contracts: unfilteredContracts, contractStatusFilter
   const [sortAsc, setSortAsc] = useState(false);
 
   const contracts = unfilteredContracts.filter((contract) => {
+    let filterStatus = false;
     switch (contract.status) {
       case ContractStatus.Requested:
-        return contractStatusFilter["requested"];
+        filterStatus = contractStatusFilter["requested"];
+        break;
       case ContractStatus.RenewalRequested:
-        return contractStatusFilter["renewalRequested"];
+        filterStatus = contractStatusFilter["renewalRequested"];
+        break;
       case ContractStatus.Approved:
-        return contractStatusFilter["approved"];
+        filterStatus = contractStatusFilter["approved"];
+        break;
       case ContractStatus.CollateralSeen:
-        return contractStatusFilter["collateralSeen"];
+        filterStatus = contractStatusFilter["collateralSeen"];
+        break;
       case ContractStatus.CollateralConfirmed:
-        return contractStatusFilter["opening"];
+        filterStatus = contractStatusFilter["opening"];
+        break;
       case ContractStatus.PrincipalGiven:
-        return contractStatusFilter["open"];
+        filterStatus = contractStatusFilter["open"];
+        break;
+      case ContractStatus.Undercollateralized:
+        filterStatus = contractStatusFilter["undercollateralized"];
+        break;
+      case ContractStatus.Defaulted:
+        filterStatus = contractStatusFilter["defaulted"];
+        break;
       case ContractStatus.Closing:
-        return contractStatusFilter["closing"];
+        filterStatus = contractStatusFilter["closing"];
+        break;
       case ContractStatus.RepaymentProvided:
-        return contractStatusFilter["repaymentProvided"];
+        filterStatus = contractStatusFilter["repaymentProvided"];
+        break;
       case ContractStatus.RepaymentConfirmed:
-        return contractStatusFilter["repaymentConfirmed"];
+        filterStatus = contractStatusFilter["repaymentConfirmed"];
+        break;
       case ContractStatus.Closed:
-        return contractStatusFilter["closed"];
+        filterStatus = contractStatusFilter["closed"];
+        break;
+      case ContractStatus.Extended:
+        filterStatus = contractStatusFilter["extended"];
+        break;
       case ContractStatus.Rejected:
-        return contractStatusFilter["rejected"];
+        filterStatus = contractStatusFilter["rejected"];
+        break;
       case ContractStatus.DisputeBorrowerStarted:
       case ContractStatus.DisputeLenderStarted:
       case ContractStatus.DisputeBorrowerResolved:
       case ContractStatus.DisputeLenderResolved:
-        return contractStatusFilter["dispute"];
+        filterStatus = contractStatusFilter["dispute"];
+        break;
       case ContractStatus.Cancelled:
-        return contractStatusFilter["canceled"];
+        filterStatus = contractStatusFilter["canceled"];
+        break;
       case ContractStatus.RequestExpired:
-        return contractStatusFilter["expired"];
-      default:
-        return contractStatusFilter["expired"];
+        filterStatus = contractStatusFilter["expired"];
+        break;
     }
+    return filterStatus;
   }).sort((a, b) => {
     let dif;
     switch (sortByColumn) {
@@ -355,7 +378,7 @@ function DashBoard() {
                     expired: false,
                     canceled: false,
                     dispute: false,
-                    defaulted: false,
+                    defaulted: true,
                     undercollateralized: false,
                   }}
                 />
@@ -379,7 +402,7 @@ function DashBoard() {
                     expired: true,
                     canceled: true,
                     dispute: true,
-                    defaulted: true,
+                    defaulted: false,
                     undercollateralized: true,
                   }}
                 />

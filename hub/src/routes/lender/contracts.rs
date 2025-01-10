@@ -460,22 +460,6 @@ async fn get_liquidation_to_bitcoin_psbt(
         return Err((StatusCode::BAD_REQUEST, Json(error_response)));
     }
 
-    let offer = db::loan_offers::loan_by_id(&data.db, &contract.loan_id)
-        .await
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?
-        .context("No loan found for contract")
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Illegal state error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
-
     let contract_index = contract.contract_index.ok_or_else(|| {
         let error_response = ErrorResponse {
             message: "Database error: missing contract index".to_string(),
@@ -515,7 +499,7 @@ async fn get_liquidation_to_bitcoin_psbt(
 
     let lender_amount = calculate_lender_liquidation_amount(
         contract.loan_amount,
-        offer.interest_rate,
+        contract.interest_rate,
         contract.duration_months as u32,
         price,
     )
@@ -631,7 +615,7 @@ async fn post_build_liquidation_to_stablecoin_psbt(
     let lender_amount = contract.loan_amount
         + calculate_interest(
             contract.loan_amount,
-            offer.interest_rate,
+            contract.interest_rate,
             contract.duration_months as u32,
         );
 
