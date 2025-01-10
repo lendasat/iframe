@@ -515,7 +515,7 @@ async fn get_liquidation_to_bitcoin_psbt(
 
     let lender_amount = calculate_lender_liquidation_amount(
         contract.loan_amount,
-        offer.interest_rate,
+        contract.interest_rate,
         contract.duration_months as u32,
         price,
     )
@@ -631,7 +631,7 @@ async fn post_build_liquidation_to_stablecoin_psbt(
     let lender_amount = contract.loan_amount
         + calculate_interest(
             contract.loan_amount,
-            offer.interest_rate,
+            contract.interest_rate,
             contract.duration_months as u32,
         );
 
