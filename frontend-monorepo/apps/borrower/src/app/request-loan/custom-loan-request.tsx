@@ -30,7 +30,7 @@ export default function CustomRequest() {
 
   const [loanAmount, setLoanAmount] = useState<number>(1000);
 
-  const [stableCoin, setStableCoin] = useState<StableCoin>(StableCoin.USDC_SN);
+  const [stableCoin, setStableCoin] = useState<StableCoin | undefined>(StableCoin.USDC_SN);
 
   const minDuration = 1;
   const maxDuration = 18;
@@ -204,7 +204,11 @@ export default function CustomRequest() {
                 <StableCoinDropdown
                   coins={StableCoinHelper.all()}
                   defaultCoin={stableCoin}
-                  onSelect={setStableCoin}
+                  onSelect={(coin) => {
+                    if (coin) {
+                      setStableCoin(coin);
+                    }
+                  }}
                   disabled={isDone}
                 />
               </Box>
