@@ -7,6 +7,8 @@ use thiserror::Error;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
+const STABLE_COIN_DECIMALS: u32 = 6;
+
 // Production API URL: https://docs.sideshift.ai/endpoints/v2/coins
 
 #[derive(Deserialize, Debug)]
@@ -404,7 +406,13 @@ impl SideShiftClient {
     ) -> Result<Quote, ApiError> {
         let url = format!("{}/quotes", self.base_url);
 
-        #[derive(Deserialize, Serialize)]
+        let settle_amount = if let Coin::Usdc | Coin::Usdt = to_coin {
+            settle_amount.map(|settle_amount| settle_amount.round_dp(STABLE_COIN_DECIMALS))
+        } else {
+            settle_amount
+        };
+
+        #[derive(Deserialize, Serialize, Debug)]
         #[serde(rename_all = "camelCase")]
         struct RequestBody {
             deposit_coin: Coin,
@@ -430,6 +438,8 @@ impl SideShiftClient {
             affiliate_id: self.affiliate_id.clone(),
             commission_rate: self.commission_rate,
         };
+
+        tracing::trace!(?body, "Requesting quote");
 
         let response = self
             .client
