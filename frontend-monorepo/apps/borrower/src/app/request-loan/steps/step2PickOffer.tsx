@@ -2,7 +2,7 @@ import { faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { LoanProductOption } from "@frontend-monorepo/base-http-client";
 import { CreateWalletModal, UnlockWalletModal, useWallet } from "@frontend-monorepo/browser-wallet";
-import { Integration, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
+import { Integration, useAuth, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import type { LoanOffer, UserCardDetail } from "@frontend-monorepo/http-client-borrower";
 import {
   AbbreviationExplanationInfo,
@@ -689,6 +689,7 @@ interface SearchParams {
 // Loan Display Component
 const LoanSearched = (props: SearchParams) => {
   const { doesWalletExist, isWalletLoaded } = useWallet();
+  const { user } = useAuth();
 
   const [bitcoinAddressInputError, setBitcoinAddressInputError] = useState("");
   const [walletSecretConfirmed, setWalletSecretConfirmed] = useState(isWalletLoaded);
@@ -756,8 +757,12 @@ const LoanSearched = (props: SearchParams) => {
 
   const confirmOfferButtonEnabled = walletSecretConfirmed && bitcoinAddressInputError === "";
 
-  const originationFeeBtc = collateralAmountBtc * props.originationFee;
-  const originationFeeUsd = props.amount * props.originationFee;
+  const discountedFee = user?.first_time_discount_rate || 0.0;
+  const isDiscountedFeeApplied = discountedFee ? discountedFee > 0 : false;
+
+  const originationFee = props.originationFee - (props.originationFee * discountedFee);
+  const originationFeeBtc = collateralAmountBtc * originationFee;
+  const originationFeeUsd = props.amount * originationFee;
 
   return (
     <>
@@ -820,17 +825,34 @@ const LoanSearched = (props: SearchParams) => {
           </Flex>
           <Separator size={"4"} />
           <Flex justify={"between"} align={"center"}>
-            <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
-              <Text className="text-xs font-medium text-font/60 dark:text-font-dark/60">
-                Origination fee
-              </Text>
-              <FaInfoCircle />
-            </Flex>
             <div className="flex flex-col">
-              <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
+              <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
+                <Text className="text-xs font-medium text-font/60 dark:text-font-dark/60">
+                  Origination fee
+                </Text>
+                <FaInfoCircle />
+              </Flex>
+
+              {isDiscountedFeeApplied
+                && (
+                  <Text className="text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-start">
+                    {-(discountedFee * 100).toFixed(2)}% discount applied
+                  </Text>
+                )}
+            </div>
+            <div className="flex flex-col">
+              <Text
+                className={`text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize ${
+                  discountedFee === 1 ? "line-through" : ""
+                }`}
+              >
                 {originationFeeBtc.toFixed(8)} BTC
               </Text>
-              <Text className="text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-end">
+              <Text
+                className={`text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-end ${
+                  discountedFee === 1 ? "line-through" : ""
+                }`}
+              >
                 ≈ {formatCurrency(originationFeeUsd)}
               </Text>
             </div>

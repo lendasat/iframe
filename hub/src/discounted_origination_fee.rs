@@ -1,6 +1,7 @@
 use crate::db;
 use rust_decimal::Decimal;
-use sqlx::{Pool, Postgres};
+use sqlx::Pool;
+use sqlx::Postgres;
 
 #[derive(Debug)]
 pub enum Error {

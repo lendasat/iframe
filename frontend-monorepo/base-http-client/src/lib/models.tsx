@@ -10,7 +10,7 @@ export interface User {
   // is to duplicate the whole login logic
   used_referral_code?: string;
   personal_referral_code?: string;
-  first_time_discount_rate_referee?: number;
+  first_time_discount_rate: number;
   created_at: Date;
 }
 

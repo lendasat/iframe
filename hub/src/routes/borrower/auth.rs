@@ -210,8 +210,8 @@ pub struct FilteredUser {
     pub verified: bool,
     pub used_referral_code: Option<String>,
     pub personal_referral_code: Option<String>,
-    #[serde(with = "rust_decimal::serde::float_option")]
-    pub first_time_discount_rate_referee: Option<Decimal>,
+    #[serde(with = "rust_decimal::serde::float")]
+    pub first_time_discount_rate: Decimal,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
     #[serde(with = "time::serde::rfc3339")]
@@ -229,7 +229,7 @@ impl FilteredUser {
             verified: user.verified,
             used_referral_code: user.used_referral_code.clone(),
             personal_referral_code: user.personal_referral_code.clone(),
-            first_time_discount_rate_referee: user.first_time_discount_rate_referee,
+            first_time_discount_rate: user.first_time_discount_rate_referee.unwrap_or_default(),
             created_at: created_at_utc,
             updated_at: updated_at_utc,
         }

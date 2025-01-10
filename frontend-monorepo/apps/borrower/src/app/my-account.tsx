@@ -38,8 +38,8 @@ function MyAccount() {
   };
 
   let discountRate = 0.00;
-  if (user?.first_time_discount_rate_referee) {
-    discountRate = user?.first_time_discount_rate_referee;
+  if (user?.first_time_discount_rate) {
+    discountRate = user.first_time_discount_rate;
   }
   return (
     <Box
@@ -209,7 +209,7 @@ function MyAccount() {
                                 Current discount on origination fee
                               </Text>
                               <Text size={"3"} weight={"medium"} className="text-font dark:text-font-dark">
-                                {(discountRate * 100).toFixed(2)}%
+                                {(-discountRate * 100).toFixed(2)}%
                               </Text>
                             </Flex>
                           </Box>
