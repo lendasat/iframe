@@ -325,6 +325,17 @@ export const ContractDetailsTable = ({
                       >
                         <Flex gap="2" align="center">
                           <Checkbox
+                            checked={contractStatusFilter["extended"]}
+                            onCheckedChange={() => onCheckedChange("extended")}
+                          />
+                          <Text>Extended</Text>
+                        </Flex>
+                      </DropdownMenu.Item>
+                      <DropdownMenu.Item
+                        onSelect={(e) => e.preventDefault()}
+                      >
+                        <Flex gap="2" align="center">
+                          <Checkbox
                             checked={contractStatusFilter["defaulted"]}
                             onCheckedChange={() => onCheckedChange("defaulted")}
                           />
