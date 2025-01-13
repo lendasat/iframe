@@ -1,10 +1,10 @@
 use crate::db::contract_emails;
 use crate::expiry::expiry_date;
-use crate::model::db;
 use crate::model::Contract;
 use crate::model::ContractStatus;
 use crate::model::ContractVersion;
 use crate::model::Integration;
+use crate::model::{db, LiquidationStatus};
 use anyhow::bail;
 use anyhow::Context;
 use anyhow::Error;
@@ -940,58 +940,18 @@ where
 pub(crate) async fn load_open_not_liquidated_contracts(
     pool: &Pool<Postgres>,
 ) -> Result<Vec<Contract>> {
-    let contracts = sqlx::query_as!(
-        db::Contract,
-        r#"
-        SELECT
-            id,
-            lender_id,
-            borrower_id,
-            loan_id,
-            initial_ltv,
-            initial_collateral_sats,
-            origination_fee_sats,
-            collateral_sats,
-            loan_amount,
-            borrower_btc_address,
-            borrower_pk,
-            borrower_loan_address,
-            integration as "integration: crate::model::db::Integration",
-            lender_xpub,
-            contract_address,
-            contract_index,
-            status as "status: crate::model::db::ContractStatus",
-            liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
-            duration_months,
-            expiry_date,
-            contract_version,
-            interest_rate,
-            created_at,
-            updated_at
-        FROM contracts
-        WHERE status NOT IN ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) and liquidation_status NOT in ($11)
-        "#,
-        db::ContractStatus::Requested as db::ContractStatus,
-        db::ContractStatus::Approved as db::ContractStatus,
-        db::ContractStatus::Closing as db::ContractStatus,
-        db::ContractStatus::Closed as db::ContractStatus,
-        db::ContractStatus::Extended as db::ContractStatus,
-        db::ContractStatus::Rejected as db::ContractStatus,
-        db::ContractStatus::Cancelled as db::ContractStatus,
-        db::ContractStatus::RequestExpired as db::ContractStatus,
-        db::ContractStatus::Defaulted as db::ContractStatus,
-        db::ContractStatus::Undercollateralized as db::ContractStatus,
-        db::LiquidationStatus::Liquidated as db::LiquidationStatus,
-    )
-    .fetch_all(pool)
-    .await?;
+    let open_contracts = load_open_contracts(pool).await?;
 
-    let contracts = contracts
+    let open_not_liquidated = open_contracts
         .into_iter()
-        .map(Contract::from)
-        .collect::<Vec<Contract>>();
+        .filter(|c| {
+            c.status != ContractStatus::Defaulted
+                && c.status != ContractStatus::Undercollateralized
+                && c.liquidation_status != LiquidationStatus::Liquidated
+        })
+        .collect::<Vec<_>>();
 
-    Ok(contracts)
+    Ok(open_not_liquidated)
 }
 
 #[derive(Clone)]
