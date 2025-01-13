@@ -608,52 +608,26 @@ pub async fn accept_extend_contract_request(
     pool: &Pool<Postgres>,
     lender_id: &str,
     contract_id: &str,
-) -> Result<Contract> {
-    let contract = sqlx::query_as!(
-        db::Contract,
+) -> Result<()> {
+    sqlx::query!(
         r#"
-        UPDATE contracts
-        SET status = $1,
-            updated_at = $2
-        WHERE lender_id = $3
-          AND id = $4 
-          AND status = $5
-        RETURNING
-            id,
-            lender_id,
-            borrower_id,
-            loan_id,
-            initial_ltv,
-            initial_collateral_sats,
-            origination_fee_sats,
-            collateral_sats,
-            loan_amount,
-            borrower_btc_address,
-            borrower_pk,
-            borrower_loan_address,
-            integration as "integration: crate::model::db::Integration",
-            lender_xpub,
-            contract_address,
-            contract_index,
-            status as "status: crate::model::db::ContractStatus",
-            liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
-            duration_months,
-            expiry_date,
-            contract_version,
-            interest_rate,
-            created_at,
-            updated_at
-        "#,
+       UPDATE contracts
+       SET status = $1,
+           updated_at = $2
+       WHERE lender_id = $3
+         AND id = $4 
+         AND status = $5
+       "#,
         db::ContractStatus::PrincipalGiven as db::ContractStatus,
         OffsetDateTime::now_utc(),
         lender_id,
         contract_id,
         db::ContractStatus::RenewalRequested as db::ContractStatus,
     )
-    .fetch_one(pool)
+    .execute(pool)
     .await?;
 
-    Ok(contract.into())
+    Ok(())
 }
 
 pub async fn mark_contract_as_principal_given(
