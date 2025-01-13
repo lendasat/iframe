@@ -279,10 +279,9 @@ pub async fn load_open_contracts(pool: &Pool<Postgres>) -> Result<Vec<Contract>>
             created_at,
             updated_at
         FROM contracts
-        WHERE status NOT IN ($1, $2, $3, $4, $5, $6, $7)
+        WHERE status NOT IN ($1, $2, $3, $4, $5, $6)
         "#,
         db::ContractStatus::Requested as db::ContractStatus,
-        db::ContractStatus::RenewalRequested as db::ContractStatus,
         db::ContractStatus::Closed as db::ContractStatus,
         db::ContractStatus::Extended as db::ContractStatus,
         db::ContractStatus::Rejected as db::ContractStatus,
