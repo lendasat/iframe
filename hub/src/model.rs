@@ -23,11 +23,6 @@ pub struct InviteCode {
     pub active: bool,
 }
 
-pub trait User {
-    fn name(&self) -> String;
-    fn email(&self) -> String;
-}
-
 #[derive(Debug, Deserialize, sqlx::FromRow, Serialize, Clone)]
 pub struct Borrower {
     pub id: String,
@@ -56,6 +51,14 @@ impl Borrower {
                 .map_or(false, |_| true),
             Err(_) => false,
         }
+    }
+
+    pub(crate) fn name(&self) -> String {
+        self.name.clone()
+    }
+
+    pub(crate) fn email(&self) -> String {
+        self.email.clone()
     }
 }
 
@@ -86,23 +89,11 @@ impl Lender {
             Err(_) => false,
         }
     }
-}
-
-impl User for Borrower {
-    fn name(&self) -> String {
+    pub(crate) fn name(&self) -> String {
         self.name.clone()
     }
 
-    fn email(&self) -> String {
-        self.email.clone()
-    }
-}
-impl User for Lender {
-    fn name(&self) -> String {
-        self.name.clone()
-    }
-
-    fn email(&self) -> String {
+    pub(crate) fn email(&self) -> String {
         self.email.clone()
     }
 }

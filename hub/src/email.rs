@@ -2,7 +2,6 @@ use crate::config::Config;
 use crate::model::Borrower;
 use crate::model::Contract;
 use crate::model::Lender;
-use crate::model::User;
 use crate::utils::calculate_liquidation_price;
 use anyhow::bail;
 use anyhow::Context;
@@ -120,7 +119,8 @@ impl Email {
 
     pub async fn send_verification_code(
         &self,
-        user: impl User,
+        name: &str,
+        email: &str,
         url: &str,
         code: &str,
     ) -> Result<()> {
@@ -128,7 +128,7 @@ impl Email {
         let handlebars = Self::prepare_template(template_name)?;
 
         let data = serde_json::json!({
-            "first_name": &user.name(),
+            "first_name": name,
             "subject": &template_name,
             "url": url,
             "code": code,
@@ -136,18 +136,14 @@ impl Email {
 
         let content_template = handlebars.render(template_name, &data)?;
 
-        self.send_email(
-            "Lendasat email verification",
-            user.name().as_str(),
-            user.email().as_str(),
-            content_template,
-        )
-        .await
+        self.send_email("Lendasat email verification", name, email, content_template)
+            .await
     }
 
     pub async fn send_password_reset_token(
         &self,
-        user: impl User,
+        name: &str,
+        email: &str,
         token_expiry_minutes: i64,
         url: &str,
     ) -> Result<()> {
@@ -157,7 +153,7 @@ impl Email {
         let subject = "Lendasat reset password request";
 
         let data = serde_json::json!({
-            "first_name": &user.name(),
+            "first_name": name,
             "subject": subject,
             "url": url,
             "expiry_minutes": token_expiry_minutes,
@@ -165,35 +161,30 @@ impl Email {
 
         let content_template = handlebars.render(template_name, &data)?;
 
-        self.send_email(
-            subject,
-            user.name().as_str(),
-            user.email().as_str(),
-            content_template,
-        )
-        .await
+        self.send_email(subject, name, email, content_template)
+            .await
     }
 
-    pub async fn send_start_dispute(&self, user: impl User, dispute_id: &str) -> Result<()> {
+    pub async fn send_start_dispute(
+        &self,
+        name: &str,
+        email: &str,
+        dispute_id: &str,
+    ) -> Result<()> {
         let template_name = "start_dispute";
         let handlebars = Self::prepare_template(template_name)?;
 
         let subject = format!("You have started a dispute - {}", dispute_id);
 
         let data = serde_json::json!({
-            "first_name": &user.name(),
+            "first_name": name,
             "subject": subject,
         });
 
         let content_template = handlebars.render(template_name, &data)?;
 
-        self.send_email(
-            subject.as_str(),
-            user.name().as_str(),
-            user.email().as_str(),
-            content_template,
-        )
-        .await
+        self.send_email(subject.as_str(), name, email, content_template)
+            .await
     }
 
     pub async fn send_notify_admin_about_dispute(

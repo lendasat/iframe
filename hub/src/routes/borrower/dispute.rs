@@ -160,7 +160,11 @@ pub(crate) async fn create_dispute(
     let email_instance = Email::new(data.config.clone());
     let user_id = user.id.clone();
     if let Err(error) = email_instance
-        .send_start_dispute(user.clone(), dispute.id.as_str())
+        .send_start_dispute(
+            user.name().as_str(),
+            user.email().as_str(),
+            dispute.id.as_str(),
+        )
         .await
     {
         tracing::error!(user_id, "Failed sending dispute email {error:#}");

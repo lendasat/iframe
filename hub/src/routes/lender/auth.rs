@@ -190,7 +190,12 @@ pub async fn register_user_handler(
 
     let email_instance = Email::new(data.config.clone());
     if let Err(err) = email_instance
-        .send_verification_code(user, verification_url.as_str(), verification_code.as_str())
+        .send_verification_code(
+            user.name().as_str(),
+            user.email().as_str(),
+            verification_url.as_str(),
+            verification_code.as_str(),
+        )
         .await
     {
         tracing::error!("Failed sending email {err:#}");
@@ -432,7 +437,8 @@ pub async fn forgot_password_handler(
     let user_id = user.id.clone();
     if let Err(error) = email_instance
         .send_password_reset_token(
-            user,
+            user.name().as_str(),
+            user.email().as_str(),
             PASSWORD_TOKEN_EXPIRES_IN_MINUTES,
             password_reset_url.as_str(),
         )
