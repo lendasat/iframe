@@ -1,0 +1,45 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n       UPDATE contracts\n       SET\n           status = $1,\n           expiry_date = $2,\n           updated_at = $3\n       WHERE id = $4\n       ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        {
+          "Custom": {
+            "name": "contract_status",
+            "kind": {
+              "Enum": [
+                "Requested",
+                "Approved",
+                "CollateralSeen",
+                "CollateralConfirmed",
+                "PrincipalGiven",
+                "RepaymentProvided",
+                "RepaymentConfirmed",
+                "Closing",
+                "Closed",
+                "Rejected",
+                "DisputeBorrowerStarted",
+                "DisputeLenderStarted",
+                "DisputeBorrowerResolved",
+                "DisputeLenderResolved",
+                "Cancelled",
+                "RequestExpired",
+                "Defaulted",
+                "Undercollateralized",
+                "RenewalRequested",
+                "Extended"
+              ]
+            }
+          }
+        },
+        "Timestamptz",
+        "Timestamptz",
+        "Bpchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "937d8b7b8050b7e8b7e50cf0f237383e149b3972469272a425c0d5526c0d76a5"
+}

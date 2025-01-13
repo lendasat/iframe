@@ -634,60 +634,29 @@ pub async fn mark_contract_as_principal_given(
     pool: &Pool<Postgres>,
     contract_id: &str,
     duration_months: i32,
-) -> Result<Contract> {
+) -> Result<()> {
     let updated_at = OffsetDateTime::now_utc();
-
-    // We update the expiry to ensure that the loan lasts long enough. We could be even more precise
-    // if we checked the confirmation time of the principal transaction, but this is probably good
-    // enough.
     let expiry_date = expiry_date(updated_at, duration_months as u64);
 
-    let contract = sqlx::query_as!(
-        db::Contract,
+    sqlx::query!(
         r#"
-        UPDATE contracts
-        SET
-            status = $1,
-            expiry_date = $2,
-            updated_at = $3
-        WHERE id = $4
-        RETURNING
-            id,
-            lender_id,
-            borrower_id,
-            loan_id,
-            initial_ltv,
-            initial_collateral_sats,
-            origination_fee_sats,
-            collateral_sats,
-            loan_amount,
-            borrower_btc_address,
-            borrower_pk,
-            borrower_loan_address,
-            integration as "integration: crate::model::db::Integration",
-            lender_xpub,
-            contract_address,
-            contract_index,
-            status as "status: crate::model::db::ContractStatus",
-            liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
-            duration_months,
-            expiry_date,
-            contract_version,
-            interest_rate,
-            created_at,
-            updated_at
-        "#,
+       UPDATE contracts
+       SET
+           status = $1,
+           expiry_date = $2,
+           updated_at = $3
+       WHERE id = $4
+       "#,
         db::ContractStatus::PrincipalGiven as db::ContractStatus,
         expiry_date,
         updated_at,
         contract_id,
     )
-    .fetch_one(pool)
+    .execute(pool)
     .await?;
 
-    Ok(contract.into())
+    Ok(())
 }
-
 pub async fn mark_contract_as_repayment_provided(
     pool: &Pool<Postgres>,
     contract_id: &str,
