@@ -1,0 +1,94 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT \n           id as \"id!\",\n           name as \"name!\",\n           email as \"email!\",\n           password as \"password!\",\n           verified as \"verified!\",\n           verification_code,\n           password_reset_token,\n           used_referral_code,\n           personal_referral_code,\n           first_time_discount_rate_referee,\n           password_reset_at,\n           created_at as \"created_at!\",\n           updated_at as \"updated_at!\"\n           FROM borrower_discount_info where email = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "name!",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "email!",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "password!",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "verified!",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 5,
+        "name": "verification_code",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "password_reset_token",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "used_referral_code",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 8,
+        "name": "personal_referral_code",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 9,
+        "name": "first_time_discount_rate_referee",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 10,
+        "name": "password_reset_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 11,
+        "name": "created_at!",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 12,
+        "name": "updated_at!",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "11bd6619c4a4c351b13d2d80a1142da2a9b1b96971d9282076941c99b188c8d1"
+}

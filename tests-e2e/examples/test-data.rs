@@ -327,6 +327,13 @@ async fn insert_borrower(pool: &Pool<Postgres>, network: &str) -> Result<Borrowe
     let user = db::borrowers::register_user(&mut tx, "bob the borrower", email, "password123")
         .await
         .context("register user failed")?;
+    db::borrowers_referral_code::insert_referred_borrower(
+        &mut *tx,
+        "BETA_PHASE_1",
+        user.id.as_str(),
+    )
+    .await?;
+
     tx.commit().await?;
 
     db::borrowers_referral_code::create_referral_code(

@@ -135,23 +135,22 @@ pub async fn get_user_by_email(
     let email = email.to_ascii_lowercase();
     // TODO: try to merge the `enhance` part again
     let maybe_base_user = sqlx::query_as!(
-        Borrower,
+        crate::model::Borrower,
         r#"SELECT 
-           b.*,
-           rb.referral_code as "used_referral_code?",
-           CASE 
-               WHEN EXISTS (
-                SELECT 1 FROM contracts c WHERE 
-                    c.borrower_id = b.id AND
-                    status != 'RequestExpired' AND 
-                    status != 'Rejected' 
-                ) THEN 0
-               ELSE rcb.first_time_discount_rate_referee 
-           END as "first_time_discount_rate_referee?"
-        FROM borrowers b
-            LEFT JOIN referred_borrowers rb ON rb.referred_borrower_id = b.id
-            LEFT JOIN referral_codes_borrowers rcb ON rcb.code = rb.referral_code
-            WHERE b.email = $1
+           id as "id!",
+           name as "name!",
+           email as "email!",
+           password as "password!",
+           verified as "verified!",
+           verification_code,
+           password_reset_token,
+           used_referral_code,
+           personal_referral_code,
+           first_time_discount_rate_referee,
+           password_reset_at,
+           created_at as "created_at!",
+           updated_at as "updated_at!"
+           FROM borrower_discount_info where email = $1
         "#,
         email
     )
@@ -159,46 +158,37 @@ pub async fn get_user_by_email(
     .await
     .context("failed loading")?;
 
-    if let Some(base_user) = maybe_base_user {
-        Ok(Some(enhance_with_personal_code(pool, base_user).await?))
-    } else {
-        Ok(None)
-    }
+    Ok(maybe_base_user)
 }
 pub async fn get_user_by_id(
     pool: &Pool<Postgres>,
     id: &str,
 ) -> Result<Option<crate::model::Borrower>> {
     let maybe_base_user = sqlx::query_as!(
-        Borrower,
-        r#"
-           SELECT 
-               b.*,
-                rb.referral_code as "used_referral_code?",
-                CASE 
-                   WHEN EXISTS (
-                    SELECT 1 FROM contracts c WHERE 
-                        c.borrower_id = b.id AND
-                        status != 'RequestExpired' AND 
-                        status != 'Rejected' 
-                    ) THEN 0
-                ELSE rcb.first_time_discount_rate_referee 
-           END as "first_time_discount_rate_referee?"
-           FROM borrowers b
-           LEFT JOIN referred_borrowers rb ON rb.referred_borrower_id = b.id
-           LEFT JOIN referral_codes_borrowers rcb ON rcb.code = rb.referral_code
-           WHERE b.id = $1
-       "#,
+        crate::model::Borrower,
+        r#"SELECT 
+           id as "id!",
+           name as "name!",
+           email as "email!",
+           password as "password!",
+           verified as "verified!",
+           verification_code,
+           password_reset_token,
+           used_referral_code,
+           personal_referral_code,
+           first_time_discount_rate_referee,
+           password_reset_at,
+           created_at as "created_at!",
+           updated_at as "updated_at!"
+           FROM borrower_discount_info where id = $1
+        "#,
         id
     )
     .fetch_optional(pool)
-    .await?;
+    .await
+    .context("failed loading")?;
 
-    if let Some(base_user) = maybe_base_user {
-        Ok(Some(enhance_with_personal_code(pool, base_user).await?))
-    } else {
-        Ok(None)
-    }
+    Ok(maybe_base_user)
 }
 pub async fn get_user_by_verification_code(
     pool: &Pool<Postgres>,
@@ -206,42 +196,30 @@ pub async fn get_user_by_verification_code(
 ) -> Result<Option<crate::model::Borrower>> {
     let verification_code = verification_code.to_ascii_lowercase();
     let maybe_base_user = sqlx::query_as!(
-        Borrower,
-        r#"SELECT
-               b.id,
-               b.name,
-               b.email,
-               b.password,
-               b.verified,
-               b.verification_code,
-               b.password_reset_token,
-               b.password_reset_at,
-               b.created_at,
-               b.updated_at,
-               rb.referral_code as "used_referral_code?",
-               CASE 
-                   WHEN EXISTS (
-                    SELECT 1 FROM contracts c WHERE 
-                        c.borrower_id = b.id AND
-                        status != 'RequestExpired' AND 
-                        status != 'Rejected' 
-                    ) THEN 0
-                 ELSE rcb.first_time_discount_rate_referee 
-                END as "first_time_discount_rate_referee?"
-           FROM borrowers b
-           LEFT JOIN referred_borrowers rb ON rb.referred_borrower_id = b.id
-           LEFT JOIN referral_codes_borrowers rcb ON rcb.code = rb.referral_code
-           WHERE b.verification_code = $1"#,
+        crate::model::Borrower,
+        r#"SELECT 
+           id as "id!",
+           name as "name!",
+           email as "email!",
+           password as "password!",
+           verified as "verified!",
+           verification_code,
+           password_reset_token,
+           used_referral_code,
+           personal_referral_code,
+           first_time_discount_rate_referee,
+           password_reset_at,
+           created_at as "created_at!",
+           updated_at as "updated_at!"
+           FROM borrower_discount_info where verification_code = $1
+        "#,
         verification_code
     )
     .fetch_optional(pool)
-    .await?;
+    .await
+    .context("failed loading")?;
 
-    if let Some(base_user) = maybe_base_user {
-        Ok(Some(enhance_with_personal_code(pool, base_user).await?))
-    } else {
-        Ok(None)
-    }
+    Ok(maybe_base_user)
 }
 pub async fn verify_user(pool: &Pool<Postgres>, verification_code: &str) -> Result<()> {
     let verification_code = verification_code.to_ascii_lowercase();
@@ -284,35 +262,30 @@ pub async fn get_user_by_rest_token(
     password_reset_token: &str,
 ) -> Result<Option<crate::model::Borrower>> {
     let maybe_base_user = sqlx::query_as!(
-        Borrower,
-        r#"SELECT
-           b.*,
-           rb.referral_code as "used_referral_code?",
-           CASE 
-               WHEN EXISTS (
-                SELECT 1 FROM contracts c WHERE 
-                    c.borrower_id = b.id AND
-                    status != 'RequestExpired' AND 
-                    status != 'Rejected' 
-                ) THEN 0
-               ELSE rcb.first_time_discount_rate_referee 
-           END as "first_time_discount_rate_referee?"
-       FROM borrowers b
-           LEFT JOIN referred_borrowers rb ON rb.referred_borrower_id = b.id
-           LEFT JOIN referral_codes_borrowers rcb ON rcb.code = rb.referral_code
-           WHERE b.password_reset_token = $1
-           AND b.password_reset_at > $2"#,
-        password_reset_token,
-        OffsetDateTime::now_utc(),
+        crate::model::Borrower,
+        r#"SELECT 
+           id as "id!",
+           name as "name!",
+           email as "email!",
+           password as "password!",
+           verified as "verified!",
+           verification_code,
+           password_reset_token,
+           used_referral_code,
+           personal_referral_code,
+           first_time_discount_rate_referee,
+           password_reset_at,
+           created_at as "created_at!",
+           updated_at as "updated_at!"
+           FROM borrower_discount_info where password_reset_token = $1
+        "#,
+        password_reset_token
     )
     .fetch_optional(pool)
-    .await?;
+    .await
+    .context("failed loading")?;
 
-    if let Some(base_user) = maybe_base_user {
-        Ok(Some(enhance_with_personal_code(pool, base_user).await?))
-    } else {
-        Ok(None)
-    }
+    Ok(maybe_base_user)
 }
 
 pub async fn update_user_password(
