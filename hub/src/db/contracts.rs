@@ -1,10 +1,11 @@
 use crate::db::contract_emails;
 use crate::expiry::expiry_date;
+use crate::model::db;
 use crate::model::Contract;
 use crate::model::ContractStatus;
 use crate::model::ContractVersion;
 use crate::model::Integration;
-use crate::model::{db, LiquidationStatus};
+use crate::model::LiquidationStatus;
 use anyhow::bail;
 use anyhow::Context;
 use anyhow::Error;
@@ -716,25 +717,22 @@ pub async fn mark_contract_as_principal_given(
 pub async fn mark_contract_as_repayment_provided(
     pool: &Pool<Postgres>,
     contract_id: &str,
-) -> Result<Contract> {
+) -> Result<()> {
     mark_contract_state_as(pool, contract_id, db::ContractStatus::RepaymentProvided).await
 }
 
 pub async fn mark_contract_as_repayment_confirmed(
     pool: &Pool<Postgres>,
     contract_id: &str,
-) -> Result<Contract> {
+) -> Result<()> {
     mark_contract_state_as(pool, contract_id, db::ContractStatus::RepaymentConfirmed).await
 }
 
-pub async fn mark_contract_as_cancelled(
-    pool: &Pool<Postgres>,
-    contract_id: &str,
-) -> Result<Contract> {
+pub async fn mark_contract_as_cancelled(pool: &Pool<Postgres>, contract_id: &str) -> Result<()> {
     mark_contract_state_as(pool, contract_id, db::ContractStatus::Cancelled).await
 }
 
-pub async fn mark_contract_as_extended<'a, E>(pool: E, contract_id: &str) -> Result<Contract>
+pub async fn mark_contract_as_extended<'a, E>(pool: E, contract_id: &str) -> Result<()>
 where
     E: sqlx::Executor<'a, Database = Postgres>,
 {
@@ -768,21 +766,18 @@ where
     Ok(())
 }
 
-pub async fn mark_contract_as_closed(pool: &Pool<Postgres>, contract_id: &str) -> Result<Contract> {
+pub async fn mark_contract_as_closed(pool: &Pool<Postgres>, contract_id: &str) -> Result<()> {
     mark_contract_state_as(pool, contract_id, db::ContractStatus::Closed).await
 }
 
-pub async fn mark_contract_as_closing(
-    pool: &Pool<Postgres>,
-    contract_id: &str,
-) -> Result<Contract> {
+pub async fn mark_contract_as_closing(pool: &Pool<Postgres>, contract_id: &str) -> Result<()> {
     mark_contract_state_as(pool, contract_id, db::ContractStatus::Closing).await
 }
 
 pub async fn mark_contract_as_undercollateralized(
     pool: &Pool<Postgres>,
     contract_id: &str,
-) -> Result<Contract> {
+) -> Result<()> {
     mark_contract_state_as(pool, contract_id, db::ContractStatus::Undercollateralized).await
 }
 
@@ -889,54 +884,27 @@ pub(crate) async fn mark_contract_state_as<'a, E>(
     pool: E,
     contract_id: &str,
     status: db::ContractStatus,
-) -> Result<Contract>
+) -> Result<()>
 where
     E: sqlx::Executor<'a, Database = Postgres>,
 {
-    let contract = sqlx::query_as!(
-        db::Contract,
+    sqlx::query!(
         r#"
-        UPDATE contracts
-        SET
-            status = $1,
-            updated_at = $2
-        WHERE id = $3
-        RETURNING
-            id,
-            lender_id,
-            borrower_id,
-            loan_id,
-            initial_ltv,
-            initial_collateral_sats,
-            origination_fee_sats,
-            collateral_sats,
-            loan_amount,
-            borrower_btc_address,
-            borrower_pk,
-            borrower_loan_address,
-            integration as "integration: crate::model::db::Integration",
-            lender_xpub,
-            contract_address,
-            contract_index,
-            status as "status: crate::model::db::ContractStatus",
-            liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
-            duration_months,
-            expiry_date,
-            contract_version,
-            interest_rate,
-            created_at,
-            updated_at
-        "#,
+       UPDATE contracts
+       SET
+           status = $1,
+           updated_at = $2
+       WHERE id = $3
+       "#,
         status as db::ContractStatus,
         OffsetDateTime::now_utc(),
         contract_id,
     )
-    .fetch_one(pool)
+    .execute(pool)
     .await?;
 
-    Ok(contract.into())
+    Ok(())
 }
-
 pub(crate) async fn load_open_not_liquidated_contracts(
     pool: &Pool<Postgres>,
 ) -> Result<Vec<Contract>> {
