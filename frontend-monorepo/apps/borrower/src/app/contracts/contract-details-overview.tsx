@@ -519,7 +519,7 @@ function ContractDetails({ contract }: DetailsProps) {
             )
             : (
               <Text
-                onClick={() => handleCopy(contract.id)}
+                onClick={() => handleCopy(contract.borrower_btc_address)}
                 size={"2"}
                 weight={"medium"}
                 className="text-end cursor-copy hover:opacity-70 flex items-center gap-1 text-font dark:text-font-dark"
