@@ -365,28 +365,27 @@ const CreateLoanOffer: FC = () => {
 
                   {/* Interest Rate */}
                   <Box className="space-y-1">
-                    <InterestRateInfoLabel>
-                      <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
+                    <Flex align={"center"} gap={"2"}>
+                      <InterestRateInfoLabel>
                         <Text as="label" size={"2"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">
                           Interest Rate
                         </Text>
-                        <FaInfoCircle />
-
-                        <Skeleton loading={statsLoading}>
-                          {stats
-                            && (
-                              <Text
-                                as="label"
-                                size={"2"}
-                                weight={"medium"}
-                                className="text-font/50 dark:text-font-dark/50"
-                              >
-                                (current best offer: {(stats?.loan_offer_stats.min * 100).toFixed(2)}%)
-                              </Text>
-                            )}
-                        </Skeleton>
-                      </Flex>
-                    </InterestRateInfoLabel>
+                        <FaInfoCircle className="text-font dark:text-font-dark" />
+                      </InterestRateInfoLabel>
+                      <Skeleton loading={statsLoading}>
+                        {stats
+                          && (
+                            <Text
+                              as="label"
+                              size={"2"}
+                              weight={"medium"}
+                              className="text-font/50 dark:text-font-dark/50"
+                            >
+                              (current best offer: {(stats?.loan_offer_stats.min * 100).toFixed(2)}%)
+                            </Text>
+                          )}
+                      </Skeleton>
+                    </Flex>
 
                     <TextField.Root
                       size="3"
