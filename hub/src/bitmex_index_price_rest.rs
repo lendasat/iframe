@@ -1,3 +1,4 @@
+use anyhow::Context;
 use rust_decimal::Decimal;
 use time::ext::NumericalDuration;
 use time::format_description;
@@ -38,7 +39,7 @@ pub async fn get_bitmex_index_price(timestamp: OffsetDateTime) -> anyhow::Result
         .append_pair("count", "1");
 
     let indices = reqwest::get(url).await?.json::<Vec<Index>>().await?;
-    let index = &indices[0];
+    let index = indices.first().context("Got no index price from BitMEX")?;
 
     let index_price = Decimal::try_from(index.last_price)?;
 
