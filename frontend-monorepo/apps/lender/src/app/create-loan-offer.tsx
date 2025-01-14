@@ -18,7 +18,7 @@ import {
 } from "@frontend-monorepo/ui-shared";
 import * as Checkbox from "@radix-ui/react-checkbox";
 import { CheckIcon } from "@radix-ui/react-icons";
-import { Box, Button, Callout, Flex, Heading, Separator, Spinner, Text, TextField } from "@radix-ui/themes";
+import { Box, Button, Callout, Flex, Heading, Separator, Skeleton, Spinner, Text, TextField } from "@radix-ui/themes";
 import type { FC, FormEvent } from "react";
 import { useState } from "react";
 import { Form } from "react-bootstrap";
@@ -26,6 +26,7 @@ import { FaInfoCircle } from "react-icons/fa";
 import { MdOutlineSwapCalls } from "react-icons/md";
 import { PiInfo, PiWarningCircle } from "react-icons/pi";
 import { useNavigate } from "react-router-dom";
+import { useAsync } from "react-use";
 
 export interface LoanDuration {
   min: number;
@@ -43,7 +44,9 @@ const CreateLoanOffer: FC = () => {
   const { doesWalletExist, getXpub } = useWallet();
   const { enabledFeatures } = useAuth();
 
-  console.log(`${JSON.stringify(enabledFeatures)}`);
+  const navigate = useNavigate();
+  const { postLoanOffer, getLoanAndContractStats } = useLenderHttpClient();
+
   const autoApproveEnabled = enabledFeatures.includes(LenderFeatureFlags.AutoApproveLoanRequests);
 
   const [loanAmount, setLoanAmount] = useState<LoanAmount>({ min: 1000, max: 100000 });
@@ -51,7 +54,7 @@ const CreateLoanOffer: FC = () => {
   const [autoAccept, setAutoAccept] = useState(autoApproveEnabled);
   const [loanDuration, setLoanDuration] = useState<LoanDuration>({ min: 1, max: 12 });
   const [ltv, setLtv] = useState<number>(50);
-  const [interest, setInterest] = useState<number>(12);
+  const [interest, setInterest] = useState<number>(7.5);
   const [selectedCoin, setSelectedCoin] = useState<StableCoin | undefined>(StableCoin.USDT_ETH);
   const [loanRepaymentAddress, setLoanRepaymentAddress] = useState<string>("");
   const [error, setError] = useState("");
@@ -132,8 +135,6 @@ const CreateLoanOffer: FC = () => {
     };
   };
 
-  const navigate = useNavigate();
-  const { postLoanOffer } = useLenderHttpClient();
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
 
@@ -163,6 +164,14 @@ const CreateLoanOffer: FC = () => {
       setLoading(false);
     }
   };
+
+  const { loading: statsLoading, value: stats, error: loadingStatsError } = useAsync(async () => {
+    return await getLoanAndContractStats();
+  });
+
+  if (loadingStatsError) {
+    console.error(`Failed loading loan and contract stats ${loadingStatsError}`);
+  }
 
   return (
     <>
@@ -353,14 +362,27 @@ const CreateLoanOffer: FC = () => {
 
                   {/* Interest Rate */}
                   <Box className="space-y-1">
-                    <InterestRateInfoLabel>
-                      <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
+                    <Flex align={"center"} gap={"2"}>
+                      <InterestRateInfoLabel>
                         <Text as="label" size={"2"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">
                           Interest Rate
                         </Text>
-                        <FaInfoCircle />
-                      </Flex>
-                    </InterestRateInfoLabel>
+                        <FaInfoCircle className="text-font dark:text-font-dark" />
+                      </InterestRateInfoLabel>
+                      <Skeleton loading={statsLoading}>
+                        {stats
+                          && (
+                            <Text
+                              as="label"
+                              size={"2"}
+                              weight={"medium"}
+                              className="text-font/50 dark:text-font-dark/50"
+                            >
+                              (current best offer: {(stats?.loan_offer_stats.min * 100).toFixed(2)}%)
+                            </Text>
+                          )}
+                      </Skeleton>
+                    </Flex>
 
                     <TextField.Root
                       size="3"

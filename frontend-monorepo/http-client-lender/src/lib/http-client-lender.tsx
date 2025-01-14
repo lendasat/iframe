@@ -10,6 +10,7 @@ import type {
   GetLiquidationPsbtResponse,
   GetRecoveryPsbtResponse,
   LiquidationToStableCoinPsbt,
+  LoanAndContractStats,
   LoanOffer,
 } from "./models";
 import { parseRFC3339Date } from "./utils";
@@ -470,6 +471,26 @@ export class HttpClientLender extends BaseHttpClient {
       }
     }
   }
+
+  async getLoanAndContractStats(): Promise<LoanAndContractStats> {
+    try {
+      const stats: AxiosResponse<LoanAndContractStats> = await this.httpClient.get(`/api/offers/stats`);
+
+      return stats.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = JSON.stringify(error.response?.data);
+        console.error(
+          `Failed to fetch contract: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not fetch contract ${JSON.stringify(error)}`);
+      }
+    }
+  }
 }
 
 type LenderHttpClientContextType = Pick<
@@ -492,6 +513,7 @@ type LenderHttpClientContextType = Pick<
   | "getLiquidationToStablecoinPsbt"
   | "postLiquidationTx"
   | "getRecoveryPsbt"
+  | "getLoanAndContractStats"
 >;
 
 export const LenderHttpClientContext = createContext<LenderHttpClientContextType | undefined>(undefined);
@@ -544,6 +566,7 @@ export const HttpClientLenderProvider: React.FC<HttpClientProviderProps> = ({ ch
     getLiquidationToStablecoinPsbt: httpClient.getLiquidationToStablecoinPsbt.bind(httpClient),
     postLiquidationTx: httpClient.postLiquidationTx.bind(httpClient),
     getRecoveryPsbt: httpClient.getRecoveryPsbt.bind(httpClient),
+    getLoanAndContractStats: httpClient.getLoanAndContractStats.bind(httpClient),
   };
 
   return (

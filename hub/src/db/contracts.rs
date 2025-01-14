@@ -1194,3 +1194,35 @@ pub(crate) async fn check_if_contract_belongs_to_lender(
 
     Ok(row.entry_exists.unwrap_or(false))
 }
+
+#[derive(sqlx::FromRow)]
+pub struct ContractStats {
+    pub(crate) loan_amount: Decimal,
+    pub(crate) duration_months: i32,
+    pub(crate) interest_rate: Decimal,
+    pub(crate) created_at: OffsetDateTime,
+}
+
+/// Returns the latest [`limit`] contracts by creation date
+pub async fn load_latest_contract_stats(
+    pool: &Pool<Postgres>,
+    limit: i64,
+) -> Result<Vec<ContractStats>> {
+    let contract_stats = sqlx::query_as!(
+        ContractStats,
+        r#"
+        SELECT
+            loan_amount,
+            duration_months,
+            interest_rate,
+            created_at
+        FROM contracts
+        order by created_at desc limit $1
+        "#,
+        limit
+    )
+    .fetch_all(pool)
+    .await?;
+
+    Ok(contract_stats)
+}
