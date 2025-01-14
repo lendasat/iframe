@@ -468,3 +468,28 @@ pub(crate) async fn loan_by_id(pool: &Pool<Postgres>, loan_id: &str) -> Result<O
         Ok(None)
     }
 }
+
+#[derive(sqlx::FromRow)]
+pub struct InterestRateStats {
+    pub(crate) avg: Decimal,
+    pub(crate) min: Decimal,
+    pub(crate) max: Decimal,
+}
+
+pub async fn calculate_loan_offer_stats(pool: &Pool<Postgres>) -> Result<InterestRateStats> {
+    let stats = sqlx::query_as!(
+        InterestRateStats,
+        r#"SELECT 
+            AVG(interest_rate) as "avg!: Decimal", 
+            MIN(interest_rate) as "min!: Decimal", 
+            MAX(interest_rate) as "max!: Decimal"
+        FROM 
+            loan_offers 
+        WHERE 
+            status = 'Available'"#
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(stats)
+}

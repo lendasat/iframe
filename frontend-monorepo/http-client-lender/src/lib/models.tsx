@@ -285,3 +285,21 @@ export class FeatureMapper {
     });
   }
 }
+
+export interface LoanAndContractStats {
+  contract_stats: ContractStats[];
+  loan_offer_stats: LoanOfferStats;
+}
+
+export interface LoanOfferStats {
+  avg: number;
+  min: number;
+  max: number;
+}
+
+export interface ContractStats {
+  loan_amount: number;
+  duration_months: number;
+  interest_rate: number;
+  created_at: string;
+}

@@ -20,6 +20,7 @@ use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use serde::Serialize;
 use std::sync::Arc;
+use time::OffsetDateTime;
 use tracing::instrument;
 
 pub(crate) fn router(app_state: Arc<AppState>) -> Router {
@@ -47,6 +48,13 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
         .route(
             "/api/offers/create",
             post(create_loan_offer).route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                auth::jwt_auth::auth,
+            )),
+        )
+        .route(
+            "/api/offers/stats",
+            get(get_latest_stats).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
                 auth::jwt_auth::auth,
             )),
@@ -178,4 +186,90 @@ pub async fn delete_loan_offer_by_lender_and_offer_id(
 #[derive(Debug, Serialize)]
 pub struct ErrorResponse {
     pub message: String,
+}
+
+#[derive(Serialize, Debug)]
+pub struct LoanOfferStats {
+    #[serde(with = "rust_decimal::serde::float")]
+    avg: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
+    min: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
+    max: Decimal,
+}
+
+impl From<db::loan_offers::InterestRateStats> for LoanOfferStats {
+    fn from(value: db::loan_offers::InterestRateStats) -> Self {
+        Self {
+            avg: value.avg,
+            min: value.min,
+            max: value.max,
+        }
+    }
+}
+
+#[derive(Serialize, Debug)]
+pub struct ContractStats {
+    #[serde(with = "rust_decimal::serde::float")]
+    loan_amount: Decimal,
+    duration_months: i32,
+    #[serde(with = "rust_decimal::serde::float")]
+    interest_rate: Decimal,
+    #[serde(with = "time::serde::rfc3339")]
+    created_at: OffsetDateTime,
+}
+
+impl From<db::contracts::ContractStats> for ContractStats {
+    fn from(value: db::contracts::ContractStats) -> Self {
+        Self {
+            loan_amount: value.loan_amount,
+            duration_months: value.duration_months,
+            interest_rate: value.interest_rate,
+            created_at: value.created_at,
+        }
+    }
+}
+
+#[derive(Serialize, Debug)]
+pub struct Stats {
+    contract_stats: Vec<ContractStats>,
+    loan_offer_stats: LoanOfferStats,
+}
+
+#[instrument(skip_all, err(Debug))]
+pub async fn get_latest_stats(
+    State(data): State<Arc<AppState>>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    let stats = db::loan_offers::calculate_loan_offer_stats(&data.db)
+        .await
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Database error: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
+
+    let loan_offer_stats = LoanOfferStats::from(stats);
+
+    let latest_contract_stats = db::contracts::load_latest_contract_stats(&data.db, 10)
+        .await
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Database error: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
+
+    let contract_stats = latest_contract_stats
+        .into_iter()
+        .map(ContractStats::from)
+        .collect::<Vec<_>>();
+
+    Ok((
+        StatusCode::OK,
+        Json(Stats {
+            contract_stats,
+            loan_offer_stats,
+        }),
+    ))
 }
