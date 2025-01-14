@@ -226,7 +226,7 @@ function MyLoanOfferDetails() {
                 type="number"
                 placeholder="Interest Rate"
                 color="purple"
-                value={offer.interest_rate}
+                value={(offer.interest_rate * 100).toFixed(2)}
                 min={0}
                 max={1}
                 step={0.01}
@@ -234,7 +234,7 @@ function MyLoanOfferDetails() {
               >
                 <TextField.Slot className="pr-0" />
                 <TextField.Slot>
-                  <Text size={"2"} weight={"medium"}>0.0 - 1.0</Text>
+                  <Text size={"2"} weight={"medium"}>1 - 100</Text>
                 </TextField.Slot>
               </TextField.Root>
             </Box>
@@ -242,23 +242,23 @@ function MyLoanOfferDetails() {
             {/* LTV */}
             <Box className="space-y-1">
               <Text as="label" size={"2"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">
-                Loan to value
+                Loan to Value (LTV)
               </Text>
               <TextField.Root
                 size="3"
                 className="flex-1 text-sm rounded-lg"
                 type="number"
-                placeholder="LTV (0-1)"
+                placeholder="LTV (1-100)"
                 color="purple"
-                value={offer.min_ltv}
-                min={0}
-                max={0.9}
-                step={0.1}
+                value={(offer.min_ltv * 100).toFixed(2)}
+                min={1}
+                max={100}
+                step={0.5}
                 disabled={true}
               >
                 <TextField.Slot className="pr-0" />
                 <TextField.Slot>
-                  <Text size={"2"} weight={"medium"}>0.1 - 0.9</Text>
+                  <Text size={"2"} weight={"medium"}>1 - 100</Text>
                 </TextField.Slot>
               </TextField.Root>
             </Box>

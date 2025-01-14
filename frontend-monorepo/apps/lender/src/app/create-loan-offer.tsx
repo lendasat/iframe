@@ -393,7 +393,7 @@ const CreateLoanOffer: FC = () => {
                       value={interest}
                       min={0}
                       max={100}
-                      step={1}
+                      step={0.5}
                       onChange={(e) => setInterest(Number(e.target.value))}
                     >
                       <TextField.Slot className="pr-0" />
