@@ -47,7 +47,6 @@ const CreateLoanOffer: FC = () => {
   const navigate = useNavigate();
   const { postLoanOffer, getLoanAndContractStats } = useLenderHttpClient();
 
-  console.log(`${JSON.stringify(enabledFeatures)}`);
   const autoApproveEnabled = enabledFeatures.includes(LenderFeatureFlags.AutoApproveLoanRequests);
 
   const [loanAmount, setLoanAmount] = useState<LoanAmount>({ min: 1000, max: 100000 });
@@ -173,8 +172,6 @@ const CreateLoanOffer: FC = () => {
   if (loadingStatsError) {
     console.error(`Failed loading loan and contract stats ${loadingStatsError}`);
   }
-
-  console.log(`Loan offer stats ${JSON.stringify(stats?.loan_offer_stats)}`);
 
   return (
     <>
