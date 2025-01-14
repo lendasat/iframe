@@ -5,6 +5,7 @@ use crate::model::Contract;
 use crate::model::ContractStatus;
 use crate::model::ContractVersion;
 use crate::model::Integration;
+use crate::model::LiquidationStatus;
 use anyhow::bail;
 use anyhow::Context;
 use anyhow::Error;
@@ -254,40 +255,31 @@ pub async fn load_open_contracts(pool: &Pool<Postgres>) -> Result<Vec<Contract>>
         db::Contract,
         r#"
         SELECT
-            id,
-            lender_id,
-            borrower_id,
-            loan_id,
-            initial_ltv,
-            initial_collateral_sats,
-            origination_fee_sats,
-            collateral_sats,
-            loan_amount,
-            borrower_btc_address,
-            borrower_pk,
-            borrower_loan_address,
-            integration as "integration: crate::model::db::Integration",
+            id as "id!",
+            lender_id as "lender_id!",
+            borrower_id as "borrower_id!",
+            loan_id as "loan_id!",
+            initial_ltv as "initial_ltv!",
+            initial_collateral_sats as "initial_collateral_sats!",
+            origination_fee_sats as "origination_fee_sats!",
+            collateral_sats as "collateral_sats!",
+            loan_amount as "loan_amount!",
+            borrower_btc_address as "borrower_btc_address!",
+            borrower_pk as "borrower_pk!",
+            borrower_loan_address as "borrower_loan_address!",
+            integration as "integration!: crate::model::db::Integration",
             lender_xpub,
             contract_address,
             contract_index,
-            status as "status: crate::model::db::ContractStatus",
-            liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
-            duration_months,
-            expiry_date,
-            contract_version,
-            interest_rate,
-            created_at,
-            updated_at
-        FROM contracts
-        WHERE status NOT IN ($1, $2, $3, $4, $5, $6, $7)
-        "#,
-        db::ContractStatus::Requested as db::ContractStatus,
-        db::ContractStatus::RenewalRequested as db::ContractStatus,
-        db::ContractStatus::Closed as db::ContractStatus,
-        db::ContractStatus::Extended as db::ContractStatus,
-        db::ContractStatus::Rejected as db::ContractStatus,
-        db::ContractStatus::Cancelled as db::ContractStatus,
-        db::ContractStatus::RequestExpired as db::ContractStatus,
+            status as "status!: crate::model::db::ContractStatus",
+            liquidation_status as "liquidation_status!: crate::model::db::LiquidationStatus",
+            duration_months as "duration_months!",
+            expiry_date as "expiry_date!",
+            contract_version as "contract_version!",
+            interest_rate as "interest_rate!",
+            created_at as "created_at!",
+            updated_at as "updated_at!"
+        FROM open_contracts"#,
     )
     .fetch_all(pool)
     .await?;
@@ -616,134 +608,74 @@ pub async fn accept_extend_contract_request(
     pool: &Pool<Postgres>,
     lender_id: &str,
     contract_id: &str,
-) -> Result<Contract> {
-    let contract = sqlx::query_as!(
-        db::Contract,
+) -> Result<()> {
+    sqlx::query!(
         r#"
-        UPDATE contracts
-        SET status = $1,
-            updated_at = $2
-        WHERE lender_id = $3
-          AND id = $4 
-          AND status = $5
-        RETURNING
-            id,
-            lender_id,
-            borrower_id,
-            loan_id,
-            initial_ltv,
-            initial_collateral_sats,
-            origination_fee_sats,
-            collateral_sats,
-            loan_amount,
-            borrower_btc_address,
-            borrower_pk,
-            borrower_loan_address,
-            integration as "integration: crate::model::db::Integration",
-            lender_xpub,
-            contract_address,
-            contract_index,
-            status as "status: crate::model::db::ContractStatus",
-            liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
-            duration_months,
-            expiry_date,
-            contract_version,
-            interest_rate,
-            created_at,
-            updated_at
-        "#,
+       UPDATE contracts
+       SET status = $1,
+           updated_at = $2
+       WHERE lender_id = $3
+         AND id = $4 
+         AND status = $5
+       "#,
         db::ContractStatus::PrincipalGiven as db::ContractStatus,
         OffsetDateTime::now_utc(),
         lender_id,
         contract_id,
         db::ContractStatus::RenewalRequested as db::ContractStatus,
     )
-    .fetch_one(pool)
+    .execute(pool)
     .await?;
 
-    Ok(contract.into())
+    Ok(())
 }
 
 pub async fn mark_contract_as_principal_given(
     pool: &Pool<Postgres>,
     contract_id: &str,
     duration_months: i32,
-) -> Result<Contract> {
+) -> Result<()> {
     let updated_at = OffsetDateTime::now_utc();
-
-    // We update the expiry to ensure that the loan lasts long enough. We could be even more precise
-    // if we checked the confirmation time of the principal transaction, but this is probably good
-    // enough.
     let expiry_date = expiry_date(updated_at, duration_months as u64);
 
-    let contract = sqlx::query_as!(
-        db::Contract,
+    sqlx::query!(
         r#"
-        UPDATE contracts
-        SET
-            status = $1,
-            expiry_date = $2,
-            updated_at = $3
-        WHERE id = $4
-        RETURNING
-            id,
-            lender_id,
-            borrower_id,
-            loan_id,
-            initial_ltv,
-            initial_collateral_sats,
-            origination_fee_sats,
-            collateral_sats,
-            loan_amount,
-            borrower_btc_address,
-            borrower_pk,
-            borrower_loan_address,
-            integration as "integration: crate::model::db::Integration",
-            lender_xpub,
-            contract_address,
-            contract_index,
-            status as "status: crate::model::db::ContractStatus",
-            liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
-            duration_months,
-            expiry_date,
-            contract_version,
-            interest_rate,
-            created_at,
-            updated_at
-        "#,
+       UPDATE contracts
+       SET
+           status = $1,
+           expiry_date = $2,
+           updated_at = $3
+       WHERE id = $4
+       "#,
         db::ContractStatus::PrincipalGiven as db::ContractStatus,
         expiry_date,
         updated_at,
         contract_id,
     )
-    .fetch_one(pool)
+    .execute(pool)
     .await?;
 
-    Ok(contract.into())
+    Ok(())
 }
-
 pub async fn mark_contract_as_repayment_provided(
     pool: &Pool<Postgres>,
     contract_id: &str,
-) -> Result<Contract> {
+) -> Result<()> {
     mark_contract_state_as(pool, contract_id, db::ContractStatus::RepaymentProvided).await
 }
 
 pub async fn mark_contract_as_repayment_confirmed(
     pool: &Pool<Postgres>,
     contract_id: &str,
-) -> Result<Contract> {
+) -> Result<()> {
     mark_contract_state_as(pool, contract_id, db::ContractStatus::RepaymentConfirmed).await
 }
 
-pub async fn mark_contract_as_cancelled(
-    pool: &Pool<Postgres>,
-    contract_id: &str,
-) -> Result<Contract> {
+pub async fn mark_contract_as_cancelled(pool: &Pool<Postgres>, contract_id: &str) -> Result<()> {
     mark_contract_state_as(pool, contract_id, db::ContractStatus::Cancelled).await
 }
 
-pub async fn mark_contract_as_extended<'a, E>(pool: E, contract_id: &str) -> Result<Contract>
+pub async fn mark_contract_as_extended<'a, E>(pool: E, contract_id: &str) -> Result<()>
 where
     E: sqlx::Executor<'a, Database = Postgres>,
 {
@@ -777,21 +709,18 @@ where
     Ok(())
 }
 
-pub async fn mark_contract_as_closed(pool: &Pool<Postgres>, contract_id: &str) -> Result<Contract> {
+pub async fn mark_contract_as_closed(pool: &Pool<Postgres>, contract_id: &str) -> Result<()> {
     mark_contract_state_as(pool, contract_id, db::ContractStatus::Closed).await
 }
 
-pub async fn mark_contract_as_closing(
-    pool: &Pool<Postgres>,
-    contract_id: &str,
-) -> Result<Contract> {
+pub async fn mark_contract_as_closing(pool: &Pool<Postgres>, contract_id: &str) -> Result<()> {
     mark_contract_state_as(pool, contract_id, db::ContractStatus::Closing).await
 }
 
 pub async fn mark_contract_as_undercollateralized(
     pool: &Pool<Postgres>,
     contract_id: &str,
-) -> Result<Contract> {
+) -> Result<()> {
     mark_contract_state_as(pool, contract_id, db::ContractStatus::Undercollateralized).await
 }
 
@@ -898,109 +827,42 @@ pub(crate) async fn mark_contract_state_as<'a, E>(
     pool: E,
     contract_id: &str,
     status: db::ContractStatus,
-) -> Result<Contract>
+) -> Result<()>
 where
     E: sqlx::Executor<'a, Database = Postgres>,
 {
-    let contract = sqlx::query_as!(
-        db::Contract,
+    sqlx::query!(
         r#"
-        UPDATE contracts
-        SET
-            status = $1,
-            updated_at = $2
-        WHERE id = $3
-        RETURNING
-            id,
-            lender_id,
-            borrower_id,
-            loan_id,
-            initial_ltv,
-            initial_collateral_sats,
-            origination_fee_sats,
-            collateral_sats,
-            loan_amount,
-            borrower_btc_address,
-            borrower_pk,
-            borrower_loan_address,
-            integration as "integration: crate::model::db::Integration",
-            lender_xpub,
-            contract_address,
-            contract_index,
-            status as "status: crate::model::db::ContractStatus",
-            liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
-            duration_months,
-            expiry_date,
-            contract_version,
-            interest_rate,
-            created_at,
-            updated_at
-        "#,
+       UPDATE contracts
+       SET
+           status = $1,
+           updated_at = $2
+       WHERE id = $3
+       "#,
         status as db::ContractStatus,
         OffsetDateTime::now_utc(),
         contract_id,
     )
-    .fetch_one(pool)
+    .execute(pool)
     .await?;
 
-    Ok(contract.into())
+    Ok(())
 }
-
 pub(crate) async fn load_open_not_liquidated_contracts(
     pool: &Pool<Postgres>,
 ) -> Result<Vec<Contract>> {
-    let contracts = sqlx::query_as!(
-        db::Contract,
-        r#"
-        SELECT
-            id,
-            lender_id,
-            borrower_id,
-            loan_id,
-            initial_ltv,
-            initial_collateral_sats,
-            origination_fee_sats,
-            collateral_sats,
-            loan_amount,
-            borrower_btc_address,
-            borrower_pk,
-            borrower_loan_address,
-            integration as "integration: crate::model::db::Integration",
-            lender_xpub,
-            contract_address,
-            contract_index,
-            status as "status: crate::model::db::ContractStatus",
-            liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
-            duration_months,
-            expiry_date,
-            contract_version,
-            interest_rate,
-            created_at,
-            updated_at
-        FROM contracts
-        WHERE status NOT IN ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) and liquidation_status NOT in ($11)
-        "#,
-        db::ContractStatus::Requested as db::ContractStatus,
-        db::ContractStatus::Approved as db::ContractStatus,
-        db::ContractStatus::Closing as db::ContractStatus,
-        db::ContractStatus::Closed as db::ContractStatus,
-        db::ContractStatus::Extended as db::ContractStatus,
-        db::ContractStatus::Rejected as db::ContractStatus,
-        db::ContractStatus::Cancelled as db::ContractStatus,
-        db::ContractStatus::RequestExpired as db::ContractStatus,
-        db::ContractStatus::Defaulted as db::ContractStatus,
-        db::ContractStatus::Undercollateralized as db::ContractStatus,
-        db::LiquidationStatus::Liquidated as db::LiquidationStatus,
-    )
-    .fetch_all(pool)
-    .await?;
+    let open_contracts = load_open_contracts(pool).await?;
 
-    let contracts = contracts
+    let open_not_liquidated = open_contracts
         .into_iter()
-        .map(Contract::from)
-        .collect::<Vec<Contract>>();
+        .filter(|c| {
+            c.status != ContractStatus::Defaulted
+                && c.status != ContractStatus::Undercollateralized
+                && c.liquidation_status != LiquidationStatus::Liquidated
+        })
+        .collect::<Vec<_>>();
 
-    Ok(contracts)
+    Ok(open_not_liquidated)
 }
 
 #[derive(Clone)]
@@ -1022,24 +884,14 @@ pub(crate) async fn default_expired_contracts(
             UPDATE
                 contracts
             SET
-                status = $1, updated_at = $2
+                status = $1, 
+                updated_at = $2
             WHERE
-                expiry_date <= $2 AND
-                status NOT IN ($3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $1)
+                id NOT IN (SELECT id FROM expired_open_contracts)
             RETURNING id, borrower_id, lender_id;
         "#,
         db::ContractStatus::Defaulted as db::ContractStatus,
-        OffsetDateTime::now_utc(),
-        db::ContractStatus::Requested as db::ContractStatus,
-        db::ContractStatus::Approved as db::ContractStatus,
-        db::ContractStatus::Closing as db::ContractStatus,
-        db::ContractStatus::Closed as db::ContractStatus,
-        db::ContractStatus::Extended as db::ContractStatus,
-        db::ContractStatus::Rejected as db::ContractStatus,
-        db::ContractStatus::Cancelled as db::ContractStatus,
-        db::ContractStatus::RequestExpired as db::ContractStatus,
-        db::ContractStatus::RepaymentProvided as db::ContractStatus,
-        db::ContractStatus::RepaymentConfirmed as db::ContractStatus,
+        OffsetDateTime::now_utc()
     )
     .fetch_all(pool)
     .await?;

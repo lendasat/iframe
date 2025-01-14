@@ -24,7 +24,46 @@ pub struct InviteCode {
 }
 
 #[derive(Debug, Deserialize, sqlx::FromRow, Serialize, Clone)]
-pub struct User {
+pub struct Borrower {
+    pub id: String,
+    pub name: String,
+    pub email: String,
+    pub password: String,
+    pub verified: bool,
+    pub verification_code: Option<String>,
+    pub used_referral_code: Option<String>,
+    pub personal_referral_code: Option<String>,
+    pub first_time_discount_rate_referee: Option<Decimal>,
+    pub password_reset_token: Option<String>,
+    #[serde(with = "time::serde::rfc3339::option")]
+    pub password_reset_at: Option<OffsetDateTime>,
+    #[serde(with = "time::serde::rfc3339")]
+    pub created_at: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339")]
+    pub updated_at: OffsetDateTime,
+}
+
+impl Borrower {
+    pub fn check_password(&self, provided_password: &str) -> bool {
+        match PasswordHash::new(&self.password) {
+            Ok(parsed_hash) => Argon2::default()
+                .verify_password(provided_password.as_bytes(), &parsed_hash)
+                .map_or(false, |_| true),
+            Err(_) => false,
+        }
+    }
+
+    pub(crate) fn name(&self) -> String {
+        self.name.clone()
+    }
+
+    pub(crate) fn email(&self) -> String {
+        self.email.clone()
+    }
+}
+
+#[derive(Debug, Deserialize, sqlx::FromRow, Serialize, Clone)]
+pub struct Lender {
     pub id: String,
     pub name: String,
     pub email: String,
@@ -41,7 +80,7 @@ pub struct User {
     pub updated_at: OffsetDateTime,
 }
 
-impl User {
+impl Lender {
     pub fn check_password(&self, provided_password: &str) -> bool {
         match PasswordHash::new(&self.password) {
             Ok(parsed_hash) => Argon2::default()
@@ -49,6 +88,13 @@ impl User {
                 .map_or(false, |_| true),
             Err(_) => false,
         }
+    }
+    pub(crate) fn name(&self) -> String {
+        self.name.clone()
+    }
+
+    pub(crate) fn email(&self) -> String {
+        self.email.clone()
     }
 }
 
@@ -782,33 +828,6 @@ pub struct BorrowerLoanFeature {
     pub name: String,
     pub description: Option<String>,
     pub is_enabled: bool,
-}
-
-#[derive(Debug, Serialize)]
-pub struct FilteredUser {
-    pub id: String,
-    pub name: String,
-    pub email: String,
-    pub verified: bool,
-    #[serde(with = "time::serde::rfc3339")]
-    pub created_at: OffsetDateTime,
-    #[serde(with = "time::serde::rfc3339")]
-    pub updated_at: OffsetDateTime,
-}
-
-impl FilteredUser {
-    pub fn new_user(user: &User) -> Self {
-        let created_at_utc = user.created_at;
-        let updated_at_utc = user.updated_at;
-        Self {
-            id: user.id.to_string(),
-            email: user.email.to_owned(),
-            name: user.name.to_owned(),
-            verified: user.verified,
-            created_at: created_at_utc,
-            updated_at: updated_at_utc,
-        }
-    }
 }
 
 #[derive(Debug)]

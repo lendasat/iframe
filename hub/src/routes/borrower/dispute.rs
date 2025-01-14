@@ -1,10 +1,10 @@
 use crate::db;
 use crate::email::Email;
 use crate::mempool;
+use crate::model::Borrower;
 use crate::model::DisputeRequestBodySchema;
 use crate::model::DisputeStatus;
 use crate::model::PsbtQueryParams;
-use crate::model::User;
 use crate::routes::borrower::auth::jwt_auth;
 use crate::routes::borrower::ClaimCollateralPsbt;
 use crate::routes::AppState;
@@ -60,7 +60,7 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
 
 pub async fn get_all_disputes(
     State(data): State<Arc<AppState>>,
-    Extension(user): Extension<User>,
+    Extension(user): Extension<Borrower>,
 ) -> anyhow::Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     let disputes = db::dispute::load_disputes_by_borrower(&data.db, user.id.as_str())
         .await
@@ -75,7 +75,7 @@ pub async fn get_all_disputes(
 
 pub async fn get_disputes_by_id(
     State(data): State<Arc<AppState>>,
-    Extension(user): Extension<User>,
+    Extension(user): Extension<Borrower>,
     Path(dispute_id): Path<String>,
 ) -> anyhow::Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     let dispute = db::dispute::load_disputes_by_borrower_and_dispute_id(
@@ -102,7 +102,7 @@ pub async fn get_disputes_by_id(
 
 pub(crate) async fn create_dispute(
     State(data): State<Arc<AppState>>,
-    Extension(user): Extension<User>,
+    Extension(user): Extension<Borrower>,
     Json(body): Json<DisputeRequestBodySchema>,
 ) -> anyhow::Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     let contract = db::contracts::load_contract_by_contract_id_and_borrower_id(
@@ -160,7 +160,11 @@ pub(crate) async fn create_dispute(
     let email_instance = Email::new(data.config.clone());
     let user_id = user.id.clone();
     if let Err(error) = email_instance
-        .send_start_dispute(user.clone(), dispute.id.as_str())
+        .send_start_dispute(
+            user.name().as_str(),
+            user.email().as_str(),
+            dispute.id.as_str(),
+        )
         .await
     {
         tracing::error!(user_id, "Failed sending dispute email {error:#}");
@@ -194,7 +198,7 @@ pub(crate) async fn create_dispute(
 #[instrument(skip_all, fields(borrower_id = user.id, contract_id), err(Debug), ret)]
 pub async fn get_claim_collateral_psbt(
     State(data): State<Arc<AppState>>,
-    Extension(user): Extension<User>,
+    Extension(user): Extension<Borrower>,
     Path(dispute_id): Path<String>,
     query_params: Query<PsbtQueryParams>,
 ) -> anyhow::Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {

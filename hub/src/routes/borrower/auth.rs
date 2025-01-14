@@ -10,18 +10,20 @@ use crate::db::borrowers::user_exists;
 use crate::db::borrowers::verify_user;
 use crate::db::wallet_backups::NewBorrowerWalletBackup;
 use crate::email::Email;
+use crate::model::Borrower;
 use crate::model::ForgotPasswordSchema;
 use crate::model::LoginUserSchema;
 use crate::model::RegisterUserSchema;
 use crate::model::ResetPasswordSchema;
 use crate::model::TokenClaims;
-use crate::model::User;
 use crate::model::WalletBackupData;
 use crate::routes::borrower::auth::jwt_auth::auth;
-use crate::routes::lender::auth::FilteredUser;
 use crate::routes::user_connection_details_middleware;
 use crate::routes::user_connection_details_middleware::UserConnectionDetails;
 use crate::routes::AppState;
+use anyhow::anyhow;
+use axum::extract::rejection::JsonRejection;
+use axum::extract::FromRequest;
 use axum::extract::Path;
 use axum::extract::State;
 use axum::http::header;
@@ -40,6 +42,7 @@ use axum_extra::extract::cookie::SameSite;
 use jsonwebtoken::encode;
 use jsonwebtoken::EncodingKey;
 use jsonwebtoken::Header;
+use rust_decimal::Decimal;
 use serde::Serialize;
 use serde_json::json;
 use std::sync::Arc;
@@ -98,74 +101,56 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
 pub async fn register_user_handler(
     State(data): State<Arc<AppState>>,
     Json(body): Json<RegisterUserSchema>,
-) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+) -> Result<impl IntoResponse, Error> {
     let user_exists = user_exists(&data.db, body.email.as_str())
         .await
-        .map_err(|e| {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(ErrorResponse {
-                    message: format!("Database error: {}", e),
-                }),
-            )
-        })?;
+        .map_err(Error::Database)?;
 
     if user_exists {
-        return Err((
-            StatusCode::CONFLICT,
-            Json(ErrorResponse {
-                message: "User with that email already exists".to_string(),
-            }),
-        ));
+        return Err(Error::UserExists);
     }
 
-    let invite_code = match body.invite_code {
+    let referral_code_valid = match &body.invite_code {
         None => {
-            return Err((
-                StatusCode::BAD_REQUEST,
-                Json(ErrorResponse {
-                    message: "An invite code is required at this time".to_string(),
-                }),
-            ));
+            return Err(Error::InviteCodeRequired);
         }
-        Some(code) => db::invite_code::load_invite_code_borrower(&data.db, code.as_str()).await,
+        Some(code) => db::borrowers_referral_code::is_referral_code_valid(&data.db, code.as_str())
+            .await
+            .map_err(|e| Error::Database(anyhow!(e)))?,
     };
 
-    let invite_code = match invite_code {
-        Ok(Some(code)) => code,
-        Ok(None) | Err(_) => {
-            return Err((
-                StatusCode::BAD_REQUEST,
-                Json(ErrorResponse {
-                    message: "Provided invite code does not exist".to_string(),
-                }),
-            ));
-        }
-    };
-
-    if !invite_code.active {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ErrorResponse {
-                message: "Provided invite code is expired".to_string(),
-            }),
-        ));
+    if !referral_code_valid {
+        return Err(Error::InvalidReferralCode {
+            referral_code: body.invite_code.unwrap_or_default(),
+        });
     }
 
-    let user: User = register_user(
-        &data.db,
+    let mut tx = data
+        .db
+        .begin()
+        .await
+        .map_err(|e| Error::Database(anyhow!(e)))?;
+
+    let user = register_user(
+        &mut tx,
         body.name.as_str(),
         body.email.as_str(),
         body.password.as_str(),
-        Some(invite_code),
     )
     .await
-    .map_err(|e| {
-        let error_response = ErrorResponse {
-            message: format!("Database error: {}", e),
-        };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?;
+    .map_err(Error::Database)?;
+
+    if let Some(referral_code) = body.invite_code {
+        db::borrowers_referral_code::insert_referred_borrower(
+            &mut *tx,
+            referral_code.as_str(),
+            user.id.as_str(),
+        )
+        .await
+        .map_err(|e| Error::Database(anyhow!(e)))?;
+    }
+
+    tx.commit().await.map_err(|e| Error::Database(anyhow!(e)))?;
 
     db::wallet_backups::insert_borrower_backup(
         &data.db,
@@ -178,12 +163,7 @@ pub async fn register_user_handler(
         },
     )
     .await
-    .map_err(|e| {
-        let error_response = ErrorResponse {
-            message: format!("Database error: {}", e),
-        };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?;
+    .map_err(|e| Error::Database(anyhow!(e)))?;
 
     //  Create an Email instance
     let email = user.email.clone();
@@ -198,16 +178,15 @@ pub async fn register_user_handler(
     );
 
     let email_instance = Email::new(data.config.clone());
-    if let Err(err) = email_instance
-        .send_verification_code(user, verification_url.as_str(), verification_code.as_str())
+    email_instance
+        .send_verification_code(
+            user.name().as_str(),
+            user.email().as_str(),
+            verification_url.as_str(),
+            verification_code.as_str(),
+        )
         .await
-    {
-        tracing::error!("Failed sending email {err:#}");
-        let json_error = ErrorResponse {
-            message: "Something bad happended while sending the verification code".to_string(),
-        };
-        return Err((StatusCode::INTERNAL_SERVER_ERROR, Json(json_error)));
-    }
+        .map_err(Error::CouldNotSendVerificationEmail)?;
 
     let user_response = serde_json::json!({"message": format!("We sent an email with a verification code to {}", email)});
 
@@ -228,40 +207,58 @@ pub struct LoginResponse {
     pub wallet_backup_data: WalletBackupData,
 }
 
+#[derive(Debug, Serialize)]
+pub struct FilteredUser {
+    pub id: String,
+    pub name: String,
+    pub email: String,
+    pub verified: bool,
+    pub used_referral_code: Option<String>,
+    pub personal_referral_code: Option<String>,
+    #[serde(with = "rust_decimal::serde::float")]
+    pub first_time_discount_rate: Decimal,
+    #[serde(with = "time::serde::rfc3339")]
+    pub created_at: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339")]
+    pub updated_at: OffsetDateTime,
+}
+
+impl FilteredUser {
+    pub fn new_user(user: &Borrower) -> Self {
+        let created_at_utc = user.created_at;
+        let updated_at_utc = user.updated_at;
+        Self {
+            id: user.id.to_string(),
+            email: user.email.to_owned(),
+            name: user.name.to_owned(),
+            verified: user.verified,
+            used_referral_code: user.used_referral_code.clone(),
+            personal_referral_code: user.personal_referral_code.clone(),
+            first_time_discount_rate: user.first_time_discount_rate_referee.unwrap_or_default(),
+            created_at: created_at_utc,
+            updated_at: updated_at_utc,
+        }
+    }
+}
+
 pub async fn login_user_handler(
     State(data): State<Arc<AppState>>,
     Extension(connection_details): Extension<UserConnectionDetails>,
     Json(body): Json<LoginUserSchema>,
-) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let user: User = get_user_by_email(&data.db, body.email.as_str())
+) -> Result<impl IntoResponse, Error> {
+    let user = get_user_by_email(&data.db, body.email.as_str())
         .await
-        .map_err(|e| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {}", e),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?
-        .ok_or_else(|| {
-            let error_response = ErrorResponse {
-                message: "Invalid email or password".to_string(),
-            };
-            (StatusCode::BAD_REQUEST, Json(error_response))
-        })?;
+        .map_err(|e| Error::Database(anyhow!(e)))?
+        .ok_or(Error::InvalidEmail)?;
 
     if !user.verified {
-        let error_response = ErrorResponse {
-            message: "Please verify your email before you can log in".to_string(),
-        };
-        return Err((StatusCode::BAD_REQUEST, Json(error_response)));
+        return Err(Error::EmailNotVerified);
     }
 
     let is_valid = user.check_password(body.password.as_str());
 
     if !is_valid {
-        let error_response = ErrorResponse {
-            message: "Invalid email or password".to_string(),
-        };
-        return Err((StatusCode::BAD_REQUEST, Json(error_response)));
+        return Err(Error::InvalidPassword);
     }
 
     let now = OffsetDateTime::now_utc();
@@ -278,12 +275,7 @@ pub async fn login_user_handler(
         &claims,
         &EncodingKey::from_secret(data.config.jwt_secret.as_ref()),
     )
-    .map_err(|error| {
-        let error_response = ErrorResponse {
-            message: format!("Failed parsing token: {}", error),
-        };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?;
+    .map_err(Error::AuthSessionDecode)?;
 
     let cookie = Cookie::build(("token", token.to_owned()))
         .path("/")
@@ -293,12 +285,7 @@ pub async fn login_user_handler(
 
     let features = db::borrower_features::load_borrower_features(&data.db, user.id.clone())
         .await
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
+        .map_err(|error| Error::Database(anyhow!(error)))?;
 
     let features = features
         .iter()
@@ -315,22 +302,16 @@ pub async fn login_user_handler(
         .collect::<Vec<_>>();
 
     if features.is_empty() {
-        let error_response = ErrorResponse {
-            message: "No features enabled".to_string(),
-        };
-        return Err((StatusCode::INTERNAL_SERVER_ERROR, Json(error_response)));
+        return Err(Error::NoFeaturesEnabled {
+            borrower_id: user.id,
+        });
     }
 
     let filtered_user = FilteredUser::new_user(&user);
 
     let wallet_backup = db::wallet_backups::find_by_borrower_id(&data.db, user.id.as_str())
         .await
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Failed reading wallet backup: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
+        .map_err(|error| Error::Database(anyhow!(error)))?;
 
     let wallet_backup_data = WalletBackupData {
         passphrase_hash: wallet_backup.passphrase_hash,
@@ -376,12 +357,7 @@ pub async fn login_user_handler(
             })
             .to_string(),
         )
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Failed parsing cookie: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
+        .map_err(|_error| Error::AuthSession)?;
     Ok(response)
 }
 
@@ -390,7 +366,7 @@ pub async fn verify_email_handler(
     State(data): State<Arc<AppState>>,
     Path(verification_code): Path<String>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let user: User = get_user_by_verification_code(&data.db, verification_code.as_str())
+    let user: Borrower = get_user_by_verification_code(&data.db, verification_code.as_str())
         .await
         .map_err(|e| {
             let error_response = ErrorResponse {
@@ -437,7 +413,7 @@ pub async fn forgot_password_handler(
     let success_message = "You will receive a password reset link via email.";
     let email_address = body.email.to_owned().to_ascii_lowercase();
 
-    let user: User = get_user_by_email(&data.db, body.email.as_str())
+    let user: Borrower = get_user_by_email(&data.db, body.email.as_str())
         .await
         .map_err(|e| {
             let error_response = ErrorResponse {
@@ -472,7 +448,8 @@ pub async fn forgot_password_handler(
     let email_instance = Email::new(data.config.clone());
     if let Err(error) = email_instance
         .send_password_reset_token(
-            user.clone(),
+            user.name().as_str(),
+            user.email().as_str(),
             PASSWORD_TOKEN_EXPIRES_IN_MINUTES,
             password_reset_url.as_str(),
         )
@@ -516,7 +493,7 @@ pub async fn reset_password_handler(
         return Err((StatusCode::BAD_REQUEST, Json(error_response)));
     }
 
-    let user: User = get_user_by_rest_token(&data.db, password_reset_token.as_str())
+    let user: Borrower = get_user_by_rest_token(&data.db, password_reset_token.as_str())
         .await
         .map_err(|e| {
             let error_response = ErrorResponse {
@@ -591,7 +568,7 @@ pub struct MeResponse {
 #[instrument(skip_all, err(Debug, level = Level::DEBUG))]
 pub async fn get_me_handler(
     State(data): State<Arc<AppState>>,
-    Extension(user): Extension<User>,
+    Extension(user): Extension<Borrower>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     let filtered_user = FilteredUser::new_user(&user);
 
@@ -636,7 +613,7 @@ pub async fn get_me_handler(
 
 #[instrument(skip_all, err(Debug, level = Level::DEBUG))]
 pub async fn check_auth_handler(
-    Extension(_user): Extension<User>,
+    Extension(_user): Extension<Borrower>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     Ok(())
 }
@@ -655,4 +632,133 @@ pub struct UserResponse {
 #[derive(Debug, Serialize)]
 pub struct ErrorResponse {
     pub message: String,
+}
+
+// Create our own JSON extractor by wrapping `axum::Json`. This makes it easy to override the
+// rejection and provide our own which formats errors to match our application.
+//
+// `axum::Json` responds with plain text if the input is invalid.
+#[derive(Debug, FromRequest)]
+#[from_request(via(Json), rejection(Error))]
+struct AppJson<T>(T);
+
+impl<T> IntoResponse for AppJson<T>
+where
+    Json<T>: IntoResponse,
+{
+    fn into_response(self) -> Response {
+        Json(self.0).into_response()
+    }
+}
+
+#[derive(Debug)]
+pub enum Error {
+    /// The request body contained invalid JSON.
+    JsonRejection(JsonRejection),
+    /// Failed to interact with the database.
+    Database(anyhow::Error),
+    /// User with this email already exists
+    UserExists,
+    /// User with this email does not exist
+    InvalidEmail,
+    /// No invite code provided
+    InviteCodeRequired,
+    /// Invalid or expired referral code
+    InvalidReferralCode { referral_code: String },
+    /// Failed sending notification email
+    CouldNotSendVerificationEmail(anyhow::Error),
+    /// User did not verify its email
+    EmailNotVerified,
+    /// User password and email did not match
+    InvalidPassword,
+    /// Could not decode the user's authentication session token
+    AuthSessionDecode(jsonwebtoken::errors::Error),
+    /// Session was not valid
+    AuthSession,
+    /// No features enabled for the user
+    NoFeaturesEnabled { borrower_id: String },
+}
+
+impl From<JsonRejection> for Error {
+    fn from(rejection: JsonRejection) -> Self {
+        Self::JsonRejection(rejection)
+    }
+}
+
+/// Tell `axum` how [`Error`] should be converted into a response.
+///
+/// This is also a convenient place to log errors.
+impl IntoResponse for Error {
+    fn into_response(self) -> Response {
+        /// How we want error responses to be serialized.
+        #[derive(Serialize)]
+        struct ErrorResponse {
+            message: String,
+        }
+
+        let (status, message) = match self {
+            Error::JsonRejection(rejection) => {
+                // This error is caused by bad user input so don't log it
+                (rejection.status(), rejection.body_text())
+            }
+            Error::Database(e) => {
+                // If we configure `tracing` properly, we don't need to add extra context here!
+                tracing::error!("Database error: {e:#}");
+
+                // Don't expose any details about the error to the client.
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
+            Error::UserExists => (StatusCode::CONFLICT, "Email already used".to_owned()),
+            Error::InviteCodeRequired => (
+                StatusCode::BAD_REQUEST,
+                "An invite code is required at this time".to_owned(),
+            ),
+            Error::InvalidReferralCode { referral_code } => {
+                tracing::warn!(referral_code, "User tried invalid referral code");
+                (StatusCode::BAD_REQUEST, "Invalid referral code".to_owned())
+            }
+            Error::CouldNotSendVerificationEmail(error) => {
+                tracing::error!("Could not send mail to verify email {error:#}");
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
+            Error::InvalidEmail => (
+                StatusCode::BAD_REQUEST,
+                "Invalid email or password".to_owned(),
+            ),
+            Error::EmailNotVerified => (
+                StatusCode::BAD_REQUEST,
+                "Please verify your email before you can log in".to_owned(),
+            ),
+            Error::InvalidPassword => (
+                StatusCode::UNAUTHORIZED,
+                "Invalid email or password".to_owned(),
+            ),
+            Error::AuthSessionDecode(error) => {
+                tracing::error!("Failed at decoding auth session {error:#}");
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong.".to_owned(),
+                )
+            }
+            Error::AuthSession => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Something went wrong.".to_owned(),
+            ),
+            Error::NoFeaturesEnabled { borrower_id } => {
+                tracing::error!(borrower_id, "No features enabled for user");
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong.".to_owned(),
+                )
+            }
+        };
+
+        (status, AppJson(ErrorResponse { message })).into_response()
+    }
 }

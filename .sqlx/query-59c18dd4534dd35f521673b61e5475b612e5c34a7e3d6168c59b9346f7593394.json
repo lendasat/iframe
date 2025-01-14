@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT * FROM borrowers WHERE id = $1",
+  "query": "\n        WITH inserted AS (\n            INSERT INTO borrowers (id, name, email, password, verification_code)\n            VALUES ($1, $2, $3, $4, $5)\n            RETURNING *\n        )\n        SELECT \n            b.*,\n            rb.referral_code as used_referral_code,\n            rcb.first_time_discount_rate_referee\n        FROM inserted b\n        LEFT JOIN referred_borrowers rb ON rb.referred_borrower_id = b.id\n        LEFT JOIN referral_codes_borrowers rcb ON rcb.code = rb.referral_code\n    ",
   "describe": {
     "columns": [
       {
@@ -45,23 +45,32 @@
       },
       {
         "ordinal": 8,
-        "name": "invite_code",
-        "type_info": "Int4"
-      },
-      {
-        "ordinal": 9,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 10,
+        "ordinal": 9,
         "name": "updated_at",
         "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 10,
+        "name": "used_referral_code",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 11,
+        "name": "first_time_discount_rate_referee",
+        "type_info": "Numeric"
       }
     ],
     "parameters": {
       "Left": [
-        "Bpchar"
+        "Bpchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar"
       ]
     },
     "nullable": [
@@ -73,10 +82,11 @@
       true,
       true,
       true,
-      true,
       false,
-      false
+      false,
+      true,
+      true
     ]
   },
-  "hash": "be4841a84b5c2c5d25644f1da58f9aebcf8997a957edfd05ba57c014eb6dd2bd"
+  "hash": "59c18dd4534dd35f521673b61e5475b612e5c34a7e3d6168c59b9346f7593394"
 }

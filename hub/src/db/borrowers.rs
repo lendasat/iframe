@@ -1,6 +1,5 @@
-use crate::model::InviteCode;
-use crate::model::User;
 use anyhow::anyhow;
+use anyhow::Context;
 use anyhow::Result;
 use argon2::password_hash::rand_core::OsRng;
 use argon2::password_hash::SaltString;
@@ -8,42 +7,119 @@ use argon2::Argon2;
 use argon2::PasswordHasher;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
+use rust_decimal::Decimal;
 use sqlx::Pool;
 use sqlx::Postgres;
 use time::OffsetDateTime;
 
 const VERIFICATION_CODE_LENGTH: usize = 6;
 
+#[derive(Debug, sqlx::FromRow, Clone)]
+pub struct Borrower {
+    pub id: String,
+    pub name: String,
+    pub email: String,
+    pub password: String,
+    pub verified: bool,
+    pub verification_code: Option<String>,
+    pub used_referral_code: Option<String>,
+    pub password_reset_token: Option<String>,
+    pub first_time_discount_rate_referee: Option<Decimal>,
+    pub password_reset_at: Option<OffsetDateTime>,
+    pub created_at: OffsetDateTime,
+    pub updated_at: OffsetDateTime,
+}
+
+fn new_model_borrower(
+    borrower: Borrower,
+    personal_referral_code: Option<String>,
+) -> crate::model::Borrower {
+    crate::model::Borrower {
+        id: borrower.id,
+        name: borrower.name,
+        email: borrower.email,
+        password: borrower.password,
+        verified: borrower.verified,
+        verification_code: borrower.verification_code,
+        used_referral_code: borrower.used_referral_code,
+        personal_referral_code,
+        first_time_discount_rate_referee: borrower.first_time_discount_rate_referee,
+        password_reset_token: borrower.password_reset_token,
+        password_reset_at: borrower.password_reset_at,
+        created_at: borrower.created_at,
+        updated_at: borrower.updated_at,
+    }
+}
+
 /// Inserts a new user and returns said user
 ///
 /// Fails if user with provided email already exists
 pub async fn register_user(
-    pool: &Pool<Postgres>,
+    transaction: &mut sqlx::Transaction<'_, Postgres>,
     name: &str,
     email: &str,
     password: &str,
-    invite_code: Option<InviteCode>,
-) -> Result<User> {
+) -> Result<crate::model::Borrower> {
+    let id = uuid::Uuid::new_v4().to_string();
     let hashed_password = generate_hashed_password(password)?;
     let verification_code = generate_random_string(VERIFICATION_CODE_LENGTH);
-    let invite_code = invite_code.map(|code| code.id);
 
-    let id = uuid::Uuid::new_v4().to_string();
-    let user: User = sqlx::query_as!(
-        User,
-        "INSERT INTO borrowers (id, name, email, password, verification_code, invite_code)
-            VALUES ($1, $2, $3, $4, $5, $6)
-            RETURNING *",
+    // First get the user with used referral code info
+    // here we don't have to adjust the `first_time_discount_rate_referee` because the user can't
+    // have any contracts yet
+    let base_user = sqlx::query_as!(
+        Borrower,
+        r#"
+        WITH inserted AS (
+            INSERT INTO borrowers (id, name, email, password, verification_code)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING *
+        )
+        SELECT 
+            b.*,
+            rb.referral_code as used_referral_code,
+            rcb.first_time_discount_rate_referee
+        FROM inserted b
+        LEFT JOIN referred_borrowers rb ON rb.referred_borrower_id = b.id
+        LEFT JOIN referral_codes_borrowers rcb ON rcb.code = rb.referral_code
+    "#,
         id,
         name,
         email.to_ascii_lowercase(),
         hashed_password,
         verification_code,
-        invite_code,
     )
-    .fetch_one(pool)
+    .fetch_one(&mut **transaction)
     .await?;
-    Ok(user)
+
+    // next we enhance it with a personal code
+    let borrower = enhance_with_personal_code(&mut **transaction, base_user).await?;
+
+    Ok(borrower)
+}
+
+async fn enhance_with_personal_code<'a, E>(
+    pool: E,
+    base_user: Borrower,
+) -> Result<crate::model::Borrower>
+where
+    E: sqlx::Executor<'a, Database = Postgres>,
+{
+    // Then get their personal referral code if it exists
+    let personal_code = sqlx::query!(
+        r#"
+    SELECT code 
+    FROM referral_codes_borrowers 
+    WHERE referrer_id = $1
+    "#,
+        base_user.id
+    )
+    .fetch_optional(pool)
+    .await?;
+
+    // Create the final user struct
+    let borrower = new_model_borrower(base_user, personal_code.map(|r| r.code));
+    Ok(borrower)
 }
 
 pub async fn user_exists(pool: &Pool<Postgres>, email: &str) -> Result<bool> {
@@ -52,48 +128,99 @@ pub async fn user_exists(pool: &Pool<Postgres>, email: &str) -> Result<bool> {
     Ok(maybe_user.is_some())
 }
 
-pub async fn get_user_by_email(pool: &Pool<Postgres>, email: &str) -> Result<Option<User>> {
+pub async fn get_user_by_email(
+    pool: &Pool<Postgres>,
+    email: &str,
+) -> Result<Option<crate::model::Borrower>> {
     let email = email.to_ascii_lowercase();
-    let maybe_user = sqlx::query_as!(User, "SELECT * FROM borrowers WHERE email = $1", email)
-        .fetch_optional(pool)
-        .await?;
-    Ok(maybe_user)
-}
-pub async fn get_user_by_id(pool: &Pool<Postgres>, id: &str) -> Result<Option<User>> {
-    let maybe_user = sqlx::query_as!(User, "SELECT * FROM borrowers WHERE id = $1", id)
-        .fetch_optional(pool)
-        .await?;
-    Ok(maybe_user)
-}
+    // TODO: try to merge the `enhance` part again
+    let maybe_base_user = sqlx::query_as!(
+        crate::model::Borrower,
+        r#"SELECT 
+           id as "id!",
+           name as "name!",
+           email as "email!",
+           password as "password!",
+           verified as "verified!",
+           verification_code,
+           password_reset_token,
+           used_referral_code,
+           personal_referral_code,
+           first_time_discount_rate_referee,
+           password_reset_at,
+           created_at as "created_at!",
+           updated_at as "updated_at!"
+           FROM borrower_discount_info where email = $1
+        "#,
+        email
+    )
+    .fetch_optional(pool)
+    .await
+    .context("failed loading")?;
 
+    Ok(maybe_base_user)
+}
+pub async fn get_user_by_id(
+    pool: &Pool<Postgres>,
+    id: &str,
+) -> Result<Option<crate::model::Borrower>> {
+    let maybe_base_user = sqlx::query_as!(
+        crate::model::Borrower,
+        r#"SELECT 
+           id as "id!",
+           name as "name!",
+           email as "email!",
+           password as "password!",
+           verified as "verified!",
+           verification_code,
+           password_reset_token,
+           used_referral_code,
+           personal_referral_code,
+           first_time_discount_rate_referee,
+           password_reset_at,
+           created_at as "created_at!",
+           updated_at as "updated_at!"
+           FROM borrower_discount_info where id = $1
+        "#,
+        id
+    )
+    .fetch_optional(pool)
+    .await
+    .context("failed loading")?;
+
+    Ok(maybe_base_user)
+}
 pub async fn get_user_by_verification_code(
     pool: &Pool<Postgres>,
     verification_code: &str,
-) -> Result<Option<User>> {
+) -> Result<Option<crate::model::Borrower>> {
     let verification_code = verification_code.to_ascii_lowercase();
-    let maybe_user = sqlx::query_as!(
-        User,
-        "SELECT 
-            id,
-            name,
-            email,
-            password,
-            verified,
-            verification_code,
-            invite_code,
-            password_reset_token,
-            password_reset_at,
-            created_at,
-            updated_at
-        FROM borrowers 
-            WHERE verification_code = $1",
+    let maybe_base_user = sqlx::query_as!(
+        crate::model::Borrower,
+        r#"SELECT 
+           id as "id!",
+           name as "name!",
+           email as "email!",
+           password as "password!",
+           verified as "verified!",
+           verification_code,
+           password_reset_token,
+           used_referral_code,
+           personal_referral_code,
+           first_time_discount_rate_referee,
+           password_reset_at,
+           created_at as "created_at!",
+           updated_at as "updated_at!"
+           FROM borrower_discount_info where verification_code = $1
+        "#,
         verification_code
     )
     .fetch_optional(pool)
-    .await?;
-    Ok(maybe_user)
-}
+    .await
+    .context("failed loading")?;
 
+    Ok(maybe_base_user)
+}
 pub async fn verify_user(pool: &Pool<Postgres>, verification_code: &str) -> Result<()> {
     let verification_code = verification_code.to_ascii_lowercase();
     sqlx::query!(
@@ -133,19 +260,32 @@ pub async fn update_password_reset_token_for_user(
 pub async fn get_user_by_rest_token(
     pool: &Pool<Postgres>,
     password_reset_token: &str,
-) -> Result<Option<User>> {
-    let maybe_user = sqlx::query_as!(
-        User,
-        "SELECT *
-            FROM borrowers
-            WHERE password_reset_token = $1
-          AND password_reset_at > $2",
-        password_reset_token,
-        OffsetDateTime::now_utc(),
+) -> Result<Option<crate::model::Borrower>> {
+    let maybe_base_user = sqlx::query_as!(
+        crate::model::Borrower,
+        r#"SELECT 
+           id as "id!",
+           name as "name!",
+           email as "email!",
+           password as "password!",
+           verified as "verified!",
+           verification_code,
+           password_reset_token,
+           used_referral_code,
+           personal_referral_code,
+           first_time_discount_rate_referee,
+           password_reset_at,
+           created_at as "created_at!",
+           updated_at as "updated_at!"
+           FROM borrower_discount_info where password_reset_token = $1
+        "#,
+        password_reset_token
     )
     .fetch_optional(pool)
-    .await?;
-    Ok(maybe_user)
+    .await
+    .context("failed loading")?;
+
+    Ok(maybe_base_user)
 }
 
 pub async fn update_user_password(

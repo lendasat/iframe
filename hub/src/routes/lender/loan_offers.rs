@@ -1,7 +1,7 @@
 use crate::db;
 use crate::model::lender_feature_flags;
 use crate::model::CreateLoanOfferSchema;
-use crate::model::User;
+use crate::model::Lender;
 use crate::routes::lender::auth;
 use crate::routes::lender::AppState;
 use axum::extract::Path;
@@ -57,7 +57,7 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
 #[instrument(skip_all, err(Debug))]
 pub async fn create_loan_offer(
     State(data): State<Arc<AppState>>,
-    Extension(user): Extension<User>,
+    Extension(user): Extension<Lender>,
     Json(body): Json<CreateLoanOfferSchema>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     if body.min_ltv > dec!(1.0) || body.min_ltv < Decimal::zero() {
@@ -115,7 +115,7 @@ pub async fn create_loan_offer(
 #[instrument(skip_all, err(Debug))]
 pub async fn get_loan_offers_by_lender(
     State(data): State<Arc<AppState>>,
-    Extension(user): Extension<User>,
+    Extension(user): Extension<Lender>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     // TODO: don't return the db object here but map it to a different one so that we can enhance it
     // with more data.
@@ -134,7 +134,7 @@ pub async fn get_loan_offers_by_lender(
 #[instrument(skip_all, err(Debug))]
 pub async fn get_loan_offer_by_lender_and_offer_id(
     State(data): State<Arc<AppState>>,
-    Extension(user): Extension<User>,
+    Extension(user): Extension<Lender>,
     Path(offer_id): Path<String>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     let loan = db::loan_offers::get_loan_offer_by_lender_and_offer_id(
@@ -156,7 +156,7 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
 #[instrument(skip_all, err(Debug))]
 pub async fn delete_loan_offer_by_lender_and_offer_id(
     State(data): State<Arc<AppState>>,
-    Extension(user): Extension<User>,
+    Extension(user): Extension<Lender>,
     Path(offer_id): Path<String>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     db::loan_offers::mark_as_deleted_by_lender_and_offer_id(

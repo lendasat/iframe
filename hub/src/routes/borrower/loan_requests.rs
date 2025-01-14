@@ -1,6 +1,6 @@
 use crate::db;
+use crate::model::Borrower;
 use crate::model::CreateLoanRequestSchema;
-use crate::model::User;
 use crate::routes::borrower::auth;
 use crate::routes::borrower::AppState;
 use axum::extract::Path;
@@ -58,7 +58,7 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
 #[instrument(skip_all, err(Debug))]
 pub async fn create_loan_request(
     State(data): State<Arc<AppState>>,
-    Extension(user): Extension<User>,
+    Extension(user): Extension<Borrower>,
     Json(body): Json<CreateLoanRequestSchema>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     if body.ltv > dec!(1.0) || body.ltv < Decimal::zero() {
@@ -100,7 +100,7 @@ pub async fn create_loan_request(
 #[instrument(skip_all, err(Debug))]
 pub async fn get_loan_requests_by_borrower(
     State(data): State<Arc<AppState>>,
-    Extension(user): Extension<User>,
+    Extension(user): Extension<Borrower>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     let loans = db::loan_requests::load_all_loan_requests_by_borrower(&data.db, user.id.as_str())
         .await
@@ -117,7 +117,7 @@ pub async fn get_loan_requests_by_borrower(
 #[instrument(skip_all, err(Debug))]
 pub async fn get_loan_request_by_borrower_and_request_id(
     State(data): State<Arc<AppState>>,
-    Extension(user): Extension<User>,
+    Extension(user): Extension<Borrower>,
     Path(offer_id): Path<String>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     let loan = db::loan_requests::get_loan_request_by_borrower_and_request_id(
@@ -139,7 +139,7 @@ pub async fn get_loan_request_by_borrower_and_request_id(
 #[instrument(skip_all, err(Debug))]
 pub async fn delete_loan_request_by_borrower_and_request_id(
     State(data): State<Arc<AppState>>,
-    Extension(user): Extension<User>,
+    Extension(user): Extension<Borrower>,
     Path(offer_id): Path<String>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     db::loan_requests::mark_as_deleted_by_borrower_and_request_id(
