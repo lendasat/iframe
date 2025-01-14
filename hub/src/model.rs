@@ -830,33 +830,6 @@ pub struct BorrowerLoanFeature {
     pub is_enabled: bool,
 }
 
-#[derive(Debug, Serialize)]
-pub struct FilteredUser {
-    pub id: String,
-    pub name: String,
-    pub email: String,
-    pub verified: bool,
-    #[serde(with = "time::serde::rfc3339")]
-    pub created_at: OffsetDateTime,
-    #[serde(with = "time::serde::rfc3339")]
-    pub updated_at: OffsetDateTime,
-}
-
-impl FilteredUser {
-    pub fn new_user(user: &Borrower) -> Self {
-        let created_at_utc = user.created_at;
-        let updated_at_utc = user.updated_at;
-        Self {
-            id: user.id.to_string(),
-            email: user.email.to_owned(),
-            name: user.name.to_owned(),
-            verified: user.verified,
-            created_at: created_at_utc,
-            updated_at: updated_at_utc,
-        }
-    }
-}
-
 #[derive(Debug)]
 pub struct ManualCollateralRecovery {
     pub id: i64,

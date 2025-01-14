@@ -409,12 +409,12 @@ impl Email {
         .await
     }
 
-    pub async fn send_loan_request_rejected(&self, lender: Borrower, url: &str) -> Result<()> {
+    pub async fn send_loan_request_rejected(&self, borrower: Borrower, url: &str) -> Result<()> {
         let template_name = "loan_request_rejected";
         let handlebars = Self::prepare_template(template_name)?;
 
         let data = serde_json::json!({
-            "first_name": &lender.name,
+            "first_name": &borrower.name,
             "subject": &template_name,
             "url": url
         });
@@ -423,8 +423,8 @@ impl Email {
 
         self.send_email(
             "Your loan request has been declined",
-            lender.name.as_str(),
-            lender.email.as_str(),
+            borrower.name.as_str(),
+            borrower.email.as_str(),
             content_template,
         )
         .await

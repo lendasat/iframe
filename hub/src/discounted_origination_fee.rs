@@ -9,7 +9,7 @@ pub enum Error {
     Database(sqlx::Error),
 }
 
-pub async fn calculate_discounted_origination_rate(
+pub async fn calculate_discounted_origination_fee_rate(
     db: &Pool<Postgres>,
     original_origination_rate: Decimal,
     user_id: &str,

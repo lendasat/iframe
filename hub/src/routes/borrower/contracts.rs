@@ -233,17 +233,18 @@ async fn post_contract_request(
         .ok_or(Error::MissingOriginationFee)?;
 
     // If the user has a discount code, we reduce the origination fee for him
-    let origination_fee = discounted_origination_fee::calculate_discounted_origination_rate(
-        &data.db,
-        origination_fee.fee,
-        user.id.as_str(),
-    )
-    .await
-    .map_err(Error::from)?;
+    let origination_fee_rate =
+        discounted_origination_fee::calculate_discounted_origination_fee_rate(
+            &data.db,
+            origination_fee.fee,
+            user.id.as_str(),
+        )
+        .await
+        .map_err(Error::from)?;
 
     let origination_fee_amount = contract_requests::calculate_origination_fee(
         body.loan_amount,
-        origination_fee,
+        origination_fee_rate,
         initial_price,
     )
     .map_err(Error::OriginationFeeCalculation)?;

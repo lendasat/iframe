@@ -290,7 +290,7 @@ pub async fn put_principal_given(
         );
         let borrower = db::borrowers::get_user_by_id(&data.db, contract.borrower_id.as_str())
             .await?
-            .context("Lender not found")?;
+            .context("Borrower not found")?;
 
         let email = Email::new(data.config.clone());
 
@@ -342,7 +342,7 @@ pub async fn delete_reject_contract(
 
         let borrower = db::borrowers::get_user_by_id(&data.db, contract.borrower_id.as_str())
             .await?
-            .context("Lender not found")?;
+            .context("Borrower not found")?;
 
         let email = Email::new(data.config.clone());
         email
@@ -771,7 +771,7 @@ async fn post_liquidation_tx(
 
         let borrower = db::borrowers::get_user_by_id(&data.db, contract.borrower_id.as_str())
             .await?
-            .context("Lender not found")?;
+            .context("Borrower not found")?;
 
         let loan_url = format!(
             "{}/my-contracts/{}",
