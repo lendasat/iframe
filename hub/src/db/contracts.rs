@@ -887,7 +887,7 @@ pub(crate) async fn default_expired_contracts(
                 status = $1, 
                 updated_at = $2
             WHERE
-                id NOT IN (SELECT id FROM expired_open_contracts)
+                id IN (SELECT id FROM expired_open_contracts)
             RETURNING id, borrower_id, lender_id;
         "#,
         db::ContractStatus::Defaulted as db::ContractStatus,
