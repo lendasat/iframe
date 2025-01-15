@@ -10,8 +10,8 @@ export interface InterestRateInfoLabelProps {
 export function InterestRateInfoLabel({ children }: InterestRateInfoLabelProps) {
   return (
     <AbbreviationExplanationInfo
-      header={"Yearly Interest Rate"}
-      description={`The yearly interest rate is used to calculate the total interest cost over the loan term.
+      header={"Actual Interest Rate"}
+      description={`The yearly interest rate is used to calculate the effective interest cost over the loan term.
 For example, given a $1000 loan and a yearly interest rate of 12%, the monthly interest rate is 1%.
 For a loan duration of 5 months, this amounts to $50 interest. Thus the borrower owes a total of $1050.`}
     >
