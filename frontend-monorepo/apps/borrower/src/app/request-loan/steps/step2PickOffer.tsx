@@ -355,7 +355,7 @@ export const Step2PickOffer = () => {
       });
 
       if (res !== undefined) {
-        navigate("/my-contracts");
+        navigate(`/my-contracts/${res.id}`);
       } else {
         setError("Failed at posting request.");
       }
