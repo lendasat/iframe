@@ -251,6 +251,7 @@ const CreateLoanOffer: FC = () => {
                       value={loanReserve}
                       min={loanAmount.max}
                       step={1}
+                      disabled={!autoApproveEnabled}
                       onChange={(e) => {
                         setLoanReserve(Number(e.target.value));
                         setAutoAccept(true);
