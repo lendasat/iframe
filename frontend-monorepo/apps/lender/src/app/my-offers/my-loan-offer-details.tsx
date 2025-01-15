@@ -9,7 +9,7 @@ import { useState } from "react";
 import { FaPenNib } from "react-icons/fa";
 import { IoReceipt } from "react-icons/io5";
 import { MdOutlineSwapCalls } from "react-icons/md";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useAsync } from "react-use";
 import BannerImg from "./../../assets/banner.png";
 import LendasatLogo from "./../../assets/lendasat.png";
@@ -21,6 +21,8 @@ function MyLoanOfferDetails() {
   const { id } = useParams();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
 
   const layout = window;
 
@@ -54,6 +56,8 @@ function MyLoanOfferDetails() {
     setLoading(true);
     try {
       await deleteLoanOffer(id);
+      setIsOpen(false);
+      navigate(0);
     } catch (error) {
       setError(`${error}`);
     } finally {
@@ -449,9 +453,9 @@ function MyLoanOfferDetails() {
               {/* Delete Offer */}
               {offer.status !== LoanOfferStatus.Deleted
                 && (
-                  <Dialog.Root>
+                  <Dialog.Root open={isOpen}>
                     <Dialog.Trigger>
-                      <Button size={"3"} color="tomato">
+                      <Button size={"3"} color="tomato" onClick={() => setIsOpen(true)}>
                         <Text as="span" size={"2"} weight={"medium"}>
                           Retract Offer
                         </Text>

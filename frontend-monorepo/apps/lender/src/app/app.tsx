@@ -58,7 +58,7 @@ const menuItems = [
         visible: true,
       },
       {
-        label: "loan proposal",
+        label: "My Loan Offers",
         path: "/my-offers",
         icon: BsBank,
         target: "_self",
