@@ -355,7 +355,7 @@ export const Step2PickOffer = () => {
       });
 
       if (res !== undefined) {
-        navigate("/my-contracts");
+        navigate(`/my-contracts/${res.id}`);
       } else {
         setError("Failed at posting request.");
       }
@@ -796,9 +796,24 @@ const LoanSearched = (props: SearchParams) => {
             </InterestRateInfoLabel>
 
             <div className="flex flex-col">
-              <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
-                {(props.interest * 100).toFixed(1)}% per year
-              </Text>
+              {props.duration !== 12
+                && (
+                  <Flex gap={"2"}>
+                    <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70">
+                      {(actualInterest * 100).toFixed(2)}%
+                    </Text>
+                    <Text className="text-[11px] text-font/70 dark:text-font-dark/50 mt-0.5 self-end">
+                      ({(props.interest * 100).toFixed(1)}% p.a.)
+                    </Text>
+                  </Flex>
+                )}
+              {props.duration === 12
+                && (
+                  <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70">
+                    {(actualInterest * 100).toFixed(2)}% p.a.
+                  </Text>
+                )}
+
               <Text className="text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-end">
                 ≈ {formatCurrency(actualInterestUsdAmount, 1, 1)} in total
               </Text>
