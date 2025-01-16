@@ -279,7 +279,7 @@ pub async fn load_open_contracts(pool: &Pool<Postgres>) -> Result<Vec<Contract>>
             interest_rate as "interest_rate!",
             created_at as "created_at!",
             updated_at as "updated_at!"
-        FROM open_contracts"#,
+        FROM contracts_to_be_watched"#,
     )
     .fetch_all(pool)
     .await?;
