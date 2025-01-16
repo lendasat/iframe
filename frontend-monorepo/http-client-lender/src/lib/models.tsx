@@ -24,6 +24,8 @@ export enum ContractStatus {
   RequestExpired = "RequestExpired",
 }
 
+export const ALL_CONTRACT_STATUSES = Object.values(ContractStatus) as ContractStatus[];
+
 export interface BorrowerProfile {
   id: string;
   name: string;

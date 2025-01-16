@@ -1,4 +1,9 @@
-import { type Contract, ContractStatus } from "@frontend-monorepo/http-client-lender";
+import {
+  ALL_CONTRACT_STATUSES,
+  type Contract,
+  ContractStatus,
+  contractStatusToLabelString,
+} from "@frontend-monorepo/http-client-lender";
 import { usePrice } from "@frontend-monorepo/ui-shared";
 import { MixerHorizontalIcon } from "@radix-ui/react-icons";
 import * as Label from "@radix-ui/react-label";
@@ -214,166 +219,21 @@ export const AllContracts = ({ contracts: unfilteredContracts, header }: OpenCon
               </DropdownMenu.Trigger>
 
               <DropdownMenu.Content size="1">
-                <DropdownMenu.Item
-                  onSelect={(e) => e.preventDefault()}
-                >
-                  <Flex gap="2" align="center">
-                    <Checkbox
-                      checked={contractStatusFilter.includes(ContractStatus.Requested)}
-                      onCheckedChange={() => toggleContractStatusFilter(ContractStatus.Requested)}
-                    />
-                    <Text>Requested</Text>
-                  </Flex>
-                </DropdownMenu.Item>
-
-                <DropdownMenu.Item
-                  onSelect={(e) => e.preventDefault()}
-                >
-                  <Flex gap="2" align="center">
-                    <Checkbox
-                      checked={contractStatusFilter.includes(ContractStatus.Approved)
-                        || contractStatusFilter.includes(ContractStatus.CollateralSeen)
-                        || contractStatusFilter.includes(ContractStatus.CollateralConfirmed)}
-                      onCheckedChange={() => {
-                        toggleContractStatusFilter(ContractStatus.Approved);
-                        toggleContractStatusFilter(ContractStatus.CollateralSeen);
-                        toggleContractStatusFilter(ContractStatus.CollateralConfirmed);
-                      }}
-                    />
-                    <Text>Opening</Text>
-                  </Flex>
-                </DropdownMenu.Item>
-
-                <DropdownMenu.Item
-                  onSelect={(e) => e.preventDefault()}
-                >
-                  <Flex gap="2" align="center">
-                    <Checkbox
-                      checked={contractStatusFilter.includes(ContractStatus.PrincipalGiven)}
-                      onCheckedChange={() => toggleContractStatusFilter(ContractStatus.PrincipalGiven)}
-                    />
-                    <Text>Open</Text>
-                  </Flex>
-                </DropdownMenu.Item>
-
-                <DropdownMenu.Item
-                  onSelect={(e) => e.preventDefault()}
-                >
-                  <Flex gap="2" align="center">
-                    <Checkbox
-                      checked={contractStatusFilter.includes(ContractStatus.RepaymentProvided)}
-                      onCheckedChange={() => toggleContractStatusFilter(ContractStatus.RepaymentProvided)}
-                    />
-                    <Text>Repayment provided</Text>
-                  </Flex>
-                </DropdownMenu.Item>
-
-                <DropdownMenu.Item
-                  onSelect={(e) => e.preventDefault()}
-                >
-                  <Flex gap="2" align="center">
-                    <Checkbox
-                      checked={contractStatusFilter.includes(ContractStatus.Closing)
-                        || contractStatusFilter.includes(ContractStatus.RepaymentConfirmed)}
-                      onCheckedChange={() => {
-                        toggleContractStatusFilter(ContractStatus.Closing);
-                        toggleContractStatusFilter(ContractStatus.RepaymentConfirmed);
-                      }}
-                    />
-                    <Text>Closing</Text>
-                  </Flex>
-                </DropdownMenu.Item>
-
-                <DropdownMenu.Item
-                  onSelect={(e) => e.preventDefault()}
-                >
-                  <Flex gap="2" align="center">
-                    <Checkbox
-                      checked={contractStatusFilter.includes(ContractStatus.Closed)}
-                      onCheckedChange={() => toggleContractStatusFilter(ContractStatus.Closed)}
-                    />
-                    <Text>Closed</Text>
-                  </Flex>
-                </DropdownMenu.Item>
-
-                <DropdownMenu.Item
-                  onSelect={(e) => e.preventDefault()}
-                >
-                  <Flex gap="2" align="center">
-                    <Checkbox
-                      checked={contractStatusFilter.includes(ContractStatus.Rejected)}
-                      onCheckedChange={() => toggleContractStatusFilter(ContractStatus.Rejected)}
-                    />
-                    <Text>Rejected</Text>
-                  </Flex>
-                </DropdownMenu.Item>
-
-                <DropdownMenu.Item
-                  onSelect={(e) => e.preventDefault()}
-                >
-                  <Flex gap="2" align="center">
-                    <Checkbox
-                      checked={contractStatusFilter.includes(ContractStatus.RequestExpired)}
-                      onCheckedChange={() => toggleContractStatusFilter(ContractStatus.RequestExpired)}
-                    />
-                    <Text>Expired</Text>
-                  </Flex>
-                </DropdownMenu.Item>
-
-                <DropdownMenu.Item
-                  onSelect={(e) => e.preventDefault()}
-                >
-                  <Flex gap="2" align="center">
-                    <Checkbox
-                      checked={contractStatusFilter.includes(ContractStatus.Cancelled)}
-                      onCheckedChange={() => toggleContractStatusFilter(ContractStatus.Cancelled)}
-                    />
-                    <Text>Canceled</Text>
-                  </Flex>
-                </DropdownMenu.Item>
-
-                <DropdownMenu.Item
-                  onSelect={(e) => e.preventDefault()}
-                >
-                  <Flex gap="2" align="center">
-                    <Checkbox
-                      checked={contractStatusFilter.includes(ContractStatus.Extended)}
-                      onCheckedChange={() => toggleContractStatusFilter(ContractStatus.Extended)}
-                    />
-                    <Text>Extended</Text>
-                  </Flex>
-                </DropdownMenu.Item>
-                <DropdownMenu.Item
-                  onSelect={(e) => e.preventDefault()}
-                >
-                  <Flex gap="2" align="center">
-                    <Checkbox
-                      checked={contractStatusFilter.includes(ContractStatus.Defaulted)}
-                      onCheckedChange={() => toggleContractStatusFilter(ContractStatus.Defaulted)}
-                    />
-                    <Text>Defaulted</Text>
-                  </Flex>
-                </DropdownMenu.Item>
-
-                <DropdownMenu.Item
-                  onSelect={(e) => e.preventDefault()}
-                >
-                  <Flex gap="2" align="center">
-                    <Checkbox
-                      checked={contractStatusFilter.includes(ContractStatus.DisputeBorrowerStarted)
-                        || contractStatusFilter.includes(ContractStatus.DisputeLenderStarted)
-                        || contractStatusFilter.includes(ContractStatus.DisputeBorrowerResolved)
-                        || contractStatusFilter.includes(ContractStatus.DisputeLenderResolved)}
-                      onCheckedChange={() => {
-                        toggleContractStatusFilter(ContractStatus.DisputeBorrowerStarted);
-                        toggleContractStatusFilter(ContractStatus.DisputeLenderStarted);
-                        toggleContractStatusFilter(ContractStatus.DisputeBorrowerResolved);
-                        toggleContractStatusFilter(ContractStatus.DisputeLenderResolved);
-                      }}
-                    />
-                    <Text>Disputes</Text>
-                  </Flex>
-                </DropdownMenu.Item>
+                {ALL_CONTRACT_STATUSES.map((contractStatus) => {
+                  return (
+                    <DropdownMenu.Item
+                      onSelect={(e) => e.preventDefault()}
+                    >
+                      <Flex gap="2" align="center">
+                        <Checkbox
+                          checked={contractStatusFilter.includes(contractStatus)}
+                          onCheckedChange={() => toggleContractStatusFilter(contractStatus)}
+                        />
+                        <Text>{contractStatusToLabelString(contractStatus)}</Text>
+                      </Flex>
+                    </DropdownMenu.Item>
+                  );
+                })}
               </DropdownMenu.Content>
             </DropdownMenu.Root>
           </div>
