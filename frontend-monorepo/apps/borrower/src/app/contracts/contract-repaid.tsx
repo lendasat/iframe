@@ -115,7 +115,7 @@ export function ContractRepaid({
           <Col>
             <div className="d-flex flex-column">
               <p className="mt-2 text-break text-font dark:text-font-dark">
-                To claim the collateral you will have to provide your <strong>contract secret</strong>.
+                To claim the collateral you will have to provide your <strong>password</strong>.
               </p>
             </div>
           </Col>

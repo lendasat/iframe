@@ -13,7 +13,14 @@ function Login() {
 
   const handleLogin = async (email: string, password: string) => {
     await init();
+
     const loginResponse = await login(email, password);
+
+    if ("must_upgrade_to_pake" in loginResponse) {
+      navigate("/upgrade-to-pake");
+      return;
+    }
+
     const walletBackupData = loginResponse.wallet_backup_data;
 
     const key = await md5(email);
@@ -21,7 +28,6 @@ function Login() {
       try {
         restore_wallet(
           key,
-          walletBackupData.passphrase_hash,
           walletBackupData.mnemonic_ciphertext,
           walletBackupData.xpub,
           walletBackupData.network,
@@ -50,7 +56,7 @@ function Login() {
   let message = "";
   switch (status) {
     case "verified":
-      message = "Email successfully verified. Please login";
+      message = "Email successfully verified. Please log in";
   }
 
   return (

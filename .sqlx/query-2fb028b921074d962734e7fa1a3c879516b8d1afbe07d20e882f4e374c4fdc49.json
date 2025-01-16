@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            id as \"id!\",\n            lender_id as \"lender_id!\",\n            borrower_id as \"borrower_id!\",\n            loan_id as \"loan_id!\",\n            initial_ltv as \"initial_ltv!\",\n            initial_collateral_sats as \"initial_collateral_sats!\",\n            origination_fee_sats as \"origination_fee_sats!\",\n            collateral_sats as \"collateral_sats!\",\n            loan_amount as \"loan_amount!\",\n            borrower_btc_address as \"borrower_btc_address!\",\n            borrower_pk as \"borrower_pk!\",\n            borrower_loan_address as \"borrower_loan_address!\",\n            integration as \"integration!: crate::model::db::Integration\",\n            lender_xpub,\n            contract_address,\n            contract_index,\n            status as \"status!: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status!: crate::model::db::LiquidationStatus\",\n            duration_months as \"duration_months!\",\n            expiry_date as \"expiry_date!\",\n            contract_version as \"contract_version!\",\n            interest_rate as \"interest_rate!\",\n            created_at as \"created_at!\",\n            updated_at as \"updated_at!\"\n        FROM open_contracts",
+  "query": "\n        SELECT\n            id as \"id!\",\n            lender_id as \"lender_id!\",\n            borrower_id as \"borrower_id!\",\n            loan_id as \"loan_id!\",\n            initial_ltv as \"initial_ltv!\",\n            initial_collateral_sats as \"initial_collateral_sats!\",\n            origination_fee_sats as \"origination_fee_sats!\",\n            collateral_sats as \"collateral_sats!\",\n            loan_amount as \"loan_amount!\",\n            borrower_btc_address as \"borrower_btc_address!\",\n            borrower_pk as \"borrower_pk!\",\n            borrower_loan_address as \"borrower_loan_address!\",\n            integration as \"integration!: crate::model::db::Integration\",\n            lender_xpub,\n            contract_address,\n            contract_index,\n            status as \"status!: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status!: crate::model::db::LiquidationStatus\",\n            duration_months as \"duration_months!\",\n            expiry_date as \"expiry_date!\",\n            contract_version as \"contract_version!\",\n            interest_rate as \"interest_rate!\",\n            created_at as \"created_at!\",\n            updated_at as \"updated_at!\"\n        FROM contracts_to_be_watched",
   "describe": {
     "columns": [
       {
@@ -204,5 +204,5 @@
       true
     ]
   },
-  "hash": "8f6f071d528ad1a88a8826501cf5da420ac127ac6c1eb342abe544eb5bf194c8"
+  "hash": "2fb028b921074d962734e7fa1a3c879516b8d1afbe07d20e882f4e374c4fdc49"
 }

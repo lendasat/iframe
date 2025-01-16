@@ -1,10 +1,6 @@
-use anyhow::anyhow;
+use crate::model;
 use anyhow::Context;
 use anyhow::Result;
-use argon2::password_hash::rand_core::OsRng;
-use argon2::password_hash::SaltString;
-use argon2::Argon2;
-use argon2::PasswordHasher;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
 use rust_decimal::Decimal;
@@ -19,7 +15,9 @@ pub struct Borrower {
     pub id: String,
     pub name: String,
     pub email: String,
-    pub password: String,
+    pub salt: String,
+    pub verifier: String,
+    pub password: Option<String>,
     pub verified: bool,
     pub verification_code: Option<String>,
     pub used_referral_code: Option<String>,
@@ -33,11 +31,13 @@ pub struct Borrower {
 fn new_model_borrower(
     borrower: Borrower,
     personal_referral_code: Option<String>,
-) -> crate::model::Borrower {
-    crate::model::Borrower {
+) -> model::Borrower {
+    model::Borrower {
         id: borrower.id,
         name: borrower.name,
         email: borrower.email,
+        salt: borrower.salt,
+        verifier: borrower.verifier,
         password: borrower.password,
         verified: borrower.verified,
         verification_code: borrower.verification_code,
@@ -55,13 +55,13 @@ fn new_model_borrower(
 ///
 /// Fails if user with provided email already exists
 pub async fn register_user(
-    transaction: &mut sqlx::Transaction<'_, Postgres>,
+    db_tx: &mut sqlx::Transaction<'_, Postgres>,
     name: &str,
     email: &str,
-    password: &str,
-) -> Result<crate::model::Borrower> {
+    salt: &str,
+    verifier: &str,
+) -> Result<model::Borrower> {
     let id = uuid::Uuid::new_v4().to_string();
-    let hashed_password = generate_hashed_password(password)?;
     let verification_code = generate_random_string(VERIFICATION_CODE_LENGTH);
 
     // First get the user with used referral code info
@@ -71,11 +71,11 @@ pub async fn register_user(
         Borrower,
         r#"
         WITH inserted AS (
-            INSERT INTO borrowers (id, name, email, password, verification_code)
-            VALUES ($1, $2, $3, $4, $5)
+            INSERT INTO borrowers (id, name, email, salt, verifier, verification_code)
+            VALUES ($1, $2, $3, $4, $5, $6)
             RETURNING *
         )
-        SELECT 
+        SELECT
             b.*,
             rb.referral_code as used_referral_code,
             rcb.first_time_discount_rate_referee
@@ -86,30 +86,28 @@ pub async fn register_user(
         id,
         name,
         email.to_ascii_lowercase(),
-        hashed_password,
+        salt,
+        verifier,
         verification_code,
     )
-    .fetch_one(&mut **transaction)
+    .fetch_one(&mut **db_tx)
     .await?;
 
     // next we enhance it with a personal code
-    let borrower = enhance_with_personal_code(&mut **transaction, base_user).await?;
+    let borrower = enhance_with_personal_code(&mut **db_tx, base_user).await?;
 
     Ok(borrower)
 }
 
-async fn enhance_with_personal_code<'a, E>(
-    pool: E,
-    base_user: Borrower,
-) -> Result<crate::model::Borrower>
+async fn enhance_with_personal_code<'a, E>(pool: E, base_user: Borrower) -> Result<model::Borrower>
 where
     E: sqlx::Executor<'a, Database = Postgres>,
 {
     // Then get their personal referral code if it exists
     let personal_code = sqlx::query!(
         r#"
-    SELECT code 
-    FROM referral_codes_borrowers 
+    SELECT code
+    FROM referral_codes_borrowers
     WHERE referrer_id = $1
     "#,
         base_user.id
@@ -122,6 +120,57 @@ where
     Ok(borrower)
 }
 
+/// Insert the `salt` and `verifier` needed to authenticate a borrower via PAKE.
+///
+/// Also erases the `password` (hash) from the borrower row, since it will never be used for
+/// authentication again.
+///
+/// The upgrade can only happen if the `salt` and `verifier` columns are set to their default values
+/// of '0'. The default value indicates that the account was created before the upgrade to PAKE.
+pub async fn upgrade_to_pake<'a, E>(pool: E, email: &str, salt: &str, verifier: &str) -> Result<()>
+where
+    E: sqlx::Executor<'a, Database = Postgres>,
+{
+    sqlx::query!(
+        "UPDATE borrowers
+        SET salt = $1,
+            verifier = $2,
+            password = null
+        WHERE email = $3 AND salt = '0' and verifier = '0'",
+        salt,
+        verifier,
+        email
+    )
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
+/// Replace `salt` and `verifier` needed to authenticate a borrower via PAKE. This is used when the
+/// borrower wants to change their password.
+pub async fn update_verifier_and_salt<'a, E>(
+    pool: E,
+    email: &str,
+    salt: &str,
+    verifier: &str,
+) -> Result<()>
+where
+    E: sqlx::Executor<'a, Database = Postgres>,
+{
+    sqlx::query!(
+        "UPDATE borrowers
+        SET salt = $1,
+            verifier = $2
+        WHERE email = $3",
+        salt,
+        verifier,
+        email
+    )
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
 pub async fn user_exists(pool: &Pool<Postgres>, email: &str) -> Result<bool> {
     let maybe_user = get_user_by_email(pool, email).await?;
 
@@ -131,16 +180,18 @@ pub async fn user_exists(pool: &Pool<Postgres>, email: &str) -> Result<bool> {
 pub async fn get_user_by_email(
     pool: &Pool<Postgres>,
     email: &str,
-) -> Result<Option<crate::model::Borrower>> {
+) -> Result<Option<model::Borrower>> {
     let email = email.to_ascii_lowercase();
     // TODO: try to merge the `enhance` part again
     let maybe_base_user = sqlx::query_as!(
-        crate::model::Borrower,
-        r#"SELECT 
+        model::Borrower,
+        r#"SELECT
            id as "id!",
            name as "name!",
            email as "email!",
-           password as "password!",
+           salt as "salt!",
+           verifier as "verifier!",
+           password,
            verified as "verified!",
            verification_code,
            password_reset_token,
@@ -160,17 +211,16 @@ pub async fn get_user_by_email(
 
     Ok(maybe_base_user)
 }
-pub async fn get_user_by_id(
-    pool: &Pool<Postgres>,
-    id: &str,
-) -> Result<Option<crate::model::Borrower>> {
+pub async fn get_user_by_id(pool: &Pool<Postgres>, id: &str) -> Result<Option<model::Borrower>> {
     let maybe_base_user = sqlx::query_as!(
-        crate::model::Borrower,
-        r#"SELECT 
+        model::Borrower,
+        r#"SELECT
            id as "id!",
            name as "name!",
            email as "email!",
-           password as "password!",
+           salt as "salt!",
+           verifier as "verifier!",
+           password,
            verified as "verified!",
            verification_code,
            password_reset_token,
@@ -193,15 +243,17 @@ pub async fn get_user_by_id(
 pub async fn get_user_by_verification_code(
     pool: &Pool<Postgres>,
     verification_code: &str,
-) -> Result<Option<crate::model::Borrower>> {
+) -> Result<Option<model::Borrower>> {
     let verification_code = verification_code.to_ascii_lowercase();
     let maybe_base_user = sqlx::query_as!(
-        crate::model::Borrower,
-        r#"SELECT 
+        model::Borrower,
+        r#"SELECT
            id as "id!",
            name as "name!",
            email as "email!",
-           password as "password!",
+           salt as "salt!",
+           verifier as "verifier!",
+           password,
            verified as "verified!",
            verification_code,
            password_reset_token,
@@ -260,14 +312,16 @@ pub async fn update_password_reset_token_for_user(
 pub async fn get_user_by_rest_token(
     pool: &Pool<Postgres>,
     password_reset_token: &str,
-) -> Result<Option<crate::model::Borrower>> {
+) -> Result<Option<model::Borrower>> {
     let maybe_base_user = sqlx::query_as!(
-        crate::model::Borrower,
-        r#"SELECT 
+        model::Borrower,
+        r#"SELECT
            id as "id!",
            name as "name!",
            email as "email!",
-           password as "password!",
+           salt as "salt!",
+           verifier as "verifier!",
+           password,
            verified as "verified!",
            verification_code,
            password_reset_token,
@@ -286,38 +340,6 @@ pub async fn get_user_by_rest_token(
     .context("failed loading")?;
 
     Ok(maybe_base_user)
-}
-
-pub async fn update_user_password(
-    pool: &Pool<Postgres>,
-    password: &str,
-    email: &str,
-) -> Result<()> {
-    let hashed_password = generate_hashed_password(password)?;
-    sqlx::query!(
-        "UPDATE borrowers
-                SET password             = $1,
-                    password_reset_token = $2,
-                    password_reset_at    = $3
-                WHERE email = $4
-        ",
-        hashed_password,
-        Option::<String>::None,
-        Option::<OffsetDateTime>::None,
-        email.to_ascii_lowercase(),
-    )
-    .execute(pool)
-    .await?;
-    Ok(())
-}
-
-pub fn generate_hashed_password(password: &str) -> Result<String> {
-    let salt = SaltString::generate(&mut OsRng);
-    let hashed_password = Argon2::default()
-        .hash_password(password.as_bytes(), &salt)
-        .map(|hash| hash.to_string())
-        .map_err(|error| anyhow!("Failed hashing password {error}"))?;
-    Ok(hashed_password)
 }
 
 /// Generates a random alphanumeric string with length [`length`]

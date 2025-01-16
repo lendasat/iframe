@@ -280,8 +280,16 @@ async fn insert_lender(pool: &Pool<Postgres>, network: &str) -> Result<Lender> {
             .expect("to be able to enable feature");
         return Ok(maybe_user);
     }
+
     let user =
-        db::lenders::register_user(pool, "alice the lender", email, "password123", None).await?;
+        db::lenders::register_user(
+            pool,
+            "alice the lender",
+            email,
+            "31ed84e76920c72530ef63744c859138",
+            "0abfe7966b8b64eb14fe2b20e7da58b6e97e96cc59a5fc4185768205d0a595f2f99c5b532960f62161eff5a5e11489b2c0fd0dc3000164f6d2e0bd18e4af576bc0b445090bf27a154a484f41df85577e5aeb594b6c51c81b65aad9bbbef7614b6f2e4f98fede089b97c81710f627c258c1b8acb4dc0f125122f37ea5a831081352965dc401af81211800f92208c9aa308d344329b11701fc6bd510dbe089636514f1dd5e6e9428bb832535ad85625c7808d4b6b6557104ae0104406761f16294d1fcc405ffda44c2e326944b83a30f601aceaec2a6b1b5a9c8ad6b4e4aea8b5a07a33c4760a52ec5049b760f303c3e57b63ed0f29add39e49dc70f19b86037b7",
+            None
+        ).await?;
     let verification_code = user.verification_code.clone().expect("to exist");
     db::lenders::verify_user(pool, verification_code.as_str()).await?;
 
@@ -291,13 +299,11 @@ async fn insert_lender(pool: &Pool<Postgres>, network: &str) -> Result<Lender> {
 
     // We can only have one wallet loaded at the time, hence, we need to unload any existing one
     wallet::unload_wallet();
-    let (passphrase_hash, mnemonic_ciphertext, network, xpub) =
-        wallet::new_wallet("password123", network)?;
+    let (mnemonic_ciphertext, network, xpub) = wallet::new_wallet("password123", network, None)?;
     db::wallet_backups::insert_lender_backup(
         pool,
         NewLenderWalletBackup {
             lender_id: user.id.clone(),
-            passphrase_hash: passphrase_hash.to_string(),
             mnemonic_ciphertext: mnemonic_ciphertext.serialize(),
             network: network.to_string(),
             xpub: xpub.to_string(),
@@ -324,7 +330,7 @@ async fn insert_borrower(pool: &Pool<Postgres>, network: &str) -> Result<Borrowe
     }
 
     let mut tx = pool.begin().await?;
-    let user = db::borrowers::register_user(&mut tx, "bob the borrower", email, "password123")
+    let user = db::borrowers::register_user(&mut tx, "bob the borrower", email, "cd8c88861c37f137eb08ee009ba7974e", "9c09ebb870171a9dc4fee895a85bfee036b4a3021f685e16f55c2c4df2032fd68ccbf6aa823f130c0dbcdb59db682c54d98c4bbcb4d934a4a27223b361f3b5838970f4d708bb884078b438a7548c85d8625865af010fc9ca55ef7295eafe27dd38b2fed5b32c215f89536aaf8f989a6b155a60003ef9a161b0d25445d5338ae623893a42a5af14355d0416bd1da19e2f9af040a58f30f8a3619ff080b7e661da06d1a0afa8b7bdecf62db3066aeb28413b68fb51cea1091981b55f49aab5b9e3e6f79ac1adb5015eda5afb3a04839853f6f6e552703babd4d0420d13396b4f3a0c012e3fdac9a140b3b2ff72d27ab286690870aa251400203bc1acf7b2e2a3c0")
         .await
         .context("register user failed")?;
     db::borrowers_referral_code::insert_referred_borrower(
@@ -353,13 +359,11 @@ async fn insert_borrower(pool: &Pool<Postgres>, network: &str) -> Result<Borrowe
 
     // We can only have one wallet loaded at the time, hence, we need to unload any existing one
     wallet::unload_wallet();
-    let (passphrase_hash, mnemonic_ciphertext, network, xpub) =
-        wallet::new_wallet("password123", network)?;
+    let (mnemonic_ciphertext, network, xpub) = wallet::new_wallet("password123", network, None)?;
     db::wallet_backups::insert_borrower_backup(
         pool,
         NewBorrowerWalletBackup {
             borrower_id: user.id.clone(),
-            passphrase_hash: passphrase_hash.to_string(),
             mnemonic_ciphertext: mnemonic_ciphertext.serialize(),
             network: network.to_string(),
             xpub: xpub.to_string(),

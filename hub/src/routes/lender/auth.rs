@@ -5,17 +5,22 @@ use crate::db::lenders::get_user_by_rest_token;
 use crate::db::lenders::get_user_by_verification_code;
 use crate::db::lenders::register_user;
 use crate::db::lenders::update_password_reset_token_for_user;
-use crate::db::lenders::update_user_password;
 use crate::db::lenders::user_exists;
 use crate::db::lenders::verify_user;
 use crate::db::wallet_backups::NewLenderWalletBackup;
 use crate::email::Email;
+use crate::model::FinishUpgradeToPakeRequest;
 use crate::model::ForgotPasswordSchema;
 use crate::model::Lender;
-use crate::model::LoginUserSchema;
+use crate::model::PakeLoginRequest;
+use crate::model::PakeLoginResponse;
+use crate::model::PakeServerData;
+use crate::model::PakeVerifyRequest;
 use crate::model::RegisterUserSchema;
 use crate::model::ResetPasswordSchema;
 use crate::model::TokenClaims;
+use crate::model::UpgradeToPakeRequest;
+use crate::model::UpgradeToPakeResponse;
 use crate::model::WalletBackupData;
 use crate::routes::lender::auth::jwt_auth::auth;
 use crate::routes::AppState;
@@ -37,8 +42,13 @@ use axum_extra::extract::cookie::SameSite;
 use jsonwebtoken::encode;
 use jsonwebtoken::EncodingKey;
 use jsonwebtoken::Header;
+use rand::thread_rng;
+use rand::RngCore;
 use serde::Serialize;
 use serde_json::json;
+use sha2::Sha256;
+use srp::groups::G_2048;
+use srp::server::SrpServer;
 use std::sync::Arc;
 use time::OffsetDateTime;
 use tracing::instrument;
@@ -56,8 +66,17 @@ const PASSWORD_RESET_TOKEN_LENGTH: usize = 20;
 
 pub(crate) fn router(app_state: Arc<AppState>) -> Router {
     Router::new()
-        .route("/api/auth/register", post(register_user_handler))
-        .route("/api/auth/login", post(login_user_handler))
+        .route("/api/auth/register", post(post_register))
+        .route(
+            "/api/auth/upgrade-to-pake",
+            post(post_start_upgrade_to_pake),
+        )
+        .route(
+            "/api/auth/finish-upgrade-to-pake",
+            post(post_finish_upgrade_to_pake),
+        )
+        .route("/api/auth/pake-login", post(post_pake_login))
+        .route("/api/auth/pake-verify", post(post_pake_verify))
         .route(
             "/api/auth/logout",
             get(logout_handler)
@@ -86,7 +105,7 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
 }
 
 #[instrument(skip_all, err(Debug, level = Level::DEBUG))]
-pub async fn register_user_handler(
+async fn post_register(
     State(data): State<Arc<AppState>>,
     Json(body): Json<RegisterUserSchema>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
@@ -143,11 +162,19 @@ pub async fn register_user_handler(
         ));
     }
 
+    let mut db_tx = data.db.begin().await.map_err(|e| {
+        let error_response = ErrorResponse {
+            message: format!("Database error: {}", e),
+        };
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+    })?;
+
     let user: Lender = register_user(
-        &data.db,
+        &mut *db_tx,
         body.name.as_str(),
         body.email.as_str(),
-        body.password.as_str(),
+        body.salt.as_str(),
+        body.verifier.as_str(),
         Some(invite_code),
     )
     .await
@@ -159,10 +186,9 @@ pub async fn register_user_handler(
     })?;
 
     db::wallet_backups::insert_lender_backup(
-        &data.db,
+        &mut *db_tx,
         NewLenderWalletBackup {
             lender_id: user.id.clone(),
-            passphrase_hash: body.wallet_backup_data.passphrase_hash,
             mnemonic_ciphertext: body.wallet_backup_data.mnemonic_ciphertext,
             network: body.wallet_backup_data.network,
             xpub: body.wallet_backup_data.xpub,
@@ -200,10 +226,17 @@ pub async fn register_user_handler(
     {
         tracing::error!("Failed sending email {err:#}");
         let json_error = ErrorResponse {
-            message: "Something bad happended while sending the verification code".to_string(),
+            message: "Something bad happened while sending the verification code".to_string(),
         };
         return Err((StatusCode::INTERNAL_SERVER_ERROR, Json(json_error)));
     }
+
+    db_tx.commit().await.map_err(|e| {
+        let error_response = ErrorResponse {
+            message: format!("Database error: {}", e),
+        };
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+    })?;
 
     let user_response = serde_json::json!({"message": format!("We sent an email with a verification code to {}", email)});
 
@@ -211,25 +244,18 @@ pub async fn register_user_handler(
 }
 
 #[derive(Debug, Serialize)]
-pub struct LenderLoanFeature {
-    pub id: String,
-    pub name: String,
+struct LenderLoanFeature {
+    id: String,
+    name: String,
 }
 
-#[derive(Serialize)]
-struct LoginResponse {
-    token: String,
-    user: FilteredUser,
-    wallet_backup_data: WalletBackupData,
-    enabled_features: Vec<LenderLoanFeature>,
-}
-
-#[instrument(skip_all, err(Debug, level = Level::DEBUG))]
-pub async fn login_user_handler(
+#[instrument(skip_all, err(Debug, level = Level::TRACE))]
+async fn post_pake_login(
     State(data): State<Arc<AppState>>,
-    Json(body): Json<LoginUserSchema>,
+    Json(body): Json<PakeLoginRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let user: Lender = get_user_by_email(&data.db, body.email.as_str())
+    let email = body.email;
+    let user: Lender = get_user_by_email(&data.db, email.as_str())
         .await
         .map_err(|e| {
             let error_response = ErrorResponse {
@@ -246,19 +272,152 @@ pub async fn login_user_handler(
 
     if !user.verified {
         let error_response = ErrorResponse {
-            message: "Please verify your email before you can log in".to_string(),
+            message: "You must verify your email before you can log in".to_string(),
         };
         return Err((StatusCode::BAD_REQUEST, Json(error_response)));
     }
 
-    let is_valid = user.check_password(body.password.as_str());
-
-    if !is_valid {
+    // The presence of a password hash indicates that the user has not upgraded to PAKE yet.
+    if user.password.is_some() {
         let error_response = ErrorResponse {
-            message: "Invalid email or password".to_string(),
+            message: "upgrade-to-pake".to_string(),
         };
         return Err((StatusCode::BAD_REQUEST, Json(error_response)));
     }
+
+    let verifier = hex::decode(user.verifier).map_err(|e| {
+        let error_response = ErrorResponse {
+            message: format!("Invalid verifier: {}", e),
+        };
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+    })?;
+
+    let server = SrpServer::<Sha256>::new(&G_2048);
+
+    let mut b = [0u8; 64];
+
+    {
+        let mut rng = thread_rng();
+        rng.fill_bytes(&mut b)
+    };
+
+    let b_pub = server.compute_public_ephemeral(&b, &verifier);
+
+    let b_pub = hex::encode(b_pub);
+
+    let response = Response::builder()
+        .status(StatusCode::OK)
+        .body(
+            json!(PakeLoginResponse {
+                b_pub,
+                salt: user.salt
+            })
+            .to_string(),
+        )
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Failed to build response: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
+
+    let mut pake_protocols = data.pake_protocols.lock().await;
+
+    // We overwrite any PAKE data from a previous login attempt.
+    pake_protocols.insert(email, PakeServerData { b: b.to_vec() });
+
+    Ok(response)
+}
+
+#[derive(Debug, Serialize)]
+struct PakeVerifyResponse {
+    server_proof: String,
+    token: String,
+    enabled_features: Vec<LenderLoanFeature>,
+    user: FilteredUser,
+    wallet_backup_data: WalletBackupData,
+}
+
+#[instrument(skip_all, err(Debug, level = Level::TRACE))]
+async fn post_pake_verify(
+    State(data): State<Arc<AppState>>,
+    Json(body): Json<PakeVerifyRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    let email = body.email;
+    let user = get_user_by_email(&data.db, email.as_str())
+        .await
+        .map_err(|e| {
+            let error_response = ErrorResponse {
+                message: format!("Database error: {}", e),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?
+        .ok_or_else(|| {
+            let error_response = ErrorResponse {
+                message: "Invalid email or password".to_string(),
+            };
+            (StatusCode::BAD_REQUEST, Json(error_response))
+        })?;
+
+    if !user.verified {
+        let error_response = ErrorResponse {
+            message: "You must verify your email before you can log in".to_string(),
+        };
+        return Err((StatusCode::BAD_REQUEST, Json(error_response)));
+    }
+
+    let verifier = hex::decode(&user.verifier).map_err(|e| {
+        let error_response = ErrorResponse {
+            message: format!("Invalid verifier: {}", e),
+        };
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+    })?;
+
+    let a_pub = hex::decode(body.a_pub).map_err(|e| {
+        let error_response = ErrorResponse {
+            message: format!("Invalid A: {}", e),
+        };
+        (StatusCode::BAD_REQUEST, Json(error_response))
+    })?;
+
+    let client_proof = hex::decode(body.client_proof).map_err(|e| {
+        let error_response = ErrorResponse {
+            message: format!("Invalid proof: {}", e),
+        };
+        (StatusCode::BAD_REQUEST, Json(error_response))
+    })?;
+
+    let b = {
+        let pake_protocols = data.pake_protocols.lock().await;
+        match pake_protocols.get(&email) {
+            Some(PakeServerData { b }) => b.clone(),
+            None => {
+                let error_response = ErrorResponse {
+                    message: "Sent verification request before login request".to_string(),
+                };
+                return Err((StatusCode::BAD_REQUEST, Json(error_response)));
+            }
+        }
+    };
+
+    let server = SrpServer::<Sha256>::new(&G_2048);
+
+    let server_verifier = server.process_reply(&b, &verifier, &a_pub).map_err(|e| {
+        let error_response = ErrorResponse {
+            message: format!("Failed to verify login: {e}"),
+        };
+        (StatusCode::BAD_REQUEST, Json(error_response))
+    })?;
+
+    server_verifier.verify_client(&client_proof).map_err(|e| {
+        let error_response = ErrorResponse {
+            message: format!("Failed to verify login: {e}"),
+        };
+        (StatusCode::BAD_REQUEST, Json(error_response))
+    })?;
+
+    let server_proof = server_verifier.proof();
+    let server_proof = hex::encode(server_proof);
 
     let now = OffsetDateTime::now_utc();
     let iat = now.unix_timestamp();
@@ -297,7 +456,6 @@ pub async fn login_user_handler(
         })?;
 
     let wallet_backup_data = WalletBackupData {
-        passphrase_hash: wallet_backup.passphrase_hash,
         mnemonic_ciphertext: wallet_backup.mnemonic_ciphertext,
         network: wallet_backup.network,
         xpub: wallet_backup.xpub,
@@ -328,29 +486,208 @@ pub async fn login_user_handler(
 
     let filtered_user = FilteredUser::new_user(&user);
 
-    let response = json!(LoginResponse {
-        token,
-        wallet_backup_data,
-        user: filtered_user,
-        enabled_features
-    })
-    .to_string();
+    let response = Response::builder()
+        .status(StatusCode::OK)
+        .header(header::SET_COOKIE.as_str(), cookie.to_string().as_str())
+        .body(
+            json!(PakeVerifyResponse {
+                server_proof,
+                token,
+                enabled_features,
+                user: filtered_user,
+                wallet_backup_data
+            })
+            .to_string(),
+        )
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Failed to build response: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
 
-    let mut response = Response::new(response);
-    response.headers_mut().insert(
-        header::SET_COOKIE,
-        cookie.to_string().parse().map_err(|error| {
+    Ok(response)
+}
+
+/// Handle the lender's attempt to upgrade to the PAKE protocol.
+///
+/// We must first verify their email and old password.
+///
+/// We return their wallet backup data, so that they can decrypt it locally and send us the backup
+/// encrypted using their new password.
+#[instrument(skip_all, err(Debug, level = Level::DEBUG))]
+async fn post_start_upgrade_to_pake(
+    State(data): State<Arc<AppState>>,
+    Json(body): Json<UpgradeToPakeRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    let user = get_user_by_email(&data.db, body.email.as_str())
+        .await
+        .map_err(|e| {
+            let error_response = ErrorResponse {
+                message: format!("Database error: {}", e),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?
+        .ok_or_else(|| {
+            let error_response = ErrorResponse {
+                message: "Invalid email or password".to_string(),
+            };
+            (StatusCode::BAD_REQUEST, Json(error_response))
+        })?;
+
+    if !user.verified {
+        let error_response = ErrorResponse {
+            message: "Please verify your email before you can log in".to_string(),
+        };
+        return Err((StatusCode::BAD_REQUEST, Json(error_response)));
+    }
+
+    let is_valid = user.check_password(body.old_password.as_str());
+
+    if !is_valid {
+        let error_response = ErrorResponse {
+            message: "Invalid email or password".to_string(),
+        };
+        return Err((StatusCode::BAD_REQUEST, Json(error_response)));
+    }
+
+    let wallet_backup = db::wallet_backups::find_by_lender_id(&data.db, user.id.as_str())
+        .await
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Failed reading wallet backup: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
+
+    let old_wallet_backup_data = WalletBackupData {
+        mnemonic_ciphertext: wallet_backup.mnemonic_ciphertext,
+        network: wallet_backup.network,
+        xpub: wallet_backup.xpub,
+    };
+
+    let response = Response::builder()
+        .status(StatusCode::OK)
+        .body(
+            json!(UpgradeToPakeResponse {
+                old_wallet_backup_data
+            })
+            .to_string(),
+        )
+        .map_err(|error| {
             let error_response = ErrorResponse {
                 message: format!("Failed parsing cookie: {}", error),
             };
             (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?,
-    );
+        })?;
+    Ok(response)
+}
+
+/// Handle the lender's attempt to finish the upgrade to the PAKE protocol.
+///
+/// We must first verify their email and old password.
+///
+/// We then instert their new wallet backup as a separate entry.
+///
+/// After that, we insert in the DB values needed to authenticate the lender via PAKE. Additionally,
+/// we erase the old pasword hash from the database, as the lender won't be authenticating that way
+/// anymore.
+#[instrument(skip_all, err(Debug, level = Level::DEBUG))]
+async fn post_finish_upgrade_to_pake(
+    State(data): State<Arc<AppState>>,
+    Json(body): Json<FinishUpgradeToPakeRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    let user = get_user_by_email(&data.db, body.email.as_str())
+        .await
+        .map_err(|e| {
+            let error_response = ErrorResponse {
+                message: format!("Database error: {}", e),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?
+        .ok_or_else(|| {
+            let error_response = ErrorResponse {
+                message: "Invalid email or password".to_string(),
+            };
+            (StatusCode::BAD_REQUEST, Json(error_response))
+        })?;
+
+    if !user.verified {
+        let error_response = ErrorResponse {
+            message: "Please verify your email before you can log in".to_string(),
+        };
+        return Err((StatusCode::BAD_REQUEST, Json(error_response)));
+    }
+
+    let is_valid = user.check_password(body.old_password.as_str());
+
+    if !is_valid {
+        let error_response = ErrorResponse {
+            message: "Invalid email or password".to_string(),
+        };
+        return Err((StatusCode::BAD_REQUEST, Json(error_response)));
+    }
+
+    let mut db_tx = data.db.begin().await.map_err(|e| {
+        let error_response = ErrorResponse {
+            message: format!("Database error: {}", e),
+        };
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+    })?;
+
+    db::wallet_backups::insert_lender_backup(
+        &mut *db_tx,
+        NewLenderWalletBackup {
+            lender_id: user.id.clone(),
+            mnemonic_ciphertext: body.new_wallet_backup_data.mnemonic_ciphertext,
+            network: body.new_wallet_backup_data.network,
+            xpub: body.new_wallet_backup_data.xpub,
+        },
+    )
+    .await
+    .map_err(|e| {
+        let error_response = ErrorResponse {
+            message: format!("Database error: {}", e),
+        };
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+    })?;
+
+    db::lenders::upgrade_to_pake(
+        &mut *db_tx,
+        body.email.as_str(),
+        body.salt.as_str(),
+        body.verifier.as_str(),
+    )
+    .await
+    .map_err(|error| {
+        let error_response = ErrorResponse {
+            message: format!("Failed upgrading to PAKE: {}", error),
+        };
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+    })?;
+
+    let response = Response::builder()
+        .status(StatusCode::OK)
+        .body(json!({ "upgraded": true }).to_string())
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Failed parsing cookie: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
+
+    db_tx.commit().await.map_err(|e| {
+        let error_response = ErrorResponse {
+            message: format!("Database error: {}", e),
+        };
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+    })?;
+
     Ok(response)
 }
 
 #[instrument(skip_all, err(Debug, level = Level::DEBUG))]
-pub async fn verify_email_handler(
+async fn verify_email_handler(
     State(data): State<Arc<AppState>>,
     Path(verification_code): Path<String>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
@@ -394,13 +731,10 @@ pub async fn verify_email_handler(
 }
 
 #[instrument(skip_all, err(Debug, level = Level::DEBUG))]
-pub async fn forgot_password_handler(
+async fn forgot_password_handler(
     State(data): State<Arc<AppState>>,
     Json(body): Json<ForgotPasswordSchema>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let success_message = "You will receive a password reset link via email.";
-    let email_address = body.email.to_owned().to_ascii_lowercase();
-
     let user: Lender = get_user_by_email(&data.db, body.email.as_str())
         .await
         .map_err(|e| {
@@ -411,7 +745,7 @@ pub async fn forgot_password_handler(
         })?
         .ok_or_else(|| {
             let error_response = ErrorResponse {
-                message: success_message.to_string(),
+                message: "No user with that email".to_string(),
             };
             (StatusCode::NOT_FOUND, Json(error_response))
         })?;
@@ -427,11 +761,30 @@ pub async fn forgot_password_handler(
     let password_reset_at =
         OffsetDateTime::now_utc() + time::Duration::minutes(PASSWORD_TOKEN_EXPIRES_IN_MINUTES);
 
-    let password_reset_url = format!(
-        "{}/api/auth/resetpassword/{}",
-        data.config.lender_frontend_origin.to_owned(),
-        password_reset_token
+    let has_contracts_before_pake =
+        db::contracts::has_contracts_before_pake_lender(&data.db, &user.id)
+            .await
+            .map_err(|e| {
+                let error_response = ErrorResponse {
+                    message: format!("Database error: {}", e),
+                };
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+            })?;
+
+    let mut password_reset_url = format!(
+        "{}/resetpassword/{}/{}",
+        data.config.borrower_frontend_origin.to_owned(),
+        password_reset_token,
+        user.email
     );
+
+    // If this user has contracts before the PAKE upgrade, we do not allow them to reset their
+    // password using a mnemonic. Using a mnemonic would remove the passphrase embedded in their
+    // encrypted local wallet, and this passphrase is needed to spend contracts created before the
+    // PAKE upgrade.
+    if has_contracts_before_pake {
+        password_reset_url.push_str("?nomn=true");
+    }
 
     let email_instance = Email::new(data.config.clone());
     let user_id = user.id.clone();
@@ -451,6 +804,7 @@ pub async fn forgot_password_handler(
         return Err((StatusCode::INTERNAL_SERVER_ERROR, Json(json_error)));
     }
 
+    let email_address = body.email.to_owned().to_ascii_lowercase();
     update_password_reset_token_for_user(
         &data.db,
         password_reset_token.as_str(),
@@ -465,22 +819,18 @@ pub async fn forgot_password_handler(
         (StatusCode::INTERNAL_SERVER_ERROR, Json(json_error))
     })?;
 
-    Ok((StatusCode::OK, Json(json!({"message": success_message}))))
+    Ok((
+        StatusCode::OK,
+        Json(json!({"message": "You will receive a password reset link via email."})),
+    ))
 }
 
 #[instrument(skip_all, err(Debug, level = Level::DEBUG))]
-pub async fn reset_password_handler(
+async fn reset_password_handler(
     State(data): State<Arc<AppState>>,
     Path(password_reset_token): Path<String>,
     Json(body): Json<ResetPasswordSchema>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    if body.password != body.password_confirm {
-        let error_response = ErrorResponse {
-            message: "Passwords do not match".to_string(),
-        };
-        return Err((StatusCode::BAD_REQUEST, Json(error_response)));
-    }
-
     let user: Lender = get_user_by_rest_token(&data.db, password_reset_token.as_str())
         .await
         .map_err(|e| {
@@ -496,14 +846,60 @@ pub async fn reset_password_handler(
             (StatusCode::FORBIDDEN, Json(error_response))
         })?;
 
-    update_user_password(&data.db, body.password.as_str(), user.email.as_str())
+    let old_wallet_backup = db::wallet_backups::find_by_lender_id(&data.db, user.id.as_str())
         .await
-        .map_err(|e| {
-            let json_error = ErrorResponse {
-                message: format!("Error updating user: {}", e),
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Failed reading wallet backup: {}", error),
             };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(json_error))
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
         })?;
+
+    // We can only run this check after a PAKE upgrade. The Xpub _changes_ after a PAKE upgrade.
+    if old_wallet_backup.xpub != body.new_wallet_backup_data.xpub {
+        let error_response = ErrorResponse {
+            message: "New Xpub does not match old one".to_string(),
+        };
+        return Err((StatusCode::INTERNAL_SERVER_ERROR, Json(error_response)));
+    }
+
+    let mut db_tx = data.db.begin().await.map_err(|e| {
+        let error_response = ErrorResponse {
+            message: format!("Database error: {}", e),
+        };
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+    })?;
+
+    db::wallet_backups::insert_lender_backup(
+        &mut *db_tx,
+        NewLenderWalletBackup {
+            lender_id: user.id.clone(),
+            mnemonic_ciphertext: body.new_wallet_backup_data.mnemonic_ciphertext,
+            network: body.new_wallet_backup_data.network,
+            xpub: body.new_wallet_backup_data.xpub,
+        },
+    )
+    .await
+    .map_err(|e| {
+        let error_response = ErrorResponse {
+            message: format!("Database error: {}", e),
+        };
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+    })?;
+
+    db::lenders::update_verifier_and_salt(
+        &mut *db_tx,
+        user.email.as_str(),
+        body.salt.as_str(),
+        body.verifier.as_str(),
+    )
+    .await
+    .map_err(|error| {
+        let error_response = ErrorResponse {
+            message: format!("Failed upgrading to PAKE: {}", error),
+        };
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+    })?;
 
     let cookie = Cookie::build(("token", ""))
         .path("/")
@@ -511,8 +907,9 @@ pub async fn reset_password_handler(
         .same_site(SameSite::Lax)
         .http_only(true);
 
-    let mut response =
-        Response::new(json!({"message": "Password data updated successfully"}).to_string());
+    let mut response = Response::new(
+        json!({"message": "Password changed successfully. Please continue to login."}).to_string(),
+    );
     response.headers_mut().insert(
         header::SET_COOKIE,
         cookie.to_string().parse().map_err(|error| {
@@ -522,11 +919,19 @@ pub async fn reset_password_handler(
             (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
         })?,
     );
+
+    db_tx.commit().await.map_err(|e| {
+        let error_response = ErrorResponse {
+            message: format!("Database error: {}", e),
+        };
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+    })?;
+
     Ok(response)
 }
 
 #[instrument(skip_all, err(Debug, level = Level::DEBUG))]
-pub async fn logout_handler() -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+async fn logout_handler() -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     let cookie = Cookie::build(("token", ""))
         .path("/")
         .max_age(time::Duration::hours(-1))
@@ -547,13 +952,13 @@ pub async fn logout_handler() -> Result<impl IntoResponse, (StatusCode, Json<Err
 }
 
 #[derive(Debug, Serialize)]
-pub struct MeResponse {
-    pub enabled_features: Vec<LenderLoanFeature>,
-    pub user: FilteredUser,
+struct MeResponse {
+    enabled_features: Vec<LenderLoanFeature>,
+    user: FilteredUser,
 }
 
 #[instrument(skip_all, err(Debug, level = Level::DEBUG))]
-pub async fn get_me_handler(
+async fn get_me_handler(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Lender>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
@@ -592,19 +997,19 @@ pub async fn get_me_handler(
 }
 
 #[derive(Debug, Serialize)]
-pub struct FilteredUser {
-    pub id: String,
-    pub name: String,
-    pub email: String,
-    pub verified: bool,
+struct FilteredUser {
+    id: String,
+    name: String,
+    email: String,
+    verified: bool,
     #[serde(with = "time::serde::rfc3339")]
-    pub created_at: OffsetDateTime,
+    created_at: OffsetDateTime,
     #[serde(with = "time::serde::rfc3339")]
-    pub updated_at: OffsetDateTime,
+    updated_at: OffsetDateTime,
 }
 
 impl FilteredUser {
-    pub fn new_user(user: &Lender) -> Self {
+    fn new_user(user: &Lender) -> Self {
         let created_at_utc = user.created_at;
         let updated_at_utc = user.updated_at;
         Self {
@@ -618,31 +1023,14 @@ impl FilteredUser {
     }
 }
 
-#[derive(Serialize, Debug)]
-pub struct UserData {
-    pub user: FilteredUser,
-}
-
-#[derive(Serialize, Debug)]
-pub struct UserResponse {
-    pub status: String,
-    pub data: UserData,
-}
-
 #[derive(Debug, Serialize)]
-pub struct ErrorResponse {
-    pub message: String,
+pub(crate) struct ErrorResponse {
+    message: String,
 }
 
 #[instrument(skip_all, err(Debug, level = Level::DEBUG))]
-pub async fn check_auth_handler(
+async fn check_auth_handler(
     Extension(_user): Extension<Lender>,
-) -> Result<
-    impl IntoResponse,
-    (
-        StatusCode,
-        Json<crate::routes::borrower::auth::ErrorResponse>,
-    ),
-> {
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     Ok(())
 }

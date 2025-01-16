@@ -20,3 +20,5 @@ export * from './lib/stable-coin';
 export * from './lib/components/theme-provider';
 export * from './lib/components/TransactionList';
 export * from './lib/models';
+export * from './lib/auth/upgrade-to-pake';
+export * from './lib/auth/upgrade-to-pake-form';

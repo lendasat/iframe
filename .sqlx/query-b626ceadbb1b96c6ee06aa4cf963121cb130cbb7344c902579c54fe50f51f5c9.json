@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT * FROM lenders WHERE email = $1",
+  "query": "\n        WITH inserted AS (\n            INSERT INTO borrowers (id, name, email, salt, verifier, verification_code)\n            VALUES ($1, $2, $3, $4, $5, $6)\n            RETURNING *\n        )\n        SELECT\n            b.*,\n            rb.referral_code as used_referral_code,\n            rcb.first_time_discount_rate_referee\n        FROM inserted b\n        LEFT JOIN referred_borrowers rb ON rb.referred_borrower_id = b.id\n        LEFT JOIN referral_codes_borrowers rcb ON rcb.code = rb.referral_code\n    ",
   "describe": {
     "columns": [
       {
@@ -45,33 +45,43 @@
       },
       {
         "ordinal": 8,
-        "name": "invite_code",
-        "type_info": "Int4"
-      },
-      {
-        "ordinal": 9,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 10,
+        "ordinal": 9,
         "name": "updated_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 11,
+        "ordinal": 10,
         "name": "salt",
         "type_info": "Text"
       },
       {
-        "ordinal": 12,
+        "ordinal": 11,
         "name": "verifier",
         "type_info": "Text"
+      },
+      {
+        "ordinal": 12,
+        "name": "used_referral_code",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 13,
+        "name": "first_time_discount_rate_referee",
+        "type_info": "Numeric"
       }
     ],
     "parameters": {
       "Left": [
-        "Text"
+        "Bpchar",
+        "Varchar",
+        "Varchar",
+        "Text",
+        "Text",
+        "Varchar"
       ]
     },
     "nullable": [
@@ -83,12 +93,13 @@
       true,
       true,
       true,
+      false,
+      false,
+      false,
+      false,
       true,
-      false,
-      false,
-      false,
-      false
+      true
     ]
   },
-  "hash": "cc9688d6ccafb3e88ddd66536dab867c3ffcc90f3bf54f03efa4890c02ea27f6"
+  "hash": "b626ceadbb1b96c6ee06aa4cf963121cb130cbb7344c902579c54fe50f51f5c9"
 }

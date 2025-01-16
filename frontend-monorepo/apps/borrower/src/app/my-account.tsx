@@ -1,8 +1,10 @@
 import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
+import { UnlockWalletModal, useWallet } from "@frontend-monorepo/browser-wallet";
 import { useAuth } from "@frontend-monorepo/http-client-borrower";
-import { Avatar, Badge, Box, Button, Callout, Flex, Heading, Spinner, Tabs, Text } from "@radix-ui/themes";
-import { useState } from "react";
+import { Avatar, Badge, Box, Button, Callout, Flex, Heading, IconButton, Spinner, Tabs, Text } from "@radix-ui/themes";
+import { useEffect, useState } from "react";
 import { BiSolidError } from "react-icons/bi";
+import { FaLock, FaLockOpen, FaRegEye, FaRegEyeSlash } from "react-icons/fa";
 import { GoVerified } from "react-icons/go";
 import { IoIosUnlock } from "react-icons/io";
 import { MdEdit } from "react-icons/md";
@@ -15,6 +17,23 @@ function MyAccount() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  const [showUnlockWalletModal, setShowUnlockWalletModal] = useState(false);
+
+  const handleCloseUnlockWalletModal = () => setShowUnlockWalletModal(false);
+  const handleOpenUnlockWalletModal = () => setShowUnlockWalletModal(true);
+
+  const [isMnemonicVisible, setIsMnemonicVisible] = useState(false);
+  const [mnemonic, setMnemonic] = useState<string | undefined>(undefined);
+
+  const { getMnemonic, isWalletLoaded } = useWallet();
+
+  useEffect(() => {
+    if (isWalletLoaded) {
+      const mnem = getMnemonic();
+      setMnemonic(mnem);
+    }
+  }, [isWalletLoaded, getMnemonic]);
+
   const handleResetPassword = async () => {
     setLoading(true);
     try {
@@ -25,6 +44,21 @@ function MyAccount() {
       setError(`Failed resetting password. ${err}`);
     }
     setLoading(false);
+  };
+
+  const unlockWallet = async () => {
+    try {
+      if (!isWalletLoaded) {
+        handleOpenUnlockWalletModal();
+      }
+    } catch (err) {
+      console.error("Failed unlocking wallet", err);
+      throw err;
+    }
+  };
+
+  const handleSubmitUnlockWalletModal = async () => {
+    handleCloseUnlockWalletModal();
   };
 
   const layout = window;
@@ -42,271 +76,364 @@ function MyAccount() {
     discountRate = user.first_time_discount_rate;
   }
   return (
-    <Box
-      className="p-4 flex flex-col overflow-y-scroll"
-      style={{
-        height: layout.innerHeight - 120,
-      }}
-    >
-      <Box className="bg-dashboard/50 dark:bg-dark-700/50 rounded-2xl shadow-sm flex-grow md:max-h-[800px]">
-        <Tabs.Root
-          activationMode="manual"
-          defaultValue="profile"
-          className="md:flex md:items-start p-5 h-full"
-        >
-          <Box className="md:h-full md:border-r md:border-black/5 dark:border-dark bg-purple-800/5 p-2 md:p-0 rounded-full md:rounded-none md:bg-transparent md:max-w-[200px] w-full">
-            <Tabs.List
-              color="purple"
-              className="border-b-0 shadow-none md:flex-col rounded-r-full md:rounded-none"
-            >
-              {["profile"].map((items, index) => (
-                <Tabs.Trigger
-                  key={index}
-                  className={`md:justify-start data-[state=active]:before:bg-transparent flex-grow md:w-fit px-2 rounded-full hover:bg-transparent ${
-                    items === "delete account"
-                      ? "text-red-600 data-[state=active]:bg-red-600/20 md:mt-8 dark:text-red-400 dark:data-[state=active]:bg-red-800/20"
-                      : "data-[state=inactive]:text-font/70 data-[state=active]:text-purple-800 data-[state=active]:bg-purple-800/20 dark:data-[state=inactive]:text-gray-400 dark:data-[state=active]:text-purple-300 dark:data-[state=active]:bg-purple-700/20"
-                  } font-medium data-[state=active]:font-semibold capitalize`}
-                  value={items}
-                >
-                  {items}
-                </Tabs.Trigger>
-              ))}
-            </Tabs.List>
-          </Box>
-          <Box pt="3" className="flex-grow">
-            <Tabs.Content value="profile">
-              {user
-                ? (
-                  <Box className="md:pl-8">
-                    <Heading as="h4" className="font-semibold text-font dark:text-font-dark" size={"5"}>
-                      Profile
-                    </Heading>
-                    <Box mt={"6"} className="space-y-4">
-                      <Box p={"4"} className="border border-purple-400/20 rounded-2xl dark:border-gray-500/50">
-                        <Flex align={"center"} gap={"3"}>
-                          <Avatar
-                            src="https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?&w=256&h=256&q=70&crop=focalpoint&fp-x=0.5&fp-y=0.3&fp-z=1&fit=crop"
-                            size={"7"}
-                            radius="full"
-                            color="purple"
-                            fallback={user.name.substring(0, 1)}
-                          />
-                          <Flex align={"start"} direction={"column"} gap={"1"}>
-                            <Heading
-                              as="h4"
+    <>
+      <UnlockWalletModal
+        show={showUnlockWalletModal}
+        handleClose={handleCloseUnlockWalletModal}
+        handleSubmit={handleSubmitUnlockWalletModal}
+      />
+      <Box
+        className="p-4 flex flex-col overflow-y-scroll"
+        style={{
+          height: layout.innerHeight - 120,
+        }}
+      >
+        <Box className="bg-dashboard/50 dark:bg-dark-700/50 rounded-2xl shadow-sm flex-grow md:max-h-[800px]">
+          <Tabs.Root
+            activationMode="manual"
+            defaultValue="profile"
+            className="md:flex md:items-start p-5 h-full"
+          >
+            <Box className="md:h-full md:border-r md:border-black/5 dark:border-dark bg-purple-800/5 p-2 md:p-0 rounded-full md:rounded-none md:bg-transparent md:max-w-[200px] w-full">
+              <Tabs.List
+                color="purple"
+                className="border-b-0 shadow-none md:flex-col rounded-r-full md:rounded-none"
+              >
+                {["profile", "wallet"].map((items, index) => (
+                  <Tabs.Trigger
+                    key={index}
+                    className={`md:justify-start data-[state=active]:before:bg-transparent flex-grow md:w-fit px-2 rounded-full hover:bg-transparent ${
+                      items === "delete account"
+                        ? "text-red-600 data-[state=active]:bg-red-600/20 md:mt-8 dark:text-red-400 dark:data-[state=active]:bg-red-800/20"
+                        : "data-[state=inactive]:text-font/70 data-[state=active]:text-purple-800 data-[state=active]:bg-purple-800/20 dark:data-[state=inactive]:text-gray-400 dark:data-[state=active]:text-purple-300 dark:data-[state=active]:bg-purple-700/20"
+                    } font-medium data-[state=active]:font-semibold capitalize`}
+                    value={items}
+                  >
+                    {items}
+                  </Tabs.Trigger>
+                ))}
+              </Tabs.List>
+            </Box>
+            <Box pt="3" className="flex-grow">
+              <Tabs.Content value="wallet">
+                <Box className="md:pl-8">
+                  <Heading as="h4" className="font-semibold text-font dark:text-font-dark" size={"5"}>
+                    Wallet
+                  </Heading>
+                  <Box mt={"6"} className="space-y-4">
+                    <Box className="border border-purple-400/20 rounded-2xl px-5 py-6 dark:border-gray-500/50">
+                      <Heading as="h4" className="font-semibold capitalize text-font dark:text-font-dark" size={"3"}>
+                        Keys
+                      </Heading>
+                      <Box mt={"4"} className="max-w-lg grid md:grid-cols-1 gap-5">
+                        <Box>
+                          <Flex direction={"column"} gap={"1"}>
+                            <Flex direction={"row"} gap={"4"}>
+                              <Text
+                                as="label"
+                                weight={"medium"}
+                                size={"2"}
+                                className="text-font/50 dark:text-font-dark/50"
+                              >
+                                Mnemonic Seed Phrase
+                              </Text>
+
+                              <IconButton
+                                variant="ghost"
+                                type="button"
+                                className="hover:bg-transparent text-font dark:text-font-dark"
+                                onClick={unlockWallet}
+                              >
+                                {isWalletLoaded ? <FaLockOpen /> : <FaLock />}
+                              </IconButton>
+                              {mnemonic !== undefined
+                                ? (
+                                  <IconButton
+                                    variant="ghost"
+                                    type="button"
+                                    className="hover:bg-transparent text-font dark:text-font-dark"
+                                    onClick={() => setIsMnemonicVisible(!isMnemonicVisible)}
+                                  >
+                                    {isMnemonicVisible ? <FaRegEye /> : <FaRegEyeSlash />}
+                                  </IconButton>
+                                )
+                                : null}
+                            </Flex>
+                            <Text
+                              size={"3"}
                               weight={"medium"}
-                              className="capitalize text-font dark:text-font-dark"
-                              size={"4"}
+                              className="text-font dark:text-font-dark"
                             >
-                              {user.name}
-                            </Heading>
-                            <Text size={"2"} className="text-font/50 dark:text-font-dark/50">
-                              {new Date(user.created_at).toLocaleDateString("en-CA", options)}
+                              {isMnemonicVisible
+                                ? mnemonic
+                                : "**** **** **** **** **** **** **** **** **** **** **** ****"}
                             </Text>
-                            {user.verified && (
-                              <Flex gap={"1"}>
-                                <GoVerified color="green" />
-                                <Text size={"1"} weight={"medium"} color="green">Verified</Text>
-                              </Flex>
-                            )}
                           </Flex>
-                        </Flex>
-                      </Box>
-
-                      <Box className="border border-purple-400/20 rounded-2xl px-5 py-6 dark:border-gray-500/50">
-                        <Heading as="h4" className="font-semibold capitalize text-font dark:text-font-dark" size={"3"}>
-                          Personal information
-                        </Heading>
-                        <Box mt={"4"} className="max-w-lg grid md:grid-cols-2 gap-5">
-                          <Box>
-                            <Flex direction={"column"} gap={"1"}>
-                              <Text
-                                as="label"
-                                weight={"medium"}
-                                size={"2"}
-                                className="text-font/50 dark:text-font-dark/50"
-                              >
-                                Full Name
-                              </Text>
-                              <Text size={"3"} weight={"medium"} className="capitalize text-font dark:text-font-dark">
-                                {user.name}
-                              </Text>
-                            </Flex>
-                          </Box>
-
-                          <Box>
-                            <Flex direction={"column"} gap={"1"}>
-                              <Text
-                                as="label"
-                                weight={"medium"}
-                                size={"2"}
-                                className="text-font/50 dark:text-font-dark/50"
-                              >
-                                Email Address
-                              </Text>
-                              <Text size={"3"} weight={"medium"} className="capitalize text-font dark:text-font-dark">
-                                {user.email}
-                              </Text>
-                            </Flex>
-                          </Box>
-                          <Box>
-                            <Flex direction={"column"} gap={"1"}>
-                              <Text
-                                as="label"
-                                weight={"medium"}
-                                size={"2"}
-                                className="text-font/50 dark:text-font-dark/50"
-                              >
-                                Password
-                              </Text>
-                              <Text size={"3"} weight={"medium"} className="capitalize text-font dark:text-font-dark">
-                                ********
-                              </Text>
-                            </Flex>
-                          </Box>
-                          <Box>
-                            <Flex direction={"column"} gap={"1"}>
-                              <Text
-                                as="label"
-                                weight={"medium"}
-                                size={"2"}
-                                className="text-font/50 dark:text-font-dark/50"
-                              >
-                                Joined on
-                              </Text>
-                              <Text size={"3"} weight={"medium"} className="capitalize text-font dark:text-font-dark">
-                                {new Date(user.created_at).toLocaleDateString("en-CA", options)}
-                              </Text>
-                            </Flex>
-                          </Box>
-                          <Box>
-                            <Flex direction={"column"} gap={"1"}>
-                              <Text
-                                as="label"
-                                weight={"medium"}
-                                size={"2"}
-                                className="text-font/50 dark:text-font-dark/50"
-                              >
-                                Used referral code
-                              </Text>
-                              <Text size={"3"} weight={"medium"} className="text-font dark:text-font-dark">
-                                <Badge size={"3"}>
-                                  {user.used_referral_code || "None"}
-                                </Badge>
-                              </Text>
-                            </Flex>
-                          </Box>
-
-                          <Box>
-                            <Flex direction={"column"} gap={"1"}>
-                              <Text
-                                as="label"
-                                weight={"medium"}
-                                size={"2"}
-                                className="text-font/50 dark:text-font-dark/50"
-                              >
-                                Current discount on origination fee
-                              </Text>
-                              <Text size={"3"} weight={"medium"} className="text-font dark:text-font-dark">
-                                {(-discountRate * 100).toFixed(2)}%
-                              </Text>
-                            </Flex>
-                          </Box>
                         </Box>
                       </Box>
-                      <Box>
-                        <Flex direction={"column"} gap={"1"}>
-                          <Text
-                            as="label"
-                            weight={"medium"}
-                            size={"2"}
-                            className="text-font/50 dark:text-font-dark/50"
-                          >
-                            Personal referral codes
-                          </Text>
-                          <Text size={"3"} weight={"medium"} className="text-font dark:text-font-dark">
-                            {user.personal_referral_code && (
-                              <Badge size={"3"}>
-                                {user.personal_referral_code}
-                              </Badge>
-                            )}
-                            {!user.personal_referral_code
-                              && (
-                                <Callout.Root color="orange">
-                                  <Callout.Icon>
-                                    <BiSolidError />
-                                  </Callout.Icon>
-                                  <Callout.Text>
-                                    {"You don't have a personal referral code yet. Reach out to us if you want to take part in the affiliation program"}
-                                  </Callout.Text>
-                                </Callout.Root>
-                              )}
-                          </Text>
-                        </Flex>
-                      </Box>
-                      {error && (
-                        <Callout.Root color="red">
+                    </Box>
+                    {error && (
+                      <Callout.Root color="red">
+                        <Callout.Icon>
+                          <BiSolidError />
+                        </Callout.Icon>
+                        <Callout.Text>
+                          {error}
+                        </Callout.Text>
+                      </Callout.Root>
+                    )}
+
+                    {success
+                      && (
+                        <Callout.Root color="green">
                           <Callout.Icon>
-                            <BiSolidError />
+                            <IoIosUnlock />
                           </Callout.Icon>
                           <Callout.Text>
-                            {error}
+                            {success}
                           </Callout.Text>
                         </Callout.Root>
                       )}
+                  </Box>
+                </Box>
+              </Tabs.Content>
+              <Tabs.Content value="profile">
+                {user
+                  ? (
+                    <Box className="md:pl-8">
+                      <Heading as="h4" className="font-semibold text-font dark:text-font-dark" size={"5"}>
+                        Profile
+                      </Heading>
+                      <Box mt={"6"} className="space-y-4">
+                        <Box p={"4"} className="border border-purple-400/20 rounded-2xl dark:border-gray-500/50">
+                          <Flex align={"center"} gap={"3"}>
+                            <Avatar
+                              src="https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?&w=256&h=256&q=70&crop=focalpoint&fp-x=0.5&fp-y=0.3&fp-z=1&fit=crop"
+                              size={"7"}
+                              radius="full"
+                              color="purple"
+                              fallback={user.name.substring(0, 1)}
+                            />
+                            <Flex align={"start"} direction={"column"} gap={"1"}>
+                              <Heading
+                                as="h4"
+                                weight={"medium"}
+                                className="capitalize text-font dark:text-font-dark"
+                                size={"4"}
+                              >
+                                {user.name}
+                              </Heading>
+                              <Text size={"2"} className="text-font/50 dark:text-font-dark/50">
+                                {new Date(user.created_at).toLocaleDateString("en-CA", options)}
+                              </Text>
+                              {user.verified && (
+                                <Flex gap={"1"}>
+                                  <GoVerified color="green" />
+                                  <Text size={"1"} weight={"medium"} color="green">Verified</Text>
+                                </Flex>
+                              )}
+                            </Flex>
+                          </Flex>
+                        </Box>
 
-                      {success
-                        && (
-                          <Callout.Root color="green">
+                        <Box className="border border-purple-400/20 rounded-2xl px-5 py-6 dark:border-gray-500/50">
+                          <Heading
+                            as="h4"
+                            className="font-semibold capitalize text-font dark:text-font-dark"
+                            size={"3"}
+                          >
+                            Personal information
+                          </Heading>
+                          <Box mt={"4"} className="max-w-lg grid md:grid-cols-2 gap-5">
+                            <Box>
+                              <Flex direction={"column"} gap={"1"}>
+                                <Text
+                                  as="label"
+                                  weight={"medium"}
+                                  size={"2"}
+                                  className="text-font/50 dark:text-font-dark/50"
+                                >
+                                  Full Name
+                                </Text>
+                                <Text size={"3"} weight={"medium"} className="capitalize text-font dark:text-font-dark">
+                                  {user.name}
+                                </Text>
+                              </Flex>
+                            </Box>
+
+                            <Box>
+                              <Flex direction={"column"} gap={"1"}>
+                                <Text
+                                  as="label"
+                                  weight={"medium"}
+                                  size={"2"}
+                                  className="text-font/50 dark:text-font-dark/50"
+                                >
+                                  Email Address
+                                </Text>
+                                <Text size={"3"} weight={"medium"} className="capitalize text-font dark:text-font-dark">
+                                  {user.email}
+                                </Text>
+                              </Flex>
+                            </Box>
+                            <Box>
+                              <Flex direction={"column"} gap={"1"}>
+                                <Text
+                                  as="label"
+                                  weight={"medium"}
+                                  size={"2"}
+                                  className="text-font/50 dark:text-font-dark/50"
+                                >
+                                  Password
+                                </Text>
+                                <Text size={"3"} weight={"medium"} className="capitalize text-font dark:text-font-dark">
+                                  ********
+                                </Text>
+                              </Flex>
+                            </Box>
+                            <Box>
+                              <Flex direction={"column"} gap={"1"}>
+                                <Text
+                                  as="label"
+                                  weight={"medium"}
+                                  size={"2"}
+                                  className="text-font/50 dark:text-font-dark/50"
+                                >
+                                  Joined on
+                                </Text>
+                                <Text size={"3"} weight={"medium"} className="capitalize text-font dark:text-font-dark">
+                                  {new Date(user.created_at).toLocaleDateString("en-CA", options)}
+                                </Text>
+                              </Flex>
+                            </Box>
+                            <Box>
+                              <Flex direction={"column"} gap={"1"}>
+                                <Text
+                                  as="label"
+                                  weight={"medium"}
+                                  size={"2"}
+                                  className="text-font/50 dark:text-font-dark/50"
+                                >
+                                  Used referral code
+                                </Text>
+                                <Text size={"3"} weight={"medium"} className="text-font dark:text-font-dark">
+                                  <Badge size={"3"}>
+                                    {user.used_referral_code || "None"}
+                                  </Badge>
+                                </Text>
+                              </Flex>
+                            </Box>
+
+                            <Box>
+                              <Flex direction={"column"} gap={"1"}>
+                                <Text
+                                  as="label"
+                                  weight={"medium"}
+                                  size={"2"}
+                                  className="text-font/50 dark:text-font-dark/50"
+                                >
+                                  Current discount on origination fee
+                                </Text>
+                                <Text size={"3"} weight={"medium"} className="text-font dark:text-font-dark">
+                                  {(-discountRate * 100).toFixed(2)}%
+                                </Text>
+                              </Flex>
+                            </Box>
+                          </Box>
+                        </Box>
+                        <Box>
+                          <Flex direction={"column"} gap={"1"}>
+                            <Text
+                              as="label"
+                              weight={"medium"}
+                              size={"2"}
+                              className="text-font/50 dark:text-font-dark/50"
+                            >
+                              Personal referral codes
+                            </Text>
+                            <Text size={"3"} weight={"medium"} className="text-font dark:text-font-dark">
+                              {user.personal_referral_code && (
+                                <Badge size={"3"}>
+                                  {user.personal_referral_code}
+                                </Badge>
+                              )}
+                              {!user.personal_referral_code
+                                && (
+                                  <Callout.Root color="orange">
+                                    <Callout.Icon>
+                                      <BiSolidError />
+                                    </Callout.Icon>
+                                    <Callout.Text>
+                                      {"You don't have a personal referral code yet. Reach out to us if you want to take part in the affiliation program"}
+                                    </Callout.Text>
+                                  </Callout.Root>
+                                )}
+                            </Text>
+                          </Flex>
+                        </Box>
+                        {error && (
+                          <Callout.Root color="red">
                             <Callout.Icon>
-                              <IoIosUnlock />
+                              <BiSolidError />
                             </Callout.Icon>
                             <Callout.Text>
-                              {success}
+                              {error}
                             </Callout.Text>
                           </Callout.Root>
                         )}
 
-                      <Box className="md:pt-5">
-                        <Flex justify={"end"}>
-                          <Button
-                            size={"3"}
-                            onClick={handleResetPassword}
-                            disabled={isLoading}
-                            className="bg-btn text-sm dark:bg-gray-900"
-                          >
-                            {isLoading
-                              ? <Spinner size={"3"} />
-                              : <MdEdit />}
-                            Recover Password
-                          </Button>
-                        </Flex>
+                        {success
+                          && (
+                            <Callout.Root color="green">
+                              <Callout.Icon>
+                                <IoIosUnlock />
+                              </Callout.Icon>
+                              <Callout.Text>
+                                {success}
+                              </Callout.Text>
+                            </Callout.Root>
+                          )}
+
+                        <Box className="md:pt-5">
+                          <Flex justify={"end"}>
+                            <Button
+                              size={"3"}
+                              onClick={handleResetPassword}
+                              disabled={isLoading}
+                              className="bg-btn text-sm dark:bg-gray-900"
+                            >
+                              {isLoading
+                                ? <Spinner size={"3"} />
+                                : <MdEdit />}
+                              Recover Password
+                            </Button>
+                          </Flex>
+                        </Box>
                       </Box>
                     </Box>
-                  </Box>
-                )
-                : (
-                  <Box className="px-5">
-                    {/* To be worked on */}
-                    <div>No user data found.</div>
-                  </Box>
-                )}
-            </Tabs.Content>
-          </Box>
-        </Tabs.Root>
+                  )
+                  : (
+                    <Box className="px-5">
+                      {/* To be worked on */}
+                      <div>No user data found.</div>
+                    </Box>
+                  )}
+              </Tabs.Content>
+            </Box>
+          </Tabs.Root>
+        </Box>
+        <Box py={"3"} mb={"8"}>
+          <Flex gap={"1"} align={"center"}>
+            <PiWarningCircleFill color="rgb(235, 172, 14)" size={22} />
+            <Text size={"1"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">
+              Do not disclose your password to anyone, including Lendasat support.
+            </Text>
+          </Flex>
+        </Box>
+        <Box>
+        </Box>
       </Box>
-      <Box py={"3"} mb={"8"}>
-        <Flex gap={"1"} align={"center"}>
-          <PiWarningCircleFill color="rgb(235, 172, 14)" size={22} />
-          <Text size={"1"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">
-            Do not disclose your password to anyone, including Lendasat support.
-          </Text>
-        </Flex>
-      </Box>
-      <Box>
-      </Box>
-    </Box>
+    </>
   );
 }
 

@@ -13,7 +13,14 @@ function Login() {
 
   const handleLogin = async (email: string, password: string) => {
     await init();
+
     const loginResponse = await login(email, password);
+
+    if ("must_upgrade_to_pake" in loginResponse) {
+      navigate("/upgrade-to-pake");
+      return;
+    }
+
     const walletBackupData = loginResponse.wallet_backup_data;
 
     const key = await md5(email);
@@ -21,7 +28,6 @@ function Login() {
       try {
         restore_wallet(
           key,
-          walletBackupData.passphrase_hash,
           walletBackupData.mnemonic_ciphertext,
           walletBackupData.xpub,
           walletBackupData.network,
@@ -30,6 +36,10 @@ function Login() {
         console.error("Failed restoring wallet data");
       }
     }
+
+    // TODO: If a wallet does not exist and it can't be restored from the hub, we should ask the
+    // user to import a mnemonic seed phrase! Basically, a wallet must be created before we continue
+    // past login.
 
     if (oldPath) {
       navigate(oldPath);
@@ -50,7 +60,7 @@ function Login() {
   let message = "";
   switch (status) {
     case "verified":
-      message = "Email successfully verified. Please login";
+      message = "Email successfully verified. Please log in";
   }
 
   return (

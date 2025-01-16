@@ -48,13 +48,13 @@ export function ForgotPasswordForm({ handleSubmit }: ForgotPasswordProps) {
             <Box className="text-center pb-4">
               <Heading size={"7"} className="text-font dark:text-font-dark pb-2">Forgot your password?</Heading>
               <Text size={"3"} className="text-font/70 dark:text-font-dark/70">
-                Worry not, we'll send you reset instructions.
+                Worry not, we will send you reset instructions.
               </Text>
             </Box>
 
             <Form className="w-full" onSubmit={onSubmit}>
               {/* Email */}
-              <Box className="grid grid-cols-1 gap-1">
+              <Box className="grid grid-cols-1 gap-1 mb-3">
                 <Box className="text-left mt-3">
                   <Text as="label" size={"1"} weight={"medium"} className="text-font/70 dark:text-font-dark/70 mb-2">
                     Email
@@ -103,7 +103,7 @@ export function ForgotPasswordForm({ handleSubmit }: ForgotPasswordProps) {
                   disabled={!(email && !isLoading)}
                   className="w-full h-12 "
                 >
-                  {isLoading ? <Spinner size={"3"} /> : "OK"}
+                  {isLoading ? <Spinner size={"3"} /> : "Submit"}
                 </Button>
               </Box>
             </Form>

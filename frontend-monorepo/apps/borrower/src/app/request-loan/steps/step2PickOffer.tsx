@@ -1,7 +1,7 @@
 import { faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { LoanProductOption } from "@frontend-monorepo/base-http-client";
-import { CreateWalletModal, UnlockWalletModal, useWallet } from "@frontend-monorepo/browser-wallet";
+import { useWallet } from "@frontend-monorepo/browser-wallet";
 import { Integration, useAuth, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import type { LoanOffer, UserCardDetail } from "@frontend-monorepo/http-client-borrower";
 import {
@@ -341,7 +341,7 @@ export const Step2PickOffer = () => {
         return;
       }
       setIsLoading(true);
-      const borrowerPk = getNextPublicKey();
+      const borrowerPk = await getNextPublicKey();
 
       const res = await postContractRequest({
         loan_id: bestOffer.id,
@@ -688,11 +688,9 @@ interface SearchParams {
 
 // Loan Display Component
 const LoanSearched = (props: SearchParams) => {
-  const { doesWalletExist, isWalletLoaded } = useWallet();
   const { user } = useAuth();
 
   const [bitcoinAddressInputError, setBitcoinAddressInputError] = useState("");
-  const [walletSecretConfirmed, setWalletSecretConfirmed] = useState(isWalletLoaded);
   const { latestPrice } = usePrice();
 
   const collateralAmountBtc = props.amount / latestPrice / props.ltv;
@@ -701,39 +699,6 @@ const LoanSearched = (props: SearchParams) => {
   const liquidationPrice = props.amount / collateralAmountBtc * 0.95;
 
   const [hideWalletConnectButton, setHideWalletConnectButton] = useState(false);
-
-  const [showUnlockWalletModal, setShowUnlockWalletModal] = useState(false);
-  const [showCreateWalletModal, setShowCreateWalletModal] = useState(false);
-
-  const handleCloseUnlockWalletModal = () => setShowUnlockWalletModal(false);
-  const handleOpenUnlockWalletModal = () => setShowUnlockWalletModal(true);
-  const handleCloseCreateWalletModal = () => setShowCreateWalletModal(false);
-  const handleOpenCreateWalletModal = () => setShowCreateWalletModal(true);
-
-  const handleSubmitCreateWalletModal = async () => {
-    setWalletSecretConfirmed(true);
-    handleCloseCreateWalletModal();
-  };
-  const handleSubmitUnlockWalletModal = async () => {
-    setWalletSecretConfirmed(true);
-    handleCloseUnlockWalletModal();
-  };
-
-  const handleUnlockOrCreateWallet = async () => {
-    try {
-      if (!doesWalletExist) {
-        handleOpenCreateWalletModal();
-        return;
-      }
-      if (!isWalletLoaded) {
-        handleOpenUnlockWalletModal();
-        return;
-      }
-    } catch (error) {
-      console.log(`Unexpected error happened ${error}`);
-      props.setError(`Failed setting contract secret ${error}`);
-    }
-  };
 
   const onBitcoinAddressChange = (address: string) => {
     let network = Network.mainnet;
@@ -755,8 +720,6 @@ const LoanSearched = (props: SearchParams) => {
   const actualInterest = props.interest / (12 / props.duration);
   const actualInterestUsdAmount = props.amount * actualInterest;
 
-  const confirmOfferButtonEnabled = walletSecretConfirmed && bitcoinAddressInputError === "";
-
   const discountedFee = user?.first_time_discount_rate || 0.0;
   const isDiscountedFeeApplied = discountedFee ? discountedFee > 0 : false;
 
@@ -765,283 +728,252 @@ const LoanSearched = (props: SearchParams) => {
   const originationFeeUsd = props.amount * originationFee;
 
   return (
-    <>
-      <CreateWalletModal
-        show={showCreateWalletModal}
-        handleClose={handleCloseCreateWalletModal}
-        handleSubmit={handleSubmitCreateWalletModal}
-      />
-      <UnlockWalletModal
-        show={showUnlockWalletModal}
-        handleClose={handleCloseUnlockWalletModal}
-        handleSubmit={handleSubmitUnlockWalletModal}
-      />
-      <Box>
-        <Box className="px-6 py-4 space-y-3">
-          <Flex justify={"between"} align={"center"}>
-            <Text className="text-xs font-medium text-font/60 dark:text-font-dark/60">Lender</Text>
-            <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
-              {props.lender}
-            </Text>
-          </Flex>
-          <Separator size={"4"} />
-          <Flex justify={"between"} align={"center"}>
-            <InterestRateInfoLabel>
-              <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
-                <Text className="text-xs font-medium text-font/60 dark:text-font-dark/60">
-                  Interest
-                </Text>
-                <FaInfoCircle />
-              </Flex>
-            </InterestRateInfoLabel>
+    <Box>
+      <Box className="px-6 py-4 space-y-3">
+        <Flex justify={"between"} align={"center"}>
+          <Text className="text-xs font-medium text-font/60 dark:text-font-dark/60">Lender</Text>
+          <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
+            {props.lender}
+          </Text>
+        </Flex>
+        <Separator size={"4"} />
+        <Flex justify={"between"} align={"center"}>
+          <InterestRateInfoLabel>
+            <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
+              <Text className="text-xs font-medium text-font/60 dark:text-font-dark/60">
+                Interest
+              </Text>
+              <FaInfoCircle />
+            </Flex>
+          </InterestRateInfoLabel>
 
-            <div className="flex flex-col">
-              {props.duration !== 12
-                && (
-                  <Flex gap={"2"}>
-                    <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70">
-                      {(actualInterest * 100).toFixed(2)}%
-                    </Text>
-                    <Text className="text-[11px] text-font/70 dark:text-font-dark/50 mt-0.5 self-end">
-                      ({(props.interest * 100).toFixed(1)}% p.a.)
-                    </Text>
-                  </Flex>
-                )}
-              {props.duration === 12
-                && (
+          <div className="flex flex-col">
+            {props.duration !== 12
+              && (
+                <Flex gap={"2"}>
                   <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70">
-                    {(actualInterest * 100).toFixed(2)}% p.a.
+                    {(actualInterest * 100).toFixed(2)}%
                   </Text>
-                )}
-
-              <Text className="text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-end">
-                ≈ {formatCurrency(actualInterestUsdAmount, 1, 1)} in total
-              </Text>
-            </div>
-          </Flex>
-          <Separator size={"4"} />
-          <Flex justify={"between"} align={"center"}>
-            <LtvInfoLabel>
-              <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
-                <Text className="text-xs font-medium text-font/60 dark:text-font-dark/60">
-                  Needed collateral ({(props.ltv * 100).toFixed(0)}% LTV)
-                </Text>
-                <FaInfoCircle />
-              </Flex>
-            </LtvInfoLabel>
-            <div className="flex flex-col">
-              <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
-                {collateralAmountBtc.toFixed(8)} BTC
-              </Text>
-              <Text className="text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-end">
-                ≈ {formatCurrency(collateralUsdAmount)}
-              </Text>
-            </div>
-          </Flex>
-          <Separator size={"4"} />
-          <Flex justify={"between"} align={"center"}>
-            <div className="flex flex-col">
-              <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
-                <Text className="text-xs font-medium text-font/60 dark:text-font-dark/60">
-                  Origination fee
-                </Text>
-                <FaInfoCircle />
-              </Flex>
-
-              {isDiscountedFeeApplied
-                && (
-                  <Text className="text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-start">
-                    {-(discountedFee * 100).toFixed(2)}% discount applied
+                  <Text className="text-[11px] text-font/70 dark:text-font-dark/50 mt-0.5 self-end">
+                    ({(props.interest * 100).toFixed(1)}% p.a.)
                   </Text>
-                )}
-            </div>
-            <div className="flex flex-col">
-              <Text
-                className={`text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize ${
-                  discountedFee === 1 ? "line-through" : ""
-                }`}
-              >
-                {originationFeeBtc.toFixed(8)} BTC
-              </Text>
-              <Text
-                className={`text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-end ${
-                  discountedFee === 1 ? "line-through" : ""
-                }`}
-              >
-                ≈ {formatCurrency(originationFeeUsd)}
-              </Text>
-            </div>
-          </Flex>
-          <Separator size={"4"} />
-          <Flex justify={"between"} align={"center"}>
-            <LiquidationPriceInfoLabel>
-              <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
-                <Text className="text-xs font-medium text-font/60 dark:text-font-dark/60">
-                  Liquidation Price
+                </Flex>
+              )}
+            {props.duration === 12
+              && (
+                <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70">
+                  {(actualInterest * 100).toFixed(2)}% p.a.
                 </Text>
-                <FaInfoCircle />
-              </Flex>
-            </LiquidationPriceInfoLabel>
-            <div className="flex flex-col">
+              )}
+            <Text className="text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-end">
+              ≈ {formatCurrency(actualInterestUsdAmount, 1, 1)} in total
+            </Text>
+          </div>
+        </Flex>
+        <Separator size={"4"} />
+        <Flex justify={"between"} align={"center"}>
+          <LtvInfoLabel>
+            <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
+              <Text className="text-xs font-medium text-font/60 dark:text-font-dark/60">
+                Needed collateral ({(props.ltv * 100).toFixed(0)}% LTV)
+              </Text>
+              <FaInfoCircle />
+            </Flex>
+          </LtvInfoLabel>
+          <div className="flex flex-col">
+            <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
+              {collateralAmountBtc.toFixed(8)} BTC
+            </Text>
+            <Text className="text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-end">
+              ≈ {formatCurrency(collateralUsdAmount)}
+            </Text>
+          </div>
+        </Flex>
+        <Separator size={"4"} />
+        <Flex justify={"between"} align={"center"}>
+          <div className="flex flex-col">
+            <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
+              <Text className="text-xs font-medium text-font/60 dark:text-font-dark/60">
+                Origination fee
+              </Text>
+              <FaInfoCircle />
+            </Flex>
+
+            {isDiscountedFeeApplied
+              && (
+                <Text className="text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-start">
+                  {-(discountedFee * 100).toFixed(2)}% discount applied
+                </Text>
+              )}
+          </div>
+          <div className="flex flex-col">
+            <Text
+              className={`text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize ${
+                discountedFee === 1 ? "line-through" : ""
+              }`}
+            >
+              {originationFeeBtc.toFixed(8)} BTC
+            </Text>
+            <Text
+              className={`text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-end ${
+                discountedFee === 1 ? "line-through" : ""
+              }`}
+            >
+              ≈ {formatCurrency(originationFeeUsd)}
+            </Text>
+          </div>
+        </Flex>
+        <Separator size={"4"} />
+        <Flex justify={"between"} align={"center"}>
+          <LiquidationPriceInfoLabel>
+            <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
+              <Text className="text-xs font-medium text-font/60 dark:text-font-dark/60">
+                Liquidation Price
+              </Text>
+              <FaInfoCircle />
+            </Flex>
+          </LiquidationPriceInfoLabel>
+          <div className="flex flex-col">
+            <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
+              {newFormatCurrency({ value: liquidationPrice, maxFraction: 0, minFraction: 1 })}
+            </Text>
+          </div>
+        </Flex>
+        {!props.coinSelectHidden && (
+          <>
+            <Separator size={"4"} />
+            <Flex justify={"between"} align={"center"}>
+              <Text className="text-xs font-medium text-font/60 dark:text-font-dark/60">Coin</Text>
               <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
-                {newFormatCurrency({ value: liquidationPrice, maxFraction: 0, minFraction: 1 })}
+                {StableCoinHelper.print(props.coin)}
               </Text>
-            </div>
-          </Flex>
-          {!props.coinSelectHidden && (
-            <>
-              <Separator size={"4"} />
-              <Flex justify={"between"} align={"center"}>
-                <Text className="text-xs font-medium text-font/60 dark:text-font-dark/60">Coin</Text>
-                <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
-                  {StableCoinHelper.print(props.coin)}
-                </Text>
-              </Flex>
-            </>
-          )}
-          <Separator size={"4"} />
-          {props.offerPicked && (
-            <>
-              <Flex direction={"column"} align={"start"} gap={"2"}>
-                <div className="flex items-center gap-2">
-                  <AbbreviationExplanationInfo
-                    header={"Collateral Refund Address"}
-                    subHeader={""}
-                    description={"The Bitcoin address where you want your collateral returned upon loan repayment."}
-                  >
-                    <Flex gap={"2"} align={"center"}>
-                      <Text
-                        size={"2"}
-                        weight={"medium"}
-                        className={"text-xs font-medium text-font/60 dark:text-font-dark/60"}
-                      >
-                        Collateral Refund Address
-                      </Text>
-                      <FaInfoCircle />
-                    </Flex>
-                  </AbbreviationExplanationInfo>
-                  {/* Error message next to label */}
-                  {bitcoinAddressInputError && <span className="text-red-500 text-sm">{bitcoinAddressInputError}</span>}
-                </div>
-                <TextField.Root
-                  className="w-full font-semibold text-sm border-0 text-font dark:text-font-dark"
-                  size={"3"}
-                  type="text"
-                  value={props.btcAddress}
-                  onChange={(e) => onBitcoinAddressChange(e.target.value)}
+            </Flex>
+          </>
+        )}
+        <Separator size={"4"} />
+        {props.offerPicked && (
+          <>
+            <Flex direction={"column"} align={"start"} gap={"2"}>
+              <div className="flex items-center gap-2">
+                <AbbreviationExplanationInfo
+                  header={"Collateral Refund Address"}
+                  subHeader={""}
+                  description={"The Bitcoin address where you want your collateral returned upon loan repayment."}
                 >
-                  <TextField.Slot className="p-1.5" />
-                </TextField.Root>
-              </Flex>
-              {props.needMoonCard
-                ? (
-                  <>
-                    <Separator size={"4"} />
-                    <Flex direction={"column"} align={"start"} gap={"2"}>
-                      <Text as="label" className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
-                        Choose a card
-                      </Text>
-                      <MoonCardDropdown
-                        cards={props.moonCards}
-                        onSelect={props.setMoonCardId}
-                        loanAmount={props.amount}
-                      />
-                    </Flex>
-                    <Separator size={"4"} />
-                  </>
-                )
-                : null}
-              {props.needLoanAddress
-                ? (
-                  <>
-                    <Separator size={"4"} />
-                    <Flex direction={"column"} align={"start"} gap={"2"}>
-                      <Text as="label" className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
-                        Wallet Address
-                      </Text>
-                      <LoanAddressInputField
-                        loanAddress={props.loanAddress ?? ""}
-                        setLoanAddress={props.setLoanAddress}
-                        hideButton={hideWalletConnectButton}
-                        setHideButton={setHideWalletConnectButton}
-                        assetChain={StableCoinHelper.toChain(props.coin)}
-                      />
-                    </Flex>
-                    <Separator size={"4"} />
-                  </>
-                )
-                : null}
-            </>
-          )}
-          {!props.offerPicked
-            && (
-              <Button
+                  <Flex gap={"2"} align={"center"}>
+                    <Text
+                      size={"2"}
+                      weight={"medium"}
+                      className={"text-xs font-medium text-font/60 dark:text-font-dark/60"}
+                    >
+                      Collateral Refund Address
+                    </Text>
+                    <FaInfoCircle />
+                  </Flex>
+                </AbbreviationExplanationInfo>
+                {/* Error message next to label */}
+                {bitcoinAddressInputError && <span className="text-red-500 text-sm">{bitcoinAddressInputError}</span>}
+              </div>
+              <TextField.Root
+                className="w-full font-semibold text-sm border-0 text-font dark:text-font-dark"
                 size={"3"}
-                variant="solid"
-                className={`text-white bg-purple-950 w-full`}
-                onClick={props.onOfferSelected}
+                type="text"
+                value={props.btcAddress}
+                onChange={(e) => onBitcoinAddressChange(e.target.value)}
               >
-                <Text
-                  size={"2"}
-                  className="font-semibold"
-                >
-                  Pick Offer
-                </Text>
-              </Button>
-            )}
+                <TextField.Slot className="p-1.5" />
+              </TextField.Root>
+            </Flex>
+            {props.needMoonCard
+              ? (
+                <>
+                  <Separator size={"4"} />
+                  <Flex direction={"column"} align={"start"} gap={"2"}>
+                    <Text as="label" className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
+                      Choose a card
+                    </Text>
+                    <MoonCardDropdown
+                      cards={props.moonCards}
+                      onSelect={props.setMoonCardId}
+                      loanAmount={props.amount}
+                    />
+                  </Flex>
+                  <Separator size={"4"} />
+                </>
+              )
+              : null}
+            {props.needLoanAddress
+              ? (
+                <>
+                  <Separator size={"4"} />
+                  <Flex direction={"column"} align={"start"} gap={"2"}>
+                    <Text as="label" className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
+                      Wallet Address
+                    </Text>
+                    <LoanAddressInputField
+                      loanAddress={props.loanAddress ?? ""}
+                      setLoanAddress={props.setLoanAddress}
+                      hideButton={hideWalletConnectButton}
+                      setHideButton={setHideWalletConnectButton}
+                      assetChain={StableCoinHelper.toChain(props.coin)}
+                    />
+                  </Flex>
+                  <Separator size={"4"} />
+                </>
+              )
+              : null}
+          </>
+        )}
+        {!props.offerPicked
+          && (
+            <Button
+              size={"3"}
+              variant="solid"
+              className={`text-white bg-purple-950 w-full`}
+              onClick={props.onOfferSelected}
+            >
+              <Text
+                size={"2"}
+                className="font-semibold"
+              >
+                Pick Offer
+              </Text>
+            </Button>
+          )}
 
-          {props.offerPicked
-            && (
-              <Box className="flex space-x-4 justify-center">
-                <Button
-                  size={"3"}
-                  variant="solid"
-                  className={`text-white ${!walletSecretConfirmed ? "bg-purple-950" : "bg-gray-400"}`}
-                  onClick={() => handleUnlockOrCreateWallet()}
-                  disabled={walletSecretConfirmed}
-                  loading={props.isLoading}
-                >
-                  <Text
-                    size={"2"}
-                    className="font-semibold"
-                  >
-                    Confirm Secret
-                  </Text>
-                </Button>
-                <Button
-                  size={"3"}
-                  variant="solid"
-                  className={`text-white ${confirmOfferButtonEnabled ? "bg-purple-950" : "bg-gray-400"}`}
-                  onClick={props.onOfferConfirmed}
-                  disabled={!confirmOfferButtonEnabled}
-                  loading={props.isLoading}
-                >
-                  <Text
-                    size={"2"}
-                    className="font-semibold"
-                  >
-                    Confirm Offer
-                  </Text>
-                </Button>
-              </Box>
-            )}
+        {props.offerPicked
+          && (
+            <Button
+              size={"3"}
+              variant="solid"
+              className={"text-white bg-purple-950 w-full"}
+              onClick={props.onOfferConfirmed}
+              loading={props.isLoading}
+            >
+              <Text
+                size={"2"}
+                className="font-semibold"
+              >
+                Confirm Offer
+              </Text>
+            </Button>
+          )}
 
-          {props.error
-            ? (
-              <Box px={"2"} className="md:col-span-2">
-                <Callout.Root color="red" className="w-full">
-                  <Callout.Icon>
-                    <FontAwesomeIcon icon={faWarning} />
-                  </Callout.Icon>
-                  <Callout.Text>
-                    {props.error}
-                  </Callout.Text>
-                </Callout.Root>
-              </Box>
-            )
-            : ""}
-        </Box>
+        {props.error
+          ? (
+            <Box px={"2"} className="md:col-span-2">
+              <Callout.Root color="red" className="w-full">
+                <Callout.Icon>
+                  <FontAwesomeIcon icon={faWarning} />
+                </Callout.Icon>
+                <Callout.Text>
+                  {props.error}
+                </Callout.Text>
+              </Callout.Root>
+            </Box>
+          )
+          : ""}
       </Box>
-    </>
+    </Box>
   );
 };

@@ -1,6 +1,6 @@
 import { faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { CreateWalletModal, UnlockWalletModal, useWallet } from "@frontend-monorepo/browser-wallet";
+import { UnlockWalletModal, useWallet } from "@frontend-monorepo/browser-wallet";
 import { findBestOriginationFee, Integration, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import type { LoanOffer } from "@frontend-monorepo/http-client-borrower";
 import {
@@ -100,7 +100,6 @@ export function RequestLoanSummaryInner({ loanOffer, loanFilter }: RequestLoanSu
   const [btcAddress, setBtcAddress] = useState(defaultBtcAddress);
   const [amountError, setAmountError] = useState<string | null>(null);
   const [loanDuration, setLoanDuration] = useState<number>(initMonths);
-  const [showCreateWalletModal, setShowCreateWalletModal] = useState(false);
   const [showUnlockWalletModal, setShowUnlockWalletModal] = useState(false);
   const [hideWalletConnectButton, setHideWalletConnectButton] = useState(false);
 
@@ -129,9 +128,6 @@ export function RequestLoanSummaryInner({ loanOffer, loanFilter }: RequestLoanSu
     }
   };
 
-  const handleCloseCreateWalletModal = () => setShowCreateWalletModal(false);
-  const handleOpenCreateWalletModal = () => setShowCreateWalletModal(true);
-
   const handleCloseUnlockWalletModal = () => setShowUnlockWalletModal(false);
   const handleOpenUnlockWalletModal = () => setShowUnlockWalletModal(true);
 
@@ -142,8 +138,7 @@ export function RequestLoanSummaryInner({ loanOffer, loanFilter }: RequestLoanSu
   const handleRequestLoan = async () => {
     try {
       if (!doesWalletExist) {
-        handleOpenCreateWalletModal();
-        return;
+        throw new Error("Wallet does not exist. Try to log back in");
       }
       if (!isWalletLoaded) {
         handleOpenUnlockWalletModal();
@@ -159,7 +154,7 @@ export function RequestLoanSummaryInner({ loanOffer, loanFilter }: RequestLoanSu
 
   const requestLoan = async () => {
     try {
-      const borrowerPk = getNextPublicKey();
+      const borrowerPk = await getNextPublicKey();
 
       const res = await postContractRequest({
         loan_id: loanOffer.id,
@@ -195,9 +190,6 @@ export function RequestLoanSummaryInner({ loanOffer, loanFilter }: RequestLoanSu
 
   const addressLabel = initCoin ? `${StableCoinHelper.print(initCoin)} address` : "Address";
 
-  const handleSubmitCreateWalletModal = async () => {
-    handleCloseCreateWalletModal();
-  };
   const handleSubmitUnlockWalletModal = async () => {
     handleCloseUnlockWalletModal();
   };
@@ -445,14 +437,9 @@ export function RequestLoanSummaryInner({ loanOffer, loanFilter }: RequestLoanSu
             onClick={handleRequestLoan}
             disabled={isButtonDisabled}
           >
-            {doesWalletExist ? isWalletLoaded ? "Request" : "Load Wallet" : "Create Wallet"}
+            {isWalletLoaded ? "Request" : "Load Wallet"}
           </Button>
         </Box>
-        <CreateWalletModal
-          show={showCreateWalletModal}
-          handleClose={handleCloseCreateWalletModal}
-          handleSubmit={handleSubmitCreateWalletModal}
-        />
         <UnlockWalletModal
           show={showUnlockWalletModal}
           handleClose={handleCloseUnlockWalletModal}

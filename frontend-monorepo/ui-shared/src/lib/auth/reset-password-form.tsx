@@ -6,20 +6,27 @@ import { useState } from "react";
 import { Button, Form, InputGroup } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import { ReactComponent as Logo } from "./../assets/lendasat_svg_logo.svg";
+import { OldPasswordOrMnemonic } from "../models";
 
 interface ResetPasswordFormProps {
-  handleSubmit: (password: string, confirmPassword: string) => Promise<string>;
+  handleSubmit: (newPassword: string, oldPasswordOrMnemonic: OldPasswordOrMnemonic) => Promise<string>;
   loginUrl: string;
+  canUseMnemonic: boolean;
 }
 
-export function ResetPasswordForm({ handleSubmit, loginUrl }: ResetPasswordFormProps) {
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+export function ResetPasswordForm({ handleSubmit, loginUrl, canUseMnemonic }: ResetPasswordFormProps) {
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isLoading, setLoading] = useState(false);
-  const [passwordMatch, setPasswordMatch] = useState(false);
   const [changeComplete, setChangeComplete] = useState(false);
+  const [passwordMatch, setPasswordMatch] = useState(false);
+
+  const [oldPassOrMnemonic, setOldPassOrMnemonic] = useState("oldPassword");
+
+  const [oldPassword, setOldPassword] = useState("");
+  const [mnemonic, setMnemonic] = useState("");
 
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -27,7 +34,16 @@ export function ResetPasswordForm({ handleSubmit, loginUrl }: ResetPasswordFormP
     setSuccess("");
     setChangeComplete(false);
     try {
-      const success = await handleSubmit(password, confirmPassword);
+      let extra;
+      if (oldPassOrMnemonic === "oldPassword") {
+        extra = { type: "oldPassword", value: oldPassword };
+      } else if (oldPassOrMnemonic === "mnemonic") {
+        extra = { type: "mnemonic", value: mnemonic };
+      } else {
+        throw new Error("Failed to provide current password or mnemonic");
+      }
+
+      const success = await handleSubmit(newPassword, extra);
       setSuccess(success);
       setChangeComplete(true);
     } catch (err) {
@@ -38,8 +54,8 @@ export function ResetPasswordForm({ handleSubmit, loginUrl }: ResetPasswordFormP
   };
   const onConfirmPasswordChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const confirmPasswordInput = e.target.value;
-    setConfirmPassword(confirmPasswordInput);
-    if (confirmPasswordInput !== password) {
+    setConfirmNewPassword(confirmPasswordInput);
+    if (confirmPasswordInput !== newPassword) {
       setError(`Passwords do not match`);
       setPasswordMatch(false);
     } else {
@@ -72,27 +88,34 @@ export function ResetPasswordForm({ handleSubmit, loginUrl }: ResetPasswordFormP
 
             <Form onSubmit={onSubmit}>
               <Form.Group controlId="formBasicPassword" className="mb-3">
+                <Text as="label" size={"1"} weight={"medium"} className="text-font dark:text-font-dark mb-2">
+                  New Password
+                </Text>
                 <Form.Control
                   type="Password"
-                  placeholder="Password"
-                  className="p-3 text-font bg-light dark:text-font-dark dark:bg-dark"
+                  placeholder="New Password"
+                  className="p-3 text-font bg-light dark:text-font-dark dark:bg-dark dark:placeholder:text-font-dark/60"
                   style={{ width: "100%" }}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
                   disabled={changeComplete}
                 />
               </Form.Group>
 
               <Form.Group controlId="formBasicPassword" className="mb-3">
+                <Text as="label" size={"1"} weight={"medium"} className="text-font dark:text-font-dark mb-2">
+                  Confirm Password
+                </Text>
                 <InputGroup className="mb-3 text-font dark:text-font-dark">
                   <Form.Control
                     type={"Password"}
-                    placeholder={"Confirm password"}
-                    value={confirmPassword}
+                    placeholder="Confirm Password"
+                    value={confirmNewPassword}
                     onChange={onConfirmPasswordChange}
-                    className="p-3 text-font bg-light dark:text-font-dark dark:bg-dark"
+                    className="p-3 text-font bg-light dark:text-font-dark dark:bg-dark dark:placeholder:text-font-dark/60"
                     disabled={changeComplete}
                   />
+
                   {
                     <div className="position-absolute top-50 end-0 translate-middle-y me-2">
                       {passwordMatch
@@ -101,6 +124,57 @@ export function ResetPasswordForm({ handleSubmit, loginUrl }: ResetPasswordFormP
                     </div>
                   }
                 </InputGroup>
+
+                <Form.Group controlId="formPasswordType">
+                  <Text as="label" size={"1"} weight={"medium"} className="text-font dark:text-font-dark mb-2">
+                    Extra Data
+                  </Text>
+                  <Box className="d-flex align-items-center ml-3 mb-3">
+                    <Form.Check
+                      type="radio"
+                      label="Current Password"
+                      name="passwordType"
+                      className="p-3 text-font bg-light dark:text-font-dark dark:bg-dark mr-4"
+                      onChange={() => setOldPassOrMnemonic("oldPassword")}
+                      checked={oldPassOrMnemonic === "oldPassword"}
+                    />
+                    {canUseMnemonic
+                      && (
+                        <Form.Check
+                          type="radio"
+                          label="Mnemonic Seed Phrase"
+                          name="passwordType"
+                          className="p-3 text-font bg-light dark:text-font-dark dark:bg-dark"
+                          onChange={() => setOldPassOrMnemonic("mnemonic")}
+                          checked={oldPassOrMnemonic === "mnemonic"}
+                        />
+                      )}
+                  </Box>
+                </Form.Group>
+
+                {oldPassOrMnemonic === "oldPassword" && (
+                  <Form.Group controlId="formOldPassword">
+                    <Form.Control
+                      type="password"
+                      placeholder="Current Password"
+                      value={oldPassword}
+                      onChange={(e) => setOldPassword(e.target.value)}
+                      className="mb-3 text-font bg-light dark:text-font-dark dark:bg-dark dark:placeholder:text-font-dark/60"
+                    />
+                  </Form.Group>
+                )}
+
+                {oldPassOrMnemonic === "mnemonic" && (
+                  <Form.Group controlId="formMnemonic">
+                    <Form.Control
+                      placeholder="abandon ability able about..."
+                      value={mnemonic}
+                      onChange={(e) => setMnemonic(e.target.value)}
+                      className="mb-3 text-font bg-light dark:text-font-dark dark:bg-dark dark:placeholder:text-font-dark/60"
+                    />
+                  </Form.Group>
+                )}
+
                 <InputGroup>
                   {error && <div className="alert alert-danger w-100">{error}</div>}
                   {success && <div className="alert alert-success w-100">{success}</div>}
@@ -110,7 +184,7 @@ export function ResetPasswordForm({ handleSubmit, loginUrl }: ResetPasswordFormP
                     ? (
                       <Link to={loginUrl} className={`text-decoration-none}`}>
                         <Button variant="primary" className="w-100 p-2">
-                          {"To Login"}
+                          {"Go To Login"}
                         </Button>
                       </Link>
                     )

@@ -57,6 +57,16 @@
         "ordinal": 10,
         "name": "updated_at",
         "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 11,
+        "name": "salt",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 12,
+        "name": "verifier",
+        "type_info": "Text"
       }
     ],
     "parameters": {
@@ -68,12 +78,14 @@
       false,
       false,
       false,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
       false,
       false,
-      true,
-      true,
-      true,
-      true,
       false,
       false
     ]

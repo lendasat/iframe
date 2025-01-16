@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO lenders (id, name, email, password, verification_code, invite_code)\n            VALUES ($1, $2, $3, $4, $5, $6)\n            RETURNING *",
+  "query": "INSERT INTO lenders (id, name, email, salt, verifier, verification_code, invite_code)\n            VALUES ($1, $2, $3, $4, $5, $6, $7)\n            RETURNING *",
   "describe": {
     "columns": [
       {
@@ -57,6 +57,16 @@
         "ordinal": 10,
         "name": "updated_at",
         "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 11,
+        "name": "salt",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 12,
+        "name": "verifier",
+        "type_info": "Text"
       }
     ],
     "parameters": {
@@ -64,7 +74,8 @@
         "Bpchar",
         "Varchar",
         "Varchar",
-        "Varchar",
+        "Text",
+        "Text",
         "Varchar",
         "Int4"
       ]
@@ -73,15 +84,17 @@
       false,
       false,
       false,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
       false,
       false,
-      true,
-      true,
-      true,
-      true,
       false,
       false
     ]
   },
-  "hash": "ebd20a556f9fcb6256488cadc3b4bd6cf0420ffa74847009685bb95d04e04e0a"
+  "hash": "de571f519d58d24aeb1143cafd0676a251e2675ff830ce575280fd576247b490"
 }

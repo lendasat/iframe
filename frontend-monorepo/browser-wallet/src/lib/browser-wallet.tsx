@@ -5,7 +5,6 @@ import init, {
   get_xpub,
   is_wallet_loaded,
   load_wallet,
-  new_wallet,
   sign_claim_psbt,
   sign_liquidation_psbt,
 } from "browser-wallet";
@@ -18,10 +17,9 @@ interface WalletContextType {
   isInitialized: boolean;
   isWalletLoaded: boolean;
   doesWalletExist: boolean;
-  createWallet: (passphrase: string, network: string) => Promise<void>;
   loadWallet: (passphrase: string) => Promise<void>;
   getMnemonic: () => string;
-  getNextPublicKey: () => string;
+  getNextPublicKey: () => Promise<string>;
   signClaimPsbt: (psbt: string, collateralDescriptor: string, borrowerPk: string) => Promise<SignedTransaction>;
   signLiquidationPsbt: (psbt: string, collateralDescriptor: string, borrowerPk: string) => Promise<SignedTransaction>;
   getXpub: () => Promise<string>;
@@ -51,23 +49,13 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
     init().then(async () => {
       setIsInitialized(true);
       const key = await md5(email);
+
       setDoesWalletExist(does_wallet_exist(key));
       setIsWalletLoaded(is_wallet_loaded());
     }).catch((error) => {
       console.log(`Failed initializing wasm library ${error}`);
     });
   }, [email]);
-
-  const createWallet = async (passphrase: string, network: string) => {
-    if (isInitialized) {
-      const key = await md5(email);
-      new_wallet(passphrase, network, key);
-      setDoesWalletExist(true);
-      setIsWalletLoaded(true);
-    } else {
-      throw Error("Wallet not initialized");
-    }
-  };
 
   const loadWallet = async (passphrase: string) => {
     console.log("loading wallet");
@@ -88,14 +76,9 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
     throw Error("Wallet not initialized");
   };
 
-  const getNextPublicKey = () => {
-    if (isInitialized && isWalletLoaded) {
-      return get_next_pk();
-    } else if (!isInitialized) {
-      throw Error("Wallet not initialized");
-    } else {
-      throw Error("Wallet not loaded");
-    }
+  const getNextPublicKey = async () => {
+    const key = await md5(email);
+    return get_next_pk(key);
   };
 
   const signClaimPsbt = async (psbt: string, collateralDescriptor: string, borrowerPk: string) => {
@@ -119,14 +102,6 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
   };
 
   const getXpub = async () => {
-    if (!isInitialized) {
-      throw Error("Wallet not initialized");
-    }
-
-    if (!doesWalletExist) {
-      throw Error("Wallet does not exist");
-    }
-
     const key = await md5(email);
     return get_xpub(key);
   };
@@ -135,7 +110,6 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
     isInitialized,
     isWalletLoaded,
     doesWalletExist,
-    createWallet,
     loadWallet,
     getMnemonic,
     getNextPublicKey,

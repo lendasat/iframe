@@ -1,7 +1,16 @@
 import type { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import axios from "axios";
 import { createContext, useContext } from "react";
-import type { LoginResponse, MeResponse, Version, WalletBackupData } from "./models";
+import type {
+  LoginResponse,
+  MeResponse,
+  PakeLoginResponse,
+  PakeLoginResponseOrUpgrade,
+  PakeVerifyResponse,
+  UpgradeToPakeResponse,
+  Version,
+  WalletBackupData,
+} from "./models";
 
 export class BaseHttpClient {
   public httpClient: AxiosInstance;
@@ -43,7 +52,8 @@ export class BaseHttpClient {
   async register(
     name: string,
     email: string,
-    password: string,
+    verifier: string,
+    salt: string,
     walletBackupData: WalletBackupData,
     inviteCode?: string,
   ): Promise<void> {
@@ -51,7 +61,8 @@ export class BaseHttpClient {
       await this.httpClient.post("/api/auth/register", {
         name,
         email,
-        password,
+        verifier,
+        salt,
         wallet_backup_data: walletBackupData,
         invite_code: inviteCode,
       });
@@ -87,6 +98,124 @@ export class BaseHttpClient {
         }
       } else {
         throw new Error("Could not send login request");
+      }
+    }
+  }
+
+  async pakeLoginRequest(email: string): Promise<PakeLoginResponseOrUpgrade> {
+    try {
+      const [response] = await Promise.all([this.httpClient.post("/api/auth/pake-login", { email })]);
+      const data = response.data as PakeLoginResponse;
+      console.log(`Got PAKE login response`);
+      return data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        console.log(error.response);
+        const status = error.response.status;
+        const message = error.response.data.message;
+
+        if (status === 400) {
+          console.log(message);
+          if (message === "upgrade-to-pake") {
+            return { must_upgrade_to_pake: undefined };
+          }
+
+          throw new Error("Please check your credentials and try again.");
+        } else {
+          throw new Error(message);
+        }
+      } else {
+        throw new Error("Could not send PAKE login request");
+      }
+    }
+  }
+
+  async pakeVerifyRequest(email: string, aPub: string, clientProof: string): Promise<PakeVerifyResponse> {
+    try {
+      const [response] = await Promise.all([
+        this.httpClient.post("/api/auth/pake-verify", { email, a_pub: aPub, client_proof: clientProof }),
+      ]);
+      const data = response.data as PakeVerifyResponse;
+      console.log(`Got PAKE verification response`);
+      return data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        console.log(error.response);
+        const status = error.response.status;
+        const message = error.response.data.message;
+
+        if (status === 400) {
+          throw new Error("Please check your credentials and try again.");
+        } else {
+          throw new Error(message);
+        }
+      } else {
+        throw new Error("Could not send PAKE verify request");
+      }
+    }
+  }
+
+  async upgradeToPake(email: string, oldPassword: string): Promise<UpgradeToPakeResponse> {
+    try {
+      const [response] = await Promise.all([
+        this.httpClient.post("/api/auth/upgrade-to-pake", { email, old_password: oldPassword }),
+      ]);
+      const data = response.data as UpgradeToPakeResponse;
+      console.log(`Got upgrade-to-PAKE response`);
+      return data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        console.log(error.response);
+        const status = error.response.status;
+        const message = error.response.data.message;
+
+        if (status === 400) {
+          console.log(message);
+
+          throw new Error("Please check your credentials and try again.");
+        } else {
+          throw new Error(message);
+        }
+      } else {
+        throw new Error("Could not upgrade-to-PAKE request");
+      }
+    }
+  }
+
+  async finishUpgradeToPake(
+    email: string,
+    oldPassword: string,
+    verifier: string,
+    salt: string,
+    newWalletBackupData: WalletBackupData,
+  ): Promise<void> {
+    try {
+      await Promise.all([
+        this.httpClient.post("/api/auth/finish-upgrade-to-pake", {
+          email,
+          old_password: oldPassword,
+          verifier,
+          salt,
+          new_wallet_backup_data: newWalletBackupData,
+        }),
+      ]);
+      console.log(`Ugraded to PAKE`);
+      return;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        console.log(error.response);
+        const status = error.response.status;
+        const message = error.response.data.message;
+
+        if (status === 400) {
+          console.log(message);
+
+          throw new Error("Please check your credentials and try again.");
+        } else {
+          throw new Error(message);
+        }
+      } else {
+        throw new Error("Could not upgrade-to-PAKE request");
       }
     }
   }
@@ -169,11 +298,17 @@ export class BaseHttpClient {
     }
   }
 
-  async resetPassword(password: string, passwordConfirm: string, passwordResetToken: string): Promise<string> {
+  async resetPassword(
+    verifier: string,
+    salt: string,
+    walletBackupData: WalletBackupData,
+    passwordResetToken: string,
+  ): Promise<string> {
     try {
       const response = await this.httpClient.put(`/api/auth/resetpassword/${passwordResetToken}`, {
-        password,
-        passwordConfirm,
+        verifier,
+        salt,
+        new_wallet_backup_data: walletBackupData,
       });
       return response.data.message;
     } catch (error) {
@@ -197,6 +332,10 @@ export type BaseHttpClientContextType = Pick<
   BaseHttpClient,
   | "register"
   | "login"
+  | "pakeLoginRequest"
+  | "pakeVerifyRequest"
+  | "upgradeToPake"
+  | "finishUpgradeToPake"
   | "logout"
   | "me"
   | "forgotPassword"
@@ -229,6 +368,10 @@ export const HttpClientProvider: React.FC<HttpClientProviderProps> = ({ children
   const baseClientFunctions: BaseHttpClientContextType = {
     register: httpClient.register.bind(httpClient),
     login: httpClient.login.bind(httpClient),
+    pakeLoginRequest: httpClient.pakeLoginRequest.bind(httpClient),
+    pakeVerifyRequest: httpClient.pakeVerifyRequest.bind(httpClient),
+    upgradeToPake: httpClient.upgradeToPake.bind(httpClient),
+    finishUpgradeToPake: httpClient.finishUpgradeToPake.bind(httpClient),
     logout: httpClient.logout.bind(httpClient),
     me: httpClient.me.bind(httpClient),
     forgotPassword: httpClient.forgotPassword.bind(httpClient),

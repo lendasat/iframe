@@ -2,104 +2,193 @@
 
 use crate::storage::local_storage;
 use crate::wallet;
+use anyhow::bail;
 use anyhow::Context;
 use anyhow::Result;
 use bitcoin::Psbt;
 use bitcoin::TxOut;
 
-const STORAGE_KEY_PREFIX: &str = "wallet";
+const STORAGE_KEY_PREFIX: &str = "wallet-v2";
 
-const PASSPHRASE_STORAGE_KEY: &str = "passphrase";
 const SEED_STORAGE_KEY: &str = "seed";
 const NETWORK_KEY: &str = "network";
 const XPUB_KEY: &str = "xpub";
 
 pub struct WalletDetails {
-    pub passphrase_hash: String,
     pub mnemonic_ciphertext: String,
     pub network: String,
     pub xpub: String,
 }
 
-/// Create a new wallet
+/// Create a new wallet.
 ///
-/// The wallet is encrypted with [`password`] and works only for [`network`]. The [`key`] is needed
-/// to uniquely identify the browser storage. This identifier needs to be unique.
+/// The wallet is encrypted with `password` and works only for `network`. The `key` argument is used
+/// as part of the browser's local storage entry key for each wallet element.
 ///
-/// Notes: if in browser storage a wallet with given [`key`] already exists, it will be overwritten.
-pub fn new(passphrase: String, network: String, key: String) -> Result<WalletDetails> {
+/// If we pass a `key` that is already being used in local storage, all the associated values will
+/// be overwritten based on the newly generated wallet.
+pub fn new(
+    password: String,
+    mnemonic: Option<String>,
+    network: String,
+    key: String,
+) -> Result<WalletDetails> {
     let storage = local_storage()?;
 
-    if does_wallet_exist(key.as_str())? {
+    if does_wallet_exist(&key)? {
         log::warn!(
             "Wallet with same name already exists in local storage. It will be overwritten."
         );
     }
 
-    let (passphrase_hash, mnemonic_ciphertext, network, xpub) =
-        wallet::new_wallet(&passphrase, &network)?;
+    let (mnemonic_ciphertext, network, xpub) =
+        wallet::new_wallet(&password, &network, mnemonic.as_deref())?;
 
     storage.set_item(
-        derive_storage_key(key.as_str(), PASSPHRASE_STORAGE_KEY).as_str(),
-        passphrase_hash.clone(),
-    )?;
-
-    storage.set_item(
-        derive_storage_key(key.as_str(), SEED_STORAGE_KEY).as_str(),
+        &derive_storage_key(&key, SEED_STORAGE_KEY),
         mnemonic_ciphertext.serialize(),
     )?;
 
-    storage.set_item(
-        derive_storage_key(key.as_str(), NETWORK_KEY).as_str(),
-        network.to_string(),
-    )?;
+    storage.set_item(&derive_storage_key(&key, NETWORK_KEY), network.to_string())?;
 
-    storage.set_item(derive_storage_key(key.as_str(), XPUB_KEY).as_str(), xpub)?;
+    storage.set_item(&derive_storage_key(&key, XPUB_KEY), xpub)?;
 
     Ok(WalletDetails {
-        passphrase_hash: passphrase_hash.to_string(),
         mnemonic_ciphertext: mnemonic_ciphertext.serialize(),
         network: network.to_string(),
         xpub: xpub.to_string(),
     })
 }
 
-/// Restores a wallet from provided arguments
+/// Restore a wallet from a backup.
 ///
-/// Notes: if in browser storage a wallet with given [`key`] already exists, it will be overwritten.
+/// If we pass a `key` that is already being used in local storage, all the associated values will
+/// be overwritten based on the newly generated wallet.
 pub fn restore(
     key: String,
-    passphrase_hash: String,
     mnemonic_ciphertext: String,
     network: String,
     xpub: String,
 ) -> Result<()> {
     let storage = local_storage()?;
 
-    if does_wallet_exist(key.as_str())? {
+    if does_wallet_exist(&key)? {
         log::warn!(
             "Wallet with same name already exists in local storage. It will be overwritten."
         );
     }
 
     storage.set_item(
-        derive_storage_key(key.as_str(), PASSPHRASE_STORAGE_KEY).as_str(),
-        passphrase_hash.clone(),
-    )?;
-
-    storage.set_item(
-        derive_storage_key(key.as_str(), SEED_STORAGE_KEY).as_str(),
+        &derive_storage_key(&key, SEED_STORAGE_KEY),
         mnemonic_ciphertext,
     )?;
 
-    storage.set_item(
-        derive_storage_key(key.as_str(), NETWORK_KEY).as_str(),
-        network,
-    )?;
+    storage.set_item(&derive_storage_key(&key, NETWORK_KEY), network)?;
 
-    storage.set_item(derive_storage_key(key.as_str(), XPUB_KEY).as_str(), xpub)?;
+    storage.set_item(&derive_storage_key(&key, XPUB_KEY), xpub)?;
 
     Ok(())
+}
+
+/// Upgrade the wallet to a new format, encrypted under `new_password`. The new format will
+/// **generate different keys**, because we no longer use the `old_password` as a passphrase to
+/// derive the seed.
+///
+/// We move the old data to a different local storage key just in case.
+pub fn upgrade_wallet(
+    key: String,
+    mnemonic_ciphertext: String,
+    network: String,
+    old_password: String,
+    new_password: String,
+) -> Result<WalletDetails> {
+    let storage = local_storage()?;
+
+    let (new_mnemonic_ciphertext, new_xpub) =
+        wallet::upgrade_wallet(&mnemonic_ciphertext, &network, &old_password, &new_password)
+            .context("failed to generate upgraded wallet data")?;
+
+    // If local storage already contains a copy of the old wallet data, we move it to a different
+    // key. This should not be necesary, but we don't want to be destructive in case we write bugs.
+    if does_wallet_exist(&key)? {
+        bail!("Should not upgrade wallet to PAKE more than once");
+    }
+
+    storage
+        .set_item(
+            &derive_storage_key(&key, SEED_STORAGE_KEY),
+            new_mnemonic_ciphertext.serialize(),
+        )
+        .context("new mnemonic ciphertext")?;
+
+    storage
+        .set_item(&derive_storage_key(&key, NETWORK_KEY), &network)
+        .context("new network")?;
+
+    storage
+        .set_item(&derive_storage_key(&key, XPUB_KEY), new_xpub)
+        .context("new Xpub")?;
+
+    Ok(WalletDetails {
+        mnemonic_ciphertext: new_mnemonic_ciphertext.serialize(),
+        network,
+        xpub: new_xpub.to_string(),
+    })
+}
+
+/// Update the encryption key of the local encrypted wallet to use `new_password` instead of
+/// `old_password`.
+///
+/// We move the old data to a different local storage key just in case.
+pub fn change_wallet_encryption(
+    key: String,
+    old_password: String,
+    new_password: String,
+) -> Result<WalletDetails> {
+    let storage = local_storage()?;
+
+    let mnemonic_ciphertext = storage
+        .get_item::<String>(&derive_storage_key(&key, SEED_STORAGE_KEY))?
+        .context("No mnemonic stored for wallet")?;
+
+    let network = storage
+        .get_item::<String>(&derive_storage_key(&key, NETWORK_KEY))?
+        .context("No network stored for wallet")?;
+
+    let (new_mnemonic_ciphertext, new_xpub) = wallet::change_wallet_encryption(
+        &mnemonic_ciphertext,
+        &network,
+        &old_password,
+        &new_password,
+    )
+    .context("failed to generate upgraded wallet data")?;
+
+    if does_wallet_exist(&key)? {
+        log::warn!(
+            "Wallet with same name already exists in local storage. It will be overwritten."
+        );
+    }
+
+    storage
+        .set_item(
+            &derive_storage_key(&key, SEED_STORAGE_KEY),
+            new_mnemonic_ciphertext.serialize(),
+        )
+        .context("new mnemonic ciphertext")?;
+
+    storage
+        .set_item(&derive_storage_key(&key, NETWORK_KEY), &network)
+        .context("new network")?;
+
+    storage
+        .set_item(&derive_storage_key(&key, XPUB_KEY), new_xpub)
+        .context("new Xpub")?;
+
+    Ok(WalletDetails {
+        mnemonic_ciphertext: new_mnemonic_ciphertext.serialize(),
+        network,
+        xpub: new_xpub.to_string(),
+    })
 }
 
 fn derive_storage_key(key: &str, actual_key: &str) -> String {
@@ -107,28 +196,31 @@ fn derive_storage_key(key: &str, actual_key: &str) -> String {
     format!("{}.{}.{}", STORAGE_KEY_PREFIX, key, actual_key)
 }
 
-pub fn load(passphrase: &str, key: &str) -> Result<()> {
+pub fn load(password: &str, key: &str) -> Result<()> {
     let storage = local_storage()?;
 
-    let passphrase_hash = storage
-        .get_item::<String>(derive_storage_key(key, PASSPHRASE_STORAGE_KEY).as_str())?
-        .context("No passphrase stored for wallet")?;
-
     let mnemonic_ciphertext = storage
-        .get_item::<String>(derive_storage_key(key, SEED_STORAGE_KEY).as_str())?
+        .get_item::<String>(&derive_storage_key(key, SEED_STORAGE_KEY))?
         .context("No mnemonic stored for wallet")?;
 
     let network = storage
-        .get_item::<String>(derive_storage_key(key, NETWORK_KEY).as_str())?
+        .get_item::<String>(&derive_storage_key(key, NETWORK_KEY))?
         .context("No network stored for wallet")?;
 
-    wallet::load_wallet(passphrase, &passphrase_hash, &mnemonic_ciphertext, &network)?;
+    wallet::load_wallet(password, &mnemonic_ciphertext, &network)?;
 
     Ok(())
 }
 
-pub fn get_next_pk() -> Result<String> {
-    let pk = wallet::get_pk()?;
+pub fn get_next_pk(key: &str) -> Result<String> {
+    let xpub = get_xpub(key)?;
+
+    let storage = local_storage()?;
+    let network = storage
+        .get_item::<String>(&derive_storage_key(key, NETWORK_KEY))?
+        .context("No network stored for wallet")?;
+
+    let pk = wallet::get_normal_pk_for_network(&xpub, &network)?;
 
     Ok(pk.to_string())
 }
@@ -185,19 +277,16 @@ pub fn sign_liquidation_psbt(
 pub fn does_wallet_exist(key: &str) -> Result<bool> {
     let storage = local_storage()?;
 
-    let passphrase =
-        storage.get_item::<String>(derive_storage_key(key, PASSPHRASE_STORAGE_KEY).as_str())?;
-    let mnemonic =
-        storage.get_item::<String>(derive_storage_key(key, SEED_STORAGE_KEY).as_str())?;
+    let mnemonic = storage.get_item::<String>(&derive_storage_key(key, SEED_STORAGE_KEY))?;
 
-    Ok(passphrase.is_some() || mnemonic.is_some())
+    Ok(mnemonic.is_some())
 }
 
 pub fn get_xpub(key: &str) -> Result<String> {
     let storage = local_storage()?;
 
     let xpub = storage
-        .get_item::<String>(derive_storage_key(key, XPUB_KEY).as_str())?
+        .get_item::<String>(&derive_storage_key(key, XPUB_KEY))?
         .context("No xpub found")?;
 
     Ok(xpub)

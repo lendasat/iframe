@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n       UPDATE contracts\n       SET status = $1,\n           updated_at = $2\n       WHERE lender_id = $3\n         AND id = $4 \n         AND status = $5\n       ",
+  "query": "\n       UPDATE contracts\n       SET status = $1,\n           updated_at = $2\n       WHERE lender_id = $3\n         AND id = $4\n         AND status = $5\n       ",
   "describe": {
     "columns": [],
     "parameters": {
@@ -70,5 +70,5 @@
     },
     "nullable": []
   },
-  "hash": "b417d9a0b704d016744ef0301feaa1ed462932f05c2cb6e87bdf8be74b914897"
+  "hash": "822bf25a270a25edb6b51c7a2fe28d45c2fdb36feba4932715ccb2d14e19260a"
 }

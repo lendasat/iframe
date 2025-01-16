@@ -18,7 +18,7 @@ use jsonwebtoken::Validation;
 use std::sync::Arc;
 
 /// Authentication middleware check if the cookie is still active and the user still logged in
-pub async fn auth(
+pub(crate) async fn auth(
     cookie_jar: CookieJar,
     State(data): State<Arc<AppState>>,
     mut req: Request<Body>,

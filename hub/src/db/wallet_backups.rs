@@ -7,7 +7,6 @@ use time::OffsetDateTime;
 pub struct BorrowerWalletBackup {
     pub id: i32,
     pub borrower_id: String,
-    pub passphrase_hash: String,
     pub mnemonic_ciphertext: String,
     pub network: String,
     pub xpub: String,
@@ -17,7 +16,6 @@ pub struct BorrowerWalletBackup {
 #[derive(Debug)]
 pub struct NewBorrowerWalletBackup {
     pub borrower_id: String,
-    pub passphrase_hash: String,
     pub mnemonic_ciphertext: String,
     pub network: String,
     pub xpub: String,
@@ -30,16 +28,16 @@ pub async fn find_by_borrower_id(
     sqlx::query_as!(
         BorrowerWalletBackup,
         r#"
-            SELECT 
-                id, 
-                borrower_id, 
-                passphrase_hash, 
-                mnemonic_ciphertext, 
-                network, 
-                xpub, 
+            SELECT
+                id,
+                borrower_id,
+                mnemonic_ciphertext,
+                network,
+                xpub,
                 created_at
             FROM borrower_wallet_backups
             WHERE borrower_id = $1
+            ORDER BY created_at DESC
             "#,
         borrower_id
     )
@@ -47,28 +45,29 @@ pub async fn find_by_borrower_id(
     .await
 }
 
-pub async fn insert_borrower_backup(
-    pool: &Pool<Postgres>,
-    new_wallet: NewBorrowerWalletBackup,
-) -> Result<BorrowerWalletBackup> {
+pub async fn insert_borrower_backup<'a, E>(
+    pool: E,
+    backup: NewBorrowerWalletBackup,
+) -> Result<BorrowerWalletBackup>
+where
+    E: sqlx::Executor<'a, Database = Postgres>,
+{
     sqlx::query_as!(
         BorrowerWalletBackup,
         r#"
         INSERT INTO borrower_wallet_backups (
-            borrower_id, 
-            passphrase_hash, 
-            mnemonic_ciphertext, 
-            network, 
+            borrower_id,
+            mnemonic_ciphertext,
+            network,
             xpub
         )
-        VALUES ($1, $2, $3, $4, $5)
-        RETURNING id, borrower_id, passphrase_hash, mnemonic_ciphertext, network, xpub, created_at
+        VALUES ($1, $2, $3, $4)
+        RETURNING id, borrower_id, mnemonic_ciphertext, network, xpub, created_at
         "#,
-        new_wallet.borrower_id,
-        new_wallet.passphrase_hash,
-        new_wallet.mnemonic_ciphertext,
-        new_wallet.network,
-        new_wallet.xpub,
+        backup.borrower_id,
+        backup.mnemonic_ciphertext,
+        backup.network,
+        backup.xpub,
     )
     .fetch_one(pool)
     .await
@@ -78,7 +77,6 @@ pub async fn insert_borrower_backup(
 pub struct LenderWalletBackup {
     pub id: i32,
     pub lender_id: String,
-    pub passphrase_hash: String,
     pub mnemonic_ciphertext: String,
     pub network: String,
     pub xpub: String,
@@ -88,7 +86,6 @@ pub struct LenderWalletBackup {
 #[derive(Debug)]
 pub struct NewLenderWalletBackup {
     pub lender_id: String,
-    pub passphrase_hash: String,
     pub mnemonic_ciphertext: String,
     pub network: String,
     pub xpub: String,
@@ -101,16 +98,16 @@ pub async fn find_by_lender_id(
     sqlx::query_as!(
         LenderWalletBackup,
         r#"
-            SELECT 
-                id, 
-                lender_id, 
-                passphrase_hash, 
-                mnemonic_ciphertext, 
-                network, 
-                xpub, 
+            SELECT
+                id,
+                lender_id,
+                mnemonic_ciphertext,
+                network,
+                xpub,
                 created_at
             FROM lender_wallet_backups
             WHERE lender_id = $1
+            ORDER BY created_at DESC
             "#,
         lender_id
     )
@@ -118,28 +115,29 @@ pub async fn find_by_lender_id(
     .await
 }
 
-pub async fn insert_lender_backup(
-    pool: &Pool<Postgres>,
-    new_wallet: NewLenderWalletBackup,
-) -> Result<LenderWalletBackup> {
+pub async fn insert_lender_backup<'a, E>(
+    pool: E,
+    backup: NewLenderWalletBackup,
+) -> Result<LenderWalletBackup>
+where
+    E: sqlx::Executor<'a, Database = Postgres>,
+{
     sqlx::query_as!(
         LenderWalletBackup,
         r#"
         INSERT INTO lender_wallet_backups (
-            lender_id, 
-            passphrase_hash, 
-            mnemonic_ciphertext, 
-            network, 
+            lender_id,
+            mnemonic_ciphertext,
+            network,
             xpub
         )
-        VALUES ($1, $2, $3, $4, $5)
-        RETURNING id, lender_id, passphrase_hash, mnemonic_ciphertext, network, xpub, created_at
+        VALUES ($1, $2, $3, $4)
+        RETURNING id, lender_id, mnemonic_ciphertext, network, xpub, created_at
         "#,
-        new_wallet.lender_id,
-        new_wallet.passphrase_hash,
-        new_wallet.mnemonic_ciphertext,
-        new_wallet.network,
-        new_wallet.xpub,
+        backup.lender_id,
+        backup.mnemonic_ciphertext,
+        backup.network,
+        backup.xpub,
     )
     .fetch_one(pool)
     .await

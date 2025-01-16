@@ -19,6 +19,7 @@ use hub::routes::lender::spawn_lender_server;
 use hub::routes::AppState;
 use hub::wallet::Wallet;
 use std::backtrace::Backtrace;
+use std::collections::HashMap;
 use std::sync::Arc;
 use temp_dir::TempDir;
 use tokio::sync::mpsc;
@@ -144,6 +145,7 @@ async fn main() -> Result<()> {
 
     let app_state = Arc::new(AppState {
         db: db.clone(),
+        pake_protocols: Arc::new(Mutex::new(HashMap::default())),
         wallet: wallet.clone(),
         config: config.clone(),
         mempool: mempool_addr,
