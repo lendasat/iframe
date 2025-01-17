@@ -191,6 +191,9 @@ pub struct UpgradeToPakeRequest {
 #[derive(Debug, Serialize)]
 pub struct UpgradeToPakeResponse {
     pub old_wallet_backup_data: WalletBackupData,
+    /// We include a list of public keys which the user has used in open contracts, so that the
+    /// client can verify that they are able to spend the contract with the remote wallet backup.
+    pub contract_pks: Vec<PublicKey>,
 }
 
 #[derive(Debug, Deserialize)]

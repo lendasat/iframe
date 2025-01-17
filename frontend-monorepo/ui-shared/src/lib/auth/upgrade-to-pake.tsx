@@ -6,9 +6,10 @@ import { UpgradeToPakeForm } from "./upgrade-to-pake-form";
 
 interface UpgradeToPakeProps {
   login: (email: string, password: string) => Promise<LoginResponseOrUpgrade>;
+  is_borrower: boolean;
 }
 
-export function UpgradeToPake({ login }: UpgradeToPakeProps) {
+export function UpgradeToPake({ login, is_borrower }: UpgradeToPakeProps) {
   const navigate = useNavigate();
   const { upgradeToPake, finishUpgradeToPake } = useBaseHttpClient();
 
@@ -19,7 +20,7 @@ export function UpgradeToPake({ login }: UpgradeToPakeProps) {
   // 2. If generating the new wallet data fails, we can try again, although the error is probably
   // not transient and we need to do some debugging for the user.
   //
-  // 3. If persisting (new or old) wallet data fails, we should be safe to try again, generating new
+  // 3. If persisting the new wallet data fails, we should be safe to try again, generating new
   // wallet and overwriting.
   //
   // 4. If generating PAKE registration data fails, we should be safe to start from the beginning.
@@ -44,17 +45,21 @@ export function UpgradeToPake({ login }: UpgradeToPakeProps) {
     //
     // We could use the local wallet backup, but the user may be logging in from a new device, so
     // the local wallet backup may not be present.
-    const res0 = await upgradeToPake(email, oldPassword);
-    const oldWalletBackupData: WalletBackupData = res0.old_wallet_backup_data;
+    const res = await upgradeToPake(email, oldPassword);
+    const oldWalletBackupData: WalletBackupData = res.old_wallet_backup_data;
+    const contractPks: string[] = res.contract_pks;
 
     console.log(`Hub approves PAKE upgrade and sends old wallet backup: ${JSON.stringify(oldWalletBackupData)}`);
 
     // We continue by:
     //
-    // 1. Generating a new wallet based on the original mnemonic (_without_ the contract secret as a
+    // 1. Checking if the old wallet can spend the user's open contracts. If not, we abort because
+    // the user will need help.
+    //
+    // 2. Generating a new wallet based on the original mnemonic (_without_ the contract secret as a
     // passphrase).
     //
-    // 2. Producing a new wallet backup encrypted under the `newPassword`.
+    // 3. Producing a new wallet backup encrypted under the `newPassword`.
     const key = await md5(email);
     const newWalletDetails = upgrade_wallet(
       key,
@@ -62,6 +67,8 @@ export function UpgradeToPake({ login }: UpgradeToPakeProps) {
       oldWalletBackupData.network,
       contractSecret,
       newPassword,
+      contractPks,
+      is_borrower,
     );
 
     const newWalletBackupData = {
