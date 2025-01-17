@@ -3,7 +3,7 @@ import type { Contract } from "@frontend-monorepo/http-client-lender";
 import { usePrice } from "@frontend-monorepo/ui-shared";
 import { Box, Heading, Tabs, Text } from "@radix-ui/themes";
 import { useState } from "react";
-import type { ColumnFilterKey, ContractStatusFilter } from "../contracts/contract-details-table";
+import type { ColumnFilterKey } from "../contracts/contract-details-table";
 import { ContractDetailsTable } from "../contracts/contract-details-table";
 
 interface TabHeaderProps {
@@ -46,66 +46,9 @@ export interface DashboardContractsProps {
   contracts: Contract[];
 }
 
-const filterContracts = (unfilteredContracts: Contract[], contractStatusFilter: ContractStatusFilter) => {
+const filterContracts = (unfilteredContracts: Contract[], contractStatusFilter: ContractStatus[]) => {
   return unfilteredContracts.filter((contract) => {
-    let filtered = false;
-    switch (contract.status) {
-      case ContractStatus.Requested:
-        filtered = contractStatusFilter["requested"];
-        break;
-      case ContractStatus.RenewalRequested:
-        filtered = contractStatusFilter["renewalRequested"];
-        break;
-      case ContractStatus.Approved:
-        filtered = contractStatusFilter["approved"];
-        break;
-      case ContractStatus.CollateralSeen:
-        filtered = contractStatusFilter["collateralSeen"];
-        break;
-      case ContractStatus.CollateralConfirmed:
-        filtered = contractStatusFilter["opening"];
-        break;
-      case ContractStatus.PrincipalGiven:
-        filtered = contractStatusFilter["open"];
-        break;
-      case ContractStatus.Closing:
-        filtered = contractStatusFilter["closing"];
-        break;
-      case ContractStatus.RepaymentProvided:
-        filtered = contractStatusFilter["repaymentProvided"];
-        break;
-      case ContractStatus.RepaymentConfirmed:
-        filtered = contractStatusFilter["repaymentConfirmed"];
-        break;
-      case ContractStatus.Undercollateralized:
-        filtered = contractStatusFilter["undercollateralized"];
-        break;
-      case ContractStatus.Defaulted:
-        filtered = contractStatusFilter["defaulted"];
-        break;
-      case ContractStatus.Closed:
-        filtered = contractStatusFilter["closed"];
-        break;
-      case ContractStatus.Extended:
-        filtered = contractStatusFilter["extended"];
-        break;
-      case ContractStatus.Rejected:
-        filtered = contractStatusFilter["rejected"];
-        break;
-      case ContractStatus.DisputeBorrowerStarted:
-      case ContractStatus.DisputeLenderStarted:
-      case ContractStatus.DisputeBorrowerResolved:
-      case ContractStatus.DisputeLenderResolved:
-        filtered = contractStatusFilter["dispute"];
-        break;
-      case ContractStatus.Cancelled:
-        filtered = contractStatusFilter["canceled"];
-        break;
-      case ContractStatus.RequestExpired:
-        filtered = contractStatusFilter["expired"];
-        break;
-    }
-    return filtered;
+    return contractStatusFilter.includes(contract.status);
   });
 };
 
@@ -131,47 +74,26 @@ export default function DashboardContracts({ contracts }: DashboardContractsProp
     action: true,
   };
 
-  const allStatusFalse = {
-    requested: false,
-    renewalRequested: false,
-    approved: false,
-    collateralSeen: false,
-    opening: false,
-    open: false,
-    closing: false,
-    closed: false,
-    extended: false,
-    repaymentProvided: false,
-    repaymentConfirmed: false,
-    rejected: false,
-    expired: false,
-    canceled: false,
-    dispute: false,
-    defaulted: false,
-    undercollateralized: false,
-  };
+  const statusFilterActionRequired = [
+    ContractStatus.Requested,
+    ContractStatus.RenewalRequested,
+    ContractStatus.CollateralSeen,
+    ContractStatus.RepaymentProvided,
+    ContractStatus.Defaulted,
+    ContractStatus.Undercollateralized,
+    ContractStatus.DisputeBorrowerStarted,
+    ContractStatus.DisputeLenderStarted,
+  ];
 
-  const statusFilterActionRequired = {
-    ...allStatusFalse,
-    requested: true,
-    renewalRequested: true,
-    opening: true,
-    collateralSeen: true,
-    repaymentProvided: true,
-    dispute: true,
-    undercollateralized: true,
-  };
-
-  const statusFilterOpen = {
-    ...allStatusFalse,
-    open: true,
-  };
-  const statusFilterClosed = {
-    ...allStatusFalse,
-    closing: true,
-    closed: true,
-    extended: true,
-  };
+  const statusFilterOpen = [
+    ContractStatus.Approved,
+    ContractStatus.PrincipalGiven,
+  ];
+  const statusFilterClosed = [
+    ContractStatus.Closing,
+    ContractStatus.Closed,
+    ContractStatus.Extended,
+  ];
 
   const contractsWithActionNeeded = contracts.filter((loan) =>
     loan.status === ContractStatus.Requested || loan.status === ContractStatus.RenewalRequested
@@ -200,13 +122,8 @@ export default function DashboardContracts({ contracts }: DashboardContractsProp
         <Box className="max-h-96 overflow-auto">
           <Tabs.Content value={"actionRequired"}>
             <ContractDetailsTable
-              contractStatusFilter={statusFilterActionRequired}
               contracts={filterContracts(contracts, statusFilterActionRequired)}
-              isToggleFilterShown={false}
               latestPrice={latestPrice}
-              onCheckedChange={() => {
-                // ignored
-              }}
               shownColumns={shownColumns}
               sortAsc={sortAsc}
               sortByColumn={sortByColumn}
@@ -215,13 +132,8 @@ export default function DashboardContracts({ contracts }: DashboardContractsProp
           </Tabs.Content>
           <Tabs.Content value="open">
             <ContractDetailsTable
-              contractStatusFilter={statusFilterOpen}
               contracts={filterContracts(contracts, statusFilterOpen)}
-              isToggleFilterShown={false}
               latestPrice={latestPrice}
-              onCheckedChange={() => {
-                // ignored
-              }}
               shownColumns={shownColumns}
               sortAsc={sortAsc}
               sortByColumn={sortByColumn}
@@ -231,13 +143,8 @@ export default function DashboardContracts({ contracts }: DashboardContractsProp
 
           <Tabs.Content value="closed">
             <ContractDetailsTable
-              contractStatusFilter={statusFilterClosed}
               contracts={filterContracts(contracts, statusFilterClosed)}
-              isToggleFilterShown={false}
               latestPrice={latestPrice}
-              onCheckedChange={() => {
-                // ignored
-              }}
               shownColumns={shownColumns}
               sortAsc={sortAsc}
               sortByColumn={sortByColumn}

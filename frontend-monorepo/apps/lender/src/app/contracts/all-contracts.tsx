@@ -1,7 +1,12 @@
-import { ContractStatus } from "@frontend-monorepo/http-client-lender";
-import { type Contract } from "@frontend-monorepo/http-client-lender";
+import {
+  ALL_CONTRACT_STATUSES,
+  type Contract,
+  ContractStatus,
+  contractStatusToLabelString,
+} from "@frontend-monorepo/http-client-lender";
 import { usePrice } from "@frontend-monorepo/ui-shared";
 import { MixerHorizontalIcon } from "@radix-ui/react-icons";
+import * as Label from "@radix-ui/react-label";
 import { Box, Button, Checkbox, DropdownMenu, Flex, Heading, Text } from "@radix-ui/themes";
 import { useState } from "react";
 import { ContractDetailsTable } from "./contract-details-table";
@@ -16,27 +21,6 @@ type ColumnFilterKey =
   | "status"
   | "action";
 type ColumnFilter = Record<ColumnFilterKey, boolean>;
-
-type ContractStatusFilterKey =
-  | "requested"
-  | "renewalRequested"
-  | "approved"
-  | "opening"
-  | "open"
-  | "closing"
-  | "closed"
-  | "extended"
-  | "rejected"
-  | "expired"
-  | "canceled"
-  | "collateralSeen"
-  | "repaymentProvided"
-  | "repaymentConfirmed"
-  | "dispute"
-  | "defaulted"
-  | "undercollateralized";
-
-type ContractStatusFilter = Record<ContractStatusFilterKey, boolean>;
 
 interface OpenContractsProps {
   contracts: Contract[];
@@ -57,25 +41,22 @@ export const AllContracts = ({ contracts: unfilteredContracts, header }: OpenCon
     action: true,
   });
 
-  const [contractStatusFilter, setContractStatusFilter] = useState<ContractStatusFilter>({
-    requested: true,
-    renewalRequested: true,
-    approved: true,
-    opening: true,
-    open: true,
-    closing: false,
-    closed: false,
-    extended: false,
-    rejected: false,
-    expired: false,
-    canceled: false,
-    collateralSeen: false,
-    repaymentProvided: true,
-    repaymentConfirmed: false,
-    dispute: true,
-    defaulted: true,
-    undercollateralized: true,
-  });
+  const [contractStatusFilter, setContractStatusFilter] = useState<ContractStatus[]>([
+    ContractStatus.Requested,
+    ContractStatus.RenewalRequested,
+    ContractStatus.Approved,
+    ContractStatus.Approved,
+    ContractStatus.CollateralSeen,
+    ContractStatus.CollateralConfirmed,
+    ContractStatus.PrincipalGiven,
+    ContractStatus.RepaymentProvided,
+    ContractStatus.DisputeBorrowerStarted,
+    ContractStatus.DisputeBorrowerResolved,
+    ContractStatus.DisputeLenderStarted,
+    ContractStatus.DisputeLenderResolved,
+    ContractStatus.Defaulted,
+    ContractStatus.Undercollateralized,
+  ]);
 
   const [sortByColumn, setSortByColumn] = useState<ColumnFilterKey>("updatedAt");
   const [sortAsc, setSortAsc] = useState(false);
@@ -86,66 +67,16 @@ export const AllContracts = ({ contracts: unfilteredContracts, header }: OpenCon
       [filterName]: !prev[filterName],
     }));
   };
-  const toggleContractStatusFilter = (filterName: ContractStatusFilterKey) => {
-    setContractStatusFilter(prev => ({
-      ...prev,
-      [filterName]: !prev[filterName],
-    }));
+  const toggleContractStatusFilter = (filterName: ContractStatus) => {
+    setContractStatusFilter(prev =>
+      prev.includes(filterName)
+        ? prev.filter(status => status !== filterName)
+        : [...prev, filterName]
+    );
   };
 
   const contracts = unfilteredContracts.filter((contract) => {
-    let filtered = false;
-    switch (contract.status) {
-      case ContractStatus.Requested:
-        filtered = contractStatusFilter["requested"];
-        break;
-      case ContractStatus.RenewalRequested:
-        filtered = contractStatusFilter["renewalRequested"];
-        break;
-      case ContractStatus.Approved:
-      case ContractStatus.CollateralSeen:
-      case ContractStatus.CollateralConfirmed:
-        filtered = contractStatusFilter["opening"];
-        break;
-      case ContractStatus.PrincipalGiven:
-        filtered = contractStatusFilter["open"];
-        break;
-      case ContractStatus.RepaymentProvided:
-        filtered = contractStatusFilter["repaymentProvided"];
-        break;
-      case ContractStatus.Closing:
-      case ContractStatus.RepaymentConfirmed:
-        filtered = contractStatusFilter["closing"];
-        break;
-      case ContractStatus.Closed:
-        filtered = contractStatusFilter["closed"];
-        break;
-      case ContractStatus.Extended:
-        filtered = contractStatusFilter["extended"];
-        break;
-      case ContractStatus.Rejected:
-        filtered = contractStatusFilter["rejected"];
-        break;
-      case ContractStatus.DisputeBorrowerStarted:
-      case ContractStatus.DisputeLenderStarted:
-      case ContractStatus.DisputeBorrowerResolved:
-      case ContractStatus.DisputeLenderResolved:
-        filtered = contractStatusFilter["dispute"];
-        break;
-      case ContractStatus.Cancelled:
-        filtered = contractStatusFilter["canceled"];
-        break;
-      case ContractStatus.RequestExpired:
-        filtered = contractStatusFilter["expired"];
-        break;
-      case ContractStatus.Defaulted:
-        filtered = contractStatusFilter["defaulted"];
-        break;
-      case ContractStatus.Undercollateralized:
-        filtered = contractStatusFilter["undercollateralized"];
-        break;
-    }
-    return filtered;
+    return contractStatusFilter.includes(contract.status);
   }).sort((a, b) => {
     let dif;
     switch (sortByColumn) {
@@ -187,7 +118,13 @@ export const AllContracts = ({ contracts: unfilteredContracts, header }: OpenCon
       <Box className={header ? "hidden" : "px-6 md:px-8 py-4"}>
         <Flex gap={"1"} align={"center"}>
           <Heading className={"text-font dark:text-font-dark"} size={"6"}>My Contracts</Heading>
-          <Flex className={"justify-center"}>
+        </Flex>
+
+        <div className="w-full max-w-md space-y-4 mt-5">
+          <div className="flex items-center justify-between">
+            <Label.Root className="text-sm font-medium text-gray-700" htmlFor="fields-switch">
+              Show/hide Fields
+            </Label.Root>
             <DropdownMenu.Root>
               <DropdownMenu.Trigger>
                 <Button variant="outline" size="2">
@@ -263,8 +200,44 @@ export const AllContracts = ({ contracts: unfilteredContracts, header }: OpenCon
                 </DropdownMenu.Item>
               </DropdownMenu.Content>
             </DropdownMenu.Root>
-          </Flex>
-        </Flex>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <Flex className={"flex items-center justify-between"} gap={"4"}>
+              <Label.Root className="text-sm font-medium text-gray-700" htmlFor="contracts-switch">
+                Show/hide Contracts
+              </Label.Root>
+              <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
+                ({contracts.length}/{unfilteredContracts.length} displayed)
+              </Text>
+            </Flex>
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger>
+                <Button variant={"outline"} size="2">
+                  <MixerHorizontalIcon />
+                </Button>
+              </DropdownMenu.Trigger>
+
+              <DropdownMenu.Content size="1">
+                {ALL_CONTRACT_STATUSES.map((contractStatus) => {
+                  return (
+                    <DropdownMenu.Item
+                      onSelect={(e) => e.preventDefault()}
+                    >
+                      <Flex gap="2" align="center">
+                        <Checkbox
+                          checked={contractStatusFilter.includes(contractStatus)}
+                          onCheckedChange={() => toggleContractStatusFilter(contractStatus)}
+                        />
+                        <Text>{contractStatusToLabelString(contractStatus)}</Text>
+                      </Flex>
+                    </DropdownMenu.Item>
+                  );
+                })}
+              </DropdownMenu.Content>
+            </DropdownMenu.Root>
+          </div>
+        </div>
       </Box>
 
       <Box className={header ? "" : "px-6 md:px-8 py-4"}>
@@ -273,13 +246,8 @@ export const AllContracts = ({ contracts: unfilteredContracts, header }: OpenCon
           toggleSortByColumn={toggleSortByColumn}
           sortByColumn={sortByColumn}
           sortAsc={sortAsc}
-          contractStatusFilter={contractStatusFilter}
-          onCheckedChange={(checked) => {
-            toggleContractStatusFilter(checked);
-          }}
           contracts={contracts}
           latestPrice={latestPrice}
-          isToggleFilterShown={true}
         />
       </Box>
     </Box>
