@@ -9,6 +9,7 @@ use crate::db::lenders::user_exists;
 use crate::db::lenders::verify_user;
 use crate::db::wallet_backups::NewLenderWalletBackup;
 use crate::email::Email;
+use crate::model::ContractStatus;
 use crate::model::FinishUpgradeToPakeRequest;
 use crate::model::ForgotPasswordSchema;
 use crate::model::Lender;
@@ -24,6 +25,7 @@ use crate::model::UpgradeToPakeResponse;
 use crate::model::WalletBackupData;
 use crate::routes::lender::auth::jwt_auth::auth;
 use crate::routes::AppState;
+use crate::wallet::derive_lender_pk;
 use axum::extract::Path;
 use axum::extract::State;
 use axum::http::header;
@@ -39,6 +41,7 @@ use axum::Json;
 use axum::Router;
 use axum_extra::extract::cookie::Cookie;
 use axum_extra::extract::cookie::SameSite;
+use bitcoin::Network;
 use jsonwebtoken::encode;
 use jsonwebtoken::EncodingKey;
 use jsonwebtoken::Header;
@@ -49,6 +52,7 @@ use serde_json::json;
 use sha2::Sha256;
 use srp::groups::G_2048;
 use srp::server::SrpServer;
+use std::str::FromStr;
 use std::sync::Arc;
 use time::OffsetDateTime;
 use tracing::instrument;
@@ -566,11 +570,37 @@ async fn post_start_upgrade_to_pake(
         xpub: wallet_backup.xpub,
     };
 
+    let contracts = db::contracts::load_contracts_by_lender_id(&data.db, user.id.as_str())
+        .await
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Database error: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
+
+    let network = Network::from_str(&data.config.network).expect("valid network");
+    let contract_pks = contracts
+        .iter()
+        // Unspent contracts.
+        .filter(|c| !matches!(c.status, ContractStatus::Closed))
+        // Contracts that may have been funded.
+        .filter(|c| c.contract_address.is_some())
+        .filter_map(|c| match (c.lender_xpub, c.contract_index) {
+            (Some(xpub), Some(index)) => Some(
+                derive_lender_pk(&xpub, index, matches!(network, Network::Bitcoin))
+                    .expect("valid PK"),
+            ),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+
     let response = Response::builder()
         .status(StatusCode::OK)
         .body(
             json!(UpgradeToPakeResponse {
-                old_wallet_backup_data
+                old_wallet_backup_data,
+                contract_pks
             })
             .to_string(),
         )

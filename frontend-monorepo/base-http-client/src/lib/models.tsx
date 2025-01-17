@@ -52,6 +52,7 @@ export interface PakeVerifyResponse {
 
 export interface UpgradeToPakeResponse {
   old_wallet_backup_data: WalletBackupData;
+  contract_pks: string[];
 }
 
 export interface LoanFeature {

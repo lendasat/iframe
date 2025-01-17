@@ -10,6 +10,7 @@ use crate::db::borrowers::verify_user;
 use crate::db::wallet_backups::NewBorrowerWalletBackup;
 use crate::email::Email;
 use crate::model::Borrower;
+use crate::model::ContractStatus;
 use crate::model::FinishUpgradeToPakeRequest;
 use crate::model::ForgotPasswordSchema;
 use crate::model::PakeLoginRequest;
@@ -504,11 +505,25 @@ async fn post_start_upgrade_to_pake(
         xpub: wallet_backup.xpub,
     };
 
+    let contracts = db::contracts::load_contracts_by_borrower_id(&data.db, user.id.as_str())
+        .await
+        .map_err(Error::Database)?;
+
+    let contract_pks = contracts
+        .iter()
+        // Unspent contracts.
+        .filter(|c| !matches!(c.status, ContractStatus::Closed))
+        // Contracts that may have been funded.
+        .filter(|c| c.contract_address.is_some())
+        .map(|c| c.borrower_pk)
+        .collect::<Vec<_>>();
+
     let response = Response::builder()
         .status(StatusCode::OK)
         .body(
             json!(UpgradeToPakeResponse {
-                old_wallet_backup_data
+                old_wallet_backup_data,
+                contract_pks
             })
             .to_string(),
         )

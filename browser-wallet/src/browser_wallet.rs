@@ -101,12 +101,20 @@ pub fn upgrade_wallet(
     network: String,
     old_password: String,
     new_password: String,
+    contract_pks: Vec<String>,
+    is_borrower: bool,
 ) -> Result<WalletDetails> {
     let storage = local_storage()?;
 
-    let (new_mnemonic_ciphertext, new_xpub) =
-        wallet::upgrade_wallet(&mnemonic_ciphertext, &network, &old_password, &new_password)
-            .context("failed to generate upgraded wallet data")?;
+    let (new_mnemonic_ciphertext, new_xpub) = wallet::upgrade_wallet(
+        &mnemonic_ciphertext,
+        &network,
+        &old_password,
+        &new_password,
+        &contract_pks,
+        is_borrower,
+    )
+    .context("failed to generate upgraded wallet data")?;
 
     // If local storage already contains a copy of the old wallet data, we move it to a different
     // key. This should not be necesary, but we don't want to be destructive in case we write bugs.

@@ -94,13 +94,17 @@ pub fn upgrade_wallet(
     network: String,
     old_password: String,
     new_password: String,
+    contract_pks: Vec<String>,
+    is_borrower: bool,
 ) -> Result<WalletDetails, JsValue> {
     map_err_to_js!(browser_wallet::upgrade_wallet(
         key,
         mnemonic_ciphertext,
         network,
         old_password,
-        new_password
+        new_password,
+        contract_pks,
+        is_borrower
     )
     .map(WalletDetails::from))
 }

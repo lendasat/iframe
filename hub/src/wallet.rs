@@ -628,7 +628,7 @@ fn two_of_three_collateral_contract_descriptor(
     format!("wsh(multi(2,{borrower_pk},{hub_pk},{lender_pk}))").parse()
 }
 
-fn derive_lender_pk(lender_xpub: &Xpub, index: u32, is_mainnet: bool) -> Result<PublicKey> {
+pub fn derive_lender_pk(lender_xpub: &Xpub, index: u32, is_mainnet: bool) -> Result<PublicKey> {
     let secp = Secp256k1::new();
 
     let network_index = if is_mainnet {
