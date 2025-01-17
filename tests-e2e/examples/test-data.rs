@@ -103,7 +103,7 @@ async fn create_sample_contracts(
         let contract2 = create_loan_request(
             pool,
             offer,
-            offer.loan_amount_max,
+            offer.loan_amount_min + dec!(1),
             borrower.id.as_str(),
             lender_xpub,
         )
@@ -228,7 +228,7 @@ async fn create_loan_offers(pool: &Pool<Postgres>, lender_id: &str) -> Result<Ve
             name: "eth-usdt".to_string(),
             min_ltv: dec!(0.5),
             interest_rate: dec!(0.12),
-            loan_amount_min: dec!(100),
+            loan_amount_min: dec!(1),
             loan_amount_max: dec!(100_000),
             loan_amount_reserve: dec!(100_000),
             duration_months_min: 3,
@@ -249,7 +249,7 @@ async fn create_loan_offers(pool: &Pool<Postgres>, lender_id: &str) -> Result<Ve
             name: "poly-usdc".to_string(),
             min_ltv: dec!(0.5),
             interest_rate: dec!(0.12),
-            loan_amount_min: dec!(100),
+            loan_amount_min: dec!(10),
             loan_amount_max: dec!(100_000),
             loan_amount_reserve: dec!(100_000),
             duration_months_min: 3,
