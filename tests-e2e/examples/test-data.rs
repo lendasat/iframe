@@ -49,12 +49,12 @@ async fn main() -> Result<()> {
     let pool = connect_to_db(config.database_url.as_str()).await?;
     run_migration(&pool).await?;
 
-    let lender = insert_lender(&pool, network.as_str()).await?;
+    let (lender, lender_xpub) = insert_lender(&pool, network.as_str()).await?;
     tracing::debug!(id = lender.id, email = lender.email, "Lender created");
     let borrower = insert_borrower(&pool, network.as_str()).await?;
     tracing::debug!(id = borrower.id, email = borrower.email, "Borrower created");
 
-    let offers = create_loan_offers(&pool, lender.id.as_str()).await?;
+    let offers = create_loan_offers(&pool, lender.id.as_str(), lender_xpub).await?;
 
     create_sample_contracts(&pool, &borrower, &offers[0], lender.id.as_str()).await?;
 
@@ -213,7 +213,11 @@ async fn create_loan_request(
     .await
 }
 
-async fn create_loan_offers(pool: &Pool<Postgres>, lender_id: &str) -> Result<Vec<LoanOffer>> {
+async fn create_loan_offers(
+    pool: &Pool<Postgres>,
+    lender_id: &str,
+    lender_xpub: Xpub,
+) -> Result<Vec<LoanOffer>> {
     let offers = db::loan_offers::load_all_loan_offers_by_lender(pool, lender_id).await?;
     if !offers.is_empty() {
         tracing::debug!("DB already contains offer(s) by lender");
@@ -221,7 +225,6 @@ async fn create_loan_offers(pool: &Pool<Postgres>, lender_id: &str) -> Result<Ve
         return Ok(offers);
     }
 
-    let lender_xpub = "tpubDAenfwNu5GyCJWv8oqRAckdKMSUoZjgVF5p8WvQwHQeXjDhAHmGrPa4a4y2Fn7HF2nfCLefJanHV3ny1UY25MRVogizB2zRUdAo7Tr9XAjm".parse().expect("valid Xpub");
     let eth_offer = db::loan_offers::insert_loan_offer(
         pool,
         CreateLoanOfferSchema {
@@ -267,7 +270,7 @@ async fn create_loan_offers(pool: &Pool<Postgres>, lender_id: &str) -> Result<Ve
     Ok(vec![eth_offer, poly_offer])
 }
 
-async fn insert_lender(pool: &Pool<Postgres>, network: &str) -> Result<Lender> {
+async fn insert_lender(pool: &Pool<Postgres>, network: &str) -> Result<(Lender, Xpub)> {
     let email = "lender@lendasat.com";
     if db::lenders::user_exists(pool, email).await? {
         tracing::debug!("DB already contains the lender, not inserting another one");
@@ -278,7 +281,13 @@ async fn insert_lender(pool: &Pool<Postgres>, network: &str) -> Result<Lender> {
         enable_lender_features(pool, maybe_user.id.as_str())
             .await
             .expect("to be able to enable feature");
-        return Ok(maybe_user);
+
+        let lender_backup = db::wallet_backups::find_by_lender_id(pool, maybe_user.id.as_str())
+            .await
+            .expect("to get lender backup");
+        let xpub = lender_backup.xpub.parse().expect("valid Xpub");
+
+        return Ok((maybe_user, xpub));
     }
 
     let user =
@@ -311,7 +320,7 @@ async fn insert_lender(pool: &Pool<Postgres>, network: &str) -> Result<Lender> {
     )
     .await?;
 
-    Ok(user)
+    Ok((user, xpub))
 }
 
 async fn insert_borrower(pool: &Pool<Postgres>, network: &str) -> Result<Borrower> {
