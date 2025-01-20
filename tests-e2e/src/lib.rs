@@ -15,7 +15,6 @@ mod tests {
     use hub::model::Integration;
     use hub::model::LoanAssetChain::Ethereum;
     use hub::model::LoanAssetType;
-    use hub::model::LoanOffer;
     use hub::model::PakeLoginRequest;
     use hub::model::PakeLoginResponse;
     use hub::model::PakeVerifyRequest;
@@ -27,10 +26,17 @@ mod tests {
     use reqwest::Client;
     use rust_decimal_macros::dec;
     use serde::Deserialize;
+    use serde::Serialize;
     use serde_json::json;
+    use sqlx::FromRow;
     use std::sync::Arc;
     use std::sync::Once;
     use std::time::Duration;
+
+    #[derive(Debug, FromRow, Serialize, Deserialize, Clone)]
+    pub struct LoanOffer {
+        pub id: String,
+    }
 
     /// Run `just prepare-e2e` before this test.
     #[ignore]

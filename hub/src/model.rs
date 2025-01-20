@@ -269,22 +269,16 @@ pub enum Integration {
     StableCoin,
 }
 
-#[derive(Debug, FromRow, Serialize, Deserialize, Clone)]
+#[derive(Debug, FromRow, Clone)]
 pub struct LoanOffer {
     pub id: String,
     pub lender_id: String,
     pub name: String,
-    #[serde(with = "rust_decimal::serde::float")]
     pub min_ltv: Decimal,
-    #[serde(with = "rust_decimal::serde::float")]
     pub interest_rate: Decimal,
-    #[serde(with = "rust_decimal::serde::float")]
     pub loan_amount_min: Decimal,
-    #[serde(with = "rust_decimal::serde::float")]
     pub loan_amount_max: Decimal,
-    #[serde(with = "rust_decimal::serde::float")]
     pub loan_amount_reserve: Decimal,
-    #[serde(with = "rust_decimal::serde::float")]
     pub loan_amount_reserve_remaining: Decimal,
     pub duration_months_min: i32,
     pub duration_months_max: i32,
@@ -292,9 +286,7 @@ pub struct LoanOffer {
     pub loan_asset_chain: LoanAssetChain,
     pub status: LoanOfferStatus,
     pub loan_repayment_address: String,
-    #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
-    #[serde(with = "time::serde::rfc3339")]
     pub updated_at: OffsetDateTime,
     pub auto_accept: bool,
     pub lender_xpub: Option<String>,

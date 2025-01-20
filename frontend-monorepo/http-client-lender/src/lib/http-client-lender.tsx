@@ -12,7 +12,6 @@ import {
   LiquidationToStableCoinPsbt,
   LoanAndContractStats,
   LoanOffer,
-  MyLoanOffer,
 } from "./models";
 import { parseRFC3339Date } from "./utils";
 
@@ -25,11 +24,6 @@ interface RawContract extends Omit<Contract, "created_at" | "repaid_at" | "updat
 }
 
 interface RawDispute extends Omit<Dispute, "created_at" | "updated_at"> {
-  created_at: string;
-  updated_at: string;
-}
-
-interface RawMyLoanOffer extends Omit<MyLoanOffer, "created_at" | "updated_at"> {
   created_at: string;
   updated_at: string;
 }
@@ -47,9 +41,9 @@ export function allowedPagesWithoutLogin(location: string) {
 }
 
 export class HttpClientLender extends BaseHttpClient {
-  async postLoanOffer(offer: CreateLoanOfferRequest): Promise<MyLoanOffer | undefined> {
+  async postLoanOffer(offer: CreateLoanOfferRequest): Promise<LoanOffer | undefined> {
     try {
-      const response: AxiosResponse<MyLoanOffer> = await this.httpClient.post("/api/my-offers/create", offer);
+      const response: AxiosResponse<LoanOffer> = await this.httpClient.post("/api/my-offers/create", offer);
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
@@ -482,23 +476,18 @@ export class HttpClientLender extends BaseHttpClient {
     }
   }
 
-  async getMyLoanOffers(): Promise<MyLoanOffer[]> {
+  async getMyLoanOffers(): Promise<LoanOffer[]> {
     try {
-      const response: AxiosResponse<RawMyLoanOffer[]> = await this.httpClient.get("/api/my-offers");
+      const response: AxiosResponse<RawLoanOffer[]> = await this.httpClient.get("/api/my-offers");
       return response.data.map(offer => {
         const createdAt = parseRFC3339Date(offer.created_at);
         if (createdAt == null) {
-          throw new Error("Invalid date");
-        }
-        const updatedAt = parseRFC3339Date(offer.updated_at);
-        if (updatedAt == null) {
           throw new Error("Invalid date");
         }
 
         return {
           ...offer,
           created_at: createdAt,
-          updated_at: updatedAt,
         };
       });
     } catch (error) {
@@ -516,22 +505,17 @@ export class HttpClientLender extends BaseHttpClient {
     }
   }
 
-  async getMyLoanOffer(id: string): Promise<MyLoanOffer> {
+  async getMyLoanOffer(id: string): Promise<LoanOffer> {
     try {
-      const response: AxiosResponse<RawMyLoanOffer> = await this.httpClient.get(`/api/my-offers/${id}`);
+      const response: AxiosResponse<RawLoanOffer> = await this.httpClient.get(`/api/my-offers/${id}`);
       const createdAt = parseRFC3339Date(response.data.created_at);
       if (createdAt == null) {
-        throw new Error("Invalid date");
-      }
-      const updatedAt = parseRFC3339Date(response.data.updated_at);
-      if (updatedAt == null) {
         throw new Error("Invalid date");
       }
 
       return {
         ...response.data,
         created_at: createdAt,
-        updated_at: updatedAt,
       };
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {

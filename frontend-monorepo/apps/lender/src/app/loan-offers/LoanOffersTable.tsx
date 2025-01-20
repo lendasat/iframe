@@ -1,4 +1,4 @@
-import { LoanOffer, MyLoanOffer } from "@frontend-monorepo/http-client-lender";
+import { LoanOffer } from "@frontend-monorepo/http-client-lender";
 import { CurrencyFormatter, StableCoinHelper } from "@frontend-monorepo/ui-shared";
 import { InfoCircledIcon } from "@radix-ui/react-icons";
 import { Box, Button, Callout, Flex, Table, Text } from "@radix-ui/themes";

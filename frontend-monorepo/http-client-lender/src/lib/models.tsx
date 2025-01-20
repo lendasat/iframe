@@ -83,9 +83,9 @@ export enum LoanOfferStatus {
   Deleted = "Deleted",
 }
 
-export interface MyLoanOffer {
+export interface LoanOffer {
   id: string;
-  lender_id: string;
+  lender: LenderProfile;
   min_ltv: number;
   interest_rate: number;
   loan_amount_min: number;
@@ -96,24 +96,9 @@ export interface MyLoanOffer {
   duration_months_max: number;
   loan_asset_type: string;
   loan_asset_chain: string;
+  origination_fee: OriginationFee[];
   status: LoanOfferStatus;
   auto_accept: boolean;
-  created_at: Date;
-  updated_at: Date;
-}
-
-export interface LoanOffer {
-  id: string;
-  lender: LenderProfile;
-  min_ltv: number;
-  interest_rate: number;
-  loan_amount_min: number;
-  loan_amount_max: number;
-  duration_months_min: number;
-  duration_months_max: number;
-  loan_asset_type: string;
-  loan_asset_chain: string;
-  origination_fee: OriginationFee[];
   created_at: Date;
 }
 
