@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT EXISTS (\n                SELECT 1 FROM contracts WHERE lender_id = $1 AND created_at < '2024-01-16'\n            ) AS entry_exists;\n        ",
+  "query": "\n            SELECT EXISTS (\n                SELECT 1 FROM contracts WHERE lender_id = $1 AND created_at < '2025-01-19'\n            ) AS entry_exists;\n        ",
   "describe": {
     "columns": [
       {
@@ -18,5 +18,5 @@
       null
     ]
   },
-  "hash": "ecaedaa445bec2b5bd13f73b20730685d6d3c5c000232286aba465a51009c504"
+  "hash": "bd70cfd9414d2de00d06560dadbdf8381926645b3828c113c946b242b7a60d62"
 }

@@ -1234,7 +1234,7 @@ pub async fn has_contracts_before_pake_borrower(
     let row = sqlx::query!(
         r#"
             SELECT EXISTS (
-                SELECT 1 FROM contracts WHERE borrower_id = $1 AND created_at < '2024-01-16'
+                SELECT 1 FROM contracts WHERE borrower_id = $1 AND created_at < '2025-01-19'
             ) AS entry_exists;
         "#,
         borrower_id,
@@ -1252,7 +1252,7 @@ pub async fn has_contracts_before_pake_lender(
     let row = sqlx::query!(
         r#"
             SELECT EXISTS (
-                SELECT 1 FROM contracts WHERE lender_id = $1 AND created_at < '2024-01-16'
+                SELECT 1 FROM contracts WHERE lender_id = $1 AND created_at < '2025-01-19'
             ) AS entry_exists;
         "#,
         lender_id,
