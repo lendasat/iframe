@@ -39,7 +39,7 @@ export function allowedPagesWithoutLogin(location: string) {
 export class HttpClientLender extends BaseHttpClient {
   async postLoanOffer(offer: CreateLoanOfferRequest): Promise<LoanOffer | undefined> {
     try {
-      const response: AxiosResponse<LoanOffer> = await this.httpClient.post("/api/offers/create", offer);
+      const response: AxiosResponse<LoanOffer> = await this.httpClient.post("/api/my-offers/create", offer);
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
@@ -417,7 +417,7 @@ export class HttpClientLender extends BaseHttpClient {
 
   async getMyLoanOffers(): Promise<LoanOffer[]> {
     try {
-      const response: AxiosResponse<LoanOffer[]> = await this.httpClient.get("/api/offers");
+      const response: AxiosResponse<LoanOffer[]> = await this.httpClient.get("/api/my-offers");
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
@@ -436,7 +436,7 @@ export class HttpClientLender extends BaseHttpClient {
 
   async getMyLoanOffer(id: string): Promise<LoanOffer> {
     try {
-      const response: AxiosResponse<LoanOffer> = await this.httpClient.get(`/api/offers/${id}`);
+      const response: AxiosResponse<LoanOffer> = await this.httpClient.get(`/api/my-offers/${id}`);
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
@@ -455,7 +455,7 @@ export class HttpClientLender extends BaseHttpClient {
 
   async deleteLoanOffer(id: string): Promise<void> {
     try {
-      await this.httpClient.delete(`/api/offers/${id}`);
+      await this.httpClient.delete(`/api/my-offers/${id}`);
       return;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {

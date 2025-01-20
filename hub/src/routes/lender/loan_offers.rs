@@ -26,27 +26,27 @@ use tracing::instrument;
 pub(crate) fn router(app_state: Arc<AppState>) -> Router {
     Router::new()
         .route(
-            "/api/offers",
+            "/api/my-offers",
             get(get_loan_offers_by_lender).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
                 auth::jwt_auth::auth,
             )),
         )
         .route(
-            "/api/offers/:id",
+            "/api/my-offers/:id",
             get(get_loan_offer_by_lender_and_offer_id).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
                 auth::jwt_auth::auth,
             )),
         )
         .route(
-            "/api/offers/:id",
+            "/api/my-offers/:id",
             delete(delete_loan_offer_by_lender_and_offer_id).route_layer(
                 middleware::from_fn_with_state(app_state.clone(), auth::jwt_auth::auth),
             ),
         )
         .route(
-            "/api/offers/create",
+            "/api/my-offers/create",
             post(create_loan_offer).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
                 auth::jwt_auth::auth,
