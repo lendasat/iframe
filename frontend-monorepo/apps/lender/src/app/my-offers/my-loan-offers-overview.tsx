@@ -1,4 +1,4 @@
-import type { LoanOffer } from "@frontend-monorepo/http-client-lender";
+import type { MyLoanOffer } from "@frontend-monorepo/http-client-lender";
 import { useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
 import { Box, Heading } from "@radix-ui/themes";
 import { useEffect, useState } from "react";
@@ -14,7 +14,7 @@ export enum TableSortBy {
 function MyLoanOffersOverview() {
   const { getMyLoanOffers } = useLenderHttpClient();
 
-  const [loanOffers, setLoanOffers] = useState<LoanOffer[]>([]);
+  const [loanOffers, setLoanOffers] = useState<MyLoanOffer[]>([]);
   const tableSorting = TableSortBy.Amount;
 
   useEffect(() => {
@@ -44,7 +44,7 @@ function MyLoanOffersOverview() {
   );
 }
 
-function sortOffers(offers: LoanOffer[], sortBy: TableSortBy): LoanOffer[] {
+function sortOffers(offers: MyLoanOffer[], sortBy: TableSortBy): MyLoanOffer[] {
   return offers.sort((a, b) => {
     let n;
     switch (sortBy) {

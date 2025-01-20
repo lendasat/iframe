@@ -4,7 +4,7 @@ import type { Dispute, LenderProfile } from "@frontend-monorepo/http-client-borr
 import type { AxiosResponse } from "axios";
 import axios from "axios";
 import { createContext, useContext } from "react";
-import type {
+import {
   Contract,
   CreateLoanOfferRequest,
   GetLiquidationPsbtResponse,
@@ -12,6 +12,7 @@ import type {
   LiquidationToStableCoinPsbt,
   LoanAndContractStats,
   LoanOffer,
+  MyLoanOffer,
 } from "./models";
 import { parseRFC3339Date } from "./utils";
 
@@ -28,6 +29,15 @@ interface RawDispute extends Omit<Dispute, "created_at" | "updated_at"> {
   updated_at: string;
 }
 
+interface RawMyLoanOffer extends Omit<MyLoanOffer, "created_at" | "updated_at"> {
+  created_at: string;
+  updated_at: string;
+}
+
+interface RawLoanOffer extends Omit<LoanOffer, "created_at"> {
+  created_at: string;
+}
+
 export function allowedPagesWithoutLogin(location: string) {
   // These need to be aligned with the routes in app.tsx
   return location.includes(`login`) || location.includes(`registration`)
@@ -37,9 +47,9 @@ export function allowedPagesWithoutLogin(location: string) {
 }
 
 export class HttpClientLender extends BaseHttpClient {
-  async postLoanOffer(offer: CreateLoanOfferRequest): Promise<LoanOffer | undefined> {
+  async postLoanOffer(offer: CreateLoanOfferRequest): Promise<MyLoanOffer | undefined> {
     try {
-      const response: AxiosResponse<LoanOffer> = await this.httpClient.post("/api/my-offers/create", offer);
+      const response: AxiosResponse<MyLoanOffer> = await this.httpClient.post("/api/my-offers/create", offer);
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
@@ -415,10 +425,21 @@ export class HttpClientLender extends BaseHttpClient {
     }
   }
 
-  async getMyLoanOffers(): Promise<LoanOffer[]> {
+  async getAllLoanOffers(): Promise<LoanOffer[]> {
     try {
-      const response: AxiosResponse<LoanOffer[]> = await this.httpClient.get("/api/my-offers");
-      return response.data;
+      const response: AxiosResponse<RawLoanOffer[]> = await this.httpClient.get("/api/offers");
+
+      return response.data.map(offer => {
+        const createdAt = parseRFC3339Date(offer.created_at);
+        if (createdAt == null) {
+          throw new Error("Invalid date");
+        }
+
+        return {
+          ...offer,
+          created_at: createdAt,
+        };
+      });
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         const message = error.response.data.message;
@@ -434,10 +455,84 @@ export class HttpClientLender extends BaseHttpClient {
     }
   }
 
-  async getMyLoanOffer(id: string): Promise<LoanOffer> {
+  async getLoanOffer(id: string): Promise<LoanOffer> {
     try {
-      const response: AxiosResponse<LoanOffer> = await this.httpClient.get(`/api/my-offers/${id}`);
-      return response.data;
+      const response: AxiosResponse<RawLoanOffer> = await this.httpClient.get(`/api/offers/${id}`);
+      const createdAt = parseRFC3339Date(response.data.created_at);
+      if (createdAt == null) {
+        throw new Error("Invalid date");
+      }
+
+      return {
+        ...response.data,
+        created_at: createdAt,
+      };
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to fetch offer: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not fetch offer ${JSON.stringify(error)}`);
+      }
+    }
+  }
+
+  async getMyLoanOffers(): Promise<MyLoanOffer[]> {
+    try {
+      const response: AxiosResponse<RawMyLoanOffer[]> = await this.httpClient.get("/api/my-offers");
+      return response.data.map(offer => {
+        const createdAt = parseRFC3339Date(offer.created_at);
+        if (createdAt == null) {
+          throw new Error("Invalid date");
+        }
+        const updatedAt = parseRFC3339Date(offer.updated_at);
+        if (updatedAt == null) {
+          throw new Error("Invalid date");
+        }
+
+        return {
+          ...offer,
+          created_at: createdAt,
+          updated_at: updatedAt,
+        };
+      });
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to fetch offers: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not fetch offers ${JSON.stringify(error)}`);
+      }
+    }
+  }
+
+  async getMyLoanOffer(id: string): Promise<MyLoanOffer> {
+    try {
+      const response: AxiosResponse<RawMyLoanOffer> = await this.httpClient.get(`/api/my-offers/${id}`);
+      const createdAt = parseRFC3339Date(response.data.created_at);
+      if (createdAt == null) {
+        throw new Error("Invalid date");
+      }
+      const updatedAt = parseRFC3339Date(response.data.updated_at);
+      if (updatedAt == null) {
+        throw new Error("Invalid date");
+      }
+
+      return {
+        ...response.data,
+        created_at: createdAt,
+        updated_at: updatedAt,
+      };
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         const message = error.response.data.message;
@@ -506,6 +601,8 @@ type LenderHttpClientContextType = Pick<
   | "getDispute"
   | "getLenderProfile"
   | "getBorrowerProfile"
+  | "getAllLoanOffers"
+  | "getLoanOffer"
   | "getMyLoanOffers"
   | "getMyLoanOffer"
   | "deleteLoanOffer"
@@ -563,6 +660,8 @@ export const HttpClientLenderProvider: React.FC<HttpClientProviderProps> = ({ ch
     getDispute: httpClient.getDispute.bind(httpClient),
     getLenderProfile: httpClient.getLenderProfile.bind(httpClient),
     getBorrowerProfile: httpClient.getBorrowerProfile.bind(httpClient),
+    getAllLoanOffers: httpClient.getAllLoanOffers.bind(httpClient),
+    getLoanOffer: httpClient.getLoanOffer.bind(httpClient),
     getMyLoanOffers: httpClient.getMyLoanOffers.bind(httpClient),
     getMyLoanOffer: httpClient.getMyLoanOffer.bind(httpClient),
     deleteLoanOffer: httpClient.deleteLoanOffer.bind(httpClient),

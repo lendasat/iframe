@@ -1,4 +1,5 @@
 import { type LoanFeature } from "@frontend-monorepo/base-http-client";
+import { OriginationFee } from "@frontend-monorepo/http-client-borrower";
 import type { LoanAssetChain, LoanAssetType, LoanTransaction } from "@frontend-monorepo/ui-shared";
 
 export enum ContractStatus {
@@ -82,7 +83,7 @@ export enum LoanOfferStatus {
   Deleted = "Deleted",
 }
 
-export interface LoanOffer {
+export interface MyLoanOffer {
   id: string;
   lender_id: string;
   min_ltv: number;
@@ -97,8 +98,23 @@ export interface LoanOffer {
   loan_asset_chain: string;
   status: LoanOfferStatus;
   auto_accept: boolean;
-  created_at: string;
-  updated_at: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface LoanOffer {
+  id: string;
+  lender: LenderProfile;
+  min_ltv: number;
+  interest_rate: number;
+  loan_amount_min: number;
+  loan_amount_max: number;
+  duration_months_min: number;
+  duration_months_max: number;
+  loan_asset_type: string;
+  loan_asset_chain: string;
+  origination_fee: OriginationFee[];
+  created_at: Date;
 }
 
 export const actionFromStatus = (status: ContractStatus) => {

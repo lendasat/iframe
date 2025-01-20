@@ -1,4 +1,4 @@
-import type { LoanOffer } from "@frontend-monorepo/http-client-lender";
+import type { MyLoanOffer } from "@frontend-monorepo/http-client-lender";
 import { CurrencyFormatter, StableCoinHelper } from "@frontend-monorepo/ui-shared";
 import { Badge, Box, Button, DropdownMenu, Flex, Grid, Heading, Text } from "@radix-ui/themes";
 import { BsThreeDotsVertical } from "react-icons/bs";
@@ -7,7 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { StatusBadge } from "./status-badge";
 
 interface LoanOfferProps {
-  loanOffer: LoanOffer;
+  loanOffer: MyLoanOffer;
 }
 
 export function MyLoanOfferComponent({ loanOffer }: LoanOfferProps) {
