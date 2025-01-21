@@ -4,15 +4,18 @@ import { InfoCircledIcon } from "@radix-ui/react-icons";
 import { Box, Button, Callout, Flex, Table, Text } from "@radix-ui/themes";
 import { useState } from "react";
 import { IoCaretDownOutline, IoCaretUp } from "react-icons/io5";
-import { Lender } from "./lender";
+import { MdCreate } from "react-icons/md";
+import { useNavigate } from "react-router-dom";
+import { StatusBadge } from "./status-badge";
 
 export type ColumnFilterKey =
-  | "lender"
   | "amount"
   | "duration"
   | "interest"
   | "ltv"
   | "coin"
+  | "status"
+  | "action"
   | "createdAt";
 
 function getCaretColor(sortByColumn: ColumnFilterKey, currentColumnKey: ColumnFilterKey, sortAsc: boolean) {
@@ -67,9 +70,11 @@ export interface ContractDetailsTableProps {
   offers: LoanOffer[];
 }
 
-export const LoanOffersTable = ({
+export const MyLoanOffersTable = ({
   offers,
 }: ContractDetailsTableProps) => {
+  const navigate = useNavigate();
+
   const [sortByColumn, setSortByColumn] = useState<ColumnFilterKey>("createdAt");
   const [sortAsc, setSortAsc] = useState(false);
 
@@ -81,9 +86,6 @@ export const LoanOffersTable = ({
   const sortedOffers = offers.sort((a, b) => {
     let sorted = 0;
     switch (sortByColumn) {
-      case "lender":
-        sorted = a.lender.id.localeCompare(b.lender.id);
-        break;
       case "amount":
         sorted = a.loan_amount_min - b.loan_amount_min;
         break;
@@ -101,6 +103,10 @@ export const LoanOffersTable = ({
           StableCoinHelper.mapFromBackend(b.loan_asset_chain, b.loan_asset_type),
         );
         break;
+      case "status":
+      case "action":
+        sorted = a.status.localeCompare(b.status);
+        break;
       case "createdAt":
         sorted = a.created_at.getTime() - b.created_at.getTime();
         break;
@@ -117,15 +123,6 @@ export const LoanOffersTable = ({
     <Table.Root variant="surface" size={"2"} layout={"auto"}>
       <Table.Header>
         <Table.Row>
-          <Table.ColumnHeaderCell className={"text-font dark:text-font-dark"}>
-            <ColumnHeader
-              toggleSortByColumn={toggleSortByColumn}
-              sortByColumn={sortByColumn}
-              sortAsc={sortAsc}
-              currentColumn={"lender"}
-              label={"Lender"}
-            />
-          </Table.ColumnHeaderCell>
           <Table.ColumnHeaderCell className={"text-font dark:text-font-dark"}>
             <ColumnHeader
               toggleSortByColumn={toggleSortByColumn}
@@ -182,6 +179,15 @@ export const LoanOffersTable = ({
             </Box>
           </Table.ColumnHeaderCell>
           <Table.ColumnHeaderCell className={"text-font dark:text-font-dark"}>
+            <ColumnHeader
+              toggleSortByColumn={toggleSortByColumn}
+              sortByColumn={sortByColumn}
+              sortAsc={sortAsc}
+              currentColumn={"status"}
+              label={"Status"}
+            />
+          </Table.ColumnHeaderCell>
+          <Table.ColumnHeaderCell className={"text-font dark:text-font-dark"}>
             <Box className={"hidden md:flex"}>
               <ColumnHeader
                 toggleSortByColumn={toggleSortByColumn}
@@ -189,6 +195,17 @@ export const LoanOffersTable = ({
                 sortAsc={sortAsc}
                 currentColumn={"createdAt"}
                 label={"CreatedAt"}
+              />
+            </Box>
+          </Table.ColumnHeaderCell>
+          <Table.ColumnHeaderCell className={"text-font dark:text-font-dark"}>
+            <Box className={"hidden md:flex"}>
+              <ColumnHeader
+                toggleSortByColumn={toggleSortByColumn}
+                sortByColumn={sortByColumn}
+                sortAsc={sortAsc}
+                currentColumn={"action"}
+                label={"Edit"}
               />
             </Box>
           </Table.ColumnHeaderCell>
@@ -215,9 +232,6 @@ export const LoanOffersTable = ({
 
           return (
             <Table.Row key={index}>
-              <Table.RowHeaderCell>
-                <Lender id={offer.lender.id} name={offer.lender.name} />
-              </Table.RowHeaderCell>
               <Table.RowHeaderCell>
                 <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
                   <CurrencyFormatter value={offer.loan_amount_min} /> -{" "}
@@ -255,12 +269,33 @@ export const LoanOffersTable = ({
               <Table.Cell>
                 <Box className="hidden md:flex">
                   <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
+                    <StatusBadge offer={offer} />
+                  </Text>
+                </Box>
+              </Table.Cell>
+              <Table.Cell>
+                <Box className="hidden md:flex">
+                  <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
                     {offer.created_at.toLocaleDateString([], {
                       day: "numeric",
                       month: "short",
                       year: "numeric",
                     })}
                   </Text>
+                </Box>
+              </Table.Cell>
+              <Table.Cell>
+                <Box className="hidden md:flex">
+                  <Button
+                    size={"1"}
+                    variant="solid"
+                    className="bg-btn dark:bg-dark-600 text-white w-full active:scale-90"
+                    onClick={() => {
+                      navigate(`/my-offers/${offer.id}`);
+                    }}
+                  >
+                    <MdCreate />
+                  </Button>
                 </Box>
               </Table.Cell>
             </Table.Row>

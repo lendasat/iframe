@@ -100,6 +100,7 @@ export interface LoanOffer {
   status: LoanOfferStatus;
   auto_accept: boolean;
   created_at: Date;
+  updated_at: Date;
 }
 
 export const actionFromStatus = (status: ContractStatus) => {

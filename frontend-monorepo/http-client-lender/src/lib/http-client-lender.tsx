@@ -28,8 +28,9 @@ interface RawDispute extends Omit<Dispute, "created_at" | "updated_at"> {
   updated_at: string;
 }
 
-interface RawLoanOffer extends Omit<LoanOffer, "created_at"> {
+interface RawLoanOffer extends Omit<LoanOffer, "created_at" | "updated_at"> {
   created_at: string;
+  updated_at: string;
 }
 
 export function allowedPagesWithoutLogin(location: string) {
@@ -428,10 +429,16 @@ export class HttpClientLender extends BaseHttpClient {
         if (createdAt == null) {
           throw new Error("Invalid date");
         }
+        const updatedAt = parseRFC3339Date(offer.updated_at);
+
+        if (updatedAt == null) {
+          throw new Error("Invalid date");
+        }
 
         return {
           ...offer,
           created_at: createdAt,
+          updated_at: updatedAt,
         };
       });
     } catch (error) {
@@ -456,10 +463,15 @@ export class HttpClientLender extends BaseHttpClient {
       if (createdAt == null) {
         throw new Error("Invalid date");
       }
+      const updatedAt = parseRFC3339Date(response.data.updated_at);
 
+      if (updatedAt == null) {
+        throw new Error("Invalid date");
+      }
       return {
         ...response.data,
         created_at: createdAt,
+        updated_at: updatedAt,
       };
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
@@ -484,10 +496,16 @@ export class HttpClientLender extends BaseHttpClient {
         if (createdAt == null) {
           throw new Error("Invalid date");
         }
+        const updatedAt = parseRFC3339Date(offer.updated_at);
+
+        if (updatedAt == null) {
+          throw new Error("Invalid date");
+        }
 
         return {
           ...offer,
           created_at: createdAt,
+          updated_at: updatedAt,
         };
       });
     } catch (error) {
@@ -512,10 +530,16 @@ export class HttpClientLender extends BaseHttpClient {
       if (createdAt == null) {
         throw new Error("Invalid date");
       }
+      const updatedAt = parseRFC3339Date(response.data.updated_at);
+
+      if (updatedAt == null) {
+        throw new Error("Invalid date");
+      }
 
       return {
         ...response.data,
         created_at: createdAt,
+        updated_at: updatedAt,
       };
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {

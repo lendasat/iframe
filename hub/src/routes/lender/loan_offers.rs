@@ -178,6 +178,7 @@ pub async fn create_loan_offer(
         loan_repayment_address: offer.loan_repayment_address,
         origination_fee,
         created_at: offer.created_at,
+        updated_at: offer.updated_at,
     };
 
     Ok((StatusCode::OK, Json(offer)))
@@ -210,6 +211,8 @@ pub struct LoanOffer {
     pub origination_fee: Vec<OriginationFee>,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339")]
+    pub updated_at: OffsetDateTime,
 }
 
 #[instrument(skip_all, err(Debug))]
@@ -270,6 +273,7 @@ pub async fn get_loan_offers_by_lender(
             loan_repayment_address: offer.loan_repayment_address,
             origination_fee,
             created_at: offer.created_at,
+            updated_at: offer.updated_at,
         };
         ret.push(offer)
     }
@@ -336,6 +340,7 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
         loan_repayment_address: offer.loan_repayment_address,
         origination_fee,
         created_at: offer.created_at,
+        updated_at: offer.updated_at,
     };
 
     Ok((StatusCode::OK, Json(loan)))
@@ -396,6 +401,7 @@ pub async fn get_loan_offers(
             loan_repayment_address: offer.loan_repayment_address,
             origination_fee,
             created_at: offer.created_at,
+            updated_at: offer.updated_at,
         })
     }
 
@@ -462,6 +468,7 @@ pub async fn get_loan_offer_by_id(
         loan_repayment_address: offer.loan_repayment_address,
         origination_fee,
         created_at: offer.created_at,
+        updated_at: offer.updated_at,
     };
 
     Ok((StatusCode::OK, Json(loan)))

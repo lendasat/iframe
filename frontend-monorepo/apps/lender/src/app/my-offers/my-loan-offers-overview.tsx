@@ -1,8 +1,7 @@
-import type { LoanOffer } from "@frontend-monorepo/http-client-lender";
 import { useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
-import { Box, Heading } from "@radix-ui/themes";
-import { useEffect, useState } from "react";
-import MyLoanOffersComponent from "./my-loan-offers";
+import { Box, Flex, Heading } from "@radix-ui/themes";
+import { useAsync } from "react-use";
+import { MyLoanOffersTable } from "./MyLoanOffersTable";
 
 export enum TableSortBy {
   Amount = "Amount",
@@ -14,56 +13,26 @@ export enum TableSortBy {
 function MyLoanOffersOverview() {
   const { getMyLoanOffers } = useLenderHttpClient();
 
-  const [loanOffers, setLoanOffers] = useState<LoanOffer[]>([]);
-  const tableSorting = TableSortBy.Amount;
+  const { value } = useAsync(async () => {
+    return getMyLoanOffers();
+  });
+  // TODO: handle loading and error from fetching
 
-  useEffect(() => {
-    const fetchLoans = async () => {
-      const offers = (await getMyLoanOffers()) || [];
-
-      const sortedOffers = sortOffers(offers, tableSorting);
-
-      setLoanOffers(sortedOffers);
-    };
-    fetchLoans();
-  }, [getMyLoanOffers, tableSorting]);
-
-  const { innerHeight } = window;
+  const loanOffers = value || [];
 
   return (
-    <Box
-      style={{
-        height: innerHeight - 130,
-      }}
-    >
-      <Box className="p-6 md:p-8">
-        <Heading className={"text-font dark:text-font-dark"} size={"7"}>My Proposals</Heading>
+    <Box className={"pb-20"}>
+      <Box className={"px-6 md:px-8 py-4"}>
+        <Flex gap={"1"} align={"center"}>
+          <Heading className={"text-font dark:text-font-dark"} size={"6"}>My Loan Offers</Heading>
+        </Flex>
       </Box>
-      <MyLoanOffersComponent loanOffers={loanOffers} />
+
+      <Box className={"px-6 md:px-8 py-4"}>
+        <MyLoanOffersTable offers={loanOffers} />
+      </Box>
     </Box>
   );
-}
-
-function sortOffers(offers: LoanOffer[], sortBy: TableSortBy): LoanOffer[] {
-  return offers.sort((a, b) => {
-    let n;
-    switch (sortBy) {
-      case TableSortBy.Amount:
-        n = a.loan_amount_min - b.loan_amount_min;
-        break;
-      case TableSortBy.Ltv:
-        n = a.min_ltv - b.min_ltv;
-        break;
-      case TableSortBy.Duration:
-        n = a.duration_months_min - b.duration_months_min;
-        break;
-      case TableSortBy.Interest:
-        n = a.interest_rate - b.interest_rate;
-        break;
-    }
-
-    return n;
-  });
 }
 
 export default MyLoanOffersOverview;
