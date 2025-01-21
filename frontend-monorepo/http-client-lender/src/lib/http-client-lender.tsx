@@ -4,7 +4,7 @@ import type { Dispute, LenderProfile } from "@frontend-monorepo/http-client-borr
 import type { AxiosResponse } from "axios";
 import axios from "axios";
 import { createContext, useContext } from "react";
-import type {
+import {
   Contract,
   CreateLoanOfferRequest,
   GetLiquidationPsbtResponse,
@@ -28,6 +28,11 @@ interface RawDispute extends Omit<Dispute, "created_at" | "updated_at"> {
   updated_at: string;
 }
 
+interface RawLoanOffer extends Omit<LoanOffer, "created_at" | "updated_at"> {
+  created_at: string;
+  updated_at: string;
+}
+
 export function allowedPagesWithoutLogin(location: string) {
   // These need to be aligned with the routes in app.tsx
   return location.includes(`login`) || location.includes(`registration`)
@@ -39,7 +44,7 @@ export function allowedPagesWithoutLogin(location: string) {
 export class HttpClientLender extends BaseHttpClient {
   async postLoanOffer(offer: CreateLoanOfferRequest): Promise<LoanOffer | undefined> {
     try {
-      const response: AxiosResponse<LoanOffer> = await this.httpClient.post("/api/offers/create", offer);
+      const response: AxiosResponse<LoanOffer> = await this.httpClient.post("/api/my-offers/create", offer);
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
@@ -415,10 +420,94 @@ export class HttpClientLender extends BaseHttpClient {
     }
   }
 
+  async getAllLoanOffers(): Promise<LoanOffer[]> {
+    try {
+      const response: AxiosResponse<RawLoanOffer[]> = await this.httpClient.get("/api/offers");
+
+      return response.data.map(offer => {
+        const createdAt = parseRFC3339Date(offer.created_at);
+        if (createdAt == null) {
+          throw new Error("Invalid date");
+        }
+        const updatedAt = parseRFC3339Date(offer.updated_at);
+
+        if (updatedAt == null) {
+          throw new Error("Invalid date");
+        }
+
+        return {
+          ...offer,
+          created_at: createdAt,
+          updated_at: updatedAt,
+        };
+      });
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to fetch offers: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not fetch offers ${JSON.stringify(error)}`);
+      }
+    }
+  }
+
+  async getLoanOffer(id: string): Promise<LoanOffer> {
+    try {
+      const response: AxiosResponse<RawLoanOffer> = await this.httpClient.get(`/api/offers/${id}`);
+      const createdAt = parseRFC3339Date(response.data.created_at);
+      if (createdAt == null) {
+        throw new Error("Invalid date");
+      }
+      const updatedAt = parseRFC3339Date(response.data.updated_at);
+
+      if (updatedAt == null) {
+        throw new Error("Invalid date");
+      }
+      return {
+        ...response.data,
+        created_at: createdAt,
+        updated_at: updatedAt,
+      };
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to fetch offer: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not fetch offer ${JSON.stringify(error)}`);
+      }
+    }
+  }
+
   async getMyLoanOffers(): Promise<LoanOffer[]> {
     try {
-      const response: AxiosResponse<LoanOffer[]> = await this.httpClient.get("/api/offers");
-      return response.data;
+      const response: AxiosResponse<RawLoanOffer[]> = await this.httpClient.get("/api/my-offers");
+      return response.data.map(offer => {
+        const createdAt = parseRFC3339Date(offer.created_at);
+        if (createdAt == null) {
+          throw new Error("Invalid date");
+        }
+        const updatedAt = parseRFC3339Date(offer.updated_at);
+
+        if (updatedAt == null) {
+          throw new Error("Invalid date");
+        }
+
+        return {
+          ...offer,
+          created_at: createdAt,
+          updated_at: updatedAt,
+        };
+      });
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         const message = error.response.data.message;
@@ -436,8 +525,22 @@ export class HttpClientLender extends BaseHttpClient {
 
   async getMyLoanOffer(id: string): Promise<LoanOffer> {
     try {
-      const response: AxiosResponse<LoanOffer> = await this.httpClient.get(`/api/offers/${id}`);
-      return response.data;
+      const response: AxiosResponse<RawLoanOffer> = await this.httpClient.get(`/api/my-offers/${id}`);
+      const createdAt = parseRFC3339Date(response.data.created_at);
+      if (createdAt == null) {
+        throw new Error("Invalid date");
+      }
+      const updatedAt = parseRFC3339Date(response.data.updated_at);
+
+      if (updatedAt == null) {
+        throw new Error("Invalid date");
+      }
+
+      return {
+        ...response.data,
+        created_at: createdAt,
+        updated_at: updatedAt,
+      };
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         const message = error.response.data.message;
@@ -455,7 +558,7 @@ export class HttpClientLender extends BaseHttpClient {
 
   async deleteLoanOffer(id: string): Promise<void> {
     try {
-      await this.httpClient.delete(`/api/offers/${id}`);
+      await this.httpClient.delete(`/api/my-offers/${id}`);
       return;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
@@ -506,6 +609,8 @@ type LenderHttpClientContextType = Pick<
   | "getDispute"
   | "getLenderProfile"
   | "getBorrowerProfile"
+  | "getAllLoanOffers"
+  | "getLoanOffer"
   | "getMyLoanOffers"
   | "getMyLoanOffer"
   | "deleteLoanOffer"
@@ -563,6 +668,8 @@ export const HttpClientLenderProvider: React.FC<HttpClientProviderProps> = ({ ch
     getDispute: httpClient.getDispute.bind(httpClient),
     getLenderProfile: httpClient.getLenderProfile.bind(httpClient),
     getBorrowerProfile: httpClient.getBorrowerProfile.bind(httpClient),
+    getAllLoanOffers: httpClient.getAllLoanOffers.bind(httpClient),
+    getLoanOffer: httpClient.getLoanOffer.bind(httpClient),
     getMyLoanOffers: httpClient.getMyLoanOffers.bind(httpClient),
     getMyLoanOffer: httpClient.getMyLoanOffer.bind(httpClient),
     deleteLoanOffer: httpClient.deleteLoanOffer.bind(httpClient),

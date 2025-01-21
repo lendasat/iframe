@@ -2,8 +2,14 @@ use crate::db;
 use crate::model::lender_feature_flags;
 use crate::model::CreateLoanOfferSchema;
 use crate::model::Lender;
+use crate::model::LoanAssetChain;
+use crate::model::LoanAssetType;
+use crate::model::LoanOfferStatus;
+use crate::model::OriginationFee;
+use crate::routes::borrower::contracts::LenderProfile;
 use crate::routes::lender::auth;
 use crate::routes::lender::AppState;
+use anyhow::Context;
 use axum::extract::Path;
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -18,6 +24,7 @@ use axum::Router;
 use rust_decimal::prelude::Zero;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
+use serde::Deserialize;
 use serde::Serialize;
 use std::sync::Arc;
 use time::OffsetDateTime;
@@ -26,28 +33,42 @@ use tracing::instrument;
 pub(crate) fn router(app_state: Arc<AppState>) -> Router {
     Router::new()
         .route(
-            "/api/offers",
+            "/api/my-offers",
             get(get_loan_offers_by_lender).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
                 auth::jwt_auth::auth,
             )),
         )
         .route(
-            "/api/offers/:id",
+            "/api/my-offers/:id",
             get(get_loan_offer_by_lender_and_offer_id).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
                 auth::jwt_auth::auth,
             )),
         )
         .route(
-            "/api/offers/:id",
+            "/api/my-offers/:id",
             delete(delete_loan_offer_by_lender_and_offer_id).route_layer(
                 middleware::from_fn_with_state(app_state.clone(), auth::jwt_auth::auth),
             ),
         )
         .route(
-            "/api/offers/create",
+            "/api/my-offers/create",
             post(create_loan_offer).route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                auth::jwt_auth::auth,
+            )),
+        )
+        .route(
+            "/api/offers",
+            get(get_loan_offers).route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                auth::jwt_auth::auth,
+            )),
+        )
+        .route(
+            "/api/offers/:id",
+            get(get_loan_offer_by_id).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
                 auth::jwt_auth::auth,
             )),
@@ -108,7 +129,7 @@ pub async fn create_loan_offer(
         return Err((StatusCode::UNAUTHORIZED, Json(error_response)));
     }
 
-    let loan = db::loan_offers::insert_loan_offer(&data.db, body, user.id.as_str())
+    let offer = db::loan_offers::insert_loan_offer(&data.db, body, user.id.as_str())
         .await
         .map_err(|error| {
             let error_response = ErrorResponse {
@@ -117,7 +138,81 @@ pub async fn create_loan_offer(
             (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
         })?;
 
-    Ok((StatusCode::OK, Json(loan)))
+    let lender = db::lenders::get_user_by_id(&data.db, &offer.lender_id)
+        .await
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Database error: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?
+        .context("No lender found for contract")
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Illegal state error: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
+
+    let origination_fee = data.config.origination_fee.clone();
+
+    let offer = LoanOffer {
+        id: offer.id,
+        lender: LenderProfile {
+            id: lender.id,
+            name: lender.name,
+        },
+        name: offer.name,
+        min_ltv: offer.min_ltv,
+        interest_rate: offer.interest_rate,
+        loan_amount_min: offer.loan_amount_min,
+        loan_amount_max: offer.loan_amount_max,
+        loan_amount_reserve: offer.loan_amount_reserve,
+        loan_amount_reserve_remaining: offer.loan_amount_reserve_remaining,
+        duration_months_min: offer.duration_months_min,
+        duration_months_max: offer.duration_months_max,
+        loan_asset_type: offer.loan_asset_type,
+        loan_asset_chain: offer.loan_asset_chain,
+        status: offer.status,
+        auto_accept: offer.auto_accept,
+        loan_repayment_address: offer.loan_repayment_address,
+        origination_fee,
+        created_at: offer.created_at,
+        updated_at: offer.updated_at,
+    };
+
+    Ok((StatusCode::OK, Json(offer)))
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct LoanOffer {
+    pub id: String,
+    pub lender: LenderProfile,
+    pub name: String,
+    #[serde(with = "rust_decimal::serde::float")]
+    pub min_ltv: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
+    pub interest_rate: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
+    pub loan_amount_min: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
+    pub loan_amount_max: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
+    pub loan_amount_reserve: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
+    pub loan_amount_reserve_remaining: Decimal,
+    pub auto_accept: bool,
+    pub duration_months_min: i32,
+    pub duration_months_max: i32,
+    pub loan_asset_type: LoanAssetType,
+    pub loan_asset_chain: LoanAssetChain,
+    pub status: LoanOfferStatus,
+    pub loan_repayment_address: String,
+    pub origination_fee: Vec<OriginationFee>,
+    #[serde(with = "time::serde::rfc3339")]
+    pub created_at: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339")]
+    pub updated_at: OffsetDateTime,
 }
 
 #[instrument(skip_all, err(Debug))]
@@ -136,7 +231,54 @@ pub async fn get_loan_offers_by_lender(
             (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
         })?;
 
-    Ok((StatusCode::OK, Json(loans)))
+    let mut ret = vec![];
+    for offer in loans {
+        let lender = db::lenders::get_user_by_id(&data.db, &offer.lender_id)
+            .await
+            .map_err(|error| {
+                let error_response = ErrorResponse {
+                    message: format!("Database error: {}", error),
+                };
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+            })?
+            .context("No lender found for contract")
+            .map_err(|error| {
+                let error_response = ErrorResponse {
+                    message: format!("Illegal state error: {}", error),
+                };
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+            })?;
+
+        let origination_fee = data.config.origination_fee.clone();
+
+        let offer = LoanOffer {
+            id: offer.id,
+            lender: LenderProfile {
+                id: lender.id,
+                name: lender.name,
+            },
+            name: offer.name,
+            min_ltv: offer.min_ltv,
+            interest_rate: offer.interest_rate,
+            loan_amount_min: offer.loan_amount_min,
+            loan_amount_max: offer.loan_amount_max,
+            duration_months_min: offer.duration_months_min,
+            duration_months_max: offer.duration_months_max,
+            loan_amount_reserve: offer.loan_amount_reserve,
+            loan_amount_reserve_remaining: offer.loan_amount_reserve_remaining,
+            loan_asset_type: offer.loan_asset_type,
+            loan_asset_chain: offer.loan_asset_chain,
+            status: offer.status,
+            auto_accept: offer.auto_accept,
+            loan_repayment_address: offer.loan_repayment_address,
+            origination_fee,
+            created_at: offer.created_at,
+            updated_at: offer.updated_at,
+        };
+        ret.push(offer)
+    }
+
+    Ok((StatusCode::OK, Json(ret)))
 }
 
 #[instrument(skip_all, err(Debug))]
@@ -145,7 +287,7 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
     Extension(user): Extension<Lender>,
     Path(offer_id): Path<String>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let loan = db::loan_offers::get_loan_offer_by_lender_and_offer_id(
+    let offer = db::loan_offers::get_loan_offer_by_lender_and_offer_id(
         &data.db,
         user.id.as_str(),
         offer_id.as_str(),
@@ -157,6 +299,177 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
         };
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
     })?;
+
+    let lender = db::lenders::get_user_by_id(&data.db, &offer.lender_id)
+        .await
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Database error: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?
+        .context("No lender found for contract")
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Illegal state error: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
+
+    let origination_fee = data.config.origination_fee.clone();
+
+    let loan = LoanOffer {
+        id: offer.id,
+        lender: LenderProfile {
+            id: lender.id,
+            name: lender.name,
+        },
+        name: offer.name,
+        min_ltv: offer.min_ltv,
+        interest_rate: offer.interest_rate,
+        loan_amount_min: offer.loan_amount_min,
+        loan_amount_max: offer.loan_amount_max,
+        loan_amount_reserve: offer.loan_amount_reserve,
+        loan_amount_reserve_remaining: offer.loan_amount_reserve_remaining,
+        duration_months_min: offer.duration_months_min,
+        duration_months_max: offer.duration_months_max,
+        loan_asset_type: offer.loan_asset_type,
+        loan_asset_chain: offer.loan_asset_chain,
+        status: offer.status,
+        auto_accept: offer.auto_accept,
+        loan_repayment_address: offer.loan_repayment_address,
+        origination_fee,
+        created_at: offer.created_at,
+        updated_at: offer.updated_at,
+    };
+
+    Ok((StatusCode::OK, Json(loan)))
+}
+
+#[instrument(skip_all, err(Debug))]
+pub async fn get_loan_offers(
+    State(data): State<Arc<AppState>>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    let loans = db::loan_offers::load_all_available_loan_offers(&data.db)
+        .await
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Database error: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
+
+    let mut ret = vec![];
+    for offer in loans {
+        let lender = db::lenders::get_user_by_id(&data.db, &offer.lender_id)
+            .await
+            .map_err(|error| {
+                let error_response = ErrorResponse {
+                    message: format!("Database error: {}", error),
+                };
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+            })?
+            .context("No lender found for contract")
+            .map_err(|error| {
+                let error_response = ErrorResponse {
+                    message: format!("Illegal state error: {}", error),
+                };
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+            })?;
+
+        let origination_fee = data.config.origination_fee.clone();
+
+        ret.push(LoanOffer {
+            id: offer.id,
+            lender: LenderProfile {
+                id: lender.id,
+                name: lender.name,
+            },
+            name: offer.name,
+            min_ltv: offer.min_ltv,
+            interest_rate: offer.interest_rate,
+            loan_amount_min: offer.loan_amount_min,
+            loan_amount_max: offer.loan_amount_max,
+            loan_amount_reserve: offer.loan_amount_reserve,
+            loan_amount_reserve_remaining: offer.loan_amount_reserve_remaining,
+            duration_months_min: offer.duration_months_min,
+            duration_months_max: offer.duration_months_max,
+            loan_asset_type: offer.loan_asset_type,
+            loan_asset_chain: offer.loan_asset_chain,
+            status: offer.status,
+            auto_accept: offer.auto_accept,
+            loan_repayment_address: offer.loan_repayment_address,
+            origination_fee,
+            created_at: offer.created_at,
+            updated_at: offer.updated_at,
+        })
+    }
+
+    Ok((StatusCode::OK, Json(ret)))
+}
+
+#[instrument(skip_all, err(Debug))]
+pub async fn get_loan_offer_by_id(
+    State(data): State<Arc<AppState>>,
+    Path(offer_id): Path<String>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    let offer = db::loan_offers::loan_by_id(&data.db, offer_id.as_str())
+        .await
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Database error: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?
+        .ok_or_else(|| {
+            let error_response = ErrorResponse {
+                message: "Offer not found".to_string(),
+            };
+            (StatusCode::NOT_FOUND, Json(error_response))
+        })?;
+
+    let lender = db::lenders::get_user_by_id(&data.db, &offer.lender_id)
+        .await
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Database error: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?
+        .context("No lender found for contract")
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Illegal state error: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
+
+    let origination_fee = data.config.origination_fee.clone();
+
+    let loan = LoanOffer {
+        id: offer.id,
+        lender: LenderProfile {
+            id: lender.id,
+            name: lender.name,
+        },
+        name: offer.name,
+        min_ltv: offer.min_ltv,
+        interest_rate: offer.interest_rate,
+        loan_amount_min: offer.loan_amount_min,
+        loan_amount_max: offer.loan_amount_max,
+        loan_amount_reserve: offer.loan_amount_reserve,
+        loan_amount_reserve_remaining: offer.loan_amount_reserve_remaining,
+        duration_months_min: offer.duration_months_min,
+        duration_months_max: offer.duration_months_max,
+        loan_asset_type: offer.loan_asset_type,
+        loan_asset_chain: offer.loan_asset_chain,
+        status: offer.status,
+        auto_accept: offer.auto_accept,
+        loan_repayment_address: offer.loan_repayment_address,
+        origination_fee,
+        created_at: offer.created_at,
+        updated_at: offer.updated_at,
+    };
 
     Ok((StatusCode::OK, Json(loan)))
 }

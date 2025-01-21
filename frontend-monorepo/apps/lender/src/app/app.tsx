@@ -23,9 +23,11 @@ import { FiHome } from "react-icons/fi";
 import { HiOutlineSupport } from "react-icons/hi";
 import { IoCreateOutline, IoWalletOutline } from "react-icons/io5";
 import { LuActivity, LuSettings } from "react-icons/lu";
+import { TbWorldDollar } from "react-icons/tb";
 import ErrorBoundary from "./auth/ErrorBoundary";
 import VerifyEmailForm from "./auth/verifyEmailForm";
 import Dashboard from "./dashboard/dashboard";
+import { LoanOffersOverview } from "./loan-offers/LoanOffersOverview";
 import MyLoanOfferDetails from "./my-offers/my-loan-offer-details";
 import MyLoanOffersOverview from "./my-offers/my-loan-offers-overview";
 
@@ -55,6 +57,13 @@ const menuItems = [
         label: "Create an offer",
         path: "/create-loan-offer",
         icon: IoCreateOutline,
+        target: "_self",
+        visible: true,
+      },
+      {
+        label: "All Loan Offers",
+        path: "/offers",
+        icon: TbWorldDollar,
         target: "_self",
         visible: true,
       },
@@ -143,6 +152,9 @@ function MainLayoutComponents() {
             <Route path="/my-offers">
               <Route index element={<MyLoanOffersOverview />} />
               <Route path={":id"} element={<MyLoanOfferDetails />} />
+            </Route>
+            <Route path="/offers">
+              <Route index element={<LoanOffersOverview />} />
             </Route>
             <Route path="/disputes/:id" element={<ResolveDispute />} />
             <Route path="/setting" element={<MyAccount />} />
