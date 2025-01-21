@@ -78,6 +78,7 @@ export default function DashboardContracts({ contracts }: DashboardContractsProp
     ContractStatus.Requested,
     ContractStatus.RenewalRequested,
     ContractStatus.CollateralSeen,
+    ContractStatus.CollateralConfirmed,
     ContractStatus.RepaymentProvided,
     ContractStatus.Defaulted,
     ContractStatus.Undercollateralized,
@@ -97,7 +98,8 @@ export default function DashboardContracts({ contracts }: DashboardContractsProp
 
   const contractsWithActionNeeded = contracts.filter((loan) =>
     loan.status === ContractStatus.Requested || loan.status === ContractStatus.RenewalRequested
-    || loan.status === ContractStatus.Defaulted || loan.status === ContractStatus.CollateralConfirmed
+    || loan.status === ContractStatus.Defaulted || loan.status === ContractStatus.CollateralSeen
+    || loan.status === ContractStatus.CollateralConfirmed
     || loan.status === ContractStatus.RepaymentProvided
   );
   const needsAction = contractsWithActionNeeded.length > 0;
