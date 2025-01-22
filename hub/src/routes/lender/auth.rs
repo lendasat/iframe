@@ -275,8 +275,7 @@ async fn post_pake_login(
         })?;
 
     let lender_id = &user.id;
-
-    tracing::debug!(%lender_id, "Lender logging in");
+    tracing::Span::current().record("lender_id", lender_id);
 
     if !user.verified {
         let error_response = ErrorResponse {
@@ -368,8 +367,7 @@ async fn post_pake_verify(
         })?;
 
     let lender_id = &user.id;
-
-    tracing::debug!("Verifying lender login");
+    tracing::Span::current().record("lender_id", lender_id);
 
     if !user.verified {
         let error_response = ErrorResponse {
@@ -548,8 +546,7 @@ async fn post_start_upgrade_to_pake(
         })?;
 
     let lender_id = &user.id;
-
-    tracing::debug!("Upgrading lender to PAKE");
+    tracing::Span::current().record("lender_id", lender_id);
 
     if !user.verified {
         let error_response = ErrorResponse {
@@ -655,8 +652,7 @@ async fn post_finish_upgrade_to_pake(
         })?;
 
     let lender_id = &user.id;
-
-    tracing::debug!("Finishing lender upgrade to PAKE");
+    tracing::Span::current().record("lender_id", lender_id);
 
     if !user.verified {
         let error_response = ErrorResponse {
@@ -753,8 +749,7 @@ async fn verify_email_handler(
         })?;
 
     let lender_id = &user.id;
-
-    tracing::trace!(%lender_id, "Lender attempting to verify email");
+    tracing::Span::current().record("lender_id", lender_id);
 
     if user.verified {
         let error_response = ErrorResponse {
@@ -801,8 +796,7 @@ async fn forgot_password_handler(
         })?;
 
     let lender_id = &user.id;
-
-    tracing::debug!("Lender forgot password");
+    tracing::Span::current().record("lender_id", lender_id);
 
     if !user.verified {
         let error_response = ErrorResponse {
@@ -900,8 +894,7 @@ async fn reset_password_handler(
         })?;
 
     let lender_id = &user.id;
-
-    tracing::debug!("Lender resetting password");
+    tracing::Span::current().record("lender_id", lender_id);
 
     let old_wallet_backup = db::wallet_backups::find_by_lender_id(&data.db, lender_id)
         .await
