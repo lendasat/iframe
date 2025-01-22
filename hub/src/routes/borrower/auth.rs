@@ -269,8 +269,7 @@ async fn post_pake_login(
         .ok_or(Error::InvalidEmail)?;
 
     let borrower_id = user.id;
-
-    tracing::debug!(%borrower_id, "Borrower logging in");
+    tracing::Span::current().record("borrower_id", &borrower_id);
 
     if !user.verified {
         return Err(Error::EmailNotVerified);
@@ -338,8 +337,7 @@ async fn post_pake_verify(
         .ok_or(Error::InvalidEmail)?;
 
     let borrower_id = &user.id;
-
-    tracing::debug!("Verifying borrower login");
+    tracing::Span::current().record("borrower_id", borrower_id);
 
     if !user.verified {
         return Err(Error::EmailNotVerified);
@@ -493,8 +491,7 @@ async fn post_start_upgrade_to_pake(
         .ok_or(Error::InvalidEmail)?;
 
     let borrower_id = &user.id;
-
-    tracing::debug!("Upgrading borrower to PAKE");
+    tracing::Span::current().record("borrower_id", borrower_id);
 
     if !user.verified {
         return Err(Error::EmailNotVerified);
@@ -565,8 +562,7 @@ async fn post_finish_upgrade_to_pake(
         .ok_or(Error::InvalidEmail)?;
 
     let borrower_id = user.id.clone();
-
-    tracing::debug!("Finishing borrower upgrade to PAKE");
+    tracing::Span::current().record("borrower_id", &borrower_id);
 
     if !user.verified {
         return Err(Error::EmailNotVerified);
@@ -630,8 +626,7 @@ async fn verify_email_handler(
         .ok_or(Error::InvalidVerificationCode)?;
 
     let borrower_id = &user.id;
-
-    tracing::trace!(%borrower_id, "Borrower attempting to verify email");
+    tracing::Span::current().record("borrower_id", borrower_id);
 
     if user.verified {
         return Err(Error::AlreadyVerified);
@@ -670,8 +665,7 @@ async fn forgot_password_handler(
         })?;
 
     let borrower_id = &user.id;
-
-    tracing::debug!("Borrower forgot password");
+    tracing::Span::current().record("borrower_id", borrower_id);
 
     if !user.verified {
         let error_response = ErrorResponse {
@@ -778,8 +772,7 @@ async fn reset_password_handler(
         })?;
 
     let borrower_id = &user.id;
-
-    tracing::debug!("Borrower resetting password");
+    tracing::Span::current().record("borrower_id", borrower_id);
 
     let old_wallet_backup = db::wallet_backups::find_by_borrower_id(&data.db, borrower_id)
         .await
