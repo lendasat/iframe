@@ -270,7 +270,7 @@ async fn post_pake_login(
 
     let borrower_id = user.id;
 
-    tracing::trace!(%borrower_id, "User attempting to log in");
+    tracing::debug!(%borrower_id, "Borrower logging in");
 
     if !user.verified {
         return Err(Error::EmailNotVerified);
@@ -338,6 +338,8 @@ async fn post_pake_verify(
         .ok_or(Error::InvalidEmail)?;
 
     let borrower_id = &user.id;
+
+    tracing::debug!("Verifying borrower login");
 
     if !user.verified {
         return Err(Error::EmailNotVerified);
@@ -492,6 +494,8 @@ async fn post_start_upgrade_to_pake(
 
     let borrower_id = &user.id;
 
+    tracing::debug!("Upgrading borrower to PAKE");
+
     if !user.verified {
         return Err(Error::EmailNotVerified);
     }
@@ -562,6 +566,8 @@ async fn post_finish_upgrade_to_pake(
 
     let borrower_id = user.id.clone();
 
+    tracing::debug!("Finishing borrower upgrade to PAKE");
+
     if !user.verified {
         return Err(Error::EmailNotVerified);
     }
@@ -625,7 +631,7 @@ async fn verify_email_handler(
 
     let borrower_id = &user.id;
 
-    tracing::trace!(%borrower_id, "User attempting to verify email");
+    tracing::trace!(%borrower_id, "Borrower attempting to verify email");
 
     if user.verified {
         return Err(Error::AlreadyVerified);
@@ -664,6 +670,8 @@ async fn forgot_password_handler(
         })?;
 
     let borrower_id = &user.id;
+
+    tracing::debug!("Borrower forgot password");
 
     if !user.verified {
         let error_response = ErrorResponse {
@@ -770,6 +778,8 @@ async fn reset_password_handler(
         })?;
 
     let borrower_id = &user.id;
+
+    tracing::debug!("Borrower resetting password");
 
     let old_wallet_backup = db::wallet_backups::find_by_borrower_id(&data.db, borrower_id)
         .await
