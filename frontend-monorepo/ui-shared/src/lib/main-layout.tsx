@@ -246,7 +246,7 @@ export const Layout: FC<LayoutProps> = ({ children, menuItems, backendVersion, u
             </Link>
             <Text as="span" color="gray">•</Text>
             <Link
-              to={"https://lendasat.notion.site/Terms-of-Service-100d2f24d4cf801aa6cee15f1b77e11b?pvs=25"}
+              to={"https://tos.lendasat.com/"}
               className="flex items-center gap-1 text-font/70 dark:text-font-dark/70 no-underline"
             >
               <Text as="p" size={"1"} weight={"medium"}>

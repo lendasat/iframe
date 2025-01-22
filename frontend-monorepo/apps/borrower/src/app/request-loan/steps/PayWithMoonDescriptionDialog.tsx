@@ -118,7 +118,7 @@ export const PayWithMoonDescriptionDialog = ({
               <div>
                 Accept{" "}
                 <Link
-                  to="https://lendasat.notion.site/Terms-of-Service-100d2f24d4cf801aa6cee15f1b77e11b?pvs=25"
+                  to="https://tos.lendasat.com/"
                   className="text-blue-600 hover:underline dark:text-blue-400"
                   target="_blank"
                   rel="noopener noreferrer"
