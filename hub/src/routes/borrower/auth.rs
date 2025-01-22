@@ -257,7 +257,7 @@ impl FilteredUser {
     }
 }
 
-#[instrument(skip_all, err(Debug, level = Level::TRACE))]
+#[instrument(skip_all, fields(borrower_id), err(Debug))]
 async fn post_pake_login(
     State(data): State<Arc<AppState>>,
     AppJson(body): AppJson<PakeLoginRequest>,
@@ -267,6 +267,10 @@ async fn post_pake_login(
         .await
         .map_err(|e| Error::Database(anyhow!(e)))?
         .ok_or(Error::InvalidEmail)?;
+
+    let borrower_id = user.id;
+
+    tracing::trace!(%borrower_id, "User attempting to log in");
 
     if !user.verified {
         return Err(Error::EmailNotVerified);
@@ -321,7 +325,7 @@ struct PakeVerifyResponse {
     wallet_backup_data: WalletBackupData,
 }
 
-#[instrument(skip_all, err(Debug, level = Level::TRACE))]
+#[instrument(skip_all, fields(borrower_id), err(Debug))]
 async fn post_pake_verify(
     State(data): State<Arc<AppState>>,
     Extension(connection_details): Extension<UserConnectionDetails>,
@@ -332,6 +336,8 @@ async fn post_pake_verify(
         .await
         .map_err(Error::Database)?
         .ok_or(Error::InvalidEmail)?;
+
+    let borrower_id = &user.id;
 
     if !user.verified {
         return Err(Error::EmailNotVerified);
@@ -370,7 +376,7 @@ async fn post_pake_verify(
     let iat = now.unix_timestamp();
     let exp = (now + time::Duration::minutes(VERIFICATION_TOKEN_EXPIRY_MINUTES)).unix_timestamp();
     let claims: TokenClaims = TokenClaims {
-        user_id: user.id.to_string(),
+        user_id: borrower_id.clone(),
         exp,
         iat,
     };
@@ -388,7 +394,7 @@ async fn post_pake_verify(
         .same_site(SameSite::Lax)
         .http_only(true);
 
-    let features = db::borrower_features::load_borrower_features(&data.db, user.id.clone())
+    let features = db::borrower_features::load_borrower_features(&data.db, borrower_id.clone())
         .await
         .map_err(|error| Error::Database(anyhow!(error)))?;
 
@@ -408,13 +414,13 @@ async fn post_pake_verify(
 
     if features.is_empty() {
         return Err(Error::NoFeaturesEnabled {
-            borrower_id: user.id,
+            borrower_id: borrower_id.clone(),
         });
     }
 
     let filtered_user = FilteredUser::new_user(&user);
 
-    let wallet_backup = db::wallet_backups::find_by_borrower_id(&data.db, user.id.as_str())
+    let wallet_backup = db::wallet_backups::find_by_borrower_id(&data.db, borrower_id)
         .await
         .map_err(|error| Error::Database(anyhow!(error)))?;
 
@@ -474,7 +480,7 @@ async fn post_pake_verify(
 ///
 /// We return their wallet backup data, so that they can decrypt it locally and send us the backup
 /// encrypted using their new password.
-#[instrument(skip_all, err(Debug, level = Level::DEBUG))]
+#[instrument(skip_all, fields(borrower_id), err(Debug))]
 async fn post_start_upgrade_to_pake(
     State(data): State<Arc<AppState>>,
     AppJson(body): AppJson<UpgradeToPakeRequest>,
@@ -483,6 +489,8 @@ async fn post_start_upgrade_to_pake(
         .await
         .map_err(Error::Database)?
         .ok_or(Error::InvalidEmail)?;
+
+    let borrower_id = &user.id;
 
     if !user.verified {
         return Err(Error::EmailNotVerified);
@@ -494,7 +502,7 @@ async fn post_start_upgrade_to_pake(
         return Err(Error::InvalidLegacyPassword);
     }
 
-    let wallet_backup = db::wallet_backups::find_by_borrower_id(&data.db, user.id.as_str())
+    let wallet_backup = db::wallet_backups::find_by_borrower_id(&data.db, borrower_id)
         .await
         .context("Missing wallet backup")
         .map_err(Error::Database)?;
@@ -505,7 +513,7 @@ async fn post_start_upgrade_to_pake(
         xpub: wallet_backup.xpub,
     };
 
-    let contracts = db::contracts::load_contracts_by_borrower_id(&data.db, user.id.as_str())
+    let contracts = db::contracts::load_contracts_by_borrower_id(&data.db, borrower_id)
         .await
         .map_err(Error::Database)?;
 
@@ -542,7 +550,7 @@ async fn post_start_upgrade_to_pake(
 /// After that, we insert in the DB values needed to authenticate the borrower via PAKE.
 /// Additionally, we erase the old pasword hash from the database, as the borrower won't be
 /// authenticating that way anymore.
-#[instrument(skip_all, err(Debug, level = Level::DEBUG))]
+#[instrument(skip_all, fields(borrower_id), err(Debug))]
 async fn post_finish_upgrade_to_pake(
     State(data): State<Arc<AppState>>,
     AppJson(body): AppJson<FinishUpgradeToPakeRequest>,
@@ -551,6 +559,8 @@ async fn post_finish_upgrade_to_pake(
         .await
         .map_err(Error::Database)?
         .ok_or(Error::InvalidEmail)?;
+
+    let borrower_id = user.id.clone();
 
     if !user.verified {
         return Err(Error::EmailNotVerified);
@@ -571,7 +581,7 @@ async fn post_finish_upgrade_to_pake(
     db::wallet_backups::insert_borrower_backup(
         &mut *db_tx,
         NewBorrowerWalletBackup {
-            borrower_id: user.id.clone(),
+            borrower_id,
             mnemonic_ciphertext: body.new_wallet_backup_data.mnemonic_ciphertext,
             network: body.new_wallet_backup_data.network,
             xpub: body.new_wallet_backup_data.xpub,
@@ -603,7 +613,7 @@ async fn post_finish_upgrade_to_pake(
     Ok(response)
 }
 
-#[instrument(skip_all, err(Debug))]
+#[instrument(skip_all, fields(borrower_id), err(Debug, level = Level::DEBUG))]
 async fn verify_email_handler(
     State(data): State<Arc<AppState>>,
     Path(verification_code): Path<String>,
@@ -612,6 +622,10 @@ async fn verify_email_handler(
         .await
         .map_err(Error::Database)?
         .ok_or(Error::InvalidVerificationCode)?;
+
+    let borrower_id = &user.id;
+
+    tracing::trace!(%borrower_id, "User attempting to verify email");
 
     if user.verified {
         return Err(Error::AlreadyVerified);
@@ -629,7 +643,7 @@ async fn verify_email_handler(
     Ok(Json(response))
 }
 
-#[instrument(skip_all, err(Debug, level = Level::DEBUG))]
+#[instrument(skip_all, fields(borrower_id), err(Debug, level = Level::DEBUG))]
 async fn forgot_password_handler(
     State(data): State<Arc<AppState>>,
     AppJson(body): AppJson<ForgotPasswordSchema>,
@@ -648,6 +662,8 @@ async fn forgot_password_handler(
             };
             (StatusCode::NOT_FOUND, Json(error_response))
         })?;
+
+    let borrower_id = &user.id;
 
     if !user.verified {
         let error_response = ErrorResponse {
@@ -670,7 +686,7 @@ async fn forgot_password_handler(
         OffsetDateTime::now_utc() + time::Duration::minutes(PASSWORD_TOKEN_EXPIRES_IN_MINUTES);
 
     let has_contracts_before_pake =
-        db::contracts::has_contracts_before_pake_borrower(&data.db, &user.id)
+        db::contracts::has_contracts_before_pake_borrower(&data.db, borrower_id)
             .await
             .map_err(|e| {
                 let error_response = ErrorResponse {
@@ -704,8 +720,7 @@ async fn forgot_password_handler(
         )
         .await
     {
-        let user_id = user.id;
-        tracing::error!(user_id, "Failed resetting user password {error:#}");
+        tracing::error!(borrower_id, "Failed resetting user password {error:#}");
         let json_error = ErrorResponse {
             message: "Something bad happened while sending the password reset code".to_string(),
         };
@@ -733,7 +748,7 @@ async fn forgot_password_handler(
     ))
 }
 
-#[instrument(skip_all, err(Debug, level = Level::DEBUG))]
+#[instrument(skip_all, fields(borrower_id), err(Debug))]
 async fn reset_password_handler(
     State(data): State<Arc<AppState>>,
     Path(password_reset_token): Path<String>,
@@ -754,7 +769,9 @@ async fn reset_password_handler(
             (StatusCode::FORBIDDEN, Json(error_response))
         })?;
 
-    let old_wallet_backup = db::wallet_backups::find_by_borrower_id(&data.db, user.id.as_str())
+    let borrower_id = &user.id;
+
+    let old_wallet_backup = db::wallet_backups::find_by_borrower_id(&data.db, borrower_id)
         .await
         .map_err(|error| {
             let error_response = ErrorResponse {
@@ -782,7 +799,7 @@ async fn reset_password_handler(
     db::wallet_backups::insert_borrower_backup(
         &mut *db_tx,
         NewBorrowerWalletBackup {
-            borrower_id: user.id.clone(),
+            borrower_id: borrower_id.clone(),
             mnemonic_ciphertext: body.new_wallet_backup_data.mnemonic_ciphertext,
             network: body.new_wallet_backup_data.network,
             xpub: body.new_wallet_backup_data.xpub,
@@ -866,7 +883,7 @@ struct MeResponse {
     user: FilteredUser,
 }
 
-#[instrument(skip_all, err(Debug, level = Level::DEBUG))]
+#[instrument(skip_all, fields(borrower_id = user.id), err(Debug, level = Level::DEBUG))]
 async fn get_me_handler(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Borrower>,
@@ -1088,22 +1105,22 @@ impl IntoResponse for Error {
                 )
             }
             Error::InvalidAPub(e) => {
-                tracing::debug!("Invalid PAKE `A` value coming from client: {e:#}");
+                tracing::error!("Invalid PAKE `A` value coming from client: {e:#}");
 
                 (StatusCode::BAD_REQUEST, "Invalid credentials.".to_owned())
             }
             Error::InvalidClientProof(e) => {
-                tracing::debug!("Invalid PAKE client proof coming from client: {e:#}");
+                tracing::error!("Invalid PAKE client proof coming from client: {e:#}");
 
                 (StatusCode::BAD_REQUEST, "Invalid credentials.".to_owned())
             }
             Error::UnexpectedPakeVerify => {
-                tracing::debug!("Got PAKE verify before PAKE login");
+                tracing::error!("Got PAKE verify before PAKE login");
 
                 (StatusCode::BAD_REQUEST, "Invalid login attempt.".to_owned())
             }
             Error::PakeVerifyFailed(e) => {
-                tracing::debug!("PAKE verify failed: {e:#}");
+                tracing::error!("PAKE verify failed: {e:#}");
 
                 (StatusCode::BAD_REQUEST, "Invalid credentials.".to_owned())
             }

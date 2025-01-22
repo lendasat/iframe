@@ -253,7 +253,7 @@ struct LenderLoanFeature {
     name: String,
 }
 
-#[instrument(skip_all, err(Debug, level = Level::TRACE))]
+#[instrument(skip_all, fields(lender_id), err(Debug))]
 async fn post_pake_login(
     State(data): State<Arc<AppState>>,
     Json(body): Json<PakeLoginRequest>,
@@ -273,6 +273,10 @@ async fn post_pake_login(
             };
             (StatusCode::BAD_REQUEST, Json(error_response))
         })?;
+
+    let lender_id = &user.id;
+
+    tracing::trace!(%lender_id, "User attempting to log in");
 
     if !user.verified {
         let error_response = ErrorResponse {
@@ -342,7 +346,7 @@ struct PakeVerifyResponse {
     wallet_backup_data: WalletBackupData,
 }
 
-#[instrument(skip_all, err(Debug, level = Level::TRACE))]
+#[instrument(skip_all, fields(lender_id), err(Debug))]
 async fn post_pake_verify(
     State(data): State<Arc<AppState>>,
     Json(body): Json<PakeVerifyRequest>,
@@ -362,6 +366,8 @@ async fn post_pake_verify(
             };
             (StatusCode::BAD_REQUEST, Json(error_response))
         })?;
+
+    let lender_id = &user.id;
 
     if !user.verified {
         let error_response = ErrorResponse {
@@ -427,7 +433,7 @@ async fn post_pake_verify(
     let iat = now.unix_timestamp();
     let exp = (now + time::Duration::minutes(VERIFICATION_TOKEN_EXPIRY_MINUTES)).unix_timestamp();
     let claims: TokenClaims = TokenClaims {
-        user_id: user.id.to_string(),
+        user_id: lender_id.clone(),
         exp,
         iat,
     };
@@ -450,7 +456,7 @@ async fn post_pake_verify(
         .same_site(SameSite::Lax)
         .http_only(true);
 
-    let wallet_backup = db::wallet_backups::find_by_lender_id(&data.db, user.id.as_str())
+    let wallet_backup = db::wallet_backups::find_by_lender_id(&data.db, lender_id)
         .await
         .map_err(|error| {
             let error_response = ErrorResponse {
@@ -465,7 +471,7 @@ async fn post_pake_verify(
         xpub: wallet_backup.xpub,
     };
 
-    let features = db::lender_features::load_lender_features(&data.db, user.id.clone())
+    let features = db::lender_features::load_lender_features(&data.db, lender_id.clone())
         .await
         .map_err(|error| {
             let error_response = ErrorResponse {
@@ -519,7 +525,7 @@ async fn post_pake_verify(
 ///
 /// We return their wallet backup data, so that they can decrypt it locally and send us the backup
 /// encrypted using their new password.
-#[instrument(skip_all, err(Debug, level = Level::DEBUG))]
+#[instrument(skip_all, fields(lender_id), err(Debug))]
 async fn post_start_upgrade_to_pake(
     State(data): State<Arc<AppState>>,
     Json(body): Json<UpgradeToPakeRequest>,
@@ -539,6 +545,8 @@ async fn post_start_upgrade_to_pake(
             (StatusCode::BAD_REQUEST, Json(error_response))
         })?;
 
+    let lender_id = &user.id;
+
     if !user.verified {
         let error_response = ErrorResponse {
             message: "Please verify your email before you can log in".to_string(),
@@ -555,7 +563,7 @@ async fn post_start_upgrade_to_pake(
         return Err((StatusCode::BAD_REQUEST, Json(error_response)));
     }
 
-    let wallet_backup = db::wallet_backups::find_by_lender_id(&data.db, user.id.as_str())
+    let wallet_backup = db::wallet_backups::find_by_lender_id(&data.db, lender_id)
         .await
         .map_err(|error| {
             let error_response = ErrorResponse {
@@ -570,7 +578,7 @@ async fn post_start_upgrade_to_pake(
         xpub: wallet_backup.xpub,
     };
 
-    let contracts = db::contracts::load_contracts_by_lender_id(&data.db, user.id.as_str())
+    let contracts = db::contracts::load_contracts_by_lender_id(&data.db, lender_id)
         .await
         .map_err(|error| {
             let error_response = ErrorResponse {
@@ -622,7 +630,7 @@ async fn post_start_upgrade_to_pake(
 /// After that, we insert in the DB values needed to authenticate the lender via PAKE. Additionally,
 /// we erase the old pasword hash from the database, as the lender won't be authenticating that way
 /// anymore.
-#[instrument(skip_all, err(Debug, level = Level::DEBUG))]
+#[instrument(skip_all, fields(lender_id), err(Debug))]
 async fn post_finish_upgrade_to_pake(
     State(data): State<Arc<AppState>>,
     Json(body): Json<FinishUpgradeToPakeRequest>,
@@ -641,6 +649,8 @@ async fn post_finish_upgrade_to_pake(
             };
             (StatusCode::BAD_REQUEST, Json(error_response))
         })?;
+
+    let lender_id = &user.id;
 
     if !user.verified {
         let error_response = ErrorResponse {
@@ -668,7 +678,7 @@ async fn post_finish_upgrade_to_pake(
     db::wallet_backups::insert_lender_backup(
         &mut *db_tx,
         NewLenderWalletBackup {
-            lender_id: user.id.clone(),
+            lender_id: lender_id.clone(),
             mnemonic_ciphertext: body.new_wallet_backup_data.mnemonic_ciphertext,
             network: body.new_wallet_backup_data.network,
             xpub: body.new_wallet_backup_data.xpub,
@@ -716,7 +726,7 @@ async fn post_finish_upgrade_to_pake(
     Ok(response)
 }
 
-#[instrument(skip_all, err(Debug, level = Level::DEBUG))]
+#[instrument(skip_all, fields(lender_id), err(Debug, level = Level::DEBUG))]
 async fn verify_email_handler(
     State(data): State<Arc<AppState>>,
     Path(verification_code): Path<String>,
@@ -735,6 +745,10 @@ async fn verify_email_handler(
             };
             (StatusCode::UNAUTHORIZED, Json(error_response))
         })?;
+
+    let lender_id = &user.id;
+
+    tracing::trace!(%lender_id, "User attempting to verify email");
 
     if user.verified {
         let error_response = ErrorResponse {
@@ -760,7 +774,7 @@ async fn verify_email_handler(
     Ok(Json(response))
 }
 
-#[instrument(skip_all, err(Debug, level = Level::DEBUG))]
+#[instrument(skip_all, fields(lender_id), err(Debug, level = Level::DEBUG))]
 async fn forgot_password_handler(
     State(data): State<Arc<AppState>>,
     Json(body): Json<ForgotPasswordSchema>,
@@ -780,6 +794,8 @@ async fn forgot_password_handler(
             (StatusCode::NOT_FOUND, Json(error_response))
         })?;
 
+    let lender_id = &user.id;
+
     if !user.verified {
         let error_response = ErrorResponse {
             message: "Account not verified".to_string(),
@@ -792,7 +808,7 @@ async fn forgot_password_handler(
         OffsetDateTime::now_utc() + time::Duration::minutes(PASSWORD_TOKEN_EXPIRES_IN_MINUTES);
 
     let has_contracts_before_pake =
-        db::contracts::has_contracts_before_pake_lender(&data.db, &user.id)
+        db::contracts::has_contracts_before_pake_lender(&data.db, lender_id)
             .await
             .map_err(|e| {
                 let error_response = ErrorResponse {
@@ -817,7 +833,6 @@ async fn forgot_password_handler(
     }
 
     let email_instance = Email::new(data.config.clone());
-    let user_id = user.id.clone();
     if let Err(error) = email_instance
         .send_password_reset_token(
             user.name().as_str(),
@@ -827,7 +842,7 @@ async fn forgot_password_handler(
         )
         .await
     {
-        tracing::error!(user_id, "Failed resetting user password {error:#}");
+        tracing::error!(lender_id, "Failed resetting user password {error:#}");
         let json_error = ErrorResponse {
             message: "Something bad happened while sending the password reset code".to_string(),
         };
@@ -855,7 +870,7 @@ async fn forgot_password_handler(
     ))
 }
 
-#[instrument(skip_all, err(Debug, level = Level::DEBUG))]
+#[instrument(skip_all, fields(lender_id), err(Debug))]
 async fn reset_password_handler(
     State(data): State<Arc<AppState>>,
     Path(password_reset_token): Path<String>,
@@ -876,7 +891,9 @@ async fn reset_password_handler(
             (StatusCode::FORBIDDEN, Json(error_response))
         })?;
 
-    let old_wallet_backup = db::wallet_backups::find_by_lender_id(&data.db, user.id.as_str())
+    let lender_id = &user.id;
+
+    let old_wallet_backup = db::wallet_backups::find_by_lender_id(&data.db, lender_id)
         .await
         .map_err(|error| {
             let error_response = ErrorResponse {
@@ -903,7 +920,7 @@ async fn reset_password_handler(
     db::wallet_backups::insert_lender_backup(
         &mut *db_tx,
         NewLenderWalletBackup {
-            lender_id: user.id.clone(),
+            lender_id: lender_id.clone(),
             mnemonic_ciphertext: body.new_wallet_backup_data.mnemonic_ciphertext,
             network: body.new_wallet_backup_data.network,
             xpub: body.new_wallet_backup_data.xpub,
@@ -987,7 +1004,7 @@ struct MeResponse {
     user: FilteredUser,
 }
 
-#[instrument(skip_all, err(Debug, level = Level::DEBUG))]
+#[instrument(skip_all, fields(lender_id = user.id), err(Debug, level = Level::DEBUG))]
 async fn get_me_handler(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Lender>,
