@@ -3,7 +3,7 @@ import { formatCurrency, usePrice } from "@frontend-monorepo/ui-shared";
 import { ExternalLinkIcon, InfoCircledIcon } from "@radix-ui/react-icons";
 import { Box, Button, Callout, Grid, Heading, Skeleton, Tabs, Text } from "@radix-ui/themes";
 import type { HTMLAttributeAnchorTarget } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { IconType } from "react-icons";
 import { BsBank, BsTicketPerforatedFill } from "react-icons/bs";
 import { IoWalletOutline } from "react-icons/io5";
