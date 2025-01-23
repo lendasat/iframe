@@ -6,8 +6,8 @@ import {
   LiquidationStatus,
 } from "@frontend-monorepo/http-client-borrower";
 import { CurrencyFormatter, LtvProgressBar } from "@frontend-monorepo/ui-shared";
-import { InfoCircledIcon, MixerHorizontalIcon } from "@radix-ui/react-icons";
-import { Badge, Box, Button, Callout, Checkbox, DropdownMenu, Flex, Heading, Table, Text } from "@radix-ui/themes";
+import { InfoCircledIcon } from "@radix-ui/react-icons";
+import { Badge, Box, Button, Callout, DropdownMenu, Flex, Heading, Table, Text } from "@radix-ui/themes";
 import { formatDistance } from "date-fns";
 import { BsThreeDotsVertical } from "react-icons/bs";
 import { IoCaretDownOutline, IoCaretUp } from "react-icons/io5";
@@ -24,27 +24,6 @@ export type ColumnFilterKey =
   | "action";
 
 export type ColumnFilter = Record<ColumnFilterKey, boolean>;
-
-export type ContractStatusFilterKey =
-  | "requested"
-  | "renewalRequested"
-  | "approved"
-  | "collateralSeen"
-  | "opening"
-  | "open"
-  | "undercollateralized"
-  | "defaulted"
-  | "closed"
-  | "extended"
-  | "closing"
-  | "repaymentProvided"
-  | "repaymentConfirmed"
-  | "rejected"
-  | "expired"
-  | "canceled"
-  | "dispute";
-
-export type ContractStatusFilter = Record<ContractStatusFilterKey, boolean>;
 
 function getCaretColor(sortByColumn: ColumnFilterKey, currentColumnKey: ColumnFilterKey, sortAsc: boolean) {
   if (sortByColumn !== currentColumnKey) {
@@ -99,11 +78,8 @@ export interface ContractDetailsTableProps {
   toggleSortByColumn: (column: ColumnFilterKey) => void;
   sortByColumn: ColumnFilterKey;
   sortAsc: boolean;
-  contractStatusFilter: ContractStatusFilter;
-  onCheckedChange: (column: ContractStatusFilterKey) => void;
   contracts: Contract[];
   latestPrice: number;
-  isToggleFilterShown: boolean;
 }
 
 export const ContractDetailsTable = ({
@@ -111,11 +87,8 @@ export const ContractDetailsTable = ({
   toggleSortByColumn,
   sortByColumn,
   sortAsc,
-  contractStatusFilter,
-  onCheckedChange,
   contracts,
   latestPrice,
-  isToggleFilterShown,
 }: ContractDetailsTableProps) => {
   const navigate = useNavigate();
 
@@ -204,123 +177,6 @@ export const ContractDetailsTable = ({
                     currentColumn={"status"}
                     label={"Status"}
                   />
-                  <DropdownMenu.Root>
-                    <DropdownMenu.Trigger className={isToggleFilterShown ? "" : "hidden"}>
-                      <Button variant={"outline"} size="1">
-                        <MixerHorizontalIcon />
-                      </Button>
-                    </DropdownMenu.Trigger>
-
-                    <DropdownMenu.Content size="1">
-                      <DropdownMenu.Item
-                        onSelect={(e) => e.preventDefault()}
-                      >
-                        <Flex gap="2" align="center">
-                          <Checkbox
-                            checked={contractStatusFilter["requested"]}
-                            onCheckedChange={() => onCheckedChange("requested")}
-                          />
-                          <Text>Requested</Text>
-                        </Flex>
-                      </DropdownMenu.Item>
-
-                      <DropdownMenu.Item
-                        onSelect={(e) => e.preventDefault()}
-                      >
-                        <Flex gap="2" align="center">
-                          <Checkbox
-                            checked={contractStatusFilter["opening"]}
-                            onCheckedChange={() => onCheckedChange("opening")}
-                          />
-                          <Text>Opening</Text>
-                        </Flex>
-                      </DropdownMenu.Item>
-
-                      <DropdownMenu.Item
-                        onSelect={(e) => e.preventDefault()}
-                      >
-                        <Flex gap="2" align="center">
-                          <Checkbox
-                            checked={contractStatusFilter["open"]}
-                            onCheckedChange={() => onCheckedChange("open")}
-                          />
-                          <Text>Open</Text>
-                        </Flex>
-                      </DropdownMenu.Item>
-
-                      <DropdownMenu.Item
-                        onSelect={(e) => e.preventDefault()}
-                      >
-                        <Flex gap="2" align="center">
-                          <Checkbox
-                            checked={contractStatusFilter["closing"]}
-                            onCheckedChange={() => onCheckedChange("closing")}
-                          />
-                          <Text>Closing</Text>
-                        </Flex>
-                      </DropdownMenu.Item>
-
-                      <DropdownMenu.Item
-                        onSelect={(e) => e.preventDefault()}
-                      >
-                        <Flex gap="2" align="center">
-                          <Checkbox
-                            checked={contractStatusFilter["closed"]}
-                            onCheckedChange={() => onCheckedChange("closed")}
-                          />
-                          <Text>Closed</Text>
-                        </Flex>
-                      </DropdownMenu.Item>
-
-                      <DropdownMenu.Item
-                        onSelect={(e) => e.preventDefault()}
-                      >
-                        <Flex gap="2" align="center">
-                          <Checkbox
-                            checked={contractStatusFilter["rejected"]}
-                            onCheckedChange={() => onCheckedChange("rejected")}
-                          />
-                          <Text>Rejected</Text>
-                        </Flex>
-                      </DropdownMenu.Item>
-
-                      <DropdownMenu.Item
-                        onSelect={(e) => e.preventDefault()}
-                      >
-                        <Flex gap="2" align="center">
-                          <Checkbox
-                            checked={contractStatusFilter["expired"]}
-                            onCheckedChange={() => onCheckedChange("expired")}
-                          />
-                          <Text>Expired</Text>
-                        </Flex>
-                      </DropdownMenu.Item>
-
-                      <DropdownMenu.Item
-                        onSelect={(e) => e.preventDefault()}
-                      >
-                        <Flex gap="2" align="center">
-                          <Checkbox
-                            checked={contractStatusFilter["canceled"]}
-                            onCheckedChange={() => onCheckedChange("canceled")}
-                          />
-                          <Text>Canceled</Text>
-                        </Flex>
-                      </DropdownMenu.Item>
-
-                      <DropdownMenu.Item
-                        onSelect={(e) => e.preventDefault()}
-                      >
-                        <Flex gap="2" align="center">
-                          <Checkbox
-                            checked={contractStatusFilter["dispute"]}
-                            onCheckedChange={() => onCheckedChange("dispute")}
-                          />
-                          <Text>Disputes</Text>
-                        </Flex>
-                      </DropdownMenu.Item>
-                    </DropdownMenu.Content>
-                  </DropdownMenu.Root>
                 </Flex>
               </Table.ColumnHeaderCell>
             )}
