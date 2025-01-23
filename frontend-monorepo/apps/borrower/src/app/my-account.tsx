@@ -1,10 +1,9 @@
 import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
-import { UnlockWalletModal, useWallet } from "@frontend-monorepo/browser-wallet";
 import { useAuth } from "@frontend-monorepo/http-client-borrower";
-import { Avatar, Badge, Box, Button, Callout, Flex, Heading, IconButton, Spinner, Tabs, Text } from "@radix-ui/themes";
-import { useEffect, useState } from "react";
+import { MnemonicComponent } from "@frontend-monorepo/ui-shared";
+import { Avatar, Badge, Box, Button, Callout, Flex, Heading, Spinner, Tabs, Text } from "@radix-ui/themes";
+import { useState } from "react";
 import { BiSolidError } from "react-icons/bi";
-import { FaLock, FaLockOpen, FaRegEye, FaRegEyeSlash } from "react-icons/fa";
 import { GoVerified } from "react-icons/go";
 import { IoIosUnlock } from "react-icons/io";
 import { MdEdit } from "react-icons/md";
@@ -17,23 +16,6 @@ function MyAccount() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const [showUnlockWalletModal, setShowUnlockWalletModal] = useState(false);
-
-  const handleCloseUnlockWalletModal = () => setShowUnlockWalletModal(false);
-  const handleOpenUnlockWalletModal = () => setShowUnlockWalletModal(true);
-
-  const [isMnemonicVisible, setIsMnemonicVisible] = useState(false);
-  const [mnemonic, setMnemonic] = useState<string | undefined>(undefined);
-
-  const { getMnemonic, isWalletLoaded } = useWallet();
-
-  useEffect(() => {
-    if (isWalletLoaded) {
-      const mnem = getMnemonic();
-      setMnemonic(mnem);
-    }
-  }, [isWalletLoaded, getMnemonic]);
-
   const handleResetPassword = async () => {
     setLoading(true);
     try {
@@ -44,21 +26,6 @@ function MyAccount() {
       setError(`Failed resetting password. ${err}`);
     }
     setLoading(false);
-  };
-
-  const unlockWallet = async () => {
-    try {
-      if (!isWalletLoaded) {
-        handleOpenUnlockWalletModal();
-      }
-    } catch (err) {
-      console.error("Failed unlocking wallet", err);
-      throw err;
-    }
-  };
-
-  const handleSubmitUnlockWalletModal = async () => {
-    handleCloseUnlockWalletModal();
   };
 
   const layout = window;
@@ -77,11 +44,6 @@ function MyAccount() {
   }
   return (
     <>
-      <UnlockWalletModal
-        show={showUnlockWalletModal}
-        handleClose={handleCloseUnlockWalletModal}
-        handleSubmit={handleSubmitUnlockWalletModal}
-      />
       <Box
         className="p-4 flex flex-col overflow-y-scroll"
         style={{
@@ -122,55 +84,7 @@ function MyAccount() {
                   </Heading>
                   <Box mt={"6"} className="space-y-4">
                     <Box className="border border-purple-400/20 rounded-2xl px-5 py-6 dark:border-gray-500/50">
-                      <Heading as="h4" className="font-semibold capitalize text-font dark:text-font-dark" size={"3"}>
-                        Keys
-                      </Heading>
-                      <Box mt={"4"} className="max-w-lg grid md:grid-cols-1 gap-5">
-                        <Box>
-                          <Flex direction={"column"} gap={"1"}>
-                            <Flex direction={"row"} gap={"4"}>
-                              <Text
-                                as="label"
-                                weight={"medium"}
-                                size={"2"}
-                                className="text-font/50 dark:text-font-dark/50"
-                              >
-                                Mnemonic Seed Phrase
-                              </Text>
-
-                              <IconButton
-                                variant="ghost"
-                                type="button"
-                                className="hover:bg-transparent text-font dark:text-font-dark"
-                                onClick={unlockWallet}
-                              >
-                                {isWalletLoaded ? <FaLockOpen /> : <FaLock />}
-                              </IconButton>
-                              {mnemonic !== undefined
-                                ? (
-                                  <IconButton
-                                    variant="ghost"
-                                    type="button"
-                                    className="hover:bg-transparent text-font dark:text-font-dark"
-                                    onClick={() => setIsMnemonicVisible(!isMnemonicVisible)}
-                                  >
-                                    {isMnemonicVisible ? <FaRegEye /> : <FaRegEyeSlash />}
-                                  </IconButton>
-                                )
-                                : null}
-                            </Flex>
-                            <Text
-                              size={"3"}
-                              weight={"medium"}
-                              className="text-font dark:text-font-dark"
-                            >
-                              {isMnemonicVisible
-                                ? mnemonic
-                                : "**** **** **** **** **** **** **** **** **** **** **** ****"}
-                            </Text>
-                          </Flex>
-                        </Box>
-                      </Box>
+                      <MnemonicComponent />
                     </Box>
                     {error && (
                       <Callout.Root color="red">

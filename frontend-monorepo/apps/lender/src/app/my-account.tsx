@@ -1,56 +1,14 @@
-import { UnlockWalletModal, useWallet } from "@frontend-monorepo/browser-wallet";
-import { Box, Flex, Heading, IconButton, Tabs, Text } from "@radix-ui/themes";
-import { useEffect, useState } from "react";
-import { FaLockOpen, FaRegEye, FaRegEyeSlash } from "react-icons/fa";
-import { FaLock } from "react-icons/fa6";
+import { MnemonicComponent } from "@frontend-monorepo/ui-shared";
+import { Box, Flex, Heading, Tabs, Text } from "@radix-ui/themes";
 import { PiWarningCircleFill } from "react-icons/pi";
 
 function MyAccount() {
-  const [showUnlockWalletModal, setShowUnlockWalletModal] = useState(false);
-
-  const handleCloseUnlockWalletModal = () => setShowUnlockWalletModal(false);
-  const handleOpenUnlockWalletModal = () => setShowUnlockWalletModal(true);
-
-  const [isMnemonicVisible, setIsMnemonicVisible] = useState(false);
-  const [mnemonic, setMnemonic] = useState<string | undefined>(undefined);
-
-  const { getMnemonic, isWalletLoaded } = useWallet();
-
-  useEffect(() => {
-    if (isWalletLoaded) {
-      const mnem = getMnemonic();
-      setMnemonic(mnem);
-    }
-  }, [isWalletLoaded, getMnemonic]);
-
-  const unlockWallet = async () => {
-    try {
-      if (!isWalletLoaded) {
-        handleOpenUnlockWalletModal();
-      }
-    } catch (err) {
-      console.error("Failed unlocking wallet", err);
-      throw err;
-    }
-  };
-
-  const handleSubmitUnlockWalletModal = async () => {
-    handleCloseUnlockWalletModal();
-  };
-
-  const layout = window;
-
   return (
     <>
-      <UnlockWalletModal
-        show={showUnlockWalletModal}
-        handleClose={handleCloseUnlockWalletModal}
-        handleSubmit={handleSubmitUnlockWalletModal}
-      />
       <Box
         className="p-4 flex flex-col overflow-y-scroll"
         style={{
-          height: layout.innerHeight - 120,
+          height: window.innerHeight - 120,
         }}
       >
         <Box className="bg-dashboard/50 dark:bg-dark-700/50 rounded-2xl shadow-sm flex-grow md:max-h-[800px]">
@@ -87,55 +45,7 @@ function MyAccount() {
                   </Heading>
                   <Box mt={"6"} className="space-y-4">
                     <Box className="border border-purple-400/20 rounded-2xl px-5 py-6 dark:border-gray-500/50">
-                      <Heading as="h4" className="font-semibold capitalize text-font dark:text-font-dark" size={"3"}>
-                        Keys
-                      </Heading>
-                      <Box mt={"4"} className="max-w-lg grid md:grid-cols-1 gap-5">
-                        <Box>
-                          <Flex direction={"column"} gap={"1"}>
-                            <Flex direction={"row"} gap={"4"}>
-                              <Text
-                                as="label"
-                                weight={"medium"}
-                                size={"2"}
-                                className="text-font/50 dark:text-font-dark/50"
-                              >
-                                Mnemonic Seed Phrase
-                              </Text>
-
-                              <IconButton
-                                variant="ghost"
-                                type="button"
-                                className="hover:bg-transparent text-font dark:text-font-dark"
-                                onClick={unlockWallet}
-                              >
-                                {isWalletLoaded ? <FaLockOpen /> : <FaLock />}
-                              </IconButton>
-                              {mnemonic !== undefined
-                                ? (
-                                  <IconButton
-                                    variant="ghost"
-                                    type="button"
-                                    className="hover:bg-transparent text-font dark:text-font-dark"
-                                    onClick={() => setIsMnemonicVisible(!isMnemonicVisible)}
-                                  >
-                                    {isMnemonicVisible ? <FaRegEye /> : <FaRegEyeSlash />}
-                                  </IconButton>
-                                )
-                                : null}
-                            </Flex>
-                            <Text
-                              size={"3"}
-                              weight={"medium"}
-                              className="text-font dark:text-font-dark"
-                            >
-                              {isMnemonicVisible
-                                ? mnemonic
-                                : "**** **** **** **** **** **** **** **** **** **** **** ****"}
-                            </Text>
-                          </Flex>
-                        </Box>
-                      </Box>
+                      <MnemonicComponent />
                     </Box>
                   </Box>
                 </Box>
