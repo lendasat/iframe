@@ -227,8 +227,11 @@ export const ContractDetailsTable = ({
           )}
 
         {contracts.map((contract, index) => {
-          const collateral_btc = contract.initial_collateral_sats / 100000000;
-          const ltvRatio = contract.loan_amount / (collateral_btc * latestPrice);
+          const isFunded = contract.collateral_sats > 0;
+          console.log(`isFunded ${isFunded}`);
+
+          const collateral_btc = contract.collateral_sats / 100000000;
+          const ltvRatio = contract.loan_amount / (collateral_btc * latestPrice) * 100;
 
           let contractStatus = contractStatusToLabelString(contract.status);
           const firstMarginCall = contract.liquidation_status === LiquidationStatus.FirstMarginCall;
@@ -282,7 +285,7 @@ export const ContractDetailsTable = ({
               {shownColumns["ltv"]
                 && (
                   <Table.Cell>
-                    <LtvProgressBar ltvRatio={latestPrice ? ltvRatio * 100 : undefined} />
+                    <LtvProgressBar ltvRatio={isFunded && latestPrice ? ltvRatio : undefined} />
                   </Table.Cell>
                 )}
               {shownColumns["collateral"]
@@ -390,7 +393,7 @@ export const ContractDetailsTable = ({
                                 </Text>
                                 <Box minWidth={"150px"}>
                                   <LtvProgressBar
-                                    ltvRatio={latestPrice ? ltvRatio * 100 : undefined}
+                                    ltvRatio={isFunded && latestPrice ? ltvRatio : undefined}
                                   />
                                 </Box>
                               </Flex>

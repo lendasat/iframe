@@ -3,13 +3,14 @@ import type { FC } from "react";
 import { Spinner } from "react-bootstrap";
 
 interface LtvProgressBarProps {
-  ltvRatio?: number;
+  ltvRatio: number | undefined;
 }
 
 export const LtvProgressBar: FC<LtvProgressBarProps> = ({ ltvRatio }) => {
   let barColor = "";
 
   const isNan = ltvRatio == null || isNaN(ltvRatio);
+
   const formattedValue = isNan ? "Loading" : ltvRatio.toFixed(0);
 
   if (isNan) {
@@ -37,7 +38,7 @@ export const LtvProgressBar: FC<LtvProgressBarProps> = ({ ltvRatio }) => {
       <Text className="text-xs font-medium text-font dark:text-font-dark" weight={"medium"}>
         {isNan
           ? (
-            <Spinner animation="border" role="status" variant="light" size="sm">
+            <Spinner animation="border" role="status" size="sm">
               <span className="visually-hidden text-font dark:text-font-dark">Loading...</span>
             </Spinner>
           )
