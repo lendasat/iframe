@@ -228,7 +228,6 @@ export const ContractDetailsTable = ({
 
         {contracts.map((contract, index) => {
           const isFunded = contract.collateral_sats > 0;
-          console.log(`isFunded ${isFunded}`);
 
           const collateral_btc = contract.collateral_sats / 100000000;
           const ltvRatio = contract.loan_amount / (collateral_btc * latestPrice) * 100;
