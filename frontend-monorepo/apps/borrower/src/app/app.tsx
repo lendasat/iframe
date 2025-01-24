@@ -96,7 +96,7 @@ const menuItems = [
     group: [
       {
         label: "settings",
-        path: "/setting",
+        path: "/settings",
         icon: LuSettings,
         target: "_self",
         visible: true,
@@ -186,7 +186,7 @@ function MainLayoutComponents() {
             />
             <Route path="/custom-request" element={<CustomRequest />} />
             <Route path="/history" element={<History />} />
-            <Route path="/setting" element={<MyAccount />} />
+            <Route path="/settings/*" element={<MyAccount />} />
             <Route path="/logout" element={<Logout />} />
             <Route path="/profile/:id" element={<Profile />} />
             <Route path="/request-loan" element={<RequestLoan />} />

@@ -1,9 +1,9 @@
 import { Contract, ContractStatus, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import { formatCurrency, usePrice } from "@frontend-monorepo/ui-shared";
-import { ExternalLinkIcon } from "@radix-ui/react-icons";
-import { Box, Button, Grid, Heading, Skeleton, Tabs, Text } from "@radix-ui/themes";
+import { ExternalLinkIcon, InfoCircledIcon } from "@radix-ui/react-icons";
+import { Box, Button, Callout, Grid, Heading, Skeleton, Tabs, Text } from "@radix-ui/themes";
 import type { HTMLAttributeAnchorTarget } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { IconType } from "react-icons";
 import { BsBank, BsTicketPerforatedFill } from "react-icons/bs";
 import { IoWalletOutline } from "react-icons/io5";
@@ -91,9 +91,17 @@ function DashBoard() {
   const { innerHeight } = window;
   const { getContracts } = useBorrowerHttpClient();
   const navigate = useNavigate();
+  const [hasMnemonicBackedUp, setHasMnemonicBackedUp] = useState(false);
 
   const { loading, value: maybeContracts } = useAsync(async () => {
     return await getContracts();
+  }, []);
+
+  useEffect(() => {
+    const storedBackup = localStorage.getItem("mnemonicBackedUp");
+    if (storedBackup) {
+      setHasMnemonicBackedUp(JSON.parse(storedBackup));
+    }
   }, []);
 
   const contracts = maybeContracts || [];
@@ -192,18 +200,27 @@ function DashBoard() {
         >
           {/* Quick action buttons */}
           <Text as="p" weight={"medium"} className="text-font dark:text-font-dark" size={"3"}>Quick Actions</Text>
-          <Grid
-            columns={{ initial: "2", sm: "4" }}
-            width="auto"
-            className="gap-y-5 gap-x-8 px-3 mt-5"
-          >
-            <QuickLinks
-              Icon={BsTicketPerforatedFill}
-              url="/requests"
-              iconStyle="bg-purple-100 dark:bg-purple-800"
-              label="Request Loan"
-              target={"_self"}
-            />
+          <Grid columns={{ initial: "2", sm: "4" }} width="auto" className="gap-y-5 gap-x-8 px-3 mt-5 mb-4">
+            {!hasMnemonicBackedUp
+              ? (
+                <QuickLinks
+                  Icon={IoWalletOutline}
+                  url="/settings/wallet"
+                  iconStyle="bg-purple-100 dark:bg-purple-800"
+                  label="Create Backup"
+                  target={"_self"}
+                  isPulsing={true}
+                />
+              )
+              : (
+                <QuickLinks
+                  Icon={BsTicketPerforatedFill}
+                  url="/requests"
+                  iconStyle="bg-purple-100 dark:bg-purple-800"
+                  label="Request Loan"
+                  target={"_self"}
+                />
+              )}
             <QuickLinks
               Icon={IoWalletOutline}
               url="/my-contracts"
@@ -226,6 +243,16 @@ function DashBoard() {
               target={"_blank"}
             />
           </Grid>
+          {!hasMnemonicBackedUp && (
+            <Callout.Root color={"orange"}>
+              <Callout.Icon>
+                <InfoCircledIcon />
+              </Callout.Icon>
+              <Callout.Text>
+                For your security, please create a backup of your wallet before proceeding.
+              </Callout.Text>
+            </Callout.Root>
+          )}
         </Box>
 
         <Box
@@ -326,25 +353,42 @@ function DashBoard() {
 
 export default DashBoard;
 
-const QuickLinks = ({ label, Icon, iconStyle, url, target }: {
+const QuickLinks = ({ label, Icon, iconStyle, url, target, isPulsing }: {
   Icon: IconType;
   label: string;
   iconStyle: string;
   url: string;
   target: HTMLAttributeAnchorTarget;
+  isPulsing?: boolean;
 }) => {
   return (
-    <Button
-      asChild
-      variant="ghost"
-      className="min-h-40 border border-font/10 dark:border-font-dark/20 flex flex-col gap-2 text-font dark:text-font-dark rounded-2xl"
-    >
-      <Link to={url} target={target}>
-        <Box className={`h-14 w-14 rounded-full place-items-center ${iconStyle} flex justify-center`}>
-          <Icon size={"20"} />
-        </Box>
-        <Text size={"2"} weight={"medium"}>{label}</Text>
-      </Link>
-    </Button>
+    <div className="relative">
+      {isPulsing && (
+        <div className="absolute -top-1 -right-1 w-3 h-3">
+          <div className="absolute w-full h-full rounded-full bg-red-500 animate-ping" />
+          <div className="absolute w-full h-full rounded-full bg-red-500" />
+        </div>
+      )}
+      <Button
+        asChild
+        variant="ghost"
+        className={`min-h-40 flex flex-col gap-2 text-font dark:text-font-dark rounded-2xl ${
+          isPulsing
+            ? "border-2 border-red-500/50 dark:border-red-500/30 bg-red-50 dark:bg-red-900/10"
+            : "border border-font/10 dark:border-font-dark/20"
+        }`}
+      >
+        <Link to={url} target={target}>
+          <Box
+            className={`h-14 w-14 rounded-full place-items-center ${iconStyle} flex justify-center ${
+              isPulsing ? "animate-pulse bg-red-500/20" : ""
+            }`}
+          >
+            <Icon size={"20"} className={isPulsing ? "text-red-500" : ""} />
+          </Box>
+          <Text size={"2"} weight={"medium"}>{label}</Text>
+        </Link>
+      </Button>
+    </div>
   );
 };
