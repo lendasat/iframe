@@ -1,15 +1,15 @@
-import { Text } from "@radix-ui/themes";
 import type { FC } from "react";
 import { Spinner } from "react-bootstrap";
 
 interface LtvProgressBarProps {
-  ltvRatio?: number;
+  ltvRatio: number | undefined;
 }
 
 export const LtvProgressBar: FC<LtvProgressBarProps> = ({ ltvRatio }) => {
   let barColor = "";
 
   const isNan = ltvRatio == null || isNaN(ltvRatio);
+
   const formattedValue = isNan ? "Loading" : ltvRatio.toFixed(0);
 
   if (isNan) {
@@ -23,26 +23,28 @@ export const LtvProgressBar: FC<LtvProgressBarProps> = ({ ltvRatio }) => {
   }
 
   return (
-    <div className="d-flex justify-content-center align-items-center gap-3" style={{ height: "100%" }}>
-      <div className="progress" style={{ width: "100%", height: "4px", backgroundColor: "#e9ecef" }}>
+    <div className="flex items-center min-w-[80px] w-full gap-0">
+      <div className="flex-1 bg-gray-200 h-1 rounded-full">
         <div
-          className={`progress-bar ${barColor} d-flex rounded-full justify-content-center align-items-center`}
+          className={`h-full rounded-full ${barColor}`}
           role="progressbar"
-          style={{ width: `${ltvRatio ? ltvRatio : 50}%` }}
-          aria-valuenow={ltvRatio ? ltvRatio : 50}
+          style={{ width: `${ltvRatio ?? 50}%` }}
+          aria-valuenow={ltvRatio ?? 50}
           aria-valuemin={0}
           aria-valuemax={100}
         />
       </div>
-      <Text className="text-xs font-medium text-font dark:text-font-dark" weight={"medium"}>
+      <div className="w-12 text-xs font-medium text-font dark:text-font-dark text-right">
         {isNan
           ? (
-            <Spinner animation="border" role="status" variant="light" size="sm">
-              <span className="visually-hidden text-font dark:text-font-dark">Loading...</span>
+            <Spinner animation="border" role="status" size="sm">
+              <span className="sr-only">Loading...</span>
             </Spinner>
           )
-          : <>{formattedValue}%</>}
-      </Text>
+          : (
+            `${formattedValue}%`
+          )}
+      </div>
     </div>
   );
 };

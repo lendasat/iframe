@@ -12,6 +12,7 @@ import {
   InterestRateInfoLabel,
   LiquidationPriceInfoLabel,
   LtvInfoLabel,
+  LtvProgressBar,
   newFormatCurrency,
   RefundAddressInfoLabel,
   StableCoinHelper,
@@ -185,7 +186,6 @@ function ContractDetails({ contract }: DetailsProps) {
   const initial_price = loanAmount / (collateral * initialLtv);
 
   const ltvRatio = loanAmount / (collateralBtc * latestPrice);
-  const ltvPercentage = (ltvRatio * 100).toFixed(0);
 
   const loanOriginatorFee = contract.origination_fee_sats / 100000000;
   const loanOriginatorFeeUsd = (loanOriginatorFee * initial_price).toFixed(0);
@@ -462,10 +462,11 @@ function ContractDetails({ contract }: DetailsProps) {
             <FaInfoCircle className={"text-font dark:text-font-dark"} />
           </LtvInfoLabel>
 
-          <Text className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
-            {ltvPercentage}%
-          </Text>
+          <div className="w-40 ml-auto">
+            <LtvProgressBar ltvRatio={ltvRatio * 100} />
+          </div>
         </Flex>
+
         <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
         <Flex justify={"between"} align={"center"}>
           <LiquidationPriceInfoLabel>
