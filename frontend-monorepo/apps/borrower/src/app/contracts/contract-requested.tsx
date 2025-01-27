@@ -20,7 +20,7 @@ export function ContractRequested({ createdAt, contractId }: ContractRequestedPr
   useEffect(() => {
     const timer = setInterval(() => {
       const now = new Date();
-      const expiryTime = new Date(createdAt.getTime() + 12 * 60 * 60 * 1000); // createdAt + 12 hours
+      const expiryTime = new Date(createdAt.getTime() + 24 * 60 * 60 * 1000); // createdAt + 24 hours
       const diff = expiryTime.getTime() - now.getTime();
 
       if (diff <= 0) {
