@@ -8,7 +8,6 @@ use crate::db::borrowers::update_password_reset_token_for_user;
 use crate::db::borrowers::user_exists;
 use crate::db::borrowers::verify_user;
 use crate::db::wallet_backups::NewBorrowerWalletBackup;
-use crate::email::Email;
 use crate::model::Borrower;
 use crate::model::ContractStatus;
 use crate::model::FinishUpgradeToPakeRequest;
@@ -23,6 +22,7 @@ use crate::model::TokenClaims;
 use crate::model::UpgradeToPakeRequest;
 use crate::model::UpgradeToPakeResponse;
 use crate::model::WalletBackupData;
+use crate::notifications;
 use crate::routes::borrower::auth::jwt_auth::auth;
 use crate::routes::user_connection_details_middleware;
 use crate::routes::user_connection_details_middleware::UserConnectionDetails;
@@ -196,8 +196,7 @@ async fn post_register(
         verification_code.as_str()
     );
 
-    let email_instance = Email::new(data.config.clone());
-    email_instance
+    data.notifications
         .send_verification_code(
             user.name().as_str(),
             user.email().as_str(),
@@ -712,8 +711,8 @@ async fn forgot_password_handler(
         password_reset_url.push_str("?nomn=true");
     }
 
-    let email_instance = Email::new(data.config.clone());
-    if let Err(error) = email_instance
+    if let Err(error) = data
+        .notifications
         .send_password_reset_token(
             user.name().as_str(),
             user.email().as_str(),
@@ -976,7 +975,7 @@ enum Error {
     /// Invalid or expired referral code.
     InvalidReferralCode { referral_code: String },
     /// Failed sending notification email.
-    CouldNotSendVerificationEmail(anyhow::Error),
+    CouldNotSendVerificationEmail(notifications::Error),
     /// User did not verify their email.
     EmailNotVerified,
     /// The verification code provided does not exist.

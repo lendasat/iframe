@@ -1,6 +1,6 @@
 use crate::config::Config;
 use crate::db;
-use crate::email::Email;
+use crate::notifications::Notifications;
 use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
@@ -20,6 +20,7 @@ use serde::Serialize;
 use sqlx::Pool;
 use sqlx::Postgres;
 use std::collections::HashMap;
+use std::sync::Arc;
 use std::time::Duration;
 use tokio::net::TcpStream;
 use tokio_tungstenite::connect_async_tls_with_config;
@@ -46,6 +47,7 @@ pub struct Actor {
     ws_sink: Option<SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>>,
     is_test_network: bool,
     config: Config,
+    notifications: Arc<Notifications>,
 }
 
 #[derive(Debug, Clone)]
@@ -76,7 +78,12 @@ struct TrackedClaimTx {
 }
 
 impl Actor {
-    pub fn new(db: Pool<Postgres>, network: Network, config: Config) -> Self {
+    pub fn new(
+        db: Pool<Postgres>,
+        network: Network,
+        config: Config,
+        notifications: Arc<Notifications>,
+    ) -> Self {
         let rest_url = config.mempool_rest_url.clone();
         let ws_url = config.mempool_ws_url.clone();
 
@@ -93,6 +100,7 @@ impl Actor {
             ws_sink: None,
             is_test_network,
             config,
+            notifications,
         }
     }
 
@@ -461,6 +469,7 @@ impl xtra::Handler<TrackContractFunding> for Actor {
                 self.config.clone(),
                 contract_id,
                 &contract.lender_id,
+                self.notifications.clone(),
             )
             .await
             .context("Failed to send loan collateralized email to lender")?;
@@ -690,6 +699,7 @@ impl xtra::Handler<NewBlockHeight> for Actor {
                     self.config.clone(),
                     &contract.id,
                     &contract.lender_id,
+                    self.notifications.clone(),
                 )
                 .await
                 {
@@ -983,6 +993,7 @@ async fn send_loan_collateralized_email_to_lender(
     config: Config,
     contract_id: &str,
     lender_id: &str,
+    notifications: Arc<Notifications>,
 ) -> Result<()> {
     let contract_emails = db::contract_emails::load_contract_emails(db, contract_id)
         .await
@@ -997,9 +1008,8 @@ async fn send_loan_collateralized_email_to_lender(
             "{}/my-contracts/{}",
             config.lender_frontend_origin, contract_id
         );
-        let email = Email::new(config);
 
-        email
+        notifications
             .send_loan_collateralized(lender, loan_url.as_str())
             .await
             .context("Failed to send collateral-funded email")?;

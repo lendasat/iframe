@@ -14,6 +14,7 @@ use hub::liquidation_engine::monitor_positions;
 use hub::logger::init_tracing;
 use hub::mempool;
 use hub::moon;
+use hub::notifications::Notifications;
 use hub::routes::borrower::spawn_borrower_server;
 use hub::routes::lender::spawn_lender_server;
 use hub::routes::AppState;
@@ -81,8 +82,10 @@ async fn main() -> Result<()> {
     )?;
     let wallet = Arc::new(Mutex::new(wallet));
 
+    let notifications = Arc::new(Notifications::new(config.clone()));
+
     let (mempool_addr, mempool_mailbox) = xtra::Mailbox::unbounded();
-    let mempool = mempool::Actor::new(db.clone(), network, config.clone());
+    let mempool = mempool::Actor::new(db.clone(), network, config.clone(), notifications.clone());
 
     tokio::spawn(async {
         let e = xtra::run(mempool_mailbox, mempool).await;
@@ -98,7 +101,13 @@ async fn main() -> Result<()> {
 
     // Start the subscription in a separate task
     tokio::spawn(subscribe_index_price([bitmex_tx, liquidation_tx]));
-    monitor_positions(db.clone(), liquidation_rx, config.clone()).await?;
+    monitor_positions(
+        db.clone(),
+        liquidation_rx,
+        config.clone(),
+        notifications.clone(),
+    )
+    .await?;
 
     // Spawn a task to handle BitMEX events and broadcast to WebSocket clients
     let broadcast_state = Arc::new(Mutex::new(Vec::new()));
@@ -122,7 +131,11 @@ async fn main() -> Result<()> {
         }
     });
 
-    let moon_client = Arc::new(moon::Manager::new(db.clone(), config.clone()));
+    let moon_client = Arc::new(moon::Manager::new(
+        db.clone(),
+        config.clone(),
+        notifications.clone(),
+    ));
     if config.sync_moon_tx {
         tokio::spawn({
             let moon_client = moon_client.clone();
@@ -152,6 +165,7 @@ async fn main() -> Result<()> {
         connections: broadcast_state.clone(),
         moon: moon_client.clone(),
         sideshift,
+        notifications: notifications.clone(),
     });
 
     let borrower_server = spawn_borrower_server(config.clone(), app_state.clone()).await?;
@@ -167,8 +181,8 @@ async fn main() -> Result<()> {
     let sched = JobScheduler::new().await?;
 
     add_contract_request_expiry_job(&sched, db.clone()).await?;
-    add_contract_default_job(&sched, config.clone(), db.clone()).await?;
-    add_contract_close_to_expiry_job(&sched, config, db).await?;
+    add_contract_default_job(&sched, config.clone(), db.clone(), notifications.clone()).await?;
+    add_contract_close_to_expiry_job(&sched, config, db, notifications).await?;
 
     sched.start().await?;
 

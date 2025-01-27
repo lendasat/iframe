@@ -1,5 +1,4 @@
 use crate::db;
-use crate::email::Email;
 use crate::model::DisputeRequestBodySchema;
 use crate::model::Lender;
 use crate::routes::lender::auth::jwt_auth;
@@ -142,9 +141,9 @@ pub(crate) async fn create_dispute(
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
     })?;
 
-    let email_instance = Email::new(data.config.clone());
     let user_id = user.id.clone();
-    if let Err(error) = email_instance
+    if let Err(error) = data
+        .notifications
         .send_start_dispute(
             user.name().as_str(),
             user.email().as_str(),

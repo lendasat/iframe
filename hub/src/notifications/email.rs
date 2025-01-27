@@ -24,7 +24,7 @@ use time::Duration;
 static TEMPLATES_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/../templates");
 const DISPUTE_ADMIN_EMAIL: &str = "dispute-center@lendasat.com";
 
-pub struct Email {
+pub(crate) struct Email {
     from: String,
     smtp_user: String,
     smtp_pass: String,

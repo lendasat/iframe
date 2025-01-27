@@ -1,9 +1,11 @@
 use anyhow::Result;
 use std::sync::Once;
-use telegram_bot::{MessageToUser, TelegramBot, TelegramResponse};
+use telegram_bot::MessageToUser;
+use telegram_bot::TelegramBot;
+use telegram_bot::TelegramResponse;
 use tokio::sync::mpsc;
 
-const TELEGRAM_BOT_TOKEN: &str = "YOUR_TOKEN";
+const TELEGRAM_BOT_TOKEN: &str = "token";
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -18,9 +20,11 @@ async fn main() -> Result<()> {
             match msg {
                 TelegramResponse::Register(register) => {
                     let response = MessageToUser {
-                        id: register.id.clone(),
-                        user_id: register.token.clone(),
-                        message: format!("Welcome! Your are registered: {}", register.token),
+                        chat_id: register.id.clone(),
+                        message: format!(
+                            "Welcome\\! Your are registered: {} [details]({})",
+                            register.token, "www.test.com"
+                        ),
                     };
 
                     if let Err(e) = msg_tx.send(response).await {
@@ -29,8 +33,7 @@ async fn main() -> Result<()> {
                 }
                 TelegramResponse::Unregister(unregister) => {
                     let response = MessageToUser {
-                        id: unregister.id.clone(),
-                        user_id: "Some user id".to_string(),
+                        chat_id: unregister.id.clone(),
                         message: "You won't receive any more updated".to_string(),
                     };
 
@@ -42,8 +45,8 @@ async fn main() -> Result<()> {
         }
     });
 
-    let bot = TelegramBot::new(TELEGRAM_BOT_TOKEN, register_tx, msg_to_user_rx);
-    bot.start().await;
+    let bot = TelegramBot::new(TELEGRAM_BOT_TOKEN, register_tx);
+    bot.start(msg_to_user_rx).await;
 
     Ok(())
 }

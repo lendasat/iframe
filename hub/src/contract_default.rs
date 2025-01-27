@@ -1,11 +1,12 @@
 use crate::config::Config;
 use crate::db;
 use crate::db::contracts::DefaultedContract;
-use crate::email::Email;
+use crate::notifications::Notifications;
 use anyhow::Context;
 use anyhow::Result;
 use sqlx::Pool;
 use sqlx::Postgres;
+use std::sync::Arc;
 use tokio_cron_scheduler::Job;
 use tokio_cron_scheduler::JobScheduler;
 use tokio_cron_scheduler::JobSchedulerError;
@@ -25,10 +26,11 @@ pub async fn add_contract_default_job(
     scheduler: &JobScheduler,
     config: Config,
     database: Pool<Postgres>,
+    notifications: Arc<Notifications>,
 ) -> Result<()> {
     let database = database.clone();
     let check_for_expiring_contracts_job =
-        create_contract_expiry_check(scheduler, config, database).await?;
+        create_contract_expiry_check(scheduler, config, database, notifications).await?;
     let uuid = scheduler.add(check_for_expiring_contracts_job).await?;
 
     tracing::debug!(
@@ -43,6 +45,7 @@ async fn create_contract_expiry_check(
     scheduler: &JobScheduler,
     config: Config,
     db: Pool<Postgres>,
+    notifications: Arc<Notifications>,
 ) -> Result<Job, JobSchedulerError> {
     let mut check_for_expiring_contracts_job = Job::new_async(
         CHECK_CONTRACT_DEFAULT_SCHEDULER,
@@ -52,6 +55,7 @@ async fn create_contract_expiry_check(
             Box::pin({
                 let db = db.clone();
                 let config = config.clone();
+                let notifications = notifications.clone();
                 async move {
                     match db::contracts::default_expired_contracts(&db).await {
                         Ok(contracts) => {
@@ -66,12 +70,14 @@ async fn create_contract_expiry_check(
                                 tokio::spawn({
                                     let config = config.clone();
                                     let db = db.clone();
+                                    let notifications = notifications.clone();
                                     let contract = contract.clone();
                                     async move {
                                         if let Err(e) = notify_borrower_about_defaulted_loan(
                                             db.clone(),
                                             config.clone(),
                                             contract.clone(),
+                                            notifications.clone(),
                                         )
                                         .await
                                         {
@@ -85,6 +91,7 @@ async fn create_contract_expiry_check(
                                             db.clone(),
                                             config.clone(),
                                             contract.clone(),
+                                            notifications.clone(),
                                         )
                                         .await
                                         {
@@ -127,9 +134,8 @@ async fn notify_borrower_about_defaulted_loan(
     db: Pool<Postgres>,
     config: Config,
     contract: DefaultedContract,
+    notifications: Arc<Notifications>,
 ) -> Result<()> {
-    let email = Email::new(config.clone());
-
     let loan_url = format!(
         "{}/my-contracts/{}",
         config.borrower_frontend_origin, contract.contract_id
@@ -139,7 +145,7 @@ async fn notify_borrower_about_defaulted_loan(
         .await?
         .context("Could not find borrower")?;
 
-    email
+    notifications
         .send_loan_defaulted_borrower(borrower, loan_url.as_str())
         .await?;
 
@@ -150,9 +156,8 @@ async fn notify_lender_about_defaulted_loan(
     db: Pool<Postgres>,
     config: Config,
     contract: DefaultedContract,
+    notifications: Arc<Notifications>,
 ) -> Result<()> {
-    let email = Email::new(config.clone());
-
     let loan_url = format!(
         "{}/my-contracts/{}",
         config.lender_frontend_origin, contract.contract_id
@@ -162,7 +167,7 @@ async fn notify_lender_about_defaulted_loan(
         .await?
         .context("Could not find lender")?;
 
-    email
+    notifications
         .send_loan_defaulted_lender(lender, loan_url.as_str())
         .await?;
 

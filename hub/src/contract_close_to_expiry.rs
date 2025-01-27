@@ -1,9 +1,10 @@
 use crate::config::Config;
 use crate::db;
-use crate::email::Email;
+use crate::notifications::Notifications;
 use anyhow::Result;
 use sqlx::Pool;
 use sqlx::Postgres;
+use std::sync::Arc;
 use tokio_cron_scheduler::Job;
 use tokio_cron_scheduler::JobScheduler;
 use tokio_cron_scheduler::JobSchedulerError;
@@ -23,10 +24,11 @@ pub async fn add_contract_close_to_expiry_job(
     scheduler: &JobScheduler,
     config: Config,
     database: Pool<Postgres>,
+    notifications: Arc<Notifications>,
 ) -> Result<()> {
     let database = database.clone();
     let check_for_close_to_expiry_contracts_job =
-        create_contract_close_to_expiry_check(scheduler, config, database).await?;
+        create_contract_close_to_expiry_check(scheduler, config, database, notifications).await?;
     let uuid = scheduler
         .add(check_for_close_to_expiry_contracts_job)
         .await?;
@@ -43,6 +45,7 @@ async fn create_contract_close_to_expiry_check(
     scheduler: &JobScheduler,
     config: Config,
     database: Pool<Postgres>,
+    notifications: Arc<Notifications>,
 ) -> Result<Job, JobSchedulerError> {
     let mut check_for_close_to_expiry_contracts_job = Job::new_async(
         CHECK_CONTRACT_CLOSE_TO_EXPIRY_SCHEDULER,
@@ -52,6 +55,7 @@ async fn create_contract_close_to_expiry_check(
             Box::pin({
                 let database = database.clone();
                 let config = config.clone();
+                let notifications = notifications.clone();
                 async move {
                     match db::contracts::close_to_expiry_contracts(&database).await {
                         Ok(contracts) => {
@@ -65,6 +69,7 @@ async fn create_contract_close_to_expiry_check(
 
                                 tokio::spawn({
                                     let config = config.clone();
+                                    let notifications = notifications.clone();
                                     let database = database.clone();
                                     async move {
                                         let loan_url = format!(
@@ -80,8 +85,7 @@ async fn create_contract_close_to_expiry_check(
                                         .await
                                         {
                                             Ok(Some(borrower)) => {
-                                                let email = Email::new(config.clone());
-                                                if let Err(e) = email
+                                                if let Err(e) = notifications
                                                     .send_close_to_expiry_contract(
                                                         borrower,
                                                         &contract_info.formatted_expiry_date(),
@@ -92,7 +96,7 @@ async fn create_contract_close_to_expiry_check(
                                                     tracing::error!(
                                                         contract_id=contract_info.contract_id,
                                                         borrower_id=contract_info.borrower_id,
-                                                        "Failed to send email about close to expiry contract. Error: {e:#}");
+                                                        "Failed to send email about close to expiry contract. Error: {e:?}");
                                                 }
                                             }
                                             Ok(None) => tracing::error!(

@@ -1,5 +1,4 @@
 use crate::db;
-use crate::email::Email;
 use crate::mempool;
 use crate::model::Borrower;
 use crate::model::DisputeRequestBodySchema;
@@ -157,9 +156,9 @@ pub(crate) async fn create_dispute(
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
     })?;
 
-    let email_instance = Email::new(data.config.clone());
     let user_id = user.id.clone();
-    if let Err(error) = email_instance
+    if let Err(error) = data
+        .notifications
         .send_start_dispute(
             user.name().as_str(),
             user.email().as_str(),
@@ -174,8 +173,8 @@ pub(crate) async fn create_dispute(
         return Err((StatusCode::INTERNAL_SERVER_ERROR, Json(json_error)));
     }
 
-    let email_instance = Email::new(data.config.clone());
-    if let Err(error) = email_instance
+    if let Err(error) = data
+        .notifications
         .send_notify_admin_about_dispute(
             user,
             dispute.id.as_str(),

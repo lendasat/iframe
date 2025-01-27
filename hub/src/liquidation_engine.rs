@@ -1,10 +1,10 @@
 use crate::bitmex_index_pricefeed::BitmexIndexPrice;
 use crate::config::Config;
 use crate::db;
-use crate::email::Email;
 use crate::model;
 use crate::model::db::LiquidationStatus;
 use crate::model::Contract;
+use crate::notifications::Notifications;
 use crate::utils::calculate_ltv;
 use crate::LTV_THRESHOLD_LIQUIDATION;
 use crate::LTV_THRESHOLD_MARGIN_CALL_1;
@@ -16,6 +16,7 @@ use rust_decimal::prelude::Zero;
 use rust_decimal::Decimal;
 use sqlx::Pool;
 use sqlx::Postgres;
+use std::sync::Arc;
 use time::Duration;
 use time::OffsetDateTime;
 use tokio::sync::mpsc::Receiver;
@@ -29,6 +30,7 @@ pub async fn monitor_positions(
     db: Pool<Postgres>,
     mut bitmex_rx: Receiver<BitmexIndexPrice>,
     config: Config,
+    notifications: Arc<Notifications>,
 ) -> Result<()> {
     tokio::spawn({
         let config = config.clone();
@@ -50,6 +52,7 @@ pub async fn monitor_positions(
                         &db,
                         average_price_in_last_five_minutes,
                         config.clone(),
+                        notifications.clone(),
                     )
                     .await;
                     last_prices.clear();
@@ -65,6 +68,7 @@ async fn check_margin_call_or_liquidation(
     db: &Pool<Postgres>,
     latest_price: Decimal,
     config: Config,
+    notifications: Arc<Notifications>,
 ) {
     // TODO: For performance reasons, we should not constantly load from the DB but use some form of
     // in-memory cache instead.
@@ -98,6 +102,7 @@ async fn check_margin_call_or_liquidation(
                                 config.clone(),
                                 latest_price,
                                 current_ltv,
+                                notifications.clone(),
                             )
                             .await;
                         } else if current_ltv >= LTV_THRESHOLD_MARGIN_CALL_2 {
@@ -107,6 +112,7 @@ async fn check_margin_call_or_liquidation(
                                 config.clone(),
                                 latest_price,
                                 current_ltv,
+                                notifications.clone(),
                             )
                             .await
                         } else if current_ltv >= LTV_THRESHOLD_MARGIN_CALL_1 {
@@ -116,6 +122,7 @@ async fn check_margin_call_or_liquidation(
                                 config.clone(),
                                 latest_price,
                                 current_ltv,
+                                notifications.clone(),
                             )
                             .await
                         } else {
@@ -174,6 +181,7 @@ async fn first_margin_call_contract(
     config: Config,
     price: Decimal,
     current_ltv: Decimal,
+    notifications: Arc<Notifications>,
 ) {
     let contract_id = &contract.id;
     let liquidation_status = contract.liquidation_status;
@@ -205,13 +213,14 @@ async fn first_margin_call_contract(
         )
     }
 
-    if let Err(err) = send_email(
+    if let Err(err) = send_notification(
         db,
         contract,
         config,
         price,
         current_ltv,
         LiquidationStatus::FirstMarginCall,
+        notifications,
     )
     .await
     {
@@ -228,6 +237,7 @@ async fn second_margin_call(
     config: Config,
     latest_price: Decimal,
     current_ltv: Decimal,
+    notifications: Arc<Notifications>,
 ) {
     let contract_id = &contract.id;
     let liquidation_status = contract.liquidation_status;
@@ -258,13 +268,14 @@ async fn second_margin_call(
         )
     }
 
-    if let Err(err) = send_email(
+    if let Err(err) = send_notification(
         db,
         contract,
         config,
         latest_price,
         current_ltv,
         LiquidationStatus::SecondMarginCall,
+        notifications,
     )
     .await
     {
@@ -281,6 +292,7 @@ async fn liquidate_contract(
     config: Config,
     latest_price: Decimal,
     current_ltv: Decimal,
+    notifications: Arc<Notifications>,
 ) {
     let contract_id = &contract.id;
 
@@ -310,13 +322,14 @@ async fn liquidate_contract(
         )
     }
 
-    if let Err(err) = send_email(
+    if let Err(err) = send_notification(
         db,
         contract,
         config,
         latest_price,
         current_ltv,
         LiquidationStatus::Liquidated,
+        notifications,
     )
     .await
     {
@@ -324,13 +337,14 @@ async fn liquidate_contract(
     }
 }
 
-async fn send_email(
+async fn send_notification(
     pool: &Pool<Postgres>,
     contract: &Contract,
     config: Config,
     price: Decimal,
     current_ltv: Decimal,
     status: LiquidationStatus,
+    notifications: Arc<Notifications>,
 ) -> Result<()> {
     let contract_id = &contract.id;
 
@@ -343,14 +357,12 @@ async fn send_email(
         config.lender_frontend_origin
     );
 
-    let email = Email::new(config);
-
     match status {
         LiquidationStatus::Healthy => {
             // We don't send emails about this.
         }
         LiquidationStatus::FirstMarginCall | LiquidationStatus::SecondMarginCall => {
-            email
+            notifications
                 .send_user_about_margin_call(
                     borrower,
                     contract.clone(),
@@ -361,7 +373,7 @@ async fn send_email(
                 .await?;
         }
         LiquidationStatus::Liquidated => {
-            if let Err(e) = email
+            if let Err(e) = notifications
                 .send_liquidation_notice_borrower(borrower, contract.clone(), price, &contract_url)
                 .await
             {
@@ -375,7 +387,7 @@ async fn send_email(
                 .await?
                 .context("lender not found")?;
 
-            if let Err(e) = email
+            if let Err(e) = notifications
                 .send_liquidation_notice_lender(lender, contract.clone(), &contract_url)
                 .await
             {

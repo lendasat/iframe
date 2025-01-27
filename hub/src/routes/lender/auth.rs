@@ -8,7 +8,6 @@ use crate::db::lenders::update_password_reset_token_for_user;
 use crate::db::lenders::user_exists;
 use crate::db::lenders::verify_user;
 use crate::db::wallet_backups::NewLenderWalletBackup;
-use crate::email::Email;
 use crate::model::ContractStatus;
 use crate::model::FinishUpgradeToPakeRequest;
 use crate::model::ForgotPasswordSchema;
@@ -218,8 +217,8 @@ async fn post_register(
         verification_code.as_str()
     );
 
-    let email_instance = Email::new(data.config.clone());
-    if let Err(err) = email_instance
+    if let Err(err) = data
+        .notifications
         .send_verification_code(
             user.name().as_str(),
             user.email().as_str(),
@@ -834,8 +833,8 @@ async fn forgot_password_handler(
         password_reset_url.push_str("?nomn=true");
     }
 
-    let email_instance = Email::new(data.config.clone());
-    if let Err(error) = email_instance
+    if let Err(error) = data
+        .notifications
         .send_password_reset_token(
             user.name().as_str(),
             user.email().as_str(),

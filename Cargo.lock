@@ -1964,6 +1964,7 @@ dependencies = [
  "sqlx",
  "srp",
  "temp-dir",
+ "thiserror 2.0.9",
  "time",
  "tokio",
  "tokio-cron-scheduler",
