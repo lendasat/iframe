@@ -1,71 +1,71 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            integration as \"integration: crate::model::db::Integration\",\n            lender_xpub,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            expiry_date,\n            contract_version,\n            interest_rate,\n            created_at,\n            updated_at\n        FROM contracts\n        where id = $1 AND\n        borrower_id = $2\n        ",
+  "query": "\n        SELECT\n            id as \"id!\",\n            lender_id as \"lender_id!\",\n            borrower_id as \"borrower_id!\",\n            loan_id as \"loan_id!\",\n            initial_ltv as \"initial_ltv!\",\n            initial_collateral_sats as \"initial_collateral_sats!\",\n            origination_fee_sats as \"origination_fee_sats!\",\n            collateral_sats as \"collateral_sats!\",\n            loan_amount as \"loan_amount!\",\n            borrower_btc_address as \"borrower_btc_address!\",\n            borrower_pk as \"borrower_pk!\",\n            borrower_loan_address as \"borrower_loan_address!\",\n            integration as \"integration!: crate::model::db::Integration\",\n            lender_xpub,\n            contract_address,\n            contract_index,\n            status as \"status!: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status!: crate::model::db::LiquidationStatus\",\n            duration_days as \"duration_days!\",\n            expiry_date as \"expiry_date!\",\n            contract_version as \"contract_version!\",\n            interest_rate as \"interest_rate!\",\n            created_at as \"created_at!\",\n            updated_at as \"updated_at!\"\n        FROM contracts_to_be_watched",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "id",
+        "name": "id!",
         "type_info": "Bpchar"
       },
       {
         "ordinal": 1,
-        "name": "lender_id",
+        "name": "lender_id!",
         "type_info": "Bpchar"
       },
       {
         "ordinal": 2,
-        "name": "borrower_id",
+        "name": "borrower_id!",
         "type_info": "Bpchar"
       },
       {
         "ordinal": 3,
-        "name": "loan_id",
+        "name": "loan_id!",
         "type_info": "Bpchar"
       },
       {
         "ordinal": 4,
-        "name": "initial_ltv",
+        "name": "initial_ltv!",
         "type_info": "Numeric"
       },
       {
         "ordinal": 5,
-        "name": "initial_collateral_sats",
+        "name": "initial_collateral_sats!",
         "type_info": "Int8"
       },
       {
         "ordinal": 6,
-        "name": "origination_fee_sats",
+        "name": "origination_fee_sats!",
         "type_info": "Int8"
       },
       {
         "ordinal": 7,
-        "name": "collateral_sats",
+        "name": "collateral_sats!",
         "type_info": "Int8"
       },
       {
         "ordinal": 8,
-        "name": "loan_amount",
+        "name": "loan_amount!",
         "type_info": "Numeric"
       },
       {
         "ordinal": 9,
-        "name": "borrower_btc_address",
+        "name": "borrower_btc_address!",
         "type_info": "Text"
       },
       {
         "ordinal": 10,
-        "name": "borrower_pk",
+        "name": "borrower_pk!",
         "type_info": "Bpchar"
       },
       {
         "ordinal": 11,
-        "name": "borrower_loan_address",
+        "name": "borrower_loan_address!",
         "type_info": "Text"
       },
       {
         "ordinal": 12,
-        "name": "integration: crate::model::db::Integration",
+        "name": "integration!: crate::model::db::Integration",
         "type_info": {
           "Custom": {
             "name": "integration",
@@ -95,7 +95,7 @@
       },
       {
         "ordinal": 16,
-        "name": "status: crate::model::db::ContractStatus",
+        "name": "status!: crate::model::db::ContractStatus",
         "type_info": {
           "Custom": {
             "name": "contract_status",
@@ -128,7 +128,7 @@
       },
       {
         "ordinal": 17,
-        "name": "liquidation_status: crate::model::db::LiquidationStatus",
+        "name": "liquidation_status!: crate::model::db::LiquidationStatus",
         "type_info": {
           "Custom": {
             "name": "liquidation_status",
@@ -145,67 +145,64 @@
       },
       {
         "ordinal": 18,
-        "name": "duration_months",
+        "name": "duration_days!",
         "type_info": "Int4"
       },
       {
         "ordinal": 19,
-        "name": "expiry_date",
+        "name": "expiry_date!",
         "type_info": "Timestamptz"
       },
       {
         "ordinal": 20,
-        "name": "contract_version",
+        "name": "contract_version!",
         "type_info": "Int4"
       },
       {
         "ordinal": 21,
-        "name": "interest_rate",
+        "name": "interest_rate!",
         "type_info": "Numeric"
       },
       {
         "ordinal": 22,
-        "name": "created_at",
+        "name": "created_at!",
         "type_info": "Timestamptz"
       },
       {
         "ordinal": 23,
-        "name": "updated_at",
+        "name": "updated_at!",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
-      "Left": [
-        "Bpchar",
-        "Bpchar"
-      ]
+      "Left": []
     },
     "nullable": [
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
       true,
       true,
       true,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
     ]
   },
-  "hash": "210704740979007736d20fff9e6ece455ff7e3cba104dcf9208f5b6f5f237950"
+  "hash": "0952a13e9c7e3d16c2e5a1be5905462c0e4891d4294477936511c952fe91a572"
 }

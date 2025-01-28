@@ -143,8 +143,8 @@ impl Config {
             hub_fee_descriptor,
             hub_fee_wallet_dir,
             origination_fee: vec![OriginationFee {
-                from_month: start,
-                to_month: end,
+                from_day: start,
+                to_day: end,
                 fee,
             }],
             moon_api_key,

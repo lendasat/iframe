@@ -12,6 +12,7 @@ import {
   LoanAddressInputField,
   LtvInfoLabel,
   newFormatCurrency,
+  ONE_YEAR,
   StableCoin,
   StableCoinDropdown,
   StableCoinHelper,
@@ -20,7 +21,7 @@ import {
 import { Box, Button, Callout, Flex, Grid, Heading, Separator, Spinner, Text, TextField } from "@radix-ui/themes";
 import axios from "axios";
 import { Network, validate } from "bitcoin-address-validation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ChangeEvent } from "react";
 import { Form } from "react-bootstrap";
 import { FaInfoCircle } from "react-icons/fa";
@@ -28,6 +29,7 @@ import { FaInfo } from "react-icons/fa6";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAsync } from "react-use";
 import EmptyResult from "../../../assets/search.png";
+import SingleDurationSelector from "./DurationSelector";
 import { MoonCardDropdown } from "./MoonCardDropdown";
 
 interface OfferFilter {
@@ -62,7 +64,7 @@ const findBestOffer = ({
       if (!duration) {
         return true;
       }
-      return offer.duration_months_max >= duration && offer.duration_months_min <= duration;
+      return offer.duration_days_max >= duration && offer.duration_days_min <= duration;
     }).filter((offer) => {
       const offerCoin = StableCoinHelper.mapFromBackend(offer.loan_asset_chain, offer.loan_asset_type);
       return validCoins.includes(offerCoin);
@@ -129,7 +131,9 @@ export const Step2PickOffer = () => {
     navigate("/requests");
   }
 
-  let validCoins: StableCoin[];
+  let validCoins = useMemo<StableCoin[]>(() => {
+    return [];
+  }, []);
   let integration = Integration.StableCoin;
   let coinSelectHidden = false;
 
@@ -180,10 +184,7 @@ export const Step2PickOffer = () => {
   const [stableCoin, setStableCoin] = useState<StableCoin | undefined>(validCoin);
 
   // Loan Duration
-  const [loanDuration, setLoanDuration] = useState<number>(1);
-  const [loanDurationString, setLoanDurationString] = useState("1");
-  // maximum repayment time
-  const maxRepaymentTime = 18;
+  const [loanDurationDays, setLoanDurationDays] = useState<number>(1);
   // minimum maxInterest rate
   const minInterestRate = 0.01;
   // Interest Rate
@@ -213,7 +214,7 @@ export const Step2PickOffer = () => {
     const availOffers = maybeAvailableOffers || [];
     const loanOffer = findBestOffer({
       loanAmount,
-      duration: loanDuration,
+      duration: loanDurationDays,
       wantedCoin: stableCoin,
       validCoins,
       minLtv: ltv,
@@ -224,7 +225,7 @@ export const Step2PickOffer = () => {
     setBestOffer(loanOffer);
   }, [
     loanAmount,
-    loanDuration,
+    loanDurationDays,
     stableCoin,
     validCoins,
     ltv,
@@ -244,7 +245,7 @@ export const Step2PickOffer = () => {
     setLoanAmount(parsedLoanAmount);
     const refreshedBestOffer = findBestOffer({
       loanAmount: parsedLoanAmount,
-      duration: loanDuration,
+      duration: loanDurationDays,
       wantedCoin: stableCoin,
       validCoins: validCoins,
       minLtv: ltv,
@@ -255,17 +256,11 @@ export const Step2PickOffer = () => {
     setBestOffer(refreshedBestOffer);
   }
 
-  function onLoanDurationChange(e: ChangeEvent<HTMLInputElement>) {
-    e.preventDefault();
-    setLoanDurationString(e.target.value);
-    let parsedDuration = parseFloat(e.target.value);
-    if (isNaN(parsedDuration)) {
-      parsedDuration = 1;
-    }
-    setLoanDuration(parsedDuration);
+  const handleDurationChange = (days: number) => {
+    setLoanDurationDays(days);
     const refreshedBestOffer = findBestOffer({
       loanAmount: loanAmount,
-      duration: parsedDuration,
+      duration: days,
       wantedCoin: stableCoin,
       validCoins: validCoins,
       minLtv: ltv,
@@ -274,13 +269,13 @@ export const Step2PickOffer = () => {
       advanceSearch: advanceSearch,
     });
     setBestOffer(refreshedBestOffer);
-  }
+  };
 
   function onStableCoinSelect(selectedStableCoin: StableCoin | undefined) {
     setStableCoin(selectedStableCoin);
     const refreshedBestOffer = findBestOffer({
       loanAmount: loanAmount,
-      duration: loanDuration,
+      duration: loanDurationDays,
       wantedCoin: selectedStableCoin,
       validCoins: validCoins,
       minLtv: ltv,
@@ -302,7 +297,7 @@ export const Step2PickOffer = () => {
     setLtv(parsedLtvUnified);
     const refreshedBestOffer = findBestOffer({
       loanAmount: loanAmount,
-      duration: loanDuration,
+      duration: loanDurationDays,
       wantedCoin: stableCoin,
       validCoins: validCoins,
       minLtv: parsedLtvUnified,
@@ -323,7 +318,7 @@ export const Step2PickOffer = () => {
     setMaxInterest(parsedInterestRateUnified);
     const refreshedBestOffer = findBestOffer({
       loanAmount: loanAmount,
-      duration: loanDuration,
+      duration: loanDurationDays,
       wantedCoin: stableCoin,
       validCoins: validCoins,
       minLtv: ltv,
@@ -346,7 +341,7 @@ export const Step2PickOffer = () => {
       const res = await postContractRequest({
         loan_id: bestOffer.id,
         loan_amount: loanAmount || 0,
-        duration_months: loanDuration,
+        duration_days: loanDurationDays,
         borrower_btc_address: btcAddress,
         borrower_pk: borrowerPk,
         borrower_loan_address: loanAddress,
@@ -380,16 +375,15 @@ export const Step2PickOffer = () => {
 
     setLoanAmountStringInput(offerWithSmallestAmount.loan_amount_min.toString());
     setLoanAmount(offerWithSmallestAmount.loan_amount_min);
-    setLoanDurationString(offerWithSmallestAmount.duration_months_min.toString());
-    setLoanDuration(offerWithSmallestAmount.duration_months_min);
+    setLoanDurationDays(offerWithSmallestAmount.duration_days_min);
   }, [loading, maybeAvailableOffers, offerWithSmallestAmount]);
 
   useEffect(() => {
     // This will run after the state updates
-    if (loanAmount && loanDuration) {
+    if (loanAmount && loanDurationDays) {
       onShowOfferClick();
     }
-  }, [loanAmount, loanDuration, onShowOfferClick]);
+  }, [loanAmount, loanDurationDays, onShowOfferClick]);
 
   if (loading) {
     // TODO: might be nicer to use a skeleton
@@ -432,7 +426,11 @@ export const Step2PickOffer = () => {
               <Text className="text-font/70 dark:text-font-dark/70" as="label" size={"2"} weight={"medium"}>
                 For how long do you want to borrow?
               </Text>
-              <TextField.Root
+
+              <SingleDurationSelector onDurationChange={handleDurationChange} />
+
+              {
+                /*<TextField.Root
                 size={"3"}
                 variant="surface"
                 type="number"
@@ -452,14 +450,15 @@ export const Step2PickOffer = () => {
                       color="gray"
                       weight={"medium"}
                       className={`transition-opacity ease-in-out ${
-                        loanDuration > 1 ? "opacity-100" : "opacity-0"
+                        loanDurationDays > 1 ? "opacity-100" : "opacity-0"
                       } duration-300`}
                     >
                       s
                     </Text>
                   </Flex>
                 </TextField.Slot>
-              </TextField.Root>
+              </TextField.Root>*/
+              }
             </Box>
 
             {advanceSearch && (
@@ -588,13 +587,14 @@ export const Step2PickOffer = () => {
               <>
                 <Heading size="4" mb="4" className="text-font dark:text-font-dark">
                   Best match to borrow <strong>{formatCurrency(loanAmount || 0)}</strong> for{" "}
-                  <strong>{loanDuration}</strong> months
+                  {/*TODO: think about how to present this to the user */}
+                  <strong>{loanDurationDays}</strong> days
                 </Heading>
                 <Box className="w-full">
                   <LoanSearched
                     lender={bestOffer.lender.name}
                     amount={loanAmount || 0}
-                    duration={loanDuration || 0}
+                    duration={loanDurationDays || 0}
                     interest={bestOffer.interest_rate}
                     ltv={bestOffer.min_ltv}
                     coin={StableCoinHelper.mapFromBackend(
@@ -645,8 +645,9 @@ export const Step2PickOffer = () => {
                           <FaInfo size={"18"} />
                         </Callout.Icon>
                         <Callout.Text>
+                          {/*TODO: think about how to present this to the user */}
                           Best available offer starts from {formatCurrency(offerWithSmallestAmount.loan_amount_min)}
-                          {"  "}with a minimum duration of {offerWithSmallestAmount.duration_months_min} months.
+                          {"  "}with a minimum duration of {offerWithSmallestAmount.duration_days_min} days.
                           <br />
                         </Callout.Text>
                       </Callout.Root>
@@ -717,7 +718,7 @@ const LoanSearched = (props: SearchParams) => {
     props.setBtcAddress(address);
   };
 
-  const actualInterest = props.interest / (12 / props.duration);
+  const actualInterest = props.interest / (ONE_YEAR / props.duration);
   const actualInterestUsdAmount = props.amount * actualInterest;
 
   const discountedFee = user?.first_time_discount_rate || 0.0;
@@ -748,7 +749,7 @@ const LoanSearched = (props: SearchParams) => {
           </InterestRateInfoLabel>
 
           <div className="flex flex-col">
-            {props.duration !== 12
+            {props.duration !== ONE_YEAR
               && (
                 <Flex gap={"2"}>
                   <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70">
@@ -759,7 +760,7 @@ const LoanSearched = (props: SearchParams) => {
                   </Text>
                 </Flex>
               )}
-            {props.duration === 12
+            {props.duration === ONE_YEAR
               && (
                 <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70">
                   {(actualInterest * 100).toFixed(2)}% p.a.

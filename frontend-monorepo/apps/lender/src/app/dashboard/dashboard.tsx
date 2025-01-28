@@ -1,5 +1,5 @@
 import { ContractStatus, useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
-import { formatCurrency } from "@frontend-monorepo/ui-shared";
+import { formatCurrency, ONE_YEAR } from "@frontend-monorepo/ui-shared";
 import { InfoCircledIcon } from "@radix-ui/react-icons";
 import { Box, Button, Callout, Flex, Grid, Heading, Text } from "@radix-ui/themes";
 import { useEffect, useState } from "react";
@@ -35,14 +35,14 @@ function Dashboard() {
     .reduce((sum, contract) => sum + contract.loan_amount, 0);
   const totalOpenInterest = openContracts.reduce((sum, contract) =>
     sum + (
-      contract.loan_amount * (contract.interest_rate / 12 * contract.duration_months)
+      contract.loan_amount * (contract.interest_rate / ONE_YEAR * contract.duration_days)
     ), 0);
 
   const totalClosedInterest = contracts.filter((contract) =>
     contract.status === ContractStatus.Closed || contract.status === ContractStatus.Closing
   ).reduce((sum, contract) =>
     sum + (
-      contract.loan_amount * (contract.interest_rate / 12 * contract.duration_months)
+      contract.loan_amount * (contract.interest_rate / ONE_YEAR * contract.duration_days)
     ), 0);
 
   return (

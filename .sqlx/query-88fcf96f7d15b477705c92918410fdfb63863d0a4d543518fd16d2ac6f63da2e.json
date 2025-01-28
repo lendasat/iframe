@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        UPDATE contracts\n        SET\n            liquidation_status = $1,\n            updated_at = $2\n        WHERE id = $3\n        RETURNING\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            integration as \"integration: crate::model::db::Integration\",\n            lender_xpub,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_months,\n            expiry_date,\n            contract_version,\n            interest_rate,\n            created_at,\n            updated_at\n        ",
+  "query": "\n        UPDATE contracts\n        SET status = $1,\n            updated_at = $2\n        WHERE lender_id = $3\n          AND id = $4\n        RETURNING\n            id,\n            lender_id,\n            borrower_id,\n            loan_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            integration as \"integration: crate::model::db::Integration\",\n            lender_xpub,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_days,\n            expiry_date,\n            contract_version,\n            interest_rate,\n            created_at,\n            updated_at\n        ",
   "describe": {
     "columns": [
       {
@@ -145,7 +145,7 @@
       },
       {
         "ordinal": 18,
-        "name": "duration_months",
+        "name": "duration_days",
         "type_info": "Int4"
       },
       {
@@ -178,18 +178,35 @@
       "Left": [
         {
           "Custom": {
-            "name": "liquidation_status",
+            "name": "contract_status",
             "kind": {
               "Enum": [
-                "Healthy",
-                "FirstMarginCall",
-                "SecondMarginCall",
-                "Liquidated"
+                "Requested",
+                "Approved",
+                "CollateralSeen",
+                "CollateralConfirmed",
+                "PrincipalGiven",
+                "RepaymentProvided",
+                "RepaymentConfirmed",
+                "Closing",
+                "Closed",
+                "Rejected",
+                "DisputeBorrowerStarted",
+                "DisputeLenderStarted",
+                "DisputeBorrowerResolved",
+                "DisputeLenderResolved",
+                "Cancelled",
+                "RequestExpired",
+                "Defaulted",
+                "Undercollateralized",
+                "RenewalRequested",
+                "Extended"
               ]
             }
           }
         },
         "Timestamptz",
+        "Bpchar",
         "Bpchar"
       ]
     },
@@ -220,5 +237,5 @@
       false
     ]
   },
-  "hash": "798873c0558b54757bc1175c8d7b1266bdef5726543393e39d6971995a6f0340"
+  "hash": "88fcf96f7d15b477705c92918410fdfb63863d0a4d543518fd16d2ac6f63da2e"
 }

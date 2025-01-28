@@ -26,7 +26,8 @@ export function LoanOfferComponent({ loanOffer, onRequest }: LoanOfferProps) {
 
         <Box className="hidden md:flex justify-center">
           <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
-            {loanOffer.duration_months_min} - {loanOffer.duration_months_max} months
+            {/*TODO: think about how to present this to the user */}
+            {loanOffer.duration_days_min} - {loanOffer.duration_days_max} days
           </Text>
         </Box>
 
@@ -91,7 +92,8 @@ export function LoanOfferComponent({ loanOffer, onRequest }: LoanOfferProps) {
                     Duration:
                   </Text>
                   <Text className="capitalize text-font dark:text-font-dark" size={"3"}>
-                    {loanOffer.duration_months_min} - {loanOffer.duration_months_max} months
+                    {/*TODO: think about how to present this to the user */}
+                    {loanOffer.duration_days_min} - {loanOffer.duration_days_max} days
                   </Text>
                 </Flex>
               </Box>

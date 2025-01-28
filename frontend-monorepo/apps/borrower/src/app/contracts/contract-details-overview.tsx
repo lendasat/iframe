@@ -14,6 +14,7 @@ import {
   LtvInfoLabel,
   LtvProgressBar,
   newFormatCurrency,
+  ONE_YEAR,
   RefundAddressInfoLabel,
   StableCoinHelper,
   usePrice,
@@ -89,7 +90,7 @@ function Details({ contract }: DetailsProps) {
   const totalCollateral = (collateralBtc + originationFeeBtc).toFixed(8);
 
   const accruedInterest = contract.loan_amount
-    * ((contract.interest_rate / 12) * contract.duration_months);
+    * ((contract.interest_rate / ONE_YEAR) * contract.duration_days);
   const totalRepaymentAmount = accruedInterest + loanAmount;
 
   // TODO: Let's calculate the initial price once, in the backend.
@@ -179,7 +180,7 @@ function ContractDetails({ contract }: DetailsProps) {
   const collateralBtc = collateral / 100000000;
   const loanAmount = contract.loan_amount;
   const interestRate = contract.interest_rate;
-  const durationMonths = contract.duration_months;
+  const durationDays = contract.duration_days;
   const expiry = contract.expiry.toLocaleDateString();
 
   const initialLtv = contract.initial_ltv;
@@ -237,7 +238,7 @@ function ContractDetails({ contract }: DetailsProps) {
       break;
   }
 
-  const actualInterestUsdAmount = (loanAmount * interestRate) / (12 / durationMonths);
+  const actualInterestUsdAmount = (loanAmount * interestRate) / (ONE_YEAR / durationDays);
 
   const [contractIdCopied, setContractIdCopied] = useState<boolean>(false);
 
@@ -260,7 +261,7 @@ function ContractDetails({ contract }: DetailsProps) {
   const hasParent = contract.extends_contract !== undefined && contract.extends_contract !== null;
   const hasChild = contract.extended_by_contract !== undefined && contract.extended_by_contract !== null;
 
-  const actualInterest = contract.interest_rate / (12 / contract.duration_months);
+  const actualInterest = contract.interest_rate / (ONE_YEAR / contract.duration_days);
 
   return (
     <Box>
@@ -404,7 +405,8 @@ function ContractDetails({ contract }: DetailsProps) {
             Duration
           </Text>
           <Text className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
-            {durationMonths} months
+            {/*TODO: think about how to present this to the user */}
+            {durationDays} days
           </Text>
         </Flex>
         <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
@@ -495,7 +497,7 @@ function ContractDetails({ contract }: DetailsProps) {
             </Flex>
           </InterestRateInfoLabel>
           <div className="flex flex-col">
-            {contract.duration_months !== 12
+            {contract.duration_days !== ONE_YEAR
               && (
                 <Flex gap={"2"}>
                   <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70">
@@ -506,7 +508,7 @@ function ContractDetails({ contract }: DetailsProps) {
                   </Text>
                 </Flex>
               )}
-            {contract.duration_months === 12
+            {contract.duration_days === 12
               && (
                 <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70">
                   {(actualInterest * 100).toFixed(2)}% p.a.

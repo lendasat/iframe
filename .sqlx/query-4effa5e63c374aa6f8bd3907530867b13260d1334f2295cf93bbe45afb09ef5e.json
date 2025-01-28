@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            loan_amount,\n            duration_months,\n            interest_rate,\n            created_at\n        FROM contracts\n        order by created_at desc limit $1\n        ",
+  "query": "\n        SELECT\n            loan_amount,\n            duration_days,\n            interest_rate,\n            created_at\n        FROM contracts\n        order by created_at desc limit $1\n        ",
   "describe": {
     "columns": [
       {
@@ -10,7 +10,7 @@
       },
       {
         "ordinal": 1,
-        "name": "duration_months",
+        "name": "duration_days",
         "type_info": "Int4"
       },
       {
@@ -36,5 +36,5 @@
       false
     ]
   },
-  "hash": "bc27bdc189739f86c30e5d5df776772db332be493c1cc7146873c04034165290"
+  "hash": "4effa5e63c374aa6f8bd3907530867b13260d1334f2295cf93bbe45afb09ef5e"
 }

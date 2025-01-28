@@ -1,4 +1,4 @@
-import type { StableCoin } from "@frontend-monorepo/ui-shared";
+import { ONE_YEAR, StableCoin } from "@frontend-monorepo/ui-shared";
 import { LtvInfoLabel, StableCoinDropdown, StableCoinHelper } from "@frontend-monorepo/ui-shared";
 import { Box, Button, Flex, Separator, Text, TextField } from "@radix-ui/themes";
 import type { ChangeEvent } from "react";
@@ -69,10 +69,10 @@ function LoanOffersFilter({ onChange, loanFilter }: LoanOffersFilterProps) {
 
   const periodSliderProps: SliderProps = {
     min: 1,
-    max: 12,
+    max: ONE_YEAR,
     step: 1,
-    init: loanFilter.period ?? 12,
-    suffix: " months",
+    init: loanFilter.period ?? ONE_YEAR,
+    suffix: " days",
     reset: resetDuration,
     onChange: (value) => {
       const filter: LoanFilter = { ...loanFilter, period: value };

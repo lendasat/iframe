@@ -18,6 +18,7 @@ mod tests {
     use hub::model::PakeLoginRequest;
     use hub::model::PakeLoginResponse;
     use hub::model::PakeVerifyRequest;
+    use hub::model::ONE_YEAR;
     use hub::routes::borrower::ClaimCollateralPsbt;
     use hub::routes::borrower::ClaimTx;
     use hub::routes::borrower::Contract;
@@ -74,8 +75,8 @@ mod tests {
             loan_amount_min: dec!(1_000),
             loan_amount_max: dec!(50_000),
             loan_amount_reserve: dec!(50_000),
-            duration_months_min: 1,
-            duration_months_max: 12,
+            duration_days_min: 7,
+            duration_days_max: ONE_YEAR as i32,
             loan_asset_type: LoanAssetType::Usdc,
             loan_asset_chain: Ethereum,
             loan_repayment_address:
@@ -117,7 +118,7 @@ mod tests {
             // if the real price of Bitcoin changes enough. We should mock the price in
             // the `hub` for the e2e tests.
             loan_amount: dec!(500),
-            duration_months: 6,
+            duration_days: 6,
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address: Some(
@@ -400,8 +401,8 @@ mod tests {
             loan_amount_min: dec!(1_000),
             loan_amount_max: dec!(50_000),
             loan_amount_reserve: dec!(50_000),
-            duration_months_min: 1,
-            duration_months_max: 12,
+            duration_days_min: 7,
+            duration_days_max: ONE_YEAR as i32,
             loan_asset_type: LoanAssetType::Usdc,
             loan_asset_chain: Ethereum,
             loan_repayment_address:
@@ -441,7 +442,7 @@ mod tests {
         let contract_request = ContractRequestSchema {
             loan_id: loan_offer.id,
             loan_amount: dec!(2_000),
-            duration_months: 6,
+            duration_days: 6,
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address: None,

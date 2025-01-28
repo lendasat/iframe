@@ -18,6 +18,7 @@ use hub::model::Lender;
 use hub::model::LoanAssetChain;
 use hub::model::LoanAssetType;
 use hub::model::LoanOffer;
+use hub::model::ONE_YEAR;
 use hub::moon::Card;
 use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
@@ -199,7 +200,7 @@ async fn create_loan_request(
         initial_collateral_sats.to_u64().expect("to fit"),
         origination_fee_sats.to_u64().expect("to fit"),
         loan_amount,
-        offer.duration_months_max,
+        offer.duration_days_max,
         Address::from_str("tb1qtsasnju08gh7ptqg7260qujgasvtexkf9t3yj3")
             .expect("to be valid address"),
         PublicKey::from_str("0363b379acd22b63c29179ad1bff81251e5c0df43a4f53f0e9d9c1f4b800a4243c")
@@ -234,8 +235,8 @@ async fn create_loan_offers(
             loan_amount_min: dec!(1),
             loan_amount_max: dec!(100_000),
             loan_amount_reserve: dec!(100_000),
-            duration_months_min: 3,
-            duration_months_max: 18,
+            duration_days_min: 1,
+            duration_days_max: ONE_YEAR as i32,
             loan_asset_type: LoanAssetType::Usdt,
             loan_asset_chain: LoanAssetChain::Ethereum,
             loan_repayment_address: "0x34e3f03F5efFaF7f70Bb1FfC50274697096ebe9d".to_string(),
@@ -255,8 +256,8 @@ async fn create_loan_offers(
             loan_amount_min: dec!(10),
             loan_amount_max: dec!(100_000),
             loan_amount_reserve: dec!(100_000),
-            duration_months_min: 3,
-            duration_months_max: 18,
+            duration_days_min: 1,
+            duration_days_max: ONE_YEAR as i32,
             loan_asset_type: LoanAssetType::Usdc,
             loan_asset_chain: LoanAssetChain::Polygon,
             loan_repayment_address: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619".to_string(),

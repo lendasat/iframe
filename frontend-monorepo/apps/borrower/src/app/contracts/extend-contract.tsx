@@ -5,12 +5,13 @@ import { Contract, LoanOffer, useBorrowerHttpClient } from "@frontend-monorepo/h
 import {
   formatCurrency,
   InterestRateInfoLabel,
+  ONE_YEAR,
   StableCoin,
   StableCoinHelper,
   usePrice,
 } from "@frontend-monorepo/ui-shared";
 import { AlertDialog, Box, Button, Callout, Flex, Separator, Slider, Spinner, Text } from "@radix-ui/themes";
-import { addMonths } from "date-fns";
+import { addDays } from "date-fns";
 import { useMemo, useState } from "react";
 import { FaInfoCircle } from "react-icons/fa";
 import { GoAlertFill } from "react-icons/go";
@@ -50,7 +51,7 @@ const ConfirmationDialog = ({ isOpen, setIsOpen, onConfirm }: ConfirmationDialog
 
 interface SelectedLoanOfferProps {
   contractId: string;
-  newDuration: number;
+  newDurationDays: number;
   amount: number;
   totalDuration: number;
   totalInterestRate: number;
@@ -94,7 +95,7 @@ const SelectedLoanOffer = (props: SelectedLoanOfferProps) => {
   };
 
   // TODO: fixme
-  const actualInterest = props.totalInterestRate / (12 / props.totalDuration);
+  const actualInterest = props.totalInterestRate / (ONE_YEAR / props.totalDuration);
   const actualInterestUsdAmount = props.amount * actualInterest;
   const extensionFeeBtc = (props.additionalOriginationFee * props.amount) / latestPrice;
   const extensionFeeUsd = props.additionalOriginationFee * props.amount;
@@ -107,7 +108,7 @@ const SelectedLoanOffer = (props: SelectedLoanOfferProps) => {
       setIsLoading(true);
       const newContract = await postExtendLoanRequest(props.contractId, {
         loan_id: props.offerId,
-        new_duration: props.newDuration,
+        new_duration: props.newDurationDays,
       });
       setNewContractId(newContract?.id || "");
       setIsFinalConfirmationDialogOpen(true);
@@ -236,9 +237,9 @@ const SelectedLoanOffer = (props: SelectedLoanOfferProps) => {
   );
 };
 
-const findBestOffer = (offers: LoanOffer[], months: number) => {
+const findBestOffer = (offers: LoanOffer[], days: number) => {
   return offers
-    .filter((offer) => offer.duration_months_min <= months && offer.duration_months_max >= months)
+    .filter((offer) => offer.duration_days_min <= days && offer.duration_days_max >= days)
     .reduce((best, current) => current.interest_rate < best.interest_rate ? current : best);
 };
 
@@ -306,23 +307,23 @@ export const ExtendContract = ({
     );
   }
 
-  const maxAvailableMonths = Math.max(...offers.map((offer) => offer.duration_months_max));
-  const minAvailableMonths = Math.min(...offers.map((offer) => offer.duration_months_min));
+  const maxAvailableDays = Math.max(...offers.map((offer) => offer.duration_days_max));
+  const minAvailableDays = Math.min(...offers.map((offer) => offer.duration_days_min));
 
-  const onValueChange = (months: number) => {
-    setSliderDuration(months);
+  const onValueChange = (days: number) => {
+    setSliderDuration(days);
   };
 
-  const selectedDuration = sliderDuration || maxAvailableMonths;
-  const bestOffer = findBestOffer(offers, selectedDuration);
+  const selectedDurationDays = sliderDuration || maxAvailableDays;
+  const bestOffer = findBestOffer(offers, selectedDurationDays);
 
   const totalInterestRate =
-    ((bestOffer.interest_rate * selectedDuration) + (contract.interest_rate * contract.duration_months))
-    / (selectedDuration + contract.duration_months);
+    ((bestOffer.interest_rate * selectedDurationDays) + (contract.interest_rate * contract.duration_days))
+    / (selectedDurationDays + contract.duration_days);
 
-  const totalDuration = selectedDuration + contract.duration_months;
+  const totalDuration = selectedDurationDays + contract.duration_days;
   const creationDate = contract.expiry;
-  const newExpiry = addMonths(creationDate, selectedDuration);
+  const newExpiry = addDays(creationDate, selectedDurationDays);
 
   return (
     <Box className="flex flex-col items-center justify-center p-6 md:p-8">
@@ -336,14 +337,14 @@ export const ExtendContract = ({
             <Slider
               className="w-full"
               onValueChange={([newVal]) => onValueChange(newVal)}
-              defaultValue={[maxAvailableMonths]}
-              max={maxAvailableMonths}
-              min={minAvailableMonths}
+              defaultValue={[maxAvailableDays]}
+              max={maxAvailableDays}
+              min={minAvailableDays}
               step={1}
             />
           </div>
           <Text className="min-w-[90px] text-sm">
-            {selectedDuration} {selectedDuration === 1 ? "month" : "months"}
+            {selectedDurationDays} {selectedDurationDays === 1 ? "day" : "days"}
           </Text>
         </div>
 
@@ -352,7 +353,7 @@ export const ExtendContract = ({
             contractId={contract.id}
             offerId={bestOffer.id}
             amount={contract.loan_amount}
-            newDuration={selectedDuration}
+            newDurationDays={selectedDurationDays}
             totalDuration={totalDuration}
             totalInterestRate={totalInterestRate}
             additionalOriginationFee={bestOffer.origination_fee[0].fee || 0}

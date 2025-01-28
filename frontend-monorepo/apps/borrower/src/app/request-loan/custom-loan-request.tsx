@@ -34,7 +34,7 @@ export default function CustomRequest() {
 
   const minDuration = 1;
   const maxDuration = 18;
-  const [duration, setDuration] = useState<number>(1);
+  const [durationDays, setDurationDays] = useState<number>(1);
 
   const minInterestRate = 10;
   const maxInterestRate = 100;
@@ -94,7 +94,7 @@ export default function CustomRequest() {
       ltv: ltv / 100,
       interest_rate: interest / 100,
       loan_amount: loanAmount,
-      duration_months: duration,
+      duration_days: durationDays,
       loan_asset_type: assetType,
       loan_asset_chain: assetChain,
     };
@@ -182,15 +182,15 @@ export default function CustomRequest() {
                   type="number"
                   min={minDuration}
                   max={maxDuration}
-                  value={duration}
-                  onChange={(e) => setDuration(parseFloat(e.target.value))}
+                  value={durationDays}
+                  onChange={(e) => setDurationDays(parseFloat(e.target.value))}
                   disabled={isDone}
                   className="w-full rounded-lg text-sm text-font dark:text-font-dark"
                 >
                   <TextField.Slot className="pl-0" />
                   <TextField.Slot>
                     <Text size={"2"} className={"text-font  dark:text-font-dark"} weight={"medium"}>
-                      {duration > 1 ? "months" : "month"}
+                      {durationDays > 1 ? "days" : "day"}
                     </Text>
                   </TextField.Slot>
                 </TextField.Root>
@@ -332,7 +332,7 @@ export default function CustomRequest() {
               <Flex justify={"between"} align={"center"}>
                 <Text className="text-xs font-medium text-font/60 dark:text-font-dark/60">Duration</Text>
                 <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
-                  {duration} {duration > 1 ? "months" : "month"}
+                  {durationDays} {durationDays > 1 ? "days" : "day"}
                 </Text>
               </Flex>
               <Separator size={"4"} className="bg-font/5 dark:bg-font-dark/5" />

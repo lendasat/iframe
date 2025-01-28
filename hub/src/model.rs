@@ -18,6 +18,11 @@ use uuid::Uuid;
 
 pub type Email = String;
 
+/// One year in our application is counted as 360 days.
+pub const ONE_YEAR: u32 = 360;
+/// One month in our application is counted as 30 days.
+pub const ONE_MONTH: u32 = 30;
+
 #[derive(Debug, sqlx::FromRow)]
 pub struct InviteCode {
     pub id: i32,
@@ -227,8 +232,8 @@ pub struct CreateLoanOfferSchema {
     pub loan_amount_min: Decimal,
     pub loan_amount_max: Decimal,
     pub loan_amount_reserve: Decimal,
-    pub duration_months_min: i32,
-    pub duration_months_max: i32,
+    pub duration_days_min: i32,
+    pub duration_days_max: i32,
     pub loan_asset_type: LoanAssetType,
     pub loan_asset_chain: LoanAssetChain,
     pub loan_repayment_address: String,
@@ -241,7 +246,7 @@ pub struct CreateLoanRequestSchema {
     pub ltv: Decimal,
     pub interest_rate: Decimal,
     pub loan_amount: Decimal,
-    pub duration_months: i32,
+    pub duration_days: i32,
     pub loan_asset_type: LoanAssetType,
     pub loan_asset_chain: LoanAssetChain,
 }
@@ -251,7 +256,7 @@ pub struct ContractRequestSchema {
     pub loan_id: String,
     #[serde(with = "rust_decimal::serde::float")]
     pub loan_amount: Decimal,
-    pub duration_months: i32,
+    pub duration_days: i32,
     pub borrower_btc_address: Address<NetworkUnchecked>,
     pub borrower_pk: PublicKey,
     /// This is optional because certain integrations (such as Pay with Moon) define their own loan
@@ -280,8 +285,8 @@ pub struct LoanOffer {
     pub loan_amount_max: Decimal,
     pub loan_amount_reserve: Decimal,
     pub loan_amount_reserve_remaining: Decimal,
-    pub duration_months_min: i32,
-    pub duration_months_max: i32,
+    pub duration_days_min: i32,
+    pub duration_days_max: i32,
     pub loan_asset_type: LoanAssetType,
     pub loan_asset_chain: LoanAssetChain,
     pub status: LoanOfferStatus,
@@ -326,7 +331,7 @@ pub struct LoanRequest {
     pub interest_rate: Decimal,
     #[serde(with = "rust_decimal::serde::float")]
     pub loan_amount: Decimal,
-    pub duration_months: i32,
+    pub duration_days: i32,
     pub loan_asset_type: LoanAssetType,
     pub loan_asset_chain: LoanAssetChain,
     pub status: LoanRequestStatus,
@@ -366,7 +371,7 @@ pub struct Contract {
     pub collateral_sats: u64,
     #[serde(with = "rust_decimal::serde::float")]
     pub loan_amount: Decimal,
-    pub duration_months: i32,
+    pub duration_days: i32,
     pub expiry_date: OffsetDateTime,
     pub borrower_btc_address: Address<NetworkUnchecked>,
     pub borrower_pk: PublicKey,
@@ -501,7 +506,7 @@ pub mod db {
         pub origination_fee_sats: i64,
         pub collateral_sats: i64,
         pub loan_amount: Decimal,
-        pub duration_months: i32,
+        pub duration_days: i32,
         pub expiry_date: OffsetDateTime,
         pub borrower_btc_address: String,
         pub borrower_pk: String,
@@ -601,7 +606,7 @@ impl From<db::Contract> for Contract {
             origination_fee_sats: value.origination_fee_sats as u64,
             collateral_sats: value.collateral_sats as u64,
             loan_amount: value.loan_amount,
-            duration_months: value.duration_months,
+            duration_days: value.duration_days,
             expiry_date: value.expiry_date,
             borrower_btc_address: Address::from_str(&value.borrower_btc_address)
                 .expect("valid address"),
@@ -727,7 +732,7 @@ impl From<Contract> for db::Contract {
             origination_fee_sats: value.origination_fee_sats as i64,
             collateral_sats: value.collateral_sats as i64,
             loan_amount: value.loan_amount,
-            duration_months: value.duration_months,
+            duration_days: value.duration_days,
             expiry_date: value.expiry_date,
             borrower_btc_address: value.borrower_btc_address.assume_checked().to_string(),
             borrower_pk: value.borrower_pk.to_string(),
@@ -875,9 +880,9 @@ pub struct LoanTransaction {
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct OriginationFee {
     /// Loans starting from this are considered, i.e. `>=from_month`
-    pub from_month: i32,
+    pub from_day: i32,
     /// Loans smaller than this are considered, i.e. `<to_month`
-    pub to_month: i32,
+    pub to_day: i32,
     /// Fee expressed as a number between 0 and 1, e.g. 0.01 = 1%
     #[serde(with = "rust_decimal::serde::float")]
     pub fee: Decimal,
@@ -885,7 +890,7 @@ pub struct OriginationFee {
 
 impl OriginationFee {
     pub fn is_relevant(&self, contract_duration: i32) -> bool {
-        self.from_month <= contract_duration && self.to_month > contract_duration
+        self.from_day <= contract_duration && self.to_day > contract_duration
     }
 }
 

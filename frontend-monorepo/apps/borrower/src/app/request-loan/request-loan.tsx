@@ -46,7 +46,7 @@ function RequestLoan() {
           }
         }
         if (loanFilter.period) {
-          if (offer.duration_months_min > loanFilter.period) {
+          if (offer.duration_days_min > loanFilter.period) {
             return false;
           }
         }
@@ -107,7 +107,7 @@ function sortOffers(offers: LoanOffer[], sortBy: TableSortBy): LoanOffer[] {
         n = a.min_ltv - b.min_ltv;
         break;
       case TableSortBy.Duration:
-        n = a.duration_months_min - b.duration_months_min;
+        n = a.duration_days_min - b.duration_days_min;
         break;
       case TableSortBy.Interest:
         n = a.interest_rate - b.interest_rate;

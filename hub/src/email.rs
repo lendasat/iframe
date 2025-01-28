@@ -231,8 +231,7 @@ impl Email {
 
         let handlebars = Self::prepare_template(template_name)?;
 
-        let expiry =
-            contract.created_at + Duration::days((365 / 12 * contract.duration_months) as i64);
+        let expiry = contract.created_at + Duration::days(contract.duration_days as i64);
         let collateral_value_usd = (Decimal::from_u64(contract.collateral_sats)
             .expect("to fit into u64")
             / dec!(100_000_000))

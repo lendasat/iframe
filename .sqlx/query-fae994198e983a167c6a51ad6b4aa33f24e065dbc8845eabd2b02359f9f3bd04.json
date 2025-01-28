@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        INSERT INTO loan_requests (\n            id,\n            borrower_id,\n            ltv,\n            interest_rate,\n            loan_amount,\n            duration_months,\n            loan_asset_type,\n            loan_asset_chain,\n            status\n        )\n        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)\n        RETURNING\n            id,\n            borrower_id,\n            ltv,\n            interest_rate,\n            loan_amount,\n            duration_months,\n            loan_asset_type AS \"loan_asset_type: crate::model::LoanAssetType\",\n            loan_asset_chain AS \"loan_asset_chain: crate::model::LoanAssetChain\",\n            status AS \"status: crate::model::LoanRequestStatus\",\n            created_at,\n            updated_at\n        ",
+  "query": "\n        INSERT INTO loan_requests (\n            id,\n            borrower_id,\n            ltv,\n            interest_rate,\n            loan_amount,\n            duration_days,\n            loan_asset_type,\n            loan_asset_chain,\n            status\n        )\n        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)\n        RETURNING\n            id,\n            borrower_id,\n            ltv,\n            interest_rate,\n            loan_amount,\n            duration_days,\n            loan_asset_type AS \"loan_asset_type: crate::model::LoanAssetType\",\n            loan_asset_chain AS \"loan_asset_chain: crate::model::LoanAssetChain\",\n            status AS \"status: crate::model::LoanRequestStatus\",\n            created_at,\n            updated_at\n        ",
   "describe": {
     "columns": [
       {
@@ -30,7 +30,7 @@
       },
       {
         "ordinal": 5,
-        "name": "duration_months",
+        "name": "duration_days",
         "type_info": "Int4"
       },
       {
@@ -152,5 +152,5 @@
       false
     ]
   },
-  "hash": "61cb0ffcc91db7cfaa7e9d71eb0e804ba4a85bf6fc33c6be26fac19a6924efdb"
+  "hash": "fae994198e983a167c6a51ad6b4aa33f24e065dbc8845eabd2b02359f9f3bd04"
 }

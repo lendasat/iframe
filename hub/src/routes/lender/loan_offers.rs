@@ -169,8 +169,8 @@ pub async fn create_loan_offer(
         loan_amount_max: offer.loan_amount_max,
         loan_amount_reserve: offer.loan_amount_reserve,
         loan_amount_reserve_remaining: offer.loan_amount_reserve_remaining,
-        duration_months_min: offer.duration_months_min,
-        duration_months_max: offer.duration_months_max,
+        duration_days_min: offer.duration_days_min,
+        duration_days_max: offer.duration_days_max,
         loan_asset_type: offer.loan_asset_type,
         loan_asset_chain: offer.loan_asset_chain,
         status: offer.status,
@@ -202,8 +202,8 @@ pub struct LoanOffer {
     #[serde(with = "rust_decimal::serde::float")]
     pub loan_amount_reserve_remaining: Decimal,
     pub auto_accept: bool,
-    pub duration_months_min: i32,
-    pub duration_months_max: i32,
+    pub duration_days_min: i32,
+    pub duration_days_max: i32,
     pub loan_asset_type: LoanAssetType,
     pub loan_asset_chain: LoanAssetChain,
     pub status: LoanOfferStatus,
@@ -262,8 +262,8 @@ pub async fn get_loan_offers_by_lender(
             interest_rate: offer.interest_rate,
             loan_amount_min: offer.loan_amount_min,
             loan_amount_max: offer.loan_amount_max,
-            duration_months_min: offer.duration_months_min,
-            duration_months_max: offer.duration_months_max,
+            duration_days_min: offer.duration_days_min,
+            duration_days_max: offer.duration_days_max,
             loan_amount_reserve: offer.loan_amount_reserve,
             loan_amount_reserve_remaining: offer.loan_amount_reserve_remaining,
             loan_asset_type: offer.loan_asset_type,
@@ -331,8 +331,8 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
         loan_amount_max: offer.loan_amount_max,
         loan_amount_reserve: offer.loan_amount_reserve,
         loan_amount_reserve_remaining: offer.loan_amount_reserve_remaining,
-        duration_months_min: offer.duration_months_min,
-        duration_months_max: offer.duration_months_max,
+        duration_days_min: offer.duration_days_min,
+        duration_days_max: offer.duration_days_max,
         loan_asset_type: offer.loan_asset_type,
         loan_asset_chain: offer.loan_asset_chain,
         status: offer.status,
@@ -392,8 +392,8 @@ pub async fn get_loan_offers(
             loan_amount_max: offer.loan_amount_max,
             loan_amount_reserve: offer.loan_amount_reserve,
             loan_amount_reserve_remaining: offer.loan_amount_reserve_remaining,
-            duration_months_min: offer.duration_months_min,
-            duration_months_max: offer.duration_months_max,
+            duration_days_min: offer.duration_days_min,
+            duration_days_max: offer.duration_days_max,
             loan_asset_type: offer.loan_asset_type,
             loan_asset_chain: offer.loan_asset_chain,
             status: offer.status,
@@ -459,8 +459,8 @@ pub async fn get_loan_offer_by_id(
         loan_amount_max: offer.loan_amount_max,
         loan_amount_reserve: offer.loan_amount_reserve,
         loan_amount_reserve_remaining: offer.loan_amount_reserve_remaining,
-        duration_months_min: offer.duration_months_min,
-        duration_months_max: offer.duration_months_max,
+        duration_days_min: offer.duration_days_min,
+        duration_days_max: offer.duration_days_max,
         loan_asset_type: offer.loan_asset_type,
         loan_asset_chain: offer.loan_asset_chain,
         status: offer.status,
@@ -525,7 +525,7 @@ impl From<db::loan_offers::InterestRateStats> for LoanOfferStats {
 pub struct ContractStats {
     #[serde(with = "rust_decimal::serde::float")]
     loan_amount: Decimal,
-    duration_months: i32,
+    duration_days: i32,
     #[serde(with = "rust_decimal::serde::float")]
     interest_rate: Decimal,
     #[serde(with = "time::serde::rfc3339")]
@@ -536,7 +536,7 @@ impl From<db::contracts::ContractStats> for ContractStats {
     fn from(value: db::contracts::ContractStats) -> Self {
         Self {
             loan_amount: value.loan_amount,
-            duration_months: value.duration_months,
+            duration_days: value.duration_days,
             interest_rate: value.interest_rate,
             created_at: value.created_at,
         }

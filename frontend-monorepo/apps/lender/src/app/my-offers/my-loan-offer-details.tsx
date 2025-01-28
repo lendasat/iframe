@@ -192,7 +192,7 @@ function MyLoanOfferDetails() {
                 Duration
               </Text>
               <Text as="span" className="text-font/50 dark:text-font-dark/50" weight={"medium"} size={"1"}>
-                (months)
+                (days)
               </Text>
               <Flex align={"center"} gap={"15px"}>
                 <TextField.Root
@@ -201,7 +201,7 @@ function MyLoanOfferDetails() {
                   type="number"
                   color="purple"
                   placeholder="Min Duration"
-                  value={offer.duration_months_min}
+                  value={offer.duration_days_min}
                   disabled={true}
                 />
 
@@ -213,7 +213,7 @@ function MyLoanOfferDetails() {
                   color="purple"
                   className="flex-1 text-sm rounded-lg"
                   placeholder="Max Duration"
-                  value={offer.duration_months_max}
+                  value={offer.duration_days_max}
                   disabled={true}
                 />
               </Flex>
@@ -275,8 +275,8 @@ function MyLoanOfferDetails() {
               {/*  color="purple"*/}
               {/*  disabled={loanAmount.max !== offer.loan_amount_max*/}
               {/*      || loanAmount.min !== offer.loan_amount_min*/}
-              {/*      || loanDuration.max !== offer.duration_months_max*/}
-              {/*      || loanDuration.min !== offer.duration_months_min*/}
+              {/*      || loanDuration.max !== offer.duration_days_max*/}
+              {/*      || loanDuration.min !== offer.duration_days_min*/}
               {/*      || interest !== offer.interest_rate*/}
               {/*      || ltv !== offer.min_ltv*/}
               {/*    ? false*/}
@@ -370,7 +370,8 @@ function MyLoanOfferDetails() {
                         Loan Duration
                       </Text>
                       <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
-                        {offer.duration_months_min} - {offer.duration_months_max} Months
+                        {/*TODO: think about how to present this to the user */}
+                        {offer.duration_days_min} - {offer.duration_days_max} days
                       </Text>
                     </Flex>
                     <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />

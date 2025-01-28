@@ -185,7 +185,8 @@ export const ClosedContracts = ({ contracts }: ClosedContractsProps) => {
                             Duration:
                           </Text>
                           <Text className="capitalize text-font dark:text-font-dark" size={"3"}>
-                            {contract.duration_months} months
+                            {/*TODO: think about how to present this to the user */}
+                            {contract.duration_days} days
                           </Text>
                         </Flex>
                       </Box>

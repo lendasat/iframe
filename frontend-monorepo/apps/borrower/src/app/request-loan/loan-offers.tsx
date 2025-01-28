@@ -265,7 +265,7 @@ function LoanOffersComponent({ loanOffers, onRequest, isLoading }: LoanOffersCom
             if (amountComparison !== 0) return amountComparison;
 
             // Compare by duration if amount is the same
-            const durationComparison = SortHelper.sort(durationSort, a.duration_months_min, b.duration_months_min);
+            const durationComparison = SortHelper.sort(durationSort, a.duration_days_min, b.duration_days_min);
             if (durationComparison !== 0) return durationComparison;
 
             // Compare by LTV if amount and duration are the same

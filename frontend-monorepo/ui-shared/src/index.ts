@@ -1,3 +1,6 @@
+
+export const ONE_YEAR = 360;
+
 export * from './lib/components/loan-address-input-field';
 export * from './lib/components/NotificationToast';
 export * from './lib/components/abbreviation-explanation-info';

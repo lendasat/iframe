@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            lo.id,\n            lo.lender_id,\n            lo.name,\n            lo.min_ltv,\n            lo.interest_rate,\n            lo.loan_amount_min,\n            lo.loan_amount_max,\n            lo.duration_months_min,\n            lo.duration_months_max,\n            lo.loan_amount_reserve,\n            COALESCE(\n                lo.loan_amount_reserve - COALESCE(\n                    SUM(\n                        CASE\n                            WHEN c.status NOT IN ('Cancelled', 'RequestExpired')\n                            THEN c.loan_amount\n                            ELSE 0\n                        END\n                    ),\n                    0\n                ),\n                lo.loan_amount_reserve\n            ) AS loan_amount_reserve_remaining,\n            lo.loan_asset_type AS \"loan_asset_type: LoanAssetType\",\n            lo.loan_asset_chain AS \"loan_asset_chain: LoanAssetChain\",\n            lo.status AS \"status: LoanOfferStatus\",\n            lo.loan_repayment_address,\n            lo.auto_accept,\n            lo.lender_xpub,\n            lo.created_at,\n            lo.updated_at\n        FROM loan_offers lo\n            LEFT JOIN\n                contracts c ON lo.id = c.loan_id\n        WHERE lo.id = $1\n        GROUP BY\n            lo.id\n    ",
+  "query": "\n        SELECT\n            lo.id,\n            lo.lender_id,\n            lo.name,\n            lo.min_ltv,\n            lo.interest_rate,\n            lo.loan_amount_min,\n            lo.loan_amount_max,\n            lo.duration_days_min,\n            lo.duration_days_max,\n            lo.loan_amount_reserve,\n            lo.lender_xpub,\n            lo.auto_accept,\n            COALESCE(\n                lo.loan_amount_reserve - COALESCE(\n                    SUM(\n                        CASE\n                            WHEN c.status NOT IN ('Cancelled', 'RequestExpired')\n                            THEN c.loan_amount\n                            ELSE 0\n                        END\n                    ),\n                    0\n                ),\n                lo.loan_amount_reserve\n            ) AS loan_amount_reserve_remaining,\n            lo.loan_asset_type AS \"loan_asset_type: LoanAssetType\",\n            lo.loan_asset_chain AS \"loan_asset_chain: LoanAssetChain\",\n            lo.status AS \"status: LoanOfferStatus\",\n            lo.loan_repayment_address,\n            lo.created_at,\n            lo.updated_at\n        FROM loan_offers lo\n            LEFT JOIN\n                contracts c ON lo.id = c.loan_id\n        WHERE lo.status = 'Available'\n        GROUP BY\n            lo.id\n        ",
   "describe": {
     "columns": [
       {
@@ -40,12 +40,12 @@
       },
       {
         "ordinal": 7,
-        "name": "duration_months_min",
+        "name": "duration_days_min",
         "type_info": "Int4"
       },
       {
         "ordinal": 8,
-        "name": "duration_months_max",
+        "name": "duration_days_max",
         "type_info": "Int4"
       },
       {
@@ -55,11 +55,21 @@
       },
       {
         "ordinal": 10,
+        "name": "lender_xpub",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 11,
+        "name": "auto_accept",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 12,
         "name": "loan_amount_reserve_remaining",
         "type_info": "Numeric"
       },
       {
-        "ordinal": 11,
+        "ordinal": 13,
         "name": "loan_asset_type: LoanAssetType",
         "type_info": {
           "Custom": {
@@ -74,7 +84,7 @@
         }
       },
       {
-        "ordinal": 12,
+        "ordinal": 14,
         "name": "loan_asset_chain: LoanAssetChain",
         "type_info": {
           "Custom": {
@@ -91,7 +101,7 @@
         }
       },
       {
-        "ordinal": 13,
+        "ordinal": 15,
         "name": "status: LoanOfferStatus",
         "type_info": {
           "Custom": {
@@ -107,19 +117,9 @@
         }
       },
       {
-        "ordinal": 14,
+        "ordinal": 16,
         "name": "loan_repayment_address",
         "type_info": "Varchar"
-      },
-      {
-        "ordinal": 15,
-        "name": "auto_accept",
-        "type_info": "Bool"
-      },
-      {
-        "ordinal": 16,
-        "name": "lender_xpub",
-        "type_info": "Text"
       },
       {
         "ordinal": 17,
@@ -133,9 +133,7 @@
       }
     ],
     "parameters": {
-      "Left": [
-        "Bpchar"
-      ]
+      "Left": []
     },
     "nullable": [
       false,
@@ -148,16 +146,16 @@
       false,
       false,
       false,
+      true,
+      false,
       null,
       false,
       false,
       false,
       false,
       false,
-      true,
-      false,
       false
     ]
   },
-  "hash": "fc9d16825a849bc5df5018e2e0098f84aec095c5b196cc2de219743d181195b4"
+  "hash": "be0c5691b53c5e5bad8992829b8ea2364f51e67fc7474a352b3551655052d7cc"
 }
