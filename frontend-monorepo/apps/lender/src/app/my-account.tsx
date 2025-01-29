@@ -1,14 +1,16 @@
+import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
+import { useAuth } from "@frontend-monorepo/http-client-lender";
 import { MnemonicComponent } from "@frontend-monorepo/ui-shared";
-import { Avatar, Box, Button, Callout, Flex, Heading, Spinner, TabNav, Text } from '@radix-ui/themes';
+import { Avatar, Box, Button, Callout, Flex, Heading, Spinner, TabNav, Text } from "@radix-ui/themes";
+import { useState } from "react";
+import { BiSolidError } from "react-icons/bi";
+import { GoVerified } from "react-icons/go";
+import { IoIosUnlock } from "react-icons/io";
+import { IoInformationCircleOutline } from "react-icons/io5";
+import { MdEdit } from "react-icons/md";
 import { PiWarningCircleFill } from "react-icons/pi";
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
-import { useAuth } from '@frontend-monorepo/http-client-lender';
-import { useBaseHttpClient } from '@frontend-monorepo/base-http-client';
-import { useState } from 'react';
-import { GoVerified } from 'react-icons/go';
-import { BiSolidError } from 'react-icons/bi';
-import { IoIosUnlock } from 'react-icons/io';
-import { MdEdit } from 'react-icons/md';
+import TelegramBotDetails from "./settings/TelegramBotDetails";
 
 function Wallet() {
   return (
@@ -203,6 +205,61 @@ function Profile() {
   );
 }
 
+function NotificationSettings() {
+  const { user } = useAuth();
+
+  const maybeBotUrl = import.meta.env.VITE_TELEGRAM_BOT_URL;
+  const maybeBotName = import.meta.env.VITE_TELEGRAM_BOT_NAME;
+  const maybePersonalTelegramToken = user?.personal_telegram_token;
+
+  let error = false;
+  if (!maybeBotUrl || !maybeBotName || !maybePersonalTelegramToken) {
+    error = true;
+  }
+
+  console.log(maybeBotUrl);
+  console.log(maybeBotName);
+  console.log(maybePersonalTelegramToken);
+
+  const botUrl = maybeBotUrl || "";
+  const botName = maybeBotName || "";
+  const personalTelegramToken = maybePersonalTelegramToken || "";
+
+  return (
+    <Box className="md:pl-8">
+      <Heading as="h4" className="font-semibold text-font dark:text-font-dark" size={"5"}>
+        Notification Settings
+      </Heading>
+      <Box mt={"6"} className="space-y-4">
+        <Box className="border border-purple-400/20 rounded-2xl px-5 py-6 dark:border-gray-500/50">
+          <Heading
+            as="h4"
+            className="font-semibold capitalize text-font dark:text-font-dark"
+            size={"3"}
+          >
+            Telegram Bot
+          </Heading>
+          {error
+            ? (
+              <Callout.Root color="orange">
+                <Callout.Icon>
+                  <IoInformationCircleOutline />
+                </Callout.Icon>
+                <Callout.Text>
+                  Telegram bot has not been configured correctly
+                </Callout.Text>
+              </Callout.Root>
+            )
+            : (
+              <Box mt={"4"} className="w-full">
+                <TelegramBotDetails token={personalTelegramToken} botUrl={botUrl} botName={botName} />
+              </Box>
+            )}
+        </Box>
+      </Box>
+    </Box>
+  );
+}
 
 function MyAccount() {
   const location = useLocation();
@@ -229,6 +286,15 @@ function MyAccount() {
               >
                 <Link to="wallet">Wallet</Link>
               </TabNav.Link>
+              <TabNav.Link
+                asChild
+                active={location.pathname.includes("notifications")}
+                className={`md:justify-start data-[state=active]:before:bg-transparent flex-grow md:w-fit px-2 rounded-full hover:bg-transparent font-medium data-[state=active]:font-semibold capitalize
+                  "data-[state=inactive]:text-font/70 data-[state=active]:text-purple-800 data-[state=active]:bg-purple-800/20 dark:data-[state=inactive]:text-gray-400 dark:data-[state=active]:text-purple-300 dark:data-[state=active]:bg-purple-700/20"
+                  `}
+              >
+                <Link to="notifications">Notification Settings</Link>
+              </TabNav.Link>
             </Box>
           </Box>
           <Box pt="3" className="flex-grow">
@@ -236,6 +302,7 @@ function MyAccount() {
               <Route path="/" element={<Navigate to="profile" replace />} />
               <Route path="profile" element={<Profile />} />
               <Route path="wallet" element={<Wallet />} />
+              <Route path="notifications" element={<NotificationSettings />} />
             </Routes>
           </Box>
         </TabNav.Root>
