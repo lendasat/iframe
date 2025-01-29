@@ -831,7 +831,7 @@ async fn forgot_password_handler(
 
     let mut password_reset_url = format!(
         "{}/resetpassword/{}/{}",
-        data.config.borrower_frontend_origin.to_owned(),
+        data.config.lender_frontend_origin.to_owned(),
         password_reset_token,
         user.email
     );
