@@ -1,0 +1,36 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        WITH inserted AS (\n            INSERT INTO telegram_bot_chat_ids (\n                id, lender_id, chat_id\n            )\n            VALUES (\n                $1, $2, $3\n            )\n            ON CONFLICT (chat_id) DO UPDATE \n            SET \n                lender_id = EXCLUDED.lender_id\n            RETURNING \n                lender_id, chat_id\n        )\n        SELECT \n            i.lender_id,\n            i.chat_id,\n            l.name as \"lender_name!\"\n        FROM inserted i\n        JOIN lenders l ON l.id = i.lender_id\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "lender_id",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "chat_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "lender_name!",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Bpchar",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "5a6a3b6f13a23d4231ef2c741368eee7a7e2e6f20d62231eea51c1bc6d1d1ab4"
+}

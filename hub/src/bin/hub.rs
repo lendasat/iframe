@@ -18,6 +18,7 @@ use hub::notifications::Notifications;
 use hub::routes::borrower::spawn_borrower_server;
 use hub::routes::lender::spawn_lender_server;
 use hub::routes::AppState;
+use hub::telegram_bot::TelegramBot;
 use hub::wallet::Wallet;
 use std::backtrace::Backtrace;
 use std::collections::HashMap;
@@ -82,7 +83,27 @@ async fn main() -> Result<()> {
     )?;
     let wallet = Arc::new(Mutex::new(wallet));
 
-    let notifications = Arc::new(Notifications::new(config.clone()));
+    let (telegram_bot_addr, telegram_bot_mailbox) = xtra::Mailbox::unbounded();
+
+    let maybe_telegram_bot = config
+        .telegram_bot_borrower
+        .clone()
+        .map(|token| TelegramBot::new(token.as_str(), db.clone()));
+
+    let maybe_telegram_bot_addr = if let Some(telegram_bot) = maybe_telegram_bot {
+        tokio::spawn(async {
+            let e = xtra::run(telegram_bot_mailbox, telegram_bot).await;
+            tracing::error!("TelegramBot actor stopped: {e:#}");
+
+            // TODO: Supervise [`telegram_bot::TelegramBot`].
+            panic!("Dying because we can't continue without telegram bot actor");
+        });
+        Some(telegram_bot_addr)
+    } else {
+        None
+    };
+
+    let notifications = Arc::new(Notifications::new(config.clone(), maybe_telegram_bot_addr));
 
     let (mempool_addr, mempool_mailbox) = xtra::Mailbox::unbounded();
     let mempool = mempool::Actor::new(db.clone(), network, config.clone(), notifications.clone());

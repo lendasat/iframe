@@ -2,7 +2,10 @@ use crate::config::Config;
 use crate::model::Borrower;
 use crate::model::Contract;
 use crate::model::Lender;
+use crate::telegram_bot::TelegramBot;
+use anyhow::Context;
 use rust_decimal::Decimal;
+use xtra::Address;
 
 mod email;
 
@@ -10,16 +13,20 @@ mod email;
 pub enum Error {
     #[error("Failed sending email. {0}")]
     Email(anyhow::Error),
+    #[error("Failed sending telegram notification. {0}")]
+    Telegram(anyhow::Error),
 }
 
 pub struct Notifications {
     email: email::Email,
+    telegram_bot: Option<Address<TelegramBot>>,
 }
 
 impl Notifications {
-    pub fn new(config: Config) -> Self {
+    pub fn new(config: Config, maybe_telegram_bot: Option<Address<TelegramBot>>) -> Self {
         Self {
             email: email::Email::new(config),
+            telegram_bot: maybe_telegram_bot,
         }
     }
 
@@ -122,10 +129,23 @@ impl Notifications {
     }
 
     pub async fn send_new_loan_request(&self, lender: Lender, url: &str) -> Result<(), Error> {
+        if let Some(tgb) = &self.telegram_bot {
+            tgb.send(crate::telegram_bot::Notification {
+                lender_id: lender.id.clone(),
+                url: url.to_string(),
+                kind: crate::telegram_bot::NotificationKind::NewLoanRequest,
+            })
+            .await
+            .context("Failed")
+            .map_err(Error::Telegram)?
+            .map_err(Error::Telegram)?
+        }
+
         self.email
             .send_new_loan_request(lender, url)
             .await
             .map_err(Error::Email)?;
+
         Ok(())
     }
 
@@ -146,6 +166,18 @@ impl Notifications {
         lender: Lender,
         url: &str,
     ) -> Result<(), Error> {
+        if let Some(tgb) = &self.telegram_bot {
+            tgb.send(crate::telegram_bot::Notification {
+                lender_id: lender.id.clone(),
+                url: url.to_string(),
+                kind: crate::telegram_bot::NotificationKind::RequestAutoApproved,
+            })
+            .await
+            .context("Failed")
+            .map_err(Error::Telegram)?
+            .map_err(Error::Telegram)?
+        }
+
         self.email
             .send_notification_about_auto_accepted_loan(lender, url)
             .await
@@ -165,9 +197,21 @@ impl Notifications {
         Ok(())
     }
 
-    pub async fn send_loan_collateralized(&self, user: Lender, url: &str) -> Result<(), Error> {
+    pub async fn send_loan_collateralized(&self, lender: Lender, url: &str) -> Result<(), Error> {
+        if let Some(tgb) = &self.telegram_bot {
+            tgb.send(crate::telegram_bot::Notification {
+                lender_id: lender.id.clone(),
+                url: url.to_string(),
+                kind: crate::telegram_bot::NotificationKind::Collateralized,
+            })
+            .await
+            .context("Failed")
+            .map_err(Error::Telegram)?
+            .map_err(Error::Telegram)?
+        }
+
         self.email
-            .send_loan_collateralized(user, url)
+            .send_loan_collateralized(lender, url)
             .await
             .map_err(Error::Email)?;
         Ok(())
@@ -202,9 +246,21 @@ impl Notifications {
         Ok(())
     }
 
-    pub async fn send_loan_repaid(&self, user: Lender, url: &str) -> Result<(), Error> {
+    pub async fn send_loan_repaid(&self, lender: Lender, url: &str) -> Result<(), Error> {
+        if let Some(tgb) = &self.telegram_bot {
+            tgb.send(crate::telegram_bot::Notification {
+                lender_id: lender.id.clone(),
+                url: url.to_string(),
+                kind: crate::telegram_bot::NotificationKind::Repaid,
+            })
+            .await
+            .context("Failed")
+            .map_err(Error::Telegram)?
+            .map_err(Error::Telegram)?
+        }
+
         self.email
-            .send_loan_repaid(user, url)
+            .send_loan_repaid(lender, url)
             .await
             .map_err(Error::Email)?;
         Ok(())
@@ -222,9 +278,21 @@ impl Notifications {
         Ok(())
     }
 
-    pub async fn send_loan_defaulted_lender(&self, user: Lender, url: &str) -> Result<(), Error> {
+    pub async fn send_loan_defaulted_lender(&self, lender: Lender, url: &str) -> Result<(), Error> {
+        if let Some(tgb) = &self.telegram_bot {
+            tgb.send(crate::telegram_bot::Notification {
+                lender_id: lender.id.clone(),
+                url: url.to_string(),
+                kind: crate::telegram_bot::NotificationKind::Defaulted,
+            })
+            .await
+            .context("Failed")
+            .map_err(Error::Telegram)?
+            .map_err(Error::Telegram)?
+        }
+
         self.email
-            .send_loan_defaulted_lender(user, url)
+            .send_loan_defaulted_lender(lender, url)
             .await
             .map_err(Error::Email)?;
         Ok(())

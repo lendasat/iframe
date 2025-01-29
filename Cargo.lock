@@ -1963,6 +1963,7 @@ dependencies = [
  "sideshift",
  "sqlx",
  "srp",
+ "telegram-bot",
  "temp-dir",
  "thiserror 2.0.9",
  "time",

@@ -23,6 +23,7 @@ pub mod moon;
 pub mod notifications;
 pub mod routes;
 pub mod sideshift;
+pub mod telegram_bot;
 pub mod utils;
 pub mod wallet;
 
