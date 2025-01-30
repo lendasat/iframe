@@ -12,6 +12,9 @@ import { SwiperSlide } from "swiper/react";
 import NoCreditCard from "./../../assets/creditcard-illustration.png";
 import CardHistory from "./CardHistory";
 import CreditCard from "./CreditCard";
+import "swiper/scss";
+import "swiper/scss/navigation";
+import "swiper/scss/pagination";
 
 export default function Cards() {
   const { innerHeight } = window;

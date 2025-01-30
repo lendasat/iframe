@@ -13,7 +13,7 @@ import {
   LoanAssetChain,
   LoanAssetType,
   LtvInfoLabel,
-  ONE_YEAR,
+  ONE_MONTH,
   parseStableCoin,
   StableCoin,
   StableCoinHelper,
@@ -33,7 +33,7 @@ import {
   Text,
   TextField,
 } from "@radix-ui/themes";
-import type { FC, FormEvent } from "react";
+import { FC, FormEvent, useCallback, useEffect } from "react";
 import { useState } from "react";
 import { Form } from "react-bootstrap";
 import { FaInfoCircle } from "react-icons/fa";
@@ -77,23 +77,25 @@ const CreateLoanOffer: FC = () => {
 
   const [loanDuration, setLoanDuration] = useState<DurationRange>({
     min: 7,
-    max: ONE_YEAR,
+    max: ONE_MONTH * 6,
   });
 
   const handleRangeChange = (start: number, end: number) => {
     setLoanDuration({ min: start, max: end });
   };
 
-  if (!doesWalletExist) {
-    setError("Cannot load wallet. Try to log back in. If the error persists, reach out to support");
-  }
+  useEffect(() => {
+    if (!doesWalletExist) {
+      setError("Cannot load wallet. Try to log back in. If the error persists, reach out to support");
+    }
+  }, [doesWalletExist]);
 
-  const handleStableCoinChange = (coinString: string) => {
+  const handleStableCoinChange = useCallback((coinString: string) => {
     const coin = parseStableCoin(coinString);
     setSelectedCoin(coin);
     setLoanRepaymentAddress("");
     setHideWalletConnectButton(false);
-  };
+  }, []);
 
   const mapToCreateLoanOfferSchema = (lender_xpub: string): CreateLoanOfferRequest => {
     let assetType = LoanAssetType.Usdt;
