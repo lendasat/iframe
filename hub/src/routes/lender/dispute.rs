@@ -1,5 +1,4 @@
 use crate::db;
-use crate::email::Email;
 use crate::model::DisputeRequestBodySchema;
 use crate::model::Lender;
 use crate::routes::lender::auth::jwt_auth;
@@ -142,22 +141,13 @@ pub(crate) async fn create_dispute(
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
     })?;
 
-    let email_instance = Email::new(data.config.clone());
-    let user_id = user.id.clone();
-    if let Err(error) = email_instance
+    data.notifications
         .send_start_dispute(
             user.name().as_str(),
             user.email().as_str(),
             dispute.id.as_str(),
         )
-        .await
-    {
-        tracing::error!(user_id, "Failed sending dispute email {error:#}");
-        let json_error = ErrorResponse {
-            message: "Something bad happened while sending the confirmation email".to_string(),
-        };
-        return Err((StatusCode::INTERNAL_SERVER_ERROR, Json(json_error)));
-    }
+        .await;
 
     Ok(Json(dispute))
 }

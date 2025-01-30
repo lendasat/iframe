@@ -4,7 +4,6 @@ use crate::bitmex_index_price_rest::get_bitmex_index_price;
 use crate::contract_requests;
 use crate::db;
 use crate::discounted_origination_fee;
-use crate::email::Email;
 use crate::mempool;
 use crate::model;
 use crate::model::Borrower;
@@ -292,6 +291,7 @@ async fn post_contract_request(
             &data.config,
             contract.id.clone(),
             &lender_id,
+            data.notifications.clone(),
         )
         .await
         .map_err(Error::from)?;
@@ -302,7 +302,6 @@ async fn post_contract_request(
         data.config.lender_frontend_origin.to_owned(),
         contract.id
     );
-    let email = Email::new(data.config.clone());
 
     // We don't want to fail this upwards because the contract request has been sent already.
     if let Err(e) = async {
@@ -313,10 +312,9 @@ async fn post_contract_request(
         let lender_id = lender.id.clone();
         let borrower_id = user.id.clone();
         if offer.auto_accept {
-            email
+            data.notifications
                 .send_notification_about_auto_accepted_loan(lender, lender_loan_url.as_str())
-                .await
-                .context("Failed to send loan-auto-accept email")?;
+                .await;
 
             db::contract_emails::mark_auto_accept_email_as_sent(&data.db, &contract.id)
                 .await
@@ -329,10 +327,9 @@ async fn post_contract_request(
                 "Contract request has been automatically approved"
             );
         } else {
-            email
+            data.notifications
                 .send_new_loan_request(lender, lender_loan_url.as_str())
-                .await
-                .context("Failed to send loan-request email")?;
+                .await;
 
             db::contract_emails::mark_loan_request_as_sent(&data.db, &contract.id)
                 .await
@@ -469,17 +466,14 @@ async fn put_repayment_provided(
         contract.id
     );
 
-    let email = Email::new(data.config.clone());
-
     if let Err(e) = async {
         let lender = db::lenders::get_user_by_id(&data.db, &contract.lender_id)
             .await?
             .context("Failed to find lender")?;
 
-        email
+        data.notifications
             .send_loan_repaid(lender, loan_url.as_str())
-            .await
-            .context("Failed to send loan repaid email")?;
+            .await;
 
         db::contract_emails::mark_loan_repaid_as_sent(&data.db, &contract.id)
             .await

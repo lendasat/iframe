@@ -3,6 +3,7 @@ use crate::mempool;
 use crate::model;
 use crate::model::PakeServerData;
 use crate::moon;
+use crate::notifications::Notifications;
 use crate::sideshift;
 use crate::wallet::Wallet;
 use axum::extract::ws::Message;
@@ -34,4 +35,5 @@ pub struct AppState {
     pub connections: Arc<Mutex<Vec<mpsc::UnboundedSender<Message>>>>,
     pub moon: Arc<moon::Manager>,
     pub sideshift: Arc<sideshift::Shifter>,
+    pub notifications: Arc<Notifications>,
 }

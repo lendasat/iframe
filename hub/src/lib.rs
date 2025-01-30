@@ -14,15 +14,16 @@ pub mod contract_request_expiry;
 pub mod contract_requests;
 pub mod db;
 mod discounted_origination_fee;
-pub mod email;
 pub mod expiry;
 pub mod liquidation_engine;
 pub mod logger;
 pub mod mempool;
 pub mod model;
 pub mod moon;
+pub mod notifications;
 pub mod routes;
 pub mod sideshift;
+pub mod telegram_bot;
 pub mod utils;
 pub mod wallet;
 

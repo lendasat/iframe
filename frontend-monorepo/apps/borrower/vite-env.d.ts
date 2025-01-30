@@ -7,6 +7,8 @@ interface ImportMetaEnv {
   readonly VITE_BORROWER_PASSWORD: string;
   readonly VITE_LENDER_USERNAME: string;
   readonly VITE_LENDER_PASSWORD: string;
+  readonly VITE_TELEGRAM_BOT_URL: string;
+  readonly VITE_TELEGRAM_BOT_NAME: string;
 }
 
 interface ImportMeta {

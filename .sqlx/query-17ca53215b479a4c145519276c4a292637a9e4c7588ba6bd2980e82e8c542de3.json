@@ -1,0 +1,30 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO telegram_bot_tokens (\n            id, token, lender_id\n        )\n        VALUES (\n            $1, $2, $3\n        )\n        RETURNING \n            token, lender_id\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "token",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "lender_id",
+        "type_info": "Bpchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Bpchar",
+        "Bpchar"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "17ca53215b479a4c145519276c4a292637a9e4c7588ba6bd2980e82e8c542de3"
+}

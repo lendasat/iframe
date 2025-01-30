@@ -2,7 +2,6 @@ use crate::approve_contract::approve_contract;
 use crate::bitmex_index_price_rest::get_bitmex_index_price;
 use crate::contract_liquidation;
 use crate::db;
-use crate::email::Email;
 use crate::mempool;
 use crate::model;
 use crate::model::ContractStatus;
@@ -226,6 +225,7 @@ pub async fn put_approve_contract(
         &data.config,
         contract_id,
         &user.id,
+        data.notifications.clone(),
     )
     .await
     .map_err(|e| {
@@ -292,12 +292,9 @@ pub async fn put_principal_given(
             .await?
             .context("Borrower not found")?;
 
-        let email = Email::new(data.config.clone());
-
-        email
+        data.notifications
             .send_loan_paid_out(borrower, loan_url.as_str())
-            .await
-            .context("Failed to send loan-paid-out email")?;
+            .await;
 
         db::contract_emails::mark_loan_paid_out_as_sent(&data.db, &contract.id)
             .await
@@ -344,11 +341,9 @@ pub async fn delete_reject_contract(
             .await?
             .context("Borrower not found")?;
 
-        let email = Email::new(data.config.clone());
-        email
+        data.notifications
             .send_loan_request_rejected(borrower, loan_url.as_str())
-            .await
-            .context("Failed to send loan-request-approved email")?;
+            .await;
 
         db::contract_emails::mark_loan_request_rejected_as_sent(&data.db, &contract.id)
             .await
@@ -758,8 +753,6 @@ async fn post_liquidation_tx(
         tracing::error!("Failed to mark contract as closing: {e:#}");
     };
 
-    let email = Email::new(data.config.clone());
-
     if let Err(e) = async {
         let contract = db::contracts::load_contract_by_contract_id_and_lender_id(
             &data.db,
@@ -778,10 +771,9 @@ async fn post_liquidation_tx(
             data.config.borrower_frontend_origin.to_owned(),
             contract_id
         );
-        email
+        data.notifications
             .send_loan_liquidated_after_default(borrower, loan_url.as_str())
-            .await
-            .context("Failed to send defaulted-loan-liquidated email")?;
+            .await;
 
         db::contract_emails::mark_defaulted_loan_liquidated_as_sent(&data.db, &contract.id)
             .await

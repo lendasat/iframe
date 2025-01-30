@@ -7,8 +7,8 @@ use crate::db::lenders::register_user;
 use crate::db::lenders::update_password_reset_token_for_user;
 use crate::db::lenders::user_exists;
 use crate::db::lenders::verify_user;
+use crate::db::telegram_bot::TelegramBotToken;
 use crate::db::wallet_backups::NewLenderWalletBackup;
-use crate::email::Email;
 use crate::model::ContractStatus;
 use crate::model::FinishUpgradeToPakeRequest;
 use crate::model::ForgotPasswordSchema;
@@ -218,22 +218,14 @@ async fn post_register(
         verification_code.as_str()
     );
 
-    let email_instance = Email::new(data.config.clone());
-    if let Err(err) = email_instance
+    data.notifications
         .send_verification_code(
             user.name().as_str(),
             user.email().as_str(),
             verification_url.as_str(),
             verification_code.as_str(),
         )
-        .await
-    {
-        tracing::error!("Failed sending email {err:#}");
-        let json_error = ErrorResponse {
-            message: "Something bad happened while sending the verification code".to_string(),
-        };
-        return Err((StatusCode::INTERNAL_SERVER_ERROR, Json(json_error)));
-    }
+        .await;
 
     db_tx.commit().await.map_err(|e| {
         let error_response = ErrorResponse {
@@ -494,7 +486,17 @@ async fn post_pake_verify(
         })
         .collect::<Vec<_>>();
 
-    let filtered_user = FilteredUser::new_user(&user);
+    let personal_telegram_token =
+        db::telegram_bot::get_or_create_token_by_lender_id(&data.db, user.id.as_str())
+            .await
+            .map_err(|error| {
+                let error_response = ErrorResponse {
+                    message: format!("Database error: {}", error),
+                };
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+            })?;
+
+    let filtered_user = FilteredUser::new_user(&user, personal_telegram_token);
 
     let response = Response::builder()
         .status(StatusCode::OK)
@@ -821,7 +823,7 @@ async fn forgot_password_handler(
 
     let mut password_reset_url = format!(
         "{}/resetpassword/{}/{}",
-        data.config.borrower_frontend_origin.to_owned(),
+        data.config.lender_frontend_origin.to_owned(),
         password_reset_token,
         user.email
     );
@@ -834,22 +836,14 @@ async fn forgot_password_handler(
         password_reset_url.push_str("?nomn=true");
     }
 
-    let email_instance = Email::new(data.config.clone());
-    if let Err(error) = email_instance
+    data.notifications
         .send_password_reset_token(
             user.name().as_str(),
             user.email().as_str(),
             PASSWORD_TOKEN_EXPIRES_IN_MINUTES,
             password_reset_url.as_str(),
         )
-        .await
-    {
-        tracing::error!(lender_id, "Failed resetting user password {error:#}");
-        let json_error = ErrorResponse {
-            message: "Something bad happened while sending the password reset code".to_string(),
-        };
-        return Err((StatusCode::INTERNAL_SERVER_ERROR, Json(json_error)));
-    }
+        .await;
 
     let email_address = body.email.to_owned().to_ascii_lowercase();
     update_password_reset_token_for_user(
@@ -1012,7 +1006,17 @@ async fn get_me_handler(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Lender>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let filtered_user = FilteredUser::new_user(&user);
+    let personal_telegram_token =
+        db::telegram_bot::get_or_create_token_by_lender_id(&data.db, user.id.as_str())
+            .await
+            .map_err(|error| {
+                let error_response = ErrorResponse {
+                    message: format!("Database error: {}", error),
+                };
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+            })?;
+
+    let filtered_user = FilteredUser::new_user(&user, personal_telegram_token);
 
     let features = db::lender_features::load_lender_features(&data.db, user.id.clone())
         .await
@@ -1056,10 +1060,11 @@ struct FilteredUser {
     created_at: OffsetDateTime,
     #[serde(with = "time::serde::rfc3339")]
     updated_at: OffsetDateTime,
+    personal_telegram_token: String,
 }
 
 impl FilteredUser {
-    fn new_user(user: &Lender) -> Self {
+    fn new_user(user: &Lender, personal_telegram_token: TelegramBotToken) -> Self {
         let created_at_utc = user.created_at;
         let updated_at_utc = user.updated_at;
         Self {
@@ -1069,6 +1074,7 @@ impl FilteredUser {
             verified: user.verified,
             created_at: created_at_utc,
             updated_at: updated_at_utc,
+            personal_telegram_token: personal_telegram_token.token,
         }
     }
 }

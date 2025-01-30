@@ -1,5 +1,14 @@
 [workspace]
-members = ["hub", "browser-wallet", "tests-e2e", "mempool-mock", "descriptor-wallet", "pay-with-moon", "sideshift"]
+members = [
+  "hub",
+  "browser-wallet",
+  "tests-e2e",
+  "mempool-mock",
+  "descriptor-wallet",
+  "pay-with-moon",
+  "sideshift",
+  "telegram-bot",
+]
 resolver = "2"
 
 [profile.release]

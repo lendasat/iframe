@@ -1,6 +1,6 @@
 use crate::config::Config;
 use crate::db;
-use crate::email::Email;
+use crate::notifications::Notifications;
 use anyhow::anyhow;
 use anyhow::bail;
 use anyhow::Context;
@@ -12,6 +12,7 @@ use rust_decimal_macros::dec;
 use sqlx::Pool;
 use sqlx::Postgres;
 use std::str::FromStr;
+use std::sync::Arc;
 use uuid::Uuid;
 
 pub const MOON_CARD_MAX_BALANCE: Decimal = dec!(5_000);
@@ -54,10 +55,11 @@ pub struct Manager {
     visa_product_id: Uuid,
     db: Pool<Postgres>,
     config: Config,
+    notifications: Arc<Notifications>,
 }
 
 impl Manager {
-    pub fn new(db: Pool<Postgres>, config: Config) -> Self {
+    pub fn new(db: Pool<Postgres>, config: Config, notifications: Arc<Notifications>) -> Self {
         let api_key = config.moon_api_key.clone();
         let base_url = config.moon_api_url.clone();
         let webhook_url = config.moon_webhook_url.clone();
@@ -68,6 +70,7 @@ impl Manager {
             visa_product_id,
             db,
             config,
+            notifications,
         }
     }
 
@@ -290,7 +293,6 @@ impl Manager {
         );
 
         //TODO: notify the user via email that the card is ready to use
-        let email = Email::new(self.config.clone());
         let borrower = db::borrowers::get_user_by_id(&self.db, invoice.borrower_id.as_str())
             .await
             .context("Failed loading borrower")?
@@ -299,10 +301,9 @@ impl Manager {
         let card_details_url =
             format!("{}/cards", self.config.borrower_frontend_origin.to_owned(),);
 
-        email
+        self.notifications
             .send_moon_card_ready(borrower, card_details_url.as_str())
-            .await
-            .context("Failed to send moon-card-ready email")?;
+            .await;
 
         Ok(())
     }

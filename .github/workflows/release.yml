@@ -82,6 +82,8 @@ jobs:
           envkey_VITE_LENDER_BASE_URL: "https://lend.lendasat.com"
           envkey_VITE_BITCOIN_NETWORK: "bitcoin"
           envkey_VITE_MEMPOOL_REST_URL: "https://mempool.space"
+          envkey_VITE_TELEGRAM_BOT_URL: "https://t.me/lendasatlendernotificationbot"
+          envkey_VITE_TELEGRAM_BOT_NAME: "@lendasatlendernotificationbot"
 
       - name: Build frontend
         run: just release-frontend

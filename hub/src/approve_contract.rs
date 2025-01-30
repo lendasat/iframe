@@ -1,27 +1,34 @@
 use crate::config::Config;
 use crate::db;
-use crate::email::Email;
 use crate::mempool;
 use crate::mempool::TrackContractFunding;
 use crate::model::ContractStatus;
+use crate::notifications::Notifications;
 use crate::wallet::Wallet;
 use anyhow::Context;
 use sqlx::PgPool;
+use std::sync::Arc;
 use tokio::sync::MutexGuard;
 
-#[derive(Debug)]
+#[derive(thiserror::Error, Debug)]
 pub enum Error {
     /// Failed to interact with the database.
-    Database(anyhow::Error),
+    #[error("Failed to interact with the database.")]
+    Database(#[source] anyhow::Error),
     /// Can't do much of anything without lender Xpub.
+    #[error("Missing lender xpub")]
     MissingLenderXpub,
     /// Failed to generate contract address.
-    ContractAddress(anyhow::Error),
+    #[error("Failed to generate contract address.")]
+    ContractAddress(#[source] anyhow::Error),
     /// Referenced borrower does not exist.
+    #[error("Referenced borrower does not exist.")]
     MissingBorrower,
     /// Failed to track accepted contract using Mempool API.
-    TrackContract(anyhow::Error),
+    #[error("Failed to track accepted contract using Mempool API.")]
+    TrackContract(#[source] anyhow::Error),
     /// The contract was in an invalid state
+    #[error("The contract was in an invalid state: {status:?}")]
     InvalidApproveRequest { status: ContractStatus },
 }
 
@@ -32,6 +39,7 @@ pub async fn approve_contract(
     config: &Config,
     contract_id: String,
     lender_id: &str,
+    notifications: Arc<Notifications>,
 ) -> Result<(), Error> {
     let contract = db::contracts::load_contract_by_contract_id_and_lender_id(
         db,
@@ -99,15 +107,13 @@ pub async fn approve_contract(
         config.borrower_frontend_origin.to_owned(),
         contract.id
     );
-    let email = Email::new(config.clone());
 
     // We don't want to fail this upwards because the contract request has already been
     // approved.
     if let Err(e) = async {
-        email
+        notifications
             .send_loan_request_approved(borrower, loan_url.as_str())
-            .await
-            .context("Failed to send loan-request-approved email")?;
+            .await;
 
         db::contract_emails::mark_loan_request_approved_as_sent(db, &contract.id)
             .await
