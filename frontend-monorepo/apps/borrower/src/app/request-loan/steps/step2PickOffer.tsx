@@ -184,7 +184,7 @@ export const Step2PickOffer = () => {
   const [stableCoin, setStableCoin] = useState<StableCoin | undefined>(validCoin);
 
   // Loan Duration
-  const [loanDurationDays, setLoanDurationDays] = useState<number>(1);
+  const [loanDurationDays, setLoanDurationDays] = useState<number>(30);
   // minimum maxInterest rate
   const minInterestRate = 0.01;
   // Interest Rate
@@ -428,37 +428,6 @@ export const Step2PickOffer = () => {
               </Text>
 
               <SingleDurationSelector onDurationChange={handleDurationChange} />
-
-              {
-                /*<TextField.Root
-                size={"3"}
-                variant="surface"
-                type="number"
-                color="gray"
-                min={1}
-                max={maxRepaymentTime}
-                value={loanDurationString}
-                onChange={onLoanDurationChange}
-                className="w-full rounded-lg text-sm text-font dark:text-font-dark"
-              >
-                <TextField.Slot className="pl-0" />
-                <TextField.Slot>
-                  <Flex>
-                    <Text size={"2"} color="gray" weight={"medium"}>Month</Text>
-                    <Text
-                      size={"2"}
-                      color="gray"
-                      weight={"medium"}
-                      className={`transition-opacity ease-in-out ${
-                        loanDurationDays > 1 ? "opacity-100" : "opacity-0"
-                      } duration-300`}
-                    >
-                      s
-                    </Text>
-                  </Flex>
-                </TextField.Slot>
-              </TextField.Root>*/
-              }
             </Box>
 
             {advanceSearch && (

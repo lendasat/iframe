@@ -879,9 +879,9 @@ pub struct LoanTransaction {
 /// Origination fee when establishing a new loan depends on the loan length.
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct OriginationFee {
-    /// Loans starting from this are considered, i.e. `>=from_month`
+    /// Loans starting from this are considered, i.e. `>=from_day`
     pub from_day: i32,
-    /// Loans smaller than this are considered, i.e. `<to_month`
+    /// Loans smaller than this are considered, i.e. `<to_day`
     pub to_day: i32,
     /// Fee expressed as a number between 0 and 1, e.g. 0.01 = 1%
     #[serde(with = "rust_decimal::serde::float")]

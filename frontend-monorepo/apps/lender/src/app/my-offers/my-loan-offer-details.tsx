@@ -266,31 +266,6 @@ function MyLoanOfferDetails() {
                 </TextField.Slot>
               </TextField.Root>
             </Box>
-
-            <Flex align={"center"} justify={"start"}>
-              {/*TODO: implement update*/}
-              {/*<Button*/}
-              {/*  loading={isLoading}*/}
-              {/*  size={"3"}*/}
-              {/*  color="purple"*/}
-              {/*  disabled={loanAmount.max !== offer.loan_amount_max*/}
-              {/*      || loanAmount.min !== offer.loan_amount_min*/}
-              {/*      || loanDuration.max !== offer.duration_days_max*/}
-              {/*      || loanDuration.min !== offer.duration_days_min*/}
-              {/*      || interest !== offer.interest_rate*/}
-              {/*      || ltv !== offer.min_ltv*/}
-              {/*    ? false*/}
-              {/*    : true}*/}
-              {/*  onClick={() => {*/}
-              {/*    setIsLoading(true);*/}
-              {/*    setTimeout(() => {*/}
-              {/*      setIsLoading(false);*/}
-              {/*    }, 1000);*/}
-              {/*  }}*/}
-              {/*>*/}
-              {/*  <Text weight={"medium"} size={"2"}>Update Changes</Text>*/}
-              {/*</Button>*/}
-            </Flex>
           </Box>
         </Box>
         <Box className="p-5 xl:h-full flex flex-col items-center justify-center order-1 md:order-2">
@@ -303,16 +278,6 @@ function MyLoanOfferDetails() {
                   Loan Preview
                 </Heading>
               </Flex>
-
-              {/* Export: TODO: implement */}
-              {/*<Tooltip content="Download Preview" className="font-medium">*/}
-              {/*  <Button className="hover:bg-transparent" variant="ghost">*/}
-              {/*    <FaFileExport className="text-font" />*/}
-              {/*    <Text as="span" size={"2"} weight={"medium"} className="text-font">*/}
-              {/*      Export*/}
-              {/*    </Text>*/}
-              {/*  </Button>*/}
-              {/*</Tooltip>*/}
             </Flex>
 
             <Box className="bg-gradient-to-tr from-60% to-100% from-[#FBFAF8] to-pink-700/5 dark:from-dark-600 dark:to-dark-700 p-6 rounded-2xl flex items-center justify-center flex-1">

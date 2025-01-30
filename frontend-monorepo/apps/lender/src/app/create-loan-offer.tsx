@@ -12,6 +12,7 @@ import {
   LoanAssetChain,
   LoanAssetType,
   LtvInfoLabel,
+  ONE_YEAR,
   parseStableCoin,
   StableCoin,
   StableCoinHelper,
@@ -75,7 +76,7 @@ const CreateLoanOffer: FC = () => {
 
   const [loanDuration, setLoanDuration] = useState<DurationRange>({
     min: 7,
-    max: 180,
+    max: ONE_YEAR,
   });
 
   const handleRangeChange = (start: number, end: number) => {

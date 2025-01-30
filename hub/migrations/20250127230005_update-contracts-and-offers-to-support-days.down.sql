@@ -29,7 +29,8 @@ SET duration_months = duration_days / 30;
 
 -- Make the restored column not null after data is populated
 ALTER TABLE loan_requests
-    ALTER COLUMN duration_months SET NOT NULL;
+ALTER
+COLUMN duration_months SET NOT NULL;
 
 -- Drop the days column
 ALTER TABLE loan_requests
@@ -58,7 +59,8 @@ SET duration_months = duration_days / 30;
 
 -- Make the restored column not null after data is populated
 ALTER TABLE contracts
-    ALTER COLUMN duration_months SET NOT NULL;
+ALTER
+COLUMN duration_months SET NOT NULL;
 
 -- Drop the days column
 ALTER TABLE contracts
@@ -119,7 +121,8 @@ select b.*,
        CASE
            WHEN (SELECT COUNT(*)
                  FROM contracts
-                 WHERE borrower_id = b.id AND id NOT IN (SELECT id FROM inactive_contracts)) > 0 THEN 0
+                 WHERE borrower_id = b.id
+                   AND id NOT IN (SELECT id FROM inactive_contracts)) > 0 THEN 0
            ELSE was_referred_rate.first_time_discount_rate_referee
            END                     as first_time_discount_rate_referee
 from borrowers b

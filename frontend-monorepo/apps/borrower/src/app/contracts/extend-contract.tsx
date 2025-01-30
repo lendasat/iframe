@@ -94,7 +94,6 @@ const SelectedLoanOffer = (props: SelectedLoanOfferProps) => {
     }
   };
 
-  // TODO: fixme
   const actualInterest = props.totalInterestRate / (ONE_YEAR / props.totalDuration);
   const actualInterestUsdAmount = props.amount * actualInterest;
   const extensionFeeBtc = (props.additionalOriginationFee * props.amount) / latestPrice;

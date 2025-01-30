@@ -508,7 +508,7 @@ function ContractDetails({ contract }: DetailsProps) {
                   </Text>
                 </Flex>
               )}
-            {contract.duration_days === 12
+            {contract.duration_days === ONE_YEAR
               && (
                 <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70">
                   {(actualInterest * 100).toFixed(2)}% p.a.

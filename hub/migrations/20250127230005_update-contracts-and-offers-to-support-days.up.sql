@@ -10,16 +10,16 @@ SET duration_days_min = duration_months_min * 30,
 
 -- Make the new columns not null after data is populated
 ALTER TABLE loan_offers
-ALTER
-COLUMN duration_days_min SET NOT NULL,
     ALTER
-COLUMN duration_days_max SET NOT NULL;
+        COLUMN duration_days_min SET NOT NULL,
+    ALTER
+        COLUMN duration_days_max SET NOT NULL;
 
 -- Drop the old columns
 ALTER TABLE loan_offers
     DROP COLUMN duration_months_min,
-DROP
-COLUMN duration_months_max;
+    DROP
+        COLUMN duration_months_max;
 
 ALTER TABLE loan_requests
     ADD COLUMN duration_days integer;
@@ -54,7 +54,7 @@ SET duration_days = duration_months * 30;
 
 -- Make the new column not null after data is populated
 ALTER TABLE contracts
-ALTER COLUMN duration_days SET NOT NULL;
+    ALTER COLUMN duration_days SET NOT NULL;
 
 -- Drop the old column
 ALTER TABLE contracts
@@ -115,7 +115,8 @@ select b.*,
        CASE
            WHEN (SELECT COUNT(*)
                  FROM contracts
-                 WHERE borrower_id = b.id AND id NOT IN (SELECT id FROM inactive_contracts)) > 0 THEN 0
+                 WHERE borrower_id = b.id
+                   AND id NOT IN (SELECT id FROM inactive_contracts)) > 0 THEN 0
            ELSE was_referred_rate.first_time_discount_rate_referee
            END                     as first_time_discount_rate_referee
 from borrowers b
