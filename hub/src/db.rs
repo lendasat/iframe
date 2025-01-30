@@ -21,6 +21,7 @@ pub(crate) mod sideshift;
 pub(crate) mod telegram_bot;
 pub mod transactions;
 pub mod user_logins;
+pub mod user_stats;
 pub mod wallet_backups;
 pub mod wallet_index;
 

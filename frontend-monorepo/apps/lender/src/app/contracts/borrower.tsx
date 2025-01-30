@@ -1,7 +1,7 @@
 import { Avatar, Box, Flex, Heading, Text } from "@radix-ui/themes";
 import { Link } from "react-router-dom";
 
-interface LenderProps {
+interface BorrowerProps {
   id: string;
   name: string;
   successful_contracts: number;
@@ -10,7 +10,7 @@ interface LenderProps {
   showAvatar: boolean;
 }
 
-export function Lender({ name, id, rating, successful_contracts, failed_contracts, showAvatar }: LenderProps) {
+export function Borrower({ name, id, rating, successful_contracts, failed_contracts, showAvatar }: BorrowerProps) {
   let ratingText = (
     <Text className={"text-font dark:text-font-dark self-end"} size={"1"} weight={"light"}>
       No rating yet
@@ -26,7 +26,7 @@ export function Lender({ name, id, rating, successful_contracts, failed_contract
 
   return (
     <Box asChild>
-      <Link to={`/lender/${id}`}>
+      <Link to={`/borrower/${id}`}>
         <Flex direction={"row"} align={"center"} gap={"3"}>
           {showAvatar
             && (
@@ -41,7 +41,7 @@ export function Lender({ name, id, rating, successful_contracts, failed_contract
             <Heading
               as="h6"
               weight={"bold"}
-              size={"2"}
+              size={"1"}
               className="capitalize xl:block text-purple-600 dark:text-purple-300"
             >
               {name}

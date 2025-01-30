@@ -276,7 +276,7 @@ function LoanOffersComponent({ loanOffers, onRequest, isLoading }: LoanOffersCom
             return SortHelper.sort(interestSort, a.interest_rate, b.interest_rate);
           }).map((loanOffer, index) => (
             <div key={index}>
-              <LoanOfferComponent key={index} loanOffer={loanOffer} onRequest={onRequest} />
+              <LoanOfferComponent key={index} loanOffer={loanOffer} />
             </div>
           ))}
       </Box>

@@ -1,14 +1,16 @@
 import type { BaseHttpClientContextType } from "@frontend-monorepo/base-http-client";
 import { BaseHttpClient, BaseHttpClientContext } from "@frontend-monorepo/base-http-client";
-import type { Dispute, LenderProfile } from "@frontend-monorepo/http-client-borrower";
+import type { Dispute } from "@frontend-monorepo/http-client-borrower";
 import type { AxiosResponse } from "axios";
 import axios from "axios";
 import { createContext, useContext } from "react";
 import {
+  BorrowerStats,
   Contract,
   CreateLoanOfferRequest,
   GetLiquidationPsbtResponse,
   GetRecoveryPsbtResponse,
+  LenderStats,
   LiquidationToStableCoinPsbt,
   LoanAndContractStats,
   LoanOffer,
@@ -31,6 +33,14 @@ interface RawDispute extends Omit<Dispute, "created_at" | "updated_at"> {
 interface RawLoanOffer extends Omit<LoanOffer, "created_at" | "updated_at"> {
   created_at: string;
   updated_at: string;
+}
+
+interface LenderStatsRaw extends Omit<LenderStats, "joined_at"> {
+  joined_at: string;
+}
+
+interface BorrowerStatsRaw extends Omit<BorrowerStats, "joined_at"> {
+  joined_at: string;
 }
 
 export function allowedPagesWithoutLogin(location: string) {
@@ -382,10 +392,16 @@ export class HttpClientLender extends BaseHttpClient {
     }
   }
 
-  async getLenderProfile(id: string): Promise<LenderProfile> {
+  async getLenderProfile(id: string): Promise<LenderStats> {
     try {
-      const [response] = await Promise.all([this.httpClient.get(`/api/lenders/${id}`)]);
-      return response.data;
+      const response: AxiosResponse<LenderStatsRaw> = await this.httpClient.get(`/api/lenders/${id}`);
+
+      const joinedAt = parseRFC3339Date(response.data.joined_at);
+      if (joinedAt == null || joinedAt == null) {
+        throw new Error("Invalid date");
+      }
+
+      return { ...response.data, joined_at: joinedAt };
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         const message = error.response.data.message;
@@ -401,10 +417,16 @@ export class HttpClientLender extends BaseHttpClient {
     }
   }
 
-  async getBorrowerProfile(id: string): Promise<LenderProfile> {
+  async getBorrowerProfile(id: string): Promise<BorrowerStats> {
     try {
-      const [response] = await Promise.all([this.httpClient.get(`/api/borrowers/${id}`)]);
-      return response.data;
+      const response: AxiosResponse<BorrowerStatsRaw> = await this.httpClient.get(`/api/borrowers/${id}`);
+
+      const joinedAt = parseRFC3339Date(response.data.joined_at);
+      if (joinedAt == null || joinedAt == null) {
+        throw new Error("Invalid date");
+      }
+
+      return { ...response.data, joined_at: joinedAt };
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         const message = error.response.data.message;

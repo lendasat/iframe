@@ -1,82 +1,99 @@
-use crate::db;
-use crate::routes::borrower::auth::jwt_auth::auth;
 use crate::routes::AppState;
-use crate::routes::ErrorResponse;
+use crate::user_stats::BorrowerStats;
+use crate::user_stats::LenderStats;
+use axum::extract::FromRequest;
 use axum::extract::Path;
 use axum::extract::State;
 use axum::http::StatusCode;
-use axum::middleware;
 use axum::response::IntoResponse;
+use axum::response::Response;
 use axum::routing::get;
 use axum::Json;
 use axum::Router;
 use serde::Serialize;
 use std::sync::Arc;
 
-pub(crate) fn router(app_state: Arc<AppState>) -> Router {
+pub(crate) fn router() -> Router<Arc<AppState>> {
     Router::new()
-        .route("/api/lenders/:id", get(get_lender_profile))
-        .route("/api/borrowers/:id", get(get_borrower_profile))
-        .route_layer(middleware::from_fn_with_state(app_state.clone(), auth))
-        .with_state(app_state)
+        .route("/api/lenders/:id", get(get_lender_stats))
+        .route("/api/borrowers/:id", get(get_borrower_stats))
 }
 
-#[derive(Serialize, Debug)]
-pub struct Profile {
-    name: String,
-    id: String,
+pub enum Error {
+    /// Failed to interact with the database.
+    Database(sqlx::Error),
 }
 
-pub async fn get_lender_profile(
-    State(data): State<Arc<AppState>>,
-    Path(lender_id): Path<String>,
-) -> impl IntoResponse {
-    let maybe_lender = db::lenders::get_user_by_id(&data.db, lender_id.as_str())
-        .await
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
+// Create our own JSON extractor by wrapping `axum::Json`. This makes it easy to override the
+// rejection and provide our own which formats errors to match our application.
+//
+// `axum::Json` responds with plain text if the input is invalid.
+#[derive(Debug, FromRequest)]
+#[from_request(via(Json), rejection(Error))]
+pub struct AppJson<T>(T);
 
-    match maybe_lender {
-        None => {
-            let error_response = ErrorResponse {
-                message: "Lender not found".to_string(),
-            };
-            Err((StatusCode::NOT_FOUND, Json(error_response)))
-        }
-        Some(lender) => Ok(Json(Profile {
-            name: lender.name,
-            id: lender.id,
-        })),
+impl<T> IntoResponse for AppJson<T>
+where
+    Json<T>: IntoResponse,
+{
+    fn into_response(self) -> Response {
+        Json(self.0).into_response()
     }
 }
 
-pub async fn get_borrower_profile(
+/// Tell `axum` how [`AppError`] should be converted into a response.
+///
+/// This is also a convenient place to log errors.
+impl IntoResponse for Error {
+    fn into_response(self) -> Response {
+        /// How we want error responses to be serialized.
+        #[derive(Serialize)]
+        struct ErrorResponse {
+            message: String,
+        }
+
+        let (status, message) = match self {
+            Error::Database(e) => {
+                // If we configure `tracing` properly, we don't need to add extra context here!
+                tracing::error!("Database error: {e:#}");
+
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
+        };
+
+        (status, AppJson(ErrorResponse { message })).into_response()
+    }
+}
+
+pub async fn get_lender_stats(
     State(data): State<Arc<AppState>>,
     Path(lender_id): Path<String>,
-) -> impl IntoResponse {
-    let maybe_profile = db::borrowers::get_user_by_id(&data.db, lender_id.as_str())
+) -> Result<AppJson<LenderStats>, Error> {
+    let lender_stats = crate::user_stats::get_lender_stats(&data.db, lender_id.as_str())
         .await
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
+        .map_err(Error::from)?;
 
-    match maybe_profile {
-        None => {
-            let error_response = ErrorResponse {
-                message: "Borrower not found".to_string(),
-            };
-            Err((StatusCode::NOT_FOUND, Json(error_response)))
+    Ok(AppJson(lender_stats))
+}
+
+impl From<crate::user_stats::Error> for Error {
+    fn from(value: crate::user_stats::Error) -> Self {
+        match value {
+            crate::user_stats::Error::Database(error) => Error::Database(error),
         }
-        Some(lender) => Ok(Json(Profile {
-            name: lender.name,
-            id: lender.id,
-        })),
     }
+}
+
+pub async fn get_borrower_stats(
+    State(data): State<Arc<AppState>>,
+    Path(borrower_id): Path<String>,
+) -> Result<AppJson<BorrowerStats>, Error> {
+    let borrower_stats = crate::user_stats::get_borrower_stats(&data.db, borrower_id.as_str())
+        .await
+        .map_err(Error::from)?;
+
+    Ok(AppJson(borrower_stats))
 }
