@@ -96,7 +96,7 @@ async fn create_contract_close_to_expiry_check(
                                                     tracing::error!(
                                                         contract_id=contract_info.contract_id,
                                                         borrower_id=contract_info.borrower_id,
-                                                        "Failed to send email about close to expiry contract. Error: {e:?}");
+                                                        "Failed to send email about close to expiry contract. Error: {e:#}");
                                                 }
                                             }
                                             Ok(None) => tracing::error!(

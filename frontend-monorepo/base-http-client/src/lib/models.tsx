@@ -12,7 +12,7 @@ export interface User {
   personal_referral_code?: string;
   first_time_discount_rate: number;
   created_at: Date;
-  // This token currently only exists for lenders
+  // TODO: This token currently only exists for lenders
   personal_telegram_token?: string;
 }
 

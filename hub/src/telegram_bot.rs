@@ -175,6 +175,7 @@ pub enum NotificationKind {
     Collateralized,
     Repaid,
     Defaulted,
+    LiquidationNotice,
     RequestAutoApproved,
 }
 
@@ -212,6 +213,12 @@ impl xtra::Handler<Notification> for TelegramBot {
             NotificationKind::Defaulted => {
                 format!(
                     "A loan has been defaulted. Please log in to liquidate the contract. \n\n[Contract details]({})",
+                    url,
+                )
+            }
+            NotificationKind::LiquidationNotice => {
+                format!(
+                    "A loan is under collateralized. Please log in to liquidate the contract. \n\n[Contract details]({})",
                     url,
                 )
             }

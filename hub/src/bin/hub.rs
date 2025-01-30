@@ -86,7 +86,7 @@ async fn main() -> Result<()> {
     let (telegram_bot_addr, telegram_bot_mailbox) = xtra::Mailbox::unbounded();
 
     let maybe_telegram_bot = config
-        .telegram_bot_borrower
+        .telegram_bot_lender
         .clone()
         .map(|token| TelegramBot::new(token.as_str(), db.clone()));
 

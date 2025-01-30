@@ -121,6 +121,18 @@ impl Notifications {
         contract: Contract,
         contract_url: &str,
     ) -> Result<(), Error> {
+        if let Some(tgb) = &self.telegram_bot {
+            tgb.send(crate::telegram_bot::Notification {
+                lender_id: lender.id.clone(),
+                url: contract_url.to_string(),
+                kind: crate::telegram_bot::NotificationKind::LiquidationNotice,
+            })
+            .await
+            .context("Failed")
+            .map_err(Error::Telegram)?
+            .map_err(Error::Telegram)?
+        }
+
         self.email
             .send_liquidation_notice_lender(lender, contract, contract_url)
             .await

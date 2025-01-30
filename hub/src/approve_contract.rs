@@ -13,26 +13,26 @@ use tokio::sync::MutexGuard;
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     /// Failed to interact with the database.
-    #[error("Failed to interact with the database. {0}")]
-    Database(anyhow::Error),
+    #[error("Failed to interact with the database.")]
+    Database(#[source] anyhow::Error),
     /// Can't do much of anything without lender Xpub.
     #[error("Missing lender xpub")]
     MissingLenderXpub,
     /// Failed to generate contract address.
-    #[error("Failed to generate contract address. {0}")]
-    ContractAddress(anyhow::Error),
+    #[error("Failed to generate contract address.")]
+    ContractAddress(#[source] anyhow::Error),
     /// Referenced borrower does not exist.
     #[error("Referenced borrower does not exist.")]
     MissingBorrower,
     /// Failed to track accepted contract using Mempool API.
-    #[error("Failed to track accepted contract using Mempool API. {0}")]
-    TrackContract(anyhow::Error),
+    #[error("Failed to track accepted contract using Mempool API.")]
+    TrackContract(#[source] anyhow::Error),
     /// The contract was in an invalid state
     #[error("The contract was in an invalid state: {status:?}")]
     InvalidApproveRequest { status: ContractStatus },
     /// Notifying the user failed
-    #[error("Notifying the user failed. {0}")]
-    Notification(crate::notifications::Error),
+    #[error("Failed to notify the user.")]
+    Notification(#[source] crate::notifications::Error),
 }
 
 pub async fn approve_contract(
