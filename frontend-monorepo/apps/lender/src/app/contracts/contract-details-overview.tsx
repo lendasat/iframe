@@ -12,6 +12,7 @@ import {
 import {
   CurrencyFormatter,
   formatCurrency,
+  getFormatedStringFromDays,
   InterestRateInfoLabel,
   LtvInfoLabel,
   ONE_YEAR,
@@ -316,8 +317,7 @@ function ContractDetails({ contract }: DetailsProps) {
               Duration
             </Text>
             <Text className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
-              {/*TODO: think about how to present this to the user */}
-              {durationDays} days
+              {getFormatedStringFromDays(durationDays)}
             </Text>
           </Flex>
           <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />

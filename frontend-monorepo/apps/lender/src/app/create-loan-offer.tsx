@@ -7,6 +7,7 @@ import {
 } from "@frontend-monorepo/http-client-lender";
 import {
   formatCurrency,
+  getFormatedStringFromDays,
   InterestRateInfoLabel,
   LoanAddressInputField,
   LoanAssetChain,
@@ -482,8 +483,7 @@ const CreateLoanOffer: FC = () => {
               <Flex align={"center"} justify={"between"} my={"4"}>
                 <Text as="label" size={"2"} className="text-font/50 dark:text-font-dark/50">Duration</Text>
                 <Text size={"2"} className="text-font/80 dark:text-font-dark/80 font-semibold">
-                  {/*TODO: think about how to present this to the user */}
-                  {loanDuration.min} ~ {loanDuration.max} Days
+                  {getFormatedStringFromDays(loanDuration.min)} - {getFormatedStringFromDays(loanDuration.max)}
                 </Text>
               </Flex>
               <Separator size={"4"} color={"gray"} className="opacity-50" />

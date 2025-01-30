@@ -1,7 +1,7 @@
 import { ContractStatus } from "@frontend-monorepo/http-client-borrower";
 import { type Contract, contractStatusToLabelString, LiquidationStatus } from "@frontend-monorepo/http-client-lender";
 import { actionFromStatus } from "@frontend-monorepo/http-client-lender";
-import { CurrencyFormatter, LtvProgressBar, usePrice } from "@frontend-monorepo/ui-shared";
+import { CurrencyFormatter, getFormatedStringFromDays, LtvProgressBar, usePrice } from "@frontend-monorepo/ui-shared";
 import { Badge, Box, Button, DropdownMenu, Flex, Grid, Heading, Text } from "@radix-ui/themes";
 import { BsThreeDotsVertical } from "react-icons/bs";
 import { useNavigate } from "react-router-dom";
@@ -185,8 +185,7 @@ export const ClosedContracts = ({ contracts }: ClosedContractsProps) => {
                             Duration:
                           </Text>
                           <Text className="capitalize text-font dark:text-font-dark" size={"3"}>
-                            {/*TODO: think about how to present this to the user */}
-                            {contract.duration_days} days
+                            {getFormatedStringFromDays(contract.duration_days)}
                           </Text>
                         </Flex>
                       </Box>

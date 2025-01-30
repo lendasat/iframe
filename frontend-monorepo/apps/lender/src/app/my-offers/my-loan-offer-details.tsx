@@ -1,7 +1,7 @@
 import { faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { LoanOfferStatus, useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
-import { formatCurrency, StableCoinHelper } from "@frontend-monorepo/ui-shared";
+import { formatCurrency, getFormatedStringFromDays, StableCoinHelper } from "@frontend-monorepo/ui-shared";
 import * as Checkbox from "@radix-ui/react-checkbox";
 import { CheckIcon } from "@radix-ui/react-icons";
 import { Box, Button, Callout, Dialog, Flex, Grid, Heading, Separator, Text, TextField } from "@radix-ui/themes";
@@ -335,8 +335,8 @@ function MyLoanOfferDetails() {
                         Loan Duration
                       </Text>
                       <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
-                        {/*TODO: think about how to present this to the user */}
-                        {offer.duration_days_min} - {offer.duration_days_max} days
+                        {getFormatedStringFromDays(offer.duration_days_min)} -{" "}
+                        {getFormatedStringFromDays(offer.duration_days_max)}
                       </Text>
                     </Flex>
                     <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />

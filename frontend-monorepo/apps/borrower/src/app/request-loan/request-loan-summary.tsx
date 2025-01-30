@@ -5,6 +5,7 @@ import { findBestOriginationFee, Integration, useBorrowerHttpClient } from "@fro
 import type { LoanOffer } from "@frontend-monorepo/http-client-borrower";
 import {
   formatCurrency,
+  getFormatedStringFromDays,
   LoanAddressInputField,
   LtvInfoLabel,
   ONE_YEAR,
@@ -346,8 +347,7 @@ export function RequestLoanSummaryInner({ loanOffer, loanFilter }: RequestLoanSu
                     <Flex justify={"between"} align={"center"}>
                       <Text className="text-xs font-medium text-font/60">Duration</Text>
                       <Text className="text-[13px] font-semibold text-black/70 capitalize">
-                        {/*TODO: think about how to present this to the user */}
-                        {loanDurationDays} Days
+                        {getFormatedStringFromDays(loanDurationDays)}
                       </Text>
                     </Flex>
                     <Flex justify={"between"} align={"center"}>

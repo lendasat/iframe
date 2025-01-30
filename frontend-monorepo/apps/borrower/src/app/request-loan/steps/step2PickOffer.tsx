@@ -7,6 +7,7 @@ import type { LoanOffer, UserCardDetail } from "@frontend-monorepo/http-client-b
 import {
   AbbreviationExplanationInfo,
   formatCurrency,
+  getFormatedStringFromDays,
   InterestRateInfoLabel,
   LiquidationPriceInfoLabel,
   LoanAddressInputField,
@@ -375,6 +376,7 @@ export const Step2PickOffer = () => {
 
     setLoanAmountStringInput(offerWithSmallestAmount.loan_amount_min.toString());
     setLoanAmount(offerWithSmallestAmount.loan_amount_min);
+    console.log(`offerWithSmallestAmount.duration_days_min${offerWithSmallestAmount.duration_days_min}`);
     setLoanDurationDays(offerWithSmallestAmount.duration_days_min);
   }, [loading, maybeAvailableOffers, offerWithSmallestAmount]);
 
@@ -556,8 +558,7 @@ export const Step2PickOffer = () => {
               <>
                 <Heading size="4" mb="4" className="text-font dark:text-font-dark">
                   Best match to borrow <strong>{formatCurrency(loanAmount || 0)}</strong> for{" "}
-                  {/*TODO: think about how to present this to the user */}
-                  <strong>{loanDurationDays}</strong> days
+                  {getFormatedStringFromDays(loanDurationDays)}
                 </Heading>
                 <Box className="w-full">
                   <LoanSearched
@@ -614,9 +615,9 @@ export const Step2PickOffer = () => {
                           <FaInfo size={"18"} />
                         </Callout.Icon>
                         <Callout.Text>
-                          {/*TODO: think about how to present this to the user */}
                           Best available offer starts from {formatCurrency(offerWithSmallestAmount.loan_amount_min)}
-                          {"  "}with a minimum duration of {offerWithSmallestAmount.duration_days_min} days.
+                          {"  "}with a minimum duration of{" "}
+                          {getFormatedStringFromDays(offerWithSmallestAmount.duration_days_min)}.
                           <br />
                         </Callout.Text>
                       </Callout.Root>
