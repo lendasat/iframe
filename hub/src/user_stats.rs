@@ -86,7 +86,7 @@ pub async fn get_borrower_stats(
 fn calculate_rating(positive_contracts: i64, negative_contracts: i64) -> Decimal {
     let positive = Decimal::from(positive_contracts);
     let negative = Decimal::from(negative_contracts);
-    if positive == Decimal::ZERO {
+    if positive + negative == Decimal::ZERO {
         return Decimal::ZERO;
     }
 

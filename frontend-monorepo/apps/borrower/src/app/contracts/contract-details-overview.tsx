@@ -286,12 +286,6 @@ function ContractDetails({ contract }: DetailsProps) {
           <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70 shrink-0">
             Lender
           </Text>
-
-          {/*<Link to={`/lender/${contract.lender.id}`}>*/}
-          {/*  <Text size={"2"} weight={"medium"} className="text-end text-font/70 dark:text-font-dark/70">*/}
-          {/*    {contract.lender.name}*/}
-          {/*  </Text>*/}
-          {/*</Link>*/}
           <Lender {...contract.lender} showAvatar={false} />
         </Flex>
         <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />

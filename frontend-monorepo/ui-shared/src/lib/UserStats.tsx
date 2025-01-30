@@ -23,9 +23,14 @@ export function UserStats({
   );
   if (successful_contracts + failed_contracts > 0) {
     ratingText = (
-      <Text className={"text-font dark:text-font-dark self-end"} size={"2"} weight={"bold"}>
-        {(rating * 100).toFixed(1)}%
-      </Text>
+      <Flex gap={"1"}>
+        <Text className={"text-font dark:text-font-dark self-end"} size={"2"} weight={"bold"}>
+          {(rating * 100).toFixed(1)}% success,
+        </Text>
+        <Text className={"text-font dark:text-font-dark self-end"} size={"2"} weight={"light"}>
+          {successful_contracts + failed_contracts} contracts
+        </Text>
+      </Flex>
     );
   }
 

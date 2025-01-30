@@ -41,7 +41,7 @@ export function Lender({ name, id, rating, successful_contracts, failed_contract
             <Heading
               as="h6"
               weight={"bold"}
-              size={"1"}
+              size={"2"}
               className="capitalize xl:block text-purple-600 dark:text-purple-300"
             >
               {name}
