@@ -107,7 +107,11 @@ impl xtra::Handler<Register> for TelegramBot {
 
                 build_message(
                     message.id.clone(),
-                    format!("Welcome, {}. Registration was successful", token.lender_name).as_str(),
+                    format!(
+                        "Welcome, {}. Registration was successful",
+                        token.lender_name
+                    )
+                    .as_str(),
                 )
             }
             Err(error) => {
