@@ -1,4 +1,5 @@
 use crate::config::Config;
+use crate::routes::borrower::auth::jwt_auth::auth;
 use crate::routes::price_feed_ws;
 use crate::routes::profiles;
 use crate::routes::AppState;
@@ -11,6 +12,7 @@ use axum::http::header::CONTENT_TYPE;
 use axum::http::header::ORIGIN;
 use axum::http::HeaderValue;
 use axum::http::Method;
+use axum::middleware;
 use axum::Router;
 pub use contracts::ClaimCollateralPsbt;
 pub use contracts::ClaimTx;
@@ -43,9 +45,13 @@ pub async fn spawn_borrower_server(
         .merge(contracts::router(app_state.clone()))
         .merge(dispute::router(app_state.clone()))
         .merge(price_feed_ws::router(app_state.clone()))
-        .merge(profiles::router(app_state.clone()))
+        .merge(
+            profiles::router()
+                .route_layer(middleware::from_fn_with_state(app_state.clone(), auth))
+                .with_state(app_state.clone()),
+        )
         .merge(loan_requests::router(app_state.clone()))
-        .merge(cards::router(app_state))
+        .merge(cards::router(app_state.clone()))
         // This is a relative path on the filesystem, which means, when deploying `hub` we will need
         // to have the frontend in this directory. Ideally we would bundle the frontend with
         // the binary, but so far we failed at handling requests which are meant to be handled by

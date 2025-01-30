@@ -103,11 +103,6 @@ export enum LiquidationStatus {
   FirstMarginCall = "FirstMarginCall",
 }
 
-export interface LenderProfile {
-  id: string;
-  name: string;
-}
-
 export interface BorrowerProfile {
   id: string;
   name: string;
@@ -141,7 +136,7 @@ export interface Contract {
   loan_asset_chain: LoanAssetChain;
   status: ContractStatus;
   liquidation_status: LiquidationStatus;
-  lender: LenderProfile;
+  lender: LenderStats;
   borrower_pk: string;
   borrower_btc_address: string;
   loan_repayment_address: string;
@@ -162,7 +157,7 @@ export interface ClaimCollateralPsbtResponse {
 
 export interface LoanOffer {
   id: string;
-  lender: LenderProfile;
+  lender: LenderStats;
   min_ltv: number;
   interest_rate: number;
   loan_amount_min: number;
@@ -338,4 +333,22 @@ export interface Fee {
   type: string;
   amount: number;
   fee_description: string;
+}
+
+export interface LenderStats {
+  id: string;
+  name: string;
+  successful_contracts: number;
+  failed_contracts: number;
+  rating: number;
+  joined_at: Date;
+}
+
+export interface BorrowerStats {
+  id: string;
+  name: string;
+  successful_contracts: number;
+  failed_contracts: number;
+  rating: number;
+  joined_at: Date;
 }

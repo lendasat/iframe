@@ -22,6 +22,8 @@ use crate::routes::borrower::auth::jwt_auth;
 use crate::routes::user_connection_details_middleware;
 use crate::routes::user_connection_details_middleware::UserConnectionDetails;
 use crate::routes::AppState;
+use crate::user_stats;
+use crate::user_stats::LenderStats;
 use crate::utils::calculate_liquidation_price;
 use anyhow::anyhow;
 use anyhow::Context;
@@ -631,7 +633,7 @@ pub struct Contract {
     pub borrower_loan_address: String,
     pub contract_address: Option<String>,
     pub loan_repayment_address: String,
-    pub lender: LenderProfile,
+    pub lender: LenderStats,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
     #[serde(with = "time::serde::rfc3339")]
@@ -647,12 +649,6 @@ pub struct Contract {
     pub liquidation_price: Decimal,
     pub extends_contract: Option<String>,
     pub extended_by_contract: Option<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct LenderProfile {
-    pub(crate) id: String,
-    pub(crate) name: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -737,6 +733,10 @@ async fn map_to_api_contract(
 
     let new_offer = offer;
 
+    let lender_stats = user_stats::get_lender_stats(&data.db, lender.id.as_str())
+        .await
+        .map_err(Error::from)?;
+
     let contract = Contract {
         id: contract.id,
         loan_amount: contract.loan_amount,
@@ -756,10 +756,7 @@ async fn map_to_api_contract(
             .contract_address
             .map(|c| c.assume_checked().to_string()),
         loan_repayment_address: new_offer.loan_repayment_address,
-        lender: LenderProfile {
-            id: contract.lender_id,
-            name: lender.name,
-        },
+        lender: lender_stats,
         created_at: contract.created_at,
         updated_at: contract.updated_at,
         repaid_at,
@@ -1252,6 +1249,14 @@ impl From<discounted_origination_fee::Error> for Error {
             discounted_origination_fee::Error::Database(sql_error) => {
                 Error::Database(anyhow!(sql_error))
             }
+        }
+    }
+}
+
+impl From<user_stats::Error> for Error {
+    fn from(value: user_stats::Error) -> Self {
+        match value {
+            user_stats::Error::Database(e) => Error::Database(anyhow!(e)),
         }
     }
 }

@@ -27,11 +27,6 @@ export enum ContractStatus {
 
 export const ALL_CONTRACT_STATUSES = Object.values(ContractStatus) as ContractStatus[];
 
-export interface BorrowerProfile {
-  id: string;
-  name: string;
-}
-
 export interface Contract {
   id: string;
   loan_amount: number;
@@ -47,7 +42,7 @@ export interface Contract {
   initial_ltv: number;
   status: ContractStatus;
   liquidation_status: LiquidationStatus;
-  borrower: BorrowerProfile;
+  borrower: BorrowerStats;
   borrower_pk: string;
   borrower_btc_address: string;
   loan_repayment_address: string;
@@ -85,7 +80,7 @@ export enum LoanOfferStatus {
 
 export interface LoanOffer {
   id: string;
-  lender: LenderProfile;
+  lender: BorrowerStats;
   min_ltv: number;
   interest_rate: number;
   loan_amount_min: number;
@@ -230,16 +225,6 @@ export interface Dispute {
   updated_at: Date;
 }
 
-export interface LenderProfile {
-  id: string;
-  name: string;
-}
-
-export interface BorrowerProfile {
-  id: string;
-  name: string;
-}
-
 export enum TransactionType {
   Funding = "Funding",
   Dispute = "Dispute",
@@ -306,4 +291,22 @@ export interface ContractStats {
   duration_days: number;
   interest_rate: number;
   created_at: string;
+}
+
+export interface LenderStats {
+  id: string;
+  name: string;
+  successful_contracts: number;
+  failed_contracts: number;
+  rating: number;
+  joined_at: Date;
+}
+
+export interface BorrowerStats {
+  id: string;
+  name: string;
+  successful_contracts: number;
+  failed_contracts: number;
+  rating: number;
+  joined_at: Date;
 }

@@ -29,6 +29,7 @@ import { FaInfoCircle } from "react-icons/fa";
 import { FaCopy } from "react-icons/fa6";
 import { IoMdCloudDownload } from "react-icons/io";
 import { Await, Link, useParams } from "react-router-dom";
+import { Lender } from "../request-loan/lender";
 import { AddCollateralModal } from "./add-collateral-modal";
 import { collateralForStatus } from "./collateralForStatus";
 import { CollateralContractDetails } from "./collateralize-contract";
@@ -286,11 +287,12 @@ function ContractDetails({ contract }: DetailsProps) {
             Lender
           </Text>
 
-          <Link to={`/profile/${contract.lender.id}`}>
-            <Text size={"2"} weight={"medium"} className="text-end text-font/70 dark:text-font-dark/70">
-              {contract.lender.name}
-            </Text>
-          </Link>
+          {/*<Link to={`/lender/${contract.lender.id}`}>*/}
+          {/*  <Text size={"2"} weight={"medium"} className="text-end text-font/70 dark:text-font-dark/70">*/}
+          {/*    {contract.lender.name}*/}
+          {/*  </Text>*/}
+          {/*</Link>*/}
+          <Lender {...contract.lender} showAvatar={false} />
         </Flex>
         <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
         <Flex gap={"5"} align={"start"} justify={"between"}>

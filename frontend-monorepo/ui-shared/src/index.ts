@@ -40,3 +40,4 @@ export * from './lib/models';
 export * from './lib/auth/upgrade-to-pake';
 export * from './lib/auth/upgrade-to-pake-form';
 export * from './lib/components/mnemonic';
+export * from './lib/UserStats';

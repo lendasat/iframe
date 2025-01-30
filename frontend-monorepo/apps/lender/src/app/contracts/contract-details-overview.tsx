@@ -27,6 +27,7 @@ import { FaCopy, FaInfoCircle } from "react-icons/fa";
 import { IoMdCloudDownload } from "react-icons/io";
 import { Await, Link, useNavigate, useParams } from "react-router-dom";
 import { ExpandableDisputeCard } from "../disputes/dispute-card";
+import { Borrower } from "./borrower";
 import { ContractDefaulted } from "./contract-defaulted";
 import { ContractRecovery } from "./contract-recovery";
 import { ContractRequested } from "./contract-requested";
@@ -188,7 +189,7 @@ function ContractDetails({ contract }: DetailsProps) {
             <Box className="max-w-sm text-end">
               <div className="flex flex-col">
                 <Text size={"2"} weight={"medium"} className="break-all text-font dark:text-font-dark">
-                  {contract.borrower.name}
+                  <Borrower {...contract.borrower} showAvatar={false} />
                 </Text>
               </div>
             </Box>

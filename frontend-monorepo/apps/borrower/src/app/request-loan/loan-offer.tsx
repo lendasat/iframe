@@ -6,16 +6,16 @@ import { Lender } from "./lender";
 
 interface LoanOfferProps {
   loanOffer: LoanOffer;
-  onRequest: (loanOffer: LoanOffer) => void;
 }
 
-export function LoanOfferComponent({ loanOffer, onRequest }: LoanOfferProps) {
+export function LoanOfferComponent({ loanOffer }: LoanOfferProps) {
   const coin = StableCoinHelper.mapFromBackend(loanOffer.loan_asset_chain, loanOffer.loan_asset_type);
+
   return (
     <Box className="pl-5 pr-6 md:pl-7 md:pr-8 py-3 border-b border-black/5 flex md:gap-2 items-center dark:border-dark">
       <Grid className="grid-cols-4 md:grid-cols-6 xl:grid-cols-7 items-center grow text-font dark:text-font-dark">
         <Box className="col-span-1 xl:col-span-2">
-          <Lender {...loanOffer.lender} />
+          <Lender {...loanOffer.lender} showAvatar={true} />
         </Box>
         <Box className="flex justify-center col-span-2 md:col-span-1">
           <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>

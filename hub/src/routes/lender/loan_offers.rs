@@ -6,9 +6,10 @@ use crate::model::LoanAssetChain;
 use crate::model::LoanAssetType;
 use crate::model::LoanOfferStatus;
 use crate::model::OriginationFee;
-use crate::routes::borrower::contracts::LenderProfile;
 use crate::routes::lender::auth;
 use crate::routes::lender::AppState;
+use crate::user_stats;
+use crate::user_stats::LenderStats;
 use anyhow::Context;
 use axum::extract::Path;
 use axum::extract::State;
@@ -34,51 +35,38 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
     Router::new()
         .route(
             "/api/my-offers",
-            get(get_loan_offers_by_lender).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                auth::jwt_auth::auth,
-            )),
+            get(get_loan_offers_by_lender)
+                .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
         )
         .route(
             "/api/my-offers/:id",
-            get(get_loan_offer_by_lender_and_offer_id).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                auth::jwt_auth::auth,
-            )),
+            get(get_loan_offer_by_lender_and_offer_id)
+                .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
         )
         .route(
             "/api/my-offers/:id",
-            delete(delete_loan_offer_by_lender_and_offer_id).route_layer(
-                middleware::from_fn_with_state(app_state.clone(), auth::jwt_auth::auth),
-            ),
+            delete(delete_loan_offer_by_lender_and_offer_id)
+                .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
         )
         .route(
             "/api/my-offers/create",
-            post(create_loan_offer).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                auth::jwt_auth::auth,
-            )),
+            post(create_loan_offer)
+                .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
         )
         .route(
             "/api/offers",
-            get(get_loan_offers).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                auth::jwt_auth::auth,
-            )),
+            get(get_loan_offers)
+                .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
         )
         .route(
             "/api/offers/:id",
-            get(get_loan_offer_by_id).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                auth::jwt_auth::auth,
-            )),
+            get(get_loan_offer_by_id)
+                .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
         )
         .route(
             "/api/offers/stats",
-            get(get_latest_stats).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                auth::jwt_auth::auth,
-            )),
+            get(get_latest_stats)
+                .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
         )
         .with_state(app_state)
 }
@@ -156,12 +144,18 @@ pub async fn create_loan_offer(
 
     let origination_fee = data.config.origination_fee.clone();
 
+    let lender_stats = user_stats::get_lender_stats(&data.db, lender.id.as_str())
+        .await
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Database error: {:?}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
+
     let offer = LoanOffer {
         id: offer.id,
-        lender: LenderProfile {
-            id: lender.id,
-            name: lender.name,
-        },
+        lender: lender_stats,
         name: offer.name,
         min_ltv: offer.min_ltv,
         interest_rate: offer.interest_rate,
@@ -187,7 +181,7 @@ pub async fn create_loan_offer(
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct LoanOffer {
     pub id: String,
-    pub lender: LenderProfile,
+    pub lender: LenderStats,
     pub name: String,
     #[serde(with = "rust_decimal::serde::float")]
     pub min_ltv: Decimal,
@@ -251,12 +245,18 @@ pub async fn get_loan_offers_by_lender(
 
         let origination_fee = data.config.origination_fee.clone();
 
+        let lender_stats = user_stats::get_lender_stats(&data.db, lender.id.as_str())
+            .await
+            .map_err(|error| {
+                let error_response = ErrorResponse {
+                    message: format!("Database error: {:?}", error),
+                };
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+            })?;
+
         let offer = LoanOffer {
             id: offer.id,
-            lender: LenderProfile {
-                id: lender.id,
-                name: lender.name,
-            },
+            lender: lender_stats,
             name: offer.name,
             min_ltv: offer.min_ltv,
             interest_rate: offer.interest_rate,
@@ -318,12 +318,18 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
 
     let origination_fee = data.config.origination_fee.clone();
 
+    let lender_stats = user_stats::get_lender_stats(&data.db, lender.id.as_str())
+        .await
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Database error: {:?}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
+
     let loan = LoanOffer {
         id: offer.id,
-        lender: LenderProfile {
-            id: lender.id,
-            name: lender.name,
-        },
+        lender: lender_stats,
         name: offer.name,
         min_ltv: offer.min_ltv,
         interest_rate: offer.interest_rate,
@@ -379,12 +385,18 @@ pub async fn get_loan_offers(
 
         let origination_fee = data.config.origination_fee.clone();
 
+        let lender_stats = user_stats::get_lender_stats(&data.db, lender.id.as_str())
+            .await
+            .map_err(|error| {
+                let error_response = ErrorResponse {
+                    message: format!("Database error: {:?}", error),
+                };
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+            })?;
+
         ret.push(LoanOffer {
             id: offer.id,
-            lender: LenderProfile {
-                id: lender.id,
-                name: lender.name,
-            },
+            lender: lender_stats,
             name: offer.name,
             min_ltv: offer.min_ltv,
             interest_rate: offer.interest_rate,
@@ -446,12 +458,18 @@ pub async fn get_loan_offer_by_id(
 
     let origination_fee = data.config.origination_fee.clone();
 
+    let lender_stats = user_stats::get_lender_stats(&data.db, lender.id.as_str())
+        .await
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Database error: {:?}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
+
     let loan = LoanOffer {
         id: offer.id,
-        lender: LenderProfile {
-            id: lender.id,
-            name: lender.name,
-        },
+        lender: lender_stats,
         name: offer.name,
         min_ltv: offer.min_ltv,
         interest_rate: offer.interest_rate,
