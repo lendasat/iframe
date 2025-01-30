@@ -109,7 +109,7 @@ impl xtra::Handler<Register> for TelegramBot {
 
                 build_message(
                     message.id.clone(),
-                    format!("Welcome {}. Registration was successful", token.lender_name).as_str(),
+                    format!("Welcome, {}. Registration was successful", token.lender_name).as_str(),
                 )
             }
             Err(error) => {
@@ -188,31 +188,31 @@ impl xtra::Handler<Notification> for TelegramBot {
         let text = match message.kind {
             NotificationKind::NewLoanRequest => {
                 format!(
-                    "A user requested a loan from you. \n \n[Contract details]({})",
+                    "You have received a new loan request! \n\nApprove or reject the request [here]({})",
                     url,
                 )
             }
             NotificationKind::RequestAutoApproved => {
                 format!(
-                    "A user requested a loan from you. \nWe auto-approved this request for you according to your settings. \n\nContract details [here]({})",
+                    "You have received a new loan request! \nThe request was automatically approved, as per your configuration. \n\nThe contract details can be found [here]({})",
                     url,
                 )
             }
             NotificationKind::Collateralized => {
                 format!(
-                    "A loan has been funded. Please don't let the borrower hanging and disburse the funds. \n\n[Contract details]({})",
+                    "A borrower has deposited the Bitcoin collateral for one of your loans. It's your turn to disburse the funds. \n\nYou can find the borrower's loan address [here]({})",
                     url,
                 )
             }
             NotificationKind::Repaid => {
                 format!(
-                    "A loan has been repaid. Please don't let the borrower hanging and release the funds. \n\n[Contract details]({})",
+                    "One of your loans has been repaid according to the borrower. You must confirm the repayment in order to release the borrower's collateral. \n\nConfirm the repayment [here]({})",
                     url,
                 )
             }
             NotificationKind::Defaulted => {
                 format!(
-                    "A loan has been defaulted. Please log in to liquidate the contract. \n\n[Contract details]({})",
+                    "A borrower has defaulted on one of your loans. \n\n Liquidate the collateral [here]({})",
                     url,
                 )
             }

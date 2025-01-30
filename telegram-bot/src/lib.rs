@@ -102,7 +102,7 @@ pub enum State {
 #[derive(BotCommands, Clone)]
 #[command(
     rename_rule = "lowercase",
-    description = "These commands are supported:"
+    description = "These are the supported commands:"
 )]
 enum Command {
     #[command(description = "Prints this message.")]
@@ -130,7 +130,7 @@ async fn start(
         // This means that it is just a regular link like https://t.me/some_bot, or a /start command
         bot.send_message(
             msg.chat.id,
-            "G'day!\nPlease provide your token to register the bot.".to_string(),
+            "G'day!\nPlease provide your token to receive Lendasat updates through this Telegram chat.".to_string(),
         )
         .await?;
         dialogue
@@ -213,7 +213,7 @@ async fn help(bot: Bot, msg: Message) -> HandlerResult {
 async fn invalid_command(bot: Bot, msg: Message) -> HandlerResult {
     bot.send_message(
         msg.chat.id,
-        "Unable to handle the message. Type /help to see the usage.",
+        "Unable to handle the message. Type /help to see all available commands.",
     )
     .await?;
     Ok(())
