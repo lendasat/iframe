@@ -214,93 +214,94 @@ export const MyLoanOffersTable = ({
 
       <Table.Body>
         {sortedOffers.length === 0
-          && (
-            <Table.Cell colSpan={8}>
-              <Callout.Root color={"blue"}>
-                <Callout.Icon>
-                  <InfoCircledIcon />
-                </Callout.Icon>
-                <Callout.Text>
-                  No contracts found.
-                </Callout.Text>
-              </Callout.Root>
-            </Table.Cell>
-          )}
-
-        {sortedOffers.map((offer, index) => {
-          const stableCoin = StableCoinHelper.mapFromBackend(offer.loan_asset_chain, offer.loan_asset_type);
-
-          return (
-            <Table.Row key={index}>
-              <Table.RowHeaderCell>
-                <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
-                  <CurrencyFormatter value={offer.loan_amount_min} /> -{" "}
-                  <CurrencyFormatter value={offer.loan_amount_max} />
-                </Text>
-              </Table.RowHeaderCell>
-              <Table.Cell>
-                <Box className="hidden md:flex">
-                  <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
-                    {offer.duration_days_min} - {offer.duration_days_max}
-                  </Text>
-                </Box>
-              </Table.Cell>
-              <Table.Cell>
-                <Box className="hidden md:flex">
-                  <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
-                    {(offer.interest_rate * 100).toFixed(2)}%
-                  </Text>
-                </Box>
-              </Table.Cell>
-              <Table.Cell>
-                <Box className="hidden md:flex">
-                  <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
-                    {(offer.min_ltv * 100).toFixed(2)}%
-                  </Text>
-                </Box>
-              </Table.Cell>
-              <Table.Cell>
-                <Box className="hidden md:flex">
-                  <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
-                    {StableCoinHelper.print(stableCoin)}
-                  </Text>
-                </Box>
-              </Table.Cell>
-              <Table.Cell>
-                <Box className="hidden md:flex">
-                  <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
-                    <StatusBadge offer={offer} />
-                  </Text>
-                </Box>
-              </Table.Cell>
-              <Table.Cell>
-                <Box className="hidden md:flex">
-                  <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
-                    {offer.created_at.toLocaleDateString([], {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </Text>
-                </Box>
-              </Table.Cell>
-              <Table.Cell>
-                <Box className="hidden md:flex">
-                  <Button
-                    size={"1"}
-                    variant="solid"
-                    className="bg-btn dark:bg-dark-600 text-white w-full active:scale-90"
-                    onClick={() => {
-                      navigate(`/my-offers/${offer.id}`);
-                    }}
-                  >
-                    <MdCreate />
-                  </Button>
-                </Box>
+          ? (
+            <Table.Row key={"nooffers"}>
+              <Table.Cell colSpan={8}>
+                <Callout.Root color={"blue"}>
+                  <Callout.Icon>
+                    <InfoCircledIcon />
+                  </Callout.Icon>
+                  <Callout.Text>
+                    No contracts found.
+                  </Callout.Text>
+                </Callout.Root>
               </Table.Cell>
             </Table.Row>
-          );
-        })}
+          )
+          : sortedOffers.map((offer, index) => {
+            const stableCoin = StableCoinHelper.mapFromBackend(offer.loan_asset_chain, offer.loan_asset_type);
+
+            return (
+              <Table.Row key={index}>
+                <Table.RowHeaderCell>
+                  <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
+                    <CurrencyFormatter value={offer.loan_amount_min} /> -{" "}
+                    <CurrencyFormatter value={offer.loan_amount_max} />
+                  </Text>
+                </Table.RowHeaderCell>
+                <Table.Cell>
+                  <Box className="hidden md:flex">
+                    <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
+                      {offer.duration_days_min} - {offer.duration_days_max}
+                    </Text>
+                  </Box>
+                </Table.Cell>
+                <Table.Cell>
+                  <Box className="hidden md:flex">
+                    <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
+                      {(offer.interest_rate * 100).toFixed(2)}%
+                    </Text>
+                  </Box>
+                </Table.Cell>
+                <Table.Cell>
+                  <Box className="hidden md:flex">
+                    <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
+                      {(offer.min_ltv * 100).toFixed(2)}%
+                    </Text>
+                  </Box>
+                </Table.Cell>
+                <Table.Cell>
+                  <Box className="hidden md:flex">
+                    <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
+                      {StableCoinHelper.print(stableCoin)}
+                    </Text>
+                  </Box>
+                </Table.Cell>
+                <Table.Cell>
+                  <Box className="hidden md:flex">
+                    <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
+                      <StatusBadge offer={offer} />
+                    </Text>
+                  </Box>
+                </Table.Cell>
+                <Table.Cell>
+                  <Box className="hidden md:flex">
+                    <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
+                      {offer.created_at.toLocaleDateString([], {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </Text>
+                  </Box>
+                </Table.Cell>
+                <Table.Cell>
+                  <Box className="hidden md:flex">
+                    <Button
+                      size={"1"}
+                      variant="solid"
+                      className="bg-btn dark:bg-dark-600 text-white w-full active:scale-90"
+                      onClick={() => {
+                        navigate(`/my-offers/${offer.id}`);
+                      }}
+                    >
+                      <MdCreate />
+                    </Button>
+                  </Box>
+                </Table.Cell>
+              </Table.Row>
+            );
+          })}
       </Table.Body>
     </Table.Root>
   );
