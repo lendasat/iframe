@@ -2,7 +2,7 @@ import { faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { LoanProductOption } from "@frontend-monorepo/base-http-client";
 import { useWallet } from "@frontend-monorepo/browser-wallet";
-import { Integration, useAuth, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
+import { Integration, LenderStats, useAuth, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import type { LoanOffer, UserCardDetail } from "@frontend-monorepo/http-client-borrower";
 import {
   AbbreviationExplanationInfo,
@@ -30,6 +30,7 @@ import { FaInfo } from "react-icons/fa6";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAsync } from "react-use";
 import EmptyResult from "../../../assets/search.png";
+import { Lender } from "../lender";
 import SingleDurationSelector from "./DurationSelector";
 import { MoonCardDropdown } from "./MoonCardDropdown";
 
@@ -562,7 +563,7 @@ export const Step2PickOffer = () => {
                 </Heading>
                 <Box className="w-full">
                   <LoanSearched
-                    lender={bestOffer.lender.name}
+                    lender={bestOffer.lender}
                     amount={loanAmount || 0}
                     duration={loanDurationDays || 0}
                     interest={bestOffer.interest_rate}
@@ -632,7 +633,7 @@ export const Step2PickOffer = () => {
 };
 
 interface SearchParams {
-  lender: string;
+  lender: LenderStats;
   amount: number;
   duration: number;
   interest: number;
@@ -704,7 +705,7 @@ const LoanSearched = (props: SearchParams) => {
         <Flex justify={"between"} align={"center"}>
           <Text className="text-xs font-medium text-font/60 dark:text-font-dark/60">Lender</Text>
           <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
-            {props.lender}
+            <Lender {...props.lender} showAvatar={false} />
           </Text>
         </Flex>
         <Separator size={"4"} />

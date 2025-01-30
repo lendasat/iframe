@@ -26,7 +26,9 @@ import { LuActivity, LuSettings } from "react-icons/lu";
 import { TbWorldDollar } from "react-icons/tb";
 import ErrorBoundary from "./auth/ErrorBoundary";
 import VerifyEmailForm from "./auth/verifyEmailForm";
+import BorrowerProfile from "./borrowerProfile";
 import Dashboard from "./dashboard/dashboard";
+import LenderProfile from "./lenderProfile";
 import { LoanOffersOverview } from "./loan-offers/LoanOffersOverview";
 import MyLoanOfferDetails from "./my-offers/my-loan-offer-details";
 import MyLoanOffersOverview from "./my-offers/my-loan-offers-overview";
@@ -159,6 +161,8 @@ function MainLayoutComponents() {
             <Route path="/disputes/:id" element={<ResolveDispute />} />
             <Route path="/settings/*" element={<MyAccount />} />
           </Route>
+          <Route path="/lender/:id" element={<LenderProfile />} />
+          <Route path="/borrower/:id" element={<BorrowerProfile />} />
           <Route path="/logout" element={<Logout />} />
           <Route path="/resetpassword/:token/:email" element={<ResetPassword />} />
           <Route path="*" element={<Dashboard />} />

@@ -217,7 +217,7 @@ export const LoanOffersTable = ({
             return (
               <Table.Row key={index}>
                 <Table.RowHeaderCell>
-                  <Lender id={offer.lender.id} name={offer.lender.name} />
+                  <Lender {...offer.lender} showAvatar={true} />
                 </Table.RowHeaderCell>
                 <Table.RowHeaderCell>
                   <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>

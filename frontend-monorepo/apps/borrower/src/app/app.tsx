@@ -20,7 +20,6 @@ import ResolveDispute from "./disputes/dispute";
 import ErrorBoundary from "./ErrorBoundary";
 import History from "./History";
 import MyAccount from "./my-account";
-import Profile from "./profile";
 import RequestLoan from "./request-loan/request-loan";
 import { RequestLoanSummary } from "./request-loan/request-loan-summary";
 import "../assets/styles.css";
@@ -34,7 +33,9 @@ import { IoCardOutline, IoWalletOutline } from "react-icons/io5";
 import { LuActivity, LuSettings } from "react-icons/lu";
 import UpgradeToPake from "./auth/upgrade-to-pake";
 import VerifyEmailForm from "./auth/verifyEmailForm";
+import BorrowerProfile from "./borrowerProfile";
 import Cards from "./cards/Cards";
+import LenderProfile from "./lenderProfile";
 import CustomRequest from "./request-loan/custom-loan-request";
 import RequestLoanWizard from "./request-loan/request-loan-wizard";
 import RestrictedAccessPage from "./RestrictedAccessPage";
@@ -188,7 +189,8 @@ function MainLayoutComponents() {
             <Route path="/history" element={<History />} />
             <Route path="/settings/*" element={<MyAccount />} />
             <Route path="/logout" element={<Logout />} />
-            <Route path="/profile/:id" element={<Profile />} />
+            <Route path="/lender/:id" element={<LenderProfile />} />
+            <Route path="/borrower/:id" element={<BorrowerProfile />} />
             <Route path="/request-loan" element={<RequestLoan />} />
             <Route path="/request-loan/:id" element={<RequestLoanSummary />} />
             <Route path="/disputes/:id" element={<ResolveDispute />} />

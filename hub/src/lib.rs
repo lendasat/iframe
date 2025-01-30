@@ -24,6 +24,7 @@ pub mod notifications;
 pub mod routes;
 pub mod sideshift;
 pub mod telegram_bot;
+mod user_stats;
 pub mod utils;
 pub mod wallet;
 

@@ -25,29 +25,23 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
     Router::new()
         .route(
             "/api/requests",
-            get(get_loan_requests_by_borrower).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                auth::jwt_auth::auth,
-            )),
+            get(get_loan_requests_by_borrower)
+                .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
         )
         .route(
             "/api/requests/:id",
-            get(get_loan_request_by_borrower_and_request_id).route_layer(
-                middleware::from_fn_with_state(app_state.clone(), auth::jwt_auth::auth),
-            ),
+            get(get_loan_request_by_borrower_and_request_id)
+                .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
         )
         .route(
             "/api/requests/:id",
-            delete(delete_loan_request_by_borrower_and_request_id).route_layer(
-                middleware::from_fn_with_state(app_state.clone(), auth::jwt_auth::auth),
-            ),
+            delete(delete_loan_request_by_borrower_and_request_id)
+                .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
         )
         .route(
             "/api/requests/create",
-            post(create_loan_request).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                auth::jwt_auth::auth,
-            )),
+            post(create_loan_request)
+                .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
         )
         .with_state(app_state)
 }

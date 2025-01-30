@@ -6,13 +6,14 @@ import type { ReactNode } from "react";
 import { createContext, useContext } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
+  BorrowerStats,
   CardTransaction,
   ClaimCollateralPsbtResponse,
   Contract,
   ContractRequest,
   Dispute,
   ExtendPostLoanRequest,
-  LenderProfile,
+  LenderStats,
   LoanOffer,
   LoanRequest,
   PostLoanRequest,
@@ -30,6 +31,14 @@ interface RawContract extends Omit<Contract, "created_at" | "repaid_at" | "updat
 interface RawDispute extends Omit<Dispute, "created_at" | "updated_at"> {
   created_at: string;
   updated_at: string;
+}
+
+interface LenderStatsRaw extends Omit<LenderStats, "joined_at"> {
+  joined_at: string;
+}
+
+interface BorrowerStatsRaw extends Omit<BorrowerStats, "joined_at"> {
+  joined_at: string;
 }
 
 export class HttpClientBorrower extends BaseHttpClient {
@@ -385,10 +394,16 @@ export class HttpClientBorrower extends BaseHttpClient {
     }
   }
 
-  async getLenderProfile(id: string): Promise<LenderProfile> {
+  async getLenderProfile(id: string): Promise<LenderStats> {
     try {
-      const [response] = await Promise.all([this.httpClient.get(`/api/lenders/${id}`)]);
-      return response.data;
+      const response: AxiosResponse<LenderStatsRaw> = await this.httpClient.get(`/api/lenders/${id}`);
+
+      const joinedAt = parseRFC3339Date(response.data.joined_at);
+      if (joinedAt == null || joinedAt == null) {
+        throw new Error("Invalid date");
+      }
+
+      return { ...response.data, joined_at: joinedAt };
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         const message = error.response.data.message;
@@ -404,10 +419,16 @@ export class HttpClientBorrower extends BaseHttpClient {
     }
   }
 
-  async getBorrowerProfile(id: string): Promise<LenderProfile> {
+  async getBorrowerProfile(id: string): Promise<BorrowerStats> {
     try {
-      const [response] = await Promise.all([this.httpClient.get(`/api/borrowers/${id}`)]);
-      return response.data;
+      const response: AxiosResponse<BorrowerStatsRaw> = await this.httpClient.get(`/api/borrowers/${id}`);
+
+      const joinedAt = parseRFC3339Date(response.data.joined_at);
+      if (joinedAt == null || joinedAt == null) {
+        throw new Error("Invalid date");
+      }
+
+      return { ...response.data, joined_at: joinedAt };
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         const message = error.response.data.message;
