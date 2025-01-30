@@ -517,8 +517,13 @@ async fn post_start_upgrade_to_pake(
 
     let contract_pks = contracts
         .iter()
-        // Unspent contracts.
-        .filter(|c| !matches!(c.status, ContractStatus::Closed))
+        // Contracts that are not yet closed or were never approved.
+        .filter(|c| {
+            !matches!(
+                c.status,
+                ContractStatus::Closed | ContractStatus::Cancelled | ContractStatus::RequestExpired
+            )
+        })
         // Contracts that may have been funded.
         .filter(|c| c.contract_address.is_some())
         .map(|c| c.borrower_pk)
