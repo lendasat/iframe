@@ -82,7 +82,6 @@ impl TelegramBot {
 
         Dispatcher::builder(bot, handler)
             .dependencies(deps![InMemStorage::<State>::new(), deps])
-            .enable_ctrlc_handler()
             .build()
             .dispatch()
             .await;
