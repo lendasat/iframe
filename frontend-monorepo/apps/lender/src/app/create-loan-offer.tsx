@@ -7,18 +7,32 @@ import {
 } from "@frontend-monorepo/http-client-lender";
 import {
   formatCurrency,
+  getFormatedStringFromDays,
   InterestRateInfoLabel,
   LoanAddressInputField,
   LoanAssetChain,
   LoanAssetType,
   LtvInfoLabel,
+  ONE_YEAR,
   parseStableCoin,
   StableCoin,
   StableCoinHelper,
 } from "@frontend-monorepo/ui-shared";
 import * as Checkbox from "@radix-ui/react-checkbox";
 import { CheckIcon } from "@radix-ui/react-icons";
-import { Box, Button, Callout, Flex, Heading, Separator, Skeleton, Spinner, Text, TextField } from "@radix-ui/themes";
+import {
+  Box,
+  Button,
+  Callout,
+  Flex,
+  Grid,
+  Heading,
+  Separator,
+  Skeleton,
+  Spinner,
+  Text,
+  TextField,
+} from "@radix-ui/themes";
 import type { FC, FormEvent } from "react";
 import { useState } from "react";
 import { Form } from "react-bootstrap";
@@ -27,13 +41,14 @@ import { MdOutlineSwapCalls } from "react-icons/md";
 import { PiInfo, PiWarningCircle } from "react-icons/pi";
 import { useNavigate } from "react-router-dom";
 import { useAsync } from "react-use";
+import DurationSelector from "./LoanDurationSelector";
 
-export interface LoanDuration {
+export interface LoanAmount {
   min: number;
   max: number;
 }
 
-export interface LoanAmount {
+interface DurationRange {
   min: number;
   max: number;
 }
@@ -52,7 +67,6 @@ const CreateLoanOffer: FC = () => {
   const [loanAmount, setLoanAmount] = useState<LoanAmount>({ min: 1000, max: 100000 });
   const [loanReserve, setLoanReserve] = useState(loanAmount.max);
   const [autoAccept, setAutoAccept] = useState(autoApproveEnabled);
-  const [loanDuration, setLoanDuration] = useState<LoanDuration>({ min: 1, max: 12 });
   const [ltv, setLtv] = useState<number>(50);
   const [interest, setInterest] = useState<number>(7.5);
   const [selectedCoin, setSelectedCoin] = useState<StableCoin | undefined>(StableCoin.USDT_ETH);
@@ -60,6 +74,15 @@ const CreateLoanOffer: FC = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [hideWalletConnectButton, setHideWalletConnectButton] = useState(false);
+
+  const [loanDuration, setLoanDuration] = useState<DurationRange>({
+    min: 7,
+    max: ONE_YEAR,
+  });
+
+  const handleRangeChange = (start: number, end: number) => {
+    setLoanDuration({ min: start, max: end });
+  };
 
   if (!doesWalletExist) {
     setError("Cannot load wallet. Try to log back in. If the error persists, reach out to support");
@@ -117,8 +140,8 @@ const CreateLoanOffer: FC = () => {
       loan_amount_min: loanAmount.min,
       loan_amount_max: loanAmount.max,
       loan_amount_reserve: loanReserve,
-      duration_months_min: loanDuration.min,
-      duration_months_max: loanDuration.max,
+      duration_days_min: loanDuration.min,
+      duration_days_max: loanDuration.max,
       loan_asset_type: assetType,
       loan_asset_chain: assetChain,
       loan_repayment_address: loanRepaymentAddress,
@@ -288,33 +311,16 @@ const CreateLoanOffer: FC = () => {
 
                 {/* Duration */}
                 <Box className="space-y-1">
-                  <Text as="label" size={"2"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">
-                    Duration
-                  </Text>
-                  <Text as="span" className="text-font/50 dark:text-font-dark/50" weight={"medium"} size={"1"}>
-                    (Months)
-                  </Text>
+                  <Flex align={"center"} gap={"1"}>
+                    <Text as="label" size={"2"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">
+                      Duration
+                    </Text>
+                    <Text as="span" className="text-font/50 dark:text-font-dark/50" weight={"medium"} size={"1"}>
+                      (Days)
+                    </Text>
+                  </Flex>
                   <Flex align={"center"} gap={"15px"}>
-                    <TextField.Root
-                      size="3"
-                      className="flex-1 text-sm rounded-lg text-font dark:text-font-dark"
-                      type="number"
-                      color="purple"
-                      placeholder="Min Duration"
-                      value={loanDuration.min}
-                      onChange={(e) => setLoanDuration({ ...loanDuration, min: Number(e.target.value) })}
-                    />
-
-                    <MdOutlineSwapCalls />
-
-                    <TextField.Root
-                      size="3"
-                      type="number"
-                      className="flex-1 text-sm rounded-lg text-font dark:text-font-dark"
-                      placeholder="Max Duration"
-                      value={loanDuration.max}
-                      onChange={(e) => setLoanDuration({ ...loanDuration, max: Number(e.target.value) })}
-                    />
+                    <DurationSelector onRangeChange={handleRangeChange} />
                   </Flex>
                 </Box>
 
@@ -395,7 +401,7 @@ const CreateLoanOffer: FC = () => {
                   <Text as="label" size={"2"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">
                     Stable Coins
                   </Text>
-                  <Flex align={"center"} gap={"3"} wrap={"wrap"}>
+                  <Grid align={"center"} columns={{ initial: "1", md: "3" }} gap="3" width="auto">
                     {StableCoinHelper.all().map((coin) => (
                       <Button
                         key={coin}
@@ -409,7 +415,7 @@ const CreateLoanOffer: FC = () => {
                         {StableCoinHelper.print(coin)}
                       </Button>
                     ))}
-                  </Flex>
+                  </Grid>
                 </Box>
 
                 {/* Repayment Address */}
@@ -477,7 +483,7 @@ const CreateLoanOffer: FC = () => {
               <Flex align={"center"} justify={"between"} my={"4"}>
                 <Text as="label" size={"2"} className="text-font/50 dark:text-font-dark/50">Duration</Text>
                 <Text size={"2"} className="text-font/80 dark:text-font-dark/80 font-semibold">
-                  {loanDuration.min} ~ {loanDuration.max} Months
+                  {getFormatedStringFromDays(loanDuration.min)} - {getFormatedStringFromDays(loanDuration.max)}
                 </Text>
               </Flex>
               <Separator size={"4"} color={"gray"} className="opacity-50" />

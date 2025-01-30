@@ -1,5 +1,5 @@
 import type { LoanOffer } from "@frontend-monorepo/http-client-borrower";
-import { CurrencyFormatter, StableCoinHelper } from "@frontend-monorepo/ui-shared";
+import { CurrencyFormatter, getFormatedStringFromDays, StableCoinHelper } from "@frontend-monorepo/ui-shared";
 import { Badge, Box, Button, DropdownMenu, Flex, Grid, Heading, Text } from "@radix-ui/themes";
 import { BsThreeDotsVertical } from "react-icons/bs";
 import { Lender } from "./lender";
@@ -26,7 +26,8 @@ export function LoanOfferComponent({ loanOffer, onRequest }: LoanOfferProps) {
 
         <Box className="hidden md:flex justify-center">
           <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
-            {loanOffer.duration_months_min} - {loanOffer.duration_months_max} months
+            {getFormatedStringFromDays(loanOffer.duration_days_min)} -{" "}
+            {getFormatedStringFromDays(loanOffer.duration_days_max)}
           </Text>
         </Box>
 
@@ -91,7 +92,8 @@ export function LoanOfferComponent({ loanOffer, onRequest }: LoanOfferProps) {
                     Duration:
                   </Text>
                   <Text className="capitalize text-font dark:text-font-dark" size={"3"}>
-                    {loanOffer.duration_months_min} - {loanOffer.duration_months_max} months
+                    {getFormatedStringFromDays(loanOffer.duration_days_min)} -{" "}
+                    {getFormatedStringFromDays(loanOffer.duration_days_max)}
                   </Text>
                 </Flex>
               </Box>

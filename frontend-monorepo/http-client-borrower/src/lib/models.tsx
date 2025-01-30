@@ -116,7 +116,7 @@ export interface BorrowerProfile {
 export interface ContractRequest {
   loan_id: string;
   loan_amount: number;
-  duration_months: number;
+  duration_days: number;
   borrower_btc_address: string;
   borrower_pk: string;
   borrower_loan_address?: string;
@@ -127,7 +127,7 @@ export interface ContractRequest {
 export interface Contract {
   id: string;
   loan_amount: number;
-  duration_months: number;
+  duration_days: number;
   created_at: Date;
   updated_at: Date;
   repaid_at: Date | undefined;
@@ -167,8 +167,8 @@ export interface LoanOffer {
   interest_rate: number;
   loan_amount_min: number;
   loan_amount_max: number;
-  duration_months_min: number;
-  duration_months_max: number;
+  duration_days_min: number;
+  duration_days_max: number;
   loan_asset_type: string;
   loan_asset_chain: string;
   origination_fee: OriginationFee[];
@@ -178,7 +178,7 @@ export interface PostLoanRequest {
   ltv: number;
   interest_rate: number;
   loan_amount: number;
-  duration_months: number;
+  duration_days: number;
   loan_asset_type: LoanAssetType;
   loan_asset_chain: LoanAssetChain;
 }
@@ -194,7 +194,7 @@ export interface LoanRequest {
   ltv: number;
   interest_rate: number;
   loan_amount: number;
-  duration_months: number;
+  duration_days: number;
   loan_asset_type: LoanAssetType;
   loan_asset_chain: LoanAssetChain;
   status: LoanRequestStatus;
@@ -227,14 +227,14 @@ export interface Dispute {
 }
 
 export interface OriginationFee {
-  from_month: number;
-  to_month: number;
+  from_day: number;
+  to_day: number;
   fee: number;
 }
 
 export class OriginationFeeHelper {
   static isRelevant(originationFee: OriginationFee, contractDuration: number): boolean {
-    return originationFee.from_month <= contractDuration && originationFee.to_month > contractDuration;
+    return originationFee.from_day <= contractDuration && originationFee.to_day > contractDuration;
   }
 }
 

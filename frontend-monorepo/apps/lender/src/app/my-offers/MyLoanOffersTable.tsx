@@ -90,7 +90,7 @@ export const MyLoanOffersTable = ({
         sorted = a.loan_amount_min - b.loan_amount_min;
         break;
       case "duration":
-        sorted = a.duration_months_min - b.duration_months_max;
+        sorted = a.duration_days_min - b.duration_days_min;
         break;
       case "interest":
         sorted = a.interest_rate - b.interest_rate;
@@ -139,7 +139,7 @@ export const MyLoanOffersTable = ({
                 sortByColumn={sortByColumn}
                 sortAsc={sortAsc}
                 currentColumn={"duration"}
-                label={"Duration"}
+                label={"Duration (days)"}
               />
             </Box>
           </Table.ColumnHeaderCell>
@@ -241,7 +241,7 @@ export const MyLoanOffersTable = ({
               <Table.Cell>
                 <Box className="hidden md:flex">
                   <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
-                    {offer.duration_months_min} - {offer.duration_months_max}
+                    {offer.duration_days_min} - {offer.duration_days_max}
                   </Text>
                 </Box>
               </Table.Cell>

@@ -226,6 +226,7 @@ function MyContracts() {
                   return (
                     <DropdownMenu.Item
                       onSelect={(e) => e.preventDefault()}
+                      key={contractStatus.toLowerCase()}
                     >
                       <Flex gap="2" align="center">
                         <Checkbox

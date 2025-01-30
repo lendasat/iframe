@@ -1,7 +1,7 @@
 import { faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { LoanOfferStatus, useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
-import { formatCurrency, StableCoinHelper } from "@frontend-monorepo/ui-shared";
+import { formatCurrency, getFormatedStringFromDays, StableCoinHelper } from "@frontend-monorepo/ui-shared";
 import * as Checkbox from "@radix-ui/react-checkbox";
 import { CheckIcon } from "@radix-ui/react-icons";
 import { Box, Button, Callout, Dialog, Flex, Grid, Heading, Separator, Text, TextField } from "@radix-ui/themes";
@@ -192,7 +192,7 @@ function MyLoanOfferDetails() {
                 Duration
               </Text>
               <Text as="span" className="text-font/50 dark:text-font-dark/50" weight={"medium"} size={"1"}>
-                (months)
+                (days)
               </Text>
               <Flex align={"center"} gap={"15px"}>
                 <TextField.Root
@@ -201,7 +201,7 @@ function MyLoanOfferDetails() {
                   type="number"
                   color="purple"
                   placeholder="Min Duration"
-                  value={offer.duration_months_min}
+                  value={offer.duration_days_min}
                   disabled={true}
                 />
 
@@ -213,7 +213,7 @@ function MyLoanOfferDetails() {
                   color="purple"
                   className="flex-1 text-sm rounded-lg"
                   placeholder="Max Duration"
-                  value={offer.duration_months_max}
+                  value={offer.duration_days_max}
                   disabled={true}
                 />
               </Flex>
@@ -266,31 +266,6 @@ function MyLoanOfferDetails() {
                 </TextField.Slot>
               </TextField.Root>
             </Box>
-
-            <Flex align={"center"} justify={"start"}>
-              {/*TODO: implement update*/}
-              {/*<Button*/}
-              {/*  loading={isLoading}*/}
-              {/*  size={"3"}*/}
-              {/*  color="purple"*/}
-              {/*  disabled={loanAmount.max !== offer.loan_amount_max*/}
-              {/*      || loanAmount.min !== offer.loan_amount_min*/}
-              {/*      || loanDuration.max !== offer.duration_months_max*/}
-              {/*      || loanDuration.min !== offer.duration_months_min*/}
-              {/*      || interest !== offer.interest_rate*/}
-              {/*      || ltv !== offer.min_ltv*/}
-              {/*    ? false*/}
-              {/*    : true}*/}
-              {/*  onClick={() => {*/}
-              {/*    setIsLoading(true);*/}
-              {/*    setTimeout(() => {*/}
-              {/*      setIsLoading(false);*/}
-              {/*    }, 1000);*/}
-              {/*  }}*/}
-              {/*>*/}
-              {/*  <Text weight={"medium"} size={"2"}>Update Changes</Text>*/}
-              {/*</Button>*/}
-            </Flex>
           </Box>
         </Box>
         <Box className="p-5 xl:h-full flex flex-col items-center justify-center order-1 md:order-2">
@@ -303,16 +278,6 @@ function MyLoanOfferDetails() {
                   Loan Preview
                 </Heading>
               </Flex>
-
-              {/* Export: TODO: implement */}
-              {/*<Tooltip content="Download Preview" className="font-medium">*/}
-              {/*  <Button className="hover:bg-transparent" variant="ghost">*/}
-              {/*    <FaFileExport className="text-font" />*/}
-              {/*    <Text as="span" size={"2"} weight={"medium"} className="text-font">*/}
-              {/*      Export*/}
-              {/*    </Text>*/}
-              {/*  </Button>*/}
-              {/*</Tooltip>*/}
             </Flex>
 
             <Box className="bg-gradient-to-tr from-60% to-100% from-[#FBFAF8] to-pink-700/5 dark:from-dark-600 dark:to-dark-700 p-6 rounded-2xl flex items-center justify-center flex-1">
@@ -370,7 +335,8 @@ function MyLoanOfferDetails() {
                         Loan Duration
                       </Text>
                       <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
-                        {offer.duration_months_min} - {offer.duration_months_max} Months
+                        {getFormatedStringFromDays(offer.duration_days_min)} -{" "}
+                        {getFormatedStringFromDays(offer.duration_days_max)}
                       </Text>
                     </Flex>
                     <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />

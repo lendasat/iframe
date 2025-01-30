@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            id,\n            borrower_id,\n            ltv,\n            interest_rate,\n            loan_amount,\n            duration_months,\n            loan_asset_type AS \"loan_asset_type: crate::model::LoanAssetType\",\n            loan_asset_chain AS \"loan_asset_chain: crate::model::LoanAssetChain\",\n            status AS \"status: crate::model::LoanRequestStatus\",\n            created_at,\n            updated_at\n        FROM loan_requests\n        WHERE borrower_id = $1\n        ",
+  "query": "\n        SELECT\n            id,\n            borrower_id,\n            ltv,\n            interest_rate,\n            loan_amount,\n            duration_days,\n            loan_asset_type AS \"loan_asset_type: crate::model::LoanAssetType\",\n            loan_asset_chain AS \"loan_asset_chain: crate::model::LoanAssetChain\",\n            status AS \"status: crate::model::LoanRequestStatus\",\n            created_at,\n            updated_at\n        FROM loan_requests\n        WHERE status = 'Available'\n        ",
   "describe": {
     "columns": [
       {
@@ -30,7 +30,7 @@
       },
       {
         "ordinal": 5,
-        "name": "duration_months",
+        "name": "duration_days",
         "type_info": "Int4"
       },
       {
@@ -93,9 +93,7 @@
       }
     ],
     "parameters": {
-      "Left": [
-        "Bpchar"
-      ]
+      "Left": []
     },
     "nullable": [
       false,
@@ -111,5 +109,5 @@
       false
     ]
   },
-  "hash": "2c435c8e64c3860ace3bd48d092dd30d0605dee1f5228b7c7025fe0c56493b89"
+  "hash": "ff6aed1533a947754b43dfc744267ff3c5cf84927541d1bf054901d2ef63901f"
 }

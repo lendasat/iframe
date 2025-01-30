@@ -35,7 +35,7 @@ export interface BorrowerProfile {
 export interface Contract {
   id: string;
   loan_amount: number;
-  duration_months: number;
+  duration_days: number;
   created_at: Date;
   updated_at: Date;
   repaid_at: Date | undefined;
@@ -68,8 +68,8 @@ export interface CreateLoanOfferRequest {
   loan_amount_min: number;
   loan_amount_max: number;
   loan_amount_reserve: number;
-  duration_months_min: number;
-  duration_months_max: number;
+  duration_days_min: number;
+  duration_days_max: number;
   loan_asset_type: LoanAssetType;
   loan_asset_chain: LoanAssetChain;
   loan_repayment_address: string;
@@ -92,8 +92,8 @@ export interface LoanOffer {
   loan_amount_max: number;
   loan_amount_reserve: number;
   loan_amount_reserve_remaining: number;
-  duration_months_min: number;
-  duration_months_max: number;
+  duration_days_min: number;
+  duration_days_max: number;
   loan_asset_type: string;
   loan_asset_chain: string;
   origination_fee: OriginationFee[];
@@ -303,7 +303,7 @@ export interface LoanOfferStats {
 
 export interface ContractStats {
   loan_amount: number;
-  duration_months: number;
+  duration_days: number;
   interest_rate: number;
   created_at: string;
 }

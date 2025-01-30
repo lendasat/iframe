@@ -48,7 +48,7 @@ pub async fn load_contracts_by_borrower_id(
             contract_index,
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
-            duration_months,
+            duration_days,
             expiry_date,
             contract_version,
             interest_rate,
@@ -96,7 +96,7 @@ pub async fn load_contracts_by_lender_id(
             contract_index,
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
-            duration_months,
+            duration_days,
             expiry_date,
             contract_version,
             interest_rate,
@@ -141,7 +141,7 @@ async fn load_contract(pool: &Pool<Postgres>, contract_id: &str) -> Result<Contr
             contract_index,
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
-            duration_months,
+            duration_days,
             expiry_date,
             contract_version,
             interest_rate,
@@ -185,7 +185,7 @@ pub async fn load_contract_by_contract_id_and_borrower_id(
             contract_index,
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
-            duration_months,
+            duration_days,
             expiry_date,
             contract_version,
             interest_rate,
@@ -231,7 +231,7 @@ pub async fn load_contract_by_contract_id_and_lender_id(
             contract_index,
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
-            duration_months,
+            duration_days,
             expiry_date,
             contract_version,
             interest_rate,
@@ -273,7 +273,7 @@ pub async fn load_open_contracts(pool: &Pool<Postgres>) -> Result<Vec<Contract>>
             contract_index,
             status as "status!: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status!: crate::model::db::LiquidationStatus",
-            duration_months as "duration_months!",
+            duration_days as "duration_days!",
             expiry_date as "expiry_date!",
             contract_version as "contract_version!",
             interest_rate as "interest_rate!",
@@ -303,7 +303,7 @@ pub async fn insert_new_contract_request(
     initial_collateral_sats: u64,
     origination_fee_sats: u64,
     loan_amount: Decimal,
-    duration_months: i32,
+    duration_days: i32,
     borrower_btc_address: Address<NetworkUnchecked>,
     borrower_pk: PublicKey,
     borrower_loan_address: &str,
@@ -325,7 +325,7 @@ pub async fn insert_new_contract_request(
     let contract_version = contract_version as i32;
 
     let created_at = OffsetDateTime::now_utc();
-    let expiry_date = expiry_date(created_at, duration_months as u64);
+    let expiry_date = expiry_date(created_at, duration_days as u64);
 
     let status = db::ContractStatus::Requested;
 
@@ -337,7 +337,7 @@ pub async fn insert_new_contract_request(
         &id,
         initial_ltv,
         loan_amount,
-        duration_months,
+        duration_days,
         borrower_btc_address,
         borrower_pk,
         borrower_loan_address,
@@ -372,7 +372,7 @@ pub async fn insert_extension_contract_request(
     collateral_sats: u64,
     origination_fee_sats: u64,
     loan_amount: Decimal,
-    duration_months: i32,
+    duration_days: i32,
     borrower_btc_address: Address<NetworkUnchecked>,
     borrower_pk: PublicKey,
     borrower_loan_address: &str,
@@ -394,7 +394,7 @@ pub async fn insert_extension_contract_request(
 
     let created_at = OffsetDateTime::now_utc();
 
-    let new_expiry_date = expiry_date(original_creation_date, duration_months as u64);
+    let new_expiry_date = expiry_date(original_creation_date, duration_days as u64);
 
     // if the contract can be automatically accepted we immediately go into
     // `ContractStatus::PrincipalGiven` because the original contract has been funded already.
@@ -412,7 +412,7 @@ pub async fn insert_extension_contract_request(
         &id,
         initial_ltv,
         loan_amount,
-        duration_months,
+        duration_days,
         borrower_btc_address,
         borrower_pk,
         borrower_loan_address,
@@ -441,7 +441,7 @@ async fn insert_contract_request(
     contract_id: &str,
     initial_ltv: Decimal,
     loan_amount: Decimal,
-    duration_months: i32,
+    duration_days: i32,
     borrower_btc_address: Address<NetworkUnchecked>,
     borrower_pk: PublicKey,
     borrower_loan_address: &str,
@@ -471,7 +471,7 @@ async fn insert_contract_request(
             origination_fee_sats,
             collateral_sats,
             loan_amount,
-            duration_months,
+            duration_days,
             status,
             liquidation_status,
             borrower_btc_address,
@@ -505,7 +505,7 @@ async fn insert_contract_request(
             contract_index,
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
-            duration_months,
+            duration_days,
             expiry_date,
             contract_version,
             interest_rate,
@@ -521,7 +521,7 @@ async fn insert_contract_request(
         origination_fee_sats,
         collateral_sats,
         loan_amount,
-        duration_months,
+        duration_days,
         status as db::ContractStatus,
         db::LiquidationStatus::Healthy as db::LiquidationStatus,
         borrower_btc_address.assume_checked().to_string(),
@@ -580,7 +580,7 @@ pub async fn accept_contract_request(
             contract_index,
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
-            duration_months,
+            duration_days,
             expiry_date,
             contract_version,
             interest_rate,
@@ -633,10 +633,10 @@ pub async fn accept_extend_contract_request(
 pub async fn mark_contract_as_principal_given(
     pool: &Pool<Postgres>,
     contract_id: &str,
-    duration_months: i32,
+    duration_days: i32,
 ) -> Result<()> {
     let updated_at = OffsetDateTime::now_utc();
-    let expiry_date = expiry_date(updated_at, duration_months as u64);
+    let expiry_date = expiry_date(updated_at, duration_days as u64);
 
     sqlx::query!(
         r#"
@@ -756,7 +756,7 @@ pub async fn reject_contract_request(
             contract_index,
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
-            duration_months,
+            duration_days,
             expiry_date,
             contract_version,
             interest_rate,
@@ -806,7 +806,7 @@ pub(crate) async fn mark_liquidation_state_as(
             contract_index,
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
-            duration_months,
+            duration_days,
             expiry_date,
             contract_version,
             interest_rate,
@@ -1055,7 +1055,7 @@ pub async fn update_collateral(
             contract_index,
             status as "status: crate::model::db::ContractStatus",
             liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
-            duration_months,
+            duration_days,
             expiry_date,
             contract_version,
             interest_rate,
@@ -1198,7 +1198,7 @@ pub(crate) async fn check_if_contract_belongs_to_lender(
 #[derive(sqlx::FromRow)]
 pub struct ContractStats {
     pub(crate) loan_amount: Decimal,
-    pub(crate) duration_months: i32,
+    pub(crate) duration_days: i32,
     pub(crate) interest_rate: Decimal,
     pub(crate) created_at: OffsetDateTime,
 }
@@ -1213,7 +1213,7 @@ pub async fn load_latest_contract_stats(
         r#"
         SELECT
             loan_amount,
-            duration_months,
+            duration_days,
             interest_rate,
             created_at
         FROM contracts

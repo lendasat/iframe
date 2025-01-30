@@ -12,8 +12,10 @@ import {
 import {
   CurrencyFormatter,
   formatCurrency,
+  getFormatedStringFromDays,
   InterestRateInfoLabel,
   LtvInfoLabel,
+  ONE_YEAR,
   StableCoinHelper,
 } from "@frontend-monorepo/ui-shared";
 import { TransactionList } from "@frontend-monorepo/ui-shared";
@@ -86,7 +88,7 @@ function ContractDetails({ contract }: DetailsProps) {
   const collateral_sats = contract.initial_collateral_sats;
   const collateral = collateral_sats / 100000000;
   const loanAmount = contract.loan_amount;
-  const durationMonths = contract.duration_months;
+  const durationDays = contract.duration_days;
 
   const interestRate = contract.interest_rate;
 
@@ -128,7 +130,7 @@ function ContractDetails({ contract }: DetailsProps) {
     contractStatusLabel = "Liquidated";
   }
 
-  const actualInterestUsdAmount = (loanAmount * interestRate) / (12 / durationMonths);
+  const actualInterestUsdAmount = (loanAmount * interestRate) / (ONE_YEAR / durationDays);
   const [contractIdCopied, setContractIdCopied] = useState<boolean>(false);
   const [errorAlt, setErrorAlt] = useState("");
   const navigate = useNavigate();
@@ -315,7 +317,7 @@ function ContractDetails({ contract }: DetailsProps) {
               Duration
             </Text>
             <Text className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
-              {durationMonths} months
+              {getFormatedStringFromDays(durationDays)}
             </Text>
           </Flex>
           <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />

@@ -39,7 +39,7 @@ pub struct LoanRequest {
     pub interest_rate: Decimal,
     #[serde(with = "rust_decimal::serde::float")]
     pub loan_amount: Decimal,
-    pub duration_months: i32,
+    pub duration_days: i32,
     pub loan_asset_type: LoanAssetType,
     pub loan_asset_chain: LoanAssetChain,
 }
@@ -91,7 +91,7 @@ pub async fn get_all_available_loan_requests(
             ltv: request.ltv,
             interest_rate: request.interest_rate,
             loan_amount: request.loan_amount,
-            duration_months: request.duration_months,
+            duration_days: request.duration_days,
             loan_asset_type: request.loan_asset_type,
             loan_asset_chain: request.loan_asset_chain,
         })

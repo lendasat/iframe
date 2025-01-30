@@ -261,7 +261,7 @@ async fn post_contract_request(
         initial_collateral.to_sat(),
         origination_fee_amount.to_sat(),
         body.loan_amount,
-        body.duration_months,
+        body.duration_days,
         body.borrower_btc_address,
         body.borrower_pk,
         borrower_loan_address.as_str(),
@@ -621,7 +621,7 @@ pub struct Contract {
     pub id: String,
     #[serde(with = "rust_decimal::serde::float")]
     pub loan_amount: Decimal,
-    pub duration_months: i32,
+    pub duration_days: i32,
     pub initial_collateral_sats: u64,
     pub origination_fee_sats: u64,
     pub collateral_sats: u64,
@@ -746,7 +746,7 @@ async fn map_to_api_contract(
     let contract = Contract {
         id: contract.id,
         loan_amount: contract.loan_amount,
-        duration_months: contract.duration_months,
+        duration_days: contract.duration_days,
         initial_collateral_sats: contract.initial_collateral_sats,
         origination_fee_sats: contract.origination_fee_sats,
         collateral_sats: contract.collateral_sats,

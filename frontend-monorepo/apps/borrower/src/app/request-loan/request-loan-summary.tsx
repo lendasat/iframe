@@ -5,8 +5,10 @@ import { findBestOriginationFee, Integration, useBorrowerHttpClient } from "@fro
 import type { LoanOffer } from "@frontend-monorepo/http-client-borrower";
 import {
   formatCurrency,
+  getFormatedStringFromDays,
   LoanAddressInputField,
   LtvInfoLabel,
+  ONE_YEAR,
   StableCoinHelper,
   usePrice,
 } from "@frontend-monorepo/ui-shared";
@@ -75,9 +77,9 @@ export function RequestLoanSummaryInner({ loanOffer, loanFilter }: RequestLoanSu
   const { postContractRequest } = useBorrowerHttpClient();
 
   // Initialize filters
-  let initMonths = loanFilter?.period || loanOffer.duration_months_min;
-  if (initMonths > loanOffer.duration_months_max) {
-    initMonths = loanOffer.duration_months_max;
+  let initDays = loanFilter?.period || loanOffer.duration_days_min;
+  if (initDays > loanOffer.duration_days_max) {
+    initDays = loanOffer.duration_days_max;
   }
 
   let initAmount = loanFilter?.amount || loanOffer.loan_amount_min;
@@ -99,14 +101,14 @@ export function RequestLoanSummaryInner({ loanOffer, loanFilter }: RequestLoanSu
 
   const [btcAddress, setBtcAddress] = useState(defaultBtcAddress);
   const [amountError, setAmountError] = useState<string | null>(null);
-  const [loanDuration, setLoanDuration] = useState<number>(initMonths);
+  const [loanDurationDays, setLoanDurationDays] = useState<number>(initDays);
   const [showUnlockWalletModal, setShowUnlockWalletModal] = useState(false);
   const [hideWalletConnectButton, setHideWalletConnectButton] = useState(false);
 
   const collateral = latestPrice ? (loanAmount / loanOffer.min_ltv / latestPrice) : undefined;
   const collateralInUsd = collateral ? collateral * latestPrice : undefined;
 
-  const bestOriginationFee = findBestOriginationFee(loanOffer.origination_fee, loanDuration);
+  const bestOriginationFee = findBestOriginationFee(loanOffer.origination_fee, loanDurationDays);
 
   const loanOriginatorFee = latestPrice ? ((loanAmount / latestPrice) * bestOriginationFee) : undefined;
 
@@ -159,7 +161,7 @@ export function RequestLoanSummaryInner({ loanOffer, loanFilter }: RequestLoanSu
       const res = await postContractRequest({
         loan_id: loanOffer.id,
         loan_amount: loanAmount || 0,
-        duration_months: loanDuration,
+        duration_days: loanDurationDays,
         borrower_btc_address: btcAddress,
         borrower_pk: borrowerPk,
         borrower_loan_address: loanAddress,
@@ -178,13 +180,13 @@ export function RequestLoanSummaryInner({ loanOffer, loanFilter }: RequestLoanSu
   };
 
   const periodSliderProps: SliderProps = {
-    min: loanOffer.duration_months_min,
-    max: loanOffer.duration_months_max,
+    min: loanOffer.duration_days_min,
+    max: loanOffer.duration_days_max,
     step: 1,
-    init: loanDuration,
-    suffix: " months",
+    init: loanDurationDays,
+    suffix: " days",
     onChange: (duration) => {
-      setLoanDuration(duration);
+      setLoanDurationDays(duration);
     },
   };
 
@@ -196,7 +198,7 @@ export function RequestLoanSummaryInner({ loanOffer, loanFilter }: RequestLoanSu
 
   const minLtv = loanOffer.min_ltv * 100;
 
-  const interestAmountUsd = loanAmount * (loanOffer.interest_rate / 12 * loanDuration);
+  const interestAmountUsd = loanAmount * (loanOffer.interest_rate / ONE_YEAR * loanDurationDays);
 
   const totalAmount = collateral && loanOriginatorFee ? (collateral + loanOriginatorFee) : undefined;
   const totalAmountUsd = totalAmount ? totalAmount * latestPrice : undefined;
@@ -345,7 +347,7 @@ export function RequestLoanSummaryInner({ loanOffer, loanFilter }: RequestLoanSu
                     <Flex justify={"between"} align={"center"}>
                       <Text className="text-xs font-medium text-font/60">Duration</Text>
                       <Text className="text-[13px] font-semibold text-black/70 capitalize">
-                        {loanDuration} Months
+                        {getFormatedStringFromDays(loanDurationDays)}
                       </Text>
                     </Flex>
                     <Flex justify={"between"} align={"center"}>
