@@ -30,8 +30,6 @@ impl xtra::Actor for TelegramBot {
         let bot = self.inner.clone();
         tokio::spawn(async move { bot.start(msg_to_user_rx).await });
 
-        tracing::debug!("Waiting for registration messages");
-
         let mut register_rx = self.register_rx.take().expect("exists");
 
         let address = mailbox.address();
