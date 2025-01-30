@@ -180,7 +180,7 @@ pub enum NotificationKind {
 }
 
 impl xtra::Handler<Notification> for TelegramBot {
-    type Return = Result<()>;
+    type Return = ();
 
     async fn handle(&mut self, message: Notification, _ctx: &mut Context<Self>) -> Self::Return {
         let url = message.url;
@@ -224,17 +224,23 @@ impl xtra::Handler<Notification> for TelegramBot {
             }
         };
 
-        let chat_ids =
-            db::telegram_bot::get_chat_ids_by_lender(&self.db, message.lender_id.as_str()).await?;
-        for chat_id in chat_ids
-            .iter()
-            .filter_map(|chat_ids| chat_ids.chat_id.clone())
-        {
-            if let Some(sender) = &self.msg_to_user_tx {
-                sender.send(build_message(chat_id, text.as_str())).await?
+        match db::telegram_bot::get_chat_ids_by_lender(&self.db, message.lender_id.as_str()).await {
+            Ok(chat_ids) => {
+                for chat_id in chat_ids
+                    .iter()
+                    .filter_map(|chat_ids| chat_ids.chat_id.clone())
+                {
+                    if let Some(sender) = &self.msg_to_user_tx {
+                        if let Err(err) = sender.send(build_message(chat_id, text.as_str())).await {
+                            tracing::error!("Failed sending message to telegram bot {err:#}");
+                        }
+                    }
+                }
+            }
+            Err(error) => {
+                tracing::error!("Failed loading chat ids for lender {error:#}");
             }
         }
-        Ok(())
     }
 }
 

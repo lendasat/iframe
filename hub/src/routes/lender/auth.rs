@@ -218,22 +218,14 @@ async fn post_register(
         verification_code.as_str()
     );
 
-    if let Err(err) = data
-        .notifications
+    data.notifications
         .send_verification_code(
             user.name().as_str(),
             user.email().as_str(),
             verification_url.as_str(),
             verification_code.as_str(),
         )
-        .await
-    {
-        tracing::error!("Failed sending email {err:#}");
-        let json_error = ErrorResponse {
-            message: "Something bad happened while sending the verification code".to_string(),
-        };
-        return Err((StatusCode::INTERNAL_SERVER_ERROR, Json(json_error)));
-    }
+        .await;
 
     db_tx.commit().await.map_err(|e| {
         let error_response = ErrorResponse {
@@ -844,22 +836,14 @@ async fn forgot_password_handler(
         password_reset_url.push_str("?nomn=true");
     }
 
-    if let Err(error) = data
-        .notifications
+    data.notifications
         .send_password_reset_token(
             user.name().as_str(),
             user.email().as_str(),
             PASSWORD_TOKEN_EXPIRES_IN_MINUTES,
             password_reset_url.as_str(),
         )
-        .await
-    {
-        tracing::error!(lender_id, "Failed resetting user password {error:#}");
-        let json_error = ErrorResponse {
-            message: "Something bad happened while sending the password reset code".to_string(),
-        };
-        return Err((StatusCode::INTERNAL_SERVER_ERROR, Json(json_error)));
-    }
+        .await;
 
     let email_address = body.email.to_owned().to_ascii_lowercase();
     update_password_reset_token_for_user(

@@ -314,8 +314,7 @@ async fn post_contract_request(
         if offer.auto_accept {
             data.notifications
                 .send_notification_about_auto_accepted_loan(lender, lender_loan_url.as_str())
-                .await
-                .context("Failed to send loan-auto-accept email")?;
+                .await;
 
             db::contract_emails::mark_auto_accept_email_as_sent(&data.db, &contract.id)
                 .await
@@ -330,8 +329,7 @@ async fn post_contract_request(
         } else {
             data.notifications
                 .send_new_loan_request(lender, lender_loan_url.as_str())
-                .await
-                .context("Failed to send loan-request email")?;
+                .await;
 
             db::contract_emails::mark_loan_request_as_sent(&data.db, &contract.id)
                 .await
@@ -475,8 +473,7 @@ async fn put_repayment_provided(
 
         data.notifications
             .send_loan_repaid(lender, loan_url.as_str())
-            .await
-            .context("Failed to send loan repaid email")?;
+            .await;
 
         db::contract_emails::mark_loan_repaid_as_sent(&data.db, &contract.id)
             .await
@@ -918,8 +915,6 @@ enum Error {
     MissingParentContract(String),
     /// Discounted origination fee rate was not valid
     InvalidDiscountRate { fee: Decimal },
-    /// We failed sending a notification
-    Notification(crate::notifications::Error),
 }
 
 impl From<JsonRejection> for Error {
@@ -1205,14 +1200,6 @@ impl IntoResponse for Error {
                     "Something went wrong".to_owned(),
                 )
             }
-            Error::Notification(error) => {
-                tracing::error!("Failed sending notifications: {error:?}");
-
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
         };
 
         (status, AppJson(ErrorResponse { message })).into_response()
@@ -1230,7 +1217,6 @@ impl From<approve_contract::Error> for Error {
             approve_contract::Error::InvalidApproveRequest { status } => {
                 Error::InvalidApproveRequest { status }
             }
-            approve_contract::Error::Notification(error) => Error::Notification(error),
         }
     }
 }

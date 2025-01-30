@@ -22,7 +22,6 @@ use crate::model::TokenClaims;
 use crate::model::UpgradeToPakeRequest;
 use crate::model::UpgradeToPakeResponse;
 use crate::model::WalletBackupData;
-use crate::notifications;
 use crate::routes::borrower::auth::jwt_auth::auth;
 use crate::routes::user_connection_details_middleware;
 use crate::routes::user_connection_details_middleware::UserConnectionDetails;
@@ -203,8 +202,7 @@ async fn post_register(
             verification_url.as_str(),
             verification_code.as_str(),
         )
-        .await
-        .map_err(Error::CouldNotSendVerificationEmail)?;
+        .await;
 
     db_tx
         .commit()
@@ -711,22 +709,14 @@ async fn forgot_password_handler(
         password_reset_url.push_str("?nomn=true");
     }
 
-    if let Err(error) = data
-        .notifications
+    data.notifications
         .send_password_reset_token(
             user.name().as_str(),
             user.email().as_str(),
             PASSWORD_TOKEN_EXPIRES_IN_MINUTES,
             password_reset_url.as_str(),
         )
-        .await
-    {
-        tracing::error!(borrower_id, "Failed resetting user password {error:#}");
-        let json_error = ErrorResponse {
-            message: "Something bad happened while sending the password reset code".to_string(),
-        };
-        return Err((StatusCode::INTERNAL_SERVER_ERROR, Json(json_error)));
-    }
+        .await;
 
     let email_address = body.email.to_owned().to_ascii_lowercase();
     update_password_reset_token_for_user(
@@ -974,8 +964,6 @@ enum Error {
     InviteCodeRequired,
     /// Invalid or expired referral code.
     InvalidReferralCode { referral_code: String },
-    /// Failed sending notification email.
-    CouldNotSendVerificationEmail(notifications::Error),
     /// User did not verify their email.
     EmailNotVerified,
     /// The verification code provided does not exist.
@@ -1045,14 +1033,6 @@ impl IntoResponse for Error {
                 tracing::warn!(referral_code, "User tried invalid referral code");
 
                 (StatusCode::BAD_REQUEST, "Invalid referral code".to_owned())
-            }
-            Error::CouldNotSendVerificationEmail(e) => {
-                tracing::error!("Could not send mail to verify email: {e:#}");
-
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
             }
             Error::InvalidEmail => (
                 StatusCode::BAD_REQUEST,

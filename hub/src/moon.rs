@@ -303,8 +303,7 @@ impl Manager {
 
         self.notifications
             .send_moon_card_ready(borrower, card_details_url.as_str())
-            .await
-            .context("Failed to send moon-card-ready email")?;
+            .await;
 
         Ok(())
     }

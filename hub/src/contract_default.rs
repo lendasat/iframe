@@ -147,7 +147,7 @@ async fn notify_borrower_about_defaulted_loan(
 
     notifications
         .send_loan_defaulted_borrower(borrower, loan_url.as_str())
-        .await?;
+        .await;
 
     Ok(())
 }
@@ -169,7 +169,7 @@ async fn notify_lender_about_defaulted_loan(
 
     notifications
         .send_loan_defaulted_lender(lender, loan_url.as_str())
-        .await?;
+        .await;
 
     Ok(())
 }

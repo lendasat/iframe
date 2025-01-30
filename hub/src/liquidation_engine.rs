@@ -370,32 +370,20 @@ async fn send_notification(
                     current_ltv,
                     &contract_url,
                 )
-                .await?;
+                .await;
         }
         LiquidationStatus::Liquidated => {
-            if let Err(e) = notifications
+            notifications
                 .send_liquidation_notice_borrower(borrower, contract.clone(), price, &contract_url)
-                .await
-            {
-                tracing::error!(
-                    contract_id,
-                    "Failed to send liquidation email to borrower: {e:#}"
-                )
-            };
+                .await;
 
             let lender = db::lenders::get_user_by_id(pool, contract.lender_id.as_str())
                 .await?
                 .context("lender not found")?;
 
-            if let Err(e) = notifications
+            notifications
                 .send_liquidation_notice_lender(lender, contract.clone(), &contract_url)
-                .await
-            {
-                tracing::error!(
-                    contract_id,
-                    "Failed to send liquidation email to lender: {e:#}"
-                )
-            };
+                .await;
         }
     }
 

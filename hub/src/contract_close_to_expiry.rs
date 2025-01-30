@@ -85,19 +85,13 @@ async fn create_contract_close_to_expiry_check(
                                         .await
                                         {
                                             Ok(Some(borrower)) => {
-                                                if let Err(e) = notifications
+                                                notifications
                                                     .send_close_to_expiry_contract(
                                                         borrower,
                                                         &contract_info.formatted_expiry_date(),
                                                         loan_url.as_str(),
                                                     )
-                                                    .await
-                                                {
-                                                    tracing::error!(
-                                                        contract_id=contract_info.contract_id,
-                                                        borrower_id=contract_info.borrower_id,
-                                                        "Failed to send email about close to expiry contract. Error: {e:#}");
-                                                }
+                                                    .await;
                                             }
                                             Ok(None) => tracing::error!(
                                                 contract_id = contract_info.contract_id,

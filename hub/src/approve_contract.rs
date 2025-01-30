@@ -30,9 +30,6 @@ pub enum Error {
     /// The contract was in an invalid state
     #[error("The contract was in an invalid state: {status:?}")]
     InvalidApproveRequest { status: ContractStatus },
-    /// Notifying the user failed
-    #[error("Failed to notify the user.")]
-    Notification(#[source] crate::notifications::Error),
 }
 
 pub async fn approve_contract(
@@ -116,8 +113,7 @@ pub async fn approve_contract(
     if let Err(e) = async {
         notifications
             .send_loan_request_approved(borrower, loan_url.as_str())
-            .await
-            .map_err(Error::Notification)?;
+            .await;
 
         db::contract_emails::mark_loan_request_approved_as_sent(db, &contract.id)
             .await

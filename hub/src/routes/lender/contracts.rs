@@ -294,8 +294,7 @@ pub async fn put_principal_given(
 
         data.notifications
             .send_loan_paid_out(borrower, loan_url.as_str())
-            .await
-            .context("Failed to send loan-paid-out email")?;
+            .await;
 
         db::contract_emails::mark_loan_paid_out_as_sent(&data.db, &contract.id)
             .await
@@ -344,8 +343,7 @@ pub async fn delete_reject_contract(
 
         data.notifications
             .send_loan_request_rejected(borrower, loan_url.as_str())
-            .await
-            .context("Failed to send loan-request-approved email")?;
+            .await;
 
         db::contract_emails::mark_loan_request_rejected_as_sent(&data.db, &contract.id)
             .await
@@ -775,8 +773,7 @@ async fn post_liquidation_tx(
         );
         data.notifications
             .send_loan_liquidated_after_default(borrower, loan_url.as_str())
-            .await
-            .context("Failed to send defaulted-loan-liquidated email")?;
+            .await;
 
         db::contract_emails::mark_defaulted_loan_liquidated_as_sent(&data.db, &contract.id)
             .await

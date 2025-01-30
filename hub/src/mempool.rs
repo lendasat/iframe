@@ -1011,8 +1011,7 @@ async fn send_loan_collateralized_email_to_lender(
 
         notifications
             .send_loan_collateralized(lender, loan_url.as_str())
-            .await
-            .context("Failed to send collateral-funded email")?;
+            .await;
 
         db::contract_emails::mark_collateral_funded_as_sent(db, contract_id)
             .await
