@@ -1,4 +1,5 @@
 use crate::model;
+use crate::model::PersonalReferralCode;
 use anyhow::Context;
 use anyhow::Result;
 use rand::distributions::Alphanumeric;
@@ -21,8 +22,8 @@ pub struct Borrower {
     pub verified: bool,
     pub verification_code: Option<String>,
     pub used_referral_code: Option<String>,
-    pub password_reset_token: Option<String>,
     pub first_time_discount_rate_referee: Option<Decimal>,
+    pub password_reset_token: Option<String>,
     pub password_reset_at: Option<OffsetDateTime>,
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
@@ -30,7 +31,7 @@ pub struct Borrower {
 
 fn new_model_borrower(
     borrower: Borrower,
-    personal_referral_code: Option<String>,
+    personal_referral_codes: Vec<PersonalReferralCode>,
 ) -> model::Borrower {
     model::Borrower {
         id: borrower.id,
@@ -42,7 +43,7 @@ fn new_model_borrower(
         verified: borrower.verified,
         verification_code: borrower.verification_code,
         used_referral_code: borrower.used_referral_code,
-        personal_referral_code,
+        personal_referral_codes,
         first_time_discount_rate_referee: borrower.first_time_discount_rate_referee,
         password_reset_token: borrower.password_reset_token,
         password_reset_at: borrower.password_reset_at,
@@ -104,19 +105,27 @@ where
     E: sqlx::Executor<'a, Database = Postgres>,
 {
     // Then get their personal referral code if it exists
-    let personal_code = sqlx::query!(
+    let personal_code = sqlx::query_as!(
+        PersonalReferralCode,
         r#"
-    SELECT code
-    FROM referral_codes_borrowers
-    WHERE referrer_id = $1
-    "#,
+            SELECT 
+                code, 
+                active, 
+                first_time_discount_rate_referee,
+                first_time_commission_rate_referrer,
+                commission_rate_referrer,
+                created_at,
+                expires_at
+            FROM referral_codes_borrowers
+            WHERE referrer_id = $1
+        "#,
         base_user.id
     )
-    .fetch_optional(pool)
+    .fetch_all(pool)
     .await?;
 
     // Create the final user struct
-    let borrower = new_model_borrower(base_user, personal_code.map(|r| r.code));
+    let borrower = new_model_borrower(base_user, personal_code);
     Ok(borrower)
 }
 
@@ -184,7 +193,7 @@ pub async fn get_user_by_email(
     let email = email.to_ascii_lowercase();
     // TODO: try to merge the `enhance` part again
     let maybe_base_user = sqlx::query_as!(
-        model::Borrower,
+        Borrower,
         r#"SELECT
            id as "id!",
            name as "name!",
@@ -196,7 +205,6 @@ pub async fn get_user_by_email(
            verification_code,
            password_reset_token,
            used_referral_code,
-           personal_referral_code,
            first_time_discount_rate_referee,
            password_reset_at,
            created_at as "created_at!",
@@ -209,11 +217,14 @@ pub async fn get_user_by_email(
     .await
     .context("failed loading")?;
 
-    Ok(maybe_base_user)
+    match maybe_base_user {
+        Some(user) => Ok(Some(enhance_with_personal_code(pool, user).await?)),
+        None => Ok(None),
+    }
 }
 pub async fn get_user_by_id(pool: &Pool<Postgres>, id: &str) -> Result<Option<model::Borrower>> {
     let maybe_base_user = sqlx::query_as!(
-        model::Borrower,
+        Borrower,
         r#"SELECT
            id as "id!",
            name as "name!",
@@ -225,7 +236,6 @@ pub async fn get_user_by_id(pool: &Pool<Postgres>, id: &str) -> Result<Option<mo
            verification_code,
            password_reset_token,
            used_referral_code,
-           personal_referral_code,
            first_time_discount_rate_referee,
            password_reset_at,
            created_at as "created_at!",
@@ -238,7 +248,10 @@ pub async fn get_user_by_id(pool: &Pool<Postgres>, id: &str) -> Result<Option<mo
     .await
     .context("failed loading")?;
 
-    Ok(maybe_base_user)
+    match maybe_base_user {
+        Some(user) => Ok(Some(enhance_with_personal_code(pool, user).await?)),
+        None => Ok(None),
+    }
 }
 pub async fn get_user_by_verification_code(
     pool: &Pool<Postgres>,
@@ -246,7 +259,7 @@ pub async fn get_user_by_verification_code(
 ) -> Result<Option<model::Borrower>> {
     let verification_code = verification_code.to_ascii_lowercase();
     let maybe_base_user = sqlx::query_as!(
-        model::Borrower,
+        Borrower,
         r#"SELECT
            id as "id!",
            name as "name!",
@@ -258,7 +271,6 @@ pub async fn get_user_by_verification_code(
            verification_code,
            password_reset_token,
            used_referral_code,
-           personal_referral_code,
            first_time_discount_rate_referee,
            password_reset_at,
            created_at as "created_at!",
@@ -271,7 +283,10 @@ pub async fn get_user_by_verification_code(
     .await
     .context("failed loading")?;
 
-    Ok(maybe_base_user)
+    match maybe_base_user {
+        Some(user) => Ok(Some(enhance_with_personal_code(pool, user).await?)),
+        None => Ok(None),
+    }
 }
 pub async fn verify_user(pool: &Pool<Postgres>, verification_code: &str) -> Result<()> {
     let verification_code = verification_code.to_ascii_lowercase();
@@ -314,7 +329,7 @@ pub async fn get_user_by_rest_token(
     password_reset_token: &str,
 ) -> Result<Option<model::Borrower>> {
     let maybe_base_user = sqlx::query_as!(
-        model::Borrower,
+        Borrower,
         r#"SELECT
            id as "id!",
            name as "name!",
@@ -326,7 +341,6 @@ pub async fn get_user_by_rest_token(
            verification_code,
            password_reset_token,
            used_referral_code,
-           personal_referral_code,
            first_time_discount_rate_referee,
            password_reset_at,
            created_at as "created_at!",
@@ -339,7 +353,10 @@ pub async fn get_user_by_rest_token(
     .await
     .context("failed loading")?;
 
-    Ok(maybe_base_user)
+    match maybe_base_user {
+        Some(user) => Ok(Some(enhance_with_personal_code(pool, user).await?)),
+        None => Ok(None),
+    }
 }
 
 /// Generates a random alphanumeric string with length [`length`]

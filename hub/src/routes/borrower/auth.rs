@@ -8,6 +8,7 @@ use crate::db::borrowers::update_password_reset_token_for_user;
 use crate::db::borrowers::user_exists;
 use crate::db::borrowers::verify_user;
 use crate::db::wallet_backups::NewBorrowerWalletBackup;
+use crate::model;
 use crate::model::Borrower;
 use crate::model::ContractStatus;
 use crate::model::FinishUpgradeToPakeRequest;
@@ -227,13 +228,43 @@ struct FilteredUser {
     email: String,
     verified: bool,
     used_referral_code: Option<String>,
-    personal_referral_code: Option<String>,
+    personal_referral_codes: Vec<PersonalReferralCode>,
     #[serde(with = "rust_decimal::serde::float")]
     first_time_discount_rate: Decimal,
     #[serde(with = "time::serde::rfc3339")]
     created_at: OffsetDateTime,
     #[serde(with = "time::serde::rfc3339")]
     updated_at: OffsetDateTime,
+}
+
+#[derive(Debug, Serialize)]
+struct PersonalReferralCode {
+    code: String,
+    active: bool,
+    #[serde(with = "rust_decimal::serde::float")]
+    first_time_discount_rate_referee: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
+    first_time_commission_rate_referrer: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
+    commission_rate_referrer: Decimal,
+    #[serde(with = "time::serde::rfc3339")]
+    created_at: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339")]
+    expires_at: OffsetDateTime,
+}
+
+impl From<model::PersonalReferralCode> for PersonalReferralCode {
+    fn from(value: model::PersonalReferralCode) -> Self {
+        PersonalReferralCode {
+            code: value.code,
+            active: value.active,
+            first_time_discount_rate_referee: value.first_time_discount_rate_referee,
+            first_time_commission_rate_referrer: value.first_time_commission_rate_referrer,
+            commission_rate_referrer: value.commission_rate_referrer,
+            created_at: value.created_at,
+            expires_at: value.expires_at,
+        }
+    }
 }
 
 impl FilteredUser {
@@ -246,7 +277,12 @@ impl FilteredUser {
             name: user.name.to_owned(),
             verified: user.verified,
             used_referral_code: user.used_referral_code.clone(),
-            personal_referral_code: user.personal_referral_code.clone(),
+            personal_referral_codes: user
+                .personal_referral_codes
+                .clone()
+                .into_iter()
+                .map(PersonalReferralCode::from)
+                .collect(),
             first_time_discount_rate: user.first_time_discount_rate_referee.unwrap_or_default(),
             created_at: created_at_utc,
             updated_at: updated_at_utc,

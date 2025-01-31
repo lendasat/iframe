@@ -1,7 +1,7 @@
 import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
 import { useAuth } from "@frontend-monorepo/http-client-borrower";
 import { MnemonicComponent } from "@frontend-monorepo/ui-shared";
-import { Avatar, Badge, Box, Button, Callout, Flex, Heading, Spinner, TabNav, Text } from "@radix-ui/themes";
+import { Avatar, Badge, Box, Button, Callout, Flex, Heading, Spinner, Table, TabNav, Text } from "@radix-ui/themes";
 import { useState } from "react";
 import { BiSolidError } from "react-icons/bi";
 import { GoVerified } from "react-icons/go";
@@ -9,6 +9,89 @@ import { IoIosUnlock } from "react-icons/io";
 import { MdEdit } from "react-icons/md";
 import { PiWarningCircleFill } from "react-icons/pi";
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
+
+type PersonalReferralCode = {
+  code: string;
+  active: boolean;
+  first_time_discount_rate_referee: number;
+  first_time_commission_rate_referrer: number;
+  commission_rate_referrer: number;
+  created_at: string;
+  expires_at: string;
+};
+
+type ReferralCodesTableProps = {
+  referralCodes: PersonalReferralCode[];
+};
+
+const ReferralCodesTable = ({ referralCodes }: ReferralCodesTableProps) => {
+  const filteredCodes = referralCodes.filter((code) => code.active);
+
+  return (
+    <Table.Root variant="surface">
+      <Table.Header>
+        <Table.Row>
+          <Table.ColumnHeaderCell>
+            <Text className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
+              Code
+            </Text>
+          </Table.ColumnHeaderCell>
+          <Table.ColumnHeaderCell>
+            <Text className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
+              Referred user discount
+            </Text>
+          </Table.ColumnHeaderCell>
+          <Table.ColumnHeaderCell>
+            <Text className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
+              First loan commission
+            </Text>
+          </Table.ColumnHeaderCell>
+          <Table.ColumnHeaderCell>
+            <Text className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
+              Other loan commission
+            </Text>
+          </Table.ColumnHeaderCell>
+        </Table.Row>
+      </Table.Header>
+
+      <Table.Body>
+        {filteredCodes.map((code) => (
+          <Table.Row key={code.code}>
+            <Table.Cell>
+              <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
+                <Badge size={"3"}>
+                  <code>{code.code}</code>
+                </Badge>
+              </Text>
+            </Table.Cell>
+            <Table.Cell>
+              <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
+                -{(code.first_time_discount_rate_referee * 100).toFixed(1)}%
+              </Text>
+            </Table.Cell>
+            <Table.Cell>
+              <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
+                {(code.first_time_commission_rate_referrer * 100).toFixed(1)}%
+              </Text>
+            </Table.Cell>
+            <Table.Cell>
+              <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
+                {(code.commission_rate_referrer * 100).toFixed(1)}%
+              </Text>
+            </Table.Cell>
+          </Table.Row>
+        ))}
+        {referralCodes.length === 0 && (
+          <Table.Row>
+            <Table.Cell colSpan={5} align="center">
+              No referral codes found
+            </Table.Cell>
+          </Table.Row>
+        )}
+      </Table.Body>
+    </Table.Root>
+  );
+};
 
 function Profile() {
   const { user } = useAuth();
@@ -188,23 +271,18 @@ function Profile() {
             </Box>
           </Box>
         </Box>
-        <Box>
-          <Flex direction={"column"} gap={"1"}>
-            <Text
-              as="label"
-              weight={"medium"}
-              size={"2"}
-              className="text-font/50 dark:text-font-dark/50"
-            >
-              Personal referral codes
-            </Text>
-            <Text size={"3"} weight={"medium"} className="text-font dark:text-font-dark">
-              {user.personal_referral_code && (
-                <Badge size={"3"}>
-                  {user.personal_referral_code}
-                </Badge>
-              )}
-              {!user.personal_referral_code
+        <Box className="border border-purple-400/20 rounded-2xl px-5 py-6 dark:border-gray-500/50">
+          <Heading
+            as="h4"
+            className="font-semibold capitalize text-font dark:text-font-dark"
+            size={"3"}
+          >
+            Personal referral codes
+          </Heading>
+
+          <Flex direction={"column"} gap={"1"} className={"mt-5"}>
+            {user.personal_referral_codes && <ReferralCodesTable referralCodes={user.personal_referral_codes} />}
+            {!user.personal_referral_codes || user.personal_referral_codes?.length === 0
                 && (
                   <Callout.Root color="orange">
                     <Callout.Icon>
@@ -215,7 +293,6 @@ function Profile() {
                     </Callout.Text>
                   </Callout.Root>
                 )}
-            </Text>
           </Flex>
         </Box>
         {error && (
