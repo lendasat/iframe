@@ -19,9 +19,9 @@ import DashBoard from "./dashboard/dash-board";
 import ResolveDispute from "./disputes/dispute";
 import ErrorBoundary from "./ErrorBoundary";
 import History from "./History";
-import MyAccount from "./my-account";
 import RequestLoan from "./request-loan/request-loan";
 import { RequestLoanSummary } from "./request-loan/request-loan-summary";
+import Settings from "./settings/settings";
 import "../assets/styles.css";
 import type { User } from "@frontend-monorepo/base-http-client";
 import { LoanProductOption } from "@frontend-monorepo/base-http-client";
@@ -187,7 +187,7 @@ function MainLayoutComponents() {
             />
             <Route path="/custom-request" element={<CustomRequest />} />
             <Route path="/history" element={<History />} />
-            <Route path="/settings/*" element={<MyAccount />} />
+            <Route path="/settings/*" element={<Settings />} />
             <Route path="/logout" element={<Logout />} />
             <Route path="/lender/:id" element={<LenderProfile />} />
             <Route path="/borrower/:id" element={<BorrowerProfile />} />
