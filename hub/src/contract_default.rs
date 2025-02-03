@@ -136,6 +136,13 @@ async fn notify_borrower_about_defaulted_loan(
     contract: DefaultedContract,
     notifications: Arc<Notifications>,
 ) -> Result<()> {
+    let emails =
+        db::contract_emails::load_contract_emails(&db, contract.contract_id.as_str()).await?;
+    if emails.defaulted_loan_borrower_sent {
+        // email already sent;
+        return Ok(());
+    }
+
     let loan_url = format!(
         "{}/my-contracts/{}",
         config.borrower_frontend_origin, contract.contract_id
@@ -149,6 +156,9 @@ async fn notify_borrower_about_defaulted_loan(
         .send_loan_defaulted_borrower(borrower, loan_url.as_str())
         .await;
 
+    db::contract_emails::mark_defaulted_loan_borrower_as_sent(&db, contract.contract_id.as_str())
+        .await?;
+
     Ok(())
 }
 
@@ -158,6 +168,13 @@ async fn notify_lender_about_defaulted_loan(
     contract: DefaultedContract,
     notifications: Arc<Notifications>,
 ) -> Result<()> {
+    let emails =
+        db::contract_emails::load_contract_emails(&db, contract.contract_id.as_str()).await?;
+    if emails.defaulted_loan_lender_sent {
+        // email already sent;
+        return Ok(());
+    }
+
     let loan_url = format!(
         "{}/my-contracts/{}",
         config.lender_frontend_origin, contract.contract_id
@@ -170,6 +187,9 @@ async fn notify_lender_about_defaulted_loan(
     notifications
         .send_loan_defaulted_lender(lender, loan_url.as_str())
         .await;
+
+    db::contract_emails::mark_defaulted_loan_lender_as_sent(&db, contract.contract_id.as_str())
+        .await?;
 
     Ok(())
 }

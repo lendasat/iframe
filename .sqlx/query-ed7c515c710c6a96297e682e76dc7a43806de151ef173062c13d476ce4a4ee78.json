@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            contract_id,\n            loan_request_sent,\n            loan_request_approved_sent,\n            loan_request_rejected_sent,\n            collateral_funded_sent,\n            loan_paid_out_sent,\n            loan_repaid_sent,\n            loan_auto_accept_notification_sent\n        FROM contract_emails\n        WHERE contract_id = $1\n        ",
+  "query": "\n        SELECT\n            contract_id,\n            loan_request_sent,\n            loan_request_approved_sent,\n            loan_request_rejected_sent,\n            collateral_funded_sent,\n            loan_paid_out_sent,\n            loan_repaid_sent,\n            loan_auto_accept_notification_sent,\n            defaulted_loan_borrower_sent,\n            defaulted_loan_lender_sent,\n            defaulted_loan_liquidated_sent\n        FROM contract_emails\n        WHERE contract_id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -42,6 +42,21 @@
         "ordinal": 7,
         "name": "loan_auto_accept_notification_sent",
         "type_info": "Bool"
+      },
+      {
+        "ordinal": 8,
+        "name": "defaulted_loan_borrower_sent",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 9,
+        "name": "defaulted_loan_lender_sent",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 10,
+        "name": "defaulted_loan_liquidated_sent",
+        "type_info": "Bool"
       }
     ],
     "parameters": {
@@ -57,8 +72,11 @@
       false,
       false,
       false,
+      false,
+      false,
+      false,
       false
     ]
   },
-  "hash": "1a4a3e0973b6f76b83cdb92e0663e27ec3d4ff4d898e9f0416ab941a5ca77670"
+  "hash": "ed7c515c710c6a96297e682e76dc7a43806de151ef173062c13d476ce4a4ee78"
 }
