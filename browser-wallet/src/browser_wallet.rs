@@ -20,16 +20,56 @@ pub struct WalletDetails {
     pub xpub: String,
 }
 
-/// Create a new wallet.
+/// Create a new wallet from implicit entropy.
+///
+/// The wallet is encrypted with `password` and works only for `network`. The `key` argument is used
+/// as part of the browser's local storage entry key for each wallet element.
+pub fn new(password: String, network: String) -> Result<WalletDetails> {
+    let (mnemonic_ciphertext, network, xpub) = wallet::generate_new(&password, &network)?;
+
+    Ok(WalletDetails {
+        mnemonic_ciphertext: mnemonic_ciphertext.serialize(),
+        network: network.to_string(),
+        xpub: xpub.to_string(),
+    })
+}
+
+/// Persist a newly created wallet.
+///
+/// If we pass a `key` that is already used in local storage to hold a wallet, the wallet data for
+/// the existing wallet will be moved to a different key.
+pub fn persist_new_wallet(
+    mnemonic_ciphertext: String,
+    network: String,
+    xpub: String,
+    key: String,
+) -> Result<()> {
+    let storage = local_storage()?;
+
+    move_wallet_to_other_key(&key).context("Failed to move wallet to other key")?;
+
+    storage.set_item(
+        &derive_storage_key(&key, SEED_STORAGE_KEY),
+        mnemonic_ciphertext,
+    )?;
+
+    storage.set_item(&derive_storage_key(&key, NETWORK_KEY), network)?;
+
+    storage.set_item(&derive_storage_key(&key, XPUB_KEY), xpub)?;
+
+    Ok(())
+}
+
+/// Create a new wallet from a given `mnemonic`.
 ///
 /// The wallet is encrypted with `password` and works only for `network`. The `key` argument is used
 /// as part of the browser's local storage entry key for each wallet element.
 ///
 /// If we pass a `key` that is already used in local storage to hold a wallet, the wallet data for
 /// the existing wallet will be moved to a different key.
-pub fn new(
+pub fn new_from_mnemonic(
     password: String,
-    mnemonic: Option<String>,
+    mnemonic: String,
     network: String,
     key: String,
 ) -> Result<WalletDetails> {
@@ -38,7 +78,7 @@ pub fn new(
     move_wallet_to_other_key(&key).context("Failed to move wallet to other key")?;
 
     let (mnemonic_ciphertext, network, xpub) =
-        wallet::new_wallet(&password, &network, mnemonic.as_deref())?;
+        wallet::new_from_mnemonic(&password, &network, &mnemonic)?;
 
     storage.set_item(
         &derive_storage_key(&key, SEED_STORAGE_KEY),

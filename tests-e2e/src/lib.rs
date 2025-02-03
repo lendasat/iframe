@@ -99,7 +99,7 @@ mod tests {
         // 2. Borrower takes loan offer by creating a contract request.
         let borrower_pk = {
             let (_, network, xpub) =
-                browser_wallet::wallet::new_wallet("borrower", "regtest", None).unwrap();
+                browser_wallet::wallet::generate_new("borrower", "regtest").unwrap();
 
             browser_wallet::wallet::get_normal_pk_for_network(
                 &xpub.to_string(),
@@ -426,7 +426,7 @@ mod tests {
 
         let borrower_pk = {
             let (_, network, xpub) =
-                browser_wallet::wallet::new_wallet("borrower", "regtest", None).unwrap();
+                browser_wallet::wallet::generate_new("borrower", "regtest").unwrap();
 
             browser_wallet::wallet::get_normal_pk_for_network(
                 &xpub.to_string(),

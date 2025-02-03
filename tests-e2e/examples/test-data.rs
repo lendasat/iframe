@@ -307,9 +307,7 @@ async fn insert_lender(pool: &Pool<Postgres>, network: &str) -> Result<(Lender, 
         .await
         .expect("to be able to enable feature");
 
-    // We can only have one wallet loaded at the time, hence, we need to unload any existing one
-    wallet::unload_wallet();
-    let (mnemonic_ciphertext, network, xpub) = wallet::new_wallet("password123", network, None)?;
+    let (mnemonic_ciphertext, network, xpub) = wallet::generate_new("password123", network)?;
     db::wallet_backups::insert_lender_backup(
         pool,
         NewLenderWalletBackup {
@@ -364,9 +362,7 @@ async fn insert_borrower(pool: &Pool<Postgres>, network: &str) -> Result<Borrowe
     db::borrowers::verify_user(pool, verification_code.as_str()).await?;
     enable_borrower_features(pool, user.id.as_str()).await?;
 
-    // We can only have one wallet loaded at the time, hence, we need to unload any existing one
-    wallet::unload_wallet();
-    let (mnemonic_ciphertext, network, xpub) = wallet::new_wallet("password123", network, None)?;
+    let (mnemonic_ciphertext, network, xpub) = wallet::generate_new("password123", network)?;
     db::wallet_backups::insert_borrower_backup(
         pool,
         NewBorrowerWalletBackup {

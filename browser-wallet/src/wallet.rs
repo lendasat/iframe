@@ -57,24 +57,35 @@ pub struct MnemonicCiphertext {
     inner: Vec<u8>,
 }
 
-pub fn new_wallet(
+pub fn generate_new(password: &str, network: &str) -> Result<(MnemonicCiphertext, Network, Xpub)> {
+    log::info!("Generating new wallet");
+
+    let mut rng = thread_rng();
+
+    let mnemonic = generate_mnemonic(&mut rng)?;
+
+    let (wallet, mnemonic_ciphertext) = Wallet::new(&mut rng, mnemonic, password, network)?;
+    let network = wallet.network;
+    let xpub = Xpub::from_priv(&Secp256k1::new(), &wallet.xprv);
+
+    Ok((mnemonic_ciphertext, network, xpub))
+}
+
+pub fn new_from_mnemonic(
     password: &str,
     network: &str,
-    mnemonic: Option<&str>,
+    mnemonic: &str,
 ) -> Result<(MnemonicCiphertext, Network, Xpub)> {
     let mut guard = WALLET.lock().expect("to get lock");
-    log::info!("Creating new wallet");
+    log::info!("Creating new wallet from mnemonic");
 
     if guard.is_some() {
         log::warn!("Wallet already loaded. Overwriting existing in-memory wallet instance");
     }
 
-    let mut rng = thread_rng();
+    let mnemonic = Mnemonic::from_str(mnemonic)?;
 
-    let mnemonic = match mnemonic {
-        Some(mnemonic) => Mnemonic::from_str(mnemonic)?,
-        None => generate_mnemonic(&mut rng)?,
-    };
+    let mut rng = thread_rng();
 
     let (wallet, mnemonic_ciphertext) = Wallet::new(&mut rng, mnemonic, password, network)?;
     let network = wallet.network;
@@ -103,13 +114,6 @@ pub fn load_wallet(password: &str, mnemonic_ciphertext: &str, network: &str) -> 
     log::debug!("Loading wallet from input.. done");
 
     Ok(())
-}
-
-pub fn unload_wallet() {
-    WALLET
-        .lock()
-        .map(|mut guard| *guard = None)
-        .expect("Failed to acquire lock");
 }
 
 pub fn is_wallet_loaded() -> Result<bool> {
