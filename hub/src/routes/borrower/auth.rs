@@ -210,6 +210,16 @@ async fn post_register(
         .await
         .map_err(|e| Error::Database(anyhow!(e)))?;
 
+    // needs to be after the tx as the user needs to exist in the database.
+    if let Err(err) =
+        db::borrowers_referral_code::create_referral_code(&data.db, None, user.id.as_str()).await
+    {
+        tracing::error!(
+            user_id = user.id,
+            "Failed inserting referral code for new user {err}"
+        );
+    }
+
     let user_response = serde_json::json!({"message": format!("We sent an email with a verification code to {}", email)});
 
     Ok(Json(user_response))
