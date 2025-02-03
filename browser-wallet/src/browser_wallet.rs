@@ -25,8 +25,8 @@ pub struct WalletDetails {
 /// The wallet is encrypted with `password` and works only for `network`. The `key` argument is used
 /// as part of the browser's local storage entry key for each wallet element.
 ///
-/// If we pass a `key` that is already being used in local storage, all the associated values will
-/// be overwritten based on the newly generated wallet.
+/// If we pass a `key` that is already used in local storage to hold a wallet, the wallet data for
+/// the existing wallet will be moved to a different key.
 pub fn new(
     password: String,
     mnemonic: Option<String>,
@@ -35,11 +35,7 @@ pub fn new(
 ) -> Result<WalletDetails> {
     let storage = local_storage()?;
 
-    if does_wallet_exist(&key)? {
-        log::warn!(
-            "Wallet with same name already exists in local storage. It will be overwritten."
-        );
-    }
+    move_wallet_to_other_key(&key).context("Failed to move wallet to other key")?;
 
     let (mnemonic_ciphertext, network, xpub) =
         wallet::new_wallet(&password, &network, mnemonic.as_deref())?;
@@ -62,8 +58,8 @@ pub fn new(
 
 /// Restore a wallet from a backup.
 ///
-/// If we pass a `key` that is already being used in local storage, all the associated values will
-/// be overwritten based on the newly generated wallet.
+/// If we pass a `key` that is already used in local storage to hold a wallet, the wallet data for
+/// the existing wallet will be moved to a different key.
 pub fn restore(
     key: String,
     mnemonic_ciphertext: String,
@@ -72,11 +68,7 @@ pub fn restore(
 ) -> Result<()> {
     let storage = local_storage()?;
 
-    if does_wallet_exist(&key)? {
-        log::warn!(
-            "Wallet with same name already exists in local storage. It will be overwritten."
-        );
-    }
+    move_wallet_to_other_key(&key).context("Failed to move wallet to other key")?;
 
     storage.set_item(
         &derive_storage_key(&key, SEED_STORAGE_KEY),
@@ -93,8 +85,6 @@ pub fn restore(
 /// Upgrade the wallet to a new format, encrypted under `new_password`. The new format will
 /// **generate different keys**, because we no longer use the `old_password` as a passphrase to
 /// derive the seed.
-///
-/// We move the old data to a different local storage key just in case.
 pub fn upgrade_wallet(
     key: String,
     mnemonic_ciphertext: String,
@@ -116,8 +106,6 @@ pub fn upgrade_wallet(
     )
     .context("failed to generate upgraded wallet data")?;
 
-    // If local storage already contains a copy of the old wallet data, we move it to a different
-    // key. This should not be necesary, but we don't want to be destructive in case we write bugs.
     if does_wallet_exist(&key)? {
         bail!("Should not upgrade wallet to PAKE more than once");
     }
@@ -147,7 +135,8 @@ pub fn upgrade_wallet(
 /// Update the encryption key of the local encrypted wallet to use `new_password` instead of
 /// `old_password`.
 ///
-/// We move the old data to a different local storage key just in case.
+/// If we pass a `key` that is already used in local storage to hold a wallet, the wallet data for
+/// the existing wallet will be moved to a different key.
 pub fn change_wallet_encryption(
     key: String,
     old_password: String,
@@ -171,11 +160,7 @@ pub fn change_wallet_encryption(
     )
     .context("failed to generate upgraded wallet data")?;
 
-    if does_wallet_exist(&key)? {
-        log::warn!(
-            "Wallet with same name already exists in local storage. It will be overwritten."
-        );
-    }
+    move_wallet_to_other_key(&key).context("Failed to move wallet to other key")?;
 
     storage
         .set_item(
@@ -197,11 +182,6 @@ pub fn change_wallet_encryption(
         network,
         xpub: new_xpub.to_string(),
     })
-}
-
-fn derive_storage_key(key: &str, actual_key: &str) -> String {
-    let key = key.trim().replace(['\n', '\t', ' '], "_");
-    format!("{}.{}.{}", STORAGE_KEY_PREFIX, key, actual_key)
 }
 
 pub fn load(password: &str, key: &str) -> Result<()> {
@@ -276,7 +256,7 @@ pub fn sign_liquidation_psbt(
 
     let tx = bitcoin::consensus::encode::serialize_hex(&tx);
 
-    log::debug!("Signed claim TX: {tx}");
+    log::debug!("Signed liquidation TX: {tx}");
 
     Ok((tx, outputs, params))
 }
@@ -298,4 +278,51 @@ pub fn get_xpub(key: &str) -> Result<String> {
         .context("No xpub found")?;
 
     Ok(xpub)
+}
+
+/// Move a wallet stored in local storage from `key` to `old-key`.
+///
+/// We move the wallet to avoid overwriting valuable information. In most scenarios the overwritten
+/// wallet will not be needed anymore.
+fn move_wallet_to_other_key(key: &str) -> Result<()> {
+    let storage = local_storage()?;
+
+    let mnemonic_ciphertext =
+        storage.get_item::<String>(&derive_storage_key(key, SEED_STORAGE_KEY))?;
+
+    let network = storage.get_item::<String>(&derive_storage_key(key, NETWORK_KEY))?;
+
+    let xpub = storage.get_item::<String>(&derive_storage_key(key, XPUB_KEY))?;
+
+    let (mnemonic_ciphertext, network, xpub) = match (mnemonic_ciphertext, network, xpub) {
+        // Nothing to move.
+        (None, None, None) => {
+            return Ok(());
+        }
+        // Wallet present in local storage.
+        (Some(m), Some(n), Some(x)) => (m, n, x),
+        _ => {
+            bail!("Cannot move incomplete wallet to other key");
+        }
+    };
+
+    // We will end up overwriting anything that already lives under `other-key`.
+    let mut other_key = "old-".to_string();
+    other_key.push_str(key);
+
+    storage.set_item(
+        &derive_storage_key(&other_key, SEED_STORAGE_KEY),
+        mnemonic_ciphertext,
+    )?;
+
+    storage.set_item(&derive_storage_key(&other_key, NETWORK_KEY), network)?;
+
+    storage.set_item(&derive_storage_key(&other_key, XPUB_KEY), xpub)?;
+
+    Ok(())
+}
+
+fn derive_storage_key(key: &str, actual_key: &str) -> String {
+    let key = key.trim().replace(['\n', '\t', ' '], "_");
+    format!("{}.{}.{}", STORAGE_KEY_PREFIX, key, actual_key)
 }
