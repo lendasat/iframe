@@ -209,6 +209,21 @@ pub fn sign_liquidation_psbt(
 }
 
 #[wasm_bindgen]
+pub fn get_nsec() -> Result<String, JsValue> {
+    map_err_to_js!(wallet::get_nsec())
+}
+
+#[wasm_bindgen]
+pub fn contract_to_pubkey(contract: String) -> Result<String, JsValue> {
+    map_err_to_js!(wallet::contract_to_pubkey(contract))
+}
+
+#[wasm_bindgen]
+pub fn derive_npub(npub: String) -> Result<String, JsValue> {
+    map_err_to_js!(wallet::derive_npub(npub))
+}
+
+#[wasm_bindgen]
 pub struct SignedTransaction {
     tx: String,
     outputs: Vec<TxOut>,

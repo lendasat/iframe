@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT xpub \n        FROM borrower_wallet_backups \n        WHERE borrower_id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "xpub",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bpchar"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "bea6803846bf5f8f3f5e83985e8aac904edbfae7e81db1e2b5bf343b337f8dc1"
+}

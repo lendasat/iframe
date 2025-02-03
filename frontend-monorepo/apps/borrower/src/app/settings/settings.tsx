@@ -46,8 +46,6 @@ function Settings() {
           </Text>
         </Flex>
       </Box>
-      <Box>
-      </Box>
     </Box>
   );
 }

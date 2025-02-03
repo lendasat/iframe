@@ -54,6 +54,8 @@ export interface Contract {
   can_recover_collateral_manually: boolean;
   extends_contract?: string;
   extended_by_contract?: string;
+  borrower_xpub: string;
+  lender_xpub: string;
 }
 
 export interface CreateLoanOfferRequest {

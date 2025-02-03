@@ -147,6 +147,8 @@ export interface Contract {
   liquidation_price: number;
   extends_contract?: string;
   extended_by_contract?: string;
+  borrower_xpub: string;
+  lender_xpub: string;
 }
 
 export interface ClaimCollateralPsbtResponse {

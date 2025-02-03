@@ -6,6 +6,7 @@ import {
   useAuth,
   useBorrowerHttpClient,
 } from "@frontend-monorepo/http-client-borrower";
+import { ChatDrawer } from "@frontend-monorepo/nostr-chat";
 import {
   CurrencyFormatter,
   formatCurrency,
@@ -261,8 +262,18 @@ function ContractDetails({ contract }: DetailsProps) {
 
   const actualInterest = contract.interest_rate / (ONE_YEAR / contract.duration_days);
 
+  console.log(`contract.lender_xpub ${contract.lender_xpub}`);
+  console.log(`contract.borrower_xpub ${contract.borrower_xpub}`);
+
+  console.log("I'm relaoding contract details");
+
   return (
     <Box>
+      <ChatDrawer
+        contractId={contract.id}
+        counterpartyXPub={contract.lender_xpub}
+      />
+
       <Box className="p-6 md:pl-8 border-b border-font/10 dark:border-font-dark/10">
         <Heading className={"text-font dark:text-font-dark"} size={"6"}>Contract Details</Heading>
       </Box>

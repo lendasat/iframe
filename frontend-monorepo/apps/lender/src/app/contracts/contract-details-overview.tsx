@@ -9,6 +9,7 @@ import {
   useAuth,
   useLenderHttpClient,
 } from "@frontend-monorepo/http-client-lender";
+import { ChatDrawer } from "@frontend-monorepo/nostr-chat";
 import {
   CurrencyFormatter,
   formatCurrency,
@@ -173,6 +174,10 @@ function ContractDetails({ contract }: DetailsProps) {
 
   return (
     <Grid className="md:grid-cols-2">
+      <ChatDrawer
+        contractId={contract.id}
+        counterpartyXPub={contract.borrower_xpub}
+      />
       <Box className="border-r border-font/10 dark:border-font-dark/10">
         <Box className="p-6 md:pl-8 border-b border-font/10 dark:border-font-dark/10">
           <Heading className={"text-font dark:text-font-dark"} size={"6"}>Contract Details</Heading>

@@ -7,10 +7,14 @@ use anyhow::Context;
 use anyhow::Result;
 use bip39::Mnemonic;
 use bitcoin::bip32::ChildNumber;
+use bitcoin::bip32::DerivationPath;
 use bitcoin::bip32::Xpriv;
 use bitcoin::bip32::Xpub;
+use bitcoin::hex::Case;
+use bitcoin::hex::DisplayHex;
 use bitcoin::key::Keypair;
 use bitcoin::key::Secp256k1;
+use bitcoin::secp256k1::SecretKey;
 use bitcoin::sighash::SighashCache;
 use bitcoin::EcdsaSighashType;
 use bitcoin::Network;
@@ -24,12 +28,15 @@ use miniscript::Descriptor;
 use rand::thread_rng;
 use rand::CryptoRng;
 use rand::Rng;
+use sha2::Digest;
 use sha2::Sha256;
 use std::str::FromStr;
 use std::sync::LazyLock;
 use std::sync::Mutex;
 
 const SECRET_KEY_ENCRYPTION_NONCE: &[u8; 12] = b"SECRET_KEY!!";
+
+const NSEC_DERIVATION_PATH: &str = "m/44/0/0/0/0";
 
 /// Index used to derive new keypairs from the wallet's [`Xpub`].
 ///
@@ -687,6 +694,11 @@ impl Wallet {
     fn mnemonic(&self) -> &Mnemonic {
         &self.mnemonic
     }
+
+    fn nsec(&self) -> Result<SecretKey> {
+        let nsec = derive_nsec_from_xprv(&self.xprv)?;
+        Ok(nsec)
+    }
 }
 
 impl MnemonicCiphertext {
@@ -744,6 +756,24 @@ fn encrypt_mnemonic(mnemonic: &Mnemonic, encryption_key: [u8; 32]) -> Result<Vec
         .context("failed to encrypt mnemonic")?;
 
     Ok(ciphertext)
+}
+
+// TODO: use index
+fn derive_nsec_from_xprv(xprv: &Xpriv) -> Result<SecretKey> {
+    let path = DerivationPath::from_str(NSEC_DERIVATION_PATH).expect("to be valid");
+
+    let secp = Secp256k1::new();
+
+    // Derive the child key at the specified path
+    let child_xprv = xprv.derive_priv(&secp, &path)?;
+
+    // Get the private key bytes
+    let private_key_bytes = child_xprv.private_key.secret_bytes();
+
+    // Create SecretKey from bytes
+    let secret_key = SecretKey::from_slice(&private_key_bytes)?;
+
+    Ok(secret_key)
 }
 
 /// Encrypt the mnemonic seed phrase with the encryption key plus a passphrase.
@@ -811,6 +841,52 @@ fn decrypt_mnemonic(
     let mnemonic = Mnemonic::from_str(&mnemonic)?;
 
     Ok((mnemonic, old_passphrase))
+}
+
+/// Returns a nsec derived from the wallet Xprv in byte format
+pub(crate) fn get_nsec() -> Result<String> {
+    let guard = WALLET.lock().expect("to get lock");
+
+    let nsec = match *guard {
+        Some(ref wallet) => wallet.nsec()?,
+        None => {
+            bail!("Can't get nsec if wallet is not loaded");
+        }
+    };
+
+    Ok(nsec.secret_bytes().to_hex_string(Case::Lower))
+}
+
+/// Returns a pubkey derived from a [`contract`] in hex format
+pub(crate) fn contract_to_pubkey(contract: String) -> Result<String> {
+    let mut hasher = Sha256::new();
+    hasher.update(contract.as_bytes());
+    let hash = hasher.finalize();
+
+    let secp = Secp256k1::new();
+    let secret_key = SecretKey::from_slice(&hash)?;
+
+    let public_key = secret_key.public_key(&secp);
+
+    let (public_key, _) = public_key.x_only_public_key();
+    Ok(public_key.to_string())
+}
+
+/// Returns a npub derived from a [`XPub`] in hex format
+pub(crate) fn derive_npub(xpub: String) -> Result<String> {
+    let xpub = Xpub::from_str(xpub.as_str()).context("Invalid xpub provided")?;
+
+    let path = DerivationPath::from_str(NSEC_DERIVATION_PATH).expect("to be valid");
+
+    let secp = Secp256k1::new();
+
+    // Derive the child key at the specified path
+    let child_xprv = xpub.derive_pub(&secp, &path)?;
+
+    let public_key = child_xprv.public_key;
+
+    let (public_key, _) = public_key.x_only_public_key();
+    Ok(public_key.to_string())
 }
 
 #[cfg(test)]
