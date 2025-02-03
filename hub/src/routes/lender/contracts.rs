@@ -771,6 +771,14 @@ async fn post_liquidation_tx(
             data.config.borrower_frontend_origin.to_owned(),
             contract_id
         );
+
+        let emails =
+            db::contract_emails::load_contract_emails(&data.db, contract.id.as_str()).await?;
+        if emails.defaulted_loan_liquidated_sent {
+            // Email already sent
+            return Ok(claim_txid.to_string());
+        }
+
         data.notifications
             .send_loan_liquidated_after_default(borrower, loan_url.as_str())
             .await;
@@ -779,7 +787,7 @@ async fn post_liquidation_tx(
             .await
             .context("Failed to mark defaulted-loan-liquidated email as sent")?;
 
-        anyhow::Ok(())
+        anyhow::Ok(claim_txid.to_string())
     }
     .await
     {

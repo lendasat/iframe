@@ -486,6 +486,12 @@ pub struct ContractEmails {
     /// Whether an email was sent to the lender telling him that the contract has been auto
     /// approved.
     pub loan_auto_accept_notification_sent: bool,
+    /// Whether an email was sent to notify borrower about a defaulted loan
+    pub defaulted_loan_borrower_sent: bool,
+    /// Whether an email was sent to notify lender about a defaulted loan
+    pub defaulted_loan_lender_sent: bool,
+    /// Whether an email was sent after the defaulted loan was liquidated
+    pub defaulted_loan_liquidated_sent: bool,
 }
 
 pub mod db {
@@ -591,6 +597,9 @@ pub mod db {
         pub loan_paid_out_sent: bool,
         pub loan_repaid_sent: bool,
         pub loan_auto_accept_notification_sent: bool,
+        pub defaulted_loan_borrower_sent: bool,
+        pub defaulted_loan_lender_sent: bool,
+        pub defaulted_loan_liquidated_sent: bool,
     }
 }
 
@@ -801,6 +810,9 @@ impl From<db::ContractEmails> for ContractEmails {
             collateral_funded_sent: value.collateral_funded_sent,
             loan_paid_out_sent: value.loan_paid_out_sent,
             loan_auto_accept_notification_sent: value.loan_auto_accept_notification_sent,
+            defaulted_loan_borrower_sent: value.defaulted_loan_borrower_sent,
+            defaulted_loan_lender_sent: value.defaulted_loan_lender_sent,
+            defaulted_loan_liquidated_sent: value.defaulted_loan_liquidated_sent,
         }
     }
 }
