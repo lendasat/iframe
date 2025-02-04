@@ -57,22 +57,24 @@ export function ContractRequested({ createdAt, contractId }: ContractRequestedPr
 
   return (
     <Box>
-      <Heading weight={"medium"} size={"4"}>Awaiting Lenders Remark...</Heading>
+      <Heading className={"text-font dark:text-font-dark"} weight={"medium"} size={"4"}>
+        Awaiting Lenders Remark...
+      </Heading>
       <Box className="mt-3 h-12 px-2 justify-between rounded-xl bg-gradient-to-r from-pink-500/20 to-active-nav/50 to-90% flex items-center">
         <Flex align={"center"} gap={"2"}>
           <Box className="h-8 w-8 bg-black rounded-lg flex items-center justify-center">
             <LuClock1 color="white" size={17} />
           </Box>
-          <Text weight={"medium"} size={"2"}>
+          <Text className={"text-font dark:text-font-dark"} weight={"medium"} size={"2"}>
             Time Remaining
           </Text>
         </Flex>
         <Flex align={"center"} gap={"2"}>
-          <Heading size={"3"}>
+          <Heading size={"3"} className={"text-font dark:text-font-dark"}>
             {timeRemaining}
           </Heading>
           <Tooltip content={"Waiting for the lenders response"}>
-            <PiWarningCircleBold />
+            <PiWarningCircleBold className={"text-font dark:text-font-dark"} />
           </Tooltip>
         </Flex>
       </Box>
@@ -85,9 +87,9 @@ export function ContractRequested({ createdAt, contractId }: ContractRequestedPr
             Cancel Request
           </Button>
         </Dialog.Trigger>
-        <Dialog.Content maxWidth="450px">
-          <Dialog.Title>Cancel Request</Dialog.Title>
-          <Dialog.Description size="2" mb="4">
+        <Dialog.Content className={"bg-light dark:bg-dark"} maxWidth="450px">
+          <Dialog.Title className={"text-font dark:text-font-dark"}>Cancel Request</Dialog.Title>
+          <Dialog.Description size="2" mb="4" className={"text-font dark:text-font-dark"}>
             Are you sure you want to cancel this loan request?
           </Dialog.Description>
           <Flex gap="3" mt="4" justify="end">

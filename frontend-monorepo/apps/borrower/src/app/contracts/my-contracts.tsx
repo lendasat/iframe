@@ -125,7 +125,10 @@ function MyContracts() {
 
         <div className="w-full max-w-md space-y-4 mt-5">
           <div className="flex items-center justify-between">
-            <Label.Root className="text-sm font-medium text-gray-700" htmlFor="fields-switch">
+            <Label.Root
+              className="text-font dark:text-font-dark text-sm font-medium text-gray-700"
+              htmlFor="fields-switch"
+            >
               Show/hide Fields
             </Label.Root>
             <DropdownMenu.Root>
@@ -134,7 +137,7 @@ function MyContracts() {
                   <MixerHorizontalIcon />
                 </Button>
               </DropdownMenu.Trigger>
-              <DropdownMenu.Content size="1">
+              <DropdownMenu.Content size="1" className={"bg-light dark:bg-dark"}>
                 <DropdownMenu.Item
                   onSelect={(e) => e.preventDefault()}
                 >
@@ -143,7 +146,7 @@ function MyContracts() {
                       checked={shownColumns["amount"]}
                       onCheckedChange={() => toggleFilterOutContractDetails("amount")}
                     />
-                    <Text>Amount</Text>
+                    <Text className="text-font dark:text-font-dark">Amount</Text>
                   </Flex>
                 </DropdownMenu.Item>
                 <DropdownMenu.Item
@@ -154,7 +157,7 @@ function MyContracts() {
                       checked={shownColumns["expiry"]}
                       onCheckedChange={() => toggleFilterOutContractDetails("expiry")}
                     />
-                    <Text>Expiry</Text>
+                    <Text className="text-font dark:text-font-dark">Expiry</Text>
                   </Flex>
                 </DropdownMenu.Item>
                 <DropdownMenu.Item
@@ -165,7 +168,7 @@ function MyContracts() {
                       checked={shownColumns["interest"]}
                       onCheckedChange={() => toggleFilterOutContractDetails("interest")}
                     />
-                    <Text>Interest</Text>
+                    <Text className="text-font dark:text-font-dark">Interest</Text>
                   </Flex>
                 </DropdownMenu.Item>
                 <DropdownMenu.Item
@@ -176,7 +179,7 @@ function MyContracts() {
                       checked={shownColumns["ltv"]}
                       onCheckedChange={() => toggleFilterOutContractDetails("ltv")}
                     />
-                    <Text>LTV</Text>
+                    <Text className="text-font dark:text-font-dark">LTV</Text>
                   </Flex>
                 </DropdownMenu.Item>
                 <DropdownMenu.Item
@@ -187,7 +190,7 @@ function MyContracts() {
                       checked={shownColumns["collateral"]}
                       onCheckedChange={() => toggleFilterOutContractDetails("collateral")}
                     />
-                    <Text>Collateral</Text>
+                    <Text className="text-font dark:text-font-dark">Collateral</Text>
                   </Flex>
                 </DropdownMenu.Item>
                 <DropdownMenu.Item
@@ -198,7 +201,7 @@ function MyContracts() {
                       checked={shownColumns["status"]}
                       onCheckedChange={() => toggleFilterOutContractDetails("status")}
                     />
-                    <Text>Status</Text>
+                    <Text className="text-font dark:text-font-dark">Status</Text>
                   </Flex>
                 </DropdownMenu.Item>
               </DropdownMenu.Content>
@@ -207,7 +210,10 @@ function MyContracts() {
 
           <div className="flex items-center justify-between">
             <Flex className={"flex items-center justify-between"} gap={"4"}>
-              <Label.Root className="text-sm font-medium text-gray-700" htmlFor="contracts-switch">
+              <Label.Root
+                className="text-font dark:text-font-dark text-sm font-medium text-gray-700"
+                htmlFor="contracts-switch"
+              >
                 Show/hide Contracts
               </Label.Root>
               <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
@@ -221,7 +227,7 @@ function MyContracts() {
                 </Button>
               </DropdownMenu.Trigger>
 
-              <DropdownMenu.Content size="1">
+              <DropdownMenu.Content className={"bg-light dark:bg-dark"} size="1">
                 {ALL_CONTRACT_STATUSES.map((contractStatus) => {
                   return (
                     <DropdownMenu.Item
@@ -233,7 +239,9 @@ function MyContracts() {
                           checked={contractStatusFilter.includes(contractStatus)}
                           onCheckedChange={() => toggleContractStatusFilter(contractStatus)}
                         />
-                        <Text>{contractStatusToLabelString(contractStatus)}</Text>
+                        <Text className="text-font dark:text-font-dark">
+                          {contractStatusToLabelString(contractStatus)}
+                        </Text>
                       </Flex>
                     </DropdownMenu.Item>
                   );
