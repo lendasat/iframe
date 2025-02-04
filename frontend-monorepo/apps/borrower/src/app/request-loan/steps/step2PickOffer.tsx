@@ -926,7 +926,7 @@ const LoanSearched = (props: SearchParams) => {
                 size={"2"}
                 className="font-semibold"
               >
-                Confirm Offer
+                Request Loan
               </Text>
             </Button>
           )}
