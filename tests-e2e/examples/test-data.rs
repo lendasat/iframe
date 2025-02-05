@@ -354,11 +354,8 @@ async fn insert_borrower(pool: &Pool<Postgres>, network: &str) -> Result<Borrowe
 
     db::borrowers_referral_code::create_referral_code(
         pool,
-        "demo",
+        Some("demo".to_string()),
         user.id.as_str(),
-        dec!(0.5),
-        dec!(0.5),
-        dec!(0.25),
     )
     .await
     .context("insert referral code failed")?;

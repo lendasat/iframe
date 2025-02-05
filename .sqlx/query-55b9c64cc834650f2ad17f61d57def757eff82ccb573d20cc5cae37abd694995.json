@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT\n           id as \"id!\",\n           name as \"name!\",\n           email as \"email!\",\n           salt as \"salt!\",\n           verifier as \"verifier!\",\n           password,\n           verified as \"verified!\",\n           verification_code,\n           password_reset_token,\n           used_referral_code,\n           personal_referral_code,\n           first_time_discount_rate_referee,\n           password_reset_at,\n           created_at as \"created_at!\",\n           updated_at as \"updated_at!\"\n           FROM borrower_discount_info where email = $1\n        ",
+  "query": "SELECT\n           id as \"id!\",\n           name as \"name!\",\n           email as \"email!\",\n           salt as \"salt!\",\n           verifier as \"verifier!\",\n           password,\n           verified as \"verified!\",\n           verification_code,\n           password_reset_token,\n           used_referral_code,\n           first_time_discount_rate_referee,\n           password_reset_at,\n           created_at as \"created_at!\",\n           updated_at as \"updated_at!\"\n           FROM borrower_discount_info where id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -55,33 +55,28 @@
       },
       {
         "ordinal": 10,
-        "name": "personal_referral_code",
-        "type_info": "Varchar"
-      },
-      {
-        "ordinal": 11,
         "name": "first_time_discount_rate_referee",
         "type_info": "Numeric"
       },
       {
-        "ordinal": 12,
+        "ordinal": 11,
         "name": "password_reset_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 13,
+        "ordinal": 12,
         "name": "created_at!",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 14,
+        "ordinal": 13,
         "name": "updated_at!",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
-        "Text"
+        "Bpchar"
       ]
     },
     "nullable": [
@@ -98,9 +93,8 @@
       true,
       true,
       true,
-      true,
       true
     ]
   },
-  "hash": "bd9ae7f8754c6268edef73e5a9191a8195de6d869ec5527db8437868114ef15c"
+  "hash": "55b9c64cc834650f2ad17f61d57def757eff82ccb573d20cc5cae37abd694995"
 }

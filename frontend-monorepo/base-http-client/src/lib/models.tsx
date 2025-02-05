@@ -9,12 +9,23 @@ export interface User {
   // I'll leave this for now, because it looks like the only way to have a specific borrower and lender user
   // is to duplicate the whole login logic
   used_referral_code?: string;
-  personal_referral_code?: string;
+  // Only exists for the borrower
+  personal_referral_codes?: PersonalReferralCode[];
   first_time_discount_rate: number;
   created_at: Date;
   // TODO: This token currently only exists for lenders
   personal_telegram_token?: string;
 }
+
+export type PersonalReferralCode = {
+  code: string;
+  active: boolean;
+  first_time_discount_rate_referee: number;
+  first_time_commission_rate_referrer: number;
+  commission_rate_referrer: number;
+  created_at: string; // RFC 3339 date string - ideally we would convert this to a date, but it's not worth the effort
+  expires_at: string; // RFC 3339 date string - ideally we would convert this to a date, but it's not worth the effort
+};
 
 export interface Version {
   commit_hash: string;
