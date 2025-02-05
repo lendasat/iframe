@@ -5,7 +5,6 @@ import { derive_npub } from "browser-wallet";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { IoMdSend } from "react-icons/io";
 import { LuMessageCircle as MessageCircle, LuUnlock as Unlock, LuX as X } from "react-icons/lu";
-import { useAsync } from "react-use";
 import { ChatMessage, useNostr } from "./useNostr";
 
 const Avatar = ({
@@ -133,48 +132,12 @@ const NostrChat = ({
     setIsLoading(false);
   };
 
-  // useAsync(async () => {
-  //   if (!client || !user) {
-  //     console.log("Not ready to sync yet");
-  //     return;
-  //   }
-  //
-  //   setIsLoading(true);
-  //   try {
-  //     await fetchChatMessages(user, otherUser, chatRoom, handleEvent);
-  //   } catch (error) {
-  //     console.log(`Failed fetching message ${error}`);
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // }, [client]);
-
   const cleanup = useCallback(async () => {
     if (client) {
       console.log("Unsubscribing from chat messages");
       await unsubscribeWithId("dms");
     }
   }, [client, unsubscribeWithId]);
-
-  // useAsync(async () => {
-  //   if (!client || !user) {
-  //     console.log("Not ready to sync yet");
-  //     return;
-  //   }
-  //   setIsLoading(true);
-  //
-  //   try {
-  //     await subscribe(user, "dms", chatRoom, handleEvent);
-  //   } catch (error) {
-  //     console.log(`Failed fetching message ${error}`);
-  //     await cleanup();
-  //     throw error;
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  //
-  //   return cleanup;
-  // }, [client]);
 
   useEffect(() => {
     if (!client || !user) {
@@ -200,7 +163,7 @@ const NostrChat = ({
     return () => {
       cleanup();
     };
-  }, [client, user, otherUser, chatRoom, handleEvent, cleanup]);
+  }, [client, user, otherUser, chatRoom, handleEvent, cleanup, fetchChatMessages, subscribe]);
 
   const sortedMessages = messages.sort((a, b) => a.createdAt.asSecs() - b.createdAt.asSecs());
 

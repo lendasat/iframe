@@ -1,7 +1,6 @@
 import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import { ContractStatus, contractStatusToLabelString } from "@frontend-monorepo/http-client-borrower";
 import { ALL_CONTRACT_STATUSES } from "@frontend-monorepo/http-client-lender";
-import { usePrice } from "@frontend-monorepo/ui-shared";
 import { MixerHorizontalIcon } from "@radix-ui/react-icons";
 import * as Label from "@radix-ui/react-label";
 import { Box, Button, Checkbox, DropdownMenu, Flex, Heading, Text } from "@radix-ui/themes";
@@ -12,7 +11,6 @@ import { ColumnFilter, ColumnFilterKey, ContractDetailsTable } from "./contract-
 
 function MyContracts() {
   const { getContracts } = useBorrowerHttpClient();
-  const { latestPrice } = usePrice();
 
   const { value, error } = useAsync(async () => {
     return getContracts();
@@ -259,7 +257,6 @@ function MyContracts() {
           sortByColumn={sortByColumn}
           sortAsc={sortAsc}
           contracts={contracts}
-          latestPrice={latestPrice}
         />
       </Box>
     </Box>

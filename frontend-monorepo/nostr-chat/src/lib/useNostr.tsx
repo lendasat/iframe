@@ -49,8 +49,8 @@ export function useNostr(secretKey: string) {
 
   useEffect(() => {
     loadWasmSync();
-
-    let mounted = true; // For cleanup
+    let mounted = true;
+    let currentClient: Client | null = null; // Create a local reference
 
     const initNostr = async () => {
       try {
@@ -70,6 +70,9 @@ export function useNostr(secretKey: string) {
           .database(db)
           .opts(opts)
           .build();
+
+        // Store the client in our local reference
+        currentClient = newClient;
 
         // Connect to relays
         for (let i = 0; i < RELAYS.length; i++) {
@@ -105,11 +108,11 @@ export function useNostr(secretKey: string) {
 
     return () => {
       mounted = false;
-      if (client) {
-        client.disconnect();
+      if (currentClient) {
+        currentClient.disconnect();
       }
     };
-  }, [secretKey]);
+  }, [secretKey]); // Only depend on secretKey;
 
   const publishNote = useCallback(async (receiver: PublicKey, room: PublicKey, content: string) => {
     if (!client || !keys) {
