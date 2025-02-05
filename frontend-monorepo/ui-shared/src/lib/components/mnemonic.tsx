@@ -2,7 +2,7 @@ import { UnlockWalletModal, useWallet } from "@frontend-monorepo/browser-wallet"
 import * as Checkbox from "@radix-ui/react-checkbox";
 import { CheckIcon } from "@radix-ui/react-icons";
 import * as Label from "@radix-ui/react-label";
-import { Box, Button, Flex, Heading, IconButton, Text } from "@radix-ui/themes";
+import { Box, Button, Flex, Grid, Heading, IconButton, Text } from "@radix-ui/themes";
 import { useEffect, useState } from "react";
 import { FaLockOpen, FaRegEye, FaRegEyeSlash } from "react-icons/fa";
 import { FaLock } from "react-icons/fa6";
@@ -91,7 +91,7 @@ export const MnemonicComponent = () => {
                 </IconButton>
               )}
             </Flex>
-            <div className="grid grid-cols-2 gap-4 w-full max-w-lg p-4">
+            <Grid columns={"2"} gap={"4"} className={"max-w-lg p-4"} rows="repeat(6, 1fr)" flow={"column"}>
               {mnemonic.map((word, index) => (
                 <div key={index} className="group flex items-center gap-3">
                   <Label.Root className="flex items-center gap-3 w-full border-b border-gray-200 pb-2 cursor-text">
@@ -104,7 +104,7 @@ export const MnemonicComponent = () => {
                   </Label.Root>
                 </div>
               ))}
-            </div>
+            </Grid>
 
             {isWalletLoaded && isMnemonicVisible && !hasBackedUp && (
               <div className="mt-4">
