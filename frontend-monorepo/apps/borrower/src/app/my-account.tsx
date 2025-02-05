@@ -84,7 +84,9 @@ const ReferralCodesTable = ({ referralCodes }: ReferralCodesTableProps) => {
         {referralCodes.length === 0 && (
           <Table.Row>
             <Table.Cell colSpan={5} align="center">
-              No referral codes found
+              <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
+                No referral codes found
+              </Text>
             </Table.Cell>
           </Table.Row>
         )}
