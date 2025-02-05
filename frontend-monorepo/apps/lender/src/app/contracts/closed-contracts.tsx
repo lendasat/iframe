@@ -1,7 +1,7 @@
 import { ContractStatus } from "@frontend-monorepo/http-client-borrower";
 import { type Contract, contractStatusToLabelString, LiquidationStatus } from "@frontend-monorepo/http-client-lender";
 import { actionFromStatus } from "@frontend-monorepo/http-client-lender";
-import { CurrencyFormatter, getFormatedStringFromDays, LtvProgressBar, usePrice } from "@frontend-monorepo/ui-shared";
+import { CurrencyFormatter, getFormatedStringFromDays, LtvProgressBar } from "@frontend-monorepo/ui-shared";
 import { Badge, Box, Button, DropdownMenu, Flex, Grid, Heading, Text } from "@radix-ui/themes";
 import { BsThreeDotsVertical } from "react-icons/bs";
 import { useNavigate } from "react-router-dom";
@@ -11,7 +11,6 @@ interface ClosedContractsProps {
 }
 
 export const ClosedContracts = ({ contracts }: ClosedContractsProps) => {
-  const { latestPrice } = usePrice();
   const navigate = useNavigate();
 
   const amount_col = {
@@ -74,7 +73,6 @@ export const ClosedContracts = ({ contracts }: ClosedContractsProps) => {
 
         {contracts.map((contract, index) => {
           const collateral_btc = contract.initial_collateral_sats / 100000000;
-          const ltvRatio = contract.loan_amount / (collateral_btc * latestPrice);
 
           let contractStatus = contractStatusToLabelString(contract.status);
           const firstMarginCall = contract.liquidation_status === LiquidationStatus.FirstMarginCall;
@@ -195,7 +193,7 @@ export const ClosedContracts = ({ contracts }: ClosedContractsProps) => {
                             LTV rate:
                           </Text>
                           <Box minWidth={"150px"}>
-                            <LtvProgressBar ltvRatio={latestPrice ? ltvRatio * 100 : undefined} />
+                            <LtvProgressBar collateralBtc={collateral_btc} loanAmount={contract.loan_amount} />
                           </Box>
                         </Flex>
                       </Box>

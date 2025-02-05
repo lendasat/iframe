@@ -284,7 +284,7 @@ export const ContractDetailsTable = ({
               {shownColumns["ltv"]
                 && (
                   <Table.Cell>
-                    <LtvProgressBar ltvRatio={isFunded && latestPrice ? ltvRatio : undefined} />
+                    <LtvProgressBar collateralBtc={collateral_btc} loanAmount={contract.loan_amount} />
                   </Table.Cell>
                 )}
               {shownColumns["collateral"]
@@ -391,9 +391,7 @@ export const ContractDetailsTable = ({
                                   LTV rate:
                                 </Text>
                                 <Box minWidth={"150px"}>
-                                  <LtvProgressBar
-                                    ltvRatio={isFunded && latestPrice ? ltvRatio : undefined}
-                                  />
+                                  <LtvProgressBar collateralBtc={collateral_btc} loanAmount={contract.loan_amount} />
                                 </Box>
                               </Flex>
                             </Box>
