@@ -81,10 +81,13 @@ export function useNostr(secretKey: string) {
 
         const newPublicKey = await nostrSigner.publicKey();
 
+        let tags = RELAYS.map((relay) => {
+          return Tag.relayMetadata(relay, RelayMetadata.Write)
+        });
         const event = new EventBuilder(
           new Kind(10002),
           "",
-        ).tags([Tag.relayMetadata("wss://relay.nostrdice.com", RelayMetadata.Write)]);
+        ).tags(tags);
         await newClient.sendEventBuilder(event);
 
         if (mounted) {
