@@ -30,7 +30,7 @@ pub struct InviteCode {
     pub active: bool,
 }
 
-#[derive(Debug, Deserialize, sqlx::FromRow, Serialize, Clone)]
+#[derive(Debug, Clone)]
 pub struct Borrower {
     pub id: String,
     pub name: String,
@@ -44,15 +44,23 @@ pub struct Borrower {
     pub verified: bool,
     pub verification_code: Option<String>,
     pub used_referral_code: Option<String>,
-    pub personal_referral_code: Option<String>,
+    pub personal_referral_codes: Vec<PersonalReferralCode>,
     pub first_time_discount_rate_referee: Option<Decimal>,
     pub password_reset_token: Option<String>,
-    #[serde(with = "time::serde::rfc3339::option")]
     pub password_reset_at: Option<OffsetDateTime>,
-    #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
-    #[serde(with = "time::serde::rfc3339")]
     pub updated_at: OffsetDateTime,
+}
+
+#[derive(Debug, sqlx::FromRow, Clone)]
+pub struct PersonalReferralCode {
+    pub(crate) code: String,
+    pub(crate) active: bool,
+    pub(crate) first_time_discount_rate_referee: Decimal,
+    pub(crate) first_time_commission_rate_referrer: Decimal,
+    pub(crate) commission_rate_referrer: Decimal,
+    pub(crate) created_at: OffsetDateTime,
+    pub(crate) expires_at: OffsetDateTime,
 }
 
 impl Borrower {
