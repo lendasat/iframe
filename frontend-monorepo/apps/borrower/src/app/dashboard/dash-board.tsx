@@ -273,7 +273,7 @@ function DashBoard() {
               <div className="flex">
                 <Tabs.Trigger
                   value="actionNeeded"
-                  className={`px-4 py-2 rounded-t-lg relative ${
+                  className={`text-font dark:text-font-dark px-4 py-2 rounded-t-lg relative ${
                     needsAction ? "animate-pulse bg-red-100 dark:bg-red-900/30" : ""
                   } transition-colors`}
                 >
@@ -286,8 +286,8 @@ function DashBoard() {
                   )}
                   Action Required
                 </Tabs.Trigger>
-                <Tabs.Trigger value="open">Open</Tabs.Trigger>
-                <Tabs.Trigger value="closed">Closed</Tabs.Trigger>
+                <Tabs.Trigger className="text-font dark:text-font-dark" value="open">Open</Tabs.Trigger>
+                <Tabs.Trigger className="text-font dark:text-font-dark" value="closed">Closed</Tabs.Trigger>
               </div>
               <Tabs.Trigger value="all" onClick={() => navigate("/my-contracts")}>
                 <div className="flex items-center gap-1">

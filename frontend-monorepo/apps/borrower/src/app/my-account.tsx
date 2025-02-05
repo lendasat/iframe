@@ -369,14 +369,14 @@ function MyAccount() {
                 active={location.pathname.includes("profile")}
                 className="flex-1 md:flex-none text-center md:text-left px-4 py-2 md:py-3 rounded-full hover:bg-transparent font-medium data-[state=active]:font-semibold capitalize data-[state=inactive]:text-font/70 data-[state=active]:text-purple-800 data-[state=active]:bg-purple-800/20 dark:data-[state=inactive]:text-gray-400 dark:data-[state=active]:text-purple-300 dark:data-[state=active]:bg-purple-700/20"
               >
-                <Link to="profile">Profile</Link>
+                <Link className="text-font dark:text-font-dark" to="profile">Profile</Link>
               </TabNav.Link>
               <TabNav.Link
                 asChild
                 active={location.pathname.includes("wallet")}
                 className="flex-1 md:flex-none text-center md:text-left px-4 py-2 md:py-3 rounded-full hover:bg-transparent font-medium data-[state=active]:font-semibold capitalize data-[state=inactive]:text-font/70 data-[state=active]:text-purple-800 data-[state=active]:bg-purple-800/20 dark:data-[state=inactive]:text-gray-400 dark:data-[state=active]:text-purple-300 dark:data-[state=active]:bg-purple-700/20"
               >
-                <Link to="wallet">Wallet</Link>
+                <Link className="text-font dark:text-font-dark" to="wallet">Wallet</Link>
               </TabNav.Link>
             </Box>
           </Box>

@@ -17,17 +17,19 @@ const TelegramNotificationSetup = ({ token, botName, botUrl }: TelegramNotificat
   };
 
   return (
-    <Card className="bg-slate-50 p-6 rounded-lg">
+    <Card className="bg-light dark:bg-dark p-6 rounded-lg">
       <div className="space-y-4">
-        <p className="text-gray-700 leading-relaxed">
+        <p className="text-font dark:text-font-dark leading-relaxed">
           You can receive notifications from Lendasat to your Telegram account. To do this, follow further instructions:
         </p>
 
         <div className="space-y-4">
           <div className="flex items-start space-x-2">
-            <span className="font-medium">1.</span>
+            <span className="text-font dark:text-font-dark font-medium">1.</span>
             <div className="space-y-2">
-              <p className="text-gray-700">To activate Telegram notifications bot, follow the link below.</p>
+              <p className="text-font dark:text-font-dark">
+                To activate Telegram notifications bot, follow the link below.
+              </p>
               <a
                 href={`${botUrl}?start=${token}`}
                 target="_blank"
@@ -40,9 +42,9 @@ const TelegramNotificationSetup = ({ token, botName, botUrl }: TelegramNotificat
           </div>
 
           <div className="flex items-start space-x-2">
-            <span className="font-medium">2.</span>
+            <span className="text-font dark:text-font-dark text-medium">2.</span>
             <div className="space-y-2">
-              <p className="text-gray-700">
+              <p className="text-font dark:text-font-dark">
                 If you can't access the link, join the telegram bot manually and provide your notifications key
                 manually.
                 <br />
@@ -61,8 +63,8 @@ const TelegramNotificationSetup = ({ token, botName, botUrl }: TelegramNotificat
               </p>
 
               <Flex gap={"3"}>
-                <div className="flex items-center space-x-2 bg-gray-100 p-2 rounded-md">
-                  <code className="text-gray-700 font-mono">{token}</code>
+                <div className="flex items-center space-x-2 bg-light dark:bg-dark p-2 rounded-md">
+                  <code className="text-font dark:text-font-dark font-mono">{token}</code>
                 </div>
                 <Button
                   onClick={handleCopy}
@@ -76,7 +78,7 @@ const TelegramNotificationSetup = ({ token, botName, botUrl }: TelegramNotificat
           </div>
         </div>
 
-        <p className="text-gray-700 mt-4">
+        <p className="text-font dark:text-font-dark mt-4">
           In order to stop using the Telegram bot, type /stop command.
         </p>
       </div>
