@@ -152,6 +152,8 @@ where
         SELECT xpub 
         FROM lender_wallet_backups 
         WHERE lender_id = $1
+        ORDER BY created_at DESC
+        LIMIT 1
         "#,
         lender_id
     )
@@ -170,6 +172,8 @@ where
         SELECT xpub 
         FROM borrower_wallet_backups 
         WHERE borrower_id = $1
+        ORDER BY created_at DESC
+        LIMIT 1
         "#,
         borrower_id
     )

@@ -1,5 +1,5 @@
 import init, {
-  contract_to_pubkey,
+  derive_nostr_room_pk,
   does_wallet_exist,
   get_mnemonic,
   get_next_pk,
@@ -88,7 +88,7 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
   };
 
   const getPubkeyFromContract = (contract: string) => {
-    return contract_to_pubkey(contract);
+    return derive_nostr_room_pk(contract);
   };
 
   const getNextPublicKey = async () => {

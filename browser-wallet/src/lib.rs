@@ -214,13 +214,13 @@ pub fn get_nsec() -> Result<String, JsValue> {
 }
 
 #[wasm_bindgen]
-pub fn contract_to_pubkey(contract: String) -> Result<String, JsValue> {
-    map_err_to_js!(wallet::contract_to_pubkey(contract))
+pub fn derive_nostr_room_pk(contract: String) -> Result<String, JsValue> {
+    map_err_to_js!(wallet::derive_nostr_room_pk(contract))
 }
 
 #[wasm_bindgen]
-pub fn derive_npub(npub: String) -> Result<String, JsValue> {
-    map_err_to_js!(wallet::derive_npub(npub))
+pub fn derive_npub(xpub: String) -> Result<String, JsValue> {
+    map_err_to_js!(wallet::derive_npub(xpub))
 }
 
 #[wasm_bindgen]

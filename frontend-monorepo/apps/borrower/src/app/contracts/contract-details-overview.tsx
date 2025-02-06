@@ -262,11 +262,6 @@ function ContractDetails({ contract }: DetailsProps) {
 
   const actualInterest = contract.interest_rate / (ONE_YEAR / contract.duration_days);
 
-  console.log(`contract.lender_xpub ${contract.lender_xpub}`);
-  console.log(`contract.borrower_xpub ${contract.borrower_xpub}`);
-
-  console.log("I'm relaoding contract details");
-
   return (
     <Box>
       <ChatDrawer

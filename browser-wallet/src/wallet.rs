@@ -758,7 +758,6 @@ fn encrypt_mnemonic(mnemonic: &Mnemonic, encryption_key: [u8; 32]) -> Result<Vec
     Ok(ciphertext)
 }
 
-// TODO: use index
 fn derive_nsec_from_xprv(xprv: &Xpriv) -> Result<SecretKey> {
     let path = DerivationPath::from_str(NSEC_DERIVATION_PATH).expect("to be valid");
 
@@ -858,7 +857,7 @@ pub(crate) fn get_nsec() -> Result<String> {
 }
 
 /// Returns a pubkey derived from a [`contract`] in hex format
-pub(crate) fn contract_to_pubkey(contract: String) -> Result<String> {
+pub(crate) fn derive_nostr_room_pk(contract: String) -> Result<String> {
     let mut hasher = Sha256::new();
     hasher.update(contract.as_bytes());
     let hash = hasher.finalize();
