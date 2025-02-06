@@ -1,5 +1,12 @@
 import { Avatar, Box, Flex, Heading, Text } from "@radix-ui/themes";
 
+const formatDateTime = (timezone: string) => {
+  return new Intl.DateTimeFormat(navigator.languages, {
+    timeZone: timezone,
+    timeStyle: "medium",
+  }).format(new Date());
+};
+
 interface UserStatsProps {
   id: string;
   name: string;
@@ -7,6 +14,7 @@ interface UserStatsProps {
   failed_contracts: number;
   rating: number;
   joined_at: Date;
+  timezone?: string;
 }
 
 export function UserStats({
@@ -15,6 +23,7 @@ export function UserStats({
   failed_contracts,
   rating,
   joined_at,
+  timezone,
 }: UserStatsProps) {
   let ratingText = (
     <Text className={"text-font dark:text-font-dark self-end"} size={"2"} weight={"bold"}>
@@ -68,6 +77,16 @@ export function UserStats({
               >
                 {name}
               </Heading>
+              {timezone && (
+                <Flex gap={"1"}>
+                  <Text size={"2"} className="text-font dark:text-font-dark">
+                    Local time:
+                  </Text>
+                  <Text size={"2"} className="text-font/50 dark:text-font-dark/50">
+                    {formatDateTime(timezone)}
+                  </Text>
+                </Flex>
+              )}
               <Flex gap={"1"}>
                 <Text size={"2"} className="text-font dark:text-font-dark">
                   Joined:

@@ -22,6 +22,7 @@ export * from './lib/components/LtvInfoLabel';
 export * from './lib/components/LiquidationPriceInfoLabel';
 export * from './lib/components/InterestRateInfoLabel';
 export * from './lib/components/RefundAddressInfoLabel';
+export * from './lib/components/timezone-selector';
 export * from './lib/full-logo-white-bg';
 export * from './lib/ltv-progress-bar/ltv-progress-bar';
 export * from './lib/auth/registration-form';

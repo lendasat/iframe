@@ -27,6 +27,7 @@ pub(crate) mod dispute;
 pub(crate) mod health_check;
 pub(crate) mod loan_offers;
 pub(crate) mod loan_requests;
+pub(crate) mod profile;
 
 pub(crate) mod version;
 
@@ -37,6 +38,7 @@ pub async fn spawn_lender_server(
     let app = Router::new().merge(
         health_check::router()
             .merge(auth::router(app_state.clone()))
+            .merge(profile::router(app_state.clone()))
             .merge(version::router(app_state.clone()))
             .merge(loan_offers::router(app_state.clone()))
             .merge(contracts::router(app_state.clone()))

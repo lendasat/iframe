@@ -1,6 +1,6 @@
 import type { BaseHttpClientContextType } from "@frontend-monorepo/base-http-client";
 import { BaseHttpClient, BaseHttpClientContext } from "@frontend-monorepo/base-http-client";
-import type { Dispute } from "@frontend-monorepo/http-client-borrower";
+import { Dispute, PutUpdateProfile } from "@frontend-monorepo/http-client-borrower";
 import type { AxiosResponse } from "axios";
 import axios from "axios";
 import { createContext, useContext } from "react";
@@ -616,6 +616,24 @@ export class HttpClientLender extends BaseHttpClient {
       }
     }
   }
+
+  async putUpdateProfile(request: PutUpdateProfile): Promise<void> {
+    try {
+      await this.httpClient.put("/api/users/", request);
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to update profile: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not update profile: ${JSON.stringify(error)}`);
+      }
+    }
+  }
 }
 
 type LenderHttpClientContextType = Pick<
@@ -641,6 +659,7 @@ type LenderHttpClientContextType = Pick<
   | "postLiquidationTx"
   | "getRecoveryPsbt"
   | "getLoanAndContractStats"
+  | "putUpdateProfile"
 >;
 
 export const LenderHttpClientContext = createContext<LenderHttpClientContextType | undefined>(undefined);
@@ -700,6 +719,7 @@ export const HttpClientLenderProvider: React.FC<HttpClientProviderProps> = ({ ch
     postLiquidationTx: httpClient.postLiquidationTx.bind(httpClient),
     getRecoveryPsbt: httpClient.getRecoveryPsbt.bind(httpClient),
     getLoanAndContractStats: httpClient.getLoanAndContractStats.bind(httpClient),
+    putUpdateProfile: httpClient.putUpdateProfile.bind(httpClient),
   };
 
   return (

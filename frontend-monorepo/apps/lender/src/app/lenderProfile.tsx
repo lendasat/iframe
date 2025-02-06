@@ -21,6 +21,7 @@ export function LenderProfile() {
             failed_contracts={profile.failed_contracts}
             rating={profile.rating}
             joined_at={profile.joined_at}
+            timezone={profile.timezone}
           />
         )}
       />

@@ -7,6 +7,7 @@ use time::OffsetDateTime;
 pub struct LenderStats {
     pub id: String,
     pub name: String,
+    pub timezone: Option<String>,
     pub successful_contracts: i64,
     pub failed_contracts: i64,
     pub created_at: OffsetDateTime,
@@ -22,6 +23,7 @@ pub async fn get_lender_stats(
         SELECT 
             l.id, 
             l.name,
+            l.timezone,
             l.created_at,
             COUNT(
                 CASE WHEN 
@@ -51,6 +53,7 @@ pub async fn get_lender_stats(
 pub struct BorrowerStats {
     pub id: String,
     pub name: String,
+    pub timezone: Option<String>,
     pub successful_contracts: i64,
     pub failed_contracts: i64,
     pub created_at: OffsetDateTime,
@@ -66,6 +69,7 @@ pub async fn get_borrower_stats(
         SELECT 
             b.id, 
             b.name,
+            b.timezone,
             b.created_at,
             COUNT(
                 CASE WHEN 

@@ -1,6 +1,6 @@
 import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
-import { useAuth } from "@frontend-monorepo/http-client-lender";
-import { MnemonicComponent } from "@frontend-monorepo/ui-shared";
+import { useAuth, useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
+import { EditableTimezoneField, MnemonicComponent } from "@frontend-monorepo/ui-shared";
 import { Avatar, Box, Button, Callout, Flex, Heading, Spinner, TabNav, Text } from "@radix-ui/themes";
 import { useState } from "react";
 import { BiSolidError } from "react-icons/bi";
@@ -30,6 +30,7 @@ function Wallet() {
 function Profile() {
   const { user } = useAuth();
   const { forgotPassword } = useBaseHttpClient();
+  const { putUpdateProfile } = useLenderHttpClient();
   const [isLoading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -159,6 +160,26 @@ function Profile() {
                       : <MdEdit />}
                   </Button>
                 </Flex>
+              </Flex>
+            </Box>
+            <Box>
+              <Flex direction={"column"} gap={"1"}>
+                <Text
+                  as="label"
+                  weight={"medium"}
+                  size={"2"}
+                  className="text-font/50 dark:text-font-dark/50"
+                >
+                  Timezone
+                </Text>
+                <EditableTimezoneField
+                  onSave={async (newVal) => {
+                    await putUpdateProfile({
+                      timezone: newVal,
+                    });
+                  }}
+                  initialValue={user.timezone}
+                />
               </Flex>
             </Box>
             <Box>

@@ -17,6 +17,7 @@ import {
   LoanOffer,
   LoanRequest,
   PostLoanRequest,
+  PutUpdateProfile,
   UserCardDetail,
 } from "./models";
 import { parseRFC3339Date } from "./utils";
@@ -424,7 +425,7 @@ export class HttpClientBorrower extends BaseHttpClient {
       const response: AxiosResponse<BorrowerStatsRaw> = await this.httpClient.get(`/api/borrowers/${id}`);
 
       const joinedAt = parseRFC3339Date(response.data.joined_at);
-      if (joinedAt == null || joinedAt == null) {
+      if (joinedAt == null) {
         throw new Error("Invalid date");
       }
 
@@ -484,6 +485,24 @@ export class HttpClientBorrower extends BaseHttpClient {
       }
     }
   }
+
+  async putUpdateProfile(request: PutUpdateProfile): Promise<void> {
+    try {
+      await this.httpClient.put("/api/users/", request);
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to update profile: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not update profile: ${JSON.stringify(error)}`);
+      }
+    }
+  }
 }
 
 type BorrowerHttpClientContextType = Pick<
@@ -507,6 +526,7 @@ type BorrowerHttpClientContextType = Pick<
   | "getBorrowerProfile"
   | "getUserCards"
   | "getCardTransactions"
+  | "putUpdateProfile"
 >;
 
 export const BorrowerHttpClientContext = createContext<BorrowerHttpClientContextType | undefined>(undefined);
@@ -592,6 +612,7 @@ export const HttpClientBorrowerProvider: React.FC<HttpClientProviderProps> = ({ 
     getBorrowerProfile: httpClient.getBorrowerProfile.bind(httpClient),
     getUserCards: httpClient.getUserCards.bind(httpClient),
     getCardTransactions: httpClient.getCardTransactions.bind(httpClient),
+    putUpdateProfile: httpClient.putUpdateProfile.bind(httpClient),
   };
 
   return (

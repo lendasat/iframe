@@ -344,6 +344,7 @@ export interface LenderStats {
   failed_contracts: number;
   rating: number;
   joined_at: Date;
+  timezone: string;
 }
 
 export interface BorrowerStats {
@@ -353,4 +354,9 @@ export interface BorrowerStats {
   failed_contracts: number;
   rating: number;
   joined_at: Date;
+  timezone: string;
+}
+
+export interface PutUpdateProfile {
+  timezone: string;
 }

@@ -65,11 +65,16 @@
       },
       {
         "ordinal": 12,
-        "name": "used_referral_code",
+        "name": "timezone",
         "type_info": "Varchar"
       },
       {
         "ordinal": 13,
+        "name": "used_referral_code",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 14,
         "name": "first_time_discount_rate_referee",
         "type_info": "Numeric"
       }
@@ -97,6 +102,7 @@
       false,
       false,
       false,
+      true,
       true,
       true
     ]

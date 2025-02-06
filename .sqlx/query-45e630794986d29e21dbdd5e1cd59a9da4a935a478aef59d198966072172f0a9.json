@@ -1,0 +1,106 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n           id as \"id!\",\n           name as \"name!\",\n           email as \"email!\",\n           salt as \"salt!\",\n           verifier as \"verifier!\",\n           password,\n           verified as \"verified!\",\n           verification_code,\n           timezone,\n           password_reset_token,\n           used_referral_code,\n           first_time_discount_rate_referee,\n           password_reset_at,\n           created_at as \"created_at!\",\n           updated_at as \"updated_at!\"\n           FROM borrower_discount_info where id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "name!",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "email!",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "salt!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "verifier!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "password",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "verified!",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 7,
+        "name": "verification_code",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 8,
+        "name": "timezone",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 9,
+        "name": "password_reset_token",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 10,
+        "name": "used_referral_code",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 11,
+        "name": "first_time_discount_rate_referee",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 12,
+        "name": "password_reset_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 13,
+        "name": "created_at!",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 14,
+        "name": "updated_at!",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bpchar"
+      ]
+    },
+    "nullable": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "45e630794986d29e21dbdd5e1cd59a9da4a935a478aef59d198966072172f0a9"
+}

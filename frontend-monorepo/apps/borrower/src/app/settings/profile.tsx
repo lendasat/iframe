@@ -1,5 +1,6 @@
 import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
-import { useAuth } from "@frontend-monorepo/http-client-borrower";
+import { useAuth, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
+import { EditableTimezoneField } from "@frontend-monorepo/ui-shared";
 import { Avatar, Badge, Box, Button, Callout, Flex, Heading, Spinner, Text } from "@radix-ui/themes";
 import { useState } from "react";
 import { BiSolidError } from "react-icons/bi";
@@ -11,6 +12,7 @@ import { ReferralCodesTable } from "./referral-codes";
 export function Profile() {
   const { user } = useAuth();
   const { forgotPassword } = useBaseHttpClient();
+  const { putUpdateProfile } = useBorrowerHttpClient();
   const [isLoading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -63,7 +65,7 @@ export function Profile() {
               <Heading
                 as="h4"
                 weight={"medium"}
-                className="capitalize text-font dark:text-font-dark"
+                className="text-font dark:text-font-dark"
                 size={"4"}
               >
                 {user.name}
@@ -84,7 +86,7 @@ export function Profile() {
         <Box className="border border-purple-400/20 rounded-2xl px-5 py-6 dark:border-gray-500/50">
           <Heading
             as="h4"
-            className="font-semibold capitalize text-font dark:text-font-dark"
+            className="font-semibold text-font dark:text-font-dark"
             size={"3"}
           >
             Personal information
@@ -100,7 +102,7 @@ export function Profile() {
                 >
                   Full Name
                 </Text>
-                <Text size={"3"} weight={"medium"} className="capitalize text-font dark:text-font-dark">
+                <Text size={"3"} weight={"medium"} className="text-font dark:text-font-dark">
                   {user.name}
                 </Text>
               </Flex>
@@ -116,7 +118,7 @@ export function Profile() {
                 >
                   Email Address
                 </Text>
-                <Text size={"3"} weight={"medium"} className="capitalize text-font dark:text-font-dark">
+                <Text size={"3"} weight={"medium"} className="text-font dark:text-font-dark">
                   {user.email}
                 </Text>
               </Flex>
@@ -131,7 +133,7 @@ export function Profile() {
                 >
                   Password
                 </Text>
-                <Text size={"3"} weight={"medium"} className="capitalize text-font dark:text-font-dark">
+                <Text size={"3"} weight={"medium"} className="text-font dark:text-font-dark">
                   ********
                 </Text>
               </Flex>
@@ -144,9 +146,29 @@ export function Profile() {
                   size={"2"}
                   className="text-font/50 dark:text-font-dark/50"
                 >
+                  Timezone
+                </Text>
+                <EditableTimezoneField
+                  onSave={async (newVal) => {
+                    await putUpdateProfile({
+                      timezone: newVal,
+                    });
+                  }}
+                  initialValue={user.timezone}
+                />
+              </Flex>
+            </Box>
+            <Box>
+              <Flex direction={"column"} gap={"1"}>
+                <Text
+                  as="label"
+                  weight={"medium"}
+                  size={"2"}
+                  className="text-font/50 dark:text-font-dark/50"
+                >
                   Joined on
                 </Text>
-                <Text size={"3"} weight={"medium"} className="capitalize text-font dark:text-font-dark">
+                <Text size={"3"} weight={"medium"} className="text-font dark:text-font-dark">
                   {new Date(user.created_at).toLocaleDateString("en-CA", options)}
                 </Text>
               </Flex>
@@ -189,7 +211,7 @@ export function Profile() {
         <Box className="border border-purple-400/20 rounded-2xl px-5 py-6 dark:border-gray-500/50">
           <Heading
             as="h4"
-            className="font-semibold capitalize text-font dark:text-font-dark"
+            className="font-semibold text-font dark:text-font-dark"
             size={"3"}
           >
             Personal referral codes
