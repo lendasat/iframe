@@ -52,12 +52,23 @@ pub fn initialize() {
 }
 
 #[wasm_bindgen]
-pub fn new_wallet(
-    password: String,
+pub fn new_wallet(password: String, network: String) -> Result<WalletDetails, JsValue> {
+    map_err_to_js!(browser_wallet::new(password, network).map(WalletDetails::from))
+}
+
+#[wasm_bindgen]
+pub fn persist_new_wallet(
+    mnemonic_ciphertext: String,
     network: String,
+    xpub: String,
     key: String,
-) -> Result<WalletDetails, JsValue> {
-    map_err_to_js!(browser_wallet::new(password, None, network, key).map(WalletDetails::from))
+) -> Result<(), JsValue> {
+    map_err_to_js!(browser_wallet::persist_new_wallet(
+        mnemonic_ciphertext,
+        network,
+        xpub,
+        key
+    ))
 }
 
 #[wasm_bindgen]
@@ -68,7 +79,8 @@ pub fn new_wallet_from_mnemonic(
     key: String,
 ) -> Result<WalletDetails, JsValue> {
     map_err_to_js!(
-        browser_wallet::new(password, Some(mnemonic), network, key).map(WalletDetails::from)
+        browser_wallet::new_from_mnemonic(password, mnemonic, network, key)
+            .map(WalletDetails::from)
     )
 }
 
