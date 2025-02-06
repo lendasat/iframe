@@ -47,6 +47,7 @@ pub struct Borrower {
     pub personal_referral_codes: Vec<PersonalReferralCode>,
     pub first_time_discount_rate_referee: Option<Decimal>,
     pub password_reset_token: Option<String>,
+    pub timezone: Option<String>,
     pub password_reset_at: Option<OffsetDateTime>,
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
@@ -106,6 +107,7 @@ pub struct Lender {
     pub verification_code: Option<String>,
     pub invite_code: Option<i32>,
     pub password_reset_token: Option<String>,
+    pub timezone: Option<String>,
     #[serde(with = "time::serde::rfc3339::option")]
     pub password_reset_at: Option<OffsetDateTime>,
     #[serde(with = "time::serde::rfc3339")]

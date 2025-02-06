@@ -18,6 +18,7 @@ pub struct LenderStats {
     name: String,
     successful_contracts: i64,
     failed_contracts: i64,
+    timezone: Option<String>,
     #[serde(with = "rust_decimal::serde::float")]
     rating: Decimal,
     #[serde(with = "time::serde::rfc3339")]
@@ -30,6 +31,7 @@ impl From<db::user_stats::LenderStats> for LenderStats {
         LenderStats {
             id: value.id,
             name: value.name,
+            timezone: value.timezone,
             successful_contracts: value.successful_contracts,
             failed_contracts: value.failed_contracts,
             rating,
@@ -50,6 +52,7 @@ pub async fn get_lender_stats(db: &Pool<Postgres>, lender_id: &str) -> Result<Le
 pub struct BorrowerStats {
     pub id: String,
     name: String,
+    timezone: Option<String>,
     successful_contracts: i64,
     failed_contracts: i64,
     #[serde(with = "rust_decimal::serde::float")]
@@ -64,6 +67,7 @@ impl From<db::user_stats::BorrowerStats> for BorrowerStats {
         BorrowerStats {
             id: value.id,
             name: value.name,
+            timezone: value.timezone,
             successful_contracts: value.successful_contracts,
             failed_contracts: value.failed_contracts,
             rating,

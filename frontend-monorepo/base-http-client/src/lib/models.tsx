@@ -11,6 +11,7 @@ export interface User {
   used_referral_code?: string;
   // Only exists for the borrower
   personal_referral_codes?: PersonalReferralCode[];
+  timezone?: string;
   first_time_discount_rate: number;
   created_at: Date;
   // TODO: This token currently only exists for lenders

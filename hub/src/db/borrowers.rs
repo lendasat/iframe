@@ -5,6 +5,7 @@ use anyhow::Result;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
 use rust_decimal::Decimal;
+use sqlx::PgPool;
 use sqlx::Pool;
 use sqlx::Postgres;
 use time::OffsetDateTime;
@@ -23,6 +24,7 @@ pub struct Borrower {
     pub verification_code: Option<String>,
     pub used_referral_code: Option<String>,
     pub first_time_discount_rate_referee: Option<Decimal>,
+    pub timezone: Option<String>,
     pub password_reset_token: Option<String>,
     pub password_reset_at: Option<OffsetDateTime>,
     pub created_at: OffsetDateTime,
@@ -45,6 +47,7 @@ fn new_model_borrower(
         used_referral_code: borrower.used_referral_code,
         personal_referral_codes,
         first_time_discount_rate_referee: borrower.first_time_discount_rate_referee,
+        timezone: borrower.timezone,
         password_reset_token: borrower.password_reset_token,
         password_reset_at: borrower.password_reset_at,
         created_at: borrower.created_at,
@@ -203,6 +206,7 @@ pub async fn get_user_by_email(
            password,
            verified as "verified!",
            verification_code,
+           timezone,
            password_reset_token,
            used_referral_code,
            first_time_discount_rate_referee,
@@ -234,6 +238,7 @@ pub async fn get_user_by_id(pool: &Pool<Postgres>, id: &str) -> Result<Option<mo
            password,
            verified as "verified!",
            verification_code,
+           timezone,
            password_reset_token,
            used_referral_code,
            first_time_discount_rate_referee,
@@ -270,6 +275,7 @@ pub async fn get_user_by_verification_code(
            verified as "verified!",
            verification_code,
            password_reset_token,
+           timezone,
            used_referral_code,
            first_time_discount_rate_referee,
            password_reset_at,
@@ -340,6 +346,7 @@ pub async fn get_user_by_rest_token(
            verified as "verified!",
            verification_code,
            password_reset_token,
+           timezone,
            used_referral_code,
            first_time_discount_rate_referee,
            password_reset_at,
@@ -370,4 +377,26 @@ pub fn generate_random_string(length: usize) -> String {
         .collect();
 
     random_string
+}
+
+pub async fn update_borrower_timezone(
+    pool: &PgPool,
+    borrower_id: &str,
+    timezone: &str,
+) -> Result<()> {
+    sqlx::query!(
+        r#"
+        UPDATE borrowers
+        SET 
+            timezone = $1,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = $2
+        "#,
+        timezone,
+        borrower_id,
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
 }

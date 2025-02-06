@@ -239,6 +239,7 @@ struct FilteredUser {
     verified: bool,
     used_referral_code: Option<String>,
     personal_referral_codes: Vec<PersonalReferralCode>,
+    timezone: Option<String>,
     #[serde(with = "rust_decimal::serde::float")]
     first_time_discount_rate: Decimal,
     #[serde(with = "time::serde::rfc3339")]
@@ -294,6 +295,7 @@ impl FilteredUser {
                 .map(PersonalReferralCode::from)
                 .collect(),
             first_time_discount_rate: user.first_time_discount_rate_referee.unwrap_or_default(),
+            timezone: user.timezone.clone(),
             created_at: created_at_utc,
             updated_at: updated_at_utc,
         }

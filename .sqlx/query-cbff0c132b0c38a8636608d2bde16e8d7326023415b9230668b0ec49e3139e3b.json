@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT\n           id as \"id!\",\n           name as \"name!\",\n           email as \"email!\",\n           salt as \"salt!\",\n           verifier as \"verifier!\",\n           password,\n           verified as \"verified!\",\n           verification_code,\n           password_reset_token,\n           used_referral_code,\n           first_time_discount_rate_referee,\n           password_reset_at,\n           created_at as \"created_at!\",\n           updated_at as \"updated_at!\"\n           FROM borrower_discount_info where password_reset_token = $1\n        ",
+  "query": "SELECT\n           id as \"id!\",\n           name as \"name!\",\n           email as \"email!\",\n           salt as \"salt!\",\n           verifier as \"verifier!\",\n           password,\n           verified as \"verified!\",\n           verification_code,\n           password_reset_token,\n           timezone,\n           used_referral_code,\n           first_time_discount_rate_referee,\n           password_reset_at,\n           created_at as \"created_at!\",\n           updated_at as \"updated_at!\"\n           FROM borrower_discount_info where verification_code = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -50,26 +50,31 @@
       },
       {
         "ordinal": 9,
-        "name": "used_referral_code",
+        "name": "timezone",
         "type_info": "Varchar"
       },
       {
         "ordinal": 10,
+        "name": "used_referral_code",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 11,
         "name": "first_time_discount_rate_referee",
         "type_info": "Numeric"
       },
       {
-        "ordinal": 11,
+        "ordinal": 12,
         "name": "password_reset_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 12,
+        "ordinal": 13,
         "name": "created_at!",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 13,
+        "ordinal": 14,
         "name": "updated_at!",
         "type_info": "Timestamptz"
       }
@@ -93,8 +98,9 @@
       true,
       true,
       true,
+      true,
       true
     ]
   },
-  "hash": "63868bc5a4560aed1233cf092f03fe03aeb8b1ce50e2bcb204cdb540a816da1c"
+  "hash": "cbff0c132b0c38a8636608d2bde16e8d7326023415b9230668b0ec49e3139e3b"
 }

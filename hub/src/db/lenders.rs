@@ -3,6 +3,7 @@ use crate::model::Lender;
 use anyhow::Result;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
+use sqlx::PgPool;
 use sqlx::Pool;
 use sqlx::Postgres;
 use time::OffsetDateTime;
@@ -184,6 +185,7 @@ pub async fn get_user_by_rest_token(
             verification_code,
             invite_code,
             password_reset_token,
+            timezone,
             password_reset_at,
             created_at,
             updated_at
@@ -209,4 +211,22 @@ pub fn generate_random_string(length: usize) -> String {
         .collect();
 
     random_string
+}
+
+pub async fn update_lender_timezone(pool: &PgPool, lender_id: &str, timezone: &str) -> Result<()> {
+    sqlx::query!(
+        r#"
+        UPDATE lenders
+        SET 
+            timezone = $1,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = $2
+        "#,
+        timezone,
+        lender_id.to_string(),
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
 }

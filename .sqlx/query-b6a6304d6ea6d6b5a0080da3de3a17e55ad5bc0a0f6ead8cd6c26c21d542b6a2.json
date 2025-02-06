@@ -1,31 +1,31 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT\n           id as \"id!\",\n           name as \"name!\",\n           email as \"email!\",\n           salt as \"salt!\",\n           verifier as \"verifier!\",\n           password,\n           verified as \"verified!\",\n           verification_code,\n           password_reset_token,\n           used_referral_code,\n           first_time_discount_rate_referee,\n           password_reset_at,\n           created_at as \"created_at!\",\n           updated_at as \"updated_at!\"\n           FROM borrower_discount_info where verification_code = $1\n        ",
+  "query": "SELECT\n            id,\n            name,\n            email,\n            salt,\n            verifier,\n            password,\n            verified,\n            verification_code,\n            invite_code,\n            password_reset_token,\n            timezone,\n            password_reset_at,\n            created_at,\n            updated_at\n        FROM lenders\n            WHERE password_reset_token = $1\n          AND password_reset_at > $2",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "id!",
+        "name": "id",
         "type_info": "Bpchar"
       },
       {
         "ordinal": 1,
-        "name": "name!",
+        "name": "name",
         "type_info": "Varchar"
       },
       {
         "ordinal": 2,
-        "name": "email!",
+        "name": "email",
         "type_info": "Varchar"
       },
       {
         "ordinal": 3,
-        "name": "salt!",
+        "name": "salt",
         "type_info": "Text"
       },
       {
         "ordinal": 4,
-        "name": "verifier!",
+        "name": "verifier",
         "type_info": "Text"
       },
       {
@@ -35,7 +35,7 @@
       },
       {
         "ordinal": 6,
-        "name": "verified!",
+        "name": "verified",
         "type_info": "Bool"
       },
       {
@@ -45,18 +45,18 @@
       },
       {
         "ordinal": 8,
+        "name": "invite_code",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 9,
         "name": "password_reset_token",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 9,
-        "name": "used_referral_code",
-        "type_info": "Varchar"
-      },
-      {
         "ordinal": 10,
-        "name": "first_time_discount_rate_referee",
-        "type_info": "Numeric"
+        "name": "timezone",
+        "type_info": "Varchar"
       },
       {
         "ordinal": 11,
@@ -65,36 +65,37 @@
       },
       {
         "ordinal": 12,
-        "name": "created_at!",
+        "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
         "ordinal": 13,
-        "name": "updated_at!",
+        "name": "updated_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
-        "Text"
+        "Text",
+        "Timestamptz"
       ]
     },
     "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
       true,
       true,
       true,
       true,
       true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true
+      false,
+      false
     ]
   },
-  "hash": "29ff41ae21ab9b48968522ecca775553608750ba6ac313c0eb46a30c2933d60c"
+  "hash": "b6a6304d6ea6d6b5a0080da3de3a17e55ad5bc0a0f6ead8cd6c26c21d542b6a2"
 }

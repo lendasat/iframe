@@ -67,6 +67,11 @@
         "ordinal": 12,
         "name": "verifier",
         "type_info": "Text"
+      },
+      {
+        "ordinal": 13,
+        "name": "timezone",
+        "type_info": "Varchar"
       }
     ],
     "parameters": {
@@ -87,7 +92,8 @@
       false,
       false,
       false,
-      false
+      false,
+      true
     ]
   },
   "hash": "cc9688d6ccafb3e88ddd66536dab867c3ffcc90f3bf54f03efa4890c02ea27f6"
