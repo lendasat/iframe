@@ -16,7 +16,7 @@ export function LiquidationPriceInfoLabel({ children }: LiquidationPriceInfoLabe
         + "Liquidation price equals loan-to-value (LTV) of 95%. If the Bitcoin price hits the liquidation price, even for only a couple of seconds, it is considered as a liquidation event."}
     >
       <RadixLink
-        href="https://lendasat.notion.site/Frequently-Asked-Questions-100d2f24d4cf800e83bbca7cff3bb707"
+        href="https://faq.lendasat.com"
         target="_blank"
       >
         <Flex gap={"2"} align={"center"}>

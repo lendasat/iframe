@@ -15,7 +15,7 @@ export function LtvInfoLabel({ children }: LtvInfoLabelProps) {
       description={"The Loan-To-Value (LTV) ratio is the relationship between the loan amount and the value of the collateral provided. The starting LTV (for example, 50%) indicates how much Bitcoin must be placed into the collateral contract to back a certain loan amount."}
     >
       <RadixLink
-        href="https://lendasat.notion.site/Frequently-Asked-Questions-100d2f24d4cf800e83bbca7cff3bb707"
+        href="https://faq.lendasat.com"
         target="_blank"
       >
         <Flex gap={"2"} align={"center"}>

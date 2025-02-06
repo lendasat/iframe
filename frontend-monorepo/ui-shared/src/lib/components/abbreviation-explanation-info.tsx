@@ -38,7 +38,7 @@ export function AbbreviationExplanationInfo(
               <div className="mb-2"></div>
 
               <RadixLink
-                href="https://lendasat.notion.site/Frequently-Asked-Questions-100d2f24d4cf800e83bbca7cff3bb707"
+                href="https://faq.lendasat.com"
                 target="_blank"
               >
                 <Flex gap={"2"}>
