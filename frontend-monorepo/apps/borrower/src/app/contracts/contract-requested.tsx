@@ -58,9 +58,9 @@ export function ContractRequested({ createdAt, contractId }: ContractRequestedPr
   return (
     <Box>
       <Heading className={"text-font dark:text-font-dark"} weight={"medium"} size={"4"}>
-        Awaiting Lenders Remark...
+        Waiting for lender to approve
       </Heading>
-      <Box className="mt-3 h-12 px-2 justify-between rounded-xl bg-gradient-to-r from-pink-500/20 to-active-nav/50 to-90% flex items-center">
+      <Box className="mb-3 mt-3 h-12 px-2 justify-between rounded-xl bg-gradient-to-r from-pink-500/20 to-active-nav/50 to-90% flex items-center">
         <Flex align={"center"} gap={"2"}>
           <Box className="h-8 w-8 bg-black rounded-lg flex items-center justify-center">
             <LuClock1 color="white" size={17} />

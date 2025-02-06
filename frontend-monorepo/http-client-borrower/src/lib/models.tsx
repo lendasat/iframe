@@ -149,6 +149,12 @@ export interface Contract {
   extended_by_contract?: string;
   borrower_xpub: string;
   lender_xpub: string;
+  kyc_info?: KycInfo;
+}
+
+export interface KycInfo {
+  kyc_link: string;
+  is_kyc_done: boolean;
 }
 
 export interface ClaimCollateralPsbtResponse {
@@ -169,6 +175,7 @@ export interface LoanOffer {
   loan_asset_type: string;
   loan_asset_chain: string;
   origination_fee: OriginationFee[];
+  kyc_link?: string;
 }
 
 export interface PostLoanRequest {

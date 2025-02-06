@@ -1,11 +1,12 @@
 import { faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { LoanOfferStatus, useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
-import { formatCurrency, getFormatedStringFromDays, StableCoinHelper } from "@frontend-monorepo/ui-shared";
+import { formatCurrency, getFormatedStringFromDays, KycBadge, StableCoinHelper } from "@frontend-monorepo/ui-shared";
 import * as Checkbox from "@radix-ui/react-checkbox";
 import { CheckIcon } from "@radix-ui/react-icons";
 import { Box, Button, Callout, Dialog, Flex, Grid, Heading, Separator, Text, TextField } from "@radix-ui/themes";
 import { useState } from "react";
+import { Col, Row } from "react-bootstrap";
 import { FaPenNib } from "react-icons/fa";
 import { IoReceipt } from "react-icons/io5";
 import { MdOutlineSwapCalls } from "react-icons/md";
@@ -266,6 +267,23 @@ function MyLoanOfferDetails() {
                 </TextField.Slot>
               </TextField.Root>
             </Box>
+
+            {offer.kyc_link && (
+              <Box className="space-y-1">
+                <Text as="label" size={"2"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">
+                  KYC Link
+                </Text>
+                <TextField.Root
+                  size="3"
+                  className="flex-1 text-sm rounded-lg"
+                  type="text"
+                  color="purple"
+                  value={offer.kyc_link}
+                  disabled={true}
+                >
+                </TextField.Root>
+              </Box>
+            )}
           </Box>
         </Box>
         <Box className="p-5 xl:h-full flex flex-col items-center justify-center order-1 md:order-2">
@@ -292,7 +310,16 @@ function MyLoanOfferDetails() {
                     />
                   </Box>
 
-                  <StatusBadge offer={offer} />
+                  <Row>
+                    <Col>
+                      <StatusBadge offer={offer} />
+                    </Col>
+                    {offer.kyc_link && (
+                      <Col>
+                        <KycBadge />
+                      </Col>
+                    )}
+                  </Row>
                 </Flex>
                 {/* Created date */}
                 <Flex align={"center"} justify={"end"} gap={"2"} className="px-4 md:px-5">

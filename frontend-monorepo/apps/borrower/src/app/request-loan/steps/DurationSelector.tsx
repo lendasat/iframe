@@ -40,7 +40,7 @@ const SingleDurationSelector: React.FC<DurationSelectorProps> = ({ onDurationCha
     if (value === selectedDuration) {
       return "ring-2 ring-purple-400 bg-purple-100 dark:bg-gray-300";
     }
-    return "hover:bg-gray-50 dark:bg-gray-600";
+    return "hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-300";
   };
 
   return (

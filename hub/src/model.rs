@@ -14,6 +14,7 @@ use serde::Serialize;
 use sqlx::FromRow;
 use std::str::FromStr;
 use time::OffsetDateTime;
+use url::Url;
 use uuid::Uuid;
 
 pub type Email = String;
@@ -249,6 +250,9 @@ pub struct CreateLoanOfferSchema {
     pub loan_repayment_address: String,
     pub auto_accept: bool,
     pub lender_xpub: Xpub,
+    /// The lender can optionally provide a KYC link, so that the borrower can complete a KYC
+    /// process.
+    pub kyc_link: Option<Url>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -305,6 +309,13 @@ pub struct LoanOffer {
     pub updated_at: OffsetDateTime,
     pub auto_accept: bool,
     pub lender_xpub: Option<String>,
+    pub kyc_link: Option<Url>,
+}
+
+impl LoanOffer {
+    pub fn requires_kyc(&self) -> bool {
+        self.kyc_link.is_some()
+    }
 }
 
 #[derive(Debug, Deserialize, sqlx::Type, Serialize, Clone, PartialEq)]
@@ -942,4 +953,5 @@ pub struct LenderFeatureFlag {
 
 pub mod lender_feature_flags {
     pub const AUTO_APPROVE_FEATURE_FLAG_ID: &str = "auto_approve";
+    pub const KYC_OFFERS_FEATURE_FLAG_ID: &str = "kyc_offers";
 }

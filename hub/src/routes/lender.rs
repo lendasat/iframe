@@ -25,6 +25,7 @@ pub(crate) mod auth;
 pub(crate) mod contracts;
 pub(crate) mod dispute;
 pub(crate) mod health_check;
+pub(crate) mod kyc;
 pub(crate) mod loan_offers;
 pub(crate) mod loan_requests;
 pub(crate) mod profile;
@@ -49,7 +50,8 @@ pub async fn spawn_lender_server(
                     .route_layer(middleware::from_fn_with_state(app_state.clone(), auth))
                     .with_state(app_state.clone()),
             )
-            .merge(loan_requests::router(app_state))
+            .merge(loan_requests::router(app_state.clone()))
+            .merge(kyc::router(app_state))
             .fallback_service(
                 ServeDir::new("./frontend-monorepo/dist/apps/lender").fallback(ServeFile::new(
                     "./frontend-monorepo/dist/apps/lender/index.html",

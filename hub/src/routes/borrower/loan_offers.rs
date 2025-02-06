@@ -21,6 +21,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use std::sync::Arc;
 use tracing::instrument;
+use url::Url;
 
 pub(crate) fn router(app_state: Arc<AppState>) -> Router {
     Router::new()
@@ -68,6 +69,7 @@ pub struct LoanOffer {
     pub status: LoanOfferStatus,
     pub loan_repayment_address: String,
     pub origination_fee: Vec<OriginationFee>,
+    pub kyc_link: Option<Url>,
 }
 
 #[instrument(skip_all, err(Debug))]
@@ -129,6 +131,7 @@ pub async fn get_all_available_loan_offers(
             status: loan_offer.status,
             loan_repayment_address: loan_offer.loan_repayment_address,
             origination_fee,
+            kyc_link: loan_offer.kyc_link,
         })
     }
 
@@ -196,6 +199,7 @@ pub async fn get_available_loan_offers_by_lender(
             status: loan_offer.status,
             loan_repayment_address: loan_offer.loan_repayment_address,
             origination_fee,
+            kyc_link: loan_offer.kyc_link,
         })
     }
 
@@ -269,6 +273,7 @@ pub async fn get_loan_offer(
                     status: loan_offer.status,
                     loan_repayment_address: loan_offer.loan_repayment_address,
                     origination_fee,
+                    kyc_link: loan_offer.kyc_link,
                 }),
             ))
         }

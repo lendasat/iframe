@@ -18,7 +18,7 @@ export const LoanOffersOverview = () => {
     <Box className={"pb-20"}>
       <Box className={"px-6 md:px-8 py-4"}>
         <Flex gap={"1"} align={"center"}>
-          <Heading className={"text-font dark:text-font-dark"} size={"6"}>Available Loan Offers</Heading>
+          <Heading className={"text-font dark:text-font-dark"} size={"6"}>All Loan Offers</Heading>
         </Flex>
       </Box>
 

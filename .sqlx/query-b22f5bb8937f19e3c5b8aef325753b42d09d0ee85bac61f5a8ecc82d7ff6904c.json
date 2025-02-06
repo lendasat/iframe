@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT \n            AVG(interest_rate) as \"avg!: Decimal\", \n            MIN(interest_rate) as \"min!: Decimal\", \n            MAX(interest_rate) as \"max!: Decimal\"\n        FROM \n            loan_offers \n        WHERE \n            status = 'Available'",
+  "query": "SELECT\n            AVG(interest_rate) as \"avg!: Decimal\",\n            MIN(interest_rate) as \"min!: Decimal\",\n            MAX(interest_rate) as \"max!: Decimal\"\n        FROM\n            loan_offers\n        WHERE\n            status = 'Available'",
   "describe": {
     "columns": [
       {
@@ -28,5 +28,5 @@
       null
     ]
   },
-  "hash": "c6932f2b699799169e30633a5d4d4dabb1a993e5b62b56bfe7ea772ad8e5c41a"
+  "hash": "b22f5bb8937f19e3c5b8aef325753b42d09d0ee85bac61f5a8ecc82d7ff6904c"
 }

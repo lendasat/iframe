@@ -1077,9 +1077,14 @@ pub async fn update_collateral(
 pub(crate) async fn expire_requested_contracts(
     pool: &Pool<Postgres>,
     expiry_in_hours: i64,
+    pending_kyc_expiry_in_hours: i64,
 ) -> Result<Vec<String>> {
     let expiration_threshold = OffsetDateTime::now_utc() - time::Duration::hours(expiry_in_hours);
 
+    let pending_kyc_expiration_threshold =
+        OffsetDateTime::now_utc() - time::Duration::hours(pending_kyc_expiry_in_hours);
+
+    // If there is no pending KYC, expire the contract after `expiration_threshold`.
     let rows = sqlx::query!(
         r#"
             UPDATE
@@ -1088,7 +1093,15 @@ pub(crate) async fn expire_requested_contracts(
                 status = 'RequestExpired', updated_at = $1
             WHERE
                 status = 'Requested' AND
-                created_at <= $2
+                created_at <= $2 AND
+                NOT EXISTS (
+                  SELECT 1
+                  FROM kyc
+                  WHERE
+                    kyc.lender_id = contracts.lender_id AND
+                    kyc.borrower_id = contracts.borrower_id AND
+                    kyc.is_done = false
+                )
             RETURNING id;
         "#,
         OffsetDateTime::now_utc(),
@@ -1098,6 +1111,36 @@ pub(crate) async fn expire_requested_contracts(
     .await?;
 
     let contract_ids = rows.into_iter().map(|row| row.id).collect();
+
+    // If there is a pending KYC, expire the contract after `pending_kyc_expiration_threshold`.
+    let rows = sqlx::query!(
+        r#"
+            UPDATE
+                contracts
+            SET
+                status = 'RequestExpired', updated_at = $1
+            WHERE
+                status = 'Requested' AND
+                created_at <= $2 AND
+                EXISTS (
+                  SELECT 1
+                  FROM kyc
+                  WHERE
+                    kyc.lender_id = contracts.lender_id AND
+                    kyc.borrower_id = contracts.borrower_id AND
+                    kyc.is_done = false
+                )
+            RETURNING id;
+        "#,
+        OffsetDateTime::now_utc(),
+        pending_kyc_expiration_threshold
+    )
+    .fetch_all(pool)
+    .await?;
+
+    let pending_kyc_contract_ids = rows.into_iter().map(|row| row.id).collect::<Vec<_>>();
+
+    let contract_ids = [contract_ids, pending_kyc_contract_ids].concat();
 
     Ok(contract_ids)
 }

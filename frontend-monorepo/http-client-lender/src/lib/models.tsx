@@ -56,6 +56,12 @@ export interface Contract {
   extended_by_contract?: string;
   borrower_xpub: string;
   lender_xpub: string;
+  kyc_info?: KycInfo;
+}
+
+export interface KycInfo {
+  kyc_link: string;
+  is_kyc_done: boolean;
 }
 
 export interface CreateLoanOfferRequest {
@@ -72,6 +78,7 @@ export interface CreateLoanOfferRequest {
   loan_repayment_address: string;
   auto_accept: boolean;
   lender_xpub: string;
+  kyc_link?: string;
 }
 
 export enum LoanOfferStatus {
@@ -96,6 +103,7 @@ export interface LoanOffer {
   origination_fee: OriginationFee[];
   status: LoanOfferStatus;
   auto_accept: boolean;
+  kyc_link?: string;
   created_at: Date;
   updated_at: Date;
 }
@@ -261,11 +269,13 @@ export interface GetRecoveryPsbtResponse {
 // working.
 export enum LenderFeatureFlags {
   AutoApproveLoanRequests = "auto_approve",
+  KycOffers = "kyc_offers",
 }
 
 export class FeatureMapper {
   private static readonly FEATURE_MAP: Record<string, LenderFeatureFlags> = {
     [LenderFeatureFlags.AutoApproveLoanRequests]: LenderFeatureFlags.AutoApproveLoanRequests,
+    [LenderFeatureFlags.KycOffers]: LenderFeatureFlags.KycOffers,
     // Add other mappings once we use them
   };
 

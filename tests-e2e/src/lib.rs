@@ -83,6 +83,7 @@ mod tests {
                 "0x055098f73c89ca554f98c0298ce900235d2e1b4205a7ca629ae017518521c2c3".to_string(),
             auto_accept: false,
             lender_xpub,
+            kyc_link: None,
         };
 
         let res = lender
@@ -409,6 +410,7 @@ mod tests {
                 "0x055098f73c89ca554f98c0298ce900235d2e1b4205a7ca629ae017518521c2c3".to_string(),
             auto_accept: false,
             lender_xpub,
+            kyc_link: None,
         };
 
         let res = lender

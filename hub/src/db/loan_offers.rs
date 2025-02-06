@@ -10,6 +10,7 @@ use sqlx::Pool;
 use sqlx::Postgres;
 use std::str::FromStr;
 use time::OffsetDateTime;
+use url::Url;
 
 pub(crate) async fn load_all_available_loan_offers(
     pool: &Pool<Postgres>,
@@ -28,6 +29,7 @@ pub(crate) async fn load_all_available_loan_offers(
             lo.duration_days_max,
             lo.loan_amount_reserve,
             lo.lender_xpub,
+            lo.kyc_link,
             lo.auto_accept,
             COALESCE(
                 lo.loan_amount_reserve - COALESCE(
@@ -97,6 +99,7 @@ pub(crate) async fn load_all_available_loan_offers(
                 updated_at: row.updated_at,
                 auto_accept: row.auto_accept,
                 lender_xpub: row.lender_xpub,
+                kyc_link: row.kyc_link.map(|l| Url::parse(&l).expect("valid URL")),
             })
         })
         .collect();
@@ -155,6 +158,7 @@ pub async fn load_all_loan_offers_by_lender(
             lo.loan_repayment_address,
             lo.auto_accept,
             lo.lender_xpub,
+            lo.kyc_link,
             lo.created_at,
             lo.updated_at
         FROM loan_offers lo
@@ -199,6 +203,7 @@ pub async fn load_all_loan_offers_by_lender(
                 updated_at: row.updated_at,
                 auto_accept: row.auto_accept,
                 lender_xpub: row.lender_xpub,
+                kyc_link: row.kyc_link.map(|l| Url::parse(&l).expect("valid URL")),
             }
         })
         .collect();
@@ -242,6 +247,7 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
             lo.loan_repayment_address,
             lo.auto_accept,
             lo.lender_xpub,
+            lo.kyc_link,
             lo.created_at,
             lo.updated_at
         FROM loan_offers lo
@@ -283,6 +289,7 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
         updated_at: row.updated_at,
         auto_accept: row.auto_accept,
         lender_xpub: row.lender_xpub,
+        kyc_link: row.kyc_link.map(|l| Url::parse(&l).expect("valid URL")),
     };
 
     Ok(loan_offer)
@@ -320,8 +327,7 @@ pub async fn insert_loan_offer(
     let id = uuid::Uuid::new_v4().to_string();
     let status = LoanOfferStatus::Available;
 
-    let loan = sqlx::query_as!(
-        LoanOffer,
+    let row = sqlx::query!(
         r#"
         INSERT INTO loan_offers (
           id,
@@ -339,9 +345,10 @@ pub async fn insert_loan_offer(
           status,
           loan_repayment_address,
           auto_accept,
-          lender_xpub
+          lender_xpub,
+          kyc_link
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
         RETURNING
           id,
           lender_id,
@@ -360,6 +367,7 @@ pub async fn insert_loan_offer(
           loan_repayment_address,
           auto_accept,
           lender_xpub,
+          kyc_link,
           created_at,
           updated_at
         "#,
@@ -379,11 +387,35 @@ pub async fn insert_loan_offer(
         offer.loan_repayment_address,
         offer.auto_accept,
         Some(offer.lender_xpub.to_string()),
+        offer.kyc_link.map(|l| l.to_string()),
     )
     .fetch_one(pool)
     .await?;
 
-    Ok(loan)
+    let loan_offer = LoanOffer {
+        id: row.id,
+        lender_id: row.lender_id,
+        name: row.name,
+        min_ltv: row.min_ltv,
+        interest_rate: row.interest_rate,
+        loan_amount_min: row.loan_amount_min,
+        loan_amount_max: row.loan_amount_max,
+        duration_days_min: row.duration_days_min,
+        duration_days_max: row.duration_days_max,
+        loan_amount_reserve: row.loan_amount_reserve,
+        loan_amount_reserve_remaining: row.loan_amount_reserve_remaining,
+        loan_asset_type: row.loan_asset_type,
+        loan_asset_chain: row.loan_asset_chain,
+        status: row.status,
+        loan_repayment_address: row.loan_repayment_address,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+        auto_accept: row.auto_accept,
+        lender_xpub: row.lender_xpub,
+        kyc_link: row.kyc_link.map(|l| Url::parse(&l).expect("valid URL")),
+    };
+
+    Ok(loan_offer)
 }
 
 pub(crate) async fn loan_by_id(pool: &Pool<Postgres>, loan_id: &str) -> Result<Option<LoanOffer>> {
@@ -419,6 +451,7 @@ pub(crate) async fn loan_by_id(pool: &Pool<Postgres>, loan_id: &str) -> Result<O
             lo.loan_repayment_address,
             lo.auto_accept,
             lo.lender_xpub,
+            lo.kyc_link,
             lo.created_at,
             lo.updated_at
         FROM loan_offers lo
@@ -461,6 +494,7 @@ pub(crate) async fn loan_by_id(pool: &Pool<Postgres>, loan_id: &str) -> Result<O
             updated_at: row.updated_at,
             auto_accept: row.auto_accept,
             lender_xpub: row.lender_xpub,
+            kyc_link: row.kyc_link.map(|l| Url::parse(&l).expect("valid URL")),
         };
 
         Ok(Some(loan_offer))
@@ -479,13 +513,13 @@ pub struct InterestRateStats {
 pub async fn calculate_loan_offer_stats(pool: &Pool<Postgres>) -> Result<InterestRateStats> {
     let stats = sqlx::query_as!(
         InterestRateStats,
-        r#"SELECT 
-            AVG(interest_rate) as "avg!: Decimal", 
-            MIN(interest_rate) as "min!: Decimal", 
+        r#"SELECT
+            AVG(interest_rate) as "avg!: Decimal",
+            MIN(interest_rate) as "min!: Decimal",
             MAX(interest_rate) as "max!: Decimal"
-        FROM 
-            loan_offers 
-        WHERE 
+        FROM
+            loan_offers
+        WHERE
             status = 'Available'"#
     )
     .fetch_one(pool)

@@ -1,5 +1,5 @@
 import { LoanOffer } from "@frontend-monorepo/http-client-lender";
-import { CurrencyFormatter, StableCoinHelper } from "@frontend-monorepo/ui-shared";
+import { CurrencyFormatter, KycBadge, StableCoinHelper } from "@frontend-monorepo/ui-shared";
 import { InfoCircledIcon } from "@radix-ui/react-icons";
 import { Box, Button, Callout, Flex, Table, Text } from "@radix-ui/themes";
 import { useState } from "react";
@@ -14,6 +14,7 @@ export type ColumnFilterKey =
   | "interest"
   | "ltv"
   | "coin"
+  | "requirements"
   | "status"
   | "action"
   | "createdAt";
@@ -62,7 +63,7 @@ const ColumnHeader = ({ toggleSortByColumn, sortByColumn, currentColumn, sortAsc
           className={`text-[10px] -mb-1 ${getCaretColor(sortByColumn, currentColumn, !sortAsc)}`}
         />
       </Box>
-    </Flex>
+    </Flex>p
   </Button>
 );
 
@@ -106,6 +107,9 @@ export const MyLoanOffersTable = ({
       case "status":
       case "action":
         sorted = a.status.localeCompare(b.status);
+        break;
+      case "requirements":
+        sorted = a.kyc_link ? 1 : -1;
         break;
       case "createdAt":
         sorted = a.created_at.getTime() - b.created_at.getTime();
@@ -155,8 +159,6 @@ export const MyLoanOffersTable = ({
             </Box>
           </Table.ColumnHeaderCell>
           <Table.ColumnHeaderCell
-            justify={"center"}
-            minWidth={"100px"}
             className={"text-font dark:text-font-dark"}
           >
             <ColumnHeader
@@ -175,6 +177,17 @@ export const MyLoanOffersTable = ({
                 sortAsc={sortAsc}
                 currentColumn={"coin"}
                 label={"Coin"}
+              />
+            </Box>
+          </Table.ColumnHeaderCell>
+          <Table.ColumnHeaderCell className={"text-font dark:text-font-dark"}>
+            <Box className={"hidden md:flex"}>
+              <ColumnHeader
+                toggleSortByColumn={toggleSortByColumn}
+                sortByColumn={sortByColumn}
+                sortAsc={sortAsc}
+                currentColumn={"requirements"}
+                label={"Requirements"}
               />
             </Box>
           </Table.ColumnHeaderCell>
@@ -264,6 +277,13 @@ export const MyLoanOffersTable = ({
                   <Box className="hidden md:flex">
                     <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
                       {StableCoinHelper.print(stableCoin)}
+                    </Text>
+                  </Box>
+                </Table.Cell>
+                <Table.Cell>
+                  <Box className="hidden md:flex">
+                    <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
+                      {offer.kyc_link && <KycBadge />}
                     </Text>
                   </Box>
                 </Table.Cell>
