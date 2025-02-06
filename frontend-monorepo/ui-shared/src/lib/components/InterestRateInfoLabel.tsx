@@ -16,7 +16,7 @@ For example, given a $1000 loan and a yearly interest rate of 12%, the monthly i
 For a loan duration of 5 months, this amounts to $50 interest. Thus the borrower owes a total of $1050.`}
     >
       <RadixLink
-        href="https://lendasat.notion.site/Frequently-Asked-Questions-100d2f24d4cf800e83bbca7cff3bb707"
+        href="https://faq.lendasat.com"
         target="_blank"
       >
         <Flex gap={"2"}>
