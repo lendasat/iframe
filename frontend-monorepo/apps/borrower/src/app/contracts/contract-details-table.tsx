@@ -79,7 +79,6 @@ export interface ContractDetailsTableProps {
   sortByColumn: ColumnFilterKey;
   sortAsc: boolean;
   contracts: Contract[];
-  latestPrice: number;
 }
 
 export const ContractDetailsTable = ({
@@ -88,7 +87,6 @@ export const ContractDetailsTable = ({
   sortByColumn,
   sortAsc,
   contracts,
-  latestPrice,
 }: ContractDetailsTableProps) => {
   const navigate = useNavigate();
 
@@ -227,10 +225,7 @@ export const ContractDetailsTable = ({
           )}
 
         {contracts.map((contract, index) => {
-          const isFunded = contract.collateral_sats > 0;
-
           const collateral_btc = contract.collateral_sats / 100000000;
-          const ltvRatio = contract.loan_amount / (collateral_btc * latestPrice) * 100;
 
           let contractStatus = contractStatusToLabelString(contract.status);
           const firstMarginCall = contract.liquidation_status === LiquidationStatus.FirstMarginCall;
@@ -284,7 +279,7 @@ export const ContractDetailsTable = ({
               {shownColumns["ltv"]
                 && (
                   <Table.Cell>
-                    <LtvProgressBar ltvRatio={isFunded && latestPrice ? ltvRatio : undefined} />
+                    <LtvProgressBar collateralBtc={collateral_btc} loanAmount={contract.loan_amount} />
                   </Table.Cell>
                 )}
               {shownColumns["collateral"]
@@ -391,9 +386,7 @@ export const ContractDetailsTable = ({
                                   LTV rate:
                                 </Text>
                                 <Box minWidth={"150px"}>
-                                  <LtvProgressBar
-                                    ltvRatio={isFunded && latestPrice ? ltvRatio : undefined}
-                                  />
+                                  <LtvProgressBar collateralBtc={collateral_btc} loanAmount={contract.loan_amount} />
                                 </Box>
                               </Flex>
                             </Box>

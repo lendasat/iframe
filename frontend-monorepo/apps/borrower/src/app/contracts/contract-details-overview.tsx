@@ -6,6 +6,7 @@ import {
   useAuth,
   useBorrowerHttpClient,
 } from "@frontend-monorepo/http-client-borrower";
+import { ChatDrawer } from "@frontend-monorepo/nostr-chat";
 import {
   CurrencyFormatter,
   formatCurrency,
@@ -18,7 +19,6 @@ import {
   ONE_YEAR,
   RefundAddressInfoLabel,
   StableCoinHelper,
-  usePrice,
 } from "@frontend-monorepo/ui-shared";
 import { TransactionList, TransactionType } from "@frontend-monorepo/ui-shared";
 import { ExternalLinkIcon } from "@radix-ui/react-icons";
@@ -160,7 +160,6 @@ interface DetailsProps {
 }
 
 function ContractDetails({ contract }: DetailsProps) {
-  const { latestPrice } = usePrice();
   const { backendVersion } = useAuth();
 
   const [showAddCollateralModal, setShowAddCollateralModal] = useState(false);
@@ -187,8 +186,6 @@ function ContractDetails({ contract }: DetailsProps) {
 
   const initialLtv = contract.initial_ltv;
   const initial_price = loanAmount / (collateral * initialLtv);
-
-  const ltvRatio = loanAmount / (collateralBtc * latestPrice);
 
   const loanOriginatorFee = contract.origination_fee_sats / 100000000;
   const loanOriginatorFeeUsd = (loanOriginatorFee * initial_price).toFixed(0);
@@ -267,6 +264,11 @@ function ContractDetails({ contract }: DetailsProps) {
 
   return (
     <Box>
+      <ChatDrawer
+        contractId={contract.id}
+        counterpartyXPub={contract.lender_xpub}
+      />
+
       <Box className="p-6 md:pl-8 border-b border-font/10 dark:border-font-dark/10">
         <Heading className={"text-font dark:text-font-dark"} size={"6"}>Contract Details</Heading>
       </Box>
@@ -461,7 +463,7 @@ function ContractDetails({ contract }: DetailsProps) {
           </LtvInfoLabel>
 
           <div className="w-40 ml-auto">
-            <LtvProgressBar ltvRatio={ltvRatio * 100} />
+            <LtvProgressBar loanAmount={loanAmount} collateralBtc={collateralBtc} />
           </div>
         </Flex>
 

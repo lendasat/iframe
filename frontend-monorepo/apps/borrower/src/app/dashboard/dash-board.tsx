@@ -1,5 +1,5 @@
 import { Contract, ContractStatus, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
-import { formatCurrency, usePrice } from "@frontend-monorepo/ui-shared";
+import { formatCurrency } from "@frontend-monorepo/ui-shared";
 import { ExternalLinkIcon, InfoCircledIcon } from "@radix-ui/react-icons";
 import { Box, Button, Callout, Grid, Heading, Skeleton, Tabs, Text } from "@radix-ui/themes";
 import type { HTMLAttributeAnchorTarget } from "react";
@@ -19,8 +19,6 @@ interface ContractOverviewProps {
 }
 
 const ContractOverview = ({ contracts: unfilteredContracts, contractStatusFilter }: ContractOverviewProps) => {
-  const { latestPrice } = usePrice();
-
   const shownColumns: ColumnFilter = {
     updatedAt: true,
     amount: true,
@@ -81,7 +79,6 @@ const ContractOverview = ({ contracts: unfilteredContracts, contractStatusFilter
         sortByColumn={sortByColumn}
         sortAsc={sortAsc}
         contracts={contracts}
-        latestPrice={latestPrice}
       />
     </Box>
   );

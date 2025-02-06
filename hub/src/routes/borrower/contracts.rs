@@ -649,6 +649,8 @@ pub struct Contract {
     pub liquidation_price: Decimal,
     pub extends_contract: Option<String>,
     pub extended_by_contract: Option<String>,
+    pub lender_xpub: String,
+    pub borrower_xpub: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -737,6 +739,14 @@ async fn map_to_api_contract(
         .await
         .map_err(Error::from)?;
 
+    let borrower_xpub = db::wallet_backups::get_xpub_for_borrower(&data.db, contract.borrower_id)
+        .await
+        .map_err(|e| Error::Database(anyhow!(e)))?;
+
+    let lender_xpub = db::wallet_backups::get_xpub_for_lender(&data.db, contract.lender_id)
+        .await
+        .map_err(|e| Error::Database(anyhow!(e)))?;
+
     let contract = Contract {
         id: contract.id,
         loan_amount: contract.loan_amount,
@@ -767,6 +777,8 @@ async fn map_to_api_contract(
         liquidation_price,
         extends_contract: parent_contract_id,
         extended_by_contract: child_contract,
+        borrower_xpub,
+        lender_xpub,
     };
 
     Ok(contract)

@@ -1,11 +1,17 @@
 import type { FC } from "react";
 import { Spinner } from "react-bootstrap";
+import { usePrice } from "../price-context";
 
-interface LtvProgressBarProps {
-  ltvRatio: number | undefined;
+interface LtvProgressBarNewProps {
+  loanAmount: number;
+  collateralBtc: number | undefined;
 }
 
-export const LtvProgressBar: FC<LtvProgressBarProps> = ({ ltvRatio }) => {
+export const LtvProgressBar: FC<LtvProgressBarNewProps> = ({ loanAmount, collateralBtc }) => {
+  const { latestPrice } = usePrice();
+
+  const ltvRatio = collateralBtc ? loanAmount / (collateralBtc * latestPrice) * 100 : undefined;
+
   let barColor = "";
 
   const isNan = ltvRatio == null || isNaN(ltvRatio);
@@ -48,5 +54,3 @@ export const LtvProgressBar: FC<LtvProgressBarProps> = ({ ltvRatio }) => {
     </div>
   );
 };
-
-export default LtvProgressBar;

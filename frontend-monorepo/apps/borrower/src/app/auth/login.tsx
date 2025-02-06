@@ -1,6 +1,6 @@
 import { useAuth } from "@frontend-monorepo/http-client-borrower";
 import { LoginForm } from "@frontend-monorepo/ui-shared";
-import init, { does_wallet_exist, restore_wallet } from "browser-wallet";
+import init, { does_wallet_exist, load_wallet, restore_wallet } from "browser-wallet";
 import { md5 } from "hash-wasm";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 
@@ -40,6 +40,8 @@ function Login() {
     // TODO: If a wallet does not exist and it can't be restored from the hub, we should ask the
     // user to import a mnemonic seed phrase! Basically, a wallet must be created before we continue
     // past login.
+
+    load_wallet(password, key);
 
     if (oldPath) {
       navigate(oldPath);

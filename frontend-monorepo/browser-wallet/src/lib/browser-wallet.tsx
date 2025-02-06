@@ -1,7 +1,9 @@
 import init, {
+  derive_nostr_room_pk,
   does_wallet_exist,
   get_mnemonic,
   get_next_pk,
+  get_nsec,
   get_xpub,
   is_wallet_loaded,
   load_wallet,
@@ -19,6 +21,8 @@ interface WalletContextType {
   doesWalletExist: boolean;
   loadWallet: (passphrase: string) => Promise<void>;
   getMnemonic: () => string;
+  getNsec: () => string;
+  getPubkeyFromContract: (passphrase: string) => string;
   getNextPublicKey: () => Promise<string>;
   signClaimPsbt: (psbt: string, collateralDescriptor: string, borrowerPk: string) => Promise<SignedTransaction>;
   signLiquidationPsbt: (psbt: string, collateralDescriptor: string, borrowerPk: string) => Promise<SignedTransaction>;
@@ -76,6 +80,17 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
     throw Error("Wallet not initialized");
   };
 
+  const getNsec = () => {
+    if (isInitialized && isWalletLoaded) {
+      return get_nsec();
+    }
+    throw Error("Wallet not initialized");
+  };
+
+  const getPubkeyFromContract = (contract: string) => {
+    return derive_nostr_room_pk(contract);
+  };
+
   const getNextPublicKey = async () => {
     const key = await md5(email);
     return get_next_pk(key);
@@ -112,6 +127,8 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
     doesWalletExist,
     loadWallet,
     getMnemonic,
+    getNsec,
+    getPubkeyFromContract,
     getNextPublicKey,
     signClaimPsbt,
     signLiquidationPsbt,

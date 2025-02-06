@@ -142,3 +142,43 @@ where
     .fetch_one(pool)
     .await
 }
+
+pub async fn get_xpub_for_lender<'a, E>(pool: E, lender_id: String) -> Result<String>
+where
+    E: sqlx::Executor<'a, Database = Postgres>,
+{
+    let xpub = sqlx::query_scalar!(
+        r#"
+        SELECT xpub 
+        FROM lender_wallet_backups 
+        WHERE lender_id = $1
+        ORDER BY created_at DESC
+        LIMIT 1
+        "#,
+        lender_id
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(xpub)
+}
+
+pub async fn get_xpub_for_borrower<'a, E>(pool: E, borrower_id: String) -> Result<String>
+where
+    E: sqlx::Executor<'a, Database = Postgres>,
+{
+    let xpub = sqlx::query_scalar!(
+        r#"
+        SELECT xpub 
+        FROM borrower_wallet_backups 
+        WHERE borrower_id = $1
+        ORDER BY created_at DESC
+        LIMIT 1
+        "#,
+        borrower_id
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(xpub)
+}
