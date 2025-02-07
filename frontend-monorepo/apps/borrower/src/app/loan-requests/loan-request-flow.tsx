@@ -1,4 +1,5 @@
 // Types
+import { LoanProductOption } from "@frontend-monorepo/base-http-client";
 import { ScrollArea } from "@radix-ui/themes";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -10,14 +11,18 @@ export const LoanRequestFlow = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   // Initialize state from URL parameters
   const [selectedService, setSelectedService] = useState<ServiceType | undefined>(
-    searchParams.get("service") as ServiceType || undefined,
+    searchParams.get("product") as ServiceType || undefined,
   );
+  const [selectedProduct, setSelectedProduct] = useState<LoanProductOption | undefined>(
+    searchParams.get("product") as LoanProductOption || undefined,
+  );
+
   const [selectedOffer, setSelectedOffer] = useState<number | undefined>(
     searchParams.get("offer") ? Number(searchParams.get("offer")) : undefined,
   );
 
   useEffect(() => {
-    const service = searchParams.get("service") as ServiceType;
+    const service = searchParams.get("product") as ServiceType;
     const offer = searchParams.get("offer");
 
     if (service && service !== selectedService) {
@@ -51,6 +56,18 @@ export const LoanRequestFlow = () => {
     }, 100);
   };
 
+  const handleProductOptionSelect = (productOption: LoanProductOption | undefined) => {
+    setSelectedProduct(productOption);
+    setSelectedOffer(undefined);
+    // Update URL
+    if (productOption) {
+      setSearchParams({ service: productOption });
+    }
+    setTimeout(() => {
+      middleRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
+  };
+
   const handleOfferSelect = (offerId: number) => {
     setSelectedOffer(offerId);
     // Update URL preserving the service parameter
@@ -68,12 +85,11 @@ export const LoanRequestFlow = () => {
     <ScrollArea type="always" scrollbars="vertical">
       <div className="container mx-auto px-4 py-8">
         <ProductSelection
-          onSelect={(service) => {
-            console.log(`Selected ${service}`);
-            // handleServiceSelect
+          onSelect={(option) => {
+            console.log(`Selected ${option}`);
+            handleProductOptionSelect(option);
           }}
-          selectedOption={undefined}
-          // selectedService={selectedService}
+          selectedOption={selectedProduct}
         />
 
         <div ref={middleRef}>
