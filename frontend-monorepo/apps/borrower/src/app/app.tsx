@@ -36,10 +36,10 @@ import VerifyEmailForm from "./auth/verifyEmailForm";
 import BorrowerProfile from "./borrowerProfile";
 import Cards from "./cards/Cards";
 import LenderProfile from "./lenderProfile";
+import { LoanRequestFlow } from "./loan-requests/loan-request-flow";
 import CustomRequest from "./request-loan/custom-loan-request";
 import RequestLoanWizard from "./request-loan/request-loan-wizard";
 import RestrictedAccessPage from "./RestrictedAccessPage";
-import { LoanRequestFlow } from './loan-requests/loan-request-flow';
 
 const menuItems = [
   {
