@@ -436,7 +436,7 @@ export const ContractDetailsTable = ({
                               size={"3"}
                               variant="solid"
                               className="bg-btn text-white dark:bg-dark-600 w-full active:scale-90"
-                              onClick={() => navigate(`${contract.id}`)}
+                              onClick={() => navigate(`/my-contracts/${contract.id}`)}
                             >
                               <Text
                                 size={"2"}
