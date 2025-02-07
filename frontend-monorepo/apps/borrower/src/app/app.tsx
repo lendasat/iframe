@@ -39,6 +39,7 @@ import LenderProfile from "./lenderProfile";
 import CustomRequest from "./request-loan/custom-loan-request";
 import RequestLoanWizard from "./request-loan/request-loan-wizard";
 import RestrictedAccessPage from "./RestrictedAccessPage";
+import { LoanRequestFlow } from './loan-requests/loan-request-flow';
 
 const menuItems = [
   {
@@ -65,6 +66,13 @@ const menuItems = [
       {
         label: "Request Loan",
         path: "/requests",
+        icon: GoGitPullRequest,
+        target: "_self",
+        visible: true,
+      },
+      {
+        label: "Request Loan New",
+        path: "/requests-new",
         icon: GoGitPullRequest,
         target: "_self",
         visible: true,
@@ -176,6 +184,7 @@ function MainLayoutComponents() {
               <Route path={":id"} element={<ContractDetailsOverview />} />
             </Route>
             <Route path="/requests/*" element={<RequestLoanWizard />} />
+            <Route path="/requests-new/*" element={<LoanRequestFlow />} />
 
             <Route
               path="/cards"
