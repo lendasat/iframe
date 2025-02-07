@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Confirmation, ServiceType } from "./confirmation";
 import { OffersTable } from "./offers-selection";
-import { ServiceSelection } from "./services";
+import { ProductSelection } from "./product-options";
 
 export const LoanRequestFlow = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -67,9 +67,13 @@ export const LoanRequestFlow = () => {
   return (
     <ScrollArea type="always" scrollbars="vertical">
       <div className="container mx-auto px-4 py-8">
-        <ServiceSelection
-          onServiceSelect={handleServiceSelect}
-          selectedService={selectedService}
+        <ProductSelection
+          onSelect={(service) => {
+            console.log(`Selected ${service}`);
+            // handleServiceSelect
+          }}
+          selectedOption={undefined}
+          // selectedService={selectedService}
         />
 
         <div ref={middleRef}>
