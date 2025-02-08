@@ -54,6 +54,14 @@ export const OffersTable = ({
   // Loan Duration
   const handleDurationChange = (days: number) => {
     setLoanDuration(days.toString());
+    setColumnFilters(prev => {
+      const existing = prev.filter(f => f.id !== "amount");
+      let value = days.toString();
+      return value
+        ? [...existing, { id: "amount", value: value }]
+        : existing;
+    });
+
     setSearchParams(params => {
       params.set("duration", days.toString());
       return params;
@@ -67,8 +75,6 @@ export const OffersTable = ({
   if (loadingError) {
     console.error(`Failed loading loan offers ${loadingError}`);
   }
-
-  console.log(`Selected product ${selectedProduct}`);
 
   const loanOffers = maybeAvailableOffers || [];
 
@@ -92,7 +98,6 @@ export const OffersTable = ({
               type="number"
               color="gray"
               min={1}
-              // value={selectedLoanAmount}
               onChange={onLoanAmountChange}
               className="w-full rounded-lg text-sm text-font dark:text-font-dark"
               value={(columnFilters.find(f => f.id === "amount")?.value as string) ?? ""}

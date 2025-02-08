@@ -76,6 +76,19 @@ export function DataTableDemo({ loanOffers, loading, columnFilters, onColumnFilt
           return <>{cell.getValue()}</>;
         },
         enableColumnFilter: true,
+        filterFn: (row: any, columnId: string, filterValue: string) => {
+          const duration = row.getValue(columnId);
+          if (!filterValue) return true;
+
+          console.log(`Filter amount: ${duration}`);
+
+          // Remove non-number symbols and convert to range numbers
+          const [minStr, maxStr] = duration.split(" - ").map((str: string) => str.replace(/[^0-9.]/g, ""));
+          const [min, max] = [parseFloat(minStr), parseFloat(maxStr)];
+          const searchValue = parseFloat(filterValue.replace(/[^0-9.]/g, ""));
+
+          return !isNaN(searchValue) && searchValue >= min && searchValue <= max;
+        },
       },
     ),
     columnHelper.accessor("min_ltv", {

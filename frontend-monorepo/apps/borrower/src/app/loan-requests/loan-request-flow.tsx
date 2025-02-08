@@ -13,12 +13,10 @@ export const LoanRequestFlow = () => {
   const [selectedProduct, setSelectedProduct] = useState<LoanProductOption | undefined>(
     searchParams.get("product") as LoanProductOption || undefined,
   );
-  console.log(`searchParams.get("product") ${searchParams.get("product")}`);
 
   const [selectedOfferId, setSelectedOfferId] = useState<string | undefined>(
     searchParams.get("offer") as string || undefined,
   );
-  console.log(`searchParams.get("offer") ${searchParams.get("offer")}`);
 
   const [selectedLoanAmount, setSelectedLoanAmount] = useState<string | undefined>(
     searchParams.get("amount") as string || undefined,
