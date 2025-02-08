@@ -18,6 +18,7 @@ interface Duration {
 interface DurationSelectorProps {
   onDurationChange: (days: number) => void;
   disabled: boolean;
+  selectedDuration: number | undefined;
 }
 
 const durations: Duration[] = [
@@ -28,17 +29,15 @@ const durations: Duration[] = [
   { value: "12m", label: "12 Months", sublabel: `${ONE_YEAR} days`, days: ONE_YEAR, icon: FaRegCalendar },
 ] as const;
 
-const SingleDurationSelector: React.FC<DurationSelectorProps> = ({ onDurationChange, disabled }) => {
-  const [selectedDuration, setSelectedDuration] = useState<AllowedDurations>("7d");
-
+const SingleDurationSelector: React.FC<DurationSelectorProps> = ({ onDurationChange, disabled, selectedDuration }) => {
   const handleDurationClick = (value: AllowedDurations) => {
-    setSelectedDuration(value);
     const days = durations.find(d => d.value === value)?.days ?? 0;
     onDurationChange(days);
   };
 
   const getCardStyle = (value: AllowedDurations): string => {
-    if (value === selectedDuration) {
+    const days = durations.find(d => d.value === value)?.days ?? 0;
+    if (days === selectedDuration) {
       return "ring-2 ring-purple-400 bg-purple-100 dark:bg-gray-300";
     }
     return "hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-300";

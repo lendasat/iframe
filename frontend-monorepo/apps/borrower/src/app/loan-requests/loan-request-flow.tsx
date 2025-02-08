@@ -102,10 +102,8 @@ export const LoanRequestFlow = () => {
 
         <div ref={bottomRef}>
           <Confirmation
-            // serviceType={selectedService}
             serviceType={undefined}
             offerId={undefined}
-            // offerId={selectedOfferId}
           />
         </div>
       </div>

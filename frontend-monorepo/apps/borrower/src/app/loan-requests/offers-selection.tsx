@@ -23,7 +23,9 @@ interface OffersTableProps {
 
 export const OffersSelectionTable = ({
   selectedProduct,
+  // TODO: to be used
   onOfferSelect,
+  // TODO: to be used
   selectedOfferId,
   selectedLoanAmount,
   setLoanAmount,
@@ -101,7 +103,7 @@ export const OffersSelectionTable = ({
               min={1}
               onChange={onLoanAmountChange}
               className="w-full rounded-lg text-sm text-font dark:text-font-dark"
-              value={(columnFilters.find(f => f.id === "amount")?.value as string) ?? ""}
+              value={selectedLoanAmount}
             >
               <TextField.Slot>
                 <Text size={"3"} weight={"medium"}>$</Text>
@@ -115,7 +117,11 @@ export const OffersSelectionTable = ({
               For how long do you want to borrow?
             </Text>
 
-            <SingleDurationSelector onDurationChange={handleDurationChange} disabled={selectedProduct === undefined} />
+            <SingleDurationSelector
+              selectedDuration={selectedLoanDuration ? Number.parseInt(selectedLoanDuration) : undefined}
+              onDurationChange={handleDurationChange}
+              disabled={selectedProduct === undefined}
+            />
           </Box>
 
           {loadingError
