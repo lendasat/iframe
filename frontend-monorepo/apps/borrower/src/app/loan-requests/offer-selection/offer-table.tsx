@@ -187,6 +187,10 @@ export function DataTableDemo({
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: (updater) => {
+      if (!onOfferSelect || !enableRowSelection) {
+        return;
+      }
+
       // When row selection changes, call onOfferSelect with the selected row id
       if (onOfferSelect) {
         const newValue = typeof updater === "function" ? updater(rowSelection) : updater;

@@ -76,7 +76,28 @@ export const OffersSelectionTable = ({
     console.error(`Failed loading loan offers ${loadingError}`);
   }
 
-  const loanOffers = maybeAvailableOffers || [];
+  const unFilteredLoanOffers = maybeAvailableOffers || [];
+
+  const loanOffers = unFilteredLoanOffers.filter((offer) => {
+    if (selectedProduct === undefined) {
+      return true;
+    }
+    switch (selectedProduct) {
+      case "pay_with_moon":
+        // only usdc on polygon can be used for pay with moon at the moment
+        if (offer.loan_asset_chain.toLowerCase() !== "polygon") {
+          return false;
+        }
+        return offer.loan_asset_type.toLowerCase() === "usdc";
+
+      case "stable_coins":
+        // all offers are stable coin offers at the moment
+        return true;
+      case "bitrefill_debit_card":
+      case "bringin_bank_account":
+        return true;
+    }
+  });
 
   return (
     <Box className="p-6 md:p-8 ">
