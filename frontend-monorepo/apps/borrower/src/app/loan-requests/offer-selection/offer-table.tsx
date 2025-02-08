@@ -109,6 +109,7 @@ export function DataTableDemo({ loanOffers, loading }: DataTableDemoProps) {
           }
           return <>{cell.getValue()}</>;
         },
+        enableColumnFilter: true,
       },
     ),
     columnHelper.accessor("min_ltv", {
@@ -241,6 +242,9 @@ export function DataTableDemo({ loanOffers, loading }: DataTableDemoProps) {
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
+    enableFilters: false,
+    getRowId: row => row.id,
+    enableMultiRowSelection: false,
     state: {
       sorting,
       columnFilters,
@@ -248,6 +252,7 @@ export function DataTableDemo({ loanOffers, loading }: DataTableDemoProps) {
       rowSelection,
     },
   });
+  console.log(`rowSelection ${JSON.stringify(rowSelection)}`);
 
   return (
     <div className="w-full">
@@ -279,6 +284,8 @@ export function DataTableDemo({ loanOffers, loading }: DataTableDemoProps) {
                 table.getRowModel().rows.map((row) => (
                   <Table.Row
                     key={row.id}
+                    className={row.getIsSelected() ? "bg-purple-50" : ""}
+                    onClick={row.getToggleSelectedHandler()}
                     data-state={row.getIsSelected() && "selected"}
                   >
                     {row.getVisibleCells().map((cell) => (
