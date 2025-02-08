@@ -11,11 +11,11 @@ import {
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
+  OnChangeFn,
   SortingState,
   useReactTable,
   VisibilityState,
 } from "@tanstack/react-table";
-import { OnChangeFn } from "@tanstack/table-core/src/types";
 import * as React from "react";
 import { useMemo } from "react";
 import { LuArrowDown, LuArrowUp, LuArrowUpDown } from "react-icons/lu";
@@ -28,9 +28,16 @@ interface DataTableDemoProps {
   loading: boolean;
   columnFilters: ColumnFiltersState;
   onColumnFiltersChange: OnChangeFn<ColumnFiltersState>;
+  enableRowSelection: boolean;
 }
 
-export function DataTableDemo({ loanOffers, loading, columnFilters, onColumnFiltersChange }: DataTableDemoProps) {
+export function DataTableDemo({
+  loanOffers,
+  loading,
+  columnFilters,
+  onColumnFiltersChange,
+  enableRowSelection,
+}: DataTableDemoProps) {
   const columns = [
     columnHelper.accessor("lender", {
       header: () => {
@@ -42,51 +49,55 @@ export function DataTableDemo({ loanOffers, loading, columnFilters, onColumnFilt
       enableSorting: true,
     }),
     columnHelper.accessor(
-      row => `${formatCurrency(row.loan_amount_min)} - ${formatCurrency(row.loan_amount_max)}`,
+      row => ({
+        min: row.loan_amount_min,
+        max: row.loan_amount_max,
+      }),
+      // row => `${formatCurrency(row.loan_amount_min)} - ${formatCurrency(row.loan_amount_max)}`,
       {
         id: "amount",
         header: () => {
           return "Amount";
         },
         cell: ({ cell }) => {
-          return <>{cell.getValue()}</>;
+          return <>{formatCurrency(cell.getValue().min)} - {formatCurrency(cell.getValue().max)}</>;
         },
         filterFn: (row: any, columnId: string, filterValue: string) => {
-          const amount = row.getValue(columnId);
           if (!filterValue) return true;
 
-          // Remove currency symbols and convert to range numbers
-          const [minStr, maxStr] = amount.split(" - ").map((str: string) => str.replace(/[^0-9.]/g, ""));
-          const [min, max] = [parseFloat(minStr), parseFloat(maxStr)];
-          const searchValue = parseFloat(filterValue.replace(/[^0-9.]/g, ""));
+          const duration = row.getValue(columnId);
+          const min = duration.min;
+          const max = duration.max;
 
+          const searchValue = parseFloat(filterValue.replace(/[^0-9.]/g, ""));
           return !isNaN(searchValue) && searchValue >= min && searchValue <= max;
         },
       },
     ),
     columnHelper.accessor(
-      row =>
-        `${getFormatedStringFromDays(row.duration_days_min)} - ${getFormatedStringFromDays(row.duration_days_max)}`,
+      row => ({
+        min: row.duration_days_min,
+        max: row.duration_days_max,
+      }),
       {
         id: "duration",
         header: () => {
           return "Duration";
         },
         cell: ({ cell }) => {
-          return <>{cell.getValue()}</>;
+          return (
+            <>{getFormatedStringFromDays(cell.getValue().min)} - {getFormatedStringFromDays(cell.getValue().max)}</>
+          );
         },
         enableColumnFilter: true,
         filterFn: (row: any, columnId: string, filterValue: string) => {
-          const duration = row.getValue(columnId);
           if (!filterValue) return true;
 
-          console.log(`Filter amount: ${duration}`);
+          const duration = row.getValue(columnId);
+          const min = duration.min;
+          const max = duration.max;
 
-          // Remove non-number symbols and convert to range numbers
-          const [minStr, maxStr] = duration.split(" - ").map((str: string) => str.replace(/[^0-9.]/g, ""));
-          const [min, max] = [parseFloat(minStr), parseFloat(maxStr)];
           const searchValue = parseFloat(filterValue.replace(/[^0-9.]/g, ""));
-
           return !isNaN(searchValue) && searchValue >= min && searchValue <= max;
         },
       },
@@ -154,9 +165,6 @@ export function DataTableDemo({ loanOffers, loading, columnFilters, onColumnFilt
   }, [loanOffers]);
 
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  // const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-  //   [],
-  // );
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
 
@@ -173,6 +181,7 @@ export function DataTableDemo({ loanOffers, loading, columnFilters, onColumnFilt
     onRowSelectionChange: setRowSelection,
     enableFilters: true,
     enableMultiRowSelection: false,
+    enableRowSelection: enableRowSelection,
     state: {
       sorting,
       columnFilters,

@@ -17,6 +17,7 @@ interface Duration {
 
 interface DurationSelectorProps {
   onDurationChange: (days: number) => void;
+  disabled: boolean;
 }
 
 const durations: Duration[] = [
@@ -27,7 +28,7 @@ const durations: Duration[] = [
   { value: "12m", label: "12 Months", sublabel: `${ONE_YEAR} days`, days: ONE_YEAR, icon: FaRegCalendar },
 ] as const;
 
-const SingleDurationSelector: React.FC<DurationSelectorProps> = ({ onDurationChange }) => {
+const SingleDurationSelector: React.FC<DurationSelectorProps> = ({ onDurationChange, disabled }) => {
   const [selectedDuration, setSelectedDuration] = useState<AllowedDurations>("7d");
 
   const handleDurationClick = (value: AllowedDurations) => {
@@ -49,8 +50,11 @@ const SingleDurationSelector: React.FC<DurationSelectorProps> = ({ onDurationCha
         {durations.map(({ value, label, sublabel, icon: Icon }) => (
           <Card
             key={value}
-            className={`p-4 cursor-pointer transition-all duration-200 ${getCardStyle(value)}`}
-            onClick={() => handleDurationClick(value)}
+            className={`p-4 transition-all duration-200
+            ${disabled ? "" : "cursor-pointer " + getCardStyle(value)} `}
+            onClick={disabled
+              ? undefined
+              : () => handleDurationClick(value)}
           >
             <div className="flex flex-col items-center text-center space-y-2">
               <div>

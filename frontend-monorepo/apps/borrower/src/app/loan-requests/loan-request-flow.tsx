@@ -3,8 +3,8 @@ import { LoanProductOption } from "@frontend-monorepo/base-http-client";
 import { ScrollArea } from "@radix-ui/themes";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Confirmation, ServiceType } from "./confirmation";
-import { OffersTable } from "./offers-selection";
+import { Confirmation } from "./confirmation";
+import { OffersSelectionTable } from "./offers-selection";
 import { ProductSelection } from "./product-options";
 
 export const LoanRequestFlow = () => {
@@ -83,14 +83,13 @@ export const LoanRequestFlow = () => {
       <div className="container mx-auto px-4 py-8">
         <ProductSelection
           onSelect={(option) => {
-            console.log(`Selected ${option}`);
             handleProductOptionSelect(option);
           }}
           selectedOption={selectedProduct}
         />
 
         <div ref={middleRef}>
-          <OffersTable
+          <OffersSelectionTable
             selectedProduct={selectedProduct}
             onOfferSelect={handleOfferSelect}
             selectedOfferId={selectedOfferId}

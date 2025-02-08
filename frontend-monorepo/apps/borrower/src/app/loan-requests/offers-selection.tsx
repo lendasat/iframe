@@ -2,7 +2,7 @@ import { faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { LoanProductOption } from "@frontend-monorepo/base-http-client";
 import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
-import { Box, Button, Callout, Flex, Heading, Table, Text, TextField } from "@radix-ui/themes";
+import { Box, Callout, Heading, Text, TextField } from "@radix-ui/themes";
 import { ColumnFiltersState } from "@tanstack/react-table";
 import { type ChangeEvent, useState } from "react";
 import { Form } from "react-bootstrap";
@@ -21,7 +21,7 @@ interface OffersTableProps {
   setLoanDuration: (value: string) => void;
 }
 
-export const OffersTable = ({
+export const OffersSelectionTable = ({
   selectedProduct,
   onOfferSelect,
   selectedOfferId,
@@ -55,10 +55,10 @@ export const OffersTable = ({
   const handleDurationChange = (days: number) => {
     setLoanDuration(days.toString());
     setColumnFilters(prev => {
-      const existing = prev.filter(f => f.id !== "amount");
+      const existing = prev.filter(f => f.id !== "duration");
       let value = days.toString();
       return value
-        ? [...existing, { id: "amount", value: value }]
+        ? [...existing, { id: "duration", value: value }]
         : existing;
     });
 
@@ -97,6 +97,7 @@ export const OffersTable = ({
               variant="surface"
               type="number"
               color="gray"
+              disabled={selectedProduct === undefined}
               min={1}
               onChange={onLoanAmountChange}
               className="w-full rounded-lg text-sm text-font dark:text-font-dark"
@@ -114,7 +115,7 @@ export const OffersTable = ({
               For how long do you want to borrow?
             </Text>
 
-            <SingleDurationSelector onDurationChange={handleDurationChange} />
+            <SingleDurationSelector onDurationChange={handleDurationChange} disabled={selectedProduct === undefined} />
           </Box>
 
           {loadingError
@@ -136,6 +137,8 @@ export const OffersTable = ({
         loanOffers={loanOffers}
         columnFilters={columnFilters}
         onColumnFiltersChange={setColumnFilters}
+        enableRowSelection={selectedProduct !== undefined && selectedLoanAmount !== undefined
+          && selectedLoanDuration !== undefined}
       />
     </Box>
   );
