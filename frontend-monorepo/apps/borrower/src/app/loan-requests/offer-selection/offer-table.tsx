@@ -153,7 +153,6 @@ export function DataTableDemo({ loanOffers, loading }: DataTableDemoProps) {
       rowSelection,
     },
   });
-  console.log(`rowSelection ${JSON.stringify(rowSelection)}`);
 
   return (
     <div className="w-full">
@@ -190,13 +189,6 @@ export function DataTableDemo({ loanOffers, loading }: DataTableDemoProps) {
                                 }[header.column.getIsSorted() as string] ?? <LuArrowUpDown />}
                               </Flex>
                             </div>
-                            {header.column.getCanFilter()
-                              ? (
-                                <div>
-                                  <Filter column={header.column} />
-                                </div>
-                              )
-                              : null}
                           </>
                         )}
                     </Table.ColumnHeaderCell>
