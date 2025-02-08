@@ -2,7 +2,7 @@
 
 import { LoanOffer } from "@frontend-monorepo/http-client-borrower";
 import { formatCurrency, getFormatedStringFromDays, StableCoinHelper } from "@frontend-monorepo/ui-shared";
-import { Badge, Button, Skeleton, Table } from "@radix-ui/themes";
+import { Badge, Button, Flex, Skeleton, Table } from "@radix-ui/themes";
 import {
   ColumnFiltersState,
   createColumnHelper,
@@ -30,26 +30,10 @@ interface DataTableDemoProps {
 export function DataTableDemo({ loanOffers, loading }: DataTableDemoProps) {
   const columns = [
     columnHelper.accessor("lender", {
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            className={"text-font dark:text-font-dark"}
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Lender
-            {column.getIsSorted() === "asc"
-              ? <LuArrowUp />
-              : column.getIsSorted() === "desc"
-              ? <LuArrowDown />
-              : <LuArrowUpDown />}
-          </Button>
-        );
+      header: () => {
+        return "Lender";
       },
       cell: ({ row }) => {
-        if (loading) {
-          return <Skeleton loading={true}>Loading</Skeleton>;
-        }
         return <Lender {...row.getValue("lender")} showAvatar={true} />;
       },
       enableSorting: true,
@@ -58,26 +42,10 @@ export function DataTableDemo({ loanOffers, loading }: DataTableDemoProps) {
       row => `${formatCurrency(row.loan_amount_min)} - ${formatCurrency(row.loan_amount_max)}`,
       {
         id: "amount",
-        header: ({ column }) => {
-          return (
-            <Button
-              variant="ghost"
-              className={"text-font dark:text-font-dark"}
-              onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            >
-              Amount
-              {column.getIsSorted() === "asc"
-                ? <LuArrowUp />
-                : column.getIsSorted() === "desc"
-                ? <LuArrowDown />
-                : <LuArrowUpDown />}
-            </Button>
-          );
+        header: () => {
+          return "Amount";
         },
         cell: ({ cell }) => {
-          if (loading) {
-            return <Skeleton loading={true}>Loading</Skeleton>;
-          }
           return <>{cell.getValue()}</>;
         },
       },
@@ -87,47 +55,18 @@ export function DataTableDemo({ loanOffers, loading }: DataTableDemoProps) {
         `${getFormatedStringFromDays(row.duration_days_min)} - ${getFormatedStringFromDays(row.duration_days_max)}`,
       {
         id: "duration",
-        header: ({ column }) => {
-          return (
-            <Button
-              variant="ghost"
-              className={"text-font dark:text-font-dark"}
-              onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            >
-              Duration
-              {column.getIsSorted() === "asc"
-                ? <LuArrowUp />
-                : column.getIsSorted() === "desc"
-                ? <LuArrowDown />
-                : <LuArrowUpDown />}
-            </Button>
-          );
+        header: () => {
+          return "Duration";
         },
         cell: ({ cell }) => {
-          if (loading) {
-            return <Skeleton loading={true}>Loading</Skeleton>;
-          }
           return <>{cell.getValue()}</>;
         },
         enableColumnFilter: true,
       },
     ),
     columnHelper.accessor("min_ltv", {
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            className={"text-font dark:text-font-dark"}
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            LTV
-            {column.getIsSorted() === "asc"
-              ? <LuArrowUp />
-              : column.getIsSorted() === "desc"
-              ? <LuArrowDown />
-              : <LuArrowUpDown />}
-          </Button>
-        );
+      header: () => {
+        return "LTV";
       },
       cell: ({ row }) => {
         if (loading) {
@@ -138,32 +77,11 @@ export function DataTableDemo({ loanOffers, loading }: DataTableDemoProps) {
       enableSorting: true,
     }),
     columnHelper.accessor("interest_rate", {
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            className={"text-font dark:text-font-dark"}
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Interest Rate
-            {column.getIsSorted() === "asc"
-              ? <LuArrowUp />
-              : column.getIsSorted() === "desc"
-              ? <LuArrowDown />
-              : <LuArrowUpDown />}
-          </Button>
-        );
+      header: () => {
+        return ("Interest Rate");
       },
       cell: ({ row }) => {
-        if (loading) {
-          return <Skeleton loading={true}>Loading</Skeleton>;
-        }
-        let element = <>{(row.getValue("interest_rate") as number * 100).toFixed(0)}%</>;
-        if (loading) {
-          return <Skeleton>{element}</Skeleton>;
-        }
-
-        return element;
+        return <>{(row.getValue("interest_rate") as number * 100).toFixed(0)}%</>;
       },
       enableSorting: true,
     }),
@@ -171,26 +89,10 @@ export function DataTableDemo({ loanOffers, loading }: DataTableDemoProps) {
       row => StableCoinHelper.mapFromBackend(row.loan_asset_chain, row.loan_asset_type),
       {
         id: "Coin",
-        header: ({ column }) => {
-          return (
-            <Button
-              variant="ghost"
-              className={"text-font dark:text-font-dark"}
-              onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            >
-              Coin
-              {column.getIsSorted() === "asc"
-                ? <LuArrowUp />
-                : column.getIsSorted() === "desc"
-                ? <LuArrowDown />
-                : <LuArrowUpDown />}
-            </Button>
-          );
+        header: () => {
+          return ("Coin");
         },
         cell: ({ cell }) => {
-          if (loading) {
-            return <Skeleton loading={true}>Loading</Skeleton>;
-          }
           return <Badge color="purple" size={"2"}>{StableCoinHelper.print(cell.getValue())}</Badge>;
         },
       },
@@ -243,7 +145,6 @@ export function DataTableDemo({ loanOffers, loading }: DataTableDemoProps) {
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
     enableFilters: false,
-    getRowId: row => row.id,
     enableMultiRowSelection: false,
     state: {
       sorting,
@@ -268,9 +169,35 @@ export function DataTableDemo({ loanOffers, loading }: DataTableDemoProps) {
                     <Table.ColumnHeaderCell key={header.id} className={"text-font dark:text-font-dark"}>
                       {header.isPlaceholder
                         ? null
-                        : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
+                        : (
+                          <>
+                            <div
+                              {...{
+                                className: header.column.getCanSort()
+                                  ? "cursor-pointer select-none"
+                                  : "",
+                                onClick: header.column.getToggleSortingHandler(),
+                              }}
+                            >
+                              <Flex gap={"1"} align={"center"}>
+                                {flexRender(
+                                  header.column.columnDef.header,
+                                  header.getContext(),
+                                )}
+                                {{
+                                  asc: <LuArrowUp />,
+                                  desc: <LuArrowDown />,
+                                }[header.column.getIsSorted() as string] ?? <LuArrowUpDown />}
+                              </Flex>
+                            </div>
+                            {header.column.getCanFilter()
+                              ? (
+                                <div>
+                                  <Filter column={header.column} />
+                                </div>
+                              )
+                              : null}
+                          </>
                         )}
                     </Table.ColumnHeaderCell>
                   );
@@ -290,7 +217,7 @@ export function DataTableDemo({ loanOffers, loading }: DataTableDemoProps) {
                   >
                     {row.getVisibleCells().map((cell) => (
                       <Table.Cell key={cell.id}>
-                        {flexRender(
+                        {loading ? <Skeleton loading={loading}>Loading</Skeleton> : flexRender(
                           cell.column.columnDef.cell,
                           cell.getContext(),
                         )}
