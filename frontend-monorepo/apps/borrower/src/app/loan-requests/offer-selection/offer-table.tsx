@@ -29,6 +29,8 @@ interface DataTableDemoProps {
   columnFilters: ColumnFiltersState;
   onColumnFiltersChange: OnChangeFn<ColumnFiltersState>;
   enableRowSelection: boolean;
+  onOfferSelect?: (offerId: string) => void;
+  selectedOfferId?: string;
 }
 
 export function DataTableDemo({
@@ -37,6 +39,8 @@ export function DataTableDemo({
   columnFilters,
   onColumnFiltersChange,
   enableRowSelection,
+  onOfferSelect,
+  selectedOfferId,
 }: DataTableDemoProps) {
   const columns = [
     columnHelper.accessor("lender", {
@@ -166,11 +170,15 @@ export function DataTableDemo({
 
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
-  const [rowSelection, setRowSelection] = React.useState({});
+
+  const rowSelection = React.useMemo(() => {
+    return selectedOfferId ? { [selectedOfferId]: true } : {};
+  }, [selectedOfferId]);
 
   const table = useReactTable({
     data,
     columns,
+    getRowId: originalRow => originalRow.id,
     onSortingChange: setSorting,
     onColumnFiltersChange: onColumnFiltersChange,
     getCoreRowModel: getCoreRowModel(),
@@ -178,7 +186,14 @@ export function DataTableDemo({
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
+    onRowSelectionChange: (updater) => {
+      // When row selection changes, call onOfferSelect with the selected row id
+      if (onOfferSelect) {
+        const newValue = typeof updater === "function" ? updater(rowSelection) : updater;
+        const selectedId = Object.keys(newValue)[0];
+        onOfferSelect(selectedId);
+      }
+    },
     enableFilters: true,
     enableMultiRowSelection: false,
     enableRowSelection: enableRowSelection,

@@ -23,9 +23,7 @@ interface OffersTableProps {
 
 export const OffersSelectionTable = ({
   selectedProduct,
-  // TODO: to be used
   onOfferSelect,
-  // TODO: to be used
   selectedOfferId,
   selectedLoanAmount,
   setLoanAmount,
@@ -145,6 +143,8 @@ export const OffersSelectionTable = ({
         onColumnFiltersChange={setColumnFilters}
         enableRowSelection={selectedProduct !== undefined && selectedLoanAmount !== undefined
           && selectedLoanDuration !== undefined}
+        onOfferSelect={onOfferSelect}
+        selectedOfferId={selectedOfferId}
       />
     </Box>
   );
