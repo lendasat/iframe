@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { LoanProductOption } from "@frontend-monorepo/base-http-client";
 import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import { Box, Button, Callout, Flex, Heading, Table, Text, TextField } from "@radix-ui/themes";
+import { ColumnFiltersState } from "@tanstack/react-table";
 import { type ChangeEvent, useState } from "react";
 import { Form } from "react-bootstrap";
 import { useSearchParams } from "react-router-dom";
@@ -32,10 +33,17 @@ export const OffersTable = ({
   const { getLoanOffers } = useBorrowerHttpClient();
   const [_searchParams, setSearchParams] = useSearchParams();
 
-  // Loan Duration
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
   function onLoanAmountChange(e: ChangeEvent<HTMLInputElement>) {
     e.preventDefault();
+    setColumnFilters(prev => {
+      const existing = prev.filter(f => f.id !== "amount");
+      return e.target.value
+        ? [...existing, { id: "amount", value: e.target.value }]
+        : existing;
+    });
+
     setLoanAmount(e.target.value);
     setSearchParams(params => {
       params.set("amount", e.target.value);
@@ -43,6 +51,7 @@ export const OffersTable = ({
     });
   }
 
+  // Loan Duration
   const handleDurationChange = (days: number) => {
     setLoanDuration(days.toString());
     setSearchParams(params => {
@@ -83,9 +92,10 @@ export const OffersTable = ({
               type="number"
               color="gray"
               min={1}
-              value={selectedLoanAmount}
+              // value={selectedLoanAmount}
               onChange={onLoanAmountChange}
               className="w-full rounded-lg text-sm text-font dark:text-font-dark"
+              value={(columnFilters.find(f => f.id === "amount")?.value as string) ?? ""}
             >
               <TextField.Slot>
                 <Text size={"3"} weight={"medium"}>$</Text>
@@ -116,7 +126,12 @@ export const OffersTable = ({
         </Form>
       </Box>
 
-      <DataTableDemo loading={loading} loanOffers={loanOffers} />
+      <DataTableDemo
+        loading={loading}
+        loanOffers={loanOffers}
+        columnFilters={columnFilters}
+        onColumnFiltersChange={setColumnFilters}
+      />
     </Box>
   );
 };

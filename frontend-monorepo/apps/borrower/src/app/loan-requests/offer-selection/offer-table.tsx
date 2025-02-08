@@ -15,6 +15,7 @@ import {
   useReactTable,
   VisibilityState,
 } from "@tanstack/react-table";
+import { OnChangeFn } from "@tanstack/table-core/src/types";
 import * as React from "react";
 import { useMemo } from "react";
 import { LuArrowDown, LuArrowUp, LuArrowUpDown } from "react-icons/lu";
@@ -25,9 +26,11 @@ const columnHelper = createColumnHelper<LoanOffer>();
 interface DataTableDemoProps {
   loanOffers: LoanOffer[];
   loading: boolean;
+  columnFilters: ColumnFiltersState;
+  onColumnFiltersChange: OnChangeFn<ColumnFiltersState>;
 }
 
-export function DataTableDemo({ loanOffers, loading }: DataTableDemoProps) {
+export function DataTableDemo({ loanOffers, loading, columnFilters, onColumnFiltersChange }: DataTableDemoProps) {
   const columns = [
     columnHelper.accessor("lender", {
       header: () => {
@@ -47,6 +50,17 @@ export function DataTableDemo({ loanOffers, loading }: DataTableDemoProps) {
         },
         cell: ({ cell }) => {
           return <>{cell.getValue()}</>;
+        },
+        filterFn: (row: any, columnId: string, filterValue: string) => {
+          const amount = row.getValue(columnId);
+          if (!filterValue) return true;
+
+          // Remove currency symbols and convert to range numbers
+          const [minStr, maxStr] = amount.split(" - ").map((str: string) => str.replace(/[^0-9.]/g, ""));
+          const [min, max] = [parseFloat(minStr), parseFloat(maxStr)];
+          const searchValue = parseFloat(filterValue.replace(/[^0-9.]/g, ""));
+
+          return !isNaN(searchValue) && searchValue >= min && searchValue <= max;
         },
       },
     ),
@@ -127,9 +141,9 @@ export function DataTableDemo({ loanOffers, loading }: DataTableDemoProps) {
   }, [loanOffers]);
 
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    [],
-  );
+  // const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+  //   [],
+  // );
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
 
@@ -137,14 +151,14 @@ export function DataTableDemo({ loanOffers, loading }: DataTableDemoProps) {
     data,
     columns,
     onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
+    onColumnFiltersChange: onColumnFiltersChange,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
-    enableFilters: false,
+    enableFilters: true,
     enableMultiRowSelection: false,
     state: {
       sorting,
@@ -156,9 +170,7 @@ export function DataTableDemo({ loanOffers, loading }: DataTableDemoProps) {
 
   return (
     <div className="w-full">
-      <div className="flex items-center py-4">
-      </div>
-      <div className="rounded-md border">
+      <div className="rounded-md border mt-4">
         <Table.Root variant="surface" size={"2"} layout={"auto"}>
           <Table.Header>
             {table.getHeaderGroups().map((headerGroup) => (
