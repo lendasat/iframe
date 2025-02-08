@@ -10,69 +10,68 @@ import { ProductSelection } from "./product-options";
 export const LoanRequestFlow = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   // Initialize state from URL parameters
-  const [selectedService, setSelectedService] = useState<ServiceType | undefined>(
-    searchParams.get("product") as ServiceType || undefined,
-  );
   const [selectedProduct, setSelectedProduct] = useState<LoanProductOption | undefined>(
     searchParams.get("product") as LoanProductOption || undefined,
   );
+  console.log(`searchParams.get("product") ${searchParams.get("product")}`);
 
-  const [selectedOffer, setSelectedOffer] = useState<number | undefined>(
-    searchParams.get("offer") ? Number(searchParams.get("offer")) : undefined,
+  const [selectedOfferId, setSelectedOfferId] = useState<string | undefined>(
+    searchParams.get("offer") as string || undefined,
+  );
+  console.log(`searchParams.get("offer") ${searchParams.get("offer")}`);
+
+  const [selectedLoanAmount, setSelectedLoanAmount] = useState<string | undefined>(
+    searchParams.get("amount") as string || undefined,
+  );
+  const [selectedLoanDuration, setSelectedLoanDuration] = useState<string | undefined>(
+    searchParams.get("duration") as string || undefined,
   );
 
+  // Add refs for each section
+  const middleRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    const service = searchParams.get("product") as ServiceType;
+    const service = searchParams.get("product") as LoanProductOption;
     const offer = searchParams.get("offer");
 
-    if (service && service !== selectedService) {
-      setSelectedService(service);
+    if (service && service !== selectedProduct) {
+      setSelectedProduct(service);
       // Scroll to middle section if we have a service in URL
       setTimeout(() => {
         middleRef.current?.scrollIntoView({ behavior: "smooth" });
       }, 100);
     }
 
-    if (offer && Number(offer) !== selectedOffer) {
-      setSelectedOffer(Number(offer));
+    if (offer && offer !== selectedOfferId) {
+      setSelectedOfferId(offer);
       // Scroll to bottom section if we have both service and offer
       setTimeout(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
       }, 100);
     }
-  }, [searchParams, selectedService, selectedOffer]);
-
-  // Add refs for each section
-  const middleRef = useRef<HTMLDivElement>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
-
-  const handleServiceSelect = (type: ServiceType) => {
-    setSelectedService(type);
-    setSelectedOffer(undefined);
-    // Update URL
-    setSearchParams({ service: type });
-    setTimeout(() => {
-      middleRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 100);
-  };
+  }, [searchParams, selectedOfferId]);
 
   const handleProductOptionSelect = (productOption: LoanProductOption | undefined) => {
     setSelectedProduct(productOption);
-    setSelectedOffer(undefined);
+    setSelectedOfferId(undefined);
     // Update URL
     if (productOption) {
-      setSearchParams({ service: productOption });
+      setSearchParams(params => {
+        params.set("product", productOption.toString());
+        return params;
+      });
     }
     setTimeout(() => {
       middleRef.current?.scrollIntoView({ behavior: "smooth" });
     }, 100);
   };
 
-  const handleOfferSelect = (offerId: number) => {
-    setSelectedOffer(offerId);
+  const handleOfferSelect = (offerId: string) => {
+    setSelectedOfferId(offerId);
     // Update URL preserving the service parameter
     setSearchParams(prev => {
-      prev.set("offer", offerId.toString());
+      prev.set("offer", offerId);
       return prev;
     });
 
@@ -82,7 +81,7 @@ export const LoanRequestFlow = () => {
   };
 
   return (
-    <ScrollArea type="always" scrollbars="vertical">
+    <ScrollArea className="h-screen" type="always" scrollbars="vertical">
       <div className="container mx-auto px-4 py-8">
         <ProductSelection
           onSelect={(option) => {
@@ -94,16 +93,22 @@ export const LoanRequestFlow = () => {
 
         <div ref={middleRef}>
           <OffersTable
-            serviceType={selectedService}
+            selectedProduct={selectedProduct}
             onOfferSelect={handleOfferSelect}
-            selectedOffer={selectedOffer}
+            selectedOfferId={selectedOfferId}
+            selectedLoanAmount={selectedLoanAmount}
+            setLoanAmount={setSelectedLoanAmount}
+            selectedLoanDuration={selectedLoanDuration}
+            setLoanDuration={setSelectedLoanDuration}
           />
         </div>
 
         <div ref={bottomRef}>
           <Confirmation
-            serviceType={selectedService}
-            offerId={selectedOffer}
+            // serviceType={selectedService}
+            serviceType={undefined}
+            offerId={undefined}
+            // offerId={selectedOfferId}
           />
         </div>
       </div>

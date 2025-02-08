@@ -1,84 +1,122 @@
-import { Table } from "@radix-ui/themes";
-import { useState } from "react";
-import { FaSearch } from "react-icons/fa";
-
-import { ServiceType } from "./confirmation";
-
-interface Offer {
-  id: number;
-  lender: string;
-  amount: string;
-  duration: string;
-  ltv: string;
-  interestRate: string;
-  coin: string;
-}
+import { faWarning } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { LoanProductOption } from "@frontend-monorepo/base-http-client";
+import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
+import { Box, Button, Callout, Flex, Heading, Table, Text, TextField } from "@radix-ui/themes";
+import { type ChangeEvent, useState } from "react";
+import { Form } from "react-bootstrap";
+import { useSearchParams } from "react-router-dom";
+import { useAsync } from "react-use";
+import SingleDurationSelector from "../request-loan/steps/DurationSelector";
+import { DataTableDemo } from "./offer-selection/offer-table";
 
 interface OffersTableProps {
-  serviceType?: ServiceType;
-  onOfferSelect: (offerId: number) => void;
-  selectedOffer?: number;
+  selectedProduct?: LoanProductOption;
+  onOfferSelect: (offerId: string) => void;
+  selectedOfferId?: string;
+  selectedLoanAmount?: string;
+  setLoanAmount: (value: string) => void;
+  selectedLoanDuration?: string;
+  setLoanDuration: (value: string) => void;
 }
 
-export const OffersTable = ({ serviceType, onOfferSelect, selectedOffer }: OffersTableProps) => {
-  const [searchTerm, setSearchTerm] = useState("");
+export const OffersTable = ({
+  selectedProduct,
+  onOfferSelect,
+  selectedOfferId,
+  selectedLoanAmount,
+  setLoanAmount,
+  selectedLoanDuration,
+  setLoanDuration,
+}: OffersTableProps) => {
+  const { getLoanOffers } = useBorrowerHttpClient();
+  const [_searchParams, setSearchParams] = useSearchParams();
 
-  const offers: Offer[] = [
-    {
-      id: 1,
-      lender: "Alice The Lender",
-      amount: "$1 - $99,993",
-      duration: "7 days - 1 year",
-      ltv: "50.00%",
-      interestRate: "12.00%",
-      coin: "USDT Ethereum",
-    },
-    // Add more offers...
-  ];
+  // Loan Duration
 
-  if (!serviceType) return null;
+  function onLoanAmountChange(e: ChangeEvent<HTMLInputElement>) {
+    e.preventDefault();
+    setLoanAmount(e.target.value);
+    setSearchParams(params => {
+      params.set("amount", e.target.value);
+      return params;
+    });
+  }
+
+  const handleDurationChange = (days: number) => {
+    setLoanDuration(days.toString());
+    setSearchParams(params => {
+      params.set("duration", days.toString());
+      return params;
+    });
+  };
+
+  const { loading, value: maybeAvailableOffers, error: loadingError } = useAsync(async () => {
+    return getLoanOffers();
+  }, []);
+
+  if (loadingError) {
+    console.error(`Failed loading loan offers ${loadingError}`);
+  }
+
+  console.log(`Selected product ${selectedProduct}`);
+
+  const loanOffers = maybeAvailableOffers || [];
 
   return (
-    <div className="mb-16">
-      <div className="relative mb-6">
-        <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-        <input
-          type="text"
-          placeholder="Search offers..."
-          className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </div>
-
-      <Table.Root>
-        <Table.Header>
-          <Table.Row>
-            <Table.ColumnHeaderCell>Lender</Table.ColumnHeaderCell>
-            <Table.ColumnHeaderCell>Amount</Table.ColumnHeaderCell>
-            <Table.ColumnHeaderCell>Duration</Table.ColumnHeaderCell>
-            <Table.ColumnHeaderCell>LTV</Table.ColumnHeaderCell>
-            <Table.ColumnHeaderCell>Interest Rate</Table.ColumnHeaderCell>
-            <Table.ColumnHeaderCell>Coin</Table.ColumnHeaderCell>
-          </Table.Row>
-        </Table.Header>
-        <Table.Body>
-          {offers.map((offer) => (
-            <Table.Row
-              key={offer.id}
-              className="cursor-pointer hover:bg-violet-50"
-              onClick={() => onOfferSelect(offer.id)}
+    <Box className="p-6 md:p-8 ">
+      <Box>
+        <Heading as="h3" size={"6"} className="font-semibold text-font dark:text-font-dark">
+          Find a loan offer
+        </Heading>
+      </Box>
+      <Box mt={"7"}>
+        <Form className="space-y-4">
+          {/* Loan Amount */}
+          <Box className="space-y-1">
+            <Text className="text-font/70 dark:text-font-dark/70" as="label" size={"2"} weight={"medium"}>
+              How much do you wish to borrow?
+            </Text>
+            <TextField.Root
+              size={"3"}
+              variant="surface"
+              type="number"
+              color="gray"
+              min={1}
+              value={selectedLoanAmount}
+              onChange={onLoanAmountChange}
+              className="w-full rounded-lg text-sm text-font dark:text-font-dark"
             >
-              <Table.Cell>{offer.lender}</Table.Cell>
-              <Table.Cell>{offer.amount}</Table.Cell>
-              <Table.Cell>{offer.duration}</Table.Cell>
-              <Table.Cell>{offer.ltv}</Table.Cell>
-              <Table.Cell>{offer.interestRate}</Table.Cell>
-              <Table.Cell>{offer.coin}</Table.Cell>
-            </Table.Row>
-          ))}
-        </Table.Body>
-      </Table.Root>
-    </div>
+              <TextField.Slot>
+                <Text size={"3"} weight={"medium"}>$</Text>
+              </TextField.Slot>
+            </TextField.Root>
+          </Box>
+
+          {/* Loan Duration */}
+          <Box className="space-y-1">
+            <Text className="text-font/70 dark:text-font-dark/70" as="label" size={"2"} weight={"medium"}>
+              For how long do you want to borrow?
+            </Text>
+
+            <SingleDurationSelector onDurationChange={handleDurationChange} />
+          </Box>
+
+          {loadingError
+            && (
+              <Callout.Root color="red" className="w-full">
+                <Callout.Icon>
+                  <FontAwesomeIcon icon={faWarning} />
+                </Callout.Icon>
+                <Callout.Text>
+                  {loadingError.message}
+                </Callout.Text>
+              </Callout.Root>
+            )}
+        </Form>
+      </Box>
+
+      <DataTableDemo loading={loading} loanOffers={loanOffers} />
+    </Box>
   );
 };
