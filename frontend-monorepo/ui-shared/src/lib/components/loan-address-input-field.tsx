@@ -1,6 +1,6 @@
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Box, Button, Callout, TextField } from "@radix-ui/themes";
+import { Box, Button, Callout, Flex, TextField } from "@radix-ui/themes";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import type { ChangeEvent } from "react";
 import { useState } from "react";
@@ -11,6 +11,7 @@ interface LoanAddressInputFieldProps {
   setLoanAddress: (value: string) => void;
   assetChain: string;
   hideButton: boolean;
+  renderWarning?: boolean;
   setHideButton: (value: boolean) => void;
 }
 
@@ -20,6 +21,7 @@ export function LoanAddressInputField({
   assetChain,
   hideButton,
   setHideButton,
+  renderWarning,
 }: LoanAddressInputFieldProps) {
   const [manualInput, setManualInput] = useState(true);
 
@@ -47,8 +49,8 @@ export function LoanAddressInputField({
   const isSolana = assetChain.toLowerCase() === "solana";
 
   return (
-    <>
-      {warning
+    <Flex direction={"column"} gap={"2"}>
+      {warning && renderWarning
         && (
           <Box>
             <Callout.Root color="amber" className="mb-3">
@@ -167,6 +169,6 @@ export function LoanAddressInputField({
           </Button>
         )}
       </TextField.Root>
-    </>
+    </Flex>
   );
 }
