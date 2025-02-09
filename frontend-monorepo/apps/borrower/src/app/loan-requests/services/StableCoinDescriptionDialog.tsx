@@ -38,7 +38,9 @@ export const StableCoinDescriptionDialog = ({
         <Button
           variant="soft"
           size={"3"}
-          className={`"w-full" ${isSelected ? "purple-500 dark:purple-300" : "gray-500 dark:gray-300"}`}
+          className={`w-full ${
+            isSelected ? "text-purple-500 dark:text-purple-300" : "text-gray-500 dark:text-gray-300"
+          }`}
           disabled={disabled}
           onClick={() => onOpening()}
         >
