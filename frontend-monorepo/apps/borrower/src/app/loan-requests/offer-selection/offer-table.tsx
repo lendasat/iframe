@@ -2,7 +2,7 @@
 
 import { LoanOffer } from "@frontend-monorepo/http-client-borrower";
 import { formatCurrency, getFormatedStringFromDays, StableCoinHelper } from "@frontend-monorepo/ui-shared";
-import { Badge, Box, Button, Flex, Skeleton, Table } from '@radix-ui/themes';
+import { Badge, Box, Button, DataList, Flex, Skeleton, Table } from "@radix-ui/themes";
 import {
   ColumnFiltersState,
   createColumnHelper,
@@ -20,6 +20,77 @@ import * as React from "react";
 import { useMemo } from "react";
 import { LuArrowDown, LuArrowUp, LuArrowUpDown } from "react-icons/lu";
 import { Lender } from "../../request-loan/lender";
+
+const MobileOfferCard = ({
+  offer,
+  loading,
+  selected,
+  onClick,
+}: {
+  offer: LoanOffer;
+  loading: boolean;
+  selected: boolean;
+  onClick: (id: string) => void;
+}) => {
+  return (
+    <Box
+      className={`p-4 rounded-lg border ${selected ? "bg-purple-50" : "bg-white"} cursor-pointer`}
+      onClick={() => onClick(offer.id)}
+    >
+      <DataList.Root>
+        <DataList.Item align="center">
+          <DataList.Label minWidth="88px">Lender</DataList.Label>
+          <DataList.Value className="flex-1 flex justify-end">
+            {loading ? <Skeleton>Loading</Skeleton> : <Lender {...offer.lender} showAvatar={false} />}
+          </DataList.Value>
+        </DataList.Item>
+        <DataList.Item align="center">
+          <DataList.Label minWidth="88px">Amounts</DataList.Label>
+          <DataList.Value className="flex-1 flex justify-end">
+            <Skeleton loading={loading}>
+              {formatCurrency(offer.loan_amount_min)} - {formatCurrency(offer.loan_amount_max)}
+            </Skeleton>
+          </DataList.Value>
+        </DataList.Item>
+        <DataList.Item align="center">
+          <DataList.Label minWidth="88px">Duration</DataList.Label>
+          <DataList.Value className="flex-1 flex justify-end">
+            <Skeleton loading={loading}>
+              {getFormatedStringFromDays(offer.duration_days_min)} -{" "}
+              {getFormatedStringFromDays(offer.duration_days_max)}
+            </Skeleton>
+          </DataList.Value>
+        </DataList.Item>
+        <DataList.Item align="center">
+          <DataList.Label minWidth="88px">Interest Rate</DataList.Label>
+          <DataList.Value className="flex-1 flex justify-end">
+            <Skeleton loading={loading}>
+              {(offer.interest_rate * 100).toFixed(1)}%
+            </Skeleton>
+          </DataList.Value>
+        </DataList.Item>
+        <DataList.Item align="center">
+          <DataList.Label minWidth="88px">LTV</DataList.Label>
+          <DataList.Value className="flex-1 flex justify-end">
+            <Skeleton loading={loading}>
+              {(offer.min_ltv * 100).toFixed(0)}%
+            </Skeleton>
+          </DataList.Value>
+        </DataList.Item>
+        <DataList.Item align="center">
+          <DataList.Label minWidth="88px">Coin</DataList.Label>
+          <DataList.Value className="flex-1 flex justify-end">
+            <Badge color="purple" size="2">
+              <Skeleton loading={loading}>
+                {StableCoinHelper.print(StableCoinHelper.mapFromBackend(offer.loan_asset_chain, offer.loan_asset_type))}
+              </Skeleton>
+            </Badge>
+          </DataList.Value>
+        </DataList.Item>
+      </DataList.Root>
+    </Box>
+  );
+};
 
 const columnHelper = createColumnHelper<LoanOffer>();
 
@@ -123,7 +194,7 @@ export function LoanOfferTable({
         return ("Interest Rate");
       },
       cell: ({ row }) => {
-        return <>{(row.getValue("interest_rate") as number * 100).toFixed(0)}%</>;
+        return <>{(row.getValue("interest_rate") as number * 100).toFixed(1)}%</>;
       },
       enableSorting: true,
     }),
@@ -211,79 +282,114 @@ export function LoanOfferTable({
 
   return (
     <Box className="w-full">
-      <Box className="rounded-md border mt-4">
-        <Table.Root variant="surface" size={"2"} layout={"auto"}>
-          <Table.Header>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <Table.Row key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <Table.ColumnHeaderCell key={header.id} className={"text-font dark:text-font-dark"}>
-                      {header.isPlaceholder
-                        ? null
-                        : (
-                          <>
-                            <Box
-                              {...{
-                                className: header.column.getCanSort()
-                                  ? "cursor-pointer select-none"
-                                  : "",
-                                onClick: header.column.getToggleSortingHandler(),
-                              }}
-                            >
-                              <Flex gap={"1"} align={"center"}>
-                                {flexRender(
-                                  header.column.columnDef.header,
-                                  header.getContext(),
-                                )}
-                                {{
-                                  asc: <LuArrowUp />,
-                                  desc: <LuArrowDown />,
-                                }[header.column.getIsSorted() as string] ?? <LuArrowUpDown />}
-                              </Flex>
-                            </Box>
-                          </>
-                        )}
-                    </Table.ColumnHeaderCell>
-                  );
-                })}
-              </Table.Row>
-            ))}
-          </Table.Header>
-          <Table.Body>
-            {table.getRowModel().rows?.length
-              ? (
-                table.getRowModel().rows.map((row) => (
-                  <Table.Row
-                    key={row.id}
-                    className={row.getIsSelected() ? "bg-purple-50" : ""}
-                    onClick={row.getToggleSelectedHandler()}
-                    data-state={row.getIsSelected() && "selected"}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <Table.Cell key={cell.id}>
-                        {loading ? <Skeleton loading={loading}>Loading</Skeleton> : flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
-                        )}
-                      </Table.Cell>
-                    ))}
-                  </Table.Row>
-                ))
-              )
-              : (
-                <Table.Row>
-                  <Table.Cell
-                    colSpan={columns.length}
-                    className="h-24 text-center"
-                  >
-                    No results.
-                  </Table.Cell>
+      <Box className="hidden md:block">
+        <Box className="rounded-md border mt-4">
+          <Table.Root variant="surface" size={"2"} layout={"auto"}>
+            <Table.Header>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <Table.Row key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => {
+                    return (
+                      <Table.ColumnHeaderCell key={header.id} className={"text-font dark:text-font-dark"}>
+                        {header.isPlaceholder
+                          ? null
+                          : (
+                            <>
+                              <Box
+                                {...{
+                                  className: header.column.getCanSort()
+                                    ? "cursor-pointer select-none"
+                                    : "",
+                                  onClick: header.column.getToggleSortingHandler(),
+                                }}
+                              >
+                                <Flex gap={"1"} align={"center"}>
+                                  {flexRender(
+                                    header.column.columnDef.header,
+                                    header.getContext(),
+                                  )}
+                                  {{
+                                    asc: <LuArrowUp />,
+                                    desc: <LuArrowDown />,
+                                  }[header.column.getIsSorted() as string] ?? <LuArrowUpDown />}
+                                </Flex>
+                              </Box>
+                            </>
+                          )}
+                      </Table.ColumnHeaderCell>
+                    );
+                  })}
                 </Table.Row>
-              )}
-          </Table.Body>
-        </Table.Root>
+              ))}
+            </Table.Header>
+            <Table.Body>
+              {table.getRowModel().rows?.length
+                ? (
+                  table.getRowModel().rows.map((row) => (
+                    <Table.Row
+                      key={row.id}
+                      className={row.getIsSelected() ? "bg-purple-50" : ""}
+                      onClick={row.getToggleSelectedHandler()}
+                      data-state={row.getIsSelected() && "selected"}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <Table.Cell key={cell.id}>
+                          {loading ? <Skeleton loading={loading}>Loading</Skeleton> : flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext(),
+                          )}
+                        </Table.Cell>
+                      ))}
+                    </Table.Row>
+                  ))
+                )
+                : (
+                  <Table.Row>
+                    <Table.Cell
+                      colSpan={columns.length}
+                      className="h-24 text-center"
+                    >
+                      No results.
+                    </Table.Cell>
+                  </Table.Row>
+                )}
+            </Table.Body>
+          </Table.Root>
+        </Box>
       </Box>
+      {/* Mobile view */}
+      <Box className="block md:hidden">
+        <Box className="space-y-4">
+          {loading
+            ? (
+              // Loading state for mobile
+              [...Array(3)].map((_, i) => (
+                <Box key={i} className="p-4 rounded-lg border">
+                  <Skeleton loading={true}>Loading</Skeleton>
+                </Box>
+              ))
+            )
+            : table.getRowModel().rows?.length
+            ? (
+              table.getRowModel().rows.map((row) => (
+                <MobileOfferCard
+                  key={row.id}
+                  offer={row.original}
+                  loading={loading}
+                  selected={row.getIsSelected()}
+                  onClick={(id) => enableRowSelection && onOfferSelect ? onOfferSelect(id) : undefined}
+                />
+              ))
+            )
+            : (
+              <Box className="p-4 text-center text-gray-500">
+                No results.
+              </Box>
+            )}
+        </Box>
+      </Box>
+
+      {/* Pagination */}
       <Box className="flex items-center justify-end space-x-2 py-4">
         <Box className="space-x-2">
           <Button
