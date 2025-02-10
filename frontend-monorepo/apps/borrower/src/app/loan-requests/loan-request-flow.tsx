@@ -28,6 +28,26 @@ export const LoanRequestFlow = () => {
   // Add refs for each section
   const middleRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  const scrollToElement = (ref: React.RefObject<HTMLDivElement>) => {
+    if (!ref.current || !scrollAreaRef.current) return;
+
+    const scrollArea = scrollAreaRef.current;
+    const element = ref.current;
+
+    // Get the element's position relative to the scroll area
+    // Get the element's position relative to the scroll area
+    const elementTop = element.offsetTop;
+    const scrollAreaTop = scrollArea.getBoundingClientRect().top;
+    const relativeTop = elementTop - scrollAreaTop;
+
+    // Scroll the ScrollArea viewport
+    scrollArea?.scrollTo({
+      top: relativeTop,
+      behavior: "smooth",
+    });
+  };
 
   useEffect(() => {
     const service = searchParams.get("product") as LoanProductOption;
@@ -37,7 +57,7 @@ export const LoanRequestFlow = () => {
       setSelectedProduct(service);
       // Scroll to middle section if we have a service in URL
       setTimeout(() => {
-        middleRef.current?.scrollIntoView({ behavior: "smooth" });
+        scrollToElement(middleRef);
       }, 100);
     }
 
@@ -45,7 +65,7 @@ export const LoanRequestFlow = () => {
       setSelectedOfferId(offer);
       // Scroll to bottom section if we have both service and offer
       setTimeout(() => {
-        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+        scrollToElement(bottomRef);
       }, 100);
     }
   }, [searchParams, selectedOfferId]);
@@ -61,7 +81,7 @@ export const LoanRequestFlow = () => {
       });
     }
     setTimeout(() => {
-      middleRef.current?.scrollIntoView({ behavior: "smooth" });
+      scrollToElement(middleRef);
     }, 100);
   };
 
@@ -79,7 +99,7 @@ export const LoanRequestFlow = () => {
   };
 
   return (
-    <ScrollArea className="h-screen" type="always" scrollbars="vertical">
+    <ScrollArea className="h-screen" type="always" scrollbars="vertical" ref={scrollAreaRef}>
       <div className="container mx-auto px-4 py-8">
         <ProductSelection
           onSelect={(option) => {
