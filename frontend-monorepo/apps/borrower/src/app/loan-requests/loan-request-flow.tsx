@@ -20,10 +20,10 @@ export const LoanRequestFlow = () => {
   );
 
   const [selectedLoanAmount, setSelectedLoanAmount] = useState<string | undefined>(
-    searchParams.get("amount") as string || undefined,
+    searchParams.get("amount") as string || "1000",
   );
   const [selectedLoanDuration, setSelectedLoanDuration] = useState<string | undefined>(
-    searchParams.get("duration") as string || undefined,
+    searchParams.get("duration") as string || "7",
   );
 
   // Add refs for each section
@@ -37,7 +37,6 @@ export const LoanRequestFlow = () => {
     const scrollArea = scrollAreaRef.current;
     const element = ref.current;
 
-    // Get the element's position relative to the scroll area
     // Get the element's position relative to the scroll area
     const elementTop = element.offsetTop;
     const scrollAreaTop = scrollArea.getBoundingClientRect().top;

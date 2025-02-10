@@ -67,8 +67,7 @@ export const OffersSelectionTable = ({
           loanOffers={loanOffers}
           columnFilters={columnFilters}
           onColumnFiltersChange={setColumnFilters}
-          enableRowSelection={selectedProduct !== undefined && selectedLoanAmount !== undefined
-            && selectedLoanDuration !== undefined}
+          enableRowSelection={true}
           onOfferSelect={onOfferSelect}
           selectedOfferId={selectedOfferId}
         />
