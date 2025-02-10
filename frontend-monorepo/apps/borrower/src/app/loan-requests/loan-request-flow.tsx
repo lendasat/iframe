@@ -85,13 +85,20 @@ export const LoanRequestFlow = () => {
     }, 100);
   };
 
-  const handleOfferSelect = (offerId: string) => {
+  const handleOfferSelect = (offerId?: string) => {
     setSelectedOfferId(offerId);
     // Update URL preserving the service parameter
-    setSearchParams(prev => {
-      prev.set("offer", offerId);
-      return prev;
-    });
+    if (offerId && offerId !== "undefined") {
+      setSearchParams(prev => {
+        prev.set("offer", offerId);
+        return prev;
+      });
+    } else {
+      setSearchParams(prev => {
+        prev.delete("offer");
+        return prev;
+      });
+    }
 
     setTimeout(() => {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });

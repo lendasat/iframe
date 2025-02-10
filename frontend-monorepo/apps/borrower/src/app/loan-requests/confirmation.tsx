@@ -193,7 +193,9 @@ export const Confirmation = ({
     }
   };
 
-  if (!selectedProduct || !selectedLoanAmountString || !selectedLoanDurationString) return <EmptyInfoMessage />;
+  if (!selectedProduct || !selectedOfferId || !selectedLoanAmountString || !selectedLoanDurationString) {
+    return <EmptyInfoMessage />;
+  }
 
   return (
     <Grid align={"center"} columns={{ initial: "1", md: "2" }} gap="3" width="auto">
