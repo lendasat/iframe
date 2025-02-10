@@ -1,11 +1,75 @@
 // Types
 import { LoanProductOption } from "@frontend-monorepo/base-http-client";
-import { Box, Heading, ScrollArea } from "@radix-ui/themes";
-import { useEffect, useRef, useState } from "react";
+import { Box, Flex, Heading, ScrollArea, Text, TextField } from "@radix-ui/themes";
+import { ColumnFiltersState } from "@tanstack/react-table";
+import { type ChangeEvent, useEffect, useRef, useState } from "react";
+import { Form } from "react-bootstrap";
 import { useSearchParams } from "react-router-dom";
+import SingleDurationSelector from "../request-loan/steps/DurationSelector";
 import { Confirmation } from "./confirmation";
 import { OffersSelectionTable } from "./offers-selection";
 import { ProductSelection } from "./product-options";
+
+interface LoanAmountAndDurationInputsProps {
+  selectedProduct?: LoanProductOption;
+  setLoanAmount: (amount: string) => void;
+  loanAmount?: string;
+  selectedLoanDuration?: string;
+  onLoanDurationChange: (days: number) => void;
+}
+
+function LoanAmountAndDurationInputs({
+  selectedProduct,
+  setLoanAmount,
+  loanAmount,
+  selectedLoanDuration,
+  onLoanDurationChange,
+}: LoanAmountAndDurationInputsProps) {
+  const onLoanAmountChange = (e: ChangeEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    setLoanAmount(e.target.value);
+  };
+
+  return (
+    <Form className="space-y-4 max-w-md">
+      {/* Loan Amount */}
+      <Flex direction="column" gap="1" className="w-full">
+        <Text className="text-font dark:text-font-dark" as="label" size={"2"} weight={"medium"}>
+          How much do you wish to borrow?
+        </Text>
+        <TextField.Root
+          size={"3"}
+          variant="surface"
+          type="number"
+          color="gray"
+          disabled={selectedProduct === undefined}
+          min={1}
+          onChange={onLoanAmountChange}
+          className="w-full rounded-lg text-sm text-font dark:text-font-dark"
+          value={loanAmount}
+        >
+          <TextField.Slot>
+            <Text size={"3"} weight={"medium"}>$</Text>
+          </TextField.Slot>
+        </TextField.Root>
+      </Flex>
+
+      {/* Loan Duration */}
+      <Flex direction="column" gap="1" className="w-full">
+        <Text className="text-font dark:text-font-dark" as="label" size={"2"} weight={"medium"}>
+          For how long do you want to borrow?
+        </Text>
+        <Box className="w-full">
+          <SingleDurationSelector
+            selectedDuration={selectedLoanDuration ? Number.parseInt(selectedLoanDuration) : undefined}
+            onDurationChange={onLoanDurationChange}
+            disabled={selectedProduct === undefined}
+          />
+        </Box>
+      </Flex>
+    </Form>
+  );
+}
 
 export const LoanRequestFlow = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -26,8 +90,8 @@ export const LoanRequestFlow = () => {
   );
 
   // Add refs for each section
-  const middleRef = useRef<HTMLDivElement>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const offerSelectionRef = useRef<HTMLDivElement>(null);
+  const confirmationRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const scrollToElement = (ref: React.RefObject<HTMLDivElement>) => {
@@ -57,7 +121,7 @@ export const LoanRequestFlow = () => {
       setSelectedProduct(service);
       // Scroll to middle section if we have a service in URL
       setTimeout(() => {
-        scrollToElement(middleRef);
+        scrollToElement(offerSelectionRef);
       }, 100);
     }
 
@@ -65,7 +129,7 @@ export const LoanRequestFlow = () => {
       setSelectedOfferId(offer);
       // Scroll to bottom section if we have both service and offer
       setTimeout(() => {
-        scrollToElement(bottomRef);
+        scrollToElement(confirmationRef);
       }, 100);
     }
   }, [searchParams, selectedOfferId]);
@@ -81,7 +145,7 @@ export const LoanRequestFlow = () => {
       });
     }
     setTimeout(() => {
-      scrollToElement(middleRef);
+      scrollToElement(offerSelectionRef);
     }, 100);
   };
 
@@ -101,10 +165,42 @@ export const LoanRequestFlow = () => {
     }
 
     setTimeout(() => {
-      scrollToElement(bottomRef);
+      scrollToElement(confirmationRef);
     }, 100);
   };
 
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+
+  const onSetLoanAmount = (newLoanAmount: string) => {
+    setColumnFilters(prev => {
+      const existing = prev.filter(f => f.id !== "amount");
+      return newLoanAmount
+        ? [...existing, { id: "amount", value: newLoanAmount }]
+        : existing;
+    });
+
+    setSelectedLoanAmount(newLoanAmount);
+    setSearchParams(params => {
+      params.set("amount", newLoanAmount);
+      return params;
+    });
+  };
+
+  const onSetLoanDuration = (days: number) => {
+    setSelectedLoanDuration(days.toString());
+    setColumnFilters(prev => {
+      const existing = prev.filter(f => f.id !== "duration");
+      let value = days.toString();
+      return value
+        ? [...existing, { id: "duration", value: value }]
+        : existing;
+    });
+
+    setSearchParams(params => {
+      params.set("duration", days.toString());
+      return params;
+    });
+  };
   return (
     <ScrollArea className="h-screen" type="always" scrollbars="vertical" ref={scrollAreaRef}>
       <Box className="container mx-auto py-8">
@@ -114,6 +210,17 @@ export const LoanRequestFlow = () => {
           </Heading>
         </Box>
 
+        <Box className="flex justify-center" mt={"6"}>
+          {/* Use max-w-md to set a consistent maximum width for the form */}
+          <LoanAmountAndDurationInputs
+            selectedProduct={selectedProduct}
+            setLoanAmount={onSetLoanAmount}
+            loanAmount={selectedLoanAmount}
+            selectedLoanDuration={selectedLoanDuration}
+            onLoanDurationChange={onSetLoanDuration}
+          />
+        </Box>
+
         <ProductSelection
           onSelect={(option) => {
             handleProductOptionSelect(option);
@@ -121,19 +228,19 @@ export const LoanRequestFlow = () => {
           selectedOption={selectedProduct}
         />
 
-        <div ref={middleRef}>
+        <div ref={offerSelectionRef}>
           <OffersSelectionTable
             selectedProduct={selectedProduct}
             onOfferSelect={handleOfferSelect}
             selectedOfferId={selectedOfferId}
             selectedLoanAmount={selectedLoanAmount}
-            setLoanAmount={setSelectedLoanAmount}
             selectedLoanDuration={selectedLoanDuration}
-            setLoanDuration={setSelectedLoanDuration}
+            columnFilters={columnFilters}
+            setColumnFilters={setColumnFilters}
           />
         </div>
 
-        <div ref={bottomRef} className={"mb-20"}>
+        <div ref={confirmationRef} className={"mb-20"}>
           <Confirmation
             selectedProduct={selectedProduct}
             selectedOfferId={selectedOfferId}
