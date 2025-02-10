@@ -32,7 +32,7 @@ function LoanProductRadioCardItem({ value, header, subHeader, img }: LoanProduct
         <Text size={"1"} weight={"light"} className="text-font dark:text-font-dark shrink-0 ">
           {subHeader}
         </Text>
-        <Box className="rounded-2xl min-w-xs" mt={"2"}>
+        <Box className="rounded-2xl" mt={"2"} width={"180px"}>
           {img}
         </Box>
       </Flex>
