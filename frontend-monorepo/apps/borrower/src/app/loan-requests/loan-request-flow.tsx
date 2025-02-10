@@ -1,12 +1,12 @@
 // Types
-import { LoanProductOption } from '@frontend-monorepo/base-http-client';
-import { Box, Heading, ScrollArea } from '@radix-ui/themes';
-import { ColumnFiltersState } from '@tanstack/react-table';
-import { useEffect, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Confirmation } from './confirmation';
-import { LoanAmountAndDurationInputs } from './loan-amount-and-duration-inputs';
-import { OffersSelectionTable } from './offer-selection/offers-selection';
+import { LoanProductOption } from "@frontend-monorepo/base-http-client";
+import { Box, Heading, ScrollArea } from "@radix-ui/themes";
+import { ColumnFiltersState } from "@tanstack/react-table";
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { Confirmation } from "./confirmation";
+import { LoanAmountAndDurationInputs } from "./loan-amount-and-duration-inputs";
+import { OffersSelectionTable } from "./offer-selection/offers-selection";
 
 export const LoanRequestFlow = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -163,8 +163,6 @@ export const LoanRequestFlow = () => {
             selectedProduct={selectedProduct}
             onOfferSelect={handleOfferSelect}
             selectedOfferId={selectedOfferId}
-            selectedLoanAmount={selectedLoanAmount}
-            selectedLoanDuration={selectedLoanDuration}
             columnFilters={columnFilters}
             setColumnFilters={setColumnFilters}
           />

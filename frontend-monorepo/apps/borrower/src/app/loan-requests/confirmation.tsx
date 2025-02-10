@@ -157,7 +157,7 @@ export const Confirmation = ({
       }
 
       if (!bitcoinAddress || bitcoinAddress.trim().length === 0 || !bitcoinAddressValid) {
-        setCreateRequestError('No valid bitcoin address provided');
+        setCreateRequestError("No valid bitcoin address provided");
         return;
       }
 
@@ -179,7 +179,7 @@ export const Confirmation = ({
       }
 
       if (integration === Integration.StableCoin && !loanAddress || loanAddress.trim().length === 0) {
-        setCreateRequestError('No address provided');
+        setCreateRequestError("No address provided");
         return;
       }
 

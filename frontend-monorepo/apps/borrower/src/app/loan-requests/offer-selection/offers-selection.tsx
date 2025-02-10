@@ -11,8 +11,6 @@ interface OffersTableProps {
   selectedProduct?: LoanProductOption;
   onOfferSelect: (offerId: string) => void;
   selectedOfferId?: string;
-  selectedLoanAmount?: string;
-  selectedLoanDuration?: string;
   columnFilters: ColumnFiltersState;
   setColumnFilters: OnChangeFn<ColumnFiltersState>;
 }
@@ -21,8 +19,6 @@ export const OffersSelectionTable = ({
   selectedProduct,
   onOfferSelect,
   selectedOfferId,
-  selectedLoanAmount,
-  selectedLoanDuration,
   columnFilters,
   setColumnFilters,
 }: OffersTableProps) => {
