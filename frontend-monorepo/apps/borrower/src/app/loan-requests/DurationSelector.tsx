@@ -1,8 +1,5 @@
-import { LoanProductOption } from "@frontend-monorepo/base-http-client";
 import { ONE_YEAR } from "@frontend-monorepo/ui-shared";
-import { Card, Grid, RadioCards } from "@radix-ui/themes";
-import { Text } from "@radix-ui/themes";
-import { useState } from "react";
+import { RadioCards, Text } from "@radix-ui/themes";
 import { IconType } from "react-icons";
 import { FaRegCalendar, FaRegClock } from "react-icons/fa6";
 

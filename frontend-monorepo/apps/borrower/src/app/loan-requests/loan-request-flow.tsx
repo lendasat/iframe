@@ -68,7 +68,7 @@ export const LoanRequestFlow = () => {
         scrollToElement(confirmationRef);
       }, 100);
     }
-  }, [searchParams, selectedOfferId]);
+  }, [searchParams, selectedOfferId, selectedProduct]);
 
   const handleProductOptionSelect = (productOption: LoanProductOption | undefined) => {
     setSelectedProduct(productOption);
@@ -126,7 +126,7 @@ export const LoanRequestFlow = () => {
     setSelectedLoanDuration(days.toString());
     setColumnFilters(prev => {
       const existing = prev.filter(f => f.id !== "duration");
-      let value = days.toString();
+      const value = days.toString();
       return value
         ? [...existing, { id: "duration", value: value }]
         : existing;

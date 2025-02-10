@@ -17,7 +17,6 @@ import {
   usePrice,
 } from "@frontend-monorepo/ui-shared";
 import {
-  AlertDialog,
   Box,
   Button,
   Callout,
@@ -107,7 +106,7 @@ export const Confirmation = ({
     }
   });
 
-  let moonCards = maybeMoonCards || [];
+  const moonCards = maybeMoonCards || [];
 
   const isStillLoading = loading || !selectedOffer;
   const ltv = selectedOffer?.min_ltv || 0;

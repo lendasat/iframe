@@ -12,6 +12,7 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   OnChangeFn,
+  Row,
   SortingState,
   useReactTable,
   VisibilityState,
@@ -131,7 +132,7 @@ export function LoanOfferTable({
   enableActionColumn,
   onActionColumnAction,
 }: LoanOfferTableProps) {
-  let columns = [
+  const columns = [
     columnHelper.accessor("lender", {
       header: () => {
         return "Lender";
@@ -155,7 +156,7 @@ export function LoanOfferTable({
         cell: ({ cell }) => {
           return <>{formatCurrency(cell.getValue().min)} - {formatCurrency(cell.getValue().max)}</>;
         },
-        filterFn: (row: any, columnId: string, filterValue: string) => {
+        filterFn: (row: Row<LoanOffer>, columnId: string, filterValue: string) => {
           if (!filterValue) return true;
 
           const duration = row.getValue(columnId);
@@ -183,7 +184,7 @@ export function LoanOfferTable({
           );
         },
         enableColumnFilter: true,
-        filterFn: (row: any, columnId: string, filterValue: string) => {
+        filterFn: (row: Row<{ min: number; max: number }>, columnId: string, filterValue: string) => {
           if (!filterValue) return true;
 
           const duration = row.getValue(columnId);
@@ -249,9 +250,11 @@ export function LoanOfferTable({
       },
       cell: (props) => (
         <Button
-          onClick={() => {
-            onActionColumnAction ? onActionColumnAction(props.row.original as LoanOffer) : undefined;
-          }}
+          onClick={onActionColumnAction
+            ? () => {
+              onActionColumnAction(props.row.original as LoanOffer);
+            }
+            : undefined}
         >
           Select
         </Button>
@@ -286,7 +289,7 @@ export function LoanOfferTable({
       }];
     }
     return loanOffers;
-  }, [loanOffers]);
+  }, [loanOffers, loading]);
 
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({ "actions": enableActionColumn || false });
@@ -343,30 +346,28 @@ export function LoanOfferTable({
                         {header.isPlaceholder
                           ? null
                           : (
-                            <>
-                              <Box
-                                {...{
-                                  className: header.column.getCanSort()
-                                    ? "cursor-pointer select-none"
-                                    : "",
-                                  onClick: header.column.getToggleSortingHandler(),
-                                }}
-                              >
-                                <Flex gap={"1"} align={"center"}>
-                                  {flexRender(
-                                    header.column.columnDef.header,
-                                    header.getContext(),
-                                  )}
+                            <Box
+                              {...{
+                                className: header.column.getCanSort()
+                                  ? "cursor-pointer select-none"
+                                  : "",
+                                onClick: header.column.getToggleSortingHandler(),
+                              }}
+                            >
+                              <Flex gap={"1"} align={"center"}>
+                                {flexRender(
+                                  header.column.columnDef.header,
+                                  header.getContext(),
+                                )}
 
-                                  {header.column.getCanSort()
-                                    ? {
-                                      asc: <LuArrowUp />,
-                                      desc: <LuArrowDown />,
-                                    }[header.column.getIsSorted() as string] ?? <LuArrowUpDown />
-                                    : undefined}
-                                </Flex>
-                              </Box>
-                            </>
+                                {header.column.getCanSort()
+                                  ? {
+                                    asc: <LuArrowUp />,
+                                    desc: <LuArrowDown />,
+                                  }[header.column.getIsSorted() as string] ?? <LuArrowUpDown />
+                                  : undefined}
+                              </Flex>
+                            </Box>
                           )}
                       </Table.ColumnHeaderCell>
                     );

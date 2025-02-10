@@ -35,24 +35,29 @@ export const OffersSelectionTable = ({
   const unFilteredLoanOffers = maybeAvailableOffers || [];
 
   const loanOffers = unFilteredLoanOffers.filter((offer) => {
+    let returnValue = false;
     if (selectedProduct === undefined) {
       return true;
     }
     switch (selectedProduct) {
-      case "pay_with_moon":
+      case LoanProductOption.PayWithMoonDebitCard:
         // only usdc on polygon can be used for pay with moon at the moment
         if (offer.loan_asset_chain.toLowerCase() !== "polygon") {
           return false;
         }
-        return offer.loan_asset_type.toLowerCase() === "usdc";
+        returnValue = offer.loan_asset_type.toLowerCase() === "usdc";
+        break;
 
-      case "stable_coins":
+      case LoanProductOption.StableCoins:
         // all offers are stable coin offers at the moment
-        return true;
-      case "bitrefill_debit_card":
-      case "bringin_bank_account":
-        return true;
+        returnValue = true;
+        break;
+      case LoanProductOption.BitrefillDebitCard:
+      case LoanProductOption.BringinBankAccount:
+        returnValue = true;
+        break;
     }
+    return returnValue;
   });
 
   return (

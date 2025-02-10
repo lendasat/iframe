@@ -38,7 +38,8 @@ export function ContractPendingKyc({ contractId, kycLink, isKycDone }: ContractP
         You must complete the KYC process before the lender can accept your contract request.
       </Text>
       <Text className={"mb-3 text-font dark:text-font-dark"} weight={"medium"} size={"3"}>
-        Follow this <a className="text-blue-500 hover:underline" target={"_blank"} href={kycLink}>link</a>{" "}
+        Follow this{" "}
+        <a className="text-blue-500 hover:underline" target={"_blank"} rel="noreferrer" href={kycLink}>link</a>{" "}
         to start the KYC process.
       </Text>
       <Text className={"mb-3 text-font dark:text-font-dark"} weight={"medium"} size={"3"}>

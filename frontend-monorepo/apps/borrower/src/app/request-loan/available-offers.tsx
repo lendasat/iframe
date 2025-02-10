@@ -24,9 +24,13 @@ function AvailableOffers() {
           loading={loading}
           loanOffers={loanOffers}
           columnFilters={[]}
-          onColumnFiltersChange={() => {}}
+          onColumnFiltersChange={() => {
+            // ignored
+          }}
           enableRowSelection={false}
-          onOfferSelect={() => {}}
+          onOfferSelect={() => {
+            // ignored
+          }}
           selectedOfferId={undefined}
           enableActionColumn={true}
           onActionColumnAction={(value) => {
