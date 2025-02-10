@@ -5,7 +5,7 @@ import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import { Box, Callout } from "@radix-ui/themes";
 import { ColumnFiltersState, OnChangeFn } from "@tanstack/react-table";
 import { useAsync } from "react-use";
-import { LoanOfferTable } from "./offer-selection/offer-table";
+import { LoanOfferTable } from "./offer-table";
 
 interface OffersTableProps {
   selectedProduct?: LoanProductOption;
