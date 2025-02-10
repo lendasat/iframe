@@ -75,6 +75,7 @@ export const Confirmation = ({
   const { user } = useAuth();
   const { getNextPublicKey } = useWallet();
   const [bitcoinAddressInputError, setBitcoinAddressInputError] = useState("");
+  const [bitcoinAddressValid, setBitcoinAddressValid] = useState(false);
   const [bitcoinAddress, setBitcoinAddress] = useState("");
   const [moonCardId, setMoonCardId] = useState<string | undefined>();
   const [loanAddress, setLoanAddress] = useState("");
@@ -139,8 +140,10 @@ export const Confirmation = ({
     const valid = validate(address, network);
     if (!valid) {
       setBitcoinAddressInputError("Invalid address");
+      setBitcoinAddressValid(false);
     } else {
       setBitcoinAddressInputError("");
+      setBitcoinAddressValid(true);
     }
     setBitcoinAddress(address);
   };
@@ -150,6 +153,11 @@ export const Confirmation = ({
       if (!selectedOfferId) {
         setIsCreatingRequest(false);
         setCreateRequestError("No offer selected");
+        return;
+      }
+
+      if (!bitcoinAddress || bitcoinAddress.trim().length === 0 || !bitcoinAddressValid) {
+        setCreateRequestError('No valid bitcoin address provided');
         return;
       }
 
@@ -168,6 +176,11 @@ export const Confirmation = ({
         case LoanProductOption.BitrefillDebitCard:
           setCreateRequestError("Loan product not yet supported");
           break;
+      }
+
+      if (integration === Integration.StableCoin && !loanAddress || loanAddress.trim().length === 0) {
+        setCreateRequestError('No address provided');
+        return;
       }
 
       const res = await postContractRequest({
