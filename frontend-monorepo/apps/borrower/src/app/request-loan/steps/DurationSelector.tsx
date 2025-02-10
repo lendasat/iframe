@@ -38,7 +38,7 @@ const SingleDurationSelector: React.FC<DurationSelectorProps> = ({ onDurationCha
   const getCardStyle = (value: AllowedDurations): string => {
     const days = durations.find(d => d.value === value)?.days ?? 0;
     if (days === selectedDuration) {
-      return "ring-2 ring-purple-400 bg-purple-100 dark:bg-gray-300";
+      return "ring-2 ring-purple-700 bg-purple-100 dark:bg-gray-300";
     }
     return "hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-300";
   };

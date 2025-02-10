@@ -77,6 +77,7 @@ export function LoanAmountAndDurationInputs({
             onValueChange={(e) => {
               onLoanProductSelect(e as LoanProductOption);
             }}
+            color={"purple"}
           >
             <RadioCards.Item value={LoanProductOption.StableCoins.toString()}>
               <Flex direction="column" width="100%">
