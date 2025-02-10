@@ -357,17 +357,18 @@ export const Confirmation = ({
                   <AbbreviationExplanationInfo
                     header={"Collateral Refund Address"}
                     subHeader={""}
-                    description={"The Bitcoin address where you want your collateral returned upon loan repayment."}
+                    description={"T"
+                      + "he Bitcoin address where you want your collateral returned upon loan repayment."}
                   >
                     <FaInfoCircle />
                   </AbbreviationExplanationInfo>
                 </Flex>
               </DataList.Label>
-              <DataList.Value>
+              <DataList.Value className="flex-1 flex justify-end">
                 {isStillLoading
                   ? <Skeleton loading={true}>Loading</Skeleton>
                   : (
-                    <Flex direction={"column"}>
+                    <Flex direction={"column"} className="w-full">
                       <TextField.Root
                         className="w-full font-semibold text-sm border-0 text-font dark:text-font-dark"
                         size={"3"}
@@ -390,7 +391,7 @@ export const Confirmation = ({
                   <DataList.Label minWidth="88px">
                     Choose a card
                   </DataList.Label>
-                  <DataList.Value>
+                  <DataList.Value className="flex-1 flex justify-end">
                     {moonCardsLoading
                       ? <Skeleton>Loading</Skeleton>
                       : (
@@ -409,7 +410,7 @@ export const Confirmation = ({
                   <DataList.Label minWidth="88px">
                     Wallet Address
                   </DataList.Label>
-                  <DataList.Value>
+                  <DataList.Value className="w-full">
                     {(isStillLoading || !selectedCoin)
                       ? <Skeleton loading={isStillLoading}>Loading</Skeleton>
                       : (
