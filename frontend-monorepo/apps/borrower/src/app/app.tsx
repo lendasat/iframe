@@ -65,13 +65,6 @@ const menuItems = [
     group: [
       {
         label: "Request Loan",
-        path: "/requests",
-        icon: GoGitPullRequest,
-        target: "_self",
-        visible: true,
-      },
-      {
-        label: "Request Loan New",
         path: "/requests-new",
         icon: GoGitPullRequest,
         target: "_self",
