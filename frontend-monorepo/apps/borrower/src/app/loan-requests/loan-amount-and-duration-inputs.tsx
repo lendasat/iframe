@@ -1,8 +1,8 @@
 import { LoanProductOption } from "@frontend-monorepo/base-http-client";
 import { Box, Flex, RadioCards, Text, TextField } from "@radix-ui/themes";
-import type { ChangeEvent } from "react";
+import type { ChangeEvent, ReactNode } from "react";
 import { Form } from "react-bootstrap";
-import Defi from "../../assets/defi.png";
+import { ReactComponent as Defi } from "../../assets/defi.svg";
 import { ReactComponent as MoonCard } from "../../assets/moon_card_satoshi_nakamoto.svg";
 import SingleDurationSelector from "../request-loan/steps/DurationSelector";
 
@@ -13,6 +13,31 @@ interface LoanAmountAndDurationInputsProps {
   onLoanDurationChange: (days: number) => void;
   onLoanProductSelect: (productOption: LoanProductOption) => void;
   selectedOption?: LoanProductOption;
+}
+
+interface LoanProductRadioCardItemProps {
+  value: string;
+  header: string;
+  subHeader: string;
+  img: ReactNode;
+}
+
+function LoanProductRadioCardItem({ value, header, subHeader, img }: LoanProductRadioCardItemProps) {
+  return (
+    <RadioCards.Item value={value}>
+      <Flex direction="column">
+        <Text size={"2"} weight={"bold"} className="text-font dark:text-font-dark shrink-0">
+          {header}
+        </Text>
+        <Text size={"1"} weight={"light"} className="text-font dark:text-font-dark shrink-0 ">
+          {subHeader}
+        </Text>
+        <Box className="rounded-2xl min-w-xs" mt={"2"}>
+          {img}
+        </Box>
+      </Flex>
+    </RadioCards.Item>
+  );
 }
 
 export function LoanAmountAndDurationInputs({
@@ -29,7 +54,7 @@ export function LoanAmountAndDurationInputs({
   };
 
   return (
-    <Form className="space-y-4 max-w-md">
+    <Form className="space-y-4">
       {/* Loan Amount */}
       <Flex direction="column" gap="1" className="w-full">
         <Text className="text-font dark:text-font-dark" as="label" size={"2"} weight={"medium"}>
@@ -70,41 +95,28 @@ export function LoanAmountAndDurationInputs({
         <Text className="text-font dark:text-font-dark" as="label" size={"2"} weight={"medium"}>
           How would you like to receive the loan?
         </Text>
-        <Box className="w-full">
+        <Box className="mx-auto ">
           <RadioCards.Root
             value={selectedOption}
             columns={{ initial: "1", sm: "2" }}
+            size={"3"}
             onValueChange={(e) => {
               onLoanProductSelect(e as LoanProductOption);
             }}
             color={"purple"}
           >
-            <RadioCards.Item value={LoanProductOption.StableCoins.toString()}>
-              <Flex direction="column" width="100%">
-                <Text size={"2"} weight={"bold"} className="text-font dark:text-font-dark shrink-0">
-                  Stablecoins
-                </Text>
-                <Text size={"1"} weight={"light"} className="text-font dark:text-font-dark shrink-0">
-                  USDC/USDT
-                </Text>
-                <Box className="h-32 w-full mb-4 mt-2 overflow-hidden rounded-2xl flex justify-center items-center">
-                  <img src={Defi} alt="Defi" className="max-h-full max-w-full" />
-                </Box>
-              </Flex>
-            </RadioCards.Item>
-            <RadioCards.Item value={LoanProductOption.PayWithMoonDebitCard.toString()}>
-              <Flex direction="column" width="100%">
-                <Text size={"2"} weight={"bold"} className="text-font dark:text-font-dark shrink-0">
-                  Moon Visa® Card
-                </Text>
-                <Text size={"1"} weight={"light"} className="text-font dark:text-font-dark shrink-0">
-                  A prepaid visa card
-                </Text>
-                <Box className="h-32 w-full mb-4 mt-2 overflow-hidden rounded-2xl flex justify-center items-center">
-                  <MoonCard />
-                </Box>
-              </Flex>
-            </RadioCards.Item>
+            <LoanProductRadioCardItem
+              value={LoanProductOption.StableCoins.toString()}
+              header={"Stablecoins"}
+              subHeader={"USDC/USDT"}
+              img={<Defi width="100%" height="100%" />}
+            />
+            <LoanProductRadioCardItem
+              value={LoanProductOption.PayWithMoonDebitCard.toString()}
+              header={"Moon Visa® Card"}
+              subHeader={"A prepaid visa card"}
+              img={<MoonCard width="100%" height="100%" />}
+            />
           </RadioCards.Root>
         </Box>
       </Flex>

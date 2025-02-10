@@ -56,7 +56,7 @@ export const OffersSelectionTable = ({
   });
 
   return (
-    <Box className="p-6 md:p-8 ">
+    <Box>
       <Box mt={"6"}>
         <LoanOfferTable
           loading={loading}

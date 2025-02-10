@@ -146,7 +146,7 @@ export const LoanRequestFlow = () => {
           </Heading>
         </Box>
 
-        <Box className="flex justify-center" mt={"6"}>
+        <Box className="flex justify-center" mt={"6"} px={"6"}>
           {/* Use max-w-md to set a consistent maximum width for the form */}
           <LoanAmountAndDurationInputs
             setLoanAmount={onSetLoanAmount}
@@ -158,7 +158,7 @@ export const LoanRequestFlow = () => {
           />
         </Box>
 
-        <div ref={offerSelectionRef}>
+        <Box ref={offerSelectionRef} mt={"6"} px={"6"}>
           <OffersSelectionTable
             selectedProduct={selectedProduct}
             onOfferSelect={handleOfferSelect}
@@ -166,16 +166,16 @@ export const LoanRequestFlow = () => {
             columnFilters={columnFilters}
             setColumnFilters={setColumnFilters}
           />
-        </div>
+        </Box>
 
-        <div ref={confirmationRef} className={"mb-20"}>
+        <Box ref={confirmationRef} className={"mb-20"} mt={"6"} px={"6"}>
           <Confirmation
             selectedProduct={selectedProduct}
             selectedOfferId={selectedOfferId}
             selectedLoanAmount={selectedLoanAmount}
             selectedLoanDuration={selectedLoanDuration}
           />
-        </div>
+        </Box>
       </Box>
     </ScrollArea>
   );
