@@ -1,18 +1,18 @@
 // Types
-import { LoanProductOption } from "@frontend-monorepo/base-http-client";
-import { Box, Heading, ScrollArea } from "@radix-ui/themes";
-import { ColumnFiltersState } from "@tanstack/react-table";
-import { useEffect, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
-import { Confirmation } from "./confirmation";
-import { LoanAmountAndDurationInputs } from "./loan-amount-and-duration-inputs";
-import { OffersSelectionTable } from "./offer-selection/offers-selection";
+import { LoanProductOption } from '@frontend-monorepo/base-http-client';
+import { Box, Heading, ScrollArea } from '@radix-ui/themes';
+import { ColumnFiltersState } from '@tanstack/react-table';
+import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { Confirmation } from './confirmation';
+import { LoanAmountAndDurationInputs } from './loan-amount-and-duration-inputs';
+import { OffersSelectionTable } from './offer-selection/offers-selection';
 
 export const LoanRequestFlow = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   // Initialize state from URL parameters
   const [selectedProduct, setSelectedProduct] = useState<LoanProductOption | undefined>(
-    searchParams.get("product") as LoanProductOption || undefined,
+    searchParams.get("product") as LoanProductOption || LoanProductOption.StableCoins,
   );
 
   const [selectedOfferId, setSelectedOfferId] = useState<string | undefined>(
