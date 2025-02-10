@@ -242,6 +242,7 @@ async fn create_loan_offers(
             loan_repayment_address: "0x34e3f03F5efFaF7f70Bb1FfC50274697096ebe9d".to_string(),
             auto_accept: true,
             lender_xpub,
+            kyc_link: None,
         },
         lender_id,
     )
@@ -263,6 +264,7 @@ async fn create_loan_offers(
             loan_repayment_address: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619".to_string(),
             auto_accept: true,
             lender_xpub,
+            kyc_link: None,
         },
         lender_id,
     )
@@ -384,6 +386,7 @@ async fn enable_borrower_features(pool: &Pool<Postgres>, user_id: &str) -> Resul
 
 async fn enable_lender_features(pool: &Pool<Postgres>, user_id: &str) -> Result<()> {
     db::lender_features::enable_feature(pool, user_id, "auto_approve").await?;
+    db::lender_features::enable_feature(pool, user_id, "kyc_offers").await?;
     Ok(())
 }
 

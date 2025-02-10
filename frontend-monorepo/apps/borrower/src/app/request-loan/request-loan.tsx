@@ -2,7 +2,6 @@ import type { LoanOffer } from "@frontend-monorepo/http-client-borrower";
 import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import { StableCoinHelper } from "@frontend-monorepo/ui-shared";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import DashHeader from "../components/DashHeader";
 import OffersNav from "../components/OffersNav";
 import LoanOffersComponent from "./loan-offers";
@@ -11,7 +10,6 @@ import { TableSortBy } from "./loan-offers-filter";
 
 function RequestLoan() {
   const { getLoanOffers } = useBorrowerHttpClient();
-  const navigate = useNavigate();
 
   const [loanOffers, setLoanOffers] = useState<LoanOffer[]>([]);
   const [loanFilter, setLoanFilter] = useState<LoanFilter>({});
@@ -86,9 +84,6 @@ function RequestLoan() {
           <LoanOffersComponent
             loanOffers={loanOffers}
             isLoading={isLoading}
-            onRequest={(loanOffer: LoanOffer) => {
-              navigate(`/request-loan/${loanOffer.id}`, { state: { loanOffer: loanOffer, loanFilter: loanFilter } });
-            }}
           />
         </div>
       </div>

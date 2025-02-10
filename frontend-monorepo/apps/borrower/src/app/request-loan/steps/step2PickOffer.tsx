@@ -9,6 +9,7 @@ import {
   formatCurrency,
   getFormatedStringFromDays,
   InterestRateInfoLabel,
+  KycBadge,
   LiquidationPriceInfoLabel,
   LoanAddressInputField,
   LtvInfoLabel,
@@ -19,6 +20,8 @@ import {
   StableCoinHelper,
   usePrice,
 } from "@frontend-monorepo/ui-shared";
+import * as Checkbox from "@radix-ui/react-checkbox";
+import { CheckIcon } from "@radix-ui/react-icons";
 import { Box, Button, Callout, Flex, Grid, Heading, Separator, Spinner, Text, TextField } from "@radix-ui/themes";
 import axios from "axios";
 import { Network, validate } from "bitcoin-address-validation";
@@ -41,6 +44,7 @@ interface OfferFilter {
   maxInterest: number | undefined;
   wantedCoin: StableCoin | undefined;
   validCoins: StableCoin[];
+  includeKycOffers: boolean;
   availableOffers: LoanOffer[];
   advanceSearch: boolean;
 }
@@ -52,10 +56,18 @@ const findBestOffer = ({
   validCoins,
   minLtv,
   maxInterest,
+  includeKycOffers,
   availableOffers,
   advanceSearch,
 }: OfferFilter) => {
   const sortedAndFiltered = availableOffers
+    .filter((offer) => {
+      // If KYC offers are not wanted, only include offers _without_ a KYC link.
+      if (!includeKycOffers) {
+        return offer.kyc_link === null;
+      }
+      return true;
+    })
     .filter((offer) => {
       if (!loanAmount) {
         return false;
@@ -201,6 +213,7 @@ export const Step2PickOffer = () => {
   const [error, setError] = useState("");
   const [offerPicked, setOfferPicked] = useState<boolean>(false);
   const [moonCardId, setMoonCardId] = useState<string | undefined>(undefined);
+  const [includeKycOffers, setIncludeKycOffers] = useState<boolean>(true);
 
   const { loading, value: maybeAvailableOffers, error: loadingError } = useAsync(async () => {
     return getLoanOffers();
@@ -221,6 +234,7 @@ export const Step2PickOffer = () => {
       validCoins,
       minLtv: ltv,
       maxInterest,
+      includeKycOffers,
       availableOffers: availOffers,
       advanceSearch,
     });
@@ -235,6 +249,7 @@ export const Step2PickOffer = () => {
     maybeAvailableOffers,
     advanceSearch,
     setBestOffer,
+    includeKycOffers,
   ]);
 
   function onLoanAmountChange(e: ChangeEvent<HTMLInputElement>) {
@@ -252,6 +267,7 @@ export const Step2PickOffer = () => {
       validCoins: validCoins,
       minLtv: ltv,
       maxInterest: maxInterest,
+      includeKycOffers,
       availableOffers: availableOffers,
       advanceSearch: advanceSearch,
     });
@@ -267,6 +283,7 @@ export const Step2PickOffer = () => {
       validCoins: validCoins,
       minLtv: ltv,
       maxInterest: maxInterest,
+      includeKycOffers,
       availableOffers: availableOffers,
       advanceSearch: advanceSearch,
     });
@@ -282,6 +299,7 @@ export const Step2PickOffer = () => {
       validCoins: validCoins,
       minLtv: ltv,
       maxInterest: maxInterest,
+      includeKycOffers,
       availableOffers: availableOffers,
       advanceSearch: advanceSearch,
     });
@@ -304,6 +322,7 @@ export const Step2PickOffer = () => {
       validCoins: validCoins,
       minLtv: parsedLtvUnified,
       maxInterest: maxInterest,
+      includeKycOffers,
       availableOffers: availableOffers,
       advanceSearch: advanceSearch,
     });
@@ -318,6 +337,7 @@ export const Step2PickOffer = () => {
     }
     const parsedInterestRateUnified = parsedInterestRate / 100;
     setMaxInterest(parsedInterestRateUnified);
+    console.log("Hello");
     const refreshedBestOffer = findBestOffer({
       loanAmount: loanAmount,
       duration: loanDurationDays,
@@ -325,6 +345,7 @@ export const Step2PickOffer = () => {
       validCoins: validCoins,
       minLtv: ltv,
       maxInterest: parsedInterestRateUnified,
+      includeKycOffers,
       availableOffers: availableOffers,
       advanceSearch: advanceSearch,
     });
@@ -427,9 +448,8 @@ export const Step2PickOffer = () => {
             {/* Loan Duration */}
             <Box className="space-y-1">
               <Text className="text-font/70 dark:text-font-dark/70" as="label" size={"2"} weight={"medium"}>
-                For how long do you want to borrow?
+                How long do you want to borrow for?
               </Text>
-
               <SingleDurationSelector onDurationChange={handleDurationChange} />
             </Box>
 
@@ -455,7 +475,7 @@ export const Step2PickOffer = () => {
                   <InterestRateInfoLabel>
                     <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
                       <Text className="text-font/70 dark:text-font-dark/70" as="label" size={"2"} weight={"medium"}>
-                        What's your preferred interest rate?
+                        What is your preferred interest rate?
                       </Text>
                       <FaInfoCircle />
                     </Flex>
@@ -483,14 +503,14 @@ export const Step2PickOffer = () => {
 
                 {/* LTV Rate */}
                 <Box className="space-y-1">
-                  <Text className="text-font/70 dark:text-font-dark/70" as="label" size={"2"} weight={"medium"}>
-                    <LtvInfoLabel>
-                      <Text as="label" className="text-sm font-medium text-font dark:text-font-dark">
-                        What's your preferred loan-to-value ratio?
+                  <LtvInfoLabel>
+                    <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
+                      <Text className="text-font/70 dark:text-font-dark/70" as="label" size={"2"} weight={"medium"}>
+                        What is your preferred loan-to-value ratio?
                       </Text>
-                      <FaInfoCircle color={"gray"} />
-                    </LtvInfoLabel>
-                  </Text>
+                      <FaInfoCircle />
+                    </Flex>
+                  </LtvInfoLabel>
                   <TextField.Root
                     size={"3"}
                     variant="surface"
@@ -510,6 +530,28 @@ export const Step2PickOffer = () => {
                     </TextField.Slot>
                   </TextField.Root>
                 </Box>
+
+                <div style={{ display: "flex", alignItems: "center" }}>
+                  <Checkbox.Root
+                    className="flex size-4 items-center rounded bg-white dark:bg-gray-300"
+                    checked={includeKycOffers}
+                    onCheckedChange={() => {
+                      setIncludeKycOffers(!includeKycOffers);
+                    }}
+                  >
+                    <Checkbox.Indicator className="text-violet11">
+                      <CheckIcon />
+                    </Checkbox.Indicator>
+                  </Checkbox.Root>
+                  <Text
+                    className="text-font/70 dark:text-font-dark/70 ml-2"
+                    as="label"
+                    size={"2"}
+                    weight={"medium"}
+                  >
+                    Include offers that require KYC
+                  </Text>
+                </div>
               </>
             )}
 
@@ -594,6 +636,7 @@ export const Step2PickOffer = () => {
                     coinSelectHidden={coinSelectHidden}
                     // TODO: once we have multiple origination fees
                     originationFee={bestOffer.origination_fee[0].fee}
+                    requiresKyc={bestOffer.kyc_link !== undefined}
                   />
                 </Box>
               </>
@@ -656,6 +699,7 @@ interface SearchParams {
   isLoading: boolean;
   coinSelectHidden: boolean;
   originationFee: number;
+  requiresKyc: boolean;
 }
 
 // Loan Display Component
@@ -752,6 +796,7 @@ const LoanSearched = (props: SearchParams) => {
               <FaInfoCircle />
             </Flex>
           </LtvInfoLabel>
+
           <div className="flex flex-col">
             <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
               {collateralAmountBtc.toFixed(8)} BTC
@@ -819,6 +864,15 @@ const LoanSearched = (props: SearchParams) => {
               <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
                 {StableCoinHelper.print(props.coin)}
               </Text>
+            </Flex>
+          </>
+        )}
+        {props.requiresKyc && (
+          <>
+            <Separator size={"4"} />
+            <Flex justify={"between"} align={"center"}>
+              <Text className="text-xs font-medium text-font/60 dark:text-font-dark/60">Requirements</Text>
+              <KycBadge />
             </Flex>
           </>
         )}
@@ -926,7 +980,7 @@ const LoanSearched = (props: SearchParams) => {
                 size={"2"}
                 className="font-semibold"
               >
-                Confirm Offer
+                Request Loan
               </Text>
             </Button>
           )}

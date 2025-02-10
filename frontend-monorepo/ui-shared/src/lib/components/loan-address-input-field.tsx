@@ -1,6 +1,6 @@
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Button, Callout, TextField } from "@radix-ui/themes";
+import { Box, Button, Callout, TextField } from "@radix-ui/themes";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import type { ChangeEvent } from "react";
 import { useState } from "react";
@@ -50,14 +50,16 @@ export function LoanAddressInputField({
     <>
       {warning
         && (
-          <Callout.Root color="amber">
-            <Callout.Icon>
-              <FontAwesomeIcon icon={faInfoCircle} />
-            </Callout.Icon>
-            <Callout.Text>
-              {warning}
-            </Callout.Text>
-          </Callout.Root>
+          <Box>
+            <Callout.Root color="amber" className="mb-3">
+              <Callout.Icon>
+                <FontAwesomeIcon icon={faInfoCircle} />
+              </Callout.Icon>
+              <Callout.Text>
+                {warning}
+              </Callout.Text>
+            </Callout.Root>
+          </Box>
         )}
 
       <TextField.Root

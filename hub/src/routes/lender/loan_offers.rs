@@ -30,6 +30,7 @@ use serde::Serialize;
 use std::sync::Arc;
 use time::OffsetDateTime;
 use tracing::instrument;
+use url::Url;
 
 pub(crate) fn router(app_state: Arc<AppState>) -> Router {
     Router::new()
@@ -117,6 +118,17 @@ pub async fn create_loan_offer(
         return Err((StatusCode::UNAUTHORIZED, Json(error_response)));
     }
 
+    if features.iter().any(|feature| {
+        body.kyc_link.is_some()
+            && feature.id == lender_feature_flags::KYC_OFFERS_FEATURE_FLAG_ID
+            && !feature.is_enabled
+    }) {
+        let error_response = ErrorResponse {
+            message: "KYC offers feature is not enabled".to_string(),
+        };
+        return Err((StatusCode::UNAUTHORIZED, Json(error_response)));
+    }
+
     let offer = db::loan_offers::insert_loan_offer(&data.db, body, user.id.as_str())
         .await
         .map_err(|error| {
@@ -171,6 +183,7 @@ pub async fn create_loan_offer(
         auto_accept: offer.auto_accept,
         loan_repayment_address: offer.loan_repayment_address,
         origination_fee,
+        kyc_link: offer.kyc_link,
         created_at: offer.created_at,
         updated_at: offer.updated_at,
     };
@@ -203,6 +216,7 @@ pub struct LoanOffer {
     pub status: LoanOfferStatus,
     pub loan_repayment_address: String,
     pub origination_fee: Vec<OriginationFee>,
+    pub kyc_link: Option<Url>,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
     #[serde(with = "time::serde::rfc3339")]
@@ -272,6 +286,7 @@ pub async fn get_loan_offers_by_lender(
             auto_accept: offer.auto_accept,
             loan_repayment_address: offer.loan_repayment_address,
             origination_fee,
+            kyc_link: offer.kyc_link,
             created_at: offer.created_at,
             updated_at: offer.updated_at,
         };
@@ -345,6 +360,7 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
         auto_accept: offer.auto_accept,
         loan_repayment_address: offer.loan_repayment_address,
         origination_fee,
+        kyc_link: offer.kyc_link,
         created_at: offer.created_at,
         updated_at: offer.updated_at,
     };
@@ -412,6 +428,7 @@ pub async fn get_loan_offers(
             auto_accept: offer.auto_accept,
             loan_repayment_address: offer.loan_repayment_address,
             origination_fee,
+            kyc_link: offer.kyc_link,
             created_at: offer.created_at,
             updated_at: offer.updated_at,
         })
@@ -485,6 +502,7 @@ pub async fn get_loan_offer_by_id(
         auto_accept: offer.auto_accept,
         loan_repayment_address: offer.loan_repayment_address,
         origination_fee,
+        kyc_link: offer.kyc_link,
         created_at: offer.created_at,
         updated_at: offer.updated_at,
     };

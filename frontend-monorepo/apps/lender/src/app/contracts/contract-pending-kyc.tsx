@@ -1,26 +1,34 @@
 import { Box, Button, Dialog, Flex, Heading, Text } from "@radix-ui/themes";
 
-interface ContractRequestedProps {
+interface ContractPendingKycProps {
   isLoading: boolean;
-  onContractApprove: () => Promise<void>;
-  onContractReject: () => Promise<void>;
+  onKycApprove: () => Promise<void>;
+  onKycReject: () => Promise<void>;
+  kycLink: string;
 }
 
-export const ContractRequested = ({
+export const ContractPendingKyc = ({
   isLoading,
-  onContractApprove,
-  onContractReject,
-}: ContractRequestedProps) => {
+  onKycApprove,
+  onKycReject,
+  kycLink,
+}: ContractPendingKycProps) => {
   return (
     <Box className="flex flex-col space-y-4">
-      <Heading className={"text-font dark:text-font-dark"} weight={"medium"} size={"4"}>
-        Awaiting Your Remark
+      <Heading className={"text-font dark:text-font-dark"} weight={"medium"} size={"5"}>
+        Awaiting KYC Outcome
       </Heading>
       <Text className={"mb-3 text-font dark:text-font-dark"} weight={"medium"} size={"3"}>
-        Do you want to go ahead with this request?
+        We have sent your KYC <a className="text-blue-500 hover:underline" href={kycLink}>link</a> to the borrower.
+      </Text>
+      <Text className={"mb-3 text-font dark:text-font-dark"} weight={"medium"} size={"3"}>
+        Once the borrower has passed the KYC process, hit <em className="text-green-500">approve</em>{" "}
+        to move forward with the contract.
+      </Text>
+      <Text className={"mb-3 text-font dark:text-font-dark"} weight={"medium"} size={"3"}>
+        If the borrower was unsuccessful, hit <em className="text-red-500">reject</em>.
       </Text>
       <Box className="flex flex-row space-x-2">
-        {/* Approve Button */}
         <Dialog.Root>
           <Dialog.Trigger>
             <Button
@@ -34,9 +42,9 @@ export const ContractRequested = ({
             </Button>
           </Dialog.Trigger>
           <Dialog.Content maxWidth="450px" className={"bg-light dark:bg-dark"}>
-            <Dialog.Title className={"text-font dark:text-font-dark"}>Approval Contract</Dialog.Title>
+            <Dialog.Title className={"text-font dark:text-font-dark"}>Approve KYC Process</Dialog.Title>
             <Dialog.Description size="2" mb="4" className={"text-font dark:text-font-dark"}>
-              Are you sure you want to approve this loan?
+              Do you want to mark the KYC process as successful?
             </Dialog.Description>
             <Flex gap="3" mt="4" justify="end">
               <Dialog.Close>
@@ -49,15 +57,14 @@ export const ContractRequested = ({
                   color="green"
                   loading={isLoading}
                   disabled={isLoading}
-                  onClick={onContractApprove}
+                  onClick={onKycApprove}
                 >
-                  Approve
+                  Yes
                 </Button>
               </Dialog.Close>
             </Flex>
           </Dialog.Content>
         </Dialog.Root>
-        {/* Reject Button */}
         <Dialog.Root>
           <Dialog.Trigger>
             <Button
@@ -71,9 +78,9 @@ export const ContractRequested = ({
             </Button>
           </Dialog.Trigger>
           <Dialog.Content maxWidth="450px" className={"bg-light dark:bg-dark"}>
-            <Dialog.Title className={"text-font dark:text-font-dark"}>Reject Contract</Dialog.Title>
+            <Dialog.Title className={"text-font dark:text-font-dark"}>Reject KYC Process</Dialog.Title>
             <Dialog.Description size="2" mb="4" className={"text-font dark:text-font-dark"}>
-              Are you sure you want to reject this loan?
+              Do you want to mark the KYC process as failed?
             </Dialog.Description>
             <Flex gap="3" mt="4" justify="end">
               <Dialog.Close>
@@ -85,9 +92,9 @@ export const ContractRequested = ({
                 color="red"
                 loading={isLoading}
                 disabled={isLoading}
-                onClick={onContractReject}
+                onClick={onKycReject}
               >
-                Reject
+                Yes
               </Button>
             </Flex>
           </Dialog.Content>

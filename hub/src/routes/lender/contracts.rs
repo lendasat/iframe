@@ -49,6 +49,7 @@ use serde::Serialize;
 use std::sync::Arc;
 use time::OffsetDateTime;
 use tracing::instrument;
+use url::Url;
 
 pub(crate) fn router(app_state: Arc<AppState>) -> Router {
     Router::new()
@@ -167,6 +168,13 @@ pub struct Contract {
     pub extended_by_contract: Option<String>,
     pub lender_xpub: String,
     pub borrower_xpub: String,
+    pub kyc_info: Option<KycInfo>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct KycInfo {
+    kyc_link: Url,
+    is_kyc_done: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -1008,6 +1016,20 @@ async fn map_to_api_contract(
             .await
             .map_err(|e| Error::Database(anyhow!(e)))?;
 
+    let kyc_info = match offer.kyc_link {
+        Some(ref kyc_link) => {
+            let is_kyc_done = db::kyc::get(&data.db, &contract.lender_id, &borrower.id)
+                .await
+                .map_err(Error::Database)?;
+
+            Some(KycInfo {
+                kyc_link: kyc_link.clone(),
+                is_kyc_done: is_kyc_done.unwrap_or(false),
+            })
+        }
+        None => None,
+    };
+
     let new_offer = offer;
 
     let borrower_xpub = db::wallet_backups::get_xpub_for_borrower(&data.db, contract.borrower_id)
@@ -1052,6 +1074,7 @@ async fn map_to_api_contract(
         can_recover_collateral_manually,
         borrower_xpub,
         lender_xpub,
+        kyc_info,
     };
 
     Ok(contract)

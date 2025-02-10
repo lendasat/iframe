@@ -56,26 +56,27 @@ const menuItems = [
   {
     group: [
       {
-        label: "Create an offer",
+        label: "Create offer",
         path: "/create-loan-offer",
         icon: IoCreateOutline,
         target: "_self",
         visible: true,
       },
       {
-        label: "All Loan Offers",
-        path: "/offers",
-        icon: TbWorldDollar,
-        target: "_self",
-        visible: true,
-      },
-      {
-        label: "My Loan Offers",
+        label: "My Offers",
         path: "/my-offers",
         icon: BsBank,
         target: "_self",
         visible: true,
       },
+      {
+        label: "All Offers",
+        path: "/offers",
+        icon: TbWorldDollar,
+        target: "_self",
+        visible: true,
+      },
+
       {
         label: "My Contracts",
         path: "/my-contracts",

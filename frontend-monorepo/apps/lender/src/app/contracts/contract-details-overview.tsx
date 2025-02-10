@@ -30,6 +30,7 @@ import { Await, Link, useNavigate, useParams } from "react-router-dom";
 import { ExpandableDisputeCard } from "../disputes/dispute-card";
 import { Borrower } from "./borrower";
 import { ContractDefaulted } from "./contract-defaulted";
+import { ContractPendingKyc } from "./contract-pending-kyc";
 import { ContractRecovery } from "./contract-recovery";
 import { ContractRequested } from "./contract-requested";
 import { ContractUndercollateralized } from "./contract-undercollateralized";
@@ -234,19 +235,24 @@ function ContractDetails({ contract }: DetailsProps) {
             </Text>
             <div className="flex flex-col">
               <Text className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
-                <Badge
-                  color={contract.status === ContractStatus.Requested
-                      || contract.status === ContractStatus.RenewalRequested
-                    ? "amber"
-                    : contract.status === ContractStatus.Approved
-                    ? "green"
-                    : contract.status === ContractStatus.Rejected
-                    ? "red"
-                    : "gray"}
-                  size={"2"}
-                >
-                  {contractStatusLabel}
-                </Badge>
+                <Box className="flex flex-row space-x-2">
+                  <Badge
+                    color={contract.status === ContractStatus.Requested
+                        || contract.status === ContractStatus.RenewalRequested
+                      ? "amber"
+                      : contract.status === ContractStatus.Approved
+                      ? "green"
+                      : contract.status === ContractStatus.Rejected
+                      ? "red"
+                      : "gray"}
+                    size={"2"}
+                  >
+                    {contractStatusLabel}
+                  </Badge>
+                  {contract.kyc_info && !contract.kyc_info.is_kyc_done && (
+                    <Badge color="gray" size="2">KYC Pending</Badge>
+                  )}
+                </Box>
               </Text>
             </div>
           </Flex>
@@ -483,9 +489,37 @@ const ContractStatusDetails = ({
   onError,
   onSuccess,
 }: ContractStatusDetailsProps) => {
-  const { approveContract, rejectContract, principalGiven, markPrincipalConfirmed } = useLenderHttpClient();
+  const { approveKyc, rejectKyc, approveContract, rejectContract, principalGiven, markPrincipalConfirmed } =
+    useLenderHttpClient();
   const [isLoading, setIsLoading] = useState(false);
   const [txid, setTxid] = useState("");
+
+  const onKycApprove = async () => {
+    try {
+      setIsLoading(true);
+      await approveKyc(contract.borrower.id);
+      // We do not automatically approve the contract, because the lender may yet want to reject
+      // this particular offer.
+      onSuccess();
+    } catch (error) {
+      onError(`${error}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  const onKycReject = async () => {
+    try {
+      setIsLoading(true);
+      await rejectKyc(contract.borrower.id);
+      // We also reject the contract, since the borrower could not KYC.
+      await rejectContract(contract.id);
+      onSuccess();
+    } catch (error) {
+      onError(`${error}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const onContractApprove = async () => {
     try {
@@ -539,7 +573,26 @@ const ContractStatusDetails = ({
   }
 
   switch (contract.status) {
-    case ContractStatus.Requested:
+    case ContractStatus.Requested: {
+      if (contract.kyc_info && !contract.kyc_info.is_kyc_done) {
+        return (
+          <ContractPendingKyc
+            isLoading={isLoading}
+            onKycApprove={onKycApprove}
+            onKycReject={onKycReject}
+            kycLink={contract.kyc_info.kyc_link}
+          />
+        );
+      } else {
+        return (
+          <ContractRequested
+            isLoading={isLoading}
+            onContractApprove={onContractApprove}
+            onContractReject={onContractReject}
+          />
+        );
+      }
+    }
     case ContractStatus.RenewalRequested:
       return (
         <ContractRequested

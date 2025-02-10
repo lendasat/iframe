@@ -18,7 +18,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 interface WalletContextType {
   isInitialized: boolean;
   isWalletLoaded: boolean;
-  doesWalletExist: boolean;
+  doesWalletExist?: boolean;
   loadWallet: (passphrase: string) => Promise<void>;
   getMnemonic: () => string;
   getNsec: () => string;
@@ -47,7 +47,7 @@ interface WalletProviderProps {
 export const WalletProvider = ({ children, email }: WalletProviderProps) => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isWalletLoaded, setIsWalletLoaded] = useState(false);
-  const [doesWalletExist, setDoesWalletExist] = useState(false);
+  const [doesWalletExist, setDoesWalletExist] = useState<boolean | undefined>(undefined);
 
   useEffect(() => {
     init().then(async () => {

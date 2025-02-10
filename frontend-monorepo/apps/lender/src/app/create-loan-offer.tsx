@@ -41,6 +41,7 @@ import { MdOutlineSwapCalls } from "react-icons/md";
 import { PiInfo, PiWarningCircle } from "react-icons/pi";
 import { useNavigate } from "react-router-dom";
 import { useAsync } from "react-use";
+import { KycLinkInputField } from "./components/KycLinkInputField";
 import DurationSelector from "./LoanDurationSelector";
 
 export interface LoanAmount {
@@ -55,7 +56,6 @@ interface DurationRange {
 
 const CreateLoanOffer: FC = () => {
   const layout = window;
-  const { user } = useAuth();
   const { doesWalletExist, getXpub } = useWallet();
   const { enabledFeatures } = useAuth();
 
@@ -63,6 +63,7 @@ const CreateLoanOffer: FC = () => {
   const { postLoanOffer, getLoanAndContractStats } = useLenderHttpClient();
 
   const autoApproveEnabled = enabledFeatures.includes(LenderFeatureFlags.AutoApproveLoanRequests);
+  const kycOffersEnabled = enabledFeatures.includes(LenderFeatureFlags.KycOffers);
 
   const [loanAmount, setLoanAmount] = useState<LoanAmount>({ min: 1000, max: 100000 });
   const [loanReserve, setLoanReserve] = useState(loanAmount.max);
@@ -80,13 +81,18 @@ const CreateLoanOffer: FC = () => {
     max: ONE_MONTH * 6,
   });
 
+  const [isKycRequired, setIsKycRequired] = useState(true);
+  const [kycLink, setKycLink] = useState<string>("");
+
   const handleRangeChange = (start: number, end: number) => {
     setLoanDuration({ min: start, max: end });
   };
 
   useEffect(() => {
-    if (!doesWalletExist) {
+    if (doesWalletExist === false) {
       setError("Cannot load wallet. Try to log back in. If the error persists, reach out to support");
+    } else {
+      setError("");
     }
   }, [doesWalletExist]);
 
@@ -149,6 +155,7 @@ const CreateLoanOffer: FC = () => {
       loan_repayment_address: loanRepaymentAddress,
       auto_accept: autoAccept,
       lender_xpub: lender_xpub,
+      kyc_link: kycLink || undefined,
     };
   };
 
@@ -202,7 +209,7 @@ const CreateLoanOffer: FC = () => {
           <Box className="py-7 lg:pb-14 md:col-span-4 bg-gradient-to-br from-white/0 to-white border-r border-font/10 space-y-5 dark:from-dark/0 dark:to-dark dark:border-font-dark/10">
             <Box className="px-6 md:px-8">
               <Heading size={"7"} className="text-font dark:text-font-dark">
-                Create an Offer
+                Create Loan Offer
               </Heading>
               <Text size={"2"} className="text-font/60 dark:text-font-dark/60">Create a loan on your own terms.</Text>
             </Box>
@@ -434,6 +441,16 @@ const CreateLoanOffer: FC = () => {
                   />
                 </Box>
 
+                {kycOffersEnabled
+                  && (
+                    <KycLinkInputField
+                      link={kycLink}
+                      setLink={setKycLink}
+                      isKycRequired={isKycRequired}
+                      setIsKycRequired={setIsKycRequired}
+                    />
+                  )}
+
                 <Box className="space-y-6 hidden lg:block">
                   {/* Error Message */}
                   {error && (
@@ -456,7 +473,7 @@ const CreateLoanOffer: FC = () => {
                     radius="large"
                     disabled={!(loanAmount.max && loanDuration.max
                       && ltv && loanRepaymentAddress
-                      && !loading && doesWalletExist)}
+                      && !loading && doesWalletExist && kycLink)}
                     className="w-full h-12"
                   >
                     {loading ? <Spinner size={"3"} /> : "Create Offer"}
@@ -467,12 +484,12 @@ const CreateLoanOffer: FC = () => {
           </Box>
           <Box className="flex flex-col justify-center px-6 lg:col-span-3 xl:col-span-2 py-12">
             <Text size={"2"} weight={"medium"} className="text-center text-font/50 dark:text-font-dark/50">
-              Lending Summary
+              Offer Summary
             </Text>
             <Heading size={"7"} className={"text-center text-font dark:text-font-dark"}>Borrowers will see</Heading>
             <Box className="my-10">
               <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
-                Loan Information
+                Loan Parameters
               </Text>
               <Separator size={"4"} mt={"4"} className="opacity-50 text-font dark:text-font-dark" />
               <Flex align={"center"} justify={"between"} my={"4"}>
@@ -521,28 +538,26 @@ const CreateLoanOffer: FC = () => {
                   {selectedCoin ? StableCoinHelper.print(selectedCoin) : ""}
                 </Text>
               </Flex>
+              {kycOffersEnabled && (
+                <>
+                  <Separator size={"4"} color={"gray"} className="opacity-50" />
+                  <Flex align={"center"} justify={"between"} my={"4"}>
+                    <Text as="label" size={"2"} className="text-font/50 dark:text-font-dark/50">KYC Required</Text>
+                    <Text size={"2"} className="text-font/80 dark:text-font-dark/80 font-semibold">
+                      {isKycRequired ? "Yes" : "No"}
+                    </Text>
+                  </Flex>
+                </>
+              )}
             </Box>
 
             <Box className="my-4">
               <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
-                Lenders Information
+                Repayment
               </Text>
               <Separator size={"4"} color={"gray"} mt={"4"} className="opacity-50" />
               <Flex align={"center"} justify={"between"} my={"4"}>
-                <Text as="label" size={"2"} className="text-font/50 dark:text-font-dark/50">Lender</Text>
-                <Text size={"2"} className="text-font/80 dark:text-font-dark/80 font-semibold capitalize">
-                  {user?.name}
-                </Text>
-              </Flex>
-            </Box>
-
-            <Box className="my-4">
-              <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
-                Refunding Information
-              </Text>
-              <Separator size={"4"} color={"gray"} mt={"4"} className="opacity-50" />
-              <Flex align={"center"} justify={"between"} my={"4"}>
-                <Text as="label" size={"2"} className="text-font/50 dark:text-font-dark/50">Wallet Address</Text>
+                <Text as="label" size={"2"} className="text-font/50 dark:text-font-dark/50">Address</Text>
                 <Text size={"1"} className="text-font/80 dark:text-font-dark/80 font-semibold capitalize">
                   {loanRepaymentAddress ? loanRepaymentAddress.slice(0, 14) + "..." : ""}
                 </Text>

@@ -35,6 +35,7 @@ import { collateralForStatus } from "./collateralForStatus";
 import { CollateralContractDetails } from "./collateralize-contract";
 import { CollateralSeenOrConfirmed } from "./contract-collateral-seen-or-confirmed";
 import { ContractDefaulted } from "./contract-defaulted";
+import { ContractPendingKyc } from "./contract-pending-kyc";
 import { ContractPrincipalGiven } from "./contract-principal-given";
 import { ContractPrincipalRepaid } from "./contract-principal-repaid";
 import { ContractRepaid } from "./contract-repaid";
@@ -320,19 +321,26 @@ function ContractDetails({ contract }: DetailsProps) {
           </Text>
           <div className="flex flex-col">
             <Text className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
-              <Badge
-                color={contract.status === ContractStatus.Requested
-                    || contract.status === ContractStatus.RenewalRequested
-                  ? "amber"
-                  : contract.status === ContractStatus.Approved
-                  ? "green"
-                  : contract.status === ContractStatus.Rejected
-                  ? "red"
-                  : "gray"}
-                size={"2"}
-              >
-                {contractStatusLabel}
-              </Badge>
+              <Box className="flex flex-row space-x-2">
+                <Badge
+                  color={contract.status === ContractStatus.Requested
+                      || contract.status === ContractStatus.RenewalRequested
+                    ? "amber"
+                    : contract.status === ContractStatus.Approved
+                    ? "green"
+                    : contract.status === ContractStatus.Rejected
+                    ? "red"
+                    : "gray"}
+                  size={"2"}
+                >
+                  {contractStatusLabel}
+                </Badge>
+                {contract.kyc_info && !contract.kyc_info.is_kyc_done && (
+                  <Badge color="gray" size="2">
+                    KYC Pending
+                  </Badge>
+                )}
+              </Box>
             </Text>
           </div>
         </Flex>
@@ -634,7 +642,19 @@ const ContractStatusDetails = ({
   loanOriginatorFeeUsd,
 }: ContractStatusDetailsProps) => {
   switch (contract.status) {
-    case ContractStatus.Requested:
+    case ContractStatus.Requested: {
+      if (contract.kyc_info) {
+        return (
+          <ContractPendingKyc
+            contractId={contract.id}
+            kycLink={contract.kyc_info?.kyc_link}
+            isKycDone={contract.kyc_info?.is_kyc_done}
+          />
+        );
+      } else {
+        return <ContractRequested createdAt={contract.created_at} contractId={contract.id} />;
+      }
+    }
     case ContractStatus.RenewalRequested:
       return <ContractRequested createdAt={contract.created_at} contractId={contract.id} />;
     case ContractStatus.Approved:

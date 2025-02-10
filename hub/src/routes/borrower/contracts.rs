@@ -58,6 +58,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 use time::OffsetDateTime;
 use tracing::instrument;
+use url::Url;
 use uuid::Uuid;
 
 pub(crate) fn router(app_state: Arc<AppState>) -> Router {
@@ -142,7 +143,17 @@ async fn post_contract_request(
         })?;
 
     let contract_id = Uuid::new_v4();
-    let lender_id = offer.lender_id;
+    let lender_id = &offer.lender_id;
+
+    let is_kyc_required = offer.requires_kyc();
+    let is_kyc_done = if is_kyc_required {
+        db::kyc::insert(&data.db, lender_id, &user.id)
+            .await
+            .map_err(Error::Database)?
+    } else {
+        false
+    };
+
     let (borrower_loan_address, moon_invoice) = match body.integration {
         Integration::StableCoin => match body.borrower_loan_address {
             Some(borrower_loan_address) => (borrower_loan_address, None),
@@ -283,7 +294,8 @@ async fn post_contract_request(
             .map_err(Error::Database)?;
     }
 
-    if offer.auto_accept {
+    // We only want to auto-accept offers if KYC is not required, or if KYC is already done.
+    if offer.auto_accept && (!is_kyc_required || is_kyc_done) {
         let wallet = data.wallet.lock().await;
 
         approve_contract(
@@ -292,7 +304,7 @@ async fn post_contract_request(
             &data.mempool,
             &data.config,
             contract.id.clone(),
-            &lender_id,
+            lender_id,
             data.notifications.clone(),
         )
         .await
@@ -651,6 +663,13 @@ pub struct Contract {
     pub extended_by_contract: Option<String>,
     pub lender_xpub: String,
     pub borrower_xpub: String,
+    pub kyc_info: Option<KycInfo>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct KycInfo {
+    kyc_link: Url,
+    is_kyc_done: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -733,6 +752,20 @@ async fn map_to_api_contract(
             .await
             .map_err(|e| Error::Database(anyhow!(e)))?;
 
+    let kyc_info = match offer.kyc_link {
+        Some(ref kyc_link) => {
+            let is_kyc_done = db::kyc::get(&data.db, &lender.id, &contract.borrower_id)
+                .await
+                .map_err(Error::Database)?;
+
+            Some(KycInfo {
+                kyc_link: kyc_link.clone(),
+                is_kyc_done: is_kyc_done.unwrap_or(false),
+            })
+        }
+        None => None,
+    };
+
     let new_offer = offer;
 
     let lender_stats = user_stats::get_lender_stats(&data.db, lender.id.as_str())
@@ -779,6 +812,7 @@ async fn map_to_api_contract(
         extended_by_contract: child_contract,
         borrower_xpub,
         lender_xpub,
+        kyc_info,
     };
 
     Ok(contract)

@@ -6,7 +6,12 @@ use tokio_cron_scheduler::Job;
 use tokio_cron_scheduler::JobScheduler;
 use tokio_cron_scheduler::JobSchedulerError;
 
+/// The number of hours the lender has to accept the borrower's contract request.
 const CONTRACT_REQUEST_TIMEOUT: i64 = 24;
+
+/// The number of hours the lender has to accept the borrower's contract request, given that the
+/// borrower must first KYC with the lender.
+const CONTRACT_REQUEST_KYC_PENDING_TIMEOUT: i64 = 7 * 24;
 
 // We don't want the doc block below to be auto-formatted.
 #[rustfmt::skip]
@@ -51,6 +56,7 @@ async fn create_contract_request_expiry_check(
                     match db::contracts::expire_requested_contracts(
                         &database,
                         CONTRACT_REQUEST_TIMEOUT,
+                        CONTRACT_REQUEST_KYC_PENDING_TIMEOUT,
                     )
                     .await
                     {

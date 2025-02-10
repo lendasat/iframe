@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        INSERT INTO loan_offers (\n          id,\n          lender_id,\n          name,\n          min_ltv,\n          interest_rate,\n          loan_amount_min,\n          loan_amount_max,\n          loan_amount_reserve,\n          duration_days_min,\n          duration_days_max,\n          loan_asset_type,\n          loan_asset_chain,\n          status,\n          loan_repayment_address,\n          auto_accept,\n          lender_xpub\n        )\n        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)\n        RETURNING\n          id,\n          lender_id,\n          name,\n          min_ltv,\n          interest_rate,\n          loan_amount_min,\n          loan_amount_max,\n          loan_amount_reserve,\n          loan_amount_reserve as loan_amount_reserve_remaining,\n          duration_days_min,\n          duration_days_max,\n          loan_asset_type AS \"loan_asset_type: crate::model::LoanAssetType\",\n          loan_asset_chain AS \"loan_asset_chain: crate::model::LoanAssetChain\",\n          status AS \"status: crate::model::LoanOfferStatus\",\n          loan_repayment_address,\n          auto_accept,\n          lender_xpub,\n          created_at,\n          updated_at\n        ",
+  "query": "\n        INSERT INTO loan_offers (\n          id,\n          lender_id,\n          name,\n          min_ltv,\n          interest_rate,\n          loan_amount_min,\n          loan_amount_max,\n          loan_amount_reserve,\n          duration_days_min,\n          duration_days_max,\n          loan_asset_type,\n          loan_asset_chain,\n          status,\n          loan_repayment_address,\n          auto_accept,\n          lender_xpub,\n          kyc_link\n        )\n        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)\n        RETURNING\n          id,\n          lender_id,\n          name,\n          min_ltv,\n          interest_rate,\n          loan_amount_min,\n          loan_amount_max,\n          loan_amount_reserve,\n          loan_amount_reserve as loan_amount_reserve_remaining,\n          duration_days_min,\n          duration_days_max,\n          loan_asset_type AS \"loan_asset_type: crate::model::LoanAssetType\",\n          loan_asset_chain AS \"loan_asset_chain: crate::model::LoanAssetChain\",\n          status AS \"status: crate::model::LoanOfferStatus\",\n          loan_repayment_address,\n          auto_accept,\n          lender_xpub,\n          kyc_link,\n          created_at,\n          updated_at\n        ",
   "describe": {
     "columns": [
       {
@@ -123,11 +123,16 @@
       },
       {
         "ordinal": 17,
+        "name": "kyc_link",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 18,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 18,
+        "ordinal": 19,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -182,6 +187,7 @@
         },
         "Varchar",
         "Bool",
+        "Text",
         "Text"
       ]
     },
@@ -203,9 +209,10 @@
       false,
       false,
       true,
+      true,
       false,
       false
     ]
   },
-  "hash": "106d311eaf2b61a33eb18bdf0ad7536aacd1c83f95199a487b29a971d8ab9cb7"
+  "hash": "e1df518d93b68a442c3f41c3293cfdba0c78eb13655ffe509f4c8e39d3bd92b0"
 }

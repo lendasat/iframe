@@ -167,6 +167,40 @@ export class HttpClientLender extends BaseHttpClient {
     }
   }
 
+  async approveKyc(borrower_id: string): Promise<void> {
+    try {
+      await this.httpClient.put(`/api/kyc/${borrower_id}/approve`);
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = JSON.stringify(error.response?.data);
+        console.error(
+          `Failed to approve KYC: http: ${error.response?.status} and response: ${
+            JSON.stringify(error.response?.data)
+          }`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not approve KYC: ${JSON.stringify(error)}`);
+      }
+    }
+  }
+
+  async rejectKyc(borrower_id: string): Promise<void> {
+    try {
+      await this.httpClient.put(`/api/kyc/${borrower_id}/reject`);
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = JSON.stringify(error.response?.data);
+        console.error(
+          `Failed to reject KYC: http: ${error.response?.status} and response: ${JSON.stringify(error.response?.data)}`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not reject KYC: ${JSON.stringify(error)}`);
+      }
+    }
+  }
+
   async approveContract(id: string): Promise<void> {
     try {
       await this.httpClient.put(`/api/contracts/${id}/approve`);
@@ -641,6 +675,8 @@ type LenderHttpClientContextType = Pick<
   | "postLoanOffer"
   | "getContracts"
   | "getContract"
+  | "approveKyc"
+  | "rejectKyc"
   | "approveContract"
   | "rejectContract"
   | "principalGiven"
@@ -703,6 +739,8 @@ export const HttpClientLenderProvider: React.FC<HttpClientProviderProps> = ({ ch
     getContract: httpClient.getContract.bind(httpClient),
     approveContract: httpClient.approveContract.bind(httpClient),
     rejectContract: httpClient.rejectContract.bind(httpClient),
+    approveKyc: httpClient.approveKyc.bind(httpClient),
+    rejectKyc: httpClient.rejectKyc.bind(httpClient),
     principalGiven: httpClient.principalGiven.bind(httpClient),
     markPrincipalConfirmed: httpClient.markPrincipalConfirmed.bind(httpClient),
     startDispute: httpClient.startDispute.bind(httpClient),

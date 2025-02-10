@@ -52,11 +52,10 @@ class SortHelper {
 
 interface LoanOffersComponentProps {
   loanOffers: LoanOffer[];
-  onRequest: (loanOffer: LoanOffer) => void;
   isLoading: boolean;
 }
 
-function LoanOffersComponent({ loanOffers, onRequest, isLoading }: LoanOffersComponentProps) {
+function LoanOffersComponent({ loanOffers, isLoading }: LoanOffersComponentProps) {
   const [amountSort, setAmountSort] = useState<Sort>(Sort.NONE);
   const [durationSort, setDurationSort] = useState<Sort>(Sort.NONE);
   const [ltvSort, setLTVSort] = useState<Sort>(Sort.NONE);
@@ -66,7 +65,7 @@ function LoanOffersComponent({ loanOffers, onRequest, isLoading }: LoanOffersCom
   return (
     <>
       <Box className="bg-active-nav/15 py-1 px-6 md:px-8 flex items-center">
-        <Grid className="grid-cols-4 md:grid-cols-6 xl:grid-cols-7 items-center grow">
+        <Grid className="grid-cols-5 md:grid-cols-7 xl:grid-cols-8 items-center grow">
           <Box className="mb-1 col-span-1 xl:col-span-2">
             <Text
               size={"1"}
@@ -243,6 +242,15 @@ function LoanOffersComponent({ loanOffers, onRequest, isLoading }: LoanOffersCom
               className="text-font/50 dark:text-font-dark/50"
             >
               Coin
+            </Text>
+          </Box>
+          <Box className="mb-1 flex justify-center">
+            <Text
+              size={"1"}
+              weight={"medium"}
+              className="text-font/50 dark:text-font-dark/50"
+            >
+              Requirements
             </Text>
           </Box>
           <Box className="mb-1 hidden xl:block" />

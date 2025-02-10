@@ -1,4 +1,3 @@
-
 export const ONE_YEAR = 360;
 export const ONE_MONTH = 30;
 
@@ -42,3 +41,4 @@ export * from './lib/auth/upgrade-to-pake';
 export * from './lib/auth/upgrade-to-pake-form';
 export * from './lib/components/mnemonic';
 export * from './lib/UserStats';
+export * from './lib/components/KycBadge';

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            lo.id,\n            lo.lender_id,\n            lo.name,\n            lo.min_ltv,\n            lo.interest_rate,\n            lo.loan_amount_min,\n            lo.loan_amount_max,\n            lo.duration_days_min,\n            lo.duration_days_max,\n            lo.loan_amount_reserve,\n            COALESCE(\n                lo.loan_amount_reserve - COALESCE(\n                    SUM(\n                        CASE\n                            WHEN c.status NOT IN ('Cancelled', 'RequestExpired')\n                            THEN c.loan_amount\n                            ELSE 0\n                        END\n                    ),\n                    0\n                ),\n                lo.loan_amount_reserve\n            ) AS loan_amount_reserve_remaining,\n            lo.loan_asset_type AS \"loan_asset_type: LoanAssetType\",\n            lo.loan_asset_chain AS \"loan_asset_chain: LoanAssetChain\",\n            lo.status AS \"status: LoanOfferStatus\",\n            lo.loan_repayment_address,\n            lo.auto_accept,\n            lo.lender_xpub,\n            lo.created_at,\n            lo.updated_at\n        FROM loan_offers lo\n            LEFT JOIN\n                contracts c ON lo.id = c.loan_id\n        WHERE lo.id = $1\n        GROUP BY\n            lo.id\n    ",
+  "query": "\n        SELECT\n            lo.id,\n            lo.lender_id,\n            lo.name,\n            lo.min_ltv,\n            lo.interest_rate,\n            lo.loan_amount_min,\n            lo.loan_amount_max,\n            lo.duration_days_min,\n            lo.duration_days_max,\n            lo.loan_amount_reserve,\n            COALESCE(\n                lo.loan_amount_reserve - COALESCE(\n                    SUM(\n                        CASE\n                            WHEN c.status NOT IN ('Cancelled', 'RequestExpired')\n                            THEN c.loan_amount\n                            ELSE 0\n                        END\n                    ),\n                    0\n                ),\n                lo.loan_amount_reserve\n            ) AS loan_amount_reserve_remaining,\n            lo.loan_asset_type AS \"loan_asset_type: LoanAssetType\",\n            lo.loan_asset_chain AS \"loan_asset_chain: LoanAssetChain\",\n            lo.status AS \"status: LoanOfferStatus\",\n            lo.loan_repayment_address,\n            lo.auto_accept,\n            lo.lender_xpub,\n            lo.kyc_link,\n            lo.created_at,\n            lo.updated_at\n        FROM loan_offers lo\n            LEFT JOIN\n                contracts c ON lo.id = c.loan_id\n        WHERE lo.id = $1\n        GROUP BY\n            lo.id\n    ",
   "describe": {
     "columns": [
       {
@@ -123,11 +123,16 @@
       },
       {
         "ordinal": 17,
+        "name": "kyc_link",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 18,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 18,
+        "ordinal": 19,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -155,9 +160,10 @@
       false,
       false,
       true,
+      true,
       false,
       false
     ]
   },
-  "hash": "279d5cc33dece8c3e2c8300f604f4808ea2b131fc9090699d22fd4edfca96d1b"
+  "hash": "b4c0511f523428edb5e0e75ba98384ad06e7aacdc6a6781d4755dbfab2ddb885"
 }

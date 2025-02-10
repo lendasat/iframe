@@ -1,5 +1,5 @@
 import type { LoanOffer } from "@frontend-monorepo/http-client-borrower";
-import { CurrencyFormatter, getFormatedStringFromDays, StableCoinHelper } from "@frontend-monorepo/ui-shared";
+import { CurrencyFormatter, getFormatedStringFromDays, KycBadge, StableCoinHelper } from "@frontend-monorepo/ui-shared";
 import { Badge, Box, Button, DropdownMenu, Flex, Grid, Heading, Text } from "@radix-ui/themes";
 import { BsThreeDotsVertical } from "react-icons/bs";
 import { Lender } from "./lender";
@@ -13,7 +13,7 @@ export function LoanOfferComponent({ loanOffer }: LoanOfferProps) {
 
   return (
     <Box className="pl-5 pr-6 md:pl-7 md:pr-8 py-3 border-b border-black/5 flex md:gap-2 items-center dark:border-dark">
-      <Grid className="grid-cols-4 md:grid-cols-6 xl:grid-cols-7 items-center grow text-font dark:text-font-dark">
+      <Grid className="grid-cols-5 md:grid-cols-7 xl:grid-cols-8 items-center grow text-font dark:text-font-dark">
         <Box className="col-span-1 xl:col-span-2">
           <Lender {...loanOffer.lender} showAvatar={true} />
         </Box>
@@ -47,6 +47,13 @@ export function LoanOfferComponent({ loanOffer }: LoanOfferProps) {
           <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
             <Badge color="purple" size={"2"}>{coin ? StableCoinHelper.print(coin) : "unknown"}</Badge>
           </Text>
+        </Box>
+        <Box className="flex justify-center">
+          {loanOffer.kyc_link && (
+            <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
+              <KycBadge />
+            </Text>
+          )}
         </Box>
       </Grid>
 
