@@ -164,6 +164,7 @@ export class HttpClientBorrower extends BaseHttpClient {
   async postContractRequest(
     request: ContractRequest,
   ): Promise<Contract | undefined> {
+    console.log(`Request ${JSON.stringify(request)}`);
     try {
       const response: AxiosResponse<Contract> = await this.httpClient.post(
         "/api/contracts",

@@ -1,8 +1,7 @@
 use crate::config::Config;
 use crate::db;
 use crate::db::sideshift::SideshiftQuote;
-use crate::model::LoanAssetChain;
-use crate::model::LoanAssetType;
+use crate::model::LoanAsset;
 use anyhow::anyhow;
 use anyhow::bail;
 use anyhow::Context;
@@ -56,8 +55,7 @@ impl Shifter {
     #[allow(clippy::too_many_arguments)]
     pub async fn create_shift(
         &self,
-        loan_asset_type: LoanAssetType,
-        loan_asset_chain: LoanAssetChain,
+        loan_asset: LoanAsset,
         amount: Decimal,
         contract_id: String,
         user_ip: String,
@@ -70,13 +68,7 @@ impl Shifter {
         Decimal,
     )> {
         let quote = self
-            .get_quote(
-                loan_asset_type,
-                loan_asset_chain,
-                amount,
-                contract_id.clone(),
-                user_ip.clone(),
-            )
+            .get_quote(loan_asset, amount, contract_id.clone(), user_ip.clone())
             .await
             .context("Failed getting sideshift quote")?;
 
@@ -132,25 +124,36 @@ impl Shifter {
 
     async fn get_quote(
         &self,
-        loan_asset_type: LoanAssetType,
-        loan_asset_chain: LoanAssetChain,
+        loan_asset: LoanAsset,
         amount: Decimal,
         contract_id: String,
         lender_ip: String,
     ) -> Result<SideshiftQuote> {
-        let coin = match loan_asset_type {
-            LoanAssetType::Usdc => Coin::Usdc,
-            LoanAssetType::Usdt => Coin::Usdt,
-        };
-
-        let chain = match loan_asset_chain {
-            LoanAssetChain::Ethereum => Network::Ethereum(EthereumNetwork::Ethereum),
-            LoanAssetChain::Polygon => Network::Ethereum(EthereumNetwork::Polygon),
-            LoanAssetChain::Solana => Network::Solana(SolanaNetwork::Solana),
-            LoanAssetChain::Starknet => {
-                bail!("Not supported by SideShift.ai");
+        let chain = match loan_asset {
+            LoanAsset::UsdcEth | LoanAsset::UsdtEth => Network::Ethereum(EthereumNetwork::Ethereum),
+            LoanAsset::UsdcPol | LoanAsset::UsdtPol => Network::Ethereum(EthereumNetwork::Polygon),
+            LoanAsset::UsdcSol | LoanAsset::UsdtSol => Network::Solana(SolanaNetwork::Solana),
+            LoanAsset::UsdcStrk
+            | LoanAsset::UsdtStrk
+            | LoanAsset::Usd
+            | LoanAsset::Eur
+            | LoanAsset::Chf => {
+                bail!("Not supported by SideShift.ai: {loan_asset:?}");
             }
         };
+
+        let coin = match loan_asset {
+            LoanAsset::UsdcEth | LoanAsset::UsdcPol | LoanAsset::UsdcSol => Coin::Usdc,
+            LoanAsset::UsdtEth | LoanAsset::UsdtPol | LoanAsset::UsdtSol => Coin::Usdt,
+            LoanAsset::UsdcStrk
+            | LoanAsset::UsdtStrk
+            | LoanAsset::Usd
+            | LoanAsset::Eur
+            | LoanAsset::Chf => {
+                bail!("Not supported by SideShift.ai: {loan_asset:?}");
+            }
+        };
+
         let quote = self
             .inner
             .get_quote(

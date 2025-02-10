@@ -1,6 +1,5 @@
 use crate::model::CreateLoanOfferSchema;
-use crate::model::LoanAssetChain;
-use crate::model::LoanAssetType;
+use crate::model::LoanAsset;
 use crate::model::LoanOffer;
 use crate::model::LoanOfferStatus;
 use anyhow::Result;
@@ -44,8 +43,7 @@ pub(crate) async fn load_all_available_loan_offers(
                 ),
                 lo.loan_amount_reserve
             ) AS loan_amount_reserve_remaining,
-            lo.loan_asset_type AS "loan_asset_type: LoanAssetType",
-            lo.loan_asset_chain AS "loan_asset_chain: LoanAssetChain",
+            lo.loan_asset AS "loan_asset: LoanAsset",
             lo.status AS "status: LoanOfferStatus",
             lo.loan_repayment_address,
             lo.created_at,
@@ -91,8 +89,7 @@ pub(crate) async fn load_all_available_loan_offers(
                 duration_days_max: row.duration_days_max,
                 loan_amount_reserve: row.loan_amount_reserve,
                 loan_amount_reserve_remaining,
-                loan_asset_type: row.loan_asset_type,
-                loan_asset_chain: row.loan_asset_chain,
+                loan_asset: row.loan_asset,
                 status: row.status,
                 loan_repayment_address: row.loan_repayment_address,
                 created_at: row.created_at,
@@ -152,8 +149,7 @@ pub async fn load_all_loan_offers_by_lender(
                 ),
                 lo.loan_amount_reserve
             ) AS loan_amount_reserve_remaining,
-            lo.loan_asset_type AS "loan_asset_type: LoanAssetType",
-            lo.loan_asset_chain AS "loan_asset_chain: LoanAssetChain",
+            lo.loan_asset AS "loan_asset: LoanAsset",
             lo.status AS "status: LoanOfferStatus",
             lo.loan_repayment_address,
             lo.auto_accept,
@@ -195,8 +191,7 @@ pub async fn load_all_loan_offers_by_lender(
                 loan_amount_reserve: row.loan_amount_reserve,
                 loan_amount_reserve_remaining: loan_amount_reserve_remaining
                     .unwrap_or(row.loan_amount_reserve),
-                loan_asset_type: row.loan_asset_type,
-                loan_asset_chain: row.loan_asset_chain,
+                loan_asset: row.loan_asset,
                 status: row.status,
                 loan_repayment_address: row.loan_repayment_address,
                 created_at: row.created_at,
@@ -241,8 +236,7 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
                 ),
                 lo.loan_amount_reserve
             ) AS loan_amount_reserve_remaining,
-            lo.loan_asset_type AS "loan_asset_type: LoanAssetType",
-            lo.loan_asset_chain AS "loan_asset_chain: LoanAssetChain",
+            lo.loan_asset AS "loan_asset: LoanAsset",
             lo.status AS "status: LoanOfferStatus",
             lo.loan_repayment_address,
             lo.auto_accept,
@@ -281,8 +275,7 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
         loan_amount_reserve: row.loan_amount_reserve,
         loan_amount_reserve_remaining: loan_amount_reserve_remaining
             .unwrap_or(row.loan_amount_reserve),
-        loan_asset_type: row.loan_asset_type,
-        loan_asset_chain: row.loan_asset_chain,
+        loan_asset: row.loan_asset,
         status: row.status,
         loan_repayment_address: row.loan_repayment_address,
         created_at: row.created_at,
@@ -340,15 +333,14 @@ pub async fn insert_loan_offer(
           loan_amount_reserve,
           duration_days_min,
           duration_days_max,
-          loan_asset_type,
-          loan_asset_chain,
+          loan_asset,
           status,
           loan_repayment_address,
           auto_accept,
           lender_xpub,
           kyc_link
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
         RETURNING
           id,
           lender_id,
@@ -361,8 +353,7 @@ pub async fn insert_loan_offer(
           loan_amount_reserve as loan_amount_reserve_remaining,
           duration_days_min,
           duration_days_max,
-          loan_asset_type AS "loan_asset_type: crate::model::LoanAssetType",
-          loan_asset_chain AS "loan_asset_chain: crate::model::LoanAssetChain",
+          loan_asset AS "loan_asset: LoanAsset",
           status AS "status: crate::model::LoanOfferStatus",
           loan_repayment_address,
           auto_accept,
@@ -381,8 +372,7 @@ pub async fn insert_loan_offer(
         offer.loan_amount_reserve,
         offer.duration_days_min,
         offer.duration_days_max,
-        offer.loan_asset_type as LoanAssetType,
-        offer.loan_asset_chain as LoanAssetChain,
+        offer.loan_asset as LoanAsset,
         status as LoanOfferStatus,
         offer.loan_repayment_address,
         offer.auto_accept,
@@ -404,8 +394,7 @@ pub async fn insert_loan_offer(
         duration_days_max: row.duration_days_max,
         loan_amount_reserve: row.loan_amount_reserve,
         loan_amount_reserve_remaining: row.loan_amount_reserve_remaining,
-        loan_asset_type: row.loan_asset_type,
-        loan_asset_chain: row.loan_asset_chain,
+        loan_asset: row.loan_asset,
         status: row.status,
         loan_repayment_address: row.loan_repayment_address,
         created_at: row.created_at,
@@ -445,8 +434,7 @@ pub(crate) async fn loan_by_id(pool: &Pool<Postgres>, loan_id: &str) -> Result<O
                 ),
                 lo.loan_amount_reserve
             ) AS loan_amount_reserve_remaining,
-            lo.loan_asset_type AS "loan_asset_type: LoanAssetType",
-            lo.loan_asset_chain AS "loan_asset_chain: LoanAssetChain",
+            lo.loan_asset AS "loan_asset: LoanAsset",
             lo.status AS "status: LoanOfferStatus",
             lo.loan_repayment_address,
             lo.auto_accept,
@@ -486,8 +474,7 @@ pub(crate) async fn loan_by_id(pool: &Pool<Postgres>, loan_id: &str) -> Result<O
             loan_amount_reserve: row.loan_amount_reserve,
             loan_amount_reserve_remaining: loan_amount_reserve_remaining
                 .unwrap_or(row.loan_amount_reserve),
-            loan_asset_type: row.loan_asset_type,
-            loan_asset_chain: row.loan_asset_chain,
+            loan_asset: row.loan_asset,
             status: row.status,
             loan_repayment_address: row.loan_repayment_address,
             created_at: row.created_at,

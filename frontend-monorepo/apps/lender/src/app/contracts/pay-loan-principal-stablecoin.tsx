@@ -5,7 +5,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import type { Contract } from "@frontend-monorepo/http-client-lender";
-import { formatCurrency } from "@frontend-monorepo/ui-shared";
+import { formatCurrency, LoanAssetHelper } from "@frontend-monorepo/ui-shared";
 import { Heading } from "@radix-ui/themes";
 import QRCode from "qrcode.react";
 import { useState } from "react";
@@ -72,7 +72,8 @@ const RepaymentDetails = ({
             <p className="mt-2 text-break text-font dark:text-font-dark">
               Please send{" "}
               <strong>{formatCurrency(contract.loan_amount)}</strong> (
-              {contract.loan_asset_type} on {contract.loan_asset_chain}) to:
+              {LoanAssetHelper.toChain(contract.loan_asset)} on{" "}
+              {LoanAssetHelper.toChain(contract.loan_asset)}) to:
             </p>
             <div className="d-flex align-items-center">
               <code>{contract.borrower_loan_address}</code>

@@ -1,10 +1,9 @@
-import { type LoanFeature } from "@frontend-monorepo/base-http-client";
+import {
+  FiatLoanDetailsResponse,
+  type LoanFeature,
+} from "@frontend-monorepo/base-http-client";
 import { OriginationFee } from "@frontend-monorepo/http-client-borrower";
-import type {
-  LoanAssetChain,
-  LoanAssetType,
-  LoanTransaction,
-} from "@frontend-monorepo/ui-shared";
+import { LoanAsset, LoanTransaction } from "@frontend-monorepo/ui-shared";
 
 export enum ContractStatus {
   Requested = "Requested",
@@ -55,14 +54,15 @@ export interface Contract {
   contract_address?: string;
   borrower_loan_address: string;
   transactions: LoanTransaction[];
-  loan_asset_type: LoanAssetType;
-  loan_asset_chain: LoanAssetChain;
+  loan_asset: LoanAsset;
   can_recover_collateral_manually: boolean;
   extends_contract?: string;
   extended_by_contract?: string;
   borrower_xpub: string;
   lender_xpub: string;
   kyc_info?: KycInfo;
+  fiat_loan_details_borrower?: FiatLoanDetailsResponse;
+  fiat_loan_details_lender?: FiatLoanDetailsResponse;
 }
 
 export interface KycInfo {
@@ -79,8 +79,7 @@ export interface CreateLoanOfferRequest {
   loan_amount_reserve: number;
   duration_days_min: number;
   duration_days_max: number;
-  loan_asset_type: LoanAssetType;
-  loan_asset_chain: LoanAssetChain;
+  loan_asset: LoanAsset;
   loan_repayment_address: string;
   auto_accept: boolean;
   lender_xpub: string;
@@ -104,8 +103,7 @@ export interface LoanOffer {
   loan_amount_reserve_remaining: number;
   duration_days_min: number;
   duration_days_max: number;
-  loan_asset_type: string;
-  loan_asset_chain: string;
+  loan_asset: LoanAsset;
   origination_fee: OriginationFee[];
   status: LoanOfferStatus;
   auto_accept: boolean;

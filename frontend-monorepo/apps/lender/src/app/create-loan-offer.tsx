@@ -10,13 +10,11 @@ import {
   getFormatedStringFromDays,
   InterestRateInfoLabel,
   LoanAddressInputField,
-  LoanAssetChain,
-  LoanAssetType,
+  LoanAsset,
+  LoanAssetHelper,
   LtvInfoLabel,
   ONE_MONTH,
-  parseStableCoin,
-  StableCoin,
-  StableCoinHelper,
+  parseLoanAsset,
 } from "@frontend-monorepo/ui-shared";
 import * as Checkbox from "@radix-ui/react-checkbox";
 import { CheckIcon } from "@radix-ui/react-icons";
@@ -30,6 +28,7 @@ import {
   Separator,
   Skeleton,
   Spinner,
+  Tabs,
   Text,
   TextField,
 } from "@radix-ui/themes";
@@ -77,9 +76,7 @@ const CreateLoanOffer: FC = () => {
   const [autoAccept, setAutoAccept] = useState(autoApproveEnabled);
   const [ltv, setLtv] = useState<number>(50);
   const [interest, setInterest] = useState<number>(7.5);
-  const [selectedCoin, setSelectedCoin] = useState<StableCoin | undefined>(
-    StableCoin.USDT_ETH,
-  );
+  const [loanAsset, setLoanAsset] = useState<LoanAsset>(LoanAsset.USDT_ETH);
   const [loanRepaymentAddress, setLoanRepaymentAddress] = useState<string>("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -90,7 +87,7 @@ const CreateLoanOffer: FC = () => {
     max: ONE_MONTH * 6,
   });
 
-  const [isKycRequired, setIsKycRequired] = useState(true);
+  const [isKycRequired, setIsKycRequired] = useState(false);
   const [kycLink, setKycLink] = useState<string>("");
 
   const handleRangeChange = (start: number, end: number) => {
@@ -108,8 +105,8 @@ const CreateLoanOffer: FC = () => {
   }, [doesWalletExist]);
 
   const handleStableCoinChange = useCallback((coinString: string) => {
-    const coin = parseStableCoin(coinString);
-    setSelectedCoin(coin);
+    const coin = parseLoanAsset(coinString);
+    setLoanAsset(coin);
     setLoanRepaymentAddress("");
     setHideWalletConnectButton(false);
   }, []);
@@ -117,43 +114,6 @@ const CreateLoanOffer: FC = () => {
   const mapToCreateLoanOfferSchema = (
     lender_xpub: string,
   ): CreateLoanOfferRequest => {
-    let assetType = LoanAssetType.Usdt;
-    let assetChain = LoanAssetChain.Starknet;
-    switch (selectedCoin) {
-      case StableCoin.USDT_SN:
-        assetType = LoanAssetType.Usdt;
-        assetChain = LoanAssetChain.Starknet;
-        break;
-      case StableCoin.USDC_SN:
-        assetType = LoanAssetType.Usdc;
-        assetChain = LoanAssetChain.Starknet;
-        break;
-      case StableCoin.USDT_POL:
-        assetType = LoanAssetType.Usdt;
-        assetChain = LoanAssetChain.Polygon;
-        break;
-      case StableCoin.USDC_POL:
-        assetType = LoanAssetType.Usdc;
-        assetChain = LoanAssetChain.Polygon;
-        break;
-      case StableCoin.USDT_ETH:
-        assetType = LoanAssetType.Usdt;
-        assetChain = LoanAssetChain.Ethereum;
-        break;
-      case StableCoin.USDC_ETH:
-        assetType = LoanAssetType.Usdc;
-        assetChain = LoanAssetChain.Ethereum;
-        break;
-      case StableCoin.USDC_SOL:
-        assetType = LoanAssetType.Usdc;
-        assetChain = LoanAssetChain.Solana;
-        break;
-      case StableCoin.USDT_SOL:
-        assetType = LoanAssetType.Usdt;
-        assetChain = LoanAssetChain.Solana;
-        break;
-    }
-
     return {
       name: "Loan Offer",
       min_ltv: ltv / 100,
@@ -163,8 +123,7 @@ const CreateLoanOffer: FC = () => {
       loan_amount_reserve: loanReserve,
       duration_days_min: loanDuration.min,
       duration_days_max: loanDuration.max,
-      loan_asset_type: assetType,
-      loan_asset_chain: assetChain,
+      loan_asset: loanAsset,
       loan_repayment_address: loanRepaymentAddress,
       auto_accept: autoAccept,
       lender_xpub: lender_xpub,
@@ -215,6 +174,17 @@ const CreateLoanOffer: FC = () => {
       `Failed loading loan and contract stats ${loadingStatsError}`,
     );
   }
+
+  const isRepaymentAddressRequired = LoanAssetHelper.isStableCoin(loanAsset);
+
+  const disableCreateOfferButton =
+    loanAmount.max === 0 ||
+    loanDuration.max === 0 ||
+    ltv === 0 ||
+    loading ||
+    !doesWalletExist ||
+    (isKycRequired && kycLink.length === 0) ||
+    (isRepaymentAddressRequired && loanRepaymentAddress.length === 0);
 
   return (
     <Form onSubmit={handleSubmit}>
@@ -344,7 +314,7 @@ const CreateLoanOffer: FC = () => {
                     <Checkbox.Root
                       className="flex size-[25px] appearance-none items-center justify-center rounded bg-white dark:bg-gray-300 shadow-[0_2px_10px] shadow-blackA4 outline-none hover:bg-violet3 focus:shadow-[0_0_0_2px_black]"
                       checked={autoAccept}
-                      disabled={!autoApproveEnabled}
+                      disabled={!autoApproveEnabled && !isKycRequired}
                       onCheckedChange={(checked) =>
                         setAutoAccept(checked === true)
                       }
@@ -498,51 +468,96 @@ const CreateLoanOffer: FC = () => {
                     weight={"medium"}
                     className="text-font/60 dark:text-font-dark/60"
                   >
-                    Stablecoins
+                    What asset will you lend?
                   </Text>
-                  <Grid
-                    align={"center"}
-                    columns={{ initial: "1", md: "3" }}
-                    gap="3"
-                    width="auto"
-                  >
-                    {StableCoinHelper.all().map((coin) => (
-                      <Button
-                        key={coin}
-                        variant="outline"
-                        type="button"
-                        size={"2"}
-                        className="h-10 rounded-lg"
-                        color={selectedCoin === coin ? "purple" : "gray"}
-                        onClick={() => handleStableCoinChange(coin)}
-                      >
-                        {StableCoinHelper.print(coin)}
-                      </Button>
-                    ))}
-                  </Grid>
-                </Box>
+                  <Tabs.Root defaultValue="stablecoins">
+                    <Tabs.List>
+                      <Tabs.Trigger value="stablecoins">
+                        Stablecoins
+                      </Tabs.Trigger>
+                      <Tabs.Trigger value="fiat">Fiat</Tabs.Trigger>
+                    </Tabs.List>
 
-                {/* Repayment Address */}
-                <Box className="space-y-1">
-                  <Text
-                    as="label"
-                    size={"2"}
-                    weight={"medium"}
-                    className="text-font/60 dark:text-font-dark/60"
-                  >
-                    Loan Repayment Address
-                  </Text>
-                  <LoanAddressInputField
-                    loanAddress={loanRepaymentAddress}
-                    setLoanAddress={setLoanRepaymentAddress}
-                    assetChain={
-                      selectedCoin
-                        ? StableCoinHelper.toChain(selectedCoin)
-                        : "undefined"
-                    }
-                    hideButton={hideWalletConnectButton}
-                    setHideButton={setHideWalletConnectButton}
-                  />
+                    <Box pt="3">
+                      <Tabs.Content value="stablecoins">
+                        <Flex direction={"column"} gap={"3"}>
+                          <Grid
+                            align={"center"}
+                            columns={{ initial: "1", md: "3" }}
+                            gap="3"
+                            width="auto"
+                          >
+                            {LoanAssetHelper.allStableCoins().map((asset) => (
+                              <Button
+                                key={asset}
+                                variant="outline"
+                                type="button"
+                                size={"2"}
+                                className="h-10 rounded-lg"
+                                color={loanAsset === asset ? "purple" : "gray"}
+                                onClick={() => handleStableCoinChange(asset)}
+                              >
+                                {LoanAssetHelper.print(asset)}
+                              </Button>
+                            ))}
+                          </Grid>
+                          {/* Repayment Address */}
+                          <Box className="space-y-1">
+                            <Text
+                              as="label"
+                              size={"2"}
+                              weight={"medium"}
+                              className="text-font/60 dark:text-font-dark/60"
+                            >
+                              Loan Repayment Address
+                            </Text>
+                            <LoanAddressInputField
+                              loanAddress={loanRepaymentAddress}
+                              setLoanAddress={setLoanRepaymentAddress}
+                              loanAsset={loanAsset}
+                              hideButton={hideWalletConnectButton}
+                              setHideButton={setHideWalletConnectButton}
+                            />
+                          </Box>
+                        </Flex>
+                      </Tabs.Content>
+
+                      <Tabs.Content value="fiat">
+                        <Flex direction={"column"} gap={"3"}>
+                          <Grid
+                            align={"center"}
+                            columns={{ initial: "1", md: "3" }}
+                            gap="3"
+                            width="auto"
+                          >
+                            {LoanAssetHelper.allFiatCoins().map((asset) => (
+                              <Button
+                                key={asset}
+                                variant="outline"
+                                type="button"
+                                size={"2"}
+                                className="h-10 rounded-lg"
+                                color={loanAsset === asset ? "purple" : "gray"}
+                                onClick={() => handleStableCoinChange(asset)}
+                              >
+                                {LoanAssetHelper.print(asset)}
+                              </Button>
+                            ))}
+                          </Grid>
+                          <Callout.Root color="orange">
+                            <Callout.Icon>
+                              <PiInfo />
+                            </Callout.Icon>
+
+                            <Callout.Text>
+                              {"You will need to provide your banking details when approving a request. " +
+                                "These details will be e2e encrypted and only shared with the corresponding borrower."}
+                            </Callout.Text>
+                          </Callout.Root>
+                        </Flex>
+                      </Tabs.Content>
+                    </Box>
+                  </Tabs.Root>
                 </Box>
 
                 {kycOffersEnabled && (
@@ -550,7 +565,13 @@ const CreateLoanOffer: FC = () => {
                     link={kycLink}
                     setLink={setKycLink}
                     isKycRequired={isKycRequired}
-                    setIsKycRequired={setIsKycRequired}
+                    setIsKycRequired={(isRequired) => {
+                      if (isRequired) {
+                        // If KYC is required, we can't do autoaccept
+                        setAutoAccept(isRequired);
+                      }
+                      setIsKycRequired(isRequired);
+                    }}
                   />
                 )}
 
@@ -572,17 +593,7 @@ const CreateLoanOffer: FC = () => {
                     size={"3"}
                     variant="solid"
                     radius="large"
-                    disabled={
-                      !(
-                        loanAmount.max &&
-                        loanDuration.max &&
-                        ltv &&
-                        loanRepaymentAddress &&
-                        !loading &&
-                        doesWalletExist &&
-                        kycLink
-                      )
-                    }
+                    disabled={disableCreateOfferButton}
                     className="w-full h-12"
                   >
                     {loading ? <Spinner size={"3"} /> : "Create Offer"}
@@ -710,13 +721,13 @@ const CreateLoanOffer: FC = () => {
                   size={"2"}
                   className="text-font/50 dark:text-font-dark/50"
                 >
-                  Preferred Coin
+                  Loan Asset
                 </Text>
                 <Text
                   size={"2"}
                   className="text-font/80 dark:text-font-dark/80 font-semibold"
                 >
-                  {selectedCoin ? StableCoinHelper.print(selectedCoin) : ""}
+                  {loanAsset ? LoanAssetHelper.print(loanAsset) : ""}
                 </Text>
               </Flex>
               {kycOffersEnabled && (
@@ -792,15 +803,7 @@ const CreateLoanOffer: FC = () => {
               size={"3"}
               variant="solid"
               radius="large"
-              disabled={
-                !(
-                  loanAmount.max &&
-                  loanDuration.max &&
-                  ltv &&
-                  loanRepaymentAddress &&
-                  !loading
-                )
-              }
+              disabled={disableCreateOfferButton}
               className="w-full h-12"
             >
               {loading ? <Spinner size={"3"} /> : "Create Offer"}

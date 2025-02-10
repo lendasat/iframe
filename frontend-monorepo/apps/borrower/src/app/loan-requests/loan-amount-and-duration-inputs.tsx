@@ -3,6 +3,7 @@ import { Box, Flex, RadioCards, Text, TextField } from "@radix-ui/themes";
 import type { ChangeEvent, ReactNode } from "react";
 import { Form } from "react-bootstrap";
 import { ReactComponent as Defi } from "../../assets/defi.svg";
+import { ReactComponent as Fiat } from "../../assets/fiat.svg";
 import { ReactComponent as MoonCard } from "../../assets/moon_card_satoshi_nakamoto.svg";
 import SingleDurationSelector from "./DurationSelector";
 
@@ -132,7 +133,7 @@ export function LoanAmountAndDurationInputs({
         <Box className="mx-auto ">
           <RadioCards.Root
             value={selectedOption}
-            columns={{ initial: "1", sm: "2" }}
+            columns={{ initial: "1", sm: "3" }}
             size={"3"}
             onValueChange={(e) => {
               onLoanProductSelect(e as LoanProductOption);
@@ -140,16 +141,26 @@ export function LoanAmountAndDurationInputs({
             color={"purple"}
           >
             <LoanProductRadioCardItem
+              key={"stable"}
               value={LoanProductOption.StableCoins.toString()}
               header={"Stablecoins"}
               subHeader={"USDC/USDT"}
               img={<Defi width="100%" height="100%" />}
             />
             <LoanProductRadioCardItem
+              key={"moon"}
               value={LoanProductOption.PayWithMoonDebitCard.toString()}
               header={"Moon Visa® Card"}
               subHeader={"A prepaid visa card"}
               img={<MoonCard width="100%" height="100%" />}
+            />
+
+            <LoanProductRadioCardItem
+              key={"fiat"}
+              value={LoanProductOption.Fiat.toString()}
+              header={"Fiat"}
+              subHeader={"EUR/USD/CHF"}
+              img={<Fiat width="100%" height="100%" />}
             />
           </RadioCards.Root>
         </Box>

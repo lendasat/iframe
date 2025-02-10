@@ -12,9 +12,8 @@ mod tests {
     use hub::model::ContractRequestSchema;
     use hub::model::ContractStatus;
     use hub::model::CreateLoanOfferSchema;
-    use hub::model::Integration;
-    use hub::model::LoanAssetChain::Ethereum;
-    use hub::model::LoanAssetType;
+    use hub::model::LoanAsset;
+    use hub::model::LoanType;
     use hub::model::PakeLoginRequest;
     use hub::model::PakeLoginResponse;
     use hub::model::PakeVerifyRequest;
@@ -77,8 +76,7 @@ mod tests {
             loan_amount_reserve: dec!(50_000),
             duration_days_min: 7,
             duration_days_max: ONE_YEAR as i32,
-            loan_asset_type: LoanAssetType::Usdc,
-            loan_asset_chain: Ethereum,
+            loan_asset: LoanAsset::UsdcEth,
             loan_repayment_address:
                 "0x055098f73c89ca554f98c0298ce900235d2e1b4205a7ca629ae017518521c2c3".to_string(),
             auto_accept: false,
@@ -98,15 +96,10 @@ mod tests {
         let loan_offer: LoanOffer = res.json().await.unwrap();
 
         // 2. Borrower takes loan offer by creating a contract request.
-        let borrower_pk = {
-            let (_, network, xpub) =
-                browser_wallet::wallet::generate_new("borrower", "regtest").unwrap();
+        let borrower_xpub = {
+            let (_, _, xpub) = browser_wallet::wallet::generate_new("borrower", "regtest").unwrap();
 
-            browser_wallet::wallet::get_normal_pk_for_network(
-                &xpub.to_string(),
-                &network.to_string(),
-            )
-            .unwrap()
+            xpub
         };
 
         let borrower_btc_address = "tb1quw75h0w26rcrdfar6knvkfazpwyzq4z8vqmt37"
@@ -121,12 +114,13 @@ mod tests {
             loan_amount: dec!(500),
             duration_days: 6,
             borrower_btc_address,
-            borrower_pk,
+            borrower_xpub,
             borrower_loan_address: Some(
                 "0x055098f73c89ca554f98c0298ce900235d2e1b4205a7ca629ae017518521c2c3".to_string(),
             ),
-            integration: Integration::StableCoin,
+            loan_type: LoanType::StableCoin,
             moon_card_id: None,
+            fiat_loan_details: None,
         };
 
         let res = borrower
@@ -404,8 +398,7 @@ mod tests {
             loan_amount_reserve: dec!(50_000),
             duration_days_min: 7,
             duration_days_max: ONE_YEAR as i32,
-            loan_asset_type: LoanAssetType::Usdc,
-            loan_asset_chain: Ethereum,
+            loan_asset: LoanAsset::UsdcEth,
             loan_repayment_address:
                 "0x055098f73c89ca554f98c0298ce900235d2e1b4205a7ca629ae017518521c2c3".to_string(),
             auto_accept: false,
@@ -426,15 +419,10 @@ mod tests {
 
         // 2. Borrower takes loan offer by creating a contract request.
 
-        let borrower_pk = {
-            let (_, network, xpub) =
-                browser_wallet::wallet::generate_new("borrower", "regtest").unwrap();
+        let borrower_xpub = {
+            let (_, _, xpub) = browser_wallet::wallet::generate_new("borrower", "regtest").unwrap();
 
-            browser_wallet::wallet::get_normal_pk_for_network(
-                &xpub.to_string(),
-                &network.to_string(),
-            )
-            .unwrap()
+            xpub
         };
 
         let borrower_btc_address = "tb1quw75h0w26rcrdfar6knvkfazpwyzq4z8vqmt37"
@@ -446,11 +434,12 @@ mod tests {
             loan_amount: dec!(2_000),
             duration_days: 6,
             borrower_btc_address,
-            borrower_pk,
+            borrower_xpub,
             borrower_loan_address: None,
             // The borrower wants to get a Moon card with their stable coins.
-            integration: Integration::PayWithMoon,
+            loan_type: LoanType::PayWithMoon,
             moon_card_id: None,
+            fiat_loan_details: None,
         };
 
         let res = borrower

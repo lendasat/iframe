@@ -10,11 +10,10 @@ use crate::model::Borrower;
 use crate::model::ContractRequestSchema;
 use crate::model::ContractStatus;
 use crate::model::ContractVersion;
-use crate::model::Integration;
 use crate::model::LiquidationStatus;
-use crate::model::LoanAssetChain;
-use crate::model::LoanAssetType;
+use crate::model::LoanAsset;
 use crate::model::LoanTransaction;
+use crate::model::LoanType;
 use crate::model::PsbtQueryParams;
 use crate::model::TransactionType;
 use crate::moon::MOON_CARD_MAX_BALANCE;
@@ -146,26 +145,23 @@ async fn post_contract_request(
     let lender_id = &offer.lender_id;
 
     let is_kyc_required = offer.requires_kyc();
-    let is_kyc_done = if is_kyc_required {
+
+    if is_kyc_required {
+        // TODO: this should be a db transaction
         db::kyc::insert(&data.db, lender_id, &user.id)
             .await
-            .map_err(Error::Database)?
-    } else {
-        false
-    };
+            .map_err(Error::Database)?;
+    }
 
-    let (borrower_loan_address, moon_invoice) = match body.integration {
-        Integration::StableCoin => match body.borrower_loan_address {
-            Some(borrower_loan_address) => (borrower_loan_address, None),
+    let (borrower_loan_address, moon_invoice, fiat_loan_details) = match body.loan_type {
+        LoanType::StableCoin => match body.borrower_loan_address {
+            Some(borrower_loan_address) => (Some(borrower_loan_address), None, None),
             None => return Err(Error::MissingBorrowerLoanAddress),
         },
-        Integration::PayWithMoon => {
-            if offer.loan_asset_chain != LoanAssetChain::Polygon
-                || offer.loan_asset_type != LoanAssetType::Usdc
-            {
+        LoanType::PayWithMoon => {
+            if offer.loan_asset != LoanAsset::UsdcPol {
                 return Err(Error::InvalidMoonLoanRequest {
-                    chain: offer.loan_asset_chain,
-                    asset: offer.loan_asset_type,
+                    asset: offer.loan_asset,
                 });
             }
 
@@ -224,7 +220,20 @@ async fn post_contract_request(
                 .await
                 .map_err(Error::MoonInvoiceGeneration)?;
 
-            (invoice.address.clone(), Some(invoice))
+            (Some(invoice.address.clone()), Some(invoice), None)
+        }
+        LoanType::Fiat => {
+            if !offer.loan_asset.is_fiat() {
+                return Err(Error::FiatLoanWithoutFiatAsset {
+                    asset: offer.loan_asset,
+                });
+            }
+
+            let fiat_loan_details = body
+                .fiat_loan_details
+                .ok_or(Error::MissingFiatLoanDetails)?;
+
+            (None, None, Some(fiat_loan_details))
         }
     };
 
@@ -261,7 +270,7 @@ async fn post_contract_request(
     )
     .map_err(Error::OriginationFeeCalculation)?;
 
-    let lender_xpub = offer.lender_xpub.ok_or(Error::MissingLenderXpub)?;
+    let lender_xpub = offer.lender_xpub;
     let lender_xpub = Xpub::from_str(&lender_xpub).expect("valid lender Xpub");
     let contract = db::contracts::insert_new_contract_request(
         &data.db,
@@ -275,15 +284,31 @@ async fn post_contract_request(
         body.loan_amount,
         body.duration_days,
         body.borrower_btc_address,
-        body.borrower_pk,
-        borrower_loan_address.as_str(),
-        body.integration,
+        body.borrower_xpub,
+        borrower_loan_address.as_deref(),
+        body.loan_type,
         lender_xpub,
         ContractVersion::TwoOfThree,
         offer.interest_rate,
     )
     .await
     .map_err(Error::Database)?;
+
+    if let Some(fiat_loan_details) = fiat_loan_details {
+        if fiat_loan_details.details.swift_transfer_details.is_none()
+            && fiat_loan_details.details.iban_transfer_details.is_none()
+        {
+            return Err(Error::MissingFiatLoanDetails);
+        }
+
+        db::fiat_loan_details::insert_borrower(
+            &data.db,
+            contract_id.to_string().as_str(),
+            fiat_loan_details,
+        )
+        .await
+        .map_err(Error::Database)?;
+    }
 
     let contract = map_to_api_contract(&data, contract).await?;
 
@@ -294,8 +319,9 @@ async fn post_contract_request(
             .map_err(Error::Database)?;
     }
 
-    // We only want to auto-accept offers if KYC is not required, or if KYC is already done.
-    if offer.auto_accept && (!is_kyc_required || is_kyc_done) {
+    // We only want to auto-accept offers if KYC is not required and it is not a fiat loan. The
+    // reason is that we need to collect banking details of the lender during approval process
+    if offer.auto_accept && (!is_kyc_required && !offer.loan_asset.is_fiat()) {
         let wallet = data.wallet.lock().await;
 
         approve_contract(
@@ -306,6 +332,7 @@ async fn post_contract_request(
             contract.id.clone(),
             lender_id,
             data.notifications.clone(),
+            None,
         )
         .await
         .map_err(Error::from)?;
@@ -546,8 +573,9 @@ async fn get_claim_collateral_psbt(
 
     let mut wallet = data.wallet.lock().await;
 
-    let (psbt, collateral_descriptor) = wallet
+    let (psbt, collateral_descriptor, borrower_pk) = wallet
         .create_claim_collateral_psbt(
+            contract.borrower_xpub.as_ref(),
             contract.borrower_pk,
             &lender_xpub,
             contract_index,
@@ -564,7 +592,7 @@ async fn get_claim_collateral_psbt(
     let res = ClaimCollateralPsbt {
         psbt,
         collateral_descriptor,
-        borrower_pk: contract.borrower_pk,
+        borrower_pk,
     };
 
     Ok(AppJson(res))
@@ -637,12 +665,11 @@ pub struct Contract {
     pub interest_rate: Decimal,
     #[serde(with = "rust_decimal::serde::float")]
     pub initial_ltv: Decimal,
-    pub loan_asset_type: LoanAssetType,
-    pub loan_asset_chain: LoanAssetChain,
+    pub loan_asset: LoanAsset,
     pub status: ContractStatus,
-    pub borrower_pk: PublicKey,
+    pub borrower_pk: Option<PublicKey>,
     pub borrower_btc_address: String,
-    pub borrower_loan_address: String,
+    pub borrower_loan_address: Option<String>,
     pub contract_address: Option<String>,
     pub loan_repayment_address: String,
     pub lender: LenderStats,
@@ -656,14 +683,23 @@ pub struct Contract {
     pub expiry: OffsetDateTime,
     pub liquidation_status: LiquidationStatus,
     pub transactions: Vec<LoanTransaction>,
-    pub integration: Integration,
+    pub loan_type: LoanType,
     #[serde(with = "rust_decimal::serde::float")]
     pub liquidation_price: Decimal,
     pub extends_contract: Option<String>,
     pub extended_by_contract: Option<String>,
+    pub borrower_xpub: Option<String>,
     pub lender_xpub: String,
-    pub borrower_xpub: String,
     pub kyc_info: Option<KycInfo>,
+    pub fiat_loan_details_borrower: Option<FiatLoanDetails>,
+    pub fiat_loan_details_lender: Option<FiatLoanDetails>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct FiatLoanDetails {
+    pub details: lendasat_core::FiatLoanDetails,
+    /// The borrower's encrypted encryption key.
+    pub encrypted_encryption_key: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -780,6 +816,28 @@ async fn map_to_api_contract(
         .await
         .map_err(|e| Error::Database(anyhow!(e)))?;
 
+    let fiat_loan_details_borrower = {
+        let details = db::fiat_loan_details::get_borrower(&data.db, &contract.id)
+            .await
+            .map_err(Error::Database)?;
+
+        details.map(|d| FiatLoanDetails {
+            details: d.details,
+            encrypted_encryption_key: d.encrypted_encryption_key_borrower,
+        })
+    };
+
+    let fiat_loan_details_lender = {
+        let details = db::fiat_loan_details::get_lender(&data.db, &contract.id)
+            .await
+            .map_err(Error::Database)?;
+
+        details.map(|d| FiatLoanDetails {
+            details: d.details,
+            encrypted_encryption_key: d.encrypted_encryption_key_borrower,
+        })
+    };
+
     let contract = Contract {
         id: contract.id,
         loan_amount: contract.loan_amount,
@@ -789,8 +847,7 @@ async fn map_to_api_contract(
         collateral_sats: contract.collateral_sats,
         interest_rate: contract.interest_rate,
         initial_ltv: contract.initial_ltv,
-        loan_asset_type: new_offer.loan_asset_type,
-        loan_asset_chain: new_offer.loan_asset_chain,
+        loan_asset: new_offer.loan_asset,
         status: contract.status,
         borrower_pk: contract.borrower_pk,
         borrower_btc_address: contract.borrower_btc_address.assume_checked().to_string(),
@@ -806,13 +863,15 @@ async fn map_to_api_contract(
         expiry: contract.expiry_date,
         liquidation_status: contract.liquidation_status,
         transactions,
-        integration: contract.integration,
+        loan_type: contract.loan_type,
         liquidation_price,
         extends_contract: parent_contract_id,
         extended_by_contract: child_contract,
-        borrower_xpub,
+        borrower_xpub: Some(borrower_xpub),
         lender_xpub,
         kyc_info,
+        fiat_loan_details_borrower,
+        fiat_loan_details_lender,
     };
 
     Ok(contract)
@@ -886,10 +945,7 @@ enum Error {
     /// Failed to provide borrower loan address for stablecoin loan.
     MissingBorrowerLoanAddress,
     /// Moon only supports USDC on Polygon.
-    InvalidMoonLoanRequest {
-        chain: LoanAssetChain,
-        asset: LoanAssetType,
-    },
+    InvalidMoonLoanRequest { asset: LoanAsset },
     /// The Moon card that the borrower is trying to top up does not exist.
     CannotTopUpNonexistentCard,
     /// The attempt to top up the card would push the balance over the limit.
@@ -928,6 +984,8 @@ enum Error {
     MissingContractIndex,
     /// Can't claim collateral without collateral address.
     MissingCollateralAddress,
+    /// Can't do much of anything without borrower Xpub.
+    MissingBorrowerXpub,
     /// Can't do much of anything without lender Xpub.
     MissingLenderXpub,
     /// Failed to generate contract address.
@@ -958,6 +1016,10 @@ enum Error {
     MissingParentContract(String),
     /// Discounted origination fee rate was not valid
     InvalidDiscountRate { fee: Decimal },
+    /// A fiat loan must use a fiat asset.
+    FiatLoanWithoutFiatAsset { asset: LoanAsset },
+    /// A request for a fiat loan offer does not include the necessary fiat loan details.
+    MissingFiatLoanDetails,
 }
 
 impl From<JsonRejection> for Error {
@@ -1029,11 +1091,11 @@ impl IntoResponse for Error {
                 StatusCode::BAD_REQUEST,
                 "Failed to provide borrower loan address for stablecoin loan".to_owned(),
             ),
-            Error::InvalidMoonLoanRequest { chain, asset } => (
+            Error::InvalidMoonLoanRequest { asset } => (
                 StatusCode::BAD_REQUEST,
                 format!(
-                    "Cannot create loan request for Moon card with asset {asset:?} \
-                     on chain {chain:?}. Moon only supports USDC on Polygon"
+                    "Cannot create loan request for Moon card with asset {asset:?}. \
+                     Moon only supports USDC on Polygon"
                 ),
             ),
             Error::CannotTopUpNonexistentCard => {
@@ -1132,6 +1194,14 @@ impl IntoResponse for Error {
             }
             Error::MissingCollateralAddress => {
                 tracing::error!("Missing collateral address");
+
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
+            Error::MissingBorrowerXpub => {
+                tracing::error!("Missing borrower Xpub");
 
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
@@ -1243,6 +1313,14 @@ impl IntoResponse for Error {
                     "Something went wrong".to_owned(),
                 )
             }
+            Error::MissingFiatLoanDetails => (
+                StatusCode::BAD_REQUEST,
+                "Failed to provide bank details for fiat loan".to_owned(),
+            ),
+            Error::FiatLoanWithoutFiatAsset { asset } => (
+                StatusCode::BAD_REQUEST,
+                format!("Cannot create fiat contract with asset: {asset:?}"),
+            ),
         };
 
         (status, AppJson(ErrorResponse { message })).into_response()
@@ -1253,7 +1331,12 @@ impl From<approve_contract::Error> for Error {
     fn from(value: approve_contract::Error) -> Self {
         match value {
             approve_contract::Error::Database(e) => Error::Database(e),
+            approve_contract::Error::MissingBorrowerXpub => Error::MissingBorrowerXpub,
             approve_contract::Error::MissingLenderXpub => Error::MissingLenderXpub,
+            approve_contract::Error::MissingLoanOffer { offer_id } => {
+                Error::MissingLoanOffer { offer_id }
+            }
+            approve_contract::Error::MissingFiatLoanDetails => Error::MissingFiatLoanDetails,
             approve_contract::Error::ContractAddress(e) => Error::ContractAddress(e),
             approve_contract::Error::MissingBorrower => Error::MissingBorrower,
             approve_contract::Error::TrackContract(e) => Error::TrackContract(e),

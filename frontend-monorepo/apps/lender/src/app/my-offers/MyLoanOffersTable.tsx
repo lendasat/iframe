@@ -2,7 +2,7 @@ import { LoanOffer } from "@frontend-monorepo/http-client-lender";
 import {
   CurrencyFormatter,
   KycBadge,
-  StableCoinHelper,
+  LoanAssetHelper,
 } from "@frontend-monorepo/ui-shared";
 import { InfoCircledIcon } from "@radix-ui/react-icons";
 import { Box, Button, Callout, Flex, Table, Text } from "@radix-ui/themes";
@@ -128,15 +128,7 @@ export const MyLoanOffersTable = ({ offers }: ContractDetailsTableProps) => {
         sorted = a.min_ltv - b.min_ltv;
         break;
       case "coin":
-        sorted = StableCoinHelper.mapFromBackend(
-          a.loan_asset_chain,
-          a.loan_asset_type,
-        ).localeCompare(
-          StableCoinHelper.mapFromBackend(
-            b.loan_asset_chain,
-            b.loan_asset_type,
-          ),
-        );
+        sorted = a.loan_asset.localeCompare(b.loan_asset);
         break;
       case "status":
       case "action":
@@ -271,10 +263,7 @@ export const MyLoanOffersTable = ({ offers }: ContractDetailsTableProps) => {
           </Table.Row>
         ) : (
           sortedOffers.map((offer, index) => {
-            const stableCoin = StableCoinHelper.mapFromBackend(
-              offer.loan_asset_chain,
-              offer.loan_asset_type,
-            );
+            const loanAsset = offer.loan_asset;
 
             return (
               <Table.Row key={index}>
@@ -328,7 +317,7 @@ export const MyLoanOffersTable = ({ offers }: ContractDetailsTableProps) => {
                       size={"1"}
                       weight={"medium"}
                     >
-                      {StableCoinHelper.print(stableCoin)}
+                      {LoanAssetHelper.print(loanAsset)}
                     </Text>
                   </Box>
                 </Table.Cell>

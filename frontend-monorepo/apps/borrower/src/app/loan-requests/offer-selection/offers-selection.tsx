@@ -6,6 +6,7 @@ import { Box, Callout } from "@radix-ui/themes";
 import { ColumnFiltersState, OnChangeFn } from "@tanstack/react-table";
 import { useAsync } from "react-use";
 import { LoanOfferTable } from "./offer-table";
+import { LoanAsset, LoanAssetHelper } from "@frontend-monorepo/ui-shared";
 
 interface OffersTableProps {
   selectedProduct?: LoanProductOption;
@@ -44,20 +45,22 @@ export const OffersSelectionTable = ({
       return true;
     }
     switch (selectedProduct) {
+      case LoanProductOption.Fiat:
+        // only usdc on polygon can be used for pay with moon at the moment
+        returnValue = LoanAssetHelper.isFiat(offer.loan_asset);
+        break;
+
       case LoanProductOption.PayWithMoonDebitCard:
         // only usdc on polygon can be used for pay with moon at the moment
-        if (offer.loan_asset_chain.toLowerCase() !== "polygon") {
-          return false;
-        }
-        returnValue = offer.loan_asset_type.toLowerCase() === "usdc";
+        returnValue = offer.loan_asset === LoanAsset.USDC_POL;
         break;
 
       case LoanProductOption.StableCoins:
-        // all offers are stable coin offers at the moment
-        returnValue = true;
-        break;
-      case LoanProductOption.BitrefillDebitCard:
-      case LoanProductOption.BringinBankAccount:
+        // all offers are stable coin offers at the moment - it also helps us to capture unwanted filter errors.
+        if (LoanAssetHelper.isFiat(offer.loan_asset)) {
+          returnValue = false;
+          break;
+        }
         returnValue = true;
         break;
     }

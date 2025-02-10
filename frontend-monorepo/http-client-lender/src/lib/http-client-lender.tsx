@@ -1,4 +1,7 @@
-import type { BaseHttpClientContextType } from "@frontend-monorepo/base-http-client";
+import type {
+  BaseHttpClientContextType,
+  FiatLoanDetails,
+} from "@frontend-monorepo/base-http-client";
 import {
   BaseHttpClient,
   BaseHttpClientContext,
@@ -223,9 +226,15 @@ export class HttpClientLender extends BaseHttpClient {
     }
   }
 
-  async approveContract(id: string): Promise<void> {
+  async approveContract(
+    id: string,
+    fiatLoanDetails?: FiatLoanDetails,
+  ): Promise<void> {
     try {
-      await this.httpClient.put(`/api/contracts/${id}/approve`);
+      await this.httpClient.put(
+        `/api/contracts/${id}/approve`,
+        fiatLoanDetails,
+      );
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         const message = JSON.stringify(error.response?.data);
@@ -259,11 +268,15 @@ export class HttpClientLender extends BaseHttpClient {
     }
   }
 
-  async principalGiven(id: string, txid: string): Promise<void> {
+  async principalGiven(id: string, txid?: string): Promise<void> {
+    let url = `/api/contracts/${id}/principalgiven`;
+
+    if (txid) {
+      url = `${url}?txid=${txid}`;
+    }
+
     try {
-      await this.httpClient.put(
-        `/api/contracts/${id}/principalgiven?txid=${txid}`,
-      );
+      await this.httpClient.put(url);
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         const message = JSON.stringify(error.response?.data);

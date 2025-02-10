@@ -72,7 +72,8 @@ export function ContractPendingKyc({
         >
           link
         </a>{" "}
-        to start the KYC process.
+        to start the KYC process. If you have already submitted it, please wait
+        for the lender to approve your request.
       </Text>
       <Text
         className={"mb-3 text-font dark:text-font-dark"}

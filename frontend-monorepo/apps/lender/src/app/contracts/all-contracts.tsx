@@ -265,7 +265,10 @@ export const AllContracts = ({
               >
                 {ALL_CONTRACT_STATUSES.map((contractStatus) => {
                   return (
-                    <DropdownMenu.Item onSelect={(e) => e.preventDefault()}>
+                    <DropdownMenu.Item
+                      onSelect={(e) => e.preventDefault()}
+                      key={contractStatus.toString()}
+                    >
                       <Flex gap="2" align="center">
                         <Checkbox
                           checked={contractStatusFilter.includes(

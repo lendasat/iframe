@@ -12,9 +12,8 @@ import {
 import {
   formatCurrency,
   InterestRateInfoLabel,
+  LoanAsset,
   ONE_YEAR,
-  StableCoin,
-  StableCoinHelper,
   usePrice,
 } from "@frontend-monorepo/ui-shared";
 import {
@@ -277,13 +276,13 @@ const findBestOffer = (offers: LoanOffer[], days: number) => {
 
 interface ExtendContractProps {
   contract: Contract;
-  coin: StableCoin;
+  loanAsset: LoanAsset;
   resetSelectedAction: () => void;
 }
 
 export const ExtendContract = ({
   contract,
-  coin,
+  loanAsset,
   resetSelectedAction,
 }: ExtendContractProps) => {
   const [sliderDuration, setSliderDuration] = useState<number | undefined>();
@@ -319,13 +318,7 @@ export const ExtendContract = ({
 
   const unfilteredOffers = value || [];
   const offers = unfilteredOffers
-    .filter(
-      (offer) =>
-        StableCoinHelper.mapFromBackend(
-          offer.loan_asset_chain,
-          offer.loan_asset_type,
-        ) === coin,
-    )
+    .filter((offer) => offer.loan_asset === loanAsset)
     .filter((offer) => {
       return (
         offer.loan_amount_min <= contract.loan_amount &&

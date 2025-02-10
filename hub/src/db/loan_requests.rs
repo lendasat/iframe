@@ -1,6 +1,5 @@
 use crate::model::CreateLoanRequestSchema;
-use crate::model::LoanAssetChain;
-use crate::model::LoanAssetType;
+use crate::model::LoanAsset;
 use crate::model::LoanRequest;
 use crate::model::LoanRequestStatus;
 use anyhow::Result;
@@ -21,8 +20,7 @@ pub(crate) async fn load_all_available_loan_requests(
             interest_rate,
             loan_amount,
             duration_days,
-            loan_asset_type AS "loan_asset_type: crate::model::LoanAssetType",
-            loan_asset_chain AS "loan_asset_chain: crate::model::LoanAssetChain",
+            loan_asset AS "loan_asset: crate::model::LoanAsset",
             status AS "status: crate::model::LoanRequestStatus",
             created_at,
             updated_at
@@ -50,8 +48,7 @@ pub async fn load_all_loan_requests_by_borrower(
             interest_rate,
             loan_amount,
             duration_days,
-            loan_asset_type AS "loan_asset_type: crate::model::LoanAssetType",
-            loan_asset_chain AS "loan_asset_chain: crate::model::LoanAssetChain",
+            loan_asset AS "loan_asset: crate::model::LoanAsset",
             status AS "status: crate::model::LoanRequestStatus",
             created_at,
             updated_at
@@ -81,8 +78,7 @@ pub async fn get_loan_request_by_borrower_and_request_id(
             interest_rate,
             loan_amount,
             duration_days,
-            loan_asset_type AS "loan_asset_type: crate::model::LoanAssetType",
-            loan_asset_chain AS "loan_asset_chain: crate::model::LoanAssetChain",
+            loan_asset AS "loan_asset: crate::model::LoanAsset",
             status AS "status: crate::model::LoanRequestStatus",
             created_at,
             updated_at
@@ -140,11 +136,10 @@ pub async fn insert_loan_request(
             interest_rate,
             loan_amount,
             duration_days,
-            loan_asset_type,
-            loan_asset_chain,
+            loan_asset,
             status
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         RETURNING
             id,
             borrower_id,
@@ -152,8 +147,7 @@ pub async fn insert_loan_request(
             interest_rate,
             loan_amount,
             duration_days,
-            loan_asset_type AS "loan_asset_type: crate::model::LoanAssetType",
-            loan_asset_chain AS "loan_asset_chain: crate::model::LoanAssetChain",
+            loan_asset AS "loan_asset: crate::model::LoanAsset",
             status AS "status: crate::model::LoanRequestStatus",
             created_at,
             updated_at
@@ -164,8 +158,7 @@ pub async fn insert_loan_request(
         request.interest_rate,
         request.loan_amount,
         request.duration_days,
-        request.loan_asset_type as LoanAssetType,
-        request.loan_asset_chain as LoanAssetChain,
+        request.loan_asset as LoanAsset,
         status as LoanRequestStatus,
     )
     .fetch_one(pool)

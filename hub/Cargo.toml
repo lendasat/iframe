@@ -22,6 +22,7 @@ handlebars = "4.3.7"
 hex = "0.4.3"
 include_dir = "0.7.4"
 jsonwebtoken = "9.2.0"
+lendasat-core = { path = "../lendasat-core" }
 lettre = { version = "0.11.2", features = ["tokio1", "tokio1-native-tls"] }
 mime = "0.3.17"
 mime_guess = "2.0.5"

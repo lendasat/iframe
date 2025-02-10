@@ -13,14 +13,15 @@ import {
   getFormatedStringFromDays,
   InterestRateInfoLabel,
   LiquidationPriceInfoLabel,
+  LoanAssetHelper,
   LtvInfoLabel,
   LtvProgressBar,
   newFormatCurrency,
   ONE_YEAR,
   RefundAddressInfoLabel,
-  StableCoinHelper,
+  TransactionList,
+  TransactionType,
 } from "@frontend-monorepo/ui-shared";
-import { TransactionList, TransactionType } from "@frontend-monorepo/ui-shared";
 import { ExternalLinkIcon } from "@radix-ui/react-icons";
 import {
   Badge,
@@ -183,10 +184,7 @@ function ContractDetails({ contract }: DetailsProps) {
 
   const [showAddCollateralModal, setShowAddCollateralModal] = useState(false);
 
-  const coin = StableCoinHelper.mapFromBackend(
-    contract.loan_asset_chain,
-    contract.loan_asset_type,
-  );
+  const loanAsset = contract.loan_asset;
 
   const collateral = collateralForStatus(
     contract.status,
@@ -474,7 +472,7 @@ function ContractDetails({ contract }: DetailsProps) {
             weight={"medium"}
           >
             <Text>
-              <Badge>{coin ? StableCoinHelper.print(coin) : ""}</Badge>
+              <Badge>{LoanAssetHelper.print(loanAsset)}</Badge>
             </Text>
           </Text>
         </Flex>

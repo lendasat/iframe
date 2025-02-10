@@ -3,6 +3,7 @@ use crate::db;
 use crate::mempool;
 use crate::mempool::TrackContractFunding;
 use crate::model::ContractStatus;
+use crate::model::FiatLoanDetails;
 use crate::notifications::Notifications;
 use crate::wallet::Wallet;
 use anyhow::Context;
@@ -16,8 +17,18 @@ pub enum Error {
     #[error("Failed to interact with the database.")]
     Database(#[source] anyhow::Error),
     /// Can't do much of anything without lender Xpub.
-    #[error("Missing lender xpub")]
+    #[error("Missing lender Xpub")]
     MissingLenderXpub,
+    /// Can't do much of anything without borrower Xpub.
+    #[error("Missing borrower Xpub")]
+    MissingBorrowerXpub,
+    /// Referenced loan does not exist.
+    #[error("Missing loan offer: {offer_id}")]
+    MissingLoanOffer { offer_id: String },
+    /// An approval for a fiat loan contract request does not include the necessary fiat loan
+    /// details for repayment.
+    #[error("Missing bank details for fiat loan")]
+    MissingFiatLoanDetails,
     /// Failed to generate contract address.
     #[error("Failed to generate contract address.")]
     ContractAddress(#[source] anyhow::Error),
@@ -32,6 +43,7 @@ pub enum Error {
     InvalidApproveRequest { status: ContractStatus },
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn approve_contract(
     db: &PgPool,
     wallet: MutexGuard<'_, Wallet>,
@@ -40,6 +52,7 @@ pub async fn approve_contract(
     contract_id: String,
     lender_id: &str,
     notifications: Arc<Notifications>,
+    fiat_loan_details: Option<FiatLoanDetails>,
 ) -> Result<(), Error> {
     let contract = db::contracts::load_contract_by_contract_id_and_lender_id(
         db,
@@ -64,16 +77,43 @@ pub async fn approve_contract(
         return Ok(());
     }
 
+    let offer = db::loan_offers::loan_by_id(db, &contract.loan_id)
+        .await
+        .map_err(Error::Database)?
+        .ok_or(Error::MissingLoanOffer {
+            offer_id: contract.loan_id.clone(),
+        })?;
+
+    if offer.loan_asset.is_fiat() {
+        let fiat_loan_details = fiat_loan_details.ok_or(Error::MissingFiatLoanDetails)?;
+        if fiat_loan_details.details.swift_transfer_details.is_none()
+            && fiat_loan_details.details.iban_transfer_details.is_none()
+        {
+            return Err(Error::MissingFiatLoanDetails);
+        }
+
+        db::fiat_loan_details::insert_lender(db, &contract_id.to_string(), fiat_loan_details)
+            .await
+            .context("Failed inserting lenders fiat loan details")
+            .map_err(Error::Database)?
+    }
+
     let lender_xpub = contract.lender_xpub.ok_or(Error::MissingLenderXpub)?;
 
-    let (contract_address, contract_index) = wallet
-        .contract_address(
-            contract.borrower_pk,
-            &lender_xpub,
-            contract.contract_version,
-        )
-        .await
-        .map_err(Error::ContractAddress)?;
+    let (contract_address, contract_index) = match (contract.borrower_xpub, contract.borrower_pk) {
+        // If we only have a `borrower_xpub`, use it to derive the contract address.
+        (Some(borrower_xpub), None) => wallet
+            .contract_address(&borrower_xpub, &lender_xpub, contract.contract_version)
+            .await
+            .map_err(Error::ContractAddress)?,
+        // If the `borrower_pk` was ever set, we should use that one because we are dealing with a
+        // legacy contract.
+        (Some(_), Some(borrower_pk)) | (None, Some(borrower_pk)) => wallet
+            .contract_address_with_borrower_pk(borrower_pk, &lender_xpub, contract.contract_version)
+            .await
+            .map_err(Error::ContractAddress)?,
+        (None, None) => return Err(Error::MissingBorrowerXpub),
+    };
 
     let borrower = db::borrowers::get_user_by_id(db, contract.borrower_id.as_str())
         .await

@@ -56,7 +56,7 @@ export function KycLinkInputField({
           type="url"
           value={link}
           onChange={onInputChange}
-        ></TextField.Root>
+        />
       )}
     </div>
   );

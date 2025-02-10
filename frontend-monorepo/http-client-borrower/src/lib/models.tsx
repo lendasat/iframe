@@ -1,10 +1,10 @@
-import { LoanProductOption } from "@frontend-monorepo/base-http-client";
+import {
+  FiatLoanDetails,
+  FiatLoanDetailsResponse,
+  LoanProductOption,
+} from "@frontend-monorepo/base-http-client";
 import type { LoanFeature } from "@frontend-monorepo/base-http-client";
-import type {
-  LoanAssetChain,
-  LoanAssetType,
-  LoanTransaction,
-} from "@frontend-monorepo/ui-shared";
+import { LoanAsset, LoanTransaction } from "@frontend-monorepo/ui-shared";
 
 export enum ContractStatus {
   Requested = "Requested",
@@ -117,10 +117,11 @@ export interface ContractRequest {
   loan_amount: number;
   duration_days: number;
   borrower_btc_address: string;
-  borrower_pk: string;
+  borrower_xpub: string;
   borrower_loan_address?: string;
-  integration: Integration;
+  loan_type: LoanType;
   moon_card_id?: string;
+  fiat_loan_details?: FiatLoanDetails;
 }
 
 export interface Contract {
@@ -136,8 +137,7 @@ export interface Contract {
   origination_fee_sats: number;
   collateral_sats: number;
   initial_ltv: number;
-  loan_asset_type: LoanAssetType;
-  loan_asset_chain: LoanAssetChain;
+  loan_asset: LoanAsset;
   status: ContractStatus;
   liquidation_status: LiquidationStatus;
   lender: LenderStats;
@@ -147,13 +147,15 @@ export interface Contract {
   contract_address?: string;
   borrower_loan_address: string;
   transactions: LoanTransaction[];
-  integration: Integration;
+  loan_type: LoanType;
   liquidation_price: number;
   extends_contract?: string;
   extended_by_contract?: string;
   borrower_xpub: string;
   lender_xpub: string;
   kyc_info?: KycInfo;
+  fiat_loan_details_borrower?: FiatLoanDetailsResponse;
+  fiat_loan_details_lender?: FiatLoanDetailsResponse;
 }
 
 export interface KycInfo {
@@ -176,10 +178,10 @@ export interface LoanOffer {
   loan_amount_max: number;
   duration_days_min: number;
   duration_days_max: number;
-  loan_asset_type: string;
-  loan_asset_chain: string;
+  loan_asset: LoanAsset;
   origination_fee: OriginationFee[];
   kyc_link?: string;
+  lender_xpub: string;
 }
 
 export interface PostLoanRequest {
@@ -187,8 +189,6 @@ export interface PostLoanRequest {
   interest_rate: number;
   loan_amount: number;
   duration_days: number;
-  loan_asset_type: LoanAssetType;
-  loan_asset_chain: LoanAssetChain;
 }
 
 export interface ExtendPostLoanRequest {
@@ -203,8 +203,7 @@ export interface LoanRequest {
   interest_rate: number;
   loan_amount: number;
   duration_days: number;
-  loan_asset_type: LoanAssetType;
-  loan_asset_chain: LoanAssetChain;
+  loan_asset: LoanAsset;
   status: LoanRequestStatus;
 }
 
@@ -295,9 +294,10 @@ export class FeatureMapper {
   }
 }
 
-export enum Integration {
+export enum LoanType {
   PayWithMoon = "PayWithMoon",
   StableCoin = "StableCoin",
+  Fiat = "Fiat",
 }
 
 export enum CardTransactionStatus {

@@ -4,8 +4,8 @@ use crate::model::db;
 use crate::model::Contract;
 use crate::model::ContractStatus;
 use crate::model::ContractVersion;
-use crate::model::Integration;
 use crate::model::LiquidationStatus;
+use crate::model::LoanType;
 use anyhow::bail;
 use anyhow::Context;
 use anyhow::Error;
@@ -42,8 +42,9 @@ pub async fn load_contracts_by_borrower_id(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
-            integration as "integration: crate::model::db::Integration",
+            loan_type as "loan_type: crate::model::db::LoanType",
             lender_xpub,
+            borrower_xpub,
             contract_address,
             contract_index,
             status as "status: crate::model::db::ContractStatus",
@@ -90,8 +91,9 @@ pub async fn load_contracts_by_lender_id(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
-            integration as "integration: crate::model::db::Integration",
+            loan_type as "loan_type: crate::model::db::LoanType",
             lender_xpub,
+            borrower_xpub,
             contract_address,
             contract_index,
             status as "status: crate::model::db::ContractStatus",
@@ -135,8 +137,9 @@ async fn load_contract(pool: &Pool<Postgres>, contract_id: &str) -> Result<Contr
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
-            integration as "integration: crate::model::db::Integration",
+            loan_type as "loan_type: crate::model::db::LoanType",
             lender_xpub,
+            borrower_xpub,
             contract_address,
             contract_index,
             status as "status: crate::model::db::ContractStatus",
@@ -179,7 +182,8 @@ pub async fn load_contract_by_contract_id_and_borrower_id(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
-            integration as "integration: crate::model::db::Integration",
+            loan_type as "loan_type: crate::model::db::LoanType",
+            borrower_xpub,
             lender_xpub,
             contract_address,
             contract_index,
@@ -225,7 +229,8 @@ pub async fn load_contract_by_contract_id_and_lender_id(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
-            integration as "integration: crate::model::db::Integration",
+            loan_type as "loan_type: crate::model::db::LoanType",
+            borrower_xpub,
             lender_xpub,
             contract_address,
             contract_index,
@@ -265,9 +270,10 @@ pub async fn load_open_contracts(pool: &Pool<Postgres>) -> Result<Vec<Contract>>
             collateral_sats as "collateral_sats!",
             loan_amount as "loan_amount!",
             borrower_btc_address as "borrower_btc_address!",
-            borrower_pk as "borrower_pk!",
-            borrower_loan_address as "borrower_loan_address!",
-            integration as "integration!: crate::model::db::Integration",
+            borrower_pk,
+            borrower_loan_address,
+            loan_type as "loan_type!: crate::model::db::LoanType",
+            borrower_xpub,
             lender_xpub,
             contract_address,
             contract_index,
@@ -305,9 +311,9 @@ pub async fn insert_new_contract_request(
     loan_amount: Decimal,
     duration_days: i32,
     borrower_btc_address: Address<NetworkUnchecked>,
-    borrower_pk: PublicKey,
-    borrower_loan_address: &str,
-    integration: Integration,
+    borrower_xpub: Xpub,
+    borrower_loan_address: Option<&str>,
+    loan_type: LoanType,
     lender_xpub: Xpub,
     contract_version: ContractVersion,
     interest_rate: Decimal,
@@ -321,7 +327,7 @@ pub async fn insert_new_contract_request(
     let initial_collateral_sats = initial_collateral_sats as i64;
     let origination_fee_sats = origination_fee_sats as i64;
     let collateral_sats = 0;
-    let integration = db::Integration::from(integration);
+    let loan_type = db::LoanType::from(loan_type);
     let contract_version = contract_version as i32;
 
     let created_at = OffsetDateTime::now_utc();
@@ -339,16 +345,17 @@ pub async fn insert_new_contract_request(
         loan_amount,
         duration_days,
         borrower_btc_address,
-        borrower_pk,
+        None,
         borrower_loan_address,
         initial_collateral_sats,
         origination_fee_sats,
         collateral_sats,
-        integration,
+        loan_type,
         contract_version,
         created_at,
         expiry_date,
         status,
+        Some(borrower_xpub),
         lender_xpub,
         None,
         None,
@@ -375,11 +382,14 @@ pub async fn insert_extension_contract_request(
     extended_duration_days: i32,
     total_duration_days: i32,
     borrower_btc_address: Address<NetworkUnchecked>,
-    borrower_pk: PublicKey,
-    borrower_loan_address: &str,
-    integration: Integration,
+    // May be `Some` if we are extending a legacy contract.
+    borrower_pk: Option<PublicKey>,
+    borrower_loan_address: Option<&str>,
+    loan_type: LoanType,
     contract_version: ContractVersion,
     auto_accepted: bool,
+    // Should be `Some` for non-legacy contracts.
+    borrower_xpub: Option<Xpub>,
     lender_xpub: Xpub,
     original_expiry_date: OffsetDateTime,
     contract_address: Option<Address<NetworkUnchecked>>,
@@ -390,7 +400,7 @@ pub async fn insert_extension_contract_request(
     let initial_collateral_sats = initial_collateral_sats as i64;
     let collateral_sats = collateral_sats as i64;
     let origination_fee_sats = origination_fee_sats as i64;
-    let integration = db::Integration::from(integration);
+    let loan_type = db::LoanType::from(loan_type);
     let contract_version = contract_version as i32;
 
     let created_at = OffsetDateTime::now_utc();
@@ -420,11 +430,12 @@ pub async fn insert_extension_contract_request(
         initial_collateral_sats,
         origination_fee_sats,
         collateral_sats,
-        integration,
+        loan_type,
         contract_version,
         created_at,
         new_expiry_date,
         status,
+        borrower_xpub,
         lender_xpub,
         contract_address.map(|address| address.assume_checked().to_string()),
         contract_index.map(|index| index as i32),
@@ -444,16 +455,17 @@ async fn insert_contract_request(
     loan_amount: Decimal,
     duration_days: i32,
     borrower_btc_address: Address<NetworkUnchecked>,
-    borrower_pk: PublicKey,
-    borrower_loan_address: &str,
+    borrower_pk: Option<PublicKey>,
+    borrower_loan_address: Option<&str>,
     initial_collateral_sats: i64,
     origination_fee_sats: i64,
     collateral_sats: i64,
-    integration: db::Integration,
+    loan_type: db::LoanType,
     contract_version: i32,
     created_at: OffsetDateTime,
     expiry_date: OffsetDateTime,
     status: db::ContractStatus,
+    borrower_xpub: Option<Xpub>,
     lender_xpub: Xpub,
     contract_address: Option<String>,
     contract_index: Option<i32>,
@@ -478,7 +490,8 @@ async fn insert_contract_request(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
-            integration,
+            loan_type,
+            borrower_xpub,
             lender_xpub,
             contract_address,
             contract_index,
@@ -486,7 +499,7 @@ async fn insert_contract_request(
             created_at,
             expiry_date,
             interest_rate
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
         RETURNING
             id,
             lender_id,
@@ -500,7 +513,8 @@ async fn insert_contract_request(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
-            integration as "integration: crate::model::db::Integration",
+            loan_type as "loan_type: crate::model::db::LoanType",
+            borrower_xpub,
             lender_xpub,
             contract_address,
             contract_index,
@@ -526,9 +540,10 @@ async fn insert_contract_request(
         status as db::ContractStatus,
         db::LiquidationStatus::Healthy as db::LiquidationStatus,
         borrower_btc_address.assume_checked().to_string(),
-        borrower_pk.to_string(),
+        borrower_pk.map(|p| p.to_string()) as Option<String>,
         borrower_loan_address,
-        integration as db::Integration,
+        loan_type as db::LoanType,
+        borrower_xpub.map(|x| x.to_string()) as Option<String>,
         lender_xpub.to_string(),
         contract_address as Option<String>,
         contract_index as Option<i32>,
@@ -575,7 +590,8 @@ pub async fn accept_contract_request(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
-            integration as "integration: crate::model::db::Integration",
+            loan_type as "loan_type: crate::model::db::LoanType",
+            borrower_xpub,
             lender_xpub,
             contract_address,
             contract_index,
@@ -754,7 +770,8 @@ pub async fn reject_contract_request(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
-            integration as "integration: crate::model::db::Integration",
+            loan_type as "loan_type: crate::model::db::LoanType",
+            borrower_xpub,
             lender_xpub,
             contract_address,
             contract_index,
@@ -804,7 +821,8 @@ pub(crate) async fn mark_liquidation_state_as(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
-            integration as "integration: crate::model::db::Integration",
+            loan_type as "loan_type: crate::model::db::LoanType",
+            borrower_xpub,
             lender_xpub,
             contract_address,
             contract_index,
@@ -1053,7 +1071,8 @@ pub async fn update_collateral(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
-            integration as "integration: crate::model::db::Integration",
+            loan_type as "loan_type: crate::model::db::LoanType",
+            borrower_xpub,
             lender_xpub,
             contract_address,
             contract_index,

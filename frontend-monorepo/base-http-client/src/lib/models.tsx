@@ -79,8 +79,7 @@ export interface LoanFeature {
 export enum LoanProductOption {
   PayWithMoonDebitCard = "pay_with_moon",
   StableCoins = "stable_coins",
-  BringinBankAccount = "bringin_bank_account",
-  BitrefillDebitCard = "bitrefill_debit_card",
+  Fiat = "fiat",
 }
 
 export interface MeResponse {
@@ -92,4 +91,39 @@ export interface WalletBackupData {
   mnemonic_ciphertext: string;
   network: string;
   xpub: string;
+}
+
+export interface IbanTransferDetails {
+  iban: string;
+  bic?: string;
+}
+
+export interface SwiftTransferDetails {
+  swift_or_bic: string;
+  account_number: string;
+}
+
+export interface InnerFiatLoanDetails {
+  iban_transfer_details?: IbanTransferDetails;
+  swift_transfer_details?: SwiftTransferDetails;
+  bank_name: string;
+  bank_address: string;
+  bank_country: string;
+  purpose_of_remittance: string;
+  full_name: string;
+  address: string;
+  city: string;
+  post_code: string;
+  country: string;
+  comments?: string;
+}
+export interface FiatLoanDetails {
+  details: InnerFiatLoanDetails;
+  encrypted_encryption_key_borrower: string;
+  encrypted_encryption_key_lender: string;
+}
+
+export interface FiatLoanDetailsResponse {
+  details: InnerFiatLoanDetails;
+  encrypted_encryption_key: string;
 }

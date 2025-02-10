@@ -574,7 +574,7 @@ async fn post_start_upgrade_to_pake(
         })
         // Contracts that may have been funded.
         .filter(|c| c.contract_address.is_some())
-        .map(|c| c.borrower_pk)
+        .filter_map(|c| c.borrower_pk)
         .collect::<Vec<_>>();
 
     let response = Response::builder()

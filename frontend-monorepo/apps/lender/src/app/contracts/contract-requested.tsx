@@ -1,16 +1,78 @@
-import { Box, Button, Dialog, Flex, Heading, Text } from "@radix-ui/themes";
+import {
+  Box,
+  Button,
+  Callout,
+  DataList,
+  Dialog,
+  Flex,
+  Heading,
+  Text,
+} from "@radix-ui/themes";
+import { useState } from "react";
+import {
+  FiatDialogFormDetails,
+  FiatTransferDetails,
+  FiatTransferDetailsDialog,
+  LoanAsset,
+  LoanAssetHelper,
+} from "@frontend-monorepo/ui-shared";
+import { FiatLoanDetails } from "@frontend-monorepo/base-http-client";
+import { IoInformationCircleOutline } from "react-icons/io5";
 
 interface ContractRequestedProps {
   isLoading: boolean;
-  onContractApprove: () => Promise<void>;
+  onContractApprove: (fiatTransferDetails?: FiatLoanDetails) => Promise<void>;
   onContractReject: () => Promise<void>;
+  loanAsset: LoanAsset;
+  borrowerXpub: string;
 }
 
 export const ContractRequested = ({
   isLoading,
   onContractApprove,
   onContractReject,
+  loanAsset,
+  borrowerXpub,
 }: ContractRequestedProps) => {
+  const [error, setError] = useState("");
+
+  const [fiatTransferDetailsConfirmed, setFiatTransferDetailsConfirmed] =
+    useState(false);
+  const [encryptedFiatTransferDetails, setEncryptedFiatTransferDetails] =
+    useState<FiatLoanDetails | undefined>();
+  const [fiatTransferDetails, setFiatTransferDetails] =
+    useState<FiatDialogFormDetails>({
+      bankDetails: {
+        isIban: true,
+        iban: "",
+        bic: "",
+        account_number: "",
+        swift: "",
+        bankName: "",
+        bankAddress: "",
+        bankCountry: "",
+        purpose: "",
+      },
+      beneficiaryDetails: {
+        fullName: "",
+        address: "",
+        city: "",
+        zipCode: "",
+        country: "",
+        additionalComments: "",
+      },
+    });
+
+  const approveContract = async () => {
+    if (LoanAssetHelper.isFiat(loanAsset)) {
+      if (!encryptedFiatTransferDetails) {
+        setError("Banking details are required");
+        return;
+      }
+    }
+    await onContractApprove(encryptedFiatTransferDetails);
+  };
+
   return (
     <Box className="flex flex-col space-y-4">
       <Heading
@@ -20,6 +82,51 @@ export const ContractRequested = ({
       >
         Awaiting Your Remark
       </Heading>
+
+      {LoanAssetHelper.isFiat(loanAsset) && (
+        <Box>
+          <DataList.Root orientation={"vertical"}>
+            <DataList.Item>
+              <DataList.Label minWidth="88px">Repayment details</DataList.Label>
+              <DataList.Value>
+                {fiatTransferDetailsConfirmed ? (
+                  <FiatTransferDetails
+                    details={fiatTransferDetails}
+                    onConfirm={(data?: FiatLoanDetails) => {
+                      setEncryptedFiatTransferDetails(data);
+                    }}
+                    isBorrower={false}
+                    counterpartyXpub={borrowerXpub}
+                  />
+                ) : (
+                  <FiatTransferDetailsDialog
+                    formData={fiatTransferDetails}
+                    onConfirm={(data: FiatDialogFormDetails) => {
+                      setFiatTransferDetails(data);
+                      setFiatTransferDetailsConfirmed(true);
+                    }}
+                  >
+                    <Box width="100%">
+                      <Button size="2" style={{ width: "100%" }}>
+                        Add loan transfer details
+                      </Button>
+                    </Box>
+                  </FiatTransferDetailsDialog>
+                )}
+              </DataList.Value>
+            </DataList.Item>
+          </DataList.Root>
+          {/* Error message */}
+          {error && (
+            <Callout.Root color="tomato" mt={"3"}>
+              <Callout.Icon>
+                <IoInformationCircleOutline />
+              </Callout.Icon>
+              <Callout.Text>{error}</Callout.Text>
+            </Callout.Root>
+          )}
+        </Box>
+      )}
       <Text
         className={"mb-3 text-font dark:text-font-dark"}
         weight={"medium"}
@@ -35,7 +142,7 @@ export const ContractRequested = ({
               className="flex-1"
               color="green"
               loading={isLoading}
-              disabled={isLoading}
+              disabled={isLoading || !encryptedFiatTransferDetails}
               size={"3"}
             >
               Approve
@@ -63,7 +170,7 @@ export const ContractRequested = ({
                   color="green"
                   loading={isLoading}
                   disabled={isLoading}
-                  onClick={onContractApprove}
+                  onClick={approveContract}
                 >
                   Approve
                 </Button>
@@ -113,6 +220,14 @@ export const ContractRequested = ({
           </Dialog.Content>
         </Dialog.Root>
       </Box>
+      {!fiatTransferDetailsConfirmed && (
+        <Callout.Root color="orange" mt={"4"} mb={"4"}>
+          <Callout.Icon>
+            <IoInformationCircleOutline />
+          </Callout.Icon>
+          <Callout.Text>Please provide banking details</Callout.Text>
+        </Callout.Root>
+      )}
     </Box>
   );
 };

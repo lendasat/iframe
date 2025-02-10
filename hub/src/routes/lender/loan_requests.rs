@@ -1,6 +1,5 @@
 use crate::db;
-use crate::model::LoanAssetChain;
-use crate::model::LoanAssetType;
+use crate::model::LoanAsset;
 use crate::routes::borrower::auth::jwt_auth;
 use crate::routes::AppState;
 use anyhow::Context;
@@ -40,8 +39,7 @@ pub struct LoanRequest {
     #[serde(with = "rust_decimal::serde::float")]
     pub loan_amount: Decimal,
     pub duration_days: i32,
-    pub loan_asset_type: LoanAssetType,
-    pub loan_asset_chain: LoanAssetChain,
+    pub loan_asset: LoanAsset,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -92,8 +90,7 @@ pub async fn get_all_available_loan_requests(
             interest_rate: request.interest_rate,
             loan_amount: request.loan_amount,
             duration_days: request.duration_days,
-            loan_asset_type: request.loan_asset_type,
-            loan_asset_chain: request.loan_asset_chain,
+            loan_asset: request.loan_asset,
         })
     }
 

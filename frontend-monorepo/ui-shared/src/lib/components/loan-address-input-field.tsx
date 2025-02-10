@@ -5,11 +5,12 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 import type { ChangeEvent } from "react";
 import { useState } from "react";
 import { connect } from "starknetkit";
+import { LoanAsset, LoanAssetHelper } from "../models";
 
 interface LoanAddressInputFieldProps {
   loanAddress: string;
   setLoanAddress: (value: string) => void;
-  assetChain: string;
+  loanAsset: LoanAsset;
   hideButton: boolean;
   renderWarning?: boolean;
   setHideButton: (value: boolean) => void;
@@ -18,16 +19,18 @@ interface LoanAddressInputFieldProps {
 export function LoanAddressInputField({
   loanAddress,
   setLoanAddress,
-  assetChain,
+  loanAsset,
   hideButton,
   setHideButton,
   renderWarning,
 }: LoanAddressInputFieldProps) {
   const [manualInput, setManualInput] = useState(true);
 
+  const loanAssetChain = LoanAssetHelper.toChain(loanAsset);
+
   let warning = "";
   if (manualInput) {
-    warning = `Provide a valid address on the ${assetChain} network. Providing an incorrect address here will lead to loss of funds.`;
+    warning = `Provide a valid address on the ${loanAssetChain} network. Providing an incorrect address here will lead to loss of funds.`;
   }
 
   function onInputChange(e: ChangeEvent<HTMLInputElement>) {
@@ -43,9 +46,9 @@ export function LoanAddressInputField({
   };
 
   // WalletConnect extension only supports Ethereum and Ethereum-L2s... No Starknet
-  const isStarknet = assetChain.toLowerCase() === "starknet";
+  const isStarknet = loanAsset.toLowerCase() === "starknet";
   // WalletConnect does not support Solana at this point of time
-  const isSolana = assetChain.toLowerCase() === "solana";
+  const isSolana = loanAsset.toLowerCase() === "solana";
 
   return (
     <Flex direction={"column"} gap={"2"} className="w-full">

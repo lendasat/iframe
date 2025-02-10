@@ -25,7 +25,7 @@ use crate::model::UpgradeToPakeResponse;
 use crate::model::WalletBackupData;
 use crate::routes::lender::auth::jwt_auth::auth;
 use crate::routes::AppState;
-use crate::wallet::derive_lender_pk;
+use crate::wallet::derive_borrower_or_lender_pk;
 use axum::extract::Path;
 use axum::extract::State;
 use axum::http::header;
@@ -604,7 +604,7 @@ async fn post_start_upgrade_to_pake(
         .filter(|c| c.contract_address.is_some())
         .filter_map(|c| match (c.lender_xpub, c.contract_index) {
             (Some(xpub), Some(index)) => Some(
-                derive_lender_pk(&xpub, index, matches!(network, Network::Bitcoin))
+                derive_borrower_or_lender_pk(&xpub, index, matches!(network, Network::Bitcoin))
                     .expect("valid PK"),
             ),
             _ => None,

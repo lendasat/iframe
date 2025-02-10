@@ -247,18 +247,20 @@ pub async fn get_claim_collateral_psbt(
             }
 
             let mut wallet = data.wallet.lock().await;
-            let (psbt, collateral_descriptor) = wallet.create_dispute_claim_collateral_psbt(
-                contract.borrower_pk,
-                &lender_xpub,
-                contract_index,
-                collateral_outputs,
-                contract.borrower_btc_address,
-                dispute.borrower_payout_sats.expect("To be some") as u64,
-                dispute.lender_payout_sats.expect("To be some") as u64,
-                contract.origination_fee_sats,
-                query_params.fee_rate,
-                contract.contract_version,
-            )?;
+            let (psbt, collateral_descriptor, borrower_pk) = wallet
+                .create_dispute_claim_collateral_psbt(
+                    contract.borrower_xpub.as_ref(),
+                    contract.borrower_pk,
+                    &lender_xpub,
+                    contract_index,
+                    collateral_outputs,
+                    contract.borrower_btc_address,
+                    dispute.borrower_payout_sats.expect("To be some") as u64,
+                    dispute.lender_payout_sats.expect("To be some") as u64,
+                    contract.origination_fee_sats,
+                    query_params.fee_rate,
+                    contract.contract_version,
+                )?;
 
             let txid = psbt.clone().extract_tx_unchecked_fee_rate().compute_txid();
             db::transactions::insert_dispute_txid(&data.db, contract.id.as_str(), &txid).await?;
@@ -268,7 +270,7 @@ pub async fn get_claim_collateral_psbt(
             let res = ClaimCollateralPsbt {
                 psbt,
                 collateral_descriptor,
-                borrower_pk: contract.borrower_pk,
+                borrower_pk,
             };
 
             anyhow::Ok(res)

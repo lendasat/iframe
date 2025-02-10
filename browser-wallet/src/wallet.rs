@@ -23,6 +23,7 @@ use bitcoin::Psbt;
 use bitcoin::PublicKey;
 use bitcoin::Transaction;
 use hkdf::Hkdf;
+use lendasat_core::FiatLoanDetails;
 use miniscript::psbt::PsbtExt;
 use miniscript::Descriptor;
 use rand::thread_rng;
@@ -33,6 +34,8 @@ use sha2::Sha256;
 use std::str::FromStr;
 use std::sync::LazyLock;
 use std::sync::Mutex;
+
+mod fiat_loan_details;
 
 const SECRET_KEY_ENCRYPTION_NONCE: &[u8; 12] = b"SECRET_KEY!!";
 
@@ -886,6 +889,78 @@ pub(crate) fn derive_npub(xpub: String) -> Result<String> {
 
     let (public_key, _) = public_key.x_only_public_key();
     Ok(public_key.to_string())
+}
+
+/// Encrypt [`FiatLoanDetails`] so that they can be stored in the hub database.
+///
+/// The caller can decrypt them after decrypting the `encrypted_encryption_key_own` with their
+/// [`Xpriv`].
+///
+/// The counterparty can decrypt them after decrypting the `encrypted_encryption_key_lender` with
+/// their [`Xpriv`].
+///
+/// # Returns
+///
+/// - An instance of [`FiatLoanDetails`] with encrypted values in each field.
+/// - The encrypted encryption key for the caller.
+/// - The encrypted encryption key for the counterparty.
+pub fn encrypt_fiat_loan_details(
+    fiat_loan_details: &FiatLoanDetails,
+    counterparty_xpub: String,
+) -> Result<(FiatLoanDetails, String, String)> {
+    let counterparty_xpub =
+        Xpub::from_str(counterparty_xpub.as_str()).context("Invalid counterparty Xpub provided")?;
+
+    let guard = WALLET.lock().expect("to get lock");
+
+    let xprv = match *guard {
+        Some(ref wallet) => wallet.xprv,
+        None => {
+            bail!("Can't encrypt fiat loan details if wallet is not loaded");
+        }
+    };
+
+    let secp = Secp256k1::new();
+    let xpub = Xpub::from_priv(&secp, &xprv);
+
+    let (fiat_loan_details, encrypted_encryption_key_caller, encrypted_encryption_key_counterparty) =
+        fiat_loan_details::encrypt_fiat_loan_details(fiat_loan_details, &xpub, &counterparty_xpub)?;
+
+    Ok((
+        fiat_loan_details,
+        encrypted_encryption_key_caller,
+        encrypted_encryption_key_counterparty,
+    ))
+}
+
+/// Decrypt [`FiatLoanDetails`].
+///
+/// First we decrypt the `encrypted_encryption_key` using the [`Wallet`]'s `xprv`. This produces the
+/// encryption key with which to decrypt all the fields in [`FiatLoanDetails`].
+///
+/// # Returns
+///
+/// An instance of [`FiatLoanDetails`] with plaintext values in each field.
+pub fn decrypt_fiat_loan_details(
+    fiat_loan_details: &FiatLoanDetails,
+    encrypted_encryption_key: String,
+) -> Result<FiatLoanDetails> {
+    let guard = WALLET.lock().expect("to get lock");
+
+    let xprv = match *guard {
+        Some(ref wallet) => wallet.xprv,
+        None => {
+            bail!("Can't encrypt fiat loan details if wallet is not loaded");
+        }
+    };
+
+    let fiat_loan_details = fiat_loan_details::decrypt_fiat_loan_details(
+        fiat_loan_details,
+        &encrypted_encryption_key,
+        &xprv,
+    )?;
+
+    Ok(fiat_loan_details)
 }
 
 #[cfg(test)]
