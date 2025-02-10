@@ -17,6 +17,7 @@ import {
   usePrice,
 } from "@frontend-monorepo/ui-shared";
 import { Box, Button, Callout, DataList, Flex, Grid, Heading, Skeleton, Text, TextField } from "@radix-ui/themes";
+import { Link as RadixLink } from "@radix-ui/themes/dist/cjs/components/link";
 import axios from "axios";
 import { Network, validate } from "bitcoin-address-validation";
 import { useState } from "react";
@@ -357,10 +358,14 @@ export const Confirmation = ({
                   <AbbreviationExplanationInfo
                     header={"Collateral Refund Address"}
                     subHeader={""}
-                    description={"T"
-                      + "he Bitcoin address where you want your collateral returned upon loan repayment."}
+                    description={"The Bitcoin address where you want your collateral returned upon loan repayment."}
                   >
-                    <FaInfoCircle />
+                    <RadixLink
+                      href="https://faq.lendasat.com"
+                      target="_blank"
+                    >
+                      <FaInfoCircle />
+                    </RadixLink>
                   </AbbreviationExplanationInfo>
                 </Flex>
               </DataList.Label>
