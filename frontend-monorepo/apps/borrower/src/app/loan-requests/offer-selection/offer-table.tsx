@@ -23,7 +23,7 @@ import { Lender } from "../../request-loan/lender";
 
 const columnHelper = createColumnHelper<LoanOffer>();
 
-interface DataTableDemoProps {
+interface LoanOfferTableProps {
   loanOffers: LoanOffer[];
   loading: boolean;
   columnFilters: ColumnFiltersState;
@@ -33,7 +33,7 @@ interface DataTableDemoProps {
   selectedOfferId?: string;
 }
 
-export function DataTableDemo({
+export function LoanOfferTable({
   loanOffers,
   loading,
   columnFilters,
@@ -41,7 +41,7 @@ export function DataTableDemo({
   enableRowSelection,
   onOfferSelect,
   selectedOfferId,
-}: DataTableDemoProps) {
+}: LoanOfferTableProps) {
   const columns = [
     columnHelper.accessor("lender", {
       header: () => {

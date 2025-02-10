@@ -9,7 +9,7 @@ import { Form } from "react-bootstrap";
 import { useSearchParams } from "react-router-dom";
 import { useAsync } from "react-use";
 import SingleDurationSelector from "../request-loan/steps/DurationSelector";
-import { DataTableDemo } from "./offer-selection/offer-table";
+import { LoanOfferTable } from "./offer-selection/offer-table";
 
 interface OffersTableProps {
   selectedProduct?: LoanProductOption;
@@ -159,7 +159,7 @@ export const OffersSelectionTable = ({
       </Box>
 
       <Box mt={"6"}>
-        <DataTableDemo
+        <LoanOfferTable
           loading={loading}
           loanOffers={loanOffers}
           columnFilters={columnFilters}
