@@ -150,7 +150,6 @@ export const LoanRequestFlow = () => {
         <Box className="flex justify-center" mt={"6"}>
           {/* Use max-w-md to set a consistent maximum width for the form */}
           <LoanAmountAndDurationInputs
-            selectedProduct={selectedProduct}
             setLoanAmount={onSetLoanAmount}
             loanAmount={selectedLoanAmount}
             selectedLoanDuration={selectedLoanDuration}

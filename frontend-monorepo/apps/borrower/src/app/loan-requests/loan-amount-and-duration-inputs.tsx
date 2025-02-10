@@ -2,10 +2,11 @@ import { LoanProductOption } from "@frontend-monorepo/base-http-client";
 import { Box, Flex, RadioCards, Text, TextField } from "@radix-ui/themes";
 import type { ChangeEvent } from "react";
 import { Form } from "react-bootstrap";
+import Defi from "../../assets/defi.png";
+import { ReactComponent as MoonCard } from "../../assets/moon_card_satoshi_nakamoto.svg";
 import SingleDurationSelector from "../request-loan/steps/DurationSelector";
 
 interface LoanAmountAndDurationInputsProps {
-  selectedProduct?: LoanProductOption;
   setLoanAmount: (amount: string) => void;
   loanAmount?: string;
   selectedLoanDuration?: string;
@@ -15,7 +16,6 @@ interface LoanAmountAndDurationInputsProps {
 }
 
 export function LoanAmountAndDurationInputs({
-  selectedProduct,
   setLoanAmount,
   loanAmount,
   selectedLoanDuration,
@@ -40,7 +40,6 @@ export function LoanAmountAndDurationInputs({
           variant="surface"
           type="number"
           color="gray"
-          disabled={selectedProduct === undefined}
           min={1}
           onChange={onLoanAmountChange}
           className="w-full rounded-lg text-sm text-font dark:text-font-dark"
@@ -61,7 +60,7 @@ export function LoanAmountAndDurationInputs({
           <SingleDurationSelector
             selectedDuration={selectedLoanDuration ? Number.parseInt(selectedLoanDuration) : undefined}
             onDurationChange={onLoanDurationChange}
-            disabled={selectedProduct === undefined}
+            disabled={false}
           />
         </Box>
       </Flex>
@@ -83,12 +82,18 @@ export function LoanAmountAndDurationInputs({
               <Flex direction="column" width="100%">
                 <Text weight="bold">Stablecoins</Text>
                 <Text>USDC/USDT</Text>
+                <Box className="h-32 w-full mb-4 mt-2 overflow-hidden rounded-2xl flex justify-center items-center">
+                  <img src={Defi} alt="Defi" className="max-h-full max-w-full" />
+                </Box>
               </Flex>
             </RadioCards.Item>
             <RadioCards.Item value={LoanProductOption.PayWithMoonDebitCard.toString()}>
               <Flex direction="column" width="100%">
                 <Text weight="bold">Moon Visa® Card</Text>
                 <Text>A prepaid visa card</Text>
+                <Box className="h-32 w-full mb-4 mt-2 overflow-hidden rounded-2xl flex justify-center items-center">
+                  <MoonCard />
+                </Box>
               </Flex>
             </RadioCards.Item>
           </RadioCards.Root>
