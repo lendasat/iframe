@@ -213,12 +213,12 @@ export const Confirmation = ({
           </DataList.Item>
           <DataList.Item>
             <DataList.Label minWidth="88px">
-              <InterestRateInfoLabel>
-                <Flex align={"center"} gap={"2"}>
-                  Interest
+              <Flex align={"center"} gap={"2"}>
+                Interest
+                <InterestRateInfoLabel>
                   <FaInfoCircle />
-                </Flex>
-              </InterestRateInfoLabel>
+                </InterestRateInfoLabel>
+              </Flex>
             </DataList.Label>
             <DataList.Value>
               <Skeleton loading={isStillLoading}>
@@ -249,14 +249,15 @@ export const Confirmation = ({
           </DataList.Item>
           <DataList.Item>
             <DataList.Label minWidth="88px">
-              <LtvInfoLabel>
-                <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
-                  <Text className="text-xs font-medium text-font/60 dark:text-font-dark/60">
-                    Needed collateral ({(ltv * 100).toFixed(0)}% LTV)
-                  </Text>
-                  <FaInfoCircle />
+              <Flex align={"center"} gap={"2"}>
+                <Flex direction={"column"}>
+                  <p>Needed collateral</p>
+                  <Text size={"1"}>({(ltv * 100).toFixed(0)}% LTV)</Text>
                 </Flex>
-              </LtvInfoLabel>
+                <LtvInfoLabel>
+                  <FaInfoCircle />
+                </LtvInfoLabel>
+              </Flex>
             </DataList.Label>
             <DataList.Value>
               <Skeleton loading={isStillLoading}>
@@ -274,9 +275,8 @@ export const Confirmation = ({
           <DataList.Item>
             <DataList.Label minWidth="88px">
               <div className="flex flex-col">
-                <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
+                <Flex align={"center"} gap={"2"}>
                   Origination fee
-                  <FaInfoCircle />
                 </Flex>
 
                 {isDiscountedFeeApplied
@@ -310,14 +310,12 @@ export const Confirmation = ({
           </DataList.Item>
           <DataList.Item>
             <DataList.Label minWidth="88px">
-              <LiquidationPriceInfoLabel>
-                <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
-                  <Text className="text-xs font-medium text-font/60 dark:text-font-dark/60">
-                    Liquidation Price
-                  </Text>
+              <Flex align={"center"} gap={"2"}>
+                Liquidation Price
+                <LiquidationPriceInfoLabel>
                   <FaInfoCircle />
-                </Flex>
-              </LiquidationPriceInfoLabel>
+                </LiquidationPriceInfoLabel>
+              </Flex>
             </DataList.Label>
             <DataList.Value>
               <Skeleton loading={isStillLoading}>
@@ -352,22 +350,16 @@ export const Confirmation = ({
           <DataList.Root>
             <DataList.Item>
               <DataList.Label minWidth="88px">
-                <AbbreviationExplanationInfo
-                  header={"Collateral Refund Address"}
-                  subHeader={""}
-                  description={"The Bitcoin address where you want your collateral returned upon loan repayment."}
-                >
-                  <Flex gap={"2"} align={"center"}>
-                    <Text
-                      size={"2"}
-                      weight={"medium"}
-                      className={"text-xs font-medium text-font/60 dark:text-font-dark/60"}
-                    >
-                      Collateral Refund Address
-                    </Text>
+                <Flex gap={"2"} align={"center"}>
+                  Collateral Refund Address
+                  <AbbreviationExplanationInfo
+                    header={"Collateral Refund Address"}
+                    subHeader={""}
+                    description={"The Bitcoin address where you want your collateral returned upon loan repayment."}
+                  >
                     <FaInfoCircle />
-                  </Flex>
-                </AbbreviationExplanationInfo>
+                  </AbbreviationExplanationInfo>
+                </Flex>
               </DataList.Label>
               <DataList.Value>
                 {isStillLoading
