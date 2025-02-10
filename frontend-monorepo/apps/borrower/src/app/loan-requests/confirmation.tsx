@@ -25,7 +25,6 @@ import { FaInfoCircle } from "react-icons/fa";
 import { IoInformationCircleOutline } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
 import { useAsync } from "react-use";
-import EmptyResult from "../../assets/search.png";
 import { Lender } from "../request-loan/lender";
 import { MoonCardDropdown } from "../request-loan/steps/MoonCardDropdown";
 
@@ -47,21 +46,6 @@ interface ConfirmationProps {
   selectedLoanAmount?: string;
   selectedLoanDuration?: string;
 }
-
-const EmptyInfoMessage = () => {
-  return (
-    <Box minHeight={"500px"} className="flex flex-col items-center justify-center">
-      <img
-        src={EmptyResult}
-        alt="No Result"
-        className="max-w-xs"
-      />
-      <Text className="text-font/90 dark:text-font-dark/90" size={"2"} weight={"medium"}>
-        No offer selected...
-      </Text>
-    </Box>
-  );
-};
 
 export const Confirmation = ({
   selectedProduct,
@@ -207,23 +191,28 @@ export const Confirmation = ({
     }
   };
 
-  if (!selectedProduct || !selectedOfferId || !selectedLoanAmountString || !selectedLoanDurationString) {
-    return <EmptyInfoMessage />;
-  }
-
   return (
     <Grid align={"center"} columns={{ initial: "1", md: "2" }} gap="3" width="auto">
       <Box className="p-6 border border-gray-200 rounded-lg h-full">
         <Heading size="4" mb="4" className="text-font dark:text-font-dark">
-          Summary to borrow <strong>{formatCurrency(selectedLoanAmount || 0)}</strong> for{" "}
-          {getFormatedStringFromDays(selectedLoanDuration)}
+          Summary to borrow{" "}
+          <Skeleton loading={isStillLoading}>
+            <strong>{formatCurrency(selectedLoanAmount || 0)}</strong>
+          </Skeleton>{" "}
+          for{" "}
+          <Skeleton loading={isStillLoading}>
+            {getFormatedStringFromDays(selectedLoanDuration)}
+          </Skeleton>
         </Heading>
         <DataList.Root>
           <DataList.Item align="center">
             <DataList.Label minWidth="88px">Lender</DataList.Label>
             <DataList.Value className="flex-1 flex justify-end">
               {isStillLoading
-                ? <Skeleton loading={true}>Loading</Skeleton>
+                ? (
+                  <Skeleton loading={isStillLoading} width={"100px"} height={"20px"}>
+                  </Skeleton>
+                )
                 : <Lender {...selectedOffer?.lender} showAvatar={false} />}
             </DataList.Value>
           </DataList.Item>
@@ -237,30 +226,35 @@ export const Confirmation = ({
               </Flex>
             </DataList.Label>
             <DataList.Value className="flex-1 flex justify-end">
-              <Skeleton loading={isStillLoading}>
-                <div className="flex flex-col">
-                  {selectedLoanDuration !== ONE_YEAR
-                    && (
-                      <Flex gap={"2"}>
+              {isStillLoading
+                ? (
+                  <Skeleton loading={isStillLoading} width={"100px"} height={"20px"}>
+                  </Skeleton>
+                )
+                : (
+                  <div className="flex flex-col">
+                    {selectedLoanDuration !== ONE_YEAR
+                      && (
+                        <Flex gap={"2"}>
+                          <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70">
+                            {(actualInterest * 100).toFixed(2)}%
+                          </Text>
+                          <Text className="text-[11px] text-font/70 dark:text-font-dark/50 mt-0.5 self-end">
+                            ({(interestRate * 100).toFixed(1)}% p.a.)
+                          </Text>
+                        </Flex>
+                      )}
+                    {selectedLoanDuration === ONE_YEAR
+                      && (
                         <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70">
-                          {(actualInterest * 100).toFixed(2)}%
+                          {(actualInterest * 100).toFixed(2)}% p.a.
                         </Text>
-                        <Text className="text-[11px] text-font/70 dark:text-font-dark/50 mt-0.5 self-end">
-                          ({(interestRate * 100).toFixed(1)}% p.a.)
-                        </Text>
-                      </Flex>
-                    )}
-                  {selectedLoanDuration === ONE_YEAR
-                    && (
-                      <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70">
-                        {(actualInterest * 100).toFixed(2)}% p.a.
-                      </Text>
-                    )}
-                  <Text className="text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-end">
-                    ≈ {formatCurrency(actualInterestUsdAmount, 1, 1)} in total
-                  </Text>
-                </div>
-              </Skeleton>
+                      )}
+                    <Text className="text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-end">
+                      ≈ {formatCurrency(actualInterestUsdAmount, 1, 1)} in total
+                    </Text>
+                  </div>
+                )}
             </DataList.Value>
           </DataList.Item>
           <DataList.Item>
@@ -276,16 +270,21 @@ export const Confirmation = ({
               </Flex>
             </DataList.Label>
             <DataList.Value className="flex-1 flex justify-end">
-              <Skeleton loading={isStillLoading}>
-                <div className="flex flex-col">
-                  <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
-                    {collateralAmountBtc.toFixed(8)} BTC
-                  </Text>
-                  <Text className="text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-end">
-                    ≈ {formatCurrency(collateralUsdAmount)}
-                  </Text>
-                </div>
-              </Skeleton>
+              {isStillLoading
+                ? (
+                  <Skeleton loading={isStillLoading} width={"100px"} height={"20px"}>
+                  </Skeleton>
+                )
+                : (
+                  <div className="flex flex-col">
+                    <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
+                      {collateralAmountBtc.toFixed(8)} BTC
+                    </Text>
+                    <Text className="text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-end">
+                      ≈ {formatCurrency(collateralUsdAmount)}
+                    </Text>
+                  </div>
+                )}
             </DataList.Value>
           </DataList.Item>
           <DataList.Item>
@@ -304,24 +303,29 @@ export const Confirmation = ({
               </div>
             </DataList.Label>
             <DataList.Value className="flex-1 flex justify-end">
-              <Skeleton loading={isStillLoading}>
-                <div className="flex flex-col">
-                  <Text
-                    className={`text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize ${
-                      discountedFee === 1 ? "line-through" : ""
-                    }`}
-                  >
-                    {originationFeeBtc.toFixed(8)} BTC
-                  </Text>
-                  <Text
-                    className={`text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-end ${
-                      discountedFee === 1 ? "line-through" : ""
-                    }`}
-                  >
-                    ≈ {formatCurrency(originationFeeUsd)}
-                  </Text>
-                </div>
-              </Skeleton>
+              {isStillLoading
+                ? (
+                  <Skeleton loading={isStillLoading} width={"100px"} height={"20px"}>
+                  </Skeleton>
+                )
+                : (
+                  <div className="flex flex-col">
+                    <Text
+                      className={`text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize ${
+                        discountedFee === 1 ? "line-through" : ""
+                      }`}
+                    >
+                      {originationFeeBtc.toFixed(8)} BTC
+                    </Text>
+                    <Text
+                      className={`text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-end ${
+                        discountedFee === 1 ? "line-through" : ""
+                      }`}
+                    >
+                      ≈ {formatCurrency(originationFeeUsd)}
+                    </Text>
+                  </div>
+                )}
             </DataList.Value>
           </DataList.Item>
           <DataList.Item>
@@ -334,15 +338,20 @@ export const Confirmation = ({
               </Flex>
             </DataList.Label>
             <DataList.Value className="flex-1 flex justify-end">
-              <Skeleton loading={isStillLoading}>
-                <Text
-                  className={`text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize ${
-                    discountedFee === 1 ? "line-through" : ""
-                  }`}
-                >
-                  {newFormatCurrency({ value: liquidationPrice, maxFraction: 0, minFraction: 1 })}
-                </Text>
-              </Skeleton>
+              {isStillLoading
+                ? (
+                  <Skeleton loading={isStillLoading} width={"100px"} height={"20px"}>
+                  </Skeleton>
+                )
+                : (
+                  <Text
+                    className={`text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize ${
+                      discountedFee === 1 ? "line-through" : ""
+                    }`}
+                  >
+                    {newFormatCurrency({ value: liquidationPrice, maxFraction: 0, minFraction: 1 })}
+                  </Text>
+                )}
             </DataList.Value>
           </DataList.Item>
           <DataList.Item>
@@ -350,15 +359,20 @@ export const Confirmation = ({
               Coin
             </DataList.Label>
             <DataList.Value className="flex-1 flex justify-end">
-              <Skeleton loading={isStillLoading}>
-                <Text
-                  className={`text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize ${
-                    discountedFee === 1 ? "line-through" : ""
-                  }`}
-                >
-                  {selectedCoin ? StableCoinHelper.print(selectedCoin) : "Loading"}
-                </Text>
-              </Skeleton>
+              {isStillLoading
+                ? (
+                  <Skeleton loading={isStillLoading} width={"100px"} height={"20px"}>
+                  </Skeleton>
+                )
+                : (
+                  <Text
+                    className={`text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize ${
+                      discountedFee === 1 ? "line-through" : ""
+                    }`}
+                  >
+                    {selectedCoin ? StableCoinHelper.print(selectedCoin) : ""}
+                  </Text>
+                )}
             </DataList.Value>
           </DataList.Item>
         </DataList.Root>
