@@ -18,7 +18,7 @@ import {
 } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
 import { LuArrowDown, LuArrowUp, LuArrowUpDown } from "react-icons/lu";
-import { Lender } from "../../request-loan/lender";
+import { Lender } from "../lender";
 
 const MobileOfferCard = ({
   offer,

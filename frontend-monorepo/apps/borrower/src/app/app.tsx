@@ -19,8 +19,7 @@ import DashBoard from "./dashboard/dash-board";
 import ResolveDispute from "./disputes/dispute";
 import ErrorBoundary from "./ErrorBoundary";
 import History from "./History";
-import RequestLoan from "./request-loan/request-loan";
-import { RequestLoanSummary } from "./request-loan/request-loan-summary";
+import AvailableOffers from "./request-loan/available-offers";
 import Settings from "./settings/settings";
 import "../assets/styles.css";
 import type { User } from "@frontend-monorepo/base-http-client";
@@ -37,8 +36,6 @@ import BorrowerProfile from "./borrowerProfile";
 import Cards from "./cards/Cards";
 import LenderProfile from "./lenderProfile";
 import { LoanRequestFlow } from "./loan-requests/loan-request-flow";
-import CustomRequest from "./request-loan/custom-loan-request";
-import RequestLoanWizard from "./request-loan/request-loan-wizard";
 import RestrictedAccessPage from "./RestrictedAccessPage";
 
 const menuItems = [
@@ -65,14 +62,14 @@ const menuItems = [
     group: [
       {
         label: "Request Loan",
-        path: "/requests-new",
+        path: "/requests",
         icon: GoGitPullRequest,
         target: "_self",
         visible: true,
       },
       {
         label: "Available offers",
-        path: "/request-loan",
+        path: "/available-offers",
         icon: BsBank,
         target: "_self",
         visible: true,
@@ -176,8 +173,7 @@ function MainLayoutComponents() {
               <Route index element={<MyContracts />} />
               <Route path={":id"} element={<ContractDetailsOverview />} />
             </Route>
-            <Route path="/requests/*" element={<RequestLoanWizard />} />
-            <Route path="/requests-new/*" element={<LoanRequestFlow />} />
+            <Route path="/requests/*" element={<LoanRequestFlow />} />
 
             <Route
               path="/cards"
@@ -187,14 +183,12 @@ function MainLayoutComponents() {
                 </FeatureFlagProtectedRoute>
               }
             />
-            <Route path="/custom-request" element={<CustomRequest />} />
             <Route path="/history" element={<History />} />
             <Route path="/settings/*" element={<Settings />} />
             <Route path="/logout" element={<Logout />} />
             <Route path="/lender/:id" element={<LenderProfile />} />
             <Route path="/borrower/:id" element={<BorrowerProfile />} />
-            <Route path="/request-loan" element={<RequestLoan />} />
-            <Route path="/request-loan/:id" element={<RequestLoanSummary />} />
+            <Route path="/available-offers" element={<AvailableOffers />} />
             <Route path="/disputes/:id" element={<ResolveDispute />} />
             <Route path="/restricted" element={<RestrictedAccessPage />} />
             <Route path="/resetpassword/:token/:email" element={<ResetPassword />} />

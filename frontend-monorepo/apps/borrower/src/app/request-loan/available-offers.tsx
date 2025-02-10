@@ -1,13 +1,11 @@
-import type { LoanOffer } from "@frontend-monorepo/http-client-borrower";
 import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import { Box } from "@radix-ui/themes";
 import { useNavigate } from "react-router-dom";
 import { useAsync } from "react-use";
 import DashHeader from "../components/DashHeader";
 import { LoanOfferTable } from "../loan-requests/offer-selection/offer-table";
-import { TableSortBy } from "./loan-offers-filter";
 
-function RequestLoan() {
+function AvailableOffers() {
   const { getLoanOffers } = useBorrowerHttpClient();
   const navigate = useNavigate();
 
@@ -33,7 +31,7 @@ function RequestLoan() {
           enableActionColumn={true}
           onActionColumnAction={(value) => {
             navigate(
-              `/requests-new?amount=${value.loan_amount_min}&duration=${value.duration_days_min}&product=stable_coins&offer=${value.id}`,
+              `/requests?amount=${value.loan_amount_min}&duration=${value.duration_days_min}&product=stable_coins&offer=${value.id}`,
             );
           }}
         />
@@ -42,29 +40,4 @@ function RequestLoan() {
   );
 }
 
-function sortOffers(offers: LoanOffer[], sortBy: TableSortBy): LoanOffer[] {
-  return offers.sort((a, b) => {
-    let n;
-    switch (sortBy) {
-      case TableSortBy.Amount:
-        n = a.loan_amount_min - b.loan_amount_min;
-        break;
-      case TableSortBy.Ltv:
-        n = a.min_ltv - b.min_ltv;
-        break;
-      case TableSortBy.Duration:
-        n = a.duration_days_min - b.duration_days_min;
-        break;
-      case TableSortBy.Interest:
-        n = a.interest_rate - b.interest_rate;
-        break;
-      case TableSortBy.Lender:
-        n = a.lender.name.localeCompare(b.lender.name);
-        break;
-    }
-
-    return n;
-  });
-}
-
-export default RequestLoan;
+export default AvailableOffers;

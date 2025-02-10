@@ -40,8 +40,8 @@ import { FaInfoCircle } from "react-icons/fa";
 import { IoInformationCircleOutline } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
 import { useAsync } from "react-use";
-import { Lender } from "../request-loan/lender";
-import { MoonCardDropdown } from "../request-loan/steps/MoonCardDropdown";
+import { Lender } from "./lender";
+import { MoonCardDropdown } from "./MoonCardDropdown";
 
 async function isInUS(): Promise<boolean> {
   try {

@@ -4,7 +4,7 @@ import type { ChangeEvent, ReactNode } from "react";
 import { Form } from "react-bootstrap";
 import { ReactComponent as Defi } from "../../assets/defi.svg";
 import { ReactComponent as MoonCard } from "../../assets/moon_card_satoshi_nakamoto.svg";
-import SingleDurationSelector from "../request-loan/steps/DurationSelector";
+import SingleDurationSelector from "./DurationSelector";
 
 interface LoanAmountAndDurationInputsProps {
   setLoanAmount: (amount: string) => void;
