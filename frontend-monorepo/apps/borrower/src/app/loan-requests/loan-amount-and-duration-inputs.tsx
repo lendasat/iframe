@@ -81,8 +81,12 @@ export function LoanAmountAndDurationInputs({
           >
             <RadioCards.Item value={LoanProductOption.StableCoins.toString()}>
               <Flex direction="column" width="100%">
-                <Text weight="bold">Stablecoins</Text>
-                <Text>USDC/USDT</Text>
+                <Text size={"2"} weight={"bold"} className="text-font dark:text-font-dark shrink-0">
+                  Stablecoins
+                </Text>
+                <Text size={"1"} weight={"light"} className="text-font dark:text-font-dark shrink-0">
+                  USDC/USDT
+                </Text>
                 <Box className="h-32 w-full mb-4 mt-2 overflow-hidden rounded-2xl flex justify-center items-center">
                   <img src={Defi} alt="Defi" className="max-h-full max-w-full" />
                 </Box>
@@ -90,8 +94,12 @@ export function LoanAmountAndDurationInputs({
             </RadioCards.Item>
             <RadioCards.Item value={LoanProductOption.PayWithMoonDebitCard.toString()}>
               <Flex direction="column" width="100%">
-                <Text weight="bold">Moon Visa® Card</Text>
-                <Text>A prepaid visa card</Text>
+                <Text size={"2"} weight={"bold"} className="text-font dark:text-font-dark shrink-0">
+                  Moon Visa® Card
+                </Text>
+                <Text size={"1"} weight={"light"} className="text-font dark:text-font-dark shrink-0">
+                  A prepaid visa card
+                </Text>
                 <Box className="h-32 w-full mb-4 mt-2 overflow-hidden rounded-2xl flex justify-center items-center">
                   <MoonCard />
                 </Box>

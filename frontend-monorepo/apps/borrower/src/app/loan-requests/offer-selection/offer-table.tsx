@@ -328,12 +328,15 @@ export function LoanOfferTable({
                   table.getRowModel().rows.map((row) => (
                     <Table.Row
                       key={row.id}
-                      className={row.getIsSelected() ? "bg-purple-50" : ""}
+                      className={row.getIsSelected() ? "bg-purple-50 dark:purple-100" : ""}
                       onClick={row.getToggleSelectedHandler()}
                       data-state={row.getIsSelected() && "selected"}
                     >
                       {row.getVisibleCells().map((cell) => (
-                        <Table.Cell key={cell.id}>
+                        <Table.Cell
+                          key={cell.id}
+                          className={row.getIsSelected() ? "text-gray-900" : "text-font dark:text-font-dark"}
+                        >
                           {loading ? <Skeleton loading={loading}>Loading</Skeleton> : flexRender(
                             cell.column.columnDef.cell,
                             cell.getContext(),

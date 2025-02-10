@@ -322,7 +322,13 @@ export const Confirmation = ({
             </DataList.Label>
             <DataList.Value className="flex-1 flex justify-end">
               <Skeleton loading={isStillLoading}>
-                {newFormatCurrency({ value: liquidationPrice, maxFraction: 0, minFraction: 1 })}
+                <Text
+                  className={`text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize ${
+                    discountedFee === 1 ? "line-through" : ""
+                  }`}
+                >
+                  {newFormatCurrency({ value: liquidationPrice, maxFraction: 0, minFraction: 1 })}
+                </Text>
               </Skeleton>
             </DataList.Value>
           </DataList.Item>
@@ -332,7 +338,13 @@ export const Confirmation = ({
             </DataList.Label>
             <DataList.Value className="flex-1 flex justify-end">
               <Skeleton loading={isStillLoading}>
-                {selectedCoin ? StableCoinHelper.print(selectedCoin) : "Loading"}
+                <Text
+                  className={`text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize ${
+                    discountedFee === 1 ? "line-through" : ""
+                  }`}
+                >
+                  {selectedCoin ? StableCoinHelper.print(selectedCoin) : "Loading"}
+                </Text>
               </Skeleton>
             </DataList.Value>
           </DataList.Item>

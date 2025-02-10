@@ -1,5 +1,6 @@
+import { LoanProductOption } from "@frontend-monorepo/base-http-client";
 import { ONE_YEAR } from "@frontend-monorepo/ui-shared";
-import { Card, Grid } from "@radix-ui/themes";
+import { Card, Grid, RadioCards } from "@radix-ui/themes";
 import { Text } from "@radix-ui/themes";
 import { useState } from "react";
 import { IconType } from "react-icons";
@@ -30,39 +31,32 @@ const durations: Duration[] = [
 ] as const;
 
 const SingleDurationSelector: React.FC<DurationSelectorProps> = ({ onDurationChange, disabled, selectedDuration }) => {
-  const handleDurationClick = (value: AllowedDurations) => {
-    const days = durations.find(d => d.value === value)?.days ?? 0;
-    onDurationChange(days);
-  };
-
-  const getCardStyle = (value: AllowedDurations): string => {
-    const days = durations.find(d => d.value === value)?.days ?? 0;
-    if (days === selectedDuration) {
-      return "ring-2 ring-purple-700 bg-purple-100 dark:bg-gray-300";
-    }
-    return "hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-300";
+  const handleDurationClick = (value: number) => {
+    onDurationChange(value);
   };
 
   return (
     <div className="w-full max-w-3xl mx-auto">
-      <Grid columns={{ initial: "5" }} gap="4">
-        {durations.map(({ value, label, sublabel, icon: Icon }) => (
-          <Card
-            key={value}
-            className={`p-4 transition-all duration-200
-            ${disabled ? "" : "cursor-pointer " + getCardStyle(value)} `}
-            onClick={disabled
-              ? undefined
-              : () => handleDurationClick(value)}
-          >
+      <RadioCards.Root
+        value={selectedDuration?.toString()}
+        columns={{ initial: "5" }}
+        onValueChange={(e) => {
+          handleDurationClick(parseInt(e));
+        }}
+        color={"purple"}
+      >
+        {durations.map(({ value, label, days, sublabel, icon: Icon }) => (
+          <RadioCards.Item value={days.toString()}>
             <div className="flex flex-col items-center text-center space-y-2">
               <div>
-                <Text size={"2"} className="font-text dark:font-text-dark">{sublabel}</Text>
+                <Text size={"2"} className="text-font dark:text-font-dark shrink-0">
+                  {sublabel}
+                </Text>
               </div>
             </div>
-          </Card>
+          </RadioCards.Item>
         ))}
-      </Grid>
+      </RadioCards.Root>
     </div>
   );
 };
