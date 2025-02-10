@@ -70,7 +70,7 @@ export const ProductSelection = ({ onSelect, selectedOption }: ProductSelectionP
                   onSelect={onSelect}
                   option={option}
                   selectedOption={selectedOption}
-                  title={"Receive stable coins"}
+                  title={"Receive stablecoins"}
                   key={index}
                   disabled={false}
                   image={<img src={Defi} alt="Defi" className="max-h-full max-w-full" />}
