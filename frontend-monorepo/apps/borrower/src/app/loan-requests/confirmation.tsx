@@ -197,7 +197,7 @@ export const Confirmation = ({
 
   return (
     <Grid align={"center"} columns={{ initial: "1", md: "2" }} gap="3" width="auto">
-      <Box className="p-6 border border-gray-200 rounded-lg">
+      <Box className="p-6 border border-gray-200 rounded-lg h-full">
         <Heading size="4" mb="4" className="text-font dark:text-font-dark">
           Summary to borrow <strong>{formatCurrency(selectedLoanAmount || 0)}</strong> for{" "}
           {getFormatedStringFromDays(selectedLoanDuration)}
@@ -345,7 +345,7 @@ export const Confirmation = ({
           </Callout.Root>
         )}
       </Box>
-      <Box className="p-6 border border-gray-200 rounded-lg">
+      <Box className="p-6 border border-gray-200 rounded-lg h-full">
         <Flex direction={"column"} gap={"2"}>
           <DataList.Root orientation={"vertical"}>
             <DataList.Item>
