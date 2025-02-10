@@ -228,6 +228,20 @@ export function LoanOfferTable({
         },
       },
     ),
+    columnHelper.accessor(
+      row => row.kyc_link,
+      {
+        id: "requirements",
+        header: () => {
+          return ("KYC");
+        },
+        cell: ({ cell }) => {
+          return cell.getValue()
+            ? <Badge color="teal" size={"2"}>{"YES"}</Badge>
+            : <Badge color="gray" size={"2"}>{"No"}</Badge>;
+        },
+      },
+    ),
     columnHelper.display({
       id: "actions",
       header: () => {

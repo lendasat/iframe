@@ -452,7 +452,7 @@ export const Confirmation = ({
               && (
                 <DataList.Item>
                   <DataList.Label minWidth="88px">
-                    Wallet Address
+                    Loan address
                   </DataList.Label>
                   <DataList.Value className="w-full">
                     {(isStillLoading || !selectedCoin)
