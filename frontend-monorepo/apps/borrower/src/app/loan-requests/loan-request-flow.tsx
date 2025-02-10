@@ -1,6 +1,6 @@
 // Types
 import { LoanProductOption } from "@frontend-monorepo/base-http-client";
-import { ScrollArea } from "@radix-ui/themes";
+import { Box, Flex, ScrollArea } from "@radix-ui/themes";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Confirmation } from "./confirmation";
@@ -107,7 +107,7 @@ export const LoanRequestFlow = () => {
 
   return (
     <ScrollArea className="h-screen" type="always" scrollbars="vertical" ref={scrollAreaRef}>
-      <div className="container mx-auto px-4 py-8">
+      <Box className="container mx-auto py-8">
         <ProductSelection
           onSelect={(option) => {
             handleProductOptionSelect(option);
@@ -135,7 +135,7 @@ export const LoanRequestFlow = () => {
             selectedLoanDuration={selectedLoanDuration}
           />
         </div>
-      </div>
+      </Box>
     </ScrollArea>
   );
 };
