@@ -127,7 +127,7 @@ export const LoanRequestFlow = () => {
           />
         </div>
 
-        <div ref={bottomRef}>
+        <div ref={bottomRef} className={"mb-20"}>
           <Confirmation
             selectedProduct={selectedProduct}
             selectedOfferId={selectedOfferId}

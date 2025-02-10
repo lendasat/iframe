@@ -2,7 +2,7 @@
 
 import { LoanOffer } from "@frontend-monorepo/http-client-borrower";
 import { formatCurrency, getFormatedStringFromDays, StableCoinHelper } from "@frontend-monorepo/ui-shared";
-import { Badge, Button, Flex, Skeleton, Table } from "@radix-ui/themes";
+import { Badge, Box, Button, Flex, Skeleton, Table } from '@radix-ui/themes';
 import {
   ColumnFiltersState,
   createColumnHelper,
@@ -210,8 +210,8 @@ export function LoanOfferTable({
   });
 
   return (
-    <div className="w-full">
-      <div className="rounded-md border mt-4">
+    <Box className="w-full">
+      <Box className="rounded-md border mt-4">
         <Table.Root variant="surface" size={"2"} layout={"auto"}>
           <Table.Header>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -223,7 +223,7 @@ export function LoanOfferTable({
                         ? null
                         : (
                           <>
-                            <div
+                            <Box
                               {...{
                                 className: header.column.getCanSort()
                                   ? "cursor-pointer select-none"
@@ -241,7 +241,7 @@ export function LoanOfferTable({
                                   desc: <LuArrowDown />,
                                 }[header.column.getIsSorted() as string] ?? <LuArrowUpDown />}
                               </Flex>
-                            </div>
+                            </Box>
                           </>
                         )}
                     </Table.ColumnHeaderCell>
@@ -283,9 +283,9 @@ export function LoanOfferTable({
               )}
           </Table.Body>
         </Table.Root>
-      </div>
-      <div className="flex items-center justify-end space-x-2 py-4">
-        <div className="space-x-2">
+      </Box>
+      <Box className="flex items-center justify-end space-x-2 py-4">
+        <Box className="space-x-2">
           <Button
             variant="outline"
             size="2"
@@ -302,8 +302,8 @@ export function LoanOfferTable({
           >
             Next
           </Button>
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   );
 }
