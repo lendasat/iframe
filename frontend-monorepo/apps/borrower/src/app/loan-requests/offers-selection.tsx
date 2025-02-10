@@ -101,12 +101,7 @@ export const OffersSelectionTable = ({
 
   return (
     <Box className="p-6 md:p-8 ">
-      <Box>
-        <Heading as="h3" size={"6"} className="font-semibold text-font dark:text-font-dark">
-          Find a loan offer
-        </Heading>
-      </Box>
-      <Box mt="6" className="flex justify-center">
+      <Box className="flex justify-center">
         {/* Use max-w-md to set a consistent maximum width for the form */}
         <Form className="space-y-4 max-w-md">
           {/* Loan Amount */}

@@ -59,8 +59,8 @@ export const StableCoinDescriptionDialog = ({
           <Box className="max-h-72 overflow-y-scroll px-4 custom-scrollbar">
             <AlertDialog.Description size="2" className="text-pretty leading-[1.8] text-font/60 dark:text-font/60">
               <Text size={"2"} className="text-font dark:text-font-dark">
-                By picking this option, you will receive the loan amount as stablecoins to the address you selected.
-                You may receive your loan as stablecoins on various different chains including (but not limited to):
+                By picking this option, you will receive the loan amount as stablecoins to the address you selected. You
+                may receive your loan as stablecoins on various different chains including (but not limited to):
                 <ul className="list-disc ml-6">
                   {StableCoinHelper.all().map((item, index) => <li key={index}>{StableCoinHelper.print(item)}</li>)}
                 </ul>
