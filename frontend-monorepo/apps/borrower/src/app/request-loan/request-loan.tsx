@@ -1,92 +1,35 @@
 import type { LoanOffer } from "@frontend-monorepo/http-client-borrower";
 import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
-import { StableCoinHelper } from "@frontend-monorepo/ui-shared";
-import { useEffect, useState } from "react";
+import { Box } from "@radix-ui/themes";
+import { useAsync } from "react-use";
 import DashHeader from "../components/DashHeader";
-import OffersNav from "../components/OffersNav";
-import LoanOffersComponent from "./loan-offers";
-import type { LoanFilter } from "./loan-offers-filter";
+import { LoanOfferTable } from "../loan-requests/offer-selection/offer-table";
 import { TableSortBy } from "./loan-offers-filter";
 
 function RequestLoan() {
   const { getLoanOffers } = useBorrowerHttpClient();
 
-  const [loanOffers, setLoanOffers] = useState<LoanOffer[]>([]);
-  const [loanFilter, setLoanFilter] = useState<LoanFilter>({});
-  const [tableSorting, setTableSorting] = useState<TableSortBy>(TableSortBy.Amount);
-  const [isLoading, setIsLoading] = useState(false);
+  const { loading, value } = useAsync(async () => {
+    return await getLoanOffers();
+  });
 
-  useEffect(() => {
-    const fetchLoans = async () => {
-      const res = await getLoanOffers() || [];
-
-      const offers = res.filter(offer => {
-        if (loanFilter.amount) {
-          if (offer.loan_amount_min > loanFilter.amount || offer.loan_amount_max < loanFilter.amount) {
-            return false;
-          }
-        }
-        if (loanFilter.stableCoin) {
-          if (
-            StableCoinHelper.mapFromBackend(offer.loan_asset_chain, offer.loan_asset_type) !== loanFilter.stableCoin
-          ) {
-            return false;
-          }
-        }
-        if (loanFilter.ltv) {
-          if (loanFilter.ltv > offer.min_ltv * 100) {
-            return false;
-          }
-        }
-        if (loanFilter.interest) {
-          if (loanFilter.interest < offer.interest_rate * 100) {
-            return false;
-          }
-        }
-        if (loanFilter.period) {
-          if (offer.duration_days_min > loanFilter.period) {
-            return false;
-          }
-        }
-
-        return true;
-      });
-
-      const sortedOffers = sortOffers(offers, tableSorting);
-
-      setLoanOffers(sortedOffers);
-      setIsLoading(false);
-    };
-
-    setIsLoading(true);
-    fetchLoans();
-  }, [loanFilter, getLoanOffers, tableSorting]);
-
-  function onLoanOfferFilterChange(loanFilter: LoanFilter) {
-    setLoanFilter(loanFilter);
-  }
-
-  function onTableSortingChange(tableSorting: TableSortBy) {
-    setTableSorting(tableSorting);
-  }
+  const loanOffers = value || [];
 
   return (
     <div>
-      <DashHeader label="Loans" />
-      <div className="pt-3">
-        <OffersNav
-          loanFilter={loanFilter}
-          onLoanFilterChange={onLoanOfferFilterChange}
-          tableSorting={tableSorting}
-          onTableSortingChange={onTableSortingChange}
+      <DashHeader label="Available Offers" />
+      {/*TODO: re-implement filters if needed */}
+      <Box className="pt-3" px={"6"}>
+        <LoanOfferTable
+          loading={loading}
+          loanOffers={loanOffers}
+          columnFilters={[]}
+          onColumnFiltersChange={() => {}}
+          enableRowSelection={false}
+          onOfferSelect={undefined}
+          selectedOfferId={undefined}
         />
-        <div className="mt-3 overflow-hidden">
-          <LoanOffersComponent
-            loanOffers={loanOffers}
-            isLoading={isLoading}
-          />
-        </div>
-      </div>
+      </Box>
     </div>
   );
 }
