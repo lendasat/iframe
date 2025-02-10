@@ -205,7 +205,7 @@ export const Confirmation = ({
         <DataList.Root>
           <DataList.Item align="center">
             <DataList.Label minWidth="88px">Lender</DataList.Label>
-            <DataList.Value>
+            <DataList.Value className="flex-1 flex justify-end">
               {isStillLoading
                 ? <Skeleton loading={true}>Loading</Skeleton>
                 : <Lender {...selectedOffer?.lender} showAvatar={false} />}
@@ -220,7 +220,7 @@ export const Confirmation = ({
                 </InterestRateInfoLabel>
               </Flex>
             </DataList.Label>
-            <DataList.Value>
+            <DataList.Value className="flex-1 flex justify-end">
               <Skeleton loading={isStillLoading}>
                 <div className="flex flex-col">
                   {selectedLoanDuration !== ONE_YEAR
@@ -259,7 +259,7 @@ export const Confirmation = ({
                 </LtvInfoLabel>
               </Flex>
             </DataList.Label>
-            <DataList.Value>
+            <DataList.Value className="flex-1 flex justify-end">
               <Skeleton loading={isStillLoading}>
                 <div className="flex flex-col">
                   <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
@@ -287,7 +287,7 @@ export const Confirmation = ({
                   )}
               </div>
             </DataList.Label>
-            <DataList.Value>
+            <DataList.Value className="flex-1 flex justify-end">
               <Skeleton loading={isStillLoading}>
                 <div className="flex flex-col">
                   <Text
@@ -317,7 +317,7 @@ export const Confirmation = ({
                 </LiquidationPriceInfoLabel>
               </Flex>
             </DataList.Label>
-            <DataList.Value>
+            <DataList.Value className="flex-1 flex justify-end">
               <Skeleton loading={isStillLoading}>
                 {newFormatCurrency({ value: liquidationPrice, maxFraction: 0, minFraction: 1 })}
               </Skeleton>
@@ -327,7 +327,7 @@ export const Confirmation = ({
             <DataList.Label minWidth="88px">
               Coin
             </DataList.Label>
-            <DataList.Value>
+            <DataList.Value className="flex-1 flex justify-end">
               <Skeleton loading={isStillLoading}>
                 {selectedCoin ? StableCoinHelper.print(selectedCoin) : "Loading"}
               </Skeleton>
@@ -347,7 +347,7 @@ export const Confirmation = ({
       </Box>
       <Box className="p-6 border border-gray-200 rounded-lg">
         <Flex direction={"column"} gap={"2"}>
-          <DataList.Root>
+          <DataList.Root orientation={"vertical"}>
             <DataList.Item>
               <DataList.Label minWidth="88px">
                 <Flex gap={"2"} align={"center"}>
