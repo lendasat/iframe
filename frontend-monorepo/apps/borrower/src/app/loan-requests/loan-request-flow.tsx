@@ -1,6 +1,6 @@
 // Types
 import { LoanProductOption } from "@frontend-monorepo/base-http-client";
-import { Box, Flex, ScrollArea } from "@radix-ui/themes";
+import { Box, ScrollArea } from "@radix-ui/themes";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Confirmation } from "./confirmation";
@@ -101,7 +101,7 @@ export const LoanRequestFlow = () => {
     }
 
     setTimeout(() => {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      scrollToElement(bottomRef);
     }, 100);
   };
 
