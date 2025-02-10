@@ -2,7 +2,7 @@ import { faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { LoanProductOption } from "@frontend-monorepo/base-http-client";
 import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
-import { Box, Callout, Heading, Text, TextField } from "@radix-ui/themes";
+import { Box, Callout, Flex, Heading, Text, TextField } from "@radix-ui/themes";
 import { ColumnFiltersState } from "@tanstack/react-table";
 import { type ChangeEvent, useState } from "react";
 import { Form } from "react-bootstrap";
@@ -106,11 +106,12 @@ export const OffersSelectionTable = ({
           Find a loan offer
         </Heading>
       </Box>
-      <Box mt={"7"}>
-        <Form className="space-y-4">
+      <Box mt="6" className="flex justify-center">
+        {/* Use max-w-md to set a consistent maximum width for the form */}
+        <Form className="space-y-4 max-w-md">
           {/* Loan Amount */}
-          <Box className="space-y-1">
-            <Text className="text-font/70 dark:text-font-dark/70" as="label" size={"2"} weight={"medium"}>
+          <Flex direction="column" gap="1" className="w-full">
+            <Text className="text-font dark:text-font-dark" as="label" size={"2"} weight={"medium"}>
               How much do you wish to borrow?
             </Text>
             <TextField.Root
@@ -128,45 +129,47 @@ export const OffersSelectionTable = ({
                 <Text size={"3"} weight={"medium"}>$</Text>
               </TextField.Slot>
             </TextField.Root>
-          </Box>
+          </Flex>
 
           {/* Loan Duration */}
-          <Box className="space-y-1">
-            <Text className="text-font/70 dark:text-font-dark/70" as="label" size={"2"} weight={"medium"}>
+          <Flex direction="column" gap="1" className="w-full">
+            <Text className="text-font dark:text-font-dark" as="label" size={"2"} weight={"medium"}>
               For how long do you want to borrow?
             </Text>
+            <Box className="w-full">
+              <SingleDurationSelector
+                selectedDuration={selectedLoanDuration ? Number.parseInt(selectedLoanDuration) : undefined}
+                onDurationChange={handleDurationChange}
+                disabled={selectedProduct === undefined}
+              />
+            </Box>
+          </Flex>
 
-            <SingleDurationSelector
-              selectedDuration={selectedLoanDuration ? Number.parseInt(selectedLoanDuration) : undefined}
-              onDurationChange={handleDurationChange}
-              disabled={selectedProduct === undefined}
-            />
-          </Box>
-
-          {loadingError
-            && (
-              <Callout.Root color="red" className="w-full">
-                <Callout.Icon>
-                  <FontAwesomeIcon icon={faWarning} />
-                </Callout.Icon>
-                <Callout.Text>
-                  {loadingError.message}
-                </Callout.Text>
-              </Callout.Root>
-            )}
+          {loadingError && (
+            <Callout.Root color="red" className="w-full">
+              <Callout.Icon>
+                <FontAwesomeIcon icon={faWarning} />
+              </Callout.Icon>
+              <Callout.Text>
+                {loadingError.message}
+              </Callout.Text>
+            </Callout.Root>
+          )}
         </Form>
       </Box>
 
-      <DataTableDemo
-        loading={loading}
-        loanOffers={loanOffers}
-        columnFilters={columnFilters}
-        onColumnFiltersChange={setColumnFilters}
-        enableRowSelection={selectedProduct !== undefined && selectedLoanAmount !== undefined
-          && selectedLoanDuration !== undefined}
-        onOfferSelect={onOfferSelect}
-        selectedOfferId={selectedOfferId}
-      />
+      <Box mt={"6"}>
+        <DataTableDemo
+          loading={loading}
+          loanOffers={loanOffers}
+          columnFilters={columnFilters}
+          onColumnFiltersChange={setColumnFilters}
+          enableRowSelection={selectedProduct !== undefined && selectedLoanAmount !== undefined
+            && selectedLoanDuration !== undefined}
+          onOfferSelect={onOfferSelect}
+          selectedOfferId={selectedOfferId}
+        />
+      </Box>
     </Box>
   );
 };
