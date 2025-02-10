@@ -49,7 +49,7 @@ export function LoanAddressInputField({
   const isSolana = assetChain.toLowerCase() === "solana";
 
   return (
-    <Flex direction={"column"} gap={"2"}>
+    <Flex direction={"column"} gap={"2"} className="w-full">
       {warning && renderWarning
         && (
           <Box>
