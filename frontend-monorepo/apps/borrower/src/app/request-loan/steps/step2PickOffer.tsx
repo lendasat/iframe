@@ -32,7 +32,6 @@ import { FaInfoCircle } from "react-icons/fa";
 import { FaInfo } from "react-icons/fa6";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAsync } from "react-use";
-import EmptyResult from "../../../assets/search.png";
 import { Lender } from "../lender";
 import SingleDurationSelector from "./DurationSelector";
 import { MoonCardDropdown } from "./MoonCardDropdown";
@@ -643,11 +642,6 @@ export const Step2PickOffer = () => {
             )
             : (
               <Box minHeight={"500px"} className="flex flex-col items-center justify-center">
-                <img
-                  src={EmptyResult}
-                  alt="No Result"
-                  className="max-w-xs"
-                />
                 <Text className="text-font/90 dark:text-font-dark/90" size={"2"} weight={"medium"}>
                   No offers found for these inputs...
                 </Text>

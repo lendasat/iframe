@@ -1,6 +1,7 @@
 import type { LoanOffer } from "@frontend-monorepo/http-client-borrower";
 import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import { Box } from "@radix-ui/themes";
+import { useNavigate } from "react-router-dom";
 import { useAsync } from "react-use";
 import DashHeader from "../components/DashHeader";
 import { LoanOfferTable } from "../loan-requests/offer-selection/offer-table";
@@ -8,6 +9,7 @@ import { TableSortBy } from "./loan-offers-filter";
 
 function RequestLoan() {
   const { getLoanOffers } = useBorrowerHttpClient();
+  const navigate = useNavigate();
 
   const { loading, value } = useAsync(async () => {
     return await getLoanOffers();
@@ -26,8 +28,14 @@ function RequestLoan() {
           columnFilters={[]}
           onColumnFiltersChange={() => {}}
           enableRowSelection={false}
-          onOfferSelect={undefined}
+          onOfferSelect={() => {}}
           selectedOfferId={undefined}
+          enableActionColumn={true}
+          onActionColumnAction={(value) => {
+            navigate(
+              `/requests-new?amount=${value.loan_amount_min}&duration=${value.duration_days_min}&product=stable_coins&offer=${value.id}`,
+            );
+          }}
         />
       </Box>
     </div>

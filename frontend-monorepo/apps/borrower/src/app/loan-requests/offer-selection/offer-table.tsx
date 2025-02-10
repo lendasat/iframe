@@ -16,8 +16,7 @@ import {
   useReactTable,
   VisibilityState,
 } from "@tanstack/react-table";
-import * as React from "react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { LuArrowDown, LuArrowUp, LuArrowUpDown } from "react-icons/lu";
 import { Lender } from "../../request-loan/lender";
 
@@ -26,11 +25,15 @@ const MobileOfferCard = ({
   loading,
   selected,
   onClick,
+  enableActionColumn,
+  onActionColumnAction,
 }: {
   offer: LoanOffer;
   loading: boolean;
   selected: boolean;
   onClick: (id: string) => void;
+  enableActionColumn?: boolean;
+  onActionColumnAction?: (offer: LoanOffer) => void;
 }) => {
   return (
     <Box
@@ -87,6 +90,17 @@ const MobileOfferCard = ({
             </Badge>
           </DataList.Value>
         </DataList.Item>
+        {(enableActionColumn && onActionColumnAction)
+          && (
+            <DataList.Item align="center">
+              <DataList.Label minWidth="88px">Pick</DataList.Label>
+              <DataList.Value className="flex-1 flex justify-end">
+                <Skeleton loading={loading}>
+                  <Button onClick={() => onActionColumnAction(offer)}>Select</Button>
+                </Skeleton>
+              </DataList.Value>
+            </DataList.Item>
+          )}
       </DataList.Root>
     </Box>
   );
@@ -102,6 +116,8 @@ interface LoanOfferTableProps {
   enableRowSelection: boolean;
   onOfferSelect?: (offerId: string) => void;
   selectedOfferId?: string;
+  enableActionColumn?: boolean;
+  onActionColumnAction?: (offer: LoanOffer) => void;
 }
 
 export function LoanOfferTable({
@@ -112,8 +128,10 @@ export function LoanOfferTable({
   enableRowSelection,
   onOfferSelect,
   selectedOfferId,
+  enableActionColumn,
+  onActionColumnAction,
 }: LoanOfferTableProps) {
-  const columns = [
+  let columns = [
     columnHelper.accessor("lender", {
       header: () => {
         return "Lender";
@@ -210,6 +228,23 @@ export function LoanOfferTable({
         },
       },
     ),
+    columnHelper.display({
+      id: "actions",
+      header: () => {
+        return "Pick";
+      },
+      cell: (props) => (
+        <Button
+          onClick={() => {
+            onActionColumnAction ? onActionColumnAction(props.row.original as LoanOffer) : undefined;
+          }}
+        >
+          Select
+        </Button>
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    }),
   ];
 
   const data = useMemo(() => {
@@ -239,10 +274,10 @@ export function LoanOfferTable({
     return loanOffers;
   }, [loanOffers]);
 
-  const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({ "actions": enableActionColumn || false });
 
-  const rowSelection = React.useMemo(() => {
+  const rowSelection = useMemo(() => {
     return selectedOfferId ? { [selectedOfferId]: true } : {};
   }, [selectedOfferId]);
 
@@ -308,10 +343,13 @@ export function LoanOfferTable({
                                     header.column.columnDef.header,
                                     header.getContext(),
                                   )}
-                                  {{
-                                    asc: <LuArrowUp />,
-                                    desc: <LuArrowDown />,
-                                  }[header.column.getIsSorted() as string] ?? <LuArrowUpDown />}
+
+                                  {header.column.getCanSort()
+                                    ? {
+                                      asc: <LuArrowUp />,
+                                      desc: <LuArrowDown />,
+                                    }[header.column.getIsSorted() as string] ?? <LuArrowUpDown />
+                                    : undefined}
                                 </Flex>
                               </Box>
                             </>
@@ -381,6 +419,8 @@ export function LoanOfferTable({
                   loading={loading}
                   selected={row.getIsSelected()}
                   onClick={(id) => enableRowSelection && onOfferSelect ? onOfferSelect(id) : undefined}
+                  enableActionColumn={enableActionColumn}
+                  onActionColumnAction={onActionColumnAction}
                 />
               ))
             )
