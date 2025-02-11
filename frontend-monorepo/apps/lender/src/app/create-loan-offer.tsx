@@ -408,7 +408,7 @@ const CreateLoanOffer: FC = () => {
                 {/* Stable Coin */}
                 <Box className="space-y-1">
                   <Text as="label" size={"2"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">
-                    Stable Coins
+                    Stablecoins
                   </Text>
                   <Grid align={"center"} columns={{ initial: "1", md: "3" }} gap="3" width="auto">
                     {StableCoinHelper.all().map((coin) => (
