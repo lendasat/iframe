@@ -21,6 +21,15 @@ import { useMemo, useState } from "react";
 import { LuArrowDown, LuArrowUp, LuArrowUpDown } from "react-icons/lu";
 import { Lender } from "../lender";
 
+interface DurationRange {
+  min: number;
+  max: number;
+}
+interface AmountRange {
+  min: number;
+  max: number;
+}
+
 const MobileOfferCard = ({
   offer,
   loading,
@@ -146,20 +155,20 @@ export function LoanOfferTable({
       row => ({
         min: row.loan_amount_min,
         max: row.loan_amount_max,
-      }),
-      // row => `${formatCurrency(row.loan_amount_min)} - ${formatCurrency(row.loan_amount_max)}`,
+      } as AmountRange), // Adding 'as const' to preserve literal types
       {
         id: "amount",
         header: () => {
           return "Amount";
         },
         cell: ({ cell }) => {
-          return <>{formatCurrency(cell.getValue().min)} - {formatCurrency(cell.getValue().max)}</>;
+          const value = cell.getValue() as AmountRange;
+          return <>{formatCurrency(value.min)} - {formatCurrency(value.max)}</>;
         },
         filterFn: (row: Row<LoanOffer>, columnId: string, filterValue: string) => {
           if (!filterValue) return true;
 
-          const duration = row.getValue(columnId);
+          const duration = row.getValue(columnId) as AmountRange;
           const min = duration.min;
           const max = duration.max;
 
@@ -172,22 +181,21 @@ export function LoanOfferTable({
       row => ({
         min: row.duration_days_min,
         max: row.duration_days_max,
-      }),
+      } satisfies DurationRange),
       {
         id: "duration",
         header: () => {
           return "Duration";
         },
         cell: ({ cell }) => {
-          return (
-            <>{getFormatedStringFromDays(cell.getValue().min)} - {getFormatedStringFromDays(cell.getValue().max)}</>
-          );
+          const value = cell.getValue() as DurationRange;
+          return <>{getFormatedStringFromDays(value.min)} - {getFormatedStringFromDays(value.max)}</>;
         },
         enableColumnFilter: true,
-        filterFn: (row: Row<{ min: number; max: number }>, columnId: string, filterValue: string) => {
+        filterFn: (row: Row<LoanOffer>, columnId: string, filterValue: string) => {
           if (!filterValue) return true;
 
-          const duration = row.getValue(columnId);
+          const duration = row.getValue(columnId) as DurationRange;
           const min = duration.min;
           const max = duration.max;
 
