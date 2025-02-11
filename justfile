@@ -16,7 +16,18 @@ deps:
 ## ------------------------
 
 fmt:
+    just fmt-dprint
+    just fmt-frontend
+
+fmt-dprint:
     dprint fmt
+
+fmt-frontend:
+    #!/usr/bin/env bash
+    set -euxo pipefail
+    cd frontend-monorepo
+    npx prettier . --write
+
 
 clippy:
     cargo clippy --all-targets --all-features -- -D warnings

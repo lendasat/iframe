@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 jobs:
-  formatting-dprint:
+  formatting:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,6 +21,19 @@ jobs:
         with:
           components: rustfmt
       - uses: dprint/check@v2.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.17.0
+      - name: ensure npm version
+        run:
+          npm install -g npm@11.1.0
+      - name: Run frontend prettier
+        working-directory: frontend-monorepo
+        run: |
+          node --version
+          npm --version
+          npx --version
+          npx prettier --check .
 
   lint-commits:
     runs-on: ubuntu-latest

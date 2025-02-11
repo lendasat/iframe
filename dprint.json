@@ -9,12 +9,13 @@
   "toml": {},
   "dockerfile": {},
   "includes": [
-    "**/*.{rs,json,md,toml,dockerfile,yml,yaml,css,tsx}"
+    "**/*.{rs,json,md,toml,dockerfile,yml,yaml}"
   ],
   "typescript": {
   },
   "excludes": [
-    "**/target"
+    "**/target",
+    "frontend-monorepo"
   ],
   "exec": {
     "commands": [
