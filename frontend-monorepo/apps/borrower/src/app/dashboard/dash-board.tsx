@@ -1,7 +1,20 @@
-import { Contract, ContractStatus, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
+import {
+  Contract,
+  ContractStatus,
+  useBorrowerHttpClient,
+} from "@frontend-monorepo/http-client-borrower";
 import { formatCurrency } from "@frontend-monorepo/ui-shared";
 import { ExternalLinkIcon, InfoCircledIcon } from "@radix-ui/react-icons";
-import { Box, Button, Callout, Grid, Heading, Skeleton, Tabs, Text } from "@radix-ui/themes";
+import {
+  Box,
+  Button,
+  Callout,
+  Grid,
+  Heading,
+  Skeleton,
+  Tabs,
+  Text,
+} from "@radix-ui/themes";
 import type { HTMLAttributeAnchorTarget } from "react";
 import { useEffect, useState } from "react";
 import type { IconType } from "react-icons";
@@ -10,7 +23,10 @@ import { IoWalletOutline } from "react-icons/io5";
 import { RiCustomerService2Fill } from "react-icons/ri";
 import { Link, useNavigate } from "react-router-dom";
 import { useAsync } from "react-use";
-import type { ColumnFilter, ColumnFilterKey } from "../contracts/contract-details-table";
+import type {
+  ColumnFilter,
+  ColumnFilterKey,
+} from "../contracts/contract-details-table";
 import { ContractDetailsTable } from "../contracts/contract-details-table";
 
 interface ContractOverviewProps {
@@ -18,7 +34,10 @@ interface ContractOverviewProps {
   contractStatusFilter: ContractStatus[];
 }
 
-const ContractOverview = ({ contracts: unfilteredContracts, contractStatusFilter }: ContractOverviewProps) => {
+const ContractOverview = ({
+  contracts: unfilteredContracts,
+  contractStatusFilter,
+}: ContractOverviewProps) => {
   const shownColumns: ColumnFilter = {
     updatedAt: true,
     amount: true,
@@ -30,41 +49,44 @@ const ContractOverview = ({ contracts: unfilteredContracts, contractStatusFilter
     action: true,
   };
 
-  const [sortByColumn, setSortByColumn] = useState<ColumnFilterKey>("updatedAt");
+  const [sortByColumn, setSortByColumn] =
+    useState<ColumnFilterKey>("updatedAt");
   const [sortAsc, setSortAsc] = useState(false);
 
-  const contracts = unfilteredContracts.filter((contract) => {
-    return contractStatusFilter.includes(contract.status);
-  }).sort((a, b) => {
-    let dif;
-    switch (sortByColumn) {
-      case "updatedAt":
-        dif = a.updated_at.getTime() - b.updated_at.getTime();
-        break;
-      case "amount":
-        dif = a.loan_amount - b.loan_amount;
-        break;
-      case "expiry":
-        dif = a.expiry.getTime() - b.expiry.getTime();
-        break;
-      case "interest":
-        dif = a.interest_rate - b.interest_rate;
-        break;
-      case "ltv":
-        // TODO: this is wrong, we should calculate the current LTV
-        dif = a.initial_ltv - b.initial_ltv;
-        break;
-      case "collateral":
-        dif = a.collateral_sats - b.collateral_sats;
-        break;
-      case "status":
-      case "action":
-      default:
-        dif = a.status.localeCompare(b.status);
-        break;
-    }
-    return sortAsc ? dif : -dif;
-  });
+  const contracts = unfilteredContracts
+    .filter((contract) => {
+      return contractStatusFilter.includes(contract.status);
+    })
+    .sort((a, b) => {
+      let dif;
+      switch (sortByColumn) {
+        case "updatedAt":
+          dif = a.updated_at.getTime() - b.updated_at.getTime();
+          break;
+        case "amount":
+          dif = a.loan_amount - b.loan_amount;
+          break;
+        case "expiry":
+          dif = a.expiry.getTime() - b.expiry.getTime();
+          break;
+        case "interest":
+          dif = a.interest_rate - b.interest_rate;
+          break;
+        case "ltv":
+          // TODO: this is wrong, we should calculate the current LTV
+          dif = a.initial_ltv - b.initial_ltv;
+          break;
+        case "collateral":
+          dif = a.collateral_sats - b.collateral_sats;
+          break;
+        case "status":
+        case "action":
+        default:
+          dif = a.status.localeCompare(b.status);
+          break;
+      }
+      return sortAsc ? dif : -dif;
+    });
 
   function toggleSortByColumn(column: ColumnFilterKey) {
     setSortByColumn(column);
@@ -105,28 +127,35 @@ function DashBoard() {
 
   const totalLoanAmount = contracts
     ? contracts
-      .filter((loan) => loan.status === ContractStatus.PrincipalGiven)
-      .map((loan) => loan.loan_amount)
-      .reduce((sum, amount) => sum + amount, 0)
+        .filter((loan) => loan.status === ContractStatus.PrincipalGiven)
+        .map((loan) => loan.loan_amount)
+        .reduce((sum, amount) => sum + amount, 0)
     : 0;
 
   // All the loans that were at least approved by the lender.
-  const totalLoans = contracts?.filter((loan) =>
-    loan.status !== ContractStatus.Rejected && loan.status !== ContractStatus.RequestExpired
-    && loan.status !== ContractStatus.Cancelled
+  const totalLoans = contracts?.filter(
+    (loan) =>
+      loan.status !== ContractStatus.Rejected &&
+      loan.status !== ContractStatus.RequestExpired &&
+      loan.status !== ContractStatus.Cancelled,
   ).length;
 
-  const totalActiveLoans =
-    contracts.filter((loan) =>
-      loan.status !== ContractStatus.Requested && loan.status !== ContractStatus.Approved
-      && loan.status !== ContractStatus.CollateralSeen && loan.status !== ContractStatus.Rejected
-      && loan.status !== ContractStatus.RequestExpired && loan.status !== ContractStatus.Cancelled
-      && loan.status !== ContractStatus.Closed && loan.status !== ContractStatus.Closing
-    ).length;
+  const totalActiveLoans = contracts.filter(
+    (loan) =>
+      loan.status !== ContractStatus.Requested &&
+      loan.status !== ContractStatus.Approved &&
+      loan.status !== ContractStatus.CollateralSeen &&
+      loan.status !== ContractStatus.Rejected &&
+      loan.status !== ContractStatus.RequestExpired &&
+      loan.status !== ContractStatus.Cancelled &&
+      loan.status !== ContractStatus.Closed &&
+      loan.status !== ContractStatus.Closing,
+  ).length;
 
-  const contractsWithActionNeeded = contracts.filter((loan) =>
-    loan.status === ContractStatus.Approved
-    || loan.status === ContractStatus.RepaymentConfirmed
+  const contractsWithActionNeeded = contracts.filter(
+    (loan) =>
+      loan.status === ContractStatus.Approved ||
+      loan.status === ContractStatus.RepaymentConfirmed,
   );
   const needsAction = contractsWithActionNeeded.length > 0;
 
@@ -154,10 +183,25 @@ function DashBoard() {
           }}
           className="bg-white dark:bg-dark-700 rounded-2xl p-5 min-h-72 h-full"
         >
-          <Text as="p" weight={"medium"} className="text-font dark:text-font-dark" size={"3"}>Open Contracts</Text>
+          <Text
+            as="p"
+            weight={"medium"}
+            className="text-font dark:text-font-dark"
+            size={"3"}
+          >
+            Open Contracts
+          </Text>
           {/*Total Loan Received*/}
-          <Heading size={"8"} mt={"3"} className="text-font dark:text-font-dark">
-            {loading ? <Skeleton>$756,809.32</Skeleton> : formatCurrency(totalLoanAmount)}
+          <Heading
+            size={"8"}
+            mt={"3"}
+            className="text-font dark:text-font-dark"
+          >
+            {loading ? (
+              <Skeleton>$756,809.32</Skeleton>
+            ) : (
+              formatCurrency(totalLoanAmount)
+            )}
           </Heading>
 
           <Grid
@@ -170,7 +214,13 @@ function DashBoard() {
               <Heading className="text-font dark:text-font-dark" size={"6"}>
                 {loading ? <Skeleton>6</Skeleton> : totalLoans}
               </Heading>
-              <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">All Contracts</Text>
+              <Text
+                size={"2"}
+                weight={"medium"}
+                className="text-font/70 dark:text-font-dark/70"
+              >
+                All Contracts
+              </Text>
             </Box>
 
             <Box className="border border-font/10 dark:border-font-dark/20 rounded-xl py-2 px-3">
@@ -178,7 +228,13 @@ function DashBoard() {
               <Heading className="text-font dark:text-font-dark" size={"6"}>
                 {loading ? <Skeleton>2</Skeleton> : totalActiveLoans}
               </Heading>
-              <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">Open Contracts</Text>
+              <Text
+                size={"2"}
+                weight={"medium"}
+                className="text-font/70 dark:text-font-dark/70"
+              >
+                Open Contracts
+              </Text>
             </Box>
           </Grid>
         </Box>
@@ -196,28 +252,37 @@ function DashBoard() {
           className="bg-white dark:bg-dark-700 rounded-2xl p-5 min-h-72 h-full"
         >
           {/* Quick action buttons */}
-          <Text as="p" weight={"medium"} className="text-font dark:text-font-dark" size={"3"}>Quick Actions</Text>
-          <Grid columns={{ initial: "2", sm: "4" }} width="auto" className="gap-y-5 gap-x-8 px-3 mt-5 mb-4">
-            {!hasMnemonicBackedUp
-              ? (
-                <QuickLinks
-                  Icon={IoWalletOutline}
-                  url="/settings/wallet"
-                  iconStyle="bg-purple-100 dark:bg-purple-800"
-                  label="Create Backup"
-                  target={"_self"}
-                  isPulsing={true}
-                />
-              )
-              : (
-                <QuickLinks
-                  Icon={BsTicketPerforatedFill}
-                  url="/requests"
-                  iconStyle="bg-purple-100 dark:bg-purple-800"
-                  label="Request Loan"
-                  target={"_self"}
-                />
-              )}
+          <Text
+            as="p"
+            weight={"medium"}
+            className="text-font dark:text-font-dark"
+            size={"3"}
+          >
+            Quick Actions
+          </Text>
+          <Grid
+            columns={{ initial: "2", sm: "4" }}
+            width="auto"
+            className="gap-y-5 gap-x-8 px-3 mt-5 mb-4"
+          >
+            {!hasMnemonicBackedUp ? (
+              <QuickLinks
+                Icon={IoWalletOutline}
+                url="/settings/wallet"
+                iconStyle="bg-purple-100 dark:bg-purple-800"
+                label="Create Backup"
+                target={"_self"}
+                isPulsing={true}
+              />
+            ) : (
+              <QuickLinks
+                Icon={BsTicketPerforatedFill}
+                url="/requests"
+                iconStyle="bg-purple-100 dark:bg-purple-800"
+                label="Request Loan"
+                target={"_self"}
+              />
+            )}
             <QuickLinks
               Icon={IoWalletOutline}
               url="/my-contracts"
@@ -246,7 +311,8 @@ function DashBoard() {
                 <InfoCircledIcon />
               </Callout.Icon>
               <Callout.Text>
-                For your security, please create a backup of your wallet before proceeding.
+                For your security, please create a backup of your wallet before
+                proceeding.
               </Callout.Text>
             </Callout.Root>
           )}
@@ -263,7 +329,14 @@ function DashBoard() {
           }}
           className="bg-white dark:bg-dark-700 rounded-2xl p-5 min-h-72 h-full"
         >
-          <Text as="p" weight={"medium"} className="text-font dark:text-font-dark" size={"3"}>Contracts</Text>
+          <Text
+            as="p"
+            weight={"medium"}
+            className="text-font dark:text-font-dark"
+            size={"3"}
+          >
+            Contracts
+          </Text>
 
           <Tabs.Root defaultValue={needsAction ? "actionNeeded" : "open"}>
             <Tabs.List size="2" color="blue" className="flex justify-between">
@@ -271,22 +344,36 @@ function DashBoard() {
                 <Tabs.Trigger
                   value="actionNeeded"
                   className={`text-font dark:text-font-dark px-4 py-2 rounded-t-lg relative ${
-                    needsAction ? "animate-pulse bg-red-100 dark:bg-red-900/30" : ""
+                    needsAction
+                      ? "animate-pulse bg-red-100 dark:bg-red-900/30"
+                      : ""
                   } transition-colors`}
                 >
                   {needsAction && (
                     <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75">
-                      </span>
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
                     </span>
                   )}
                   Action Required
                 </Tabs.Trigger>
-                <Tabs.Trigger className="text-font dark:text-font-dark" value="open">Open</Tabs.Trigger>
-                <Tabs.Trigger className="text-font dark:text-font-dark" value="closed">Closed</Tabs.Trigger>
+                <Tabs.Trigger
+                  className="text-font dark:text-font-dark"
+                  value="open"
+                >
+                  Open
+                </Tabs.Trigger>
+                <Tabs.Trigger
+                  className="text-font dark:text-font-dark"
+                  value="closed"
+                >
+                  Closed
+                </Tabs.Trigger>
               </div>
-              <Tabs.Trigger value="all" onClick={() => navigate("/my-contracts")}>
+              <Tabs.Trigger
+                value="all"
+                onClick={() => navigate("/my-contracts")}
+              >
                 <div className="flex items-center gap-1">
                   <Text size={"3"} weight={"bold"}>
                     All
@@ -351,7 +438,14 @@ function DashBoard() {
 
 export default DashBoard;
 
-const QuickLinks = ({ label, Icon, iconStyle, url, target, isPulsing }: {
+const QuickLinks = ({
+  label,
+  Icon,
+  iconStyle,
+  url,
+  target,
+  isPulsing,
+}: {
   Icon: IconType;
   label: string;
   iconStyle: string;
@@ -384,7 +478,9 @@ const QuickLinks = ({ label, Icon, iconStyle, url, target, isPulsing }: {
           >
             <Icon size={"20"} className={isPulsing ? "text-red-500" : ""} />
           </Box>
-          <Text size={"2"} weight={"medium"}>{label}</Text>
+          <Text size={"2"} weight={"medium"}>
+            {label}
+          </Text>
         </Link>
       </Button>
     </div>

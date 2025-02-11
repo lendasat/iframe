@@ -7,7 +7,9 @@ export interface InterestRateInfoLabelProps {
   children?: ReactNode;
 }
 
-export function InterestRateInfoLabel({ children }: InterestRateInfoLabelProps) {
+export function InterestRateInfoLabel({
+  children,
+}: InterestRateInfoLabelProps) {
   return (
     <AbbreviationExplanationInfo
       header={"Actual Interest Rate"}
@@ -15,13 +17,8 @@ export function InterestRateInfoLabel({ children }: InterestRateInfoLabelProps) 
 For example, given a $1000 loan and a yearly interest rate of 12%, the monthly interest rate is 1%.
 For a loan duration of 5 months, this amounts to $50 interest. Thus the borrower owes a total of $1050.`}
     >
-      <RadixLink
-        href="https://faq.lendasat.com"
-        target="_blank"
-      >
-        <Flex gap={"2"}>
-          {children}
-        </Flex>
+      <RadixLink href="https://faq.lendasat.com" target="_blank">
+        <Flex gap={"2"}>{children}</Flex>
       </RadixLink>
     </AbbreviationExplanationInfo>
   );

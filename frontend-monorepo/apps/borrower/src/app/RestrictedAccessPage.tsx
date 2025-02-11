@@ -13,16 +13,20 @@ const RestrictedAccessPage = () => {
         </div>
 
         <div className="space-y-4">
-          <h1 className="text-4xl font-bold text-font dark:text-font-dark">Access Restricted</h1>
+          <h1 className="text-4xl font-bold text-font dark:text-font-dark">
+            Access Restricted
+          </h1>
           <p className="text-xl text-font dark:text-font-dark">
-            You do not have access to this feature yet. If you want early access, please reach out to us via{" "}
+            You do not have access to this feature yet. If you want early
+            access, please reach out to us via{" "}
             <Link
               className="text-font/70 dark:text-font-dark/70 hover:text-purple-800 dark:hover:text-purple-300"
               to={"https://discord.gg/a5MP7yZDpQ"}
               target={"_blank"}
             >
               Discord
-            </Link>.
+            </Link>
+            .
           </p>
         </div>
 

@@ -12,7 +12,11 @@ export function LenderProfile() {
     <Suspense>
       <Await
         resolve={id ? getLenderProfile(id) : null}
-        errorElement={<div className={"text-font dark:text-font-dark"}>Could not load profile</div>}
+        errorElement={
+          <div className={"text-font dark:text-font-dark"}>
+            Could not load profile
+          </div>
+        }
         children={(profile: Awaited<LenderStats>) => (
           <UserStats
             id={profile.id}

@@ -22,14 +22,27 @@ interface LoanProductRadioCardItemProps {
   img: ReactNode;
 }
 
-function LoanProductRadioCardItem({ value, header, subHeader, img }: LoanProductRadioCardItemProps) {
+function LoanProductRadioCardItem({
+  value,
+  header,
+  subHeader,
+  img,
+}: LoanProductRadioCardItemProps) {
   return (
     <RadioCards.Item value={value}>
       <Flex direction="column">
-        <Text size={"2"} weight={"bold"} className="text-font dark:text-font-dark shrink-0">
+        <Text
+          size={"2"}
+          weight={"bold"}
+          className="text-font dark:text-font-dark shrink-0"
+        >
           {header}
         </Text>
-        <Text size={"1"} weight={"light"} className="text-font dark:text-font-dark shrink-0 ">
+        <Text
+          size={"1"}
+          weight={"light"}
+          className="text-font dark:text-font-dark shrink-0 "
+        >
           {subHeader}
         </Text>
         <Box className="rounded-2xl" mt={"2"} width={"180px"}>
@@ -57,7 +70,12 @@ export function LoanAmountAndDurationInputs({
     <Form className="space-y-4">
       {/* Loan Amount */}
       <Flex direction="column" gap="1" className="w-full">
-        <Text className="text-font dark:text-font-dark" as="label" size={"2"} weight={"medium"}>
+        <Text
+          className="text-font dark:text-font-dark"
+          as="label"
+          size={"2"}
+          weight={"medium"}
+        >
           How much do you wish to borrow?
         </Text>
         <TextField.Root
@@ -71,19 +89,30 @@ export function LoanAmountAndDurationInputs({
           value={loanAmount}
         >
           <TextField.Slot>
-            <Text size={"3"} weight={"medium"}>$</Text>
+            <Text size={"3"} weight={"medium"}>
+              $
+            </Text>
           </TextField.Slot>
         </TextField.Root>
       </Flex>
 
       {/* Loan Duration */}
       <Flex direction="column" gap="1" className="w-full">
-        <Text className="text-font dark:text-font-dark" as="label" size={"2"} weight={"medium"}>
+        <Text
+          className="text-font dark:text-font-dark"
+          as="label"
+          size={"2"}
+          weight={"medium"}
+        >
           For how long do you want to borrow?
         </Text>
         <Box className="w-full">
           <SingleDurationSelector
-            selectedDuration={selectedLoanDuration ? Number.parseInt(selectedLoanDuration) : undefined}
+            selectedDuration={
+              selectedLoanDuration
+                ? Number.parseInt(selectedLoanDuration)
+                : undefined
+            }
             onDurationChange={onLoanDurationChange}
             disabled={false}
           />
@@ -92,7 +121,12 @@ export function LoanAmountAndDurationInputs({
 
       {/* Loan product */}
       <Flex direction="column" gap="1" className="w-full">
-        <Text className="text-font dark:text-font-dark" as="label" size={"2"} weight={"medium"}>
+        <Text
+          className="text-font dark:text-font-dark"
+          as="label"
+          size={"2"}
+          weight={"medium"}
+        >
           How would you like to receive the loan?
         </Text>
         <Box className="mx-auto ">

@@ -14,7 +14,11 @@ const ThemeSwitch: FC<ThemeSwitchProps> = ({ className }) => {
   const { toggleTheme } = useTheme();
 
   return (
-    <button onClick={toggleTheme} className={className} aria-label="Toggle theme">
+    <button
+      onClick={toggleTheme}
+      className={className}
+      aria-label="Toggle theme"
+    >
       {getPreferredTheme() === "light" ? <MoonIcon /> : <SunIcon />}
     </button>
   );

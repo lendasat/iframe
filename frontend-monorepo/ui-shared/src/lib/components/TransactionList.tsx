@@ -14,22 +14,28 @@ interface TransactionLinkProps {
   loanAssetChain: LoanAssetChain;
 }
 
-function TransactionLink({ transaction, loanAssetChain }: TransactionLinkProps) {
+function TransactionLink({
+  transaction,
+  loanAssetChain,
+}: TransactionLinkProps) {
   let urlPrefix = "";
   const [copied, setCopied] = useState(false);
 
   const transactionType = transaction.transaction_type;
 
   if (
-    transactionType === TransactionType.Funding
-    || transactionType === TransactionType.ClaimCollateral
-    || transactionType === TransactionType.Liquidation
-    || transactionType === TransactionType.Dispute
+    transactionType === TransactionType.Funding ||
+    transactionType === TransactionType.ClaimCollateral ||
+    transactionType === TransactionType.Liquidation ||
+    transactionType === TransactionType.Dispute
   ) {
     urlPrefix = `${import.meta.env.VITE_MEMPOOL_REST_URL}/tx`;
   }
 
-  if (transactionType === TransactionType.PrincipalGiven || transactionType === TransactionType.PrincipalRepaid) {
+  if (
+    transactionType === TransactionType.PrincipalGiven ||
+    transactionType === TransactionType.PrincipalRepaid
+  ) {
     switch (loanAssetChain) {
       case LoanAssetChain.Ethereum:
         urlPrefix = "https://etherscan.io/tx";
@@ -65,25 +71,28 @@ function TransactionLink({ transaction, loanAssetChain }: TransactionLinkProps) 
   return (
     <Flex justify={"end"}>
       <code>{ellipseId(transaction.txid)}</code>
-      {urlPrefix
-        ? (
-          <a
-            href={`${urlPrefix}/${transaction.txid}`}
-            target={"_blank"}
-            rel={"noreferrer"}
-            style={{ marginLeft: "8px" }}
-          >
-            <FaLink className={"text-font dark:text-font-dark"} />
-          </a>
-        )
-        : ""}
-      <Box
-        onClick={() => handleCopy(transaction.txid)}
-      >
-        <NotificationToast description={transaction.txid} title={"Transaction ID copied"}>
-          {copied
-            ? <FaCheckCircle className={"text-font dark:text-font-dark"} />
-            : <FaCopy className={"text-font dark:text-font-dark"} />}
+      {urlPrefix ? (
+        <a
+          href={`${urlPrefix}/${transaction.txid}`}
+          target={"_blank"}
+          rel={"noreferrer"}
+          style={{ marginLeft: "8px" }}
+        >
+          <FaLink className={"text-font dark:text-font-dark"} />
+        </a>
+      ) : (
+        ""
+      )}
+      <Box onClick={() => handleCopy(transaction.txid)}>
+        <NotificationToast
+          description={transaction.txid}
+          title={"Transaction ID copied"}
+        >
+          {copied ? (
+            <FaCheckCircle className={"text-font dark:text-font-dark"} />
+          ) : (
+            <FaCopy className={"text-font dark:text-font-dark"} />
+          )}
         </NotificationToast>
       </Box>
     </Flex>
@@ -100,7 +109,10 @@ interface Contract {
   transactions: LoanTransaction[];
 }
 
-export const TransactionList: FC<TransactionListProps> = ({ contract, transactionType }) => {
+export const TransactionList: FC<TransactionListProps> = ({
+  contract,
+  transactionType,
+}) => {
   const filteredTransactions = contract.transactions.filter(
     (transaction) => transaction.transaction_type === transactionType,
   );
@@ -132,16 +144,25 @@ export const TransactionList: FC<TransactionListProps> = ({ contract, transactio
   return (
     filteredTransactions.length > 0 && (
       <Row className="justify-content-between border-b dark:border-dark mt-2">
-        <Col className={"text-font/70 dark:text-font-dark/70"}>{transactionName} transaction</Col>
+        <Col className={"text-font/70 dark:text-font-dark/70"}>
+          {transactionName} transaction
+        </Col>
         <Col className="text-end mb-2">
           <div>
             <ul>
               {filteredTransactions.map((transaction: LoanTransaction) => (
                 <li
                   key={transaction.txid}
-                  style={{ display: "flex", justifyContent: "flex-end", alignItems: "center" }}
+                  style={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    alignItems: "center",
+                  }}
                 >
-                  <TransactionLink transaction={transaction} loanAssetChain={loanAssetChain} />
+                  <TransactionLink
+                    transaction={transaction}
+                    loanAssetChain={loanAssetChain}
+                  />
                 </li>
               ))}
             </ul>

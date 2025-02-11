@@ -11,7 +11,11 @@ interface AddCollateralProps {
   handleClose: () => void;
 }
 
-export function AddCollateralModal({ show, address, handleClose }: AddCollateralProps) {
+export function AddCollateralModal({
+  show,
+  address,
+  handleClose,
+}: AddCollateralProps) {
   return (
     <Modal show={show} onHide={handleClose} centered>
       <Box className="px-4 pt-7 bg-white dark:bg-dark-700 rounded-2">
@@ -30,7 +34,8 @@ export function AddCollateralModal({ show, address, handleClose }: AddCollateral
                 <FontAwesomeIcon icon={faInfoCircle} />
               </Box>
               <Text>
-                You can top up your collateral at any point by paying to your collateral address.
+                You can top up your collateral at any point by paying to your
+                collateral address.
               </Text>
             </Alert>
           </Flex>

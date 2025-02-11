@@ -2,7 +2,11 @@ import { faCheckCircle, faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { LoanProductOption } from "@frontend-monorepo/base-http-client";
 import { useWallet } from "@frontend-monorepo/browser-wallet";
-import { Integration, useAuth, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
+import {
+  Integration,
+  useAuth,
+  useBorrowerHttpClient,
+} from "@frontend-monorepo/http-client-borrower";
 import {
   AbbreviationExplanationInfo,
   formatCurrency,
@@ -68,7 +72,8 @@ export const Confirmation = ({
   selectedLoanDuration: selectedLoanDurationString,
 }: ConfirmationProps) => {
   const navigate = useNavigate();
-  const { getLoanOffer, getUserCards, postContractRequest } = useBorrowerHttpClient();
+  const { getLoanOffer, getUserCards, postContractRequest } =
+    useBorrowerHttpClient();
   const { latestPrice } = usePrice();
   const { user } = useAuth();
   const { getNextPublicKey } = useWallet();
@@ -90,14 +95,22 @@ export const Confirmation = ({
   const selectedLoanAmount = parseInt(selectedLoanAmountString || "0");
   const selectedLoanDuration = parseInt(selectedLoanDurationString || "0");
 
-  const { loading, value: selectedOffer, error } = useAsync(async () => {
+  const {
+    loading,
+    value: selectedOffer,
+    error,
+  } = useAsync(async () => {
     if (!selectedOfferId) {
       return;
     }
     return getLoanOffer(selectedOfferId);
   }, [selectedOfferId]);
 
-  const { loading: moonCardsLoading, value: maybeMoonCards, error: userCardsError } = useAsync(async () => {
+  const {
+    loading: moonCardsLoading,
+    value: maybeMoonCards,
+    error: userCardsError,
+  } = useAsync(async () => {
     // Users located in the US cannot top up cards.
     if (await isInUS()) {
       return [];
@@ -121,15 +134,19 @@ export const Confirmation = ({
 
   // TODO: once we have different origination fees, this won't be correct anymore.
   const originationFee = selectedOffer?.origination_fee[0].fee || 0.0;
-  const discountedOriginationFee = originationFee - (originationFee * discountedFee);
+  const discountedOriginationFee =
+    originationFee - originationFee * discountedFee;
   const originationFeeBtc = collateralAmountBtc * discountedOriginationFee;
   const originationFeeUsd = selectedLoanAmount * discountedOriginationFee;
 
   // TODO: the liquidation threshold should be synced with the backend
-  const liquidationPrice = selectedLoanAmount / collateralAmountBtc * 0.95;
+  const liquidationPrice = (selectedLoanAmount / collateralAmountBtc) * 0.95;
 
   const selectedCoin = selectedOffer
-    ? StableCoinHelper.mapFromBackend(selectedOffer.loan_asset_chain, selectedOffer.loan_asset_type)
+    ? StableCoinHelper.mapFromBackend(
+        selectedOffer.loan_asset_chain,
+        selectedOffer.loan_asset_type,
+      )
     : undefined;
 
   const onBitcoinAddressChange = (address: string) => {
@@ -159,7 +176,11 @@ export const Confirmation = ({
         return;
       }
 
-      if (!bitcoinAddress || bitcoinAddress.trim().length === 0 || !bitcoinAddressValid) {
+      if (
+        !bitcoinAddress ||
+        bitcoinAddress.trim().length === 0 ||
+        !bitcoinAddressValid
+      ) {
         setCreateRequestError("No valid bitcoin address provided");
         return;
       }
@@ -181,7 +202,10 @@ export const Confirmation = ({
           break;
       }
 
-      if (integration === Integration.StableCoin && !loanAddress || loanAddress.trim().length === 0) {
+      if (
+        (integration === Integration.StableCoin && !loanAddress) ||
+        loanAddress.trim().length === 0
+      ) {
         setCreateRequestError("No address provided");
         return;
       }
@@ -211,7 +235,12 @@ export const Confirmation = ({
   };
 
   return (
-    <Grid align={"center"} columns={{ initial: "1", md: "2" }} gap="3" width="auto">
+    <Grid
+      align={"center"}
+      columns={{ initial: "1", md: "2" }}
+      gap="3"
+      width="auto"
+    >
       <Box className="p-6 border border-gray-200 rounded-lg h-full">
         <Heading size="4" mb="4" className="text-font dark:text-font-dark">
           Summary to borrow{" "}
@@ -227,12 +256,15 @@ export const Confirmation = ({
           <DataList.Item align="center">
             <DataList.Label minWidth="88px">Lender</DataList.Label>
             <DataList.Value className="flex-1 flex justify-end">
-              {isStillLoading
-                ? (
-                  <Skeleton loading={isStillLoading} width={"100px"} height={"20px"}>
-                  </Skeleton>
-                )
-                : <Lender {...selectedOffer?.lender} showAvatar={false} />}
+              {isStillLoading ? (
+                <Skeleton
+                  loading={isStillLoading}
+                  width={"100px"}
+                  height={"20px"}
+                ></Skeleton>
+              ) : (
+                <Lender {...selectedOffer?.lender} showAvatar={false} />
+              )}
             </DataList.Value>
           </DataList.Item>
           <DataList.Item>
@@ -245,35 +277,34 @@ export const Confirmation = ({
               </Flex>
             </DataList.Label>
             <DataList.Value className="flex-1 flex justify-end">
-              {isStillLoading
-                ? (
-                  <Skeleton loading={isStillLoading} width={"100px"} height={"20px"}>
-                  </Skeleton>
-                )
-                : (
-                  <div className="flex flex-col">
-                    {selectedLoanDuration !== ONE_YEAR
-                      && (
-                        <Flex gap={"2"}>
-                          <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70">
-                            {(actualInterest * 100).toFixed(2)}%
-                          </Text>
-                          <Text className="text-[11px] text-font/70 dark:text-font-dark/50 mt-0.5 self-end">
-                            ({(interestRate * 100).toFixed(1)}% p.a.)
-                          </Text>
-                        </Flex>
-                      )}
-                    {selectedLoanDuration === ONE_YEAR
-                      && (
-                        <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70">
-                          {(actualInterest * 100).toFixed(2)}% p.a.
-                        </Text>
-                      )}
-                    <Text className="text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-end">
-                      ≈ {formatCurrency(actualInterestUsdAmount, 1, 1)} in total
+              {isStillLoading ? (
+                <Skeleton
+                  loading={isStillLoading}
+                  width={"100px"}
+                  height={"20px"}
+                ></Skeleton>
+              ) : (
+                <div className="flex flex-col">
+                  {selectedLoanDuration !== ONE_YEAR && (
+                    <Flex gap={"2"}>
+                      <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70">
+                        {(actualInterest * 100).toFixed(2)}%
+                      </Text>
+                      <Text className="text-[11px] text-font/70 dark:text-font-dark/50 mt-0.5 self-end">
+                        ({(interestRate * 100).toFixed(1)}% p.a.)
+                      </Text>
+                    </Flex>
+                  )}
+                  {selectedLoanDuration === ONE_YEAR && (
+                    <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70">
+                      {(actualInterest * 100).toFixed(2)}% p.a.
                     </Text>
-                  </div>
-                )}
+                  )}
+                  <Text className="text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-end">
+                    ≈ {formatCurrency(actualInterestUsdAmount, 1, 1)} in total
+                  </Text>
+                </div>
+              )}
             </DataList.Value>
           </DataList.Item>
           <DataList.Item>
@@ -289,21 +320,22 @@ export const Confirmation = ({
               </Flex>
             </DataList.Label>
             <DataList.Value className="flex-1 flex justify-end">
-              {isStillLoading
-                ? (
-                  <Skeleton loading={isStillLoading} width={"100px"} height={"20px"}>
-                  </Skeleton>
-                )
-                : (
-                  <div className="flex flex-col">
-                    <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
-                      {collateralAmountBtc.toFixed(8)} BTC
-                    </Text>
-                    <Text className="text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-end">
-                      ≈ {formatCurrency(collateralUsdAmount)}
-                    </Text>
-                  </div>
-                )}
+              {isStillLoading ? (
+                <Skeleton
+                  loading={isStillLoading}
+                  width={"100px"}
+                  height={"20px"}
+                ></Skeleton>
+              ) : (
+                <div className="flex flex-col">
+                  <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
+                    {collateralAmountBtc.toFixed(8)} BTC
+                  </Text>
+                  <Text className="text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-end">
+                    ≈ {formatCurrency(collateralUsdAmount)}
+                  </Text>
+                </div>
+              )}
             </DataList.Value>
           </DataList.Item>
           <DataList.Item>
@@ -313,38 +345,38 @@ export const Confirmation = ({
                   Origination fee
                 </Flex>
 
-                {isDiscountedFeeApplied
-                  && (
-                    <Text className="text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-start">
-                      {-(discountedFee * 100).toFixed(2)}% discount applied
-                    </Text>
-                  )}
+                {isDiscountedFeeApplied && (
+                  <Text className="text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-start">
+                    {-(discountedFee * 100).toFixed(2)}% discount applied
+                  </Text>
+                )}
               </div>
             </DataList.Label>
             <DataList.Value className="flex-1 flex justify-end">
-              {isStillLoading
-                ? (
-                  <Skeleton loading={isStillLoading} width={"100px"} height={"20px"}>
-                  </Skeleton>
-                )
-                : (
-                  <div className="flex flex-col">
-                    <Text
-                      className={`text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize ${
-                        discountedFee === 1 ? "line-through" : ""
-                      }`}
-                    >
-                      {originationFeeBtc.toFixed(8)} BTC
-                    </Text>
-                    <Text
-                      className={`text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-end ${
-                        discountedFee === 1 ? "line-through" : ""
-                      }`}
-                    >
-                      ≈ {formatCurrency(originationFeeUsd)}
-                    </Text>
-                  </div>
-                )}
+              {isStillLoading ? (
+                <Skeleton
+                  loading={isStillLoading}
+                  width={"100px"}
+                  height={"20px"}
+                ></Skeleton>
+              ) : (
+                <div className="flex flex-col">
+                  <Text
+                    className={`text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize ${
+                      discountedFee === 1 ? "line-through" : ""
+                    }`}
+                  >
+                    {originationFeeBtc.toFixed(8)} BTC
+                  </Text>
+                  <Text
+                    className={`text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-end ${
+                      discountedFee === 1 ? "line-through" : ""
+                    }`}
+                  >
+                    ≈ {formatCurrency(originationFeeUsd)}
+                  </Text>
+                </div>
+              )}
             </DataList.Value>
           </DataList.Item>
           <DataList.Item>
@@ -357,41 +389,45 @@ export const Confirmation = ({
               </Flex>
             </DataList.Label>
             <DataList.Value className="flex-1 flex justify-end">
-              {isStillLoading
-                ? (
-                  <Skeleton loading={isStillLoading} width={"100px"} height={"20px"}>
-                  </Skeleton>
-                )
-                : (
-                  <Text
-                    className={`text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize ${
-                      discountedFee === 1 ? "line-through" : ""
-                    }`}
-                  >
-                    {newFormatCurrency({ value: liquidationPrice, maxFraction: 0, minFraction: 1 })}
-                  </Text>
-                )}
+              {isStillLoading ? (
+                <Skeleton
+                  loading={isStillLoading}
+                  width={"100px"}
+                  height={"20px"}
+                ></Skeleton>
+              ) : (
+                <Text
+                  className={`text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize ${
+                    discountedFee === 1 ? "line-through" : ""
+                  }`}
+                >
+                  {newFormatCurrency({
+                    value: liquidationPrice,
+                    maxFraction: 0,
+                    minFraction: 1,
+                  })}
+                </Text>
+              )}
             </DataList.Value>
           </DataList.Item>
           <DataList.Item>
-            <DataList.Label minWidth="88px">
-              Coin
-            </DataList.Label>
+            <DataList.Label minWidth="88px">Coin</DataList.Label>
             <DataList.Value className="flex-1 flex justify-end">
-              {isStillLoading
-                ? (
-                  <Skeleton loading={isStillLoading} width={"100px"} height={"20px"}>
-                  </Skeleton>
-                )
-                : (
-                  <Text
-                    className={`text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize ${
-                      discountedFee === 1 ? "line-through" : ""
-                    }`}
-                  >
-                    {selectedCoin ? StableCoinHelper.print(selectedCoin) : ""}
-                  </Text>
-                )}
+              {isStillLoading ? (
+                <Skeleton
+                  loading={isStillLoading}
+                  width={"100px"}
+                  height={"20px"}
+                ></Skeleton>
+              ) : (
+                <Text
+                  className={`text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize ${
+                    discountedFee === 1 ? "line-through" : ""
+                  }`}
+                >
+                  {selectedCoin ? StableCoinHelper.print(selectedCoin) : ""}
+                </Text>
+              )}
             </DataList.Value>
           </DataList.Item>
         </DataList.Root>
@@ -416,172 +452,181 @@ export const Confirmation = ({
                   <AbbreviationExplanationInfo
                     header={"Collateral Refund Address"}
                     subHeader={""}
-                    description={"The Bitcoin address where you want your collateral returned upon loan repayment."}
+                    description={
+                      "The Bitcoin address where you want your collateral returned upon loan repayment."
+                    }
                   >
-                    <RadixLink
-                      href="https://faq.lendasat.com"
-                      target="_blank"
-                    >
+                    <RadixLink href="https://faq.lendasat.com" target="_blank">
                       <FaInfoCircle />
                     </RadixLink>
                   </AbbreviationExplanationInfo>
                 </Flex>
               </DataList.Label>
               <DataList.Value className="flex-1 flex justify-end">
-                {isStillLoading
-                  ? <Skeleton loading={true}>Loading</Skeleton>
-                  : (
-                    <Flex direction={"column"} className="w-full">
-                      <TextField.Root
-                        className="w-full font-semibold text-sm border-0 text-font dark:text-font-dark"
-                        size={"3"}
-                        type="text"
-                        value={bitcoinAddress}
-                        onChange={(e) => onBitcoinAddressChange(e.target.value)}
-                      >
-                        <TextField.Slot className="p-1.5" />
-                      </TextField.Root>
-                      {bitcoinAddressInputError && (
-                        <span className="text-red-500 text-sm">{bitcoinAddressInputError}</span>
-                      )}
-                    </Flex>
-                  )}
+                {isStillLoading ? (
+                  <Skeleton loading={true}>Loading</Skeleton>
+                ) : (
+                  <Flex direction={"column"} className="w-full">
+                    <TextField.Root
+                      className="w-full font-semibold text-sm border-0 text-font dark:text-font-dark"
+                      size={"3"}
+                      type="text"
+                      value={bitcoinAddress}
+                      onChange={(e) => onBitcoinAddressChange(e.target.value)}
+                    >
+                      <TextField.Slot className="p-1.5" />
+                    </TextField.Root>
+                    {bitcoinAddressInputError && (
+                      <span className="text-red-500 text-sm">
+                        {bitcoinAddressInputError}
+                      </span>
+                    )}
+                  </Flex>
+                )}
               </DataList.Value>
             </DataList.Item>
 
-            {selectedOffer?.kyc_link
-              && (
-                <DataList.Item>
-                  <DataList.Label minWidth="88px">
-                    KYC Required
-                  </DataList.Label>
-                  <DataList.Value className="flex-1 flex justify-end">
-                    {isStillLoading
-                      ? <Skeleton loading={true}></Skeleton>
-                      : (
-                        <Flex direction={"column"}>
-                          <Callout.Root color={kycFormDialogConfirmed ? "green" : "amber"} className="w-full">
-                            <Callout.Icon>
-                              <FontAwesomeIcon icon={kycFormDialogConfirmed ? faCheckCircle : faWarning} />
-                            </Callout.Icon>
-                            <Callout.Text>
-                              <Text>
-                                Identity verification is required. Please complete the lender's KYC form. You can
-                                continue while the verification is in progress.
-                                <br />
-                                <Dialog.Root>
-                                  <Dialog.Trigger>
-                                    <Button color={"purple"}>KYC Form</Button>
-                                  </Dialog.Trigger>
+            {selectedOffer?.kyc_link && (
+              <DataList.Item>
+                <DataList.Label minWidth="88px">KYC Required</DataList.Label>
+                <DataList.Value className="flex-1 flex justify-end">
+                  {isStillLoading ? (
+                    <Skeleton loading={true}></Skeleton>
+                  ) : (
+                    <Flex direction={"column"}>
+                      <Callout.Root
+                        color={kycFormDialogConfirmed ? "green" : "amber"}
+                        className="w-full"
+                      >
+                        <Callout.Icon>
+                          <FontAwesomeIcon
+                            icon={
+                              kycFormDialogConfirmed ? faCheckCircle : faWarning
+                            }
+                          />
+                        </Callout.Icon>
+                        <Callout.Text>
+                          <Text>
+                            Identity verification is required. Please complete
+                            the lender's KYC form. You can continue while the
+                            verification is in progress.
+                            <br />
+                            <Dialog.Root>
+                              <Dialog.Trigger>
+                                <Button color={"purple"}>KYC Form</Button>
+                              </Dialog.Trigger>
 
-                                  <Dialog.Content style={{ maxWidth: "450px" }}>
-                                    <Flex direction="column" gap="4">
-                                      <Dialog.Title>KYC Required</Dialog.Title>
+                              <Dialog.Content style={{ maxWidth: "450px" }}>
+                                <Flex direction="column" gap="4">
+                                  <Dialog.Title>KYC Required</Dialog.Title>
 
-                                      <Text as="p">
-                                        For this offer KYC is required. KYC verification is performed by the lender and
-                                        we do not know if you have processed or succeeded KYC with them in the past.
-                                      </Text>
+                                  <Text as="p">
+                                    For this offer KYC is required. KYC
+                                    verification is performed by the lender and
+                                    we do not know if you have processed or
+                                    succeeded KYC with them in the past.
+                                  </Text>
 
-                                      <Flex justify="center" py="4">
-                                        <Link
-                                          href={selectedOffer?.kyc_link}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          weight="medium"
-                                        >
-                                          Access KYC Form →
-                                        </Link>
-                                      </Flex>
+                                  <Flex justify="center" py="4">
+                                    <Link
+                                      href={selectedOffer?.kyc_link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      weight="medium"
+                                    >
+                                      Access KYC Form →
+                                    </Link>
+                                  </Flex>
 
-                                      <Text as="p">
-                                        If this is your first time requesting from this lender, please proceed to their
-                                        KYC form to initiate the procedure.
-                                      </Text>
+                                  <Text as="p">
+                                    If this is your first time requesting from
+                                    this lender, please proceed to their KYC
+                                    form to initiate the procedure.
+                                  </Text>
 
-                                      <Text as="p">
-                                        Meanwhile, you can continue requesting the offer through Lendasat. Once the KYC
-                                        request has been approved, the Lender will accept your loan request.
-                                      </Text>
+                                  <Text as="p">
+                                    Meanwhile, you can continue requesting the
+                                    offer through Lendasat. Once the KYC request
+                                    has been approved, the Lender will accept
+                                    your loan request.
+                                  </Text>
 
-                                      <Flex gap="2" align="center">
-                                        <Checkbox
-                                          checked={isKycChecked}
-                                          onCheckedChange={(c) => setIsKycChecked(c === true)}
-                                          id="kyc-confirm"
-                                        />
-                                        <Text as="label" htmlFor="kyc-confirm">
-                                          I confirm I've submitted the KYC
-                                        </Text>
-                                      </Flex>
+                                  <Flex gap="2" align="center">
+                                    <Checkbox
+                                      checked={isKycChecked}
+                                      onCheckedChange={(c) =>
+                                        setIsKycChecked(c === true)
+                                      }
+                                      id="kyc-confirm"
+                                    />
+                                    <Text as="label" htmlFor="kyc-confirm">
+                                      I confirm I've submitted the KYC
+                                    </Text>
+                                  </Flex>
 
-                                      <Flex gap="3" justify="end" mt="4">
-                                        <Dialog.Close>
-                                          <Button variant="soft" color="gray">
-                                            Cancel
-                                          </Button>
-                                        </Dialog.Close>
-                                        <Dialog.Close>
-                                          <Button
-                                            disabled={!isKycChecked}
-                                            onClick={() => setKycFormDialogConfirmed(true)}
-                                          >
-                                            Confirm
-                                          </Button>
-                                        </Dialog.Close>
-                                      </Flex>
-                                    </Flex>
-                                  </Dialog.Content>
-                                </Dialog.Root>
-                              </Text>
-                            </Callout.Text>
-                          </Callout.Root>
-                        </Flex>
-                      )}
-                  </DataList.Value>
-                </DataList.Item>
-              )}
-            {selectedProduct === LoanProductOption.PayWithMoonDebitCard
-              && (
-                <DataList.Item>
-                  <DataList.Label minWidth="88px">
-                    Choose a card
-                  </DataList.Label>
-                  <DataList.Value className="flex-1 flex justify-end">
-                    {moonCardsLoading
-                      ? <Skeleton>Loading</Skeleton>
-                      : (
-                        <MoonCardDropdown
-                          cards={moonCards}
-                          onSelect={setMoonCardId}
-                          loanAmount={selectedLoanAmount}
-                        />
-                      )}
-                  </DataList.Value>
-                </DataList.Item>
-              )}
-            {selectedProduct === LoanProductOption.StableCoins
-              && (
-                <DataList.Item>
-                  <DataList.Label minWidth="88px">
-                    Loan address
-                  </DataList.Label>
-                  <DataList.Value className="w-full">
-                    {(isStillLoading || !selectedCoin)
-                      ? <Skeleton loading={isStillLoading}>Loading</Skeleton>
-                      : (
-                        <LoanAddressInputField
-                          loanAddress={loanAddress ?? ""}
-                          setLoanAddress={setLoanAddress}
-                          hideButton={hideWalletConnectButton}
-                          setHideButton={setHideWalletConnectButton}
-                          assetChain={StableCoinHelper.toChain(selectedCoin)}
-                          renderWarning={true}
-                        />
-                      )}
-                  </DataList.Value>
-                </DataList.Item>
-              )}
+                                  <Flex gap="3" justify="end" mt="4">
+                                    <Dialog.Close>
+                                      <Button variant="soft" color="gray">
+                                        Cancel
+                                      </Button>
+                                    </Dialog.Close>
+                                    <Dialog.Close>
+                                      <Button
+                                        disabled={!isKycChecked}
+                                        onClick={() =>
+                                          setKycFormDialogConfirmed(true)
+                                        }
+                                      >
+                                        Confirm
+                                      </Button>
+                                    </Dialog.Close>
+                                  </Flex>
+                                </Flex>
+                              </Dialog.Content>
+                            </Dialog.Root>
+                          </Text>
+                        </Callout.Text>
+                      </Callout.Root>
+                    </Flex>
+                  )}
+                </DataList.Value>
+              </DataList.Item>
+            )}
+            {selectedProduct === LoanProductOption.PayWithMoonDebitCard && (
+              <DataList.Item>
+                <DataList.Label minWidth="88px">Choose a card</DataList.Label>
+                <DataList.Value className="flex-1 flex justify-end">
+                  {moonCardsLoading ? (
+                    <Skeleton>Loading</Skeleton>
+                  ) : (
+                    <MoonCardDropdown
+                      cards={moonCards}
+                      onSelect={setMoonCardId}
+                      loanAmount={selectedLoanAmount}
+                    />
+                  )}
+                </DataList.Value>
+              </DataList.Item>
+            )}
+            {selectedProduct === LoanProductOption.StableCoins && (
+              <DataList.Item>
+                <DataList.Label minWidth="88px">Loan address</DataList.Label>
+                <DataList.Value className="w-full">
+                  {isStillLoading || !selectedCoin ? (
+                    <Skeleton loading={isStillLoading}>Loading</Skeleton>
+                  ) : (
+                    <LoanAddressInputField
+                      loanAddress={loanAddress ?? ""}
+                      setLoanAddress={setLoanAddress}
+                      hideButton={hideWalletConnectButton}
+                      setHideButton={setHideWalletConnectButton}
+                      assetChain={StableCoinHelper.toChain(selectedCoin)}
+                      renderWarning={true}
+                    />
+                  )}
+                </DataList.Value>
+              </DataList.Item>
+            )}
           </DataList.Root>
           <Button
             size={"3"}
@@ -591,20 +636,18 @@ export const Confirmation = ({
           >
             Pick Offer
           </Button>
-          {createRequestError
-            ? (
-              <Box px={"2"} className="md:col-span-2">
-                <Callout.Root color="red" className="w-full">
-                  <Callout.Icon>
-                    <FontAwesomeIcon icon={faWarning} />
-                  </Callout.Icon>
-                  <Callout.Text>
-                    {createRequestError}
-                  </Callout.Text>
-                </Callout.Root>
-              </Box>
-            )
-            : ""}
+          {createRequestError ? (
+            <Box px={"2"} className="md:col-span-2">
+              <Callout.Root color="red" className="w-full">
+                <Callout.Icon>
+                  <FontAwesomeIcon icon={faWarning} />
+                </Callout.Icon>
+                <Callout.Text>{createRequestError}</Callout.Text>
+              </Callout.Root>
+            </Box>
+          ) : (
+            ""
+          )}
         </Flex>
       </Box>
     </Grid>

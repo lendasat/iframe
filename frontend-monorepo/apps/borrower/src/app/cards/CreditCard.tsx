@@ -38,7 +38,9 @@ const CardNumber = ({ pan, visible, setVisible }: CardNumberProps) => {
       style={{ fontFamily: "PayWithMoonFont" }}
       onClick={() => handleCopy()}
     >
-      {groups.map((group, index) => <span key={index}>{group}</span>)}
+      {groups.map((group, index) => (
+        <span key={index}>{group}</span>
+      ))}
     </div>
   );
 };
@@ -55,7 +57,10 @@ const ExpirationDate = ({ expiry, visible }: ExpirationDateProps) => {
   }
 
   return (
-    <div className="flex space-x-3 text-md tracking-wider" style={{ fontFamily: "PayWithMoonFont" }}>
+    <div
+      className="flex space-x-3 text-md tracking-wider"
+      style={{ fontFamily: "PayWithMoonFont" }}
+    >
       {formatted}
     </div>
   );
@@ -73,13 +78,20 @@ const Cvv = ({ cvv, visible }: CvvProps) => {
   }
 
   return (
-    <div className="flex space-x-3 text-md tracking-wider" style={{ fontFamily: "PayWithMoonFont" }}>
+    <div
+      className="flex space-x-3 text-md tracking-wider"
+      style={{ fontFamily: "PayWithMoonFont" }}
+    >
       {formatted}
     </div>
   );
 };
 
-export default function CreditCard({ card, visible, setVisible }: CredtCardProps) {
+export default function CreditCard({
+  card,
+  visible,
+  setVisible,
+}: CredtCardProps) {
   return (
     <Box className="relative flex items-center justify-center w-[320px] h-[200px]">
       {/* Background image */}
@@ -88,7 +100,11 @@ export default function CreditCard({ card, visible, setVisible }: CredtCardProps
           <MoonCard className="object-cover w-full h-full" />
         </div>
         <div className="absolute bottom-10 left-3 transform -translate-y-1/2 text-white text-center p-2 rounded">
-          <CardNumber pan={card.pan} visible={visible} setVisible={setVisible}></CardNumber>
+          <CardNumber
+            pan={card.pan}
+            visible={visible}
+            setVisible={setVisible}
+          ></CardNumber>
         </div>
         <div className="absolute bottom-4 left-3 text-white text-center p-2 rounded">
           <ExpirationDate expiry={card.expiration} visible={visible} />

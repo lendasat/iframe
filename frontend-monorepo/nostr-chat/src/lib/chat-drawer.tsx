@@ -1,10 +1,17 @@
-import { UnlockWalletModal, useWallet } from "@frontend-monorepo/browser-wallet";
+import {
+  UnlockWalletModal,
+  useWallet,
+} from "@frontend-monorepo/browser-wallet";
 import { Box, Button, Flex, Heading, Text, TextField } from "@radix-ui/themes";
 import { loadWasmSync, PublicKey, Timestamp } from "@rust-nostr/nostr-sdk";
 import { derive_npub } from "browser-wallet";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { IoMdSend } from "react-icons/io";
-import { LuMessageCircle as MessageCircle, LuUnlock as Unlock, LuX as X } from "react-icons/lu";
+import {
+  LuMessageCircle as MessageCircle,
+  LuUnlock as Unlock,
+  LuX as X,
+} from "react-icons/lu";
 import { ChatMessage, useNostr } from "./useNostr";
 
 const Avatar = ({
@@ -20,22 +27,24 @@ const Avatar = ({
 }) => (
   <Box
     className={`w-8 h-8 rounded-full flex items-center justify-center ${
-      avatar ? "" : position === "left" ? "bg-purple-100 dark:bg-purple-600" : "bg-gray-200 dark:bg-gray-200"
+      avatar
+        ? ""
+        : position === "left"
+          ? "bg-purple-100 dark:bg-purple-600"
+          : "bg-gray-200 dark:bg-gray-200"
     } ${position === "left" ? "mr-2" : "ml-2"}`}
   >
-    {avatar
-      ? (
-        <img
-          src={avatar}
-          alt={`Avatar for ${fullString}`}
-          className="w-full h-full rounded-full object-cover bg"
-        />
-      )
-      : (
-        <span className="text-sm font-medium text-gray-500">
-          {initial.toUpperCase()}
-        </span>
-      )}
+    {avatar ? (
+      <img
+        src={avatar}
+        alt={`Avatar for ${fullString}`}
+        className="w-full h-full rounded-full object-cover bg"
+      />
+    ) : (
+      <span className="text-sm font-medium text-gray-500">
+        {initial.toUpperCase()}
+      </span>
+    )}
   </Box>
 );
 
@@ -88,7 +97,10 @@ const NostrChat = ({
     throw e;
   }
   try {
-    otherUser = useMemo(() => PublicKey.parse(otherUserString), [otherUserString]);
+    otherUser = useMemo(
+      () => PublicKey.parse(otherUserString),
+      [otherUserString],
+    );
   } catch (e) {
     console.error(`Invalid other usd pk: ${e}`);
     throw e;
@@ -116,7 +128,11 @@ const NostrChat = ({
     if (newMessage.trim()) {
       try {
         await publishNote(otherUser, chatRoom, newMessage.trim());
-        const sendEventOutput2 = await publishNote(user, chatRoom, newMessage.trim());
+        const sendEventOutput2 = await publishNote(
+          user,
+          chatRoom,
+          newMessage.trim(),
+        );
         handleEvent({
           sender: user.toBech32(),
           eventId: sendEventOutput2.id,
@@ -163,9 +179,20 @@ const NostrChat = ({
     return () => {
       cleanup();
     };
-  }, [client, user, otherUser, chatRoom, handleEvent, cleanup, fetchChatMessages, subscribe]);
+  }, [
+    client,
+    user,
+    otherUser,
+    chatRoom,
+    handleEvent,
+    cleanup,
+    fetchChatMessages,
+    subscribe,
+  ]);
 
-  const sortedMessages = messages.sort((a, b) => a.createdAt.asSecs() - b.createdAt.asSecs());
+  const sortedMessages = messages.sort(
+    (a, b) => a.createdAt.asSecs() - b.createdAt.asSecs(),
+  );
 
   // Scroll to bottom function
   const scrollToBottom = useCallback(() => {
@@ -183,7 +210,11 @@ const NostrChat = ({
         {sortedMessages.map((message) => (
           <div
             key={message.eventId.toHex()}
-            className={`flex items-start ${message.sender === otherUser.toBech32() ? "justify-end" : "justify-start"}`}
+            className={`flex items-start ${
+              message.sender === otherUser.toBech32()
+                ? "justify-end"
+                : "justify-start"
+            }`}
           >
             {message.sender === user?.toBech32() && (
               <Avatar
@@ -206,14 +237,17 @@ const NostrChat = ({
                   {message.content}
                 </Text>
                 <Text size={"1"}>
-                  {new Date(message.createdAt.asSecs() * 1000).toLocaleString(undefined, {
-                    year: "numeric",
-                    month: "short",
-                    day: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    second: "2-digit",
-                  })}
+                  {new Date(message.createdAt.asSecs() * 1000).toLocaleString(
+                    undefined,
+                    {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      second: "2-digit",
+                    },
+                  )}
                 </Text>
               </Flex>
             </Box>
@@ -264,11 +298,15 @@ interface ChatDrawerProps {
   counterpartyXPub: string;
 }
 
-export const ChatDrawer = ({ contractId, counterpartyXPub }: ChatDrawerProps) => {
+export const ChatDrawer = ({
+  contractId,
+  counterpartyXPub,
+}: ChatDrawerProps) => {
   console.log(`I'm reloading chat drawer`);
   const [isOpen, setIsOpen] = useState(false);
   const [showUnlockWalletModal, setShowUnlockWalletModal] = useState(false);
-  const { doesWalletExist, isWalletLoaded, getNsec, getPubkeyFromContract } = useWallet();
+  const { doesWalletExist, isWalletLoaded, getNsec, getPubkeyFromContract } =
+    useWallet();
   const handleCloseUnlockWalletModal = () => setShowUnlockWalletModal(false);
   const handleOpenUnlockWalletModal = () => setShowUnlockWalletModal(true);
   const handleSubmitUnlockWalletModal = async () => {
@@ -283,8 +321,12 @@ export const ChatDrawer = ({ contractId, counterpartyXPub }: ChatDrawerProps) =>
   }, [counterpartyXPub]);
 
   const nsec = isWalletLoaded ? getNsec() : null;
-  const chatRoom = isWalletLoaded ? getPubkeyFromContract(contractIdMemorized) : null;
-  const counterpartyNPub = isWalletLoaded ? derive_npub(counterpartyXPubMemorized) : null;
+  const chatRoom = isWalletLoaded
+    ? getPubkeyFromContract(contractIdMemorized)
+    : null;
+  const counterpartyNPub = isWalletLoaded
+    ? derive_npub(counterpartyXPubMemorized)
+    : null;
 
   const toggleDrawer = () => {
     setIsOpen(!isOpen);
@@ -347,21 +389,21 @@ export const ChatDrawer = ({ contractId, counterpartyXPub }: ChatDrawerProps) =>
           </Button>
         </Box>
 
-        {isWalletLoaded && chatConfig
-          ? <NostrChat {...chatConfig} />
-          : (
-            <Box className="h-96 flex items-center justify-center">
-              <Button
-                onClick={handleUnlock}
-                size="4"
-                color="purple"
-                className="flex items-center gap-2"
-              >
-                <Unlock size={24} />
-                <Text>Unlock Chat</Text>
-              </Button>
-            </Box>
-          )}
+        {isWalletLoaded && chatConfig ? (
+          <NostrChat {...chatConfig} />
+        ) : (
+          <Box className="h-96 flex items-center justify-center">
+            <Button
+              onClick={handleUnlock}
+              size="4"
+              color="purple"
+              className="flex items-center gap-2"
+            >
+              <Unlock size={24} />
+              <Text>Unlock Chat</Text>
+            </Button>
+          </Box>
+        )}
       </Box>
       <UnlockWalletModal
         show={showUnlockWalletModal}

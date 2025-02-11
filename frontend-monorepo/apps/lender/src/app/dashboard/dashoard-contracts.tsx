@@ -24,15 +24,10 @@ export function TabHeader({ thisIndex, label, needsAction }: TabHeaderProps) {
       }`}
       value={thisIndex}
     >
-      <Text
-        size={"2"}
-        weight={"medium"}
-        className={`break-all`}
-      >
+      <Text size={"2"} weight={"medium"} className={`break-all`}>
         {needsAction && (
           <span className="absolute -top-1 -right-1 flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75">
-            </span>
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
           </span>
         )}
@@ -46,16 +41,22 @@ export interface DashboardContractsProps {
   contracts: Contract[];
 }
 
-const filterContracts = (unfilteredContracts: Contract[], contractStatusFilter: ContractStatus[]) => {
+const filterContracts = (
+  unfilteredContracts: Contract[],
+  contractStatusFilter: ContractStatus[],
+) => {
   return unfilteredContracts.filter((contract) => {
     return contractStatusFilter.includes(contract.status);
   });
 };
 
-export default function DashboardContracts({ contracts }: DashboardContractsProps) {
+export default function DashboardContracts({
+  contracts,
+}: DashboardContractsProps) {
   const { latestPrice } = usePrice();
 
-  const [sortByColumn, setSortByColumn] = useState<ColumnFilterKey>("updatedAt");
+  const [sortByColumn, setSortByColumn] =
+    useState<ColumnFilterKey>("updatedAt");
   const [sortAsc, setSortAsc] = useState(false);
 
   function toggleSortByColumn(column: ColumnFilterKey) {
@@ -96,26 +97,34 @@ export default function DashboardContracts({ contracts }: DashboardContractsProp
     ContractStatus.Extended,
   ];
 
-  const contractsWithActionNeeded = contracts.filter((loan) =>
-    loan.status === ContractStatus.Requested || loan.status === ContractStatus.RenewalRequested
-    || loan.status === ContractStatus.Defaulted || loan.status === ContractStatus.CollateralSeen
-    || loan.status === ContractStatus.CollateralConfirmed
-    || loan.status === ContractStatus.RepaymentProvided
+  const contractsWithActionNeeded = contracts.filter(
+    (loan) =>
+      loan.status === ContractStatus.Requested ||
+      loan.status === ContractStatus.RenewalRequested ||
+      loan.status === ContractStatus.Defaulted ||
+      loan.status === ContractStatus.CollateralSeen ||
+      loan.status === ContractStatus.CollateralConfirmed ||
+      loan.status === ContractStatus.RepaymentProvided,
   );
   const needsAction = contractsWithActionNeeded.length > 0;
 
   return (
     <Box className="space-y-3">
-      <Tabs.Root defaultValue={!needsAction ? "actionRequired" : "open"} className={"flex flex-col"}>
+      <Tabs.Root
+        defaultValue={!needsAction ? "actionRequired" : "open"}
+        className={"flex flex-col"}
+      >
         <Box className="space-y-2 flex items-center justify-between flex-wrap">
-          <Heading className="text-black dark:text-white">
-            Contracts
-          </Heading>
+          <Heading className="text-black dark:text-white">Contracts</Heading>
           <Tabs.List
             className="bg-white dark:bg-dark-500 flex items-center gap-1 p-1 rounded-xl border dark:border-dark-600 shrink-0 "
             color={undefined}
           >
-            <TabHeader needsAction={needsAction} thisIndex={"actionRequired"} label={"Action Required"} />
+            <TabHeader
+              needsAction={needsAction}
+              thisIndex={"actionRequired"}
+              label={"Action Required"}
+            />
             <TabHeader thisIndex={"open"} label={"Open"} />
             <TabHeader thisIndex={"closed"} label={"Closed"} />
           </Tabs.List>

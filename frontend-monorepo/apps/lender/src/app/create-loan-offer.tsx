@@ -62,15 +62,24 @@ const CreateLoanOffer: FC = () => {
   const navigate = useNavigate();
   const { postLoanOffer, getLoanAndContractStats } = useLenderHttpClient();
 
-  const autoApproveEnabled = enabledFeatures.includes(LenderFeatureFlags.AutoApproveLoanRequests);
-  const kycOffersEnabled = enabledFeatures.includes(LenderFeatureFlags.KycOffers);
+  const autoApproveEnabled = enabledFeatures.includes(
+    LenderFeatureFlags.AutoApproveLoanRequests,
+  );
+  const kycOffersEnabled = enabledFeatures.includes(
+    LenderFeatureFlags.KycOffers,
+  );
 
-  const [loanAmount, setLoanAmount] = useState<LoanAmount>({ min: 1000, max: 100000 });
+  const [loanAmount, setLoanAmount] = useState<LoanAmount>({
+    min: 1000,
+    max: 100000,
+  });
   const [loanReserve, setLoanReserve] = useState(loanAmount.max);
   const [autoAccept, setAutoAccept] = useState(autoApproveEnabled);
   const [ltv, setLtv] = useState<number>(50);
   const [interest, setInterest] = useState<number>(7.5);
-  const [selectedCoin, setSelectedCoin] = useState<StableCoin | undefined>(StableCoin.USDT_ETH);
+  const [selectedCoin, setSelectedCoin] = useState<StableCoin | undefined>(
+    StableCoin.USDT_ETH,
+  );
   const [loanRepaymentAddress, setLoanRepaymentAddress] = useState<string>("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -90,7 +99,9 @@ const CreateLoanOffer: FC = () => {
 
   useEffect(() => {
     if (doesWalletExist === false) {
-      setError("Cannot load wallet. Try to log back in. If the error persists, reach out to support");
+      setError(
+        "Cannot load wallet. Try to log back in. If the error persists, reach out to support",
+      );
     } else {
       setError("");
     }
@@ -103,7 +114,9 @@ const CreateLoanOffer: FC = () => {
     setHideWalletConnectButton(false);
   }, []);
 
-  const mapToCreateLoanOfferSchema = (lender_xpub: string): CreateLoanOfferRequest => {
+  const mapToCreateLoanOfferSchema = (
+    lender_xpub: string,
+  ): CreateLoanOfferRequest => {
     let assetType = LoanAssetType.Usdt;
     let assetChain = LoanAssetChain.Starknet;
     switch (selectedCoin) {
@@ -189,12 +202,18 @@ const CreateLoanOffer: FC = () => {
     }
   };
 
-  const { loading: statsLoading, value: stats, error: loadingStatsError } = useAsync(async () => {
+  const {
+    loading: statsLoading,
+    value: stats,
+    error: loadingStatsError,
+  } = useAsync(async () => {
     return await getLoanAndContractStats();
   });
 
   if (loadingStatsError) {
-    console.error(`Failed loading loan and contract stats ${loadingStatsError}`);
+    console.error(
+      `Failed loading loan and contract stats ${loadingStatsError}`,
+    );
   }
 
   return (
@@ -211,7 +230,9 @@ const CreateLoanOffer: FC = () => {
               <Heading size={"7"} className="text-font dark:text-font-dark">
                 Create Loan Offer
               </Heading>
-              <Text size={"2"} className="text-font/60 dark:text-font-dark/60">Create a loan on your own terms.</Text>
+              <Text size={"2"} className="text-font/60 dark:text-font-dark/60">
+                Create a loan on your own terms.
+              </Text>
             </Box>
 
             <Separator size={"4"} my={"5"} className="opacity-50" />
@@ -223,7 +244,12 @@ const CreateLoanOffer: FC = () => {
               >
                 {/* Amount */}
                 <Box className="space-y-1">
-                  <Text as="label" size={"2"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">
+                  <Text
+                    as="label"
+                    size={"2"}
+                    weight={"medium"}
+                    className="text-font/60 dark:text-font-dark/60"
+                  >
                     Amount to Lend
                   </Text>
                   <Flex align={"center"} gap={"15px"}>
@@ -234,7 +260,12 @@ const CreateLoanOffer: FC = () => {
                       type="number"
                       placeholder="Min Amount"
                       value={loanAmount.min}
-                      onChange={(e) => setLoanAmount({ ...loanAmount, min: Number(e.target.value) })}
+                      onChange={(e) =>
+                        setLoanAmount({
+                          ...loanAmount,
+                          min: Number(e.target.value),
+                        })
+                      }
                     />
 
                     <MdOutlineSwapCalls />
@@ -247,15 +278,29 @@ const CreateLoanOffer: FC = () => {
                       placeholder="Max Amount"
                       value={loanAmount.max}
                       variant="surface"
-                      onChange={(e) => setLoanAmount({ ...loanAmount, max: Number(e.target.value) })}
+                      onChange={(e) =>
+                        setLoanAmount({
+                          ...loanAmount,
+                          max: Number(e.target.value),
+                        })
+                      }
                     />
                   </Flex>
                 </Box>
 
                 {/* Reserve */}
                 <Box className="space-y-1">
-                  <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
-                    <Text as="label" size={"2"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">
+                  <Flex
+                    align={"center"}
+                    gap={"2"}
+                    className="text-font dark:text-font-dark"
+                  >
+                    <Text
+                      as="label"
+                      size={"2"}
+                      weight={"medium"}
+                      className="text-font/60 dark:text-font-dark/60"
+                    >
                       Reserve (max amount across all requests for this offer)
                     </Text>
                   </Flex>
@@ -274,15 +319,24 @@ const CreateLoanOffer: FC = () => {
                       setLoanReserve(Number(e.target.value));
                       setAutoAccept(true);
                     }}
-                  >
-                  </TextField.Root>
+                  ></TextField.Root>
                 </Box>
 
                 {/* Auto Accept */}
                 <Box className="space-y-1">
-                  <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
-                    <Text as="label" size={"2"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">
-                      Auto Accept (Requests within Loan Reserve will be automatically accepted)
+                  <Flex
+                    align={"center"}
+                    gap={"2"}
+                    className="text-font dark:text-font-dark"
+                  >
+                    <Text
+                      as="label"
+                      size={"2"}
+                      weight={"medium"}
+                      className="text-font/60 dark:text-font-dark/60"
+                    >
+                      Auto Accept (Requests within Loan Reserve will be
+                      automatically accepted)
                     </Text>
                   </Flex>
 
@@ -291,7 +345,9 @@ const CreateLoanOffer: FC = () => {
                       className="flex size-[25px] appearance-none items-center justify-center rounded bg-white dark:bg-gray-300 shadow-[0_2px_10px] shadow-blackA4 outline-none hover:bg-violet3 focus:shadow-[0_0_0_2px_black]"
                       checked={autoAccept}
                       disabled={!autoApproveEnabled}
-                      onCheckedChange={(checked) => setAutoAccept(checked === true)}
+                      onCheckedChange={(checked) =>
+                        setAutoAccept(checked === true)
+                      }
                     >
                       <Checkbox.Indicator className="text-violet11">
                         <CheckIcon />
@@ -304,27 +360,38 @@ const CreateLoanOffer: FC = () => {
                       Auto accept requests within Loan Reserve
                     </label>
                   </div>
-                  {!autoApproveEnabled
-                    && (
-                      <Callout.Root color="orange">
-                        <Callout.Icon>
-                          <PiInfo />
-                        </Callout.Icon>
+                  {!autoApproveEnabled && (
+                    <Callout.Root color="orange">
+                      <Callout.Icon>
+                        <PiInfo />
+                      </Callout.Icon>
 
-                        <Callout.Text>
-                          {"You do not qualify for the auto approval feature yet. Please reach out to us via discord if you want it."}
-                        </Callout.Text>
-                      </Callout.Root>
-                    )}
+                      <Callout.Text>
+                        {
+                          "You do not qualify for the auto approval feature yet. Please reach out to us via discord if you want it."
+                        }
+                      </Callout.Text>
+                    </Callout.Root>
+                  )}
                 </Box>
 
                 {/* Duration */}
                 <Box className="space-y-1">
                   <Flex align={"center"} gap={"1"}>
-                    <Text as="label" size={"2"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">
+                    <Text
+                      as="label"
+                      size={"2"}
+                      weight={"medium"}
+                      className="text-font/60 dark:text-font-dark/60"
+                    >
                       Duration
                     </Text>
-                    <Text as="span" className="text-font/50 dark:text-font-dark/50" weight={"medium"} size={"1"}>
+                    <Text
+                      as="span"
+                      className="text-font/50 dark:text-font-dark/50"
+                      weight={"medium"}
+                      size={"1"}
+                    >
                       (Days)
                     </Text>
                   </Flex>
@@ -336,8 +403,17 @@ const CreateLoanOffer: FC = () => {
                 {/* LTV */}
                 <Box className="space-y-1">
                   <LtvInfoLabel>
-                    <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
-                      <Text as="label" size={"2"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">
+                    <Flex
+                      align={"center"}
+                      gap={"2"}
+                      className="text-font dark:text-font-dark"
+                    >
+                      <Text
+                        as="label"
+                        size={"2"}
+                        weight={"medium"}
+                        className="text-font/60 dark:text-font-dark/60"
+                      >
                         Loan to value (LTV)
                       </Text>
                       <FaInfoCircle />
@@ -357,7 +433,9 @@ const CreateLoanOffer: FC = () => {
                   >
                     <TextField.Slot className="pr-0" />
                     <TextField.Slot>
-                      <Text size={"2"} weight={"medium"}>1% - 70%</Text>
+                      <Text size={"2"} weight={"medium"}>
+                        1% - 70%
+                      </Text>
                     </TextField.Slot>
                   </TextField.Root>
                 </Box>
@@ -366,23 +444,28 @@ const CreateLoanOffer: FC = () => {
                 <Box className="space-y-1">
                   <Flex align={"center"} gap={"2"}>
                     <InterestRateInfoLabel>
-                      <Text as="label" size={"2"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">
+                      <Text
+                        as="label"
+                        size={"2"}
+                        weight={"medium"}
+                        className="text-font/60 dark:text-font-dark/60"
+                      >
                         Interest Rate
                       </Text>
                       <FaInfoCircle className="text-font dark:text-font-dark" />
                     </InterestRateInfoLabel>
                     <Skeleton loading={statsLoading}>
-                      {stats
-                        && (
-                          <Text
-                            as="label"
-                            size={"2"}
-                            weight={"medium"}
-                            className="text-font/50 dark:text-font-dark/50"
-                          >
-                            (current best offer: {(stats?.loan_offer_stats.min * 100).toFixed(2)}%)
-                          </Text>
-                        )}
+                      {stats && (
+                        <Text
+                          as="label"
+                          size={"2"}
+                          weight={"medium"}
+                          className="text-font/50 dark:text-font-dark/50"
+                        >
+                          (current best offer:{" "}
+                          {(stats?.loan_offer_stats.min * 100).toFixed(2)}%)
+                        </Text>
+                      )}
                     </Skeleton>
                   </Flex>
 
@@ -400,17 +483,29 @@ const CreateLoanOffer: FC = () => {
                   >
                     <TextField.Slot className="pr-0" />
                     <TextField.Slot>
-                      <Text size={"2"} weight={"medium"}>0% - 100%</Text>
+                      <Text size={"2"} weight={"medium"}>
+                        0% - 100%
+                      </Text>
                     </TextField.Slot>
                   </TextField.Root>
                 </Box>
 
                 {/* Stable Coin */}
                 <Box className="space-y-1">
-                  <Text as="label" size={"2"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">
+                  <Text
+                    as="label"
+                    size={"2"}
+                    weight={"medium"}
+                    className="text-font/60 dark:text-font-dark/60"
+                  >
                     Stablecoins
                   </Text>
-                  <Grid align={"center"} columns={{ initial: "1", md: "3" }} gap="3" width="auto">
+                  <Grid
+                    align={"center"}
+                    columns={{ initial: "1", md: "3" }}
+                    gap="3"
+                    width="auto"
+                  >
                     {StableCoinHelper.all().map((coin) => (
                       <Button
                         key={coin}
@@ -429,27 +524,35 @@ const CreateLoanOffer: FC = () => {
 
                 {/* Repayment Address */}
                 <Box className="space-y-1">
-                  <Text as="label" size={"2"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">
+                  <Text
+                    as="label"
+                    size={"2"}
+                    weight={"medium"}
+                    className="text-font/60 dark:text-font-dark/60"
+                  >
                     Loan Repayment Address
                   </Text>
                   <LoanAddressInputField
                     loanAddress={loanRepaymentAddress}
                     setLoanAddress={setLoanRepaymentAddress}
-                    assetChain={selectedCoin ? StableCoinHelper.toChain(selectedCoin) : "undefined"}
+                    assetChain={
+                      selectedCoin
+                        ? StableCoinHelper.toChain(selectedCoin)
+                        : "undefined"
+                    }
                     hideButton={hideWalletConnectButton}
                     setHideButton={setHideWalletConnectButton}
                   />
                 </Box>
 
-                {kycOffersEnabled
-                  && (
-                    <KycLinkInputField
-                      link={kycLink}
-                      setLink={setKycLink}
-                      isKycRequired={isKycRequired}
-                      setIsKycRequired={setIsKycRequired}
-                    />
-                  )}
+                {kycOffersEnabled && (
+                  <KycLinkInputField
+                    link={kycLink}
+                    setLink={setKycLink}
+                    isKycRequired={isKycRequired}
+                    setIsKycRequired={setIsKycRequired}
+                  />
+                )}
 
                 <Box className="space-y-6 hidden lg:block">
                   {/* Error Message */}
@@ -458,9 +561,7 @@ const CreateLoanOffer: FC = () => {
                       <Callout.Icon>
                         <PiWarningCircle />
                       </Callout.Icon>
-                      <Callout.Text>
-                        {error}
-                      </Callout.Text>
+                      <Callout.Text>{error}</Callout.Text>
                     </Callout.Root>
                   )}
 
@@ -471,9 +572,17 @@ const CreateLoanOffer: FC = () => {
                     size={"3"}
                     variant="solid"
                     radius="large"
-                    disabled={!(loanAmount.max && loanDuration.max
-                      && ltv && loanRepaymentAddress
-                      && !loading && doesWalletExist && kycLink)}
+                    disabled={
+                      !(
+                        loanAmount.max &&
+                        loanDuration.max &&
+                        ltv &&
+                        loanRepaymentAddress &&
+                        !loading &&
+                        doesWalletExist &&
+                        kycLink
+                      )
+                    }
                     className="w-full h-12"
                   >
                     {loading ? <Spinner size={"3"} /> : "Create Offer"}
@@ -483,58 +592,130 @@ const CreateLoanOffer: FC = () => {
             </Box>
           </Box>
           <Box className="flex flex-col justify-center px-6 lg:col-span-3 xl:col-span-2 py-12">
-            <Text size={"2"} weight={"medium"} className="text-center text-font/50 dark:text-font-dark/50">
+            <Text
+              size={"2"}
+              weight={"medium"}
+              className="text-center text-font/50 dark:text-font-dark/50"
+            >
               Offer Summary
             </Text>
-            <Heading size={"7"} className={"text-center text-font dark:text-font-dark"}>Borrowers will see</Heading>
+            <Heading
+              size={"7"}
+              className={"text-center text-font dark:text-font-dark"}
+            >
+              Borrowers will see
+            </Heading>
             <Box className="my-10">
-              <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
+              <Text
+                size={"2"}
+                weight={"medium"}
+                className="text-font/70 dark:text-font-dark/70"
+              >
                 Loan Parameters
               </Text>
-              <Separator size={"4"} mt={"4"} className="opacity-50 text-font dark:text-font-dark" />
+              <Separator
+                size={"4"}
+                mt={"4"}
+                className="opacity-50 text-font dark:text-font-dark"
+              />
               <Flex align={"center"} justify={"between"} my={"4"}>
-                <Text as="label" size={"2"} className="text-font/50 dark:text-font-dark/50">Amount</Text>
-                <Text size={"2"} className="text-font/80 dark:text-font-dark/80 font-semibold">
-                  {formatCurrency(loanAmount.min)} - {formatCurrency(loanAmount.max)}
+                <Text
+                  as="label"
+                  size={"2"}
+                  className="text-font/50 dark:text-font-dark/50"
+                >
+                  Amount
+                </Text>
+                <Text
+                  size={"2"}
+                  className="text-font/80 dark:text-font-dark/80 font-semibold"
+                >
+                  {formatCurrency(loanAmount.min)} -{" "}
+                  {formatCurrency(loanAmount.max)}
                 </Text>
               </Flex>
               <Separator size={"4"} color={"gray"} className="opacity-50" />
               <Flex align={"center"} justify={"between"} my={"4"}>
-                <Text as="label" size={"2"} className="text-font/50 dark:text-font-dark/50">Duration</Text>
-                <Text size={"2"} className="text-font/80 dark:text-font-dark/80 font-semibold">
-                  {getFormatedStringFromDays(loanDuration.min)} - {getFormatedStringFromDays(loanDuration.max)}
+                <Text
+                  as="label"
+                  size={"2"}
+                  className="text-font/50 dark:text-font-dark/50"
+                >
+                  Duration
+                </Text>
+                <Text
+                  size={"2"}
+                  className="text-font/80 dark:text-font-dark/80 font-semibold"
+                >
+                  {getFormatedStringFromDays(loanDuration.min)} -{" "}
+                  {getFormatedStringFromDays(loanDuration.max)}
                 </Text>
               </Flex>
               <Separator size={"4"} color={"gray"} className="opacity-50" />
               <Flex align={"center"} justify={"between"} my={"4"}>
                 <LtvInfoLabel>
-                  <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
-                    <Text as="label" size={"2"} className="text-font/50 dark:text-font-dark/50">LTV</Text>
+                  <Flex
+                    align={"center"}
+                    gap={"2"}
+                    className="text-font dark:text-font-dark"
+                  >
+                    <Text
+                      as="label"
+                      size={"2"}
+                      className="text-font/50 dark:text-font-dark/50"
+                    >
+                      LTV
+                    </Text>
                     <FaInfoCircle />
                   </Flex>
                 </LtvInfoLabel>
 
-                <Text size={"2"} className="text-font/80 dark:text-font-dark/80 font-semibold">
+                <Text
+                  size={"2"}
+                  className="text-font/80 dark:text-font-dark/80 font-semibold"
+                >
                   {ltv.toFixed(2)}%
                 </Text>
               </Flex>
               <Separator size={"4"} color={"gray"} className="opacity-50" />
               <Flex align={"center"} justify={"between"} my={"4"}>
                 <InterestRateInfoLabel>
-                  <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
-                    <Text as="label" size={"2"} className="text-font/50 dark:text-font-dark/50">Interest Rate</Text>
+                  <Flex
+                    align={"center"}
+                    gap={"2"}
+                    className="text-font dark:text-font-dark"
+                  >
+                    <Text
+                      as="label"
+                      size={"2"}
+                      className="text-font/50 dark:text-font-dark/50"
+                    >
+                      Interest Rate
+                    </Text>
                     <FaInfoCircle />
                   </Flex>
                 </InterestRateInfoLabel>
 
-                <Text size={"2"} className="text-font/80 dark:text-font-dark/80 font-semibold">
+                <Text
+                  size={"2"}
+                  className="text-font/80 dark:text-font-dark/80 font-semibold"
+                >
                   {interest.toFixed(2)}%
                 </Text>
               </Flex>
               <Separator size={"4"} color={"gray"} className="opacity-50" />
               <Flex align={"center"} justify={"between"} my={"4"}>
-                <Text as="label" size={"2"} className="text-font/50 dark:text-font-dark/50">Preferred Coin</Text>
-                <Text size={"2"} className="text-font/80 dark:text-font-dark/80 font-semibold">
+                <Text
+                  as="label"
+                  size={"2"}
+                  className="text-font/50 dark:text-font-dark/50"
+                >
+                  Preferred Coin
+                </Text>
+                <Text
+                  size={"2"}
+                  className="text-font/80 dark:text-font-dark/80 font-semibold"
+                >
                   {selectedCoin ? StableCoinHelper.print(selectedCoin) : ""}
                 </Text>
               </Flex>
@@ -542,8 +723,17 @@ const CreateLoanOffer: FC = () => {
                 <>
                   <Separator size={"4"} color={"gray"} className="opacity-50" />
                   <Flex align={"center"} justify={"between"} my={"4"}>
-                    <Text as="label" size={"2"} className="text-font/50 dark:text-font-dark/50">KYC Required</Text>
-                    <Text size={"2"} className="text-font/80 dark:text-font-dark/80 font-semibold">
+                    <Text
+                      as="label"
+                      size={"2"}
+                      className="text-font/50 dark:text-font-dark/50"
+                    >
+                      KYC Required
+                    </Text>
+                    <Text
+                      size={"2"}
+                      className="text-font/80 dark:text-font-dark/80 font-semibold"
+                    >
                       {isKycRequired ? "Yes" : "No"}
                     </Text>
                   </Flex>
@@ -552,14 +742,34 @@ const CreateLoanOffer: FC = () => {
             </Box>
 
             <Box className="my-4">
-              <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
+              <Text
+                size={"2"}
+                weight={"medium"}
+                className="text-font/70 dark:text-font-dark/70"
+              >
                 Repayment
               </Text>
-              <Separator size={"4"} color={"gray"} mt={"4"} className="opacity-50" />
+              <Separator
+                size={"4"}
+                color={"gray"}
+                mt={"4"}
+                className="opacity-50"
+              />
               <Flex align={"center"} justify={"between"} my={"4"}>
-                <Text as="label" size={"2"} className="text-font/50 dark:text-font-dark/50">Address</Text>
-                <Text size={"1"} className="text-font/80 dark:text-font-dark/80 font-semibold capitalize">
-                  {loanRepaymentAddress ? loanRepaymentAddress.slice(0, 14) + "..." : ""}
+                <Text
+                  as="label"
+                  size={"2"}
+                  className="text-font/50 dark:text-font-dark/50"
+                >
+                  Address
+                </Text>
+                <Text
+                  size={"1"}
+                  className="text-font/80 dark:text-font-dark/80 font-semibold capitalize"
+                >
+                  {loanRepaymentAddress
+                    ? loanRepaymentAddress.slice(0, 14) + "..."
+                    : ""}
                 </Text>
               </Flex>
             </Box>
@@ -571,9 +781,7 @@ const CreateLoanOffer: FC = () => {
                 <Callout.Icon>
                   <PiWarningCircle />
                 </Callout.Icon>
-                <Callout.Text>
-                  {error}
-                </Callout.Text>
+                <Callout.Text>{error}</Callout.Text>
               </Callout.Root>
             )}
 
@@ -584,9 +792,15 @@ const CreateLoanOffer: FC = () => {
               size={"3"}
               variant="solid"
               radius="large"
-              disabled={!(loanAmount.max && loanDuration.max
-                && ltv && loanRepaymentAddress
-                && !loading)}
+              disabled={
+                !(
+                  loanAmount.max &&
+                  loanDuration.max &&
+                  ltv &&
+                  loanRepaymentAddress &&
+                  !loading
+                )
+              }
               className="w-full h-12"
             >
               {loading ? <Spinner size={"3"} /> : "Create Offer"}

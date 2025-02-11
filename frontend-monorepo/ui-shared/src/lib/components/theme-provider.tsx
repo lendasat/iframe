@@ -1,7 +1,15 @@
-import { createContext, type ReactNode, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  type ReactNode,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 
 const getPreferredSystemTheme = () => {
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  return window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
 };
 
 // Order of theme preferences.
@@ -19,7 +27,8 @@ interface Theme {
 
 export const ThemeContext = createContext<Theme>({
   theme: "light",
-  toggleTheme: () => { // noop
+  toggleTheme: () => {
+    // noop
   },
 });
 

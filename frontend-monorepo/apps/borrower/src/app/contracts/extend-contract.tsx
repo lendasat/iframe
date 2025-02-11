@@ -1,7 +1,14 @@
 import { faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { UnlockWalletModal, useWallet } from "@frontend-monorepo/browser-wallet";
-import { Contract, LoanOffer, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
+import {
+  UnlockWalletModal,
+  useWallet,
+} from "@frontend-monorepo/browser-wallet";
+import {
+  Contract,
+  LoanOffer,
+  useBorrowerHttpClient,
+} from "@frontend-monorepo/http-client-borrower";
 import {
   formatCurrency,
   InterestRateInfoLabel,
@@ -10,7 +17,17 @@ import {
   StableCoinHelper,
   usePrice,
 } from "@frontend-monorepo/ui-shared";
-import { AlertDialog, Box, Button, Callout, Flex, Separator, Slider, Spinner, Text } from "@radix-ui/themes";
+import {
+  AlertDialog,
+  Box,
+  Button,
+  Callout,
+  Flex,
+  Separator,
+  Slider,
+  Spinner,
+  Text,
+} from "@radix-ui/themes";
 import { addDays } from "date-fns";
 import { useMemo, useState } from "react";
 import { FaInfoCircle } from "react-icons/fa";
@@ -24,7 +41,11 @@ interface ConfirmationDialogProps {
   onConfirm: () => void;
 }
 
-const ConfirmationDialog = ({ isOpen, setIsOpen, onConfirm }: ConfirmationDialogProps) => {
+const ConfirmationDialog = ({
+  isOpen,
+  setIsOpen,
+  onConfirm,
+}: ConfirmationDialogProps) => {
   return (
     <AlertDialog.Root open={isOpen} onOpenChange={setIsOpen}>
       <AlertDialog.Content className="fixed left-1/2 top-1/2 max-h-[85vh] w-[90vw] max-w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-md bg-white p-[25px] shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] focus:outline-none data-[state=open]:animate-contentShow">
@@ -68,11 +89,13 @@ const SelectedLoanOffer = (props: SelectedLoanOfferProps) => {
   const [error, setError] = useState("");
   const { postExtendLoanRequest } = useBorrowerHttpClient();
 
-  const [walletSecretConfirmed, setWalletSecretConfirmed] = useState(isWalletLoaded);
+  const [walletSecretConfirmed, setWalletSecretConfirmed] =
+    useState(isWalletLoaded);
   const [showUnlockWalletModal, setShowUnlockWalletModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [newContractId, setNewContractId] = useState("");
-  const [isFinalConfirmationDialogOpen, setIsFinalConfirmationDialogOpen] = useState(false);
+  const [isFinalConfirmationDialogOpen, setIsFinalConfirmationDialogOpen] =
+    useState(false);
 
   const handleCloseUnlockWalletModal = () => setShowUnlockWalletModal(false);
   const handleOpenUnlockWalletModal = () => setShowUnlockWalletModal(true);
@@ -94,9 +117,11 @@ const SelectedLoanOffer = (props: SelectedLoanOfferProps) => {
     }
   };
 
-  const actualInterest = props.totalInterestRate / (ONE_YEAR / props.totalDuration);
+  const actualInterest =
+    props.totalInterestRate / (ONE_YEAR / props.totalDuration);
   const actualInterestUsdAmount = props.amount * actualInterest;
-  const extensionFeeBtc = (props.additionalOriginationFee * props.amount) / latestPrice;
+  const extensionFeeBtc =
+    (props.additionalOriginationFee * props.amount) / latestPrice;
   const extensionFeeUsd = props.additionalOriginationFee * props.amount;
 
   const confirmOfferButtonEnabled = walletSecretConfirmed;
@@ -142,7 +167,11 @@ const SelectedLoanOffer = (props: SelectedLoanOfferProps) => {
           <Separator size={"4"} />
           <Flex justify={"between"} align={"center"}>
             <InterestRateInfoLabel>
-              <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
+              <Flex
+                align={"center"}
+                gap={"2"}
+                className="text-font dark:text-font-dark"
+              >
                 <Text className="text-xs font-medium text-font/60 dark:text-font-dark/60">
                   Total Interest
                 </Text>
@@ -160,16 +189,19 @@ const SelectedLoanOffer = (props: SelectedLoanOfferProps) => {
             </div>
           </Flex>
           <Flex justify={"between"} align={"center"}>
-            <Text className="text-xs font-medium text-font/60 dark:text-font-dark/60">New expiry</Text>
+            <Text className="text-xs font-medium text-font/60 dark:text-font-dark/60">
+              New expiry
+            </Text>
             <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
               {props.newExpiry.toLocaleDateString()}
             </Text>
           </Flex>
           <Separator size={"4"} />
           <Flex justify={"between"} align={"center"}>
-            <Text className="text-xs font-medium text-font/60 dark:text-font-dark/60">Extension Fee</Text>
-            <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
+            <Text className="text-xs font-medium text-font/60 dark:text-font-dark/60">
+              Extension Fee
             </Text>
+            <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize"></Text>
             <div className="flex flex-col">
               <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
                 {extensionFeeBtc.toFixed(8)} BTC
@@ -184,22 +216,23 @@ const SelectedLoanOffer = (props: SelectedLoanOfferProps) => {
             <Button
               size={"3"}
               variant="solid"
-              className={`text-white ${!walletSecretConfirmed ? "bg-purple-950" : "bg-gray-400"}`}
+              className={`text-white ${
+                !walletSecretConfirmed ? "bg-purple-950" : "bg-gray-400"
+              }`}
               onClick={() => UnlockWallet()}
               disabled={walletSecretConfirmed}
               loading={isLoading}
             >
-              <Text
-                size={"2"}
-                className="font-semibold"
-              >
+              <Text size={"2"} className="font-semibold">
                 Confirm Secret
               </Text>
             </Button>
             <Button
               size={"3"}
               variant="solid"
-              className={`text-white ${confirmOfferButtonEnabled ? "bg-purple-950" : "bg-gray-400"}`}
+              className={`text-white ${
+                confirmOfferButtonEnabled ? "bg-purple-950" : "bg-gray-400"
+              }`}
               onClick={() => {
                 onExtendLoanContract();
               }}
@@ -207,29 +240,24 @@ const SelectedLoanOffer = (props: SelectedLoanOfferProps) => {
               // TODO:
               loading={isLoading}
             >
-              <Text
-                size={"2"}
-                className="font-semibold"
-              >
+              <Text size={"2"} className="font-semibold">
                 Confirm Offer
               </Text>
             </Button>
           </Box>
 
-          {error
-            ? (
-              <Box px={"2"} className="md:col-span-2">
-                <Callout.Root color="red" className="w-full">
-                  <Callout.Icon>
-                    <FontAwesomeIcon icon={faWarning} />
-                  </Callout.Icon>
-                  <Callout.Text>
-                    {error}
-                  </Callout.Text>
-                </Callout.Root>
-              </Box>
-            )
-            : ""}
+          {error ? (
+            <Box px={"2"} className="md:col-span-2">
+              <Callout.Root color="red" className="w-full">
+                <Callout.Icon>
+                  <FontAwesomeIcon icon={faWarning} />
+                </Callout.Icon>
+                <Callout.Text>{error}</Callout.Text>
+              </Callout.Root>
+            </Box>
+          ) : (
+            ""
+          )}
         </Box>
       </Box>
     </>
@@ -238,8 +266,13 @@ const SelectedLoanOffer = (props: SelectedLoanOfferProps) => {
 
 const findBestOffer = (offers: LoanOffer[], days: number) => {
   return offers
-    .filter((offer) => offer.duration_days_min <= days && offer.duration_days_max >= days)
-    .reduce((best, current) => current.interest_rate < best.interest_rate ? current : best);
+    .filter(
+      (offer) =>
+        offer.duration_days_min <= days && offer.duration_days_max >= days,
+    )
+    .reduce((best, current) =>
+      current.interest_rate < best.interest_rate ? current : best,
+    );
 };
 
 interface ExtendContractProps {
@@ -260,7 +293,11 @@ export const ExtendContract = ({
     return contract.lender.id;
   }, [contract]);
 
-  const { error: loadingError, value, loading } = useAsync(async () => {
+  const {
+    error: loadingError,
+    value,
+    loading,
+  } = useAsync(async () => {
     return getLoanOffersByLender(lenderIdMemorized);
   }, [lenderIdMemorized]);
 
@@ -275,22 +312,26 @@ export const ExtendContract = ({
         <Callout.Icon>
           <GoAlertFill />
         </Callout.Icon>
-        <Callout.Text>
-          {loadingError.message}
-        </Callout.Text>
+        <Callout.Text>{loadingError.message}</Callout.Text>
       </Callout.Root>
     );
   }
 
   const unfilteredOffers = value || [];
-  const offers = unfilteredOffers.filter((offer) =>
-    StableCoinHelper.mapFromBackend(
-      offer.loan_asset_chain,
-      offer.loan_asset_type,
-    ) === coin
-  ).filter((offer) => {
-    return (offer.loan_amount_min <= contract.loan_amount && offer.loan_amount_max >= contract.loan_amount);
-  });
+  const offers = unfilteredOffers
+    .filter(
+      (offer) =>
+        StableCoinHelper.mapFromBackend(
+          offer.loan_asset_chain,
+          offer.loan_asset_type,
+        ) === coin,
+    )
+    .filter((offer) => {
+      return (
+        offer.loan_amount_min <= contract.loan_amount &&
+        offer.loan_amount_max >= contract.loan_amount
+      );
+    });
 
   if (offers.length === 0) {
     return (
@@ -300,14 +341,20 @@ export const ExtendContract = ({
         </Callout.Icon>
         <Callout.Text>
           {/*TODO: in the future we could send a request for extension nevertheless*/}
-          {"The lender does not have any open offers or disabled extending contracts."}
+          {
+            "The lender does not have any open offers or disabled extending contracts."
+          }
         </Callout.Text>
       </Callout.Root>
     );
   }
 
-  const maxAvailableDays = Math.max(...offers.map((offer) => offer.duration_days_max));
-  const minAvailableDays = Math.min(...offers.map((offer) => offer.duration_days_min));
+  const maxAvailableDays = Math.max(
+    ...offers.map((offer) => offer.duration_days_max),
+  );
+  const minAvailableDays = Math.min(
+    ...offers.map((offer) => offer.duration_days_min),
+  );
 
   const onValueChange = (days: number) => {
     setSliderDuration(days);
@@ -317,8 +364,9 @@ export const ExtendContract = ({
   const bestOffer = findBestOffer(offers, selectedDurationDays);
 
   const totalInterestRate =
-    ((bestOffer.interest_rate * selectedDurationDays) + (contract.interest_rate * contract.duration_days))
-    / (selectedDurationDays + contract.duration_days);
+    (bestOffer.interest_rate * selectedDurationDays +
+      contract.interest_rate * contract.duration_days) /
+    (selectedDurationDays + contract.duration_days);
 
   const totalDuration = selectedDurationDays + contract.duration_days;
   const creationDate = contract.expiry;

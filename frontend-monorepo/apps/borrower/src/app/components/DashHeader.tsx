@@ -9,7 +9,11 @@ export default function DashHeader(props: DashInterface) {
     <Box>
       <Box className="px-6 md:px-8" py={"3"}>
         <Flex justify={"between"}>
-          <Heading className={"text-font dark:text-font-dark"} as="h2" weight={"medium"}>
+          <Heading
+            className={"text-font dark:text-font-dark"}
+            as="h2"
+            weight={"medium"}
+          >
             {props.label}
           </Heading>
         </Flex>

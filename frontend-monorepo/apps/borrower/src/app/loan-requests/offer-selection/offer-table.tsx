@@ -1,8 +1,20 @@
 "use client";
 
 import { LoanOffer } from "@frontend-monorepo/http-client-borrower";
-import { formatCurrency, getFormatedStringFromDays, StableCoinHelper } from "@frontend-monorepo/ui-shared";
-import { Badge, Box, Button, DataList, Flex, Skeleton, Table } from "@radix-ui/themes";
+import {
+  formatCurrency,
+  getFormatedStringFromDays,
+  StableCoinHelper,
+} from "@frontend-monorepo/ui-shared";
+import {
+  Badge,
+  Box,
+  Button,
+  DataList,
+  Flex,
+  Skeleton,
+  Table,
+} from "@radix-ui/themes";
 import {
   ColumnFiltersState,
   createColumnHelper,
@@ -47,21 +59,28 @@ const MobileOfferCard = ({
 }) => {
   return (
     <Box
-      className={`p-4 rounded-lg border ${selected ? "bg-purple-50" : "bg-white"} cursor-pointer`}
+      className={`p-4 rounded-lg border ${
+        selected ? "bg-purple-50" : "bg-white"
+      } cursor-pointer`}
       onClick={() => onClick(offer.id)}
     >
       <DataList.Root>
         <DataList.Item align="center">
           <DataList.Label minWidth="88px">Lender</DataList.Label>
           <DataList.Value className="flex-1 flex justify-end">
-            {loading ? <Skeleton>Loading</Skeleton> : <Lender {...offer.lender} showAvatar={false} />}
+            {loading ? (
+              <Skeleton>Loading</Skeleton>
+            ) : (
+              <Lender {...offer.lender} showAvatar={false} />
+            )}
           </DataList.Value>
         </DataList.Item>
         <DataList.Item align="center">
           <DataList.Label minWidth="88px">Amounts</DataList.Label>
           <DataList.Value className="flex-1 flex justify-end">
             <Skeleton loading={loading}>
-              {formatCurrency(offer.loan_amount_min)} - {formatCurrency(offer.loan_amount_max)}
+              {formatCurrency(offer.loan_amount_min)} -{" "}
+              {formatCurrency(offer.loan_amount_max)}
             </Skeleton>
           </DataList.Value>
         </DataList.Item>
@@ -95,22 +114,28 @@ const MobileOfferCard = ({
           <DataList.Value className="flex-1 flex justify-end">
             <Badge color="purple" size="2">
               <Skeleton loading={loading}>
-                {StableCoinHelper.print(StableCoinHelper.mapFromBackend(offer.loan_asset_chain, offer.loan_asset_type))}
+                {StableCoinHelper.print(
+                  StableCoinHelper.mapFromBackend(
+                    offer.loan_asset_chain,
+                    offer.loan_asset_type,
+                  ),
+                )}
               </Skeleton>
             </Badge>
           </DataList.Value>
         </DataList.Item>
-        {(enableActionColumn && onActionColumnAction)
-          && (
-            <DataList.Item align="center">
-              <DataList.Label minWidth="88px">Pick</DataList.Label>
-              <DataList.Value className="flex-1 flex justify-end">
-                <Skeleton loading={loading}>
-                  <Button onClick={() => onActionColumnAction(offer)}>Select</Button>
-                </Skeleton>
-              </DataList.Value>
-            </DataList.Item>
-          )}
+        {enableActionColumn && onActionColumnAction && (
+          <DataList.Item align="center">
+            <DataList.Label minWidth="88px">Pick</DataList.Label>
+            <DataList.Value className="flex-1 flex justify-end">
+              <Skeleton loading={loading}>
+                <Button onClick={() => onActionColumnAction(offer)}>
+                  Select
+                </Button>
+              </Skeleton>
+            </DataList.Value>
+          </DataList.Item>
+        )}
       </DataList.Root>
     </Box>
   );
@@ -152,10 +177,11 @@ export function LoanOfferTable({
       enableSorting: true,
     }),
     columnHelper.accessor(
-      row => ({
-        min: row.loan_amount_min,
-        max: row.loan_amount_max,
-      } as AmountRange), // Adding 'as const' to preserve literal types
+      (row) =>
+        ({
+          min: row.loan_amount_min,
+          max: row.loan_amount_max,
+        }) as AmountRange, // Adding 'as const' to preserve literal types
       {
         id: "amount",
         header: () => {
@@ -163,9 +189,17 @@ export function LoanOfferTable({
         },
         cell: ({ cell }) => {
           const value = cell.getValue() as AmountRange;
-          return <>{formatCurrency(value.min)} - {formatCurrency(value.max)}</>;
+          return (
+            <>
+              {formatCurrency(value.min)} - {formatCurrency(value.max)}
+            </>
+          );
         },
-        filterFn: (row: Row<LoanOffer>, columnId: string, filterValue: string) => {
+        filterFn: (
+          row: Row<LoanOffer>,
+          columnId: string,
+          filterValue: string,
+        ) => {
           if (!filterValue) return true;
 
           const duration = row.getValue(columnId) as AmountRange;
@@ -173,15 +207,18 @@ export function LoanOfferTable({
           const max = duration.max;
 
           const searchValue = parseFloat(filterValue.replace(/[^0-9.]/g, ""));
-          return !isNaN(searchValue) && searchValue >= min && searchValue <= max;
+          return (
+            !isNaN(searchValue) && searchValue >= min && searchValue <= max
+          );
         },
       },
     ),
     columnHelper.accessor(
-      row => ({
-        min: row.duration_days_min,
-        max: row.duration_days_max,
-      } satisfies DurationRange),
+      (row) =>
+        ({
+          min: row.duration_days_min,
+          max: row.duration_days_max,
+        }) satisfies DurationRange,
       {
         id: "duration",
         header: () => {
@@ -189,10 +226,19 @@ export function LoanOfferTable({
         },
         cell: ({ cell }) => {
           const value = cell.getValue() as DurationRange;
-          return <>{getFormatedStringFromDays(value.min)} - {getFormatedStringFromDays(value.max)}</>;
+          return (
+            <>
+              {getFormatedStringFromDays(value.min)} -{" "}
+              {getFormatedStringFromDays(value.max)}
+            </>
+          );
         },
         enableColumnFilter: true,
-        filterFn: (row: Row<LoanOffer>, columnId: string, filterValue: string) => {
+        filterFn: (
+          row: Row<LoanOffer>,
+          columnId: string,
+          filterValue: string,
+        ) => {
           if (!filterValue) return true;
 
           const duration = row.getValue(columnId) as DurationRange;
@@ -200,7 +246,9 @@ export function LoanOfferTable({
           const max = duration.max;
 
           const searchValue = parseFloat(filterValue.replace(/[^0-9.]/g, ""));
-          return !isNaN(searchValue) && searchValue >= min && searchValue <= max;
+          return (
+            !isNaN(searchValue) && searchValue >= min && searchValue <= max
+          );
         },
       },
     ),
@@ -212,45 +260,58 @@ export function LoanOfferTable({
         if (loading) {
           return <Skeleton loading={true}>Loading</Skeleton>;
         }
-        return <>{(row.getValue("min_ltv") as number * 100).toFixed(0)}%</>;
+        return <>{((row.getValue("min_ltv") as number) * 100).toFixed(0)}%</>;
       },
       enableSorting: true,
     }),
     columnHelper.accessor("interest_rate", {
       header: () => {
-        return ("Interest Rate");
+        return "Interest Rate";
       },
       cell: ({ row }) => {
-        return <>{(row.getValue("interest_rate") as number * 100).toFixed(1)}%</>;
+        return (
+          <>{((row.getValue("interest_rate") as number) * 100).toFixed(1)}%</>
+        );
       },
       enableSorting: true,
     }),
     columnHelper.accessor(
-      row => StableCoinHelper.mapFromBackend(row.loan_asset_chain, row.loan_asset_type),
+      (row) =>
+        StableCoinHelper.mapFromBackend(
+          row.loan_asset_chain,
+          row.loan_asset_type,
+        ),
       {
         id: "Coin",
         header: () => {
-          return ("Coin");
+          return "Coin";
         },
         cell: ({ cell }) => {
-          return <Badge color="purple" size={"2"}>{StableCoinHelper.print(cell.getValue())}</Badge>;
+          return (
+            <Badge color="purple" size={"2"}>
+              {StableCoinHelper.print(cell.getValue())}
+            </Badge>
+          );
         },
       },
     ),
-    columnHelper.accessor(
-      row => row.kyc_link,
-      {
-        id: "requirements",
-        header: () => {
-          return ("KYC");
-        },
-        cell: ({ cell }) => {
-          return cell.getValue()
-            ? <Badge color="teal" size={"2"}>{"YES"}</Badge>
-            : <Badge color="gray" size={"2"}>{"No"}</Badge>;
-        },
+    columnHelper.accessor((row) => row.kyc_link, {
+      id: "requirements",
+      header: () => {
+        return "KYC";
       },
-    ),
+      cell: ({ cell }) => {
+        return cell.getValue() ? (
+          <Badge color="teal" size={"2"}>
+            {"YES"}
+          </Badge>
+        ) : (
+          <Badge color="gray" size={"2"}>
+            {"No"}
+          </Badge>
+        );
+      },
+    }),
     columnHelper.display({
       id: "actions",
       header: () => {
@@ -258,11 +319,13 @@ export function LoanOfferTable({
       },
       cell: (props) => (
         <Button
-          onClick={onActionColumnAction
-            ? () => {
-              onActionColumnAction(props.row.original as LoanOffer);
-            }
-            : undefined}
+          onClick={
+            onActionColumnAction
+              ? () => {
+                  onActionColumnAction(props.row.original as LoanOffer);
+                }
+              : undefined
+          }
         >
           Select
         </Button>
@@ -274,33 +337,37 @@ export function LoanOfferTable({
 
   const data = useMemo(() => {
     if (loading) {
-      return [{
-        id: "dummy",
-        lender: {
+      return [
+        {
           id: "dummy",
-          joined_at: new Date(),
-          name: "dummy",
-          successful_contracts: 1,
-          failed_contracts: 0,
-          rating: 1,
-          timezone: "",
+          lender: {
+            id: "dummy",
+            joined_at: new Date(),
+            name: "dummy",
+            successful_contracts: 1,
+            failed_contracts: 0,
+            rating: 1,
+            timezone: "",
+          },
+          min_ltv: 0,
+          interest_rate: 0,
+          loan_amount_min: 0,
+          loan_amount_max: 0,
+          duration_days_min: 0,
+          duration_days_max: 0,
+          loan_asset_type: "Usdc",
+          loan_asset_chain: "Ethereum",
+          origination_fee: [],
         },
-        min_ltv: 0,
-        interest_rate: 0,
-        loan_amount_min: 0,
-        loan_amount_max: 0,
-        duration_days_min: 0,
-        duration_days_max: 0,
-        loan_asset_type: "Usdc",
-        loan_asset_chain: "Ethereum",
-        origination_fee: [],
-      }];
+      ];
     }
     return loanOffers;
   }, [loanOffers, loading]);
 
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({ "actions": enableActionColumn || false });
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
+    actions: enableActionColumn || false,
+  });
 
   const rowSelection = useMemo(() => {
     return selectedOfferId ? { [selectedOfferId]: true } : {};
@@ -309,7 +376,7 @@ export function LoanOfferTable({
   const table = useReactTable({
     data,
     columns,
-    getRowId: originalRow => originalRow.id,
+    getRowId: (originalRow) => originalRow.id,
     onSortingChange: setSorting,
     onColumnFiltersChange: onColumnFiltersChange,
     getCoreRowModel: getCoreRowModel(),
@@ -324,7 +391,8 @@ export function LoanOfferTable({
 
       // When row selection changes, call onOfferSelect with the selected row id
       if (onOfferSelect) {
-        const newValue = typeof updater === "function" ? updater(rowSelection) : updater;
+        const newValue =
+          typeof updater === "function" ? updater(rowSelection) : updater;
         const selectedId = Object.keys(newValue)[0];
         onOfferSelect(selectedId);
       }
@@ -350,33 +418,36 @@ export function LoanOfferTable({
                 <Table.Row key={headerGroup.id}>
                   {headerGroup.headers.map((header) => {
                     return (
-                      <Table.ColumnHeaderCell key={header.id} className={"text-font dark:text-font-dark"}>
-                        {header.isPlaceholder
-                          ? null
-                          : (
-                            <Box
-                              {...{
-                                className: header.column.getCanSort()
-                                  ? "cursor-pointer select-none"
-                                  : "",
-                                onClick: header.column.getToggleSortingHandler(),
-                              }}
-                            >
-                              <Flex gap={"1"} align={"center"}>
-                                {flexRender(
-                                  header.column.columnDef.header,
-                                  header.getContext(),
-                                )}
+                      <Table.ColumnHeaderCell
+                        key={header.id}
+                        className={"text-font dark:text-font-dark"}
+                      >
+                        {header.isPlaceholder ? null : (
+                          <Box
+                            {...{
+                              className: header.column.getCanSort()
+                                ? "cursor-pointer select-none"
+                                : "",
+                              onClick: header.column.getToggleSortingHandler(),
+                            }}
+                          >
+                            <Flex gap={"1"} align={"center"}>
+                              {flexRender(
+                                header.column.columnDef.header,
+                                header.getContext(),
+                              )}
 
-                                {header.column.getCanSort()
-                                  ? {
+                              {header.column.getCanSort()
+                                ? ({
                                     asc: <LuArrowUp />,
                                     desc: <LuArrowDown />,
-                                  }[header.column.getIsSorted() as string] ?? <LuArrowUpDown />
-                                  : undefined}
-                              </Flex>
-                            </Box>
-                          )}
+                                  }[header.column.getIsSorted() as string] ?? (
+                                    <LuArrowUpDown />
+                                  ))
+                                : undefined}
+                            </Flex>
+                          </Box>
+                        )}
                       </Table.ColumnHeaderCell>
                     );
                   })}
@@ -384,39 +455,47 @@ export function LoanOfferTable({
               ))}
             </Table.Header>
             <Table.Body>
-              {table.getRowModel().rows?.length
-                ? (
-                  table.getRowModel().rows.map((row) => (
-                    <Table.Row
-                      key={row.id}
-                      className={row.getIsSelected() ? "bg-purple-50 dark:purple-100" : ""}
-                      onClick={row.getToggleSelectedHandler()}
-                      data-state={row.getIsSelected() && "selected"}
-                    >
-                      {row.getVisibleCells().map((cell) => (
-                        <Table.Cell
-                          key={cell.id}
-                          className={row.getIsSelected() ? "text-gray-900" : "text-font dark:text-font-dark"}
-                        >
-                          {loading ? <Skeleton loading={loading}>Loading</Skeleton> : flexRender(
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <Table.Row
+                    key={row.id}
+                    className={
+                      row.getIsSelected() ? "bg-purple-50 dark:purple-100" : ""
+                    }
+                    onClick={row.getToggleSelectedHandler()}
+                    data-state={row.getIsSelected() && "selected"}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <Table.Cell
+                        key={cell.id}
+                        className={
+                          row.getIsSelected()
+                            ? "text-gray-900"
+                            : "text-font dark:text-font-dark"
+                        }
+                      >
+                        {loading ? (
+                          <Skeleton loading={loading}>Loading</Skeleton>
+                        ) : (
+                          flexRender(
                             cell.column.columnDef.cell,
                             cell.getContext(),
-                          )}
-                        </Table.Cell>
-                      ))}
-                    </Table.Row>
-                  ))
-                )
-                : (
-                  <Table.Row>
-                    <Table.Cell
-                      colSpan={columns.length}
-                      className="h-24 text-center"
-                    >
-                      No results.
-                    </Table.Cell>
+                          )
+                        )}
+                      </Table.Cell>
+                    ))}
                   </Table.Row>
-                )}
+                ))
+              ) : (
+                <Table.Row>
+                  <Table.Cell
+                    colSpan={columns.length}
+                    className="h-24 text-center"
+                  >
+                    No results.
+                  </Table.Cell>
+                </Table.Row>
+              )}
             </Table.Body>
           </Table.Root>
         </Box>
@@ -424,34 +503,34 @@ export function LoanOfferTable({
       {/* Mobile view */}
       <Box className="block md:hidden">
         <Box className="space-y-4">
-          {loading
-            ? (
-              // Loading state for mobile
-              [...Array(3)].map((_, i) => (
-                <Box key={i} className="p-4 rounded-lg border">
-                  <Skeleton loading={true}>Loading</Skeleton>
-                </Box>
-              ))
-            )
-            : table.getRowModel().rows?.length
-            ? (
-              table.getRowModel().rows.map((row) => (
+          {loading ? (
+            // Loading state for mobile
+            [...Array(3)].map((_, i) => (
+              <Box key={i} className="p-4 rounded-lg border">
+                <Skeleton loading={true}>Loading</Skeleton>
+              </Box>
+            ))
+          ) : table.getRowModel().rows?.length ? (
+            table
+              .getRowModel()
+              .rows.map((row) => (
                 <MobileOfferCard
                   key={row.id}
                   offer={row.original}
                   loading={loading}
                   selected={row.getIsSelected()}
-                  onClick={(id) => enableRowSelection && onOfferSelect ? onOfferSelect(id) : undefined}
+                  onClick={(id) =>
+                    enableRowSelection && onOfferSelect
+                      ? onOfferSelect(id)
+                      : undefined
+                  }
                   enableActionColumn={enableActionColumn}
                   onActionColumnAction={onActionColumnAction}
                 />
               ))
-            )
-            : (
-              <Box className="p-4 text-center text-gray-500">
-                No results.
-              </Box>
-            )}
+          ) : (
+            <Box className="p-4 text-center text-gray-500">No results.</Box>
+          )}
         </Box>
       </Box>
 

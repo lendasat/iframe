@@ -1,4 +1,7 @@
-import { contractStatusToLabelString, Integration } from "@frontend-monorepo/http-client-borrower";
+import {
+  contractStatusToLabelString,
+  Integration,
+} from "@frontend-monorepo/http-client-borrower";
 import type { Contract } from "@frontend-monorepo/http-client-borrower";
 import { formatCurrency } from "@frontend-monorepo/ui-shared";
 import { Callout } from "@radix-ui/themes";
@@ -21,15 +24,17 @@ export function CollateralSeenOrConfirmed({
     case Integration.PayWithMoon:
       info = (
         <>
-          Your loan amount of {formatCurrency(contract.loan_amount)}{" "}
-          will be sent to your Moon card. Once confirmed, you will receive an email and you can start using your card.
+          Your loan amount of {formatCurrency(contract.loan_amount)} will be
+          sent to your Moon card. Once confirmed, you will receive an email and
+          you can start using your card.
         </>
       );
       break;
     case Integration.StableCoin:
       info = (
         <>
-          Your loan amount of {formatCurrency(contract.loan_amount)} will be sent to this address.
+          Your loan amount of {formatCurrency(contract.loan_amount)} will be
+          sent to this address.
           <InputGroup className="mt-2">
             <Form.Control
               type="text"
@@ -47,14 +52,17 @@ export function CollateralSeenOrConfirmed({
   return (
     <Container fluid>
       <Row>
-        <h4 className={"text-font dark:text-font-dark"}>{contractStatusToLabelString(contract.status)}</h4>
+        <h4 className={"text-font dark:text-font-dark"}>
+          {contractStatusToLabelString(contract.status)}
+        </h4>
       </Row>
 
       <Row className="mt-4">
         <Col className="text-center">
           <div className="d-flex justify-content-center align-items-center flex-column">
             <p className="mt-2 text-break text-font dark:text-font-dark">
-              <strong>{collateral} BTC</strong> are locked in <strong>{collateralAddress}</strong>.
+              <strong>{collateral} BTC</strong> are locked in{" "}
+              <strong>{collateralAddress}</strong>.
               {/*  TODO: add transaction id*/}
             </p>
           </div>
@@ -63,7 +71,10 @@ export function CollateralSeenOrConfirmed({
       <Row className="justify-content-between mt-4">
         <Callout.Root color={"teal"}>
           <Callout.Icon>
-            <FaInfoCircle className={"text-font dark:text-font-dark"} size={"18"} />
+            <FaInfoCircle
+              className={"text-font dark:text-font-dark"}
+              size={"18"}
+            />
           </Callout.Icon>
           <Callout.Text className={"text-font dark:text-font-dark"}>
             {info}

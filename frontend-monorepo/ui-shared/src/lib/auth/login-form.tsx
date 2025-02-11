@@ -1,4 +1,15 @@
-import { Box, Button, Callout, Checkbox, Flex, Grid, Heading, IconButton, Spinner, Text } from "@radix-ui/themes";
+import {
+  Box,
+  Button,
+  Callout,
+  Checkbox,
+  Flex,
+  Grid,
+  Heading,
+  IconButton,
+  Spinner,
+  Text,
+} from "@radix-ui/themes";
 import type { FormEvent } from "react";
 import { useState } from "react";
 import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
@@ -16,10 +27,14 @@ interface LoginFormProps {
   infoMessage?: string;
 }
 
-export function LoginForm(
-  { handleLogin, registrationLink, forgotPasswordLink, initialUserEmail, initialUserPassword, infoMessage }:
-    LoginFormProps,
-) {
+export function LoginForm({
+  handleLogin,
+  registrationLink,
+  forgotPasswordLink,
+  initialUserEmail,
+  initialUserPassword,
+  infoMessage,
+}: LoginFormProps) {
   const [email, setEmail] = useState(initialUserEmail);
   const [password, setPassword] = useState(initialUserPassword);
   const [error, setError] = useState("");
@@ -44,7 +59,11 @@ export function LoginForm(
       <Grid align={"center"} className="overflow-hidden grid-cols-1 w-screen">
         <Box className="flex flex-col items-center p-5">
           {/* Logo */}
-          <Logo height={27} width={"auto"} className="w-fit invert dark:invert-0" />
+          <Logo
+            height={27}
+            width={"auto"}
+            className="w-fit invert dark:invert-0"
+          />
           <Box
             mt={"6"}
             maxWidth={"550px"}
@@ -55,7 +74,12 @@ export function LoginForm(
           >
             {/* Heading */}
             <Box className="text-center pb-4">
-              <Heading size={"7"} className="text-font dark:text-font-dark pb-2">Sign In</Heading>
+              <Heading
+                size={"7"}
+                className="text-font dark:text-font-dark pb-2"
+              >
+                Sign In
+              </Heading>
               <Text size={"3"} className="text-font/70 dark:text-font-dark/70">
                 Welcome back! Please enter your details...
               </Text>
@@ -67,9 +91,7 @@ export function LoginForm(
                 <Callout.Icon>
                   <IoInformationCircleOutline />
                 </Callout.Icon>
-                <Callout.Text>
-                  {infoMessage}.
-                </Callout.Text>
+                <Callout.Text>{infoMessage}.</Callout.Text>
               </Callout.Root>
             )}
 
@@ -77,7 +99,12 @@ export function LoginForm(
               {/* Fields */}
               <Box className="text-left mt-3">
                 <Box>
-                  <Text as="label" size={"1"} weight={"medium"} className="text-font/70 dark:text-font-dark/70 mb-2">
+                  <Text
+                    as="label"
+                    size={"1"}
+                    weight={"medium"}
+                    className="text-font/70 dark:text-font-dark/70 mb-2"
+                  >
                     Email
                   </Text>
                   <TypeField
@@ -89,7 +116,12 @@ export function LoginForm(
               </Box>
               <Box className="text-left mt-3">
                 <Box>
-                  <Text as="label" size={"1"} weight={"medium"} className="text-font/70 dark:text-font-dark/70 mb-2">
+                  <Text
+                    as="label"
+                    size={"1"}
+                    weight={"medium"}
+                    className="text-font/70 dark:text-font-dark/70 mb-2"
+                  >
                     Password
                   </Text>
                   <TypeField
@@ -115,7 +147,12 @@ export function LoginForm(
                 <Flex align={"center"} justify={"between"}>
                   <Flex align={"center"} gap={"1"}>
                     <Checkbox size="1" color="purple" />
-                    <Text as="label" size={"1"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
+                    <Text
+                      as="label"
+                      size={"1"}
+                      weight={"medium"}
+                      className="text-font/70 dark:text-font-dark/70"
+                    >
                       Remember me
                     </Text>
                   </Flex>
@@ -134,9 +171,7 @@ export function LoginForm(
                   <Callout.Icon>
                     <IoInformationCircleOutline />
                   </Callout.Icon>
-                  <Callout.Text>
-                    {error}
-                  </Callout.Text>
+                  <Callout.Text>{error}</Callout.Text>
                 </Callout.Root>
               )}
               {/* Submit Button */}
@@ -157,7 +192,12 @@ export function LoginForm(
 
             {/* Sign Up Routing */}
             <Box className="flex items-center gap-1 justify-center mt-16">
-              <Text as="label" size={"1"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
+              <Text
+                as="label"
+                size={"1"}
+                weight={"medium"}
+                className="text-font/70 dark:text-font-dark/70"
+              >
                 Don't have an account?
               </Text>
               <Link

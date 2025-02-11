@@ -1,6 +1,10 @@
 import { LoanProductOption } from "@frontend-monorepo/base-http-client";
 import type { LoanFeature } from "@frontend-monorepo/base-http-client";
-import type { LoanAssetChain, LoanAssetType, LoanTransaction } from "@frontend-monorepo/ui-shared";
+import type {
+  LoanAssetChain,
+  LoanAssetType,
+  LoanTransaction,
+} from "@frontend-monorepo/ui-shared";
 
 export enum ContractStatus {
   Requested = "Requested",
@@ -237,8 +241,14 @@ export interface OriginationFee {
 }
 
 export class OriginationFeeHelper {
-  static isRelevant(originationFee: OriginationFee, contractDuration: number): boolean {
-    return originationFee.from_day <= contractDuration && originationFee.to_day > contractDuration;
+  static isRelevant(
+    originationFee: OriginationFee,
+    contractDuration: number,
+  ): boolean {
+    return (
+      originationFee.from_day <= contractDuration &&
+      originationFee.to_day > contractDuration
+    );
   }
 }
 
@@ -246,7 +256,9 @@ export function findBestOriginationFee(
   originationFees: OriginationFee[],
   contractDuration: number,
 ): number {
-  const relevantFees = originationFees.filter(fee => OriginationFeeHelper.isRelevant(fee, contractDuration));
+  const relevantFees = originationFees.filter((fee) =>
+    OriginationFeeHelper.isRelevant(fee, contractDuration),
+  );
 
   if (relevantFees.length === 0) {
     return 0.01;
@@ -270,7 +282,8 @@ export interface UserCardDetail {
 export class FeatureMapper {
   private static readonly FEATURE_MAP: Record<string, LoanProductOption> = {
     [LoanProductOption.StableCoins]: LoanProductOption.StableCoins,
-    [LoanProductOption.PayWithMoonDebitCard]: LoanProductOption.PayWithMoonDebitCard,
+    [LoanProductOption.PayWithMoonDebitCard]:
+      LoanProductOption.PayWithMoonDebitCard,
     // Add other mappings once we use them
   };
 

@@ -1,5 +1,13 @@
 import type { Version } from "@frontend-monorepo/base-http-client";
-import { Avatar, Box, Flex, Heading, IconButton, Separator, Text } from "@radix-ui/themes";
+import {
+  Avatar,
+  Box,
+  Flex,
+  Heading,
+  IconButton,
+  Separator,
+  Text,
+} from "@radix-ui/themes";
 import type { ReactNode } from "react";
 import type { FC } from "react";
 import { useState } from "react";
@@ -43,8 +51,16 @@ export interface User {
   verified: boolean;
 }
 
-export const Layout: FC<LayoutProps> = ({ children, menuItems, backendVersion, user, logout }) => {
-  const versionString = `${backendVersion.version}-${backendVersion.commit_hash.substring(0, 5)}`;
+export const Layout: FC<LayoutProps> = ({
+  children,
+  menuItems,
+  backendVersion,
+  user,
+  logout,
+}) => {
+  const versionString = `${
+    backendVersion.version
+  }-${backendVersion.commit_hash.substring(0, 5)}`;
   const [toggled, setToggled] = useState(false);
   const [broken, setBroken] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -66,13 +82,19 @@ export const Layout: FC<LayoutProps> = ({ children, menuItems, backendVersion, u
         }}
       >
         <div className="flex flex-col h-full pb-3 items-center bg-gradient-to-b from-blue-500/[2%] via-40% via-pink-500/5 to-[#FBFAF8] to-90% dark:from-dark dark:via-dark/100 dark:to-dark/80 border-l border-black/5 dark:border-white/10">
-          <Box className={`w-full flex items-center ${collapsed ? "justify-center" : "justify-between"} px-3 h-20`}>
-            <SidebarHeader className={`shrink-0 ${collapsed ? "hidden" : "flex"} ml-5`} />
+          <Box
+            className={`w-full flex items-center ${
+              collapsed ? "justify-center" : "justify-between"
+            } px-3 h-20`}
+          >
+            <SidebarHeader
+              className={`shrink-0 ${collapsed ? "hidden" : "flex"} ml-5`}
+            />
             <IconButton
               variant={"ghost"}
               color="gray"
               className="hover:bg-transparent hidden lg:block"
-              onClick={() => (setCollapsed(!collapsed))}
+              onClick={() => setCollapsed(!collapsed)}
             >
               <TbLayoutSidebarLeftCollapse size={20} />
             </IconButton>
@@ -103,7 +125,10 @@ export const Layout: FC<LayoutProps> = ({ children, menuItems, backendVersion, u
             }}
           >
             {menuItems.map((items, index) => (
-              <Box key={index} className={index === 0 ? "px-3" : "px-3 pt-[5vh]"}>
+              <Box
+                key={index}
+                className={index === 0 ? "px-3" : "px-3 pt-[5vh]"}
+              >
                 {items.group.map((item, idx) => {
                   if (!item.visible) {
                     return "";
@@ -114,7 +139,9 @@ export const Layout: FC<LayoutProps> = ({ children, menuItems, backendVersion, u
                       key={idx}
                       component={
                         <NavLink
-                          className={"aria-[current=page]:bg-white/65 dark:aria-[current=page]:bg-dark/65 aria-[current=page]:border aria-[current=page]:border-white/95 dark:aria-[current=page]:border-dark/95 aria-[current=page]:text-font dark:aria-[current=page]:text-font-dark aria-[current=page]:font-medium aria-[current=page]:backdrop-blur-md aria-[current=page]:shadow-sm capitalize text-font/90 dark:text-font-dark/90"}
+                          className={
+                            "aria-[current=page]:bg-white/65 dark:aria-[current=page]:bg-dark/65 aria-[current=page]:border aria-[current=page]:border-white/95 dark:aria-[current=page]:border-dark/95 aria-[current=page]:text-font dark:aria-[current=page]:text-font-dark aria-[current=page]:font-medium aria-[current=page]:backdrop-blur-md aria-[current=page]:shadow-sm capitalize text-font/90 dark:text-font-dark/90"
+                          }
                           to={item.path}
                           target={item.target ? item.target : "_self"}
                         />
@@ -149,27 +176,45 @@ export const Layout: FC<LayoutProps> = ({ children, menuItems, backendVersion, u
                       radius="full"
                       fallback={user ? user.name.substring(0, 1) : "W"}
                     />
-                    {user && user.verified
-                      ? <RiVerifiedBadgeFill color="green" className="absolute bottom-0 right-0 z-10" size={10} />
-                      : ""}
+                    {user && user.verified ? (
+                      <RiVerifiedBadgeFill
+                        color="green"
+                        className="absolute bottom-0 right-0 z-10"
+                        size={10}
+                      />
+                    ) : (
+                      ""
+                    )}
                   </Box>
                   <Flex
                     direction={"column"}
-                    className={collapsed ? "opacity-0" : "shrink-0 opacity-100 transition-opacity duration-200 ease-in"}
+                    className={
+                      collapsed
+                        ? "opacity-0"
+                        : "shrink-0 opacity-100 transition-opacity duration-200 ease-in"
+                    }
                   >
                     <Text
                       size={"2"}
                       weight={"medium"}
-                      className={"capitalize text-font dark:text-font-dark break-keep"}
+                      className={
+                        "capitalize text-font dark:text-font-dark break-keep"
+                      }
                     >
                       {user.name}
                     </Text>
-                    <Text weight={"medium"} className="text-[9px] text-font/80 dark:text-font-dark/80 break-keep">
+                    <Text
+                      weight={"medium"}
+                      className="text-[9px] text-font/80 dark:text-font-dark/80 break-keep"
+                    >
                       {user.email}
                     </Text>
                   </Flex>
                 </Flex>
-                <IoChevronForward size={15} className={collapsed ? "hidden" : "flex"} />
+                <IoChevronForward
+                  size={15}
+                  className={collapsed ? "hidden" : "flex"}
+                />
               </Box>
             </Link>
           )}
@@ -186,15 +231,24 @@ export const Layout: FC<LayoutProps> = ({ children, menuItems, backendVersion, u
                   variant={"ghost"}
                   color="gray"
                   className="hover:bg-transparent block lg:hidden"
-                  onClick={() => (setToggled(!toggled))}
+                  onClick={() => setToggled(!toggled)}
                 >
                   <TbLayoutSidebarLeftCollapse size={20} />
                 </IconButton>
               )}
               {user && (
                 <Box>
-                  <Text className="text-font dark:text-font-dark" weight={"medium"} size={"1"}>Welcome,</Text>
-                  <Heading className="capitalize text-font/90 dark:text-font-dark/90 -mt-1 font-semibold" size={"3"}>
+                  <Text
+                    className="text-font dark:text-font-dark"
+                    weight={"medium"}
+                    size={"1"}
+                  >
+                    Welcome,
+                  </Text>
+                  <Heading
+                    className="capitalize text-font/90 dark:text-font-dark/90 -mt-1 font-semibold"
+                    size={"3"}
+                  >
                     {user.name}
                   </Heading>
                 </Box>
@@ -202,10 +256,8 @@ export const Layout: FC<LayoutProps> = ({ children, menuItems, backendVersion, u
             </Flex>
           </Box>
 
-          {
-            /*TODO: removed for now due to not being implemented
-          <SearchBar placeholder="Looking for something..." />*/
-          }
+          {/*TODO: removed for now due to not being implemented
+          <SearchBar placeholder="Looking for something..." />*/}
 
           <Box className="shrink-0">
             <Flex align={"center"} className="gap-4">
@@ -228,23 +280,31 @@ export const Layout: FC<LayoutProps> = ({ children, menuItems, backendVersion, u
         </Box>
 
         {/* Content */}
-        <Box className="lg:rounded-tl-2xl flex-1 dark:bg-dark">
-          {children}
-        </Box>
+        <Box className="lg:rounded-tl-2xl flex-1 dark:bg-dark">{children}</Box>
 
         {/* Footer */}
         <Box className="flex md:justify-end gap-3 items-center px-4 md:px-6 flex-wrap justify-center dark:bg-dark pb-2">
-          <Text as="p" size={"1"} weight={"medium"} className="text-font/70 dark:text-font-dark/70 tracking-wider">
+          <Text
+            as="p"
+            size={"1"}
+            weight={"medium"}
+            className="text-font/70 dark:text-font-dark/70 tracking-wider"
+          >
             {versionString}
           </Text>
           <Box className="flex flex-row items-center gap-2">
-            <Link to={"/"} className="flex items-center gap-1 text-font/70 dark:text-font-dark/70 no-underline">
+            <Link
+              to={"/"}
+              className="flex items-center gap-1 text-font/70 dark:text-font-dark/70 no-underline"
+            >
               <PiCopyright />
               <Text as="p" size={"1"} weight={"medium"}>
                 {new Date().getFullYear()} Lendasat
               </Text>
             </Link>
-            <Text as="span" color="gray">•</Text>
+            <Text as="span" color="gray">
+              •
+            </Text>
             <Link
               to={"https://tos.lendasat.com/"}
               className="flex items-center gap-1 text-font/70 dark:text-font-dark/70 no-underline"
@@ -253,9 +313,13 @@ export const Layout: FC<LayoutProps> = ({ children, menuItems, backendVersion, u
                 Terms of Service
               </Text>
             </Link>
-            <Text as="span" color="gray">•</Text>
+            <Text as="span" color="gray">
+              •
+            </Text>
             <Link
-              to={"https://lendasat.notion.site/Privacy-a91b9883bca1495693654c996f5423e1?pvs=25"}
+              to={
+                "https://lendasat.notion.site/Privacy-a91b9883bca1495693654c996f5423e1?pvs=25"
+              }
               className="flex items-center gap-1 text-font/70 dark:text-font-dark/70 no-underline"
             >
               <Text as="p" size={"1"} weight={"medium"}>

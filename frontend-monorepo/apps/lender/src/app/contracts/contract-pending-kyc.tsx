@@ -15,18 +15,40 @@ export const ContractPendingKyc = ({
 }: ContractPendingKycProps) => {
   return (
     <Box className="flex flex-col space-y-4">
-      <Heading className={"text-font dark:text-font-dark"} weight={"medium"} size={"5"}>
+      <Heading
+        className={"text-font dark:text-font-dark"}
+        weight={"medium"}
+        size={"5"}
+      >
         Awaiting KYC Outcome
       </Heading>
-      <Text className={"mb-3 text-font dark:text-font-dark"} weight={"medium"} size={"3"}>
-        We have sent your KYC <a className="text-blue-500 hover:underline" href={kycLink}>link</a> to the borrower.
+      <Text
+        className={"mb-3 text-font dark:text-font-dark"}
+        weight={"medium"}
+        size={"3"}
+      >
+        We have sent your KYC{" "}
+        <a className="text-blue-500 hover:underline" href={kycLink}>
+          link
+        </a>{" "}
+        to the borrower.
       </Text>
-      <Text className={"mb-3 text-font dark:text-font-dark"} weight={"medium"} size={"3"}>
-        Once the borrower has passed the KYC process, hit <em className="text-green-500">approve</em>{" "}
-        to move forward with the contract.
+      <Text
+        className={"mb-3 text-font dark:text-font-dark"}
+        weight={"medium"}
+        size={"3"}
+      >
+        Once the borrower has passed the KYC process, hit{" "}
+        <em className="text-green-500">approve</em> to move forward with the
+        contract.
       </Text>
-      <Text className={"mb-3 text-font dark:text-font-dark"} weight={"medium"} size={"3"}>
-        If the borrower was unsuccessful, hit <em className="text-red-500">reject</em>.
+      <Text
+        className={"mb-3 text-font dark:text-font-dark"}
+        weight={"medium"}
+        size={"3"}
+      >
+        If the borrower was unsuccessful, hit{" "}
+        <em className="text-red-500">reject</em>.
       </Text>
       <Box className="flex flex-row space-x-2">
         <Dialog.Root>
@@ -42,8 +64,14 @@ export const ContractPendingKyc = ({
             </Button>
           </Dialog.Trigger>
           <Dialog.Content maxWidth="450px" className={"bg-light dark:bg-dark"}>
-            <Dialog.Title className={"text-font dark:text-font-dark"}>Approve KYC Process</Dialog.Title>
-            <Dialog.Description size="2" mb="4" className={"text-font dark:text-font-dark"}>
+            <Dialog.Title className={"text-font dark:text-font-dark"}>
+              Approve KYC Process
+            </Dialog.Title>
+            <Dialog.Description
+              size="2"
+              mb="4"
+              className={"text-font dark:text-font-dark"}
+            >
               Do you want to mark the KYC process as successful?
             </Dialog.Description>
             <Flex gap="3" mt="4" justify="end">
@@ -78,8 +106,14 @@ export const ContractPendingKyc = ({
             </Button>
           </Dialog.Trigger>
           <Dialog.Content maxWidth="450px" className={"bg-light dark:bg-dark"}>
-            <Dialog.Title className={"text-font dark:text-font-dark"}>Reject KYC Process</Dialog.Title>
-            <Dialog.Description size="2" mb="4" className={"text-font dark:text-font-dark"}>
+            <Dialog.Title className={"text-font dark:text-font-dark"}>
+              Reject KYC Process
+            </Dialog.Title>
+            <Dialog.Description
+              size="2"
+              mb="4"
+              className={"text-font dark:text-font-dark"}
+            >
               Do you want to mark the KYC process as failed?
             </Dialog.Description>
             <Flex gap="3" mt="4" justify="end">

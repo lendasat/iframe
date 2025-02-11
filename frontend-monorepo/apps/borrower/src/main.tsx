@@ -5,7 +5,12 @@ import "@radix-ui/themes/styles.css";
 import { Theme } from "@radix-ui/themes";
 import { getDefaultConfig, RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { createBrowserRouter, createRoutesFromElements, Route, RouterProvider } from "react-router-dom";
+import {
+  createBrowserRouter,
+  createRoutesFromElements,
+  Route,
+  RouterProvider,
+} from "react-router-dom";
 import { mainnet } from "viem/chains";
 import { WagmiProvider } from "wagmi";
 import App from "./app/app";
@@ -22,10 +27,7 @@ const config = getDefaultConfig({
 const queryClient = new QueryClient();
 
 const router = createBrowserRouter(
-  createRoutesFromElements(
-    <Route path="/*" element={<App />}>
-    </Route>,
-  ),
+  createRoutesFromElements(<Route path="/*" element={<App />}></Route>),
 );
 
 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion

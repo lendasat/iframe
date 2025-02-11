@@ -7,10 +7,15 @@ interface LtvProgressBarNewProps {
   collateralBtc: number | undefined;
 }
 
-export const LtvProgressBar: FC<LtvProgressBarNewProps> = ({ loanAmount, collateralBtc }) => {
+export const LtvProgressBar: FC<LtvProgressBarNewProps> = ({
+  loanAmount,
+  collateralBtc,
+}) => {
   const { latestPrice } = usePrice();
 
-  const ltvRatio = collateralBtc ? loanAmount / (collateralBtc * latestPrice) * 100 : undefined;
+  const ltvRatio = collateralBtc
+    ? (loanAmount / (collateralBtc * latestPrice)) * 100
+    : undefined;
 
   let barColor = "";
 
@@ -41,15 +46,13 @@ export const LtvProgressBar: FC<LtvProgressBarNewProps> = ({ loanAmount, collate
         />
       </div>
       <div className="w-12 text-xs font-medium text-font dark:text-font-dark text-right">
-        {isNan
-          ? (
-            <Spinner animation="border" role="status" size="sm">
-              <span className="sr-only">Loading...</span>
-            </Spinner>
-          )
-          : (
-            `${formattedValue}%`
-          )}
+        {isNan ? (
+          <Spinner animation="border" role="status" size="sm">
+            <span className="sr-only">Loading...</span>
+          </Spinner>
+        ) : (
+          `${formattedValue}%`
+        )}
       </div>
     </div>
   );

@@ -13,7 +13,15 @@ export interface SliderProps {
   onChange: (value: number) => void;
 }
 
-export const Slider = ({ min, max, init, step, suffix, reset, onChange }: SliderProps) => {
+export const Slider = ({
+  min,
+  max,
+  init,
+  step,
+  suffix,
+  reset,
+  onChange,
+}: SliderProps) => {
   const [value, setValue] = useState<number>(init);
 
   useEffect(() => {
@@ -43,7 +51,10 @@ export const Slider = ({ min, max, init, step, suffix, reset, onChange }: Slider
           <small className="text-xs font-medium">min: {min}</small>
         </span>
         <span>
-          <small className="text-sm font-medium">{value}{suffix}</small>
+          <small className="text-sm font-medium">
+            {value}
+            {suffix}
+          </small>
         </span>
         <span>
           <small className="text-xs font-medium">max: {max}</small>

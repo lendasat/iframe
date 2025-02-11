@@ -10,15 +10,30 @@ interface LenderProps {
   showAvatar: boolean;
 }
 
-export function Lender({ name, id, rating, successful_contracts, failed_contracts, showAvatar }: LenderProps) {
+export function Lender({
+  name,
+  id,
+  rating,
+  successful_contracts,
+  failed_contracts,
+  showAvatar,
+}: LenderProps) {
   let ratingText = (
-    <Text className={"text-font dark:text-font-dark self-end"} size={"1"} weight={"light"}>
+    <Text
+      className={"text-font dark:text-font-dark self-end"}
+      size={"1"}
+      weight={"light"}
+    >
       No rating yet
     </Text>
   );
   if (successful_contracts + failed_contracts > 0) {
     ratingText = (
-      <Text className={"text-font dark:text-font-dark self-end"} size={"1"} weight={"light"}>
+      <Text
+        className={"text-font dark:text-font-dark self-end"}
+        size={"1"}
+        weight={"light"}
+      >
         {(rating * 100).toFixed(1)}%
       </Text>
     );
@@ -28,14 +43,13 @@ export function Lender({ name, id, rating, successful_contracts, failed_contract
     <Box asChild>
       <Link to={`/lender/${id}`}>
         <Flex direction={"row"} align={"center"} gap={"3"}>
-          {showAvatar
-            && (
-              <Avatar
-                radius="full"
-                color="purple"
-                fallback={name.substring(0, 1)}
-              />
-            )}
+          {showAvatar && (
+            <Avatar
+              radius="full"
+              color="purple"
+              fallback={name.substring(0, 1)}
+            />
+          )}
 
           <Flex direction={"column"}>
             <Heading

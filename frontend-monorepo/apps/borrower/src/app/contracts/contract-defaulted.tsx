@@ -7,8 +7,9 @@ export function ContractDefaulted() {
     <Container fluid>
       <Alert variant="danger">
         <FontAwesomeIcon icon={faExclamationCircle} className="h-4 w-4 mr-2" />
-        You have defaulted on your contract. We are waiting for the lender to liquidate the collateral. The remainder
-        will be sent to your refund address.
+        You have defaulted on your contract. We are waiting for the lender to
+        liquidate the collateral. The remainder will be sent to your refund
+        address.
       </Alert>
     </Container>
   );

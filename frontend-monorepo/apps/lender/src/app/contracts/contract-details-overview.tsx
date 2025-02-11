@@ -1,4 +1,7 @@
-import { faExclamationCircle, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+import {
+  faExclamationCircle,
+  faInfoCircle,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import type { Contract } from "@frontend-monorepo/http-client-lender";
 import {
@@ -21,7 +24,17 @@ import {
 } from "@frontend-monorepo/ui-shared";
 import { TransactionList } from "@frontend-monorepo/ui-shared";
 import { ExternalLinkIcon } from "@radix-ui/react-icons";
-import { Badge, Box, Button, Callout, Flex, Grid, Heading, Separator, Text } from "@radix-ui/themes";
+import {
+  Badge,
+  Box,
+  Button,
+  Callout,
+  Flex,
+  Grid,
+  Heading,
+  Separator,
+  Text,
+} from "@radix-ui/themes";
 import { Suspense, useState } from "react";
 import { Alert, Col, Row, Spinner } from "react-bootstrap";
 import { FaCopy, FaInfoCircle } from "react-icons/fa";
@@ -46,7 +59,11 @@ function ContractDetailsOverview() {
     <Suspense>
       <Await
         resolve={id ? getContract(id) : null}
-        errorElement={<div className={"text-font dark:text-font-dark"}>Could not load contracts</div>}
+        errorElement={
+          <div className={"text-font dark:text-font-dark"}>
+            Could not load contracts
+          </div>
+        }
         children={(contract: Awaited<Contract>) => (
           <Box
             style={{
@@ -99,10 +116,11 @@ function ContractDetails({ contract }: DetailsProps) {
 
   const initialLtvFormatted = (initialLtv * 100).toFixed(0);
 
-  const disputeInProgress = contract.status === ContractStatus.DisputeBorrowerResolved
-    || contract.status === ContractStatus.DisputeLenderResolved
-    || contract.status === ContractStatus.DisputeBorrowerStarted
-    || contract.status === ContractStatus.DisputeLenderStarted;
+  const disputeInProgress =
+    contract.status === ContractStatus.DisputeBorrowerResolved ||
+    contract.status === ContractStatus.DisputeLenderResolved ||
+    contract.status === ContractStatus.DisputeBorrowerStarted ||
+    contract.status === ContractStatus.DisputeLenderStarted;
 
   const onStartDispute = async (reason: string, comment: string) => {
     setStartingDisputeLoading(true);
@@ -119,9 +137,12 @@ function ContractDetails({ contract }: DetailsProps) {
   };
 
   let contractStatusLabel = contractStatusToLabelString(contract.status);
-  const firstMarginCall = contract.liquidation_status === LiquidationStatus.FirstMarginCall;
-  const secondMarginCall = contract.liquidation_status === LiquidationStatus.SecondMarginCall;
-  const liquidated = contract.liquidation_status === LiquidationStatus.Liquidated;
+  const firstMarginCall =
+    contract.liquidation_status === LiquidationStatus.FirstMarginCall;
+  const secondMarginCall =
+    contract.liquidation_status === LiquidationStatus.SecondMarginCall;
+  const liquidated =
+    contract.liquidation_status === LiquidationStatus.Liquidated;
 
   if (firstMarginCall) {
     contractStatusLabel = "First Margin Call";
@@ -133,7 +154,8 @@ function ContractDetails({ contract }: DetailsProps) {
     contractStatusLabel = "Liquidated";
   }
 
-  const actualInterestUsdAmount = (loanAmount * interestRate) / (ONE_YEAR / durationDays);
+  const actualInterestUsdAmount =
+    (loanAmount * interestRate) / (ONE_YEAR / durationDays);
   const [contractIdCopied, setContractIdCopied] = useState<boolean>(false);
   const [errorAlt, setErrorAlt] = useState("");
   const navigate = useNavigate();
@@ -162,16 +184,21 @@ function ContractDetails({ contract }: DetailsProps) {
     }
   };
 
-  const displayDispute = contract.status !== ContractStatus.Requested
-    && contract.status !== ContractStatus.Approved;
+  const displayDispute =
+    contract.status !== ContractStatus.Requested &&
+    contract.status !== ContractStatus.Approved;
 
   const stableCoin = StableCoinHelper.mapFromBackend(
     contract.loan_asset_chain,
     contract.loan_asset_type,
   );
 
-  const hasParent = contract.extends_contract !== undefined && contract.extends_contract !== null;
-  const hasChild = contract.extended_by_contract !== undefined && contract.extended_by_contract !== null;
+  const hasParent =
+    contract.extends_contract !== undefined &&
+    contract.extends_contract !== null;
+  const hasChild =
+    contract.extended_by_contract !== undefined &&
+    contract.extended_by_contract !== null;
 
   return (
     <Grid className="md:grid-cols-2">
@@ -181,7 +208,9 @@ function ContractDetails({ contract }: DetailsProps) {
       />
       <Box className="border-r border-font/10 dark:border-font-dark/10">
         <Box className="p-6 md:pl-8 border-b border-font/10 dark:border-font-dark/10">
-          <Heading className={"text-font dark:text-font-dark"} size={"6"}>Contract Details</Heading>
+          <Heading className={"text-font dark:text-font-dark"} size={"6"}>
+            Contract Details
+          </Heading>
         </Box>
         <Box className="p-6 md:p-8 space-y-5">
           <Flex gap={"5"} align={"start"} justify={"between"}>
@@ -194,7 +223,11 @@ function ContractDetails({ contract }: DetailsProps) {
             </Text>
             <Box className="max-w-sm text-end">
               <div className="flex flex-col">
-                <Text size={"2"} weight={"medium"} className="break-all text-font dark:text-font-dark">
+                <Text
+                  size={"2"}
+                  weight={"medium"}
+                  className="break-all text-font dark:text-font-dark"
+                >
                   <Borrower {...contract.borrower} showAvatar={false} />
                 </Text>
               </div>
@@ -210,47 +243,62 @@ function ContractDetails({ contract }: DetailsProps) {
             >
               Contract ID
             </Text>
-            {contractIdCopied
-              ? (
-                <Text size={"2"} className="font-medium text-font dark:text-font-dark" color="green">
-                  Copied
-                </Text>
-              )
-              : (
-                <Text
-                  onClick={() => handleCopy(contract.id)}
-                  size={"2"}
-                  weight={"medium"}
-                  className="text-end cursor-copy hover:opacity-70 flex items-center gap-1 text-font dark:text-font-dark"
-                >
-                  {formatId(contract.id)} <FaCopy className={"text-font dark:text-font-dark"} />
-                </Text>
-              )}
+            {contractIdCopied ? (
+              <Text
+                size={"2"}
+                className="font-medium text-font dark:text-font-dark"
+                color="green"
+              >
+                Copied
+              </Text>
+            ) : (
+              <Text
+                onClick={() => handleCopy(contract.id)}
+                size={"2"}
+                weight={"medium"}
+                className="text-end cursor-copy hover:opacity-70 flex items-center gap-1 text-font dark:text-font-dark"
+              >
+                {formatId(contract.id)}{" "}
+                <FaCopy className={"text-font dark:text-font-dark"} />
+              </Text>
+            )}
           </Flex>
           <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
 
           <Flex gap={"5"} align={"center"} justify={"between"}>
-            <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
+            <Text
+              size={"2"}
+              weight={"medium"}
+              className="text-font/70 dark:text-font-dark/70"
+            >
               Contract status
             </Text>
             <div className="flex flex-col">
-              <Text className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
+              <Text
+                className={"text-font dark:text-font-dark"}
+                size={"2"}
+                weight={"medium"}
+              >
                 <Box className="flex flex-row space-x-2">
                   <Badge
-                    color={contract.status === ContractStatus.Requested
-                        || contract.status === ContractStatus.RenewalRequested
-                      ? "amber"
-                      : contract.status === ContractStatus.Approved
-                      ? "green"
-                      : contract.status === ContractStatus.Rejected
-                      ? "red"
-                      : "gray"}
+                    color={
+                      contract.status === ContractStatus.Requested ||
+                      contract.status === ContractStatus.RenewalRequested
+                        ? "amber"
+                        : contract.status === ContractStatus.Approved
+                          ? "green"
+                          : contract.status === ContractStatus.Rejected
+                            ? "red"
+                            : "gray"
+                    }
                     size={"2"}
                   >
                     {contractStatusLabel}
                   </Badge>
                   {contract.kyc_info && !contract.kyc_info.is_kyc_done && (
-                    <Badge color="gray" size="2">KYC Pending</Badge>
+                    <Badge color="gray" size="2">
+                      KYC Pending
+                    </Badge>
                   )}
                 </Box>
               </Text>
@@ -258,62 +306,98 @@ function ContractDetails({ contract }: DetailsProps) {
           </Flex>
           <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
 
-          {hasParent
-            && (
-              <>
-                <Flex gap={"5"} align={"center"} justify={"between"}>
-                  <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
-                    Old contract
-                  </Text>
-                  <div className="flex flex-col">
-                    <div className="flex items-center gap-1">
-                      <Text size={"2"}>
-                        <Link to={`/my-contracts/${contract.extends_contract}`}>Replaces</Link>
-                      </Text>
-                      <ExternalLinkIcon />
-                    </div>
+          {hasParent && (
+            <>
+              <Flex gap={"5"} align={"center"} justify={"between"}>
+                <Text
+                  size={"2"}
+                  weight={"medium"}
+                  className="text-font/70 dark:text-font-dark/70"
+                >
+                  Old contract
+                </Text>
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-1">
+                    <Text size={"2"}>
+                      <Link to={`/my-contracts/${contract.extends_contract}`}>
+                        Replaces
+                      </Link>
+                    </Text>
+                    <ExternalLinkIcon />
                   </div>
-                </Flex>
-                <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
-              </>
-            )}
-          {hasChild
-            && (
-              <>
-                <Flex gap={"5"} align={"center"} justify={"between"}>
-                  <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
-                    Replaced by
-                  </Text>
-                  <div className="flex flex-col">
-                    <div className="flex items-center gap-1">
-                      <Text size={"2"}>
-                        <Link to={`/my-contracts/${contract.extended_by_contract}`}>Replaced by</Link>
-                      </Text>
-                      <ExternalLinkIcon />
-                    </div>
+                </div>
+              </Flex>
+              <Separator
+                size={"4"}
+                className="bg-font/10 dark:bg-font-dark/10"
+              />
+            </>
+          )}
+          {hasChild && (
+            <>
+              <Flex gap={"5"} align={"center"} justify={"between"}>
+                <Text
+                  size={"2"}
+                  weight={"medium"}
+                  className="text-font/70 dark:text-font-dark/70"
+                >
+                  Replaced by
+                </Text>
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-1">
+                    <Text size={"2"}>
+                      <Link
+                        to={`/my-contracts/${contract.extended_by_contract}`}
+                      >
+                        Replaced by
+                      </Link>
+                    </Text>
+                    <ExternalLinkIcon />
                   </div>
-                </Flex>
-                <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
-              </>
-            )}
+                </div>
+              </Flex>
+              <Separator
+                size={"4"}
+                className="bg-font/10 dark:bg-font-dark/10"
+              />
+            </>
+          )}
 
           <Flex gap={"5"} align={"start"} justify={"between"}>
-            <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
+            <Text
+              size={"2"}
+              weight={"medium"}
+              className="text-font/70 dark:text-font-dark/70"
+            >
               Loan Amount
             </Text>
-            <Text className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
+            <Text
+              className={"text-font dark:text-font-dark"}
+              size={"2"}
+              weight={"medium"}
+            >
               <CurrencyFormatter value={loanAmount} />
             </Text>
           </Flex>
           <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
 
           <Flex gap={"5"} align={"start"} justify={"between"}>
-            <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
+            <Text
+              size={"2"}
+              weight={"medium"}
+              className="text-font/70 dark:text-font-dark/70"
+            >
               Asset
             </Text>
-            <Text className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
+            <Text
+              className={"text-font dark:text-font-dark"}
+              size={"2"}
+              weight={"medium"}
+            >
               <Text>
-                {stableCoin ? <Badge>{StableCoinHelper.print(stableCoin)}</Badge> : (
+                {stableCoin ? (
+                  <Badge>{StableCoinHelper.print(stableCoin)}</Badge>
+                ) : (
                   <>
                     {contract.loan_asset_chain}
                     {contract.loan_asset_type}
@@ -325,20 +409,36 @@ function ContractDetails({ contract }: DetailsProps) {
           <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
 
           <Flex gap={"5"} align={"start"} justify={"between"}>
-            <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
+            <Text
+              size={"2"}
+              weight={"medium"}
+              className="text-font/70 dark:text-font-dark/70"
+            >
               Duration
             </Text>
-            <Text className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
+            <Text
+              className={"text-font dark:text-font-dark"}
+              size={"2"}
+              weight={"medium"}
+            >
               {getFormatedStringFromDays(durationDays)}
             </Text>
           </Flex>
           <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
 
           <Flex gap={"5"} align={"start"} justify={"between"}>
-            <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
+            <Text
+              size={"2"}
+              weight={"medium"}
+              className="text-font/70 dark:text-font-dark/70"
+            >
               Expiry
             </Text>
-            <Text className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
+            <Text
+              className={"text-font dark:text-font-dark"}
+              size={"2"}
+              weight={"medium"}
+            >
               {contract.expiry.toLocaleDateString([], {
                 day: "numeric",
                 month: "short",
@@ -349,10 +449,18 @@ function ContractDetails({ contract }: DetailsProps) {
           <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
 
           <Flex gap={"5"} align={"start"} justify={"between"}>
-            <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
+            <Text
+              size={"2"}
+              weight={"medium"}
+              className="text-font/70 dark:text-font-dark/70"
+            >
               Collateral
             </Text>
-            <Text className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
+            <Text
+              className={"text-font dark:text-font-dark"}
+              size={"2"}
+              weight={"medium"}
+            >
               {collateral.toFixed(8)} BTC
             </Text>
           </Flex>
@@ -360,12 +468,20 @@ function ContractDetails({ contract }: DetailsProps) {
 
           <Flex gap={"5"} align={"start"} justify={"between"}>
             <LtvInfoLabel>
-              <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
+              <Text
+                size={"2"}
+                weight={"medium"}
+                className="text-font/70 dark:text-font-dark/70"
+              >
                 Initial LTV ratio
               </Text>
               <FaInfoCircle className="text-font dark:text-font-dark" />
             </LtvInfoLabel>
-            <Text className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
+            <Text
+              className={"text-font dark:text-font-dark"}
+              size={"2"}
+              weight={"medium"}
+            >
               {initialLtvFormatted}%
             </Text>
           </Flex>
@@ -373,8 +489,16 @@ function ContractDetails({ contract }: DetailsProps) {
 
           <Flex gap={"5"} align={"start"} justify={"between"}>
             <InterestRateInfoLabel>
-              <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dar">
-                <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
+              <Flex
+                align={"center"}
+                gap={"2"}
+                className="text-font dark:text-font-dar"
+              >
+                <Text
+                  size={"2"}
+                  weight={"medium"}
+                  className="text-font/70 dark:text-font-dark/70"
+                >
                   Interest Rate
                 </Text>
                 <FaInfoCircle className={"text-font dark:text-font-dark"} />
@@ -382,7 +506,11 @@ function ContractDetails({ contract }: DetailsProps) {
             </InterestRateInfoLabel>
 
             <div className="flex flex-col">
-              <Text className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
+              <Text
+                className={"text-font dark:text-font-dark"}
+                size={"2"}
+                weight={"medium"}
+              >
                 {(interestRate * 100).toFixed(2)}% per year
               </Text>
               <Text className="text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-end">
@@ -434,10 +562,7 @@ function ContractDetails({ contract }: DetailsProps) {
         {errorAlt && (
           <Callout.Root color="red">
             <Callout.Icon>
-              <FontAwesomeIcon
-                icon={faExclamationCircle}
-                className="h-4 w-4"
-              />
+              <FontAwesomeIcon icon={faExclamationCircle} className="h-4 w-4" />
             </Callout.Icon>
             <Callout.Text>{errorAlt}</Callout.Text>
           </Callout.Root>
@@ -489,8 +614,14 @@ const ContractStatusDetails = ({
   onError,
   onSuccess,
 }: ContractStatusDetailsProps) => {
-  const { approveKyc, rejectKyc, approveContract, rejectContract, principalGiven, markPrincipalConfirmed } =
-    useLenderHttpClient();
+  const {
+    approveKyc,
+    rejectKyc,
+    approveContract,
+    rejectContract,
+    principalGiven,
+    markPrincipalConfirmed,
+  } = useLenderHttpClient();
   const [isLoading, setIsLoading] = useState(false);
   const [txid, setTxid] = useState("");
 
@@ -605,11 +736,14 @@ const ContractStatusDetails = ({
       return (
         <Callout.Root className="w-full" color="teal">
           <Callout.Icon>
-            <FontAwesomeIcon icon={faInfoCircle} className="h-4 w-4 text-font dark:text-font-dark" />
+            <FontAwesomeIcon
+              icon={faInfoCircle}
+              className="h-4 w-4 text-font dark:text-font-dark"
+            />
           </Callout.Icon>
           <Callout.Text className={"text-font dark:text-font-dark"}>
-            Waiting for borrower to fund the contract. Please refresh to check for updates or wait for email
-            notification.
+            Waiting for borrower to fund the contract. Please refresh to check
+            for updates or wait for email notification.
           </Callout.Text>
         </Callout.Root>
       );
@@ -639,20 +773,20 @@ const ContractStatusDetails = ({
           <Row className="mt-3">
             <Col>
               <Button onClick={onMarkAsRepaid} disabled={isLoading}>
-                {isLoading
-                  ? (
-                    <Spinner
-                      animation="border"
-                      role="status"
-                      variant="light"
-                      size="sm"
-                    >
-                      <span className="visually-hidden text-font dark:text-font-dark">Loading...</span>
-                    </Spinner>
-                  )
-                  : (
-                    "Accept as repaid"
-                  )}
+                {isLoading ? (
+                  <Spinner
+                    animation="border"
+                    role="status"
+                    variant="light"
+                    size="sm"
+                  >
+                    <span className="visually-hidden text-font dark:text-font-dark">
+                      Loading...
+                    </span>
+                  </Spinner>
+                ) : (
+                  "Accept as repaid"
+                )}
               </Button>
             </Col>
           </Row>

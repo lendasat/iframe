@@ -11,9 +11,7 @@
           "error",
           {
             "enforceBuildableLibDependency": true,
-            "allow": [
-              "../browser-wallet/pkg"
-            ],
+            "allow": ["../browser-wallet/pkg"],
             "depConstraints": [
               {
                 "sourceTag": "*",

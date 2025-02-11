@@ -27,8 +27,7 @@ export function LoanAddressInputField({
 
   let warning = "";
   if (manualInput) {
-    warning =
-      `Provide a valid address on the ${assetChain} network. Providing an incorrect address here will lead to loss of funds.`;
+    warning = `Provide a valid address on the ${assetChain} network. Providing an incorrect address here will lead to loss of funds.`;
   }
 
   function onInputChange(e: ChangeEvent<HTMLInputElement>) {
@@ -50,19 +49,16 @@ export function LoanAddressInputField({
 
   return (
     <Flex direction={"column"} gap={"2"} className="w-full">
-      {warning && renderWarning
-        && (
-          <Box>
-            <Callout.Root color="amber" className="mb-3">
-              <Callout.Icon>
-                <FontAwesomeIcon icon={faInfoCircle} />
-              </Callout.Icon>
-              <Callout.Text>
-                {warning}
-              </Callout.Text>
-            </Callout.Root>
-          </Box>
-        )}
+      {warning && renderWarning && (
+        <Box>
+          <Callout.Root color="amber" className="mb-3">
+            <Callout.Icon>
+              <FontAwesomeIcon icon={faInfoCircle} />
+            </Callout.Icon>
+            <Callout.Text>{warning}</Callout.Text>
+          </Callout.Root>
+        </Box>
+      )}
 
       <TextField.Root
         className="w-full font-semibold border-0 flex items-center text-font dark:text-font-dark"
@@ -90,7 +86,7 @@ export function LoanAddressInputField({
                   <div
                     {...(!ready && {
                       "aria-hidden": true,
-                      "style": {
+                      style: {
                         opacity: 0,
                         pointerEvents: "none",
                         userSelect: "none",

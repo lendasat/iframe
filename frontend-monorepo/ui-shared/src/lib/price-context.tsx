@@ -28,7 +28,10 @@ const changeProtocolToWSS = (urlString: string): string => {
   }
 };
 
-export const PriceProvider: FC<{ url: string; children: ReactNode }> = ({ children, url }) => {
+export const PriceProvider: FC<{ url: string; children: ReactNode }> = ({
+  children,
+  url,
+}) => {
   const [latestPrice, setLatestPrice] = useState<number | undefined>();
   const ws = useRef<WebSocket | null>(null);
   const websocketUrl = changeProtocolToWSS(url);
@@ -60,7 +63,9 @@ export const PriceProvider: FC<{ url: string; children: ReactNode }> = ({ childr
       };
 
       ws.current.onclose = () => {
-        console.log("Lendasat price feed WS closed, attempting to reconnect...");
+        console.log(
+          "Lendasat price feed WS closed, attempting to reconnect...",
+        );
         setTimeout(connect, 200);
       };
     };

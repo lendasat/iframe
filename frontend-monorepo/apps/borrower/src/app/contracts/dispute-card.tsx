@@ -1,8 +1,18 @@
 import type { IconProp } from "@fortawesome/fontawesome-svg-core";
-import { faExclamationCircle, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+import {
+  faExclamationCircle,
+  faInfoCircle,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import * as Collapsible from "@radix-ui/react-collapsible";
-import { Box, Button, Callout, Heading, Select, TextArea } from "@radix-ui/themes";
+import {
+  Box,
+  Button,
+  Callout,
+  Heading,
+  Select,
+  TextArea,
+} from "@radix-ui/themes";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { RxCross2, RxRowSpacing } from "react-icons/rx";
@@ -26,15 +36,17 @@ const AlertMessage = ({ variant, icon, children }: AlertMessageProps) => (
     <Callout.Icon>
       <FontAwesomeIcon icon={icon} className="h-4 w-4" />
     </Callout.Icon>
-    <Callout.Text>
-      {children}
-    </Callout.Text>
+    <Callout.Text>{children}</Callout.Text>
   </Callout.Root>
 );
 
-export const ExpandableDisputeCard = (
-  { info, error, onStartDispute, startingDisputeLoading, disputeInProgress }: ExpandableDisputeCardProps,
-) => {
+export const ExpandableDisputeCard = ({
+  info,
+  error,
+  onStartDispute,
+  startingDisputeLoading,
+  disputeInProgress,
+}: ExpandableDisputeCardProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedReason, setSelectedReason] = useState("");
   const [otherReason, setOtherReason] = useState("");
@@ -64,13 +76,15 @@ export const ExpandableDisputeCard = (
     } else if (disputeInProgress) {
       return (
         <AlertMessage variant="amber" icon={faInfoCircle}>
-          A dispute is currently in progress. Please share any additional information via email.
+          A dispute is currently in progress. Please share any additional
+          information via email.
         </AlertMessage>
       );
     } else {
       return (
         <AlertMessage variant="amber" icon={faInfoCircle}>
-          Something is not right? Please start a dispute. Before doing so ensure that your email address is up to date.
+          Something is not right? Please start a dispute. Before doing so ensure
+          that your email address is up to date.
         </AlertMessage>
       );
     }
@@ -87,9 +101,11 @@ export const ExpandableDisputeCard = (
           </Heading>
           <Collapsible.Trigger asChild>
             <button className="inline-flex size-[25px] items-center justify-center rounded-full text-violet11 shadow-[0_2px_10px] shadow-blackA4 outline-none hover:bg-violet3 focus:shadow-[0_0_0_2px] focus:shadow-black data-[state=closed]:bg-white data-[state=open]:bg-violet3 dark:text-violet10 dark:shadow-blackA9 dark:data-[state=closed]:bg-dark dark:data-[state=open]:bg-violet4 dark:hover:bg-violet5">
-              {open
-                ? <RxCross2 className={"text-font dark:text-font-dark"} />
-                : <RxRowSpacing className={"text-font dark:text-font-dark"} />}
+              {open ? (
+                <RxCross2 className={"text-font dark:text-font-dark"} />
+              ) : (
+                <RxRowSpacing className={"text-font dark:text-font-dark"} />
+              )}
             </button>
           </Collapsible.Trigger>
         </div>
@@ -109,8 +125,11 @@ export const ExpandableDisputeCard = (
                   variant="soft"
                 />
                 <Select.Content>
-                  {disputeReasons.map((reason, index) => <Select.Item key={index} value={reason}>{reason}
-                  </Select.Item>)}
+                  {disputeReasons.map((reason, index) => (
+                    <Select.Item key={index} value={reason}>
+                      {reason}
+                    </Select.Item>
+                  ))}
                 </Select.Content>
               </Select.Root>
             </Box>
@@ -142,7 +161,13 @@ export const ExpandableDisputeCard = (
                 }, 1000);
               }}
               loading={isLoading}
-              disabled={startingDisputeLoading || !selectedReason || !isOtherReasonValid || !otherReason || isLoading}
+              disabled={
+                startingDisputeLoading ||
+                !selectedReason ||
+                !isOtherReasonValid ||
+                !otherReason ||
+                isLoading
+              }
             >
               Start dispute
             </Button>

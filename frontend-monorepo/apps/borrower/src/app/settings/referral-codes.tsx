@@ -14,7 +14,9 @@ type ReferralCodesTableProps = {
   referralCodes: PersonalReferralCode[];
 };
 
-export const ReferralCodesTable = ({ referralCodes }: ReferralCodesTableProps) => {
+export const ReferralCodesTable = ({
+  referralCodes,
+}: ReferralCodesTableProps) => {
   const filteredCodes = referralCodes.filter((code) => code.active);
 
   return (
@@ -22,22 +24,38 @@ export const ReferralCodesTable = ({ referralCodes }: ReferralCodesTableProps) =
       <Table.Header>
         <Table.Row>
           <Table.ColumnHeaderCell>
-            <Text className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
+            <Text
+              className={"text-font dark:text-font-dark"}
+              size={"2"}
+              weight={"medium"}
+            >
               Code
             </Text>
           </Table.ColumnHeaderCell>
           <Table.ColumnHeaderCell>
-            <Text className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
+            <Text
+              className={"text-font dark:text-font-dark"}
+              size={"2"}
+              weight={"medium"}
+            >
               Referred user discount
             </Text>
           </Table.ColumnHeaderCell>
           <Table.ColumnHeaderCell>
-            <Text className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
+            <Text
+              className={"text-font dark:text-font-dark"}
+              size={"2"}
+              weight={"medium"}
+            >
               First loan commission
             </Text>
           </Table.ColumnHeaderCell>
           <Table.ColumnHeaderCell>
-            <Text className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
+            <Text
+              className={"text-font dark:text-font-dark"}
+              size={"2"}
+              weight={"medium"}
+            >
               Other loan commission
             </Text>
           </Table.ColumnHeaderCell>
@@ -48,24 +66,40 @@ export const ReferralCodesTable = ({ referralCodes }: ReferralCodesTableProps) =
         {filteredCodes.map((code) => (
           <Table.Row key={code.code}>
             <Table.Cell>
-              <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
+              <Text
+                className={"text-font dark:text-font-dark"}
+                size={"1"}
+                weight={"medium"}
+              >
                 <Badge size={"3"}>
                   <code>{code.code}</code>
                 </Badge>
               </Text>
             </Table.Cell>
             <Table.Cell>
-              <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
+              <Text
+                className={"text-font dark:text-font-dark"}
+                size={"1"}
+                weight={"medium"}
+              >
                 -{(code.first_time_discount_rate_referee * 100).toFixed(1)}%
               </Text>
             </Table.Cell>
             <Table.Cell>
-              <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
+              <Text
+                className={"text-font dark:text-font-dark"}
+                size={"1"}
+                weight={"medium"}
+              >
                 {(code.first_time_commission_rate_referrer * 100).toFixed(1)}%
               </Text>
             </Table.Cell>
             <Table.Cell>
-              <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
+              <Text
+                className={"text-font dark:text-font-dark"}
+                size={"1"}
+                weight={"medium"}
+              >
                 {(code.commission_rate_referrer * 100).toFixed(1)}%
               </Text>
             </Table.Cell>
@@ -74,7 +108,11 @@ export const ReferralCodesTable = ({ referralCodes }: ReferralCodesTableProps) =
         {referralCodes.length === 0 && (
           <Table.Row>
             <Table.Cell colSpan={5} align="center">
-              <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
+              <Text
+                className={"text-font dark:text-font-dark"}
+                size={"1"}
+                weight={"medium"}
+              >
                 No referral codes found
               </Text>
             </Table.Cell>

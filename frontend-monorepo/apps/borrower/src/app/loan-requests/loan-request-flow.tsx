@@ -11,20 +11,23 @@ import { OffersSelectionTable } from "./offer-selection/offers-selection";
 export const LoanRequestFlow = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   // Initialize state from URL parameters
-  const [selectedProduct, setSelectedProduct] = useState<LoanProductOption | undefined>(
-    searchParams.get("product") as LoanProductOption || LoanProductOption.StableCoins,
+  const [selectedProduct, setSelectedProduct] = useState<
+    LoanProductOption | undefined
+  >(
+    (searchParams.get("product") as LoanProductOption) ||
+      LoanProductOption.StableCoins,
   );
 
   const [selectedOfferId, setSelectedOfferId] = useState<string | undefined>(
-    searchParams.get("offer") as string || undefined,
+    (searchParams.get("offer") as string) || undefined,
   );
 
-  const [selectedLoanAmount, setSelectedLoanAmount] = useState<string | undefined>(
-    searchParams.get("amount") as string || "1000",
-  );
-  const [selectedLoanDuration, setSelectedLoanDuration] = useState<string | undefined>(
-    searchParams.get("duration") as string || "7",
-  );
+  const [selectedLoanAmount, setSelectedLoanAmount] = useState<
+    string | undefined
+  >((searchParams.get("amount") as string) || "1000");
+  const [selectedLoanDuration, setSelectedLoanDuration] = useState<
+    string | undefined
+  >((searchParams.get("duration") as string) || "7");
 
   // Add refs for each section
   const offerSelectionRef = useRef<HTMLDivElement>(null);
@@ -70,12 +73,14 @@ export const LoanRequestFlow = () => {
     }
   }, [searchParams, selectedOfferId, selectedProduct]);
 
-  const handleProductOptionSelect = (productOption: LoanProductOption | undefined) => {
+  const handleProductOptionSelect = (
+    productOption: LoanProductOption | undefined,
+  ) => {
     setSelectedProduct(productOption);
     setSelectedOfferId(undefined);
     // Update URL
     if (productOption) {
-      setSearchParams(params => {
+      setSearchParams((params) => {
         params.set("product", productOption.toString());
         return params;
       });
@@ -89,12 +94,12 @@ export const LoanRequestFlow = () => {
     setSelectedOfferId(offerId);
     // Update URL preserving the service parameter
     if (offerId && offerId !== "undefined") {
-      setSearchParams(prev => {
+      setSearchParams((prev) => {
         prev.set("offer", offerId);
         return prev;
       });
     } else {
-      setSearchParams(prev => {
+      setSearchParams((prev) => {
         prev.delete("offer");
         return prev;
       });
@@ -108,15 +113,15 @@ export const LoanRequestFlow = () => {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
   const onSetLoanAmount = (newLoanAmount: string) => {
-    setColumnFilters(prev => {
-      const existing = prev.filter(f => f.id !== "amount");
+    setColumnFilters((prev) => {
+      const existing = prev.filter((f) => f.id !== "amount");
       return newLoanAmount
         ? [...existing, { id: "amount", value: newLoanAmount }]
         : existing;
     });
 
     setSelectedLoanAmount(newLoanAmount);
-    setSearchParams(params => {
+    setSearchParams((params) => {
       params.set("amount", newLoanAmount);
       return params;
     });
@@ -124,24 +129,30 @@ export const LoanRequestFlow = () => {
 
   const onSetLoanDuration = (days: number) => {
     setSelectedLoanDuration(days.toString());
-    setColumnFilters(prev => {
-      const existing = prev.filter(f => f.id !== "duration");
+    setColumnFilters((prev) => {
+      const existing = prev.filter((f) => f.id !== "duration");
       const value = days.toString();
-      return value
-        ? [...existing, { id: "duration", value: value }]
-        : existing;
+      return value ? [...existing, { id: "duration", value: value }] : existing;
     });
 
-    setSearchParams(params => {
+    setSearchParams((params) => {
       params.set("duration", days.toString());
       return params;
     });
   };
   return (
-    <ScrollArea className="h-screen" type="always" scrollbars="vertical" ref={scrollAreaRef}>
+    <ScrollArea
+      className="h-screen"
+      type="always"
+      scrollbars="vertical"
+      ref={scrollAreaRef}
+    >
       <Box className="container mx-auto py-8">
         <Box mx="auto" className="text-center">
-          <Heading size="7" className="font-semibold text-font dark:text-font-dark">
+          <Heading
+            size="7"
+            className="font-semibold text-font dark:text-font-dark"
+          >
             Find a loan offer
           </Heading>
         </Box>

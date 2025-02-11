@@ -14,21 +14,25 @@ enum LiquidationPreference {
   stablecoin = "1",
 }
 
-export function ContractDefaulted({
-  contract,
-}: ContractDefaultedProps) {
-  const [selectedLiquidationPreference, setSelectedLiquidationPreference] = useState(LiquidationPreference.bitcoin);
+export function ContractDefaulted({ contract }: ContractDefaultedProps) {
+  const [selectedLiquidationPreference, setSelectedLiquidationPreference] =
+    useState(LiquidationPreference.bitcoin);
 
   return (
     <Container fluid>
-      <Heading className={"text-font dark:text-font-dark"} size={"4"} weight={"medium"}>
+      <Heading
+        className={"text-font dark:text-font-dark"}
+        size={"4"}
+        weight={"medium"}
+      >
         Liquidate Collateral
       </Heading>
       <Row className="mt-4">
         <Col>
           <div className="d-flex flex-column">
             <p className="mt-2 text-break text-font dark:text-font-dark">
-              To liquidate the collateral you will have to provide your <strong>password</strong>.
+              To liquidate the collateral you will have to provide your{" "}
+              <strong>password</strong>.
             </p>
           </div>
         </Col>
@@ -42,25 +46,46 @@ export function ContractDefaulted({
                 columns={{ initial: "2", sm: "2" }}
                 size={"3"}
                 onValueChange={(new_pref) => {
-                  if (Object.values(LiquidationPreference).includes(new_pref as LiquidationPreference)) {
-                    setSelectedLiquidationPreference(new_pref as LiquidationPreference);
+                  if (
+                    Object.values(LiquidationPreference).includes(
+                      new_pref as LiquidationPreference,
+                    )
+                  ) {
+                    setSelectedLiquidationPreference(
+                      new_pref as LiquidationPreference,
+                    );
                   }
                 }}
               >
-                <RadioCards.Item value={LiquidationPreference.bitcoin.toString()}>
+                <RadioCards.Item
+                  value={LiquidationPreference.bitcoin.toString()}
+                >
                   <Flex direction="column" width="100%">
-                    <Text className={"text-font dark:text-font-dark"} size={"3"} weight={"bold"}>
+                    <Text
+                      className={"text-font dark:text-font-dark"}
+                      size={"3"}
+                      weight={"bold"}
+                    >
                       Receive as bitcoin
                     </Text>
                   </Flex>
                 </RadioCards.Item>
-                <RadioCards.Item value={LiquidationPreference.stablecoin.toString()}>
+                <RadioCards.Item
+                  value={LiquidationPreference.stablecoin.toString()}
+                >
                   <Flex direction="column" width="100%">
-                    <Text className={"text-font dark:text-font-dark"} size={"3"} weight={"bold"}>
+                    <Text
+                      className={"text-font dark:text-font-dark"}
+                      size={"3"}
+                      weight={"bold"}
+                    >
                       Receive as {contract.loan_asset_type}
                     </Text>
-                    <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>
-                    </Text>
+                    <Text
+                      className={"text-font dark:text-font-dark"}
+                      size={"1"}
+                      weight={"medium"}
+                    ></Text>
                   </Flex>
                 </RadioCards.Item>
               </RadioCards.Root>
@@ -69,19 +94,15 @@ export function ContractDefaulted({
         </Col>
       </Row>
 
-      {selectedLiquidationPreference === LiquidationPreference.bitcoin
-        && (
-          <LiquidateToBitcoin
-            contractId={contract.id}
-          />
-        )}
-      {selectedLiquidationPreference === LiquidationPreference.stablecoin
-        && (
-          <LiquidateToStablecoin
-            contractId={contract.id}
-            repaymentAddress={contract.loan_repayment_address}
-          />
-        )}
+      {selectedLiquidationPreference === LiquidationPreference.bitcoin && (
+        <LiquidateToBitcoin contractId={contract.id} />
+      )}
+      {selectedLiquidationPreference === LiquidationPreference.stablecoin && (
+        <LiquidateToStablecoin
+          contractId={contract.id}
+          repaymentAddress={contract.loan_repayment_address}
+        />
+      )}
     </Container>
   );
 }

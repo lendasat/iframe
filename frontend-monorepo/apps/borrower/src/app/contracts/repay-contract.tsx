@@ -1,8 +1,21 @@
 import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
-import { formatCurrency, type StableCoin, StableCoinHelper } from "@frontend-monorepo/ui-shared";
-import { Badge, Box, Button, Callout, Flex, Separator, Text, Tooltip as Popup } from "@radix-ui/themes";
+import {
+  formatCurrency,
+  type StableCoin,
+  StableCoinHelper,
+} from "@frontend-monorepo/ui-shared";
+import {
+  Badge,
+  Box,
+  Button,
+  Callout,
+  Flex,
+  Separator,
+  Text,
+  Tooltip as Popup,
+} from "@radix-ui/themes";
 import { format } from "date-fns";
 import QRCode from "qrcode.react";
 import { type FormEvent, useState } from "react";
@@ -69,19 +82,35 @@ export const RepayContract = ({
   return (
     <Container fluid>
       <Box>
-        <Separator className="bg-font/10 dark:bg-font-dark/10" size={"4"} my={"4"} />
+        <Separator
+          className="bg-font/10 dark:bg-font-dark/10"
+          size={"4"}
+          my={"4"}
+        />
         <Box className="space-y-4">
           <Flex align={"center"} justify={"between"}>
-            <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70 shrink-0">
+            <Text
+              size={"2"}
+              weight={"medium"}
+              className="text-font/70 dark:text-font-dark/70 shrink-0"
+            >
               Loan Amount
             </Text>
 
-            <Text size={"2"} weight={"medium"} className="text-end text-font/70 dark:text-font-dark/70">
+            <Text
+              size={"2"}
+              weight={"medium"}
+              className="text-end text-font/70 dark:text-font-dark/70"
+            >
               {formatCurrency(loanAmount)}
             </Text>
           </Flex>
           <Flex align={"center"} justify={"between"}>
-            <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70 shrink-0">
+            <Text
+              size={"2"}
+              weight={"medium"}
+              className="text-font/70 dark:text-font-dark/70 shrink-0"
+            >
               Interest Amount
             </Text>
             <Text
@@ -92,17 +121,33 @@ export const RepayContract = ({
               {formatCurrency(interestAmount)}
             </Text>
           </Flex>
-          <Separator className="bg-font/10 dark:bg-font-dark/10" size={"4"} my={"4"} />
+          <Separator
+            className="bg-font/10 dark:bg-font-dark/10"
+            size={"4"}
+            my={"4"}
+          />
           <Flex align={"center"} justify={"between"}>
-            <Text size={"2"} weight={"bold"} className="shrink-0 text-font dark:text-font-dark">
+            <Text
+              size={"2"}
+              weight={"bold"}
+              className="shrink-0 text-font dark:text-font-dark"
+            >
               Total Owed
             </Text>
 
-            <Text size={"2"} weight={"bold"} className="text-end text-font dark:text-font-dark">
+            <Text
+              size={"2"}
+              weight={"bold"}
+              className="text-end text-font dark:text-font-dark"
+            >
               {formatCurrency(totalRepaymentAmount)}
             </Text>
           </Flex>
-          <Separator className="bg-font/10 dark:bg-font-dark/10" size={"4"} my={"4"} />
+          <Separator
+            className="bg-font/10 dark:bg-font-dark/10"
+            size={"4"}
+            my={"4"}
+          />
         </Box>
 
         <Box py={"4"} className="text-center">
@@ -111,26 +156,38 @@ export const RepayContract = ({
               <FaInfoCircle size={"18"} />
             </Callout.Icon>
             <Callout.Text>
-              You are expected to pay back your loan by <strong>{format(expiry, "PPPP")}</strong>. Remember to{" "}
-              <strong>pay back in full</strong>, with a single transaction; partial repayments are not supported. You
-              must pay back using the same asset you borrowed:{" "}
+              You are expected to pay back your loan by{" "}
+              <strong>{format(expiry, "PPPP")}</strong>. Remember to{" "}
+              <strong>pay back in full</strong>, with a single transaction;
+              partial repayments are not supported. You must pay back using the
+              same asset you borrowed:{" "}
               <Link
                 to={StableCoinHelper.toContractUrl(stableCoin)}
                 target={"_blank"}
                 className="text-blue-500 hover:underline hover:text-blue-700"
               >
                 {StableCoinHelper.print(stableCoin)}
-              </Link>.
+              </Link>
+              .
             </Callout.Text>
           </Callout.Root>
         </Box>
 
         <Box py={"4"} className="text-center">
-          <Text size={"2"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">
+          <Text
+            size={"2"}
+            weight={"medium"}
+            className="text-font/60 dark:text-font-dark/60"
+          >
             Scan QR code to make payment
           </Text>
         </Box>
-        <Flex align={"center"} justify={"center"} direction={"column"} gap={"4"}>
+        <Flex
+          align={"center"}
+          justify={"center"}
+          direction={"column"}
+          gap={"4"}
+        >
           <Box
             onClick={() => handleCopy(repaymentAddress)}
             p={"5"}
@@ -148,7 +205,8 @@ export const RepayContract = ({
               size={"2"}
               className="text-font/60 dark:text-font-dark/60 text-center max-w-sm font-medium"
             >
-              Please send <em>exactly</em>{"  "}
+              Please send <em>exactly</em>
+              {"  "}
               <Popup
                 content={"Copy exact amount to send"}
                 className="text-font dark:text-font-dark font-semibold"
@@ -160,7 +218,8 @@ export const RepayContract = ({
                   {formatCurrency(totalRepaymentAmount)} {"  "}
                 </span>
               </Popup>
-              to{"  "}<br />
+              to{"  "}
+              <br />
               <Button
                 onClick={() => handleCopy(repaymentAddress)}
                 asChild
@@ -183,7 +242,11 @@ export const RepayContract = ({
         </Flex>
       </Box>
 
-      <Separator className="bg-font/10 dark:bg-font-dark/10" size={"4"} my={"4"} />
+      <Separator
+        className="bg-font/10 dark:bg-font-dark/10"
+        size={"4"}
+        my={"4"}
+      />
 
       <Box py={"4"} className="text-center">
         <Callout.Root color={"teal"}>
@@ -191,11 +254,11 @@ export const RepayContract = ({
             <FaInfoCircle size={"18"} />
           </Callout.Icon>
           <Callout.Text>
-            After sending the repayment amount to the address above, you <em>must</em>{" "}
-            confirm the repayment by providing the <strong>repayment transaction ID</strong>. Make sure to provide the
-            {" "}
-            <strong>correct</strong>{" "}
-            transaction ID, to allow the lender to verify the repayment. Once the lender confirms your repayment, you
+            After sending the repayment amount to the address above, you{" "}
+            <em>must</em> confirm the repayment by providing the{" "}
+            <strong>repayment transaction ID</strong>. Make sure to provide the{" "}
+            <strong>correct</strong> transaction ID, to allow the lender to
+            verify the repayment. Once the lender confirms your repayment, you
             will be able to claim your collateral.
           </Callout.Text>
         </Callout.Root>
@@ -203,7 +266,9 @@ export const RepayContract = ({
 
       <Form onSubmit={onSubmit}>
         <Form.Group controlId="formTxId" className="mb-3">
-          <Form.Label className={"text-font dark:text-font-dark"} column={"sm"}>Repayment Transaction ID</Form.Label>
+          <Form.Label className={"text-font dark:text-font-dark"} column={"sm"}>
+            Repayment Transaction ID
+          </Form.Label>
           <Form.Control
             type="text"
             placeholder="e.g. 0x1b3b3d48df236c1e83ab5e7253f885a6f60699963691ad066aa3a5ae3b298d62"
@@ -222,7 +287,10 @@ export const RepayContract = ({
 
       {error && (
         <Alert variant="danger">
-          <FontAwesomeIcon icon={faExclamationCircle} className="h-4 w-4 mr-2" />
+          <FontAwesomeIcon
+            icon={faExclamationCircle}
+            className="h-4 w-4 mr-2"
+          />
           {error}
         </Alert>
       )}

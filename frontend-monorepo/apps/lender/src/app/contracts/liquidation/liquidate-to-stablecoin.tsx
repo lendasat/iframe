@@ -1,6 +1,9 @@
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { UnlockWalletModal, useWallet } from "@frontend-monorepo/browser-wallet";
+import {
+  UnlockWalletModal,
+  useWallet,
+} from "@frontend-monorepo/browser-wallet";
 import { useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
 import { useFees } from "@frontend-monorepo/mempool";
 import { formatCurrency } from "@frontend-monorepo/ui-shared";
@@ -24,11 +27,14 @@ export function LiquidateToStablecoin({
   const { recommendedFees } = useFees();
   const { isWalletLoaded, signLiquidationPsbt } = useWallet();
   const navigate = useNavigate();
-  const { getLiquidationToStablecoinPsbt, postLiquidationTx } = useLenderHttpClient();
+  const { getLiquidationToStablecoinPsbt, postLiquidationTx } =
+    useLenderHttpClient();
 
   const [address, setAddress] = useState("");
   const [error, setError] = useState("");
-  const [liquidationTx, setLiquidationTx] = useState<SignedTransaction | null>(null);
+  const [liquidationTx, setLiquidationTx] = useState<SignedTransaction | null>(
+    null,
+  );
   const [confirmSettleAddress, setConfirmSettleAddress] = useState("");
   const [confirmSettleAmount, setConfirmSettleAmount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -87,7 +93,7 @@ export function LiquidateToStablecoin({
   };
 
   const liquidateCollateral = async () => {
-    if (!(recommendedFees?.fastestFee)) {
+    if (!recommendedFees?.fastestFee) {
       setError("Can't liquidate without a fee rate, please retry");
       return;
     }
@@ -98,7 +104,11 @@ export function LiquidateToStablecoin({
       throw Error("Missing liquidation address");
     }
 
-    const res = await getLiquidationToStablecoinPsbt(contractId, recommendedFees.fastestFee, address);
+    const res = await getLiquidationToStablecoinPsbt(
+      contractId,
+      recommendedFees.fastestFee,
+      address,
+    );
 
     console.log(`Signing liquidation PSBT: ${JSON.stringify(res)}`);
 
@@ -190,12 +200,14 @@ export function LiquidateToStablecoin({
       <Row className="mt-2">
         <Col>
           <Alert variant="info">
-            <FontAwesomeIcon icon={faInfoCircle} /> You will receive your funds at <strong>{repaymentAddress}</strong>.
+            <FontAwesomeIcon icon={faInfoCircle} /> You will receive your funds
+            at <strong>{repaymentAddress}</strong>.
             <br />
             <br />
-            <strong>Note:</strong>{" "}
-            We are using a third party service for the liquidation. In the unlikely event where the liquidation fails,
-            you will receive the bitcoin. Because of this, please provide below a fallback bitcoin address.
+            <strong>Note:</strong> We are using a third party service for the
+            liquidation. In the unlikely event where the liquidation fails, you
+            will receive the bitcoin. Because of this, please provide below a
+            fallback bitcoin address.
           </Alert>
         </Col>
       </Row>
@@ -203,7 +215,10 @@ export function LiquidateToStablecoin({
         <Form.Group controlId="formAddress" className="mb-3">
           <Row className="mt-2">
             <Col>
-              <Form.Label className={"font-bold text-font dark:text-font-dark"} column={false}>
+              <Form.Label
+                className={"font-bold text-font dark:text-font-dark"}
+                column={false}
+              >
                 Fallback Bitcoin Address
               </Form.Label>
               <Form.Control
@@ -226,11 +241,7 @@ export function LiquidateToStablecoin({
           <Row className="justify-content-between mt-4">
             <Row className="mt-1">
               <Col className="d-grid">
-                <Button
-                  type="submit"
-                  loading={isLoading}
-                  size={"3"}
-                >
+                <Button type="submit" loading={isLoading} size={"3"}>
                   {isWalletLoaded ? "Liquidate" : "Unlock Contract"}
                 </Button>
                 {error && (
@@ -239,9 +250,7 @@ export function LiquidateToStablecoin({
                       <Callout.Icon>
                         <IoInformationCircleOutline />
                       </Callout.Icon>
-                      <Callout.Text>
-                        {error}
-                      </Callout.Text>
+                      <Callout.Text>{error}</Callout.Text>
                     </Callout.Root>
                   </Col>
                 )}
@@ -263,10 +272,14 @@ type ConfirmationModalProps = {
   confirmSettleAmount: number;
 };
 
-const ConfirmationModal = (
-  { show, handleClose, handleConfirm, liquidationTx, confirmSettleAddress, confirmSettleAmount }:
-    ConfirmationModalProps,
-) => {
+const ConfirmationModal = ({
+  show,
+  handleClose,
+  handleConfirm,
+  liquidationTx,
+  confirmSettleAddress,
+  confirmSettleAmount,
+}: ConfirmationModalProps) => {
   return (
     <Modal show={show} onHide={handleClose} centered>
       <Box className={"bg-white dark:bg-dark-700 rounded-2"}>
@@ -286,7 +299,8 @@ const ConfirmationModal = (
                   <FontAwesomeIcon icon={faInfoCircle} />
                 </Box>
                 <Text>
-                  Please verify that the liquidation transaction pays the expected amount to your chosen address.
+                  Please verify that the liquidation transaction pays the
+                  expected amount to your chosen address.
                 </Text>
               </Alert>
             </Flex>
@@ -296,7 +310,8 @@ const ConfirmationModal = (
               <Text>Sending:</Text>
               <ul className="list-disc list-inside pl-5">
                 <li className="whitespace-nowrap overflow-hidden text-ellipsis">
-                  <strong>{formatCurrency(confirmSettleAmount)}</strong> to <em>{confirmSettleAddress}</em>.
+                  <strong>{formatCurrency(confirmSettleAmount)}</strong> to{" "}
+                  <em>{confirmSettleAddress}</em>.
                 </li>
               </ul>
             </Flex>

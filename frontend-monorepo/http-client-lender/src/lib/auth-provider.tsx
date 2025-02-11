@@ -1,4 +1,8 @@
-import type { LoginResponseOrUpgrade, User, Version } from "@frontend-monorepo/base-http-client";
+import type {
+  LoginResponseOrUpgrade,
+  User,
+  Version,
+} from "@frontend-monorepo/base-http-client";
 import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
 import axios from "axios";
 import { process_login_response, verify_server } from "browser-wallet";
@@ -7,7 +11,10 @@ import { useCallback } from "react";
 import { createContext, useContext, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { SemVer } from "semver";
-import { allowedPagesWithoutLogin, HttpClientLenderProvider } from "./http-client-lender";
+import {
+  allowedPagesWithoutLogin,
+  HttpClientLenderProvider,
+} from "./http-client-lender";
 import { FeatureMapper, LenderFeatureFlags } from "./models";
 
 interface AuthContextType {
@@ -19,7 +26,9 @@ interface AuthContextType {
   enabledFeatures: LenderFeatureFlags[];
 }
 
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(
+  undefined,
+);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -58,12 +67,13 @@ interface AuthProviderProps {
   baseUrl: string;
 }
 
-export const AuthProviderLender: FC<AuthProviderProps> = ({ children, baseUrl }) => {
+export const AuthProviderLender: FC<AuthProviderProps> = ({
+  children,
+  baseUrl,
+}) => {
   return (
     <HttpClientLenderProvider baseUrl={baseUrl}>
-      <LenderAuthProviderInner>
-        {children}
-      </LenderAuthProviderInner>
+      <LenderAuthProviderInner>{children}</LenderAuthProviderInner>
     </HttpClientLenderProvider>
   );
 };
@@ -74,12 +84,21 @@ const LenderAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) => {
 
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [enabledFeatures, setEnabledFeatures] = useState<LenderFeatureFlags[]>([]);
+  const [enabledFeatures, setEnabledFeatures] = useState<LenderFeatureFlags[]>(
+    [],
+  );
   const [backendVersion, setBackendVersion] = useState<Version>({
     version: new SemVer("0.0.0"),
     commit_hash: "unknown",
   });
-  const { me, pakeLoginRequest, pakeVerifyRequest, logout: baseLogout, getVersion, check } = useBaseHttpClient();
+  const {
+    me,
+    pakeLoginRequest,
+    pakeVerifyRequest,
+    logout: baseLogout,
+    getVersion,
+    check,
+  } = useBaseHttpClient();
 
   const handle401 = useCallback(() => {
     setUser(null);
@@ -107,14 +126,16 @@ const LenderAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) => {
         } else {
           const message = error.response.data.message;
           console.error(
-            `Failed to check login status: http: ${error.response?.status} and response: ${
-              JSON.stringify(error.response?.data)
-            }`,
+            `Failed to check login status: http: ${
+              error.response?.status
+            } and response: ${JSON.stringify(error.response?.data)}`,
           );
           throw new Error(message);
         }
       } else {
-        throw new Error(`Failed to check login status: http: ${JSON.stringify(error)}`);
+        throw new Error(
+          `Failed to check login status: http: ${JSON.stringify(error)}`,
+        );
       }
     }
   }, [check, handle401]);
@@ -132,7 +153,9 @@ const LenderAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) => {
         const currentUser = await me();
         if (currentUser) {
           setUser(currentUser.user);
-          const enabledFeatures = FeatureMapper.mapEnabledFeatures(currentUser.enabled_features);
+          const enabledFeatures = FeatureMapper.mapEnabledFeatures(
+            currentUser.enabled_features,
+          );
 
           setEnabledFeatures(enabledFeatures);
         } else {
@@ -167,7 +190,12 @@ const LenderAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) => {
         return { must_upgrade_to_pake: undefined };
       }
 
-      const verificationData = process_login_response(email, password, pakeLoginResponse.salt, pakeLoginResponse.b_pub);
+      const verificationData = process_login_response(
+        email,
+        password,
+        pakeLoginResponse.salt,
+        pakeLoginResponse.b_pub,
+      );
 
       const pakeVerifyResponse = await pakeVerifyRequest(
         email,
@@ -179,7 +207,9 @@ const LenderAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) => {
         throw new Error("failed to verify server proof");
       }
 
-      const enabledFeatures = FeatureMapper.mapEnabledFeatures(pakeVerifyResponse.enabled_features);
+      const enabledFeatures = FeatureMapper.mapEnabledFeatures(
+        pakeVerifyResponse.enabled_features,
+      );
 
       if (enabledFeatures) {
         setEnabledFeatures(enabledFeatures);
@@ -221,7 +251,9 @@ const LenderAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, backendVersion, enabledFeatures }}>
+    <AuthContext.Provider
+      value={{ user, loading, login, logout, backendVersion, enabledFeatures }}
+    >
       {children}
     </AuthContext.Provider>
   );

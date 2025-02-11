@@ -24,8 +24,16 @@ interface WalletContextType {
   getNsec: () => string;
   getPubkeyFromContract: (passphrase: string) => string;
   getNextPublicKey: () => Promise<string>;
-  signClaimPsbt: (psbt: string, collateralDescriptor: string, borrowerPk: string) => Promise<SignedTransaction>;
-  signLiquidationPsbt: (psbt: string, collateralDescriptor: string, borrowerPk: string) => Promise<SignedTransaction>;
+  signClaimPsbt: (
+    psbt: string,
+    collateralDescriptor: string,
+    borrowerPk: string,
+  ) => Promise<SignedTransaction>;
+  signLiquidationPsbt: (
+    psbt: string,
+    collateralDescriptor: string,
+    borrowerPk: string,
+  ) => Promise<SignedTransaction>;
   getXpub: () => Promise<string>;
 }
 
@@ -47,18 +55,22 @@ interface WalletProviderProps {
 export const WalletProvider = ({ children, email }: WalletProviderProps) => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isWalletLoaded, setIsWalletLoaded] = useState(false);
-  const [doesWalletExist, setDoesWalletExist] = useState<boolean | undefined>(undefined);
+  const [doesWalletExist, setDoesWalletExist] = useState<boolean | undefined>(
+    undefined,
+  );
 
   useEffect(() => {
-    init().then(async () => {
-      setIsInitialized(true);
-      const key = await md5(email);
+    init()
+      .then(async () => {
+        setIsInitialized(true);
+        const key = await md5(email);
 
-      setDoesWalletExist(does_wallet_exist(key));
-      setIsWalletLoaded(is_wallet_loaded());
-    }).catch((error) => {
-      console.log(`Failed initializing wasm library ${error}`);
-    });
+        setDoesWalletExist(does_wallet_exist(key));
+        setIsWalletLoaded(is_wallet_loaded());
+      })
+      .catch((error) => {
+        console.log(`Failed initializing wasm library ${error}`);
+      });
   }, [email]);
 
   const loadWallet = async (passphrase: string) => {
@@ -96,7 +108,11 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
     return get_next_pk(key);
   };
 
-  const signClaimPsbt = async (psbt: string, collateralDescriptor: string, borrowerPk: string) => {
+  const signClaimPsbt = async (
+    psbt: string,
+    collateralDescriptor: string,
+    borrowerPk: string,
+  ) => {
     if (isInitialized && isWalletLoaded) {
       return sign_claim_psbt(psbt, collateralDescriptor, borrowerPk);
     } else {
@@ -135,7 +151,9 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
     getXpub,
   };
 
-  return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
+  return (
+    <WalletContext.Provider value={value}>{children}</WalletContext.Provider>
+  );
 };
 
 export default WalletProvider;

@@ -1,4 +1,13 @@
-import { Box, Button, Callout, Grid, Heading, IconButton, Spinner, Text } from "@radix-ui/themes";
+import {
+  Box,
+  Button,
+  Callout,
+  Grid,
+  Heading,
+  IconButton,
+  Spinner,
+  Text,
+} from "@radix-ui/themes";
 import type { FormEvent } from "react";
 import { useState } from "react";
 import { Form } from "react-bootstrap";
@@ -16,7 +25,9 @@ interface UpgradeToPakeFormProps {
   ) => Promise<void>;
 }
 
-export function UpgradeToPakeForm({ handleFormSubmission }: UpgradeToPakeFormProps) {
+export function UpgradeToPakeForm({
+  handleFormSubmission,
+}: UpgradeToPakeFormProps) {
   const [email, setEmail] = useState("");
 
   const [oldPassword, setOldPassword] = useState("");
@@ -42,7 +53,12 @@ export function UpgradeToPakeForm({ handleFormSubmission }: UpgradeToPakeFormPro
 
     setError("");
     try {
-      await handleFormSubmission(email, oldPassword, contractSecret, newPassword);
+      await handleFormSubmission(
+        email,
+        oldPassword,
+        contractSecret,
+        newPassword,
+      );
     } catch (err) {
       console.error("Failed upgrading user to PAKE:", err);
       setError(
@@ -59,7 +75,11 @@ export function UpgradeToPakeForm({ handleFormSubmission }: UpgradeToPakeFormPro
       <Grid align={"center"} className="overflow-hidden grid-cols-1 w-screen">
         <Box className="flex flex-col items-center p-5">
           {/* Logo */}
-          <Logo height={27} width={"auto"} className="w-fit invert dark:invert-0" />
+          <Logo
+            height={27}
+            width={"auto"}
+            className="w-fit invert dark:invert-0"
+          />
           <Box
             mt={"6"}
             maxWidth={"550px"}
@@ -70,15 +90,22 @@ export function UpgradeToPakeForm({ handleFormSubmission }: UpgradeToPakeFormPro
           >
             {/* Heading */}
             <Box className="text-center pb-4">
-              <Heading size={"7"} className="text-font dark:text-font-dark pb-2">Choose a new password</Heading>
+              <Heading
+                size={"7"}
+                className="text-font dark:text-font-dark pb-2"
+              >
+                Choose a new password
+              </Heading>
               <Text size={"3"} className="text-font/70 dark:text-font-dark/70">
-                <strong>Good news!</strong> Lendasat is getting <em>simpler</em>.
+                <strong>Good news!</strong> Lendasat is getting <em>simpler</em>
+                .
               </Text>
               <br /> <br />
               <Text size={"3"} className="text-font/70 dark:text-font-dark/70">
-                We have updated the app and you no longer need to remember both a password <em>and</em>{" "}
-                a contract secret. You will now use a <strong>single password</strong>{" "}
-                to authenticate and secure your wallet.
+                We have updated the app and you no longer need to remember both
+                a password <em>and</em> a contract secret. You will now use a{" "}
+                <strong>single password</strong> to authenticate and secure your
+                wallet.
               </Text>
             </Box>
 
@@ -87,7 +114,12 @@ export function UpgradeToPakeForm({ handleFormSubmission }: UpgradeToPakeFormPro
               <Box className="text-left mt-3">
                 {/* Email */}
                 <Box>
-                  <Text as="label" size={"1"} weight={"medium"} className="text-font/70 dark:text-font-dark/70 mb-2">
+                  <Text
+                    as="label"
+                    size={"1"}
+                    weight={"medium"}
+                    className="text-font/70 dark:text-font-dark/70 mb-2"
+                  >
                     Email
                   </Text>
                   <TypeField
@@ -100,7 +132,12 @@ export function UpgradeToPakeForm({ handleFormSubmission }: UpgradeToPakeFormPro
 
               <Box className="text-left mt-3">
                 <Box>
-                  <Text as="label" size={"1"} weight={"medium"} className="text-font/70 dark:text-font-dark/70 mb-2">
+                  <Text
+                    as="label"
+                    size={"1"}
+                    weight={"medium"}
+                    className="text-font/70 dark:text-font-dark/70 mb-2"
+                  >
                     Current Password
                   </Text>
                   <TypeField
@@ -113,7 +150,9 @@ export function UpgradeToPakeForm({ handleFormSubmission }: UpgradeToPakeFormPro
                       variant="ghost"
                       type="button"
                       className="hover:bg-transparent text-font dark:text-font-dark"
-                      onClick={() => setIsOldPasswordVisible(!isOldPasswordVisible)}
+                      onClick={() =>
+                        setIsOldPasswordVisible(!isOldPasswordVisible)
+                      }
                     >
                       {isOldPasswordVisible ? <FaRegEye /> : <FaRegEyeSlash />}
                     </IconButton>
@@ -123,7 +162,12 @@ export function UpgradeToPakeForm({ handleFormSubmission }: UpgradeToPakeFormPro
 
               <Box className="text-left mt-3">
                 <Box>
-                  <Text as="label" size={"1"} weight={"medium"} className="text-font/70 dark:text-font-dark/70 mb-2">
+                  <Text
+                    as="label"
+                    size={"1"}
+                    weight={"medium"}
+                    className="text-font/70 dark:text-font-dark/70 mb-2"
+                  >
                     Contract Secret
                   </Text>
                   <TypeField
@@ -136,9 +180,15 @@ export function UpgradeToPakeForm({ handleFormSubmission }: UpgradeToPakeFormPro
                       variant="ghost"
                       type="button"
                       className="hover:bg-transparent text-font dark:text-font-dark"
-                      onClick={() => setContractSecretVisible(!isContractSecretVisible)}
+                      onClick={() =>
+                        setContractSecretVisible(!isContractSecretVisible)
+                      }
                     >
-                      {isContractSecretVisible ? <FaRegEye /> : <FaRegEyeSlash />}
+                      {isContractSecretVisible ? (
+                        <FaRegEye />
+                      ) : (
+                        <FaRegEyeSlash />
+                      )}
                     </IconButton>
                   </TypeField>
                 </Box>
@@ -147,7 +197,12 @@ export function UpgradeToPakeForm({ handleFormSubmission }: UpgradeToPakeFormPro
               {/* Password */}
               <Box className="grid grid-cols-1 md:grid-cols-2 md:gap-1">
                 <Box className="text-left mt-3">
-                  <Text as="label" size={"1"} weight={"medium"} className="text-font/70 dark:text-font-dark/70 mb-2">
+                  <Text
+                    as="label"
+                    size={"1"}
+                    weight={"medium"}
+                    className="text-font/70 dark:text-font-dark/70 mb-2"
+                  >
                     New Password
                   </Text>
                   <TypeField
@@ -160,7 +215,9 @@ export function UpgradeToPakeForm({ handleFormSubmission }: UpgradeToPakeFormPro
                       type="button"
                       variant="ghost"
                       className="hover:bg-transparent text-font dark:text-font-dark"
-                      onClick={() => setIsNewPasswordVisible(!isNewPasswordVisible)}
+                      onClick={() =>
+                        setIsNewPasswordVisible(!isNewPasswordVisible)
+                      }
                       tabIndex={-1}
                     >
                       {isNewPasswordVisible ? <FaRegEye /> : <FaRegEyeSlash />}
@@ -168,7 +225,12 @@ export function UpgradeToPakeForm({ handleFormSubmission }: UpgradeToPakeFormPro
                   </TypeField>
                 </Box>
                 <Box className="text-left mt-3">
-                  <Text as="label" size={"1"} weight={"medium"} className="text-font/70 dark:text-font-dark/70 mb-2">
+                  <Text
+                    as="label"
+                    size={"1"}
+                    weight={"medium"}
+                    className="text-font/70 dark:text-font-dark/70 mb-2"
+                  >
                     Confirm Password
                   </Text>
                   <TypeField
@@ -181,7 +243,9 @@ export function UpgradeToPakeForm({ handleFormSubmission }: UpgradeToPakeFormPro
                       type="button"
                       variant="ghost"
                       className="hover:bg-transparent text-font dark:text-font-dark"
-                      onClick={() => setIsNewPasswordVisible(!isNewPasswordVisible)}
+                      onClick={() =>
+                        setIsNewPasswordVisible(!isNewPasswordVisible)
+                      }
                       tabIndex={-1}
                     >
                       {isNewPasswordVisible ? <FaRegEye /> : <FaRegEyeSlash />}
@@ -196,9 +260,7 @@ export function UpgradeToPakeForm({ handleFormSubmission }: UpgradeToPakeFormPro
                   <Callout.Icon>
                     <IoInformationCircleOutline />
                   </Callout.Icon>
-                  <Callout.Text>
-                    {error}
-                  </Callout.Text>
+                  <Callout.Text>{error}</Callout.Text>
                 </Callout.Root>
               )}
 
@@ -210,9 +272,16 @@ export function UpgradeToPakeForm({ handleFormSubmission }: UpgradeToPakeFormPro
                   size={"3"}
                   variant="solid"
                   radius="large"
-                  disabled={!(email && oldPassword && contractSecret && newPassword
-                    && newPassword === confirmNewPassword
-                    && !isLoading)}
+                  disabled={
+                    !(
+                      email &&
+                      oldPassword &&
+                      contractSecret &&
+                      newPassword &&
+                      newPassword === confirmNewPassword &&
+                      !isLoading
+                    )
+                  }
                   className="w-full h-12"
                 >
                   {isLoading ? <Spinner size={"3"} /> : "Submit"}

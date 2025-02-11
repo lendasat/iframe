@@ -1,6 +1,9 @@
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { UnlockWalletModal, useWallet } from "@frontend-monorepo/browser-wallet";
+import {
+  UnlockWalletModal,
+  useWallet,
+} from "@frontend-monorepo/browser-wallet";
 import { useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
 import { FeeSelector } from "@frontend-monorepo/mempool";
 import { Box, Button, Callout, Flex, Heading, Text } from "@radix-ui/themes";
@@ -15,10 +18,9 @@ export interface LiquidateToBitcoinProps {
   contractId: string;
 }
 
-export function LiquidateToBitcoin({
-  contractId,
-}: LiquidateToBitcoinProps) {
-  const { getLiquidationToBitcoinPsbt, postLiquidationTx } = useLenderHttpClient();
+export function LiquidateToBitcoin({ contractId }: LiquidateToBitcoinProps) {
+  const { getLiquidationToBitcoinPsbt, postLiquidationTx } =
+    useLenderHttpClient();
   const { isWalletLoaded, signLiquidationPsbt } = useWallet();
   const navigate = useNavigate();
 
@@ -26,7 +28,9 @@ export function LiquidateToBitcoin({
   const [address, setAddress] = useState("");
 
   const [showModal, setShowModal] = useState(false);
-  const [liquidationTx, setLiquidationTx] = useState<SignedTransaction | null>(null);
+  const [liquidationTx, setLiquidationTx] = useState<SignedTransaction | null>(
+    null,
+  );
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -85,7 +89,11 @@ export function LiquidateToBitcoin({
       throw Error("Missing liquidation address");
     }
 
-    const res = await getLiquidationToBitcoinPsbt(contractId, selectedFee, address);
+    const res = await getLiquidationToBitcoinPsbt(
+      contractId,
+      selectedFee,
+      address,
+    );
 
     console.log(`Signing liquidation PSBT: ${JSON.stringify(res)}`);
 
@@ -172,8 +180,8 @@ export function LiquidateToBitcoin({
       <Row className="mt-2">
         <Col>
           <Alert variant="info">
-            <FontAwesomeIcon icon={faInfoCircle} />{" "}
-            Your share of the collateral will be sent to the Bitcoin address you choose.
+            <FontAwesomeIcon icon={faInfoCircle} /> Your share of the collateral
+            will be sent to the Bitcoin address you choose.
           </Alert>
         </Col>
       </Row>
@@ -181,7 +189,10 @@ export function LiquidateToBitcoin({
         <Form.Group controlId="formAddress" className="mb-3">
           <Row className="mt-2">
             <Col>
-              <Form.Label className={"font-bold text-font dark:text-font-dark"} column={false}>
+              <Form.Label
+                className={"font-bold text-font dark:text-font-dark"}
+                column={false}
+              >
                 Liquidation Address
               </Form.Label>
               <Form.Control
@@ -206,11 +217,7 @@ export function LiquidateToBitcoin({
           <Row className="justify-content-between mt-4">
             <Row className="mt-1">
               <Col className="d-grid">
-                <Button
-                  type="submit"
-                  loading={isLoading}
-                  size={"3"}
-                >
+                <Button type="submit" loading={isLoading} size={"3"}>
                   {isWalletLoaded ? "Liquidate" : "Unlock Contract"}
                 </Button>
                 {error && (
@@ -219,9 +226,7 @@ export function LiquidateToBitcoin({
                       <Callout.Icon>
                         <IoInformationCircleOutline />
                       </Callout.Icon>
-                      <Callout.Text>
-                        {error}
-                      </Callout.Text>
+                      <Callout.Text>{error}</Callout.Text>
                     </Callout.Root>
                   </Col>
                 )}
@@ -241,7 +246,12 @@ type ConfirmationModalProps = {
   liquidationTx: SignedTransaction;
 };
 
-const ConfirmationModal = ({ show, handleClose, handleConfirm, liquidationTx }: ConfirmationModalProps) => {
+const ConfirmationModal = ({
+  show,
+  handleClose,
+  handleConfirm,
+  liquidationTx,
+}: ConfirmationModalProps) => {
   const formatter = new Intl.NumberFormat("en-US");
 
   return (
@@ -263,7 +273,8 @@ const ConfirmationModal = ({ show, handleClose, handleConfirm, liquidationTx }: 
                   <FontAwesomeIcon icon={faInfoCircle} />
                 </Box>
                 <Text>
-                  Please verify that the liquidation transaction pays the expected amount to your chosen address.
+                  Please verify that the liquidation transaction pays the
+                  expected amount to your chosen address.
                 </Text>
               </Alert>
             </Flex>
@@ -273,8 +284,12 @@ const ConfirmationModal = ({ show, handleClose, handleConfirm, liquidationTx }: 
               <Text>Sending:</Text>
               <ul className="list-disc list-inside pl-5">
                 {liquidationTx.outputs.map((o, index) => (
-                  <li key={index} className="whitespace-nowrap overflow-hidden text-ellipsis">
-                    <strong>{formatter.format(o.value)}</strong> sats to <em>{o.address}</em>.
+                  <li
+                    key={index}
+                    className="whitespace-nowrap overflow-hidden text-ellipsis"
+                  >
+                    <strong>{formatter.format(o.value)}</strong> sats to{" "}
+                    <em>{o.address}</em>.
                   </li>
                 ))}
               </ul>

@@ -24,7 +24,11 @@ export const OffersSelectionTable = ({
 }: OffersTableProps) => {
   const { getLoanOffers } = useBorrowerHttpClient();
 
-  const { loading, value: maybeAvailableOffers, error: loadingError } = useAsync(async () => {
+  const {
+    loading,
+    value: maybeAvailableOffers,
+    error: loadingError,
+  } = useAsync(async () => {
     return getLoanOffers();
   }, []);
 
@@ -78,9 +82,7 @@ export const OffersSelectionTable = ({
           <Callout.Icon>
             <FontAwesomeIcon icon={faWarning} />
           </Callout.Icon>
-          <Callout.Text>
-            {loadingError.message}
-          </Callout.Text>
+          <Callout.Text>{loadingError.message}</Callout.Text>
         </Callout.Root>
       )}
     </Box>

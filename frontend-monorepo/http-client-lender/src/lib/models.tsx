@@ -1,6 +1,10 @@
 import { type LoanFeature } from "@frontend-monorepo/base-http-client";
 import { OriginationFee } from "@frontend-monorepo/http-client-borrower";
-import type { LoanAssetChain, LoanAssetType, LoanTransaction } from "@frontend-monorepo/ui-shared";
+import type {
+  LoanAssetChain,
+  LoanAssetType,
+  LoanTransaction,
+} from "@frontend-monorepo/ui-shared";
 
 export enum ContractStatus {
   Requested = "Requested",
@@ -25,7 +29,9 @@ export enum ContractStatus {
   RequestExpired = "RequestExpired",
 }
 
-export const ALL_CONTRACT_STATUSES = Object.values(ContractStatus) as ContractStatus[];
+export const ALL_CONTRACT_STATUSES = Object.values(
+  ContractStatus,
+) as ContractStatus[];
 
 export interface Contract {
   id: string;
@@ -274,7 +280,8 @@ export enum LenderFeatureFlags {
 
 export class FeatureMapper {
   private static readonly FEATURE_MAP: Record<string, LenderFeatureFlags> = {
-    [LenderFeatureFlags.AutoApproveLoanRequests]: LenderFeatureFlags.AutoApproveLoanRequests,
+    [LenderFeatureFlags.AutoApproveLoanRequests]:
+      LenderFeatureFlags.AutoApproveLoanRequests,
     [LenderFeatureFlags.KycOffers]: LenderFeatureFlags.KycOffers,
     // Add other mappings once we use them
   };

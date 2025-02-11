@@ -1,13 +1,24 @@
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { UnlockWalletModal, useWallet } from "@frontend-monorepo/browser-wallet";
+import {
+  UnlockWalletModal,
+  useWallet,
+} from "@frontend-monorepo/browser-wallet";
 import { useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
 import type { Contract } from "@frontend-monorepo/http-client-lender";
 import { FeeSelector } from "@frontend-monorepo/mempool";
 import { Box, Callout, Flex, Heading, Text } from "@radix-ui/themes";
 import type { SignedTransaction } from "browser-wallet";
 import { useState } from "react";
-import { Alert, Button, Col, Container, Form, Modal, Row } from "react-bootstrap";
+import {
+  Alert,
+  Button,
+  Col,
+  Container,
+  Form,
+  Modal,
+  Row,
+} from "react-bootstrap";
 import { IoInformationCircleOutline } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
 
@@ -15,9 +26,7 @@ interface ContractRecoveryProps {
   contract: Contract;
 }
 
-export function ContractRecovery({
-  contract,
-}: ContractRecoveryProps) {
+export function ContractRecovery({ contract }: ContractRecoveryProps) {
   const { getRecoveryPsbt, postLiquidationTx } = useLenderHttpClient();
   const navigate = useNavigate();
 
@@ -151,14 +160,19 @@ export function ContractRecovery({
         />
       )}
       <Container fluid>
-        <Heading className={"text-font dark:text-font-dark"} size={"4"} weight={"medium"}>
+        <Heading
+          className={"text-font dark:text-font-dark"}
+          size={"4"}
+          weight={"medium"}
+        >
           Recover Collateral
         </Heading>
         <Row className="mt-4">
           <Col>
             <div className="d-flex flex-column">
               <p className="mt-2 text-break text-font dark:text-font-dark">
-                To recover the collateral you will have to provide your <strong>password</strong>.
+                To recover the collateral you will have to provide your{" "}
+                <strong>password</strong>.
               </p>
             </div>
           </Col>
@@ -166,9 +180,9 @@ export function ContractRecovery({
         <Row className="mt-2">
           <Col>
             <Alert variant="info">
-              <FontAwesomeIcon icon={faInfoCircle} />{" "}
-              If the borrower has yet to pay back the loan, your share of the collateral will be sent to the Bitcoin
-              address you choose.
+              <FontAwesomeIcon icon={faInfoCircle} /> If the borrower has yet to
+              pay back the loan, your share of the collateral will be sent to
+              the Bitcoin address you choose.
             </Alert>
           </Col>
         </Row>
@@ -176,7 +190,9 @@ export function ContractRecovery({
           <Form.Group controlId="formAddress" className="mb-3">
             <Row className="mt-2">
               <Col>
-                <Form.Label className={"font-bold text-font dark:text-font-dark"}>
+                <Form.Label
+                  className={"font-bold text-font dark:text-font-dark"}
+                >
                   Your Bitcoin Address
                 </Form.Label>
                 <Form.Control
@@ -198,10 +214,7 @@ export function ContractRecovery({
             <Row className="justify-content-between mt-4">
               <Row className="mt-1">
                 <Col className="d-grid">
-                  <Button
-                    type="submit"
-                    variant="primary"
-                  >
+                  <Button type="submit" variant="primary">
                     {isWalletLoaded ? "Liquidate" : "Unlock Contract"}
                   </Button>
                   {error && (
@@ -210,9 +223,7 @@ export function ContractRecovery({
                         <Callout.Icon>
                           <IoInformationCircleOutline />
                         </Callout.Icon>
-                        <Callout.Text>
-                          {error}
-                        </Callout.Text>
+                        <Callout.Text>{error}</Callout.Text>
                       </Callout.Root>
                     </Col>
                   )}
@@ -233,7 +244,12 @@ type ConfirmationModalProps = {
   tx: SignedTransaction;
 };
 
-const ConfirmationModal = ({ show, handleClose, handleConfirm, tx }: ConfirmationModalProps) => {
+const ConfirmationModal = ({
+  show,
+  handleClose,
+  handleConfirm,
+  tx,
+}: ConfirmationModalProps) => {
   const formatter = new Intl.NumberFormat("en-US");
 
   return (
@@ -255,8 +271,10 @@ const ConfirmationModal = ({ show, handleClose, handleConfirm, tx }: Confirmatio
                   <FontAwesomeIcon icon={faInfoCircle} />
                 </Box>
                 <Text>
-                  Make sure that you agree with the transaction before confirming. Keep in mind that Lendasat may return
-                  a transaction that does not pay to you if the borrower has already paid back the loan.
+                  Make sure that you agree with the transaction before
+                  confirming. Keep in mind that Lendasat may return a
+                  transaction that does not pay to you if the borrower has
+                  already paid back the loan.
                 </Text>
               </Alert>
             </Flex>
@@ -266,8 +284,12 @@ const ConfirmationModal = ({ show, handleClose, handleConfirm, tx }: Confirmatio
               <Text>Sending:</Text>
               <ul className="list-disc list-inside pl-5">
                 {tx.outputs.map((o, index) => (
-                  <li key={index} className="whitespace-nowrap overflow-hidden text-ellipsis">
-                    <strong>{formatter.format(o.value)}</strong> sats to <em>{o.address}</em>.
+                  <li
+                    key={index}
+                    className="whitespace-nowrap overflow-hidden text-ellipsis"
+                  >
+                    <strong>{formatter.format(o.value)}</strong> sats to{" "}
+                    <em>{o.address}</em>.
                   </li>
                 ))}
               </ul>

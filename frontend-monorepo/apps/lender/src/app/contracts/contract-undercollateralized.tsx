@@ -1,13 +1,24 @@
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { UnlockWalletModal, useWallet } from "@frontend-monorepo/browser-wallet";
+import {
+  UnlockWalletModal,
+  useWallet,
+} from "@frontend-monorepo/browser-wallet";
 import { useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
 import type { Contract } from "@frontend-monorepo/http-client-lender";
 import { FeeSelector } from "@frontend-monorepo/mempool";
 import { Box, Callout, Flex, Heading, Text } from "@radix-ui/themes";
 import type { SignedTransaction } from "browser-wallet";
 import { useState } from "react";
-import { Alert, Button, Col, Container, Form, Modal, Row } from "react-bootstrap";
+import {
+  Alert,
+  Button,
+  Col,
+  Container,
+  Form,
+  Modal,
+  Row,
+} from "react-bootstrap";
 import { IoInformationCircleOutline } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
 
@@ -18,14 +29,17 @@ interface ContractUndercollateralizedProps {
 export function ContractUndercollateralized({
   contract,
 }: ContractUndercollateralizedProps) {
-  const { getLiquidationToBitcoinPsbt, postLiquidationTx } = useLenderHttpClient();
+  const { getLiquidationToBitcoinPsbt, postLiquidationTx } =
+    useLenderHttpClient();
   const navigate = useNavigate();
 
   const [selectedFee, setSelectedFee] = useState(1);
   const [address, setAddress] = useState("");
 
   const [showModal, setShowModal] = useState(false);
-  const [liquidationTx, setLiquidationTx] = useState<SignedTransaction | null>(null);
+  const [liquidationTx, setLiquidationTx] = useState<SignedTransaction | null>(
+    null,
+  );
 
   const [showUnlockWalletModal, setShowUnlockWalletModal] = useState(false);
 
@@ -69,7 +83,11 @@ export function ContractUndercollateralized({
       throw Error("Missing liquidation address");
     }
 
-    const res = await getLiquidationToBitcoinPsbt(contract.id, selectedFee, address);
+    const res = await getLiquidationToBitcoinPsbt(
+      contract.id,
+      selectedFee,
+      address,
+    );
 
     console.log(`Signing liquidation PSBT: ${JSON.stringify(res)}`);
 
@@ -151,14 +169,19 @@ export function ContractUndercollateralized({
         />
       )}
       <Container fluid>
-        <Heading className={"text-font dark:text-font-dark"} size={"4"} weight={"medium"}>
+        <Heading
+          className={"text-font dark:text-font-dark"}
+          size={"4"}
+          weight={"medium"}
+        >
           Liquidate Collateral
         </Heading>
         <Row className="mt-4">
           <Col>
             <div className="d-flex flex-column">
               <p className="mt-2 text-break text-font dark:text-font-dark">
-                To liquidate the collateral you will have to provide your <strong>password</strong>.
+                To liquidate the collateral you will have to provide your{" "}
+                <strong>password</strong>.
               </p>
             </div>
           </Col>
@@ -166,8 +189,8 @@ export function ContractUndercollateralized({
         <Row className="mt-2">
           <Col>
             <Alert variant="info">
-              <FontAwesomeIcon icon={faInfoCircle} />{" "}
-              Your share of the collateral will be sent to the Bitcoin address you choose.
+              <FontAwesomeIcon icon={faInfoCircle} /> Your share of the
+              collateral will be sent to the Bitcoin address you choose.
             </Alert>
           </Col>
         </Row>
@@ -175,7 +198,9 @@ export function ContractUndercollateralized({
           <Form.Group controlId="formAddress" className="mb-3">
             <Row className="mt-2">
               <Col>
-                <Form.Label className={"font-bold text-font dark:text-font-dark"}>
+                <Form.Label
+                  className={"font-bold text-font dark:text-font-dark"}
+                >
                   Liquidation Address
                 </Form.Label>
                 <Form.Control
@@ -197,10 +222,7 @@ export function ContractUndercollateralized({
             <Row className="justify-content-between mt-4">
               <Row className="mt-1">
                 <Col className="d-grid">
-                  <Button
-                    type="submit"
-                    variant="primary"
-                  >
+                  <Button type="submit" variant="primary">
                     {isWalletLoaded ? "Liquidate" : "Unlock Contract"}
                   </Button>
                   {error && (
@@ -209,9 +231,7 @@ export function ContractUndercollateralized({
                         <Callout.Icon>
                           <IoInformationCircleOutline />
                         </Callout.Icon>
-                        <Callout.Text>
-                          {error}
-                        </Callout.Text>
+                        <Callout.Text>{error}</Callout.Text>
                       </Callout.Root>
                     </Col>
                   )}
@@ -232,7 +252,12 @@ type ConfirmationModalProps = {
   liquidationTx: SignedTransaction;
 };
 
-const ConfirmationModal = ({ show, handleClose, handleConfirm, liquidationTx }: ConfirmationModalProps) => {
+const ConfirmationModal = ({
+  show,
+  handleClose,
+  handleConfirm,
+  liquidationTx,
+}: ConfirmationModalProps) => {
   const formatter = new Intl.NumberFormat("en-US");
 
   return (
@@ -254,7 +279,8 @@ const ConfirmationModal = ({ show, handleClose, handleConfirm, liquidationTx }: 
                   <FontAwesomeIcon icon={faInfoCircle} />
                 </Box>
                 <Text>
-                  Please verify that the liquidation transaction pays the expected amount to your chosen address.
+                  Please verify that the liquidation transaction pays the
+                  expected amount to your chosen address.
                 </Text>
               </Alert>
             </Flex>
@@ -264,8 +290,12 @@ const ConfirmationModal = ({ show, handleClose, handleConfirm, liquidationTx }: 
               <Text>Sending:</Text>
               <ul className="list-disc list-inside pl-5">
                 {liquidationTx.outputs.map((o, index) => (
-                  <li key={index} className="whitespace-nowrap overflow-hidden text-ellipsis">
-                    <strong>{formatter.format(o.value)}</strong> sats to <em>{o.address}</em>.
+                  <li
+                    key={index}
+                    className="whitespace-nowrap overflow-hidden text-ellipsis"
+                  >
+                    <strong>{formatter.format(o.value)}</strong> sats to{" "}
+                    <em>{o.address}</em>.
                   </li>
                 ))}
               </ul>

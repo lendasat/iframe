@@ -84,10 +84,7 @@ export function useNostr(secretKey: string) {
         const tags = RELAYS.map((relay) => {
           return Tag.relayMetadata(relay, RelayMetadata.Write);
         });
-        const event = new EventBuilder(
-          new Kind(10002),
-          "",
-        ).tags(tags);
+        const event = new EventBuilder(new Kind(10002), "").tags(tags);
         await newClient.sendEventBuilder(event);
 
         if (mounted) {
@@ -117,20 +114,30 @@ export function useNostr(secretKey: string) {
     };
   }, [secretKey]); // Only depend on secretKey;
 
-  const publishNote = useCallback(async (receiver: PublicKey, room: PublicKey, content: string) => {
-    if (!client || !keys) {
-      throw new Error("Nostr client not initialized");
-    }
+  const publishNote = useCallback(
+    async (receiver: PublicKey, room: PublicKey, content: string) => {
+      if (!client || !keys) {
+        throw new Error("Nostr client not initialized");
+      }
 
-    try {
-      return await client.sendPrivateMsg(receiver, content, [Tag.publicKey(room)]);
-    } catch (e) {
-      throw new Error(`Failed to publish note: ${e}`);
-    }
-  }, [client, keys]);
+      try {
+        return await client.sendPrivateMsg(receiver, content, [
+          Tag.publicKey(room),
+        ]);
+      } catch (e) {
+        throw new Error(`Failed to publish note: ${e}`);
+      }
+    },
+    [client, keys],
+  );
 
   const fetchChatMessages = useCallback(
-    async (sender: PublicKey, receiver: PublicKey, chatRoom: PublicKey, callback: (event: ChatMessage) => void) => {
+    async (
+      sender: PublicKey,
+      receiver: PublicKey,
+      chatRoom: PublicKey,
+      callback: (event: ChatMessage) => void,
+    ) => {
       if (!client || !keys) {
         console.log("Error client not set");
         return;
@@ -139,10 +146,9 @@ export function useNostr(secretKey: string) {
 
       {
         // fetch events to sender, i.e. to yourself
-        const filter = new Filter().kind(new Kind(1059)).customTag(
-          SingleLetterTag.lowercase(Alphabet.P),
-          sender.toHex(),
-        );
+        const filter = new Filter()
+          .kind(new Kind(1059))
+          .customTag(SingleLetterTag.lowercase(Alphabet.P), sender.toHex());
         const events = await client.fetchEvents(filter, Duration.fromSecs(5));
 
         for (const event of events.toVec()) {
@@ -169,10 +175,9 @@ export function useNostr(secretKey: string) {
 
       {
         // fetch events to receiver, i.e. to the other party
-        const filter = new Filter().kind(new Kind(1059)).customTag(
-          SingleLetterTag.lowercase(Alphabet.P),
-          receiver.toHex(),
-        );
+        const filter = new Filter()
+          .kind(new Kind(1059))
+          .customTag(SingleLetterTag.lowercase(Alphabet.P), receiver.toHex());
         const events = await client.fetchEvents(filter, Duration.fromSecs(5));
 
         for (const event of events.toVec()) {
@@ -206,13 +211,23 @@ export function useNostr(secretKey: string) {
   );
 
   const subscribe = useCallback(
-    async (sender: PublicKey, id: string, chatRoom: PublicKey, callback: (event: ChatMessage) => void) => {
+    async (
+      sender: PublicKey,
+      id: string,
+      chatRoom: PublicKey,
+      callback: (event: ChatMessage) => void,
+    ) => {
       if (!client || !publicKey || !keys) {
         throw new Error("Nostr client not initialized");
       }
 
-      const handle = { // Handle event
-        handleEvent: async (relayUrl: string, subscriptionId: string, event: Event) => {
+      const handle = {
+        // Handle event
+        handleEvent: async (
+          relayUrl: string,
+          subscriptionId: string,
+          event: Event,
+        ) => {
           console.log(
             `Received new event from ${relayUrl} with subscription id ${subscriptionId} and kind ${event.kind.asU16()}`,
           );
@@ -251,13 +266,16 @@ export function useNostr(secretKey: string) {
     [client, publicKey, keys],
   );
 
-  const unsubscribeWithId = useCallback(async (id: string) => {
-    if (!client || !publicKey || !keys) {
-      throw new Error("Nostr client not initialized");
-    }
-    console.log(`Unsubscribing subscription with id: ${id}`);
-    await client.unsubscribe(id);
-  }, [client, publicKey, keys]);
+  const unsubscribeWithId = useCallback(
+    async (id: string) => {
+      if (!client || !publicKey || !keys) {
+        throw new Error("Nostr client not initialized");
+      }
+      console.log(`Unsubscribing subscription with id: ${id}`);
+      await client.unsubscribe(id);
+    },
+    [client, publicKey, keys],
+  );
   return {
     client,
     publicKey,
