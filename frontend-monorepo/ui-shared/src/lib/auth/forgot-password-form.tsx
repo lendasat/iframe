@@ -1,8 +1,19 @@
-import { Box, Button, Callout, Grid, Heading, Spinner, Text } from "@radix-ui/themes";
+import {
+  Box,
+  Button,
+  Callout,
+  Grid,
+  Heading,
+  Spinner,
+  Text,
+} from "@radix-ui/themes";
 import type { FormEvent } from "react";
 import { useState } from "react";
 import { Form } from "react-bootstrap";
-import { IoArrowBackOutline, IoInformationCircleOutline } from "react-icons/io5";
+import {
+  IoArrowBackOutline,
+  IoInformationCircleOutline,
+} from "react-icons/io5";
 import { Link } from "react-router-dom";
 import { ReactComponent as Logo } from "./../assets/lendasat_svg_logo.svg";
 import TypeField from "../components/TypeField";
@@ -35,7 +46,11 @@ export function ForgotPasswordForm({ handleSubmit }: ForgotPasswordProps) {
       <Grid align={"center"} className="overflow-hidden grid-cols-1 w-screen">
         <Box className="flex flex-col items-center p-5">
           {/* Logo */}
-          <Logo height={27} width={"auto"} className="w-fit invert dark:invert-0" />
+          <Logo
+            height={27}
+            width={"auto"}
+            className="w-fit invert dark:invert-0"
+          />
 
           <Box
             mt={"6"}
@@ -46,7 +61,12 @@ export function ForgotPasswordForm({ handleSubmit }: ForgotPasswordProps) {
             className="bg-light dark:bg-dark shadow-sm rounded-2xl"
           >
             <Box className="text-center pb-4">
-              <Heading size={"7"} className="text-font dark:text-font-dark pb-2">Forgot your password?</Heading>
+              <Heading
+                size={"7"}
+                className="text-font dark:text-font-dark pb-2"
+              >
+                Forgot your password?
+              </Heading>
               <Text size={"3"} className="text-font/70 dark:text-font-dark/70">
                 Worry not, we will send you reset instructions.
               </Text>
@@ -56,7 +76,12 @@ export function ForgotPasswordForm({ handleSubmit }: ForgotPasswordProps) {
               {/* Email */}
               <Box className="grid grid-cols-1 gap-1 mb-3">
                 <Box className="text-left mt-3">
-                  <Text as="label" size={"1"} weight={"medium"} className="text-font/70 dark:text-font-dark/70 mb-2">
+                  <Text
+                    as="label"
+                    size={"1"}
+                    weight={"medium"}
+                    className="text-font/70 dark:text-font-dark/70 mb-2"
+                  >
                     Email
                   </Text>
                   <TypeField
@@ -74,9 +99,7 @@ export function ForgotPasswordForm({ handleSubmit }: ForgotPasswordProps) {
                   <Callout.Icon>
                     <IoInformationCircleOutline />
                   </Callout.Icon>
-                  <Callout.Text>
-                    {error}
-                  </Callout.Text>
+                  <Callout.Text>{error}</Callout.Text>
                 </Callout.Root>
               )}
 
@@ -86,9 +109,7 @@ export function ForgotPasswordForm({ handleSubmit }: ForgotPasswordProps) {
                   <Callout.Icon>
                     <IoInformationCircleOutline />
                   </Callout.Icon>
-                  <Callout.Text>
-                    {success}
-                  </Callout.Text>
+                  <Callout.Text>{success}</Callout.Text>
                 </Callout.Root>
               )}
 

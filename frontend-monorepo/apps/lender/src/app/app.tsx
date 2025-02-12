@@ -1,6 +1,10 @@
 import type { User } from "@frontend-monorepo/base-http-client";
 import { WalletProvider } from "@frontend-monorepo/browser-wallet";
-import { AuthIsNotSignedIn, AuthIsSignedIn, AuthProviderLender } from "@frontend-monorepo/http-client-lender";
+import {
+  AuthIsNotSignedIn,
+  AuthIsSignedIn,
+  AuthProviderLender,
+} from "@frontend-monorepo/http-client-lender";
 import { useAuth } from "@frontend-monorepo/http-client-lender";
 import { Layout, PriceProvider } from "@frontend-monorepo/ui-shared";
 import { BsBank } from "react-icons/bs";
@@ -165,7 +169,10 @@ function MainLayoutComponents() {
           <Route path="/lender/:id" element={<LenderProfile />} />
           <Route path="/borrower/:id" element={<BorrowerProfile />} />
           <Route path="/logout" element={<Logout />} />
-          <Route path="/resetpassword/:token/:email" element={<ResetPassword />} />
+          <Route
+            path="/resetpassword/:token/:email"
+            element={<ResetPassword />}
+          />
           <Route path="*" element={<Dashboard />} />
         </Routes>
       </Layout>
@@ -191,8 +198,14 @@ function App() {
               <Route index element={<Login />} />
               <Route path="/registration" element={<Registration />} />
               <Route path="/forgotpassword" element={<ForgotPassword />} />
-              <Route path="/resetpassword/:token/:email" element={<ResetPassword />} />
-              <Route path="/verifyemail/:token?" element={<VerifyEmailForm />} />
+              <Route
+                path="/resetpassword/:token/:email"
+                element={<ResetPassword />}
+              />
+              <Route
+                path="/verifyemail/:token?"
+                element={<VerifyEmailForm />}
+              />
               <Route path="/logout" element={<Logout />} />
               <Route path="/login/:status?" element={<Login />} />
               <Route path="/upgrade-to-pake" element={<UpgradeToPake />} />

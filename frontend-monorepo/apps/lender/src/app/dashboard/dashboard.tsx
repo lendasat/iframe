@@ -1,7 +1,19 @@
-import { Contract, ContractStatus, useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
+import {
+  Contract,
+  ContractStatus,
+  useLenderHttpClient,
+} from "@frontend-monorepo/http-client-lender";
 import { formatCurrency, ONE_YEAR } from "@frontend-monorepo/ui-shared";
 import { InfoCircledIcon } from "@radix-ui/react-icons";
-import { Box, Button, Callout, Flex, Grid, Heading, Text } from "@radix-ui/themes";
+import {
+  Box,
+  Button,
+  Callout,
+  Flex,
+  Grid,
+  Heading,
+  Text,
+} from "@radix-ui/themes";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAsync } from "react-use";
@@ -44,10 +56,19 @@ const QuickBoards = ({ color, label, value, type }: QuickBoardsProps) => {
           }}
         />
         <Box className="space-y-3">
-          <Text as="p" size={"1"} weight={"medium"} className="text-font dark:text-font-dark">
+          <Text
+            as="p"
+            size={"1"}
+            weight={"medium"}
+            className="text-font dark:text-font-dark"
+          >
             {label}
           </Text>
-          <Heading size={"6"} weight={"bold"} className="text-black dark:text-white">
+          <Heading
+            size={"6"}
+            weight={"bold"}
+            className="text-black dark:text-white"
+          >
             {formattedValue}
           </Heading>
         </Box>
@@ -73,7 +94,12 @@ const AlertBoard = ({ color }: AlertBoardProps) => {
           }}
         />
         <Box className="space-y-3">
-          <Text as="p" size={"1"} weight={"medium"} className="text-font dark:text-font-dark">
+          <Text
+            as="p"
+            size={"1"}
+            weight={"medium"}
+            className="text-font dark:text-font-dark"
+          >
             Attention
           </Text>
           <Callout.Root color={"orange"}>
@@ -81,7 +107,8 @@ const AlertBoard = ({ color }: AlertBoardProps) => {
               <InfoCircledIcon />
             </Callout.Icon>
             <Callout.Text>
-              For your security, please create a backup of your seed phrase before proceeding.
+              For your security, please create a backup of your seed phrase
+              before proceeding.
             </Callout.Text>
             <Button onClick={() => navigate("/settings/wallet")}>
               Go to Settings
@@ -97,7 +124,7 @@ const calculateWeightedAverageAPR = (contracts: Contract[]) => {
   let totalWeightedValue = 0;
   let totalLoanAmount = 0;
 
-  contracts.forEach(contract => {
+  contracts.forEach((contract) => {
     totalWeightedValue += contract.interest_rate * contract.loan_amount;
     totalLoanAmount += contract.loan_amount;
   });
@@ -125,25 +152,36 @@ function Dashboard() {
 
   const contracts = maybeContracts || [];
 
-  const openContracts = contracts
-    .filter((contract) => contract.status === ContractStatus.PrincipalGiven);
+  const openContracts = contracts.filter(
+    (contract) => contract.status === ContractStatus.PrincipalGiven,
+  );
 
   const numberOfOpenContracts = openContracts.length;
-  const totalLoanAmount = openContracts
-    .reduce((sum, contract) => sum + contract.loan_amount, 0);
-  const totalOpenInterest = openContracts.reduce((sum, contract) =>
-    sum + (
-      contract.loan_amount * (contract.interest_rate / ONE_YEAR * contract.duration_days)
-    ), 0);
-
-  const closedContracts = contracts.filter((contract) =>
-    contract.status === ContractStatus.Closed || contract.status === ContractStatus.Closing
-    || contract.status === ContractStatus.Extended
+  const totalLoanAmount = openContracts.reduce(
+    (sum, contract) => sum + contract.loan_amount,
+    0,
   );
-  const totalClosedInterest = closedContracts.reduce((sum, contract) =>
-    sum + (
-      contract.loan_amount * (contract.interest_rate / ONE_YEAR * contract.duration_days)
-    ), 0);
+  const totalOpenInterest = openContracts.reduce(
+    (sum, contract) =>
+      sum +
+      contract.loan_amount *
+        ((contract.interest_rate / ONE_YEAR) * contract.duration_days),
+    0,
+  );
+
+  const closedContracts = contracts.filter(
+    (contract) =>
+      contract.status === ContractStatus.Closed ||
+      contract.status === ContractStatus.Closing ||
+      contract.status === ContractStatus.Extended,
+  );
+  const totalClosedInterest = closedContracts.reduce(
+    (sum, contract) =>
+      sum +
+      contract.loan_amount *
+        ((contract.interest_rate / ONE_YEAR) * contract.duration_days),
+    0,
+  );
 
   const averageApr = calculateWeightedAverageAPR(closedContracts);
 

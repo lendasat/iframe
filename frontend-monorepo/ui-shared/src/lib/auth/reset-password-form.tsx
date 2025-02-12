@@ -9,12 +9,19 @@ import { ReactComponent as Logo } from "./../assets/lendasat_svg_logo.svg";
 import { OldPasswordOrMnemonic } from "../models";
 
 interface ResetPasswordFormProps {
-  handleSubmit: (newPassword: string, oldPasswordOrMnemonic: OldPasswordOrMnemonic) => Promise<string>;
+  handleSubmit: (
+    newPassword: string,
+    oldPasswordOrMnemonic: OldPasswordOrMnemonic,
+  ) => Promise<string>;
   loginUrl: string;
   canUseMnemonic: boolean;
 }
 
-export function ResetPasswordForm({ handleSubmit, loginUrl, canUseMnemonic }: ResetPasswordFormProps) {
+export function ResetPasswordForm({
+  handleSubmit,
+  loginUrl,
+  canUseMnemonic,
+}: ResetPasswordFormProps) {
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [error, setError] = useState("");
@@ -69,7 +76,11 @@ export function ResetPasswordForm({ handleSubmit, loginUrl, canUseMnemonic }: Re
       <Grid align={"center"} className="overflow-hidden grid-cols-1 w-screen">
         <Box className="flex flex-col items-center p-5">
           {/* Logo */}
-          <Logo height={27} width={"auto"} className="w-fit invert dark:invert-0" />
+          <Logo
+            height={27}
+            width={"auto"}
+            className="w-fit invert dark:invert-0"
+          />
 
           <Box
             mt={"6"}
@@ -80,7 +91,12 @@ export function ResetPasswordForm({ handleSubmit, loginUrl, canUseMnemonic }: Re
             className="bg-light dark:bg-dark shadow-sm rounded-2xl"
           >
             <Box className="text-center pb-4">
-              <Heading size={"7"} className="text-font dark:text-font-dark pb-2">Reset your password</Heading>
+              <Heading
+                size={"7"}
+                className="text-font dark:text-font-dark pb-2"
+              >
+                Reset your password
+              </Heading>
               <Text size={"3"} className="text-font/70 dark:text-font-dark/70">
                 Please enter your new password
               </Text>
@@ -88,7 +104,12 @@ export function ResetPasswordForm({ handleSubmit, loginUrl, canUseMnemonic }: Re
 
             <Form onSubmit={onSubmit}>
               <Form.Group controlId="formBasicPassword" className="mb-3">
-                <Text as="label" size={"1"} weight={"medium"} className="text-font dark:text-font-dark mb-2">
+                <Text
+                  as="label"
+                  size={"1"}
+                  weight={"medium"}
+                  className="text-font dark:text-font-dark mb-2"
+                >
                   New Password
                 </Text>
                 <Form.Control
@@ -103,7 +124,12 @@ export function ResetPasswordForm({ handleSubmit, loginUrl, canUseMnemonic }: Re
               </Form.Group>
 
               <Form.Group controlId="formBasicPassword" className="mb-3">
-                <Text as="label" size={"1"} weight={"medium"} className="text-font dark:text-font-dark mb-2">
+                <Text
+                  as="label"
+                  size={"1"}
+                  weight={"medium"}
+                  className="text-font dark:text-font-dark mb-2"
+                >
                   Confirm Password
                 </Text>
                 <InputGroup className="mb-3 text-font dark:text-font-dark">
@@ -118,15 +144,22 @@ export function ResetPasswordForm({ handleSubmit, loginUrl, canUseMnemonic }: Re
 
                   {
                     <div className="position-absolute top-50 end-0 translate-middle-y me-2">
-                      {passwordMatch
-                        ? <FontAwesomeIcon icon={faCheckCircle} color={"green"} />
-                        : <FontAwesomeIcon icon={faX} color={"red"} />}
+                      {passwordMatch ? (
+                        <FontAwesomeIcon icon={faCheckCircle} color={"green"} />
+                      ) : (
+                        <FontAwesomeIcon icon={faX} color={"red"} />
+                      )}
                     </div>
                   }
                 </InputGroup>
 
                 <Form.Group controlId="formPasswordType">
-                  <Text as="label" size={"1"} weight={"medium"} className="text-font dark:text-font-dark mb-2">
+                  <Text
+                    as="label"
+                    size={"1"}
+                    weight={"medium"}
+                    className="text-font dark:text-font-dark mb-2"
+                  >
                     Extra Data
                   </Text>
                   <Box className="d-flex align-items-center ml-3 mb-3">
@@ -138,17 +171,16 @@ export function ResetPasswordForm({ handleSubmit, loginUrl, canUseMnemonic }: Re
                       onChange={() => setOldPassOrMnemonic("oldPassword")}
                       checked={oldPassOrMnemonic === "oldPassword"}
                     />
-                    {canUseMnemonic
-                      && (
-                        <Form.Check
-                          type="radio"
-                          label="Mnemonic Seed Phrase"
-                          name="passwordType"
-                          className="p-3 text-font bg-light dark:text-font-dark dark:bg-dark"
-                          onChange={() => setOldPassOrMnemonic("mnemonic")}
-                          checked={oldPassOrMnemonic === "mnemonic"}
-                        />
-                      )}
+                    {canUseMnemonic && (
+                      <Form.Check
+                        type="radio"
+                        label="Mnemonic Seed Phrase"
+                        name="passwordType"
+                        className="p-3 text-font bg-light dark:text-font-dark dark:bg-dark"
+                        onChange={() => setOldPassOrMnemonic("mnemonic")}
+                        checked={oldPassOrMnemonic === "mnemonic"}
+                      />
+                    )}
                   </Box>
                 </Form.Group>
 
@@ -176,23 +208,30 @@ export function ResetPasswordForm({ handleSubmit, loginUrl, canUseMnemonic }: Re
                 )}
 
                 <InputGroup>
-                  {error && <div className="alert alert-danger w-100">{error}</div>}
-                  {success && <div className="alert alert-success w-100">{success}</div>}
+                  {error && (
+                    <div className="alert alert-danger w-100">{error}</div>
+                  )}
+                  {success && (
+                    <div className="alert alert-success w-100">{success}</div>
+                  )}
                 </InputGroup>
                 <InputGroup>
-                  {success
-                    ? (
-                      <Link to={loginUrl} className={`text-decoration-none}`}>
-                        <Button variant="primary" className="w-100 p-2">
-                          {"Go To Login"}
-                        </Button>
-                      </Link>
-                    )
-                    : (
-                      <Button variant="primary" type="submit" className="w-100 p-2" disabled={isLoading}>
-                        {isLoading ? "Loading…" : "Submit"}
+                  {success ? (
+                    <Link to={loginUrl} className={`text-decoration-none}`}>
+                      <Button variant="primary" className="w-100 p-2">
+                        {"Go To Login"}
                       </Button>
-                    )}
+                    </Link>
+                  ) : (
+                    <Button
+                      variant="primary"
+                      type="submit"
+                      className="w-100 p-2"
+                      disabled={isLoading}
+                    >
+                      {isLoading ? "Loading…" : "Submit"}
+                    </Button>
+                  )}
                 </InputGroup>
               </Form.Group>
             </Form>

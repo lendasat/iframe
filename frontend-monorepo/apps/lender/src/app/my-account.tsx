@@ -1,7 +1,23 @@
 import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
-import { useAuth, useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
-import { EditableTimezoneField, MnemonicComponent } from "@frontend-monorepo/ui-shared";
-import { Avatar, Box, Button, Callout, Flex, Heading, Spinner, TabNav, Text } from "@radix-ui/themes";
+import {
+  useAuth,
+  useLenderHttpClient,
+} from "@frontend-monorepo/http-client-lender";
+import {
+  EditableTimezoneField,
+  MnemonicComponent,
+} from "@frontend-monorepo/ui-shared";
+import {
+  Avatar,
+  Box,
+  Button,
+  Callout,
+  Flex,
+  Heading,
+  Spinner,
+  TabNav,
+  Text,
+} from "@radix-ui/themes";
 import { useState } from "react";
 import { BiSolidError } from "react-icons/bi";
 import { GoVerified } from "react-icons/go";
@@ -15,7 +31,11 @@ import TelegramBotDetails from "./settings/TelegramBotDetails";
 function Wallet() {
   return (
     <Box className="md:pl-8">
-      <Heading as="h4" className="font-semibold text-font dark:text-font-dark" size={"5"}>
+      <Heading
+        as="h4"
+        className="font-semibold text-font dark:text-font-dark"
+        size={"5"}
+      >
         Wallet
       </Heading>
       <Box mt={"6"} className="space-y-4">
@@ -60,11 +80,18 @@ function Profile() {
 
   return (
     <Box className="md:pl-8">
-      <Heading as="h4" className="font-semibold text-font dark:text-font-dark" size={"5"}>
+      <Heading
+        as="h4"
+        className="font-semibold text-font dark:text-font-dark"
+        size={"5"}
+      >
         Profile
       </Heading>
       <Box mt={"6"} className="space-y-4">
-        <Box p={"4"} className="border border-purple-400/20 rounded-2xl dark:border-gray-500/50">
+        <Box
+          p={"4"}
+          className="border border-purple-400/20 rounded-2xl dark:border-gray-500/50"
+        >
           <Flex align={"center"} gap={"3"}>
             <Avatar
               src="https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?&w=256&h=256&q=70&crop=focalpoint&fp-x=0.5&fp-y=0.3&fp-z=1&fit=crop"
@@ -88,7 +115,9 @@ function Profile() {
               {user.verified && (
                 <Flex gap={"1"}>
                   <GoVerified color="green" />
-                  <Text size={"1"} weight={"medium"} color="green">Verified</Text>
+                  <Text size={"1"} weight={"medium"} color="green">
+                    Verified
+                  </Text>
                 </Flex>
               )}
             </Flex>
@@ -114,7 +143,11 @@ function Profile() {
                 >
                   Full Name
                 </Text>
-                <Text size={"3"} weight={"medium"} className="capitalize text-font dark:text-font-dark">
+                <Text
+                  size={"3"}
+                  weight={"medium"}
+                  className="capitalize text-font dark:text-font-dark"
+                >
                   {user.name}
                 </Text>
               </Flex>
@@ -130,7 +163,11 @@ function Profile() {
                 >
                   Email Address
                 </Text>
-                <Text size={"3"} weight={"medium"} className="text-font dark:text-font-dark">
+                <Text
+                  size={"3"}
+                  weight={"medium"}
+                  className="text-font dark:text-font-dark"
+                >
                   {user.email}
                 </Text>
               </Flex>
@@ -146,7 +183,11 @@ function Profile() {
                   Password
                 </Text>
                 <Flex gap={"3"}>
-                  <Text size={"3"} weight={"medium"} className="capitalize text-font dark:text-font-dark">
+                  <Text
+                    size={"3"}
+                    weight={"medium"}
+                    className="capitalize text-font dark:text-font-dark"
+                  >
                     ********
                   </Text>
                   <Button
@@ -155,9 +196,7 @@ function Profile() {
                     disabled={isLoading}
                     className="bg-btn text-sm dark:bg-gray-900"
                   >
-                    {isLoading
-                      ? <Spinner size={"1"} />
-                      : <MdEdit />}
+                    {isLoading ? <Spinner size={"1"} /> : <MdEdit />}
                   </Button>
                 </Flex>
               </Flex>
@@ -192,8 +231,15 @@ function Profile() {
                 >
                   Joined on
                 </Text>
-                <Text size={"3"} weight={"medium"} className="capitalize text-font dark:text-font-dark">
-                  {new Date(user.created_at).toLocaleDateString("en-CA", options)}
+                <Text
+                  size={"3"}
+                  weight={"medium"}
+                  className="capitalize text-font dark:text-font-dark"
+                >
+                  {new Date(user.created_at).toLocaleDateString(
+                    "en-CA",
+                    options,
+                  )}
                 </Text>
               </Flex>
             </Box>
@@ -204,23 +250,18 @@ function Profile() {
             <Callout.Icon>
               <BiSolidError />
             </Callout.Icon>
-            <Callout.Text>
-              {error}
-            </Callout.Text>
+            <Callout.Text>{error}</Callout.Text>
           </Callout.Root>
         )}
 
-        {success
-          && (
-            <Callout.Root color="green">
-              <Callout.Icon>
-                <IoIosUnlock />
-              </Callout.Icon>
-              <Callout.Text>
-                {success}
-              </Callout.Text>
-            </Callout.Root>
-          )}
+        {success && (
+          <Callout.Root color="green">
+            <Callout.Icon>
+              <IoIosUnlock />
+            </Callout.Icon>
+            <Callout.Text>{success}</Callout.Text>
+          </Callout.Root>
+        )}
       </Box>
     </Box>
   );
@@ -248,7 +289,11 @@ function NotificationSettings() {
 
   return (
     <Box className="md:pl-8">
-      <Heading as="h4" className="font-semibold text-font dark:text-font-dark" size={"5"}>
+      <Heading
+        as="h4"
+        className="font-semibold text-font dark:text-font-dark"
+        size={"5"}
+      >
         Notification Settings
       </Heading>
       <Box mt={"6"} className="space-y-4">
@@ -260,22 +305,24 @@ function NotificationSettings() {
           >
             Telegram Bot
           </Heading>
-          {error
-            ? (
-              <Callout.Root color="orange">
-                <Callout.Icon>
-                  <IoInformationCircleOutline />
-                </Callout.Icon>
-                <Callout.Text>
-                  Telegram bot has not been configured correctly
-                </Callout.Text>
-              </Callout.Root>
-            )
-            : (
-              <Box mt={"4"} className="w-full">
-                <TelegramBotDetails token={personalTelegramToken} botUrl={botUrl} botName={botName} />
-              </Box>
-            )}
+          {error ? (
+            <Callout.Root color="orange">
+              <Callout.Icon>
+                <IoInformationCircleOutline />
+              </Callout.Icon>
+              <Callout.Text>
+                Telegram bot has not been configured correctly
+              </Callout.Text>
+            </Callout.Root>
+          ) : (
+            <Box mt={"4"} className="w-full">
+              <TelegramBotDetails
+                token={personalTelegramToken}
+                botUrl={botUrl}
+                botName={botName}
+              />
+            </Box>
+          )}
         </Box>
       </Box>
     </Box>
@@ -288,7 +335,10 @@ function MyAccount() {
   return (
     <Box className="p-4 flex flex-col overflow-y-scroll">
       <Box className="bg-dashboard/50 dark:bg-dark-700/50 rounded-2xl shadow-sm flex-grow md:max-h-[800px]">
-        <TabNav.Root className="md:flex md:items-start p-5 h-full" color={"purple"}>
+        <TabNav.Root
+          className="md:flex md:items-start p-5 h-full"
+          color={"purple"}
+        >
           <Box className="md:h-full md:border-r md:border-black/5 dark:border-dark bg-purple-800/5 p-2 md:p-0 rounded-full md:rounded-none md:bg-transparent md:max-w-[200px] w-full">
             <Box className="border-b-0 shadow-none md:flex-col rounded-r-full md:rounded-none">
               <TabNav.Link
@@ -296,7 +346,9 @@ function MyAccount() {
                 active={location.pathname.includes("profile")}
                 className="flex-1 md:flex-none text-center md:text-left px-4 py-2 md:py-3 rounded-full hover:bg-transparent font-medium data-[state=active]:font-semibold capitalize data-[state=inactive]:text-font/70 data-[state=active]:text-purple-800 data-[state=active]:bg-purple-800/20 dark:data-[state=inactive]:text-gray-400 dark:data-[state=active]:text-purple-300 dark:data-[state=active]:bg-purple-700/20"
               >
-                <Link className={"text-font dark:text-font-dark"} to="profile">Profile</Link>
+                <Link className={"text-font dark:text-font-dark"} to="profile">
+                  Profile
+                </Link>
               </TabNav.Link>
               <TabNav.Link
                 asChild
@@ -305,7 +357,9 @@ function MyAccount() {
                   "data-[state=inactive]:text-font/70 data-[state=active]:text-purple-800 data-[state=active]:bg-purple-800/20 dark:data-[state=inactive]:text-gray-400 dark:data-[state=active]:text-purple-300 dark:data-[state=active]:bg-purple-700/20"
                   `}
               >
-                <Link className={"text-font dark:text-font-dark"} to="wallet">Wallet</Link>
+                <Link className={"text-font dark:text-font-dark"} to="wallet">
+                  Wallet
+                </Link>
               </TabNav.Link>
               <TabNav.Link
                 asChild
@@ -314,7 +368,12 @@ function MyAccount() {
                   "data-[state=inactive]:text-font/70 data-[state=active]:text-purple-800 data-[state=active]:bg-purple-800/20 dark:data-[state=inactive]:text-gray-400 dark:data-[state=active]:text-purple-300 dark:data-[state=active]:bg-purple-700/20"
                   `}
               >
-                <Link className={"text-font dark:text-font-dark"} to="notifications">Notification Settings</Link>
+                <Link
+                  className={"text-font dark:text-font-dark"}
+                  to="notifications"
+                >
+                  Notification Settings
+                </Link>
               </TabNav.Link>
             </Box>
           </Box>
@@ -331,13 +390,16 @@ function MyAccount() {
       <Box py={"3"} mb={"8"}>
         <Flex gap={"1"} align={"center"}>
           <PiWarningCircleFill color="rgb(235, 172, 14)" size={22} />
-          <Text size={"1"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">
+          <Text
+            size={"1"}
+            weight={"medium"}
+            className="text-font/60 dark:text-font-dark/60"
+          >
             Do not disclose your password to anyone, including Lendasat support.
           </Text>
         </Flex>
       </Box>
-      <Box>
-      </Box>
+      <Box></Box>
     </Box>
   );
 }

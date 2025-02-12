@@ -1,6 +1,10 @@
 import type { FC } from "react";
 
-export const formatCurrency = (value: number, minFraction?: number, maxFraction?: number) => {
+export const formatCurrency = (
+  value: number,
+  minFraction?: number,
+  maxFraction?: number,
+) => {
   let minimumFractionDigits = minFraction || 0;
   let maximumFractionDigits = maxFraction || 2;
   if (minFraction && !maxFraction) {
@@ -24,7 +28,11 @@ interface formatCurrencyProps {
   maxFraction: number;
 }
 
-export const newFormatCurrency = ({ maxFraction, minFraction, value }: formatCurrencyProps) => {
+export const newFormatCurrency = ({
+  maxFraction,
+  minFraction,
+  value,
+}: formatCurrencyProps) => {
   let minFractionDigits = minFraction;
   if (minFraction > maxFraction) {
     minFractionDigits = maxFraction;
@@ -45,7 +53,11 @@ interface CurrencyFormatterProps {
   maxFraction?: number;
 }
 
-export const CurrencyFormatter: FC<CurrencyFormatterProps> = ({ value, maxFraction, minFraction }) => {
+export const CurrencyFormatter: FC<CurrencyFormatterProps> = ({
+  value,
+  maxFraction,
+  minFraction,
+}) => {
   return <span>{formatCurrency(value, minFraction, maxFraction)}</span>;
 };
 

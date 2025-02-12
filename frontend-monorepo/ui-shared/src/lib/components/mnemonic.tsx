@@ -1,8 +1,19 @@
-import { UnlockWalletModal, useWallet } from "@frontend-monorepo/browser-wallet";
+import {
+  UnlockWalletModal,
+  useWallet,
+} from "@frontend-monorepo/browser-wallet";
 import * as Checkbox from "@radix-ui/react-checkbox";
 import { CheckIcon } from "@radix-ui/react-icons";
 import * as Label from "@radix-ui/react-label";
-import { Box, Button, Flex, Grid, Heading, IconButton, Text } from "@radix-ui/themes";
+import {
+  Box,
+  Button,
+  Flex,
+  Grid,
+  Heading,
+  IconButton,
+  Text,
+} from "@radix-ui/themes";
 import { useEffect, useState } from "react";
 import { FaLockOpen, FaRegEye, FaRegEyeSlash } from "react-icons/fa";
 import { FaLock } from "react-icons/fa6";
@@ -68,7 +79,11 @@ export const MnemonicComponent = () => {
         <Box>
           <Flex direction={"column"} gap={"1"}>
             <Flex direction={"row"} gap={"4"}>
-              <Heading as="h4" className="font-semibold capitalize text-font dark:text-font-dark" size={"3"}>
+              <Heading
+                as="h4"
+                className="font-semibold capitalize text-font dark:text-font-dark"
+                size={"3"}
+              >
                 Mnemonic Seed Phrase
               </Heading>
 
@@ -91,14 +106,28 @@ export const MnemonicComponent = () => {
                 </IconButton>
               )}
             </Flex>
-            <Grid columns={"2"} gap={"4"} className={"max-w-lg p-4"} rows="repeat(6, 1fr)" flow={"column"}>
+            <Grid
+              columns={"2"}
+              gap={"4"}
+              className={"max-w-lg p-4"}
+              rows="repeat(6, 1fr)"
+              flow={"column"}
+            >
               {mnemonic.map((word, index) => (
                 <div key={index} className="group flex items-center gap-3">
                   <Label.Root className="flex items-center gap-3 w-full border-b border-gray-200 pb-2 cursor-text">
-                    <Text size={"3"} weight={"medium"} className="text-gray-400 text-font/60 dark:text-font-dark/60">
+                    <Text
+                      size={"3"}
+                      weight={"medium"}
+                      className="text-gray-400 text-font/60 dark:text-font-dark/60"
+                    >
                       {index + 1}.
                     </Text>
-                    <Text size={"3"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">
+                    <Text
+                      size={"3"}
+                      weight={"medium"}
+                      className="text-font/60 dark:text-font-dark/60"
+                    >
                       {isMnemonicVisible ? word : "****"}
                     </Text>
                   </Label.Root>
@@ -114,7 +143,9 @@ export const MnemonicComponent = () => {
                       className="flex size-[25px] appearance-none items-center justify-center rounded bg-white shadow-[0_1px_5px] outline-none hover:bg-violet3 focus:shadow-[0_0_0_2px_black]"
                       disabled={!isMnemonicVisible}
                       checked={isCheckboxTicked}
-                      onCheckedChange={(change) => setIsCheckboxTicked(change === true)}
+                      onCheckedChange={(change) =>
+                        setIsCheckboxTicked(change === true)
+                      }
                       id="backup"
                     >
                       <Checkbox.Indicator className="text-violet11">

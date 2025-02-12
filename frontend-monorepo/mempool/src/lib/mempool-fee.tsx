@@ -1,4 +1,10 @@
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import type { ReactNode } from "react";
 import MempoolClient, { type RecommendedFees } from "./mempool-client";
 
@@ -17,10 +23,7 @@ interface FeeProviderProps {
 }
 
 // Provider component
-export const FeeProvider = ({
-  children,
-  mempoolUrl,
-}: FeeProviderProps) => {
+export const FeeProvider = ({ children, mempoolUrl }: FeeProviderProps) => {
   const [recommendedFees, setRecommendedFees] = useState<RecommendedFees>();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -52,11 +55,7 @@ export const FeeProvider = ({
     refreshFees: fetchFees,
   };
 
-  return (
-    <FeeContext.Provider value={value}>
-      {children}
-    </FeeContext.Provider>
-  );
+  return <FeeContext.Provider value={value}>{children}</FeeContext.Provider>;
 };
 
 // Custom hook to use the fee context

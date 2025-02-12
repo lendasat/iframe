@@ -7,8 +7,9 @@ export function ContractPrincipalRepaid() {
     <Container fluid>
       <Alert variant="info">
         <FontAwesomeIcon icon={faExclamationCircle} className="h-4 w-4 mr-2" />
-        Contract has been marked as repaid. Once the lender confirms the repayment, you will be able to withdraw the
-        collateral from the contract.
+        Contract has been marked as repaid. Once the lender confirms the
+        repayment, you will be able to withdraw the collateral from the
+        contract.
       </Alert>
     </Container>
   );

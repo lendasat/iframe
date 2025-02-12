@@ -1,4 +1,8 @@
-import { LoginResponseOrUpgrade, useBaseHttpClient, WalletBackupData } from "@frontend-monorepo/base-http-client";
+import {
+  LoginResponseOrUpgrade,
+  useBaseHttpClient,
+  WalletBackupData,
+} from "@frontend-monorepo/base-http-client";
 import init, { begin_registration, upgrade_wallet } from "browser-wallet";
 import { md5 } from "hash-wasm";
 import { useNavigate } from "react-router-dom";
@@ -49,7 +53,11 @@ export function UpgradeToPake({ login, is_borrower }: UpgradeToPakeProps) {
     const oldWalletBackupData: WalletBackupData = res.old_wallet_backup_data;
     const contractPks: string[] = res.contract_pks;
 
-    console.log(`Hub approves PAKE upgrade and sends old wallet backup: ${JSON.stringify(oldWalletBackupData)}`);
+    console.log(
+      `Hub approves PAKE upgrade and sends old wallet backup: ${JSON.stringify(
+        oldWalletBackupData,
+      )}`,
+    );
 
     // We continue by:
     //
@@ -77,7 +85,11 @@ export function UpgradeToPake({ login, is_borrower }: UpgradeToPakeProps) {
       xpub: newWalletDetails.xpub,
     };
 
-    console.log(`Upgraded wallet based on new PAKE password: ${JSON.stringify(newWalletBackupData)}`);
+    console.log(
+      `Upgraded wallet based on new PAKE password: ${JSON.stringify(
+        newWalletBackupData,
+      )}`,
+    );
 
     const registrationData = begin_registration(email, newPassword);
 

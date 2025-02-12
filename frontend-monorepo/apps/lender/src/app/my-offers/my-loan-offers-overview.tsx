@@ -24,7 +24,9 @@ function MyLoanOffersOverview() {
     <Box className={"pb-20"}>
       <Box className={"px-6 md:px-8 py-4"}>
         <Flex gap={"1"} align={"center"}>
-          <Heading className={"text-font dark:text-font-dark"} size={"6"}>My Loan Offers</Heading>
+          <Heading className={"text-font dark:text-font-dark"} size={"6"}>
+            My Loan Offers
+          </Heading>
         </Flex>
       </Box>
 

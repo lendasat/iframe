@@ -35,7 +35,8 @@ export class BaseHttpClient {
 
   async getVersion(): Promise<Version> {
     try {
-      const response: AxiosResponse<Version> = await this.httpClient.get("/api/version");
+      const response: AxiosResponse<Version> =
+        await this.httpClient.get("/api/version");
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
@@ -81,7 +82,9 @@ export class BaseHttpClient {
 
   async login(email: string, password: string): Promise<LoginResponse> {
     try {
-      const [response] = await Promise.all([this.httpClient.post("/api/auth/login", { email, password })]);
+      const [response] = await Promise.all([
+        this.httpClient.post("/api/auth/login", { email, password }),
+      ]);
       const data = response.data as LoginResponse;
       console.log(`Login successful`);
       return data;
@@ -104,7 +107,9 @@ export class BaseHttpClient {
 
   async pakeLoginRequest(email: string): Promise<PakeLoginResponseOrUpgrade> {
     try {
-      const [response] = await Promise.all([this.httpClient.post("/api/auth/pake-login", { email })]);
+      const [response] = await Promise.all([
+        this.httpClient.post("/api/auth/pake-login", { email }),
+      ]);
       const data = response.data as PakeLoginResponse;
       console.log(`Got PAKE login response`);
       return data;
@@ -130,10 +135,18 @@ export class BaseHttpClient {
     }
   }
 
-  async pakeVerifyRequest(email: string, aPub: string, clientProof: string): Promise<PakeVerifyResponse> {
+  async pakeVerifyRequest(
+    email: string,
+    aPub: string,
+    clientProof: string,
+  ): Promise<PakeVerifyResponse> {
     try {
       const [response] = await Promise.all([
-        this.httpClient.post("/api/auth/pake-verify", { email, a_pub: aPub, client_proof: clientProof }),
+        this.httpClient.post("/api/auth/pake-verify", {
+          email,
+          a_pub: aPub,
+          client_proof: clientProof,
+        }),
       ]);
       const data = response.data as PakeVerifyResponse;
       console.log(`Got PAKE verification response`);
@@ -155,10 +168,16 @@ export class BaseHttpClient {
     }
   }
 
-  async upgradeToPake(email: string, oldPassword: string): Promise<UpgradeToPakeResponse> {
+  async upgradeToPake(
+    email: string,
+    oldPassword: string,
+  ): Promise<UpgradeToPakeResponse> {
     try {
       const [response] = await Promise.all([
-        this.httpClient.post("/api/auth/upgrade-to-pake", { email, old_password: oldPassword }),
+        this.httpClient.post("/api/auth/upgrade-to-pake", {
+          email,
+          old_password: oldPassword,
+        }),
       ]);
       const data = response.data as UpgradeToPakeResponse;
       console.log(`Got upgrade-to-PAKE response`);
@@ -228,7 +247,9 @@ export class BaseHttpClient {
       if (axios.isAxiosError(error) && error.response) {
         const message = error.response.data.message;
         console.error(
-          `Failed logging out: http: ${error.response?.status} and response: ${JSON.stringify(error.response?.data)}`,
+          `Failed logging out: http: ${
+            error.response?.status
+          } and response: ${JSON.stringify(error.response?.data)}`,
         );
         throw new Error(message);
       } else {
@@ -239,13 +260,16 @@ export class BaseHttpClient {
 
   async me(): Promise<MeResponse | undefined> {
     try {
-      const response: AxiosResponse<MeResponse> = await this.httpClient.get("/api/users/me");
+      const response: AxiosResponse<MeResponse> =
+        await this.httpClient.get("/api/users/me");
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         const message = error.response.data.message;
         console.error(
-          `Failed to fetch me: http: ${error.response?.status} and response: ${JSON.stringify(error.response?.data)}`,
+          `Failed to fetch me: http: ${
+            error.response?.status
+          } and response: ${JSON.stringify(error.response?.data)}`,
         );
         throw new Error(message);
       } else {
@@ -262,38 +286,46 @@ export class BaseHttpClient {
 
   async forgotPassword(email: string): Promise<string> {
     try {
-      const response = await this.httpClient.post("/api/auth/forgotpassword", { email: email });
+      const response = await this.httpClient.post("/api/auth/forgotpassword", {
+        email: email,
+      });
       return response.data.message;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         const message = error.response.data.message;
         console.error(
-          `Failed to call forget password: http: ${error.response?.status} and response: ${
-            JSON.stringify(error.response?.data)
-          }`,
+          `Failed to call forget password: http: ${
+            error.response?.status
+          } and response: ${JSON.stringify(error.response?.data)}`,
         );
         throw new Error(message);
       } else {
-        throw new Error(`Failed to call forget password: http: ${JSON.stringify(error)}`);
+        throw new Error(
+          `Failed to call forget password: http: ${JSON.stringify(error)}`,
+        );
       }
     }
   }
 
   async verifyEmail(token: string): Promise<string> {
     try {
-      const response = await this.httpClient.get(`/api/auth/verifyemail/${token}`);
+      const response = await this.httpClient.get(
+        `/api/auth/verifyemail/${token}`,
+      );
       return response.data.message;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         const message = error.response.data.message;
         console.error(
-          `Failed to verify email: http: ${error.response?.status} and response: ${
-            JSON.stringify(error.response?.data)
-          }`,
+          `Failed to verify email: http: ${
+            error.response?.status
+          } and response: ${JSON.stringify(error.response?.data)}`,
         );
         throw new Error(message);
       } else {
-        throw new Error(`Failed to verify email: http: ${JSON.stringify(error)}`);
+        throw new Error(
+          `Failed to verify email: http: ${JSON.stringify(error)}`,
+        );
       }
     }
   }
@@ -305,23 +337,28 @@ export class BaseHttpClient {
     passwordResetToken: string,
   ): Promise<string> {
     try {
-      const response = await this.httpClient.put(`/api/auth/resetpassword/${passwordResetToken}`, {
-        verifier,
-        salt,
-        new_wallet_backup_data: walletBackupData,
-      });
+      const response = await this.httpClient.put(
+        `/api/auth/resetpassword/${passwordResetToken}`,
+        {
+          verifier,
+          salt,
+          new_wallet_backup_data: walletBackupData,
+        },
+      );
       return response.data.message;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         const message = error.response.data.message;
         console.error(
-          `Failed to reset password: http: ${error.response?.status} and response: ${
-            JSON.stringify(error.response?.data)
-          }`,
+          `Failed to reset password: http: ${
+            error.response?.status
+          } and response: ${JSON.stringify(error.response?.data)}`,
         );
         throw new Error(message);
       } else {
-        throw new Error(`Failed to reset password: http: ${JSON.stringify(error)}`);
+        throw new Error(
+          `Failed to reset password: http: ${JSON.stringify(error)}`,
+        );
       }
     }
   }
@@ -346,12 +383,16 @@ export type BaseHttpClientContextType = Pick<
 >;
 
 // Create the contexts
-export const BaseHttpClientContext = createContext<BaseHttpClientContextType | undefined>(undefined);
+export const BaseHttpClientContext = createContext<
+  BaseHttpClientContextType | undefined
+>(undefined);
 
 export const useBaseHttpClient = () => {
   const context = useContext(BaseHttpClientContext);
   if (context === undefined) {
-    throw new Error("useBaseHttpClient must be used within a BaseHttpClientProvider");
+    throw new Error(
+      "useBaseHttpClient must be used within a BaseHttpClientProvider",
+    );
   }
   return context;
 };
@@ -362,7 +403,10 @@ interface HttpClientProviderProps {
   baseUrl: string;
 }
 
-export const HttpClientProvider: React.FC<HttpClientProviderProps> = ({ children, baseUrl }) => {
+export const HttpClientProvider: React.FC<HttpClientProviderProps> = ({
+  children,
+  baseUrl,
+}) => {
   const httpClient = new BaseHttpClient(baseUrl);
 
   const baseClientFunctions: BaseHttpClientContextType = {

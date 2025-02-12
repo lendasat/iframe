@@ -1,4 +1,8 @@
-import { faCopy, faExclamationCircle, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+import {
+  faCopy,
+  faExclamationCircle,
+  faInfoCircle,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import type { Contract } from "@frontend-monorepo/http-client-lender";
 import { formatCurrency } from "@frontend-monorepo/ui-shared";
@@ -15,7 +19,13 @@ interface RepaymentDetailsProps {
   setTxId: (value: ((prevState: string) => string) | string) => void;
 }
 
-const RepaymentDetails = ({ contract, onPrincipalGiven, isLoading, txid, setTxId }: RepaymentDetailsProps) => {
+const RepaymentDetails = ({
+  contract,
+  onPrincipalGiven,
+  isLoading,
+  txid,
+  setTxId,
+}: RepaymentDetailsProps) => {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
 
@@ -40,7 +50,9 @@ const RepaymentDetails = ({ contract, onPrincipalGiven, isLoading, txid, setTxId
     <Container fluid>
       <Row>
         <Col>
-          <Heading className={"text-font dark:text-font-dark"}>Payout Details</Heading>
+          <Heading className={"text-font dark:text-font-dark"}>
+            Payout Details
+          </Heading>
         </Col>
       </Row>
 
@@ -51,11 +63,16 @@ const RepaymentDetails = ({ contract, onPrincipalGiven, isLoading, txid, setTxId
               onClick={() => handleCopy(contract.borrower_loan_address)}
               style={{ cursor: "pointer" }}
             >
-              <QRCode value={contract.borrower_loan_address} size={200} renderAs={"svg"} />
+              <QRCode
+                value={contract.borrower_loan_address}
+                size={200}
+                renderAs={"svg"}
+              />
             </div>
             <p className="mt-2 text-break text-font dark:text-font-dark">
-              Please send <strong>{formatCurrency(contract.loan_amount)}</strong> ({contract.loan_asset_type} on{" "}
-              {contract.loan_asset_chain}) to:
+              Please send{" "}
+              <strong>{formatCurrency(contract.loan_amount)}</strong> (
+              {contract.loan_asset_type} on {contract.loan_asset_chain}) to:
             </p>
             <div className="d-flex align-items-center">
               <code>{contract.borrower_loan_address}</code>
@@ -64,10 +81,17 @@ const RepaymentDetails = ({ contract, onPrincipalGiven, isLoading, txid, setTxId
                 className="ms-2"
                 onClick={() => handleCopy(contract.borrower_loan_address)}
               >
-                <FontAwesomeIcon icon={faCopy} className={"text-font dark:text-font-dark"} />
+                <FontAwesomeIcon
+                  icon={faCopy}
+                  className={"text-font dark:text-font-dark"}
+                />
               </Button>
             </div>
-            {copied && <small className="text-success text-font dark:text-font-dark">Copied to clipboard!</small>}
+            {copied && (
+              <small className="text-success text-font dark:text-font-dark">
+                Copied to clipboard!
+              </small>
+            )}
           </div>
         </Col>
       </Row>
@@ -83,7 +107,9 @@ const RepaymentDetails = ({ contract, onPrincipalGiven, isLoading, txid, setTxId
 
       <Row className="mt-3">
         <Col>
-          <label className={"text-font dark:text-font-dark"} htmlFor="txid">Transaction ID:</label>
+          <label className={"text-font dark:text-font-dark"} htmlFor="txid">
+            Transaction ID:
+          </label>
           <input
             id="txid"
             type="text"
@@ -98,15 +124,18 @@ const RepaymentDetails = ({ contract, onPrincipalGiven, isLoading, txid, setTxId
       <Row className="mt-3">
         <Col>
           <Button onClick={onConfirm} disabled={isLoading}>
-            {isLoading
-              ? (
-                <Spinner animation="border" role="status" variant="light" size="sm">
-                  <span className="visually-hidden">Loading...</span>
-                </Spinner>
-              )
-              : (
-                "Mark principal given"
-              )}
+            {isLoading ? (
+              <Spinner
+                animation="border"
+                role="status"
+                variant="light"
+                size="sm"
+              >
+                <span className="visually-hidden">Loading...</span>
+              </Spinner>
+            ) : (
+              "Mark principal given"
+            )}
           </Button>
         </Col>
       </Row>
@@ -115,7 +144,10 @@ const RepaymentDetails = ({ contract, onPrincipalGiven, isLoading, txid, setTxId
         <Col>
           {error && (
             <Alert variant="danger">
-              <FontAwesomeIcon icon={faExclamationCircle} className="h-4 w-4 mr-2" />
+              <FontAwesomeIcon
+                icon={faExclamationCircle}
+                className="h-4 w-4 mr-2"
+              />
               {error}
             </Alert>
           )}

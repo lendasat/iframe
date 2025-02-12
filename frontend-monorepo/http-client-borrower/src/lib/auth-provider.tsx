@@ -1,13 +1,26 @@
-import type { LoginResponseOrUpgrade, User, Version } from "@frontend-monorepo/base-http-client";
+import type {
+  LoginResponseOrUpgrade,
+  User,
+  Version,
+} from "@frontend-monorepo/base-http-client";
 import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
 import type { LoanProductOption } from "@frontend-monorepo/base-http-client";
 import axios from "axios";
 import { process_login_response, verify_server } from "browser-wallet";
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import type { FC, ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { SemVer } from "semver";
-import { allowedPagesWithoutLogin, HttpClientBorrowerProvider } from "./http-client-borrower";
+import {
+  allowedPagesWithoutLogin,
+  HttpClientBorrowerProvider,
+} from "./http-client-borrower";
 import { FeatureMapper } from "./models";
 
 interface AuthContextType {
@@ -19,7 +32,9 @@ interface AuthContextType {
   enabledFeatures: LoanProductOption[];
 }
 
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(
+  undefined,
+);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -58,17 +73,20 @@ interface AuthProviderProps {
   baseUrl: string;
 }
 
-export const AuthProviderBorrower: FC<AuthProviderProps> = ({ children, baseUrl }) => {
+export const AuthProviderBorrower: FC<AuthProviderProps> = ({
+  children,
+  baseUrl,
+}) => {
   return (
     <HttpClientBorrowerProvider baseUrl={baseUrl}>
-      <BorrowerAuthProviderInner>
-        {children}
-      </BorrowerAuthProviderInner>
+      <BorrowerAuthProviderInner>{children}</BorrowerAuthProviderInner>
     </HttpClientBorrowerProvider>
   );
 };
 
-const BorrowerAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) => {
+const BorrowerAuthProviderInner: FC<{ children: ReactNode }> = ({
+  children,
+}) => {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -79,8 +97,17 @@ const BorrowerAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) =>
     commit_hash: "unknown",
   });
   const [loading, setLoading] = useState(true);
-  const [enabledFeatures, setEnabledFeatures] = useState<LoanProductOption[]>([]);
-  const { me, pakeLoginRequest, pakeVerifyRequest, logout: baseLogout, getVersion, check } = useBaseHttpClient();
+  const [enabledFeatures, setEnabledFeatures] = useState<LoanProductOption[]>(
+    [],
+  );
+  const {
+    me,
+    pakeLoginRequest,
+    pakeVerifyRequest,
+    logout: baseLogout,
+    getVersion,
+    check,
+  } = useBaseHttpClient();
 
   const handle401 = useCallback(() => {
     setUser(null);
@@ -108,14 +135,16 @@ const BorrowerAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) =>
         } else {
           const message = error.response.data.message;
           console.error(
-            `Failed to check login status: http: ${error.response?.status} and response: ${
-              JSON.stringify(error.response?.data)
-            }`,
+            `Failed to check login status: http: ${
+              error.response?.status
+            } and response: ${JSON.stringify(error.response?.data)}`,
           );
           throw new Error(message);
         }
       } else {
-        throw new Error(`Failed to check login status: http: ${JSON.stringify(error)}`);
+        throw new Error(
+          `Failed to check login status: http: ${JSON.stringify(error)}`,
+        );
       }
     }
   }, [check, handle401]);
@@ -133,7 +162,9 @@ const BorrowerAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) =>
         const currentUser = await me();
         if (currentUser) {
           setUser(currentUser.user);
-          const enabledFeatures = FeatureMapper.mapEnabledFeatures(currentUser.enabled_features);
+          const enabledFeatures = FeatureMapper.mapEnabledFeatures(
+            currentUser.enabled_features,
+          );
 
           setEnabledFeatures(enabledFeatures);
         } else {
@@ -166,7 +197,12 @@ const BorrowerAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) =>
         return { must_upgrade_to_pake: undefined };
       }
 
-      const verificationData = process_login_response(email, password, pakeLoginResponse.salt, pakeLoginResponse.b_pub);
+      const verificationData = process_login_response(
+        email,
+        password,
+        pakeLoginResponse.salt,
+        pakeLoginResponse.b_pub,
+      );
 
       const pakeVerifyResponse = await pakeVerifyRequest(
         email,
@@ -180,7 +216,9 @@ const BorrowerAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) =>
         throw new Error("failed to verify server proof");
       }
 
-      const enabledFeatures = FeatureMapper.mapEnabledFeatures(pakeVerifyResponse.enabled_features);
+      const enabledFeatures = FeatureMapper.mapEnabledFeatures(
+        pakeVerifyResponse.enabled_features,
+      );
 
       const currentUser = pakeVerifyResponse.user;
 
@@ -221,7 +259,9 @@ const BorrowerAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, backendVersion, enabledFeatures }}>
+    <AuthContext.Provider
+      value={{ user, loading, login, logout, backendVersion, enabledFeatures }}
+    >
       {children}
     </AuthContext.Provider>
   );

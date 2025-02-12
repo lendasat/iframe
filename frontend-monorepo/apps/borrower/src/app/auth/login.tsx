@@ -1,6 +1,10 @@
 import { useAuth } from "@frontend-monorepo/http-client-borrower";
 import { LoginForm } from "@frontend-monorepo/ui-shared";
-import init, { does_wallet_exist, load_wallet, restore_wallet } from "browser-wallet";
+import init, {
+  does_wallet_exist,
+  load_wallet,
+  restore_wallet,
+} from "browser-wallet";
 import { md5 } from "hash-wasm";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 
@@ -52,10 +56,16 @@ function Login() {
 
   let defaultUsername = "";
   let defaultPassword = "";
-  if (import.meta.env.VITE_BITCOIN_NETWORK === "regtest" || import.meta.env.VITE_BITCOIN_NETWORK === "signet") {
+  if (
+    import.meta.env.VITE_BITCOIN_NETWORK === "regtest" ||
+    import.meta.env.VITE_BITCOIN_NETWORK === "signet"
+  ) {
     defaultUsername = import.meta.env.VITE_BORROWER_USERNAME;
   }
-  if (import.meta.env.VITE_BITCOIN_NETWORK === "regtest" || import.meta.env.VITE_BITCOIN_NETWORK === "signet") {
+  if (
+    import.meta.env.VITE_BITCOIN_NETWORK === "regtest" ||
+    import.meta.env.VITE_BITCOIN_NETWORK === "signet"
+  ) {
     defaultPassword = import.meta.env.VITE_BORROWER_PASSWORD;
   }
 

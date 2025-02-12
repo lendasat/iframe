@@ -7,7 +7,9 @@ export interface RefundAddressInfoLabelProps {
   children?: ReactNode;
 }
 
-export function RefundAddressInfoLabel({ children }: RefundAddressInfoLabelProps) {
+export function RefundAddressInfoLabel({
+  children,
+}: RefundAddressInfoLabelProps) {
   return (
     <AbbreviationExplanationInfo
       header={"Collateral Refund Address"}
@@ -15,13 +17,8 @@ export function RefundAddressInfoLabel({ children }: RefundAddressInfoLabelProps
 This address belongs to the borrower.
 `}
     >
-      <RadixLink
-        href="https://faq.lendasat.com"
-        target="_blank"
-      >
-        <Flex gap={"2"}>
-          {children}
-        </Flex>
+      <RadixLink href="https://faq.lendasat.com" target="_blank">
+        <Flex gap={"2"}>{children}</Flex>
       </RadixLink>
     </AbbreviationExplanationInfo>
   );

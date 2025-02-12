@@ -16,7 +16,9 @@ const ErrorBoundary = () => {
             {"We couldn't find what you were looking for."}
           </p>
           <Link to="/">
-            <Button variant="primary" onClick={() => navigate("/")}>Home</Button>
+            <Button variant="primary" onClick={() => navigate("/")}>
+              Home
+            </Button>
           </Link>
         </Col>
       </Row>

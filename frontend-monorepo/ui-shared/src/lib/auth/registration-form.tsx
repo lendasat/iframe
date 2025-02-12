@@ -1,4 +1,13 @@
-import { Box, Button, Callout, Grid, Heading, IconButton, Spinner, Text } from "@radix-ui/themes";
+import {
+  Box,
+  Button,
+  Callout,
+  Grid,
+  Heading,
+  IconButton,
+  Spinner,
+  Text,
+} from "@radix-ui/themes";
 import type { FormEvent } from "react";
 import { useState } from "react";
 import { Form } from "react-bootstrap";
@@ -56,7 +65,11 @@ export function RegistrationForm({ handleRegister }: RegistrationFormProps) {
       <Grid align={"center"} className="overflow-hidden grid-cols-1 w-screen">
         <Box className="flex flex-col items-center p-5">
           {/* Logo */}
-          <Logo height={27} width={"auto"} className="w-fit invert dark:invert-0" />
+          <Logo
+            height={27}
+            width={"auto"}
+            className="w-fit invert dark:invert-0"
+          />
           <Box
             mt={"6"}
             maxWidth={"550px"}
@@ -67,15 +80,27 @@ export function RegistrationForm({ handleRegister }: RegistrationFormProps) {
           >
             {/* Heading */}
             <Box className="text-center pb-4">
-              <Heading size={"7"} className="text-font dark:text-font-dark pb-2">Register</Heading>
-              <Text size={"3"} className="text-font/70 dark:text-font-dark/70">To join the future of lending</Text>
+              <Heading
+                size={"7"}
+                className="text-font dark:text-font-dark pb-2"
+              >
+                Register
+              </Heading>
+              <Text size={"3"} className="text-font/70 dark:text-font-dark/70">
+                To join the future of lending
+              </Text>
             </Box>
 
             {/* Form */}
             <Form className="w-full mt-7 space-y-0.5" onSubmit={onSubmit}>
               <Box className="grid grid-cols-1 md:grid-cols-2 md:gap-1">
                 <Box className="text-left mt-3">
-                  <Text as="label" size={"1"} weight={"medium"} className="text-font/70 dark:text-font-dark/70 mb-2">
+                  <Text
+                    as="label"
+                    size={"1"}
+                    weight={"medium"}
+                    className="text-font/70 dark:text-font-dark/70 mb-2"
+                  >
                     Name
                   </Text>
                   <TypeField
@@ -87,7 +112,12 @@ export function RegistrationForm({ handleRegister }: RegistrationFormProps) {
 
                 {/* Email */}
                 <Box className="text-left mt-3">
-                  <Text as="label" size={"1"} weight={"medium"} className="text-font/70 dark:text-font-dark/70 mb-2">
+                  <Text
+                    as="label"
+                    size={"1"}
+                    weight={"medium"}
+                    className="text-font/70 dark:text-font-dark/70 mb-2"
+                  >
                     Email
                   </Text>
                   <TypeField
@@ -101,7 +131,12 @@ export function RegistrationForm({ handleRegister }: RegistrationFormProps) {
               {/* Password */}
               <Box className="grid grid-cols-1 md:grid-cols-2 md:gap-1">
                 <Box className="text-left mt-3">
-                  <Text as="label" size={"1"} weight={"medium"} className="text-font/70 dark:text-font-dark/70 mb-2">
+                  <Text
+                    as="label"
+                    size={"1"}
+                    weight={"medium"}
+                    className="text-font/70 dark:text-font-dark/70 mb-2"
+                  >
                     Password
                   </Text>
                   <TypeField
@@ -122,7 +157,12 @@ export function RegistrationForm({ handleRegister }: RegistrationFormProps) {
                   </TypeField>
                 </Box>
                 <Box className="text-left mt-3">
-                  <Text as="label" size={"1"} weight={"medium"} className="text-font/70 dark:text-font-dark/70 mb-2">
+                  <Text
+                    as="label"
+                    size={"1"}
+                    weight={"medium"}
+                    className="text-font/70 dark:text-font-dark/70 mb-2"
+                  >
                     Confirm Password
                   </Text>
                   <TypeField
@@ -147,7 +187,12 @@ export function RegistrationForm({ handleRegister }: RegistrationFormProps) {
               {/* Referral Code */}
               <Box className="grid grid-cols-1 gap-5">
                 <Box className="text-left mt-3">
-                  <Text as="label" size={"1"} weight={"medium"} className="text-font/70 dark:text-font-dark/70 mb-2">
+                  <Text
+                    as="label"
+                    size={"1"}
+                    weight={"medium"}
+                    className="text-font/70 dark:text-font-dark/70 mb-2"
+                  >
                     Referral Code
                   </Text>
                   <TypeField
@@ -164,9 +209,7 @@ export function RegistrationForm({ handleRegister }: RegistrationFormProps) {
                   <Callout.Icon>
                     <IoInformationCircleOutline />
                   </Callout.Icon>
-                  <Callout.Text>
-                    {error}
-                  </Callout.Text>
+                  <Callout.Text>{error}</Callout.Text>
                 </Callout.Root>
               )}
 
@@ -178,7 +221,14 @@ export function RegistrationForm({ handleRegister }: RegistrationFormProps) {
                   size={"3"}
                   variant="solid"
                   radius="large"
-                  disabled={!(email && password === confirmPassword && name && !isLoading)}
+                  disabled={
+                    !(
+                      email &&
+                      password === confirmPassword &&
+                      name &&
+                      !isLoading
+                    )
+                  }
                   className="w-full h-12"
                 >
                   {isLoading ? <Spinner size={"3"} /> : "Register"}
@@ -188,7 +238,12 @@ export function RegistrationForm({ handleRegister }: RegistrationFormProps) {
 
             {/* Sign Up Routing */}
             <Box className="flex items-center gap-1 justify-center mt-16">
-              <Text as="label" size={"1"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
+              <Text
+                as="label"
+                size={"1"}
+                weight={"medium"}
+                className="text-font/70 dark:text-font-dark/70"
+              >
                 Already have an account?
               </Text>
               <Link

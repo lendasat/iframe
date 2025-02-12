@@ -10,7 +10,10 @@ function Settings() {
   return (
     <Box className="p-4 flex flex-col overflow-y-scroll">
       <Box className="bg-dashboard/50 dark:bg-dark-700/50 rounded-2xl shadow-sm flex-grow md:max-h-[800px]">
-        <TabNav.Root className="flex flex-col md:flex md:flex-row md:items-start p-5 h-full" color={"purple"}>
+        <TabNav.Root
+          className="flex flex-col md:flex md:flex-row md:items-start p-5 h-full"
+          color={"purple"}
+        >
           <Box className="flex md:flex-col md:h-full md:border-r md:border-black/5 dark:border-dark bg-purple-800/5 p-2 rounded-full md:rounded-none md:bg-transparent md:max-w-[200px] w-full mb-4 md:mb-0">
             <Box className="flex md:flex-col w-full border-b-0 shadow-none rounded-r-full md:rounded-none gap-2">
               <TabNav.Link
@@ -41,7 +44,11 @@ function Settings() {
       <Box py={"3"} mb={"8"}>
         <Flex gap={"1"} align={"center"}>
           <PiWarningCircleFill color="rgb(235, 172, 14)" size={22} />
-          <Text size={"1"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">
+          <Text
+            size={"1"}
+            weight={"medium"}
+            className="text-font/60 dark:text-font-dark/60"
+          >
             Do not disclose your password to anyone, including Lendasat support.
           </Text>
         </Flex>

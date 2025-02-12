@@ -1,8 +1,14 @@
 import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { UnlockWalletModal, useWallet } from "@frontend-monorepo/browser-wallet";
+import {
+  UnlockWalletModal,
+  useWallet,
+} from "@frontend-monorepo/browser-wallet";
 import type { Dispute } from "@frontend-monorepo/http-client-borrower";
-import { DisputeStatus, useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
+import {
+  DisputeStatus,
+  useBorrowerHttpClient,
+} from "@frontend-monorepo/http-client-borrower";
 import { FeeSelector } from "@frontend-monorepo/mempool";
 import { Suspense, useState } from "react";
 import { Alert, Button } from "react-bootstrap";
@@ -11,7 +17,8 @@ import { Await, useParams } from "react-router-dom";
 function ResolveDispute() {
   const { getDispute } = useBorrowerHttpClient();
   const { id } = useParams();
-  const { getClaimDisputeCollateralPsbt, postClaimTx, getContract } = useBorrowerHttpClient();
+  const { getClaimDisputeCollateralPsbt, postClaimTx, getContract } =
+    useBorrowerHttpClient();
   const [error, setError] = useState("");
   const [selectedFee, setSelectedFee] = useState(1);
 
@@ -39,7 +46,11 @@ function ResolveDispute() {
       const contract = await getContract(dispute.contract_id);
       const res = await getClaimDisputeCollateralPsbt(dispute.id, selectedFee);
       console.log(`${JSON.stringify(res)}`);
-      const claimTx = await signClaimPsbt(res.psbt, res.collateral_descriptor, res.borrower_pk);
+      const claimTx = await signClaimPsbt(
+        res.psbt,
+        res.collateral_descriptor,
+        res.borrower_pk,
+      );
       const txid = await postClaimTx(contract.id, claimTx.tx);
       alert(`Transaction ${txid} was published!`);
     } catch (error) {
@@ -56,7 +67,11 @@ function ResolveDispute() {
     <Suspense>
       <Await
         resolve={id ? getDispute(id) : null}
-        errorElement={<div className={"text-font dark:text-font-dark"}>Could not load dispute</div>}
+        errorElement={
+          <div className={"text-font dark:text-font-dark"}>
+            Could not load dispute
+          </div>
+        }
         children={(dispute: Awaited<Dispute>) => (
           <div>
             <UnlockWalletModal
@@ -85,32 +100,42 @@ function ResolveDispute() {
                   <strong>Status:</strong> {dispute.status}
                 </p>
                 <p>
-                  <strong>Created At:</strong> {dispute.created_at.toLocaleString()}
+                  <strong>Created At:</strong>{" "}
+                  {dispute.created_at.toLocaleString()}
                 </p>
                 <p>
-                  <strong>Updated At:</strong> {dispute.updated_at.toLocaleString()}
+                  <strong>Updated At:</strong>{" "}
+                  {dispute.updated_at.toLocaleString()}
                 </p>
 
                 {dispute.lender_payout_sats && (
                   <p>
-                    <strong>Lender Payout (sats):</strong> {dispute.lender_payout_sats}
+                    <strong>Lender Payout (sats):</strong>{" "}
+                    {dispute.lender_payout_sats}
                   </p>
                 )}
                 {dispute.borrower_payout_sats && (
                   <p>
-                    <strong>Borrower Payout (sats):</strong> {dispute.borrower_payout_sats}
+                    <strong>Borrower Payout (sats):</strong>{" "}
+                    {dispute.borrower_payout_sats}
                   </p>
                 )}
-                <ActionItem dispute={dispute} onWithdrawAction={onWithdrawAction} onFeeSelected={setSelectedFee}>
-                </ActionItem>
-                {error
-                  ? (
-                    <Alert variant="danger">
-                      <FontAwesomeIcon icon={faExclamationCircle} className="h-4 w-4 mr-2" />
-                      {error}
-                    </Alert>
-                  )
-                  : ""}
+                <ActionItem
+                  dispute={dispute}
+                  onWithdrawAction={onWithdrawAction}
+                  onFeeSelected={setSelectedFee}
+                ></ActionItem>
+                {error ? (
+                  <Alert variant="danger">
+                    <FontAwesomeIcon
+                      icon={faExclamationCircle}
+                      className="h-4 w-4 mr-2"
+                    />
+                    {error}
+                  </Alert>
+                ) : (
+                  ""
+                )}
               </div>
             </div>
           </div>
@@ -126,7 +151,11 @@ interface ActionItemProps {
   onFeeSelected: (fee: number) => void;
 }
 
-const ActionItem = ({ dispute, onWithdrawAction, onFeeSelected }: ActionItemProps) => {
+const ActionItem = ({
+  dispute,
+  onWithdrawAction,
+  onFeeSelected,
+}: ActionItemProps) => {
   let actionDisabled = true;
 
   switch (dispute.status) {
@@ -142,18 +171,26 @@ const ActionItem = ({ dispute, onWithdrawAction, onFeeSelected }: ActionItemProp
 
   return (
     <>
-      {actionDisabled
-        ? (
-          <Alert variant="warning">
-            <FontAwesomeIcon icon={faExclamationCircle} className="h-4 w-4 mr-2" />
-            {"The dispute is still ongoing. Once it's been resolved you will be able to withdraw your collateral."}
-          </Alert>
-        )
-        : ""}
-      {!actionDisabled
-        ? <FeeSelector onSelectFee={onFeeSelected} />
-        : null}
-      <Button disabled={actionDisabled} onClick={() => onWithdrawAction(dispute)}>Withdraw collateral</Button>
+      {actionDisabled ? (
+        <Alert variant="warning">
+          <FontAwesomeIcon
+            icon={faExclamationCircle}
+            className="h-4 w-4 mr-2"
+          />
+          {
+            "The dispute is still ongoing. Once it's been resolved you will be able to withdraw your collateral."
+          }
+        </Alert>
+      ) : (
+        ""
+      )}
+      {!actionDisabled ? <FeeSelector onSelectFee={onFeeSelected} /> : null}
+      <Button
+        disabled={actionDisabled}
+        onClick={() => onWithdrawAction(dispute)}
+      >
+        Withdraw collateral
+      </Button>
     </>
   );
 };

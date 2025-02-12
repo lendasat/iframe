@@ -7,15 +7,18 @@ function VerifyEmailForm() {
   const navigate = useNavigate();
   const { token } = useParams();
 
-  const handleVerification = async (
-    verificationCode: string,
-  ) => {
+  const handleVerification = async (verificationCode: string) => {
     await verifyEmail(verificationCode);
 
     navigate("/login/verified");
   };
 
-  return <EmailVerificationForm handleVerification={handleVerification} initialVerificationCode={token || ""} />;
+  return (
+    <EmailVerificationForm
+      handleVerification={handleVerification}
+      initialVerificationCode={token || ""}
+    />
+  );
 }
 
 export default VerifyEmailForm;

@@ -7,7 +7,11 @@ interface TelegramNotificationSetupProps {
   botUrl: string;
 }
 
-const TelegramNotificationSetup = ({ token, botName, botUrl }: TelegramNotificationSetupProps) => {
+const TelegramNotificationSetup = ({
+  token,
+  botName,
+  botUrl,
+}: TelegramNotificationSetupProps) => {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
@@ -20,12 +24,15 @@ const TelegramNotificationSetup = ({ token, botName, botUrl }: TelegramNotificat
     <Card className="bg-light dark:bg-dark p-6 rounded-lg">
       <div className="space-y-4">
         <p className="text-font dark:text-font-dark leading-relaxed">
-          You can receive notifications from Lendasat to your Telegram account. To do this, follow further instructions:
+          You can receive notifications from Lendasat to your Telegram account.
+          To do this, follow further instructions:
         </p>
 
         <div className="space-y-4">
           <div className="flex items-start space-x-2">
-            <span className="text-font dark:text-font-dark font-medium">1.</span>
+            <span className="text-font dark:text-font-dark font-medium">
+              1.
+            </span>
             <div className="space-y-2">
               <p className="text-font dark:text-font-dark">
                 To activate Telegram notifications bot, follow the link below.
@@ -42,11 +49,13 @@ const TelegramNotificationSetup = ({ token, botName, botUrl }: TelegramNotificat
           </div>
 
           <div className="flex items-start space-x-2">
-            <span className="text-font dark:text-font-dark text-medium">2.</span>
+            <span className="text-font dark:text-font-dark text-medium">
+              2.
+            </span>
             <div className="space-y-2">
               <p className="text-font dark:text-font-dark">
-                If you can't access the link, join the telegram bot manually and provide your notifications key
-                manually.
+                If you can't access the link, join the telegram bot manually and
+                provide your notifications key manually.
                 <br />
                 <span className="text-purple-500">
                   <a
@@ -56,15 +65,16 @@ const TelegramNotificationSetup = ({ token, botName, botUrl }: TelegramNotificat
                     className="text-purple-500 hover:text-purple-600 break-all"
                   >
                     {" "}
-                    {botUrl}
-                    {" "}
+                    {botUrl}{" "}
                   </a>
                 </span>
               </p>
 
               <Flex gap={"3"}>
                 <div className="flex items-center space-x-2 bg-light dark:bg-dark p-2 rounded-md">
-                  <code className="text-font dark:text-font-dark font-mono">{token}</code>
+                  <code className="text-font dark:text-font-dark font-mono">
+                    {token}
+                  </code>
                 </div>
                 <Button
                   onClick={handleCopy}

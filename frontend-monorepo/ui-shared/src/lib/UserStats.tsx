@@ -26,17 +26,29 @@ export function UserStats({
   timezone,
 }: UserStatsProps) {
   let ratingText = (
-    <Text className={"text-font dark:text-font-dark self-end"} size={"2"} weight={"bold"}>
+    <Text
+      className={"text-font dark:text-font-dark self-end"}
+      size={"2"}
+      weight={"bold"}
+    >
       No rating yet
     </Text>
   );
   if (successful_contracts + failed_contracts > 0) {
     ratingText = (
       <Flex gap={"1"}>
-        <Text className={"text-font dark:text-font-dark self-end"} size={"2"} weight={"bold"}>
+        <Text
+          className={"text-font dark:text-font-dark self-end"}
+          size={"2"}
+          weight={"bold"}
+        >
           {(rating * 100).toFixed(1)}% success,
         </Text>
-        <Text className={"text-font dark:text-font-dark self-end"} size={"2"} weight={"light"}>
+        <Text
+          className={"text-font dark:text-font-dark self-end"}
+          size={"2"}
+          weight={"light"}
+        >
           {successful_contracts + failed_contracts} contracts
         </Text>
       </Flex>
@@ -82,7 +94,10 @@ export function UserStats({
                   <Text size={"2"} className="text-font dark:text-font-dark">
                     Local time:
                   </Text>
-                  <Text size={"2"} className="text-font/50 dark:text-font-dark/50">
+                  <Text
+                    size={"2"}
+                    className="text-font/50 dark:text-font-dark/50"
+                  >
                     {formatDateTime(timezone)}
                   </Text>
                 </Flex>
@@ -91,7 +106,10 @@ export function UserStats({
                 <Text size={"2"} className="text-font dark:text-font-dark">
                   Joined:
                 </Text>
-                <Text size={"2"} className="text-font/50 dark:text-font-dark/50">
+                <Text
+                  size={"2"}
+                  className="text-font/50 dark:text-font-dark/50"
+                >
                   {new Date(joined_at).toLocaleDateString("en-CA", options)}
                 </Text>
               </Flex>
@@ -99,11 +117,13 @@ export function UserStats({
           </Flex>
         </Box>
 
-        <Box className="border border-purple-400/20 rounded-2xl px-5 py-6 dark:border-gray-500/50
+        <Box
+          className="border border-purple-400/20 rounded-2xl px-5 py-6 dark:border-gray-500/50
 
         bg-dashboard/50 dark:bg-dark-700/50 shadow-sm flex-grow md:max-h-[800px]
 
-        ">
+        "
+        >
           <Heading
             as="h4"
             className="font-semibold capitalize text-font dark:text-font-dark"
@@ -122,7 +142,11 @@ export function UserStats({
                 >
                   Rating
                 </Text>
-                <Text size={"3"} weight={"medium"} className="capitalize text-font dark:text-font-dark">
+                <Text
+                  size={"3"}
+                  weight={"medium"}
+                  className="capitalize text-font dark:text-font-dark"
+                >
                   {ratingText}
                 </Text>
               </Flex>
@@ -138,7 +162,11 @@ export function UserStats({
                 >
                   Completed Contracts
                 </Text>
-                <Text size={"3"} weight={"medium"} className="capitalize text-font dark:text-font-dark">
+                <Text
+                  size={"3"}
+                  weight={"medium"}
+                  className="capitalize text-font dark:text-font-dark"
+                >
                   {successful_contracts + failed_contracts}
                 </Text>
               </Flex>

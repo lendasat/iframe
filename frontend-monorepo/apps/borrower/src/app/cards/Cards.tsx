@@ -1,6 +1,15 @@
 import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import { CurrencyFormatter } from "@frontend-monorepo/ui-shared";
-import { Box, Button, Flex, Grid, Heading, Skeleton, Spinner, Text } from "@radix-ui/themes";
+import {
+  Box,
+  Button,
+  Flex,
+  Grid,
+  Heading,
+  Skeleton,
+  Spinner,
+  Text,
+} from "@radix-ui/themes";
 import { useState } from "react";
 import { IoWallet } from "react-icons/io5";
 import { Link } from "react-router-dom";
@@ -23,7 +32,11 @@ export default function Cards() {
 
   const { getUserCards } = useBorrowerHttpClient();
 
-  const { loading, value: maybeUserCardDetails, error } = useAsync(async () => {
+  const {
+    loading,
+    value: maybeUserCardDetails,
+    error,
+  } = useAsync(async () => {
     return getUserCards();
   }, []);
 
@@ -90,33 +103,55 @@ export default function Cards() {
 
         <Box className="pt-5 space-y-4">
           <Grid className="grid-cols-2 gap-2">
-            <Skeleton loading={!activeCard} className="flex items-center justify-between">
+            <Skeleton
+              loading={!activeCard}
+              className="flex items-center justify-between"
+            >
               <Box className="min-h-[150px] w-full border border-font/10 flex flex-col items-center justify-center gap-1.5 text-font rounded-2xl dark:border-dark dark:bg-dark-600">
                 <Box
                   className={`h-12 w-12 bg-purple-50 rounded-xl place-items-center flex justify-center dark:bg-purple-800/20`}
                 >
                   <IoWallet size={"24"} />
                 </Box>
-                <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>Available Balance</Text>
+                <Text
+                  className={"text-font dark:text-font-dark"}
+                  size={"1"}
+                  weight={"medium"}
+                >
+                  Available Balance
+                </Text>
                 <Heading className={"text-font dark:text-font-dark"} size={"2"}>
                   <Skeleton loading={!activeCard}>
-                    {activeCard && <CurrencyFormatter value={activeCard.available_balance} />}
+                    {activeCard && (
+                      <CurrencyFormatter value={activeCard.available_balance} />
+                    )}
                   </Skeleton>
                 </Heading>
               </Box>
             </Skeleton>
 
-            <Skeleton loading={!activeCard} className="flex items-center justify-between">
+            <Skeleton
+              loading={!activeCard}
+              className="flex items-center justify-between"
+            >
               <Box className="min-h-[150px] w-full border border-font/10 flex flex-col items-center justify-center gap-1.5 text-font rounded-2xl dark:border-dark dark:bg-dark-600">
                 <Box
                   className={`h-12 w-12 bg-purple-50 rounded-xl place-items-center flex justify-center dark:bg-purple-800/20`}
                 >
                   <IoWallet size={"24"} />
                 </Box>
-                <Text className={"text-font dark:text-font-dark"} size={"1"} weight={"medium"}>Balance</Text>
+                <Text
+                  className={"text-font dark:text-font-dark"}
+                  size={"1"}
+                  weight={"medium"}
+                >
+                  Balance
+                </Text>
                 <Heading className={"text-font dark:text-font-dark"} size={"2"}>
                   <Skeleton loading={!activeCard}>
-                    {activeCard && <CurrencyFormatter value={activeCard.balance} />}
+                    {activeCard && (
+                      <CurrencyFormatter value={activeCard.balance} />
+                    )}
                   </Skeleton>
                 </Heading>
               </Box>
@@ -126,7 +161,12 @@ export default function Cards() {
           <Box className="space-y-1">
             <Skeleton loading={!activeCard}>
               <Flex align={"center"} justify={"between"}>
-                <Heading className={"text-font dark:text-font-dark"} as="h4" size={"3"} weight={"medium"}>
+                <Heading
+                  className={"text-font dark:text-font-dark"}
+                  as="h4"
+                  size={"3"}
+                  weight={"medium"}
+                >
                   Card Details
                 </Heading>
                 <Button
@@ -142,8 +182,18 @@ export default function Cards() {
             </Skeleton>
 
             <Skeleton loading={!activeCard}>
-              <Text size={"1"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">Card Number</Text>
-              <Text className={"text-font dark:text-font-dark"} as="p" weight={"medium"}>
+              <Text
+                size={"1"}
+                weight={"medium"}
+                className="text-font/60 dark:text-font-dark/60"
+              >
+                Card Number
+              </Text>
+              <Text
+                className={"text-font dark:text-font-dark"}
+                as="p"
+                weight={"medium"}
+              >
                 <Skeleton loading={!activeCard}>
                   {visible ? formatCreditCardNumber(activeCard.pan) : "******"}
                 </Skeleton>
@@ -152,16 +202,36 @@ export default function Cards() {
             <Skeleton loading={!activeCard}>
               <Flex justify={"between"}>
                 <Box>
-                  <Text size={"1"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">Expiry</Text>
-                  <Text className={"text-font dark:text-font-dark"} as="p" weight={"medium"}>
+                  <Text
+                    size={"1"}
+                    weight={"medium"}
+                    className="text-font/60 dark:text-font-dark/60"
+                  >
+                    Expiry
+                  </Text>
+                  <Text
+                    className={"text-font dark:text-font-dark"}
+                    as="p"
+                    weight={"medium"}
+                  >
                     <Skeleton loading={!activeCard}>
                       {visible ? activeCard.expiration : "****"}
                     </Skeleton>
                   </Text>
                 </Box>
                 <Box>
-                  <Text size={"1"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">CVV</Text>
-                  <Text className={"text-font dark:text-font-dark"} as="p" weight={"medium"}>
+                  <Text
+                    size={"1"}
+                    weight={"medium"}
+                    className="text-font/60 dark:text-font-dark/60"
+                  >
+                    CVV
+                  </Text>
+                  <Text
+                    className={"text-font dark:text-font-dark"}
+                    as="p"
+                    weight={"medium"}
+                  >
                     <Skeleton loading={!activeCard}>
                       {visible ? activeCard.cvv : "****"}
                     </Skeleton>
@@ -184,46 +254,56 @@ export default function Cards() {
         {/*  </Flex>*/}
         {/*</Skeleton>*/}
       </Box>
-      <Box className={`flex flex-col ${!activeCard ? "items-center justify-center" : ""} gap-4 py-4`}>
-        {activeCard
-          && (
-            <Box className="px-6 md:px-8">
-              <Heading className={"text-font dark:text-font-dark"}>
-                Transactions
-              </Heading>
-            </Box>
-          )}
+      <Box
+        className={`flex flex-col ${
+          !activeCard ? "items-center justify-center" : ""
+        } gap-4 py-4`}
+      >
+        {activeCard && (
+          <Box className="px-6 md:px-8">
+            <Heading className={"text-font dark:text-font-dark"}>
+              Transactions
+            </Heading>
+          </Box>
+        )}
 
         {/*TODO: show some information if no card is available yet*/}
-        {!activeCard
-          ? (
-            <Box className="text-center">
-              <Text as="p" className={"text-font dark:text-font-dark"} weight={"medium"}>
-                Why no credit card yet?!
-              </Text>
-              <img
-                src={NoCreditCard}
-                alt="Credit Card"
-                className="h-40 w-auto mb-3"
-              />
-              <Link to={"/requests"} className="text-font/70 hover:text-purple-800">
-                <Button
-                  variant="soft"
-                  size={"3"}
-                  color="purple"
-                  className="w-full"
-                >
-                  Get a Card
-                </Button>
-              </Link>
-            </Box>
-          )
-          : (
-            <CardHistory
-              cardId={activeCard.id}
-              lastFourCardDigits={activeCard.pan.substring(activeCard.pan.length - 4)}
+        {!activeCard ? (
+          <Box className="text-center">
+            <Text
+              as="p"
+              className={"text-font dark:text-font-dark"}
+              weight={"medium"}
+            >
+              Why no credit card yet?!
+            </Text>
+            <img
+              src={NoCreditCard}
+              alt="Credit Card"
+              className="h-40 w-auto mb-3"
             />
-          )}
+            <Link
+              to={"/requests"}
+              className="text-font/70 hover:text-purple-800"
+            >
+              <Button
+                variant="soft"
+                size={"3"}
+                color="purple"
+                className="w-full"
+              >
+                Get a Card
+              </Button>
+            </Link>
+          </Box>
+        ) : (
+          <CardHistory
+            cardId={activeCard.id}
+            lastFourCardDigits={activeCard.pan.substring(
+              activeCard.pan.length - 4,
+            )}
+          />
+        )}
       </Box>
     </Grid>
   );

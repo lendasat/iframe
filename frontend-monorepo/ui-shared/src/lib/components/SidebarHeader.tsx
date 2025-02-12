@@ -19,12 +19,19 @@ const StyledSidebarHeader = styled.div`
   }
 `;
 
-export const SidebarHeader: FC<SidebarHeaderProps> = ({ children, ...rest }) => {
+export const SidebarHeader: FC<SidebarHeaderProps> = ({
+  children,
+  ...rest
+}) => {
   return (
     <StyledSidebarHeader {...rest}>
       <div>
         {/* <FullLogoWhiteBg /> */}
-        <img src={Lendasat} alt="Logo" className="h-5 w-auto dark:filter dark:invert dark:brightness-90" />
+        <img
+          src={Lendasat}
+          alt="Logo"
+          className="h-5 w-auto dark:filter dark:invert dark:brightness-90"
+        />
       </div>
     </StyledSidebarHeader>
   );

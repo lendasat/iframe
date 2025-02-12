@@ -1,4 +1,7 @@
-import { BorrowerStats, useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
+import {
+  BorrowerStats,
+  useLenderHttpClient,
+} from "@frontend-monorepo/http-client-lender";
 import { UserStats } from "@frontend-monorepo/ui-shared";
 import { Suspense } from "react";
 import { Await, useParams } from "react-router-dom";
@@ -11,7 +14,11 @@ export function BorrowerProfile() {
     <Suspense>
       <Await
         resolve={id ? getBorrowerProfile(id) : null}
-        errorElement={<div className={"text-font dark:text-font-dark"}>Could not load profile</div>}
+        errorElement={
+          <div className={"text-font dark:text-font-dark"}>
+            Could not load profile
+          </div>
+        }
         children={(profile: Awaited<BorrowerStats>) => (
           <UserStats
             id={profile.id}

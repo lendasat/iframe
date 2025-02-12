@@ -139,7 +139,9 @@ export function StableCoinDropdown({
   defaultCoin?: StableCoin; // Optional prop for default selected coin
 }) {
   // Initialize selectedCoin with defaultCoin if provided, otherwise fall back to StableCoin.USDT_SN
-  const [selectedCoin, setSelectedCoin] = useState<StableCoin | "disabled">(defaultCoin ?? "disabled");
+  const [selectedCoin, setSelectedCoin] = useState<StableCoin | "disabled">(
+    defaultCoin ?? "disabled",
+  );
 
   // Reseting choosen coin
   useEffect(() => {
@@ -173,7 +175,11 @@ export function StableCoinDropdown({
             className="shadow-none focus-visible:outline-none p-3 outline-none h-10 text-font dark:text-font-dark text-sm border rounded-lg w-full max-w-full dark:bg-dark-700"
           />
 
-          <Select.Content highContrast color="purple" className="font-normal text-sm z-50">
+          <Select.Content
+            highContrast
+            color="purple"
+            className="font-normal text-sm z-50"
+          >
             <Select.Item value="disabled">-- Select a coin --</Select.Item>
             {coins.map((coin: StableCoin) => (
               <Select.Item key={coin} value={coin}>

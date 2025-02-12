@@ -1,36 +1,39 @@
 /// <reference types='vitest' />
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin';
-import svgr from 'vite-plugin-svgr';
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import { nxViteTsPaths } from "@nx/vite/plugins/nx-tsconfig-paths.plugin";
+import svgr from "vite-plugin-svgr";
 
 export default defineConfig({
   root: __dirname,
-  cacheDir: '../../node_modules/.vite/apps/borrower',
+  cacheDir: "../../node_modules/.vite/apps/borrower",
 
   server: {
     port: 4200,
-    host: 'localhost',
+    host: "localhost",
     fs: {
-      allow: ["../../.."]
-    }
+      allow: ["../../.."],
+    },
   },
 
   preview: {
     port: 4300,
-    host: 'localhost',
+    host: "localhost",
   },
 
-  plugins: [react(), nxViteTsPaths(),
+  plugins: [
+    react(),
+    nxViteTsPaths(),
     svgr({
       svgrOptions: {
-        exportType: 'named',
+        exportType: "named",
         ref: true,
         svgo: false,
         titleProp: true,
       },
-      include: '**/*.svg',
-    }),],
+      include: "**/*.svg",
+    }),
+  ],
 
   // Uncomment this if you are using workers.
   // worker: {
@@ -38,7 +41,7 @@ export default defineConfig({
   // },
 
   build: {
-    outDir: '../../dist/apps/borrower',
+    outDir: "../../dist/apps/borrower",
     emptyOutDir: true,
     reportCompressedSize: true,
     commonjsOptions: {

@@ -10,7 +10,11 @@ type NotificationToastProps = {
   description: string;
 };
 
-export function NotificationToast({ children, title, description }: NotificationToastProps) {
+export function NotificationToast({
+  children,
+  title,
+  description,
+}: NotificationToastProps) {
   const [open, setOpen] = useState(false);
   const timerRef = useRef(0);
 
@@ -32,8 +36,14 @@ export function NotificationToast({ children, title, description }: Notification
         {children}
       </Box>
 
-      <Toast.Root className="ToastRoot dark:bg-dark-700" open={open} onOpenChange={setOpen}>
-        <Toast.Title className="ToastTitle text-font dark:text-font-dark">{title}</Toast.Title>
+      <Toast.Root
+        className="ToastRoot dark:bg-dark-700"
+        open={open}
+        onOpenChange={setOpen}
+      >
+        <Toast.Title className="ToastTitle text-font dark:text-font-dark">
+          {title}
+        </Toast.Title>
         <Toast.Description className={"text-font dark:text-font-dark"} asChild>
           {description}
         </Toast.Description>

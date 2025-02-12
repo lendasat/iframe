@@ -1,6 +1,10 @@
 import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
 import { ResetPasswordForm } from "@frontend-monorepo/ui-shared";
-import init, { begin_registration, change_wallet_encryption, new_wallet_from_mnemonic } from "browser-wallet";
+import init, {
+  begin_registration,
+  change_wallet_encryption,
+  new_wallet_from_mnemonic,
+} from "browser-wallet";
 import { md5 } from "hash-wasm";
 import { useLocation, useParams } from "react-router-dom";
 
@@ -53,15 +57,26 @@ function ResetPassword() {
 
       console.log("Using old password to decrypt encrypted wallet");
 
-      newWalletDetails = change_wallet_encryption(key, oldPasswordOrMnemonic.value, newPassword);
+      newWalletDetails = change_wallet_encryption(
+        key,
+        oldPasswordOrMnemonic.value,
+        newPassword,
+      );
     } else if (oldPasswordOrMnemonic.type === "mnemonic") {
       // If the mnemonic is provided, we generate a new wallet encrypted under the new password.
 
       console.log("Using mnemonic to create new encrypted wallet");
 
-      newWalletDetails = new_wallet_from_mnemonic(newPassword, oldPasswordOrMnemonic.value, network, key);
+      newWalletDetails = new_wallet_from_mnemonic(
+        newPassword,
+        oldPasswordOrMnemonic.value,
+        network,
+        key,
+      );
     } else {
-      throw new Error("Cannot reset password without either old password or mnemonic");
+      throw new Error(
+        "Cannot reset password without either old password or mnemonic",
+      );
     }
 
     const newWalletBackupData = {
@@ -70,7 +85,9 @@ function ResetPassword() {
       xpub: newWalletDetails.xpub,
     };
 
-    console.log(`Generated new wallet backup data: ${JSON.stringify(newWalletBackupData)}`);
+    console.log(
+      `Generated new wallet backup data: ${JSON.stringify(newWalletBackupData)}`,
+    );
 
     return await resetPassword(
       registrationData.verifier,

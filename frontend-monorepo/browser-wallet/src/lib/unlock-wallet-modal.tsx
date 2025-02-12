@@ -1,6 +1,14 @@
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Box, Button, Flex, Heading, IconButton, Text, TextField } from "@radix-ui/themes";
+import {
+  Box,
+  Button,
+  Flex,
+  Heading,
+  IconButton,
+  Text,
+  TextField,
+} from "@radix-ui/themes";
 import { useEffect, useState } from "react";
 import { Alert, Modal } from "react-bootstrap";
 import { MdOutlineVisibility, MdOutlineVisibilityOff } from "react-icons/md";
@@ -12,7 +20,11 @@ interface WalletModalProps {
   handleSubmit: () => void;
 }
 
-export function UnlockWalletModal({ show, handleClose, handleSubmit }: WalletModalProps) {
+export function UnlockWalletModal({
+  show,
+  handleClose,
+  handleSubmit,
+}: WalletModalProps) {
   const [password, setPassword] = useState("");
   const [passVisibility, setPassVisibility] = useState<boolean>(false);
   const [error, setError] = useState("");
@@ -67,27 +79,27 @@ export function UnlockWalletModal({ show, handleClose, handleSubmit }: WalletMod
           </Box>
           <Box className="mb-3">
             <Flex className="flex flex-col gap-3">
-              {(!error)
-                ? (
-                  <Alert variant={"info"} className="flex items-baseline gap-2">
-                    <Box>
-                      <FontAwesomeIcon icon={faInfoCircle} />
-                    </Box>
-                    <Text>
-                      Please provide your password. It is needed to access your encrypted contract data.
-                    </Text>
-                  </Alert>
-                )
-                : ""}
-              {error
-                && (
-                  <Alert variant={"danger"} className="flex items-start gap-2">
-                    <Box>
-                      <FontAwesomeIcon icon={faInfoCircle} />
-                    </Box>
-                    <Text>{error}</Text>
-                  </Alert>
-                )}
+              {!error ? (
+                <Alert variant={"info"} className="flex items-baseline gap-2">
+                  <Box>
+                    <FontAwesomeIcon icon={faInfoCircle} />
+                  </Box>
+                  <Text>
+                    Please provide your password. It is needed to access your
+                    encrypted contract data.
+                  </Text>
+                </Alert>
+              ) : (
+                ""
+              )}
+              {error && (
+                <Alert variant={"danger"} className="flex items-start gap-2">
+                  <Box>
+                    <FontAwesomeIcon icon={faInfoCircle} />
+                  </Box>
+                  <Text>{error}</Text>
+                </Alert>
+              )}
             </Flex>
           </Box>
           <Box>
@@ -101,10 +113,21 @@ export function UnlockWalletModal({ show, handleClose, handleSubmit }: WalletMod
             >
               <TextField.Slot />
               <TextField.Slot>
-                <IconButton variant="ghost" onClick={() => setPassVisibility(!passVisibility)}>
-                  {passVisibility
-                    ? <MdOutlineVisibilityOff size={24} className="text-font/50 dark:text-font-dark/50" />
-                    : <MdOutlineVisibility size={24} className="text-font/50 dark:text-font-dark/50" />}
+                <IconButton
+                  variant="ghost"
+                  onClick={() => setPassVisibility(!passVisibility)}
+                >
+                  {passVisibility ? (
+                    <MdOutlineVisibilityOff
+                      size={24}
+                      className="text-font/50 dark:text-font-dark/50"
+                    />
+                  ) : (
+                    <MdOutlineVisibility
+                      size={24}
+                      className="text-font/50 dark:text-font-dark/50"
+                    />
+                  )}
                 </IconButton>
               </TextField.Slot>
             </TextField.Root>
@@ -113,7 +136,9 @@ export function UnlockWalletModal({ show, handleClose, handleSubmit }: WalletMod
         <Box className="mt-4 px-4 pb-5 bg-white dark:bg-dark-700 rounded-2">
           <Button
             variant="solid"
-            className={`w-full h-12 ${loading ? "bg-btn/5" : "bg-btn text-white"} rounded-lg `}
+            className={`w-full h-12 ${
+              loading ? "bg-btn/5" : "bg-btn text-white"
+            } rounded-lg `}
             onClick={onOkClick}
             disabled={loading}
           >
@@ -126,5 +151,5 @@ export function UnlockWalletModal({ show, handleClose, handleSubmit }: WalletMod
 }
 
 export function delay(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

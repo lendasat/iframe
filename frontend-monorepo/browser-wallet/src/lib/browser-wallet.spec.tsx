@@ -3,7 +3,9 @@ import { WalletProvider } from "./browser-wallet";
 
 describe("BrowserWallet", () => {
   it("should render successfully", () => {
-    const { baseElement } = render(<WalletProvider children={""} email="borrower@lendasat.com" />);
+    const { baseElement } = render(
+      <WalletProvider children={""} email="borrower@lendasat.com" />,
+    );
     expect(baseElement).toBeTruthy();
   });
 });

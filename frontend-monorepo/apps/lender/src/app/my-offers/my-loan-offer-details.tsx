@@ -1,10 +1,29 @@
 import { faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { LoanOfferStatus, useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
-import { formatCurrency, getFormatedStringFromDays, KycBadge, StableCoinHelper } from "@frontend-monorepo/ui-shared";
+import {
+  LoanOfferStatus,
+  useLenderHttpClient,
+} from "@frontend-monorepo/http-client-lender";
+import {
+  formatCurrency,
+  getFormatedStringFromDays,
+  KycBadge,
+  StableCoinHelper,
+} from "@frontend-monorepo/ui-shared";
 import * as Checkbox from "@radix-ui/react-checkbox";
 import { CheckIcon } from "@radix-ui/react-icons";
-import { Box, Button, Callout, Dialog, Flex, Grid, Heading, Separator, Text, TextField } from "@radix-ui/themes";
+import {
+  Box,
+  Button,
+  Callout,
+  Dialog,
+  Flex,
+  Grid,
+  Heading,
+  Separator,
+  Text,
+  TextField,
+} from "@radix-ui/themes";
 import { useState } from "react";
 import { Col, Row } from "react-bootstrap";
 import { FaPenNib } from "react-icons/fa";
@@ -104,7 +123,12 @@ function MyLoanOfferDetails() {
           <Box className="space-y-5">
             {/* Amount */}
             <Box className="space-y-1">
-              <Text as="label" size={"2"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">
+              <Text
+                as="label"
+                size={"2"}
+                weight={"medium"}
+                className="text-font/60 dark:text-font-dark/60"
+              >
                 Amount
               </Text>
               <Flex align={"center"} gap={"15px"}>
@@ -135,7 +159,12 @@ function MyLoanOfferDetails() {
 
             {/* Reserve */}
             <Box className="space-y-1">
-              <Text as="label" size={"2"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">
+              <Text
+                as="label"
+                size={"2"}
+                weight={"medium"}
+                className="text-font/60 dark:text-font-dark/60"
+              >
                 Loan Amount Reserve
               </Text>
               <TextField.Root
@@ -153,7 +182,8 @@ function MyLoanOfferDetails() {
                 <TextField.Slot className="pr-0" />
                 <TextField.Slot>
                   <Text size={"2"} weight={"medium"}>
-                    ({formatCurrency(offer.loan_amount_reserve_remaining)} remaining)
+                    ({formatCurrency(offer.loan_amount_reserve_remaining)}{" "}
+                    remaining)
                   </Text>
                 </TextField.Slot>
               </TextField.Root>
@@ -161,8 +191,17 @@ function MyLoanOfferDetails() {
 
             {/* Auto Accept */}
             <Box className="space-y-1">
-              <Flex align={"center"} gap={"2"} className="text-font dark:text-font-dark">
-                <Text as="label" size={"2"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">
+              <Flex
+                align={"center"}
+                gap={"2"}
+                className="text-font dark:text-font-dark"
+              >
+                <Text
+                  as="label"
+                  size={"2"}
+                  weight={"medium"}
+                  className="text-font/60 dark:text-font-dark/60"
+                >
                   Auto Accept within Reserve
                 </Text>
               </Flex>
@@ -189,10 +228,20 @@ function MyLoanOfferDetails() {
 
             {/* Duration */}
             <Box className="space-y-1">
-              <Text as="label" size={"2"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">
+              <Text
+                as="label"
+                size={"2"}
+                weight={"medium"}
+                className="text-font/60 dark:text-font-dark/60"
+              >
                 Duration
               </Text>
-              <Text as="span" className="text-font/50 dark:text-font-dark/50" weight={"medium"} size={"1"}>
+              <Text
+                as="span"
+                className="text-font/50 dark:text-font-dark/50"
+                weight={"medium"}
+                size={"1"}
+              >
                 (days)
               </Text>
               <Flex align={"center"} gap={"15px"}>
@@ -222,7 +271,12 @@ function MyLoanOfferDetails() {
 
             {/* Interest Rate */}
             <Box className="space-y-1">
-              <Text as="label" size={"2"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">
+              <Text
+                as="label"
+                size={"2"}
+                weight={"medium"}
+                className="text-font/60 dark:text-font-dark/60"
+              >
                 Interest Rate
               </Text>
               <TextField.Root
@@ -239,14 +293,21 @@ function MyLoanOfferDetails() {
               >
                 <TextField.Slot className="pr-0" />
                 <TextField.Slot>
-                  <Text size={"2"} weight={"medium"}>1 - 100</Text>
+                  <Text size={"2"} weight={"medium"}>
+                    1 - 100
+                  </Text>
                 </TextField.Slot>
               </TextField.Root>
             </Box>
 
             {/* LTV */}
             <Box className="space-y-1">
-              <Text as="label" size={"2"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">
+              <Text
+                as="label"
+                size={"2"}
+                weight={"medium"}
+                className="text-font/60 dark:text-font-dark/60"
+              >
                 Loan to Value (LTV)
               </Text>
               <TextField.Root
@@ -263,14 +324,21 @@ function MyLoanOfferDetails() {
               >
                 <TextField.Slot className="pr-0" />
                 <TextField.Slot>
-                  <Text size={"2"} weight={"medium"}>1 - 100</Text>
+                  <Text size={"2"} weight={"medium"}>
+                    1 - 100
+                  </Text>
                 </TextField.Slot>
               </TextField.Root>
             </Box>
 
             {offer.kyc_link && (
               <Box className="space-y-1">
-                <Text as="label" size={"2"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">
+                <Text
+                  as="label"
+                  size={"2"}
+                  weight={"medium"}
+                  className="text-font/60 dark:text-font-dark/60"
+                >
                   KYC Link
                 </Text>
                 <TextField.Root
@@ -280,8 +348,7 @@ function MyLoanOfferDetails() {
                   color="purple"
                   value={offer.kyc_link}
                   disabled={true}
-                >
-                </TextField.Root>
+                ></TextField.Root>
               </Box>
             )}
           </Box>
@@ -300,7 +367,12 @@ function MyLoanOfferDetails() {
 
             <Box className="bg-gradient-to-tr from-60% to-100% from-[#FBFAF8] to-pink-700/5 dark:from-dark-600 dark:to-dark-700 p-6 rounded-2xl flex items-center justify-center flex-1">
               <Box className="space-y-6 min-w-[300px] w-full max-w-sm bg-white dark:bg-dark rounded-xl py-7">
-                <Flex align={"start"} justify={"between"} mb="8" className="px-4 md:px-5">
+                <Flex
+                  align={"start"}
+                  justify={"between"}
+                  mb="8"
+                  className="px-4 md:px-5"
+                >
                   {/* Logo */}
                   <Box>
                     <img
@@ -322,18 +394,35 @@ function MyLoanOfferDetails() {
                   </Row>
                 </Flex>
                 {/* Created date */}
-                <Flex align={"center"} justify={"end"} gap={"2"} className="px-4 md:px-5">
-                  <Text as="label" size={"1"} weight={"medium"} className={"text-font dark:text-font-dark"}>
+                <Flex
+                  align={"center"}
+                  justify={"end"}
+                  gap={"2"}
+                  className="px-4 md:px-5"
+                >
+                  <Text
+                    as="label"
+                    size={"1"}
+                    weight={"medium"}
+                    className={"text-font dark:text-font-dark"}
+                  >
                     Created on:
                   </Text>
-                  <Text as="p" size={"1"} weight={"medium"} className={"text-font dark:text-font-dark"}>
+                  <Text
+                    as="p"
+                    size={"1"}
+                    weight={"medium"}
+                    className={"text-font dark:text-font-dark"}
+                  >
                     {new Date(offer.created_at).toLocaleDateString()}
                   </Text>
                 </Flex>
 
                 <Box className="px-3 md:px-5">
                   <Box className="mb-2 pl-3">
-                    <Text className="text-font/80 dark:text-font-dark/80 font-medium">Details</Text>
+                    <Text className="text-font/80 dark:text-font-dark/80 font-medium">
+                      Details
+                    </Text>
                   </Box>
                   <Box className="border border-font/10 dark:border-font-dark/10 space-y-5 p-4 rounded-xl py-6">
                     {/* Amount */}
@@ -347,10 +436,14 @@ function MyLoanOfferDetails() {
                         Amount
                       </Text>
                       <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
-                        {formatCurrency(offer.loan_amount_min)} - {formatCurrency(offer.loan_amount_max)}
+                        {formatCurrency(offer.loan_amount_min)} -{" "}
+                        {formatCurrency(offer.loan_amount_max)}
                       </Text>
                     </Flex>
-                    <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
+                    <Separator
+                      size={"4"}
+                      className="bg-font/10 dark:bg-font-dark/10"
+                    />
                     {/* Duration */}
                     <Flex justify={"between"} align={"center"}>
                       <Text
@@ -366,7 +459,10 @@ function MyLoanOfferDetails() {
                         {getFormatedStringFromDays(offer.duration_days_max)}
                       </Text>
                     </Flex>
-                    <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
+                    <Separator
+                      size={"4"}
+                      className="bg-font/10 dark:bg-font-dark/10"
+                    />
                     {/* Interest */}
                     <Flex justify={"between"} align={"center"}>
                       <Text
@@ -381,7 +477,10 @@ function MyLoanOfferDetails() {
                         {(offer.interest_rate * 100).toFixed(2)}%
                       </Text>
                     </Flex>
-                    <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
+                    <Separator
+                      size={"4"}
+                      className="bg-font/10 dark:bg-font-dark/10"
+                    />
                     {/* Ltv */}
                     <Flex justify={"between"} align={"center"}>
                       <Text
@@ -396,7 +495,10 @@ function MyLoanOfferDetails() {
                         {(offer.min_ltv * 100).toFixed(2)}%
                       </Text>
                     </Flex>
-                    <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
+                    <Separator
+                      size={"4"}
+                      className="bg-font/10 dark:bg-font-dark/10"
+                    />
                     {/* Coin */}
                     <Flex justify={"between"} align={"center"}>
                       <Text
@@ -416,7 +518,12 @@ function MyLoanOfferDetails() {
               </Box>
             </Box>
 
-            <Flex align={"center"} justify={"between"} px={"3"} className="pt-4">
+            <Flex
+              align={"center"}
+              justify={"between"}
+              px={"3"}
+              className="pt-4"
+            >
               {/* Update Information */}
               <Flex align={"center"} gap={"2"}>
                 <Text
@@ -444,57 +551,67 @@ function MyLoanOfferDetails() {
               </Flex>
 
               {/* Delete Offer */}
-              {offer.status !== LoanOfferStatus.Deleted
-                && (
-                  <Dialog.Root open={isOpen}>
-                    <Dialog.Trigger>
-                      <Button size={"3"} color="tomato" onClick={() => setIsOpen(true)}>
+              {offer.status !== LoanOfferStatus.Deleted && (
+                <Dialog.Root open={isOpen}>
+                  <Dialog.Trigger>
+                    <Button
+                      size={"3"}
+                      color="tomato"
+                      onClick={() => setIsOpen(true)}
+                    >
+                      <Text as="span" size={"2"} weight={"medium"}>
+                        Retract Offer
+                      </Text>
+                    </Button>
+                  </Dialog.Trigger>
+
+                  <Dialog.Content
+                    maxWidth="450px"
+                    className={"bg-light dark:bg-dark"}
+                  >
+                    <Dialog.Title className={"text-font dark:text-font-dark"}>
+                      Retract Offer
+                    </Dialog.Title>
+                    <Dialog.Description
+                      className={"text-font dark:text-font-dark"}
+                      size="2"
+                      mb="4"
+                    >
+                      Please confirm the retraction of this offer.
+                    </Dialog.Description>
+
+                    {error ? (
+                      <Callout.Root color="red" className="w-full">
+                        <Callout.Icon>
+                          <FontAwesomeIcon icon={faWarning} />
+                        </Callout.Icon>
+                        <Callout.Text>{error}</Callout.Text>
+                      </Callout.Root>
+                    ) : (
+                      ""
+                    )}
+
+                    <Flex gap="3" mt="4" justify="end">
+                      <Dialog.Close>
+                        <Button variant="soft" color="gray">
+                          Cancel
+                        </Button>
+                      </Dialog.Close>
+                      <Button
+                        loading={loading}
+                        disabled={loading}
+                        onClick={() => onDeleteOffer(offer.id)}
+                        size={"2"}
+                        color="tomato"
+                      >
                         <Text as="span" size={"2"} weight={"medium"}>
-                          Retract Offer
+                          Retract
                         </Text>
                       </Button>
-                    </Dialog.Trigger>
-
-                    <Dialog.Content maxWidth="450px" className={"bg-light dark:bg-dark"}>
-                      <Dialog.Title className={"text-font dark:text-font-dark"}>Retract Offer</Dialog.Title>
-                      <Dialog.Description className={"text-font dark:text-font-dark"} size="2" mb="4">
-                        Please confirm the retraction of this offer.
-                      </Dialog.Description>
-
-                      {error
-                        ? (
-                          <Callout.Root color="red" className="w-full">
-                            <Callout.Icon>
-                              <FontAwesomeIcon icon={faWarning} />
-                            </Callout.Icon>
-                            <Callout.Text>{error}</Callout.Text>
-                          </Callout.Root>
-                        )
-                        : (
-                          ""
-                        )}
-
-                      <Flex gap="3" mt="4" justify="end">
-                        <Dialog.Close>
-                          <Button variant="soft" color="gray">
-                            Cancel
-                          </Button>
-                        </Dialog.Close>
-                        <Button
-                          loading={loading}
-                          disabled={loading}
-                          onClick={() => onDeleteOffer(offer.id)}
-                          size={"2"}
-                          color="tomato"
-                        >
-                          <Text as="span" size={"2"} weight={"medium"}>
-                            Retract
-                          </Text>
-                        </Button>
-                      </Flex>
-                    </Dialog.Content>
-                  </Dialog.Root>
-                )}
+                    </Flex>
+                  </Dialog.Content>
+                </Dialog.Root>
+              )}
             </Flex>
           </Box>
         </Box>

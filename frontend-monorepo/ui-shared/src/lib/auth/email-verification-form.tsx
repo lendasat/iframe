@@ -1,4 +1,12 @@
-import { Box, Button, Callout, Grid, Heading, Spinner, Text } from "@radix-ui/themes";
+import {
+  Box,
+  Button,
+  Callout,
+  Grid,
+  Heading,
+  Spinner,
+  Text,
+} from "@radix-ui/themes";
 import type { FormEvent } from "react";
 import { useState } from "react";
 import { Form } from "react-bootstrap";
@@ -8,15 +16,18 @@ import { ReactComponent as Logo } from "./../assets/lendasat_svg_logo.svg";
 import TypeField from "../components/TypeField";
 
 interface EmailVerificationFormProps {
-  handleVerification: (
-    verificationCode: string,
-  ) => Promise<void>;
+  handleVerification: (verificationCode: string) => Promise<void>;
   initialVerificationCode: string;
 }
 
-export function EmailVerificationForm({ handleVerification, initialVerificationCode }: EmailVerificationFormProps) {
+export function EmailVerificationForm({
+  handleVerification,
+  initialVerificationCode,
+}: EmailVerificationFormProps) {
   const navigate = useNavigate();
-  const [verificationCode, setVerificationCode] = useState(initialVerificationCode);
+  const [verificationCode, setVerificationCode] = useState(
+    initialVerificationCode,
+  );
   const [error, setError] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -28,7 +39,9 @@ export function EmailVerificationForm({ handleVerification, initialVerificationC
       await handleVerification(verificationCode);
     } catch (err) {
       console.error("Failed to verify email:", err);
-      setError(err instanceof Error ? err.message : "Verification failed failed.");
+      setError(
+        err instanceof Error ? err.message : "Verification failed failed.",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -39,7 +52,11 @@ export function EmailVerificationForm({ handleVerification, initialVerificationC
       <Grid align={"center"} className="overflow-hidden grid-cols-1 w-screen">
         <Box className="flex flex-col items-center p-5">
           {/* Logo */}
-          <Logo height={27} width={"auto"} className="w-fit invert dark:invert-0" />
+          <Logo
+            height={27}
+            width={"auto"}
+            className="w-fit invert dark:invert-0"
+          />
           <Box
             mt={"6"}
             maxWidth={"550px"}
@@ -50,7 +67,12 @@ export function EmailVerificationForm({ handleVerification, initialVerificationC
           >
             {/* Heading */}
             <Box className="text-center pb-4">
-              <Heading size={"7"} className="text-font dark:text-font-dark pb-2">Verify Email</Heading>
+              <Heading
+                size={"7"}
+                className="text-font dark:text-font-dark pb-2"
+              >
+                Verify Email
+              </Heading>
               <Text size={"3"} className="text-font/70 dark:text-font-dark/70">
                 Check your email for the verification code
               </Text>
@@ -74,9 +96,7 @@ export function EmailVerificationForm({ handleVerification, initialVerificationC
                   <Callout.Icon>
                     <IoInformationCircleOutline />
                   </Callout.Icon>
-                  <Callout.Text>
-                    {error}
-                  </Callout.Text>
+                  <Callout.Text>{error}</Callout.Text>
                 </Callout.Root>
               )}
 
@@ -109,7 +129,12 @@ export function EmailVerificationForm({ handleVerification, initialVerificationC
 
             {/* Sign Up Routing */}
             <Box className="flex items-center gap-1 justify-center mt-16">
-              <Text as="label" size={"1"} weight={"medium"} className="text-font/70 dark:text-font-dark/70">
+              <Text
+                as="label"
+                size={"1"}
+                weight={"medium"}
+                className="text-font/70 dark:text-font-dark/70"
+              >
                 Already have an account?
               </Text>
               <Link

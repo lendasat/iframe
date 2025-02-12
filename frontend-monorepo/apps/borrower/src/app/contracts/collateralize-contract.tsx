@@ -1,4 +1,14 @@
-import { Badge, Box, Button, Callout, Flex, Heading, Separator, Text, Tooltip as Popup } from "@radix-ui/themes";
+import {
+  Badge,
+  Box,
+  Button,
+  Callout,
+  Flex,
+  Heading,
+  Separator,
+  Text,
+  Tooltip as Popup,
+} from "@radix-ui/themes";
 import QRCode from "qrcode.react";
 import queryString from "query-string";
 import { useState } from "react";
@@ -47,22 +57,42 @@ export function CollateralContractDetails({
 
   return (
     <Box>
-      <Heading className={"text-font dark:text-font-dark"} size={"4"} weight={"medium"}>
+      <Heading
+        className={"text-font dark:text-font-dark"}
+        size={"4"}
+        weight={"medium"}
+      >
         Fund Collateral Contract
       </Heading>
-      <Separator className="bg-font/10 dark:bg-font-dark/10" size={"4"} my={"4"} />
+      <Separator
+        className="bg-font/10 dark:bg-font-dark/10"
+        size={"4"}
+        my={"4"}
+      />
       <Box className="space-y-4">
         <Flex align={"center"} justify={"between"}>
-          <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70 shrink-0">
+          <Text
+            size={"2"}
+            weight={"medium"}
+            className="text-font/70 dark:text-font-dark/70 shrink-0"
+          >
             Collateral
           </Text>
 
-          <Text size={"2"} weight={"medium"} className="text-end text-font/70 dark:text-font-dark/70">
+          <Text
+            size={"2"}
+            weight={"medium"}
+            className="text-end text-font/70 dark:text-font-dark/70"
+          >
             {collateral_btc.toFixed(8)} BTC
           </Text>
         </Flex>
         <Flex align={"center"} justify={"between"}>
-          <Text size={"2"} weight={"medium"} className="text-font/70 dark:text-font-dark/70 shrink-0">
+          <Text
+            size={"2"}
+            weight={"medium"}
+            className="text-font/70 dark:text-font-dark/70 shrink-0"
+          >
             {/* TODO: here we showed the percentage as well, but we don't know the number :) */}
             Origination fee
           </Text>
@@ -80,17 +110,33 @@ export function CollateralContractDetails({
             </Text>
           </OverlayTrigger>
         </Flex>
-        <Separator className="bg-font/10 dark:bg-font-dark/10" size={"4"} my={"4"} />
+        <Separator
+          className="bg-font/10 dark:bg-font-dark/10"
+          size={"4"}
+          my={"4"}
+        />
         <Flex align={"center"} justify={"between"}>
-          <Text size={"2"} weight={"bold"} className="shrink-0 text-font dark:text-font-dark">
+          <Text
+            size={"2"}
+            weight={"bold"}
+            className="shrink-0 text-font dark:text-font-dark"
+          >
             Total
           </Text>
 
-          <Text size={"2"} weight={"bold"} className="text-end text-font dark:text-font-dark">
+          <Text
+            size={"2"}
+            weight={"bold"}
+            className="text-end text-font dark:text-font-dark"
+          >
             {totalCollateral} BTC
           </Text>
         </Flex>
-        <Separator className="bg-font/10 dark:bg-font-dark/10" size={"4"} my={"4"} />
+        <Separator
+          className="bg-font/10 dark:bg-font-dark/10"
+          size={"4"}
+          my={"4"}
+        />
       </Box>
 
       <Box py={"4"} className="text-center">
@@ -99,15 +145,20 @@ export function CollateralContractDetails({
             <FaInfoCircle size={"18"} />
           </Callout.Icon>
           <Callout.Text>
-            Psst! You can send <em>more</em>{" "}
-            collateral if you want. The more you send, the lower the initial LTV ratio of your contract, and the less
-            likely you will ever get liquidated. In any case, you can always add more later.
+            Psst! You can send <em>more</em> collateral if you want. The more
+            you send, the lower the initial LTV ratio of your contract, and the
+            less likely you will ever get liquidated. In any case, you can
+            always add more later.
           </Callout.Text>
         </Callout.Root>
       </Box>
 
       <Box py={"4"} className="text-center">
-        <Text size={"2"} weight={"medium"} className="text-font/60 dark:text-font-dark/60">
+        <Text
+          size={"2"}
+          weight={"medium"}
+          className="text-font/60 dark:text-font-dark/60"
+        >
           Scan QR code to make payment
         </Text>
       </Box>
@@ -129,7 +180,8 @@ export function CollateralContractDetails({
             size={"2"}
             className="text-font/60 dark:text-font-dark/60 text-center max-w-sm font-medium"
           >
-            Please send <em>at least</em>{"  "}
+            Please send <em>at least</em>
+            {"  "}
             <Popup
               content={"Copy exact amount to send"}
               className="text-font dark:text-font-dark font-semibold"
@@ -141,7 +193,8 @@ export function CollateralContractDetails({
                 {totalCollateral} BTC {"  "}
               </span>
             </Popup>
-            to{"  "}<br />
+            to{"  "}
+            <br />
             <Button
               onClick={() => handleCopy(collateralAddress)}
               asChild

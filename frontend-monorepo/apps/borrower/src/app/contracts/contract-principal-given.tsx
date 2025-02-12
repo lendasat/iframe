@@ -31,7 +31,11 @@ export function ContractPrincipalGiven({
   return (
     <Box>
       <Flex gap={"2"} className={"items-center"}>
-        <Heading className={"text-font dark:text-font-dark"} size={"4"} weight={"medium"}>
+        <Heading
+          className={"text-font dark:text-font-dark"}
+          size={"4"}
+          weight={"medium"}
+        >
           I want to
         </Heading>
         <Select.Root
@@ -41,12 +45,18 @@ export function ContractPrincipalGiven({
           <Select.Trigger className={"text-font dark:text-font-dark"} />
           <Select.Content className={"bg-white dark:bg-dark"}>
             <Select.Group>
-              <Select.Item className={"text-font dark:text-font-dark"} value="repay">
+              <Select.Item
+                className={"text-font dark:text-font-dark"}
+                value="repay"
+              >
                 <div className={"text-font dark:text-font-dark "}>
                   pay back the contract.
                 </div>
               </Select.Item>
-              <Select.Item className={"text-font dark:text-font-dark"} value="extend">
+              <Select.Item
+                className={"text-font dark:text-font-dark"}
+                value="extend"
+              >
                 <div className={"text-font dark:text-font-dark"}>
                   extend the contract.
                 </div>
@@ -55,37 +65,34 @@ export function ContractPrincipalGiven({
           </Select.Content>
         </Select.Root>
       </Flex>
-      {action === "repay"
-        && (
-          <RepayContract
-            contractId={contractId}
-            loanAmount={loanAmount}
-            interestAmount={interestAmount}
-            totalRepaymentAmount={totalRepaymentAmount}
-            expiry={expiry}
-            stableCoin={coin}
-            repaymentAddress={repaymentAddress}
-          />
-        )}
-      {action === "extend"
-        && (
-          <ExtendContract
-            contract={contract}
-            coin={coin}
-            resetSelectedAction={() => setAction("")}
-          />
-        )}
-      {action !== "extend" && action !== "repay"
-        && (
-          <Callout.Root>
-            <Callout.Icon>
-              <InfoCircledIcon />
-            </Callout.Icon>
-            <Callout.Text>
-              Please select whether you want to repay now or extend your contract.
-            </Callout.Text>
-          </Callout.Root>
-        )}
+      {action === "repay" && (
+        <RepayContract
+          contractId={contractId}
+          loanAmount={loanAmount}
+          interestAmount={interestAmount}
+          totalRepaymentAmount={totalRepaymentAmount}
+          expiry={expiry}
+          stableCoin={coin}
+          repaymentAddress={repaymentAddress}
+        />
+      )}
+      {action === "extend" && (
+        <ExtendContract
+          contract={contract}
+          coin={coin}
+          resetSelectedAction={() => setAction("")}
+        />
+      )}
+      {action !== "extend" && action !== "repay" && (
+        <Callout.Root>
+          <Callout.Icon>
+            <InfoCircledIcon />
+          </Callout.Icon>
+          <Callout.Text>
+            Please select whether you want to repay now or extend your contract.
+          </Callout.Text>
+        </Callout.Root>
+      )}
     </Box>
   );
 }

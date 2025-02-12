@@ -1,6 +1,9 @@
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { UnlockWalletModal, useWallet } from "@frontend-monorepo/browser-wallet";
+import {
+  UnlockWalletModal,
+  useWallet,
+} from "@frontend-monorepo/browser-wallet";
 import type { Contract } from "@frontend-monorepo/http-client-borrower";
 import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
 import { FeeSelector } from "@frontend-monorepo/mempool";
@@ -67,7 +70,11 @@ export function ContractRepaid({
 
     console.log("Signing claim collateral PSBT");
 
-    const claimTx = await signClaimPsbt(res.psbt, res.collateral_descriptor, res.borrower_pk);
+    const claimTx = await signClaimPsbt(
+      res.psbt,
+      res.collateral_descriptor,
+      res.borrower_pk,
+    );
 
     console.log("Posting signed claim TX");
 
@@ -108,14 +115,19 @@ export function ContractRepaid({
         handleSubmit={handleSubmitUnlockWalletModal}
       />
       <Container fluid>
-        <Heading className={"text-font dark:text-font-dark"} size={"4"} weight={"medium"}>
+        <Heading
+          className={"text-font dark:text-font-dark"}
+          size={"4"}
+          weight={"medium"}
+        >
           Claim Collateral
         </Heading>
         <Row className="mt-4">
           <Col>
             <div className="d-flex flex-column">
               <p className="mt-2 text-break text-font dark:text-font-dark">
-                To claim the collateral you will have to provide your <strong>password</strong>.
+                To claim the collateral you will have to provide your{" "}
+                <strong>password</strong>.
               </p>
             </div>
           </Col>
@@ -123,8 +135,11 @@ export function ContractRepaid({
         <Row className="mt-2">
           <Col>
             <Alert variant="info">
-              <FontAwesomeIcon icon={faInfoCircle} /> The <strong>{collateralBtc} BTC</strong>{"  "}
-              collateral will be sent to your collateral refund address: <strong>{refundAddress}</strong>.
+              <FontAwesomeIcon icon={faInfoCircle} /> The{" "}
+              <strong>{collateralBtc} BTC</strong>
+              {"  "}
+              collateral will be sent to your collateral refund address:{" "}
+              <strong>{refundAddress}</strong>.
             </Alert>
           </Col>
         </Row>
@@ -133,10 +148,7 @@ export function ContractRepaid({
         <Row className="justify-content-between mt-4">
           <Row className="mt-1">
             <Col className="d-grid">
-              <Button
-                variant="primary"
-                onClick={onUnlockOrWithdraw}
-              >
+              <Button variant="primary" onClick={onUnlockOrWithdraw}>
                 {isWalletLoaded ? "Withdraw Funds" : "Unlock Contract"}
               </Button>
               {error && (
@@ -145,9 +157,7 @@ export function ContractRepaid({
                     <Callout.Icon>
                       <IoInformationCircleOutline />
                     </Callout.Icon>
-                    <Callout.Text>
-                      {error}
-                    </Callout.Text>
+                    <Callout.Text>{error}</Callout.Text>
                   </Callout.Root>
                 </Col>
               )}

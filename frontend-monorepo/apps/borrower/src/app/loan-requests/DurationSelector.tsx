@@ -20,14 +20,48 @@ interface DurationSelectorProps {
 }
 
 const durations: Duration[] = [
-  { value: "7d", label: "7 Days", sublabel: "7 days", days: 7, icon: FaRegClock },
-  { value: "1m", label: "1 Month", sublabel: "30 days", days: 30, icon: FaRegCalendar },
-  { value: "3m", label: "3 Months", sublabel: "90 days", days: 90, icon: FaRegCalendar },
-  { value: "6m", label: "6 Months", sublabel: "180 days", days: 180, icon: FaRegCalendar },
-  { value: "12m", label: "12 Months", sublabel: `${ONE_YEAR} days`, days: ONE_YEAR, icon: FaRegCalendar },
+  {
+    value: "7d",
+    label: "7 Days",
+    sublabel: "7 days",
+    days: 7,
+    icon: FaRegClock,
+  },
+  {
+    value: "1m",
+    label: "1 Month",
+    sublabel: "30 days",
+    days: 30,
+    icon: FaRegCalendar,
+  },
+  {
+    value: "3m",
+    label: "3 Months",
+    sublabel: "90 days",
+    days: 90,
+    icon: FaRegCalendar,
+  },
+  {
+    value: "6m",
+    label: "6 Months",
+    sublabel: "180 days",
+    days: 180,
+    icon: FaRegCalendar,
+  },
+  {
+    value: "12m",
+    label: "12 Months",
+    sublabel: `${ONE_YEAR} days`,
+    days: ONE_YEAR,
+    icon: FaRegCalendar,
+  },
 ] as const;
 
-const SingleDurationSelector: React.FC<DurationSelectorProps> = ({ onDurationChange, disabled, selectedDuration }) => {
+const SingleDurationSelector: React.FC<DurationSelectorProps> = ({
+  onDurationChange,
+  disabled,
+  selectedDuration,
+}) => {
   const handleDurationClick = (value: number) => {
     onDurationChange(value);
   };
@@ -46,7 +80,10 @@ const SingleDurationSelector: React.FC<DurationSelectorProps> = ({ onDurationCha
           <RadioCards.Item value={days.toString()}>
             <div className="flex flex-col items-center text-center space-y-2">
               <div>
-                <Text size={"2"} className="text-font dark:text-font-dark shrink-0">
+                <Text
+                  size={"2"}
+                  className="text-font dark:text-font-dark shrink-0"
+                >
                   {sublabel}
                 </Text>
               </div>
