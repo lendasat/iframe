@@ -372,7 +372,8 @@ pub async fn insert_extension_contract_request(
     collateral_sats: u64,
     origination_fee_sats: u64,
     loan_amount: Decimal,
-    duration_days: i32,
+    extended_duration_days: i32,
+    total_duration_days: i32,
     borrower_btc_address: Address<NetworkUnchecked>,
     borrower_pk: PublicKey,
     borrower_loan_address: &str,
@@ -380,7 +381,7 @@ pub async fn insert_extension_contract_request(
     contract_version: ContractVersion,
     auto_accepted: bool,
     lender_xpub: Xpub,
-    original_creation_date: OffsetDateTime,
+    original_expiry_date: OffsetDateTime,
     contract_address: Option<Address<NetworkUnchecked>>,
     contract_index: Option<u32>,
     interest_rate: Decimal,
@@ -394,7 +395,7 @@ pub async fn insert_extension_contract_request(
 
     let created_at = OffsetDateTime::now_utc();
 
-    let new_expiry_date = expiry_date(original_creation_date, duration_days as u64);
+    let new_expiry_date = expiry_date(original_expiry_date, extended_duration_days as u64);
 
     // if the contract can be automatically accepted we immediately go into
     // `ContractStatus::PrincipalGiven` because the original contract has been funded already.
@@ -412,7 +413,7 @@ pub async fn insert_extension_contract_request(
         &id,
         initial_ltv,
         loan_amount,
-        duration_days,
+        total_duration_days,
         borrower_btc_address,
         borrower_pk,
         borrower_loan_address,

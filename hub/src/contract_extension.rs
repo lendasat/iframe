@@ -90,7 +90,8 @@ pub async fn request_contract_extension(
     )
     .map_err(Error::InterestRateCalculation)?;
 
-    let new_total_duration_days = extended_duration_days + original_contract.duration_days;
+    let total_duration_days = extended_duration_days + original_contract.duration_days;
+
     let new_contract = db::contracts::insert_extension_contract_request(
         &mut db_tx,
         Uuid::new_v4(),
@@ -102,7 +103,8 @@ pub async fn request_contract_extension(
         original_contract.collateral_sats,
         new_origination_fee,
         original_contract.loan_amount,
-        new_total_duration_days,
+        extended_duration_days,
+        total_duration_days,
         original_contract.borrower_btc_address,
         original_contract.borrower_pk,
         original_contract.borrower_loan_address.as_str(),
@@ -112,7 +114,7 @@ pub async fn request_contract_extension(
         original_contract
             .lender_xpub
             .ok_or(Error::MissingLenderXpub)?,
-        original_contract.created_at,
+        original_contract.expiry_date,
         original_contract.contract_address,
         original_contract.contract_index,
         interest_rate,
