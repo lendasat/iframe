@@ -635,6 +635,9 @@ pub async fn mark_contract_as_principal_given(
     contract_id: &str,
     duration_days: i32,
 ) -> Result<()> {
+    // We update the expiry to ensure that the loan lasts long enough. We could be even more precise
+    // if we checked the confirmation time of the principal transaction, but this is probably good
+    // enough.
     let updated_at = OffsetDateTime::now_utc();
     let expiry_date = expiry_date(updated_at, duration_days as u64);
 
