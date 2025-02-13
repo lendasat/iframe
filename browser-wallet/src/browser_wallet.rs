@@ -310,6 +310,36 @@ pub fn does_wallet_exist(key: &str) -> Result<bool> {
     Ok(mnemonic.is_some())
 }
 
+/// Check if the wallet stored in local storage matches the arguments to this function.
+pub fn is_wallet_equal(
+    key: &str,
+    mnemonic_ciphertext: &str,
+    network: &str,
+    xpub: &str,
+) -> Result<bool> {
+    let storage = local_storage()?;
+
+    let local_mnemonic_ciphertext =
+        match storage.get_item::<String>(&derive_storage_key(key, SEED_STORAGE_KEY))? {
+            Some(m) => m,
+            None => return Ok(false),
+        };
+
+    let local_network = match storage.get_item::<String>(&derive_storage_key(key, NETWORK_KEY))? {
+        Some(n) => n,
+        None => return Ok(false),
+    };
+
+    let local_xpub = match storage.get_item::<String>(&derive_storage_key(key, XPUB_KEY))? {
+        Some(x) => x,
+        None => return Ok(false),
+    };
+
+    Ok(local_mnemonic_ciphertext == mnemonic_ciphertext
+        && local_network == network
+        && local_xpub == xpub)
+}
+
 pub fn get_xpub(key: &str) -> Result<String> {
     let storage = local_storage()?;
 
