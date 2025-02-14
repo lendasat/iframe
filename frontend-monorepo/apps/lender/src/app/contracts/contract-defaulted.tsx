@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Col, Container, Row } from "react-bootstrap";
 import { LiquidateToBitcoin } from "./liquidation/liquidate-to-bitcoin";
 import { LiquidateToStablecoin } from "./liquidation/liquidate-to-stablecoin";
+import { LoanAssetHelper } from "@frontend-monorepo/ui-shared";
 
 interface ContractDefaultedProps {
   contract: Contract;
@@ -79,7 +80,7 @@ export function ContractDefaulted({ contract }: ContractDefaultedProps) {
                       size={"3"}
                       weight={"bold"}
                     >
-                      Receive as {contract.loan_asset_type}
+                      Receive as {LoanAssetHelper.print(contract.loan_asset)}
                     </Text>
                     <Text
                       className={"text-font dark:text-font-dark"}

@@ -10,6 +10,7 @@ pub mod contract_emails;
 pub mod contract_extensions;
 pub mod contracts;
 pub mod dispute;
+pub mod fiat_loan_details;
 pub mod invite_code;
 pub mod kyc;
 pub mod lender_features;

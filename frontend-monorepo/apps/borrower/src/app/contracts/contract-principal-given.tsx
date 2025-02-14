@@ -1,5 +1,4 @@
 import { Contract } from "@frontend-monorepo/http-client-borrower";
-import { StableCoinHelper } from "@frontend-monorepo/ui-shared";
 import { InfoCircledIcon } from "@radix-ui/react-icons";
 import { Box, Callout, Flex, Heading, Select } from "@radix-ui/themes";
 import { useState } from "react";
@@ -19,10 +18,7 @@ export function ContractPrincipalGiven({
 }: ContractPrincipalGivenProps) {
   const [action, setAction] = useState<string>("");
 
-  const coin = StableCoinHelper.mapFromBackend(
-    contract.loan_asset_chain,
-    contract.loan_asset_type,
-  );
+  const loanAsset = contract.loan_asset;
   const expiry = contract.expiry;
   const contractId = contract.id;
   const loanAmount = contract.loan_amount;
@@ -72,14 +68,15 @@ export function ContractPrincipalGiven({
           interestAmount={interestAmount}
           totalRepaymentAmount={totalRepaymentAmount}
           expiry={expiry}
-          stableCoin={coin}
+          loanAsset={loanAsset}
           repaymentAddress={repaymentAddress}
+          fiatLoanDetails={contract.fiat_loan_details_lender}
         />
       )}
       {action === "extend" && (
         <ExtendContract
           contract={contract}
-          coin={coin}
+          loanAsset={loanAsset}
           resetSelectedAction={() => setAction("")}
         />
       )}

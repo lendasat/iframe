@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            lo.id,\n            lo.lender_id,\n            lo.name,\n            lo.min_ltv,\n            lo.interest_rate,\n            lo.loan_amount_min,\n            lo.loan_amount_max,\n            lo.duration_days_min,\n            lo.duration_days_max,\n            lo.loan_amount_reserve,\n            lo.lender_xpub,\n            lo.kyc_link,\n            lo.auto_accept,\n            COALESCE(\n                lo.loan_amount_reserve - COALESCE(\n                    SUM(\n                        CASE\n                            WHEN c.status NOT IN ('Cancelled', 'RequestExpired')\n                            THEN c.loan_amount\n                            ELSE 0\n                        END\n                    ),\n                    0\n                ),\n                lo.loan_amount_reserve\n            ) AS loan_amount_reserve_remaining,\n            lo.loan_asset_type AS \"loan_asset_type: LoanAssetType\",\n            lo.loan_asset_chain AS \"loan_asset_chain: LoanAssetChain\",\n            lo.status AS \"status: LoanOfferStatus\",\n            lo.loan_repayment_address,\n            lo.created_at,\n            lo.updated_at\n        FROM loan_offers lo\n            LEFT JOIN\n                contracts c ON lo.id = c.loan_id\n        WHERE lo.status = 'Available'\n        GROUP BY\n            lo.id\n        ",
+  "query": "\n        SELECT\n            lo.id,\n            lo.lender_id,\n            lo.name,\n            lo.min_ltv,\n            lo.interest_rate,\n            lo.loan_amount_min,\n            lo.loan_amount_max,\n            lo.duration_days_min,\n            lo.duration_days_max,\n            lo.loan_amount_reserve,\n            lo.lender_xpub,\n            lo.kyc_link,\n            lo.auto_accept,\n            COALESCE(\n                lo.loan_amount_reserve - COALESCE(\n                    SUM(\n                        CASE\n                            WHEN c.status NOT IN ('Cancelled', 'RequestExpired')\n                            THEN c.loan_amount\n                            ELSE 0\n                        END\n                    ),\n                    0\n                ),\n                lo.loan_amount_reserve\n            ) AS loan_amount_reserve_remaining,\n            lo.loan_asset AS \"loan_asset: LoanAsset\",\n            lo.status AS \"status: LoanOfferStatus\",\n            lo.loan_repayment_address,\n            lo.created_at,\n            lo.updated_at\n        FROM loan_offers lo\n            LEFT JOIN\n                contracts c ON lo.id = c.loan_id\n        WHERE lo.status = 'Available'\n        GROUP BY\n            lo.id\n        ",
   "describe": {
     "columns": [
       {
@@ -75,14 +75,24 @@
       },
       {
         "ordinal": 14,
-        "name": "loan_asset_type: LoanAssetType",
+        "name": "loan_asset: LoanAsset",
         "type_info": {
           "Custom": {
-            "name": "loan_asset_type",
+            "name": "loan_asset",
             "kind": {
               "Enum": [
-                "Usdc",
-                "Usdt"
+                "UsdcPol",
+                "UsdtPol",
+                "UsdcEth",
+                "UsdtEth",
+                "UsdcStrk",
+                "UsdtStrk",
+                "UsdcSol",
+                "UsdtSol",
+                "Usd",
+                "Eur",
+                "Chf",
+                "Unknown"
               ]
             }
           }
@@ -90,23 +100,6 @@
       },
       {
         "ordinal": 15,
-        "name": "loan_asset_chain: LoanAssetChain",
-        "type_info": {
-          "Custom": {
-            "name": "loan_asset_chain",
-            "kind": {
-              "Enum": [
-                "Ethereum",
-                "Starknet",
-                "Polygon",
-                "Solana"
-              ]
-            }
-          }
-        }
-      },
-      {
-        "ordinal": 16,
         "name": "status: LoanOfferStatus",
         "type_info": {
           "Custom": {
@@ -122,17 +115,17 @@
         }
       },
       {
-        "ordinal": 17,
+        "ordinal": 16,
         "name": "loan_repayment_address",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 18,
+        "ordinal": 17,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 19,
+        "ordinal": 18,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -151,7 +144,7 @@
       false,
       false,
       false,
-      true,
+      false,
       true,
       false,
       null,
@@ -159,9 +152,8 @@
       false,
       false,
       false,
-      false,
       false
     ]
   },
-  "hash": "3c8737b641d576a004aefd0e587e6bb3f5d3900cb190dcf635eba0b3a49f66ba"
+  "hash": "3f39ec6a89606de2bf1dacce46a48d1d0eb109a544f692da6e4c421648a06711"
 }

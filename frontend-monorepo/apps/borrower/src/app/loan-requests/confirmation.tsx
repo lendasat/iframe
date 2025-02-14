@@ -1,36 +1,39 @@
 import { faCheckCircle, faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { LoanProductOption } from "@frontend-monorepo/base-http-client";
+import {
+  FiatLoanDetails,
+  LoanProductOption,
+} from "@frontend-monorepo/base-http-client";
 import { useWallet } from "@frontend-monorepo/browser-wallet";
 import {
-  Integration,
+  LoanType,
   useAuth,
   useBorrowerHttpClient,
 } from "@frontend-monorepo/http-client-borrower";
 import {
   AbbreviationExplanationInfo,
+  FiatDialogFormDetails,
+  FiatTransferDetails,
+  FiatTransferDetailsDialog,
   formatCurrency,
   getFormatedStringFromDays,
   InterestRateInfoLabel,
   LiquidationPriceInfoLabel,
   LoanAddressInputField,
+  LoanAssetHelper,
   LtvInfoLabel,
   newFormatCurrency,
   ONE_YEAR,
-  StableCoinHelper,
   usePrice,
 } from "@frontend-monorepo/ui-shared";
 import {
   Box,
   Button,
   Callout,
-  Checkbox,
   DataList,
-  Dialog,
   Flex,
   Grid,
   Heading,
-  Link,
   Skeleton,
   Text,
   TextField,
@@ -43,6 +46,7 @@ import { FaInfoCircle } from "react-icons/fa";
 import { IoInformationCircleOutline } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
 import { useAsync } from "react-use";
+import { KycDialog } from "./kyc-dialog";
 import { Lender } from "./lender";
 import { MoonCardDropdown } from "./MoonCardDropdown";
 
@@ -72,11 +76,12 @@ export const Confirmation = ({
   selectedLoanDuration: selectedLoanDurationString,
 }: ConfirmationProps) => {
   const navigate = useNavigate();
+  const { getXpub } = useWallet();
+
   const { getLoanOffer, getUserCards, postContractRequest } =
     useBorrowerHttpClient();
   const { latestPrice } = usePrice();
   const { user } = useAuth();
-  const { getNextPublicKey } = useWallet();
   const [bitcoinAddressInputError, setBitcoinAddressInputError] = useState("");
   const [bitcoinAddressValid, setBitcoinAddressValid] = useState(false);
   const [bitcoinAddress, setBitcoinAddress] = useState("");
@@ -86,6 +91,32 @@ export const Confirmation = ({
   // TODO: set this value
   const [createRequestError, setCreateRequestError] = useState("");
   const [isCreatingRequest, setIsCreatingRequest] = useState(false);
+  const [fiatTransferDetailsConfirmed, setFiatTransferDetailsConfirmed] =
+    useState(false);
+  const [encryptedFiatTransferDetails, setEncryptedFiatTransferDetails] =
+    useState<FiatLoanDetails>();
+  const [fiatTransferDetails, setFiatTransferDetails] =
+    useState<FiatDialogFormDetails>({
+      bankDetails: {
+        isIban: true,
+        iban: "",
+        bic: "",
+        account_number: "",
+        swift: "",
+        bankName: "",
+        bankAddress: "",
+        bankCountry: "",
+        purpose: "",
+      },
+      beneficiaryDetails: {
+        fullName: "",
+        address: "",
+        city: "",
+        zipCode: "",
+        country: "",
+        additionalComments: "",
+      },
+    });
 
   // inside KYC dialog
   const [isKycChecked, setIsKycChecked] = useState(false);
@@ -142,12 +173,7 @@ export const Confirmation = ({
   // TODO: the liquidation threshold should be synced with the backend
   const liquidationPrice = (selectedLoanAmount / collateralAmountBtc) * 0.95;
 
-  const selectedCoin = selectedOffer
-    ? StableCoinHelper.mapFromBackend(
-        selectedOffer.loan_asset_chain,
-        selectedOffer.loan_asset_type,
-      )
-    : undefined;
+  const loanAsset = selectedOffer?.loan_asset;
 
   const onBitcoinAddressChange = (address: string) => {
     let network = Network.mainnet;
@@ -168,7 +194,7 @@ export const Confirmation = ({
     setBitcoinAddress(address);
   };
 
-  const createOfferRequest = async () => {
+  const unlockWalletOrCreateOfferRequest = async () => {
     try {
       if (!selectedOfferId) {
         setIsCreatingRequest(false);
@@ -186,27 +212,35 @@ export const Confirmation = ({
       }
 
       setIsCreatingRequest(true);
-      const borrowerPk = await getNextPublicKey();
+      const borrowerXpub = await getXpub();
 
-      let integration = Integration.StableCoin;
+      let loanType = LoanType.StableCoin;
       switch (selectedProduct) {
         case LoanProductOption.PayWithMoonDebitCard:
-          integration = Integration.PayWithMoon;
+          loanType = LoanType.PayWithMoon;
           break;
         case LoanProductOption.StableCoins:
-          integration = Integration.StableCoin;
+          loanType = LoanType.StableCoin;
           break;
-        case LoanProductOption.BringinBankAccount:
-        case LoanProductOption.BitrefillDebitCard:
-          setCreateRequestError("Loan product not yet supported");
+        case LoanProductOption.Fiat:
+          loanType = LoanType.Fiat;
           break;
       }
 
       if (
-        (integration === Integration.StableCoin && !loanAddress) ||
-        loanAddress.trim().length === 0
+        loanType === LoanType.StableCoin &&
+        (!loanAddress || loanAddress.trim().length === 0)
       ) {
         setCreateRequestError("No address provided");
+        return;
+      }
+
+      if (loanType === LoanType.Fiat && !encryptedFiatTransferDetails) {
+        setCreateRequestError("No bank transfer details provided");
+        return;
+      }
+      if (loanType === LoanType.Fiat && !kycFormDialogConfirmed) {
+        setCreateRequestError("KYC form dialog not confirmed");
         return;
       }
 
@@ -215,10 +249,11 @@ export const Confirmation = ({
         loan_amount: selectedLoanAmount,
         duration_days: selectedLoanDuration,
         borrower_btc_address: bitcoinAddress,
-        borrower_pk: borrowerPk,
+        borrower_xpub: borrowerXpub,
         borrower_loan_address: loanAddress,
-        integration: integration,
+        loan_type: loanType,
         moon_card_id: moonCardId,
+        fiat_loan_details: encryptedFiatTransferDetails,
       });
 
       if (res !== undefined) {
@@ -233,6 +268,15 @@ export const Confirmation = ({
       setIsCreatingRequest(false);
     }
   };
+
+  const fiatButNoEncryptedDataPresent =
+    loanAsset &&
+    LoanAssetHelper.isFiat(loanAsset) &&
+    !encryptedFiatTransferDetails;
+  const kycButNoKycConfirmed =
+    selectedOffer?.kyc_link !== undefined && !kycFormDialogConfirmed;
+  const buttonDisabled =
+    isStillLoading || fiatButNoEncryptedDataPresent || kycButNoKycConfirmed;
 
   return (
     <Grid
@@ -425,7 +469,7 @@ export const Confirmation = ({
                     discountedFee === 1 ? "line-through" : ""
                   }`}
                 >
-                  {selectedCoin ? StableCoinHelper.print(selectedCoin) : ""}
+                  {loanAsset ? LoanAssetHelper.print(loanAsset) : ""}
                 </Text>
               )}
             </DataList.Value>
@@ -476,6 +520,13 @@ export const Confirmation = ({
                     >
                       <TextField.Slot className="p-1.5" />
                     </TextField.Root>
+                    <Text
+                      size={"1"}
+                      weight={"light"}
+                      className="text-font dark:text-font-dark"
+                    >
+                      This address will be used to return the collateral to you
+                    </Text>
                     {bitcoinAddressInputError && (
                       <span className="text-red-500 text-sm">
                         {bitcoinAddressInputError}
@@ -485,6 +536,47 @@ export const Confirmation = ({
                 )}
               </DataList.Value>
             </DataList.Item>
+
+            {loanAsset && LoanAssetHelper.isFiat(loanAsset) && (
+              <DataList.Item>
+                <DataList.Label minWidth="88px">
+                  Loan transfer details
+                </DataList.Label>
+                <DataList.Value className="flex-1 flex">
+                  {isStillLoading ? (
+                    <Skeleton loading={true}>Loading</Skeleton>
+                  ) : (
+                    <Box>
+                      {fiatTransferDetailsConfirmed ? (
+                        <FiatTransferDetails
+                          details={fiatTransferDetails}
+                          onConfirm={(data?: FiatLoanDetails) => {
+                            setEncryptedFiatTransferDetails(data);
+                            setFiatTransferDetailsConfirmed(true);
+                          }}
+                          counterpartyXpub={selectedOffer.lender_xpub}
+                          isBorrower={true}
+                        />
+                      ) : (
+                        <FiatTransferDetailsDialog
+                          formData={fiatTransferDetails}
+                          onConfirm={(data: FiatDialogFormDetails) => {
+                            setFiatTransferDetails(data);
+                            setFiatTransferDetailsConfirmed(true);
+                          }}
+                        >
+                          <Box width="100%">
+                            <Button size="2" style={{ width: "100%" }}>
+                              Add loan transfer details
+                            </Button>
+                          </Box>
+                        </FiatTransferDetailsDialog>
+                      )}
+                    </Box>
+                  )}
+                </DataList.Value>
+              </DataList.Item>
+            )}
 
             {selectedOffer?.kyc_link && (
               <DataList.Item>
@@ -511,79 +603,12 @@ export const Confirmation = ({
                             the lender's KYC form. You can continue while the
                             verification is in progress.
                             <br />
-                            <Dialog.Root>
-                              <Dialog.Trigger>
-                                <Button color={"purple"}>KYC Form</Button>
-                              </Dialog.Trigger>
-
-                              <Dialog.Content style={{ maxWidth: "450px" }}>
-                                <Flex direction="column" gap="4">
-                                  <Dialog.Title>KYC Required</Dialog.Title>
-
-                                  <Text as="p">
-                                    For this offer KYC is required. KYC
-                                    verification is performed by the lender and
-                                    we do not know if you have processed or
-                                    succeeded KYC with them in the past.
-                                  </Text>
-
-                                  <Flex justify="center" py="4">
-                                    <Link
-                                      href={selectedOffer?.kyc_link}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      weight="medium"
-                                    >
-                                      Access KYC Form →
-                                    </Link>
-                                  </Flex>
-
-                                  <Text as="p">
-                                    If this is your first time requesting from
-                                    this lender, please proceed to their KYC
-                                    form to initiate the procedure.
-                                  </Text>
-
-                                  <Text as="p">
-                                    Meanwhile, you can continue requesting the
-                                    offer through Lendasat. Once the KYC request
-                                    has been approved, the Lender will accept
-                                    your loan request.
-                                  </Text>
-
-                                  <Flex gap="2" align="center">
-                                    <Checkbox
-                                      checked={isKycChecked}
-                                      onCheckedChange={(c) =>
-                                        setIsKycChecked(c === true)
-                                      }
-                                      id="kyc-confirm"
-                                    />
-                                    <Text as="label" htmlFor="kyc-confirm">
-                                      I confirm I've submitted the KYC
-                                    </Text>
-                                  </Flex>
-
-                                  <Flex gap="3" justify="end" mt="4">
-                                    <Dialog.Close>
-                                      <Button variant="soft" color="gray">
-                                        Cancel
-                                      </Button>
-                                    </Dialog.Close>
-                                    <Dialog.Close>
-                                      <Button
-                                        disabled={!isKycChecked}
-                                        onClick={() =>
-                                          setKycFormDialogConfirmed(true)
-                                        }
-                                      >
-                                        Confirm
-                                      </Button>
-                                    </Dialog.Close>
-                                  </Flex>
-                                </Flex>
-                              </Dialog.Content>
-                            </Dialog.Root>
+                            <KycDialog
+                              selectedOffer={selectedOffer}
+                              checked={isKycChecked}
+                              onCheckedChange={setIsKycChecked}
+                              onConfirm={() => setKycFormDialogConfirmed(true)}
+                            />
                           </Text>
                         </Callout.Text>
                       </Callout.Root>
@@ -592,6 +617,7 @@ export const Confirmation = ({
                 </DataList.Value>
               </DataList.Item>
             )}
+
             {selectedProduct === LoanProductOption.PayWithMoonDebitCard && (
               <DataList.Item>
                 <DataList.Label minWidth="88px">Choose a card</DataList.Label>
@@ -608,31 +634,41 @@ export const Confirmation = ({
                 </DataList.Value>
               </DataList.Item>
             )}
-            {selectedProduct === LoanProductOption.StableCoins && (
-              <DataList.Item>
-                <DataList.Label minWidth="88px">Loan address</DataList.Label>
-                <DataList.Value className="w-full">
-                  {isStillLoading || !selectedCoin ? (
-                    <Skeleton loading={isStillLoading}>Loading</Skeleton>
-                  ) : (
-                    <LoanAddressInputField
-                      loanAddress={loanAddress ?? ""}
-                      setLoanAddress={setLoanAddress}
-                      hideButton={hideWalletConnectButton}
-                      setHideButton={setHideWalletConnectButton}
-                      assetChain={StableCoinHelper.toChain(selectedCoin)}
-                      renderWarning={true}
-                    />
-                  )}
-                </DataList.Value>
-              </DataList.Item>
-            )}
+            {selectedOffer?.loan_asset &&
+              LoanAssetHelper.isStableCoin(selectedOffer.loan_asset) && (
+                <DataList.Item>
+                  <DataList.Label minWidth="88px">Loan address</DataList.Label>
+                  <DataList.Value className="w-full">
+                    {isStillLoading || !loanAsset ? (
+                      <Skeleton loading={isStillLoading}>Loading</Skeleton>
+                    ) : (
+                      <Flex direction={"column"}>
+                        <LoanAddressInputField
+                          loanAddress={loanAddress ?? ""}
+                          setLoanAddress={setLoanAddress}
+                          hideButton={hideWalletConnectButton}
+                          setHideButton={setHideWalletConnectButton}
+                          loanAsset={loanAsset}
+                          renderWarning={true}
+                        />
+                        <Text
+                          size={"1"}
+                          weight={"light"}
+                          className="text-font dark:text-font-dark"
+                        >
+                          This address will be used to transfer the loan amount
+                        </Text>
+                      </Flex>
+                    )}
+                  </DataList.Value>
+                </DataList.Item>
+              )}
           </DataList.Root>
           <Button
             size={"3"}
-            onClick={createOfferRequest}
+            onClick={unlockWalletOrCreateOfferRequest}
             loading={isCreatingRequest}
-            disabled={isStillLoading}
+            disabled={buttonDisabled}
           >
             Pick Offer
           </Button>

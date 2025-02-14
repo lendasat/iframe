@@ -2,7 +2,6 @@ use anyhow::Context;
 use anyhow::Result;
 use bitcoin::bip32::Xpub;
 use bitcoin::Address;
-use bitcoin::PublicKey;
 use browser_wallet::wallet;
 use hub::config::Config;
 use hub::db;
@@ -13,13 +12,13 @@ use hub::model::Contract;
 use hub::model::ContractStatus;
 use hub::model::ContractVersion;
 use hub::model::CreateLoanOfferSchema;
-use hub::model::Integration;
 use hub::model::Lender;
-use hub::model::LoanAssetChain;
-use hub::model::LoanAssetType;
+use hub::model::LoanAsset;
 use hub::model::LoanOffer;
+use hub::model::LoanType;
 use hub::model::ONE_YEAR;
 use hub::moon::Card;
+use reqwest::Url;
 use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
@@ -57,7 +56,7 @@ async fn main() -> Result<()> {
 
     let offers = create_loan_offers(&pool, lender.id.as_str(), lender_xpub).await?;
 
-    create_sample_contracts(&pool, &borrower, &offers[0], lender.id.as_str()).await?;
+    create_sample_contracts(&pool, &borrower, &offers[1], lender.id.as_str()).await?;
 
     create_sample_card(&pool, &borrower).await?;
 
@@ -90,7 +89,6 @@ async fn create_sample_contracts(
         let lender_xpub = offer
             .lender_xpub
             .clone()
-            .expect("lender Xpub")
             .parse()
             .expect("valid lender Xpub");
         let contract1 = create_loan_request(
@@ -203,10 +201,11 @@ async fn create_loan_request(
         offer.duration_days_max,
         Address::from_str("tb1qtsasnju08gh7ptqg7260qujgasvtexkf9t3yj3")
             .expect("to be valid address"),
-        PublicKey::from_str("0363b379acd22b63c29179ad1bff81251e5c0df43a4f53f0e9d9c1f4b800a4243c")
-            .expect("to be valid pk"),
-        "0x34e3f03F5efFaF7f70Bb1FfC50274697096ebe9d",
-        Integration::StableCoin,
+        "tpubD6NzVbkrYhZ4WsDaymvt8M3cxWdRgTavGkpzM2qHXxiEaAx7AiUMsw6GMSCzJkJAiLJMdWS9FWuF8fpwwLoSMxL4jy7Z3VfJnuPL4zQzP2w"
+            .parse()
+            .expect("valid Xpub"),
+        Some("0x34e3f03F5efFaF7f70Bb1FfC50274697096ebe9d"),
+        LoanType::StableCoin,
         lender_xpub,
         ContractVersion::TwoOfThree,
         offer.interest_rate,
@@ -226,10 +225,10 @@ async fn create_loan_offers(
         return Ok(offers);
     }
 
-    let eth_offer = db::loan_offers::insert_loan_offer(
+    let euro_offer = db::loan_offers::insert_loan_offer(
         pool,
         CreateLoanOfferSchema {
-            name: "eth-usdt".to_string(),
+            name: "Eur".to_string(),
             min_ltv: dec!(0.5),
             interest_rate: dec!(0.12),
             loan_amount_min: dec!(1),
@@ -237,12 +236,11 @@ async fn create_loan_offers(
             loan_amount_reserve: dec!(100_000),
             duration_days_min: 7,
             duration_days_max: ONE_YEAR as i32,
-            loan_asset_type: LoanAssetType::Usdt,
-            loan_asset_chain: LoanAssetChain::Ethereum,
+            loan_asset: LoanAsset::Eur,
             loan_repayment_address: "0x34e3f03F5efFaF7f70Bb1FfC50274697096ebe9d".to_string(),
             auto_accept: true,
             lender_xpub,
-            kyc_link: None,
+            kyc_link: Some(Url::parse("https://nokycforlife.com").expect("to be valid")),
         },
         lender_id,
     )
@@ -259,8 +257,7 @@ async fn create_loan_offers(
             loan_amount_reserve: dec!(100_000),
             duration_days_min: 7,
             duration_days_max: ONE_YEAR as i32,
-            loan_asset_type: LoanAssetType::Usdc,
-            loan_asset_chain: LoanAssetChain::Polygon,
+            loan_asset: LoanAsset::UsdcPol,
             loan_repayment_address: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619".to_string(),
             auto_accept: true,
             lender_xpub,
@@ -270,7 +267,7 @@ async fn create_loan_offers(
     )
     .await?;
 
-    Ok(vec![eth_offer, poly_offer])
+    Ok(vec![euro_offer, poly_offer])
 }
 
 async fn insert_lender(pool: &Pool<Postgres>, network: &str) -> Result<(Lender, Xpub)> {

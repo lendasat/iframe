@@ -4,7 +4,8 @@ import { LoanOffer } from "@frontend-monorepo/http-client-borrower";
 import {
   formatCurrency,
   getFormatedStringFromDays,
-  StableCoinHelper,
+  LoanAsset,
+  LoanAssetHelper,
 } from "@frontend-monorepo/ui-shared";
 import {
   Badge,
@@ -114,12 +115,7 @@ const MobileOfferCard = ({
           <DataList.Value className="flex-1 flex justify-end">
             <Badge color="purple" size="2">
               <Skeleton loading={loading}>
-                {StableCoinHelper.print(
-                  StableCoinHelper.mapFromBackend(
-                    offer.loan_asset_chain,
-                    offer.loan_asset_type,
-                  ),
-                )}
+                {LoanAssetHelper.print(offer.loan_asset)}
               </Skeleton>
             </Badge>
           </DataList.Value>
@@ -275,26 +271,19 @@ export function LoanOfferTable({
       },
       enableSorting: true,
     }),
-    columnHelper.accessor(
-      (row) =>
-        StableCoinHelper.mapFromBackend(
-          row.loan_asset_chain,
-          row.loan_asset_type,
-        ),
-      {
-        id: "Coin",
-        header: () => {
-          return "Coin";
-        },
-        cell: ({ cell }) => {
-          return (
-            <Badge color="purple" size={"2"}>
-              {StableCoinHelper.print(cell.getValue())}
-            </Badge>
-          );
-        },
+    columnHelper.accessor((row) => row.loan_asset, {
+      id: "Coin",
+      header: () => {
+        return "Coin";
       },
-    ),
+      cell: ({ cell }) => {
+        return (
+          <Badge color="purple" size={"2"}>
+            {LoanAssetHelper.print(cell.getValue())}
+          </Badge>
+        );
+      },
+    }),
     columnHelper.accessor((row) => row.kyc_link, {
       id: "requirements",
       header: () => {
@@ -355,9 +344,9 @@ export function LoanOfferTable({
           loan_amount_max: 0,
           duration_days_min: 0,
           duration_days_max: 0,
-          loan_asset_type: "Usdc",
-          loan_asset_chain: "Ethereum",
+          loan_asset: LoanAsset.USDT_POL,
           origination_fee: [],
+          lender_xpub: "none",
         },
       ];
     }

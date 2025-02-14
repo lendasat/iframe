@@ -1,6 +1,6 @@
 import {
   contractStatusToLabelString,
-  Integration,
+  LoanType,
 } from "@frontend-monorepo/http-client-borrower";
 import type { Contract } from "@frontend-monorepo/http-client-borrower";
 import { formatCurrency } from "@frontend-monorepo/ui-shared";
@@ -20,8 +20,8 @@ export function CollateralSeenOrConfirmed({
   contract,
 }: CollateralSeenOrConfirmedProps) {
   let info;
-  switch (contract.integration) {
-    case Integration.PayWithMoon:
+  switch (contract.loan_type) {
+    case LoanType.PayWithMoon:
       info = (
         <>
           Your loan amount of {formatCurrency(contract.loan_amount)} will be
@@ -30,7 +30,7 @@ export function CollateralSeenOrConfirmed({
         </>
       );
       break;
-    case Integration.StableCoin:
+    case LoanType.StableCoin:
       info = (
         <>
           Your loan amount of {formatCurrency(contract.loan_amount)} will be
@@ -44,6 +44,14 @@ export function CollateralSeenOrConfirmed({
               className="bg-white dark:bg-dark-700 text-font dark:text-font-dark"
             />
           </InputGroup>
+        </>
+      );
+      break;
+    case LoanType.Fiat:
+      info = (
+        <>
+          Your loan amount of {formatCurrency(contract.loan_amount)} will be
+          sent your bank account.
         </>
       );
       break;

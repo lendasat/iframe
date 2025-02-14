@@ -1,6 +1,5 @@
 use crate::db;
-use crate::model::LoanAssetChain;
-use crate::model::LoanAssetType;
+use crate::model::LoanAsset;
 use crate::model::LoanOfferStatus;
 use crate::model::OriginationFee;
 use crate::routes::borrower::auth::jwt_auth;
@@ -64,12 +63,13 @@ pub struct LoanOffer {
     pub loan_amount_max: Decimal,
     pub duration_days_min: i32,
     pub duration_days_max: i32,
-    pub loan_asset_type: LoanAssetType,
-    pub loan_asset_chain: LoanAssetChain,
+    pub loan_asset: LoanAsset,
     pub status: LoanOfferStatus,
     pub loan_repayment_address: String,
     pub origination_fee: Vec<OriginationFee>,
     pub kyc_link: Option<Url>,
+    // The `lender_xpub` is used to encrypt the [`lendasat_core::FiatLoanDetails`] of
+    pub lender_xpub: String,
 }
 
 #[instrument(skip_all, err(Debug))]
@@ -126,12 +126,12 @@ pub async fn get_all_available_loan_offers(
             loan_amount_max: loan_offer.loan_amount_max,
             duration_days_min: loan_offer.duration_days_min,
             duration_days_max: loan_offer.duration_days_max,
-            loan_asset_type: loan_offer.loan_asset_type,
-            loan_asset_chain: loan_offer.loan_asset_chain,
+            loan_asset: loan_offer.loan_asset,
             status: loan_offer.status,
             loan_repayment_address: loan_offer.loan_repayment_address,
             origination_fee,
             kyc_link: loan_offer.kyc_link,
+            lender_xpub: loan_offer.lender_xpub,
         })
     }
 
@@ -194,12 +194,12 @@ pub async fn get_available_loan_offers_by_lender(
             loan_amount_max: loan_offer.loan_amount_max,
             duration_days_min: loan_offer.duration_days_min,
             duration_days_max: loan_offer.duration_days_max,
-            loan_asset_type: loan_offer.loan_asset_type,
-            loan_asset_chain: loan_offer.loan_asset_chain,
+            loan_asset: loan_offer.loan_asset,
             status: loan_offer.status,
             loan_repayment_address: loan_offer.loan_repayment_address,
             origination_fee,
             kyc_link: loan_offer.kyc_link,
+            lender_xpub: loan_offer.lender_xpub,
         })
     }
 
@@ -268,12 +268,12 @@ pub async fn get_loan_offer(
                     loan_amount_max: loan_offer.loan_amount_max,
                     duration_days_min: loan_offer.duration_days_min,
                     duration_days_max: loan_offer.duration_days_max,
-                    loan_asset_type: loan_offer.loan_asset_type,
-                    loan_asset_chain: loan_offer.loan_asset_chain,
+                    loan_asset: loan_offer.loan_asset,
                     status: loan_offer.status,
                     loan_repayment_address: loan_offer.loan_repayment_address,
                     origination_fee,
                     kyc_link: loan_offer.kyc_link,
+                    lender_xpub: loan_offer.lender_xpub,
                 }),
             ))
         }

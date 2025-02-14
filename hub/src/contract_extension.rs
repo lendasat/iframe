@@ -107,10 +107,11 @@ pub async fn request_contract_extension(
         total_duration_days,
         original_contract.borrower_btc_address,
         original_contract.borrower_pk,
-        original_contract.borrower_loan_address.as_str(),
-        original_contract.integration,
+        original_contract.borrower_loan_address.as_deref(),
+        original_contract.loan_type,
         original_contract.contract_version,
         new_offer.auto_accept,
+        original_contract.borrower_xpub,
         original_contract
             .lender_xpub
             .ok_or(Error::MissingLenderXpub)?,

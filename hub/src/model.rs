@@ -245,8 +245,7 @@ pub struct CreateLoanOfferSchema {
     pub loan_amount_reserve: Decimal,
     pub duration_days_min: i32,
     pub duration_days_max: i32,
-    pub loan_asset_type: LoanAssetType,
-    pub loan_asset_chain: LoanAssetChain,
+    pub loan_asset: LoanAsset,
     pub loan_repayment_address: String,
     pub auto_accept: bool,
     pub lender_xpub: Xpub,
@@ -261,8 +260,7 @@ pub struct CreateLoanRequestSchema {
     pub interest_rate: Decimal,
     pub loan_amount: Decimal,
     pub duration_days: i32,
-    pub loan_asset_type: LoanAssetType,
-    pub loan_asset_chain: LoanAssetChain,
+    pub loan_asset: LoanAsset,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -272,20 +270,36 @@ pub struct ContractRequestSchema {
     pub loan_amount: Decimal,
     pub duration_days: i32,
     pub borrower_btc_address: Address<NetworkUnchecked>,
-    pub borrower_pk: PublicKey,
+    pub borrower_xpub: Xpub,
     /// This is optional because certain integrations (such as Pay with Moon) define their own loan
     /// address.
     pub borrower_loan_address: Option<String>,
-    pub integration: Integration,
-    /// If the `integration` field is set to `Integration::PayWithMoon`, this field indicates
-    /// whether the contract corresponds to a new card or an existing one.
+    pub loan_type: LoanType,
+    /// If the `loan_type` field is set to `LoanType::PayWithMoon`, this field indicates whether
+    /// the contract corresponds to a new card or an existing one.
     pub moon_card_id: Option<Uuid>,
+    /// If the borrower chooses a `loan_id` that corresponds to a fiat loan (e.g. with `loan_asset`
+    /// [`LoanAsset::Usd`] or [`LoanAsset::Eur`]), this field must be present.
+    pub fiat_loan_details: Option<FiatLoanDetails>,
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct FiatLoanDetails {
+    pub details: lendasat_core::FiatLoanDetails,
+    /// The ciphertext which the borrower can decrypt to get the decryption key which can be used
+    /// to decrypt the `details`.
+    pub encrypted_encryption_key_borrower: String,
+    /// The ciphertext which the lender can decrypt to get the decryption key which can be used to
+    /// decrypt the `details`.
+    pub encrypted_encryption_key_lender: String,
+}
+
+/// The type of loan primarily describes where to deliver the principal.
 #[derive(Debug, Deserialize, Serialize, Clone, Copy)]
-pub enum Integration {
+pub enum LoanType {
     PayWithMoon,
     StableCoin,
+    Fiat,
 }
 
 #[derive(Debug, FromRow, Clone)]
@@ -301,14 +315,13 @@ pub struct LoanOffer {
     pub loan_amount_reserve_remaining: Decimal,
     pub duration_days_min: i32,
     pub duration_days_max: i32,
-    pub loan_asset_type: LoanAssetType,
-    pub loan_asset_chain: LoanAssetChain,
+    pub loan_asset: LoanAsset,
     pub status: LoanOfferStatus,
     pub loan_repayment_address: String,
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
     pub auto_accept: bool,
-    pub lender_xpub: Option<String>,
+    pub lender_xpub: String,
     pub kyc_link: Option<Url>,
 }
 
@@ -319,19 +332,35 @@ impl LoanOffer {
 }
 
 #[derive(Debug, Deserialize, sqlx::Type, Serialize, Clone, PartialEq)]
-#[sqlx(type_name = "loan_asset_type")]
-pub enum LoanAssetType {
-    Usdc,
-    Usdt,
+#[sqlx(type_name = "loan_asset")]
+pub enum LoanAsset {
+    UsdcPol,
+    UsdtPol,
+    UsdcEth,
+    UsdtEth,
+    UsdcStrk,
+    UsdtStrk,
+    UsdcSol,
+    UsdtSol,
+    Usd,
+    Eur,
+    Chf,
 }
 
-#[derive(Debug, Deserialize, sqlx::Type, Serialize, Clone, PartialEq)]
-#[sqlx(type_name = "loan_asset_chain")]
-pub enum LoanAssetChain {
-    Ethereum,
-    Polygon,
-    Starknet,
-    Solana,
+impl LoanAsset {
+    pub fn is_fiat(&self) -> bool {
+        match self {
+            LoanAsset::Usd | LoanAsset::Eur | LoanAsset::Chf => true,
+            LoanAsset::UsdcPol
+            | LoanAsset::UsdtPol
+            | LoanAsset::UsdcEth
+            | LoanAsset::UsdtEth
+            | LoanAsset::UsdcStrk
+            | LoanAsset::UsdtStrk
+            | LoanAsset::UsdcSol
+            | LoanAsset::UsdtSol => false,
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, sqlx::Type, Serialize, Clone, PartialEq)]
@@ -353,8 +382,7 @@ pub struct LoanRequest {
     #[serde(with = "rust_decimal::serde::float")]
     pub loan_amount: Decimal,
     pub duration_days: i32,
-    pub loan_asset_type: LoanAssetType,
-    pub loan_asset_chain: LoanAssetChain,
+    pub loan_asset: LoanAsset,
     pub status: LoanRequestStatus,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
@@ -395,9 +423,13 @@ pub struct Contract {
     pub duration_days: i32,
     pub expiry_date: OffsetDateTime,
     pub borrower_btc_address: Address<NetworkUnchecked>,
-    pub borrower_pk: PublicKey,
-    pub borrower_loan_address: String,
-    pub integration: Integration,
+    /// Optional because we are phasing this field out, replacing it with the `borrower_xpub`.
+    pub borrower_pk: Option<PublicKey>,
+    /// Optional because fiat loans do not have loan addresses in the cryptocurrency sense.
+    pub borrower_loan_address: Option<String>,
+    pub loan_type: LoanType,
+    /// Optional to remain backwards compatible with existing contracts.
+    pub borrower_xpub: Option<Xpub>,
     pub lender_xpub: Option<Xpub>,
     pub contract_address: Option<Address<NetworkUnchecked>>,
     pub contract_index: Option<u32>,
@@ -536,9 +568,10 @@ pub mod db {
         pub duration_days: i32,
         pub expiry_date: OffsetDateTime,
         pub borrower_btc_address: String,
-        pub borrower_pk: String,
-        pub borrower_loan_address: String,
-        pub integration: Integration,
+        pub borrower_pk: Option<String>,
+        pub borrower_loan_address: Option<String>,
+        pub loan_type: LoanType,
+        pub borrower_xpub: Option<String>,
         pub lender_xpub: Option<String>,
         pub contract_address: Option<String>,
         pub contract_index: Option<i32>,
@@ -587,10 +620,11 @@ pub mod db {
     }
 
     #[derive(Debug, Deserialize, sqlx::Type, Serialize)]
-    #[sqlx(type_name = "integration")]
-    pub enum Integration {
+    #[sqlx(type_name = "loan_type")]
+    pub enum LoanType {
         PayWithMoon,
         StableCoin,
+        Fiat,
     }
 
     #[derive(Debug, Deserialize, sqlx::Type, Serialize)]
@@ -640,9 +674,14 @@ impl From<db::Contract> for Contract {
             expiry_date: value.expiry_date,
             borrower_btc_address: Address::from_str(&value.borrower_btc_address)
                 .expect("valid address"),
-            borrower_pk: PublicKey::from_str(&value.borrower_pk).expect("valid pk"),
+            borrower_pk: value
+                .borrower_pk
+                .map(|p| PublicKey::from_str(&p).expect("valid pk")),
             borrower_loan_address: value.borrower_loan_address,
-            integration: value.integration.into(),
+            loan_type: value.loan_type.into(),
+            borrower_xpub: value
+                .borrower_xpub
+                .map(|x| Xpub::from_str(&x).expect("valid Xpub")),
             lender_xpub: value
                 .lender_xpub
                 .map(|xpub| xpub.parse().expect("valid xpub")),
@@ -698,20 +737,22 @@ impl From<db::LiquidationStatus> for LiquidationStatus {
     }
 }
 
-impl From<db::Integration> for Integration {
-    fn from(value: db::Integration) -> Self {
+impl From<db::LoanType> for LoanType {
+    fn from(value: db::LoanType) -> Self {
         match value {
-            db::Integration::PayWithMoon => Self::PayWithMoon,
-            db::Integration::StableCoin => Self::StableCoin,
+            db::LoanType::PayWithMoon => Self::PayWithMoon,
+            db::LoanType::StableCoin => Self::StableCoin,
+            db::LoanType::Fiat => Self::Fiat,
         }
     }
 }
 
-impl From<Integration> for db::Integration {
-    fn from(value: Integration) -> Self {
+impl From<LoanType> for db::LoanType {
+    fn from(value: LoanType) -> Self {
         match value {
-            Integration::PayWithMoon => Self::PayWithMoon,
-            Integration::StableCoin => Self::StableCoin,
+            LoanType::PayWithMoon => Self::PayWithMoon,
+            LoanType::StableCoin => Self::StableCoin,
+            LoanType::Fiat => Self::Fiat,
         }
     }
 }
@@ -765,9 +806,10 @@ impl From<Contract> for db::Contract {
             duration_days: value.duration_days,
             expiry_date: value.expiry_date,
             borrower_btc_address: value.borrower_btc_address.assume_checked().to_string(),
-            borrower_pk: value.borrower_pk.to_string(),
+            borrower_pk: value.borrower_pk.map(|p| p.to_string()),
             borrower_loan_address: value.borrower_loan_address,
-            integration: value.integration.into(),
+            loan_type: value.loan_type.into(),
+            borrower_xpub: value.borrower_xpub.map(|xpub| xpub.to_string()),
             lender_xpub: value.lender_xpub.map(|xpub| xpub.to_string()),
             contract_address: value
                 .contract_address

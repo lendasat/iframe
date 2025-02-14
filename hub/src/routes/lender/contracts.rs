@@ -1,3 +1,4 @@
+use crate::approve_contract;
 use crate::approve_contract::approve_contract;
 use crate::bitmex_index_price_rest::get_bitmex_index_price;
 use crate::contract_liquidation;
@@ -7,8 +8,7 @@ use crate::model;
 use crate::model::ContractStatus;
 use crate::model::Lender;
 use crate::model::LiquidationStatus;
-use crate::model::LoanAssetChain;
-use crate::model::LoanAssetType;
+use crate::model::LoanAsset;
 use crate::model::LoanTransaction;
 use crate::model::ManualCollateralRecovery;
 use crate::model::TransactionType;
@@ -145,9 +145,9 @@ pub struct Contract {
     #[serde(with = "rust_decimal::serde::float")]
     pub initial_ltv: Decimal,
     pub status: ContractStatus,
-    pub borrower_pk: PublicKey,
+    pub borrower_pk: Option<PublicKey>,
     pub borrower_btc_address: String,
-    pub borrower_loan_address: String,
+    pub borrower_loan_address: Option<String>,
     pub contract_address: Option<String>,
     pub loan_repayment_address: String,
     pub borrower: BorrowerProfile,
@@ -161,14 +161,22 @@ pub struct Contract {
     pub expiry: OffsetDateTime,
     pub liquidation_status: LiquidationStatus,
     pub transactions: Vec<LoanTransaction>,
-    pub loan_asset_chain: LoanAssetChain,
-    pub loan_asset_type: LoanAssetType,
+    pub loan_asset: LoanAsset,
     pub can_recover_collateral_manually: bool,
     pub extends_contract: Option<String>,
     pub extended_by_contract: Option<String>,
+    pub borrower_xpub: Option<String>,
     pub lender_xpub: String,
-    pub borrower_xpub: String,
     pub kyc_info: Option<KycInfo>,
+    pub fiat_loan_details_borrower: Option<FiatLoanDetails>,
+    pub fiat_loan_details_lender: Option<FiatLoanDetails>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct FiatLoanDetails {
+    pub details: lendasat_core::FiatLoanDetails,
+    /// The lender's encrypted encryption key.
+    pub encrypted_encryption_key: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -226,8 +234,12 @@ pub async fn put_approve_contract(
     State(data): State<Arc<AppState>>,
     Path(contract_id): Path<String>,
     Extension(user): Extension<Lender>,
-) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    body: Option<AppJson<model::FiatLoanDetails>>,
+) -> Result<AppJson<()>, Error> {
     let wallet = data.wallet.lock().await;
+
+    let fiat_loan_details = body.map(|f| f.0);
+
     approve_contract(
         &data.db,
         wallet,
@@ -236,21 +248,17 @@ pub async fn put_approve_contract(
         contract_id,
         &user.id,
         data.notifications.clone(),
+        fiat_loan_details,
     )
     .await
-    .map_err(|e| {
-        let error_response = ErrorResponse {
-            message: format!("Database error: {e:?}"),
-        };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?;
+    .map_err(Error::from)?;
 
-    Ok(())
+    Ok(AppJson(()))
 }
 
 #[derive(Debug, Deserialize)]
 pub struct PrincipalGivenQueryParam {
-    pub txid: String,
+    pub txid: Option<String>,
 }
 
 #[instrument(skip(data, user), err(Debug))]
@@ -277,13 +285,15 @@ pub async fn put_principal_given(
         .await
         .context("Failed to mark contract as repaid")?;
 
-        db::transactions::insert_principal_given_txid(
-            &data.db,
-            contract_id.as_str(),
-            query_params.txid.as_str(),
-        )
-        .await
-        .context("Failed inserting principal given tx id")?;
+        if let Some(txid) = &query_params.txid {
+            db::transactions::insert_principal_given_txid(
+                &data.db,
+                contract_id.as_str(),
+                txid.as_str(),
+            )
+            .await
+            .context("Failed inserting principal given tx id")?;
+        }
 
         anyhow::Ok(contract)
     }
@@ -627,8 +637,7 @@ async fn post_build_liquidation_to_stablecoin_psbt(
     let (shift_address, lender_amount, settle_address, settle_amount) = data
         .sideshift
         .create_shift(
-            offer.loan_asset_type,
-            offer.loan_asset_chain,
+            offer.loan_asset,
             lender_amount,
             contract_id.to_string(),
             lender_ip.to_string(),
@@ -938,6 +947,7 @@ async fn get_manual_recovery_psbt(
 
     let (psbt, collateral_descriptor, lender_pk) = wallet
         .create_liquidation_psbt(
+            contract.borrower_xpub.as_ref(),
             contract.borrower_pk,
             &lender_xpub,
             contract_index,
@@ -1032,13 +1042,31 @@ async fn map_to_api_contract(
 
     let new_offer = offer;
 
-    let borrower_xpub = db::wallet_backups::get_xpub_for_borrower(&data.db, contract.borrower_id)
-        .await
-        .map_err(|e| Error::Database(anyhow!(e)))?;
-
     let lender_xpub = db::wallet_backups::get_xpub_for_lender(&data.db, contract.lender_id)
         .await
         .map_err(|e| Error::Database(anyhow!(e)))?;
+
+    let fiat_loan_details_borrower = {
+        let details = db::fiat_loan_details::get_borrower(&data.db, &contract.id)
+            .await
+            .map_err(Error::Database)?;
+
+        details.map(|d| FiatLoanDetails {
+            details: d.details,
+            encrypted_encryption_key: d.encrypted_encryption_key_lender,
+        })
+    };
+
+    let fiat_loan_details_lender = {
+        let details = db::fiat_loan_details::get_lender(&data.db, &contract.id)
+            .await
+            .map_err(Error::Database)?;
+
+        details.map(|d| FiatLoanDetails {
+            details: d.details,
+            encrypted_encryption_key: d.encrypted_encryption_key_borrower,
+        })
+    };
 
     let contract = Contract {
         id: contract.id,
@@ -1049,8 +1077,7 @@ async fn map_to_api_contract(
         collateral_sats: contract.collateral_sats,
         interest_rate: contract.interest_rate,
         initial_ltv: contract.initial_ltv,
-        loan_asset_type: new_offer.loan_asset_type,
-        loan_asset_chain: new_offer.loan_asset_chain,
+        loan_asset: new_offer.loan_asset,
         status: contract.status,
         borrower_pk: contract.borrower_pk,
         borrower_btc_address: contract.borrower_btc_address.assume_checked().to_string(),
@@ -1072,9 +1099,11 @@ async fn map_to_api_contract(
         extends_contract: parent_contract_id,
         extended_by_contract: child_contract,
         can_recover_collateral_manually,
-        borrower_xpub,
+        borrower_xpub: contract.borrower_xpub.map(|x| x.to_string()),
         lender_xpub,
         kyc_info,
+        fiat_loan_details_borrower,
+        fiat_loan_details_lender,
     };
 
     Ok(contract)
@@ -1093,6 +1122,8 @@ enum Error {
     MissingLender,
     /// Can't do much of anything without lender Xpub.
     MissingLenderXpub,
+    /// Can't do much of anything without lender Xpub.
+    MissingBorrowerXpub,
     /// Loan extension was requested with an offer from a different lender which is currently not
     /// supported
     LoanOfferLenderMissmatch,
@@ -1102,6 +1133,16 @@ enum Error {
     MissingOriginationFee,
     /// Failed to calculate origination fee in sats.
     OriginationFeeCalculation(anyhow::Error),
+    /// Fiat loan details were not provided
+    MissingFiatLoanDetails,
+    /// Failed to generate contract address.
+    ContractAddress(anyhow::Error),
+    /// Failed to track accepted contract using Mempool API.
+    TrackContract(anyhow::Error),
+    /// The contract was in an invalid state
+    InvalidApproveRequest { status: ContractStatus },
+    /// Referenced borrower does not exist.
+    MissingBorrower,
 }
 
 impl From<JsonRejection> for Error {
@@ -1187,6 +1228,40 @@ impl IntoResponse for Error {
                     "Something went wrong".to_owned(),
                 )
             }
+
+            Error::MissingBorrowerXpub => (
+                StatusCode::BAD_REQUEST,
+                "Cannot approve without borrower xpub".to_owned(),
+            ),
+            Error::MissingFiatLoanDetails => (
+                StatusCode::BAD_REQUEST,
+                "Cannot approve without fiat loan details".to_owned(),
+            ),
+            Error::ContractAddress(error) => {
+                tracing::error!("Failed creating contract address {error:#}");
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
+            Error::TrackContract(e) => {
+                tracing::error!("Failed tracking contract contract address {e:#}");
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
+            Error::InvalidApproveRequest { status } => {
+                tracing::error!("Failed approving request {status:?}");
+                (StatusCode::BAD_REQUEST, "Cannot approve request".to_owned())
+            }
+            Error::MissingBorrower => {
+                tracing::error!("Borrower not found");
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
         };
 
         (status, AppJson(ErrorResponse { message })).into_response()
@@ -1228,6 +1303,26 @@ impl From<crate::contract_extension::Error> for Error {
                 Error::OriginationFeeCalculation(e)
             }
             crate::contract_extension::Error::MissingLenderXpub => Error::MissingLenderXpub,
+        }
+    }
+}
+
+impl From<approve_contract::Error> for Error {
+    fn from(value: approve_contract::Error) -> Self {
+        match value {
+            approve_contract::Error::Database(e) => Error::Database(e),
+            approve_contract::Error::MissingLenderXpub => Error::MissingLenderXpub,
+            approve_contract::Error::MissingBorrowerXpub => Error::MissingBorrowerXpub,
+            approve_contract::Error::MissingLoanOffer { offer_id } => {
+                Error::MissingLoanOffer { offer_id }
+            }
+            approve_contract::Error::MissingFiatLoanDetails => Error::MissingFiatLoanDetails,
+            approve_contract::Error::ContractAddress(error) => Error::ContractAddress(error),
+            approve_contract::Error::MissingBorrower => Error::MissingBorrower,
+            approve_contract::Error::TrackContract(error) => Error::TrackContract(error),
+            approve_contract::Error::InvalidApproveRequest { status } => {
+                Error::InvalidApproveRequest { status }
+            }
         }
     }
 }

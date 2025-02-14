@@ -4,20 +4,16 @@ import { useState } from "react";
 import { Col, Row } from "react-bootstrap";
 import { FaCheckCircle } from "react-icons/fa";
 import { FaCopy, FaLink } from "react-icons/fa6";
-import type { LoanTransaction } from "../models";
+import { LoanAsset, LoanTransaction } from "../models";
 import { TransactionType } from "../models";
-import { LoanAssetChain } from "../models";
 import { NotificationToast } from "./NotificationToast";
 
 interface TransactionLinkProps {
   transaction: LoanTransaction;
-  loanAssetChain: LoanAssetChain;
+  loanAsset: LoanAsset;
 }
 
-function TransactionLink({
-  transaction,
-  loanAssetChain,
-}: TransactionLinkProps) {
+function TransactionLink({ transaction, loanAsset }: TransactionLinkProps) {
   let urlPrefix = "";
   const [copied, setCopied] = useState(false);
 
@@ -36,18 +32,27 @@ function TransactionLink({
     transactionType === TransactionType.PrincipalGiven ||
     transactionType === TransactionType.PrincipalRepaid
   ) {
-    switch (loanAssetChain) {
-      case LoanAssetChain.Ethereum:
+    switch (loanAsset) {
+      case LoanAsset.USDC_ETH:
+      case LoanAsset.USDT_ETH:
         urlPrefix = "https://etherscan.io/tx";
         break;
-      case LoanAssetChain.Polygon:
+      case LoanAsset.USDT_POL:
+      case LoanAsset.USDC_POL:
         urlPrefix = "https://polygonscan.com/tx";
         break;
-      case LoanAssetChain.Starknet:
+      case LoanAsset.USDC_SN:
+      case LoanAsset.USDT_SN:
         urlPrefix = "https://starkscan.co/tx";
         break;
-      case LoanAssetChain.Solana:
+      case LoanAsset.USDC_SOL:
+      case LoanAsset.USDT_SOL:
         urlPrefix = "https://solscan.io/tx";
+        break;
+      case LoanAsset.EUR:
+      case LoanAsset.USD:
+      case LoanAsset.CHF:
+        urlPrefix = "";
         break;
     }
   }
@@ -105,7 +110,7 @@ interface TransactionListProps {
 }
 
 interface Contract {
-  loan_asset_chain: LoanAssetChain;
+  loan_asset: LoanAsset;
   transactions: LoanTransaction[];
 }
 
@@ -117,7 +122,7 @@ export const TransactionList: FC<TransactionListProps> = ({
     (transaction) => transaction.transaction_type === transactionType,
   );
 
-  const loanAssetChain = contract.loan_asset_chain;
+  const loanAsset = contract.loan_asset;
 
   let transactionName;
   switch (transactionType) {
@@ -161,7 +166,7 @@ export const TransactionList: FC<TransactionListProps> = ({
                 >
                   <TransactionLink
                     transaction={transaction}
-                    loanAssetChain={loanAssetChain}
+                    loanAsset={loanAsset}
                   />
                 </li>
               ))}

@@ -2,8 +2,7 @@ use crate::db;
 use crate::model::lender_feature_flags;
 use crate::model::CreateLoanOfferSchema;
 use crate::model::Lender;
-use crate::model::LoanAssetChain;
-use crate::model::LoanAssetType;
+use crate::model::LoanAsset;
 use crate::model::LoanOfferStatus;
 use crate::model::OriginationFee;
 use crate::routes::lender::auth;
@@ -177,8 +176,7 @@ pub async fn create_loan_offer(
         loan_amount_reserve_remaining: offer.loan_amount_reserve_remaining,
         duration_days_min: offer.duration_days_min,
         duration_days_max: offer.duration_days_max,
-        loan_asset_type: offer.loan_asset_type,
-        loan_asset_chain: offer.loan_asset_chain,
+        loan_asset: offer.loan_asset,
         status: offer.status,
         auto_accept: offer.auto_accept,
         loan_repayment_address: offer.loan_repayment_address,
@@ -211,8 +209,7 @@ pub struct LoanOffer {
     pub auto_accept: bool,
     pub duration_days_min: i32,
     pub duration_days_max: i32,
-    pub loan_asset_type: LoanAssetType,
-    pub loan_asset_chain: LoanAssetChain,
+    pub loan_asset: LoanAsset,
     pub status: LoanOfferStatus,
     pub loan_repayment_address: String,
     pub origination_fee: Vec<OriginationFee>,
@@ -280,8 +277,7 @@ pub async fn get_loan_offers_by_lender(
             duration_days_max: offer.duration_days_max,
             loan_amount_reserve: offer.loan_amount_reserve,
             loan_amount_reserve_remaining: offer.loan_amount_reserve_remaining,
-            loan_asset_type: offer.loan_asset_type,
-            loan_asset_chain: offer.loan_asset_chain,
+            loan_asset: offer.loan_asset,
             status: offer.status,
             auto_accept: offer.auto_accept,
             loan_repayment_address: offer.loan_repayment_address,
@@ -354,8 +350,7 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
         loan_amount_reserve_remaining: offer.loan_amount_reserve_remaining,
         duration_days_min: offer.duration_days_min,
         duration_days_max: offer.duration_days_max,
-        loan_asset_type: offer.loan_asset_type,
-        loan_asset_chain: offer.loan_asset_chain,
+        loan_asset: offer.loan_asset,
         status: offer.status,
         auto_accept: offer.auto_accept,
         loan_repayment_address: offer.loan_repayment_address,
@@ -422,8 +417,7 @@ pub async fn get_loan_offers(
             loan_amount_reserve_remaining: offer.loan_amount_reserve_remaining,
             duration_days_min: offer.duration_days_min,
             duration_days_max: offer.duration_days_max,
-            loan_asset_type: offer.loan_asset_type,
-            loan_asset_chain: offer.loan_asset_chain,
+            loan_asset: offer.loan_asset,
             status: offer.status,
             auto_accept: offer.auto_accept,
             loan_repayment_address: offer.loan_repayment_address,
@@ -496,8 +490,7 @@ pub async fn get_loan_offer_by_id(
         loan_amount_reserve_remaining: offer.loan_amount_reserve_remaining,
         duration_days_min: offer.duration_days_min,
         duration_days_max: offer.duration_days_max,
-        loan_asset_type: offer.loan_asset_type,
-        loan_asset_chain: offer.loan_asset_chain,
+        loan_asset: offer.loan_asset,
         status: offer.status,
         auto_accept: offer.auto_accept,
         loan_repayment_address: offer.loan_repayment_address,

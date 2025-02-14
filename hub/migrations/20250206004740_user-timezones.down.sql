@@ -1,11 +1,13 @@
 ALTER TABLE lenders
     DROP COLUMN timezone;
 
-ALTER TABLE borrowers
-    DROP COLUMN timezone;
 
 -- we need to drop and recreate it because of the dropped column
 DROP VIEW IF EXISTS borrower_discount_info;
+
+ALTER TABLE borrowers
+    DROP COLUMN timezone;
+
 CREATE VIEW borrower_discount_info AS
 select b.*,
        was_referred.referral_code  as used_referral_code,

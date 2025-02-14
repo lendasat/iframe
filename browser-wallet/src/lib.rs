@@ -341,6 +341,184 @@ pub fn verify_server(server_proof: String) -> Result<bool, JsValue> {
     Ok(res.is_ok())
 }
 
+#[wasm_bindgen(getter_with_clone)]
+#[derive(Clone)]
+pub struct FiatLoanDetails {
+    pub inner: InnerFiatLoanDetails,
+    pub encrypted_encryption_key_own: String,
+    pub encrypted_encryption_key_counterparty: String,
+}
+
+#[wasm_bindgen(getter_with_clone)]
+#[derive(Clone)]
+pub struct InnerFiatLoanDetails {
+    pub iban_transfer_details: Option<IbanTransferDetails>,
+    pub swift_transfer_details: Option<SwiftTransferDetails>,
+    pub bank_name: String,
+    pub bank_address: String,
+    pub bank_country: String,
+    pub purpose_of_remittance: String,
+    pub full_name: String,
+    pub address: String,
+    pub city: String,
+    pub post_code: String,
+    pub country: String,
+    pub comments: Option<String>,
+}
+
+#[wasm_bindgen]
+impl InnerFiatLoanDetails {
+    #[allow(clippy::too_many_arguments)]
+    #[wasm_bindgen(constructor)]
+    pub fn new(
+        iban_transfer_details: Option<IbanTransferDetails>,
+        swift_transfer_details: Option<SwiftTransferDetails>,
+        bank_name: String,
+        bank_address: String,
+        bank_country: String,
+        purpose_of_remittance: String,
+        full_name: String,
+        address: String,
+        city: String,
+        post_code: String,
+        country: String,
+        comments: Option<String>,
+    ) -> Self {
+        Self {
+            iban_transfer_details,
+            swift_transfer_details,
+            bank_name,
+            bank_address,
+            bank_country,
+            purpose_of_remittance,
+            full_name,
+            address,
+            city,
+            post_code,
+            country,
+            comments,
+        }
+    }
+}
+
+#[wasm_bindgen(getter_with_clone)]
+#[derive(Clone)]
+pub struct IbanTransferDetails {
+    pub iban: String,
+    pub bic: Option<String>,
+}
+
+#[wasm_bindgen]
+impl IbanTransferDetails {
+    #[wasm_bindgen(constructor)]
+    pub fn new(iban: String, bic: Option<String>) -> Self {
+        Self { iban, bic }
+    }
+}
+
+#[wasm_bindgen(getter_with_clone)]
+#[derive(Clone)]
+pub struct SwiftTransferDetails {
+    pub bic_or_swift: String,
+    pub account_number: String,
+}
+
+#[wasm_bindgen]
+impl SwiftTransferDetails {
+    #[wasm_bindgen(constructor)]
+    pub fn new(bic_or_swift: String, account_number: String) -> Self {
+        Self {
+            bic_or_swift,
+            account_number,
+        }
+    }
+}
+
+#[wasm_bindgen]
+pub fn encrypt_fiat_loan_details(
+    fiat_loan_details: InnerFiatLoanDetails,
+    counterparty_xpub: String,
+) -> Result<FiatLoanDetails, JsValue> {
+    let (fiat_loan_details, encrypted_encryption_key_own, encrypted_encryption_key_counterparty) =
+        map_err_to_js!(wallet::encrypt_fiat_loan_details(
+            &fiat_loan_details.into(),
+            counterparty_xpub
+        ))?;
+
+    Ok(FiatLoanDetails {
+        inner: fiat_loan_details.into(),
+        encrypted_encryption_key_own,
+        encrypted_encryption_key_counterparty,
+    })
+}
+
+#[wasm_bindgen]
+pub fn decrypt_fiat_loan_details(
+    fiat_loan_details: InnerFiatLoanDetails,
+    encrypted_encryption_key: String,
+) -> Result<InnerFiatLoanDetails, JsValue> {
+    let fiat_loan_details = map_err_to_js!(wallet::decrypt_fiat_loan_details(
+        &fiat_loan_details.into(),
+        encrypted_encryption_key
+    ))?;
+
+    Ok(fiat_loan_details.into())
+}
+
+impl From<InnerFiatLoanDetails> for lendasat_core::FiatLoanDetails {
+    fn from(value: InnerFiatLoanDetails) -> Self {
+        Self {
+            iban_transfer_details: value.iban_transfer_details.map(|i| {
+                lendasat_core::IbanTransferDetails {
+                    iban: i.iban,
+                    bic: i.bic,
+                }
+            }),
+            swift_transfer_details: value.swift_transfer_details.map(|s| {
+                lendasat_core::SwiftTransferDetails {
+                    swift_or_bic: s.bic_or_swift,
+                    account_number: s.account_number,
+                }
+            }),
+            bank_name: value.bank_name,
+            bank_address: value.bank_address,
+            bank_country: value.bank_country,
+            purpose_of_remittance: value.purpose_of_remittance,
+            full_name: value.full_name,
+            address: value.address,
+            city: value.city,
+            post_code: value.post_code,
+            country: value.country,
+            comments: value.comments,
+        }
+    }
+}
+
+impl From<lendasat_core::FiatLoanDetails> for InnerFiatLoanDetails {
+    fn from(value: lendasat_core::FiatLoanDetails) -> Self {
+        Self {
+            iban_transfer_details: value.iban_transfer_details.map(|i| IbanTransferDetails {
+                iban: i.iban,
+                bic: i.bic,
+            }),
+            swift_transfer_details: value.swift_transfer_details.map(|s| SwiftTransferDetails {
+                bic_or_swift: s.swift_or_bic,
+                account_number: s.account_number,
+            }),
+            bank_name: value.bank_name,
+            bank_address: value.bank_address,
+            bank_country: value.bank_country,
+            purpose_of_remittance: value.purpose_of_remittance,
+            full_name: value.full_name,
+            address: value.address,
+            city: value.city,
+            post_code: value.post_code,
+            country: value.country,
+            comments: value.comments,
+        }
+    }
+}
+
 #[macro_export]
 macro_rules! map_err_to_js {
     ($e:expr) => {

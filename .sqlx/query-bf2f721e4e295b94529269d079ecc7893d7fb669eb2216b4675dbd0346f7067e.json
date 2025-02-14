@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            id,\n            borrower_id,\n            ltv,\n            interest_rate,\n            loan_amount,\n            duration_days,\n            loan_asset_type AS \"loan_asset_type: crate::model::LoanAssetType\",\n            loan_asset_chain AS \"loan_asset_chain: crate::model::LoanAssetChain\",\n            status AS \"status: crate::model::LoanRequestStatus\",\n            created_at,\n            updated_at\n        FROM loan_requests\n        WHERE status = 'Available'\n        ",
+  "query": "\n        SELECT\n            id,\n            borrower_id,\n            ltv,\n            interest_rate,\n            loan_amount,\n            duration_days,\n            loan_asset AS \"loan_asset: crate::model::LoanAsset\",\n            status AS \"status: crate::model::LoanRequestStatus\",\n            created_at,\n            updated_at\n        FROM loan_requests\n        WHERE borrower_id = $1 and id = $2\n        ",
   "describe": {
     "columns": [
       {
@@ -35,14 +35,24 @@
       },
       {
         "ordinal": 6,
-        "name": "loan_asset_type: crate::model::LoanAssetType",
+        "name": "loan_asset: crate::model::LoanAsset",
         "type_info": {
           "Custom": {
-            "name": "loan_asset_type",
+            "name": "loan_asset",
             "kind": {
               "Enum": [
-                "Usdc",
-                "Usdt"
+                "UsdcPol",
+                "UsdtPol",
+                "UsdcEth",
+                "UsdtEth",
+                "UsdcStrk",
+                "UsdtStrk",
+                "UsdcSol",
+                "UsdtSol",
+                "Usd",
+                "Eur",
+                "Chf",
+                "Unknown"
               ]
             }
           }
@@ -50,23 +60,6 @@
       },
       {
         "ordinal": 7,
-        "name": "loan_asset_chain: crate::model::LoanAssetChain",
-        "type_info": {
-          "Custom": {
-            "name": "loan_asset_chain",
-            "kind": {
-              "Enum": [
-                "Ethereum",
-                "Starknet",
-                "Polygon",
-                "Solana"
-              ]
-            }
-          }
-        }
-      },
-      {
-        "ordinal": 8,
         "name": "status: crate::model::LoanRequestStatus",
         "type_info": {
           "Custom": {
@@ -82,21 +75,23 @@
         }
       },
       {
-        "ordinal": 9,
+        "ordinal": 8,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 10,
+        "ordinal": 9,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
-      "Left": []
+      "Left": [
+        "Bpchar",
+        "Bpchar"
+      ]
     },
     "nullable": [
-      false,
       false,
       false,
       false,
@@ -109,5 +104,5 @@
       false
     ]
   },
-  "hash": "ff6aed1533a947754b43dfc744267ff3c5cf84927541d1bf054901d2ef63901f"
+  "hash": "bf2f721e4e295b94529269d079ecc7893d7fb669eb2216b4675dbd0346f7067e"
 }

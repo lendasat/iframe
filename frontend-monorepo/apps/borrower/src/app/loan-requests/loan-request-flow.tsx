@@ -77,7 +77,7 @@ export const LoanRequestFlow = () => {
     productOption: LoanProductOption | undefined,
   ) => {
     setSelectedProduct(productOption);
-    setSelectedOfferId(undefined);
+    handleOfferSelect(undefined);
     // Update URL
     if (productOption) {
       setSearchParams((params) => {

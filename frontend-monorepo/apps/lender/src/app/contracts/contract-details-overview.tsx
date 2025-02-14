@@ -18,11 +18,11 @@ import {
   formatCurrency,
   getFormatedStringFromDays,
   InterestRateInfoLabel,
+  LoanAssetHelper,
   LtvInfoLabel,
   ONE_YEAR,
-  StableCoinHelper,
+  TransactionList,
 } from "@frontend-monorepo/ui-shared";
-import { TransactionList } from "@frontend-monorepo/ui-shared";
 import { ExternalLinkIcon } from "@radix-ui/react-icons";
 import {
   Badge,
@@ -48,7 +48,9 @@ import { ContractRecovery } from "./contract-recovery";
 import { ContractRequested } from "./contract-requested";
 import { ContractUndercollateralized } from "./contract-undercollateralized";
 import { downloadLocalStorage } from "./download-local-storage";
-import RepaymentDetails from "./pay-loan-principal";
+import LoanPrincipalStablecoinPayout from "./pay-loan-principal-stablecoin";
+import { FiatLoanDetails } from "@frontend-monorepo/base-http-client";
+import RepaymentDetailsFiat from "./pay-loan-principal-fiat";
 
 function ContractDetailsOverview() {
   const { innerHeight } = window;
@@ -188,10 +190,7 @@ function ContractDetails({ contract }: DetailsProps) {
     contract.status !== ContractStatus.Requested &&
     contract.status !== ContractStatus.Approved;
 
-  const stableCoin = StableCoinHelper.mapFromBackend(
-    contract.loan_asset_chain,
-    contract.loan_asset_type,
-  );
+  const loanAsset = contract.loan_asset;
 
   const hasParent =
     contract.extends_contract !== undefined &&
@@ -395,14 +394,7 @@ function ContractDetails({ contract }: DetailsProps) {
               weight={"medium"}
             >
               <Text>
-                {stableCoin ? (
-                  <Badge>{StableCoinHelper.print(stableCoin)}</Badge>
-                ) : (
-                  <>
-                    {contract.loan_asset_chain}
-                    {contract.loan_asset_type}
-                  </>
-                )}
+                <Badge>{LoanAssetHelper.print(loanAsset)}</Badge>
               </Text>
             </Text>
           </Flex>
@@ -652,11 +644,11 @@ const ContractStatusDetails = ({
     }
   };
 
-  const onContractApprove = async () => {
+  const onContractApprove = async (fiatTransferDetails?: FiatLoanDetails) => {
     try {
       setIsLoading(true);
 
-      await approveContract(contract.id);
+      await approveContract(contract.id, fiatTransferDetails);
       onSuccess();
     } catch (error) {
       onError(`${error}`);
@@ -717,8 +709,10 @@ const ContractStatusDetails = ({
       } else {
         return (
           <ContractRequested
+            borrowerXpub={contract.borrower_xpub}
+            loanAsset={contract.loan_asset}
             isLoading={isLoading}
-            onContractApprove={onContractApprove}
+            onContractApprove={(a) => onContractApprove(a)}
             onContractReject={onContractReject}
           />
         );
@@ -727,6 +721,8 @@ const ContractStatusDetails = ({
     case ContractStatus.RenewalRequested:
       return (
         <ContractRequested
+          borrowerXpub={contract.borrower_xpub}
+          loanAsset={contract.loan_asset}
           isLoading={isLoading}
           onContractApprove={onContractApprove}
           onContractReject={onContractReject}
@@ -751,13 +747,22 @@ const ContractStatusDetails = ({
     case ContractStatus.CollateralConfirmed:
       return (
         <div>
-          <RepaymentDetails
-            contract={contract}
-            isLoading={isLoading}
-            onPrincipalGiven={onPrincipalGiven}
-            txid={txid}
-            setTxId={setTxid}
-          />
+          {!LoanAssetHelper.isFiat(contract.loan_asset) && (
+            <LoanPrincipalStablecoinPayout
+              contract={contract}
+              isLoading={isLoading}
+              onPrincipalGiven={onPrincipalGiven}
+              txid={txid}
+              setTxId={setTxid}
+            />
+          )}
+          {LoanAssetHelper.isFiat(contract.loan_asset) && (
+            <RepaymentDetailsFiat
+              contract={contract}
+              isLoading={isLoading}
+              onPrincipalGiven={onPrincipalGiven}
+            />
+          )}
         </div>
       );
     case ContractStatus.PrincipalGiven:

@@ -8,7 +8,7 @@ import {
   formatCurrency,
   getFormatedStringFromDays,
   KycBadge,
-  StableCoinHelper,
+  LoanAssetHelper,
 } from "@frontend-monorepo/ui-shared";
 import * as Checkbox from "@radix-ui/react-checkbox";
 import { CheckIcon } from "@radix-ui/react-icons";
@@ -89,12 +89,9 @@ function MyLoanOfferDetails() {
 
   //  Should be replaced with the current offer values
 
-  const initCoin = StableCoinHelper.mapFromBackend(
-    offer.loan_asset_chain,
-    offer.loan_asset_type,
-  );
+  const loanAsset = offer.loan_asset;
 
-  const coinLabel = StableCoinHelper.print(initCoin);
+  const coinLabel = LoanAssetHelper.print(loanAsset);
 
   return (
     <Box
