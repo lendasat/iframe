@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO api_keys_lender (api_key_hash, lender_id, description)\n            SELECT $1, $2, $3\n            WHERE (\n                SELECT COUNT(*)\n                FROM api_keys_lender\n                WHERE lender_id = $2\n            ) < 5;\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Bpchar",
+        "Bpchar",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "49db18b9acdd3e8b23b19f0ebf4d8cf4084a692e994e2045e9d8788e0b3565b5"
+}

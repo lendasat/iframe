@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            DELETE FROM api_keys_lender\n            WHERE lender_id = $1 AND id = $2\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Bpchar",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "45bc0313b3f5001add40da113740d99034c668ddd292d35300f94b5320a146b0"
+}

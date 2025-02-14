@@ -1,6 +1,10 @@
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 
+mod contract_liquidation;
+mod discounted_origination_fee;
+mod user_stats;
+
 pub mod approve_contract;
 pub mod bitmex_index_price_rest;
 pub mod bitmex_index_pricefeed;
@@ -9,11 +13,9 @@ pub mod config;
 pub mod contract_close_to_expiry;
 pub mod contract_default;
 pub mod contract_extension;
-mod contract_liquidation;
 pub mod contract_request_expiry;
 pub mod contract_requests;
 pub mod db;
-mod discounted_origination_fee;
 pub mod expiry;
 pub mod liquidation_engine;
 pub mod logger;
@@ -24,7 +26,6 @@ pub mod notifications;
 pub mod routes;
 pub mod sideshift;
 pub mod telegram_bot;
-mod user_stats;
 pub mod utils;
 pub mod wallet;
 
