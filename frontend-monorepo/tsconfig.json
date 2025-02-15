@@ -1,0 +1,8 @@
+{
+  "extends": "./tsconfig.base.json",
+  "files": [], // intentionally empty
+  "references": [
+    // UPDATED BY PROJECT GENERATORS
+    // All projects in the repository
+  ]
+}

@@ -1,6 +1,6 @@
 import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
 import { RegistrationForm } from "@frontend-monorepo/ui-shared";
-import init, {
+import {
   begin_registration,
   load_wallet,
   new_wallet,
@@ -22,8 +22,6 @@ function Registration() {
     password: string,
     referralCode?: string,
   ) => {
-    await init();
-
     const registrationData = begin_registration(email, password);
 
     const network = import.meta.env.VITE_BITCOIN_NETWORK;

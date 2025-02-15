@@ -45,8 +45,8 @@ pub async fn spawn_lender_server(
             .merge(kyc::router(app_state.clone()))
             .merge(api_keys::router(app_state))
             .fallback_service(
-                ServeDir::new("./frontend-monorepo/dist/apps/lender").fallback(ServeFile::new(
-                    "./frontend-monorepo/dist/apps/lender/index.html",
+                ServeDir::new("./frontend-monorepo/apps/lender/dist").fallback(ServeFile::new(
+                    "./frontend-monorepo/apps/lender/dist/index.html",
                 )),
             ),
     );

@@ -1,6 +1,6 @@
 import { useAuth } from "@frontend-monorepo/http-client-borrower";
 import { LoginForm } from "@frontend-monorepo/ui-shared";
-import init, {
+import {
   does_wallet_exist,
   is_wallet_equal,
   load_wallet,
@@ -15,8 +15,6 @@ function Login() {
   const { status } = useParams();
 
   const handleLogin = async (email: string, password: string) => {
-    await init();
-
     const loginResponse = await login(email, password);
 
     if ("must_upgrade_to_pake" in loginResponse) {

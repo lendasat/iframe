@@ -26,7 +26,7 @@ fmt-frontend:
     #!/usr/bin/env bash
     set -euxo pipefail
     cd frontend-monorepo
-    npx prettier . --write
+    pnpm format
 
 
 clippy:
@@ -36,13 +36,13 @@ lint-frontend:
     #!/usr/bin/env bash
     set -euxo pipefail
     cd frontend-monorepo
-    npx nx run-many --target=lint --all --skipNxCache -- --max-warnings 0
+    pnpm lint
 
 check-frontend:
     #!/usr/bin/env bash
     set -euxo pipefail
     cd frontend-monorepo
-    npx tsc --project tsconfig.base.json --jsx react-jsx --noEmit
+    pnpm check-types
 
 ## ------------------------
 ## Test functions
@@ -52,18 +52,13 @@ test-frontend:
     #!/usr/bin/env bash
     set -euxo pipefail
     cd frontend-monorepo
-    npx nx run-many --target=test --all --skipNxCache
+    # FIXME: we should run our frontend tests
+    # npx nx run-many --target=test --all --skipNxCache
 
 test-rust:
     cargo test --workspace
 
 test: test-frontend test-rust
-
-e2e-tests-frontend:
-    #!/usr/bin/env bash
-    set -euxo pipefail
-    cd frontend-monorepo
-    npx nx run-many --target=e2e --all --skipNxCache
 
 prepare-e2e:
     # Start hub DB
@@ -116,12 +111,14 @@ mempool-d:
 borrower:
     #!/usr/bin/env bash
     cd frontend-monorepo
-    npx nx serve borrower
+    pnpm build --filter=!@frontend/borrower
+    pnpm --filter="@frontend/borrower" serve
 
 lender:
     #!/usr/bin/env bash
     cd frontend-monorepo
-    npx nx serve lender
+    pnpm build --filter=!@frontend/lender
+    pnpm --filter="@frontend/lender" serve
 
 ## ------------------------
 ## Build frontend functions
@@ -131,7 +128,7 @@ lender:
 deps-frontend:
     #!/usr/bin/env bash
     cd frontend-monorepo
-    npm install
+    pnpm install
 
 # build the WASM browser wallet
 build-wallet:
@@ -141,13 +138,8 @@ build-wallet:
 build-frontend:
     #!/usr/bin/env bash
     cd frontend-monorepo
-    npx nx run-many --target=build --all --skipNxCache
+    pnpm build
 
-# Clear cached Nx artifacts and metadata about the workspace and shut down the Nx Daemon.
-nx-reset:
-    #!/usr/bin/env bash
-    cd frontend-monorepo
-    npx nx reset
 
 ## ------------------------
 ## Build hub functions

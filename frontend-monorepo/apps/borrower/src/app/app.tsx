@@ -37,6 +37,9 @@ import Cards from "./cards/Cards";
 import LenderProfile from "./lenderProfile";
 import { LoanRequestFlow } from "./loan-requests/loan-request-flow";
 import RestrictedAccessPage from "./RestrictedAccessPage";
+import { useEffect } from "react";
+import init from "browser-wallet";
+import browserWalletUrl from "browser-wallet/browser_wallet_bg.wasm?url";
 
 const menuItems = [
   {
@@ -212,6 +215,12 @@ function App() {
   if (!baseUrl) {
     throw new Error("VITE_BORROWER_BASE_URL is undefined!");
   }
+
+  useEffect(() => {
+    (async () => {
+      await init(browserWalletUrl);
+    })();
+  });
 
   return (
     <AuthProviderBorrower baseUrl={baseUrl}>

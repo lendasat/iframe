@@ -37,6 +37,10 @@ import { LoanOffersOverview } from "./loan-offers/LoanOffersOverview";
 import MyLoanOfferDetails from "./my-offers/my-loan-offer-details";
 import MyLoanOffersOverview from "./my-offers/my-loan-offers-overview";
 
+import init from "browser-wallet";
+import browserWalletUrl from "browser-wallet/browser_wallet_bg.wasm?url";
+import { useEffect } from "react";
+
 const menuItems = [
   {
     group: [
@@ -185,6 +189,12 @@ function App() {
   if (!baseUrl) {
     throw new Error("VITE_LENDER_BASE_URL is undefined!");
   }
+
+  useEffect(() => {
+    (async () => {
+      await init(browserWalletUrl);
+    })();
+  });
 
   return (
     <PriceProvider url={baseUrl}>

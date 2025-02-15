@@ -1,6 +1,6 @@
 import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
 import { ResetPasswordForm } from "@frontend-monorepo/ui-shared";
-import init, {
+import {
   begin_registration,
   change_wallet_encryption,
   new_wallet_from_mnemonic,
@@ -36,8 +36,6 @@ function ResetPassword() {
     if (email === undefined) {
       throw new Error("Cannot reset password without email");
     }
-
-    await init();
 
     const registrationData = begin_registration(email, newPassword);
 

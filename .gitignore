@@ -234,3 +234,6 @@ rust-project.json
 
 hub.log*
 mempool.log*
+
+
+**/.vscode

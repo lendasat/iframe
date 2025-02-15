@@ -1,0 +1,23 @@
+{
+  "name": "@frontend-monorepo/base-http-client",
+  "version": "0.0.1",
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "typings": "dist/index.d.ts",
+  "files": [
+    "src/**"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch"
+  },
+  "devDependencies": {
+    "@types/semver": "^7.5.8"
+  }
+}
