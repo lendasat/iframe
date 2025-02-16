@@ -2,7 +2,6 @@ import type { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import axios from "axios";
 import { createContext, useContext } from "react";
 import type {
-  LoginResponse,
   MeResponse,
   PakeLoginResponse,
   PakeLoginResponseOrUpgrade,
@@ -76,31 +75,6 @@ export class BaseHttpClient {
         throw new Error(message);
       } else {
         throw error;
-      }
-    }
-  }
-
-  async login(email: string, password: string): Promise<LoginResponse> {
-    try {
-      const [response] = await Promise.all([
-        this.httpClient.post("/api/auth/login", { email, password }),
-      ]);
-      const data = response.data as LoginResponse;
-      console.log(`Login successful`);
-      return data;
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        console.log(error.response);
-        const status = error.response.status;
-        const message = error.response.data.message;
-
-        if (status === 400) {
-          throw new Error("Please check your credentials and try again.");
-        } else {
-          throw new Error(message);
-        }
-      } else {
-        throw new Error("Could not send login request");
       }
     }
   }
@@ -368,7 +342,6 @@ export class BaseHttpClient {
 export type BaseHttpClientContextType = Pick<
   BaseHttpClient,
   | "register"
-  | "login"
   | "pakeLoginRequest"
   | "pakeVerifyRequest"
   | "upgradeToPake"
@@ -411,7 +384,6 @@ export const HttpClientProvider: React.FC<HttpClientProviderProps> = ({
 
   const baseClientFunctions: BaseHttpClientContextType = {
     register: httpClient.register.bind(httpClient),
-    login: httpClient.login.bind(httpClient),
     pakeLoginRequest: httpClient.pakeLoginRequest.bind(httpClient),
     pakeVerifyRequest: httpClient.pakeVerifyRequest.bind(httpClient),
     upgradeToPake: httpClient.upgradeToPake.bind(httpClient),

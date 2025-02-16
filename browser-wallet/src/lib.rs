@@ -149,6 +149,21 @@ pub fn does_wallet_exist(key: String) -> Result<bool, JsValue> {
 }
 
 #[wasm_bindgen]
+pub fn is_wallet_equal(
+    key: String,
+    mnemonic_ciphertext: String,
+    network: String,
+    xpub: String,
+) -> Result<bool, JsValue> {
+    map_err_to_js!(browser_wallet::is_wallet_equal(
+        &key,
+        &mnemonic_ciphertext,
+        &network,
+        &xpub
+    ))
+}
+
+#[wasm_bindgen]
 pub fn get_mnemonic() -> Result<String, JsValue> {
     map_err_to_js!(wallet::get_mnemonic())
 }

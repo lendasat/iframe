@@ -49,8 +49,8 @@ export function LoginForm({
       setLoading(false);
     } catch (err) {
       setLoading(false);
-      console.error("Login failed: ", err);
-      setError(`Login failed. ${err}`);
+      console.error("Error during login: ", err);
+      setError(`Login failed: ${err}`);
     }
   };
 

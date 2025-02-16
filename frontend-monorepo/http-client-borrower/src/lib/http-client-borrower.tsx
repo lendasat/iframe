@@ -666,7 +666,6 @@ export const HttpClientBorrowerProvider: React.FC<HttpClientProviderProps> = ({
 
   const baseClientFunctions: BaseHttpClientContextType = {
     register: httpClient.register.bind(httpClient),
-    login: httpClient.login.bind(httpClient),
     pakeLoginRequest: httpClient.pakeLoginRequest.bind(httpClient),
     pakeVerifyRequest: httpClient.pakeVerifyRequest.bind(httpClient),
     upgradeToPake: httpClient.upgradeToPake.bind(httpClient),

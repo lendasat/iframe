@@ -237,9 +237,6 @@ const BorrowerAuthProviderInner: FC<{ children: ReactNode }> = ({
         setBackendVersion(version);
       }
       return pakeVerifyResponse;
-    } catch (error) {
-      console.error("Login failed:", error);
-      throw error;
     } finally {
       setLoading(false);
     }

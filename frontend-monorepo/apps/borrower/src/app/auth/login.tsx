@@ -2,17 +2,16 @@ import { useAuth } from "@frontend-monorepo/http-client-borrower";
 import { LoginForm } from "@frontend-monorepo/ui-shared";
 import init, {
   does_wallet_exist,
+  is_wallet_equal,
   load_wallet,
   restore_wallet,
 } from "browser-wallet";
 import { md5 } from "hash-wasm";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
-  const oldPath = location.pathname;
   const { status } = useParams();
 
   const handleLogin = async (email: string, password: string) => {
@@ -37,20 +36,33 @@ function Login() {
           walletBackupData.network,
         );
       } catch (error) {
-        console.error("Failed restoring wallet data");
+        alert(
+          `We could not restore your wallet from the remote backup. You can log in, but certain actions will not be available. Please reach out to Lendasat support. Error: ${error}.`,
+        );
+        throw error;
       }
     }
 
-    // TODO: If a wallet does not exist and it can't be restored from the hub, we should ask the
-    // user to import a mnemonic seed phrase! Basically, a wallet must be created before we continue
-    // past login.
+    try {
+      load_wallet(password, key);
+    } catch (error) {
+      alert(
+        `We could not load your local wallet. You can log in, but certain actions will not be available. Please reach out to Lendasat support. Error: ${error}.`,
+      );
+      throw error;
+    }
 
-    load_wallet(password, key);
+    const is_local_wallet_equal_to_remote_wallet = is_wallet_equal(
+      key,
+      walletBackupData.mnemonic_ciphertext,
+      walletBackupData.network,
+      walletBackupData.xpub,
+    );
 
-    if (oldPath) {
-      navigate(oldPath);
-    } else {
-      navigate("/");
+    if (!is_local_wallet_equal_to_remote_wallet) {
+      alert(
+        "Your local encrypted wallet does not match your remote encrypted wallet. Please do not request new loans, and reach out to Lendasat support as this can lead to loss of funds.",
+      );
     }
   };
 
