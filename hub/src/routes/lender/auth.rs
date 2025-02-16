@@ -1066,6 +1066,7 @@ struct FilteredUser {
     #[serde(with = "time::serde::rfc3339")]
     updated_at: OffsetDateTime,
     personal_telegram_token: String,
+    timezone: Option<String>,
 }
 
 impl FilteredUser {
@@ -1080,6 +1081,7 @@ impl FilteredUser {
             created_at: created_at_utc,
             updated_at: updated_at_utc,
             personal_telegram_token: personal_telegram_token.token,
+            timezone: user.timezone.clone(),
         }
     }
 }
