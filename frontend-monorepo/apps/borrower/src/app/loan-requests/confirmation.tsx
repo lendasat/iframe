@@ -49,6 +49,7 @@ import { useAsync } from "react-use";
 import { KycDialog } from "./kyc-dialog";
 import { Lender } from "./lender";
 import { MoonCardDropdown } from "./MoonCardDropdown";
+import { ToS } from "./tos";
 
 async function isInUS(): Promise<boolean> {
   try {
@@ -273,10 +274,17 @@ export const Confirmation = ({
     loanAsset &&
     LoanAssetHelper.isFiat(loanAsset) &&
     !encryptedFiatTransferDetails;
-  const kycButNoKycConfirmed =
-    selectedOffer?.kyc_link !== undefined && !kycFormDialogConfirmed;
+  const kycButNoKycConfirmed = Boolean(
+    selectedOffer?.kyc_link && !kycFormDialogConfirmed,
+  );
   const buttonDisabled =
     isStillLoading || fiatButNoEncryptedDataPresent || kycButNoKycConfirmed;
+
+  const showStablecoinLoadAddressInput = Boolean(
+    selectedOffer?.loan_asset &&
+      LoanAssetHelper.isStableCoin(selectedOffer.loan_asset) &&
+      selectedProduct !== LoanProductOption.PayWithMoonDebitCard,
+  );
 
   return (
     <Grid
@@ -634,35 +642,34 @@ export const Confirmation = ({
                 </DataList.Value>
               </DataList.Item>
             )}
-            {selectedOffer?.loan_asset &&
-              LoanAssetHelper.isStableCoin(selectedOffer.loan_asset) && (
-                <DataList.Item>
-                  <DataList.Label minWidth="88px">Loan address</DataList.Label>
-                  <DataList.Value className="w-full">
-                    {isStillLoading || !loanAsset ? (
-                      <Skeleton loading={isStillLoading}>Loading</Skeleton>
-                    ) : (
-                      <Flex direction={"column"}>
-                        <LoanAddressInputField
-                          loanAddress={loanAddress ?? ""}
-                          setLoanAddress={setLoanAddress}
-                          hideButton={hideWalletConnectButton}
-                          setHideButton={setHideWalletConnectButton}
-                          loanAsset={loanAsset}
-                          renderWarning={true}
-                        />
-                        <Text
-                          size={"1"}
-                          weight={"light"}
-                          className="text-font dark:text-font-dark"
-                        >
-                          This address will be used to transfer the loan amount
-                        </Text>
-                      </Flex>
-                    )}
-                  </DataList.Value>
-                </DataList.Item>
-              )}
+            {showStablecoinLoadAddressInput && (
+              <DataList.Item>
+                <DataList.Label minWidth="88px">Loan address</DataList.Label>
+                <DataList.Value className="w-full">
+                  {isStillLoading || !loanAsset ? (
+                    <Skeleton loading={isStillLoading}>Loading</Skeleton>
+                  ) : (
+                    <Flex direction={"column"}>
+                      <LoanAddressInputField
+                        loanAddress={loanAddress ?? ""}
+                        setLoanAddress={setLoanAddress}
+                        hideButton={hideWalletConnectButton}
+                        setHideButton={setHideWalletConnectButton}
+                        loanAsset={loanAsset}
+                        renderWarning={true}
+                      />
+                      <Text
+                        size={"1"}
+                        weight={"light"}
+                        className="text-font dark:text-font-dark"
+                      >
+                        This address will be used to transfer the loan amount
+                      </Text>
+                    </Flex>
+                  )}
+                </DataList.Value>
+              </DataList.Item>
+            )}
           </DataList.Root>
           <Button
             size={"3"}
@@ -684,6 +691,7 @@ export const Confirmation = ({
           ) : (
             ""
           )}
+          <ToS product={selectedProduct} />
         </Flex>
       </Box>
     </Grid>
