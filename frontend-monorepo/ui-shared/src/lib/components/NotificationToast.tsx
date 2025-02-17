@@ -47,13 +47,6 @@ export function NotificationToast({
         <Toast.Description className={"text-font dark:text-font-dark"} asChild>
           {description}
         </Toast.Description>
-        {/*<Toast.Action*/}
-        {/*  className="ToastAction"*/}
-        {/*  asChild*/}
-        {/*  altText="Action"*/}
-        {/*>*/}
-        {/*  <button className="Button small green">Undo</button>*/}
-        {/*</Toast.Action>*/}
       </Toast.Root>
       <Toast.Viewport className="ToastViewport" />
     </Toast.Provider>
