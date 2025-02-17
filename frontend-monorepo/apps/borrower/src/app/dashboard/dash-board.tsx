@@ -137,6 +137,7 @@ function DashBoard() {
     (loan) =>
       loan.status !== ContractStatus.Rejected &&
       loan.status !== ContractStatus.RequestExpired &&
+      loan.status !== ContractStatus.ApprovalExpired &&
       loan.status !== ContractStatus.Cancelled,
   ).length;
 
@@ -147,6 +148,7 @@ function DashBoard() {
       loan.status !== ContractStatus.CollateralSeen &&
       loan.status !== ContractStatus.Rejected &&
       loan.status !== ContractStatus.RequestExpired &&
+      loan.status !== ContractStatus.ApprovalExpired &&
       loan.status !== ContractStatus.Cancelled &&
       loan.status !== ContractStatus.Closed &&
       loan.status !== ContractStatus.Closing,
@@ -418,6 +420,7 @@ function DashBoard() {
                     ContractStatus.Closing,
                     ContractStatus.Extended,
                     ContractStatus.RequestExpired,
+                    ContractStatus.ApprovalExpired,
                     ContractStatus.Cancelled,
                     ContractStatus.DisputeBorrowerResolved,
                     ContractStatus.DisputeLenderResolved,

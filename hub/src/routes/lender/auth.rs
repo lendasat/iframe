@@ -597,7 +597,10 @@ async fn post_start_upgrade_to_pake(
         .filter(|c| {
             !matches!(
                 c.status,
-                ContractStatus::Closed | ContractStatus::Cancelled | ContractStatus::RequestExpired
+                ContractStatus::Closed
+                    | ContractStatus::Cancelled
+                    | ContractStatus::RequestExpired
+                    | ContractStatus::ApprovalExpired
             )
         })
         // Contracts that may have been funded.

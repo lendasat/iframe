@@ -814,6 +814,7 @@ const ContractStatusDetails = ({
     case ContractStatus.Rejected:
     case ContractStatus.Cancelled:
     case ContractStatus.RequestExpired:
+    case ContractStatus.ApprovalExpired:
     case ContractStatus.DisputeBorrowerStarted:
     case ContractStatus.DisputeLenderStarted:
     case ContractStatus.DisputeBorrowerResolved:

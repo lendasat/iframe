@@ -1000,7 +1000,8 @@ pub async fn update_collateral(
                     | ContractStatus::DisputeBorrowerResolved
                     | ContractStatus::DisputeLenderResolved
                     | ContractStatus::Cancelled
-                    | ContractStatus::RequestExpired => (contract.status, false),
+                    | ContractStatus::RequestExpired
+                    | ContractStatus::ApprovalExpired => (contract.status, false),
                 }
             }
             Ordering::Less => {
@@ -1327,4 +1328,33 @@ pub async fn has_contracts_before_pake_lender(
     .await?;
 
     Ok(row.entry_exists.unwrap_or(false))
+}
+
+/// Expires contracts in state Approved and returns their IDs
+pub(crate) async fn expire_approved_contracts(
+    pool: &Pool<Postgres>,
+    expiry_in_hours: i64,
+) -> Result<Vec<String>> {
+    let expiration_threshold = OffsetDateTime::now_utc() - time::Duration::hours(expiry_in_hours);
+
+    let rows = sqlx::query!(
+        r#"
+            UPDATE
+                contracts
+            SET
+                status = 'ApprovalExpired', updated_at = $1
+            WHERE
+                status = 'Approved' AND
+                created_at <= $2
+            RETURNING id;
+        "#,
+        OffsetDateTime::now_utc(),
+        expiration_threshold
+    )
+    .fetch_all(pool)
+    .await?;
+
+    let contract_ids = rows.into_iter().map(|row| row.id).collect();
+
+    Ok(contract_ids)
 }

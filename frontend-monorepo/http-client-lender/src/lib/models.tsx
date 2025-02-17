@@ -26,6 +26,7 @@ export enum ContractStatus {
   DisputeLenderResolved = "DisputeLenderResolved",
   Cancelled = "Cancelled",
   RequestExpired = "RequestExpired",
+  ApprovalExpired = "ApprovalExpired",
 }
 
 export const ALL_CONTRACT_STATUSES = Object.values(
@@ -132,6 +133,7 @@ export const actionFromStatus = (status: ContractStatus) => {
     case ContractStatus.Approved:
     case ContractStatus.Rejected:
     case ContractStatus.RequestExpired:
+    case ContractStatus.ApprovalExpired:
     case ContractStatus.CollateralSeen:
     case ContractStatus.PrincipalGiven:
     case ContractStatus.RepaymentConfirmed:
@@ -207,6 +209,9 @@ export function contractStatusToLabelString(status: ContractStatus): string {
       break;
     case ContractStatus.RequestExpired:
       statusText = "Request Expired";
+      break;
+    case ContractStatus.ApprovalExpired:
+      statusText = "Approval Expired";
       break;
   }
   return statusText;

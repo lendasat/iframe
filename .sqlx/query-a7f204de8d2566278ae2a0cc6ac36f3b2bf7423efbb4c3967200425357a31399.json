@@ -126,7 +126,8 @@
                 "Defaulted",
                 "Undercollateralized",
                 "RenewalRequested",
-                "Extended"
+                "Extended",
+                "ApprovalExpired"
               ]
             }
           }
@@ -216,7 +217,8 @@
                 "Defaulted",
                 "Undercollateralized",
                 "RenewalRequested",
-                "Extended"
+                "Extended",
+                "ApprovalExpired"
               ]
             }
           }
