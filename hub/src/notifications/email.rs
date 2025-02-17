@@ -90,7 +90,7 @@ impl Email {
             .from(self.from.as_str().parse()?)
             .subject(subject)
             .header(ContentType::TEXT_HTML)
-            .body(html_template)?;
+            .body(html_template.clone())?;
 
         let transport = self.new_transport()?;
 
@@ -98,9 +98,26 @@ impl Email {
             tracing::info!("Sending smtp is disabled.");
             return Ok(());
         }
+
+        let subject = subject.to_string();
+        let user_email = user_email.to_string();
+        let html_template = html_template.clone();
+
         tokio::spawn(async move {
             if let Err(err) = transport.send(email).await {
-                tracing::error!("Failed at sending email {err:#}");
+                tracing::error!(
+                    subject,
+                    user_email,
+                    template_name = html_template,
+                    "Failed at sending email {err:#}"
+                );
+            } else {
+                tracing::info!(
+                    subject,
+                    user_email,
+                    template_name = html_template,
+                    "Email sent"
+                );
             }
         });
         Ok(())
