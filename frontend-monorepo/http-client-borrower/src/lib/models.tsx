@@ -27,6 +27,7 @@ export enum ContractStatus {
   DisputeLenderResolved = "DisputeLenderResolved",
   Cancelled = "Cancelled",
   RequestExpired = "RequestExpired",
+  ApprovalExpired = "ApprovalExpired",
 }
 
 export function contractStatusToLabelString(status: ContractStatus): string {
@@ -69,6 +70,8 @@ export function contractStatusToLabelString(status: ContractStatus): string {
       return "Cancelled";
     case ContractStatus.RequestExpired:
       return "Request Expired";
+    case ContractStatus.ApprovalExpired:
+      return "Approval Expired";
   }
 }
 
@@ -82,6 +85,7 @@ export const actionFromStatus = (status: ContractStatus) => {
     case ContractStatus.RenewalRequested:
     case ContractStatus.Rejected:
     case ContractStatus.RequestExpired:
+    case ContractStatus.ApprovalExpired:
     case ContractStatus.CollateralSeen:
     case ContractStatus.CollateralConfirmed:
     case ContractStatus.PrincipalGiven:

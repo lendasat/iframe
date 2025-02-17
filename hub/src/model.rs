@@ -504,6 +504,8 @@ pub enum ContractStatus {
     Cancelled,
     /// The request has expired due to not being accepted nor cancelled
     RequestExpired,
+    /// The request has been approved but was not funded in time
+    ApprovalExpired,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
@@ -545,6 +547,10 @@ pub struct ContractEmails {
     pub defaulted_loan_lender_sent: bool,
     /// Whether an email was sent after the defaulted loan was liquidated
     pub defaulted_loan_liquidated_sent: bool,
+    /// Whether an email was sent to the borrower after the we expired a contract request
+    pub loan_request_expired_borrower_sent: bool,
+    /// Whether an email was sent to the lender after the we expired a contract request
+    pub loan_request_expired_lender_sent: bool,
 }
 
 /// Public information about an API key.
@@ -616,6 +622,7 @@ pub mod db {
         DisputeBorrowerResolved,
         DisputeLenderResolved,
         RequestExpired,
+        ApprovalExpired,
     }
 
     #[derive(Debug, Deserialize, sqlx::Type, Serialize)]
@@ -663,6 +670,8 @@ pub mod db {
         pub defaulted_loan_borrower_sent: bool,
         pub defaulted_loan_lender_sent: bool,
         pub defaulted_loan_liquidated_sent: bool,
+        pub loan_request_expired_borrower_sent: bool,
+        pub loan_request_expired_lender_sent: bool,
     }
 }
 
@@ -730,6 +739,7 @@ impl From<db::ContractStatus> for ContractStatus {
             db::ContractStatus::DisputeLenderResolved => Self::DisputeLenderResolved,
             db::ContractStatus::Cancelled => Self::Cancelled,
             db::ContractStatus::RequestExpired => Self::RequestExpired,
+            db::ContractStatus::ApprovalExpired => Self::ApprovalExpired,
         }
     }
 }
@@ -856,6 +866,7 @@ impl From<ContractStatus> for db::ContractStatus {
             ContractStatus::DisputeLenderResolved => Self::DisputeLenderResolved,
             ContractStatus::Cancelled => Self::Cancelled,
             ContractStatus::RequestExpired => Self::RequestExpired,
+            ContractStatus::ApprovalExpired => Self::ApprovalExpired,
         }
     }
 }
@@ -884,6 +895,8 @@ impl From<db::ContractEmails> for ContractEmails {
             defaulted_loan_borrower_sent: value.defaulted_loan_borrower_sent,
             defaulted_loan_lender_sent: value.defaulted_loan_lender_sent,
             defaulted_loan_liquidated_sent: value.defaulted_loan_liquidated_sent,
+            loan_request_expired_borrower_sent: value.loan_request_expired_borrower_sent,
+            loan_request_expired_lender_sent: value.loan_request_expired_lender_sent,
         }
     }
 }

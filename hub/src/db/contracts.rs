@@ -1000,7 +1000,8 @@ pub async fn update_collateral(
                     | ContractStatus::DisputeBorrowerResolved
                     | ContractStatus::DisputeLenderResolved
                     | ContractStatus::Cancelled
-                    | ContractStatus::RequestExpired => (contract.status, false),
+                    | ContractStatus::RequestExpired
+                    | ContractStatus::ApprovalExpired => (contract.status, false),
                 }
             }
             Ordering::Less => {
@@ -1096,24 +1097,33 @@ pub async fn update_collateral(
     Ok((contract.into(), is_newly_confirmed))
 }
 
-/// Expires contracts in state Requested and returns their IDs
+#[derive(Clone)]
+pub struct ExpiredContract {
+    pub contract_id: String,
+    pub borrower_id: String,
+    pub lender_id: String,
+}
+
+/// Expires contracts in state Requested and returns their details
 pub(crate) async fn expire_requested_contracts(
     pool: &Pool<Postgres>,
     expiry_in_hours: i64,
     pending_kyc_expiry_in_hours: i64,
-) -> Result<Vec<String>> {
+) -> Result<Vec<ExpiredContract>> {
     let expiration_threshold = OffsetDateTime::now_utc() - time::Duration::hours(expiry_in_hours);
 
     let pending_kyc_expiration_threshold =
         OffsetDateTime::now_utc() - time::Duration::hours(pending_kyc_expiry_in_hours);
 
     // If there is no pending KYC, expire the contract after `expiration_threshold`.
-    let rows = sqlx::query!(
+    let regular_expired = sqlx::query_as!(
+        ExpiredContract,
         r#"
             UPDATE
                 contracts
             SET
-                status = 'RequestExpired', updated_at = $1
+                status = 'RequestExpired', 
+                updated_at = $1
             WHERE
                 status = 'Requested' AND
                 created_at <= $2 AND
@@ -1125,7 +1135,10 @@ pub(crate) async fn expire_requested_contracts(
                     kyc.borrower_id = contracts.borrower_id AND
                     kyc.is_done = false
                 )
-            RETURNING id;
+            RETURNING 
+                id as "contract_id",
+                borrower_id as "borrower_id",
+                lender_id as "lender_id"
         "#,
         OffsetDateTime::now_utc(),
         expiration_threshold
@@ -1133,15 +1146,15 @@ pub(crate) async fn expire_requested_contracts(
     .fetch_all(pool)
     .await?;
 
-    let contract_ids = rows.into_iter().map(|row| row.id).collect();
-
     // If there is a pending KYC, expire the contract after `pending_kyc_expiration_threshold`.
-    let rows = sqlx::query!(
+    let kyc_expired = sqlx::query_as!(
+        ExpiredContract,
         r#"
             UPDATE
                 contracts
             SET
-                status = 'RequestExpired', updated_at = $1
+                status = 'RequestExpired', 
+                updated_at = $1
             WHERE
                 status = 'Requested' AND
                 created_at <= $2 AND
@@ -1153,7 +1166,10 @@ pub(crate) async fn expire_requested_contracts(
                     kyc.borrower_id = contracts.borrower_id AND
                     kyc.is_done = false
                 )
-            RETURNING id;
+            RETURNING 
+                id as "contract_id",
+                borrower_id as "borrower_id",
+                lender_id as "lender_id"
         "#,
         OffsetDateTime::now_utc(),
         pending_kyc_expiration_threshold
@@ -1161,11 +1177,10 @@ pub(crate) async fn expire_requested_contracts(
     .fetch_all(pool)
     .await?;
 
-    let pending_kyc_contract_ids = rows.into_iter().map(|row| row.id).collect::<Vec<_>>();
+    // Combine both sets of expired contracts
+    let all_expired = [regular_expired, kyc_expired].concat();
 
-    let contract_ids = [contract_ids, pending_kyc_contract_ids].concat();
-
-    Ok(contract_ids)
+    Ok(all_expired)
 }
 
 pub struct ContractInfo {
@@ -1327,4 +1342,33 @@ pub async fn has_contracts_before_pake_lender(
     .await?;
 
     Ok(row.entry_exists.unwrap_or(false))
+}
+
+/// Expires contracts in state Approved and returns their IDs
+pub(crate) async fn expire_approved_contracts(
+    pool: &Pool<Postgres>,
+    expiry_in_hours: i64,
+) -> Result<Vec<String>> {
+    let expiration_threshold = OffsetDateTime::now_utc() - time::Duration::hours(expiry_in_hours);
+
+    let rows = sqlx::query!(
+        r#"
+            UPDATE
+                contracts
+            SET
+                status = 'ApprovalExpired', updated_at = $1
+            WHERE
+                status = 'Approved' AND
+                created_at <= $2
+            RETURNING id;
+        "#,
+        OffsetDateTime::now_utc(),
+        expiration_threshold
+    )
+    .fetch_all(pool)
+    .await?;
+
+    let contract_ids = rows.into_iter().map(|row| row.id).collect();
+
+    Ok(contract_ids)
 }

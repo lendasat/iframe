@@ -253,6 +253,7 @@ function ContractDetails({ contract }: DetailsProps) {
     case ContractStatus.Extended:
     case ContractStatus.Cancelled:
     case ContractStatus.RequestExpired:
+    case ContractStatus.ApprovalExpired:
       canAddExtraCollateral = false;
       break;
   }
@@ -838,6 +839,7 @@ const ContractStatusDetails = ({
     case ContractStatus.Closing:
     case ContractStatus.Rejected:
     case ContractStatus.RequestExpired:
+    case ContractStatus.ApprovalExpired:
     case ContractStatus.DisputeBorrowerStarted:
     case ContractStatus.DisputeLenderStarted:
     case ContractStatus.DisputeBorrowerResolved:

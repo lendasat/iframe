@@ -179,6 +179,7 @@ pub enum NotificationKind {
     Defaulted,
     LiquidationNotice,
     RequestAutoApproved,
+    RequestExpired,
 }
 
 impl xtra::Handler<Notification> for TelegramBot {
@@ -221,6 +222,12 @@ impl xtra::Handler<Notification> for TelegramBot {
             NotificationKind::LiquidationNotice => {
                 format!(
                     "A loan is under collateralized. Please log in to liquidate the contract. \n\n[Contract details]({})",
+                    url,
+                )
+            }
+            NotificationKind::RequestExpired => {
+                format!(
+                    "You did not respond in time. We have marked the loan request as expired and marked your loan offer as unavailable. Please log in to create a new offer whenever you are available \n\n[Create New Offer]({})",
                     url,
                 )
             }

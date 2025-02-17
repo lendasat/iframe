@@ -5,6 +5,7 @@ use bitcoin::Network;
 use descriptor_wallet::DescriptorWallet;
 use hub::bitmex_index_pricefeed::subscribe_index_price;
 use hub::config::Config;
+use hub::contract_approval_expired::add_contract_approval_expiry_job;
 use hub::contract_close_to_expiry::add_contract_close_to_expiry_job;
 use hub::contract_default::add_contract_default_job;
 use hub::contract_request_expiry::add_contract_request_expiry_job;
@@ -201,9 +202,12 @@ async fn main() -> Result<()> {
 
     let sched = JobScheduler::new().await?;
 
-    add_contract_request_expiry_job(&sched, db.clone()).await?;
+    add_contract_request_expiry_job(&sched, db.clone(), config.clone(), notifications.clone())
+        .await?;
     add_contract_default_job(&sched, config.clone(), db.clone(), notifications.clone()).await?;
-    add_contract_close_to_expiry_job(&sched, config, db, notifications).await?;
+    add_contract_close_to_expiry_job(&sched, config.clone(), db.clone(), notifications.clone())
+        .await?;
+    add_contract_approval_expiry_job(&sched, db).await?;
 
     sched.start().await?;
 

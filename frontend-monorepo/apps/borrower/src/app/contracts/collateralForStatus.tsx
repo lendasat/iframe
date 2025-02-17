@@ -31,6 +31,7 @@ export function collateralForStatus(
     case ContractStatus.DisputeLenderResolved:
     case ContractStatus.Cancelled:
     case ContractStatus.RequestExpired:
+    case ContractStatus.ApprovalExpired:
       collateral_btc = actual;
       break;
   }

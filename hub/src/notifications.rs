@@ -288,4 +288,36 @@ impl Notifications {
             tracing::error!("Could not send email {e:#}");
         }
     }
+
+    pub async fn send_expired_loan_request_borrower(&self, borrower: Borrower, url: &str) {
+        if let Err(e) = self
+            .email
+            .send_expired_loan_request_borrower(borrower, url)
+            .await
+        {
+            tracing::error!("Could not send email {e:#}");
+        }
+    }
+    pub async fn send_expired_loan_request_lender(&self, lender: Lender, url: &str) {
+        if let Some(tgb) = &self.telegram_bot {
+            if let Err(e) = tgb
+                .send(crate::telegram_bot::Notification {
+                    lender_id: lender.id.clone(),
+                    url: url.to_string(),
+                    kind: crate::telegram_bot::NotificationKind::RequestExpired,
+                })
+                .await
+            {
+                tracing::error!("Failed sending to telegram actor {e:#}");
+            }
+        }
+
+        if let Err(e) = self
+            .email
+            .send_expired_loan_request_lender(lender, url)
+            .await
+        {
+            tracing::error!("Could not send email {e:#}");
+        }
+    }
 }

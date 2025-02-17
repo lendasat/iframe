@@ -90,7 +90,7 @@ impl Email {
             .from(self.from.as_str().parse()?)
             .subject(subject)
             .header(ContentType::TEXT_HTML)
-            .body(html_template)?;
+            .body(html_template.clone())?;
 
         let transport = self.new_transport()?;
 
@@ -98,9 +98,26 @@ impl Email {
             tracing::info!("Sending smtp is disabled.");
             return Ok(());
         }
+
+        let subject = subject.to_string();
+        let user_email = user_email.to_string();
+        let html_template = html_template.clone();
+
         tokio::spawn(async move {
             if let Err(err) = transport.send(email).await {
-                tracing::error!("Failed at sending email {err:#}");
+                tracing::error!(
+                    subject,
+                    user_email,
+                    template_name = html_template,
+                    "Failed at sending email {err:#}"
+                );
+            } else {
+                tracing::info!(
+                    subject,
+                    user_email,
+                    template_name = html_template,
+                    "Email sent"
+                );
             }
         });
         Ok(())
@@ -602,6 +619,56 @@ impl Email {
             "Your loan expired without repayment",
             user.name.as_str(),
             user.email.as_str(),
+            content_template,
+        )
+        .await
+    }
+
+    pub async fn send_expired_loan_request_borrower(
+        &self,
+        borrower: Borrower,
+        offers_url: &str,
+    ) -> Result<()> {
+        let template_name = "loan_request_expired_borrower";
+        let handlebars = Self::prepare_template(template_name)?;
+
+        let data = serde_json::json!({
+            "first_name": &borrower.name,
+            "subject": &template_name,
+            "url": offers_url
+        });
+
+        let content_template = handlebars.render(template_name, &data)?;
+
+        self.send_email(
+            "Your loan request expired without response",
+            borrower.name.as_str(),
+            borrower.email.as_str(),
+            content_template,
+        )
+        .await
+    }
+
+    pub async fn send_expired_loan_request_lender(
+        &self,
+        lender: Lender,
+        create_new_offer_url: &str,
+    ) -> Result<()> {
+        let template_name = "loan_request_expired_lender";
+        let handlebars = Self::prepare_template(template_name)?;
+
+        let data = serde_json::json!({
+            "first_name": &lender.name,
+            "subject": &template_name,
+            "url": create_new_offer_url
+        });
+
+        let content_template = handlebars.render(template_name, &data)?;
+
+        self.send_email(
+            "A contract request expired without response",
+            lender.name.as_str(),
+            lender.email.as_str(),
             content_template,
         )
         .await

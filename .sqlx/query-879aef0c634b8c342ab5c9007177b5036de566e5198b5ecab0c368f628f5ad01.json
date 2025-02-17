@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT \n            b.id, \n            b.name,\n            b.timezone,\n            b.created_at,\n            COUNT(\n                CASE WHEN \n                    c.status = 'Closed'\n                    THEN 1 END\n                ) as \"successful_contracts!\",\n            COUNT(\n                CASE WHEN \n                    c.status = 'Cancelled'\n                    THEN 1 END\n                ) as \"failed_contracts!\"\n        FROM borrowers b\n        LEFT JOIN contracts c ON c.borrower_id = b.id\n        WHERE b.id = $1\n        GROUP BY b.name, b.id\n        ",
+  "query": "\n        SELECT \n            b.id, \n            b.name,\n            b.timezone,\n            b.created_at,\n            COUNT(\n                CASE WHEN \n                    c.status = 'Closed'\n                    THEN 1 END\n                ) as \"successful_contracts!\",\n            COUNT(\n                CASE WHEN \n                    c.status = 'Cancelled' OR\n                    c.status = 'ApprovalExpired'\n                    THEN 1 END\n                ) as \"failed_contracts!\"\n        FROM borrowers b\n        LEFT JOIN contracts c ON c.borrower_id = b.id\n        WHERE b.id = $1\n        GROUP BY b.name, b.id\n        ",
   "describe": {
     "columns": [
       {
@@ -48,5 +48,5 @@
       null
     ]
   },
-  "hash": "82e4e698cd221681980a2efe49abf2a642dc2462cbb69469d8fc49ec82138279"
+  "hash": "879aef0c634b8c342ab5c9007177b5036de566e5198b5ecab0c368f628f5ad01"
 }

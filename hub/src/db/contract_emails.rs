@@ -30,7 +30,9 @@ where
             loan_auto_accept_notification_sent,
             defaulted_loan_borrower_sent,
             defaulted_loan_lender_sent,
-            defaulted_loan_liquidated_sent
+            defaulted_loan_liquidated_sent,
+            loan_request_expired_borrower_sent,
+            loan_request_expired_lender_sent
         "#,
         contract_id,
     )
@@ -60,7 +62,9 @@ pub async fn load_contract_emails(
             loan_auto_accept_notification_sent,
             defaulted_loan_borrower_sent,
             defaulted_loan_lender_sent,
-            defaulted_loan_liquidated_sent
+            defaulted_loan_liquidated_sent,
+            loan_request_expired_borrower_sent,
+            loan_request_expired_lender_sent
         FROM contract_emails
         WHERE contract_id = $1
         "#,
@@ -82,6 +86,8 @@ pub async fn load_contract_emails(
             defaulted_loan_borrower_sent: false,
             defaulted_loan_lender_sent: false,
             defaulted_loan_liquidated_sent: false,
+            loan_request_expired_borrower_sent: false,
+            loan_request_expired_lender_sent: false,
         }))
 }
 
@@ -266,6 +272,46 @@ pub async fn mark_defaulted_loan_lender_as_sent(
         r#"
         UPDATE contract_emails
         SET defaulted_loan_lender_sent = true
+        WHERE contract_id = $1
+        "#,
+        contract_id,
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+pub async fn mark_loan_request_expired_borrower_as_sent(
+    pool: &Pool<Postgres>,
+    contract_id: &str,
+) -> Result<()> {
+    let contract_id = contract_id.to_string();
+
+    sqlx::query!(
+        r#"
+        UPDATE contract_emails
+            SET loan_request_expired_borrower_sent = true
+        WHERE contract_id = $1
+        "#,
+        contract_id,
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+pub async fn mark_loan_request_expired_lender_as_sent(
+    pool: &Pool<Postgres>,
+    contract_id: &str,
+) -> Result<()> {
+    let contract_id = contract_id.to_string();
+
+    sqlx::query!(
+        r#"
+        UPDATE contract_emails
+            SET loan_request_expired_lender_sent = true
         WHERE contract_id = $1
         "#,
         contract_id,

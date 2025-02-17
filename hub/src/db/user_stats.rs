@@ -78,7 +78,8 @@ pub async fn get_borrower_stats(
                 ) as "successful_contracts!",
             COUNT(
                 CASE WHEN 
-                    c.status = 'Cancelled'
+                    c.status = 'Cancelled' OR
+                    c.status = 'ApprovalExpired'
                     THEN 1 END
                 ) as "failed_contracts!"
         FROM borrowers b
