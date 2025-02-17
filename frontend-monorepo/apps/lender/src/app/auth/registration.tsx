@@ -14,7 +14,7 @@ function Registration() {
   const navigate = useNavigate();
 
   const queryParams = new URLSearchParams(useLocation().search);
-  const referralCode = queryParams.get("referral");
+  const referralCode = queryParams.get("ref");
 
   const handleRegister = async (
     name: string,

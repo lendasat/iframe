@@ -28,7 +28,7 @@ export const ReferralCodesTable = ({
     try {
       const baseUrl = window.location.origin;
       await navigator.clipboard.writeText(
-        `${baseUrl}/registration?referral=${code}`,
+        `${baseUrl}/registration?ref=${code}`,
       );
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
