@@ -514,3 +514,30 @@ pub async fn calculate_loan_offer_stats(pool: &Pool<Postgres>) -> Result<Interes
 
     Ok(stats)
 }
+
+/// Sets loan offers to unavailable based on contract IDs and returns the updated loan offer IDs
+pub async fn set_loan_offers_unavailable_by_contract_id(
+    pool: &Pool<Postgres>,
+    contract_ids: &[String],
+) -> Result<Vec<String>, sqlx::Error> {
+    let records = sqlx::query!(
+        r#"
+        UPDATE loan_offers
+        SET 
+            status = 'Unavailable',
+            updated_at = CURRENT_TIMESTAMP
+        WHERE 
+            id IN (
+                SELECT loan_id 
+                FROM contracts 
+                WHERE contracts.id = ANY($1)
+            )
+        RETURNING id
+        "#,
+        contract_ids as &[String]
+    )
+    .fetch_all(pool)
+    .await?;
+
+    Ok(records.into_iter().map(|r| r.id).collect())
+}

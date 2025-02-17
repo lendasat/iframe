@@ -48,7 +48,7 @@ async fn create_contract_request_expiry_check(
     let mut check_for_expiring_contracts_job = Job::new_async(
         CHECK_CONTRACT_REQUESTS_EXPIRED_SCHEDULER,
         move |_uuid, _l| {
-            tracing::info!("Running job");
+            tracing::info!("Running job to expire contracts");
 
             Box::pin({
                 let database = database.clone();
@@ -60,9 +60,12 @@ async fn create_contract_request_expiry_check(
                     )
                     .await
                     {
-                        Ok(contracts) => contracts.iter().for_each(|contract_id| {
-                            tracing::info!(contract_id, "Contract request expired");
-                        }),
+                        Ok(contracts) => {
+                            contracts.iter().for_each(|contract_id| {
+                                tracing::info!(contract_id, "Contract request expired");
+                            });
+                            expire_loan_offers(&database, contracts).await;
+                        }
                         Err(err) => {
                             tracing::error!("Failed expire contract requests: {err:#}");
                         }
@@ -88,4 +91,22 @@ async fn create_contract_request_expiry_check(
         .await?;
 
     Ok(check_for_expiring_contracts_job)
+}
+
+async fn expire_loan_offers(database: &Pool<Postgres>, contracts: Vec<String>) {
+    match db::loan_offers::set_loan_offers_unavailable_by_contract_id(
+        database,
+        contracts.as_slice(),
+    )
+    .await
+    {
+        Ok(offer_ids) => {
+            offer_ids.iter().for_each(|offer_id| {
+                tracing::info!(offer_id, "Loan offer expired due to inactivity");
+            });
+        }
+        Err(error) => {
+            tracing::error!("Failed marking loan offer as unavailable: {error:#}");
+        }
+    }
 }
