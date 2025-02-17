@@ -78,7 +78,6 @@ export default function DashboardContracts({
   const statusFilterActionRequired = [
     ContractStatus.Requested,
     ContractStatus.RenewalRequested,
-    ContractStatus.CollateralSeen,
     ContractStatus.CollateralConfirmed,
     ContractStatus.RepaymentProvided,
     ContractStatus.Defaulted,
@@ -89,22 +88,19 @@ export default function DashboardContracts({
 
   const statusFilterOpen = [
     ContractStatus.Approved,
+    ContractStatus.CollateralSeen,
     ContractStatus.PrincipalGiven,
+    ContractStatus.RepaymentConfirmed,
   ];
+
   const statusFilterClosed = [
     ContractStatus.Closing,
     ContractStatus.Closed,
     ContractStatus.Extended,
   ];
 
-  const contractsWithActionNeeded = contracts.filter(
-    (loan) =>
-      loan.status === ContractStatus.Requested ||
-      loan.status === ContractStatus.RenewalRequested ||
-      loan.status === ContractStatus.Defaulted ||
-      loan.status === ContractStatus.CollateralSeen ||
-      loan.status === ContractStatus.CollateralConfirmed ||
-      loan.status === ContractStatus.RepaymentProvided,
+  const contractsWithActionNeeded = contracts.filter((loan) =>
+    statusFilterActionRequired.includes(loan.status),
   );
   const needsAction = contractsWithActionNeeded.length > 0;
 
@@ -151,7 +147,6 @@ export default function DashboardContracts({
               toggleSortByColumn={toggleSortByColumn}
             />
           </Tabs.Content>
-
           <Tabs.Content value="closed">
             <ContractDetailsTable
               contracts={filterContracts(contracts, statusFilterClosed)}
