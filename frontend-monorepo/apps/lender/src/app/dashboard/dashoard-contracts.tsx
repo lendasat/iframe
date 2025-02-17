@@ -78,7 +78,6 @@ export default function DashboardContracts({
   const statusFilterActionRequired = [
     ContractStatus.Requested,
     ContractStatus.RenewalRequested,
-    ContractStatus.CollateralSeen,
     ContractStatus.CollateralConfirmed,
     ContractStatus.RepaymentProvided,
     ContractStatus.Defaulted,
@@ -89,8 +88,11 @@ export default function DashboardContracts({
 
   const statusFilterOpen = [
     ContractStatus.Approved,
+    ContractStatus.CollateralSeen,
     ContractStatus.PrincipalGiven,
+    ContractStatus.RepaymentConfirmed,
   ];
+
   const statusFilterClosed = [
     ContractStatus.Closing,
     ContractStatus.Closed,
@@ -145,7 +147,6 @@ export default function DashboardContracts({
               toggleSortByColumn={toggleSortByColumn}
             />
           </Tabs.Content>
-
           <Tabs.Content value="closed">
             <ContractDetailsTable
               contracts={filterContracts(contracts, statusFilterClosed)}
