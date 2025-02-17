@@ -666,7 +666,7 @@ impl Email {
         let content_template = handlebars.render(template_name, &data)?;
 
         self.send_email(
-            "A loan request expired without response",
+            "A contract request expired without response",
             lender.name.as_str(),
             lender.email.as_str(),
             content_template,
