@@ -46,6 +46,7 @@ const RepaymentDetails = ({
     }
     onPrincipalGiven();
   };
+
   return (
     <Container fluid>
       <Row>
@@ -72,7 +73,7 @@ const RepaymentDetails = ({
             <p className="mt-2 text-break text-font dark:text-font-dark">
               Please send{" "}
               <strong>{formatCurrency(contract.loan_amount)}</strong> (
-              {LoanAssetHelper.toChain(contract.loan_asset)} on{" "}
+              {LoanAssetHelper.toCoin(contract.loan_asset)} on{" "}
               {LoanAssetHelper.toChain(contract.loan_asset)}) to:
             </p>
             <div className="d-flex align-items-center">
