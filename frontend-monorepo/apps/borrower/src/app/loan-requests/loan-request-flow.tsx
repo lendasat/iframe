@@ -1,6 +1,6 @@
 // Types
 import { LoanProductOption } from "@frontend-monorepo/base-http-client";
-import { Box, Heading, ScrollArea } from "@radix-ui/themes";
+import { Box, Flex, Heading, ScrollArea, Text } from "@radix-ui/themes";
 import { ColumnFiltersState } from "@tanstack/react-table";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -186,6 +186,13 @@ export const LoanRequestFlow = () => {
             selectedLoanAmount={selectedLoanAmount}
             selectedLoanDuration={selectedLoanDuration}
           />
+          <Flex direction={"column"} mx={"2"} gap={"1"}>
+            <Text size={"1"} weight={"light"}>
+              During the closed beta we will be using a 2-of-3 multisig contract
+              instead of a DLC. The keys are distributed among the borrower, the
+              lender and Lendasat.
+            </Text>
+          </Flex>
         </Box>
       </Box>
     </ScrollArea>

@@ -49,6 +49,7 @@ import { useAsync } from "react-use";
 import { KycDialog } from "./kyc-dialog";
 import { Lender } from "./lender";
 import { MoonCardDropdown } from "./MoonCardDropdown";
+import { ToS } from "./tos";
 
 async function isInUS(): Promise<boolean> {
   try {
@@ -684,6 +685,7 @@ export const Confirmation = ({
           ) : (
             ""
           )}
+          <ToS product={selectedProduct} />
         </Flex>
       </Box>
     </Grid>
