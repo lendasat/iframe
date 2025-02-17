@@ -97,14 +97,8 @@ export default function DashboardContracts({
     ContractStatus.Extended,
   ];
 
-  const contractsWithActionNeeded = contracts.filter(
-    (loan) =>
-      loan.status === ContractStatus.Requested ||
-      loan.status === ContractStatus.RenewalRequested ||
-      loan.status === ContractStatus.Defaulted ||
-      loan.status === ContractStatus.CollateralSeen ||
-      loan.status === ContractStatus.CollateralConfirmed ||
-      loan.status === ContractStatus.RepaymentProvided,
+  const contractsWithActionNeeded = contracts.filter((loan) =>
+    statusFilterActionRequired.includes(loan.status),
   );
   const needsAction = contractsWithActionNeeded.length > 0;
 
