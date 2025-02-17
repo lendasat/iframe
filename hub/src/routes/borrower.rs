@@ -24,15 +24,17 @@ use tower_http::cors::CorsLayer;
 use tower_http::services::ServeDir;
 use tower_http::services::ServeFile;
 
+pub(crate) mod api_keys;
 pub(crate) mod auth;
-mod cards;
 pub(crate) mod contracts;
-mod dispute;
 pub(crate) mod health_check;
 pub(crate) mod loan_offers;
 pub(crate) mod loan_requests;
 pub(crate) mod profile;
 pub(crate) mod version;
+
+mod cards;
+mod dispute;
 
 pub async fn spawn_borrower_server(
     config: Config,
@@ -53,7 +55,8 @@ pub async fn spawn_borrower_server(
                 .with_state(app_state.clone()),
         )
         .merge(loan_requests::router(app_state.clone()))
-        .merge(cards::router(app_state.clone()))
+        .merge(api_keys::router(app_state.clone()))
+        .merge(cards::router(app_state))
         // This is a relative path on the filesystem, which means, when deploying `hub` we will need
         // to have the frontend in this directory. Ideally we would bundle the frontend with
         // the binary, but so far we failed at handling requests which are meant to be handled by

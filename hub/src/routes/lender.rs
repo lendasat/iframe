@@ -21,6 +21,7 @@ use tower_http::cors::CorsLayer;
 use tower_http::services::ServeDir;
 use tower_http::services::ServeFile;
 
+pub(crate) mod api_keys;
 pub(crate) mod auth;
 pub(crate) mod contracts;
 pub(crate) mod dispute;
@@ -29,7 +30,6 @@ pub(crate) mod kyc;
 pub(crate) mod loan_offers;
 pub(crate) mod loan_requests;
 pub(crate) mod profile;
-
 pub(crate) mod version;
 
 pub async fn spawn_lender_server(
@@ -51,7 +51,8 @@ pub async fn spawn_lender_server(
                     .with_state(app_state.clone()),
             )
             .merge(loan_requests::router(app_state.clone()))
-            .merge(kyc::router(app_state))
+            .merge(kyc::router(app_state.clone()))
+            .merge(api_keys::router(app_state))
             .fallback_service(
                 ServeDir::new("./frontend-monorepo/dist/apps/lender").fallback(ServeFile::new(
                     "./frontend-monorepo/dist/apps/lender/index.html",

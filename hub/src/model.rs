@@ -547,6 +547,14 @@ pub struct ContractEmails {
     pub defaulted_loan_liquidated_sent: bool,
 }
 
+/// Public information about an API key.
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ApiKeyInfo {
+    pub id: i32,
+    pub description: String,
+    pub created_at: OffsetDateTime,
+}
+
 pub mod db {
     use rust_decimal::Decimal;
     use serde::Deserialize;

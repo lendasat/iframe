@@ -3,6 +3,7 @@ use sqlx::postgres::PgPoolOptions;
 use sqlx::Pool;
 use sqlx::Postgres;
 
+pub mod api_keys;
 pub mod borrower_features;
 pub mod borrowers;
 pub mod borrowers_referral_code;

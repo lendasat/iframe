@@ -22,6 +22,8 @@ use reqwest::Url;
 use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
+use sha2::Digest;
+use sha2::Sha256;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::Pool;
 use sqlx::Postgres;
@@ -59,6 +61,9 @@ async fn main() -> Result<()> {
     create_sample_contracts(&pool, &borrower, &offers[1], lender.id.as_str()).await?;
 
     create_sample_card(&pool, &borrower).await?;
+
+    insert_borrower_api_key(&pool, &borrower.id, "satoshi").await?;
+    insert_lender_api_key(&pool, &lender.id, "lendatoshi").await?;
 
     Ok(())
 }
@@ -384,6 +389,32 @@ async fn enable_borrower_features(pool: &Pool<Postgres>, user_id: &str) -> Resul
 async fn enable_lender_features(pool: &Pool<Postgres>, user_id: &str) -> Result<()> {
     db::lender_features::enable_feature(pool, user_id, "auto_approve").await?;
     db::lender_features::enable_feature(pool, user_id, "kyc_offers").await?;
+    Ok(())
+}
+
+async fn insert_borrower_api_key(
+    pool: &Pool<Postgres>,
+    borrower_id: &str,
+    api_key: &str,
+) -> Result<()> {
+    let api_key_hash = Sha256::digest(api_key.as_bytes());
+    let api_key_hash = hex::encode(api_key_hash);
+
+    db::api_keys::insert_borrower(pool, &api_key_hash, borrower_id, "test").await?;
+
+    Ok(())
+}
+
+async fn insert_lender_api_key(
+    pool: &Pool<Postgres>,
+    lender_id: &str,
+    api_key: &str,
+) -> Result<()> {
+    let api_key_hash = Sha256::digest(api_key.as_bytes());
+    let api_key_hash = hex::encode(api_key_hash);
+
+    db::api_keys::insert_lender(pool, &api_key_hash, lender_id, "test").await?;
+
     Ok(())
 }
 
