@@ -1,4 +1,7 @@
-import { Badge, Table, Text } from "@radix-ui/themes";
+import { Badge, Box, Table, Text } from "@radix-ui/themes";
+import { useState } from "react";
+import { FaCheckCircle, FaCopy } from "react-icons/fa";
+import { NotificationToast } from "@frontend-monorepo/ui-shared";
 
 type PersonalReferralCode = {
   code: string;
@@ -17,7 +20,22 @@ type ReferralCodesTableProps = {
 export const ReferralCodesTable = ({
   referralCodes,
 }: ReferralCodesTableProps) => {
+  const [copied, setCopied] = useState(false);
+
   const filteredCodes = referralCodes.filter((code) => code.active);
+
+  const handleCopyLink = async (code: string) => {
+    try {
+      const baseUrl = window.location.origin;
+      await navigator.clipboard.writeText(
+        `${baseUrl}/registration?ref=${code}`,
+      );
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (e) {
+      console.error(`Failed to copy text to clipboard: ${e}`);
+    }
+  };
 
   return (
     <Table.Root variant="surface">
@@ -66,15 +84,32 @@ export const ReferralCodesTable = ({
         {filteredCodes.map((code) => (
           <Table.Row key={code.code}>
             <Table.Cell>
-              <Text
-                className={"text-font dark:text-font-dark"}
-                size={"1"}
-                weight={"medium"}
-              >
-                <Badge size={"3"}>
-                  <code>{code.code}</code>
-                </Badge>
-              </Text>
+              <Box className="flex items-center">
+                <Text
+                  className={"text-font dark:text-font-dark mr-2"}
+                  size={"1"}
+                  weight={"medium"}
+                >
+                  <Badge size={"3"}>
+                    <code>{code.code}</code>
+                  </Badge>
+                </Text>
+                <NotificationToast
+                  description={code.code}
+                  title={"Referral link copied"}
+                >
+                  {copied ? (
+                    <FaCheckCircle
+                      className={"text-font dark:text-font-dark"}
+                    />
+                  ) : (
+                    <FaCopy
+                      onClick={() => handleCopyLink(code.code)}
+                      className={"text-font dark:text-font-dark"}
+                    />
+                  )}
+                </NotificationToast>
+              </Box>
             </Table.Cell>
             <Table.Cell>
               <Text

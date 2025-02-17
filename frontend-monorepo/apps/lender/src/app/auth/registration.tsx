@@ -7,17 +7,20 @@ import init, {
   persist_new_wallet,
 } from "browser-wallet";
 import { md5 } from "hash-wasm";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 function Registration() {
   const { register } = useBaseHttpClient();
   const navigate = useNavigate();
 
+  const queryParams = new URLSearchParams(useLocation().search);
+  const referralCode = queryParams.get("ref");
+
   const handleRegister = async (
     name: string,
     email: string,
     password: string,
-    inviteCode?: string,
+    referralCode?: string,
   ) => {
     await init();
 
@@ -36,7 +39,7 @@ function Registration() {
         network: network,
         xpub: walletDetails.xpub,
       },
-      inviteCode,
+      referralCode,
     );
 
     const key = await md5(email);
@@ -51,7 +54,12 @@ function Registration() {
     navigate("/verifyemail");
   };
 
-  return <RegistrationForm handleRegister={handleRegister} />;
+  return (
+    <RegistrationForm
+      handleRegister={handleRegister}
+      referralCode={referralCode}
+    />
+  );
 }
 
 export default Registration;

@@ -22,19 +22,27 @@ interface RegistrationFormProps {
     name: string,
     email: string,
     password: string,
-    inviteCode?: string,
+    referralCode?: string,
   ) => Promise<void>;
+  referralCode: string | null;
 }
 
-export function RegistrationForm({ handleRegister }: RegistrationFormProps) {
-  let defaultInviteCode = "";
-  if (import.meta.env.VITE_BITCOIN_NETWORK === "regtest") {
-    defaultInviteCode = "BETA_PHASE_1";
+export function RegistrationForm({
+  handleRegister,
+  referralCode: defaultReferralCode,
+}: RegistrationFormProps) {
+  if (
+    defaultReferralCode === null &&
+    import.meta.env.VITE_BITCOIN_NETWORK === "regtest"
+  ) {
+    defaultReferralCode = "BETA_PHASE_1";
   }
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [inviteCode, setInviteCode] = useState<string>(defaultInviteCode);
+  const [referralCode, setReferralCode] = useState<string>(
+    defaultReferralCode || "",
+  );
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string>("");
@@ -52,7 +60,7 @@ export function RegistrationForm({ handleRegister }: RegistrationFormProps) {
 
     setError("");
     try {
-      await handleRegister(name, email, password, inviteCode);
+      await handleRegister(name, email, password, referralCode);
     } catch (err) {
       console.error("Failed registering user:", err);
       setError(err instanceof Error ? err.message : "Registration failed.");
@@ -197,8 +205,8 @@ export function RegistrationForm({ handleRegister }: RegistrationFormProps) {
                   </Text>
                   <TypeField
                     placeholder=""
-                    value={inviteCode}
-                    onChange={(e) => setInviteCode(e.target.value)}
+                    value={referralCode}
+                    onChange={(e) => setReferralCode(e.target.value)}
                   />
                 </Box>
               </Box>
