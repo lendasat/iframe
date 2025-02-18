@@ -1,6 +1,5 @@
 use anyhow::Result;
 use rust_decimal::Decimal;
-use sideshift::ShiftKind;
 use sideshift::ShiftStatus;
 use sqlx::Pool;
 use sqlx::Postgres;
@@ -8,49 +7,52 @@ use time::OffsetDateTime;
 use uuid::Uuid;
 
 #[derive(sqlx::Type, Debug, Clone)]
-#[sqlx(type_name = "sideshift_coin")]
-pub enum SideshiftCoin {
-    #[sqlx(rename = "usdc")]
-    Usdc,
-    #[sqlx(rename = "usdt")]
-    Usdt,
-    #[sqlx(rename = "btc")]
-    Btc,
+#[sqlx(type_name = "sideshift_asset_type")]
+pub enum SideshiftAssetType {
+    UsdtEth,
+    UsdcEth,
+    UsdtPol,
+    UsdcPol,
+    UsdtStrk,
+    UsdcStrk,
+    UsdtSol,
+    UsdcSol,
+    BtcMainnet,
 }
 
-#[derive(sqlx::Type, Debug, Clone)]
-#[sqlx(type_name = "sideshift_bitcoin_network")]
-pub enum SideshiftBitcoinNetwork {
-    #[sqlx(rename = "bitcoin")]
-    Bitcoin,
-}
-
-#[derive(sqlx::Type, Debug, Clone)]
-#[sqlx(type_name = "sideshift_ethereum_network")]
-pub enum SideshiftEthereumNetwork {
-    #[sqlx(rename = "mainnet")]
-    Mainnet,
-    #[sqlx(rename = "arbitrum")]
-    Arbitrum,
-    #[sqlx(rename = "polygon")]
-    Polygon,
-}
-
-#[derive(sqlx::Type, Debug, Clone)]
-#[sqlx(type_name = "sideshift_solana_network")]
-pub enum SideshiftSolanaNetwork {
-    #[sqlx(rename = "solana")]
-    Solana,
-}
-
-// Composite type for network
-#[derive(sqlx::Type, Debug, Clone)]
-#[sqlx(type_name = "sideshift_network")]
-pub struct SideshiftNetwork {
-    pub network_type: String,
-    pub ethereum_network: Option<SideshiftEthereumNetwork>,
-    pub bitcoin_network: Option<SideshiftBitcoinNetwork>,
-    pub solana_network: Option<SideshiftSolanaNetwork>,
+impl From<(sideshift::Network, sideshift::Coin)> for SideshiftAssetType {
+    fn from(value: (sideshift::Network, sideshift::Coin)) -> Self {
+        match value {
+            (
+                sideshift::Network::Ethereum(sideshift::EthereumNetwork::Ethereum),
+                sideshift::Coin::Usdt,
+            ) => Self::UsdtEth,
+            (
+                sideshift::Network::Ethereum(sideshift::EthereumNetwork::Ethereum),
+                sideshift::Coin::Usdc,
+            ) => Self::UsdcEth,
+            (
+                sideshift::Network::Ethereum(sideshift::EthereumNetwork::Polygon),
+                sideshift::Coin::Usdt,
+            ) => Self::UsdtEth,
+            (
+                sideshift::Network::Ethereum(sideshift::EthereumNetwork::Polygon),
+                sideshift::Coin::Usdc,
+            ) => Self::UsdcEth,
+            (sideshift::Network::Bitcoin(_), sideshift::Coin::Btc) => Self::BtcMainnet,
+            (
+                sideshift::Network::Solana(sideshift::SolanaNetwork::Solana),
+                sideshift::Coin::Usdt,
+            ) => Self::UsdtSol,
+            (
+                sideshift::Network::Solana(sideshift::SolanaNetwork::Solana),
+                sideshift::Coin::Usdc,
+            ) => Self::UsdcSol,
+            (a, b) => {
+                panic!("This combination is not supported {a}/{b}")
+            }
+        }
+    }
 }
 
 // Quote struct that matches your table
@@ -59,10 +61,8 @@ pub struct SideshiftQuote {
     pub id: Uuid,
     pub contract_id: String,
     pub created_at: OffsetDateTime,
-    pub deposit_coin: SideshiftCoin,
-    pub deposit_network: SideshiftNetwork,
-    pub settle_coin: SideshiftCoin,
-    pub settle_network: SideshiftNetwork,
+    pub deposit_asset: SideshiftAssetType,
+    pub settle_asset: SideshiftAssetType,
     pub expires_at: OffsetDateTime,
     pub deposit_amount: Decimal,
     pub settle_amount: Decimal,
@@ -72,70 +72,19 @@ pub struct SideshiftQuote {
 
 impl SideshiftQuote {
     pub fn new(quote: sideshift::Quote, contract_id: String) -> Self {
+        let deposit_asset = (quote.deposit_network, quote.deposit_coin).into();
+        let settle_asset = (quote.settle_network, quote.settle_coin).into();
         Self {
             id: quote.id,
             contract_id,
             created_at: quote.created_at,
-            deposit_coin: quote.deposit_coin.into(),
-            deposit_network: quote.deposit_network.into(),
-            settle_coin: quote.settle_coin.into(),
-            settle_network: quote.settle_network.into(),
+            deposit_asset,
+            settle_asset,
             expires_at: quote.expires_at,
             deposit_amount: quote.deposit_amount,
             settle_amount: quote.settle_amount,
             rate: quote.rate,
             affiliate_id: quote.affiliate_id,
-        }
-    }
-}
-
-impl From<sideshift::Coin> for SideshiftCoin {
-    fn from(value: sideshift::Coin) -> Self {
-        match value {
-            sideshift::Coin::Usdc => SideshiftCoin::Usdc,
-            sideshift::Coin::Usdt => SideshiftCoin::Usdt,
-            sideshift::Coin::Btc => SideshiftCoin::Btc,
-        }
-    }
-}
-
-impl From<sideshift::Network> for SideshiftNetwork {
-    fn from(value: sideshift::Network) -> Self {
-        match value {
-            sideshift::Network::Ethereum(sideshift::EthereumNetwork::Aribtrum) => {
-                SideshiftNetwork {
-                    network_type: "ethereum".to_string(),
-                    ethereum_network: Some(SideshiftEthereumNetwork::Arbitrum),
-                    bitcoin_network: None,
-                    solana_network: None,
-                }
-            }
-            sideshift::Network::Ethereum(sideshift::EthereumNetwork::Ethereum) => {
-                SideshiftNetwork {
-                    network_type: "ethereum".to_string(),
-                    ethereum_network: Some(SideshiftEthereumNetwork::Mainnet),
-                    bitcoin_network: None,
-                    solana_network: None,
-                }
-            }
-            sideshift::Network::Ethereum(sideshift::EthereumNetwork::Polygon) => SideshiftNetwork {
-                network_type: "ethereum".to_string(),
-                ethereum_network: Some(SideshiftEthereumNetwork::Polygon),
-                bitcoin_network: None,
-                solana_network: None,
-            },
-            sideshift::Network::Bitcoin(sideshift::BitcoinNetwork::Bitcoin) => SideshiftNetwork {
-                network_type: "bitcoin".to_string(),
-                ethereum_network: None,
-                bitcoin_network: Some(SideshiftBitcoinNetwork::Bitcoin),
-                solana_network: None,
-            },
-            sideshift::Network::Solana(sideshift::SolanaNetwork::Solana) => SideshiftNetwork {
-                network_type: "solana".to_string(),
-                ethereum_network: None,
-                bitcoin_network: None,
-                solana_network: Some(SideshiftSolanaNetwork::Solana),
-            },
         }
     }
 }
@@ -146,27 +95,23 @@ pub async fn insert_quote(pool: &Pool<Postgres>, quote: SideshiftQuote) -> Resul
         INSERT INTO sideshift_quotes (
             id, 
             contract_id, 
-            created_at, 
-            deposit_coin, 
-            deposit_network, 
-            settle_coin, 
-            settle_network, 
+            created_at,
+            deposit_asset,
+            settle_asset,
             expires_at, 
             deposit_amount, 
             settle_amount, 
             rate, 
             affiliate_id
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         RETURNING id
         "#,
         quote.id,
         quote.contract_id,
         quote.created_at,
-        quote.deposit_coin as SideshiftCoin,
-        quote.deposit_network as SideshiftNetwork,
-        quote.settle_coin as SideshiftCoin,
-        quote.settle_network as SideshiftNetwork,
+        quote.deposit_asset as SideshiftAssetType,
+        quote.settle_asset as SideshiftAssetType,
         quote.expires_at,
         quote.deposit_amount,
         quote.settle_amount,
@@ -208,10 +153,10 @@ pub async fn insert_shift(
     pool: &Pool<Postgres>,
     shift: &sideshift::FixedShiftStatus,
 ) -> Result<(), sqlx::Error> {
-    let deposit_coin = SideshiftCoin::from(shift.deposit_coin.clone());
-    let deposit_network = SideshiftNetwork::from(shift.deposit_network.clone());
-    let settle_coin = SideshiftCoin::from(shift.settle_coin.clone());
-    let settle_network = SideshiftNetwork::from(shift.settle_network.clone());
+    let deposit_asset =
+        SideshiftAssetType::from((shift.deposit_network.clone(), shift.deposit_coin.clone()));
+    let settle_asset =
+        SideshiftAssetType::from((shift.settle_network.clone(), shift.settle_coin.clone()));
 
     let status = match shift.status {
         ShiftStatus::Waiting => SideshiftShiftStatus::Waiting,
@@ -227,8 +172,8 @@ pub async fn insert_shift(
         ShiftStatus::Multiple => SideshiftShiftStatus::Multiple,
     };
     let kind = match shift.kind {
-        ShiftKind::Fixed => SideshiftShiftKind::Fixed,
-        ShiftKind::Variable => SideshiftShiftKind::Variable,
+        sideshift::ShiftKind::Fixed => SideshiftShiftKind::Fixed,
+        sideshift::ShiftKind::Variable => SideshiftShiftKind::Variable,
     };
 
     sqlx::query!(
@@ -239,10 +184,8 @@ pub async fn insert_shift(
             kind,
             deposit_amount,
             settle_amount,
-            deposit_coin,
-            deposit_network,
-            settle_coin,
-            settle_network,
+            deposit_asset,
+            settle_asset,
             deposit_address,
             settle_address,
             external_id,
@@ -276,9 +219,7 @@ pub async fn insert_shift(
                 $17, 
                 $18, 
                 $19, 
-                $20, 
-                $21, 
-                $22
+                $20
             )
         RETURNING id
         "#,
@@ -287,10 +228,8 @@ pub async fn insert_shift(
         kind as SideshiftShiftKind,
         shift.deposit_amount,
         shift.settle_amount,
-        deposit_coin as SideshiftCoin,
-        deposit_network as SideshiftNetwork,
-        settle_coin as SideshiftCoin,
-        settle_network as SideshiftNetwork,
+        deposit_asset as SideshiftAssetType,
+        settle_asset as SideshiftAssetType,
         shift.deposit_address,
         shift.settle_address,
         shift.external_id,

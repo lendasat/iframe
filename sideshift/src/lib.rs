@@ -64,7 +64,6 @@ pub enum BitcoinNetwork {
 pub enum EthereumNetwork {
     /// Ethereum main chain
     Ethereum,
-    Aribtrum,
     Polygon,
 }
 
@@ -90,9 +89,6 @@ impl fmt::Display for Network {
             }
             Network::Bitcoin(BitcoinNetwork::Bitcoin) => {
                 write!(f, "bitcoin")
-            }
-            Network::Ethereum(EthereumNetwork::Aribtrum) => {
-                write!(f, "arbitrum")
             }
             Network::Ethereum(EthereumNetwork::Polygon) => {
                 write!(f, "polygon")
