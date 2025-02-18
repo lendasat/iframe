@@ -17,6 +17,7 @@ pub enum SideshiftAssetType {
     UsdcStrk,
     UsdtSol,
     UsdcSol,
+    UsdtLiquid,
     BtcMainnet,
 }
 

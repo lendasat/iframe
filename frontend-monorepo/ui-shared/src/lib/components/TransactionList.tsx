@@ -49,6 +49,9 @@ function TransactionLink({ transaction, loanAsset }: TransactionLinkProps) {
       case LoanAsset.USDT_SOL:
         urlPrefix = "https://solscan.io/tx";
         break;
+      case LoanAsset.USDT_Liquid:
+        urlPrefix = "https://liquid.network/tx";
+        break;
       case LoanAsset.EUR:
       case LoanAsset.USD:
       case LoanAsset.CHF:
