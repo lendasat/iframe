@@ -37,7 +37,7 @@ pub enum SideshiftEthereumNetwork {
 }
 
 #[derive(sqlx::Type, Debug, Clone)]
-#[sqlx(type_name = "sideshift_ethereum_network")]
+#[sqlx(type_name = "sideshift_solana_network")]
 pub enum SideshiftSolanaNetwork {
     #[sqlx(rename = "solana")]
     Solana,
