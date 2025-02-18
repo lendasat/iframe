@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { useAsync } from "react-use";
 import DashHeader from "../components/DashHeader";
 import { LoanOfferTable } from "../loan-requests/offer-selection/offer-table";
+import { LoanAssetHelper } from "@frontend-monorepo/ui-shared";
+import { LoanProductOption } from "@frontend-monorepo/base-http-client";
 
 function AvailableOffers() {
   const { getLoanOffers } = useBorrowerHttpClient();
@@ -34,8 +36,12 @@ function AvailableOffers() {
           selectedOfferId={undefined}
           enableActionColumn={true}
           onActionColumnAction={(value) => {
+            let product = LoanProductOption.StableCoins;
+            if (LoanAssetHelper.isFiat(value.loan_asset)) {
+              product = LoanProductOption.Fiat;
+            }
             navigate(
-              `/requests?amount=${value.loan_amount_min}&duration=${value.duration_days_min}&product=stable_coins&offer=${value.id}`,
+              `/requests?amount=${value.loan_amount_min}&duration=${value.duration_days_min}&product=${product}&offer=${value.id}`,
             );
           }}
         />
