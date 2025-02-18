@@ -51,9 +51,9 @@ export class LoanAssetHelper {
       case LoanAsset.USDC_ETH:
         return "USDC Ethereum";
       case LoanAsset.USDC_SOL:
-        return "USDT Solana";
-      case LoanAsset.USDT_SOL:
         return "USDC Solana";
+      case LoanAsset.USDT_SOL:
+        return "USDT Solana";
       case LoanAsset.USD:
         return "USD";
       case LoanAsset.EUR:

@@ -121,6 +121,10 @@ const AlertBoard = ({ color }: AlertBoardProps) => {
 };
 
 const calculateWeightedAverageAPR = (contracts: Contract[]) => {
+  if (contracts.length === 0) {
+    return 0;
+  }
+
   let totalWeightedValue = 0;
   let totalLoanAmount = 0;
 
