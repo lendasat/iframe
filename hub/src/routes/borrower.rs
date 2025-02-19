@@ -4,14 +4,6 @@ use crate::routes::price_feed_ws;
 use crate::routes::profiles;
 use crate::routes::AppState;
 use anyhow::Result;
-use axum::http::header::ACCEPT;
-use axum::http::header::ACCESS_CONTROL_ALLOW_HEADERS;
-use axum::http::header::ACCESS_CONTROL_ALLOW_ORIGIN;
-use axum::http::header::AUTHORIZATION;
-use axum::http::header::CONTENT_TYPE;
-use axum::http::header::ORIGIN;
-use axum::http::HeaderValue;
-use axum::http::Method;
 use axum::middleware;
 use axum::Router;
 pub use contracts::ClaimCollateralPsbt;
@@ -20,7 +12,6 @@ pub use contracts::Contract;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::task::JoinHandle;
-use tower_http::cors::CorsLayer;
 use tower_http::services::ServeDir;
 use tower_http::services::ServeFile;
 
@@ -68,24 +59,36 @@ pub async fn spawn_borrower_server(
             )),
         );
 
-    // todo: make this a dev-only setting
-    let cors = CorsLayer::new()
-        .allow_credentials(true)
-        .allow_methods(vec![Method::GET, Method::POST, Method::PUT, Method::DELETE])
-        .allow_headers(vec![
-            ORIGIN,
-            AUTHORIZATION,
-            ACCEPT,
-            ACCESS_CONTROL_ALLOW_HEADERS,
-            ACCESS_CONTROL_ALLOW_ORIGIN,
-            CONTENT_TYPE,
-        ])
-        .allow_origin([
-            "http://localhost:4200".parse::<HeaderValue>()?,
-            "http://localhost:4201".parse::<HeaderValue>()?,
-        ]);
+    #[cfg(debug_assertions)]
+    let app = {
+        use axum::http::header::ACCEPT;
+        use axum::http::header::ACCESS_CONTROL_ALLOW_HEADERS;
+        use axum::http::header::ACCESS_CONTROL_ALLOW_ORIGIN;
+        use axum::http::header::AUTHORIZATION;
+        use axum::http::header::CONTENT_TYPE;
+        use axum::http::header::ORIGIN;
+        use axum::http::HeaderValue;
+        use reqwest::Method;
+        use tower_http::cors::CorsLayer;
 
-    let app = app.layer(cors);
+        let cors = CorsLayer::new()
+            .allow_credentials(true)
+            .allow_methods(vec![Method::GET, Method::POST, Method::PUT, Method::DELETE])
+            .allow_headers(vec![
+                ORIGIN,
+                AUTHORIZATION,
+                ACCEPT,
+                ACCESS_CONTROL_ALLOW_HEADERS,
+                ACCESS_CONTROL_ALLOW_ORIGIN,
+                CONTENT_TYPE,
+            ])
+            .allow_origin([
+                "http://localhost:4200".parse::<HeaderValue>()?,
+                "http://localhost:4201".parse::<HeaderValue>()?,
+            ]);
+
+        app.layer(cors)
+    };
 
     let listener = tokio::net::TcpListener::bind(&config.borrower_listen_address).await?;
 
