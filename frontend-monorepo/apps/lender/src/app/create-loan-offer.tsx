@@ -568,7 +568,7 @@ const CreateLoanOffer: FC = () => {
                     setIsKycRequired={(isRequired) => {
                       if (isRequired) {
                         // If KYC is required, we can't do autoaccept
-                        setAutoAccept(isRequired);
+                        setAutoAccept(false);
                       }
                       setIsKycRequired(isRequired);
                     }}
