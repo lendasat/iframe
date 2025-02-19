@@ -272,7 +272,6 @@ struct TransactionData {
 }
 
 #[derive(Debug, sqlx::Type)]
-#[sqlx(type_name = "moon_transaction_status")]
 pub enum TransactionStatus {
     Authorization,
     Reversal,

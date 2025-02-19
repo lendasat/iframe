@@ -7,7 +7,6 @@ use time::OffsetDateTime;
 use uuid::Uuid;
 
 #[derive(sqlx::Type, Debug, Clone)]
-#[sqlx(type_name = "sideshift_asset_type")]
 pub enum SideshiftAssetType {
     UsdtEth,
     UsdcEth,
@@ -94,15 +93,15 @@ pub async fn insert_quote(pool: &Pool<Postgres>, quote: SideshiftQuote) -> Resul
     let id = sqlx::query!(
         r#"
         INSERT INTO sideshift_quotes (
-            id, 
-            contract_id, 
+            id,
+            contract_id,
             created_at,
             deposit_asset,
             settle_asset,
-            expires_at, 
-            deposit_amount, 
-            settle_amount, 
-            rate, 
+            expires_at,
+            deposit_amount,
+            settle_amount,
+            rate,
             affiliate_id
         )
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
@@ -127,14 +126,12 @@ pub async fn insert_quote(pool: &Pool<Postgres>, quote: SideshiftQuote) -> Resul
 
 // First, create the enums to match the database
 #[derive(sqlx::Type)]
-#[sqlx(type_name = "sideshift_shift_kind", rename_all = "lowercase")]
 pub enum SideshiftShiftKind {
     Fixed,
     Variable,
 }
 
 #[derive(sqlx::Type)]
-#[sqlx(type_name = "sideshift_shift_status", rename_all = "lowercase")]
 pub enum SideshiftShiftStatus {
     Waiting,
     Pending,
@@ -201,25 +198,25 @@ pub async fn insert_shift(
             expires_at,
             created_at
         )
-        VALUES ($1, 
-                $2, 
-                $3, 
-                $4, 
-                $5, 
-                $6, 
-                $7, 
-                $8, 
-                $9, 
-                $10, 
-                $11, 
-                $12, 
-                $13, 
-                $14, 
-                $15, 
-                $16, 
-                $17, 
-                $18, 
-                $19, 
+        VALUES ($1,
+                $2,
+                $3,
+                $4,
+                $5,
+                $6,
+                $7,
+                $8,
+                $9,
+                $10,
+                $11,
+                $12,
+                $13,
+                $14,
+                $15,
+                $16,
+                $17,
+                $18,
+                $19,
                 $20
             )
         RETURNING id
