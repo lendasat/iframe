@@ -16,7 +16,9 @@ export function KycDialog({
   return (
     <Dialog.Root>
       <Dialog.Trigger>
-        <Button color={"purple"}>KYC Form</Button>
+        <Button color={"purple"} mt={"3"}>
+          KYC Form
+        </Button>
       </Dialog.Trigger>
 
       <Dialog.Content style={{ maxWidth: "450px" }}>
