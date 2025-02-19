@@ -42,7 +42,7 @@ pub struct Config {
 
 impl Config {
     pub fn init() -> Config {
-        let database_url = std::env::var("DB_URL").expect("DATABASE_URL must be set");
+        let database_url = std::env::var("DB_URL").expect("DB_URL must be set");
         let mempool_rest_url =
             std::env::var("MEMPOOL_REST_URL").expect("MEMPOOL_REST_URL must be set");
         let mempool_ws_url = std::env::var("MEMPOOL_WS_URL").expect("MEMPOOL_WS_URL must be set");
