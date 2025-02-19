@@ -142,7 +142,11 @@ export const ContractRequested = ({
               className="flex-1"
               color="green"
               loading={isLoading}
-              disabled={isLoading || !encryptedFiatTransferDetails}
+              disabled={
+                isLoading ||
+                (LoanAssetHelper.isFiat(loanAsset) &&
+                  !encryptedFiatTransferDetails)
+              }
               size={"3"}
             >
               Approve
@@ -220,7 +224,7 @@ export const ContractRequested = ({
           </Dialog.Content>
         </Dialog.Root>
       </Box>
-      {!fiatTransferDetailsConfirmed && (
+      {LoanAssetHelper.isFiat(loanAsset) && !fiatTransferDetailsConfirmed && (
         <Callout.Root color="orange" mt={"4"} mb={"4"}>
           <Callout.Icon>
             <IoInformationCircleOutline />
