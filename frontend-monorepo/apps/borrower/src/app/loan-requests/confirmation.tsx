@@ -240,7 +240,10 @@ export const Confirmation = ({
         setCreateRequestError("No bank transfer details provided");
         return;
       }
-      if (loanType === LoanType.Fiat && !kycFormDialogConfirmed) {
+      if (
+        !kycFormDialogConfirmed &&
+        Boolean(selectedOffer?.kyc_link && selectedOffer?.kyc_link.length > 0)
+      ) {
         setCreateRequestError("KYC form dialog not confirmed");
         return;
       }

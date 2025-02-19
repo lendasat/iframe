@@ -652,38 +652,75 @@ export const FiatTransferDetails = ({
         handleClose={handleCloseUnlockWalletModal}
         handleSubmit={handleSubmitUnlockWalletModal}
       />
-      <Callout.Root color={"green"} className="w-full">
-        <Callout.Icon>
-          <FontAwesomeIcon icon={faCheckCircle} />
-        </Callout.Icon>
-        <Callout.Text>
-          <Flex direction={"row"} gap={"3"} align={"center"}>
-            <Text>Payment details provided</Text>
-            <FiatTransferDetailsDialog
-              formData={fiatTransferDetails}
-              onConfirm={(data) => {
-                console.log("I was clicked as well");
-                setDataEncrypted(false);
-                setFiatTransferDetails(data);
-                onConfirm(undefined);
-              }}
+      {!dataEncrypted && (
+        <Callout.Root color={"amber"} className="w-full">
+          <Callout.Icon>
+            <FontAwesomeIcon icon={faCheckCircle} />
+          </Callout.Icon>
+
+          <Callout.Text>
+            <Flex direction={"row"} gap={"3"} align={"center"}>
+              <Text>Please encrypt details</Text>
+              <FiatTransferDetailsDialog
+                formData={fiatTransferDetails}
+                onConfirm={(data) => {
+                  setDataEncrypted(false);
+                  setFiatTransferDetails(data);
+                  onConfirm(undefined);
+                }}
+              >
+                <Button variant="soft" color={"purple"}>
+                  <LuPencil size={16} />
+                </Button>
+              </FiatTransferDetailsDialog>
+            </Flex>
+            <Button
+              loading={isLoading}
+              onClick={unlockWalletOrEncrypt}
+              mt={"3"}
+              color={"purple"}
+              disabled={dataEncrypted}
             >
-              <Button variant="soft" color={"purple"}>
-                <LuPencil size={16} />
-              </Button>
-            </FiatTransferDetailsDialog>
-          </Flex>
-          <Button
-            loading={isLoading}
-            onClick={unlockWalletOrEncrypt}
-            mt={"3"}
-            color={"purple"}
-            disabled={dataEncrypted}
-          >
-            {isWalletLoaded ? "Encrypt Details" : "Unlock to Encrypt"}
-          </Button>
-        </Callout.Text>
-      </Callout.Root>
+              {isWalletLoaded ? "Encrypt Details" : "Unlock to Encrypt"}
+            </Button>
+          </Callout.Text>
+        </Callout.Root>
+      )}
+      {dataEncrypted && (
+        <Callout.Root color={"green"} className="w-full">
+          <Callout.Icon>
+            <FontAwesomeIcon icon={faCheckCircle} />
+          </Callout.Icon>
+
+          <Callout.Text>
+            <Flex direction={"row"} gap={"3"} align={"center"}>
+              <Text>Payment details provided</Text>
+              <FiatTransferDetailsDialog
+                formData={fiatTransferDetails}
+                onConfirm={(data) => {
+                  setDataEncrypted(false);
+                  setFiatTransferDetails(data);
+                  onConfirm(undefined);
+                }}
+              >
+                <Button variant="soft" color={"purple"}>
+                  <LuPencil size={16} />
+                </Button>
+              </FiatTransferDetailsDialog>
+            </Flex>
+            <Button
+              loading={isLoading}
+              onClick={unlockWalletOrEncrypt}
+              mt={"3"}
+              color={"purple"}
+              disabled={dataEncrypted}
+            >
+              {"Details encrypted"}
+            </Button>
+          </Callout.Text>
+        </Callout.Root>
+      )}
+
       {error && (
         <Callout.Root color={"red"} className="w-full">
           <Callout.Icon>
