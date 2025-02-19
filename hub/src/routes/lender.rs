@@ -72,7 +72,10 @@ pub async fn spawn_lender_server(
             ACCESS_CONTROL_ALLOW_ORIGIN,
             CONTENT_TYPE,
         ])
-        .allow_origin(["http://localhost:4201".parse::<HeaderValue>()?]);
+        .allow_origin([
+            "http://localhost:4200".parse::<HeaderValue>()?,
+            "http://localhost:4201".parse::<HeaderValue>()?,
+        ]);
 
     let app = app.layer(cors);
 
