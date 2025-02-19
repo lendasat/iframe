@@ -275,7 +275,9 @@ export const Confirmation = ({
     LoanAssetHelper.isFiat(loanAsset) &&
     !encryptedFiatTransferDetails;
   const kycButNoKycConfirmed = Boolean(
-    selectedOffer?.kyc_link && !kycFormDialogConfirmed,
+    selectedOffer?.kyc_link &&
+      !kycFormDialogConfirmed &&
+      selectedOffer.kyc_link.length > 0,
   );
   const buttonDisabled =
     isStillLoading || fiatButNoEncryptedDataPresent || kycButNoKycConfirmed;
