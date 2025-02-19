@@ -64,7 +64,6 @@ pub enum BitcoinNetwork {
 pub enum EthereumNetwork {
     /// Ethereum main chain
     Ethereum,
-    Aribtrum,
     Polygon,
 }
 
@@ -73,6 +72,11 @@ pub enum EthereumNetwork {
 pub enum SolanaNetwork {
     Solana,
 }
+#[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
+#[serde(rename_all = "lowercase")]
+pub enum LiquidNetwork {
+    Liquid,
+}
 
 #[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
 #[serde(untagged)]
@@ -80,6 +84,7 @@ pub enum Network {
     Ethereum(EthereumNetwork),
     Bitcoin(BitcoinNetwork),
     Solana(SolanaNetwork),
+    Liquid(LiquidNetwork),
 }
 
 impl fmt::Display for Network {
@@ -91,14 +96,14 @@ impl fmt::Display for Network {
             Network::Bitcoin(BitcoinNetwork::Bitcoin) => {
                 write!(f, "bitcoin")
             }
-            Network::Ethereum(EthereumNetwork::Aribtrum) => {
-                write!(f, "arbitrum")
-            }
             Network::Ethereum(EthereumNetwork::Polygon) => {
                 write!(f, "polygon")
             }
             Network::Solana(SolanaNetwork::Solana) => {
                 write!(f, "solana")
+            }
+            Network::Liquid(LiquidNetwork::Liquid) => {
+                write!(f, "liquid")
             }
         }
     }

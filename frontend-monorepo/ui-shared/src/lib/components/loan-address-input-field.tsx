@@ -46,9 +46,13 @@ export function LoanAddressInputField({
   };
 
   // WalletConnect extension only supports Ethereum and Ethereum-L2s... No Starknet
-  const isStarknet = loanAsset.toLowerCase() === "starknet";
+  const isStarknet =
+    loanAsset === LoanAsset.USDT_SN || loanAsset === LoanAsset.USDC_SN;
   // WalletConnect does not support Solana at this point of time
-  const isSolana = loanAsset.toLowerCase() === "solana";
+  const isSolana =
+    loanAsset === LoanAsset.USDT_SOL || loanAsset === LoanAsset.USDC_SOL;
+  // WalletConnect does not support Liquid at this point of time
+  const isLiquid = loanAsset === LoanAsset.USDT_Liquid;
 
   return (
     <Flex direction={"column"} gap={"2"} className="w-full">
@@ -72,7 +76,7 @@ export function LoanAddressInputField({
         value={loanAddress}
         onChange={onInputChange}
       >
-        {!isStarknet && !isSolana && !hideButton && (
+        {!isStarknet && !isSolana && !isLiquid && !hideButton && (
           <TextField.Slot side={"right"}>
             <ConnectButton.Custom>
               {({

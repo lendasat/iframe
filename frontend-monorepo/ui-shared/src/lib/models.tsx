@@ -23,6 +23,7 @@ export enum LoanAsset {
   USDC_ETH = "UsdcEth",
   USDC_SOL = "UsdcSol",
   USDT_SOL = "UsdtSol",
+  USDT_Liquid = "UsdtLiquid",
   USD = "Usd",
   EUR = "Eur",
   CHF = "Chf",
@@ -54,6 +55,8 @@ export class LoanAssetHelper {
         return "USDC Solana";
       case LoanAsset.USDT_SOL:
         return "USDT Solana";
+      case LoanAsset.USDT_Liquid:
+        return "USDT Liquid";
       case LoanAsset.USD:
         return "USD";
       case LoanAsset.EUR:
@@ -73,6 +76,7 @@ export class LoanAssetHelper {
       LoanAsset.USDC_POL,
       LoanAsset.USDT_SOL,
       LoanAsset.USDC_SOL,
+      LoanAsset.USDT_Liquid,
       LoanAsset.USD,
       LoanAsset.EUR,
       LoanAsset.CHF,
@@ -89,6 +93,7 @@ export class LoanAssetHelper {
       LoanAsset.USDC_POL,
       LoanAsset.USDT_SOL,
       LoanAsset.USDC_SOL,
+      LoanAsset.USDT_Liquid,
     ];
   }
 
@@ -110,6 +115,8 @@ export class LoanAssetHelper {
       case LoanAsset.USDT_SOL:
       case LoanAsset.USDC_SOL:
         return "Solana";
+      case LoanAsset.USDT_Liquid:
+        return "Liquid";
       case LoanAsset.EUR:
       case LoanAsset.USD:
       case LoanAsset.CHF:
@@ -129,6 +136,7 @@ export class LoanAssetHelper {
       case LoanAsset.USDT_POL:
       case LoanAsset.USDT_ETH:
       case LoanAsset.USDT_SOL:
+      case LoanAsset.USDT_Liquid:
         return "USDT";
       case LoanAsset.USD:
         return "USD";
@@ -149,6 +157,7 @@ export class LoanAssetHelper {
       case LoanAsset.USDT_POL:
       case LoanAsset.USDT_ETH:
       case LoanAsset.USDT_SOL:
+      case LoanAsset.USDT_Liquid:
         return true;
       case LoanAsset.USD:
       case LoanAsset.EUR:
@@ -167,6 +176,7 @@ export class LoanAssetHelper {
       case LoanAsset.USDT_POL:
       case LoanAsset.USDT_ETH:
       case LoanAsset.USDT_SOL:
+      case LoanAsset.USDT_Liquid:
         return false;
       case LoanAsset.USD:
       case LoanAsset.EUR:
@@ -193,6 +203,7 @@ export class LoanAssetHelper {
         return "https://solscan.io/token/EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
       case LoanAsset.USDT_SOL:
         return "https://solscan.io/token/Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB";
+      case LoanAsset.USDT_Liquid: // TODO: it should exist somewhere but I couldn't find it
       case LoanAsset.CHF:
       case LoanAsset.EUR:
       case LoanAsset.USD:

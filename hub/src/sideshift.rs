@@ -12,6 +12,7 @@ use rust_decimal::Decimal;
 use sideshift::BitcoinNetwork;
 use sideshift::Coin;
 use sideshift::EthereumNetwork;
+use sideshift::LiquidNetwork;
 use sideshift::Network;
 use sideshift::ShiftStatus;
 use sideshift::SideShiftClient;
@@ -133,6 +134,7 @@ impl Shifter {
             LoanAsset::UsdcEth | LoanAsset::UsdtEth => Network::Ethereum(EthereumNetwork::Ethereum),
             LoanAsset::UsdcPol | LoanAsset::UsdtPol => Network::Ethereum(EthereumNetwork::Polygon),
             LoanAsset::UsdcSol | LoanAsset::UsdtSol => Network::Solana(SolanaNetwork::Solana),
+            LoanAsset::UsdtLiquid => Network::Liquid(LiquidNetwork::Liquid),
             LoanAsset::UsdcStrk
             | LoanAsset::UsdtStrk
             | LoanAsset::Usd
@@ -144,7 +146,10 @@ impl Shifter {
 
         let coin = match loan_asset {
             LoanAsset::UsdcEth | LoanAsset::UsdcPol | LoanAsset::UsdcSol => Coin::Usdc,
-            LoanAsset::UsdtEth | LoanAsset::UsdtPol | LoanAsset::UsdtSol => Coin::Usdt,
+            LoanAsset::UsdtEth
+            | LoanAsset::UsdtPol
+            | LoanAsset::UsdtSol
+            | LoanAsset::UsdtLiquid => Coin::Usdt,
             LoanAsset::UsdcStrk
             | LoanAsset::UsdtStrk
             | LoanAsset::Usd

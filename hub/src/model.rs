@@ -345,6 +345,7 @@ pub enum LoanAsset {
     Usd,
     Eur,
     Chf,
+    UsdtLiquid,
 }
 
 impl LoanAsset {
@@ -358,7 +359,8 @@ impl LoanAsset {
             | LoanAsset::UsdcStrk
             | LoanAsset::UsdtStrk
             | LoanAsset::UsdcSol
-            | LoanAsset::UsdtSol => false,
+            | LoanAsset::UsdtSol
+            | LoanAsset::UsdtLiquid => false,
         }
     }
 }

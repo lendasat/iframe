@@ -1,0 +1,106 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO sideshift_shifts (\n            id,\n            quote_id,\n            kind,\n            deposit_amount,\n            settle_amount,\n            deposit_asset,\n            settle_asset,\n            deposit_address,\n            settle_address,\n            external_id,\n            rate,\n            status,\n            average_shift_seconds,\n            deposit_hash,\n            settle_hash,\n            deposit_received_at,\n            settle_coin_network_fee,\n            issue,\n            expires_at,\n            created_at\n        )\n        VALUES ($1, \n                $2, \n                $3, \n                $4, \n                $5, \n                $6, \n                $7, \n                $8, \n                $9, \n                $10, \n                $11, \n                $12, \n                $13, \n                $14, \n                $15, \n                $16, \n                $17, \n                $18, \n                $19, \n                $20\n            )\n        RETURNING id\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Uuid",
+        {
+          "Custom": {
+            "name": "sideshift_shift_kind",
+            "kind": {
+              "Enum": [
+                "fixed",
+                "variable"
+              ]
+            }
+          }
+        },
+        "Numeric",
+        "Numeric",
+        {
+          "Custom": {
+            "name": "sideshift_asset_type",
+            "kind": {
+              "Enum": [
+                "UsdtEth",
+                "UsdcEth",
+                "UsdtPol",
+                "UsdcPol",
+                "UsdtStrk",
+                "UsdcStrk",
+                "UsdtSol",
+                "UsdcSol",
+                "UsdtLiquid",
+                "BtcMainnet"
+              ]
+            }
+          }
+        },
+        {
+          "Custom": {
+            "name": "sideshift_asset_type",
+            "kind": {
+              "Enum": [
+                "UsdtEth",
+                "UsdcEth",
+                "UsdtPol",
+                "UsdcPol",
+                "UsdtStrk",
+                "UsdcStrk",
+                "UsdtSol",
+                "UsdcSol",
+                "UsdtLiquid",
+                "BtcMainnet"
+              ]
+            }
+          }
+        },
+        "Text",
+        "Text",
+        "Text",
+        "Numeric",
+        {
+          "Custom": {
+            "name": "sideshift_shift_status",
+            "kind": {
+              "Enum": [
+                "waiting",
+                "pending",
+                "processing",
+                "review",
+                "settling",
+                "settled",
+                "refund",
+                "refunding",
+                "refunded",
+                "expired",
+                "multiple"
+              ]
+            }
+          }
+        },
+        "Numeric",
+        "Text",
+        "Text",
+        "Timestamptz",
+        "Numeric",
+        "Text",
+        "Timestamptz",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "087f8c4543a12956409d8e77ff2c3036fc3c7a6fe178595737223607dba4af9a"
+}
