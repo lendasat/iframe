@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        INSERT INTO sideshift_quotes (\n            id,\n            contract_id,\n            created_at,\n            deposit_asset,\n            settle_asset,\n            expires_at,\n            deposit_amount,\n            settle_amount,\n            rate,\n            affiliate_id\n        )\n        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)\n        RETURNING id\n        ",
+  "query": "\n        INSERT INTO sideshift_quotes (\n            id, \n            contract_id, \n            created_at,\n            deposit_asset,\n            settle_asset,\n            expires_at, \n            deposit_amount, \n            settle_amount, \n            rate, \n            affiliate_id\n        )\n        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)\n        RETURNING id\n        ",
   "describe": {
     "columns": [
       {
@@ -63,5 +63,5 @@
       false
     ]
   },
-  "hash": "add8a26042b84d66d3b644f1a00ebbdca2116b75a17271225fabe9679859b47d"
+  "hash": "114cd49ad5b842d12112f7dd41f4bcf1be5d69837cc12269b9a0833d98b4abec"
 }

@@ -332,6 +332,7 @@ impl LoanOffer {
 }
 
 #[derive(Debug, Deserialize, sqlx::Type, Serialize, Clone, PartialEq)]
+#[sqlx(type_name = "loan_asset")]
 pub enum LoanAsset {
     UsdcPol,
     UsdtPol,
@@ -365,6 +366,7 @@ impl LoanAsset {
 }
 
 #[derive(Debug, Deserialize, sqlx::Type, Serialize, Clone, PartialEq)]
+#[sqlx(type_name = "loan_offer_status")]
 pub enum LoanOfferStatus {
     Available,
     Unavailable,
@@ -391,6 +393,7 @@ pub struct LoanRequest {
 }
 
 #[derive(Debug, Deserialize, sqlx::Type, Serialize, Clone)]
+#[sqlx(type_name = "loan_request_status")]
 pub enum LoanRequestStatus {
     Available,
     Unavailable,
@@ -599,6 +602,7 @@ pub mod db {
     }
 
     #[derive(Debug, Deserialize, sqlx::Type, Serialize)]
+    #[sqlx(type_name = "contract_status")]
     pub enum ContractStatus {
         Requested,
         RenewalRequested,
@@ -624,6 +628,7 @@ pub mod db {
     }
 
     #[derive(Debug, Deserialize, sqlx::Type, Serialize)]
+    #[sqlx(type_name = "liquidation_status")]
     pub enum LiquidationStatus {
         Healthy,
         FirstMarginCall,
@@ -632,6 +637,7 @@ pub mod db {
     }
 
     #[derive(Debug, Deserialize, sqlx::Type, Serialize)]
+    #[sqlx(type_name = "loan_type")]
     pub enum LoanType {
         PayWithMoon,
         StableCoin,
@@ -639,6 +645,7 @@ pub mod db {
     }
 
     #[derive(Debug, Deserialize, sqlx::Type, Serialize)]
+    #[sqlx(type_name = "moon_cards")]
     pub struct MoonCard {
         pub id: String,
         pub balance: Decimal,
@@ -909,6 +916,7 @@ where
 }
 
 #[derive(sqlx::Type, Serialize, Debug, Eq, PartialEq)]
+#[sqlx(type_name = "dispute_status")]
 pub enum DisputeStatus {
     StartedBorrower,
     StartedLender,
@@ -946,6 +954,7 @@ pub struct PsbtQueryParams {
 }
 
 #[derive(Debug, Deserialize, sqlx::Type, Serialize, Clone)]
+#[sqlx(type_name = "transaction_type")]
 pub enum TransactionType {
     Funding,
     Dispute,

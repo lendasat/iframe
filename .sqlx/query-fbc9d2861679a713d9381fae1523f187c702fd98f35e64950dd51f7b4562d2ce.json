@@ -52,8 +52,7 @@
                 "Usd",
                 "Eur",
                 "Chf",
-                "Unknown",
-                "UsdtLiquid"
+                "Unknown"
               ]
             }
           }
@@ -110,8 +109,7 @@
                 "Usd",
                 "Eur",
                 "Chf",
-                "Unknown",
-                "UsdtLiquid"
+                "Unknown"
               ]
             }
           }
