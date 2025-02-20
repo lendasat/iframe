@@ -2,9 +2,9 @@ import type {
   CardTransaction,
   DeclineData,
   TransactionData,
-} from "@frontend-monorepo/http-client-borrower";
-import { CardTransactionStatus } from "@frontend-monorepo/http-client-borrower";
-import { CurrencyFormatter } from "@frontend-monorepo/ui-shared";
+} from "@frontend/http-client-borrower";
+import { CardTransactionStatus } from "@frontend/http-client-borrower";
+import { CurrencyFormatter } from "@frontend/ui-shared";
 import { Badge, Box, Flex, Grid, Heading, Text } from "@radix-ui/themes";
 import { AiOutlineStop } from "react-icons/ai";
 import { GoArrowDownLeft, GoArrowUpRight } from "react-icons/go";

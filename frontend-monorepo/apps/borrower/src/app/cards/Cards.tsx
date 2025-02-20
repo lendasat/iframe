@@ -1,5 +1,5 @@
-import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
-import { CurrencyFormatter } from "@frontend-monorepo/ui-shared";
+import { useBorrowerHttpClient } from "@frontend/http-client-borrower";
+import { CurrencyFormatter } from "@frontend/ui-shared";
 import {
   Box,
   Button,

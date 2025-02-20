@@ -1,19 +1,13 @@
 /// <reference types='vitest' />
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import { nxViteTsPaths } from "@nx/vite/plugins/nx-tsconfig-paths.plugin";
 import svgr from "vite-plugin-svgr";
 
 export default defineConfig({
-  root: __dirname,
-  cacheDir: "../../node_modules/.vite/apps/lender",
-
+  envDir: "../../../",
   server: {
     port: 4200,
     host: "localhost",
-    fs: {
-      allow: ["../../.."],
-    },
   },
 
   preview: {
@@ -23,7 +17,6 @@ export default defineConfig({
 
   plugins: [
     react(),
-    nxViteTsPaths(),
     svgr({
       svgrOptions: {
         exportType: "named",
@@ -41,7 +34,6 @@ export default defineConfig({
   // },
 
   build: {
-    outDir: "../../dist/apps/lender",
     emptyOutDir: true,
     reportCompressedSize: true,
     commonjsOptions: {

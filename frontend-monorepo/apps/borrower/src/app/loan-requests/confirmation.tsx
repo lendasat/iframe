@@ -1,15 +1,12 @@
 import { faCheckCircle, faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  FiatLoanDetails,
-  LoanProductOption,
-} from "@frontend-monorepo/base-http-client";
-import { useWallet } from "@frontend-monorepo/browser-wallet";
+import { FiatLoanDetails, LoanProductOption } from "@frontend/base-http-client";
+import { useWallet } from "@frontend/browser-wallet";
 import {
   LoanType,
   useAuth,
   useBorrowerHttpClient,
-} from "@frontend-monorepo/http-client-borrower";
+} from "@frontend/http-client-borrower";
 import {
   AbbreviationExplanationInfo,
   FiatDialogFormDetails,
@@ -25,7 +22,7 @@ import {
   newFormatCurrency,
   ONE_YEAR,
   usePrice,
-} from "@frontend-monorepo/ui-shared";
+} from "@frontend/ui-shared";
 import {
   Box,
   Button,

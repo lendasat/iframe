@@ -1,12 +1,9 @@
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  UnlockWalletModal,
-  useWallet,
-} from "@frontend-monorepo/browser-wallet";
-import { useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
-import { useFees } from "@frontend-monorepo/mempool";
-import { formatCurrency } from "@frontend-monorepo/ui-shared";
+import { UnlockWalletModal, useWallet } from "@frontend/browser-wallet";
+import { useLenderHttpClient } from "@frontend/http-client-lender";
+import { useFees } from "@frontend/mempool";
+import { formatCurrency } from "@frontend/ui-shared";
 import { Box, Button, Callout, Flex, Heading, Text } from "@radix-ui/themes";
 import { Network, validate } from "bitcoin-address-validation";
 import type { SignedTransaction } from "browser-wallet";

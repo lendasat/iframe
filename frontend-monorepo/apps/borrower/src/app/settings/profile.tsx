@@ -1,9 +1,6 @@
-import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
-import {
-  useAuth,
-  useBorrowerHttpClient,
-} from "@frontend-monorepo/http-client-borrower";
-import { EditableTimezoneField } from "@frontend-monorepo/ui-shared";
+import { useBaseHttpClient } from "@frontend/base-http-client";
+import { useAuth, useBorrowerHttpClient } from "@frontend/http-client-borrower";
+import { EditableTimezoneField } from "@frontend/ui-shared";
 import {
   Avatar,
   Badge,

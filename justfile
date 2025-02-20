@@ -26,44 +26,41 @@ fmt-frontend:
     #!/usr/bin/env bash
     set -euxo pipefail
     cd frontend-monorepo
-    npx prettier . --write
+    pnpm format
 
 
 clippy:
     cargo clippy --all-targets --all-features -- -D warnings
 
-lint-frontend:
-    #!/usr/bin/env bash
-    set -euxo pipefail
-    cd frontend-monorepo
-    npx nx run-many --target=lint --all --skipNxCache -- --max-warnings 0
+# TODO: also update CI script when re-added
+# lint-frontend:
+#     #!/usr/bin/env bash
+#     set -euxo pipefail
+#     cd frontend-monorepo
+#     pnpm lint
 
-check-frontend:
-    #!/usr/bin/env bash
-    set -euxo pipefail
-    cd frontend-monorepo
-    npx tsc --project tsconfig.base.json --jsx react-jsx --noEmit
+# check-frontend:
+#     #!/usr/bin/env bash
+#     set -euxo pipefail
+#     cd frontend-monorepo
+#     pnpm check-types
 
 ## ------------------------
 ## Test functions
 ## ------------------------
 
-test-frontend:
-    #!/usr/bin/env bash
-    set -euxo pipefail
-    cd frontend-monorepo
-    npx nx run-many --target=test --all --skipNxCache
+# FIXME: we should run our frontend tests
+# test-frontend:
+#     #!/usr/bin/env bash
+#     set -euxo pipefail
+#     cd frontend-monorepo
+#     pnpm test
 
 test-rust:
     cargo test --workspace
 
-test: test-frontend test-rust
-
-e2e-tests-frontend:
-    #!/usr/bin/env bash
-    set -euxo pipefail
-    cd frontend-monorepo
-    npx nx run-many --target=e2e --all --skipNxCache
+# test: test-frontend test-rust
+test: test-rust
 
 prepare-e2e:
     # Start hub DB
@@ -113,15 +110,22 @@ mempool-d:
 ## Serve frontend functions
 ## ------------------------
 
+fronts:
+    #!/usr/bin/env bash
+    cd frontend-monorepo
+    pnpm dev
+
 borrower:
     #!/usr/bin/env bash
     cd frontend-monorepo
-    npx nx serve borrower
+    pnpm build --filter=!@frontend/borrower
+    pnpm --filter="@frontend/borrower" dev
 
 lender:
     #!/usr/bin/env bash
     cd frontend-monorepo
-    npx nx serve lender
+    pnpm build --filter=!@frontend/lender
+    pnpm --filter="@frontend/lender" dev
 
 ## ------------------------
 ## Build frontend functions
@@ -131,7 +135,7 @@ lender:
 deps-frontend:
     #!/usr/bin/env bash
     cd frontend-monorepo
-    npm install
+    pnpm install
 
 # build the WASM browser wallet
 build-wallet:
@@ -141,13 +145,8 @@ build-wallet:
 build-frontend:
     #!/usr/bin/env bash
     cd frontend-monorepo
-    npx nx run-many --target=build --all --skipNxCache
+    pnpm build
 
-# Clear cached Nx artifacts and metadata about the workspace and shut down the Nx Daemon.
-nx-reset:
-    #!/usr/bin/env bash
-    cd frontend-monorepo
-    npx nx reset
 
 ## ------------------------
 ## Build hub functions

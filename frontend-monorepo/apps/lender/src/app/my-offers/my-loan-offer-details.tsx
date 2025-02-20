@@ -3,13 +3,13 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   LoanOfferStatus,
   useLenderHttpClient,
-} from "@frontend-monorepo/http-client-lender";
+} from "@frontend/http-client-lender";
 import {
   formatCurrency,
   getFormatedStringFromDays,
   KycBadge,
   LoanAssetHelper,
-} from "@frontend-monorepo/ui-shared";
+} from "@frontend/ui-shared";
 import * as Checkbox from "@radix-ui/react-checkbox";
 import { CheckIcon } from "@radix-ui/react-icons";
 import {

@@ -14,11 +14,11 @@ import {
   formatCurrency,
   LoanAsset,
   LoanAssetHelper,
-} from "@frontend-monorepo/ui-shared";
+} from "@frontend/ui-shared";
 import QRCode from "qrcode.react";
 import { type FormEvent, useState } from "react";
 import { Alert, Form } from "react-bootstrap";
-import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
+import { useBorrowerHttpClient } from "@frontend/http-client-borrower";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
 

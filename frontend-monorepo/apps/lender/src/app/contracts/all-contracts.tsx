@@ -3,8 +3,8 @@ import {
   type Contract,
   ContractStatus,
   contractStatusToLabelString,
-} from "@frontend-monorepo/http-client-lender";
-import { usePrice } from "@frontend-monorepo/ui-shared";
+} from "@frontend/http-client-lender";
+import { usePrice } from "@frontend/ui-shared";
 import { MixerHorizontalIcon } from "@radix-ui/react-icons";
 import * as Label from "@radix-ui/react-label";
 import {

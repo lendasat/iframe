@@ -1,0 +1,25 @@
+{
+  "name": "@frontend/http-client-borrower",
+  "version": "0.0.1",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch"
+  },
+  "dependencies": {
+    "@frontend/base-http-client": "*",
+    "@frontend/ui-shared": "*"
+  },
+  "devDependencies": {
+    "@types/semver": "^7.5.8"
+  }
+}

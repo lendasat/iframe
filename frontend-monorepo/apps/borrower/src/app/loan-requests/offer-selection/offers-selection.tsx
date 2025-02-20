@@ -1,12 +1,12 @@
 import { faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { LoanProductOption } from "@frontend-monorepo/base-http-client";
-import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
+import { LoanProductOption } from "@frontend/base-http-client";
+import { useBorrowerHttpClient } from "@frontend/http-client-borrower";
 import { Box, Callout } from "@radix-ui/themes";
 import { ColumnFiltersState, OnChangeFn } from "@tanstack/react-table";
 import { useAsync } from "react-use";
 import { LoanOfferTable } from "./offer-table";
-import { LoanAsset, LoanAssetHelper } from "@frontend-monorepo/ui-shared";
+import { LoanAsset, LoanAssetHelper } from "@frontend/ui-shared";
 
 interface OffersTableProps {
   selectedProduct?: LoanProductOption;

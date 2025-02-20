@@ -1,12 +1,12 @@
-import type { User } from "@frontend-monorepo/base-http-client";
-import { WalletProvider } from "@frontend-monorepo/browser-wallet";
+import type { User } from "@frontend/base-http-client";
+import { WalletProvider } from "@frontend/browser-wallet";
 import {
   AuthIsNotSignedIn,
   AuthIsSignedIn,
   AuthProviderLender,
-} from "@frontend-monorepo/http-client-lender";
-import { useAuth } from "@frontend-monorepo/http-client-lender";
-import { Layout, PriceProvider } from "@frontend-monorepo/ui-shared";
+} from "@frontend/http-client-lender";
+import { useAuth } from "@frontend/http-client-lender";
+import { Layout, PriceProvider } from "@frontend/ui-shared";
 import { BsBank } from "react-icons/bs";
 import { Outlet, Route, Routes } from "react-router-dom";
 import { SemVer } from "semver";
@@ -22,7 +22,7 @@ import CreateLoanOffer from "./create-loan-offer";
 import ResolveDispute from "./disputes/dispute";
 import MyAccount from "./my-account";
 import "../assets/styles.css";
-import { FeeProvider } from "@frontend-monorepo/mempool";
+import { FeeProvider } from "@frontend/mempool";
 import { FiHome } from "react-icons/fi";
 import { HiOutlineSupport } from "react-icons/hi";
 import { IoCreateOutline, IoWalletOutline } from "react-icons/io5";
@@ -36,6 +36,10 @@ import LenderProfile from "./lenderProfile";
 import { LoanOffersOverview } from "./loan-offers/LoanOffersOverview";
 import MyLoanOfferDetails from "./my-offers/my-loan-offer-details";
 import MyLoanOffersOverview from "./my-offers/my-loan-offers-overview";
+
+import init from "browser-wallet";
+import browserWalletUrl from "browser-wallet/browser_wallet_bg.wasm?url";
+import { useEffect } from "react";
 
 const menuItems = [
   {
@@ -185,6 +189,12 @@ function App() {
   if (!baseUrl) {
     throw new Error("VITE_LENDER_BASE_URL is undefined!");
   }
+
+  useEffect(() => {
+    (async () => {
+      await init(browserWalletUrl);
+    })();
+  });
 
   return (
     <PriceProvider url={baseUrl}>

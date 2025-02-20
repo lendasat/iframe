@@ -4,11 +4,8 @@ import {
   ContractStatus,
   contractStatusToLabelString,
   LiquidationStatus,
-} from "@frontend-monorepo/http-client-lender";
-import {
-  CurrencyFormatter,
-  LtvProgressBar,
-} from "@frontend-monorepo/ui-shared";
+} from "@frontend/http-client-lender";
+import { CurrencyFormatter, LtvProgressBar } from "@frontend/ui-shared";
 import { InfoCircledIcon } from "@radix-ui/react-icons";
 import {
   Badge,

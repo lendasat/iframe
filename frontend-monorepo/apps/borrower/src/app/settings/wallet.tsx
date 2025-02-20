@@ -1,4 +1,4 @@
-import { MnemonicComponent } from "@frontend-monorepo/ui-shared";
+import { MnemonicComponent } from "@frontend/ui-shared";
 import { Box, Heading } from "@radix-ui/themes";
 
 export function Wallet() {

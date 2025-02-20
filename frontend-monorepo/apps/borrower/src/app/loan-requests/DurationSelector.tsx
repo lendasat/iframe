@@ -1,4 +1,4 @@
-import { ONE_YEAR } from "@frontend-monorepo/ui-shared";
+import { ONE_YEAR } from "@frontend/ui-shared";
 import { RadioCards, Text } from "@radix-ui/themes";
 import { IconType } from "react-icons";
 import { FaRegCalendar, FaRegClock } from "react-icons/fa6";

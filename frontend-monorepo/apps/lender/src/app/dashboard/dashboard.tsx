@@ -2,8 +2,8 @@ import {
   Contract,
   ContractStatus,
   useLenderHttpClient,
-} from "@frontend-monorepo/http-client-lender";
-import { formatCurrency, ONE_YEAR } from "@frontend-monorepo/ui-shared";
+} from "@frontend/http-client-lender";
+import { formatCurrency, ONE_YEAR } from "@frontend/ui-shared";
 import { InfoCircledIcon } from "@radix-ui/react-icons";
 import {
   Box,

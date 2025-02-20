@@ -1,19 +1,16 @@
 /// <reference types='vitest' />
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import { nxViteTsPaths } from "@nx/vite/plugins/nx-tsconfig-paths.plugin";
 import svgr from "vite-plugin-svgr";
+import wasm from "vite-plugin-wasm";
+import topLevelAwait from "vite-plugin-top-level-await";
 
 export default defineConfig({
-  root: __dirname,
-  cacheDir: "../../node_modules/.vite/apps/borrower",
-
+  envDir: "../../../",
   server: {
     port: 4200,
     host: "localhost",
-    fs: {
-      allow: ["../../.."],
-    },
+    cors: true,
   },
 
   preview: {
@@ -23,7 +20,6 @@ export default defineConfig({
 
   plugins: [
     react(),
-    nxViteTsPaths(),
     svgr({
       svgrOptions: {
         exportType: "named",
@@ -41,11 +37,10 @@ export default defineConfig({
   // },
 
   build: {
-    outDir: "../../dist/apps/borrower",
     emptyOutDir: true,
     reportCompressedSize: true,
-    commonjsOptions: {
-      transformMixedEsModules: true,
-    },
+    // commonjsOptions: {
+    //   transformMixedEsModules: true,
+    // },
   },
 });

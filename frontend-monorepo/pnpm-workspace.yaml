@@ -1,0 +1,6 @@
+packages:
+  # specify a package in a direct subdir of the root
+  - "apps/**"
+  # all packages in direct subdirs of packages/
+  - "packages/*"
+  - "!**/dist/**"

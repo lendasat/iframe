@@ -1,17 +1,13 @@
-const { createGlobPatternsForDependencies } = require("@nx/react/tailwind");
-const { join } = require("path");
-const { blackA, violet, mauve, red } = require("@radix-ui/colors");
+import { blackA, violet, mauve, red } from "@radix-ui/colors";
 
 /** @type {import('tailwindcss').Config} */
-module.exports = {
+export default {
   darkMode: "class",
   important: true,
   content: [
-    join(
-      __dirname,
-      "{src,pages,components,app}/**/*!(*.stories|*.spec).{ts,tsx,html}",
-    ),
-    ...createGlobPatternsForDependencies(__dirname),
+    "./node_modules/@frontend/**/*.{ts,tsx}",
+    "./src/**/*.{ts,tsx}",
+    "./index.html",
   ],
   theme: {
     extend: {

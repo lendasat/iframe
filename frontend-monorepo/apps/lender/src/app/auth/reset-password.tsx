@@ -1,9 +1,6 @@
-import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
+import { useBaseHttpClient } from "@frontend/base-http-client";
+import { OldPasswordOrMnemonic, ResetPasswordForm } from "@frontend/ui-shared";
 import {
-  OldPasswordOrMnemonic,
-  ResetPasswordForm,
-} from "@frontend-monorepo/ui-shared";
-import init, {
   begin_registration,
   change_wallet_encryption,
   new_wallet_from_mnemonic,
@@ -36,8 +33,6 @@ function ResetPassword() {
     }
 
     console.log(email);
-
-    await init();
 
     const registrationData = begin_registration(email, newPassword);
 

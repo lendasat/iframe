@@ -1,13 +1,9 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "outDir": "../../dist/out-tsc",
-    "types": [
-      "node",
-      "@nx/react/typings/cssmodule.d.ts",
-      "@nx/react/typings/image.d.ts",
-      "vite/client"
-    ]
+    "composite": true,
+    "declaration": true,
+    "types": ["node", "vite/client"]
   },
   "exclude": [
     "src/**/*.spec.ts",

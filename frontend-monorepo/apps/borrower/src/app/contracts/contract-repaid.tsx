@@ -1,12 +1,9 @@
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  UnlockWalletModal,
-  useWallet,
-} from "@frontend-monorepo/browser-wallet";
-import type { Contract } from "@frontend-monorepo/http-client-borrower";
-import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
-import { FeeSelector } from "@frontend-monorepo/mempool";
+import { UnlockWalletModal, useWallet } from "@frontend/browser-wallet";
+import type { Contract } from "@frontend/http-client-borrower";
+import { useBorrowerHttpClient } from "@frontend/http-client-borrower";
+import { FeeSelector } from "@frontend/mempool";
 import { Callout, Heading } from "@radix-ui/themes";
 import { useState } from "react";
 import { Alert, Button, Col, Container, Row } from "react-bootstrap";

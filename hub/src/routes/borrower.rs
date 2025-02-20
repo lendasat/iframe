@@ -54,8 +54,8 @@ pub async fn spawn_borrower_server(
         // the frontend and not by the backend, e.g. `/wallet` should not look up a file/asset on
         // the backend, but be only handled on the client side.
         .fallback_service(
-            ServeDir::new("./frontend-monorepo/dist/apps/borrower").fallback(ServeFile::new(
-                "./frontend-monorepo/dist/apps/borrower/index.html",
+            ServeDir::new("./frontend-monorepo/apps/borrower/dist").fallback(ServeFile::new(
+                "./frontend-monorepo/apps/borrower/dist/index.html",
             )),
         );
 

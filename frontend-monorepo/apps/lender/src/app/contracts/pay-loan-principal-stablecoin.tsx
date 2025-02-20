@@ -4,8 +4,8 @@ import {
   faInfoCircle,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import type { Contract } from "@frontend-monorepo/http-client-lender";
-import { formatCurrency, LoanAssetHelper } from "@frontend-monorepo/ui-shared";
+import type { Contract } from "@frontend/http-client-lender";
+import { formatCurrency, LoanAssetHelper } from "@frontend/ui-shared";
 import { Heading } from "@radix-ui/themes";
 import QRCode from "qrcode.react";
 import { useState } from "react";
