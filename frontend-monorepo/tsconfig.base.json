@@ -17,20 +17,6 @@
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "esModuleInterop": true
-    // "baseUrl": ".",
-    // "paths": {
-    //   "@frontend-monorepo/base-http-client": ["base-http-client/src/index.ts"],
-    //   "@frontend-monorepo/browser-wallet": ["browser-wallet/src/index.ts"],
-    //   "@frontend-monorepo/http-client-borrower": [
-    //     "http-client-borrower/src/index.ts"
-    //   ],
-    //   "@frontend-monorepo/http-client-lender": [
-    //     "http-client-lender/src/index.ts"
-    //   ],
-    //   "@frontend-monorepo/mempool": ["mempool/src/index.ts"],
-    //   "@frontend-monorepo/nostr-chat": ["nostr-chat/src/index.ts"],
-    //   "@frontend-monorepo/ui-shared": ["ui-shared/src/index.ts"]
-    // }
   },
   "exclude": ["node_modules", "tmp", "**/dist/**"]
 }
