@@ -53,7 +53,7 @@ test-frontend:
     set -euxo pipefail
     cd frontend-monorepo
     # FIXME: we should run our frontend tests
-    # npx nx run-many --target=test --all --skipNxCache
+    pnpm test
 
 test-rust:
     cargo test --workspace

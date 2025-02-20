@@ -3,7 +3,7 @@ export default {
   darkMode: "class",
   important: true,
   content: [
-    "../../packages/**/src/**/*.{ts,tsx}",
+    "./node_modules/@frontend-monorepo/**/*.{ts,tsx}",
     "./src/**/*.{ts,tsx}",
     "./index.html",
   ],
