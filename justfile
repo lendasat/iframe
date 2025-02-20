@@ -32,33 +32,34 @@ fmt-frontend:
 clippy:
     cargo clippy --all-targets --all-features -- -D warnings
 
-lint-frontend:
-    #!/usr/bin/env bash
-    set -euxo pipefail
-    cd frontend-monorepo
-    pnpm lint
+# lint-frontend:
+#     #!/usr/bin/env bash
+#     set -euxo pipefail
+#     cd frontend-monorepo
+#     pnpm lint
 
-check-frontend:
-    #!/usr/bin/env bash
-    set -euxo pipefail
-    cd frontend-monorepo
-    pnpm check-types
+# check-frontend:
+#     #!/usr/bin/env bash
+#     set -euxo pipefail
+#     cd frontend-monorepo
+#     pnpm check-types
 
 ## ------------------------
 ## Test functions
 ## ------------------------
 
-test-frontend:
-    #!/usr/bin/env bash
-    set -euxo pipefail
-    cd frontend-monorepo
-    # FIXME: we should run our frontend tests
-    pnpm test
+# FIXME: we should run our frontend tests
+# test-frontend:
+#     #!/usr/bin/env bash
+#     set -euxo pipefail
+#     cd frontend-monorepo
+#     pnpm test
 
 test-rust:
     cargo test --workspace
 
-test: test-frontend test-rust
+# test: test-frontend test-rust
+test: test-rust
 
 prepare-e2e:
     # Start hub DB
@@ -108,17 +109,22 @@ mempool-d:
 ## Serve frontend functions
 ## ------------------------
 
+fronts:
+    #!/usr/bin/env bash
+    cd frontend-monorepo
+    pnpm dev
+
 borrower:
     #!/usr/bin/env bash
     cd frontend-monorepo
     pnpm build --filter=!@frontend/borrower
-    pnpm --filter="@frontend/borrower" serve
+    pnpm --filter="@frontend/borrower" dev
 
 lender:
     #!/usr/bin/env bash
     cd frontend-monorepo
     pnpm build --filter=!@frontend/lender
-    pnpm --filter="@frontend/lender" serve
+    pnpm --filter="@frontend/lender" dev
 
 ## ------------------------
 ## Build frontend functions

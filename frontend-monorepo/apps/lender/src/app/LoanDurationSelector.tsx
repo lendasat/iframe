@@ -107,10 +107,10 @@ const DurationSelector: React.FC<DurationSelectorProps> = ({
 
   const getCardStyle = (value: AllowedDurations): string => {
     if (value === startDuration) {
-      return "ring-2 ring-purple-400 bg-purple-100 dark:bg-bg-gray-700";
+      return "ring-2 ring-purple-400 bg-purple-100 dark:bg-gray-700";
     }
     if (value === endDuration) {
-      return "ring-2 ring-purple-400 bg-purple-100 dark:bg-bg-gray-900";
+      return "ring-2 ring-purple-400 bg-purple-100 dark:bg-gray-900";
     }
     if (isInRange(value)) {
       return "ring-1 ring-purple-300 bg-purple-50 dark:bg-gray-400";
