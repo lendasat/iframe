@@ -1,8 +1,5 @@
-import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
-import {
-  OldPasswordOrMnemonic,
-  ResetPasswordForm,
-} from "@frontend-monorepo/ui-shared";
+import { useBaseHttpClient } from "@lendasat/base-http-client";
+import { OldPasswordOrMnemonic, ResetPasswordForm } from "@lendasat/ui-shared";
 import {
   begin_registration,
   change_wallet_encryption,

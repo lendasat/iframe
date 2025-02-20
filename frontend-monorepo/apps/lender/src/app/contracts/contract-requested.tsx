@@ -15,8 +15,8 @@ import {
   FiatTransferDetailsDialog,
   LoanAsset,
   LoanAssetHelper,
-} from "@frontend-monorepo/ui-shared";
-import { FiatLoanDetails } from "@frontend-monorepo/base-http-client";
+} from "@lendasat/ui-shared";
+import { FiatLoanDetails } from "@lendasat/base-http-client";
 import { IoInformationCircleOutline } from "react-icons/io5";
 
 interface ContractRequestedProps {

@@ -1,9 +1,9 @@
 import {
   FiatLoanDetailsResponse,
   type LoanFeature,
-} from "@frontend-monorepo/base-http-client";
-import { OriginationFee } from "@frontend-monorepo/http-client-borrower";
-import { LoanAsset, LoanTransaction } from "@frontend-monorepo/ui-shared";
+} from "@lendasat/base-http-client";
+import { OriginationFee } from "@lendasat/http-client-borrower";
+import { LoanAsset, LoanTransaction } from "@lendasat/ui-shared";
 
 export enum ContractStatus {
   Requested = "Requested",

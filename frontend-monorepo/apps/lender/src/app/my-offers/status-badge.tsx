@@ -1,5 +1,5 @@
-import type { LoanOffer } from "@frontend-monorepo/http-client-lender";
-import { LoanOfferStatus } from "@frontend-monorepo/http-client-lender";
+import type { LoanOffer } from "@lendasat/http-client-lender";
+import { LoanOfferStatus } from "@lendasat/http-client-lender";
 import { Badge } from "@radix-ui/themes";
 
 export interface StatusBadgeProps {

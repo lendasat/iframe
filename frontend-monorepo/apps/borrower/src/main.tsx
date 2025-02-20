@@ -15,7 +15,7 @@ import { mainnet } from "viem/chains";
 import { WagmiProvider } from "wagmi";
 import App from "./app/app";
 import "@rainbow-me/rainbowkit/styles.css";
-import { ThemeProvider } from "@frontend-monorepo/ui-shared";
+import { ThemeProvider } from "@lendasat/ui-shared";
 
 const config = getDefaultConfig({
   appName: "Lendasat",

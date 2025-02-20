@@ -45,7 +45,7 @@ export default defineConfig({
         "react/jsx-runtime",
         "react-router-dom",
         "browser-wallet",
-        "@frontend-monorepo/browser-wallet",
+        "@lendasat/browser-wallet",
       ],
     },
   },

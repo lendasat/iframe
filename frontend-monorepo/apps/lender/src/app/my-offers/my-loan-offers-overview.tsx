@@ -1,4 +1,4 @@
-import { useLenderHttpClient } from "@frontend-monorepo/http-client-lender";
+import { useLenderHttpClient } from "@lendasat/http-client-lender";
 import { Box, Flex, Heading } from "@radix-ui/themes";
 import { useAsync } from "react-use";
 import { MyLoanOffersTable } from "./MyLoanOffersTable";

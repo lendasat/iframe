@@ -1,9 +1,6 @@
-import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
-import {
-  useAuth,
-  useBorrowerHttpClient,
-} from "@frontend-monorepo/http-client-borrower";
-import { EditableTimezoneField } from "@frontend-monorepo/ui-shared";
+import { useBaseHttpClient } from "@lendasat/base-http-client";
+import { useAuth, useBorrowerHttpClient } from "@lendasat/http-client-borrower";
+import { EditableTimezoneField } from "@lendasat/ui-shared";
 import {
   Avatar,
   Badge,

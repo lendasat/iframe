@@ -1,12 +1,9 @@
-import {
-  UnlockWalletModal,
-  useWallet,
-} from "@frontend-monorepo/browser-wallet";
+import { UnlockWalletModal, useWallet } from "@lendasat/browser-wallet";
 import { useState } from "react";
 import {
   FiatLoanDetailsResponse,
   InnerFiatLoanDetails,
-} from "@frontend-monorepo/base-http-client";
+} from "@lendasat/base-http-client";
 import {
   Button,
   Code,

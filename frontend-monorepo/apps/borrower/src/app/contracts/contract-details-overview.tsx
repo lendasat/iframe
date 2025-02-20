@@ -1,12 +1,12 @@
-import type { Contract } from "@frontend-monorepo/http-client-borrower";
+import type { Contract } from "@lendasat/http-client-borrower";
 import {
   ContractStatus,
   contractStatusToLabelString,
   LiquidationStatus,
   useAuth,
   useBorrowerHttpClient,
-} from "@frontend-monorepo/http-client-borrower";
-import { ChatDrawer } from "@frontend-monorepo/nostr-chat";
+} from "@lendasat/http-client-borrower";
+import { ChatDrawer } from "@lendasat/nostr-chat";
 import {
   CurrencyFormatter,
   formatCurrency,
@@ -21,7 +21,7 @@ import {
   RefundAddressInfoLabel,
   TransactionList,
   TransactionType,
-} from "@frontend-monorepo/ui-shared";
+} from "@lendasat/ui-shared";
 import { ExternalLinkIcon } from "@radix-ui/react-icons";
 import {
   Badge,

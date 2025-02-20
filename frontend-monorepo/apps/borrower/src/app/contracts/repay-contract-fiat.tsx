@@ -1,13 +1,13 @@
 import { Box, Button, Callout, Flex } from "@radix-ui/themes";
 import { FaInfoCircle } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import { BankingDetailsSummary } from "@frontend-monorepo/ui-shared";
+import { BankingDetailsSummary } from "@lendasat/ui-shared";
 import { type FormEvent, useState } from "react";
 import { Alert, Form } from "react-bootstrap";
-import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
+import { useBorrowerHttpClient } from "@lendasat/http-client-borrower";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
-import { FiatLoanDetailsResponse } from "@frontend-monorepo/base-http-client";
+import { FiatLoanDetailsResponse } from "@lendasat/base-http-client";
 
 interface RepayFiatProps {
   contractId: string;

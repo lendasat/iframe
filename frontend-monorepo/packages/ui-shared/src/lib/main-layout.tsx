@@ -1,4 +1,4 @@
-import type { Version } from "@frontend-monorepo/base-http-client";
+import type { Version } from "@lendasat/base-http-client";
 import {
   Avatar,
   Box,

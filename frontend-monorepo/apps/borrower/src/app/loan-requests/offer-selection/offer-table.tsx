@@ -1,12 +1,12 @@
 "use client";
 
-import { LoanOffer } from "@frontend-monorepo/http-client-borrower";
+import { LoanOffer } from "@lendasat/http-client-borrower";
 import {
   formatCurrency,
   getFormatedStringFromDays,
   LoanAsset,
   LoanAssetHelper,
-} from "@frontend-monorepo/ui-shared";
+} from "@lendasat/ui-shared";
 import {
   Badge,
   Box,

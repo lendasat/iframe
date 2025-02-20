@@ -1,9 +1,9 @@
-import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
+import { useBorrowerHttpClient } from "@lendasat/http-client-borrower";
 import {
   ContractStatus,
   contractStatusToLabelString,
-} from "@frontend-monorepo/http-client-borrower";
-import { ALL_CONTRACT_STATUSES } from "@frontend-monorepo/http-client-lender";
+} from "@lendasat/http-client-borrower";
+import { ALL_CONTRACT_STATUSES } from "@lendasat/http-client-lender";
 import { MixerHorizontalIcon } from "@radix-ui/react-icons";
 import * as Label from "@radix-ui/react-label";
 import {

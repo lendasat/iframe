@@ -1,8 +1,8 @@
 import {
   LenderStats,
   useBorrowerHttpClient,
-} from "@frontend-monorepo/http-client-borrower";
-import { UserStats } from "@frontend-monorepo/ui-shared";
+} from "@lendasat/http-client-borrower";
+import { UserStats } from "@lendasat/ui-shared";
 import { Suspense } from "react";
 import { Await, useParams } from "react-router-dom";
 

@@ -1,5 +1,5 @@
 {
-  "name": "@frontend-monorepo/ui-shared",
+  "name": "@lendasat/ui-shared",
   "version": "0.0.1",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -12,8 +12,8 @@
     }
   },
   "dependencies": {
-    "@frontend-monorepo/base-http-client": "*",
-    "@frontend-monorepo/browser-wallet": "*",
+    "@lendasat/base-http-client": "*",
+    "@lendasat/browser-wallet": "*",
     "@radix-ui/react-checkbox": "1.1.4",
     "@radix-ui/colors": "3.0.0"
   },

@@ -263,25 +263,25 @@ importers:
 
   apps/borrower:
     dependencies:
-      '@frontend-monorepo/base-http-client':
+      '@lendasat/base-http-client':
         specifier: workspace:*
         version: link:../../packages/base-http-client
-      '@frontend-monorepo/browser-wallet':
+      '@lendasat/browser-wallet':
         specifier: workspace:*
         version: link:../../packages/browser-wallet
-      '@frontend-monorepo/http-client-borrower':
+      '@lendasat/http-client-borrower':
         specifier: workspace:*
         version: link:../../packages/http-client-borrower
-      '@frontend-monorepo/http-client-lender':
+      '@lendasat/http-client-lender':
         specifier: workspace:*
         version: link:../../packages/http-client-lender
-      '@frontend-monorepo/mempool':
+      '@lendasat/mempool':
         specifier: workspace:*
         version: link:../../packages/mempool
-      '@frontend-monorepo/nostr-chat':
+      '@lendasat/nostr-chat':
         specifier: workspace:*
         version: link:../../packages/nostr-chat
-      '@frontend-monorepo/ui-shared':
+      '@lendasat/ui-shared':
         specifier: workspace:*
         version: link:../../packages/ui-shared
       '@radix-ui/themes':
@@ -309,25 +309,25 @@ importers:
 
   apps/lender:
     dependencies:
-      '@frontend-monorepo/base-http-client':
+      '@lendasat/base-http-client':
         specifier: workspace:*
         version: link:../../packages/base-http-client
-      '@frontend-monorepo/browser-wallet':
+      '@lendasat/browser-wallet':
         specifier: workspace:*
         version: link:../../packages/browser-wallet
-      '@frontend-monorepo/http-client-borrower':
+      '@lendasat/http-client-borrower':
         specifier: workspace:*
         version: link:../../packages/http-client-borrower
-      '@frontend-monorepo/http-client-lender':
+      '@lendasat/http-client-lender':
         specifier: workspace:*
         version: link:../../packages/http-client-lender
-      '@frontend-monorepo/mempool':
+      '@lendasat/mempool':
         specifier: workspace:*
         version: link:../../packages/mempool
-      '@frontend-monorepo/nostr-chat':
+      '@lendasat/nostr-chat':
         specifier: workspace:*
         version: link:../../packages/nostr-chat
-      '@frontend-monorepo/ui-shared':
+      '@lendasat/ui-shared':
         specifier: workspace:*
         version: link:../../packages/ui-shared
       '@radix-ui/colors':
@@ -376,16 +376,16 @@ importers:
 
   packages/browser-wallet:
     dependencies:
-      '@frontend-monorepo/base-http-client':
+      '@lendasat/base-http-client':
         specifier: workspace:*
         version: link:../base-http-client
 
   packages/http-client-borrower:
     dependencies:
-      '@frontend-monorepo/base-http-client':
+      '@lendasat/base-http-client':
         specifier: '*'
         version: link:../base-http-client
-      '@frontend-monorepo/ui-shared':
+      '@lendasat/ui-shared':
         specifier: '*'
         version: link:../ui-shared
     devDependencies:
@@ -395,13 +395,13 @@ importers:
 
   packages/http-client-lender:
     dependencies:
-      '@frontend-monorepo/base-http-client':
+      '@lendasat/base-http-client':
         specifier: '*'
         version: link:../base-http-client
-      '@frontend-monorepo/http-client-borrower':
+      '@lendasat/http-client-borrower':
         specifier: '*'
         version: link:../http-client-borrower
-      '@frontend-monorepo/ui-shared':
+      '@lendasat/ui-shared':
         specifier: '*'
         version: link:../ui-shared
     devDependencies:
@@ -413,16 +413,16 @@ importers:
 
   packages/nostr-chat:
     dependencies:
-      '@frontend-monorepo/browser-wallet':
+      '@lendasat/browser-wallet':
         specifier: '*'
         version: link:../browser-wallet
 
   packages/ui-shared:
     dependencies:
-      '@frontend-monorepo/base-http-client':
+      '@lendasat/base-http-client':
         specifier: '*'
         version: link:../base-http-client
-      '@frontend-monorepo/browser-wallet':
+      '@lendasat/browser-wallet':
         specifier: '*'
         version: link:../browser-wallet
       '@radix-ui/colors':

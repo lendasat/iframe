@@ -1,6 +1,6 @@
-import type { Contract } from "@frontend-monorepo/http-client-lender";
+import type { Contract } from "@lendasat/http-client-lender";
 import { Button, Flex } from "@radix-ui/themes";
-import { BankingDetailsSummary } from "@frontend-monorepo/ui-shared";
+import { BankingDetailsSummary } from "@lendasat/ui-shared";
 
 interface RepaymentDetailsProps {
   contract: Contract;

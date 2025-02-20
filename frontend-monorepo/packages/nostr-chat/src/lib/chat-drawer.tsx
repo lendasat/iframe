@@ -1,7 +1,4 @@
-import {
-  UnlockWalletModal,
-  useWallet,
-} from "@frontend-monorepo/browser-wallet";
+import { UnlockWalletModal, useWallet } from "@lendasat/browser-wallet";
 import { Box, Button, Flex, Heading, Text, TextField } from "@radix-ui/themes";
 import { loadWasmSync, PublicKey, Timestamp } from "@rust-nostr/nostr-sdk";
 import { derive_npub } from "browser-wallet";

@@ -1,4 +1,4 @@
-import { LoanOffer } from "@frontend-monorepo/http-client-borrower";
+import { LoanOffer } from "@lendasat/http-client-borrower";
 import { Button, Checkbox, Dialog, Flex, Link, Text } from "@radix-ui/themes";
 interface KycDialogProps {
   selectedOffer: LoanOffer;

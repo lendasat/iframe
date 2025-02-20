@@ -1,4 +1,4 @@
-import { ContractStatus } from "@frontend-monorepo/http-client-borrower";
+import { ContractStatus } from "@lendasat/http-client-borrower";
 
 // Depending on the ContractStatus we want to show the `initial` collateral or the `actual`
 // collateral. This is because for certain states the `actual` collateral is 0.

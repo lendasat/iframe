@@ -1,5 +1,5 @@
-import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
-import { RegistrationForm } from "@frontend-monorepo/ui-shared";
+import { useBaseHttpClient } from "@lendasat/base-http-client";
+import { RegistrationForm } from "@lendasat/ui-shared";
 import {
   begin_registration,
   load_wallet,

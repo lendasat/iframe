@@ -2,8 +2,8 @@ import {
   Contract,
   ContractStatus,
   useBorrowerHttpClient,
-} from "@frontend-monorepo/http-client-borrower";
-import { formatCurrency } from "@frontend-monorepo/ui-shared";
+} from "@lendasat/http-client-borrower";
+import { formatCurrency } from "@lendasat/ui-shared";
 import { ExternalLinkIcon, InfoCircledIcon } from "@radix-ui/react-icons";
 import {
   Box,

@@ -1,15 +1,12 @@
 import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  UnlockWalletModal,
-  useWallet,
-} from "@frontend-monorepo/browser-wallet";
-import type { Dispute } from "@frontend-monorepo/http-client-borrower";
+import { UnlockWalletModal, useWallet } from "@lendasat/browser-wallet";
+import type { Dispute } from "@lendasat/http-client-borrower";
 import {
   DisputeStatus,
   useBorrowerHttpClient,
-} from "@frontend-monorepo/http-client-borrower";
-import { FeeSelector } from "@frontend-monorepo/mempool";
+} from "@lendasat/http-client-borrower";
+import { FeeSelector } from "@lendasat/mempool";
 import { Suspense, useState } from "react";
 import { Alert, Button } from "react-bootstrap";
 import { Await, useParams } from "react-router-dom";

@@ -1,4 +1,4 @@
-import { useBorrowerHttpClient } from "@frontend-monorepo/http-client-borrower";
+import { useBorrowerHttpClient } from "@lendasat/http-client-borrower";
 import {
   Box,
   Button,

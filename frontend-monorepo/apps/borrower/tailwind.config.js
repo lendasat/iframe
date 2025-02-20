@@ -3,7 +3,7 @@ export default {
   darkMode: "class",
   important: true,
   content: [
-    "./node_modules/@frontend-monorepo/**/*.{ts,tsx}",
+    "./node_modules/@lendasat/**/*.{ts,tsx}",
     "./src/**/*.{ts,tsx}",
     "./index.html",
   ],

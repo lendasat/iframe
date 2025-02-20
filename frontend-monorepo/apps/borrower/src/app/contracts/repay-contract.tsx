@@ -2,11 +2,11 @@ import {
   formatCurrency,
   LoanAsset,
   LoanAssetHelper,
-} from "@frontend-monorepo/ui-shared";
+} from "@lendasat/ui-shared";
 import { Box, Flex, Separator, Text, Tooltip } from "@radix-ui/themes";
 import { RepayStablecoins } from "./repay-contract-stablecoins";
 import { RepayFiat } from "./repay-contract-fiat";
-import { FiatLoanDetailsResponse } from "@frontend-monorepo/base-http-client";
+import { FiatLoanDetailsResponse } from "@lendasat/base-http-client";
 
 interface RepayContractProps {
   contractId: string;

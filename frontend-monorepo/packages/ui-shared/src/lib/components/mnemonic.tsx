@@ -1,7 +1,4 @@
-import {
-  UnlockWalletModal,
-  useWallet,
-} from "@frontend-monorepo/browser-wallet";
+import { UnlockWalletModal, useWallet } from "@lendasat/browser-wallet";
 import * as Checkbox from "@radix-ui/react-checkbox";
 import { CheckIcon } from "@radix-ui/react-icons";
 import * as Label from "@radix-ui/react-label";

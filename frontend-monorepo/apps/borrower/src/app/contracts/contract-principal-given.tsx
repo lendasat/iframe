@@ -1,4 +1,4 @@
-import { Contract } from "@frontend-monorepo/http-client-borrower";
+import { Contract } from "@lendasat/http-client-borrower";
 import { InfoCircledIcon } from "@radix-ui/react-icons";
 import { Box, Callout, Flex, Heading, Select } from "@radix-ui/themes";
 import { useState } from "react";

@@ -1,10 +1,10 @@
-import type { Contract } from "@frontend-monorepo/http-client-lender";
+import type { Contract } from "@lendasat/http-client-lender";
 import { Box, Flex, Heading, RadioCards, Text } from "@radix-ui/themes";
 import { useState } from "react";
 import { Col, Container, Row } from "react-bootstrap";
 import { LiquidateToBitcoin } from "./liquidation/liquidate-to-bitcoin";
 import { LiquidateToStablecoin } from "./liquidation/liquidate-to-stablecoin";
-import { LoanAssetHelper } from "@frontend-monorepo/ui-shared";
+import { LoanAssetHelper } from "@lendasat/ui-shared";
 
 interface ContractDefaultedProps {
   contract: Contract;

@@ -1,5 +1,5 @@
-import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
-import { EmailVerificationForm } from "@frontend-monorepo/ui-shared";
+import { useBaseHttpClient } from "@lendasat/base-http-client";
+import { EmailVerificationForm } from "@lendasat/ui-shared";
 import { useNavigate, useParams } from "react-router-dom";
 
 function VerifyEmailForm() {

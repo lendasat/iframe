@@ -1,5 +1,5 @@
 {
-  "name": "@frontend-monorepo/http-client-lender",
+  "name": "@lendasat/http-client-lender",
   "version": "0.0.1",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -15,9 +15,9 @@
     "dev": "vite build --watch"
   },
   "dependencies": {
-    "@frontend-monorepo/base-http-client": "*",
-    "@frontend-monorepo/http-client-borrower": "*",
-    "@frontend-monorepo/ui-shared": "*"
+    "@lendasat/base-http-client": "*",
+    "@lendasat/http-client-borrower": "*",
+    "@lendasat/ui-shared": "*"
   },
   "devDependencies": {
     "@types/semver": "^7.5.8"

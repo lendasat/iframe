@@ -1,4 +1,4 @@
-import type { UserCardDetail } from "@frontend-monorepo/http-client-borrower";
+import type { UserCardDetail } from "@lendasat/http-client-borrower";
 import { Box } from "@radix-ui/themes";
 import { ReactComponent as MoonCard } from "../../assets/moon_card.svg";
 import "../../assets/moonFont.css";

@@ -1,6 +1,6 @@
-import { ContractStatus } from "@frontend-monorepo/http-client-lender";
-import type { Contract } from "@frontend-monorepo/http-client-lender";
-import { usePrice } from "@frontend-monorepo/ui-shared";
+import { ContractStatus } from "@lendasat/http-client-lender";
+import type { Contract } from "@lendasat/http-client-lender";
+import { usePrice } from "@lendasat/ui-shared";
 import { Box, Heading, Tabs, Text } from "@radix-ui/themes";
 import { useState } from "react";
 import type { ColumnFilterKey } from "../contracts/contract-details-table";

@@ -2,7 +2,7 @@ import {
   LoginResponseOrUpgrade,
   useBaseHttpClient,
   WalletBackupData,
-} from "@frontend-monorepo/base-http-client";
+} from "@lendasat/base-http-client";
 import { begin_registration, upgrade_wallet } from "browser-wallet";
 
 import { md5 } from "hash-wasm";

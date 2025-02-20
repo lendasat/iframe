@@ -1,5 +1,5 @@
-import { useAuth } from "@frontend-monorepo/http-client-borrower";
-import { UpgradeToPake as UpgradeToPakeGeneric } from "@frontend-monorepo/ui-shared";
+import { useAuth } from "@lendasat/http-client-borrower";
+import { UpgradeToPake as UpgradeToPakeGeneric } from "@lendasat/ui-shared";
 
 function UpgradeToPake() {
   const { login } = useAuth();

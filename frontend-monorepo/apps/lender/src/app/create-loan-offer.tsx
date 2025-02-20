@@ -1,10 +1,10 @@
-import { useWallet } from "@frontend-monorepo/browser-wallet";
+import { useWallet } from "@lendasat/browser-wallet";
 import {
   CreateLoanOfferRequest,
   LenderFeatureFlags,
   useAuth,
   useLenderHttpClient,
-} from "@frontend-monorepo/http-client-lender";
+} from "@lendasat/http-client-lender";
 import {
   formatCurrency,
   getFormatedStringFromDays,
@@ -15,7 +15,7 @@ import {
   LtvInfoLabel,
   ONE_MONTH,
   parseLoanAsset,
-} from "@frontend-monorepo/ui-shared";
+} from "@lendasat/ui-shared";
 import * as Checkbox from "@radix-ui/react-checkbox";
 import { CheckIcon } from "@radix-ui/react-icons";
 import {

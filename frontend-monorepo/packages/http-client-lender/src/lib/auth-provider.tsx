@@ -2,8 +2,8 @@ import type {
   LoginResponseOrUpgrade,
   User,
   Version,
-} from "@frontend-monorepo/base-http-client";
-import { useBaseHttpClient } from "@frontend-monorepo/base-http-client";
+} from "@lendasat/base-http-client";
+import { useBaseHttpClient } from "@lendasat/base-http-client";
 import axios from "axios";
 import { process_login_response, verify_server } from "browser-wallet";
 import type { FC, ReactNode } from "react";
