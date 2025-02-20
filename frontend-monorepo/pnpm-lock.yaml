@@ -330,6 +330,9 @@ importers:
       '@frontend-monorepo/ui-shared':
         specifier: workspace:*
         version: link:../../packages/ui-shared
+      '@radix-ui/colors':
+        specifier: 3.0.0
+        version: 3.0.0
       '@radix-ui/react-checkbox':
         specifier: 1.1.4
         version: 1.1.4(@types/react-dom@18.3.0)(@types/react@18.3.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
