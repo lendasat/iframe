@@ -1,4 +1,4 @@
-import { LoanProductOption } from "@lendasat/base-http-client";
+import { LoanProductOption } from "@frontend/base-http-client";
 import { Box, Flex, RadioCards, Text, TextField } from "@radix-ui/themes";
 import type { ChangeEvent, ReactNode } from "react";
 import { Form } from "react-bootstrap";

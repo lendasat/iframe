@@ -2,7 +2,7 @@ import {
   LoginResponseOrUpgrade,
   useBaseHttpClient,
   WalletBackupData,
-} from "@lendasat/base-http-client";
+} from "@frontend/base-http-client";
 import { begin_registration, upgrade_wallet } from "browser-wallet";
 
 import { md5 } from "hash-wasm";

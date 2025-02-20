@@ -2,11 +2,11 @@ import {
   formatCurrency,
   LoanAsset,
   LoanAssetHelper,
-} from "@lendasat/ui-shared";
+} from "@frontend/ui-shared";
 import { Box, Flex, Separator, Text, Tooltip } from "@radix-ui/themes";
 import { RepayStablecoins } from "./repay-contract-stablecoins";
 import { RepayFiat } from "./repay-contract-fiat";
-import { FiatLoanDetailsResponse } from "@lendasat/base-http-client";
+import { FiatLoanDetailsResponse } from "@frontend/base-http-client";
 
 interface RepayContractProps {
   contractId: string;

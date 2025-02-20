@@ -2,8 +2,8 @@ import {
   Contract,
   ContractStatus,
   useLenderHttpClient,
-} from "@lendasat/http-client-lender";
-import { formatCurrency, ONE_YEAR } from "@lendasat/ui-shared";
+} from "@frontend/http-client-lender";
+import { formatCurrency, ONE_YEAR } from "@frontend/ui-shared";
 import { InfoCircledIcon } from "@radix-ui/react-icons";
 import {
   Box,

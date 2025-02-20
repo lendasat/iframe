@@ -1,12 +1,12 @@
 import type {
   BaseHttpClientContextType,
   FiatLoanDetails,
-} from "@lendasat/base-http-client";
+} from "@frontend/base-http-client";
 import {
   BaseHttpClient,
   BaseHttpClientContext,
-} from "@lendasat/base-http-client";
-import { Dispute, PutUpdateProfile } from "@lendasat/http-client-borrower";
+} from "@frontend/base-http-client";
+import { Dispute, PutUpdateProfile } from "@frontend/http-client-borrower";
 import type { AxiosResponse } from "axios";
 import axios from "axios";
 import { createContext, useContext } from "react";

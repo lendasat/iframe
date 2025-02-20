@@ -1,5 +1,5 @@
 // Types
-import { LoanProductOption } from "@lendasat/base-http-client";
+import { LoanProductOption } from "@frontend/base-http-client";
 import { Box, Flex, Heading, ScrollArea, Text } from "@radix-ui/themes";
 import { ColumnFiltersState } from "@tanstack/react-table";
 import { useEffect, useRef, useState } from "react";

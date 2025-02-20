@@ -1,5 +1,5 @@
-import { useBorrowerHttpClient } from "@lendasat/http-client-borrower";
-import { CurrencyFormatter } from "@lendasat/ui-shared";
+import { useBorrowerHttpClient } from "@frontend/http-client-borrower";
+import { CurrencyFormatter } from "@frontend/ui-shared";
 import {
   Box,
   Button,

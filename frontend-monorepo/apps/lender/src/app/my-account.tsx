@@ -1,6 +1,6 @@
-import { useBaseHttpClient } from "@lendasat/base-http-client";
-import { useAuth, useLenderHttpClient } from "@lendasat/http-client-lender";
-import { EditableTimezoneField, MnemonicComponent } from "@lendasat/ui-shared";
+import { useBaseHttpClient } from "@frontend/base-http-client";
+import { useAuth, useLenderHttpClient } from "@frontend/http-client-lender";
+import { EditableTimezoneField, MnemonicComponent } from "@frontend/ui-shared";
 import {
   Avatar,
   Box,

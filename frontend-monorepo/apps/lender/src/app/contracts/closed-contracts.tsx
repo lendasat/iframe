@@ -1,15 +1,15 @@
-import { ContractStatus } from "@lendasat/http-client-borrower";
+import { ContractStatus } from "@frontend/http-client-borrower";
 import {
   type Contract,
   contractStatusToLabelString,
   LiquidationStatus,
-} from "@lendasat/http-client-lender";
-import { actionFromStatus } from "@lendasat/http-client-lender";
+} from "@frontend/http-client-lender";
+import { actionFromStatus } from "@frontend/http-client-lender";
 import {
   CurrencyFormatter,
   getFormatedStringFromDays,
   LtvProgressBar,
-} from "@lendasat/ui-shared";
+} from "@frontend/ui-shared";
 import {
   Badge,
   Box,

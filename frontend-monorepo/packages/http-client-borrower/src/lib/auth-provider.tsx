@@ -2,9 +2,9 @@ import type {
   LoginResponseOrUpgrade,
   User,
   Version,
-} from "@lendasat/base-http-client";
-import { useBaseHttpClient } from "@lendasat/base-http-client";
-import type { LoanProductOption } from "@lendasat/base-http-client";
+} from "@frontend/base-http-client";
+import { useBaseHttpClient } from "@frontend/base-http-client";
+import type { LoanProductOption } from "@frontend/base-http-client";
 import axios from "axios";
 import { process_login_response, verify_server } from "browser-wallet";
 import {

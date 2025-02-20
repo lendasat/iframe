@@ -15,12 +15,12 @@ import {
 } from "@radix-ui/themes";
 import { FormEvent, ReactNode, useState } from "react";
 import { LuPencil } from "react-icons/lu";
-import { UnlockWalletModal, useWallet } from "@lendasat/browser-wallet";
+import { UnlockWalletModal, useWallet } from "@frontend/browser-wallet";
 import {
   FiatLoanDetails,
   IbanTransferDetails,
   SwiftTransferDetails,
-} from "@lendasat/base-http-client";
+} from "@frontend/base-http-client";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCheckCircle } from "@fortawesome/free-solid-svg-icons";
 

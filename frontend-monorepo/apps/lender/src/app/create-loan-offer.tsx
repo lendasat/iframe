@@ -1,10 +1,10 @@
-import { useWallet } from "@lendasat/browser-wallet";
+import { useWallet } from "@frontend/browser-wallet";
 import {
   CreateLoanOfferRequest,
   LenderFeatureFlags,
   useAuth,
   useLenderHttpClient,
-} from "@lendasat/http-client-lender";
+} from "@frontend/http-client-lender";
 import {
   formatCurrency,
   getFormatedStringFromDays,
@@ -15,7 +15,7 @@ import {
   LtvInfoLabel,
   ONE_MONTH,
   parseLoanAsset,
-} from "@lendasat/ui-shared";
+} from "@frontend/ui-shared";
 import * as Checkbox from "@radix-ui/react-checkbox";
 import { CheckIcon } from "@radix-ui/react-icons";
 import {

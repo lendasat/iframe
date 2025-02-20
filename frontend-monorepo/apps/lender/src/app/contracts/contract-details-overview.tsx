@@ -3,7 +3,7 @@ import {
   faInfoCircle,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import type { Contract } from "@lendasat/http-client-lender";
+import type { Contract } from "@frontend/http-client-lender";
 import {
   ContractStatus,
   contractStatusToLabelString,
@@ -11,8 +11,8 @@ import {
   TransactionType,
   useAuth,
   useLenderHttpClient,
-} from "@lendasat/http-client-lender";
-import { ChatDrawer } from "@lendasat/nostr-chat";
+} from "@frontend/http-client-lender";
+import { ChatDrawer } from "@frontend/nostr-chat";
 import {
   CurrencyFormatter,
   formatCurrency,
@@ -22,7 +22,7 @@ import {
   LtvInfoLabel,
   ONE_YEAR,
   TransactionList,
-} from "@lendasat/ui-shared";
+} from "@frontend/ui-shared";
 import { ExternalLinkIcon } from "@radix-ui/react-icons";
 import {
   Badge,
@@ -49,7 +49,7 @@ import { ContractRequested } from "./contract-requested";
 import { ContractUndercollateralized } from "./contract-undercollateralized";
 import { downloadLocalStorage } from "./download-local-storage";
 import LoanPrincipalStablecoinPayout from "./pay-loan-principal-stablecoin";
-import { FiatLoanDetails } from "@lendasat/base-http-client";
+import { FiatLoanDetails } from "@frontend/base-http-client";
 import RepaymentDetailsFiat from "./pay-loan-principal-fiat";
 
 function ContractDetailsOverview() {

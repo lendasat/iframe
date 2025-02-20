@@ -1,5 +1,5 @@
-import { useAuth } from "@lendasat/http-client-lender";
-import { UpgradeToPake as UpgradeToPakeGeneric } from "@lendasat/ui-shared";
+import { useAuth } from "@frontend/http-client-lender";
+import { UpgradeToPake as UpgradeToPakeGeneric } from "@frontend/ui-shared";
 
 function UpgradeToPake() {
   const { login } = useAuth();

@@ -1,4 +1,4 @@
-import type { Version } from "@lendasat/base-http-client";
+import type { Version } from "@frontend/base-http-client";
 
 export function downloadLocalStorage(version: Version) {
   const localStorageData = { version, ...localStorage };

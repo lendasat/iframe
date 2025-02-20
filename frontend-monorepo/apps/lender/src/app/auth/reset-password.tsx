@@ -1,5 +1,5 @@
-import { useBaseHttpClient } from "@lendasat/base-http-client";
-import { OldPasswordOrMnemonic, ResetPasswordForm } from "@lendasat/ui-shared";
+import { useBaseHttpClient } from "@frontend/base-http-client";
+import { OldPasswordOrMnemonic, ResetPasswordForm } from "@frontend/ui-shared";
 import {
   begin_registration,
   change_wallet_encryption,

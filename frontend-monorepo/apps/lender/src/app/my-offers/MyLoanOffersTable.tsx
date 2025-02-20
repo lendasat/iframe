@@ -1,9 +1,9 @@
-import { LoanOffer } from "@lendasat/http-client-lender";
+import { LoanOffer } from "@frontend/http-client-lender";
 import {
   CurrencyFormatter,
   KycBadge,
   LoanAssetHelper,
-} from "@lendasat/ui-shared";
+} from "@frontend/ui-shared";
 import { InfoCircledIcon } from "@radix-ui/react-icons";
 import { Box, Button, Callout, Flex, Table, Text } from "@radix-ui/themes";
 import { useState } from "react";

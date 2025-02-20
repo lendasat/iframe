@@ -1,10 +1,10 @@
 import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import type { Dispute } from "@lendasat/http-client-lender";
+import type { Dispute } from "@frontend/http-client-lender";
 import {
   DisputeStatus,
   useLenderHttpClient,
-} from "@lendasat/http-client-lender";
+} from "@frontend/http-client-lender";
 import { Suspense } from "react";
 import { Alert } from "react-bootstrap";
 import { Await, useParams } from "react-router-dom";

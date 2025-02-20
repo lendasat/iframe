@@ -1,8 +1,8 @@
 import {
   LenderStats,
   useBorrowerHttpClient,
-} from "@lendasat/http-client-borrower";
-import { UserStats } from "@lendasat/ui-shared";
+} from "@frontend/http-client-borrower";
+import { UserStats } from "@frontend/ui-shared";
 import { Suspense } from "react";
 import { Await, useParams } from "react-router-dom";
 

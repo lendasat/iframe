@@ -1,5 +1,5 @@
 {
-  "name": "@lendasat/nostr-chat",
+  "name": "@frontend/nostr-chat",
   "version": "0.0.1",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -16,6 +16,6 @@
     "dev": "vite build --watch"
   },
   "dependencies": {
-    "@lendasat/browser-wallet": "*"
+    "@frontend/browser-wallet": "*"
   }
 }

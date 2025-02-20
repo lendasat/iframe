@@ -1,6 +1,6 @@
-import { ContractStatus } from "@lendasat/http-client-lender";
-import type { Contract } from "@lendasat/http-client-lender";
-import { usePrice } from "@lendasat/ui-shared";
+import { ContractStatus } from "@frontend/http-client-lender";
+import type { Contract } from "@frontend/http-client-lender";
+import { usePrice } from "@frontend/ui-shared";
 import { Box, Heading, Tabs, Text } from "@radix-ui/themes";
 import { useState } from "react";
 import type { ColumnFilterKey } from "../contracts/contract-details-table";

@@ -4,8 +4,8 @@ import {
   ContractStatus,
   contractStatusToLabelString,
   LiquidationStatus,
-} from "@lendasat/http-client-borrower";
-import { CurrencyFormatter, LtvProgressBar } from "@lendasat/ui-shared";
+} from "@frontend/http-client-borrower";
+import { CurrencyFormatter, LtvProgressBar } from "@frontend/ui-shared";
 import { InfoCircledIcon } from "@radix-ui/react-icons";
 import {
   Badge,

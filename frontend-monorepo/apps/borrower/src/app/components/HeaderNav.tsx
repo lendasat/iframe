@@ -1,4 +1,4 @@
-import { useAuth } from "@lendasat/http-client-borrower";
+import { useAuth } from "@frontend/http-client-borrower";
 import { IoNotifications } from "react-icons/io5";
 import { RiCustomerService2Fill, RiUser6Fill } from "react-icons/ri";
 import { Link } from "react-router-dom";

@@ -1,12 +1,12 @@
-import type { Contract } from "@lendasat/http-client-borrower";
+import type { Contract } from "@frontend/http-client-borrower";
 import {
   ContractStatus,
   contractStatusToLabelString,
   LiquidationStatus,
   useAuth,
   useBorrowerHttpClient,
-} from "@lendasat/http-client-borrower";
-import { ChatDrawer } from "@lendasat/nostr-chat";
+} from "@frontend/http-client-borrower";
+import { ChatDrawer } from "@frontend/nostr-chat";
 import {
   CurrencyFormatter,
   formatCurrency,
@@ -21,7 +21,7 @@ import {
   RefundAddressInfoLabel,
   TransactionList,
   TransactionType,
-} from "@lendasat/ui-shared";
+} from "@frontend/ui-shared";
 import { ExternalLinkIcon } from "@radix-ui/react-icons";
 import {
   Badge,

@@ -1,9 +1,9 @@
 import {
   contractStatusToLabelString,
   LoanType,
-} from "@lendasat/http-client-borrower";
-import type { Contract } from "@lendasat/http-client-borrower";
-import { formatCurrency } from "@lendasat/ui-shared";
+} from "@frontend/http-client-borrower";
+import type { Contract } from "@frontend/http-client-borrower";
+import { formatCurrency } from "@frontend/ui-shared";
 import { Callout } from "@radix-ui/themes";
 import { Col, Container, Form, InputGroup, Row } from "react-bootstrap";
 import { FaInfoCircle } from "react-icons/fa";

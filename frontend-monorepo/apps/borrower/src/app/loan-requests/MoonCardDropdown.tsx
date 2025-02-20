@@ -1,4 +1,4 @@
-import type { UserCardDetail } from "@lendasat/http-client-borrower";
+import type { UserCardDetail } from "@frontend/http-client-borrower";
 import { Box, Select } from "@radix-ui/themes";
 import { useState } from "react";
 

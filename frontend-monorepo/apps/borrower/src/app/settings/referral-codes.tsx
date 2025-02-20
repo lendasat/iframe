@@ -1,7 +1,7 @@
 import { Badge, Box, Table, Text } from "@radix-ui/themes";
 import { useState } from "react";
 import { FaCheckCircle, FaCopy } from "react-icons/fa";
-import { NotificationToast } from "@lendasat/ui-shared";
+import { NotificationToast } from "@frontend/ui-shared";
 
 type PersonalReferralCode = {
   code: string;

@@ -1,4 +1,4 @@
-import { useAuth } from "@lendasat/http-client-borrower";
+import { useAuth } from "@frontend/http-client-borrower";
 import { Button, Container, Form } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 

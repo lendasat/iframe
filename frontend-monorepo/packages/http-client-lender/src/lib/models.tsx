@@ -1,9 +1,9 @@
 import {
   FiatLoanDetailsResponse,
   type LoanFeature,
-} from "@lendasat/base-http-client";
-import { OriginationFee } from "@lendasat/http-client-borrower";
-import { LoanAsset, LoanTransaction } from "@lendasat/ui-shared";
+} from "@frontend/base-http-client";
+import { OriginationFee } from "@frontend/http-client-borrower";
+import { LoanAsset, LoanTransaction } from "@frontend/ui-shared";
 
 export enum ContractStatus {
   Requested = "Requested",

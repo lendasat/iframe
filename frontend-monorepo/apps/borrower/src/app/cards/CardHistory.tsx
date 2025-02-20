@@ -1,4 +1,4 @@
-import { useBorrowerHttpClient } from "@lendasat/http-client-borrower";
+import { useBorrowerHttpClient } from "@frontend/http-client-borrower";
 import { Box, Flex, Grid, Spinner, Text } from "@radix-ui/themes";
 import { useAsync } from "react-use";
 import HistoryComponent from "./HistoryComponent";

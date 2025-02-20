@@ -1,11 +1,11 @@
-import { useBorrowerHttpClient } from "@lendasat/http-client-borrower";
+import { useBorrowerHttpClient } from "@frontend/http-client-borrower";
 import { Box } from "@radix-ui/themes";
 import { useNavigate } from "react-router-dom";
 import { useAsync } from "react-use";
 import DashHeader from "../components/DashHeader";
 import { LoanOfferTable } from "../loan-requests/offer-selection/offer-table";
-import { LoanAssetHelper } from "@lendasat/ui-shared";
-import { LoanProductOption } from "@lendasat/base-http-client";
+import { LoanAssetHelper } from "@frontend/ui-shared";
+import { LoanProductOption } from "@frontend/base-http-client";
 
 function AvailableOffers() {
   const { getLoanOffers } = useBorrowerHttpClient();

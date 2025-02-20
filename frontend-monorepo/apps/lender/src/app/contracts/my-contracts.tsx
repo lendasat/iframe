@@ -1,5 +1,5 @@
-import type { Contract } from "@lendasat/http-client-lender";
-import { useLenderHttpClient } from "@lendasat/http-client-lender";
+import type { Contract } from "@frontend/http-client-lender";
+import { useLenderHttpClient } from "@frontend/http-client-lender";
 import { Box } from "@radix-ui/themes";
 import { Suspense } from "react";
 import { Await } from "react-router-dom";

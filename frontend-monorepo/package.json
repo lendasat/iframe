@@ -1,5 +1,5 @@
 {
-  "name": "@lendasat/root",
+  "name": "@frontend/root",
   "version": "0.0.0",
   "license": "MIT",
   "type": "module",
@@ -7,7 +7,6 @@
     "build": "turbo run build",
     "dev": "turbo watch dev",
     "lint": "turbo run lint",
-    "test": "turbo run test",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types"
   },

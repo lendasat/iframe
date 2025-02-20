@@ -1,12 +1,12 @@
-import type { User } from "@lendasat/base-http-client";
-import { WalletProvider } from "@lendasat/browser-wallet";
+import type { User } from "@frontend/base-http-client";
+import { WalletProvider } from "@frontend/browser-wallet";
 import {
   AuthIsNotSignedIn,
   AuthIsSignedIn,
   AuthProviderLender,
-} from "@lendasat/http-client-lender";
-import { useAuth } from "@lendasat/http-client-lender";
-import { Layout, PriceProvider } from "@lendasat/ui-shared";
+} from "@frontend/http-client-lender";
+import { useAuth } from "@frontend/http-client-lender";
+import { Layout, PriceProvider } from "@frontend/ui-shared";
 import { BsBank } from "react-icons/bs";
 import { Outlet, Route, Routes } from "react-router-dom";
 import { SemVer } from "semver";
@@ -22,7 +22,7 @@ import CreateLoanOffer from "./create-loan-offer";
 import ResolveDispute from "./disputes/dispute";
 import MyAccount from "./my-account";
 import "../assets/styles.css";
-import { FeeProvider } from "@lendasat/mempool";
+import { FeeProvider } from "@frontend/mempool";
 import { FiHome } from "react-icons/fi";
 import { HiOutlineSupport } from "react-icons/hi";
 import { IoCreateOutline, IoWalletOutline } from "react-icons/io5";

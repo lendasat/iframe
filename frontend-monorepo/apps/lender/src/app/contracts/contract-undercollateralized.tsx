@@ -1,9 +1,9 @@
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { UnlockWalletModal, useWallet } from "@lendasat/browser-wallet";
-import { useLenderHttpClient } from "@lendasat/http-client-lender";
-import type { Contract } from "@lendasat/http-client-lender";
-import { FeeSelector } from "@lendasat/mempool";
+import { UnlockWalletModal, useWallet } from "@frontend/browser-wallet";
+import { useLenderHttpClient } from "@frontend/http-client-lender";
+import type { Contract } from "@frontend/http-client-lender";
+import { FeeSelector } from "@frontend/mempool";
 import { Box, Callout, Flex, Heading, Text } from "@radix-ui/themes";
 import type { SignedTransaction } from "browser-wallet";
 import { useState } from "react";

@@ -1,5 +1,5 @@
-import { useBaseHttpClient } from "@lendasat/base-http-client";
-import { RegistrationForm } from "@lendasat/ui-shared";
+import { useBaseHttpClient } from "@frontend/base-http-client";
+import { RegistrationForm } from "@frontend/ui-shared";
 import {
   begin_registration,
   load_wallet,

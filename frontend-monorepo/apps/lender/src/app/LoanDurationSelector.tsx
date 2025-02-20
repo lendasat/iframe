@@ -1,4 +1,4 @@
-import { ONE_YEAR } from "@lendasat/ui-shared";
+import { ONE_YEAR } from "@frontend/ui-shared";
 import { Card, Grid } from "@radix-ui/themes";
 import { Text } from "@radix-ui/themes";
 import { useState } from "react";

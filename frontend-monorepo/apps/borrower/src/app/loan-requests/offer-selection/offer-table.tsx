@@ -1,12 +1,12 @@
 "use client";
 
-import { LoanOffer } from "@lendasat/http-client-borrower";
+import { LoanOffer } from "@frontend/http-client-borrower";
 import {
   formatCurrency,
   getFormatedStringFromDays,
   LoanAsset,
   LoanAssetHelper,
-} from "@lendasat/ui-shared";
+} from "@frontend/ui-shared";
 import {
   Badge,
   Box,

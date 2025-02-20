@@ -1,18 +1,18 @@
 import { faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { UnlockWalletModal, useWallet } from "@lendasat/browser-wallet";
+import { UnlockWalletModal, useWallet } from "@frontend/browser-wallet";
 import {
   Contract,
   LoanOffer,
   useBorrowerHttpClient,
-} from "@lendasat/http-client-borrower";
+} from "@frontend/http-client-borrower";
 import {
   formatCurrency,
   InterestRateInfoLabel,
   LoanAsset,
   ONE_YEAR,
   usePrice,
-} from "@lendasat/ui-shared";
+} from "@frontend/ui-shared";
 import {
   AlertDialog,
   Box,

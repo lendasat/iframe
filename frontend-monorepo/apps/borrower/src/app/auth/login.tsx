@@ -1,5 +1,5 @@
-import { useAuth } from "@lendasat/http-client-borrower";
-import { LoginForm } from "@lendasat/ui-shared";
+import { useAuth } from "@frontend/http-client-borrower";
+import { LoginForm } from "@frontend/ui-shared";
 import {
   does_wallet_exist,
   is_wallet_equal,

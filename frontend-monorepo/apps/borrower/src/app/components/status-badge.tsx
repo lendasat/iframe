@@ -1,4 +1,4 @@
-import { ContractStatus } from "@lendasat/http-client-borrower";
+import { ContractStatus } from "@frontend/http-client-borrower";
 import { Badge } from "@radix-ui/themes";
 
 export interface StatusBadgeProps {

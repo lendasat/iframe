@@ -1,8 +1,8 @@
-import type { BaseHttpClientContextType } from "@lendasat/base-http-client";
+import type { BaseHttpClientContextType } from "@frontend/base-http-client";
 import {
   BaseHttpClient,
   BaseHttpClientContext,
-} from "@lendasat/base-http-client";
+} from "@frontend/base-http-client";
 import type { AxiosResponse } from "axios";
 import axios from "axios";
 import type { ReactNode } from "react";

@@ -5,7 +5,7 @@ export default {
   darkMode: "class",
   important: true,
   content: [
-    "./node_modules/@lendasat/**/*.{ts,tsx}",
+    "./node_modules/@frontend/**/*.{ts,tsx}",
     "./src/**/*.{ts,tsx}",
     "./index.html",
   ],

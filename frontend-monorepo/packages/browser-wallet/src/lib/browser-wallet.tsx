@@ -24,7 +24,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import {
   FiatLoanDetails as ReactFiatLoanDetails,
   InnerFiatLoanDetails as ReactInnerFiatLoanDetails,
-} from "@lendasat/base-http-client";
+} from "@frontend/base-http-client";
 
 interface WalletContextType {
   isInitialized: boolean;

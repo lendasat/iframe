@@ -1,5 +1,5 @@
 {
-  "name": "@lendasat/ui-shared",
+  "name": "@frontend/ui-shared",
   "version": "0.0.1",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -12,8 +12,8 @@
     }
   },
   "dependencies": {
-    "@lendasat/base-http-client": "*",
-    "@lendasat/browser-wallet": "*",
+    "@frontend/base-http-client": "*",
+    "@frontend/browser-wallet": "*",
     "@radix-ui/react-checkbox": "1.1.4",
     "@radix-ui/colors": "3.0.0"
   },

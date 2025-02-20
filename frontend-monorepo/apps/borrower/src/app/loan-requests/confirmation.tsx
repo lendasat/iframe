@@ -1,12 +1,12 @@
 import { faCheckCircle, faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { FiatLoanDetails, LoanProductOption } from "@lendasat/base-http-client";
-import { useWallet } from "@lendasat/browser-wallet";
+import { FiatLoanDetails, LoanProductOption } from "@frontend/base-http-client";
+import { useWallet } from "@frontend/browser-wallet";
 import {
   LoanType,
   useAuth,
   useBorrowerHttpClient,
-} from "@lendasat/http-client-borrower";
+} from "@frontend/http-client-borrower";
 import {
   AbbreviationExplanationInfo,
   FiatDialogFormDetails,
@@ -22,7 +22,7 @@ import {
   newFormatCurrency,
   ONE_YEAR,
   usePrice,
-} from "@lendasat/ui-shared";
+} from "@frontend/ui-shared";
 import {
   Box,
   Button,

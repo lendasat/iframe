@@ -1,9 +1,9 @@
-import { useBorrowerHttpClient } from "@lendasat/http-client-borrower";
+import { useBorrowerHttpClient } from "@frontend/http-client-borrower";
 import {
   ContractStatus,
   contractStatusToLabelString,
-} from "@lendasat/http-client-borrower";
-import { ALL_CONTRACT_STATUSES } from "@lendasat/http-client-lender";
+} from "@frontend/http-client-borrower";
+import { ALL_CONTRACT_STATUSES } from "@frontend/http-client-lender";
 import { MixerHorizontalIcon } from "@radix-ui/react-icons";
 import * as Label from "@radix-ui/react-label";
 import {

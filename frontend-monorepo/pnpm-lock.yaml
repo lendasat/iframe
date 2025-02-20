@@ -263,25 +263,25 @@ importers:
 
   apps/borrower:
     dependencies:
-      '@lendasat/base-http-client':
+      '@frontend/base-http-client':
         specifier: workspace:*
         version: link:../../packages/base-http-client
-      '@lendasat/browser-wallet':
+      '@frontend/browser-wallet':
         specifier: workspace:*
         version: link:../../packages/browser-wallet
-      '@lendasat/http-client-borrower':
+      '@frontend/http-client-borrower':
         specifier: workspace:*
         version: link:../../packages/http-client-borrower
-      '@lendasat/http-client-lender':
+      '@frontend/http-client-lender':
         specifier: workspace:*
         version: link:../../packages/http-client-lender
-      '@lendasat/mempool':
+      '@frontend/mempool':
         specifier: workspace:*
         version: link:../../packages/mempool
-      '@lendasat/nostr-chat':
+      '@frontend/nostr-chat':
         specifier: workspace:*
         version: link:../../packages/nostr-chat
-      '@lendasat/ui-shared':
+      '@frontend/ui-shared':
         specifier: workspace:*
         version: link:../../packages/ui-shared
       '@radix-ui/themes':
@@ -309,25 +309,25 @@ importers:
 
   apps/lender:
     dependencies:
-      '@lendasat/base-http-client':
+      '@frontend/base-http-client':
         specifier: workspace:*
         version: link:../../packages/base-http-client
-      '@lendasat/browser-wallet':
+      '@frontend/browser-wallet':
         specifier: workspace:*
         version: link:../../packages/browser-wallet
-      '@lendasat/http-client-borrower':
+      '@frontend/http-client-borrower':
         specifier: workspace:*
         version: link:../../packages/http-client-borrower
-      '@lendasat/http-client-lender':
+      '@frontend/http-client-lender':
         specifier: workspace:*
         version: link:../../packages/http-client-lender
-      '@lendasat/mempool':
+      '@frontend/mempool':
         specifier: workspace:*
         version: link:../../packages/mempool
-      '@lendasat/nostr-chat':
+      '@frontend/nostr-chat':
         specifier: workspace:*
         version: link:../../packages/nostr-chat
-      '@lendasat/ui-shared':
+      '@frontend/ui-shared':
         specifier: workspace:*
         version: link:../../packages/ui-shared
       '@radix-ui/colors':
@@ -376,16 +376,16 @@ importers:
 
   packages/browser-wallet:
     dependencies:
-      '@lendasat/base-http-client':
+      '@frontend/base-http-client':
         specifier: workspace:*
         version: link:../base-http-client
 
   packages/http-client-borrower:
     dependencies:
-      '@lendasat/base-http-client':
+      '@frontend/base-http-client':
         specifier: '*'
         version: link:../base-http-client
-      '@lendasat/ui-shared':
+      '@frontend/ui-shared':
         specifier: '*'
         version: link:../ui-shared
     devDependencies:
@@ -395,13 +395,13 @@ importers:
 
   packages/http-client-lender:
     dependencies:
-      '@lendasat/base-http-client':
+      '@frontend/base-http-client':
         specifier: '*'
         version: link:../base-http-client
-      '@lendasat/http-client-borrower':
+      '@frontend/http-client-borrower':
         specifier: '*'
         version: link:../http-client-borrower
-      '@lendasat/ui-shared':
+      '@frontend/ui-shared':
         specifier: '*'
         version: link:../ui-shared
     devDependencies:
@@ -413,16 +413,16 @@ importers:
 
   packages/nostr-chat:
     dependencies:
-      '@lendasat/browser-wallet':
+      '@frontend/browser-wallet':
         specifier: '*'
         version: link:../browser-wallet
 
   packages/ui-shared:
     dependencies:
-      '@lendasat/base-http-client':
+      '@frontend/base-http-client':
         specifier: '*'
         version: link:../base-http-client
-      '@lendasat/browser-wallet':
+      '@frontend/browser-wallet':
         specifier: '*'
         version: link:../browser-wallet
       '@radix-ui/colors':

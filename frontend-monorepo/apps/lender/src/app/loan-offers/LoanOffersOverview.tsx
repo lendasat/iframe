@@ -1,4 +1,4 @@
-import { useLenderHttpClient } from "@lendasat/http-client-lender";
+import { useLenderHttpClient } from "@frontend/http-client-lender";
 import { Box, Flex, Heading } from "@radix-ui/themes";
 import { useAsync } from "react-use";
 import { LoanOffersTable } from "./LoanOffersTable";

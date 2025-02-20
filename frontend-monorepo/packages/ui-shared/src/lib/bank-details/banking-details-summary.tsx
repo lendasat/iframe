@@ -1,9 +1,9 @@
-import { UnlockWalletModal, useWallet } from "@lendasat/browser-wallet";
+import { UnlockWalletModal, useWallet } from "@frontend/browser-wallet";
 import { useState } from "react";
 import {
   FiatLoanDetailsResponse,
   InnerFiatLoanDetails,
-} from "@lendasat/base-http-client";
+} from "@frontend/base-http-client";
 import {
   Button,
   Code,

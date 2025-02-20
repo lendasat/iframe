@@ -1,4 +1,4 @@
-import { useBorrowerHttpClient } from "@lendasat/http-client-borrower";
+import { useBorrowerHttpClient } from "@frontend/http-client-borrower";
 import {
   Box,
   Button,

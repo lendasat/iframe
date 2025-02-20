@@ -1,5 +1,5 @@
-import { useBaseHttpClient } from "@lendasat/base-http-client";
-import { ForgotPasswordForm } from "@lendasat/ui-shared";
+import { useBaseHttpClient } from "@frontend/base-http-client";
+import { ForgotPasswordForm } from "@frontend/ui-shared";
 
 function ForgotPassword() {
   const { forgotPassword } = useBaseHttpClient();
