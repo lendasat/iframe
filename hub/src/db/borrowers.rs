@@ -111,9 +111,9 @@ where
     let personal_code = sqlx::query_as!(
         PersonalReferralCode,
         r#"
-            SELECT 
-                code, 
-                active, 
+            SELECT
+                code,
+                active,
                 first_time_discount_rate_referee,
                 first_time_commission_rate_referrer,
                 commission_rate_referrer,
@@ -180,6 +180,37 @@ where
     )
     .execute(pool)
     .await?;
+    Ok(())
+}
+
+/// Update the legacy password hash stored in the `borrowers` table.
+pub async fn update_legacy_password<'a, E>(
+    pool: E,
+    borrower_id: &str,
+    legacy_password: &str,
+) -> Result<()>
+where
+    E: sqlx::Executor<'a, Database = Postgres>,
+{
+    use argon2::PasswordHasher;
+
+    let salt = argon2::password_hash::SaltString::generate(&mut rand::rngs::OsRng);
+    let legacy_password_hash = argon2::Argon2::default()
+        .hash_password(legacy_password.as_bytes(), &salt)
+        .map(|hash| hash.to_string())
+        .map_err(|e| anyhow::anyhow!("Failed to hash password: {e}"))?;
+
+    sqlx::query!(
+        r#"UPDATE borrowers
+           SET password = $1
+           WHERE id = $2
+        "#,
+        legacy_password_hash,
+        borrower_id,
+    )
+    .execute(pool)
+    .await?;
+
     Ok(())
 }
 
@@ -330,7 +361,7 @@ pub async fn update_password_reset_token_for_user(
 /// Returns a user by reset token.
 ///
 /// Returns None if the reset token as already been expired
-pub async fn get_user_by_rest_token(
+pub async fn get_user_by_reset_token(
     pool: &Pool<Postgres>,
     password_reset_token: &str,
 ) -> Result<Option<model::Borrower>> {
@@ -387,7 +418,7 @@ pub async fn update_borrower_timezone(
     sqlx::query!(
         r#"
         UPDATE borrowers
-        SET 
+        SET
             timezone = $1,
             updated_at = CURRENT_TIMESTAMP
         WHERE id = $2

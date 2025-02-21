@@ -235,6 +235,11 @@ pub struct ResetPasswordSchema {
     pub new_wallet_backup_data: WalletBackupData,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct ResetLegacyPasswordSchema {
+    pub password: String,
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct CreateLoanOfferSchema {
     pub name: String,
