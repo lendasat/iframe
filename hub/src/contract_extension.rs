@@ -27,7 +27,6 @@ pub enum Error {
     MissingLenderXpub,
 }
 
-// TODO: error handling
 pub async fn request_contract_extension(
     pool: &Pool<Postgres>,
     config: &Config,
