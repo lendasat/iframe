@@ -1,7 +1,7 @@
 use crate::db;
 use crate::db::borrowers::generate_random_string;
 use crate::db::borrowers::get_user_by_email;
-use crate::db::borrowers::get_user_by_rest_token;
+use crate::db::borrowers::get_user_by_reset_token;
 use crate::db::borrowers::get_user_by_verification_code;
 use crate::db::borrowers::register_user;
 use crate::db::borrowers::update_password_reset_token_for_user;
@@ -18,6 +18,7 @@ use crate::model::PakeLoginResponse;
 use crate::model::PakeServerData;
 use crate::model::PakeVerifyRequest;
 use crate::model::RegisterUserSchema;
+use crate::model::ResetLegacyPasswordSchema;
 use crate::model::ResetPasswordSchema;
 use crate::model::TokenClaims;
 use crate::model::UpgradeToPakeRequest;
@@ -108,6 +109,10 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
             "/api/users/me",
             get(get_me_handler)
                 .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
+        )
+        .route(
+            "/api/auth/reset-legacy-password/:password_reset_token",
+            put(reset_legacy_password_handler),
         )
         .layer(
             tower::ServiceBuilder::new().layer(middleware::from_fn_with_state(
@@ -801,7 +806,7 @@ async fn reset_password_handler(
     Path(password_reset_token): Path<String>,
     AppJson(body): AppJson<ResetPasswordSchema>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let user = get_user_by_rest_token(&data.db, password_reset_token.as_str())
+    let user = get_user_by_reset_token(&data.db, password_reset_token.as_str())
         .await
         .map_err(|e| {
             let error_response = ErrorResponse {
@@ -902,6 +907,31 @@ async fn reset_password_handler(
     })?;
 
     Ok(response)
+}
+
+#[instrument(skip_all, fields(borrower_id), err(Debug))]
+async fn reset_legacy_password_handler(
+    State(data): State<Arc<AppState>>,
+    Path(password_reset_token): Path<String>,
+    AppJson(body): AppJson<ResetLegacyPasswordSchema>,
+) -> Result<(), Error> {
+    let user = get_user_by_reset_token(&data.db, password_reset_token.as_str())
+        .await
+        .map_err(Error::Database)?
+        .ok_or(Error::InvalidVerificationCode)?;
+
+    let borrower_id = &user.id;
+    tracing::Span::current().record("borrower_id", borrower_id);
+
+    if user.password.is_none() {
+        return Err(Error::NoLegacyResetAfterPake);
+    }
+
+    db::borrowers::update_legacy_password(&data.db, &user.id, &body.password)
+        .await
+        .map_err(Error::Database)?;
+
+    Ok(())
 }
 
 #[instrument(skip_all, err(Debug, level = Level::DEBUG))]
@@ -1046,6 +1076,8 @@ enum Error {
     UnexpectedPakeVerify,
     /// Failed to process the client's PAKE verify request.
     PakeVerifyFailed(srp::types::SrpAuthError),
+    /// Cannot reset a legacy password after PAKE upgrade.
+    NoLegacyResetAfterPake,
 }
 
 impl From<JsonRejection> for Error {
@@ -1161,6 +1193,11 @@ impl IntoResponse for Error {
                 tracing::error!("PAKE verify failed: {e:#}");
 
                 (StatusCode::BAD_REQUEST, "Invalid credentials.".to_owned())
+            }
+            Error::NoLegacyResetAfterPake => {
+                tracing::error!("Cannot reset legacy password after PAKE upgrade");
+
+                (StatusCode::BAD_REQUEST, "Something went wrong.".to_owned())
             }
         };
 
