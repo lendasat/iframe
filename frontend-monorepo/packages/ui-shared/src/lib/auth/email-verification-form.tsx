@@ -48,8 +48,8 @@ export function EmailVerificationForm({
   };
 
   return (
-    <Box className="bg-gradient-to-tr from-60% to-100% from-[#F5F9FD] to-pink-700/5 py-20 pt-0 h-screen overflow-y-scroll flex items-center justify-center dark:from-[#1a202c] dark:to-gray-900/70">
-      <Grid align={"center"} className="overflow-hidden grid-cols-1 w-screen">
+    <Box className="flex h-screen items-center justify-center overflow-y-scroll bg-gradient-to-tr from-[#F5F9FD] from-60% to-pink-700/5 to-100% py-20 pt-0 dark:from-[#1a202c] dark:to-gray-900/70">
+      <Grid align={"center"} className="w-screen grid-cols-1 overflow-hidden">
         <Box className="flex flex-col items-center p-5">
           {/* Logo */}
           <Logo
@@ -63,10 +63,10 @@ export function EmailVerificationForm({
             width={"100%"}
             py={"6"}
             px={"6"}
-            className="bg-light dark:bg-dark shadow-sm rounded-2xl"
+            className="bg-light dark:bg-dark rounded-2xl shadow-sm"
           >
             {/* Heading */}
-            <Box className="text-center pb-4">
+            <Box className="pb-4 text-center">
               <Heading
                 size={"7"}
                 className="text-font dark:text-font-dark pb-2"
@@ -79,13 +79,13 @@ export function EmailVerificationForm({
             </Box>
 
             {/* Form */}
-            <Form className="w-full mt-7 space-y-0.5" onSubmit={onSubmit}>
-              <Box className="text-left mt-3">
+            <Form className="mt-7 w-full space-y-0.5" onSubmit={onSubmit}>
+              <Box className="mt-3 text-left">
                 <TypeField
                   placeholder="000000"
                   value={verificationCode}
                   maxLength={6}
-                  className="w-full text-center text-font dark:text-font-dark bg-light dark:bg-dark text-2xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="text-font dark:text-font-dark bg-light dark:bg-dark w-full text-center text-2xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                   onChange={(e) => setVerificationCode(e.target.value)}
                 />
               </Box>
@@ -102,7 +102,7 @@ export function EmailVerificationForm({
 
               {/* Submit Button */}
               <div className="flex flex-col items-center justify-center gap-4">
-                <Box className="pt-7 w-full">
+                <Box className="w-full pt-7">
                   <Button
                     color="purple"
                     type="submit"
@@ -110,7 +110,7 @@ export function EmailVerificationForm({
                     variant="solid"
                     radius="large"
                     disabled={isLoading}
-                    className="w-full h-12"
+                    className="h-12 w-full"
                   >
                     {isLoading ? <Spinner size={"3"} /> : "Continue"}
                   </Button>
@@ -118,7 +118,7 @@ export function EmailVerificationForm({
 
                 <span
                   onClick={() => navigate("/registration")}
-                  className="text-blue-500 underline hover:text-blue-700 cursor-pointer"
+                  className="cursor-pointer text-blue-500 underline hover:text-blue-700"
                   role="link"
                   tabIndex={0}
                 >
@@ -128,7 +128,7 @@ export function EmailVerificationForm({
             </Form>
 
             {/* Sign Up Routing */}
-            <Box className="flex items-center gap-1 justify-center mt-16">
+            <Box className="mt-16 flex items-center justify-center gap-1">
               <Text
                 as="label"
                 size={"1"}
@@ -139,7 +139,7 @@ export function EmailVerificationForm({
               </Text>
               <Link
                 to={"/login"}
-                className="text-sm font-medium text-font dark:text-font-dark hover:text-purple-800 dark:hover:text-purple-300"
+                className="text-font dark:text-font-dark text-sm font-medium hover:text-purple-800 dark:hover:text-purple-300"
               >
                 Sign in
               </Link>

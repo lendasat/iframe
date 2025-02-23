@@ -61,7 +61,7 @@ export const ClosedContracts = ({ contracts }: ClosedContractsProps) => {
 
   return (
     <>
-      <Box className="px-6 md:px-8 py-4">
+      <Box className="px-6 py-4 md:px-8">
         <Flex align={"center"} justify={"between"}>
           <Heading className={"text-font dark:text-font-dark"} size={"6"}>
             Closed Contracts
@@ -71,9 +71,9 @@ export const ClosedContracts = ({ contracts }: ClosedContractsProps) => {
 
       <Flex
         align={"center"}
-        className="bg-active-nav/15 pr-8 border-b border-font/5 dark:border-font-dark/5"
+        className="bg-active-nav/15 border-font/5 dark:border-font-dark/5 border-b pr-8"
       >
-        <Box className="w-[45px] xl:w-[80px] text-center py-1">
+        <Box className="w-[45px] py-1 text-center xl:w-[80px]">
           <Text
             size={"1"}
             weight={"medium"}
@@ -82,7 +82,7 @@ export const ClosedContracts = ({ contracts }: ClosedContractsProps) => {
             S/N
           </Text>
         </Box>
-        <Grid className="grid-cols-3 md:grid-cols-5 xl:grid-cols-5 flex-grow">
+        <Grid className="flex-grow grid-cols-3 md:grid-cols-5 xl:grid-cols-5">
           {headers.map((header, index) => (
             <Box key={index} className={header.className}>
               <Text
@@ -137,9 +137,9 @@ export const ClosedContracts = ({ contracts }: ClosedContractsProps) => {
                 (index + 1) % 2 === 0
                   ? "bg-light/50 dark:bg-dark/50"
                   : "bg-transparent"
-              } border-black/5 dark:border-dark pr-3`}
+              } dark:border-dark border-black/5 pr-3`}
             >
-              <Box className="w-[45px] xl:w-[80px] text-center py-5 border-r dark:border-dark">
+              <Box className="dark:border-dark w-[45px] border-r py-5 text-center xl:w-[80px]">
                 <Text
                   size={"1"}
                   weight={"medium"}
@@ -148,7 +148,7 @@ export const ClosedContracts = ({ contracts }: ClosedContractsProps) => {
                   {index + 1}
                 </Text>
               </Box>
-              <Grid className="grid-cols-3 pr-2 flex-grow md:grid-cols-5 xl:grid-cols-5 items-center text-font">
+              <Grid className="text-font flex-grow grid-cols-3 items-center pr-2 md:grid-cols-5 xl:grid-cols-5">
                 <Box className="text-center">
                   <Text
                     className={"text-font dark:text-font-dark"}
@@ -169,7 +169,7 @@ export const ClosedContracts = ({ contracts }: ClosedContractsProps) => {
                   </Text>
                 </Box>
 
-                <Box className="hidden md:flex justify-center">
+                <Box className="hidden justify-center md:flex">
                   <Text
                     className={"text-font dark:text-font-dark"}
                     size={"1"}
@@ -179,7 +179,7 @@ export const ClosedContracts = ({ contracts }: ClosedContractsProps) => {
                   </Text>
                 </Box>
 
-                <Box className="flex justify-center ">
+                <Box className="flex justify-center">
                   <Badge
                     color={
                       contract.status === ContractStatus.Requested
@@ -196,11 +196,11 @@ export const ClosedContracts = ({ contracts }: ClosedContractsProps) => {
                   </Badge>
                 </Box>
 
-                <Box className="hidden xl:flex justify-center">
+                <Box className="hidden justify-center xl:flex">
                   <Button
                     size={"3"}
                     variant="solid"
-                    className="bg-btn text-white dark:bg-dark-600 rounded-lg"
+                    className="bg-btn dark:bg-dark-600 rounded-lg text-white"
                     onClick={() => navigate(`${contract.id}`)}
                   >
                     <Text size={"1"} className="font-semibold">
@@ -215,7 +215,7 @@ export const ClosedContracts = ({ contracts }: ClosedContractsProps) => {
                 <DropdownMenu.Trigger>
                   <Button
                     variant="ghost"
-                    className="xl:hidden text-font dark:text-font-dark hover:bg-transparent"
+                    className="text-font dark:text-font-dark hover:bg-transparent xl:hidden"
                   >
                     <BsThreeDotsVertical />
                   </Button>
@@ -260,7 +260,7 @@ export const ClosedContracts = ({ contracts }: ClosedContractsProps) => {
                             Duration:
                           </Text>
                           <Text
-                            className="capitalize text-font dark:text-font-dark"
+                            className="text-font dark:text-font-dark capitalize"
                             size={"3"}
                           >
                             {getFormatedStringFromDays(contract.duration_days)}
@@ -294,7 +294,7 @@ export const ClosedContracts = ({ contracts }: ClosedContractsProps) => {
                             Interest:
                           </Text>
                           <Text
-                            className="capitalize text-font dark:text-font-dark"
+                            className="text-font dark:text-font-dark capitalize"
                             size={"3"}
                           >
                             TODO
@@ -311,7 +311,7 @@ export const ClosedContracts = ({ contracts }: ClosedContractsProps) => {
                             Collateral:
                           </Text>
                           <Text
-                            className="capitalize text-font dark:text-font-dark"
+                            className="text-font dark:text-font-dark capitalize"
                             size={"3"}
                           >
                             {collateral_btc} BTC
@@ -328,7 +328,7 @@ export const ClosedContracts = ({ contracts }: ClosedContractsProps) => {
                             Status:
                           </Text>
                           <Text
-                            className="capitalize text-font dark:text-font-dark"
+                            className="text-font dark:text-font-dark capitalize"
                             size={"3"}
                           >
                             <Badge
@@ -352,7 +352,7 @@ export const ClosedContracts = ({ contracts }: ClosedContractsProps) => {
                       <Button
                         size={"3"}
                         variant="solid"
-                        className="bg-btn dark:bg-dark-600 text-white w-full active:scale-90"
+                        className="bg-btn dark:bg-dark-600 w-full text-white active:scale-90"
                         onClick={() => navigate(`${contract.id}`)}
                       >
                         <Text size={"2"} className="font-semibold">

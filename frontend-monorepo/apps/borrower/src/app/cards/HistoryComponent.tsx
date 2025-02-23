@@ -67,7 +67,7 @@ const DeclinedTransaction = ({
           <Flex
             align={"center"}
             justify={"center"}
-            className="w-10 h-10 rounded-full bg-purple-50 dark:bg-dark-600 text-font dark:text-font-dark"
+            className="dark:bg-dark-600 text-font dark:text-font-dark h-10 w-10 rounded-full bg-purple-50"
           >
             <AiOutlineStop size={"24"} />
           </Flex>
@@ -75,7 +75,7 @@ const DeclinedTransaction = ({
             <Heading
               size={"2"}
               weight={"medium"}
-              className="capitalize hidden md:inline-block text-font dark:text-font-dark"
+              className="text-font dark:text-font-dark hidden capitalize md:inline-block"
             >
               {declineData.merchant}
             </Heading>
@@ -150,7 +150,7 @@ const CardTransaction = ({
           <Flex
             align={"center"}
             justify={"center"}
-            className="w-10 h-10 rounded-full bg-purple-50 dark:bg-dark-600 text-font dark:text-font-dark"
+            className="dark:bg-dark-600 text-font dark:text-font-dark h-10 w-10 rounded-full bg-purple-50"
           >
             {transaction.amount < 0 ? (
               <GoArrowDownLeft size={"24"} />
@@ -162,7 +162,7 @@ const CardTransaction = ({
             <Heading
               size={"2"}
               weight={"medium"}
-              className="capitalize text-font dark:text-font-dark hidden md:inline-block"
+              className="text-font dark:text-font-dark hidden capitalize md:inline-block"
             >
               {transaction.merchant}
             </Heading>

@@ -148,7 +148,7 @@ function Details({ contract }: DetailsProps) {
 
   return (
     <Grid className="md:grid-cols-2">
-      <Box className="order-1 md:order-1 border-r border-font/10 dark:border-font-dark/10">
+      <Box className="border-font/10 dark:border-font-dark/10 order-1 border-r md:order-1">
         <ContractDetails contract={contract} />
         <ExpandableDisputeCard
           info={info}
@@ -159,7 +159,7 @@ function Details({ contract }: DetailsProps) {
         />
       </Box>
 
-      <Box className="order-2 md:order-2 p-6 md:p-8 space-y-5">
+      <Box className="order-2 space-y-5 p-6 md:order-2 md:p-8">
         <ContractStatusDetails
           contract={contract}
           collateralBtc={collateralBtc}
@@ -296,7 +296,7 @@ function ContractDetails({ contract }: DetailsProps) {
         counterpartyXPub={contract.lender_xpub}
       />
 
-      <Box className="p-6 md:pl-8 border-b border-font/10 dark:border-font-dark/10">
+      <Box className="border-font/10 dark:border-font-dark/10 border-b p-6 md:pl-8">
         <Heading className={"text-font dark:text-font-dark"} size={"6"}>
           Contract Details
         </Heading>
@@ -310,7 +310,7 @@ function ContractDetails({ contract }: DetailsProps) {
         />
       ) : null}
 
-      <Box className="p-6 md:p-8 space-y-5">
+      <Box className="space-y-5 p-6 md:p-8">
         <Flex gap={"5"} align={"start"} justify={"between"}>
           <Text
             size={"2"}
@@ -333,7 +333,7 @@ function ContractDetails({ contract }: DetailsProps) {
           {contractIdCopied ? (
             <Text
               size={"2"}
-              className="font-medium text-font dark:text-font-dark"
+              className="text-font dark:text-font-dark font-medium"
               color="green"
             >
               Copied
@@ -343,7 +343,7 @@ function ContractDetails({ contract }: DetailsProps) {
               onClick={() => handleCopy(contract.id)}
               size={"2"}
               weight={"medium"}
-              className="text-end cursor-copy hover:opacity-70 flex items-center gap-1 text-font dark:text-font-dark"
+              className="text-font dark:text-font-dark flex cursor-copy items-center gap-1 text-end hover:opacity-70"
             >
               {formatId(contract.id)} <FaCopy />
             </Text>
@@ -578,7 +578,7 @@ function ContractDetails({ contract }: DetailsProps) {
             <FaInfoCircle className={"text-font dark:text-font-dark"} />
           </LtvInfoLabel>
 
-          <div className="w-40 ml-auto">
+          <div className="ml-auto w-40">
             <LtvProgressBar
               loanAmount={loanAmount}
               collateralBtc={collateralBtc}
@@ -605,7 +605,7 @@ function ContractDetails({ contract }: DetailsProps) {
             </Flex>
           </LiquidationPriceInfoLabel>
           <div className="flex flex-col">
-            <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
+            <Text className="text-font/70 dark:text-font-dark/70 text-[13px] font-semibold capitalize">
               {newFormatCurrency({
                 value: liquidationPrice,
                 maxFraction: 0,
@@ -632,20 +632,20 @@ function ContractDetails({ contract }: DetailsProps) {
           <div className="flex flex-col">
             {contract.duration_days !== ONE_YEAR && (
               <Flex gap={"2"}>
-                <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70">
+                <Text className="text-font/70 dark:text-font-dark/70 text-[13px] font-semibold">
                   {(actualInterest * 100).toFixed(2)}%
                 </Text>
-                <Text className="text-[11px] text-font/70 dark:text-font-dark/50 mt-0.5 self-end">
+                <Text className="text-font/70 dark:text-font-dark/50 mt-0.5 self-end text-[11px]">
                   ({(contract.interest_rate * 100).toFixed(1)}% p.a.)
                 </Text>
               </Flex>
             )}
             {contract.duration_days === ONE_YEAR && (
-              <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70">
+              <Text className="text-font/70 dark:text-font-dark/70 text-[13px] font-semibold">
                 {(actualInterest * 100).toFixed(2)}% p.a.
               </Text>
             )}
-            <Text className="text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-end">
+            <Text className="text-font/50 dark:text-font-dark/50 mt-0.5 self-end text-[11px]">
               ≈ {formatCurrency(actualInterestUsdAmount, 1, 1)} in total
             </Text>
 
@@ -677,7 +677,7 @@ function ContractDetails({ contract }: DetailsProps) {
           {contractIdCopied ? (
             <Text
               size={"2"}
-              className="font-medium text-font dark:text-font-dark"
+              className="text-font dark:text-font-dark font-medium"
               color="green"
             >
               Copied
@@ -687,7 +687,7 @@ function ContractDetails({ contract }: DetailsProps) {
               onClick={() => handleCopy(contract.borrower_btc_address)}
               size={"2"}
               weight={"medium"}
-              className="text-end cursor-copy hover:opacity-70 flex items-center gap-1 text-font dark:text-font-dark"
+              className="text-font dark:text-font-dark flex cursor-copy items-center gap-1 text-end hover:opacity-70"
             >
               {formatId(contract.borrower_btc_address)} <FaCopy />
             </Text>

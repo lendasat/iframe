@@ -74,14 +74,14 @@ const ColumnHeader = ({
       </Text>
       <Box>
         <IoCaretUp
-          className={`text-[10px] -mb-1 ${getCaretColor(
+          className={`-mb-1 text-[10px] ${getCaretColor(
             sortByColumn,
             currentColumn,
             sortAsc,
           )}`}
         />
         <IoCaretDownOutline
-          className={`text-[10px] -mb-1 ${getCaretColor(
+          className={`-mb-1 text-[10px] ${getCaretColor(
             sortByColumn,
             currentColumn,
             !sortAsc,

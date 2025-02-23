@@ -56,7 +56,7 @@ export function Lender({
               as="h6"
               weight={"bold"}
               size={"2"}
-              className="capitalize xl:block text-purple-600 dark:text-purple-300"
+              className="capitalize text-purple-600 xl:block dark:text-purple-300"
             >
               {name}
             </Heading>

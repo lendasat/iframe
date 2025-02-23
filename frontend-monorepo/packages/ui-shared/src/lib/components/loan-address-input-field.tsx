@@ -68,7 +68,7 @@ export function LoanAddressInputField({
       )}
 
       <TextField.Root
-        className="w-full font-semibold border-0 flex items-center text-font dark:text-font-dark"
+        className="text-font dark:text-font-dark flex w-full items-center border-0 font-semibold"
         size={"3"}
         variant="surface"
         placeholder="Enter a valid address"

@@ -205,18 +205,18 @@ function ContractDetails({ contract }: DetailsProps) {
         contractId={contract.id}
         counterpartyXPub={contract.borrower_xpub}
       />
-      <Box className="border-r border-font/10 dark:border-font-dark/10">
-        <Box className="p-6 md:pl-8 border-b border-font/10 dark:border-font-dark/10">
+      <Box className="border-font/10 dark:border-font-dark/10 border-r">
+        <Box className="border-font/10 dark:border-font-dark/10 border-b p-6 md:pl-8">
           <Heading className={"text-font dark:text-font-dark"} size={"6"}>
             Contract Details
           </Heading>
         </Box>
-        <Box className="p-6 md:p-8 space-y-5">
+        <Box className="space-y-5 p-6 md:p-8">
           <Flex gap={"5"} align={"start"} justify={"between"}>
             <Text
               size={"2"}
               weight={"medium"}
-              className="shrink-0 text-font/70 dark:text-font-dark/70"
+              className="text-font/70 dark:text-font-dark/70 shrink-0"
             >
               Borrower
             </Text>
@@ -225,7 +225,7 @@ function ContractDetails({ contract }: DetailsProps) {
                 <Text
                   size={"2"}
                   weight={"medium"}
-                  className="break-all text-font dark:text-font-dark"
+                  className="text-font dark:text-font-dark break-all"
                 >
                   <Borrower {...contract.borrower} showAvatar={false} />
                 </Text>
@@ -245,7 +245,7 @@ function ContractDetails({ contract }: DetailsProps) {
             {contractIdCopied ? (
               <Text
                 size={"2"}
-                className="font-medium text-font dark:text-font-dark"
+                className="text-font dark:text-font-dark font-medium"
                 color="green"
               >
                 Copied
@@ -255,7 +255,7 @@ function ContractDetails({ contract }: DetailsProps) {
                 onClick={() => handleCopy(contract.id)}
                 size={"2"}
                 weight={"medium"}
-                className="text-end cursor-copy hover:opacity-70 flex items-center gap-1 text-font dark:text-font-dark"
+                className="text-font dark:text-font-dark flex cursor-copy items-center gap-1 text-end hover:opacity-70"
               >
                 {formatId(contract.id)}{" "}
                 <FaCopy className={"text-font dark:text-font-dark"} />
@@ -505,7 +505,7 @@ function ContractDetails({ contract }: DetailsProps) {
               >
                 {(interestRate * 100).toFixed(2)}% per year
               </Text>
-              <Text className="text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-end">
+              <Text className="text-font/50 dark:text-font-dark/50 mt-0.5 self-end text-[11px]">
                 ≈ {formatCurrency(actualInterestUsdAmount, 1, 1)} in total
               </Text>
             </div>
@@ -523,7 +523,7 @@ function ContractDetails({ contract }: DetailsProps) {
           <Flex align={"center"} justify={"end"}>
             <Button
               size="3"
-              className="bg-btn text-white dark:bg-dark-600"
+              className="bg-btn dark:bg-dark-600 text-white"
               onClick={() => downloadLocalStorage(backendVersion)}
             >
               <IoMdCloudDownload />
@@ -544,7 +544,7 @@ function ContractDetails({ contract }: DetailsProps) {
           )}
         </Box>
       </Box>
-      <Box className="p-6 md:p-8 space-y-5">
+      <Box className="space-y-5 p-6 md:p-8">
         <ContractStatusDetails
           contract={contract}
           onError={onError}
@@ -734,7 +734,7 @@ const ContractStatusDetails = ({
           <Callout.Icon>
             <FontAwesomeIcon
               icon={faInfoCircle}
-              className="h-4 w-4 text-font dark:text-font-dark"
+              className="text-font dark:text-font-dark h-4 w-4"
             />
           </Callout.Icon>
           <Callout.Text className={"text-font dark:text-font-dark"}>
@@ -768,7 +768,7 @@ const ContractStatusDetails = ({
     case ContractStatus.PrincipalGiven:
       return (
         <Alert variant="info">
-          <FontAwesomeIcon icon={faInfoCircle} className="h-4 w-4 mr-2" />
+          <FontAwesomeIcon icon={faInfoCircle} className="mr-2 h-4 w-4" />
           Please wait until the borrower repays the loan.
         </Alert>
       );
@@ -800,7 +800,7 @@ const ContractStatusDetails = ({
     case ContractStatus.RepaymentConfirmed:
       return (
         <Alert variant="info">
-          <FontAwesomeIcon icon={faInfoCircle} className="h-4 w-4 mr-2" />
+          <FontAwesomeIcon icon={faInfoCircle} className="mr-2 h-4 w-4" />
           Waiting for user to withdraw funds.
         </Alert>
       );

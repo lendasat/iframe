@@ -55,8 +55,8 @@ export function LoginForm({
   };
 
   return (
-    <Box className="bg-gradient-to-tr from-60% to-100% from-[#F5F9FD] to-pink-700/5 py-20 pt-0 h-screen overflow-y-scroll flex items-center justify-center dark:from-[#1a202c] dark:to-gray-900/70">
-      <Grid align={"center"} className="overflow-hidden grid-cols-1 w-screen">
+    <Box className="flex h-screen items-center justify-center overflow-y-scroll bg-gradient-to-tr from-[#F5F9FD] from-60% to-pink-700/5 to-100% py-20 pt-0 dark:from-[#1a202c] dark:to-gray-900/70">
+      <Grid align={"center"} className="w-screen grid-cols-1 overflow-hidden">
         <Box className="flex flex-col items-center p-5">
           {/* Logo */}
           <Logo
@@ -70,10 +70,10 @@ export function LoginForm({
             width={"100%"}
             py={"6"}
             px={"6"}
-            className="bg-white shadow-sm rounded-2xl dark:bg-dark dark:shadow-md"
+            className="dark:bg-dark rounded-2xl bg-white shadow-sm dark:shadow-md"
           >
             {/* Heading */}
-            <Box className="text-center pb-4">
+            <Box className="pb-4 text-center">
               <Heading
                 size={"7"}
                 className="text-font dark:text-font-dark pb-2"
@@ -97,7 +97,7 @@ export function LoginForm({
 
             <form onSubmit={onSubmit}>
               {/* Fields */}
-              <Box className="text-left mt-3">
+              <Box className="mt-3 text-left">
                 <Box>
                   <Text
                     as="label"
@@ -114,7 +114,7 @@ export function LoginForm({
                   />
                 </Box>
               </Box>
-              <Box className="text-left mt-3">
+              <Box className="mt-3 text-left">
                 <Box>
                   <Text
                     as="label"
@@ -133,7 +133,7 @@ export function LoginForm({
                     <IconButton
                       variant="ghost"
                       type="button"
-                      className="hover:bg-transparent text-font dark:text-font-dark"
+                      className="text-font dark:text-font-dark hover:bg-transparent"
                       onClick={() => setIsVisible(!isVisible)}
                     >
                       {isVisible ? <FaRegEye /> : <FaRegEyeSlash />}
@@ -158,7 +158,7 @@ export function LoginForm({
                   </Flex>
                   <Link
                     to={forgotPasswordLink}
-                    className="text-sm font-medium text-purple-800 hover:text-font dark:text-purple-300 dark:hover:text-font-dark"
+                    className="hover:text-font dark:hover:text-font-dark text-sm font-medium text-purple-800 dark:text-purple-300"
                   >
                     Forgot Password
                   </Link>
@@ -183,7 +183,7 @@ export function LoginForm({
                   variant="solid"
                   radius="large"
                   disabled={!(email && password && !loading)}
-                  className="w-full h-12"
+                  className="h-12 w-full"
                 >
                   {loading ? <Spinner size={"3"} /> : " Sign in"}
                 </Button>
@@ -191,7 +191,7 @@ export function LoginForm({
             </form>
 
             {/* Sign Up Routing */}
-            <Box className="flex items-center gap-1 justify-center mt-16">
+            <Box className="mt-16 flex items-center justify-center gap-1">
               <Text
                 as="label"
                 size={"1"}
@@ -202,7 +202,7 @@ export function LoginForm({
               </Text>
               <Link
                 to={registrationLink}
-                className="text-sm font-medium text-purple-800 hover:text-font dark:text-purple-300 dark:hover:text-font-dark"
+                className="hover:text-font dark:hover:text-font-dark text-sm font-medium text-purple-800 dark:text-purple-300"
               >
                 Sign up
               </Link>

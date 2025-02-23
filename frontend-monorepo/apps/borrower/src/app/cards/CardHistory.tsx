@@ -55,7 +55,7 @@ export default function CardHistory({
     <Box className="flex-1">
       <Grid
         align={"center"}
-        className="py-1 bg-purple-50 grid-cols-4 px-6 md:px-8 dark:bg-purple-800/20"
+        className="grid-cols-4 bg-purple-50 px-6 py-1 md:px-8 dark:bg-purple-800/20"
       >
         {headers.map((items, index) => (
           <Box key={index} className={` ${items.className}`}>
@@ -69,13 +69,13 @@ export default function CardHistory({
           </Box>
         ))}
       </Grid>
-      <Box className="md:overflow-y-scroll h-full">
+      <Box className="h-full md:overflow-y-scroll">
         {loading && <Spinner />}
         {!loading && noTxHistory && (
           <Flex
             align={"center"}
             justify={"center"}
-            className="w-full py-1 px-2 rounded-md bg-gray-100 border border-gray-200 dark:bg-dark dark:border-dark"
+            className="dark:bg-dark dark:border-dark w-full rounded-md border border-gray-200 bg-gray-100 px-2 py-1"
           >
             <Text
               size={"1"}

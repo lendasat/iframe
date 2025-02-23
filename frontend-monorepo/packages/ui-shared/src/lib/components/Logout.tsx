@@ -19,14 +19,14 @@ export default function Logout({ logout }: LogoutProps) {
       <AlertDialog.Trigger>
         <MenuItem
           component={
-            <Link className="capitalize text-font/90 dark:text-font-dark/90" />
+            <Link className="text-font/90 dark:text-font-dark/90 capitalize" />
           }
           icon={<TbLogout2 size={18} />}
         >
           Logout
         </MenuItem>
       </AlertDialog.Trigger>
-      <AlertDialog.Content maxWidth="450px" className={"bg-white dark:bg-dark"}>
+      <AlertDialog.Content maxWidth="450px" className={"dark:bg-dark bg-white"}>
         <AlertDialog.Title className={"text-font dark:text-font-dark"}>
           Confirm Logout
         </AlertDialog.Title>

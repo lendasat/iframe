@@ -43,7 +43,7 @@ export const Slider = ({
         step={step}
         value={value}
         onChange={handleChange}
-        className="mb-0 custom-slider"
+        className="custom-slider mb-0"
       />
 
       <div className="d-flex justify-content-between">

@@ -82,7 +82,7 @@ export function CollateralContractDetails({
           <Text
             size={"2"}
             weight={"medium"}
-            className="text-end text-font/70 dark:text-font-dark/70"
+            className="text-font/70 dark:text-font-dark/70 text-end"
           >
             {collateral_btc.toFixed(8)} BTC
           </Text>
@@ -104,7 +104,7 @@ export function CollateralContractDetails({
             <Text
               size={"2"}
               weight={"medium"}
-              className="text-end text-font/70 dark:text-font-dark/70"
+              className="text-font/70 dark:text-font-dark/70 text-end"
             >
               {loanOriginatorFee.toFixed(8)} BTC
             </Text>
@@ -119,7 +119,7 @@ export function CollateralContractDetails({
           <Text
             size={"2"}
             weight={"bold"}
-            className="shrink-0 text-font dark:text-font-dark"
+            className="text-font dark:text-font-dark shrink-0"
           >
             Total
           </Text>
@@ -127,7 +127,7 @@ export function CollateralContractDetails({
           <Text
             size={"2"}
             weight={"bold"}
-            className="text-end text-font dark:text-font-dark"
+            className="text-font dark:text-font-dark text-end"
           >
             {totalCollateral} BTC
           </Text>
@@ -166,7 +166,7 @@ export function CollateralContractDetails({
         <Box
           onClick={() => handleCopy(bip21Url)}
           p={"5"}
-          className="rounded-2xl bg-white cursor-copy hover:shadow-sm"
+          className="cursor-copy rounded-2xl bg-white hover:shadow-sm"
         >
           <QRCode renderAs={"svg"} value={bip21Url} size={300} />
         </Box>
@@ -178,7 +178,7 @@ export function CollateralContractDetails({
         >
           <Text
             size={"2"}
-            className="text-font/60 dark:text-font-dark/60 text-center max-w-sm font-medium"
+            className="text-font/60 dark:text-font-dark/60 max-w-sm text-center font-medium"
           >
             Please send <em>at least</em>
             {"  "}
@@ -188,7 +188,7 @@ export function CollateralContractDetails({
             >
               <span
                 onClick={() => handleCopy(totalCollateral)}
-                className="text-font dark:text-font-dark font-semibold cursor-copy"
+                className="text-font dark:text-font-dark cursor-copy font-semibold"
               >
                 {totalCollateral} BTC {"  "}
               </span>
@@ -199,7 +199,7 @@ export function CollateralContractDetails({
               onClick={() => handleCopy(collateralAddress)}
               asChild
               variant="ghost"
-              className="cursor-copy mt-1"
+              className="mt-1 cursor-copy"
             >
               <span className="text-font dark:text-font-dark font-semibold">
                 {ellipsedAddress}

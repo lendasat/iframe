@@ -54,13 +54,13 @@ export const EditableTimezoneField = ({
       <Flex className="flex flex-col gap-1">
         <Flex className="flex items-center justify-between">
           {isEditing ? (
-            <form onSubmit={handleSubmit} className="flex items-center w-full">
+            <form onSubmit={handleSubmit} className="flex w-full items-center">
               <TimezoneSelect onValueChange={setValue} value={value} />
               <Button
                 type="submit"
-                className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 bg-transparent"
+                className="rounded-md bg-transparent p-1 hover:bg-gray-100 dark:hover:bg-gray-700"
               >
-                <LuCheck className="w-4 h-4 text-green-600 dark:text-green-400" />
+                <LuCheck className="h-4 w-4 text-green-600 dark:text-green-400" />
               </Button>
             </form>
           ) : (
@@ -70,9 +70,9 @@ export const EditableTimezoneField = ({
               </span>
               <Button
                 onClick={() => setIsEditing(true)}
-                className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 bg-transparent"
+                className="rounded-md bg-transparent p-1 hover:bg-gray-100 dark:hover:bg-gray-700"
               >
-                <LuPencil className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                <LuPencil className="h-4 w-4 text-gray-600 dark:text-gray-400" />
               </Button>
             </>
           )}

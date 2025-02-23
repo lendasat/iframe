@@ -89,14 +89,14 @@ const ColumnHeader = ({
       </Text>
       <Box>
         <IoCaretUp
-          className={`text-[10px] -mb-1 ${getCaretColor(
+          className={`-mb-1 text-[10px] ${getCaretColor(
             sortByColumn,
             currentColumn,
             sortAsc,
           )}`}
         />
         <IoCaretDownOutline
-          className={`text-[10px] -mb-1 ${getCaretColor(
+          className={`-mb-1 text-[10px] ${getCaretColor(
             sortByColumn,
             currentColumn,
             !sortAsc,
@@ -373,7 +373,7 @@ export const ContractDetailsTable = ({
                     <Button
                       size={"2"}
                       variant="solid"
-                      className="bg-btn text-white dark:bg-dark-600 rounded-lg"
+                      className="bg-btn dark:bg-dark-600 rounded-lg text-white"
                       onClick={() => navigate(`/my-contracts/${contract.id}`)}
                     >
                       <Text size={"1"} className="font-semibold">
@@ -385,7 +385,7 @@ export const ContractDetailsTable = ({
                     <DropdownMenu.Trigger>
                       <Button
                         variant="ghost"
-                        className="xl:hidden text-font dark:text-font-dark hover:bg-transparent"
+                        className="text-font dark:text-font-dark hover:bg-transparent xl:hidden"
                       >
                         <BsThreeDotsVertical />
                       </Button>
@@ -440,7 +440,7 @@ export const ContractDetailsTable = ({
                                 Expiry:
                               </Text>
                               <Text
-                                className="capitalize text-font dark:text-font-dark"
+                                className="text-font dark:text-font-dark capitalize"
                                 size={"3"}
                               >
                                 {contract.expiry.toLocaleDateString([], {
@@ -486,7 +486,7 @@ export const ContractDetailsTable = ({
                                 Interest:
                               </Text>
                               <Text
-                                className="capitalize text-font dark:text-font-dark"
+                                className="text-font dark:text-font-dark capitalize"
                                 size={"3"}
                               >
                                 TODO
@@ -507,7 +507,7 @@ export const ContractDetailsTable = ({
                                 Collateral:
                               </Text>
                               <Text
-                                className="capitalize text-font dark:text-font-dark"
+                                className="text-font dark:text-font-dark capitalize"
                                 size={"3"}
                               >
                                 {collateral_btc} BTC
@@ -528,7 +528,7 @@ export const ContractDetailsTable = ({
                                 Status:
                               </Text>
                               <Text
-                                className="capitalize text-font dark:text-font-dark"
+                                className="text-font dark:text-font-dark capitalize"
                                 size={"3"}
                               >
                                 <Badge
@@ -553,7 +553,7 @@ export const ContractDetailsTable = ({
                           <Button
                             size={"3"}
                             variant="solid"
-                            className="bg-btn text-white dark:bg-dark-600 w-full active:scale-90"
+                            className="bg-btn dark:bg-dark-600 w-full text-white active:scale-90"
                             onClick={() =>
                               navigate(`/my-contracts/${contract.id}`)
                             }

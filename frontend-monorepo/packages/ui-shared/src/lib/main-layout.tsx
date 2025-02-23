@@ -81,11 +81,11 @@ export const Layout: FC<LayoutProps> = ({
           height: "100vh !important",
         }}
       >
-        <div className="flex flex-col h-full pb-3 items-center bg-gradient-to-b from-blue-500/[2%] via-40% via-pink-500/5 to-[#FBFAF8] to-90% dark:from-dark dark:via-dark/100 dark:to-dark/80 border-l border-black/5 dark:border-white/10">
+        <div className="dark:from-dark dark:via-dark/100 dark:to-dark/80 flex h-full flex-col items-center border-l border-black/5 bg-gradient-to-b from-blue-500/[2%] via-pink-500/5 via-40% to-[#FBFAF8] to-90% pb-3 dark:border-white/10">
           <Box
-            className={`w-full flex items-center ${
+            className={`flex w-full items-center ${
               collapsed ? "justify-center" : "justify-between"
-            } px-3 h-20`}
+            } h-20 px-3`}
           >
             <SidebarHeader
               className={`shrink-0 ${collapsed ? "hidden" : "flex"} ml-5`}
@@ -93,7 +93,7 @@ export const Layout: FC<LayoutProps> = ({
             <IconButton
               variant={"ghost"}
               color="gray"
-              className="hover:bg-transparent hidden lg:block"
+              className="hidden hover:bg-transparent lg:block"
               onClick={() => setCollapsed(!collapsed)}
             >
               <TbLayoutSidebarLeftCollapse size={20} />
@@ -140,7 +140,7 @@ export const Layout: FC<LayoutProps> = ({
                       component={
                         <NavLink
                           className={
-                            "aria-[current=page]:bg-white/65 dark:aria-[current=page]:bg-dark/65 aria-[current=page]:border aria-[current=page]:border-white/95 dark:aria-[current=page]:border-dark/95 aria-[current=page]:text-font dark:aria-[current=page]:text-font-dark aria-[current=page]:font-medium aria-[current=page]:backdrop-blur-md aria-[current=page]:shadow-sm capitalize text-font/90 dark:text-font-dark/90"
+                            "dark:aria-[current=page]:bg-dark/65 dark:aria-[current=page]:border-dark/95 aria-[current=page]:text-font dark:aria-[current=page]:text-font-dark text-font/90 dark:text-font-dark/90 capitalize aria-[current=page]:border aria-[current=page]:border-white/95 aria-[current=page]:bg-white/65 aria-[current=page]:font-medium aria-[current=page]:shadow-sm aria-[current=page]:backdrop-blur-md"
                           }
                           to={item.path}
                           target={item.target ? item.target : "_self"}
@@ -156,7 +156,7 @@ export const Layout: FC<LayoutProps> = ({
                   <Separator
                     size={"4"}
                     color="gray"
-                    className="opacity-40 mt-[5vh]"
+                    className="mt-[5vh] opacity-40"
                   />
                 )}
               </Box>
@@ -167,7 +167,7 @@ export const Layout: FC<LayoutProps> = ({
           </Menu>
           {user && (
             <Link to={"setting"} className="w-full px-3">
-              <Box className="h-14 shadow-sm w-full bg-white/90 dark:bg-dark/90 rounded-xl p-3 flex flex-row items-center justify-between dark:shadow-md">
+              <Box className="dark:bg-dark/90 flex h-14 w-full flex-row items-center justify-between rounded-xl bg-white/90 p-3 shadow-sm dark:shadow-md">
                 <Flex align={"center"} gap={"2"}>
                   <Box className="relative">
                     <Avatar
@@ -198,14 +198,14 @@ export const Layout: FC<LayoutProps> = ({
                       size={"2"}
                       weight={"medium"}
                       className={
-                        "capitalize text-font dark:text-font-dark break-keep"
+                        "text-font dark:text-font-dark break-keep capitalize"
                       }
                     >
                       {user.name}
                     </Text>
                     <Text
                       weight={"medium"}
-                      className="text-[9px] text-font/80 dark:text-font-dark/80 break-keep"
+                      className="text-font/80 dark:text-font-dark/80 break-keep text-[9px]"
                     >
                       {user.email}
                     </Text>
@@ -221,16 +221,16 @@ export const Layout: FC<LayoutProps> = ({
         </div>
       </Sidebar>
 
-      <main className="w-full h-screen flex flex-col overflow-hidden relative bg-gradient-to-tr from-[#FBFAF8] to-pink-700/5 dark:from-dark dark:to-dark">
+      <main className="dark:from-dark dark:to-dark relative flex h-screen w-full flex-col overflow-hidden bg-gradient-to-tr from-[#FBFAF8] to-pink-700/5">
         {/* Header */}
-        <Box className="h-[65px] px-5 md:px-8 flex items-center justify-between gap-10 border-b border-black/5 dark:border-dark dark:bg-dark">
+        <Box className="dark:border-dark dark:bg-dark flex h-[65px] items-center justify-between gap-10 border-b border-black/5 px-5 md:px-8">
           <Box className="shrink-0">
             <Flex align={"center"} gap={"5"}>
               {broken && (
                 <IconButton
                   variant={"ghost"}
                   color="gray"
-                  className="hover:bg-transparent block lg:hidden"
+                  className="block hover:bg-transparent lg:hidden"
                   onClick={() => setToggled(!toggled)}
                 >
                   <TbLayoutSidebarLeftCollapse size={20} />
@@ -246,7 +246,7 @@ export const Layout: FC<LayoutProps> = ({
                     Welcome,
                   </Text>
                   <Heading
-                    className="capitalize text-font/90 dark:text-font-dark/90 -mt-1 font-semibold"
+                    className="text-font/90 dark:text-font-dark/90 -mt-1 font-semibold capitalize"
                     size={"3"}
                   >
                     {user.name}
@@ -262,28 +262,28 @@ export const Layout: FC<LayoutProps> = ({
           <Box className="shrink-0">
             <Flex align={"center"} className="gap-4">
               <Link
-                className="h-9 w-9 bg-white/70 text-font/80 border border-white rounded-full flex items-center justify-center  hover:bg-white hover:border-black/10 hover:text-font transition-colors ease-in duration-200"
+                className="text-font/80 hover:text-font flex h-9 w-9 items-center justify-center rounded-full border border-white bg-white/70 transition-colors duration-200 ease-in hover:border-black/10 hover:bg-white"
                 to={"https://lendasat.notion.site"}
                 target="_blank"
               >
                 <IoHelpCircleOutline size={"20"} />
               </Link>
               <Link
-                className="h-9 w-9 bg-white/70 text-font/80 border border-white rounded-full flex items-center justify-center  hover:bg-white hover:border-black/10 hover:text-font transition-colors ease-in duration-200"
+                className="text-font/80 hover:text-font flex h-9 w-9 items-center justify-center rounded-full border border-white bg-white/70 transition-colors duration-200 ease-in hover:border-black/10 hover:bg-white"
                 to={"/"}
               >
                 <IoIosNotificationsOutline size={"20"} />
               </Link>
-              <ThemeSwitch className="h-9 w-9 bg-white/70 text-font/80 border border-white rounded-full flex items-center justify-center  hover:bg-white hover:border-black/10 hover:text-font transition-colors ease-in duration-200" />
+              <ThemeSwitch className="text-font/80 hover:text-font flex h-9 w-9 items-center justify-center rounded-full border border-white bg-white/70 transition-colors duration-200 ease-in hover:border-black/10 hover:bg-white" />
             </Flex>
           </Box>
         </Box>
 
         {/* Content */}
-        <Box className="lg:rounded-tl-2xl flex-1 dark:bg-dark">{children}</Box>
+        <Box className="dark:bg-dark flex-1 lg:rounded-tl-2xl">{children}</Box>
 
         {/* Footer */}
-        <Box className="flex md:justify-end gap-3 items-center px-4 md:px-6 flex-wrap justify-center dark:bg-dark pb-2">
+        <Box className="dark:bg-dark flex flex-wrap items-center justify-center gap-3 px-4 pb-2 md:justify-end md:px-6">
           <Text
             as="p"
             size={"1"}
@@ -295,7 +295,7 @@ export const Layout: FC<LayoutProps> = ({
           <Box className="flex flex-row items-center gap-2">
             <Link
               to={"/"}
-              className="flex items-center gap-1 text-font/70 dark:text-font-dark/70 no-underline"
+              className="text-font/70 dark:text-font-dark/70 flex items-center gap-1 no-underline"
             >
               <PiCopyright />
               <Text as="p" size={"1"} weight={"medium"}>
@@ -307,7 +307,7 @@ export const Layout: FC<LayoutProps> = ({
             </Text>
             <Link
               to={"https://tos.lendasat.com/"}
-              className="flex items-center gap-1 text-font/70 dark:text-font-dark/70 no-underline"
+              className="text-font/70 dark:text-font-dark/70 flex items-center gap-1 no-underline"
             >
               <Text as="p" size={"1"} weight={"medium"}>
                 Terms of Service
@@ -320,7 +320,7 @@ export const Layout: FC<LayoutProps> = ({
               to={
                 "https://lendasat.notion.site/Privacy-a91b9883bca1495693654c996f5423e1?pvs=25"
               }
-              className="flex items-center gap-1 text-font/70 dark:text-font-dark/70 no-underline"
+              className="text-font/70 dark:text-font-dark/70 flex items-center gap-1 no-underline"
             >
               <Text as="p" size={"1"} weight={"medium"}>
                 Privacy Policy

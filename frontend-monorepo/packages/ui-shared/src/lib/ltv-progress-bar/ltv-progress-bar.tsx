@@ -34,8 +34,8 @@ export const LtvProgressBar: FC<LtvProgressBarNewProps> = ({
   }
 
   return (
-    <div className="flex items-center min-w-[80px] w-full gap-0">
-      <div className="flex-1 bg-gray-200 h-1 rounded-full">
+    <div className="flex w-full min-w-[80px] items-center gap-0">
+      <div className="h-1 flex-1 rounded-full bg-gray-200">
         <div
           className={`h-full rounded-full ${barColor}`}
           role="progressbar"
@@ -45,7 +45,7 @@ export const LtvProgressBar: FC<LtvProgressBarNewProps> = ({
           aria-valuemax={100}
         />
       </div>
-      <div className="w-12 text-xs font-medium text-font dark:text-font-dark text-right">
+      <div className="text-font dark:text-font-dark w-12 text-right text-xs font-medium">
         {isNan ? (
           <Spinner animation="border" role="status" size="sm">
             <span className="sr-only">Loading...</span>

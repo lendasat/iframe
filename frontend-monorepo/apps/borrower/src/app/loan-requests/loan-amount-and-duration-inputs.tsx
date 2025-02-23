@@ -42,7 +42,7 @@ function LoanProductRadioCardItem({
         <Text
           size={"1"}
           weight={"light"}
-          className="text-font dark:text-font-dark shrink-0 "
+          className="text-font dark:text-font-dark shrink-0"
         >
           {subHeader}
         </Text>
@@ -86,7 +86,7 @@ export function LoanAmountAndDurationInputs({
           color="gray"
           min={1}
           onChange={onLoanAmountChange}
-          className="w-full rounded-lg text-sm text-font dark:text-font-dark"
+          className="text-font dark:text-font-dark w-full rounded-lg text-sm"
           value={loanAmount}
         >
           <TextField.Slot>
@@ -130,7 +130,7 @@ export function LoanAmountAndDurationInputs({
         >
           How would you like to receive the loan?
         </Text>
-        <Box className="mx-auto ">
+        <Box className="mx-auto">
           <RadioCards.Root
             value={selectedOption}
             columns={{ initial: "1", sm: "3" }}

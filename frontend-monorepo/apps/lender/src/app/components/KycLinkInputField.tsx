@@ -32,7 +32,7 @@ export function KycLinkInputField({
     <div className="flex flex-col">
       <div className="flex items-center">
         <Checkbox.Root
-          className="flex size-[25px] appearance-none items-center justify-center rounded bg-white dark:bg-gray-300 shadow-[0_2px_10px] shadow-blackA4 outline-none hover:bg-violet3 focus:shadow-[0_0_0_2px_black] mb-2"
+          className="shadow-blackA4 hover:bg-violet3 mb-2 flex size-[25px] appearance-none items-center justify-center rounded bg-white shadow-[0_2px_10px] outline-none focus:shadow-[0_0_0_2px_black] dark:bg-gray-300"
           checked={isKycRequired}
           onCheckedChange={onCheckboxChange}
         >
@@ -41,7 +41,7 @@ export function KycLinkInputField({
           </Checkbox.Indicator>
         </Checkbox.Root>
         <label
-          className="pl-[15px] text-[15px] dark:text-font-dark/60"
+          className="dark:text-font-dark/60 pl-[15px] text-[15px]"
           htmlFor="c1"
         >
           Require KYC
@@ -49,7 +49,7 @@ export function KycLinkInputField({
       </div>
       {isKycRequired && (
         <TextField.Root
-          className="w-full font-semibold border-0 flex items-center text-font dark:text-font-dark mt-2"
+          className="text-font dark:text-font-dark mt-2 flex w-full items-center border-0 font-semibold"
           size={"3"}
           variant="surface"
           placeholder="Enter KYC link"

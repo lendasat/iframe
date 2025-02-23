@@ -30,7 +30,7 @@ export const SidebarHeader: FC<SidebarHeaderProps> = ({
         <img
           src={Lendasat}
           alt="Logo"
-          className="h-5 w-auto dark:filter dark:invert dark:brightness-90"
+          className="h-5 w-auto dark:brightness-90 dark:invert dark:filter"
         />
       </div>
     </StyledSidebarHeader>

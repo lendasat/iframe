@@ -51,7 +51,7 @@ export function ContractPendingKyc({
         Waiting for KYC process
       </Heading>
       <Text
-        className={"mb-3 text-font dark:text-font-dark"}
+        className={"text-font dark:text-font-dark mb-3"}
         weight={"medium"}
         size={"3"}
       >
@@ -59,7 +59,7 @@ export function ContractPendingKyc({
         contract request.
       </Text>
       <Text
-        className={"mb-3 text-font dark:text-font-dark"}
+        className={"text-font dark:text-font-dark mb-3"}
         weight={"medium"}
         size={"3"}
       >
@@ -76,7 +76,7 @@ export function ContractPendingKyc({
         for the lender to approve your request.
       </Text>
       <Text
-        className={"mb-3 text-font dark:text-font-dark"}
+        className={"text-font dark:text-font-dark mb-3"}
         weight={"medium"}
         size={"3"}
       >

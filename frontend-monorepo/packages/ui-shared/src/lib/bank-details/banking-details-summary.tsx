@@ -251,7 +251,7 @@ export const BankingDetailsSummary = ({
             <Alert variant="danger">
               <FontAwesomeIcon
                 icon={faExclamationCircle}
-                className="h-4 w-4 mr-2"
+                className="mr-2 h-4 w-4"
               />
               {error}
             </Alert>

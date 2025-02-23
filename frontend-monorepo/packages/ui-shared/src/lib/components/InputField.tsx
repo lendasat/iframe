@@ -7,9 +7,9 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 
 export function InputField({ children, ...rest }: InputProps) {
   return (
-    <div className="flex flex-row items-center gap-2 px-3 h-11 border-1 border-font/40 bg-white rounded-xl max-w-xl w-full">
+    <div className="border-1 border-font/40 flex h-11 w-full max-w-xl flex-row items-center gap-2 rounded-xl bg-white px-3">
       <input
-        className="focus:outline-none text-sm font-medium flex-grow placeholder:text-font-dark/85 text-font-dark bg-transparent"
+        className="placeholder:text-font-dark/85 text-font-dark flex-grow bg-transparent text-sm font-medium focus:outline-none"
         {...rest}
       />
       {children}

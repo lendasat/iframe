@@ -6,7 +6,7 @@ export function ContractDefaulted() {
   return (
     <Container fluid>
       <Alert variant="danger">
-        <FontAwesomeIcon icon={faExclamationCircle} className="h-4 w-4 mr-2" />
+        <FontAwesomeIcon icon={faExclamationCircle} className="mr-2 h-4 w-4" />
         You have defaulted on your contract. We are waiting for the lender to
         liquidate the collateral. The remainder will be sent to your refund
         address.

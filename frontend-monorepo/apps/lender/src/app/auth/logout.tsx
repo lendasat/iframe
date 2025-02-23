@@ -20,10 +20,10 @@ const Logout = () => {
       style={{ height: "100vh" }}
     >
       <Form
-        className="p-4 rounded border"
+        className="rounded border p-4"
         style={{ maxWidth: "400px", width: "100%" }}
       >
-        <h1 className="text-center mb-4">Confirm Logout</h1>
+        <h1 className="mb-4 text-center">Confirm Logout</h1>
         <p className="text-center">Are you sure you want to log out?</p>
         <div className="d-flex justify-content-between">
           <Button

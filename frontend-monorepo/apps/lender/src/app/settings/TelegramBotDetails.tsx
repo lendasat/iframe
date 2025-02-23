@@ -21,7 +21,7 @@ const TelegramNotificationSetup = ({
   };
 
   return (
-    <Card className="bg-light dark:bg-dark p-6 rounded-lg">
+    <Card className="bg-light dark:bg-dark rounded-lg p-6">
       <div className="space-y-4">
         <p className="text-font dark:text-font-dark leading-relaxed">
           You can receive notifications from Lendasat to your Telegram account.
@@ -41,7 +41,7 @@ const TelegramNotificationSetup = ({
                 href={`${botUrl}?start=${token}`}
                 target="_blank"
                 rel="noreferrer"
-                className="text-purple-500 hover:text-purple-600 break-all"
+                className="break-all text-purple-500 hover:text-purple-600"
               >
                 {botUrl}?start={token}
               </a>
@@ -62,7 +62,7 @@ const TelegramNotificationSetup = ({
                     href={`${botUrl}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-purple-500 hover:text-purple-600 break-all"
+                    className="break-all text-purple-500 hover:text-purple-600"
                   >
                     {" "}
                     {botUrl}{" "}
@@ -71,7 +71,7 @@ const TelegramNotificationSetup = ({
               </p>
 
               <Flex gap={"3"}>
-                <div className="flex items-center space-x-2 bg-light dark:bg-dark p-2 rounded-md">
+                <div className="bg-light dark:bg-dark flex items-center space-x-2 rounded-md p-2">
                   <code className="text-font dark:text-font-dark font-mono">
                     {token}
                   </code>
@@ -79,7 +79,7 @@ const TelegramNotificationSetup = ({
                 <Button
                   onClick={handleCopy}
                   variant={"surface"}
-                  className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded"
+                  className="rounded bg-purple-500 px-4 py-2 text-white hover:bg-purple-600"
                 >
                   {copied ? "Copied!" : "Click to copy"}
                 </Button>

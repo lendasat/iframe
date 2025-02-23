@@ -27,13 +27,13 @@ function Wallet() {
     <Box className="md:pl-8">
       <Heading
         as="h4"
-        className="font-semibold text-font dark:text-font-dark"
+        className="text-font dark:text-font-dark font-semibold"
         size={"5"}
       >
         Wallet
       </Heading>
       <Box mt={"6"} className="space-y-4">
-        <Box className="border border-purple-400/20 rounded-2xl px-5 py-6 dark:border-gray-500/50">
+        <Box className="rounded-2xl border border-purple-400/20 px-5 py-6 dark:border-gray-500/50">
           <MnemonicComponent />
         </Box>
       </Box>
@@ -76,7 +76,7 @@ function Profile() {
     <Box className="md:pl-8">
       <Heading
         as="h4"
-        className="font-semibold text-font dark:text-font-dark"
+        className="text-font dark:text-font-dark font-semibold"
         size={"5"}
       >
         Profile
@@ -84,7 +84,7 @@ function Profile() {
       <Box mt={"6"} className="space-y-4">
         <Box
           p={"4"}
-          className="border border-purple-400/20 rounded-2xl dark:border-gray-500/50"
+          className="rounded-2xl border border-purple-400/20 dark:border-gray-500/50"
         >
           <Flex align={"center"} gap={"3"}>
             <Avatar
@@ -98,7 +98,7 @@ function Profile() {
               <Heading
                 as="h4"
                 weight={"medium"}
-                className="capitalize text-font dark:text-font-dark"
+                className="text-font dark:text-font-dark capitalize"
                 size={"4"}
               >
                 {user.name}
@@ -118,15 +118,15 @@ function Profile() {
           </Flex>
         </Box>
 
-        <Box className="border border-purple-400/20 rounded-2xl px-5 py-6 dark:border-gray-500/50">
+        <Box className="rounded-2xl border border-purple-400/20 px-5 py-6 dark:border-gray-500/50">
           <Heading
             as="h4"
-            className="font-semibold capitalize text-font dark:text-font-dark"
+            className="text-font dark:text-font-dark font-semibold capitalize"
             size={"3"}
           >
             Personal information
           </Heading>
-          <Box mt={"4"} className="max-w-lg grid md:grid-cols-2 gap-5">
+          <Box mt={"4"} className="grid max-w-lg gap-5 md:grid-cols-2">
             <Box>
               <Flex direction={"column"} gap={"1"}>
                 <Text
@@ -140,7 +140,7 @@ function Profile() {
                 <Text
                   size={"3"}
                   weight={"medium"}
-                  className="capitalize text-font dark:text-font-dark"
+                  className="text-font dark:text-font-dark capitalize"
                 >
                   {user.name}
                 </Text>
@@ -180,7 +180,7 @@ function Profile() {
                   <Text
                     size={"3"}
                     weight={"medium"}
-                    className="capitalize text-font dark:text-font-dark"
+                    className="text-font dark:text-font-dark capitalize"
                   >
                     ********
                   </Text>
@@ -228,7 +228,7 @@ function Profile() {
                 <Text
                   size={"3"}
                   weight={"medium"}
-                  className="capitalize text-font dark:text-font-dark"
+                  className="text-font dark:text-font-dark capitalize"
                 >
                   {new Date(user.created_at).toLocaleDateString(
                     "en-CA",
@@ -285,16 +285,16 @@ function NotificationSettings() {
     <Box className="md:pl-8">
       <Heading
         as="h4"
-        className="font-semibold text-font dark:text-font-dark"
+        className="text-font dark:text-font-dark font-semibold"
         size={"5"}
       >
         Notification Settings
       </Heading>
       <Box mt={"6"} className="space-y-4">
-        <Box className="border border-purple-400/20 rounded-2xl px-5 py-6 dark:border-gray-500/50">
+        <Box className="rounded-2xl border border-purple-400/20 px-5 py-6 dark:border-gray-500/50">
           <Heading
             as="h4"
-            className="font-semibold capitalize text-font dark:text-font-dark"
+            className="text-font dark:text-font-dark font-semibold capitalize"
             size={"3"}
           >
             Telegram Bot
@@ -327,18 +327,18 @@ function MyAccount() {
   const location = useLocation();
 
   return (
-    <Box className="p-4 flex flex-col overflow-y-scroll">
-      <Box className="bg-dashboard/50 dark:bg-dark-700/50 rounded-2xl shadow-sm flex-grow md:max-h-[800px]">
+    <Box className="flex flex-col overflow-y-scroll p-4">
+      <Box className="bg-dashboard/50 dark:bg-dark-700/50 flex-grow rounded-2xl shadow-sm md:max-h-[800px]">
         <TabNav.Root
-          className="md:flex md:items-start p-5 h-full"
+          className="h-full p-5 md:flex md:items-start"
           color={"purple"}
         >
-          <Box className="md:h-full md:border-r md:border-black/5 dark:border-dark bg-purple-800/5 p-2 md:p-0 rounded-full md:rounded-none md:bg-transparent md:max-w-[200px] w-full">
-            <Box className="border-b-0 shadow-none md:flex-col rounded-r-full md:rounded-none">
+          <Box className="dark:border-dark w-full rounded-full bg-purple-800/5 p-2 md:h-full md:max-w-[200px] md:rounded-none md:border-r md:border-black/5 md:bg-transparent md:p-0">
+            <Box className="rounded-r-full border-b-0 shadow-none md:flex-col md:rounded-none">
               <TabNav.Link
                 asChild
                 active={location.pathname.includes("profile")}
-                className="flex-1 md:flex-none text-center md:text-left px-4 py-2 md:py-3 rounded-full hover:bg-transparent font-medium data-[state=active]:font-semibold capitalize data-[state=inactive]:text-font/70 data-[state=active]:text-purple-800 data-[state=active]:bg-purple-800/20 dark:data-[state=inactive]:text-gray-400 dark:data-[state=active]:text-purple-300 dark:data-[state=active]:bg-purple-700/20"
+                className="data-[state=inactive]:text-font/70 flex-1 rounded-full px-4 py-2 text-center font-medium capitalize hover:bg-transparent data-[state=active]:bg-purple-800/20 data-[state=active]:font-semibold data-[state=active]:text-purple-800 md:flex-none md:py-3 md:text-left dark:data-[state=active]:bg-purple-700/20 dark:data-[state=active]:text-purple-300 dark:data-[state=inactive]:text-gray-400"
               >
                 <Link className={"text-font dark:text-font-dark"} to="profile">
                   Profile
@@ -347,9 +347,7 @@ function MyAccount() {
               <TabNav.Link
                 asChild
                 active={location.pathname.includes("wallet")}
-                className={`md:justify-start data-[state=active]:before:bg-transparent flex-grow md:w-fit px-2 rounded-full hover:bg-transparent font-medium data-[state=active]:font-semibold capitalize
-                  "data-[state=inactive]:text-font/70 data-[state=active]:text-purple-800 data-[state=active]:bg-purple-800/20 dark:data-[state=inactive]:text-gray-400 dark:data-[state=active]:text-purple-300 dark:data-[state=active]:bg-purple-700/20"
-                  `}
+                className={`"data-[state=inactive]:text-font/70 dark:data-[state=active]:bg-purple-700/20" flex-grow rounded-full px-2 font-medium capitalize hover:bg-transparent data-[state=active]:bg-purple-800/20 data-[state=active]:font-semibold data-[state=active]:text-purple-800 data-[state=active]:before:bg-transparent md:w-fit md:justify-start dark:data-[state=active]:text-purple-300 dark:data-[state=inactive]:text-gray-400`}
               >
                 <Link className={"text-font dark:text-font-dark"} to="wallet">
                   Wallet
@@ -358,9 +356,7 @@ function MyAccount() {
               <TabNav.Link
                 asChild
                 active={location.pathname.includes("notifications")}
-                className={`md:justify-start data-[state=active]:before:bg-transparent flex-grow md:w-fit px-2 rounded-full hover:bg-transparent font-medium data-[state=active]:font-semibold capitalize
-                  "data-[state=inactive]:text-font/70 data-[state=active]:text-purple-800 data-[state=active]:bg-purple-800/20 dark:data-[state=inactive]:text-gray-400 dark:data-[state=active]:text-purple-300 dark:data-[state=active]:bg-purple-700/20"
-                  `}
+                className={`"data-[state=inactive]:text-font/70 dark:data-[state=active]:bg-purple-700/20" flex-grow rounded-full px-2 font-medium capitalize hover:bg-transparent data-[state=active]:bg-purple-800/20 data-[state=active]:font-semibold data-[state=active]:text-purple-800 data-[state=active]:before:bg-transparent md:w-fit md:justify-start dark:data-[state=active]:text-purple-300 dark:data-[state=inactive]:text-gray-400`}
               >
                 <Link
                   className={"text-font dark:text-font-dark"}

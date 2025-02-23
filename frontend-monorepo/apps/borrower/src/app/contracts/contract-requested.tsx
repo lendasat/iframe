@@ -76,9 +76,9 @@ export function ContractRequested({
       >
         Waiting for lender to approve
       </Heading>
-      <Box className="mb-3 mt-3 h-12 px-2 justify-between rounded-xl bg-gradient-to-r from-pink-500/20 to-active-nav/50 to-90% flex items-center">
+      <Box className="to-active-nav/50 mb-3 mt-3 flex h-12 items-center justify-between rounded-xl bg-gradient-to-r from-pink-500/20 to-90% px-2">
         <Flex align={"center"} gap={"2"}>
-          <Box className="h-8 w-8 bg-black rounded-lg flex items-center justify-center">
+          <Box className="flex h-8 w-8 items-center justify-center rounded-lg bg-black">
             <LuClock1 color="white" size={17} />
           </Box>
           <Text

@@ -194,8 +194,8 @@ const CreateLoanOffer: FC = () => {
           overflowY: "scroll",
         }}
       >
-        <Box className="lg:grid lg:grid-cols-7 xl:grid-cols-6 w-full">
-          <Box className="py-7 lg:pb-14 md:col-span-4 bg-gradient-to-br from-white/0 to-white border-r border-font/10 space-y-5 dark:from-dark/0 dark:to-dark dark:border-font-dark/10">
+        <Box className="w-full lg:grid lg:grid-cols-7 xl:grid-cols-6">
+          <Box className="border-font/10 dark:from-dark/0 dark:to-dark dark:border-font-dark/10 space-y-5 border-r bg-gradient-to-br from-white/0 to-white py-7 md:col-span-4 lg:pb-14">
             <Box className="px-6 md:px-8">
               <Heading size={"7"} className="text-font dark:text-font-dark">
                 Create Loan Offer
@@ -210,7 +210,7 @@ const CreateLoanOffer: FC = () => {
             <Box className="px-6 md:px-8">
               <Box
                 width={"100%"}
-                className="border border-font/10 dark:border-font-dark/10 rounded-xl py-10 px-6 md:px-8 space-y-6"
+                className="border-font/10 dark:border-font-dark/10 space-y-6 rounded-xl border px-6 py-10 md:px-8"
               >
                 {/* Amount */}
                 <Box className="space-y-1">
@@ -226,7 +226,7 @@ const CreateLoanOffer: FC = () => {
                     <TextField.Root
                       size="3"
                       color="purple"
-                      className="flex-1 text-sm rounded-lg text-font dark:text-font-dark"
+                      className="text-font dark:text-font-dark flex-1 rounded-lg text-sm"
                       type="number"
                       placeholder="Min Amount"
                       value={loanAmount.min}
@@ -243,7 +243,7 @@ const CreateLoanOffer: FC = () => {
                     <TextField.Root
                       size="3"
                       type="number"
-                      className="flex-1 text-sm rounded-lg text-font dark:text-font-dark"
+                      className="text-font dark:text-font-dark flex-1 rounded-lg text-sm"
                       color="purple"
                       placeholder="Max Amount"
                       value={loanAmount.max}
@@ -277,7 +277,7 @@ const CreateLoanOffer: FC = () => {
 
                   <TextField.Root
                     size="3"
-                    className="flex-1 text-sm rounded-lg text-font dark:text-font-dark"
+                    className="text-font dark:text-font-dark flex-1 rounded-lg text-sm"
                     type="number"
                     placeholder="Loan Reserve"
                     color="purple"
@@ -312,7 +312,7 @@ const CreateLoanOffer: FC = () => {
 
                   <div className="flex items-center">
                     <Checkbox.Root
-                      className="flex size-[25px] appearance-none items-center justify-center rounded bg-white dark:bg-gray-300 shadow-[0_2px_10px] shadow-blackA4 outline-none hover:bg-violet3 focus:shadow-[0_0_0_2px_black]"
+                      className="shadow-blackA4 hover:bg-violet3 flex size-[25px] appearance-none items-center justify-center rounded bg-white shadow-[0_2px_10px] outline-none focus:shadow-[0_0_0_2px_black] dark:bg-gray-300"
                       checked={autoAccept}
                       disabled={!autoApproveEnabled && !isKycRequired}
                       onCheckedChange={(checked) =>
@@ -324,7 +324,7 @@ const CreateLoanOffer: FC = () => {
                       </Checkbox.Indicator>
                     </Checkbox.Root>
                     <label
-                      className="pl-[15px] text-[15px] dark:text-font-dark/60"
+                      className="dark:text-font-dark/60 pl-[15px] text-[15px]"
                       htmlFor="c1"
                     >
                       Auto accept requests within Loan Reserve
@@ -391,7 +391,7 @@ const CreateLoanOffer: FC = () => {
                   </LtvInfoLabel>
                   <TextField.Root
                     size="3"
-                    className="flex-1 text-sm rounded-lg text-font dark:text-font-dark"
+                    className="text-font dark:text-font-dark flex-1 rounded-lg text-sm"
                     type="number"
                     placeholder="LTV (1-70%)"
                     color="purple"
@@ -441,7 +441,7 @@ const CreateLoanOffer: FC = () => {
 
                   <TextField.Root
                     size="3"
-                    className="flex-1 text-sm rounded-lg text-font dark:text-font-dark"
+                    className="text-font dark:text-font-dark flex-1 rounded-lg text-sm"
                     type="number"
                     placeholder="Interest Rate"
                     color="purple"
@@ -575,7 +575,7 @@ const CreateLoanOffer: FC = () => {
                   />
                 )}
 
-                <Box className="space-y-6 hidden lg:block">
+                <Box className="hidden space-y-6 lg:block">
                   {/* Error Message */}
                   {error && (
                     <Callout.Root color="red">
@@ -594,7 +594,7 @@ const CreateLoanOffer: FC = () => {
                     variant="solid"
                     radius="large"
                     disabled={disableCreateOfferButton}
-                    className="w-full h-12"
+                    className="h-12 w-full"
                   >
                     {loading ? <Spinner size={"3"} /> : "Create Offer"}
                   </Button>
@@ -602,17 +602,17 @@ const CreateLoanOffer: FC = () => {
               </Box>
             </Box>
           </Box>
-          <Box className="flex flex-col justify-center px-6 lg:col-span-3 xl:col-span-2 py-12">
+          <Box className="flex flex-col justify-center px-6 py-12 lg:col-span-3 xl:col-span-2">
             <Text
               size={"2"}
               weight={"medium"}
-              className="text-center text-font/50 dark:text-font-dark/50"
+              className="text-font/50 dark:text-font-dark/50 text-center"
             >
               Offer Summary
             </Text>
             <Heading
               size={"7"}
-              className={"text-center text-font dark:text-font-dark"}
+              className={"text-font dark:text-font-dark text-center"}
             >
               Borrowers will see
             </Heading>
@@ -627,7 +627,7 @@ const CreateLoanOffer: FC = () => {
               <Separator
                 size={"4"}
                 mt={"4"}
-                className="opacity-50 text-font dark:text-font-dark"
+                className="text-font dark:text-font-dark opacity-50"
               />
               <Flex align={"center"} justify={"between"} my={"4"}>
                 <Text
@@ -785,7 +785,7 @@ const CreateLoanOffer: FC = () => {
               </Flex>
             </Box>
           </Box>
-          <Box className="space-y-6 block w-full lg:hidden px-6 mb-20">
+          <Box className="mb-20 block w-full space-y-6 px-6 lg:hidden">
             {/* Error Message */}
             {error && (
               <Callout.Root color="red">
@@ -804,7 +804,7 @@ const CreateLoanOffer: FC = () => {
               variant="solid"
               radius="large"
               disabled={disableCreateOfferButton}
-              className="w-full h-12"
+              className="h-12 w-full"
             >
               {loading ? <Spinner size={"3"} /> : "Create Offer"}
             </Button>

@@ -18,7 +18,7 @@ function MyContracts() {
           </div>
         }
         children={(contracts: Awaited<Contract[]>) => (
-          <Box className="h-screen flex-1 max-h-1/2 overflow-auto flex-col pb-5">
+          <Box className="max-h-1/2 h-screen flex-1 flex-col overflow-auto pb-5">
             <AllContracts contracts={contracts} />
           </Box>
         )}

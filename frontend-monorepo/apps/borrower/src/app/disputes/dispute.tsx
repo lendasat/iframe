@@ -126,7 +126,7 @@ function ResolveDispute() {
                   <Alert variant="danger">
                     <FontAwesomeIcon
                       icon={faExclamationCircle}
-                      className="h-4 w-4 mr-2"
+                      className="mr-2 h-4 w-4"
                     />
                     {error}
                   </Alert>
@@ -172,7 +172,7 @@ const ActionItem = ({
         <Alert variant="warning">
           <FontAwesomeIcon
             icon={faExclamationCircle}
-            className="h-4 w-4 mr-2"
+            className="mr-2 h-4 w-4"
           />
           {
             "The dispute is still ongoing. Once it's been resolved you will be able to withdraw your collateral."

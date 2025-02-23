@@ -16,17 +16,17 @@ const Logout = () => {
 
   return (
     <Container
-      className="d-flex justify-content-center align-items-center bg-white dark:bg-dark"
+      className="d-flex justify-content-center align-items-center dark:bg-dark bg-white"
       style={{ height: "100vh" }}
     >
       <Form
-        className="p-4 rounded border dark:border-dark"
+        className="dark:border-dark rounded border p-4"
         style={{ maxWidth: "400px", width: "100%" }}
       >
-        <h1 className="text-center mb-4 text-font dark:text-font-dark">
+        <h1 className="text-font dark:text-font-dark mb-4 text-center">
           Confirm Logout
         </h1>
-        <p className="text-center text-font dark:text-font-dark">
+        <p className="text-font dark:text-font-dark text-center">
           Are you sure you want to log out?
         </p>
         <div className="d-flex justify-content-between">

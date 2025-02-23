@@ -73,7 +73,7 @@ export const FeeSelector = ({ onSelectFee }: FeeSelectorProps) => {
 
   return (
     <div>
-      <h1 className={"font-bold text-font dark:text-font-dark"}>
+      <h1 className={"text-font dark:text-font-dark font-bold"}>
         Transaction Fee Rate
       </h1>
       {recommendedFees ? (

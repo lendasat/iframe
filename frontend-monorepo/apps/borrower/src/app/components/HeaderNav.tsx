@@ -6,24 +6,24 @@ import { Link } from "react-router-dom";
 export default function HeaderNav() {
   const { user } = useAuth();
   return (
-    <div className="items-center gap-3 flex">
+    <div className="flex items-center gap-3">
       <Link
         to={"/"}
-        className="h-10 w-10 border hover:border-font-dark hover:text-black flex items-center justify-center rounded transition-colors ease-in duration-300"
+        className="hover:border-font-dark flex h-10 w-10 items-center justify-center rounded border transition-colors duration-300 ease-in hover:text-black"
       >
-        <IoNotifications className="text-xl text-font" />
+        <IoNotifications className="text-font text-xl" />
       </Link>
       <Link
         to={"https://lendasat.notion.site"}
-        className="h-10 w-10 border hover:border-font-dark hover:text-black flex items-center justify-center rounded transition-colors ease-in duration-300"
+        className="hover:border-font-dark flex h-10 w-10 items-center justify-center rounded border transition-colors duration-300 ease-in hover:text-black"
         target="_blank"
       >
-        <RiCustomerService2Fill className="text-xl text-font" />
+        <RiCustomerService2Fill className="text-font text-xl" />
       </Link>
       <Link to={"/my-account"} className="no-underline">
-        <div className="flex items-center gap-2 text-xl text-font">
+        <div className="text-font flex items-center gap-2 text-xl">
           <RiUser6Fill />
-          <h3 className="hidden md:block text-base m-0 text-font hover:text-font-dark capitalize">
+          <h3 className="text-font hover:text-font-dark m-0 hidden text-base capitalize md:block">
             {user?.name}
           </h3>
         </div>

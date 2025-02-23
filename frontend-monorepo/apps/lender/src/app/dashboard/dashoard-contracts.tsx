@@ -15,20 +15,14 @@ interface TabHeaderProps {
 export function TabHeader({ thisIndex, label, needsAction }: TabHeaderProps) {
   return (
     <Tabs.Trigger
-      className={`text-[13px] font-medium px-6 max-h-9 rounded-lg bg-transparent text-font/60 dark:text-font-dark/60"
-      data-[state=active]:bg-purple-800
-      data-[state=active]:text-white
-      data-[state=inactive]:dark:text-gray-400
-      data-[state=active]:dark:text-white
-      ${needsAction ? "animate-pulse bg-red-100 dark:bg-red-900/30" : ""}
-      }`}
+      className={`text-font/60 dark:text-font-dark/60" max-h-9 rounded-lg bg-transparent px-6 text-[13px] font-medium data-[state=active]:bg-purple-800 data-[state=active]:text-white data-[state=active]:dark:text-white data-[state=inactive]:dark:text-gray-400 ${needsAction ? "animate-pulse bg-red-100 dark:bg-red-900/30" : ""} }`}
       value={thisIndex}
     >
       <Text size={"2"} weight={"medium"} className={`break-all`}>
         {needsAction && (
-          <span className="absolute -top-1 -right-1 flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+          <span className="absolute -right-1 -top-1 flex h-3 w-3">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
+            <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500"></span>
           </span>
         )}
         {label}
@@ -110,10 +104,10 @@ export default function DashboardContracts({
         defaultValue={!needsAction ? "actionRequired" : "open"}
         className={"flex flex-col"}
       >
-        <Box className="space-y-2 flex items-center justify-between flex-wrap">
+        <Box className="flex flex-wrap items-center justify-between space-y-2">
           <Heading className="text-black dark:text-white">Contracts</Heading>
           <Tabs.List
-            className="bg-white dark:bg-dark-500 flex items-center gap-1 p-1 rounded-xl border dark:border-dark-600 shrink-0 "
+            className="dark:bg-dark-500 dark:border-dark-600 flex shrink-0 items-center gap-1 rounded-xl border bg-white p-1"
             color={undefined}
           >
             <TabHeader

@@ -24,7 +24,7 @@ function ResolveDispute() {
         }
         children={(dispute: Awaited<Dispute>) => (
           <div>
-            <div className="card my-3 bg-light dark:bg-dark">
+            <div className="card bg-light dark:bg-dark my-3">
               <div className="card-header">
                 <h5 className={"text-font dark:text-font-dark"}>
                   Dispute: {dispute.id}
@@ -72,7 +72,7 @@ function ResolveDispute() {
                   <Alert variant="info">
                     <FontAwesomeIcon
                       icon={faExclamationCircle}
-                      className="h-4 w-4 mr-2"
+                      className="mr-2 h-4 w-4"
                     />
                     The dispute is on-going. Please communicate with us via
                     email{" "}
@@ -85,7 +85,7 @@ function ResolveDispute() {
                   <Alert variant="info">
                     <FontAwesomeIcon
                       icon={faExclamationCircle}
-                      className="h-4 w-4 mr-2"
+                      className="mr-2 h-4 w-4"
                     />
                     This dispute has been resolved already.
                   </Alert>
