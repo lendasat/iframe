@@ -40,8 +40,8 @@ jobs:
         run: |
           node --version
           pnpm --version
-          pnpm i --no-save prettier-plugin-tailwindcss
-          pnpx prettier --write "**/*.{ts,tsx,md}"
+          pnpm install --filter="@frontend/root"
+          pnpm exec prettier --write "**/*.{ts,tsx,md}"
 
   lint-commits:
     runs-on: ubuntu-latest
