@@ -151,7 +151,7 @@ export const LoanRequestFlow = () => {
         <Box mx="auto" className="text-center">
           <Heading
             size="7"
-            className="font-semibold text-font dark:text-font-dark"
+            className="text-font dark:text-font-dark font-semibold"
           >
             Find a loan offer
           </Heading>

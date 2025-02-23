@@ -70,7 +70,7 @@ const RepaymentDetails = ({
                 renderAs={"svg"}
               />
             </div>
-            <p className="mt-2 text-break text-font dark:text-font-dark">
+            <p className="text-break text-font dark:text-font-dark mt-2">
               Please send{" "}
               <strong>{formatCurrency(contract.loan_amount)}</strong> (
               {LoanAssetHelper.toCoin(contract.loan_asset)} on{" "}
@@ -148,7 +148,7 @@ const RepaymentDetails = ({
             <Alert variant="danger">
               <FontAwesomeIcon
                 icon={faExclamationCircle}
-                className="h-4 w-4 mr-2"
+                className="mr-2 h-4 w-4"
               />
               {error}
             </Alert>

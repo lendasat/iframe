@@ -72,8 +72,8 @@ export function ResetPasswordForm({
   };
 
   return (
-    <Box className="bg-gradient-to-tr from-60% to-100% from-[#F5F9FD] to-pink-700/5 py-20 pt-0 h-screen overflow-y-scroll flex items-center justify-center dark:from-[#1a202c] dark:to-gray-900/70">
-      <Grid align={"center"} className="overflow-hidden grid-cols-1 w-screen">
+    <Box className="flex h-screen items-center justify-center overflow-y-scroll bg-gradient-to-tr from-[#F5F9FD] from-60% to-pink-700/5 to-100% py-20 pt-0 dark:from-[#1a202c] dark:to-gray-900/70">
+      <Grid align={"center"} className="w-screen grid-cols-1 overflow-hidden">
         <Box className="flex flex-col items-center p-5">
           {/* Logo */}
           <Logo
@@ -88,9 +88,9 @@ export function ResetPasswordForm({
             width={"100%"}
             py={"6"}
             px={"6"}
-            className="bg-light dark:bg-dark shadow-sm rounded-2xl"
+            className="bg-light dark:bg-dark rounded-2xl shadow-sm"
           >
-            <Box className="text-center pb-4">
+            <Box className="pb-4 text-center">
               <Heading
                 size={"7"}
                 className="text-font dark:text-font-dark pb-2"
@@ -115,7 +115,7 @@ export function ResetPasswordForm({
                 <Form.Control
                   type="Password"
                   placeholder="New Password"
-                  className="p-3 text-font bg-light dark:text-font-dark dark:bg-dark dark:placeholder:text-font-dark/60"
+                  className="text-font bg-light dark:text-font-dark dark:bg-dark dark:placeholder:text-font-dark/60 p-3"
                   style={{ width: "100%" }}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
@@ -132,18 +132,18 @@ export function ResetPasswordForm({
                 >
                   Confirm Password
                 </Text>
-                <InputGroup className="mb-3 text-font dark:text-font-dark">
+                <InputGroup className="text-font dark:text-font-dark mb-3">
                   <Form.Control
                     type={"Password"}
                     placeholder="Confirm Password"
                     value={confirmNewPassword}
                     onChange={onConfirmPasswordChange}
-                    className="p-3 text-font bg-light dark:text-font-dark dark:bg-dark dark:placeholder:text-font-dark/60"
+                    className="text-font bg-light dark:text-font-dark dark:bg-dark dark:placeholder:text-font-dark/60 p-3"
                     disabled={changeComplete}
                   />
 
                   {
-                    <div className="position-absolute top-50 end-0 translate-middle-y me-2">
+                    <div className="position-absolute top-50 translate-middle-y end-0 me-2">
                       {passwordMatch ? (
                         <FontAwesomeIcon icon={faCheckCircle} color={"green"} />
                       ) : (
@@ -162,12 +162,12 @@ export function ResetPasswordForm({
                   >
                     Extra Data
                   </Text>
-                  <Box className="d-flex align-items-center ml-3 mb-3">
+                  <Box className="d-flex align-items-center mb-3 ml-3">
                     <Form.Check
                       type="radio"
                       label="Current Password"
                       name="passwordType"
-                      className="p-3 text-font bg-light dark:text-font-dark dark:bg-dark mr-4"
+                      className="text-font bg-light dark:text-font-dark dark:bg-dark mr-4 p-3"
                       onChange={() => setOldPassOrMnemonic("oldPassword")}
                       checked={oldPassOrMnemonic === "oldPassword"}
                     />
@@ -176,7 +176,7 @@ export function ResetPasswordForm({
                         type="radio"
                         label="Mnemonic Seed Phrase"
                         name="passwordType"
-                        className="p-3 text-font bg-light dark:text-font-dark dark:bg-dark"
+                        className="text-font bg-light dark:text-font-dark dark:bg-dark p-3"
                         onChange={() => setOldPassOrMnemonic("mnemonic")}
                         checked={oldPassOrMnemonic === "mnemonic"}
                       />
@@ -191,7 +191,7 @@ export function ResetPasswordForm({
                       placeholder="Current Password"
                       value={oldPassword}
                       onChange={(e) => setOldPassword(e.target.value)}
-                      className="mb-3 text-font bg-light dark:text-font-dark dark:bg-dark dark:placeholder:text-font-dark/60"
+                      className="text-font bg-light dark:text-font-dark dark:bg-dark dark:placeholder:text-font-dark/60 mb-3"
                     />
                   </Form.Group>
                 )}
@@ -202,7 +202,7 @@ export function ResetPasswordForm({
                       placeholder="abandon ability able about..."
                       value={mnemonic}
                       onChange={(e) => setMnemonic(e.target.value)}
-                      className="mb-3 text-font bg-light dark:text-font-dark dark:bg-dark dark:placeholder:text-font-dark/60"
+                      className="text-font bg-light dark:text-font-dark dark:bg-dark dark:placeholder:text-font-dark/60 mb-3"
                     />
                   </Form.Group>
                 )}

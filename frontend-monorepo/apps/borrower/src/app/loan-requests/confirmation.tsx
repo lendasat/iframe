@@ -295,7 +295,7 @@ export const Confirmation = ({
       gap="3"
       width="auto"
     >
-      <Box className="p-6 border border-gray-200 rounded-lg h-full">
+      <Box className="h-full rounded-lg border border-gray-200 p-6">
         <Heading size="4" mb="4" className="text-font dark:text-font-dark">
           Summary to borrow{" "}
           <Skeleton loading={isStillLoading}>
@@ -309,7 +309,7 @@ export const Confirmation = ({
         <DataList.Root>
           <DataList.Item align="center">
             <DataList.Label minWidth="88px">Lender</DataList.Label>
-            <DataList.Value className="flex-1 flex justify-end">
+            <DataList.Value className="flex flex-1 justify-end">
               {isStillLoading ? (
                 <Skeleton
                   loading={isStillLoading}
@@ -330,7 +330,7 @@ export const Confirmation = ({
                 </InterestRateInfoLabel>
               </Flex>
             </DataList.Label>
-            <DataList.Value className="flex-1 flex justify-end">
+            <DataList.Value className="flex flex-1 justify-end">
               {isStillLoading ? (
                 <Skeleton
                   loading={isStillLoading}
@@ -341,20 +341,20 @@ export const Confirmation = ({
                 <div className="flex flex-col">
                   {selectedLoanDuration !== ONE_YEAR && (
                     <Flex gap={"2"}>
-                      <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70">
+                      <Text className="text-font/70 dark:text-font-dark/70 text-[13px] font-semibold">
                         {(actualInterest * 100).toFixed(2)}%
                       </Text>
-                      <Text className="text-[11px] text-font/70 dark:text-font-dark/50 mt-0.5 self-end">
+                      <Text className="text-font/70 dark:text-font-dark/50 mt-0.5 self-end text-[11px]">
                         ({(interestRate * 100).toFixed(1)}% p.a.)
                       </Text>
                     </Flex>
                   )}
                   {selectedLoanDuration === ONE_YEAR && (
-                    <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70">
+                    <Text className="text-font/70 dark:text-font-dark/70 text-[13px] font-semibold">
                       {(actualInterest * 100).toFixed(2)}% p.a.
                     </Text>
                   )}
-                  <Text className="text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-end">
+                  <Text className="text-font/50 dark:text-font-dark/50 mt-0.5 self-end text-[11px]">
                     ≈ {formatCurrency(actualInterestUsdAmount, 1, 1)} in total
                   </Text>
                 </div>
@@ -373,7 +373,7 @@ export const Confirmation = ({
                 </LtvInfoLabel>
               </Flex>
             </DataList.Label>
-            <DataList.Value className="flex-1 flex justify-end">
+            <DataList.Value className="flex flex-1 justify-end">
               {isStillLoading ? (
                 <Skeleton
                   loading={isStillLoading}
@@ -382,10 +382,10 @@ export const Confirmation = ({
                 ></Skeleton>
               ) : (
                 <div className="flex flex-col">
-                  <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
+                  <Text className="text-font/70 dark:text-font-dark/70 text-[13px] font-semibold capitalize">
                     {collateralAmountBtc.toFixed(8)} BTC
                   </Text>
-                  <Text className="text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-end">
+                  <Text className="text-font/50 dark:text-font-dark/50 mt-0.5 self-end text-[11px]">
                     ≈ {formatCurrency(collateralUsdAmount)}
                   </Text>
                 </div>
@@ -400,13 +400,13 @@ export const Confirmation = ({
                 </Flex>
 
                 {isDiscountedFeeApplied && (
-                  <Text className="text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-start">
+                  <Text className="text-font/50 dark:text-font-dark/50 mt-0.5 self-start text-[11px]">
                     {-(discountedFee * 100).toFixed(2)}% discount applied
                   </Text>
                 )}
               </div>
             </DataList.Label>
-            <DataList.Value className="flex-1 flex justify-end">
+            <DataList.Value className="flex flex-1 justify-end">
               {isStillLoading ? (
                 <Skeleton
                   loading={isStillLoading}
@@ -416,14 +416,14 @@ export const Confirmation = ({
               ) : (
                 <div className="flex flex-col">
                   <Text
-                    className={`text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize ${
+                    className={`text-font/70 dark:text-font-dark/70 text-[13px] font-semibold capitalize ${
                       discountedFee === 1 ? "line-through" : ""
                     }`}
                   >
                     {originationFeeBtc.toFixed(8)} BTC
                   </Text>
                   <Text
-                    className={`text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-end ${
+                    className={`text-font/50 dark:text-font-dark/50 mt-0.5 self-end text-[11px] ${
                       discountedFee === 1 ? "line-through" : ""
                     }`}
                   >
@@ -442,7 +442,7 @@ export const Confirmation = ({
                 </LiquidationPriceInfoLabel>
               </Flex>
             </DataList.Label>
-            <DataList.Value className="flex-1 flex justify-end">
+            <DataList.Value className="flex flex-1 justify-end">
               {isStillLoading ? (
                 <Skeleton
                   loading={isStillLoading}
@@ -451,7 +451,7 @@ export const Confirmation = ({
                 ></Skeleton>
               ) : (
                 <Text
-                  className={`text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize ${
+                  className={`text-font/70 dark:text-font-dark/70 text-[13px] font-semibold capitalize ${
                     discountedFee === 1 ? "line-through" : ""
                   }`}
                 >
@@ -466,7 +466,7 @@ export const Confirmation = ({
           </DataList.Item>
           <DataList.Item>
             <DataList.Label minWidth="88px">Coin</DataList.Label>
-            <DataList.Value className="flex-1 flex justify-end">
+            <DataList.Value className="flex flex-1 justify-end">
               {isStillLoading ? (
                 <Skeleton
                   loading={isStillLoading}
@@ -475,7 +475,7 @@ export const Confirmation = ({
                 ></Skeleton>
               ) : (
                 <Text
-                  className={`text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize ${
+                  className={`text-font/70 dark:text-font-dark/70 text-[13px] font-semibold capitalize ${
                     discountedFee === 1 ? "line-through" : ""
                   }`}
                 >
@@ -496,7 +496,7 @@ export const Confirmation = ({
           </Callout.Root>
         )}
       </Box>
-      <Box className="p-6 border border-gray-200 rounded-lg h-full">
+      <Box className="h-full rounded-lg border border-gray-200 p-6">
         <Flex direction={"column"} gap={"2"}>
           <DataList.Root orientation={"vertical"}>
             <DataList.Item>
@@ -516,13 +516,13 @@ export const Confirmation = ({
                   </AbbreviationExplanationInfo>
                 </Flex>
               </DataList.Label>
-              <DataList.Value className="flex-1 flex justify-end">
+              <DataList.Value className="flex flex-1 justify-end">
                 {isStillLoading ? (
                   <Skeleton loading={true}>Loading</Skeleton>
                 ) : (
                   <Flex direction={"column"} className="w-full">
                     <TextField.Root
-                      className="w-full font-semibold text-sm border-0 text-font dark:text-font-dark"
+                      className="text-font dark:text-font-dark w-full border-0 text-sm font-semibold"
                       size={"3"}
                       type="text"
                       value={bitcoinAddress}
@@ -538,7 +538,7 @@ export const Confirmation = ({
                       This address will be used to return the collateral to you
                     </Text>
                     {bitcoinAddressInputError && (
-                      <span className="text-red-500 text-sm">
+                      <span className="text-sm text-red-500">
                         {bitcoinAddressInputError}
                       </span>
                     )}
@@ -552,7 +552,7 @@ export const Confirmation = ({
                 <DataList.Label minWidth="88px">
                   Loan transfer details
                 </DataList.Label>
-                <DataList.Value className="flex-1 flex">
+                <DataList.Value className="flex flex-1">
                   {isStillLoading ? (
                     <Skeleton loading={true}>Loading</Skeleton>
                   ) : (
@@ -591,7 +591,7 @@ export const Confirmation = ({
             {selectedOffer?.kyc_link && (
               <DataList.Item>
                 <DataList.Label minWidth="88px">KYC Required</DataList.Label>
-                <DataList.Value className="flex-1 flex justify-end">
+                <DataList.Value className="flex flex-1 justify-end">
                   {isStillLoading ? (
                     <Skeleton loading={true}></Skeleton>
                   ) : (
@@ -631,7 +631,7 @@ export const Confirmation = ({
             {selectedProduct === LoanProductOption.PayWithMoonDebitCard && (
               <DataList.Item>
                 <DataList.Label minWidth="88px">Choose a card</DataList.Label>
-                <DataList.Value className="flex-1 flex justify-end">
+                <DataList.Value className="flex flex-1 justify-end">
                   {moonCardsLoading ? (
                     <Skeleton>Loading</Skeleton>
                   ) : (

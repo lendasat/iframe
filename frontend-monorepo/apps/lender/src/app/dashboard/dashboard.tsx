@@ -47,7 +47,7 @@ const QuickBoards = ({ color, label, value, type }: QuickBoardsProps) => {
   }
 
   return (
-    <Box className="min-h-24 bg-white dark:bg-dark-500 py-4 rounded-2xl space-y-4 drop-shadow-sm">
+    <Box className="dark:bg-dark-500 min-h-24 space-y-4 rounded-2xl bg-white py-4 drop-shadow-sm">
       <Flex className={`relative px-4`} align={"start"} justify={"between"}>
         <Box
           className="absolute left-0 top-0 h-full w-1 rounded-r-lg"
@@ -85,7 +85,7 @@ const AlertBoard = ({ color }: AlertBoardProps) => {
   const navigate = useNavigate();
 
   return (
-    <Box className="min-h-24 bg-white dark:bg-dark-500 py-4 rounded-2xl space-y-4 drop-shadow-sm">
+    <Box className="dark:bg-dark-500 min-h-24 space-y-4 rounded-2xl bg-white py-4 drop-shadow-sm">
       <Flex className={`relative px-4`} align={"start"} justify={"between"}>
         <Box
           className="absolute left-0 top-0 h-full w-1 rounded-r-lg"
@@ -191,11 +191,11 @@ function Dashboard() {
 
   return (
     <Box
-      className="flex flex-col overflow-y-scroll p-4 md:p-8 dark:bg-dark"
+      className="dark:bg-dark flex flex-col overflow-y-scroll p-4 md:p-8"
       height={innerHeight - 120 + "px"}
     >
       <Box className="space-y-8">
-        <Grid className="md:grid-cols-2 xl:grid-cols-5 gap-5">
+        <Grid className="gap-5 md:grid-cols-2 xl:grid-cols-5">
           <QuickBoards
             color="orange"
             label="$ in Open Loans"

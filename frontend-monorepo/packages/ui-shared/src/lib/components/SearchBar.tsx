@@ -8,10 +8,10 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 
 export const SearchBar = ({ label, ...rest }: InputProps) => {
   return (
-    <div className="hidden md:flex flex-row items-center gap-2 px-2 h-9 border-1 border-white/70 bg-gradient-to-tr from-white/70 to-pink-800/[2%] backdrop-blur-lg rounded-lg max-w-xl w-full">
+    <div className="border-1 hidden h-9 w-full max-w-xl flex-row items-center gap-2 rounded-lg border-white/70 bg-gradient-to-tr from-white/70 to-pink-800/[2%] px-2 backdrop-blur-lg md:flex">
       <BiSearchAlt className="text-font/60" />
       <input
-        className="focus:outline-none text-sm font-medium flex-grow text-font/60 bg-transparent"
+        className="text-font/60 flex-grow bg-transparent text-sm font-medium focus:outline-none"
         defaultValue={label}
         {...rest}
       />

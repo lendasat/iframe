@@ -23,7 +23,7 @@ const Avatar = ({
   position: "left" | "right";
 }) => (
   <Box
-    className={`w-8 h-8 rounded-full flex items-center justify-center ${
+    className={`flex h-8 w-8 items-center justify-center rounded-full ${
       avatar
         ? ""
         : position === "left"
@@ -35,7 +35,7 @@ const Avatar = ({
       <img
         src={avatar}
         alt={`Avatar for ${fullString}`}
-        className="w-full h-full rounded-full object-cover bg"
+        className="bg h-full w-full rounded-full object-cover"
       />
     ) : (
       <span className="text-sm font-medium text-gray-500">
@@ -203,7 +203,7 @@ const NostrChat = ({
 
   return (
     <>
-      <Box className="h-96 overflow-y-auto p-4 space-y-4">
+      <Box className="h-96 space-y-4 overflow-y-auto p-4">
         {sortedMessages.map((message) => (
           <div
             key={message.eventId.toHex()}
@@ -223,10 +223,10 @@ const NostrChat = ({
             )}
 
             <Box
-              className={`p-3 rounded-lg ${
+              className={`rounded-lg p-3 ${
                 message.sender === otherUser.toBech32()
-                  ? "bg-gray-200 dark:bg-gray-700 rounded-br-none"
-                  : "bg-purple-100 dark:bg-purple-900 rounded-br-none"
+                  ? "rounded-br-none bg-gray-200 dark:bg-gray-700"
+                  : "rounded-br-none bg-purple-100 dark:bg-purple-900"
               }`}
             >
               <Flex direction={"column"}>
@@ -268,14 +268,14 @@ const NostrChat = ({
           e.preventDefault();
           await handleSend();
         }}
-        className="p-4 border-t border-gray-200 dark:border-gray-700 flex gap-2"
+        className="flex gap-2 border-t border-gray-200 p-4 dark:border-gray-700"
       >
         <TextField.Root
           value={newMessage}
           size={"3"}
           onChange={(e) => setNewMessage(e.target.value)}
           placeholder="Type a message..."
-          className="flex-grow px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
+          className="flex-grow bg-white px-3 py-2 text-gray-900 placeholder-gray-500 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400"
         />
         <Button
           type="submit"
@@ -359,7 +359,7 @@ export const ChatDrawer = ({
       {/* Chat Toggle Button */}
       <Button
         onClick={toggleDrawer}
-        className={`mb-4 mr-4 p-4 bg-purple-500 text-white rounded-full shadow-lg hover:bg-purple-600 transition-all duration-300 ${
+        className={`mb-4 mr-4 rounded-full bg-purple-500 p-4 text-white shadow-lg transition-all duration-300 hover:bg-purple-600 ${
           isOpen ? "rotate-90" : ""
         }`}
       >
@@ -369,18 +369,18 @@ export const ChatDrawer = ({
 
       {/* Chat Drawer */}
       <Box
-        className={`fixed bottom-0 right-0 w-96 bg-white shadow-lg rounded-t-xl transition-transform duration-300 transform ${
+        className={`fixed bottom-0 right-0 w-96 transform rounded-t-xl bg-white shadow-lg transition-transform duration-300 ${
           isOpen ? "translate-y-0" : "translate-y-full"
         }`}
       >
         {/* Header */}
-        <Box className="p-4 bg-purple-500 text-white rounded-t-xl flex justify-between items-center">
+        <Box className="flex items-center justify-between rounded-t-xl bg-purple-500 p-4 text-white">
           <Heading size={"3"} className="font-semibold">
             Chat
           </Heading>
           <Button
             onClick={toggleDrawer}
-            className="text-white hover:text-gray-200 transition-colors bg-transparent"
+            className="bg-transparent text-white transition-colors hover:text-gray-200"
           >
             <X size={20} />
           </Button>
@@ -389,7 +389,7 @@ export const ChatDrawer = ({
         {isWalletLoaded && chatConfig ? (
           <NostrChat {...chatConfig} />
         ) : (
-          <Box className="h-96 flex items-center justify-center">
+          <Box className="flex h-96 items-center justify-center">
             <Button
               onClick={handleUnlock}
               size="4"

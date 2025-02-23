@@ -77,14 +77,14 @@ const ColumnHeader = ({
       </Text>
       <Box>
         <IoCaretUp
-          className={`text-[10px] -mb-1 ${getCaretColor(
+          className={`-mb-1 text-[10px] ${getCaretColor(
             sortByColumn,
             currentColumn,
             sortAsc,
           )}`}
         />
         <IoCaretDownOutline
-          className={`text-[10px] -mb-1 ${getCaretColor(
+          className={`-mb-1 text-[10px] ${getCaretColor(
             sortByColumn,
             currentColumn,
             !sortAsc,
@@ -363,7 +363,7 @@ export const MyLoanOffersTable = ({ offers }: ContractDetailsTableProps) => {
                     <Button
                       size={"1"}
                       variant="solid"
-                      className="bg-btn dark:bg-dark-600 text-white w-full active:scale-90"
+                      className="bg-btn dark:bg-dark-600 w-full text-white active:scale-90"
                       onClick={() => {
                         navigate(`/my-offers/${offer.id}`);
                       }}

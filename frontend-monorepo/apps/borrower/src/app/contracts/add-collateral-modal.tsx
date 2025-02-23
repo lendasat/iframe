@@ -18,11 +18,11 @@ export function AddCollateralModal({
 }: AddCollateralProps) {
   return (
     <Modal show={show} onHide={handleClose} centered>
-      <Box className="px-4 pt-7 bg-white dark:bg-dark-700 rounded-2">
+      <Box className="dark:bg-dark-700 rounded-2 bg-white px-4 pt-7">
         <Box>
           <Heading
             as="h2"
-            className="text-xl md:text-2xl lg:text-3xl font-semibold text-center text-font dark:text-font-dark mb-7"
+            className="text-font dark:text-font-dark mb-7 text-center text-xl font-semibold md:text-2xl lg:text-3xl"
           >
             Add Collateral
           </Heading>
@@ -43,7 +43,7 @@ export function AddCollateralModal({
         <Box className="mb-4">
           <div className="d-flex justify-content-center align-items-center flex-column">
             <QRCode value={address} size={200} />
-            <p className="mt-2 text-break text-center text-font dark:text-font-dark">
+            <p className="text-break text-font dark:text-font-dark mt-2 text-center">
               <strong className="small">bitcoin:{address}</strong>
             </p>
           </div>

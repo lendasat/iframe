@@ -33,13 +33,13 @@ export function MoonCardDropdown({
       <Select.Root value={selectedCard} onValueChange={handleChange}>
         <Select.Trigger
           variant={"surface"}
-          className="w-full shadow-none focus-visible:outline-none p-3 outline-none h-10 text-font dark:text-font-dark text-sm border rounded-lg dark:bg-dark-700"
+          className="text-font dark:text-font-dark dark:bg-dark-700 h-10 w-full rounded-lg border p-3 text-sm shadow-none outline-none focus-visible:outline-none"
         />
 
         <Select.Content
           highContrast
           color="purple"
-          className="font-normal text-sm z-50"
+          className="z-50 text-sm font-normal"
         >
           <Select.Item value="New card">Create New</Select.Item>
           {filteredCards.map((card: UserCardDetail) => (

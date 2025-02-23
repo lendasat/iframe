@@ -22,7 +22,7 @@ function MyLoanOffersOverview() {
 
   return (
     <Box className={"pb-20"}>
-      <Box className={"px-6 md:px-8 py-4"}>
+      <Box className={"px-6 py-4 md:px-8"}>
         <Flex gap={"1"} align={"center"}>
           <Heading className={"text-font dark:text-font-dark"} size={"6"}>
             My Loan Offers
@@ -30,7 +30,7 @@ function MyLoanOffersOverview() {
         </Flex>
       </Box>
 
-      <Box className={"px-6 md:px-8 py-4"}>
+      <Box className={"px-6 py-4 md:px-8"}>
         <MyLoanOffersTable offers={loanOffers} />
       </Box>
     </Box>

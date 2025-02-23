@@ -176,7 +176,7 @@ export function ContractUndercollateralized({
         <Row className="mt-4">
           <Col>
             <div className="d-flex flex-column">
-              <p className="mt-2 text-break text-font dark:text-font-dark">
+              <p className="text-break text-font dark:text-font-dark mt-2">
                 To liquidate the collateral you will have to provide your{" "}
                 <strong>password</strong>.
               </p>
@@ -196,14 +196,14 @@ export function ContractUndercollateralized({
             <Row className="mt-2">
               <Col>
                 <Form.Label
-                  className={"font-bold text-font dark:text-font-dark"}
+                  className={"text-font dark:text-font-dark font-bold"}
                 >
                   Liquidation Address
                 </Form.Label>
                 <Form.Control
                   type="text"
                   placeholder="Enter your Bitcoin address"
-                  className="p-3 bg-light dark:bg-dark text-font dark:text-font-dark dark:placeholder-gray-500"
+                  className="bg-light dark:bg-dark text-font dark:text-font-dark p-3 dark:placeholder-gray-500"
                   style={{
                     width: "100%",
                   }}
@@ -259,12 +259,12 @@ const ConfirmationModal = ({
 
   return (
     <Modal show={show} onHide={handleClose} centered>
-      <Box className={"bg-white dark:bg-dark-700 rounded-2"}>
+      <Box className={"dark:bg-dark-700 rounded-2 bg-white"}>
         <Box className="px-4 pt-7">
           <Box>
             <Heading
               as="h2"
-              className="text-xl md:text-2xl lg:text-4xl font-semibold text-center text-font dark:text-font-dark mb-7"
+              className="text-font dark:text-font-dark mb-7 text-center text-xl font-semibold md:text-2xl lg:text-4xl"
             >
               Confirm Liquidation
             </Heading>
@@ -283,13 +283,13 @@ const ConfirmationModal = ({
             </Flex>
           </Box>
           <Box className="mb-3">
-            <Flex className="flex flex-col gap-3 dark:text-font-dark">
+            <Flex className="dark:text-font-dark flex flex-col gap-3">
               <Text>Sending:</Text>
-              <ul className="list-disc list-inside pl-5">
+              <ul className="list-inside list-disc pl-5">
                 {liquidationTx.outputs.map((o, index) => (
                   <li
                     key={index}
-                    className="whitespace-nowrap overflow-hidden text-ellipsis"
+                    className="overflow-hidden text-ellipsis whitespace-nowrap"
                   >
                     <strong>{formatter.format(o.value)}</strong> sats to{" "}
                     <em>{o.address}</em>.
@@ -299,10 +299,10 @@ const ConfirmationModal = ({
             </Flex>
           </Box>
         </Box>
-        <Box className="mt-4 px-4 pb-5 bg-white dark:bg-dark-700 rounded-2 flex justify-center items-center">
+        <Box className="dark:bg-dark-700 rounded-2 mt-4 flex items-center justify-center bg-white px-4 pb-5">
           <Button
             variant="solid"
-            className="w-full max-w-md h-12 bg-btn text-white rounded-lg"
+            className="bg-btn h-12 w-full max-w-md rounded-lg text-white"
             onClick={handleConfirm}
           >
             Confirm

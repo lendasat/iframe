@@ -4,19 +4,19 @@ import { Link } from "react-router-dom";
 
 const RestrictedAccessPage = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-b flex items-center justify-center p-4">
-      <div className="max-w-2xl w-full text-center space-y-8">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b p-4">
+      <div className="w-full max-w-2xl space-y-8 text-center">
         <div className="flex justify-center">
-          <div className="bg-purple-100 p-6 rounded-full">
+          <div className="rounded-full bg-purple-100 p-6">
             <IoIosLock size={48} className="text-purple-600" />
           </div>
         </div>
 
         <div className="space-y-4">
-          <h1 className="text-4xl font-bold text-font dark:text-font-dark">
+          <h1 className="text-font dark:text-font-dark text-4xl font-bold">
             Access Restricted
           </h1>
-          <p className="text-xl text-font dark:text-font-dark">
+          <p className="text-font dark:text-font-dark text-xl">
             You do not have access to this feature yet. If you want early
             access, please reach out to us via{" "}
             <Link
@@ -30,8 +30,8 @@ const RestrictedAccessPage = () => {
           </p>
         </div>
 
-        <div className="relative w-full h-64 my-8">
-          <svg viewBox="0 0 500 200" className="w-full h-full">
+        <div className="relative my-8 h-64 w-full">
+          <svg viewBox="0 0 500 200" className="h-full w-full">
             <path
               d="M30,100 Q150,50 250,100 T470,100"
               fill="none"
@@ -47,13 +47,13 @@ const RestrictedAccessPage = () => {
 
         <button
           onClick={() => window.history.back()}
-          className="inline-flex items-center px-4 py-2 text-sm font-medium text-purple-600 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors dark:text-purple-300 dark:bg-purple-700 dark:hover:bg-purple-600"
+          className="inline-flex items-center rounded-lg bg-purple-50 px-4 py-2 text-sm font-medium text-purple-600 transition-colors hover:bg-purple-100 dark:bg-purple-700 dark:text-purple-300 dark:hover:bg-purple-600"
         >
           <FaArrowLeftLong size={16} className="mr-2" />
           Go Back
         </button>
 
-        <p className="text-sm text-font dark:text-font-dark mt-8">
+        <p className="text-font dark:text-font-dark mt-8 text-sm">
           If you believe this is an error, please reach out to our support team.
         </p>
       </div>

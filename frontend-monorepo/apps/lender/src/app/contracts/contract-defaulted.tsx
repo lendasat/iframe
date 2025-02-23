@@ -31,7 +31,7 @@ export function ContractDefaulted({ contract }: ContractDefaultedProps) {
       <Row className="mt-4">
         <Col>
           <div className="d-flex flex-column">
-            <p className="mt-2 text-break text-font dark:text-font-dark">
+            <p className="text-break text-font dark:text-font-dark mt-2">
               To liquidate the collateral you will have to provide your{" "}
               <strong>password</strong>.
             </p>

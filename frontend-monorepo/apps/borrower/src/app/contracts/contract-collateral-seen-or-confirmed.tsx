@@ -41,7 +41,7 @@ export function CollateralSeenOrConfirmed({
               value={contract.borrower_loan_address}
               disabled
               readOnly
-              className="bg-white dark:bg-dark-700 text-font dark:text-font-dark"
+              className="dark:bg-dark-700 text-font dark:text-font-dark bg-white"
             />
           </InputGroup>
         </>
@@ -68,7 +68,7 @@ export function CollateralSeenOrConfirmed({
       <Row className="mt-4">
         <Col className="text-center">
           <div className="d-flex justify-content-center align-items-center flex-column">
-            <p className="mt-2 text-break text-font dark:text-font-dark">
+            <p className="text-break text-font dark:text-font-dark mt-2">
               <strong>{collateral} BTC</strong> are locked in{" "}
               <strong>{collateralAddress}</strong>.
               {/*  TODO: add transaction id*/}

@@ -72,13 +72,13 @@ export const MnemonicComponent = () => {
         handleSubmit={handleSubmitUnlockWalletModal}
       />
 
-      <Box mt={"4"} className="max-w-lg grid md:grid-cols-1 gap-5">
+      <Box mt={"4"} className="grid max-w-lg gap-5 md:grid-cols-1">
         <Box>
           <Flex direction={"column"} gap={"1"}>
             <Flex direction={"row"} gap={"4"}>
               <Heading
                 as="h4"
-                className="font-semibold capitalize text-font dark:text-font-dark"
+                className="text-font dark:text-font-dark font-semibold capitalize"
                 size={"3"}
               >
                 Mnemonic Seed Phrase
@@ -87,7 +87,7 @@ export const MnemonicComponent = () => {
               <IconButton
                 variant="ghost"
                 type="button"
-                className="hover:bg-transparent text-font dark:text-font-dark"
+                className="text-font dark:text-font-dark hover:bg-transparent"
                 onClick={unlockWallet}
               >
                 {isWalletLoaded ? <FaLockOpen /> : <FaLock />}
@@ -96,7 +96,7 @@ export const MnemonicComponent = () => {
                 <IconButton
                   variant="ghost"
                   type="button"
-                  className="hover:bg-transparent text-font dark:text-font-dark"
+                  className="text-font dark:text-font-dark hover:bg-transparent"
                   onClick={() => setIsMnemonicVisible(!isMnemonicVisible)}
                 >
                   {isMnemonicVisible ? <FaRegEye /> : <FaRegEyeSlash />}
@@ -112,11 +112,11 @@ export const MnemonicComponent = () => {
             >
               {mnemonic.map((word, index) => (
                 <div key={index} className="group flex items-center gap-3">
-                  <Label.Root className="flex items-center gap-3 w-full border-b border-gray-200 pb-2 cursor-text">
+                  <Label.Root className="flex w-full cursor-text items-center gap-3 border-b border-gray-200 pb-2">
                     <Text
                       size={"3"}
                       weight={"medium"}
-                      className="text-gray-400 text-font/60 dark:text-font-dark/60"
+                      className="text-font/60 dark:text-font-dark/60 text-gray-400"
                     >
                       {index + 1}.
                     </Text>
@@ -137,7 +137,7 @@ export const MnemonicComponent = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <Checkbox.Root
-                      className="flex size-[25px] appearance-none items-center justify-center rounded bg-white shadow-[0_1px_5px] outline-none hover:bg-violet3 focus:shadow-[0_0_0_2px_black]"
+                      className="hover:bg-violet3 flex size-[25px] appearance-none items-center justify-center rounded bg-white shadow-[0_1px_5px] outline-none focus:shadow-[0_0_0_2px_black]"
                       disabled={!isMnemonicVisible}
                       checked={isCheckboxTicked}
                       onCheckedChange={(change) =>
@@ -152,7 +152,7 @@ export const MnemonicComponent = () => {
 
                     <label
                       htmlFor="backup"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-font/60 dark:text-font-dark/60"
+                      className="text-font/60 dark:text-font-dark/60 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                     >
                       I've created a secure backup
                     </label>

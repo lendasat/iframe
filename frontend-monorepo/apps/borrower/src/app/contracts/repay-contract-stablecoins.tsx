@@ -90,7 +90,7 @@ export const RepayStablecoins = ({
             <Link
               to={LoanAssetHelper.toContractUrl(loanAsset)}
               target={"_blank"}
-              className="text-blue-500 hover:underline hover:text-blue-700"
+              className="text-blue-500 hover:text-blue-700 hover:underline"
             >
               {LoanAssetHelper.print(loanAsset)}
             </Link>
@@ -112,7 +112,7 @@ export const RepayStablecoins = ({
         <Box
           onClick={() => handleCopy(repaymentAddress)}
           p={"5"}
-          className="rounded-2xl bg-white cursor-copy hover:shadow-sm"
+          className="cursor-copy rounded-2xl bg-white hover:shadow-sm"
         >
           <QRCode renderAs={"svg"} value={repaymentAddress} size={300} />
         </Box>
@@ -124,7 +124,7 @@ export const RepayStablecoins = ({
         >
           <Text
             size={"2"}
-            className="text-font/60 dark:text-font-dark/60 text-center max-w-sm font-medium"
+            className="text-font/60 dark:text-font-dark/60 max-w-sm text-center font-medium"
           >
             Please send <em>exactly</em>
             {"  "}
@@ -134,7 +134,7 @@ export const RepayStablecoins = ({
             >
               <span
                 onClick={() => handleCopy(totalRepaymentAmount.toString())}
-                className="text-font dark:text-font-dark font-semibold cursor-copy"
+                className="text-font dark:text-font-dark cursor-copy font-semibold"
               >
                 {formatCurrency(totalRepaymentAmount)} {"  "}
               </span>
@@ -145,7 +145,7 @@ export const RepayStablecoins = ({
               onClick={() => handleCopy(repaymentAddress)}
               asChild
               variant="ghost"
-              className="cursor-copy mt-1"
+              className="mt-1 cursor-copy"
             >
               <span className="text-font dark:text-font-dark font-semibold">
                 {repaymentAddress}
@@ -186,7 +186,7 @@ export const RepayStablecoins = ({
           <Form.Control
             type="text"
             placeholder="e.g. 0x1b3b3d48df236c1e83ab5e7253f885a6f60699963691ad066aa3a5ae3b298d62"
-            className="p-3 bg-light dark:bg-dark text-font dark:text-font-dark dark:placeholder-gray-500"
+            className="bg-light dark:bg-dark text-font dark:text-font-dark p-3 dark:placeholder-gray-500"
             style={{ width: "100%" }}
             value={txid}
             required={true}
@@ -203,7 +203,7 @@ export const RepayStablecoins = ({
         <Alert variant="danger">
           <FontAwesomeIcon
             icon={faExclamationCircle}
-            className="h-4 w-4 mr-2"
+            className="mr-2 h-4 w-4"
           />
           {error}
         </Alert>

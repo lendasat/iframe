@@ -4,13 +4,10 @@ import { TabHeader } from "./dashoard-contracts";
 export function Charts() {
   return (
     <Box className="min-h-96 space-y-4">
-      <Heading className="text-black dark:text-white mb-4">Charts</Heading>
+      <Heading className="mb-4 text-black dark:text-white">Charts</Heading>
 
       <Tabs.Root defaultValue="tab1" orientation="vertical" className="flex">
-        <Tabs.List
-          className="flex flex-col min-w-[200px] space-y-2 border-r border-gray-200 p-4
-              bg-white dark:bg-dark-500 items-center gap-1 rounded-xl border dark:border-dark-600 shrink-0"
-        >
+        <Tabs.List className="dark:bg-dark-500 dark:border-dark-600 flex min-w-[200px] shrink-0 flex-col items-center gap-1 space-y-2 rounded-xl border border-r border-gray-200 bg-white p-4">
           <TabHeader thisIndex={"tab1"} label={"Interest Rates"} />
           <TabHeader thisIndex={"tab2"} label={"..."} />
         </Tabs.List>

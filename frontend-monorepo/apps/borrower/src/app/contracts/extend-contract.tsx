@@ -44,17 +44,17 @@ const ConfirmationDialog = ({
 }: ConfirmationDialogProps) => {
   return (
     <AlertDialog.Root open={isOpen} onOpenChange={setIsOpen}>
-      <AlertDialog.Content className="fixed left-1/2 top-1/2 max-h-[85vh] w-[90vw] max-w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-md bg-white p-[25px] shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] focus:outline-none data-[state=open]:animate-contentShow">
-        <AlertDialog.Title className="m-0 text-[17px] font-medium text-mauve12">
+      <AlertDialog.Content className="data-[state=open]:animate-contentShow fixed left-1/2 top-1/2 max-h-[85vh] w-[90vw] max-w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-md bg-white p-[25px] shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] focus:outline-none">
+        <AlertDialog.Title className="text-mauve12 m-0 text-[17px] font-medium">
           Contract request sent
         </AlertDialog.Title>
-        <AlertDialog.Description className="mb-5 mt-[15px] text-[15px] leading-normal text-mauve11">
+        <AlertDialog.Description className="text-mauve11 mb-5 mt-[15px] text-[15px] leading-normal">
           Your renewal request has been sent to the lender.
         </AlertDialog.Description>
         <div className="flex justify-end gap-[25px]">
           <AlertDialog.Action>
             <Button
-              className="inline-flex h-[35px] items-center justify-center rounded bg-red4 px-[15px] font-medium leading-none text-red11 outline-none hover:bg-red5 focus:shadow-[0_0_0_2px] focus:shadow-red7"
+              className="bg-red4 text-red11 hover:bg-red5 focus:shadow-red7 inline-flex h-[35px] items-center justify-center rounded px-[15px] font-medium leading-none outline-none focus:shadow-[0_0_0_2px]"
               onClick={() => onConfirm()}
             >
               Continue
@@ -159,7 +159,7 @@ const SelectedLoanOffer = (props: SelectedLoanOfferProps) => {
         handleSubmit={handleSubmitUnlockWalletModal}
       />
       <Box>
-        <Box className="px-6 py-4 space-y-3">
+        <Box className="space-y-3 px-6 py-4">
           <Separator size={"4"} />
           <Flex justify={"between"} align={"center"}>
             <InterestRateInfoLabel>
@@ -168,7 +168,7 @@ const SelectedLoanOffer = (props: SelectedLoanOfferProps) => {
                 gap={"2"}
                 className="text-font dark:text-font-dark"
               >
-                <Text className="text-xs font-medium text-font/60 dark:text-font-dark/60">
+                <Text className="text-font/60 dark:text-font-dark/60 text-xs font-medium">
                   Total Interest
                 </Text>
                 <FaInfoCircle />
@@ -176,39 +176,39 @@ const SelectedLoanOffer = (props: SelectedLoanOfferProps) => {
             </InterestRateInfoLabel>
 
             <div className="flex flex-col">
-              <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
+              <Text className="text-font/70 dark:text-font-dark/70 text-[13px] font-semibold capitalize">
                 {(props.totalInterestRate * 100).toFixed(1)}% per year
               </Text>
-              <Text className="text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-end">
+              <Text className="text-font/50 dark:text-font-dark/50 mt-0.5 self-end text-[11px]">
                 ≈ {formatCurrency(actualInterestUsdAmount, 1, 1)} in total
               </Text>
             </div>
           </Flex>
           <Flex justify={"between"} align={"center"}>
-            <Text className="text-xs font-medium text-font/60 dark:text-font-dark/60">
+            <Text className="text-font/60 dark:text-font-dark/60 text-xs font-medium">
               New expiry
             </Text>
-            <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
+            <Text className="text-font/70 dark:text-font-dark/70 text-[13px] font-semibold capitalize">
               {props.newExpiry.toLocaleDateString()}
             </Text>
           </Flex>
           <Separator size={"4"} />
           <Flex justify={"between"} align={"center"}>
-            <Text className="text-xs font-medium text-font/60 dark:text-font-dark/60">
+            <Text className="text-font/60 dark:text-font-dark/60 text-xs font-medium">
               Extension Fee
             </Text>
-            <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize"></Text>
+            <Text className="text-font/70 dark:text-font-dark/70 text-[13px] font-semibold capitalize"></Text>
             <div className="flex flex-col">
-              <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
+              <Text className="text-font/70 dark:text-font-dark/70 text-[13px] font-semibold capitalize">
                 {extensionFeeBtc.toFixed(8)} BTC
               </Text>
-              <Text className="text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-end">
+              <Text className="text-font/50 dark:text-font-dark/50 mt-0.5 self-end text-[11px]">
                 ≈ {formatCurrency(extensionFeeUsd, 1, 1)} in total
               </Text>
             </div>
           </Flex>
 
-          <Box className="flex space-x-4 justify-center">
+          <Box className="flex justify-center space-x-4">
             <Button
               size={"3"}
               variant="solid"
@@ -364,12 +364,12 @@ export const ExtendContract = ({
 
   return (
     <Box className="flex flex-col items-center justify-center p-6 md:p-8">
-      <Box className="flex flex-col items-center h-full w-full border border-font/10 bg-white max-w-lg rounded-3xl pt-10 dark:border-dark dark:bg-dark-700 dark:text-white">
+      <Box className="border-font/10 dark:border-dark dark:bg-dark-700 flex h-full w-full max-w-lg flex-col items-center rounded-3xl border bg-white pt-10 dark:text-white">
         <Text size="4" mb="4" className="text-font dark:text-font-dark">
           Please select the desired duration
         </Text>
 
-        <div className="flex flex-col items-center gap-3 m-2 w-full px-4">
+        <div className="m-2 flex w-full flex-col items-center gap-3 px-4">
           <div className="w-full">
             <Slider
               className="w-full"

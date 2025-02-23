@@ -131,17 +131,17 @@ export const AllContracts = ({
 
   return (
     <Box className={"pb-20"}>
-      <Box className={header ? "hidden" : "px-6 md:px-8 py-4"}>
+      <Box className={header ? "hidden" : "px-6 py-4 md:px-8"}>
         <Flex gap={"1"} align={"center"}>
           <Heading className={"text-font dark:text-font-dark"} size={"6"}>
             My Contracts
           </Heading>
         </Flex>
 
-        <div className="w-full max-w-md space-y-4 mt-5">
+        <div className="mt-5 w-full max-w-md space-y-4">
           <div className="flex items-center justify-between">
             <Label.Root
-              className="text-sm text-font dark:text-font-dark font-medium text-gray-700"
+              className="text-font dark:text-font-dark text-sm font-medium text-gray-700"
               htmlFor="fields-switch"
             >
               Show/hide Fields
@@ -239,7 +239,7 @@ export const AllContracts = ({
           <div className="flex items-center justify-between">
             <Flex className={"flex items-center justify-between"} gap={"4"}>
               <Label.Root
-                className="text-sm text-font dark:text-font-dark font-medium text-gray-700"
+                className="text-font dark:text-font-dark text-sm font-medium text-gray-700"
                 htmlFor="contracts-switch"
               >
                 Show/hide Contracts
@@ -291,7 +291,7 @@ export const AllContracts = ({
         </div>
       </Box>
 
-      <Box className={header ? "" : "px-6 md:px-8 py-4"}>
+      <Box className={header ? "" : "px-6 py-4 md:px-8"}>
         <ContractDetailsTable
           shownColumns={shownColumns}
           toggleSortByColumn={toggleSortByColumn}

@@ -39,13 +39,13 @@ export function ContractPrincipalGiven({
           onValueChange={(newValue) => setAction(newValue)}
         >
           <Select.Trigger className={"text-font dark:text-font-dark"} />
-          <Select.Content className={"bg-white dark:bg-dark"}>
+          <Select.Content className={"dark:bg-dark bg-white"}>
             <Select.Group>
               <Select.Item
                 className={"text-font dark:text-font-dark"}
                 value="repay"
               >
-                <div className={"text-font dark:text-font-dark "}>
+                <div className={"text-font dark:text-font-dark"}>
                   pay back the contract.
                 </div>
               </Select.Item>

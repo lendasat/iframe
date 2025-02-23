@@ -60,7 +60,7 @@ export function Profile() {
     <Box className="md:pl-8">
       <Heading
         as="h4"
-        className="font-semibold text-font dark:text-font-dark"
+        className="text-font dark:text-font-dark font-semibold"
         size={"5"}
       >
         Profile
@@ -68,7 +68,7 @@ export function Profile() {
       <Box mt={"6"} className="space-y-4">
         <Box
           p={"4"}
-          className="border border-purple-400/20 rounded-2xl dark:border-gray-500/50"
+          className="rounded-2xl border border-purple-400/20 dark:border-gray-500/50"
         >
           <Flex align={"center"} gap={"3"}>
             <Avatar
@@ -102,15 +102,15 @@ export function Profile() {
           </Flex>
         </Box>
 
-        <Box className="border border-purple-400/20 rounded-2xl px-5 py-6 dark:border-gray-500/50">
+        <Box className="rounded-2xl border border-purple-400/20 px-5 py-6 dark:border-gray-500/50">
           <Heading
             as="h4"
-            className="font-semibold text-font dark:text-font-dark"
+            className="text-font dark:text-font-dark font-semibold"
             size={"3"}
           >
             Personal information
           </Heading>
-          <Box mt={"4"} className="max-w-lg grid md:grid-cols-2 gap-5">
+          <Box mt={"4"} className="grid max-w-lg gap-5 md:grid-cols-2">
             <Box>
               <Flex direction={"column"} gap={"1"}>
                 <Text
@@ -252,10 +252,10 @@ export function Profile() {
             </Box>
           </Box>
         </Box>
-        <Box className="border border-purple-400/20 rounded-2xl px-5 py-6 dark:border-gray-500/50">
+        <Box className="rounded-2xl border border-purple-400/20 px-5 py-6 dark:border-gray-500/50">
           <Heading
             as="h4"
-            className="font-semibold text-font dark:text-font-dark"
+            className="text-font dark:text-font-dark font-semibold"
             size={"3"}
           >
             Personal referral codes

@@ -119,7 +119,7 @@ const DurationSelector: React.FC<DurationSelectorProps> = ({
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto">
+    <div className="mx-auto w-full max-w-3xl">
       <Text size="1" color="gray" mb="4">
         {!startDuration
           ? "Select starting duration"
@@ -133,14 +133,14 @@ const DurationSelector: React.FC<DurationSelectorProps> = ({
         {durations.map(({ value, label, sublabel, icon: Icon }) => (
           <Card
             key={value}
-            className={`p-4 cursor-pointer transition-all duration-200 ${getCardStyle(
+            className={`cursor-pointer p-4 transition-all duration-200 ${getCardStyle(
               value,
             )}`}
             onClick={() => handleDurationClick(value)}
           >
-            <div className="flex flex-col items-center text-center space-y-2">
+            <div className="flex flex-col items-center space-y-2 text-center">
               <Icon
-                className={`w-6 h-6 ${
+                className={`h-6 w-6 ${
                   value === startDuration || value === endDuration
                     ? "text-blue-400"
                     : isInRange(value)

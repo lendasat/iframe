@@ -58,7 +58,7 @@ export const RepayContract = ({
             <Text
               size={"2"}
               weight={"medium"}
-              className="text-end text-font/70 dark:text-font-dark/70"
+              className="text-font/70 dark:text-font-dark/70 text-end"
             >
               {formatCurrency(loanAmount)}
             </Text>
@@ -74,7 +74,7 @@ export const RepayContract = ({
             <Text
               size={"2"}
               weight={"medium"}
-              className="text-end text-font/70 dark:text-font-dark/70"
+              className="text-font/70 dark:text-font-dark/70 text-end"
             >
               {formatCurrency(interestAmount)}
             </Text>
@@ -88,7 +88,7 @@ export const RepayContract = ({
             <Text
               size={"2"}
               weight={"bold"}
-              className="shrink-0 text-font dark:text-font-dark"
+              className="text-font dark:text-font-dark shrink-0"
             >
               Total Owed
             </Text>
@@ -96,7 +96,7 @@ export const RepayContract = ({
             <Text
               size={"2"}
               weight={"bold"}
-              className="text-end text-font dark:text-font-dark"
+              className="text-font dark:text-font-dark text-end"
             >
               <Tooltip
                 content={"Copy exact amount to send"}
@@ -104,7 +104,7 @@ export const RepayContract = ({
               >
                 <span
                   onClick={() => handleCopy(totalRepaymentAmount.toString())}
-                  className="text-font dark:text-font-dark font-semibold cursor-copy"
+                  className="text-font dark:text-font-dark cursor-copy font-semibold"
                 >
                   {formatCurrency(totalRepaymentAmount)} {"  "}
                 </span>

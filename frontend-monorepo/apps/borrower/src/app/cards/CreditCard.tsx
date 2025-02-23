@@ -32,9 +32,7 @@ const CardNumber = ({ pan, visible, setVisible }: CardNumberProps) => {
 
   return (
     <div
-      className="flex space-x-3 text-xl tracking-wider
-             cursor-copy hover:bg-dark-600 active:bg-dark active:cursor-default
-             b-2 rounded-md transition-colors"
+      className="hover:bg-dark-600 active:bg-dark b-2 flex cursor-copy space-x-3 rounded-md text-xl tracking-wider transition-colors active:cursor-default"
       style={{ fontFamily: "PayWithMoonFont" }}
       onClick={() => handleCopy()}
     >
@@ -58,7 +56,7 @@ const ExpirationDate = ({ expiry, visible }: ExpirationDateProps) => {
 
   return (
     <div
-      className="flex space-x-3 text-md tracking-wider"
+      className="text-md flex space-x-3 tracking-wider"
       style={{ fontFamily: "PayWithMoonFont" }}
     >
       {formatted}
@@ -79,7 +77,7 @@ const Cvv = ({ cvv, visible }: CvvProps) => {
 
   return (
     <div
-      className="flex space-x-3 text-md tracking-wider"
+      className="text-md flex space-x-3 tracking-wider"
       style={{ fontFamily: "PayWithMoonFont" }}
     >
       {formatted}
@@ -93,23 +91,23 @@ export default function CreditCard({
   setVisible,
 }: CredtCardProps) {
   return (
-    <Box className="relative flex items-center justify-center w-[320px] h-[200px]">
+    <Box className="relative flex h-[200px] w-[320px] items-center justify-center">
       {/* Background image */}
-      <div className="overflow-hidden w-full h-full">
+      <div className="h-full w-full overflow-hidden">
         <div className="absolute inset-0">
-          <MoonCard className="object-cover w-full h-full" />
+          <MoonCard className="h-full w-full object-cover" />
         </div>
-        <div className="absolute bottom-10 left-3 transform -translate-y-1/2 text-white text-center p-2 rounded">
+        <div className="absolute bottom-10 left-3 -translate-y-1/2 transform rounded p-2 text-center text-white">
           <CardNumber
             pan={card.pan}
             visible={visible}
             setVisible={setVisible}
           ></CardNumber>
         </div>
-        <div className="absolute bottom-4 left-3 text-white text-center p-2 rounded">
+        <div className="absolute bottom-4 left-3 rounded p-2 text-center text-white">
           <ExpirationDate expiry={card.expiration} visible={visible} />
         </div>
-        <div className="absolute bottom-4 left-44 transform -translate-x-1 text-white text-center p-2 rounded">
+        <div className="absolute bottom-4 left-44 -translate-x-1 transform rounded p-2 text-center text-white">
           <Cvv cvv={card.cvv} visible={visible} />
         </div>
       </div>

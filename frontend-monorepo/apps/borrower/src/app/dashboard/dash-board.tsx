@@ -163,7 +163,7 @@ function DashBoard() {
 
   return (
     <Box
-      className="flex flex-col overflow-y-scroll p-4 dark:bg-dark"
+      className="dark:bg-dark flex flex-col overflow-y-scroll p-4"
       height={innerHeight - 120 + "px"}
     >
       <Grid
@@ -183,7 +183,7 @@ function DashBoard() {
           gridColumnStart={{
             initial: "1",
           }}
-          className="bg-white dark:bg-dark-700 rounded-2xl p-5 min-h-72 h-full"
+          className="dark:bg-dark-700 h-full min-h-72 rounded-2xl bg-white p-5"
         >
           <Text
             as="p"
@@ -211,7 +211,7 @@ function DashBoard() {
             gap={"3"}
             className="col-span-2 mt-8"
           >
-            <Box className="border border-font/10 dark:border-font-dark/20 rounded-xl py-2 px-3">
+            <Box className="border-font/10 dark:border-font-dark/20 rounded-xl border px-3 py-2">
               {/*Total number of loans received*/}
               <Heading className="text-font dark:text-font-dark" size={"6"}>
                 {loading ? <Skeleton>6</Skeleton> : totalLoans}
@@ -225,7 +225,7 @@ function DashBoard() {
               </Text>
             </Box>
 
-            <Box className="border border-font/10 dark:border-font-dark/20 rounded-xl py-2 px-3">
+            <Box className="border-font/10 dark:border-font-dark/20 rounded-xl border px-3 py-2">
               {/*Total number of loans not repaid/closed */}
               <Heading className="text-font dark:text-font-dark" size={"6"}>
                 {loading ? <Skeleton>2</Skeleton> : totalActiveLoans}
@@ -251,7 +251,7 @@ function DashBoard() {
             initial: "2",
             sm: "4",
           }}
-          className="bg-white dark:bg-dark-700 rounded-2xl p-5 min-h-72 h-full"
+          className="dark:bg-dark-700 h-full min-h-72 rounded-2xl bg-white p-5"
         >
           {/* Quick action buttons */}
           <Text
@@ -265,7 +265,7 @@ function DashBoard() {
           <Grid
             columns={{ initial: "2", sm: "4" }}
             width="auto"
-            className="gap-y-5 gap-x-8 px-3 mt-5 mb-4"
+            className="mb-4 mt-5 gap-x-8 gap-y-5 px-3"
           >
             {!hasMnemonicBackedUp ? (
               <QuickLinks
@@ -329,7 +329,7 @@ function DashBoard() {
             initial: "2",
             sm: "4",
           }}
-          className="bg-white dark:bg-dark-700 rounded-2xl p-5 min-h-72 h-full"
+          className="dark:bg-dark-700 h-full min-h-72 rounded-2xl bg-white p-5"
         >
           <Text
             as="p"
@@ -345,16 +345,16 @@ function DashBoard() {
               <div className="flex">
                 <Tabs.Trigger
                   value="actionNeeded"
-                  className={`text-font dark:text-font-dark px-4 py-2 rounded-t-lg relative ${
+                  className={`text-font dark:text-font-dark relative rounded-t-lg px-4 py-2 ${
                     needsAction
                       ? "animate-pulse bg-red-100 dark:bg-red-900/30"
                       : ""
                   } transition-colors`}
                 >
                   {needsAction && (
-                    <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                    <span className="absolute -right-1 -top-1 flex h-3 w-3">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500"></span>
                     </span>
                   )}
                   Action Required
@@ -459,23 +459,23 @@ const QuickLinks = ({
   return (
     <div className="relative">
       {isPulsing && (
-        <div className="absolute -top-1 -right-1 w-3 h-3">
-          <div className="absolute w-full h-full rounded-full bg-red-500 animate-ping" />
-          <div className="absolute w-full h-full rounded-full bg-red-500" />
+        <div className="absolute -right-1 -top-1 h-3 w-3">
+          <div className="absolute h-full w-full animate-ping rounded-full bg-red-500" />
+          <div className="absolute h-full w-full rounded-full bg-red-500" />
         </div>
       )}
       <Button
         asChild
         variant="ghost"
-        className={`min-h-40 flex flex-col gap-2 text-font dark:text-font-dark rounded-2xl ${
+        className={`text-font dark:text-font-dark flex min-h-40 flex-col gap-2 rounded-2xl ${
           isPulsing
-            ? "border-2 border-red-500/50 dark:border-red-500/30 bg-red-50 dark:bg-red-900/10"
-            : "border border-font/10 dark:border-font-dark/20"
+            ? "border-2 border-red-500/50 bg-red-50 dark:border-red-500/30 dark:bg-red-900/10"
+            : "border-font/10 dark:border-font-dark/20 border"
         }`}
       >
         <Link to={url} target={target}>
           <Box
-            className={`h-14 w-14 rounded-full place-items-center ${iconStyle} flex justify-center ${
+            className={`h-14 w-14 place-items-center rounded-full ${iconStyle} flex justify-center ${
               isPulsing ? "animate-pulse bg-red-500/20" : ""
             }`}
           >

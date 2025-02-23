@@ -67,7 +67,7 @@ export const RepayFiat = ({ contractId, fiatLoanDetails }: RepayFiatProps) => {
           <Form.Control
             type="text"
             placeholder="loan repayment..."
-            className="p-3 bg-light dark:bg-dark text-font dark:text-font-dark dark:placeholder-gray-500"
+            className="bg-light dark:bg-dark text-font dark:text-font-dark p-3 dark:placeholder-gray-500"
             style={{ width: "100%" }}
             value={txid}
             required={true}
@@ -84,7 +84,7 @@ export const RepayFiat = ({ contractId, fiatLoanDetails }: RepayFiatProps) => {
         <Alert variant="danger">
           <FontAwesomeIcon
             icon={faExclamationCircle}
-            className="h-4 w-4 mr-2"
+            className="mr-2 h-4 w-4"
           />
           {error}
         </Alert>

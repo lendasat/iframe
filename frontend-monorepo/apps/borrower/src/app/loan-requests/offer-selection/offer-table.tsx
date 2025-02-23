@@ -60,7 +60,7 @@ const MobileOfferCard = ({
 }) => {
   return (
     <Box
-      className={`p-4 rounded-lg border ${
+      className={`rounded-lg border p-4 ${
         selected ? "bg-purple-50" : "bg-white"
       } cursor-pointer`}
       onClick={() => onClick(offer.id)}
@@ -68,7 +68,7 @@ const MobileOfferCard = ({
       <DataList.Root>
         <DataList.Item align="center">
           <DataList.Label minWidth="88px">Lender</DataList.Label>
-          <DataList.Value className="flex-1 flex justify-end">
+          <DataList.Value className="flex flex-1 justify-end">
             {loading ? (
               <Skeleton>Loading</Skeleton>
             ) : (
@@ -78,7 +78,7 @@ const MobileOfferCard = ({
         </DataList.Item>
         <DataList.Item align="center">
           <DataList.Label minWidth="88px">Amounts</DataList.Label>
-          <DataList.Value className="flex-1 flex justify-end">
+          <DataList.Value className="flex flex-1 justify-end">
             <Skeleton loading={loading}>
               {formatCurrency(offer.loan_amount_min)} -{" "}
               {formatCurrency(offer.loan_amount_max)}
@@ -87,7 +87,7 @@ const MobileOfferCard = ({
         </DataList.Item>
         <DataList.Item align="center">
           <DataList.Label minWidth="88px">Duration</DataList.Label>
-          <DataList.Value className="flex-1 flex justify-end">
+          <DataList.Value className="flex flex-1 justify-end">
             <Skeleton loading={loading}>
               {getFormatedStringFromDays(offer.duration_days_min)} -{" "}
               {getFormatedStringFromDays(offer.duration_days_max)}
@@ -96,7 +96,7 @@ const MobileOfferCard = ({
         </DataList.Item>
         <DataList.Item align="center">
           <DataList.Label minWidth="88px">Interest Rate</DataList.Label>
-          <DataList.Value className="flex-1 flex justify-end">
+          <DataList.Value className="flex flex-1 justify-end">
             <Skeleton loading={loading}>
               {(offer.interest_rate * 100).toFixed(1)}%
             </Skeleton>
@@ -104,7 +104,7 @@ const MobileOfferCard = ({
         </DataList.Item>
         <DataList.Item align="center">
           <DataList.Label minWidth="88px">LTV</DataList.Label>
-          <DataList.Value className="flex-1 flex justify-end">
+          <DataList.Value className="flex flex-1 justify-end">
             <Skeleton loading={loading}>
               {(offer.min_ltv * 100).toFixed(0)}%
             </Skeleton>
@@ -112,7 +112,7 @@ const MobileOfferCard = ({
         </DataList.Item>
         <DataList.Item align="center">
           <DataList.Label minWidth="88px">Coin</DataList.Label>
-          <DataList.Value className="flex-1 flex justify-end">
+          <DataList.Value className="flex flex-1 justify-end">
             <Badge color="purple" size="2">
               <Skeleton loading={loading}>
                 {LoanAssetHelper.print(offer.loan_asset)}
@@ -123,7 +123,7 @@ const MobileOfferCard = ({
         {enableActionColumn && onActionColumnAction && (
           <DataList.Item align="center">
             <DataList.Label minWidth="88px">Pick</DataList.Label>
-            <DataList.Value className="flex-1 flex justify-end">
+            <DataList.Value className="flex flex-1 justify-end">
               <Skeleton loading={loading}>
                 <Button onClick={() => onActionColumnAction(offer)}>
                   Select
@@ -400,7 +400,7 @@ export function LoanOfferTable({
   return (
     <Box className="w-full">
       <Box className="hidden md:block">
-        <Box className="rounded-md border mt-4">
+        <Box className="mt-4 rounded-md border">
           <Table.Root variant="surface" size={"2"} layout={"auto"}>
             <Table.Header>
               {table.getHeaderGroups().map((headerGroup) => (
@@ -449,7 +449,7 @@ export function LoanOfferTable({
                   <Table.Row
                     key={row.id}
                     className={
-                      row.getIsSelected() ? "bg-purple-50 dark:purple-100" : ""
+                      row.getIsSelected() ? "dark:purple-100 bg-purple-50" : ""
                     }
                     onClick={row.getToggleSelectedHandler()}
                     data-state={row.getIsSelected() && "selected"}
@@ -495,7 +495,7 @@ export function LoanOfferTable({
           {loading ? (
             // Loading state for mobile
             [...Array(3)].map((_, i) => (
-              <Box key={i} className="p-4 rounded-lg border">
+              <Box key={i} className="rounded-lg border p-4">
                 <Skeleton loading={true}>Loading</Skeleton>
               </Box>
             ))

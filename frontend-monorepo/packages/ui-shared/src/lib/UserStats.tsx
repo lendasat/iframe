@@ -64,13 +64,11 @@ export function UserStats({
   };
 
   return (
-    <Box className="md:pl-8 mt-5 px-4" pt={"3"}>
+    <Box className="mt-5 px-4 md:pl-8" pt={"3"}>
       <Box className="space-y-4">
         <Box
           p={"4"}
-          className="border border-purple-400/20 rounded-2xl dark:border-gray-500/50
-        bg-dashboard/50 dark:bg-dark-700/50 shadow-sm flex-grow md:max-h-[800px]
-        "
+          className="bg-dashboard/50 dark:bg-dark-700/50 flex-grow rounded-2xl border border-purple-400/20 shadow-sm md:max-h-[800px] dark:border-gray-500/50"
         >
           <Flex align={"center"} gap={"3"}>
             <Avatar
@@ -84,7 +82,7 @@ export function UserStats({
               <Heading
                 as="h4"
                 weight={"medium"}
-                className="capitalize text-font dark:text-font-dark"
+                className="text-font dark:text-font-dark capitalize"
                 size={"4"}
               >
                 {name}
@@ -117,21 +115,15 @@ export function UserStats({
           </Flex>
         </Box>
 
-        <Box
-          className="border border-purple-400/20 rounded-2xl px-5 py-6 dark:border-gray-500/50
-
-        bg-dashboard/50 dark:bg-dark-700/50 shadow-sm flex-grow md:max-h-[800px]
-
-        "
-        >
+        <Box className="bg-dashboard/50 dark:bg-dark-700/50 flex-grow rounded-2xl border border-purple-400/20 px-5 py-6 shadow-sm md:max-h-[800px] dark:border-gray-500/50">
           <Heading
             as="h4"
-            className="font-semibold capitalize text-font dark:text-font-dark"
+            className="text-font dark:text-font-dark font-semibold capitalize"
             size={"3"}
           >
             Stats
           </Heading>
-          <Box mt={"4"} className="max-w-lg grid md:grid-cols-2 gap-5">
+          <Box mt={"4"} className="grid max-w-lg gap-5 md:grid-cols-2">
             <Box>
               <Flex direction={"column"} gap={"1"}>
                 <Text
@@ -145,7 +137,7 @@ export function UserStats({
                 <Text
                   size={"3"}
                   weight={"medium"}
-                  className="capitalize text-font dark:text-font-dark"
+                  className="text-font dark:text-font-dark capitalize"
                 >
                   {ratingText}
                 </Text>
@@ -165,7 +157,7 @@ export function UserStats({
                 <Text
                   size={"3"}
                   weight={"medium"}
-                  className="capitalize text-font dark:text-font-dark"
+                  className="text-font dark:text-font-dark capitalize"
                 >
                   {successful_contracts + failed_contracts}
                 </Text>

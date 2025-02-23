@@ -7,9 +7,9 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 
 function TypeField({ children, ...rest }: InputProps) {
   return (
-    <div className="flex flex-row items-center gap-2 px-3 h-11 border border-font/40 bg-white rounded-xl w-full dark:border-dark dark:bg-dark dark:text-white">
+    <div className="border-font/40 dark:border-dark dark:bg-dark flex h-11 w-full flex-row items-center gap-2 rounded-xl border bg-white px-3 dark:text-white">
       <input
-        className="focus:outline-none text-sm font-medium flex-grow placeholder:text-font/60 text-font bg-transparent dark:text-font-dark dark:placeholder:text-font-dark/60"
+        className="placeholder:text-font/60 text-font dark:text-font-dark dark:placeholder:text-font-dark/60 flex-grow bg-transparent text-sm font-medium focus:outline-none"
         {...rest}
       />
       {children}

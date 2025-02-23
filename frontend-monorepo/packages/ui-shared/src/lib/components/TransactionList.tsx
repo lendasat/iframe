@@ -151,11 +151,11 @@ export const TransactionList: FC<TransactionListProps> = ({
 
   return (
     filteredTransactions.length > 0 && (
-      <Row className="justify-content-between border-b dark:border-dark mt-2">
+      <Row className="justify-content-between dark:border-dark mt-2 border-b">
         <Col className={"text-font/70 dark:text-font-dark/70"}>
           {transactionName} transaction
         </Col>
-        <Col className="text-end mb-2">
+        <Col className="mb-2 text-end">
           <div>
             <ul>
               {filteredTransactions.map((transaction: LoanTransaction) => (

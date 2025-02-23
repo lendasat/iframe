@@ -128,7 +128,7 @@ export const ContractRequested = ({
         </Box>
       )}
       <Text
-        className={"mb-3 text-font dark:text-font-dark"}
+        className={"text-font dark:text-font-dark mb-3"}
         weight={"medium"}
         size={"3"}
       >

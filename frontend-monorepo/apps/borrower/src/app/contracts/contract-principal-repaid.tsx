@@ -6,7 +6,7 @@ export function ContractPrincipalRepaid() {
   return (
     <Container fluid>
       <Alert variant="info">
-        <FontAwesomeIcon icon={faExclamationCircle} className="h-4 w-4 mr-2" />
+        <FontAwesomeIcon icon={faExclamationCircle} className="mr-2 h-4 w-4" />
         Contract has been marked as repaid. Once the lender confirms the
         repayment, you will be able to withdraw the collateral from the
         contract.

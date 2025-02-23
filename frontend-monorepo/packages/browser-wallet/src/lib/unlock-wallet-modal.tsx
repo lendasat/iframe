@@ -67,7 +67,7 @@ export function UnlockWalletModal({
 
   return (
     <Modal show={show} onHide={handleClose} centered>
-      <Box className={"bg-white dark:bg-dark-700 rounded-2"}>
+      <Box className={"dark:bg-dark-700 rounded-2 bg-white"}>
         <form
           onSubmit={async (e) => {
             e.preventDefault();
@@ -78,7 +78,7 @@ export function UnlockWalletModal({
             <Box>
               <Heading
                 as="h2"
-                className="text-xl md:text-2xl lg:text-4xl font-semibold text-center text-font dark:text-font-dark mb-7"
+                className="text-font dark:text-font-dark mb-7 text-center text-xl font-semibold md:text-2xl lg:text-4xl"
               >
                 Input Password
               </Heading>
@@ -111,7 +111,7 @@ export function UnlockWalletModal({
             <Box>
               <TextField.Root
                 variant="soft"
-                className="py-3 px-4 rounded-lg border border-font/10 dark:border-font-dark/10 text-font dark:text-font-dark"
+                className="border-font/10 dark:border-font-dark/10 text-font dark:text-font-dark rounded-lg border px-4 py-3"
                 placeholder="Enter Password"
                 type={passVisibility ? "text" : "password"}
                 value={password}
@@ -140,12 +140,12 @@ export function UnlockWalletModal({
               </TextField.Root>
             </Box>
           </Box>
-          <Box className="mt-4 px-4 pb-5 bg-white dark:bg-dark-700 rounded-2">
+          <Box className="dark:bg-dark-700 rounded-2 mt-4 bg-white px-4 pb-5">
             <Button
               variant="solid"
-              className={`w-full h-12 ${
+              className={`h-12 w-full ${
                 loading ? "bg-btn/5" : "bg-btn text-white"
-              } rounded-lg `}
+              } rounded-lg`}
               type="submit"
               disabled={loading}
             >

@@ -62,7 +62,7 @@ function MyLoanOfferDetails() {
           height: layout.innerHeight - 130,
         }}
       >
-        <Box className="rounded-full bg-white h-52 w-52 overflow-hidden flex items-center justify-center">
+        <Box className="flex h-52 w-52 items-center justify-center overflow-hidden rounded-full bg-white">
           <img src={ReceipImg} alt="error card" className="max-w-52" />
         </Box>
         <Text className="text-font/50 dark:text-font-dark/50" size={"2"}>
@@ -100,9 +100,9 @@ function MyLoanOfferDetails() {
         height: layout.innerHeight - 130,
       }}
     >
-      <Grid className="md:grid-cols-2 gap-y-5 items-center min-h-full">
-        <Box py={"4"} className="px-4 xl:px-8 space-y-5 order-2 md:order-1">
-          <Box className="h-32 rounded-2xl bg-purple-100 overflow-hidden">
+      <Grid className="min-h-full items-center gap-y-5 md:grid-cols-2">
+        <Box py={"4"} className="order-2 space-y-5 px-4 md:order-1 xl:px-8">
+          <Box className="h-32 overflow-hidden rounded-2xl bg-purple-100">
             <img
               src={BannerImg}
               alt="Banner Information"
@@ -132,7 +132,7 @@ function MyLoanOfferDetails() {
                 <TextField.Root
                   size="3"
                   color="purple"
-                  className="flex-1 text-sm rounded-lg"
+                  className="flex-1 rounded-lg text-sm"
                   type="text"
                   placeholder="Min Amount"
                   value={formatCurrency(offer.loan_amount_min)}
@@ -144,7 +144,7 @@ function MyLoanOfferDetails() {
                 <TextField.Root
                   size="3"
                   type="text"
-                  className="flex-1 text-sm rounded-lg"
+                  className="flex-1 rounded-lg text-sm"
                   color="purple"
                   placeholder="Max Amount"
                   value={formatCurrency(offer.loan_amount_max)}
@@ -166,7 +166,7 @@ function MyLoanOfferDetails() {
               </Text>
               <TextField.Root
                 size="3"
-                className="flex-1 text-sm rounded-lg"
+                className="flex-1 rounded-lg text-sm"
                 type="text"
                 placeholder="Loan Reserve"
                 color="purple"
@@ -205,7 +205,7 @@ function MyLoanOfferDetails() {
 
               <div className="flex items-center">
                 <Checkbox.Root
-                  className="flex size-[25px] appearance-none items-center justify-center rounded shadow-[0_2px_10px] shadow-blackA4 outline-none hover:bg-violet3 focus:shadow-[0_0_0_2px_black]"
+                  className="shadow-blackA4 hover:bg-violet3 flex size-[25px] appearance-none items-center justify-center rounded shadow-[0_2px_10px] outline-none focus:shadow-[0_0_0_2px_black]"
                   checked={offer.auto_accept}
                   disabled={true}
                   id={"c1"}
@@ -244,7 +244,7 @@ function MyLoanOfferDetails() {
               <Flex align={"center"} gap={"15px"}>
                 <TextField.Root
                   size="3"
-                  className="flex-1 text-sm rounded-lg"
+                  className="flex-1 rounded-lg text-sm"
                   type="number"
                   color="purple"
                   placeholder="Min Duration"
@@ -258,7 +258,7 @@ function MyLoanOfferDetails() {
                   size="3"
                   type="number"
                   color="purple"
-                  className="flex-1 text-sm rounded-lg"
+                  className="flex-1 rounded-lg text-sm"
                   placeholder="Max Duration"
                   value={offer.duration_days_max}
                   disabled={true}
@@ -278,7 +278,7 @@ function MyLoanOfferDetails() {
               </Text>
               <TextField.Root
                 size="3"
-                className="flex-1 text-sm rounded-lg"
+                className="flex-1 rounded-lg text-sm"
                 type="number"
                 placeholder="Interest Rate"
                 color="purple"
@@ -309,7 +309,7 @@ function MyLoanOfferDetails() {
               </Text>
               <TextField.Root
                 size="3"
-                className="flex-1 text-sm rounded-lg"
+                className="flex-1 rounded-lg text-sm"
                 type="number"
                 placeholder="LTV (1-100)"
                 color="purple"
@@ -340,7 +340,7 @@ function MyLoanOfferDetails() {
                 </Text>
                 <TextField.Root
                   size="3"
-                  className="flex-1 text-sm rounded-lg"
+                  className="flex-1 rounded-lg text-sm"
                   type="text"
                   color="purple"
                   value={offer.kyc_link}
@@ -350,9 +350,9 @@ function MyLoanOfferDetails() {
             )}
           </Box>
         </Box>
-        <Box className="p-5 xl:h-full flex flex-col items-center justify-center order-1 md:order-2">
-          <Box className="bg-light dark:bg-dark flex-1 flex flex-col w-full rounded-2xl border border-font/10 dark:border-font-dark/10 p-2 xl:p-4">
-            <Flex align={"center"} justify={"between"} className="pb-4 px-3">
+        <Box className="order-1 flex flex-col items-center justify-center p-5 md:order-2 xl:h-full">
+          <Box className="bg-light dark:bg-dark border-font/10 dark:border-font-dark/10 flex w-full flex-1 flex-col rounded-2xl border p-2 xl:p-4">
+            <Flex align={"center"} justify={"between"} className="px-3 pb-4">
               {/* Title */}
               <Flex align={"center"} gap={"2"}>
                 <IoReceipt className="text-font dark:text-font-dark" />
@@ -362,8 +362,8 @@ function MyLoanOfferDetails() {
               </Flex>
             </Flex>
 
-            <Box className="bg-gradient-to-tr from-60% to-100% from-[#FBFAF8] to-pink-700/5 dark:from-dark-600 dark:to-dark-700 p-6 rounded-2xl flex items-center justify-center flex-1">
-              <Box className="space-y-6 min-w-[300px] w-full max-w-sm bg-white dark:bg-dark rounded-xl py-7">
+            <Box className="dark:from-dark-600 dark:to-dark-700 flex flex-1 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#FBFAF8] from-60% to-pink-700/5 to-100% p-6">
+              <Box className="dark:bg-dark w-full min-w-[300px] max-w-sm space-y-6 rounded-xl bg-white py-7">
                 <Flex
                   align={"start"}
                   justify={"between"}
@@ -375,7 +375,7 @@ function MyLoanOfferDetails() {
                     <img
                       src={LendasatLogo}
                       alt="Lendasat Logo"
-                      className="h-4 w-auto shrink-0 dark:filter dark:invert dark:brightness-90"
+                      className="h-4 w-auto shrink-0 dark:brightness-90 dark:invert dark:filter"
                     />
                   </Box>
 
@@ -421,7 +421,7 @@ function MyLoanOfferDetails() {
                       Details
                     </Text>
                   </Box>
-                  <Box className="border border-font/10 dark:border-font-dark/10 space-y-5 p-4 rounded-xl py-6">
+                  <Box className="border-font/10 dark:border-font-dark/10 space-y-5 rounded-xl border p-4 py-6">
                     {/* Amount */}
                     <Flex justify={"between"} align={"center"}>
                       <Text
@@ -432,7 +432,7 @@ function MyLoanOfferDetails() {
                       >
                         Amount
                       </Text>
-                      <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
+                      <Text className="text-font/70 dark:text-font-dark/70 text-[13px] font-semibold capitalize">
                         {formatCurrency(offer.loan_amount_min)} -{" "}
                         {formatCurrency(offer.loan_amount_max)}
                       </Text>
@@ -451,7 +451,7 @@ function MyLoanOfferDetails() {
                       >
                         Loan Duration
                       </Text>
-                      <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
+                      <Text className="text-font/70 dark:text-font-dark/70 text-[13px] font-semibold capitalize">
                         {getFormatedStringFromDays(offer.duration_days_min)} -{" "}
                         {getFormatedStringFromDays(offer.duration_days_max)}
                       </Text>
@@ -470,7 +470,7 @@ function MyLoanOfferDetails() {
                       >
                         Interest Rate
                       </Text>
-                      <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
+                      <Text className="text-font/70 dark:text-font-dark/70 text-[13px] font-semibold capitalize">
                         {(offer.interest_rate * 100).toFixed(2)}%
                       </Text>
                     </Flex>
@@ -488,7 +488,7 @@ function MyLoanOfferDetails() {
                       >
                         LTV
                       </Text>
-                      <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
+                      <Text className="text-font/70 dark:text-font-dark/70 text-[13px] font-semibold capitalize">
                         {(offer.min_ltv * 100).toFixed(2)}%
                       </Text>
                     </Flex>
@@ -506,7 +506,7 @@ function MyLoanOfferDetails() {
                       >
                         Coin
                       </Text>
-                      <Text className="text-[13px] font-semibold text-font/70 dark:text-font-dark/70 capitalize">
+                      <Text className="text-font/70 dark:text-font-dark/70 text-[13px] font-semibold capitalize">
                         {coinLabel}
                       </Text>
                     </Flex>

@@ -23,7 +23,7 @@ export const ContractPendingKyc = ({
         Awaiting KYC Outcome
       </Heading>
       <Text
-        className={"mb-3 text-font dark:text-font-dark"}
+        className={"text-font dark:text-font-dark mb-3"}
         weight={"medium"}
         size={"3"}
       >
@@ -34,7 +34,7 @@ export const ContractPendingKyc = ({
         to the borrower.
       </Text>
       <Text
-        className={"mb-3 text-font dark:text-font-dark"}
+        className={"text-font dark:text-font-dark mb-3"}
         weight={"medium"}
         size={"3"}
       >
@@ -43,7 +43,7 @@ export const ContractPendingKyc = ({
         contract.
       </Text>
       <Text
-        className={"mb-3 text-font dark:text-font-dark"}
+        className={"text-font dark:text-font-dark mb-3"}
         weight={"medium"}
         size={"3"}
       >

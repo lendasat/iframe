@@ -64,15 +64,15 @@ export default function Cards() {
 
   return (
     <Grid
-      className="md:grid-cols-[minmax(390px,390px)_2fr] overflow-y-scroll"
+      className="overflow-y-scroll md:grid-cols-[minmax(390px,390px)_2fr]"
       style={{
         height: innerHeight - 100,
       }}
     >
       <Box
-        className={` p-4 ${
+        className={`p-4 ${
           activeCard ? " " : "hidden md:block"
-        } md:px-8 space-y-4 border-r border-font/10 bg-light dark:bg-dark-700 h-full`}
+        } border-font/10 bg-light dark:bg-dark-700 h-full space-y-4 border-r md:px-8`}
       >
         <Skeleton loading={!activeCard}>
           <Swiper
@@ -101,15 +101,15 @@ export default function Cards() {
           </Swiper>
         </Skeleton>
 
-        <Box className="pt-5 space-y-4">
+        <Box className="space-y-4 pt-5">
           <Grid className="grid-cols-2 gap-2">
             <Skeleton
               loading={!activeCard}
               className="flex items-center justify-between"
             >
-              <Box className="min-h-[150px] w-full border border-font/10 flex flex-col items-center justify-center gap-1.5 text-font rounded-2xl dark:border-dark dark:bg-dark-600">
+              <Box className="border-font/10 text-font dark:border-dark dark:bg-dark-600 flex min-h-[150px] w-full flex-col items-center justify-center gap-1.5 rounded-2xl border">
                 <Box
-                  className={`h-12 w-12 bg-purple-50 rounded-xl place-items-center flex justify-center dark:bg-purple-800/20`}
+                  className={`flex h-12 w-12 place-items-center justify-center rounded-xl bg-purple-50 dark:bg-purple-800/20`}
                 >
                   <IoWallet size={"24"} />
                 </Box>
@@ -134,9 +134,9 @@ export default function Cards() {
               loading={!activeCard}
               className="flex items-center justify-between"
             >
-              <Box className="min-h-[150px] w-full border border-font/10 flex flex-col items-center justify-center gap-1.5 text-font rounded-2xl dark:border-dark dark:bg-dark-600">
+              <Box className="border-font/10 text-font dark:border-dark dark:bg-dark-600 flex min-h-[150px] w-full flex-col items-center justify-center gap-1.5 rounded-2xl border">
                 <Box
-                  className={`h-12 w-12 bg-purple-50 rounded-xl place-items-center flex justify-center dark:bg-purple-800/20`}
+                  className={`flex h-12 w-12 place-items-center justify-center rounded-xl bg-purple-50 dark:bg-purple-800/20`}
                 >
                   <IoWallet size={"24"} />
                 </Box>
@@ -173,7 +173,7 @@ export default function Cards() {
                   onClick={() => setVisible(!visible)}
                   disabled={!activeCard}
                   variant="ghost"
-                  className="hover:bg-transparent text-xs font-medium text-purple-800 dark:text-purple-300"
+                  className="text-xs font-medium text-purple-800 hover:bg-transparent dark:text-purple-300"
                 >
                   {!visible ? " Show" : "Hide"}
                   {"   "}
@@ -280,7 +280,7 @@ export default function Cards() {
             <img
               src={NoCreditCard}
               alt="Credit Card"
-              className="h-40 w-auto mb-3"
+              className="mb-3 h-40 w-auto"
             />
             <Link
               to={"/requests"}

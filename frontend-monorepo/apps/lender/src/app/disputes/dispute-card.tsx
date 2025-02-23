@@ -92,13 +92,13 @@ export const ExpandableDisputeCard = ({
 
   return (
     <Collapsible.Root className="w-full" open={open} onOpenChange={setOpen}>
-      <Box className="p-5 md:px-7 rounded-xl space-y-4">
+      <Box className="space-y-4 rounded-xl p-5 md:px-7">
         <div className="flex items-center justify-between">
           <Heading className={"text-font dark:text-font-dark"}>
             Dispute Information
           </Heading>
           <Collapsible.Trigger asChild>
-            <button className="inline-flex size-[25px] items-center justify-center rounded-full text-violet11 shadow-[0_2px_10px] shadow-blackA4 outline-none hover:bg-violet3 focus:shadow-[0_0_0_2px] focus:shadow-black data-[state=closed]:bg-white data-[state=open]:bg-violet3 dark:text-violet10 dark:shadow-blackA9 dark:data-[state=closed]:bg-dark dark:data-[state=open]:bg-violet4 dark:hover:bg-violet5">
+            <button className="text-violet11 shadow-blackA4 hover:bg-violet3 data-[state=open]:bg-violet3 dark:text-violet10 dark:shadow-blackA9 dark:data-[state=closed]:bg-dark dark:data-[state=open]:bg-violet4 dark:hover:bg-violet5 inline-flex size-[25px] items-center justify-center rounded-full shadow-[0_2px_10px] outline-none focus:shadow-[0_0_0_2px] focus:shadow-black data-[state=closed]:bg-white">
               {open ? (
                 <RxCross2 className={"text-font dark:text-font-dark"} />
               ) : (
@@ -119,7 +119,7 @@ export const ExpandableDisputeCard = ({
               >
                 <Select.Trigger
                   placeholder="Select reason"
-                  className="shadow-none focus-visible:outline-none p-3 outline-none font-normal text-font dark:text-font-dark dark:bg-dark-700 text-sm w-full border z-50 rounded-lg"
+                  className="text-font dark:text-font-dark dark:bg-dark-700 z-50 w-full rounded-lg border p-3 text-sm font-normal shadow-none outline-none focus-visible:outline-none"
                   variant="soft"
                 />
                 <Select.Content>
@@ -133,7 +133,7 @@ export const ExpandableDisputeCard = ({
             </Box>
             <TextArea
               resize={"none"}
-              className="h-40 rounded-lg focus-visible:outline-none outline-none p-2 text-font dark:text-font-dark bg-light dark:bg-dark-700"
+              className="text-font dark:text-font-dark bg-light dark:bg-dark-700 h-40 rounded-lg p-2 outline-none focus-visible:outline-none"
               variant="soft"
               value={otherReason}
               onChange={(e) => setOtherReason(e.target.value)}

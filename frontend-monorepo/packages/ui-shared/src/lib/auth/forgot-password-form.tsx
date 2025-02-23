@@ -42,8 +42,8 @@ export function ForgotPasswordForm({ handleSubmit }: ForgotPasswordProps) {
   };
 
   return (
-    <Box className="bg-gradient-to-tr from-60% to-100% from-[#F5F9FD] to-pink-700/5 py-20 pt-0 h-screen overflow-y-scroll flex items-center justify-center dark:from-[#1a202c] dark:to-gray-900/70">
-      <Grid align={"center"} className="overflow-hidden grid-cols-1 w-screen">
+    <Box className="flex h-screen items-center justify-center overflow-y-scroll bg-gradient-to-tr from-[#F5F9FD] from-60% to-pink-700/5 to-100% py-20 pt-0 dark:from-[#1a202c] dark:to-gray-900/70">
+      <Grid align={"center"} className="w-screen grid-cols-1 overflow-hidden">
         <Box className="flex flex-col items-center p-5">
           {/* Logo */}
           <Logo
@@ -58,9 +58,9 @@ export function ForgotPasswordForm({ handleSubmit }: ForgotPasswordProps) {
             width={"100%"}
             py={"6"}
             px={"6"}
-            className="bg-light dark:bg-dark shadow-sm rounded-2xl"
+            className="bg-light dark:bg-dark rounded-2xl shadow-sm"
           >
-            <Box className="text-center pb-4">
+            <Box className="pb-4 text-center">
               <Heading
                 size={"7"}
                 className="text-font dark:text-font-dark pb-2"
@@ -74,8 +74,8 @@ export function ForgotPasswordForm({ handleSubmit }: ForgotPasswordProps) {
 
             <Form className="w-full" onSubmit={onSubmit}>
               {/* Email */}
-              <Box className="grid grid-cols-1 gap-1 mb-3">
-                <Box className="text-left mt-3">
+              <Box className="mb-3 grid grid-cols-1 gap-1">
+                <Box className="mt-3 text-left">
                   <Text
                     as="label"
                     size={"1"}
@@ -122,7 +122,7 @@ export function ForgotPasswordForm({ handleSubmit }: ForgotPasswordProps) {
                   variant="solid"
                   radius="large"
                   disabled={!(email && !isLoading)}
-                  className="w-full h-12 "
+                  className="h-12 w-full"
                 >
                   {isLoading ? <Spinner size={"3"} /> : "Submit"}
                 </Button>
@@ -133,9 +133,9 @@ export function ForgotPasswordForm({ handleSubmit }: ForgotPasswordProps) {
 
             <Link
               to={"/login"}
-              className="text-sm font-medium text-font dark:text-font-dark hover:text-purple-800 dark:hover:text-purple-300"
+              className="text-font dark:text-font-dark text-sm font-medium hover:text-purple-800 dark:hover:text-purple-300"
             >
-              <Box className="flex items-center gap-1 justify-center mt-6">
+              <Box className="mt-6 flex items-center justify-center gap-1">
                 <IoArrowBackOutline />
                 <Text size={"2"}>Back to Sign in</Text>
               </Box>

@@ -8,25 +8,25 @@ function Settings() {
   const location = useLocation();
 
   return (
-    <Box className="p-4 flex flex-col overflow-y-scroll">
-      <Box className="bg-dashboard/50 dark:bg-dark-700/50 rounded-2xl shadow-sm flex-grow md:max-h-[800px]">
+    <Box className="flex flex-col overflow-y-scroll p-4">
+      <Box className="bg-dashboard/50 dark:bg-dark-700/50 flex-grow rounded-2xl shadow-sm md:max-h-[800px]">
         <TabNav.Root
-          className="flex flex-col md:flex md:flex-row md:items-start p-5 h-full"
+          className="flex h-full flex-col p-5 md:flex md:flex-row md:items-start"
           color={"purple"}
         >
-          <Box className="flex md:flex-col md:h-full md:border-r md:border-black/5 dark:border-dark bg-purple-800/5 p-2 rounded-full md:rounded-none md:bg-transparent md:max-w-[200px] w-full mb-4 md:mb-0">
-            <Box className="flex md:flex-col w-full border-b-0 shadow-none rounded-r-full md:rounded-none gap-2">
+          <Box className="dark:border-dark mb-4 flex w-full rounded-full bg-purple-800/5 p-2 md:mb-0 md:h-full md:max-w-[200px] md:flex-col md:rounded-none md:border-r md:border-black/5 md:bg-transparent">
+            <Box className="flex w-full gap-2 rounded-r-full border-b-0 shadow-none md:flex-col md:rounded-none">
               <TabNav.Link
                 asChild
                 active={location.pathname.includes("profile")}
-                className="flex-1 md:flex-none text-center md:text-left px-4 py-2 md:py-3 rounded-full hover:bg-transparent font-medium data-[state=active]:font-semibold capitalize data-[state=inactive]:text-font/70 data-[state=active]:text-purple-800 data-[state=active]:bg-purple-800/20 dark:data-[state=inactive]:text-gray-400 dark:data-[state=active]:text-purple-300 dark:data-[state=active]:bg-purple-700/20"
+                className="data-[state=inactive]:text-font/70 flex-1 rounded-full px-4 py-2 text-center font-medium capitalize hover:bg-transparent data-[state=active]:bg-purple-800/20 data-[state=active]:font-semibold data-[state=active]:text-purple-800 md:flex-none md:py-3 md:text-left dark:data-[state=active]:bg-purple-700/20 dark:data-[state=active]:text-purple-300 dark:data-[state=inactive]:text-gray-400"
               >
                 <Link to="profile">Profile</Link>
               </TabNav.Link>
               <TabNav.Link
                 asChild
                 active={location.pathname.includes("wallet")}
-                className="flex-1 md:flex-none text-center md:text-left px-4 py-2 md:py-3 rounded-full hover:bg-transparent font-medium data-[state=active]:font-semibold capitalize data-[state=inactive]:text-font/70 data-[state=active]:text-purple-800 data-[state=active]:bg-purple-800/20 dark:data-[state=inactive]:text-gray-400 dark:data-[state=active]:text-purple-300 dark:data-[state=active]:bg-purple-700/20"
+                className="data-[state=inactive]:text-font/70 flex-1 rounded-full px-4 py-2 text-center font-medium capitalize hover:bg-transparent data-[state=active]:bg-purple-800/20 data-[state=active]:font-semibold data-[state=active]:text-purple-800 md:flex-none md:py-3 md:text-left dark:data-[state=active]:bg-purple-700/20 dark:data-[state=active]:text-purple-300 dark:data-[state=inactive]:text-gray-400"
               >
                 <Link to="wallet">Wallet</Link>
               </TabNav.Link>

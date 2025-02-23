@@ -67,7 +67,7 @@ const SingleDurationSelector: React.FC<DurationSelectorProps> = ({
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto">
+    <div className="mx-auto w-full max-w-3xl">
       <RadioCards.Root
         value={selectedDuration?.toString()}
         columns={{ initial: "5" }}
@@ -78,7 +78,7 @@ const SingleDurationSelector: React.FC<DurationSelectorProps> = ({
       >
         {durations.map(({ value, label, days, sublabel, icon: Icon }) => (
           <RadioCards.Item value={days.toString()}>
-            <div className="flex flex-col items-center text-center space-y-2">
+            <div className="flex flex-col items-center space-y-2 text-center">
               <div>
                 <Text
                   size={"2"}
