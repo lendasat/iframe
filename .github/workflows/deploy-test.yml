@@ -24,13 +24,17 @@ jobs:
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - name: Build browser wallet
         run: just build-wallet
 
       - name: Install frontend deps
         run: |
           cd frontend-monorepo
-          npm install
+          pnpm install
 
       - name: Make .env file for Vite build
         uses: SpicyPizza/create-envfile@v2.0
