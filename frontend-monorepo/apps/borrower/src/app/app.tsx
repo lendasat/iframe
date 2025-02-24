@@ -40,6 +40,8 @@ import RestrictedAccessPage from "./RestrictedAccessPage";
 import { useEffect } from "react";
 import init from "browser-wallet";
 import browserWalletUrl from "browser-wallet/browser_wallet_bg.wasm?url";
+import Waitlist from "./waitlist/waitlist";
+import WaitlistSuccess from "./waitlist/success";
 
 const menuItems = [
   {
@@ -243,6 +245,11 @@ function App() {
           >
             <Route index element={<Login />} />
             <Route path="/registration" element={<Registration />} />
+            <Route path="/waitlist">
+              <Route index element={<Waitlist />} />
+              <Route path={"success"} element={<WaitlistSuccess />} />
+            </Route>
+
             <Route path="/forgotpassword" element={<ForgotPassword />} />
             <Route
               path="/resetpassword/:token/:email"

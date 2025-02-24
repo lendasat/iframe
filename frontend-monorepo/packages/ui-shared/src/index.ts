@@ -26,6 +26,8 @@ export * from "./lib/components/timezone-selector";
 export * from "./lib/full-logo-white-bg";
 export * from "./lib/ltv-progress-bar/ltv-progress-bar";
 export * from "./lib/auth/registration-form";
+export * from "./lib/auth/waitlist-form";
+export * from "./lib/auth/waitlist-success";
 export * from "./lib/auth/email-verification-form";
 export * from "./lib/auth/login-form";
 export * from "./lib/auth/forgot-password-form";

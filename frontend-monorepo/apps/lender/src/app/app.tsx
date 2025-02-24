@@ -14,6 +14,8 @@ import ForgotPassword from "./auth/forgot-password";
 import Login from "./auth/login";
 import Logout from "./auth/logout";
 import Registration from "./auth/registration";
+import Waitlist from "./waitlist/waitlist";
+import WaitlistSuccess from "./waitlist/success";
 import ResetPassword from "./auth/reset-password";
 import UpgradeToPake from "./auth/upgrade-to-pake";
 import ContractDetailsOverview from "./contracts/contract-details-overview";
@@ -207,6 +209,10 @@ function App() {
             <Routes>
               <Route index element={<Login />} />
               <Route path="/registration" element={<Registration />} />
+              <Route path="/waitlist">
+                <Route index element={<Waitlist />} />
+                <Route path={"success"} element={<WaitlistSuccess />} />
+              </Route>
               <Route path="/forgotpassword" element={<ForgotPassword />} />
               <Route
                 path="/resetpassword/:token/:email"

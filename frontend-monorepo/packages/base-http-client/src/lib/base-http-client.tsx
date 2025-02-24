@@ -336,6 +336,25 @@ export class BaseHttpClient {
       }
     }
   }
+
+  async joinWaitlist(email: string): Promise<void> {
+    try {
+      await this.httpClient.post("/api/auth/waitlist", {
+        email,
+      });
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        console.log(error.response);
+        const message = error.response.data.message;
+
+        throw new Error(message);
+      } else {
+        throw new Error(
+          `Failed to register for waiting list: ${JSON.stringify(error)}`,
+        );
+      }
+    }
+  }
 }
 
 // Define types for the contexts
@@ -353,6 +372,7 @@ export type BaseHttpClientContextType = Pick<
   | "verifyEmail"
   | "getVersion"
   | "check"
+  | "joinWaitlist"
 >;
 
 // Create the contexts
@@ -395,6 +415,7 @@ export const HttpClientProvider: React.FC<HttpClientProviderProps> = ({
     resetPassword: httpClient.resetPassword.bind(httpClient),
     getVersion: httpClient.getVersion.bind(httpClient),
     check: httpClient.check.bind(httpClient),
+    joinWaitlist: httpClient.joinWaitlist.bind(httpClient),
   };
 
   return (

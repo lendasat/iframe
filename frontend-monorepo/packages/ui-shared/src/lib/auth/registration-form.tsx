@@ -2,6 +2,7 @@ import {
   Box,
   Button,
   Callout,
+  Flex,
   Grid,
   Heading,
   IconButton,
@@ -208,6 +209,24 @@ export function RegistrationForm({
                     value={referralCode}
                     onChange={(e) => setReferralCode(e.target.value)}
                   />
+                  <Flex gap={"1"} align={"baseline"}>
+                    <Text
+                      as="label"
+                      size={"1"}
+                      weight={"medium"}
+                      className="text-font/70 dark:text-font-dark/70"
+                    >
+                      Don't have an invite code? Join our
+                    </Text>
+                    <Link
+                      to={"/waitlist"}
+                      className="hover:text-font dark:hover:text-font-dark text-purple-800 dark:text-purple-300"
+                    >
+                      <Text size={"1"} weight={"medium"}>
+                        Waitlist!
+                      </Text>
+                    </Link>
+                  </Flex>
                 </Box>
               </Box>
 
