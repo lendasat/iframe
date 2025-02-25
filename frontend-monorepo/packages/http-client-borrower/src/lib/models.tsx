@@ -184,6 +184,7 @@ export interface LoanOffer {
   duration_days_max: number;
   loan_asset: LoanAsset;
   origination_fee: OriginationFee[];
+  extension_origination_fee: OriginationFee[];
   kyc_link?: string;
   lender_xpub: string;
 }

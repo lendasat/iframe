@@ -97,4 +97,16 @@ mod tests {
         // Expected: $50,000 worth of BTC at $100,000/BTC = 0.5 BTC
         assert_eq!(result, Amount::from_btc(0.5).unwrap());
     }
+
+    #[test]
+    fn test_zero_fee() {
+        let loan_amount = dec!(100_000.0);
+        let fee_rate = dec!(0);
+        let btc_price = dec!(50_000.0);
+
+        let result = calculate_origination_fee(loan_amount, fee_rate, btc_price).unwrap();
+
+        // Expected: 0 BTC.
+        assert_eq!(result, Amount::ZERO);
+    }
 }
