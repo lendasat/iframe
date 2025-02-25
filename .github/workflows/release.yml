@@ -71,7 +71,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./frontend-monorepo
-        run: pnpm ci
+        run: pnpm install
 
       - name: Make .env file for Vite build
         uses: SpicyPizza/create-envfile@v2.0
