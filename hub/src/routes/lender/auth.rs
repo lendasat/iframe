@@ -8,6 +8,8 @@ use crate::db::lenders::update_password_reset_token_for_user;
 use crate::db::lenders::user_exists;
 use crate::db::lenders::verify_user;
 use crate::db::telegram_bot::TelegramBotToken;
+use crate::db::waitlist::Error;
+use crate::db::waitlist::WaitlistRole;
 use crate::db::wallet_backups::NewLenderWalletBackup;
 use crate::model::ContractStatus;
 use crate::model::FinishUpgradeToPakeRequest;
@@ -47,6 +49,7 @@ use jsonwebtoken::EncodingKey;
 use jsonwebtoken::Header;
 use rand::thread_rng;
 use rand::RngCore;
+use serde::Deserialize;
 use serde::Serialize;
 use serde_json::json;
 use sha2::Sha256;
@@ -105,6 +108,7 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
             get(get_me_handler)
                 .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
         )
+        .route("/api/auth/waitlist", post(post_add_to_waitlist))
         .with_state(app_state)
 }
 
@@ -1099,4 +1103,36 @@ async fn check_auth_handler(
     Extension(_user): Extension<Lender>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     Ok(())
+}
+
+#[derive(Debug, Deserialize)]
+pub struct WaitlistBody {
+    email: String,
+}
+
+#[instrument(skip_all, err(Debug))]
+async fn post_add_to_waitlist(
+    State(data): State<Arc<AppState>>,
+    Json(body): Json<WaitlistBody>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    db::waitlist::insert_into_waitlist(&data.db, body.email.as_str(), WaitlistRole::Lender)
+        .await
+        .map_err(|e| match e {
+            Error::EmailInUse(_) => {
+                let error_response = ErrorResponse {
+                    message: "Email already registered".to_string(),
+                };
+                (StatusCode::CONFLICT, Json(error_response))
+            }
+            Error::DatabaseError(error) => {
+                tracing::error!("Database error when inserting into mailinglist {error:#}");
+
+                let error_response = ErrorResponse {
+                    message: "Something went wrong".to_string(),
+                };
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+            }
+        })?;
+
+    Ok(Json(()))
 }

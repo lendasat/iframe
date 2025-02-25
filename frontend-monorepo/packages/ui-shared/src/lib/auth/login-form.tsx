@@ -207,6 +207,22 @@ export function LoginForm({
                 Sign up
               </Link>
             </Box>
+            <Box className="flex items-center justify-center gap-1">
+              <Text
+                as="label"
+                size={"1"}
+                weight={"medium"}
+                className="text-font/70 dark:text-font-dark/70"
+              >
+                Don't have an invite code? Join our
+              </Text>
+              <Link
+                to={"/waitlist"}
+                className="hover:text-font dark:hover:text-font-dark text-sm font-medium text-purple-800 dark:text-purple-300"
+              >
+                Waitlist!
+              </Link>
+            </Box>
           </Box>
         </Box>
       </Grid>

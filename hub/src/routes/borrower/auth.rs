@@ -7,6 +7,7 @@ use crate::db::borrowers::register_user;
 use crate::db::borrowers::update_password_reset_token_for_user;
 use crate::db::borrowers::user_exists;
 use crate::db::borrowers::verify_user;
+use crate::db::waitlist::WaitlistRole;
 use crate::db::wallet_backups::NewBorrowerWalletBackup;
 use crate::model;
 use crate::model::Borrower;
@@ -53,6 +54,7 @@ use jsonwebtoken::Header;
 use rand::thread_rng;
 use rand::RngCore;
 use rust_decimal::Decimal;
+use serde::Deserialize;
 use serde::Serialize;
 use serde_json::json;
 use sha2::Sha256;
@@ -114,6 +116,7 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
             "/api/auth/reset-legacy-password/:password_reset_token",
             put(reset_legacy_password_handler),
         )
+        .route("/api/auth/waitlist", post(post_add_to_waitlist))
         .layer(
             tower::ServiceBuilder::new().layer(middleware::from_fn_with_state(
                 app_state.clone(),
@@ -1019,6 +1022,23 @@ async fn check_auth_handler(
     Ok(())
 }
 
+#[derive(Debug, Deserialize)]
+pub struct WaitlistBody {
+    email: String,
+}
+
+#[instrument(skip_all, err(Debug))]
+async fn post_add_to_waitlist(
+    State(data): State<Arc<AppState>>,
+    AppJson(body): AppJson<WaitlistBody>,
+) -> Result<impl IntoResponse, Error> {
+    db::waitlist::insert_into_waitlist(&data.db, body.email.as_str(), WaitlistRole::Borrower)
+        .await
+        .map_err(Error::from)?;
+
+    Ok(Json(()))
+}
+
 // Create our own JSON extractor by wrapping `axum::Json`. This makes it easy to override the
 // rejection and provide our own which formats errors to match our application.
 //
@@ -1078,11 +1098,22 @@ enum Error {
     PakeVerifyFailed(srp::types::SrpAuthError),
     /// Cannot reset a legacy password after PAKE upgrade.
     NoLegacyResetAfterPake,
+    /// User already in waiting list with this email.
+    EmailExists,
 }
 
 impl From<JsonRejection> for Error {
     fn from(rejection: JsonRejection) -> Self {
         Self::JsonRejection(rejection)
+    }
+}
+
+impl From<db::waitlist::Error> for Error {
+    fn from(value: db::waitlist::Error) -> Self {
+        match value {
+            db::waitlist::Error::EmailInUse(_) => Error::EmailExists,
+            db::waitlist::Error::DatabaseError(e) => Error::Database(anyhow!(e)),
+        }
     }
 }
 
@@ -1199,6 +1230,7 @@ impl IntoResponse for Error {
 
                 (StatusCode::BAD_REQUEST, "Something went wrong.".to_owned())
             }
+            Error::EmailExists => (StatusCode::CONFLICT, "Email already used".to_owned()),
         };
 
         (status, AppJson(ErrorResponse { message })).into_response()

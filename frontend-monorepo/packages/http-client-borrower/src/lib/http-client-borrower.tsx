@@ -636,7 +636,8 @@ export function allowedPagesWithoutLogin(location: string) {
     location.includes(`verifyemail`) ||
     location.includes(`logout`) ||
     location.includes(`error`) ||
-    location.includes(`upgrade-to-pake`)
+    location.includes(`upgrade-to-pake`) ||
+    location.includes(`waitlist`)
   );
 }
 
@@ -677,6 +678,7 @@ export const HttpClientBorrowerProvider: React.FC<HttpClientProviderProps> = ({
     resetPassword: httpClient.resetPassword.bind(httpClient),
     getVersion: httpClient.getVersion.bind(httpClient),
     check: httpClient.check.bind(httpClient),
+    joinWaitlist: httpClient.joinWaitlist.bind(httpClient),
   };
 
   const borrowerClientFunctions: BorrowerHttpClientContextType = {
