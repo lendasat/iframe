@@ -393,7 +393,9 @@ export const ExtendContract = ({
             newDurationDays={selectedDurationDays}
             totalDuration={totalDuration}
             totalInterestRate={totalInterestRate}
-            additionalOriginationFee={bestOffer.origination_fee[0].fee || 0}
+            additionalOriginationFee={
+              bestOffer.extension_origination_fee[0].fee || 0
+            }
             newExpiry={newExpiry}
             resetSelectedAction={resetSelectedAction}
           />

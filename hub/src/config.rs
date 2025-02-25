@@ -27,6 +27,7 @@ pub struct Config {
     pub hub_fee_descriptor: String,
     pub hub_fee_wallet_dir: Option<String>,
     pub origination_fee: Vec<OriginationFee>,
+    pub extension_origination_fee: Vec<OriginationFee>,
     pub moon_api_key: String,
     pub moon_api_url: String,
     pub moon_webhook_url: String,
@@ -75,16 +76,43 @@ impl Config {
             std::env::var("HUB_FEE_DESCRIPTOR").expect("HUB_FEE_DESCRIPTOR must be set");
         let hub_fee_wallet_dir = std::env::var("HUB_FEE_WALLET_DIR").ok();
 
-        let origination_fee =
-            std::env::var("HUB_ORIGINATION_FEE").expect("HUB_ORIGINATION_FEE must be set");
-        let orig_fee_parts: Vec<&str> = origination_fee.split(',').collect();
-        let start = i32::from_str(orig_fee_parts[0])
-            .expect("HUB_ORIGINATION_FEE does not fit format `start,end,fee`");
-        let end = i32::from_str(orig_fee_parts[1])
-            .expect("HUB_ORIGINATION_FEE does not fit format `start,end,fee`");
-        let fee = Decimal::from_str(orig_fee_parts[2])
-            .expect("HUB_ORIGINATION_FEE does not fit format `start,end,fee`");
-        let fee = fee.div(dec!(100));
+        let origination_fee = {
+            let data =
+                std::env::var("HUB_ORIGINATION_FEE").expect("HUB_ORIGINATION_FEE must be set");
+            let parts: Vec<&str> = data.split(',').collect();
+            let start = i32::from_str(parts[0])
+                .expect("HUB_ORIGINATION_FEE does not fit format `start,end,fee`");
+            let end = i32::from_str(parts[1])
+                .expect("HUB_ORIGINATION_FEE does not fit format `start,end,fee`");
+            let fee = Decimal::from_str(parts[2])
+                .expect("HUB_ORIGINATION_FEE does not fit format `start,end,fee`");
+            let fee = fee.div(dec!(100));
+
+            vec![OriginationFee {
+                from_day: start,
+                to_day: end,
+                fee,
+            }]
+        };
+
+        let extension_origination_fee = {
+            let data = std::env::var("HUB_EXTENSION_ORIGINATION_FEE")
+                .expect("HUB_EXTENSION_ORIGINATION_FEE must be set");
+            let parts: Vec<&str> = data.split(',').collect();
+            let start = i32::from_str(parts[0])
+                .expect("HUB_EXTENSION_ORIGINATION_FEE does not fit format `start,end,fee`");
+            let end = i32::from_str(parts[1])
+                .expect("HUB_EXTENSION_ORIGINATION_FEE does not fit format `start,end,fee`");
+            let fee = Decimal::from_str(parts[2])
+                .expect("HUB_EXTENSION_ORIGINATION_FEE does not fit format `start,end,fee`");
+            let fee = fee.div(dec!(100));
+
+            vec![OriginationFee {
+                from_day: start,
+                to_day: end,
+                fee,
+            }]
+        };
 
         let moon_api_key = std::env::var("MOON_API_KEY").expect("MOON_API_KEY must be set");
         let moon_api_url = std::env::var("MOON_API_URL").expect("MOON_API_URL must be set");
@@ -144,11 +172,8 @@ impl Config {
                     .unwrap_or_default(),
             hub_fee_descriptor,
             hub_fee_wallet_dir,
-            origination_fee: vec![OriginationFee {
-                from_day: start,
-                to_day: end,
-                fee,
-            }],
+            origination_fee,
+            extension_origination_fee,
             moon_api_key,
             moon_api_url,
             moon_webhook_url,

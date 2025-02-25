@@ -62,10 +62,8 @@ pub async fn request_contract_extension(
         .await
         .map_err(|e| Error::Database(anyhow!(e)))?;
 
-    // TODO: we might want a different origination fee if a user extends his loan, for now it's the
-    // same again
     let new_origination_fee = config
-        .origination_fee
+        .extension_origination_fee
         .first()
         .ok_or(Error::MissingOriginationFee)?;
 
