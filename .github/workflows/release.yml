@@ -125,7 +125,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Compress frontend directory
-        run: tar -czvf hub-frontend.tar.gz ./frontend-monorepo/dist/
+        run: tar -czvf hub-frontend.tar.gz ./frontend-monorepo/apps/borrower/dist ./frontend-monorepo/apps/lender/dist
 
       - name: Copy ssh key
         run: |
