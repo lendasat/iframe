@@ -15,6 +15,11 @@ export function getFormatedStringFromDays(numberOfDays: number) {
   return yearsDisplay + monthsDisplay + daysDisplay;
 }
 
+export const validateEmail = (email: string) => {
+  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return regex.test(email);
+};
+
 export * from "./lib/components/loan-address-input-field";
 export * from "./lib/components/NotificationToast";
 export * from "./lib/components/abbreviation-explanation-info";

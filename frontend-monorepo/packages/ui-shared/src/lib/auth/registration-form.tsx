@@ -9,7 +9,7 @@ import {
   Spinner,
   Text,
 } from "@radix-ui/themes";
-import type { FormEvent } from "react";
+import type { ChangeEvent, FormEvent } from "react";
 import { useState } from "react";
 import { Form } from "react-bootstrap";
 import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
@@ -17,6 +17,7 @@ import { IoInformationCircleOutline } from "react-icons/io5";
 import { Link } from "react-router-dom";
 import { ReactComponent as Logo } from "./../assets/lendasat_svg_logo.svg";
 import TypeField from "../components/TypeField";
+import { validateEmail } from "../../index";
 
 interface RegistrationFormProps {
   handleRegister: (
@@ -41,6 +42,7 @@ export function RegistrationForm({
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [isEmailValid, setIsEmailValid] = useState(true);
   const [referralCode, setReferralCode] = useState<string>(
     defaultReferralCode || "",
   );
@@ -49,6 +51,21 @@ export function RegistrationForm({
   const [error, setError] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [isTouched, setIsTouched] = useState(false);
+
+  const handleEmailChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    setEmail(value);
+
+    if (isTouched) {
+      setIsEmailValid(validateEmail(value));
+    }
+  };
+
+  const handleBlur = () => {
+    setIsTouched(true);
+    setIsEmailValid(validateEmail(email));
+  };
 
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -131,9 +148,18 @@ export function RegistrationForm({
                   </Text>
                   <TypeField
                     placeholder="example@domain.com"
+                    type={"email"}
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={handleEmailChange}
+                    onBlur={handleBlur}
+                    aria-invalid={!isEmailValid}
+                    required
                   />
+                  {!isEmailValid && isTouched && (
+                    <Text size="1" className="mt-1 text-red-500">
+                      Please enter a valid email address
+                    </Text>
+                  )}
                 </Box>
               </Box>
 
