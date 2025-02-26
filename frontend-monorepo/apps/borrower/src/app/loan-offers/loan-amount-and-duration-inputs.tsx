@@ -1,7 +1,6 @@
 import { LoanProductOption } from "@frontend/base-http-client";
 import { Box, Flex, RadioCards, Text, TextField } from "@radix-ui/themes";
 import type { ChangeEvent, ReactNode } from "react";
-import { Form } from "react-bootstrap";
 import { ReactComponent as Defi } from "../../assets/defi.svg";
 import { ReactComponent as Fiat } from "../../assets/fiat.svg";
 import { ReactComponent as MoonCard } from "../../assets/moon_card_satoshi_nakamoto.svg";
@@ -68,7 +67,7 @@ export function LoanAmountAndDurationInputs({
   };
 
   return (
-    <Form className="space-y-4">
+    <div className="space-y-4">
       {/* Loan Amount */}
       <Flex direction="column" gap="1" className="w-full">
         <Text
@@ -77,7 +76,7 @@ export function LoanAmountAndDurationInputs({
           size={"2"}
           weight={"medium"}
         >
-          How much do you wish to borrow?
+          How much do you wish to borrow? ????-
         </Text>
         <TextField.Root
           size={"3"}
@@ -165,6 +164,6 @@ export function LoanAmountAndDurationInputs({
           </RadioCards.Root>
         </Box>
       </Flex>
-    </Form>
+    </div>
   );
 }

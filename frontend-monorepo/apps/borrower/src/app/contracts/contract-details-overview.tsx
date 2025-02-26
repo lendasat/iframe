@@ -807,7 +807,7 @@ const ContractStatusDetails = ({
         <CollateralContractDetails
           totalCollateral={totalCollateral}
           collateralAddress={contractAddress}
-          collateral_btc={contract.initial_collateral_sats / 100000000}
+          collateral_btc={contract.initial_collateral_sats / 100_000_000}
           loanOriginatorFeeUsd={loanOriginatorFeeUsd}
           loanOriginatorFee={loanOriginatorFee}
         />

@@ -12,7 +12,6 @@ import {
 import QRCode from "qrcode.react";
 import queryString from "query-string";
 import { useState } from "react";
-import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import { FaInfoCircle } from "react-icons/fa";
 
 interface CollateralContractDetailsProps {
@@ -97,10 +96,7 @@ export function CollateralContractDetails({
             Origination fee
           </Text>
 
-          <OverlayTrigger
-            placement="top"
-            overlay={<Tooltip>${loanOriginatorFeeUsd}</Tooltip>}
-          >
+          <Popup content={<Text>${loanOriginatorFeeUsd}</Text>} side="top">
             <Text
               size={"2"}
               weight={"medium"}
@@ -108,7 +104,7 @@ export function CollateralContractDetails({
             >
               {loanOriginatorFee.toFixed(8)} BTC
             </Text>
-          </OverlayTrigger>
+          </Popup>
         </Flex>
         <Separator
           className="bg-font/10 dark:bg-font-dark/10"
@@ -182,10 +178,7 @@ export function CollateralContractDetails({
           >
             Please send <em>at least</em>
             {"  "}
-            <Popup
-              content={"Copy exact amount to send"}
-              className="text-font dark:text-font-dark font-semibold"
-            >
+            <Popup content="Copy exact amount to send" side="top">
               <span
                 onClick={() => handleCopy(totalCollateral)}
                 className="text-font dark:text-font-dark cursor-copy font-semibold"
