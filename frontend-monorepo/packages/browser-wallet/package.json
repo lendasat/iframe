@@ -1,20 +1,10 @@
 {
   "name": "@frontend/browser-wallet",
   "version": "0.0.1",
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
   "type": "module",
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
-    }
-  },
-  "scripts": {
-    "build": "vite build",
-    "dev": "vite build --watch"
-  },
+  "scripts": {},
   "dependencies": {
     "@fortawesome/free-solid-svg-icons": "^6.6.0",
     "@fortawesome/react-fontawesome": "^0.2.2",

@@ -1,19 +1,10 @@
 {
   "name": "@frontend/mempool",
   "version": "0.0.1",
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
   "type": "module",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
-    }
-  },
   "scripts": {
-    "build": "vite build",
-    "dev": "vite build --watch",
     "test": "vitest"
   },
   "devDependencies": {

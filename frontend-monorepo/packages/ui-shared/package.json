@@ -1,16 +1,9 @@
 {
   "name": "@frontend/ui-shared",
   "version": "0.0.1",
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
   "type": "module",
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
-    }
-  },
   "dependencies": {
     "@emotion/styled": "^11.10.5",
     "@fortawesome/free-solid-svg-icons": "^6.6.0",
@@ -43,9 +36,5 @@
     "vite-plugin-dts": "^4.5.0",
     "vite-plugin-svgr": "^4.2.0",
     "vitest": "^1.6.1"
-  },
-  "scripts": {
-    "build": "vite build",
-    "dev": "vite build --watch"
   }
 }

@@ -118,13 +118,11 @@ fronts:
 borrower:
     #!/usr/bin/env bash
     cd frontend-monorepo
-    pnpm build --filter=!@frontend/borrower
     pnpm --filter="@frontend/borrower" dev
 
 lender:
     #!/usr/bin/env bash
     cd frontend-monorepo
-    pnpm build --filter=!@frontend/lender
     pnpm --filter="@frontend/lender" dev
 
 ## ------------------------
