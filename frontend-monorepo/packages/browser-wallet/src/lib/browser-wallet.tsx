@@ -210,7 +210,7 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
       details.comments,
     );
 
-    const fiatLoanDetails = await encrypt_fiat_loan_details(
+    const fiatLoanDetails = encrypt_fiat_loan_details(
       inputInnerFiatLoanDetails,
       counterpartyXpub,
     );
@@ -301,7 +301,7 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
       details.comments,
     );
 
-    const fiatLoanDetails = await decrypt_fiat_loan_details(
+    const fiatLoanDetails = decrypt_fiat_loan_details(
       inputInnerFiatLoanDetails,
       ownEncryptedEncryptionKey,
     );
