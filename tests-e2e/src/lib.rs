@@ -85,7 +85,7 @@ mod tests {
         };
 
         let res = lender
-            .post("http://localhost:7338/api/offers/create")
+            .post("http://localhost:7338/api/my-offers/create")
             .json(&loan_offer)
             .send()
             .await
@@ -97,7 +97,15 @@ mod tests {
 
         // 2. Borrower takes loan offer by creating a contract request.
         let borrower_xpub = {
-            let (_, _, xpub) = browser_wallet::wallet::generate_new("borrower", "regtest").unwrap();
+            let (mnemonic_ciphertext, network, xpub) =
+                browser_wallet::wallet::generate_new("borrower", "regtest").unwrap();
+
+            browser_wallet::wallet::load_wallet(
+                "borrower",
+                &mnemonic_ciphertext.serialize(),
+                &network.to_string(),
+            )
+            .unwrap();
 
             xpub
         };
