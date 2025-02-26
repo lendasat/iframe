@@ -82,6 +82,75 @@ jobs:
       - name: Running cargo tests
         run: RUST_BACKTRACE=1 just test-rust
 
+  e2e-tests:
+    runs-on: ubuntu-latest
+    needs: [clippy]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: extractions/setup-just@v2
+
+      - name: Set up Rust toolchain
+        run: rustup show
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Create seed file
+        run: echo "super-secure-seed" > test-seed
+
+      - name: Make .env file
+        uses: SpicyPizza/create-envfile@v2.0
+        with:
+          envkey_SEED_FILE: "./test-seed"
+          envkey_FALLBACK_XPUB: "tpubD6NzVbkrYhZ4YRwqdJt3gfhyeAndFq8LBzR3H6FZRHsaceWk6RB4CBeEmWMfptREDEBZef6cKQ37ZFpkpX4dxtv48GjiHsZ8JDegfNzRz6G"
+          envkey_HUB_FEE_DESCRIPTOR: "wpkh(tpubD6NzVbkrYhZ4YRwqdJt3gfhyeAndFq8LBzR3H6FZRHsaceWk6RB4CBeEmWMfptREDEBZef6cKQ37ZFpkpX4dxtv48GjiHsZ8JDegfNzRz6G)#2g9gvjz5"
+          envkey_DB_URL: "postgres://hub:supersecretpassword@localhost:5555/hub"
+          envkey_JWT_SECRET: "my_ultra_secure_secret"
+          envkey_NETWORK: "regtest"
+          envkey_MEMPOOL_REST_URL: "http://localhost:7339"
+          envkey_MEMPOOL_WS_URL: "ws://localhost:7339/ws"
+          envkey_MOON_API_KEY: "api-key"
+          envkey_MOON_API_URL: "https://example.com"
+          envkey_MOON_VISA_PRODUCT_ID: "4155e9b9-4a94-4894-acd8-90c728bd14e7"
+          envkey_MOON_WEBHOOK_URL: "https://example.com"
+          envkey_HUB_ORIGINATION_FEE: "0,100,1"
+          envkey_HUB_EXTENSION_ORIGINATION_FEE: "0,100,1"
+          envkey_BORROWER_LISTEN_ADDRESS: "0.0.0.0:7337"
+          envkey_BORROWER_FRONTEND_ORIGIN: "http://localhost:7337"
+          envkey_LENDER_LISTEN_ADDRESS: "0.0.0.0:7338"
+          envkey_LENDER_FRONTEND_ORIGIN: "http://localhost:7338"
+          envkey_SIDESHIFT_SECRET: "private_key"
+          envkey_SIDESHIFT_AFFILIATE_ID: "affiliate_id"
+          envkey_SIDESHIFT_API_BASE_URL: "https://example.com"
+          envkey_SIDESHIFT_COMMISSION_RATE: 0
+          file_name: .env
+
+      - name: Show disk space before test run
+        if: always()
+        run: df -h
+
+      - name: Prepare e2e test environment
+        run: just prepare-e2e
+
+      - name: Run e2e test
+        run: cargo test -p tests-e2e -- --ignored open_and_repay_loan
+
+      - name: Show hub logs if test run fails
+        if: failure()
+        run: cat hub.log
+
+      - name: Show mempool-mock logs if test run fails
+        if: failure()
+        run: cat mempool.log
+
+      - name: Show Postgres logs if test run fails
+        if: failure()
+        run: docker logs postgres
+
+      - name: Show disk space after test run
+        if: always()
+        run: df -h
+
   frontend:
     runs-on: ubuntu-latest
     defaults:
