@@ -1,22 +1,13 @@
 {
   "name": "@frontend/base-http-client",
   "version": "0.0.1",
-  "main": "./index.js",
-  "types": "./index.d.ts",
-  "typings": "dist/index.d.ts",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
   "files": [
     "src/**"
   ],
-  "exports": {
-    ".": {
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
-    }
-  },
-  "scripts": {
-    "build": "vite build",
-    "dev": "vite build --watch"
-  },
+  "scripts": {},
   "devDependencies": {
     "@types/node": "18.16.9",
     "@types/react": "18.3.1",
