@@ -22,7 +22,7 @@ import ContractDetailsOverview from "./contracts/contract-details-overview";
 import MyContracts from "./contracts/my-contracts";
 import CreateLoanOffer from "./create-loan-offer";
 import ResolveDispute from "./disputes/dispute";
-import MyAccount from "./my-account";
+import Settings from "./settings/settings";
 import "../assets/styles.css";
 import { FeeProvider } from "@frontend/mempool";
 import { FiHome } from "react-icons/fi";
@@ -170,7 +170,7 @@ function MainLayoutComponents() {
               <Route index element={<LoanOffersOverview />} />
             </Route>
             <Route path="/disputes/:id" element={<ResolveDispute />} />
-            <Route path="/settings/*" element={<MyAccount />} />
+            <Route path="/settings/*" element={<Settings />} />
           </Route>
           <Route path="/lender/:id" element={<LenderProfile />} />
           <Route path="/borrower/:id" element={<BorrowerProfile />} />
