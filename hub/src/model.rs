@@ -334,6 +334,14 @@ impl LoanOffer {
     pub fn requires_kyc(&self) -> bool {
         self.kyc_link.is_some()
     }
+
+    pub fn is_valid_loan_duration(&self, duration_days: i32) -> bool {
+        (self.duration_days_min..=self.duration_days_max).contains(&duration_days)
+    }
+
+    pub fn is_valid_loan_amount(&self, loan_amount: Decimal) -> bool {
+        (self.loan_amount_min..=self.loan_amount_max).contains(&loan_amount)
+    }
 }
 
 #[derive(Debug, Deserialize, sqlx::Type, Serialize, Clone, PartialEq)]

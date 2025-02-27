@@ -141,6 +141,22 @@ async fn post_contract_request(
             offer_id: body.loan_id.clone(),
         })?;
 
+    if !offer.is_valid_loan_duration(body.duration_days) {
+        return Err(Error::InvalidLoanDuration {
+            duration_days: body.duration_days,
+            duration_days_min: offer.duration_days_min,
+            duration_days_max: offer.duration_days_max,
+        });
+    }
+
+    if !offer.is_valid_loan_amount(body.loan_amount) {
+        return Err(Error::InvalidLoanAmount {
+            amount: body.loan_amount,
+            loan_amount_min: offer.loan_amount_min,
+            loan_amount_max: offer.loan_amount_max,
+        });
+    }
+
     let contract_id = Uuid::new_v4();
     let lender_id = &offer.lender_id;
 
@@ -1020,6 +1036,16 @@ enum Error {
     FiatLoanWithoutFiatAsset { asset: LoanAsset },
     /// A request for a fiat loan offer does not include the necessary fiat loan details.
     MissingFiatLoanDetails,
+    InvalidLoanAmount {
+        amount: Decimal,
+        loan_amount_min: Decimal,
+        loan_amount_max: Decimal,
+    },
+    InvalidLoanDuration {
+        duration_days: i32,
+        duration_days_min: i32,
+        duration_days_max: i32,
+    },
 }
 
 impl From<JsonRejection> for Error {
@@ -1320,6 +1346,18 @@ impl IntoResponse for Error {
             Error::FiatLoanWithoutFiatAsset { asset } => (
                 StatusCode::BAD_REQUEST,
                 format!("Cannot create fiat contract with asset: {asset:?}"),
+            ),
+            Error::InvalidLoanAmount {
+                amount,
+                loan_amount_min,
+                loan_amount_max,
+            } => (
+                StatusCode::BAD_REQUEST,
+                format!("Invalid loan amount: ${amount} not in range ${loan_amount_min}-${loan_amount_max}"),
+            ),
+            Error::InvalidLoanDuration { duration_days, duration_days_min, duration_days_max } => (
+                StatusCode::BAD_REQUEST,
+                format!("Invalid loan duration: {duration_days} days not in range {duration_days_min}-{duration_days_max}"),
             ),
         };
 
