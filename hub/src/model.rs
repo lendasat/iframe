@@ -15,6 +15,7 @@ use sqlx::FromRow;
 use std::str::FromStr;
 use time::OffsetDateTime;
 use url::Url;
+use utoipa::ToSchema;
 use uuid::Uuid;
 
 pub type Email = String;
@@ -158,7 +159,7 @@ pub struct TokenClaims {
     pub exp: i64,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct RegisterUserSchema {
     /// Used as the user's unique identifier.
     pub email: Email,
@@ -170,7 +171,7 @@ pub struct RegisterUserSchema {
     pub wallet_backup_data: WalletBackupData,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct WalletBackupData {
     pub mnemonic_ciphertext: String,
     pub network: String,
@@ -272,13 +273,16 @@ pub struct CreateLoanRequestSchema {
     pub loan_asset: LoanAsset,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct ContractRequestSchema {
     pub loan_id: String,
     #[serde(with = "rust_decimal::serde::float")]
     pub loan_amount: Decimal,
     pub duration_days: i32,
+    // #[schema(schema_with = crate::open_api_schemas::address_schema_function)]
+    #[schema(value_type = String)]
     pub borrower_btc_address: Address<NetworkUnchecked>,
+    #[schema(value_type = String)]
     pub borrower_xpub: Xpub,
     /// This is optional because certain integrations (such as Pay with Moon) define their own loan
     /// address.
@@ -289,12 +293,12 @@ pub struct ContractRequestSchema {
     pub moon_card_id: Option<Uuid>,
     /// If the borrower chooses a `loan_id` that corresponds to a fiat loan (e.g. with `loan_asset`
     /// [`LoanAsset::Usd`] or [`LoanAsset::Eur`]), this field must be present.
-    pub fiat_loan_details: Option<FiatLoanDetails>,
+    pub fiat_loan_details: Option<FiatLoanDetailsWrapper>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct FiatLoanDetails {
-    pub details: lendasat_core::FiatLoanDetails,
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+pub struct FiatLoanDetailsWrapper {
+    pub details: FiatLoanDetails,
     /// The ciphertext which the borrower can decrypt to get the decryption key which can be used
     /// to decrypt the `details`.
     pub encrypted_encryption_key_borrower: String,
@@ -304,7 +308,7 @@ pub struct FiatLoanDetails {
 }
 
 /// The type of loan primarily describes where to deliver the principal.
-#[derive(Debug, Deserialize, Serialize, Clone, Copy)]
+#[derive(Debug, Deserialize, Serialize, Clone, Copy, ToSchema)]
 pub enum LoanType {
     PayWithMoon,
     StableCoin,
@@ -348,7 +352,7 @@ impl LoanOffer {
     }
 }
 
-#[derive(Debug, Deserialize, sqlx::Type, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, sqlx::Type, Serialize, Clone, PartialEq, ToSchema)]
 #[sqlx(type_name = "loan_asset")]
 pub enum LoanAsset {
     UsdcPol,
@@ -382,7 +386,7 @@ impl LoanAsset {
     }
 }
 
-#[derive(Debug, Deserialize, sqlx::Type, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, sqlx::Type, Serialize, Clone, PartialEq, ToSchema)]
 #[sqlx(type_name = "loan_offer_status")]
 pub enum LoanOfferStatus {
     Available,
@@ -479,7 +483,7 @@ impl From<i32> for ContractVersion {
     }
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, ToSchema)]
 pub enum ContractStatus {
     /// The borrower has sent a contract request based on a loan offer.
     Requested,
@@ -526,7 +530,7 @@ pub enum ContractStatus {
     ApprovalExpired,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, ToSchema)]
 pub enum LiquidationStatus {
     /// Contract is in a healthy state.
     Healthy,
@@ -572,10 +576,11 @@ pub struct ContractEmails {
 }
 
 /// Public information about an API key.
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct ApiKeyInfo {
     pub id: i32,
     pub description: String,
+    #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
 }
 
@@ -967,7 +972,7 @@ pub struct PsbtQueryParams {
     pub fee_rate: u64,
 }
 
-#[derive(Debug, Deserialize, sqlx::Type, Serialize, Clone)]
+#[derive(Debug, Deserialize, sqlx::Type, Serialize, Clone, ToSchema)]
 #[sqlx(type_name = "transaction_type")]
 pub enum TransactionType {
     Funding,
@@ -978,7 +983,7 @@ pub enum TransactionType {
     ClaimCollateral,
 }
 
-#[derive(Debug, Deserialize, Serialize, sqlx::FromRow)]
+#[derive(Debug, Deserialize, Serialize, sqlx::FromRow, ToSchema)]
 pub struct LoanTransaction {
     pub id: i64,
     pub txid: String,
@@ -989,7 +994,7 @@ pub struct LoanTransaction {
 }
 
 /// Origination fee when establishing a new loan depends on the loan length.
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, ToSchema)]
 pub struct OriginationFee {
     /// Loans starting from this are considered, i.e. `>=from_day`
     pub from_day: i32,
@@ -1033,6 +1038,46 @@ pub struct LenderFeatureFlag {
 pub mod lender_feature_flags {
     pub const AUTO_APPROVE_FEATURE_FLAG_ID: &str = "auto_approve";
     pub const KYC_OFFERS_FEATURE_FLAG_ID: &str = "kyc_offers";
+}
+
+/// Details needed for the lender to send fiat to the borrower.
+///
+/// All fields are _encrypted_ so that the hub can't learn anything.
+#[derive(Debug, Deserialize, Serialize, PartialEq, ToSchema)]
+pub struct FiatLoanDetails {
+    /// Details for transfers within Europe (generally).
+    pub iban_transfer_details: Option<IbanTransferDetails>,
+    /// Details for transfers outside Europe (generally).
+    pub swift_transfer_details: Option<SwiftTransferDetails>,
+    pub bank_name: String,
+    pub bank_address: String,
+    pub bank_country: String,
+    pub purpose_of_remittance: String,
+    pub full_name: String,
+    pub address: String,
+    pub city: String,
+    pub post_code: String,
+    pub country: String,
+    /// Extra information the borrower may want to provide to the lender.
+    pub comments: Option<String>,
+}
+
+/// Details needed for the lender to send fiat via an IBAN transfer to the borrower.
+///
+/// All fields are _encrypted_ so that the hub can't learn anything.
+#[derive(Debug, Deserialize, Serialize, PartialEq, ToSchema)]
+pub struct IbanTransferDetails {
+    pub iban: String,
+    pub bic: Option<String>,
+}
+
+/// Details needed for the lender to send fiat via a SWIFT transfer to the borrower.
+///
+/// All fields are _encrypted_ so that the hub can't learn anything.
+#[derive(Debug, Deserialize, Serialize, PartialEq, ToSchema)]
+pub struct SwiftTransferDetails {
+    pub swift_or_bic: String,
+    pub account_number: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

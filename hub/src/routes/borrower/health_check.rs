@@ -1,19 +1,36 @@
+use crate::routes::borrower::HEALTH_CHECK_TAG;
 use axum::response::IntoResponse;
-use axum::routing::get;
 use axum::Json;
-use axum::Router;
+use serde::Deserialize;
+use serde::Serialize;
+use utoipa::ToSchema;
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
 
-pub(crate) fn router() -> Router {
-    Router::new().route("/api/health", get(health_checker_handler))
+pub(crate) fn router_openapi() -> OpenApiRouter {
+    OpenApiRouter::new().routes(routes!(health_checker_handler))
 }
 
+#[derive(Deserialize, Serialize, ToSchema)]
+pub struct Health {
+    message: String,
+}
+
+/// Shows if server is up and running
+#[utoipa::path(
+get,
+path = "/",
+tag = HEALTH_CHECK_TAG,
+responses(
+    (
+        status = 200,
+        description = "Shows if server is up and running",
+        body = [Health]
+    )
+)
+)]
 pub async fn health_checker_handler() -> impl IntoResponse {
-    const MESSAGE: &str = "Up and running";
-
-    let json_response = serde_json::json!({
-        "status": "success",
-        "message": MESSAGE
-    });
-
-    Json(json_response)
+    Json(Health {
+        message: "Up and running".to_string(),
+    })
 }

@@ -1,3 +1,6 @@
+use crate::models::FiatLoanDetails;
+use crate::models::IbanTransferDetails;
+use crate::models::SwiftTransferDetails;
 use aes_gcm_siv::aead::Aead;
 use aes_gcm_siv::Aes256GcmSiv;
 use aes_gcm_siv::KeyInit;
@@ -9,9 +12,6 @@ use bitcoin::bip32::Xpriv;
 use bitcoin::bip32::Xpub;
 use bitcoin::key::Secp256k1;
 use hkdf::Hkdf;
-use lendasat_core::FiatLoanDetails;
-use lendasat_core::IbanTransferDetails;
-use lendasat_core::SwiftTransferDetails;
 use rand::thread_rng;
 use rand::Rng;
 use sha2::Sha256;

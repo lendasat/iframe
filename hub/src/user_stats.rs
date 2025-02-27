@@ -5,6 +5,7 @@ use serde::Serialize;
 use sqlx::Pool;
 use sqlx::Postgres;
 use time::OffsetDateTime;
+use utoipa::ToSchema;
 
 #[derive(Debug)]
 pub enum Error {
@@ -12,7 +13,7 @@ pub enum Error {
     Database(sqlx::Error),
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct LenderStats {
     pub id: String,
     name: String,

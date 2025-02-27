@@ -17,7 +17,6 @@ ecies = { version = "0.2", default-features = false, features = ["pure"] }
 getrandom = { version = "0.2", features = ["wasm-bindgen", "js"] }
 hex = "0.4"
 hkdf = { version = "0.12", features = ["std"] }
-lendasat-core = { path = "../lendasat-core" }
 log = "0.4"
 miniscript = "12"
 rand = "0.8"

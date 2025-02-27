@@ -1,13 +1,14 @@
 use crate::model::FiatLoanDetails;
+use crate::model::FiatLoanDetailsWrapper;
+use crate::model::IbanTransferDetails;
+use crate::model::SwiftTransferDetails;
 use anyhow::Result;
-use lendasat_core::IbanTransferDetails;
-use lendasat_core::SwiftTransferDetails;
 use sqlx::Postgres;
 
 pub async fn insert_borrower<'a, E>(
     tx: E,
     contract_id: &str,
-    fiat_loan_details: FiatLoanDetails,
+    fiat_loan_details: FiatLoanDetailsWrapper,
 ) -> Result<()>
 where
     E: sqlx::Executor<'a, Database = Postgres>,
@@ -71,8 +72,8 @@ where
     Ok(())
 }
 
-/// Get the [`FiatLoanDetails`] for the borrower in the contract identified by `contract_id`.
-pub async fn get_borrower<'a, E>(tx: E, contract_id: &str) -> Result<Option<FiatLoanDetails>>
+/// Get the [`FiatLoanDetailsWrapper`] for the borrower in the contract identified by `contract_id`.
+pub async fn get_borrower<'a, E>(tx: E, contract_id: &str) -> Result<Option<FiatLoanDetailsWrapper>>
 where
     E: sqlx::Executor<'a, Database = Postgres>,
 {
@@ -119,8 +120,8 @@ where
                 _ => None,
             };
 
-            Some(FiatLoanDetails {
-                details: lendasat_core::FiatLoanDetails {
+            Some(FiatLoanDetailsWrapper {
+                details: FiatLoanDetails {
                     iban_transfer_details: iban_details,
                     swift_transfer_details: swift_details,
                     bank_name: row.bank_name,
@@ -147,7 +148,7 @@ where
 pub async fn insert_lender<'a, E>(
     tx: E,
     contract_id: &str,
-    fiat_loan_details: FiatLoanDetails,
+    fiat_loan_details: FiatLoanDetailsWrapper,
 ) -> Result<()>
 where
     E: sqlx::Executor<'a, Database = Postgres>,
@@ -211,8 +212,8 @@ where
     Ok(())
 }
 
-/// Get the [`FiatLoanDetails`] for the lender in the contract identified by `contract_id`.
-pub async fn get_lender<'a, E>(tx: E, contract_id: &str) -> Result<Option<FiatLoanDetails>>
+/// Get the [`FiatLoanDetailsWrapper`] for the lender in the contract identified by `contract_id`.
+pub async fn get_lender<'a, E>(tx: E, contract_id: &str) -> Result<Option<FiatLoanDetailsWrapper>>
 where
     E: sqlx::Executor<'a, Database = Postgres>,
 {
@@ -259,8 +260,8 @@ where
                 _ => None,
             };
 
-            Some(FiatLoanDetails {
-                details: lendasat_core::FiatLoanDetails {
+            Some(FiatLoanDetailsWrapper {
+                details: FiatLoanDetails {
                     iban_transfer_details,
                     swift_transfer_details,
                     bank_name: row.bank_name,

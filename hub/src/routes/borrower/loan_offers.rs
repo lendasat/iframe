@@ -3,6 +3,7 @@ use crate::model::LoanAsset;
 use crate::model::LoanOfferStatus;
 use crate::model::OriginationFee;
 use crate::routes::borrower::auth::jwt_or_api_auth;
+use crate::routes::borrower::LOAN_OFFERS_TAG;
 use crate::routes::AppState;
 use crate::user_stats;
 use crate::user_stats::LenderStats;
@@ -12,43 +13,30 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::middleware;
 use axum::response::IntoResponse;
-use axum::routing::get;
 use axum::Json;
-use axum::Router;
 use rust_decimal::Decimal;
 use serde::Deserialize;
 use serde::Serialize;
 use std::sync::Arc;
 use tracing::instrument;
 use url::Url;
+use utoipa::ToSchema;
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
 
-pub(crate) fn router(app_state: Arc<AppState>) -> Router {
-    Router::new()
-        .route(
-            "/api/offers",
-            get(get_all_available_loan_offers).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_or_api_auth::auth,
-            )),
-        )
-        .route(
-            "/api/offer/:id",
-            get(get_loan_offer).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_or_api_auth::auth,
-            )),
-        )
-        .route(
-            "/api/offersbylender/:lender_id",
-            get(get_available_loan_offers_by_lender).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_or_api_auth::auth,
-            )),
-        )
+pub(crate) fn router_openapi(app_state: Arc<AppState>) -> OpenApiRouter {
+    OpenApiRouter::new()
+        .routes(routes!(get_all_available_loan_offers))
+        .routes(routes!(get_loan_offer))
+        .routes(routes!(get_available_loan_offers_by_lender))
+        .route_layer(middleware::from_fn_with_state(
+            app_state.clone(),
+            jwt_or_api_auth::auth,
+        ))
         .with_state(app_state)
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct LoanOffer {
     pub id: String,
     pub lender: LenderStats,
@@ -73,6 +61,24 @@ pub struct LoanOffer {
     pub lender_xpub: String,
 }
 
+/// Return all available offers
+#[utoipa::path(
+get,
+path = "/",
+tag = LOAN_OFFERS_TAG,
+responses(
+    (
+    status = 200,
+    description = "A list of available offers",
+    body = [LoanOffer]
+    )
+),
+security(
+    (
+    "api_key" = [])
+    )
+)
+]
 #[instrument(skip_all, err(Debug))]
 pub async fn get_all_available_loan_offers(
     State(data): State<Arc<AppState>>,
@@ -141,6 +147,29 @@ pub async fn get_all_available_loan_offers(
     Ok((StatusCode::OK, Json(ret)))
 }
 
+/// Return loan offers by lender
+#[utoipa::path(
+get,
+path = "/bylender/{id}",
+params(
+    (
+    "id" = String, Path, description = "Lender id"
+    )
+),
+tag = LOAN_OFFERS_TAG,
+responses(
+    (
+    status = 200,
+    description = "A list of loan offers by the specific lender",
+    body = [LoanOffer]
+    )
+),
+security(
+    (
+    "api_key" = [])
+    )
+)
+]
 #[instrument(skip_all, err(Debug))]
 pub async fn get_available_loan_offers_by_lender(
     State(data): State<Arc<AppState>>,
@@ -211,6 +240,29 @@ pub async fn get_available_loan_offers_by_lender(
     Ok((StatusCode::OK, Json(ret)))
 }
 
+/// Return specific loan offers
+#[utoipa::path(
+get,
+path = "/{id}",
+params(
+    (
+    "id" = String, Path, description = "Loan offer id"
+    )
+),
+tag = LOAN_OFFERS_TAG,
+responses(
+    (
+    status = 200,
+    description = "A loan offer",
+    body = LoanOffer
+    )
+),
+security(
+    (
+    "api_key" = [])
+    )
+)
+]
 #[instrument(skip_all, err(Debug))]
 pub async fn get_loan_offer(
     State(data): State<Arc<AppState>>,
