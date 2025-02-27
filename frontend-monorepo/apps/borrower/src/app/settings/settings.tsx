@@ -3,6 +3,7 @@ import { PiWarningCircleFill } from "react-icons/pi";
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Profile } from "./profile";
 import { Wallet } from "./wallet";
+import { NostrChatSettingsPage } from "./nostr-chat-settings";
 
 function Settings() {
   const location = useLocation();
@@ -30,6 +31,13 @@ function Settings() {
               >
                 <Link to="wallet">Wallet</Link>
               </TabNav.Link>
+              <TabNav.Link
+                asChild
+                active={location.pathname.includes("chat")}
+                className="data-[state=inactive]:text-font/70 flex-1 rounded-full px-4 py-2 text-center font-medium capitalize hover:bg-transparent data-[state=active]:bg-purple-800/20 data-[state=active]:font-semibold data-[state=active]:text-purple-800 md:flex-none md:py-3 md:text-left dark:data-[state=active]:bg-purple-700/20 dark:data-[state=active]:text-purple-300 dark:data-[state=inactive]:text-gray-400"
+              >
+                <Link to="chat">Chat (Nostr)</Link>
+              </TabNav.Link>
             </Box>
           </Box>
           <Box pt="3" className="flex-grow">
@@ -37,6 +45,7 @@ function Settings() {
               <Route path="/" element={<Navigate to="profile" replace />} />
               <Route path="profile" element={<Profile />} />
               <Route path="wallet" element={<Wallet />} />
+              <Route path="chat" element={<NostrChatSettingsPage />} />
             </Routes>
           </Box>
         </TabNav.Root>

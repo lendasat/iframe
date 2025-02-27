@@ -49,16 +49,12 @@ interface NostrChatProps {
   otherUser: string;
   chatRoom: string;
   secretKey: string;
-  userAvatar?: string;
-  otherUserAvatar?: string;
 }
 
 const NostrChat = ({
   secretKey,
   chatRoom: chatRoomString,
   otherUser: otherUserString,
-  userAvatar,
-  otherUserAvatar,
 }: NostrChatProps) => {
   loadWasmSync();
 
@@ -201,6 +197,10 @@ const NostrChat = ({
     scrollToBottom();
   }, [sortedMessages, scrollToBottom]);
 
+  console.log(`Other user ${otherUser.toBech32()}`);
+  console.log(`Local user ${user?.toBech32()}`);
+  console.log(`Chat room ${chatRoom?.toBech32()}`);
+
   return (
     <>
       <Box className="h-96 space-y-4 overflow-y-auto p-4">
@@ -208,28 +208,30 @@ const NostrChat = ({
           <div
             key={message.eventId.toHex()}
             className={`flex items-start ${
-              message.sender === otherUser.toBech32()
-                ? "justify-end"
-                : "justify-start"
+              message.sender === user?.toBech32()
+                ? "justify-start"
+                : "justify-end"
             }`}
           >
-            {message.sender === user?.toBech32() && (
-              <Avatar
-                initial={message.sender[0]}
-                fullString={message.sender}
-                avatar={userAvatar}
-                position="left"
-              />
-            )}
-
             <Box
               className={`rounded-lg p-3 ${
-                message.sender === otherUser.toBech32()
+                message.sender === user?.toBech32()
                   ? "rounded-br-none bg-gray-200 dark:bg-gray-700"
                   : "rounded-br-none bg-purple-100 dark:bg-purple-900"
               }`}
             >
               <Flex direction={"column"}>
+                <Text
+                  size={"1"}
+                  className={`text-gray-900 dark:text-gray-100`}
+                  weight={"light"}
+                >
+                  {message.sender.substring(0, 8)}:
+                  {message.sender.substring(
+                    message.sender.length - 9,
+                    message.sender.length - 1,
+                  )}
+                </Text>
                 <Text size={"2"} className={`text-gray-900 dark:text-gray-100`}>
                   {message.content}
                 </Text>
@@ -248,14 +250,6 @@ const NostrChat = ({
                 </Text>
               </Flex>
             </Box>
-            {message.sender === otherUser.toBech32() && (
-              <Avatar
-                initial={otherUserString[0]}
-                fullString={otherUserString}
-                avatar={otherUserAvatar}
-                position="right"
-              />
-            )}
           </div>
         ))}
 
