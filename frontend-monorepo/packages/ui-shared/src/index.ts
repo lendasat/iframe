@@ -47,6 +47,7 @@ export * from "./lib/models";
 export * from "./lib/auth/upgrade-to-pake";
 export * from "./lib/auth/upgrade-to-pake-form";
 export * from "./lib/components/mnemonic";
+export * from "./lib/components/nostr-chat-settings";
 export * from "./lib/UserStats";
 export * from "./lib/components/KycBadge";
 export * from "./lib/bank-details/bank-details-dialog";

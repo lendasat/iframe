@@ -1,6 +1,4 @@
-import { useBaseHttpClient } from "@frontend/base-http-client";
-import { useAuth, useLenderHttpClient } from "@frontend/http-client-lender";
-import { EditableTimezoneField, MnemonicComponent } from "@frontend/ui-shared";
+import { useState } from "react";
 import {
   Avatar,
   Box,
@@ -9,39 +7,17 @@ import {
   Flex,
   Heading,
   Spinner,
-  TabNav,
   Text,
 } from "@radix-ui/themes";
-import { useState } from "react";
-import { BiSolidError } from "react-icons/bi";
 import { GoVerified } from "react-icons/go";
-import { IoIosUnlock } from "react-icons/io";
-import { IoInformationCircleOutline } from "react-icons/io5";
 import { MdEdit } from "react-icons/md";
-import { PiWarningCircleFill } from "react-icons/pi";
-import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
-import TelegramBotDetails from "./settings/TelegramBotDetails";
+import { BiSolidError } from "react-icons/bi";
+import { IoIosUnlock } from "react-icons/io";
+import { useAuth, useLenderHttpClient } from "@frontend/http-client-lender";
+import { useBaseHttpClient } from "@frontend/base-http-client";
+import { EditableTimezoneField } from "@frontend/ui-shared";
 
-function Wallet() {
-  return (
-    <Box className="md:pl-8">
-      <Heading
-        as="h4"
-        className="text-font dark:text-font-dark font-semibold"
-        size={"5"}
-      >
-        Wallet
-      </Heading>
-      <Box mt={"6"} className="space-y-4">
-        <Box className="rounded-2xl border border-purple-400/20 px-5 py-6 dark:border-gray-500/50">
-          <MnemonicComponent />
-        </Box>
-      </Box>
-    </Box>
-  );
-}
-
-function Profile() {
+export function Profile() {
   const { user } = useAuth();
   const { forgotPassword } = useBaseHttpClient();
   const { putUpdateProfile } = useLenderHttpClient();
@@ -260,138 +236,3 @@ function Profile() {
     </Box>
   );
 }
-
-function NotificationSettings() {
-  const { user } = useAuth();
-
-  const maybeBotUrl = import.meta.env.VITE_TELEGRAM_BOT_URL;
-  const maybeBotName = import.meta.env.VITE_TELEGRAM_BOT_NAME;
-  const maybePersonalTelegramToken = user?.personal_telegram_token;
-
-  let error = false;
-  if (!maybeBotUrl || !maybeBotName || !maybePersonalTelegramToken) {
-    error = true;
-  }
-
-  console.log(maybeBotUrl);
-  console.log(maybeBotName);
-  console.log(maybePersonalTelegramToken);
-
-  const botUrl = maybeBotUrl || "";
-  const botName = maybeBotName || "";
-  const personalTelegramToken = maybePersonalTelegramToken || "";
-
-  return (
-    <Box className="md:pl-8">
-      <Heading
-        as="h4"
-        className="text-font dark:text-font-dark font-semibold"
-        size={"5"}
-      >
-        Notification Settings
-      </Heading>
-      <Box mt={"6"} className="space-y-4">
-        <Box className="rounded-2xl border border-purple-400/20 px-5 py-6 dark:border-gray-500/50">
-          <Heading
-            as="h4"
-            className="text-font dark:text-font-dark font-semibold capitalize"
-            size={"3"}
-          >
-            Telegram Bot
-          </Heading>
-          {error ? (
-            <Callout.Root color="orange">
-              <Callout.Icon>
-                <IoInformationCircleOutline />
-              </Callout.Icon>
-              <Callout.Text>
-                Telegram bot has not been configured correctly
-              </Callout.Text>
-            </Callout.Root>
-          ) : (
-            <Box mt={"4"} className="w-full">
-              <TelegramBotDetails
-                token={personalTelegramToken}
-                botUrl={botUrl}
-                botName={botName}
-              />
-            </Box>
-          )}
-        </Box>
-      </Box>
-    </Box>
-  );
-}
-
-function MyAccount() {
-  const location = useLocation();
-
-  return (
-    <Box className="flex flex-col overflow-y-scroll p-4">
-      <Box className="bg-dashboard/50 dark:bg-dark-700/50 flex-grow rounded-2xl shadow-sm md:max-h-[800px]">
-        <TabNav.Root
-          className="h-full p-5 md:flex md:items-start"
-          color={"purple"}
-        >
-          <Box className="dark:border-dark w-full rounded-full bg-purple-800/5 p-2 md:h-full md:max-w-[200px] md:rounded-none md:border-r md:border-black/5 md:bg-transparent md:p-0">
-            <Box className="rounded-r-full border-b-0 shadow-none md:flex-col md:rounded-none">
-              <TabNav.Link
-                asChild
-                active={location.pathname.includes("profile")}
-                className="data-[state=inactive]:text-font/70 flex-1 rounded-full px-4 py-2 text-center font-medium capitalize hover:bg-transparent data-[state=active]:bg-purple-800/20 data-[state=active]:font-semibold data-[state=active]:text-purple-800 md:flex-none md:py-3 md:text-left dark:data-[state=active]:bg-purple-700/20 dark:data-[state=active]:text-purple-300 dark:data-[state=inactive]:text-gray-400"
-              >
-                <Link className={"text-font dark:text-font-dark"} to="profile">
-                  Profile
-                </Link>
-              </TabNav.Link>
-              <TabNav.Link
-                asChild
-                active={location.pathname.includes("wallet")}
-                className={`"data-[state=inactive]:text-font/70 dark:data-[state=active]:bg-purple-700/20" flex-grow rounded-full px-2 font-medium capitalize hover:bg-transparent data-[state=active]:bg-purple-800/20 data-[state=active]:font-semibold data-[state=active]:text-purple-800 data-[state=active]:before:bg-transparent md:w-fit md:justify-start dark:data-[state=active]:text-purple-300 dark:data-[state=inactive]:text-gray-400`}
-              >
-                <Link className={"text-font dark:text-font-dark"} to="wallet">
-                  Wallet
-                </Link>
-              </TabNav.Link>
-              <TabNav.Link
-                asChild
-                active={location.pathname.includes("notifications")}
-                className={`"data-[state=inactive]:text-font/70 dark:data-[state=active]:bg-purple-700/20" flex-grow rounded-full px-2 font-medium capitalize hover:bg-transparent data-[state=active]:bg-purple-800/20 data-[state=active]:font-semibold data-[state=active]:text-purple-800 data-[state=active]:before:bg-transparent md:w-fit md:justify-start dark:data-[state=active]:text-purple-300 dark:data-[state=inactive]:text-gray-400`}
-              >
-                <Link
-                  className={"text-font dark:text-font-dark"}
-                  to="notifications"
-                >
-                  Notification Settings
-                </Link>
-              </TabNav.Link>
-            </Box>
-          </Box>
-          <Box pt="3" className="flex-grow">
-            <Routes>
-              <Route path="/" element={<Navigate to="profile" replace />} />
-              <Route path="profile" element={<Profile />} />
-              <Route path="wallet" element={<Wallet />} />
-              <Route path="notifications" element={<NotificationSettings />} />
-            </Routes>
-          </Box>
-        </TabNav.Root>
-      </Box>
-      <Box py={"3"} mb={"8"}>
-        <Flex gap={"1"} align={"center"}>
-          <PiWarningCircleFill color="rgb(235, 172, 14)" size={22} />
-          <Text
-            size={"1"}
-            weight={"medium"}
-            className="text-font/60 dark:text-font-dark/60"
-          >
-            Do not disclose your password to anyone, including Lendasat support.
-          </Text>
-        </Flex>
-      </Box>
-      <Box></Box>
-    </Box>
-  );
-}
-
-export default MyAccount;
