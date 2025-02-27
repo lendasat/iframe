@@ -71,7 +71,7 @@ mod tests {
             name: "a fantastic loan".to_string(),
             min_ltv: dec!(0.5),
             interest_rate: dec!(0.10),
-            loan_amount_min: dec!(1_000),
+            loan_amount_min: dec!(500),
             loan_amount_max: dec!(50_000),
             loan_amount_reserve: dec!(50_000),
             duration_days_min: 7,
@@ -120,7 +120,7 @@ mod tests {
             // if the real price of Bitcoin changes enough. We should mock the price in
             // the `hub` for the e2e tests.
             loan_amount: dec!(500),
-            duration_days: 6,
+            duration_days: 7,
             borrower_btc_address,
             borrower_xpub,
             borrower_loan_address: Some(
