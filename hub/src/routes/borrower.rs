@@ -44,6 +44,15 @@ const API_KEYS_TAG: &str = "api-keys";
 
 #[derive(OpenApi)]
 #[openapi(
+    info(
+        title = "Lendasat Borrower API",
+        description = "Interact with the lendasat server to \n\
+            - register as a new user, \n\
+            - manage personal api keys, \n\
+            - query available loan offers \n\
+            - create a contract request and \n\
+            - and manage open contracts."
+    ),
     modifiers(&SecurityAddon),
     tags(
         (
@@ -61,7 +70,6 @@ const API_KEYS_TAG: &str = "api-keys";
         (
             name = LOAN_OFFERS_TAG, description = "API to interact with loan offers",
         )
-
     ),
 )]
 struct ApiDoc;
