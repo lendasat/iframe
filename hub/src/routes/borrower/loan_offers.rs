@@ -282,7 +282,7 @@ pub async fn get_loan_offer(
             let error_response = ErrorResponse {
                 message: "Loan offer not found".to_string(),
             };
-            return Err((StatusCode::INTERNAL_SERVER_ERROR, Json(error_response)));
+            return Err((StatusCode::BAD_REQUEST, Json(error_response)));
         }
         Some(loan_offer) => {
             let lender = db::lenders::get_user_by_id(&data.db, &loan_offer.lender_id)
