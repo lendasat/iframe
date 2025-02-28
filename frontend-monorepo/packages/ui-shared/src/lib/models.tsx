@@ -15,8 +15,8 @@ export interface LoanTransaction {
 }
 
 export enum LoanAsset {
-  USDT_SN = "UsdtSn",
-  USDC_SN = "UsdcSn",
+  USDT_SN = "UsdtStrk",
+  USDC_SN = "UsdcStrk",
   USDT_POL = "UsdtPol",
   USDC_POL = "UsdcPol",
   USDT_ETH = "UsdtEth",
