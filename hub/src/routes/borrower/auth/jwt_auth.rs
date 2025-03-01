@@ -1,6 +1,6 @@
 use crate::db;
-use crate::db::borrowers::get_user_by_id;
 use crate::model::Borrower;
+use crate::model::PasswordAuth;
 use crate::model::TokenClaims;
 use crate::routes::borrower::auth::ErrorResponse;
 use crate::routes::borrower::AppState;
@@ -16,12 +16,11 @@ use axum_extra::extract::cookie::CookieJar;
 use jsonwebtoken::decode;
 use jsonwebtoken::DecodingKey;
 use jsonwebtoken::Validation;
-use sha2::Digest;
-use sha2::Sha256;
 use std::sync::Arc;
 
-/// Authentication middleware check if the cookie is still active and the user still logged in
-pub(crate) async fn auth(
+/// Authentication middleware to check if the cookie is still active and the user is still logged
+/// in.
+pub async fn auth(
     cookie_jar: CookieJar,
     State(data): State<Arc<AppState>>,
     mut req: Request<Body>,
@@ -41,74 +40,67 @@ pub(crate) async fn auth(
                 })
         });
 
-    let user_id = match token {
-        Some(token) => {
-            decode::<TokenClaims>(
-                &token,
-                &DecodingKey::from_secret(data.config.jwt_secret.as_ref()),
-                &Validation::default(),
-            )
-            .map_err(|_| {
+    let token = token.ok_or_else(|| {
+        let json_error = ErrorResponse {
+            message: "You are not logged in.".to_string(),
+        };
+        (StatusCode::UNAUTHORIZED, Json(json_error))
+    })?;
+
+    let claims = decode::<TokenClaims>(
+        &token,
+        &DecodingKey::from_secret(data.config.jwt_secret.as_ref()),
+        &Validation::default(),
+    )
+    .map_err(|_| {
+        let json_error = ErrorResponse {
+            message: "Invalid token".to_string(),
+        };
+        (StatusCode::UNAUTHORIZED, Json(json_error))
+    })?
+    .claims;
+
+    let borrower_id = &claims.user_id;
+    let borrower: Option<Borrower> =
+        match db::borrowers::get_user_by_id(&data.db, borrower_id).await {
+            Ok(user) => user,
+            Err(e) => {
                 let json_error = ErrorResponse {
-                    message: "Invalid token".to_string(),
+                    message: format!("Error fetching user from database: {}", e),
                 };
-                (StatusCode::UNAUTHORIZED, Json(json_error))
-            })?
-            .claims
-            .user_id
-        }
-        None => {
-            let api_key = req.headers().get("x-api-key").ok_or_else(|| {
-                let json_error = ErrorResponse {
-                    message: "Missing JWT or API key.".to_string(),
-                };
-                (StatusCode::UNAUTHORIZED, Json(json_error))
-            })?;
+                return Err((StatusCode::INTERNAL_SERVER_ERROR, Json(json_error)));
+            }
+        };
 
-            let api_key = api_key.to_str().map_err(|_| {
-                let json_error = ErrorResponse {
-                    message: "Invalid API key".to_string(),
-                };
-                (StatusCode::UNAUTHORIZED, Json(json_error))
-            })?;
-
-            let api_key_hash = Sha256::digest(api_key.as_bytes());
-            let api_key_hash = hex::encode(api_key_hash);
-
-            db::api_keys::authenticate_borrower(&data.db, &api_key_hash)
-                .await
-                .map_err(|_| {
-                    let json_error = ErrorResponse {
-                        message: "Database Error".to_string(),
-                    };
-                    (StatusCode::INTERNAL_SERVER_ERROR, Json(json_error))
-                })?
-                .ok_or_else(|| {
-                    let json_error = ErrorResponse {
-                        message: "Invalid API key".to_string(),
-                    };
-                    (StatusCode::UNAUTHORIZED, Json(json_error))
-                })?
-        }
-    };
-
-    let borrower: Option<Borrower> = match get_user_by_id(&data.db, user_id.as_str()).await {
-        Ok(user) => user,
-        Err(e) => {
-            let json_error = ErrorResponse {
-                message: format!("Error fetching user from database: {}", e),
-            };
-            return Err((StatusCode::INTERNAL_SERVER_ERROR, Json(json_error)));
-        }
-    };
-
-    let user = borrower.ok_or_else(|| {
+    let borrower = borrower.ok_or_else(|| {
         let json_error = ErrorResponse {
             message: "The user belonging to this token no longer exists".to_string(),
         };
         (StatusCode::UNAUTHORIZED, Json(json_error))
     })?;
 
-    req.extensions_mut().insert(user);
+    let password_auth_info: Option<PasswordAuth> =
+        match db::borrowers::get_password_auth_info_by_borrower_id(&data.db, borrower_id).await {
+            Ok(user) => user,
+            Err(e) => {
+                let json_error = ErrorResponse {
+                    message: format!(
+                        "Error fetching password authentication info from database: {}",
+                        e
+                    ),
+                };
+                return Err((StatusCode::INTERNAL_SERVER_ERROR, Json(json_error)));
+            }
+        };
+
+    let password_auth_info = password_auth_info.ok_or_else(|| {
+        let json_error = ErrorResponse {
+            message: "The user belonging to this token does not have password authentication info"
+                .to_string(),
+        };
+        (StatusCode::UNAUTHORIZED, Json(json_error))
+    })?;
+
+    req.extensions_mut().insert((borrower, password_auth_info));
     Ok(next.run(req).await)
 }

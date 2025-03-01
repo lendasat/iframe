@@ -1,3 +1,4 @@
+use crate::db;
 use crate::model;
 use crate::model::PersonalReferralCode;
 use anyhow::Context;
@@ -5,6 +6,8 @@ use anyhow::Result;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
 use rust_decimal::Decimal;
+use sha2::Digest;
+use sha2::Sha256;
 use sqlx::PgPool;
 use sqlx::Pool;
 use sqlx::Postgres;
@@ -12,21 +15,14 @@ use time::OffsetDateTime;
 
 const VERIFICATION_CODE_LENGTH: usize = 6;
 
-#[derive(Debug, sqlx::FromRow, Clone)]
+#[derive(Debug, Clone)]
 pub struct Borrower {
     pub id: String,
     pub name: String,
-    pub email: String,
-    pub salt: String,
-    pub verifier: String,
-    pub password: Option<String>,
-    pub verified: bool,
-    pub verification_code: Option<String>,
+    pub email: Option<String>,
     pub used_referral_code: Option<String>,
     pub first_time_discount_rate_referee: Option<Decimal>,
     pub timezone: Option<String>,
-    pub password_reset_token: Option<String>,
-    pub password_reset_at: Option<OffsetDateTime>,
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
 }
@@ -39,68 +35,153 @@ fn new_model_borrower(
         id: borrower.id,
         name: borrower.name,
         email: borrower.email,
-        salt: borrower.salt,
-        verifier: borrower.verifier,
-        password: borrower.password,
-        verified: borrower.verified,
-        verification_code: borrower.verification_code,
         used_referral_code: borrower.used_referral_code,
         personal_referral_codes,
         first_time_discount_rate_referee: borrower.first_time_discount_rate_referee,
         timezone: borrower.timezone,
-        password_reset_token: borrower.password_reset_token,
-        password_reset_at: borrower.password_reset_at,
         created_at: borrower.created_at,
         updated_at: borrower.updated_at,
     }
 }
 
-/// Inserts a new user and returns said user
+/// Insert a new, password-authenticated [`Borrower`].
 ///
-/// Fails if user with provided email already exists
-pub async fn register_user(
+/// Fails if a user with the provided email already exists in the database table.
+pub async fn register_password_auth_user(
     db_tx: &mut sqlx::Transaction<'_, Postgres>,
     name: &str,
     email: &str,
     salt: &str,
     verifier: &str,
-) -> Result<model::Borrower> {
+) -> Result<(model::Borrower, model::PasswordAuth)> {
     let id = uuid::Uuid::new_v4().to_string();
+    let email = email.to_ascii_lowercase();
+    let email = email.trim();
     let verification_code = generate_random_string(VERIFICATION_CODE_LENGTH);
 
-    // First get the user with used referral code info
-    // here we don't have to adjust the `first_time_discount_rate_referee` because the user can't
-    // have any contracts yet
-    let base_user = sqlx::query_as!(
-        Borrower,
+    // First, get the user with used referral code info.
+    //
+    // Here we don't have to adjust the `first_time_discount_rate_referee` because the user can't
+    // have any contracts yet.
+    let row = sqlx::query!(
         r#"
-        WITH inserted AS (
-            INSERT INTO borrowers (id, name, email, salt, verifier, verification_code)
-            VALUES ($1, $2, $3, $4, $5, $6)
+        WITH inserted_borrower AS (
+            INSERT INTO borrowers (id, name)
+            VALUES ($1, $2)
+            RETURNING *
+        ), inserted_auth AS (
+            INSERT INTO borrowers_password_auth (borrower_id, email, salt, verifier, verification_code)
+            VALUES ($1, $3, $4, $5, $6)
             RETURNING *
         )
         SELECT
             b.*,
             rb.referral_code as used_referral_code,
             rcb.first_time_discount_rate_referee
-        FROM inserted b
+        FROM inserted_borrower b
         LEFT JOIN referred_borrowers rb ON rb.referred_borrower_id = b.id
         LEFT JOIN referral_codes_borrowers rcb ON rcb.code = rb.referral_code
     "#,
         id,
         name,
-        email.to_ascii_lowercase(),
+        email,
         salt,
         verifier,
         verification_code,
     )
     .fetch_one(&mut **db_tx)
+        .await?;
+
+    let borrower = Borrower {
+        id,
+        name: row.name,
+        email: row.email,
+        used_referral_code: row.used_referral_code,
+        first_time_discount_rate_referee: row.first_time_discount_rate_referee,
+        timezone: row.timezone,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+    };
+
+    // Next, we enhance the borrower model with a personal code.
+    let borrower = enhance_with_personal_code(&mut **db_tx, borrower).await?;
+
+    let password_auth = model::PasswordAuth {
+        borrower_id: row.id,
+        email: email.to_string(),
+        password: None,
+        salt: salt.to_string(),
+        verifier: verifier.to_string(),
+        verified: false,
+        verification_code: Some(verification_code),
+        password_reset_token: None,
+        password_reset_at: None,
+    };
+
+    Ok((borrower, password_auth))
+}
+
+/// Register a borrower for an API account.
+pub async fn register_api_account(
+    db_tx: &mut sqlx::Transaction<'_, Postgres>,
+    name: &str,
+    email: Option<&str>,
+    timezone: Option<&str>,
+    creator_api_id: i32,
+) -> Result<(model::Borrower, String)> {
+    let borrower_id = uuid::Uuid::new_v4().to_string();
+    let email = email.map(|email| email.to_ascii_lowercase().trim().to_string());
+    let row = sqlx::query!(
+        r#"
+           INSERT INTO borrowers (id, name, email, timezone)
+           VALUES ($1, $2, $3, $4)
+           RETURNING *
+        "#,
+        borrower_id,
+        name,
+        email,
+        timezone
+    )
+    .fetch_one(&mut **db_tx)
     .await?;
 
-    // next we enhance it with a personal code
-    let borrower = enhance_with_personal_code(&mut **db_tx, base_user).await?;
+    // Insert into api_accounts_by_creators to establish the relationship
+    sqlx::query!(
+        r#"
+           INSERT INTO api_accounts_by_creators (borrower_id, creator_api_key)
+           VALUES ($1, $2)
+        "#,
+        borrower_id,
+        creator_api_id
+    )
+    .execute(&mut **db_tx)
+    .await?;
 
-    Ok(borrower)
+    let api_key = {
+        let key = uuid::Uuid::new_v4().to_string();
+        format!("ldst-acc-{key}")
+    };
+    let api_key_hash = Sha256::digest(api_key.as_bytes());
+    let api_key_hash = hex::encode(api_key_hash);
+
+    db::api_keys::insert_borrower(&mut **db_tx, &api_key_hash, &borrower_id, "account key").await?;
+
+    // Not dealing with referral codes or discounts for API accounts (for now).
+
+    let borrower = Borrower {
+        id: borrower_id,
+        name: row.name,
+        email: row.email,
+        used_referral_code: None,
+        first_time_discount_rate_referee: None,
+        timezone: row.timezone,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+    };
+
+    let borrower = new_model_borrower(borrower, vec![]);
+
+    Ok((borrower, api_key))
 }
 
 async fn enhance_with_personal_code<'a, E>(pool: E, base_user: Borrower) -> Result<model::Borrower>
@@ -144,7 +225,7 @@ where
     E: sqlx::Executor<'a, Database = Postgres>,
 {
     sqlx::query!(
-        "UPDATE borrowers
+        "UPDATE borrowers_password_auth
         SET salt = $1,
             verifier = $2,
             password = null
@@ -170,7 +251,7 @@ where
     E: sqlx::Executor<'a, Database = Postgres>,
 {
     sqlx::query!(
-        "UPDATE borrowers
+        "UPDATE borrowers_password_auth
         SET salt = $1,
             verifier = $2
         WHERE email = $3",
@@ -183,7 +264,7 @@ where
     Ok(())
 }
 
-/// Update the legacy password hash stored in the `borrowers` table.
+/// Update the legacy password hash stored in the `borrowers_password_auth` table.
 pub async fn update_legacy_password<'a, E>(
     pool: E,
     borrower_id: &str,
@@ -201,9 +282,9 @@ where
         .map_err(|e| anyhow::anyhow!("Failed to hash password: {e}"))?;
 
     sqlx::query!(
-        r#"UPDATE borrowers
+        r#"UPDATE borrowers_password_auth
            SET password = $1
-           WHERE id = $2
+           WHERE borrower_id = $2
         "#,
         legacy_password_hash,
         borrower_id,
@@ -223,28 +304,30 @@ pub async fn user_exists(pool: &Pool<Postgres>, email: &str) -> Result<bool> {
 pub async fn get_user_by_email(
     pool: &Pool<Postgres>,
     email: &str,
-) -> Result<Option<model::Borrower>> {
+) -> Result<Option<(model::Borrower, model::PasswordAuth)>> {
     let email = email.to_ascii_lowercase();
-    // TODO: try to merge the `enhance` part again
-    let maybe_base_user = sqlx::query_as!(
-        Borrower,
+
+    let maybe_row = sqlx::query!(
         r#"SELECT
-           id as "id!",
-           name as "name!",
-           email as "email!",
-           salt as "salt!",
-           verifier as "verifier!",
-           password,
-           verified as "verified!",
-           verification_code,
-           timezone,
-           password_reset_token,
-           used_referral_code,
-           first_time_discount_rate_referee,
-           password_reset_at,
-           created_at as "created_at!",
-           updated_at as "updated_at!"
-           FROM borrower_discount_info where email = $1
+           b.id as "id!",
+           b.name as "name!",
+           b.email,
+           b.used_referral_code,
+           b.first_time_discount_rate_referee,
+           b.timezone,
+           b_auth.salt,
+           b_auth.email as auth_email,
+           b_auth.verifier,
+           b_auth.password,
+           b_auth.verified,
+           b_auth.verification_code,
+           b_auth.password_reset_token,
+           b_auth.password_reset_at,
+           b.created_at as "created_at!",
+           b.updated_at as "updated_at!"
+           FROM borrowers_password_auth b_auth
+           LEFT JOIN borrower_discount_info b ON b.id = b_auth.borrower_id
+           WHERE b_auth.email = $1
         "#,
         email
     )
@@ -252,31 +335,53 @@ pub async fn get_user_by_email(
     .await
     .context("failed loading")?;
 
-    match maybe_base_user {
-        Some(user) => Ok(Some(enhance_with_personal_code(pool, user).await?)),
+    match maybe_row {
+        Some(row) => {
+            let borrower = Borrower {
+                id: row.id.clone(),
+                name: row.name,
+                email: row.email,
+                used_referral_code: row.used_referral_code,
+                first_time_discount_rate_referee: row.first_time_discount_rate_referee,
+                timezone: row.timezone,
+                created_at: row.created_at,
+                updated_at: row.updated_at,
+            };
+
+            let borrower = enhance_with_personal_code(pool, borrower).await?;
+
+            let password_auth = model::PasswordAuth {
+                borrower_id: row.id,
+                email: row.auth_email,
+                salt: row.salt,
+                verifier: row.verifier,
+                password: row.password,
+                verified: row.verified,
+                verification_code: row.verification_code,
+                password_reset_token: row.password_reset_token,
+                password_reset_at: row.password_reset_at,
+            };
+
+            Ok(Some((borrower, password_auth)))
+        }
         None => Ok(None),
     }
 }
+
 pub async fn get_user_by_id(pool: &Pool<Postgres>, id: &str) -> Result<Option<model::Borrower>> {
-    let maybe_base_user = sqlx::query_as!(
-        Borrower,
+    let maybe_row = sqlx::query!(
         r#"SELECT
-           id as "id!",
-           name as "name!",
-           email as "email!",
-           salt as "salt!",
-           verifier as "verifier!",
-           password,
-           verified as "verified!",
-           verification_code,
-           timezone,
-           password_reset_token,
-           used_referral_code,
-           first_time_discount_rate_referee,
-           password_reset_at,
-           created_at as "created_at!",
-           updated_at as "updated_at!"
-           FROM borrower_discount_info where id = $1
+           b.id as "id!",
+           b.name as "name!",
+           b.email,
+           b.used_referral_code,
+           b.first_time_discount_rate_referee,
+           b.timezone,
+           b.created_at as "created_at!",
+           b.updated_at as "updated_at!"
+           FROM borrower_discount_info b
+           LEFT JOIN borrowers_password_auth b_auth ON b.id = b_auth.borrower_id
+           WHERE b.id = $1
         "#,
         id
     )
@@ -284,51 +389,110 @@ pub async fn get_user_by_id(pool: &Pool<Postgres>, id: &str) -> Result<Option<mo
     .await
     .context("failed loading")?;
 
-    match maybe_base_user {
-        Some(user) => Ok(Some(enhance_with_personal_code(pool, user).await?)),
+    match maybe_row {
+        Some(row) => {
+            let borrower = Borrower {
+                id: row.id,
+                name: row.name,
+                email: row.email,
+                used_referral_code: row.used_referral_code,
+                first_time_discount_rate_referee: row.first_time_discount_rate_referee,
+                timezone: row.timezone,
+                created_at: row.created_at,
+                updated_at: row.updated_at,
+            };
+
+            Ok(Some(enhance_with_personal_code(pool, borrower).await?))
+        }
         None => Ok(None),
     }
 }
-pub async fn get_user_by_verification_code(
+
+pub async fn get_password_auth_info_by_borrower_id(
     pool: &Pool<Postgres>,
-    verification_code: &str,
-) -> Result<Option<model::Borrower>> {
-    let verification_code = verification_code.to_ascii_lowercase();
-    let maybe_base_user = sqlx::query_as!(
-        Borrower,
+    borrower_id: &str,
+) -> Result<Option<model::PasswordAuth>> {
+    let maybe_row = sqlx::query!(
         r#"SELECT
-           id as "id!",
-           name as "name!",
-           email as "email!",
-           salt as "salt!",
-           verifier as "verifier!",
+           borrower_id,
+           email,
+           salt,
+           verifier,
            password,
-           verified as "verified!",
+           verified,
            verification_code,
            password_reset_token,
-           timezone,
-           used_referral_code,
-           first_time_discount_rate_referee,
-           password_reset_at,
-           created_at as "created_at!",
-           updated_at as "updated_at!"
-           FROM borrower_discount_info where verification_code = $1
+           password_reset_at
+           FROM borrowers_password_auth
+           WHERE borrower_id = $1
         "#,
-        verification_code
+        borrower_id,
     )
     .fetch_optional(pool)
     .await
     .context("failed loading")?;
 
-    match maybe_base_user {
-        Some(user) => Ok(Some(enhance_with_personal_code(pool, user).await?)),
+    match maybe_row {
+        Some(row) => Ok(Some(model::PasswordAuth {
+            borrower_id: row.borrower_id,
+            email: row.email,
+            salt: row.salt,
+            verifier: row.verifier,
+            password: row.password,
+            verified: row.verified,
+            verification_code: row.verification_code,
+            password_reset_token: row.password_reset_token,
+            password_reset_at: row.password_reset_at,
+        })),
         None => Ok(None),
     }
 }
+
+pub async fn get_password_auth_info_by_verification_code(
+    pool: &Pool<Postgres>,
+    verification_code: &str,
+) -> Result<Option<model::PasswordAuth>> {
+    let verification_code = verification_code.to_ascii_lowercase();
+    let maybe_row = sqlx::query!(
+        r#"SELECT
+           borrower_id,
+           email,
+           salt,
+           verifier,
+           password,
+           verified,
+           verification_code,
+           password_reset_token,
+           password_reset_at
+           FROM borrowers_password_auth
+           WHERE verification_code = $1
+        "#,
+        verification_code,
+    )
+    .fetch_optional(pool)
+    .await
+    .context("failed loading")?;
+
+    match maybe_row {
+        Some(row) => Ok(Some(model::PasswordAuth {
+            borrower_id: row.borrower_id,
+            email: row.email,
+            salt: row.salt,
+            verifier: row.verifier,
+            password: row.password,
+            verified: row.verified,
+            verification_code: row.verification_code,
+            password_reset_token: row.password_reset_token,
+            password_reset_at: row.password_reset_at,
+        })),
+        None => Ok(None),
+    }
+}
+
 pub async fn verify_user(pool: &Pool<Postgres>, verification_code: &str) -> Result<()> {
     let verification_code = verification_code.to_ascii_lowercase();
     sqlx::query!(
-        "UPDATE borrowers SET verification_code = $1, verified = $2 WHERE verification_code = $3",
+        "UPDATE borrowers_password_auth SET verification_code = $1, verified = $2 WHERE verification_code = $3",
         Option::<String>::None,
         true,
         verification_code,
@@ -345,7 +509,7 @@ pub async fn update_password_reset_token_for_user(
     email: &str,
 ) -> Result<()> {
     sqlx::query!(
-        "UPDATE borrowers
+        "UPDATE borrowers_password_auth
         SET password_reset_token = $1,
             password_reset_at    = $2
         WHERE email = $3",
@@ -358,41 +522,45 @@ pub async fn update_password_reset_token_for_user(
     Ok(())
 }
 
-/// Returns a user by reset token.
+/// Return a user by reset token.
 ///
-/// Returns None if the reset token as already been expired
-pub async fn get_user_by_reset_token(
+/// Returns None if the reset token has already expired.
+pub async fn get_password_auth_info_by_reset_token(
     pool: &Pool<Postgres>,
     password_reset_token: &str,
-) -> Result<Option<model::Borrower>> {
-    let maybe_base_user = sqlx::query_as!(
-        Borrower,
+) -> Result<Option<model::PasswordAuth>> {
+    let maybe_row = sqlx::query!(
         r#"SELECT
-           id as "id!",
-           name as "name!",
-           email as "email!",
-           salt as "salt!",
-           verifier as "verifier!",
+           borrower_id,
+           email,
+           salt,
+           verifier,
            password,
-           verified as "verified!",
+           verified,
            verification_code,
            password_reset_token,
-           timezone,
-           used_referral_code,
-           first_time_discount_rate_referee,
-           password_reset_at,
-           created_at as "created_at!",
-           updated_at as "updated_at!"
-           FROM borrower_discount_info where password_reset_token = $1
+           password_reset_at
+           FROM borrowers_password_auth
+           WHERE password_reset_token = $1
         "#,
-        password_reset_token
+        password_reset_token,
     )
     .fetch_optional(pool)
     .await
     .context("failed loading")?;
 
-    match maybe_base_user {
-        Some(user) => Ok(Some(enhance_with_personal_code(pool, user).await?)),
+    match maybe_row {
+        Some(row) => Ok(Some(model::PasswordAuth {
+            borrower_id: row.borrower_id,
+            email: row.email,
+            password: row.password,
+            salt: row.salt,
+            verifier: row.verifier,
+            verified: row.verified,
+            verification_code: row.verification_code,
+            password_reset_token: row.password_reset_token,
+            password_reset_at: row.password_reset_at,
+        })),
         None => Ok(None),
     }
 }

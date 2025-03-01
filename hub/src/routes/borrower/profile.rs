@@ -1,6 +1,6 @@
 use crate::db;
 use crate::model::Borrower;
-use crate::routes::borrower::auth::jwt_auth;
+use crate::routes::borrower::auth::jwt_or_api_auth;
 use crate::routes::user_connection_details_middleware;
 use crate::routes::AppState;
 use axum::extract::FromRequest;
@@ -24,7 +24,7 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
             "/api/users/",
             put(update_profile).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
-                jwt_auth::auth,
+                jwt_or_api_auth::auth,
             )),
         )
         .layer(

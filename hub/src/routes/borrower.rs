@@ -1,5 +1,5 @@
 use crate::config::Config;
-use crate::routes::borrower::auth::jwt_auth::auth;
+use crate::routes::borrower::auth::jwt_or_api_auth::auth;
 use crate::routes::price_feed_ws;
 use crate::routes::profiles;
 use crate::routes::AppState;
@@ -15,6 +15,7 @@ use tokio::task::JoinHandle;
 use tower_http::services::ServeDir;
 use tower_http::services::ServeFile;
 
+pub(crate) mod api_accounts;
 pub(crate) mod api_keys;
 pub(crate) mod auth;
 pub(crate) mod contracts;
@@ -47,7 +48,8 @@ pub async fn spawn_borrower_server(
         )
         .merge(loan_requests::router(app_state.clone()))
         .merge(api_keys::router(app_state.clone()))
-        .merge(cards::router(app_state))
+        .merge(cards::router(app_state.clone()))
+        .merge(api_accounts::router(app_state))
         // This is a relative path on the filesystem, which means, when deploying `hub` we will need
         // to have the frontend in this directory. Ideally we would bundle the frontend with
         // the binary, but so far we failed at handling requests which are meant to be handled by

@@ -100,19 +100,22 @@ pub async fn approve_contract(
 
     let lender_xpub = contract.lender_xpub.ok_or(Error::MissingLenderXpub)?;
 
-    let (contract_address, contract_index) = match (contract.borrower_xpub, contract.borrower_pk) {
+    let (contract_address, contract_index) = match contract.borrower_pk {
         // If we only have a `borrower_xpub`, use it to derive the contract address.
-        (Some(borrower_xpub), None) => wallet
-            .contract_address(&borrower_xpub, &lender_xpub, contract.contract_version)
+        None => wallet
+            .contract_address(
+                &contract.borrower_xpub,
+                &lender_xpub,
+                contract.contract_version,
+            )
             .await
             .map_err(Error::ContractAddress)?,
         // If the `borrower_pk` was ever set, we should use that one because we are dealing with a
         // legacy contract.
-        (Some(_), Some(borrower_pk)) | (None, Some(borrower_pk)) => wallet
+        Some(borrower_pk) => wallet
             .contract_address_with_borrower_pk(borrower_pk, &lender_xpub, contract.contract_version)
             .await
             .map_err(Error::ContractAddress)?,
-        (None, None) => return Err(Error::MissingBorrowerXpub),
     };
 
     let borrower = db::borrowers::get_user_by_id(db, contract.borrower_id.as_str())

@@ -1,4 +1,4 @@
-use crate::routes::borrower::auth::jwt_auth::auth;
+use crate::routes::borrower::auth::jwt_or_api_auth::auth;
 use crate::routes::AppState;
 use axum::middleware;
 use axum::response::IntoResponse;

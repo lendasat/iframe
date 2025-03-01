@@ -1,7 +1,7 @@
 use crate::db;
 use crate::model::Borrower;
 use crate::moon;
-use crate::routes::borrower::auth::jwt_auth;
+use crate::routes::borrower::auth::jwt_or_api_auth;
 use crate::routes::AppState;
 use crate::routes::ErrorResponse;
 use anyhow::Result;
@@ -30,14 +30,14 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
             "/api/cards",
             get(get_cards).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
-                jwt_auth::auth,
+                jwt_or_api_auth::auth,
             )),
         )
         .route(
             "/api/transaction/:card_id",
             get(get_card_transaction).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
-                jwt_auth::auth,
+                jwt_or_api_auth::auth,
             )),
         )
         .route("/api/moon/webhook", post(post_webhook).get(get_webhook))

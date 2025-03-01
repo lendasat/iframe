@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT xpub \n        FROM lender_wallet_backups \n        WHERE lender_id = $1\n        ORDER BY created_at DESC\n        LIMIT 1\n        ",
+  "query": "\n        SELECT xpub\n        FROM lender_wallet_backups\n        WHERE lender_id = $1\n        ORDER BY created_at DESC\n        LIMIT 1\n        ",
   "describe": {
     "columns": [
       {
@@ -18,5 +18,5 @@
       false
     ]
   },
-  "hash": "1acf099389420cf5fe802f2747d2ba9cc524aaed01472fc87167c58cdee90cee"
+  "hash": "3d0800ca2ac81196d1322b068d8e7ec9ada12c893ba53ac3ed69dae9115d1887"
 }

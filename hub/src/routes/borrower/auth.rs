@@ -1,9 +1,9 @@
 use crate::db;
 use crate::db::borrowers::generate_random_string;
+use crate::db::borrowers::get_password_auth_info_by_reset_token;
+use crate::db::borrowers::get_password_auth_info_by_verification_code;
 use crate::db::borrowers::get_user_by_email;
-use crate::db::borrowers::get_user_by_reset_token;
-use crate::db::borrowers::get_user_by_verification_code;
-use crate::db::borrowers::register_user;
+use crate::db::borrowers::register_password_auth_user;
 use crate::db::borrowers::update_password_reset_token_for_user;
 use crate::db::borrowers::user_exists;
 use crate::db::borrowers::verify_user;
@@ -18,6 +18,7 @@ use crate::model::PakeLoginRequest;
 use crate::model::PakeLoginResponse;
 use crate::model::PakeServerData;
 use crate::model::PakeVerifyRequest;
+use crate::model::PasswordAuth;
 use crate::model::RegisterUserSchema;
 use crate::model::ResetLegacyPasswordSchema;
 use crate::model::ResetPasswordSchema;
@@ -25,7 +26,6 @@ use crate::model::TokenClaims;
 use crate::model::UpgradeToPakeRequest;
 use crate::model::UpgradeToPakeResponse;
 use crate::model::WalletBackupData;
-use crate::routes::borrower::auth::jwt_auth::auth;
 use crate::routes::user_connection_details_middleware;
 use crate::routes::user_connection_details_middleware::UserConnectionDetails;
 use crate::routes::AppState;
@@ -65,7 +65,9 @@ use time::OffsetDateTime;
 use tracing::instrument;
 use tracing::Level;
 
+pub(crate) mod api_account_creator_auth;
 pub(crate) mod jwt_auth;
+pub(crate) mod jwt_or_api_auth;
 
 /// Expiry time of a session cookie
 const COOKIE_EXPIRY_HOURS: i64 = 1;
@@ -90,13 +92,17 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
         .route("/api/auth/pake-verify", post(post_pake_verify))
         .route(
             "/api/auth/logout",
-            get(logout_handler)
-                .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
+            get(logout_handler).route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                jwt_or_api_auth::auth,
+            )),
         )
         .route(
             "/api/auth/check",
-            get(check_auth_handler)
-                .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
+            get(check_auth_handler).route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                jwt_or_api_auth::auth,
+            )),
         )
         .route(
             "/api/auth/verifyemail/:verification_code",
@@ -109,8 +115,10 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
         )
         .route(
             "/api/users/me",
-            get(get_me_handler)
-                .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
+            get(get_me_handler).route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                jwt_auth::auth,
+            )),
         )
         .route(
             "/api/auth/reset-legacy-password/:password_reset_token",
@@ -160,7 +168,7 @@ async fn post_register(
         .await
         .map_err(|e| Error::Database(anyhow!(e)))?;
 
-    let user = register_user(
+    let (user, password_auth_info) = register_password_auth_user(
         &mut db_tx,
         body.name.as_str(),
         body.email.as_str(),
@@ -192,10 +200,8 @@ async fn post_register(
     .await
     .map_err(|e| Error::Database(anyhow!(e)))?;
 
-    //  Create an Email instance
-    let email = user.email.clone();
-    let verification_code = user
-        .clone()
+    let email = password_auth_info.email.clone();
+    let verification_code = password_auth_info
         .verification_code
         .expect("to have verification code for new user");
     let verification_url = format!(
@@ -206,8 +212,8 @@ async fn post_register(
 
     data.notifications
         .send_verification_code(
-            user.name().as_str(),
-            user.email().as_str(),
+            user.name.as_str(),
+            email.as_str(),
             verification_url.as_str(),
             verification_code.as_str(),
         )
@@ -287,14 +293,14 @@ impl From<model::PersonalReferralCode> for PersonalReferralCode {
 }
 
 impl FilteredUser {
-    fn new_user(user: &Borrower) -> Self {
+    fn new_user(user: &Borrower, password_auth_info: &PasswordAuth) -> Self {
         let created_at_utc = user.created_at;
         let updated_at_utc = user.updated_at;
         Self {
             id: user.id.to_string(),
-            email: user.email.to_owned(),
+            email: password_auth_info.email.clone(),
             name: user.name.to_owned(),
-            verified: user.verified,
+            verified: password_auth_info.verified,
             used_referral_code: user.used_referral_code.clone(),
             personal_referral_codes: user
                 .personal_referral_codes
@@ -316,7 +322,7 @@ async fn post_pake_login(
     AppJson(body): AppJson<PakeLoginRequest>,
 ) -> Result<impl IntoResponse, Error> {
     let email = body.email;
-    let user = get_user_by_email(&data.db, email.as_str())
+    let (user, password_auth_info) = get_user_by_email(&data.db, email.as_str())
         .await
         .map_err(|e| Error::Database(anyhow!(e)))?
         .ok_or(Error::InvalidEmail)?;
@@ -324,16 +330,16 @@ async fn post_pake_login(
     let borrower_id = user.id;
     tracing::Span::current().record("borrower_id", &borrower_id);
 
-    if !user.verified {
+    if !password_auth_info.verified {
         return Err(Error::EmailNotVerified);
     }
 
     // The presence of a password hash indicates that the user has not upgraded to PAKE yet.
-    if user.password.is_some() {
+    if password_auth_info.password.is_some() {
         return Err(Error::PakeUpgradeRequired);
     }
 
-    let verifier = hex::decode(user.verifier).map_err(Error::InvalidVerifier)?;
+    let verifier = hex::decode(password_auth_info.verifier).map_err(Error::InvalidVerifier)?;
 
     let server = SrpServer::<Sha256>::new(&G_2048);
 
@@ -353,7 +359,7 @@ async fn post_pake_login(
         .body(
             json!(PakeLoginResponse {
                 b_pub,
-                salt: user.salt
+                salt: password_auth_info.salt
             })
             .to_string(),
         )
@@ -384,7 +390,7 @@ async fn post_pake_verify(
     AppJson(body): AppJson<PakeVerifyRequest>,
 ) -> Result<impl IntoResponse, Error> {
     let email = body.email;
-    let user = get_user_by_email(&data.db, email.as_str())
+    let (user, password_auth_info) = get_user_by_email(&data.db, email.as_str())
         .await
         .map_err(Error::Database)?
         .ok_or(Error::InvalidEmail)?;
@@ -392,11 +398,11 @@ async fn post_pake_verify(
     let borrower_id = &user.id;
     tracing::Span::current().record("borrower_id", borrower_id);
 
-    if !user.verified {
+    if !password_auth_info.verified {
         return Err(Error::EmailNotVerified);
     }
 
-    let verifier = hex::decode(&user.verifier).map_err(Error::InvalidVerifier)?;
+    let verifier = hex::decode(&password_auth_info.verifier).map_err(Error::InvalidVerifier)?;
 
     let a_pub = hex::decode(body.a_pub).map_err(Error::InvalidAPub)?;
 
@@ -471,7 +477,7 @@ async fn post_pake_verify(
         });
     }
 
-    let filtered_user = FilteredUser::new_user(&user);
+    let filtered_user = FilteredUser::new_user(&user, &password_auth_info);
 
     let wallet_backup = db::wallet_backups::find_by_borrower_id(&data.db, borrower_id)
         .await
@@ -538,7 +544,7 @@ async fn post_start_upgrade_to_pake(
     State(data): State<Arc<AppState>>,
     AppJson(body): AppJson<UpgradeToPakeRequest>,
 ) -> Result<impl IntoResponse, Error> {
-    let user = get_user_by_email(&data.db, body.email.as_str())
+    let (user, password_auth_info) = get_user_by_email(&data.db, body.email.as_str())
         .await
         .map_err(Error::Database)?
         .ok_or(Error::InvalidEmail)?;
@@ -546,11 +552,11 @@ async fn post_start_upgrade_to_pake(
     let borrower_id = &user.id;
     tracing::Span::current().record("borrower_id", borrower_id);
 
-    if !user.verified {
+    if !password_auth_info.verified {
         return Err(Error::EmailNotVerified);
     }
 
-    let is_valid = user.check_password(body.old_password.as_str());
+    let is_valid = password_auth_info.check_password(body.old_password.as_str());
 
     if !is_valid {
         return Err(Error::InvalidLegacyPassword);
@@ -617,7 +623,7 @@ async fn post_finish_upgrade_to_pake(
     State(data): State<Arc<AppState>>,
     AppJson(body): AppJson<FinishUpgradeToPakeRequest>,
 ) -> Result<impl IntoResponse, Error> {
-    let user = get_user_by_email(&data.db, body.email.as_str())
+    let (user, password_auth_info) = get_user_by_email(&data.db, body.email.as_str())
         .await
         .map_err(Error::Database)?
         .ok_or(Error::InvalidEmail)?;
@@ -625,11 +631,11 @@ async fn post_finish_upgrade_to_pake(
     let borrower_id = user.id.clone();
     tracing::Span::current().record("borrower_id", &borrower_id);
 
-    if !user.verified {
+    if !password_auth_info.verified {
         return Err(Error::EmailNotVerified);
     }
 
-    let is_valid = user.check_password(body.old_password.as_str());
+    let is_valid = password_auth_info.check_password(body.old_password.as_str());
 
     if !is_valid {
         return Err(Error::InvalidLegacyPassword);
@@ -681,15 +687,16 @@ async fn verify_email_handler(
     State(data): State<Arc<AppState>>,
     Path(verification_code): Path<String>,
 ) -> Result<impl IntoResponse, Error> {
-    let user = get_user_by_verification_code(&data.db, verification_code.as_str())
-        .await
-        .map_err(Error::Database)?
-        .ok_or(Error::InvalidVerificationCode)?;
+    let password_auth_info =
+        get_password_auth_info_by_verification_code(&data.db, verification_code.as_str())
+            .await
+            .map_err(Error::Database)?
+            .ok_or(Error::InvalidVerificationCode)?;
 
-    let borrower_id = &user.id;
+    let borrower_id = &password_auth_info.borrower_id;
     tracing::Span::current().record("borrower_id", borrower_id);
 
-    if user.verified {
+    if password_auth_info.verified {
         return Err(Error::AlreadyVerified);
     }
 
@@ -710,7 +717,7 @@ async fn forgot_password_handler(
     State(data): State<Arc<AppState>>,
     AppJson(body): AppJson<ForgotPasswordSchema>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let user = get_user_by_email(&data.db, body.email.as_str())
+    let (user, password_auth_info) = get_user_by_email(&data.db, body.email.as_str())
         .await
         .map_err(|e| {
             let error_response = ErrorResponse {
@@ -728,16 +735,15 @@ async fn forgot_password_handler(
     let borrower_id = &user.id;
     tracing::Span::current().record("borrower_id", borrower_id);
 
-    if !user.verified {
+    if !password_auth_info.verified {
         let error_response = ErrorResponse {
             message: "Account not verified".to_string(),
         };
         return Err((StatusCode::FORBIDDEN, Json(error_response)));
     }
 
-    // TODO: We could support this, but it's even more convoluted. We can implement it if any user
-    // runs into this.
-    if user.password.is_some() {
+    // This can be done by calling another API directly, but not through this one.
+    if password_auth_info.password.is_some() {
         let error_response = ErrorResponse {
             message: "Cannot change password before upgrading to PAKE".to_string(),
         };
@@ -762,7 +768,7 @@ async fn forgot_password_handler(
         "{}/resetpassword/{}/{}",
         data.config.borrower_frontend_origin.to_owned(),
         password_reset_token,
-        user.email
+        password_auth_info.email
     );
 
     // If this user has contracts before the PAKE upgrade, we do not allow them to reset their
@@ -775,8 +781,8 @@ async fn forgot_password_handler(
 
     data.notifications
         .send_password_reset_token(
-            user.name().as_str(),
-            user.email().as_str(),
+            user.name.as_str(),
+            password_auth_info.email.as_str(),
             PASSWORD_TOKEN_EXPIRES_IN_MINUTES,
             password_reset_url.as_str(),
         )
@@ -809,22 +815,23 @@ async fn reset_password_handler(
     Path(password_reset_token): Path<String>,
     AppJson(body): AppJson<ResetPasswordSchema>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let user = get_user_by_reset_token(&data.db, password_reset_token.as_str())
-        .await
-        .map_err(|e| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {}", e),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?
-        .ok_or_else(|| {
-            let error_response = ErrorResponse {
-                message: "The password reset token is invalid or has expired".to_string(),
-            };
-            (StatusCode::FORBIDDEN, Json(error_response))
-        })?;
+    let password_auth_info =
+        get_password_auth_info_by_reset_token(&data.db, password_reset_token.as_str())
+            .await
+            .map_err(|e| {
+                let error_response = ErrorResponse {
+                    message: format!("Database error: {}", e),
+                };
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+            })?
+            .ok_or_else(|| {
+                let error_response = ErrorResponse {
+                    message: "The password reset token is invalid or has expired".to_string(),
+                };
+                (StatusCode::FORBIDDEN, Json(error_response))
+            })?;
 
-    let borrower_id = &user.id;
+    let borrower_id = &password_auth_info.borrower_id;
     tracing::Span::current().record("borrower_id", borrower_id);
 
     let old_wallet_backup = db::wallet_backups::find_by_borrower_id(&data.db, borrower_id)
@@ -871,7 +878,7 @@ async fn reset_password_handler(
 
     db::borrowers::update_verifier_and_salt(
         &mut *db_tx,
-        user.email.as_str(),
+        password_auth_info.email.as_str(),
         body.salt.as_str(),
         body.verifier.as_str(),
     )
@@ -918,19 +925,20 @@ async fn reset_legacy_password_handler(
     Path(password_reset_token): Path<String>,
     AppJson(body): AppJson<ResetLegacyPasswordSchema>,
 ) -> Result<(), Error> {
-    let user = get_user_by_reset_token(&data.db, password_reset_token.as_str())
-        .await
-        .map_err(Error::Database)?
-        .ok_or(Error::InvalidVerificationCode)?;
+    let password_auth_info =
+        get_password_auth_info_by_reset_token(&data.db, password_reset_token.as_str())
+            .await
+            .map_err(Error::Database)?
+            .ok_or(Error::InvalidVerificationCode)?;
 
-    let borrower_id = &user.id;
+    let borrower_id = &password_auth_info.borrower_id;
     tracing::Span::current().record("borrower_id", borrower_id);
 
-    if user.password.is_none() {
+    if password_auth_info.password.is_none() {
         return Err(Error::NoLegacyResetAfterPake);
     }
 
-    db::borrowers::update_legacy_password(&data.db, &user.id, &body.password)
+    db::borrowers::update_legacy_password(&data.db, borrower_id, &body.password)
         .await
         .map_err(Error::Database)?;
 
@@ -967,9 +975,9 @@ struct MeResponse {
 #[instrument(skip_all, fields(borrower_id = user.id), err(Debug, level = Level::DEBUG))]
 async fn get_me_handler(
     State(data): State<Arc<AppState>>,
-    Extension(user): Extension<Borrower>,
+    Extension((user, password_auth_info)): Extension<(Borrower, PasswordAuth)>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let filtered_user = FilteredUser::new_user(&user);
+    let filtered_user = FilteredUser::new_user(&user, &password_auth_info);
 
     let features = db::borrower_features::load_borrower_features(&data.db, user.id.clone())
         .await

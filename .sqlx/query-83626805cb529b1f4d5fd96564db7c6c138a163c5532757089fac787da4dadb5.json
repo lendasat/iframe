@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE lenders\n        SET\n            timezone = $1,\n            updated_at = CURRENT_TIMESTAMP\n        WHERE id = $2\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Bpchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "83626805cb529b1f4d5fd96564db7c6c138a163c5532757089fac787da4dadb5"
+}

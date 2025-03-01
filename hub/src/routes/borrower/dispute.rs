@@ -4,7 +4,7 @@ use crate::model::Borrower;
 use crate::model::DisputeRequestBodySchema;
 use crate::model::DisputeStatus;
 use crate::model::PsbtQueryParams;
-use crate::routes::borrower::auth::jwt_auth;
+use crate::routes::borrower::auth::jwt_or_api_auth;
 use crate::routes::borrower::ClaimCollateralPsbt;
 use crate::routes::AppState;
 use crate::routes::ErrorResponse;
@@ -30,28 +30,28 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
             "/api/disputes",
             get(get_all_disputes).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
-                jwt_auth::auth,
+                jwt_or_api_auth::auth,
             )),
         )
         .route(
             "/api/disputes/:dispute_id",
             get(get_disputes_by_id).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
-                jwt_auth::auth,
+                jwt_or_api_auth::auth,
             )),
         )
         .route(
             "/api/disputes/:dispute_id/claim",
             get(get_claim_collateral_psbt).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
-                jwt_auth::auth,
+                jwt_or_api_auth::auth,
             )),
         )
         .route(
             "/api/disputes",
             post(create_dispute).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
-                jwt_auth::auth,
+                jwt_or_api_auth::auth,
             )),
         )
         .with_state(app_state)
@@ -156,13 +156,11 @@ pub(crate) async fn create_dispute(
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
     })?;
 
-    data.notifications
-        .send_start_dispute(
-            user.name().as_str(),
-            user.email().as_str(),
-            dispute.id.as_str(),
-        )
-        .await;
+    if let Some(ref email) = user.email {
+        data.notifications
+            .send_start_dispute(user.name.as_str(), email.as_str(), dispute.id.as_str())
+            .await;
+    }
 
     data.notifications
         .send_notify_admin_about_dispute(
@@ -249,7 +247,7 @@ pub async fn get_claim_collateral_psbt(
             let mut wallet = data.wallet.lock().await;
             let (psbt, collateral_descriptor, borrower_pk) = wallet
                 .create_dispute_claim_collateral_psbt(
-                    contract.borrower_xpub.as_ref(),
+                    &contract.borrower_xpub,
                     contract.borrower_pk,
                     &lender_xpub,
                     contract_index,

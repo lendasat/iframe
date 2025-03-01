@@ -165,7 +165,7 @@ pub struct Contract {
     pub can_recover_collateral_manually: bool,
     pub extends_contract: Option<String>,
     pub extended_by_contract: Option<String>,
-    pub borrower_xpub: Option<String>,
+    pub borrower_xpub: String,
     pub lender_xpub: String,
     pub kyc_info: Option<KycInfo>,
     pub fiat_loan_details_borrower: Option<FiatLoanDetails>,
@@ -947,7 +947,7 @@ async fn get_manual_recovery_psbt(
 
     let (psbt, collateral_descriptor, lender_pk) = wallet
         .create_liquidation_psbt(
-            contract.borrower_xpub.as_ref(),
+            &contract.borrower_xpub,
             contract.borrower_pk,
             &lender_xpub,
             contract_index,
@@ -1099,7 +1099,7 @@ async fn map_to_api_contract(
         extends_contract: parent_contract_id,
         extended_by_contract: child_contract,
         can_recover_collateral_manually,
-        borrower_xpub: contract.borrower_xpub.map(|x| x.to_string()),
+        borrower_xpub: contract.borrower_xpub.to_string(),
         lender_xpub,
         kyc_info,
         fiat_loan_details_borrower,
