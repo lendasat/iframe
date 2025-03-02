@@ -29,7 +29,7 @@ impl DescriptorWallet {
     }
 
     pub fn get_new_address(&mut self) -> Result<AddressInfo> {
-        self.wallet.next_unused_address(KeychainKind::Internal)
+        self.wallet.reveal_next_address(KeychainKind::Internal)
     }
 }
 
@@ -56,6 +56,16 @@ pub mod tests {
             .expect("to be able to get an address");
 
         let expected = Address::from_str("tb1quw75h0w26rcrdfar6knvkfazpwyzq4z8vqmt37")
+            .expect("to be unchecked")
+            .assume_checked();
+
+        assert_eq!(expected.to_string(), address_info.address.to_string());
+
+        let address_info = wallet
+            .get_new_address()
+            .expect("to be able to get an address");
+
+        let expected = Address::from_str("tb1q25qrvtqlw5teev66eh29mtr96zqeh67ncrztht")
             .expect("to be unchecked")
             .assume_checked();
 
