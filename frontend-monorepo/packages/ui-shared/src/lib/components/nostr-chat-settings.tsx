@@ -99,11 +99,11 @@ export const NostrChatSettings = () => {
                 {isNsecVisible ? <FaRegEye /> : <FaRegEyeSlash />}
               </IconButton>
             </Flex>
-            <Callout.Root className="w-full" color="blue">
+            <Callout.Root color="blue" size={"2"}>
               <Callout.Icon>
                 <FontAwesomeIcon icon={faInfoCircle} className="h-4 w-4" />
               </Callout.Icon>
-              <Callout.Text>
+              <Callout.Text wrap={"pretty"}>
                 Below you can find your private NSEC (Nostr Private Key). It is
                 derived from your seed phrase. You can use this nsec and import
                 it in a Nostr Client such as Amethyst on Android or YakiHonne to
