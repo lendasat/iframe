@@ -1,6 +1,8 @@
 use anyhow::Context;
 use anyhow::Result;
 use bitcoin::bip32::Xpub;
+use bitcoin::hex::Case;
+use bitcoin::hex::DisplayHex;
 use bitcoin::Address;
 use browser_wallet::wallet;
 use hub::config::Config;
@@ -73,14 +75,17 @@ async fn main() -> Result<()> {
     insert_lender_api_key(&pool, &lender.id, "lendatoshi").await?;
 
     // The corresponding API account creator API key is `theboss`.
-    db::api_account_creator::register(
-        &pool,
-        "ccacc3f402107b6f53288cead560305b9f8230b080280283efa23ae77904180a",
-        "the boss",
-    )
-    .await?;
+    let sha256 = create_sha256(b"theboss");
+    db::api_account_creator::register(&pool, sha256.as_str(), "the boss").await?;
 
     Ok(())
+}
+
+fn create_sha256(value: &[u8; 7]) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(value);
+    let result = hasher.finalize();
+    result[..].to_hex_string(Case::Lower)
 }
 
 async fn create_sample_contracts(
