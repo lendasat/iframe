@@ -74,7 +74,7 @@ impl Notifications {
         }
     }
 
-    pub async fn send_user_about_margin_call(
+    pub async fn send_borrower_margin_call(
         &self,
         user: Borrower,
         contract: Contract,
