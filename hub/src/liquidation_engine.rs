@@ -352,9 +352,9 @@ async fn send_notification(
         .await?
         .context("borrower not found")?;
 
-    let contract_url = format!(
+    let borrower_contract_url = format!(
         "{}/my-contracts/{contract_id}",
-        config.lender_frontend_origin
+        config.borrower_frontend_origin
     );
 
     match status {
@@ -363,26 +363,36 @@ async fn send_notification(
         }
         LiquidationStatus::FirstMarginCall | LiquidationStatus::SecondMarginCall => {
             notifications
-                .send_user_about_margin_call(
+                .send_borrower_margin_call(
                     borrower,
                     contract.clone(),
                     price,
                     current_ltv,
-                    &contract_url,
+                    &borrower_contract_url,
                 )
                 .await;
         }
         LiquidationStatus::Liquidated => {
             notifications
-                .send_liquidation_notice_borrower(borrower, contract.clone(), price, &contract_url)
+                .send_liquidation_notice_borrower(
+                    borrower,
+                    contract.clone(),
+                    price,
+                    &borrower_contract_url,
+                )
                 .await;
 
             let lender = db::lenders::get_user_by_id(pool, contract.lender_id.as_str())
                 .await?
                 .context("lender not found")?;
 
+            let lender_contract_url = format!(
+                "{}/my-contracts/{contract_id}",
+                config.lender_frontend_origin
+            );
+
             notifications
-                .send_liquidation_notice_lender(lender, contract.clone(), &contract_url)
+                .send_liquidation_notice_lender(lender, contract.clone(), &lender_contract_url)
                 .await;
         }
     }
