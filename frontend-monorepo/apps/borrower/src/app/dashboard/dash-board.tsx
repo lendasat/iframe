@@ -294,7 +294,7 @@ function DashBoard() {
             />
             <QuickLinks
               Icon={BsBank}
-              url="/request-loan"
+              url="/available-offers"
               iconStyle="bg-pink-100 dark:bg-pink-800"
               label="Available offers"
               target={"_self"}
