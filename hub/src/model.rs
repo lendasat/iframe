@@ -1080,14 +1080,14 @@ pub struct SwiftTransferDetails {
     pub account_number: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct CreateApiAccountRequest {
     pub name: String,
     pub email: Option<String>,
     pub timezone: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct CreateApiAccountResponse {
     pub id: String,
     pub name: String,

@@ -148,7 +148,8 @@ pub struct RegistrationResponse {
     message: String,
 }
 
-/// Register a new user
+/// Register a new user with email and password. For registering an account using API keys please
+/// refer to `/api/create-api-account`.
 ///
 /// Tries to register a new user. Will fail if email is already in use.
 #[utoipa::path(

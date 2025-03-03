@@ -41,6 +41,7 @@ const AUTH_TAG: &str = "auth";
 const CONTRACTS_TAG: &str = "contracts";
 const LOAN_OFFERS_TAG: &str = "loan-offers";
 const API_KEYS_TAG: &str = "api-keys";
+const API_ACCOUNTS_TAG: &str = "api-accounts";
 
 #[derive(OpenApi)]
 #[openapi(
@@ -60,6 +61,9 @@ const API_KEYS_TAG: &str = "api-keys";
         ),
         (
             name = API_KEYS_TAG, description = "API to interact with API keys",
+        ),
+        (
+            name = API_ACCOUNTS_TAG, description = "API to create register new users with API keys",
         ),
         (
             name = AUTH_TAG, description = "Authenticate with the server",
@@ -102,6 +106,10 @@ pub async fn spawn_borrower_server(
             contracts::router_openapi(app_state.clone()),
         )
         .nest("/api/keys", api_keys::router_openapi(app_state.clone()))
+        .nest(
+            "/api/create-api-account",
+            api_accounts::router_openapi(app_state.clone()),
+        )
         .split_for_parts();
 
     let router =
@@ -119,8 +127,7 @@ pub async fn spawn_borrower_server(
                 .with_state(app_state.clone()),
         )
         .merge(loan_requests::router(app_state.clone()))
-        .merge(cards::router(app_state.clone()))
-        .merge(api_accounts::router(app_state))
+        .merge(cards::router(app_state))
         // This is a relative path on the filesystem, which means, when deploying `hub` we will need
         // to have the frontend in this directory. Ideally we would bundle the frontend with
         // the binary, but so far we failed at handling requests which are meant to be handled by
