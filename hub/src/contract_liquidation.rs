@@ -40,7 +40,7 @@ pub async fn prepare_liquidation_psbt(
     let origination_fee = Amount::from_sat(contract.origination_fee_sats);
 
     let (psbt, collateral_descriptor, lender_pk) = wallet.create_liquidation_psbt(
-        contract.borrower_xpub.as_ref(),
+        &contract.borrower_xpub,
         contract.borrower_pk,
         &lender_xpub,
         contract_index,

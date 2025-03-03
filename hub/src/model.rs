@@ -31,10 +31,28 @@ pub struct InviteCode {
     pub active: bool,
 }
 
+#[derive(Clone, sqlx::FromRow)]
+pub struct CreatorApiKey {
+    pub id: i32,
+    pub description: String,
+}
+
 #[derive(Debug, Clone)]
 pub struct Borrower {
     pub id: String,
     pub name: String,
+    pub email: Option<Email>,
+    pub used_referral_code: Option<String>,
+    pub personal_referral_codes: Vec<PersonalReferralCode>,
+    pub first_time_discount_rate_referee: Option<Decimal>,
+    pub timezone: Option<String>,
+    pub created_at: OffsetDateTime,
+    pub updated_at: OffsetDateTime,
+}
+
+#[derive(Debug, Clone)]
+pub struct PasswordAuth {
+    pub borrower_id: String,
     pub email: Email,
     /// A password (hash) may be stored if the user has yet to upgrade to PAKE.
     ///
@@ -44,14 +62,8 @@ pub struct Borrower {
     pub verifier: String,
     pub verified: bool,
     pub verification_code: Option<String>,
-    pub used_referral_code: Option<String>,
-    pub personal_referral_codes: Vec<PersonalReferralCode>,
-    pub first_time_discount_rate_referee: Option<Decimal>,
     pub password_reset_token: Option<String>,
-    pub timezone: Option<String>,
     pub password_reset_at: Option<OffsetDateTime>,
-    pub created_at: OffsetDateTime,
-    pub updated_at: OffsetDateTime,
 }
 
 #[derive(Debug, sqlx::FromRow, Clone)]
@@ -65,7 +77,7 @@ pub struct PersonalReferralCode {
     pub(crate) expires_at: OffsetDateTime,
 }
 
-impl Borrower {
+impl PasswordAuth {
     pub fn check_password(&self, provided_password: &str) -> bool {
         let legacy_password_hash = match &self.password {
             Some(p) => p,
@@ -82,14 +94,6 @@ impl Borrower {
                 .map_or(false, |_| true),
             Err(_) => false,
         }
-    }
-
-    pub(crate) fn name(&self) -> String {
-        self.name.clone()
-    }
-
-    pub(crate) fn email(&self) -> String {
-        self.email.clone()
     }
 }
 
@@ -443,8 +447,7 @@ pub struct Contract {
     /// Optional because fiat loans do not have loan addresses in the cryptocurrency sense.
     pub borrower_loan_address: Option<String>,
     pub loan_type: LoanType,
-    /// Optional to remain backwards compatible with existing contracts.
-    pub borrower_xpub: Option<Xpub>,
+    pub borrower_xpub: Xpub,
     pub lender_xpub: Option<Xpub>,
     pub contract_address: Option<Address<NetworkUnchecked>>,
     pub contract_index: Option<u32>,
@@ -600,7 +603,7 @@ pub mod db {
         pub borrower_pk: Option<String>,
         pub borrower_loan_address: Option<String>,
         pub loan_type: LoanType,
-        pub borrower_xpub: Option<String>,
+        pub borrower_xpub: String,
         pub lender_xpub: Option<String>,
         pub contract_address: Option<String>,
         pub contract_index: Option<i32>,
@@ -711,9 +714,7 @@ impl From<db::Contract> for Contract {
                 .map(|p| PublicKey::from_str(&p).expect("valid pk")),
             borrower_loan_address: value.borrower_loan_address,
             loan_type: value.loan_type.into(),
-            borrower_xpub: value
-                .borrower_xpub
-                .map(|x| Xpub::from_str(&x).expect("valid Xpub")),
+            borrower_xpub: Xpub::from_str(&value.borrower_xpub).expect("valid Xpub"),
             lender_xpub: value
                 .lender_xpub
                 .map(|xpub| xpub.parse().expect("valid xpub")),
@@ -842,7 +843,7 @@ impl From<Contract> for db::Contract {
             borrower_pk: value.borrower_pk.map(|p| p.to_string()),
             borrower_loan_address: value.borrower_loan_address,
             loan_type: value.loan_type.into(),
-            borrower_xpub: value.borrower_xpub.map(|xpub| xpub.to_string()),
+            borrower_xpub: value.borrower_xpub.to_string(),
             lender_xpub: value.lender_xpub.map(|xpub| xpub.to_string()),
             contract_address: value
                 .contract_address
@@ -1032,4 +1033,20 @@ pub struct LenderFeatureFlag {
 pub mod lender_feature_flags {
     pub const AUTO_APPROVE_FEATURE_FLAG_ID: &str = "auto_approve";
     pub const KYC_OFFERS_FEATURE_FLAG_ID: &str = "kyc_offers";
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CreateApiAccountRequest {
+    pub name: String,
+    pub email: Option<String>,
+    pub timezone: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CreateApiAccountResponse {
+    pub id: String,
+    pub name: String,
+    pub email: Option<String>,
+    pub timezone: Option<String>,
+    pub api_key: String,
 }

@@ -273,7 +273,7 @@ pub async fn load_open_contracts(pool: &Pool<Postgres>) -> Result<Vec<Contract>>
             borrower_pk,
             borrower_loan_address,
             loan_type as "loan_type!: crate::model::db::LoanType",
-            borrower_xpub,
+            borrower_xpub as "borrower_xpub!",
             lender_xpub,
             contract_address,
             contract_index,
@@ -355,7 +355,7 @@ pub async fn insert_new_contract_request(
         created_at,
         expiry_date,
         status,
-        Some(borrower_xpub),
+        borrower_xpub,
         lender_xpub,
         None,
         None,
@@ -388,8 +388,7 @@ pub async fn insert_extension_contract_request(
     loan_type: LoanType,
     contract_version: ContractVersion,
     auto_accepted: bool,
-    // Should be `Some` for non-legacy contracts.
-    borrower_xpub: Option<Xpub>,
+    borrower_xpub: Xpub,
     lender_xpub: Xpub,
     original_expiry_date: OffsetDateTime,
     contract_address: Option<Address<NetworkUnchecked>>,
@@ -465,7 +464,7 @@ async fn insert_contract_request(
     created_at: OffsetDateTime,
     expiry_date: OffsetDateTime,
     status: db::ContractStatus,
-    borrower_xpub: Option<Xpub>,
+    borrower_xpub: Xpub,
     lender_xpub: Xpub,
     contract_address: Option<String>,
     contract_index: Option<i32>,
@@ -543,7 +542,7 @@ async fn insert_contract_request(
         borrower_pk.map(|p| p.to_string()) as Option<String>,
         borrower_loan_address,
         loan_type as db::LoanType,
-        borrower_xpub.map(|x| x.to_string()) as Option<String>,
+        borrower_xpub.to_string(),
         lender_xpub.to_string(),
         contract_address as Option<String>,
         contract_index as Option<i32>,
@@ -1122,7 +1121,7 @@ pub(crate) async fn expire_requested_contracts(
             UPDATE
                 contracts
             SET
-                status = 'RequestExpired', 
+                status = 'RequestExpired',
                 updated_at = $1
             WHERE
                 status = 'Requested' AND
@@ -1135,7 +1134,7 @@ pub(crate) async fn expire_requested_contracts(
                     kyc.borrower_id = contracts.borrower_id AND
                     kyc.is_done = false
                 )
-            RETURNING 
+            RETURNING
                 id as "contract_id",
                 borrower_id as "borrower_id",
                 lender_id as "lender_id"
@@ -1153,7 +1152,7 @@ pub(crate) async fn expire_requested_contracts(
             UPDATE
                 contracts
             SET
-                status = 'RequestExpired', 
+                status = 'RequestExpired',
                 updated_at = $1
             WHERE
                 status = 'Requested' AND
@@ -1166,7 +1165,7 @@ pub(crate) async fn expire_requested_contracts(
                     kyc.borrower_id = contracts.borrower_id AND
                     kyc.is_done = false
                 )
-            RETURNING 
+            RETURNING
                 id as "contract_id",
                 borrower_id as "borrower_id",
                 lender_id as "lender_id"

@@ -2,7 +2,7 @@ use crate::db;
 use crate::model::LoanAsset;
 use crate::model::LoanOfferStatus;
 use crate::model::OriginationFee;
-use crate::routes::borrower::auth::jwt_auth;
+use crate::routes::borrower::auth::jwt_or_api_auth;
 use crate::routes::AppState;
 use crate::user_stats;
 use crate::user_stats::LenderStats;
@@ -28,21 +28,21 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
             "/api/offers",
             get(get_all_available_loan_offers).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
-                jwt_auth::auth,
+                jwt_or_api_auth::auth,
             )),
         )
         .route(
             "/api/offer/:id",
             get(get_loan_offer).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
-                jwt_auth::auth,
+                jwt_or_api_auth::auth,
             )),
         )
         .route(
             "/api/offersbylender/:lender_id",
             get(get_available_loan_offers_by_lender).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
-                jwt_auth::auth,
+                jwt_or_api_auth::auth,
             )),
         )
         .with_state(app_state)

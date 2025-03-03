@@ -1,0 +1,64 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n           b.id as \"id!\",\n           b.name as \"name!\",\n           b.email,\n           b.used_referral_code,\n           b.first_time_discount_rate_referee,\n           b.timezone,\n           b.created_at as \"created_at!\",\n           b.updated_at as \"updated_at!\"\n           FROM borrower_discount_info b\n           LEFT JOIN borrowers_password_auth b_auth ON b.id = b_auth.borrower_id\n           WHERE b.id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "name!",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "email",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "used_referral_code",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "first_time_discount_rate_referee",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 5,
+        "name": "timezone",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "created_at!",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 7,
+        "name": "updated_at!",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bpchar"
+      ]
+    },
+    "nullable": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "727de509f7f14c2a2ec6b3b4c505b2221ca57bbf6539191ced311d618d8b22c2"
+}

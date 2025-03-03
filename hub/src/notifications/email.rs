@@ -285,13 +285,17 @@ impl Email {
 
         let content_template = handlebars.render(template_name, &data)?;
 
-        self.send_email(
-            "You have received a margin call",
-            user.name.as_str(),
-            user.email.as_str(),
-            content_template,
-        )
-        .await
+        if let Some(email) = user.email {
+            self.send_email(
+                "You have received a margin call",
+                user.name.as_str(),
+                email.as_str(),
+                content_template,
+            )
+            .await?;
+        }
+
+        Ok(())
     }
 
     pub async fn send_liquidation_notice_borrower(
@@ -322,13 +326,17 @@ impl Email {
 
         let content_template = handlebars.render(template_name, &data)?;
 
-        self.send_email(
-            "Your contract has been liquidated",
-            borrower.name.as_str(),
-            borrower.email.as_str(),
-            content_template,
-        )
-        .await
+        if let Some(email) = borrower.email {
+            self.send_email(
+                "Your contract has been liquidated",
+                borrower.name.as_str(),
+                email.as_str(),
+                content_template,
+            )
+            .await?;
+        }
+
+        Ok(())
     }
 
     pub async fn send_liquidation_notice_lender(
@@ -391,13 +399,17 @@ impl Email {
 
         let content_template = handlebars.render(template_name, &data)?;
 
-        self.send_email(
-            "Your loan request has been approved",
-            borrower.name.as_str(),
-            borrower.email.as_str(),
-            content_template,
-        )
-        .await
+        if let Some(email) = borrower.email {
+            self.send_email(
+                "Your loan request has been approved",
+                borrower.name.as_str(),
+                email.as_str(),
+                content_template,
+            )
+            .await?;
+        }
+
+        Ok(())
     }
 
     pub async fn send_notification_about_auto_accepted_loan(
@@ -437,13 +449,17 @@ impl Email {
 
         let content_template = handlebars.render(template_name, &data)?;
 
-        self.send_email(
-            "Your loan request has been declined",
-            borrower.name.as_str(),
-            borrower.email.as_str(),
-            content_template,
-        )
-        .await
+        if let Some(email) = borrower.email {
+            self.send_email(
+                "Your loan request has been declined",
+                borrower.name.as_str(),
+                email.as_str(),
+                content_template,
+            )
+            .await?;
+        }
+
+        Ok(())
     }
 
     pub async fn send_loan_collateralized(&self, user: Lender, url: &str) -> Result<()> {
@@ -479,13 +495,17 @@ impl Email {
 
         let content_template = handlebars.render(template_name, &data)?;
 
-        self.send_email(
-            "Your loan has been paid out",
-            user.name.as_str(),
-            user.email.as_str(),
-            content_template,
-        )
-        .await
+        if let Some(email) = user.email {
+            self.send_email(
+                "Your loan has been paid out",
+                user.name.as_str(),
+                email.as_str(),
+                content_template,
+            )
+            .await?;
+        }
+
+        Ok(())
     }
 
     pub async fn send_close_to_expiry_contract(
@@ -506,13 +526,17 @@ impl Email {
 
         let content_template = handlebars.render(template_name, &data)?;
 
-        self.send_email(
-            "Time to repay your loan",
-            user.name.as_str(),
-            user.email.as_str(),
-            content_template,
-        )
-        .await
+        if let Some(email) = user.email {
+            self.send_email(
+                "Time to repay your loan",
+                user.name.as_str(),
+                email.as_str(),
+                content_template,
+            )
+            .await?;
+        }
+
+        Ok(())
     }
 
     pub async fn send_moon_card_ready(&self, user: Borrower, url: &str) -> Result<()> {
@@ -527,13 +551,16 @@ impl Email {
 
         let content_template = handlebars.render(template_name, &data)?;
 
-        self.send_email(
-            "Your debit card has been funded",
-            user.name.as_str(),
-            user.email.as_str(),
-            content_template,
-        )
-        .await
+        if let Some(email) = user.email {
+            self.send_email(
+                "Your debit card has been funded",
+                user.name.as_str(),
+                email.as_str(),
+                content_template,
+            )
+            .await?;
+        }
+        Ok(())
     }
 
     pub async fn send_loan_repaid(&self, user: Lender, url: &str) -> Result<()> {
@@ -573,13 +600,17 @@ impl Email {
 
         let content_template = handlebars.render(template_name, &data)?;
 
-        self.send_email(
-            "Your defaulted loan was liquidated",
-            user.name.as_str(),
-            user.email.as_str(),
-            content_template,
-        )
-        .await
+        if let Some(email) = user.email {
+            self.send_email(
+                "Your defaulted loan was liquidated",
+                user.name.as_str(),
+                email.as_str(),
+                content_template,
+            )
+            .await?;
+        }
+
+        Ok(())
     }
 
     pub async fn send_loan_defaulted_lender(&self, user: Lender, url: &str) -> Result<()> {
@@ -615,13 +646,17 @@ impl Email {
 
         let content_template = handlebars.render(template_name, &data)?;
 
-        self.send_email(
-            "Your loan expired without repayment",
-            user.name.as_str(),
-            user.email.as_str(),
-            content_template,
-        )
-        .await
+        if let Some(email) = user.email {
+            self.send_email(
+                "Your loan expired without repayment",
+                user.name.as_str(),
+                email.as_str(),
+                content_template,
+            )
+            .await?;
+        }
+
+        Ok(())
     }
 
     pub async fn send_expired_loan_request_borrower(
@@ -640,13 +675,17 @@ impl Email {
 
         let content_template = handlebars.render(template_name, &data)?;
 
-        self.send_email(
-            "Your loan request expired without response",
-            borrower.name.as_str(),
-            borrower.email.as_str(),
-            content_template,
-        )
-        .await
+        if let Some(email) = borrower.email {
+            self.send_email(
+                "Your loan request expired without response",
+                borrower.name.as_str(),
+                email.as_str(),
+                content_template,
+            )
+            .await?;
+        }
+
+        Ok(())
     }
 
     pub async fn send_expired_loan_request_lender(

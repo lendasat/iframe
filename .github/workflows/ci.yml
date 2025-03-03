@@ -133,7 +133,8 @@ jobs:
         run: just prepare-e2e
 
       - name: Run e2e test
-        run: cargo test -p tests-e2e -- --ignored open_and_repay_loan
+        # We run the tests in sequence to avoid spurious errors.
+        run: cargo test -p tests-e2e -- --ignored --test-threads=1
 
       - name: Show hub logs if test run fails
         if: failure()

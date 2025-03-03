@@ -1,6 +1,6 @@
 use crate::db;
 use crate::model::LoanAsset;
-use crate::routes::borrower::auth::jwt_auth;
+use crate::routes::borrower::auth::jwt_or_api_auth;
 use crate::routes::AppState;
 use anyhow::Context;
 use axum::extract::State;
@@ -22,7 +22,7 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
             "/api/requests",
             get(get_all_available_loan_requests).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
-                jwt_auth::auth,
+                jwt_or_api_auth::auth,
             )),
         )
         .with_state(app_state)

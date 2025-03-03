@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE borrowers_password_auth\n           SET password = $1\n           WHERE borrower_id = $2\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Bpchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f70fb70d4efe64ab10b656f04460adb0a0e56f6ce5390a8d3c6b26faa0c8456e"
+}

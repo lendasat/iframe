@@ -17,7 +17,7 @@ use crate::model::LoanType;
 use crate::model::PsbtQueryParams;
 use crate::model::TransactionType;
 use crate::moon::MOON_CARD_MAX_BALANCE;
-use crate::routes::borrower::auth::jwt_auth;
+use crate::routes::borrower::auth::jwt_or_api_auth;
 use crate::routes::user_connection_details_middleware;
 use crate::routes::user_connection_details_middleware::UserConnectionDetails;
 use crate::routes::AppState;
@@ -66,56 +66,56 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
             "/api/contracts",
             get(get_contracts).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
-                jwt_auth::auth,
+                jwt_or_api_auth::auth,
             )),
         )
         .route(
             "/api/contracts/:id",
             get(get_contract).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
-                jwt_auth::auth,
+                jwt_or_api_auth::auth,
             )),
         )
         .route(
             "/api/contracts/:id",
             post(post_claim_tx).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
-                jwt_auth::auth,
+                jwt_or_api_auth::auth,
             )),
         )
         .route(
             "/api/contracts",
             post(post_contract_request).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
-                jwt_auth::auth,
+                jwt_or_api_auth::auth,
             )),
         )
         .route(
             "/api/contracts/:id",
             delete(cancel_contract_request).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
-                jwt_auth::auth,
+                jwt_or_api_auth::auth,
             )),
         )
         .route(
             "/api/contracts/:contract_id/repaid",
             put(put_repayment_provided).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
-                jwt_auth::auth,
+                jwt_or_api_auth::auth,
             )),
         )
         .route(
             "/api/contracts/:id/claim",
             get(get_claim_collateral_psbt).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
-                jwt_auth::auth,
+                jwt_or_api_auth::auth,
             )),
         )
         .route(
             "/api/contracts/:id/extend",
             post(post_extend_contract_request).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
-                jwt_auth::auth,
+                jwt_or_api_auth::auth,
             )),
         )
         .layer(
@@ -591,7 +591,7 @@ async fn get_claim_collateral_psbt(
 
     let (psbt, collateral_descriptor, borrower_pk) = wallet
         .create_claim_collateral_psbt(
-            contract.borrower_xpub.as_ref(),
+            &contract.borrower_xpub,
             contract.borrower_pk,
             &lender_xpub,
             contract_index,
@@ -704,7 +704,7 @@ pub struct Contract {
     pub liquidation_price: Decimal,
     pub extends_contract: Option<String>,
     pub extended_by_contract: Option<String>,
-    pub borrower_xpub: Option<String>,
+    pub borrower_xpub: String,
     pub lender_xpub: String,
     pub kyc_info: Option<KycInfo>,
     pub fiat_loan_details_borrower: Option<FiatLoanDetails>,
@@ -824,10 +824,6 @@ async fn map_to_api_contract(
         .await
         .map_err(Error::from)?;
 
-    let borrower_xpub = db::wallet_backups::get_xpub_for_borrower(&data.db, contract.borrower_id)
-        .await
-        .map_err(|e| Error::Database(anyhow!(e)))?;
-
     let lender_xpub = db::wallet_backups::get_xpub_for_lender(&data.db, contract.lender_id)
         .await
         .map_err(|e| Error::Database(anyhow!(e)))?;
@@ -883,7 +879,7 @@ async fn map_to_api_contract(
         liquidation_price,
         extends_contract: parent_contract_id,
         extended_by_contract: child_contract,
-        borrower_xpub: Some(borrower_xpub),
+        borrower_xpub: contract.borrower_xpub.to_string(),
         lender_xpub,
         kyc_info,
         fiat_loan_details_borrower,

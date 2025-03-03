@@ -1,6 +1,8 @@
 use anyhow::Context;
 use anyhow::Result;
 use bitcoin::bip32::Xpub;
+use bitcoin::hex::Case;
+use bitcoin::hex::DisplayHex;
 use bitcoin::Address;
 use browser_wallet::wallet;
 use hub::config::Config;
@@ -72,7 +74,18 @@ async fn main() -> Result<()> {
     insert_borrower_api_key(&pool, &borrower.id, "satoshi").await?;
     insert_lender_api_key(&pool, &lender.id, "lendatoshi").await?;
 
+    // The corresponding API account creator API key is `theboss`.
+    let sha256 = create_sha256(b"theboss");
+    db::api_account_creator::register(&pool, sha256.as_str(), "the boss").await?;
+
     Ok(())
+}
+
+fn create_sha256(value: &[u8; 7]) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(value);
+    let result = hasher.finalize();
+    result[..].to_hex_string(Case::Lower)
 }
 
 async fn create_sample_contracts(
@@ -348,7 +361,7 @@ async fn insert_borrower(pool: &Pool<Postgres>, network: &str) -> Result<(Borrow
     {
         tracing::debug!("DB already contains the borrower, not inserting another one");
 
-        let maybe_user = db::borrowers::get_user_by_email(pool, email)
+        let (maybe_user, _) = db::borrowers::get_user_by_email(pool, email)
             .await?
             .expect("expect to have user");
         enable_borrower_features(pool, maybe_user.id.as_str()).await?;
@@ -362,7 +375,7 @@ async fn insert_borrower(pool: &Pool<Postgres>, network: &str) -> Result<(Borrow
     }
 
     let mut tx = pool.begin().await?;
-    let user = db::borrowers::register_user(&mut tx, "bob the borrower", email, "cd8c88861c37f137eb08ee009ba7974e", "9c09ebb870171a9dc4fee895a85bfee036b4a3021f685e16f55c2c4df2032fd68ccbf6aa823f130c0dbcdb59db682c54d98c4bbcb4d934a4a27223b361f3b5838970f4d708bb884078b438a7548c85d8625865af010fc9ca55ef7295eafe27dd38b2fed5b32c215f89536aaf8f989a6b155a60003ef9a161b0d25445d5338ae623893a42a5af14355d0416bd1da19e2f9af040a58f30f8a3619ff080b7e661da06d1a0afa8b7bdecf62db3066aeb28413b68fb51cea1091981b55f49aab5b9e3e6f79ac1adb5015eda5afb3a04839853f6f6e552703babd4d0420d13396b4f3a0c012e3fdac9a140b3b2ff72d27ab286690870aa251400203bc1acf7b2e2a3c0")
+    let (user, password_auth_info) = db::borrowers::register_password_auth_user(&mut tx, "bob the borrower", email, "cd8c88861c37f137eb08ee009ba7974e", "9c09ebb870171a9dc4fee895a85bfee036b4a3021f685e16f55c2c4df2032fd68ccbf6aa823f130c0dbcdb59db682c54d98c4bbcb4d934a4a27223b361f3b5838970f4d708bb884078b438a7548c85d8625865af010fc9ca55ef7295eafe27dd38b2fed5b32c215f89536aaf8f989a6b155a60003ef9a161b0d25445d5338ae623893a42a5af14355d0416bd1da19e2f9af040a58f30f8a3619ff080b7e661da06d1a0afa8b7bdecf62db3066aeb28413b68fb51cea1091981b55f49aab5b9e3e6f79ac1adb5015eda5afb3a04839853f6f6e552703babd4d0420d13396b4f3a0c012e3fdac9a140b3b2ff72d27ab286690870aa251400203bc1acf7b2e2a3c0")
         .await
         .context("register user failed")?;
     db::borrowers_referral_code::insert_referred_borrower(
@@ -382,7 +395,10 @@ async fn insert_borrower(pool: &Pool<Postgres>, network: &str) -> Result<(Borrow
     .await
     .context("insert referral code failed")?;
 
-    let verification_code = user.verification_code.clone().expect("to exist");
+    let verification_code = password_auth_info
+        .verification_code
+        .clone()
+        .expect("to exist");
     db::borrowers::verify_user(pool, verification_code.as_str()).await?;
     enable_borrower_features(pool, user.id.as_str()).await?;
 

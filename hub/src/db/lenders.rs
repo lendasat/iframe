@@ -24,6 +24,9 @@ pub async fn register_user<'a, E>(
 where
     E: sqlx::Executor<'a, Database = Postgres>,
 {
+    let email = email.to_ascii_lowercase();
+    let email = email.trim();
+
     let verification_code = generate_random_string(VERIFICATION_CODE_LENGTH);
     let invite_code = invite_code.map(|code| code.id);
 
@@ -35,7 +38,7 @@ where
             RETURNING *",
         id,
         name,
-        email.to_ascii_lowercase(),
+        email,
         salt,
         verifier,
         verification_code,
@@ -217,7 +220,7 @@ pub async fn update_lender_timezone(pool: &PgPool, lender_id: &str, timezone: &s
     sqlx::query!(
         r#"
         UPDATE lenders
-        SET 
+        SET
             timezone = $1,
             updated_at = CURRENT_TIMESTAMP
         WHERE id = $2
