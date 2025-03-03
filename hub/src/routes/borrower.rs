@@ -47,12 +47,59 @@ const API_ACCOUNTS_TAG: &str = "api-accounts";
 #[openapi(
     info(
         title = "Lendasat Borrower API",
-        description = "Interact with the lendasat server to \n\
-            - register as a new user, \n\
-            - manage personal api keys, \n\
-            - query available loan offers \n\
-            - create a contract request and \n\
-            - and manage open contracts."
+        description = r#"
+Interact with the lendasat server to 
+- register as a new user, 
+- manage personal api keys,
+- query available loan offers
+- create a contract request and
+- and manage open contracts.
+            
+## How to get an API key
+
+To get started with an API key, follow these steps:
+
+1. Sign up a new user under https://borrow.lendasat.com
+2. Provide your user id to a Lendasat employee who will generate a master API key for you, e.g. `las-BTC21` 
+3. Now you can create new sub users. This API will return a new API key for this user
+```bash
+curl -X POST "http://localhost:7337/api/create-api-account" \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: las-BTC21" \
+  -d '{
+    "name": "Satoshi Nakamoto",
+    "email": "satoshi@gmx.com",
+    "timezone": "America/New_York"
+  }' \
+  -v | jq .
+```
+
+e.g.
+
+```json
+{
+  "id": "818316da-6cad-41d6-ac82-6a4d1ec91d3b",
+  "name": "Satoshi Nakamoto",
+  "email": "satoshi@gmx.com",
+  "timezone": "America/New_York",
+  "api_key": "ldst-acc-1d906625-064b-4c61-bb3a-41d497421e3f"
+}
+```
+
+4. The newly created user can then use this key e.g. to send a loan request:
+
+```bash
+curl -X POST "http://localhost:7337/api/contracts" \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: ldst-acc-1d906625-064b-4c61-bb3a-41d497421e3f" \
+  -v \
+  -d '{
+    "loan_id": "9c89f12b-3f1a-4320-bf68-be3ce0820dd2",
+    "loan_amount": 100,
+    "duration_days": 7,
+    ...
+  }' | jq .
+```"#
     ),
     modifiers(&SecurityAddon),
     tags(
