@@ -3,7 +3,6 @@ members = [
   "browser-wallet",
   "descriptor-wallet",
   "hub",
-  "lendasat-core",
   "mempool-mock",
   "pay-with-moon",
   "sideshift",

@@ -3,6 +3,7 @@ use crate::model::CreateApiAccountRequest;
 use crate::model::CreateApiAccountResponse;
 use crate::model::CreatorApiKey;
 use crate::routes::borrower::auth::api_account_creator_auth;
+use crate::routes::borrower::API_ACCOUNTS_TAG;
 use crate::routes::AppState;
 use anyhow::anyhow;
 use axum::extract::rejection::JsonRejection;
@@ -11,27 +12,44 @@ use axum::extract::State;
 use axum::middleware;
 use axum::response::IntoResponse;
 use axum::response::Response;
-use axum::routing::post;
 use axum::Extension;
 use axum::Json;
-use axum::Router;
 use reqwest::StatusCode;
 use serde::Serialize;
 use std::sync::Arc;
 use tracing::instrument;
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
 
-pub(crate) fn router(app_state: Arc<AppState>) -> Router {
-    Router::new()
-        .route(
-            "/api/create-api-account",
-            post(post_create_api_account).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                api_account_creator_auth::auth,
-            )),
-        )
+pub(crate) fn router_openapi(app_state: Arc<AppState>) -> OpenApiRouter {
+    OpenApiRouter::new()
+        .routes(routes!(post_create_api_account))
+        .route_layer(middleware::from_fn_with_state(
+            app_state.clone(),
+            api_account_creator_auth::auth,
+        ))
         .with_state(app_state)
 }
 
+/// Create a user account with API key acccess
+#[utoipa::path(
+post,
+path = "/",
+tag = API_ACCOUNTS_TAG,
+request_body = CreateApiAccountRequest,
+responses(
+    (
+    status = 200,
+    description = "If successful, return new user object which holds the new API key. Note: there API key is only returned once!",
+    body = CreateApiAccountResponse,
+    )
+),
+security(
+    (
+    "api_key" = [])
+    )
+)
+]
 #[instrument(skip_all, err(Debug))]
 async fn post_create_api_account(
     State(data): State<Arc<AppState>>,

@@ -6,6 +6,7 @@ use crate::db;
 use crate::mempool;
 use crate::model;
 use crate::model::ContractStatus;
+use crate::model::FiatLoanDetails;
 use crate::model::Lender;
 use crate::model::LiquidationStatus;
 use crate::model::LoanAsset;
@@ -168,13 +169,13 @@ pub struct Contract {
     pub borrower_xpub: String,
     pub lender_xpub: String,
     pub kyc_info: Option<KycInfo>,
-    pub fiat_loan_details_borrower: Option<FiatLoanDetails>,
-    pub fiat_loan_details_lender: Option<FiatLoanDetails>,
+    pub fiat_loan_details_borrower: Option<FiatLoanDetailsWrapper>,
+    pub fiat_loan_details_lender: Option<FiatLoanDetailsWrapper>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct FiatLoanDetails {
-    pub details: lendasat_core::FiatLoanDetails,
+pub struct FiatLoanDetailsWrapper {
+    pub details: FiatLoanDetails,
     /// The lender's encrypted encryption key.
     pub encrypted_encryption_key: String,
 }
@@ -234,7 +235,7 @@ pub async fn put_approve_contract(
     State(data): State<Arc<AppState>>,
     Path(contract_id): Path<String>,
     Extension(user): Extension<Lender>,
-    body: Option<AppJson<model::FiatLoanDetails>>,
+    body: Option<AppJson<model::FiatLoanDetailsWrapper>>,
 ) -> Result<AppJson<()>, Error> {
     let wallet = data.wallet.lock().await;
 
@@ -1051,7 +1052,7 @@ async fn map_to_api_contract(
             .await
             .map_err(Error::Database)?;
 
-        details.map(|d| FiatLoanDetails {
+        details.map(|d| FiatLoanDetailsWrapper {
             details: d.details,
             encrypted_encryption_key: d.encrypted_encryption_key_lender,
         })
@@ -1062,7 +1063,7 @@ async fn map_to_api_contract(
             .await
             .map_err(Error::Database)?;
 
-        details.map(|d| FiatLoanDetails {
+        details.map(|d| FiatLoanDetailsWrapper {
             details: d.details,
             encrypted_encryption_key: d.encrypted_encryption_key_borrower,
         })

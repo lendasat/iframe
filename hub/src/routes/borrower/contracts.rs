@@ -10,6 +10,7 @@ use crate::model::Borrower;
 use crate::model::ContractRequestSchema;
 use crate::model::ContractStatus;
 use crate::model::ContractVersion;
+use crate::model::FiatLoanDetails;
 use crate::model::LiquidationStatus;
 use crate::model::LoanAsset;
 use crate::model::LoanTransaction;
@@ -18,6 +19,7 @@ use crate::model::PsbtQueryParams;
 use crate::model::TransactionType;
 use crate::moon::MOON_CARD_MAX_BALANCE;
 use crate::routes::borrower::auth::jwt_or_api_auth;
+use crate::routes::borrower::CONTRACTS_TAG;
 use crate::routes::user_connection_details_middleware;
 use crate::routes::user_connection_details_middleware::UserConnectionDetails;
 use crate::routes::AppState;
@@ -35,13 +37,8 @@ use axum::http::StatusCode;
 use axum::middleware;
 use axum::response::IntoResponse;
 use axum::response::Response;
-use axum::routing::delete;
-use axum::routing::get;
-use axum::routing::post;
-use axum::routing::put;
 use axum::Extension;
 use axum::Json;
-use axum::Router;
 use bitcoin::bip32::Xpub;
 use bitcoin::consensus::encode::FromHexError;
 use bitcoin::Amount;
@@ -58,66 +55,25 @@ use std::sync::Arc;
 use time::OffsetDateTime;
 use tracing::instrument;
 use url::Url;
+use utoipa::ToSchema;
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
 use uuid::Uuid;
 
-pub(crate) fn router(app_state: Arc<AppState>) -> Router {
-    Router::new()
-        .route(
-            "/api/contracts",
-            get(get_contracts).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_or_api_auth::auth,
-            )),
-        )
-        .route(
-            "/api/contracts/:id",
-            get(get_contract).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_or_api_auth::auth,
-            )),
-        )
-        .route(
-            "/api/contracts/:id",
-            post(post_claim_tx).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_or_api_auth::auth,
-            )),
-        )
-        .route(
-            "/api/contracts",
-            post(post_contract_request).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_or_api_auth::auth,
-            )),
-        )
-        .route(
-            "/api/contracts/:id",
-            delete(cancel_contract_request).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_or_api_auth::auth,
-            )),
-        )
-        .route(
-            "/api/contracts/:contract_id/repaid",
-            put(put_repayment_provided).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_or_api_auth::auth,
-            )),
-        )
-        .route(
-            "/api/contracts/:id/claim",
-            get(get_claim_collateral_psbt).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_or_api_auth::auth,
-            )),
-        )
-        .route(
-            "/api/contracts/:id/extend",
-            post(post_extend_contract_request).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_or_api_auth::auth,
-            )),
-        )
+pub(crate) fn router_openapi(app_state: Arc<AppState>) -> OpenApiRouter {
+    OpenApiRouter::new()
+        .routes(routes!(get_contracts))
+        .routes(routes!(get_contract))
+        .routes(routes!(get_claim_collateral_psbt))
+        .routes(routes!(post_contract_request))
+        .routes(routes!(post_claim_tx))
+        .routes(routes!(post_extend_contract_request))
+        .routes(routes!(put_repayment_provided))
+        .routes(routes!(cancel_contract_request))
+        .route_layer(middleware::from_fn_with_state(
+            app_state.clone(),
+            jwt_or_api_auth::auth,
+        ))
         .layer(
             tower::ServiceBuilder::new().layer(middleware::from_fn_with_state(
                 app_state.clone(),
@@ -127,6 +83,27 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
         .with_state(app_state)
 }
 
+/// Post a contract request
+///
+/// A contract request will be sent to the lender.
+#[utoipa::path(
+post,
+request_body = ContractRequestSchema,
+path = "/",
+tag = CONTRACTS_TAG,
+responses(
+    (
+        status = 200,
+        description = "The successfully requested contract",
+        body = Contract
+    )
+),
+security(
+    (
+    "api_key" = []
+    )
+)
+)]
 #[instrument(skip_all, err(Debug))]
 async fn post_contract_request(
     State(data): State<Arc<AppState>>,
@@ -409,6 +386,28 @@ async fn post_contract_request(
     Ok(AppJson(contract))
 }
 
+/// Cancel a request
+#[utoipa::path(
+delete,
+path = "/{id}",
+params(
+    (
+    "id" = String, Path, description = "Contract id"
+    )
+),
+tag = CONTRACTS_TAG,
+responses(
+    (
+    status = 200,
+    description = "If OK HTTP 200 is returned",
+    )
+),
+security(
+    (
+    "api_key" = [])
+    )
+)
+]
 #[instrument(skip(data, user), err(Debug), ret)]
 async fn cancel_contract_request(
     State(data): State<Arc<AppState>>,
@@ -453,6 +452,24 @@ async fn cancel_contract_request(
     Ok(())
 }
 
+/// Get all personal contracts
+#[utoipa::path(
+get,
+path = "/",
+tag = CONTRACTS_TAG,
+responses(
+    (
+    status = 200,
+    description = "A list of contracts",
+    body = [Contract]
+    )
+),
+security(
+    (
+    "api_key" = [])
+    )
+)
+]
 async fn get_contracts(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Borrower>,
@@ -471,6 +488,29 @@ async fn get_contracts(
     Ok(AppJson(contracts_api))
 }
 
+/// Get a contract by id
+#[utoipa::path(
+get,
+path = "/{id}",
+params(
+    (
+    "id" = String, Path, description = "Contract id"
+    )
+),
+tag = CONTRACTS_TAG,
+responses(
+    (
+    status = 200,
+    description = "If present, the contract details",
+    body = Contract
+    )
+),
+security(
+    (
+    "api_key" = [])
+    )
+)
+]
 async fn get_contract(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Borrower>,
@@ -489,6 +529,29 @@ async fn get_contract(
     Ok(AppJson(contract))
 }
 
+/// Marks a contract as repaid.
+#[utoipa::path(
+put,
+path = "/{id}/repaid",
+params(
+    (
+    "id" = String, Path, description = "Contract id"
+    )
+),
+request_body = PrincipalRepaidQueryParam,
+tag = CONTRACTS_TAG,
+responses(
+    (
+    status = 200,
+    description = "Ok if successful",
+    )
+),
+security(
+    (
+    "api_key" = [])
+    )
+    )
+]
 #[instrument(skip(data, user), err(Debug))]
 async fn put_repayment_provided(
     State(data): State<Arc<AppState>>,
@@ -548,6 +611,29 @@ async fn put_repayment_provided(
 
 // This API is only needed for the version of the protocol _without_ DLCs. With DLCs, the borrower
 // will be able to unilaterally reclaim the collateral after they learn the loan secret.
+/// Get the claim transaction
+#[utoipa::path(
+get,
+path = "/{id}/claim",
+params(
+    (
+    "id" = String, Path, description = "Contract id"
+    )
+),
+tag = CONTRACTS_TAG,
+responses(
+    (
+    status = 200,
+    description = "Ok if successful",
+    body = ClaimCollateralPsbt,
+    )
+),
+security(
+    (
+    "api_key" = [])
+    )
+)
+]
 #[instrument(skip_all, fields(borrower_id = user.id, contract_id), err(Debug), ret)]
 async fn get_claim_collateral_psbt(
     State(data): State<Arc<AppState>>,
@@ -617,6 +703,30 @@ async fn get_claim_collateral_psbt(
 // We don't need the borrower to publish the claim TX through the hub, but it is convenient to be
 // able to move the contract state forward. Eventually we could remove this and publish from the
 // borrower client.
+/// Get all personal contracts
+#[utoipa::path(
+post,
+path = "/{id}",
+params(
+    (
+    "id" = String, Path, description = "Contract id"
+    )
+),
+request_body = ClaimTx,
+tag = CONTRACTS_TAG,
+responses(
+    (
+    status = 200,
+    description = "Transaction ID of successfully posted transaction",
+    body = String
+    )
+),
+security(
+    (
+    "api_key" = [])
+    )
+)
+]
 #[instrument(skip(data, user), err(Debug), ret)]
 async fn post_claim_tx(
     State(data): State<Arc<AppState>>,
@@ -668,7 +778,7 @@ async fn post_claim_tx(
     Ok(claim_txid.to_string())
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct Contract {
     pub id: String,
     #[serde(with = "rust_decimal::serde::float")]
@@ -683,6 +793,7 @@ pub struct Contract {
     pub initial_ltv: Decimal,
     pub loan_asset: LoanAsset,
     pub status: ContractStatus,
+    #[schema(value_type = Option<String>)]
     pub borrower_pk: Option<PublicKey>,
     pub borrower_btc_address: String,
     pub borrower_loan_address: Option<String>,
@@ -707,36 +818,38 @@ pub struct Contract {
     pub borrower_xpub: String,
     pub lender_xpub: String,
     pub kyc_info: Option<KycInfo>,
-    pub fiat_loan_details_borrower: Option<FiatLoanDetails>,
-    pub fiat_loan_details_lender: Option<FiatLoanDetails>,
+    pub fiat_loan_details_borrower: Option<FiatLoanDetailsWrapper>,
+    pub fiat_loan_details_lender: Option<FiatLoanDetailsWrapper>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct FiatLoanDetails {
-    pub details: lendasat_core::FiatLoanDetails,
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct FiatLoanDetailsWrapper {
+    pub details: FiatLoanDetails,
     /// The borrower's encrypted encryption key.
     pub encrypted_encryption_key: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct KycInfo {
     kyc_link: Url,
     is_kyc_done: bool,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct ClaimCollateralPsbt {
     pub psbt: String,
+    #[schema(value_type = String)]
     pub collateral_descriptor: Descriptor<PublicKey>,
+    #[schema(value_type = String)]
     pub borrower_pk: PublicKey,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct ClaimTx {
     pub tx: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct PrincipalRepaidQueryParam {
     pub txid: String,
 }
@@ -833,7 +946,7 @@ async fn map_to_api_contract(
             .await
             .map_err(Error::Database)?;
 
-        details.map(|d| FiatLoanDetails {
+        details.map(|d| FiatLoanDetailsWrapper {
             details: d.details,
             encrypted_encryption_key: d.encrypted_encryption_key_borrower,
         })
@@ -844,7 +957,7 @@ async fn map_to_api_contract(
             .await
             .map_err(Error::Database)?;
 
-        details.map(|d| FiatLoanDetails {
+        details.map(|d| FiatLoanDetailsWrapper {
             details: d.details,
             encrypted_encryption_key: d.encrypted_encryption_key_borrower,
         })
@@ -895,6 +1008,30 @@ pub struct ExtendContractRequestSchema {
     pub new_duration: i32,
 }
 
+/// Post a request to extend the contract
+#[utoipa::path(
+post,
+path = "/{id}/extend",
+params(
+    (
+    "id" = String, Path, description = "Contract id"
+    )
+),
+request_body = PrincipalRepaidQueryParam,
+tag = CONTRACTS_TAG,
+responses(
+    (
+    status = 200,
+    description = "Ok if successful",
+    body = Contract,
+    )
+),
+security(
+    (
+    "api_key" = [])
+    )
+)
+]
 #[instrument(skip_all, err(Debug))]
 async fn post_extend_contract_request(
     State(data): State<Arc<AppState>>,

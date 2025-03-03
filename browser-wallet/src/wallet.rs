@@ -1,3 +1,4 @@
+use crate::models::FiatLoanDetails;
 use aes_gcm_siv::aead::Aead;
 use aes_gcm_siv::Aes256GcmSiv;
 use aes_gcm_siv::KeyInit;
@@ -23,7 +24,6 @@ use bitcoin::Psbt;
 use bitcoin::PublicKey;
 use bitcoin::Transaction;
 use hkdf::Hkdf;
-use lendasat_core::FiatLoanDetails;
 use miniscript::psbt::PsbtExt;
 use miniscript::Descriptor;
 use rand::thread_rng;

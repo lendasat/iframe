@@ -69,7 +69,7 @@ export class HttpClientBorrower extends BaseHttpClient {
   async getLoanOffersByLender(lenderId: string): Promise<LoanOffer[]> {
     try {
       const response: AxiosResponse<LoanOffer[]> = await this.httpClient.get(
-        `/api/offersbylender/${lenderId}`,
+        `/api/offers/bylender/${lenderId}`,
       );
       return response.data;
     } catch (error) {
@@ -90,7 +90,7 @@ export class HttpClientBorrower extends BaseHttpClient {
   async getLoanOffer(id: string): Promise<LoanOffer | undefined> {
     try {
       const response: AxiosResponse<LoanOffer> = await this.httpClient.get(
-        `/api/offer/${id}`,
+        `/api/offers/${id}`,
       );
       return response.data;
     } catch (error) {

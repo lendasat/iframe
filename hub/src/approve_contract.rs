@@ -3,7 +3,7 @@ use crate::db;
 use crate::mempool;
 use crate::mempool::TrackContractFunding;
 use crate::model::ContractStatus;
-use crate::model::FiatLoanDetails;
+use crate::model::FiatLoanDetailsWrapper;
 use crate::notifications::Notifications;
 use crate::wallet::Wallet;
 use anyhow::Context;
@@ -52,7 +52,7 @@ pub async fn approve_contract(
     contract_id: String,
     lender_id: &str,
     notifications: Arc<Notifications>,
-    fiat_loan_details: Option<FiatLoanDetails>,
+    fiat_loan_details: Option<FiatLoanDetailsWrapper>,
 ) -> Result<(), Error> {
     let contract = db::contracts::load_contract_by_contract_id_and_lender_id(
         db,
