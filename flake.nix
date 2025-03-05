@@ -36,18 +36,6 @@
         rustfmt = rustBinNightly.passthru.availableComponents.rustfmt;
         rustAnalyzer = rustBinNightly.passthru.availableComponents.rust-analyzer;
 
-        # Only for debugging a problem. Can remove.
-        fwiSource = pkgs.fetchFromGitHub {
-          owner = "Liamolucko";
-          repo = "find_wasm_import";
-          rev = "b726e870fcc30f59987ef59ad448ceb2d3dd998d";
-          sha256 = "sha256-FKfU/xpE0zZDTlrj4wOVeqIACxWQquKmvaNnOk8n9dk=";
-        };
-        fwi = pkgs.rustPlatform.buildRustPackage {
-          name = "find_wasm_import";
-          src = fwiSource;
-          cargoHash = "sha256-9GOx8xlGExwwgmnT7tx/d75LbxpRTifiIfw3715VGko=";
-        };
       in
         {
           devShells.default = with pkgs; mkShell {
@@ -55,13 +43,14 @@
             buildInputs = [
               llvmPackages_latest.bintools
               worker-build
-              fwi
               gcc
               jq
               rustfmt
               rustAnalyzer
               nodejs_22
               yarn # Cannot easily use npm.
+              pnpm
+              corepack
               openssl # TODO: Needed?
               pkg-config
               postgresql
