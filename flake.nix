@@ -63,8 +63,7 @@ wasm-pack # Does not produce a valid `browser-wallet` output.
               pkgs-stable.nodePackages.eslint
             ];
 
-            # TODO: rust-analyzer dies when we jump to the standard library and this does not fix it.
-            RUST_SRC_PATH = "${rustToolchain}/lib/rustlib/src/rust/library";
+            RUST_SRC_PATH = "${rustToolchainWithWasm}/lib/rustlib/src/rust/library";
           };
         }
     );
