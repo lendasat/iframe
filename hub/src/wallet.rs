@@ -233,7 +233,7 @@ impl Wallet {
         update_fee(
             fee_rate_spvb,
             total_collateral_amount,
-            &mut unsigned_claim_tx, // we assume the refund output will always be on 0
+            &mut unsigned_claim_tx,
             contract_version,
         );
 
@@ -537,7 +537,7 @@ impl Wallet {
         update_fee(
             fee_rate_spvb,
             total_collateral_amount.to_sat(),
-            &mut unsigned_claim_tx, // we assume the refund output will always be on 0
+            &mut unsigned_claim_tx,
             contract_version,
         );
 
@@ -734,7 +734,7 @@ fn update_fee(
     const COLLATERAL_OUTPUT_INDEX: usize = 0;
 
     if contract_version != ContractVersion::TwoOfThree {
-        tracing::warn!("Using a fee rate optimizes which was meant for a different contract version. The resulting fee rate will be slightly off.")
+        tracing::warn!(?contract_version, "Fee calculation will be inaccurate");
     }
 
     let mut sample_signed_tx = unsigned_claim_tx.clone();
@@ -754,7 +754,7 @@ fn update_fee(
 
     // We calculate the fee rate, and reduce the output until we get to the wanted sats per vByte,
     // this will lead to a slight overshooting which is unavoidable unless we change
-    // [`ADJUSTMENT_AMOUNT`] to 1 sat, but then we would have 100x more iterations.
+    // `ADJUSTMENT_AMOUNT` to 1 sat, but then we would have 100x more iterations.
     const ADJUSTMENT_AMOUNT: u64 = 100;
     {
         let mut calculated_fee = calculate_fee_rate(
@@ -763,10 +763,10 @@ fn update_fee(
         );
 
         while calculated_fee.to_sat_per_vb_ceil() <= fee_rate_spvb {
-            tracing::info!(
+            tracing::debug!(
                 calculated_fee = calculated_fee.to_sat_per_vb_ceil(),
                 wanted_fee = fee_rate_spvb,
-                "Fee rate not met, reducing "
+                "Fee rate not met, reducing"
             );
 
             if sample_signed_tx.output[COLLATERAL_OUTPUT_INDEX]
