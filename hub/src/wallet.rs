@@ -26,7 +26,10 @@ use bitcoin::ScriptBuf;
 use bitcoin::Transaction;
 use bitcoin::TxIn;
 use bitcoin::TxOut;
+use bitcoin::Witness;
+use bitcoin_units::FeeRate;
 use descriptor_wallet::DescriptorWallet;
+use hex::FromHex;
 use miniscript::Descriptor;
 use sqlx::Pool;
 use sqlx::Postgres;
@@ -197,11 +200,6 @@ impl Wallet {
             inputs.push(input)
         }
 
-        // FIXME: Incorrect arbitrary value!
-        let tx_weight_vb = 200 + (collateral_outputs.len() as u64) * 50;
-
-        let tx_fee = tx_weight_vb * fee_rate_spvb;
-
         // Filter out small outputs
         // TODO: if an output was filtered out, we shouldn't burn it as tx fee,
         // instead credit it to the other party
@@ -210,34 +208,13 @@ impl Wallet {
             .filter(|(_, amount)| amount >= &MIN_TX_OUTPUT_VALUE)
             .collect::<Vec<_>>();
 
-        let tx_fee_per_output = tx_fee / outputs.len() as u64;
+        let total_collateral_amount = collateral_outputs.iter().fold(0, |acc, (_, a)| acc + a);
 
         let mut outputs = outputs
             .into_iter()
-            .filter_map(|(address, amount)| {
-                if tx_fee_per_output > amount {
-                    // Tx fee is too high, ignoring output
-                    tracing::warn!(
-                        address = address.assume_checked().to_string(),
-                        amount,
-                        tx_fee_per_output,
-                        "Ignoring output as tx fee would render output too small"
-                    );
-                    None
-                } else if amount - tx_fee_per_output < MIN_TX_OUTPUT_VALUE {
-                    tracing::warn!(
-                        address = address.assume_checked().to_string(),
-                        amount,
-                        tx_fee_per_output,
-                        "Ignoring output as tx fee would render output too small"
-                    );
-                    None
-                } else {
-                    Some(TxOut {
-                        value: Amount::from_sat(amount - tx_fee_per_output),
-                        script_pubkey: address.assume_checked().script_pubkey(),
-                    })
-                }
+            .map(|(address, amount)| TxOut {
+                value: Amount::from_sat(amount),
+                script_pubkey: address.assume_checked().script_pubkey(),
             })
             .collect::<Vec<_>>();
 
@@ -249,12 +226,21 @@ impl Wallet {
 
         outputs.push(origination_fee_output);
 
-        let unsigned_claim_tx = Transaction {
+        let mut unsigned_claim_tx = Transaction {
             version: Version::TWO,
             lock_time: LockTime::ZERO,
             input: inputs,
             output: outputs,
         };
+
+        // TODO: we need to check if the output holds enough to cover the fee
+        update_fee(
+            fee_rate_spvb,
+            total_collateral_amount,
+            &mut unsigned_claim_tx,
+            0, // we assume the refund output will always be on 0
+            contract_version,
+        );
 
         // All collateral outputs share the same script.
         let collateral_descriptor = match contract_version {
@@ -361,14 +347,9 @@ impl Wallet {
             inputs.push(input)
         }
 
-        // FIXME: Incorrect arbitrary value!
-        let tx_weight_vb = 200 + (collateral_outputs.len() as u64) * 50;
-
-        let tx_fee = tx_weight_vb * fee_rate_spvb;
-
         let total_collateral_amount = collateral_outputs.iter().fold(0, |acc, (_, a)| acc + a);
         let claim_amount = total_collateral_amount
-            .checked_sub(origination_fee + tx_fee)
+            .checked_sub(origination_fee)
             .context("Negative claim amount")?;
 
         let claim_output = TxOut {
@@ -397,7 +378,7 @@ impl Wallet {
             vec![claim_output, origination_fee_output]
         };
 
-        let unsigned_claim_tx = Transaction {
+        let mut unsigned_claim_tx = Transaction {
             version: Version::TWO,
             lock_time: LockTime::ZERO,
             input: inputs,
@@ -418,6 +399,15 @@ impl Wallet {
             }
         };
         let witness_script = collateral_descriptor.script_code()?;
+
+        // TODO: we need to check if the output holds enough to cover the fee
+        update_fee(
+            fee_rate_spvb,
+            total_collateral_amount,
+            &mut unsigned_claim_tx,
+            0, // the refund output
+            contract_version,
+        );
 
         let mut inputs = Vec::new();
 
@@ -510,19 +500,14 @@ impl Wallet {
             inputs.push(input)
         }
 
-        // FIXME: Incorrect arbitrary value!
-        let tx_weight_vb = 200 + (collateral_outputs.len() as u64) * 50;
-
-        let tx_fee = Amount::from_sat(tx_weight_vb * fee_rate_spvb);
-
         let total_collateral_amount =
             Amount::from_sat(collateral_outputs.iter().fold(0, |acc, (_, a)| acc + a));
         let borrower_amount = total_collateral_amount
-            .checked_sub(origination_fee + lender_amount + tx_fee)
+            .checked_sub(origination_fee + lender_amount)
             .with_context(|| {
                 format!(
                     "Collateral ({total_collateral_amount}) cannot cover lender amount \
-                     ({lender_amount}) origination_fee ({origination_fee}) and TX fee {tx_fee}"
+                     ({lender_amount}) origination_fee ({origination_fee})"
                 )
             })?;
 
@@ -554,12 +539,21 @@ impl Wallet {
             .filter(|o| o.value.to_sat() >= MIN_TX_OUTPUT_VALUE)
             .collect::<Vec<_>>();
 
-        let unsigned_claim_tx = Transaction {
+        let mut unsigned_claim_tx = Transaction {
             version: Version::TWO,
             lock_time: LockTime::ZERO,
             input: inputs,
             output,
         };
+
+        // TODO: we need to check if the output holds enough to cover the fee
+        update_fee(
+            fee_rate_spvb,
+            total_collateral_amount.to_sat(),
+            &mut unsigned_claim_tx,
+            0, // we assume the refund output will always be on 0
+            contract_version,
+        );
 
         // All collateral outputs share the same script.
         let hub_pk = PublicKey::new(hub_kp.public_key());
@@ -689,6 +683,16 @@ impl Wallet {
     }
 }
 
+fn calculate_fee_rate(tx: Transaction, total_input_amount: Amount) -> FeeRate {
+    let fee_amount = calculate_fee_amount(&tx, total_input_amount);
+    fee_amount / tx.weight()
+}
+
+fn calculate_fee_amount(tx: &Transaction, total_input_amount: Amount) -> Amount {
+    let total_output_amount = tx.output.iter().map(|o| o.value).sum();
+    total_input_amount - total_output_amount
+}
+
 fn two_of_four_collateral_contract_descriptor(
     borrower_pk: PublicKey,
     hub_pk: PublicKey,
@@ -731,4 +735,172 @@ pub fn derive_borrower_or_lender_pk(
     };
 
     Ok(pk)
+}
+
+/// Updates how much fee the transaction pays by reducing the amount sent to [`output`]
+fn update_fee(
+    fee_rate_spvb: u64,
+    total_collateral_amount: u64,
+    unsigned_claim_tx: &mut Transaction,
+    output: usize,
+    contract_version: ContractVersion,
+) {
+    if contract_version != ContractVersion::TwoOfThree {
+        tracing::warn!("Using a fee rate optimizes which was meant for a different contract version. The resulting fee rate will be slightly off.")
+    }
+
+    let mut sample_signed_tx = unsigned_claim_tx.clone();
+
+    // sample witness stack taken from a simple 2of3 multi-sig
+    let witness = [
+        Vec::from_hex("").expect("to be a vec"),
+        Vec::from_hex("30440220539a32ea34d8bb124255bc9e1c58b281727e9b98e87a140015459c6e74c92dea022021d397de1d67802c83872862498664e22f557c3a896ee1763fe66f08d07495e101").expect("to be a vec"),
+        Vec::from_hex("3044022060b0b382040373640cb2cb488dabec25bab817c8a574be5cef07284647d4bc9a02207c4d94350be6449c40b6e5c1d29b01c441807b0b4a3c6e3cd48b1f8916e9b14801").expect("to be a vec"),
+        Vec::from_hex("52210341e69dcf830490e3f37c72a04c1f7fda50364524ff9a7f9bee356af7e93a88c52102e7d424c60e484cca1b5c1a1bd37c52b13130424afd5c935e345ca76ca9565d33210275fa3cbc739a93d5d3a55c05e2295d30a690d847927a8cc1b1eb0937ac13c38353ae").expect("to be a vec"),
+    ];
+
+    sample_signed_tx
+        .input
+        .iter_mut()
+        .for_each(|input| input.witness = Witness::from_slice(&witness));
+
+    // We calculate the fee rate, and reduce the output until we get to the wanted sats per vByte,
+    // this will lead to a slight overshooting which is unavoidable unless we change
+    // [`ADJUSTMENT_AMOUNT`] to 1 sat, but then we would have 100x more iterations.
+    const ADJUSTMENT_AMOUNT: u64 = 100;
+    {
+        let mut calculated_fee = calculate_fee_rate(
+            sample_signed_tx.clone(),
+            Amount::from_sat(total_collateral_amount),
+        );
+
+        while calculated_fee.to_sat_per_vb_ceil() <= fee_rate_spvb {
+            tracing::info!(
+                calculated_fee = calculated_fee.to_sat_per_vb_ceil(),
+                wanted_fee = fee_rate_spvb,
+                "Fee rate not met, reducing "
+            );
+
+            sample_signed_tx.output[output].value -= Amount::from_sat(ADJUSTMENT_AMOUNT);
+            calculated_fee = calculate_fee_rate(
+                sample_signed_tx.clone(),
+                Amount::from_sat(total_collateral_amount),
+            );
+        }
+    }
+
+    // update the output amount of the provided transaction
+    unsigned_claim_tx.output[output].value = sample_signed_tx.output[output].value;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bitcoin::consensus::encode::deserialize;
+    use bitcoin::Amount;
+    use bitcoin::FeeRate;
+    use bitcoin::Transaction;
+    use bitcoin::Txid;
+
+    #[test]
+    fn test_calculate_fee_rate() {
+        // Example transaction taken from: https://mempool.space/tx/8ed825f3414ad1e14017bd0895397583efbc071a97d48e32c9405c6783d6a329
+        let tx_hex = "0200000000010185d40e8b1752377b082cd9521f57ef6b2f8e64e77a048f002e29c317510c9dcf1100000000fdffffff0fa4743100000000001600148e91eeeba56eef1bc9537b0b2967b0898934ec5ab173120000000000160014e5d4a97318440421d2273b6de37044f6c3d028b7c64a46000000000016001498eaab114122c0e313410715bc70ff94a318c8e92a8d6100000000002251209cad789fc1466bbca60672d11fff041c010ce88f7acd98f765f6604500631bdf668a070000000000160014b3c347edbc430bc361dc49aea09f24c5637e37ec7a960000000000001976a914d8b123ffb132a5f76d06c931b6c136127204952988acbe7c07000000000016001468e7b8927ebddd98dac907bb9c67fc1328d2ee7d9b5427000000000016001412ad6107eebda44c4f6154f35b0a9ed5c487ffa8f289050000000000160014cb67db77d0a0002470c813962ef1e54086a49a323b76f40500000000160014979c7bc678e031bdfc907559632278904d8aaab22dbd1300000000001600147a9415eb6545f1b3f9a5729713623dbab1dd40228df006000000000017a914d662ebf23e5318e2b7c9fbdca77731f107f8a0468708410a0000000000160014c92942f6b18568fe37f9fca95ab46bb11a5b569e5f3d050000000000220020a227155d5896fbf58f9e4fd51e9c2b9160b175c2da7d07f0d1748207e8d01541a394e30f000000001600143877cc298fc5b8a591e34982a91183bb35f0c2420247304402207e1afd03357595269b2a71a6f49eb0526ae32467aecfdc1140605a97297aaf3d0220319bbde2217bf101de5c82247e6021d1383c2caaa5895e16ad9711fb7adc92d30121023e86a944b9cff6bea3e61d3594820cacbfb122b817934f981256b2bc4e6b850400000000";
+
+        let tx: Transaction = deserialize(&hex::decode(tx_hex).unwrap()).unwrap();
+
+        // Taken from mempool.space
+        let total_input_amount = Amount::from_sat(388_659_747);
+
+        let expected_fee_rate = FeeRate::from_sat_per_vb_unchecked(3);
+
+        let actual_fee_rate = calculate_fee_rate(tx, total_input_amount);
+
+        assert_eq!(
+            actual_fee_rate.to_sat_per_vb_ceil(),
+            expected_fee_rate.to_sat_per_vb_ceil()
+        );
+    }
+
+    #[test]
+    fn test_calculate_fee_rate_2_inputs() {
+        // Collateral funding transaction with 2 inputs and 2 outputs (refund and origination fee)
+        // Example transaction taken from: https://mutinynet.com/api/tx/93a74403f11c8aff71ff4497c351cbcffc18a376cfc1738b088ba162c12ae319/hex
+        let tx_hex = "02000000000102dcc95a2f1059a6b54b1074cb38c2610a48f0e12a715d44bbcf91420ad3847fe00000000000ffffffffb7bb469e60f757390434792e4996a28008164cc892abc7856f0b377e3c1f457b0100000000ffffffff0286a2030000000000160014cbab657cdd6e9e32e40b5b3ba3c5068d85e7287a1f07000000000000160014e3bd4bbdcad0f036a7a3d5a6cb27a20b88205447040047304402204ef6eae9e18bb13abffaa12016338ad00643c4cb8120d4f42e3e488fb50ef20b02202b029d1cfdc51b0466e954ca2aff1fcce14f53096b1e2547499ce085414ba9fc01483045022100848c7d4d0f37e5e1b3751388ed6a216092419190b796b1d72a9b1546e49fbe9702205e0f079b80cb2412744ca172329d382a95113142ab90dfa16933ca74d565f6f50169522102d346ee590a95992b184433526f94ff23843f546853ef9dce406af4e7852bdfb2210206b0c487a6e223a667a54db318da2373dea6e139bbc2c6494cda0ca2b8a94bfb2103c5daed8afc5ed1486819789555e03446e135361d06b8712f85e2496994b57e8d53ae04004730440220075e3038bd85ae6bd05124d67d14db53dff78d29cde2bb5a9c4fdfa9e11f812e0220032be2c3efff88370cdf051a5b7736c8f31a37132f025003336af9c4f877b86a01483045022100cbc44b1153b1ad6fac7272d6185aade4c9c66bb8183bca40c89d545a02fb3fb102200e1b25bd96f930c6abb283554ab8818c6a10939f017074c44f0dfa303a19d9010169522102d346ee590a95992b184433526f94ff23843f546853ef9dce406af4e7852bdfb2210206b0c487a6e223a667a54db318da2373dea6e139bbc2c6494cda0ca2b8a94bfb2103c5daed8afc5ed1486819789555e03446e135361d06b8712f85e2496994b57e8d53ae00000000";
+
+        let tx: Transaction = deserialize(&hex::decode(tx_hex).unwrap()).unwrap();
+
+        // Taken from mempool.space https://mutinynet.com/address/tb1qvcq8h554lkdvlr60kz23eyfxnd5mlzf6q2j53rtz906a3yvt77tsk6mcwm
+        let total_input_amount = Amount::from_sat(245_937);
+
+        let expected_fee_rate = FeeRate::from_sat_per_vb_unchecked(21);
+
+        let actual_fee_rate = calculate_fee_rate(tx, total_input_amount);
+
+        assert_eq!(
+            actual_fee_rate.to_sat_per_vb_ceil(),
+            expected_fee_rate.to_sat_per_vb_ceil()
+        );
+    }
+
+    #[test]
+    fn test_estimate_fee_rate_and_compare() {
+        // Collateral funding transaction with 1 input and 2 outputs (refund and origination fee)
+        // Example transaction taken from: https://mutinynet.com/api/tx/c3ef7eb2a6c341ec2deb72a68bbdec249d20bb37c16d7bd4b9489e8539895440/hex
+        let tx_hex = "020000000001011ff103086c0576460a82028463b592ec4527dbb368292c8d4a1c65850da392200000000000ffffffff0251af0300000000001600144c79b50158c70a1838a2feb54250a8bcc5de1b992407000000000000160014e3bd4bbdcad0f036a7a3d5a6cb27a20b8820544704004830450221008bbea01873507fff28ebad70ccfe906662788848eae655430a493cd3a9c511bc0220526a49fdef5e072a8a97f632b948820961a11220d437779c5a7befb3f18b79ee0147304402203aa9d7f74c68b7006b89d95b5bdde66d7aafa9cef8ffec732926679b07be47340220543fe4b199550fbbbf55469c2770c7558c4ac88b4b91fa736b31a6089276ec49016952210347e3c2d5408487258410767b321b843958c112c6ae0de20007a8a0a7a7b2acb521028612fa09c36fdeb18a498bbdf714d2699fc353e7711a01989969c6c42111acf821038946c3f6702dbff2fe9e0556908d390cbd829510d52d4a664093224ec127a54353ae00000000";
+        let tx: Transaction = deserialize(&hex::decode(tx_hex).unwrap()).unwrap();
+        // Taken from mempool.space https://mutinynet.com/address/tb1qvcq8h554lkdvlr60kz23eyfxnd5mlzf6q2j53rtz906a3yvt77tsk6mcwm
+        let total_input_amount = Amount::from_sat(245_617);
+
+        // actual_fee_rate is 3253 sats/kw =>  3253 / (1000 / 4) ~= 13.012 sats/vbyte
+        let actual_fee_rate = calculate_fee_rate(tx.clone(), total_input_amount);
+
+        // Just to ensure the amounts add up with the paid fee. You can compare these numbers on
+        // mempool
+        let expected_paid_fee = Amount::from_sat(2_300);
+        let paid_fee = calculate_fee_amount(&tx, Amount::from_sat(245_617));
+        assert_eq!(paid_fee, expected_paid_fee);
+
+        // next we create a new transaction, based on the inputs and outputs but without the fee,
+        // i.e. we add 2_300 sats to the first outputs.
+        let mut sample_tx = Transaction {
+            version: Version::TWO,
+            lock_time: tx.lock_time,
+            input: vec![TxIn {
+                previous_output: OutPoint::new(
+                    Txid::from_str(
+                        "2092a30d85651c4a8d2c2968b3db2745ec92b5638402820a4676056c0803f11f",
+                    )
+                    .expect("to be valud"),
+                    0,
+                ),
+                script_sig: Default::default(),
+                sequence: Default::default(),
+                witness: Default::default(),
+            }],
+            output: vec![
+                TxOut {
+                    value: tx.output[0].value + expected_paid_fee,
+                    script_pubkey: tx.output[0].clone().script_pubkey,
+                },
+                TxOut {
+                    value: tx.output[1].value,
+                    script_pubkey: tx.output[1].clone().script_pubkey,
+                },
+            ],
+        };
+
+        update_fee(
+            13,
+            total_input_amount.to_sat(),
+            &mut sample_tx,
+            0,
+            ContractVersion::TwoOfThree,
+        );
+        let paid_fee = calculate_fee_amount(&tx, Amount::from_sat(245_617));
+        assert_eq!(paid_fee, expected_paid_fee);
+
+        let sample_fee_rate = calculate_fee_rate(tx.clone(), total_input_amount);
+        assert_eq!(sample_fee_rate, actual_fee_rate);
+    }
 }
