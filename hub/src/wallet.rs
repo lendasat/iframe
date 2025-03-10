@@ -185,7 +185,7 @@ impl Wallet {
         let liquidator_address_info = self.hub_fee_wallet.get_new_address()?;
         let liquidator_address =
             Address::from_str(liquidator_address_info.address.to_string().as_str())?;
-        let target_outputs = [
+        let outputs = [
             (borrower_address, borrower_amount_sats),
             (liquidator_address, liquidator_amount_sats),
         ];
@@ -203,10 +203,6 @@ impl Wallet {
         // Filter out small outputs
         // TODO: if an output was filtered out, we shouldn't burn it as tx fee,
         // instead credit it to the other party
-        let outputs = target_outputs
-            .into_iter()
-            .filter(|(_, amount)| amount >= &MIN_TX_OUTPUT_VALUE)
-            .collect::<Vec<_>>();
 
         let total_collateral_amount = collateral_outputs.iter().fold(0, |acc, (_, a)| acc + a);
 
@@ -237,8 +233,7 @@ impl Wallet {
         update_fee(
             fee_rate_spvb,
             total_collateral_amount,
-            &mut unsigned_claim_tx,
-            0, // we assume the refund output will always be on 0
+            &mut unsigned_claim_tx, // we assume the refund output will always be on 0
             contract_version,
         );
 
@@ -404,8 +399,7 @@ impl Wallet {
         update_fee(
             fee_rate_spvb,
             total_collateral_amount,
-            &mut unsigned_claim_tx,
-            0, // the refund output
+            &mut unsigned_claim_tx, // the refund output
             contract_version,
         );
 
@@ -532,13 +526,6 @@ impl Wallet {
 
         let output = vec![borrower_output, lender_output, origination_fee_output];
 
-        // Any output that would be below `MIN_TX_OUTPUT_VALUE` goes towards the transaction fee
-        // instead.
-        let output = output
-            .into_iter()
-            .filter(|o| o.value.to_sat() >= MIN_TX_OUTPUT_VALUE)
-            .collect::<Vec<_>>();
-
         let mut unsigned_claim_tx = Transaction {
             version: Version::TWO,
             lock_time: LockTime::ZERO,
@@ -550,8 +537,7 @@ impl Wallet {
         update_fee(
             fee_rate_spvb,
             total_collateral_amount.to_sat(),
-            &mut unsigned_claim_tx,
-            0, // we assume the refund output will always be on 0
+            &mut unsigned_claim_tx, // we assume the refund output will always be on 0
             contract_version,
         );
 
@@ -742,9 +728,11 @@ fn update_fee(
     fee_rate_spvb: u64,
     total_collateral_amount: u64,
     unsigned_claim_tx: &mut Transaction,
-    output: usize,
     contract_version: ContractVersion,
 ) {
+    // We assume that the refund output is always the first output.
+    const COLLATERAL_OUTPUT_INDEX: usize = 0;
+
     if contract_version != ContractVersion::TwoOfThree {
         tracing::warn!("Using a fee rate optimizes which was meant for a different contract version. The resulting fee rate will be slightly off.")
     }
@@ -781,7 +769,24 @@ fn update_fee(
                 "Fee rate not met, reducing "
             );
 
-            sample_signed_tx.output[output].value -= Amount::from_sat(ADJUSTMENT_AMOUNT);
+            if sample_signed_tx.output[COLLATERAL_OUTPUT_INDEX]
+                .value
+                .to_sat()
+                < ADJUSTMENT_AMOUNT
+                || sample_signed_tx.output[COLLATERAL_OUTPUT_INDEX]
+                    .value
+                    .to_sat()
+                    - ADJUSTMENT_AMOUNT
+                    < MIN_TX_OUTPUT_VALUE
+            {
+                // can't cover tx fee, we drop this output
+                sample_signed_tx.output.remove(COLLATERAL_OUTPUT_INDEX);
+                // we need to remove the output from the original tx as well
+                unsigned_claim_tx.output.remove(COLLATERAL_OUTPUT_INDEX);
+                tracing::warn!("Output couldn't cover fee, hence we drop the output and continue with the next output");
+            }
+            sample_signed_tx.output[COLLATERAL_OUTPUT_INDEX].value -=
+                Amount::from_sat(ADJUSTMENT_AMOUNT);
             calculated_fee = calculate_fee_rate(
                 sample_signed_tx.clone(),
                 Amount::from_sat(total_collateral_amount),
@@ -790,7 +795,8 @@ fn update_fee(
     }
 
     // update the output amount of the provided transaction
-    unsigned_claim_tx.output[output].value = sample_signed_tx.output[output].value;
+    unsigned_claim_tx.output[COLLATERAL_OUTPUT_INDEX].value =
+        sample_signed_tx.output[COLLATERAL_OUTPUT_INDEX].value;
 }
 
 #[cfg(test)]
@@ -894,7 +900,6 @@ mod tests {
             13,
             total_input_amount.to_sat(),
             &mut sample_tx,
-            0,
             ContractVersion::TwoOfThree,
         );
         let paid_fee = calculate_fee_amount(&tx, Amount::from_sat(245_617));
@@ -902,5 +907,46 @@ mod tests {
 
         let sample_fee_rate = calculate_fee_rate(tx.clone(), total_input_amount);
         assert_eq!(sample_fee_rate, actual_fee_rate);
+    }
+
+    #[test]
+    fn test_dropping_output_due_to_too_low_for_fee() {
+        // next we create a new transaction, based on the inputs and outputs but without the fee,
+        // i.e. we add 2_300 sats to the first outputs.
+        let mut sample_tx = Transaction {
+            version: Version::TWO,
+            lock_time: LockTime::ZERO,
+            input: vec![TxIn {
+                previous_output: OutPoint::new(
+                    Txid::from_str(
+                        "2092a30d85651c4a8d2c2968b3db2745ec92b5638402820a4676056c0803f11f",
+                    )
+                    .expect("to be valid"),
+                    0,
+                ),
+                script_sig: Default::default(),
+                sequence: Default::default(),
+                witness: Default::default(),
+            }],
+            output: vec![
+                TxOut {
+                    value: Amount::from_sat(400),
+                    script_pubkey: ScriptBuf::default(),
+                },
+                TxOut {
+                    value: Amount::from_sat(1_000_000),
+                    script_pubkey: ScriptBuf::default(),
+                },
+            ],
+        };
+
+        update_fee(
+            13,
+            400 + 1_000_000,
+            &mut sample_tx,
+            ContractVersion::TwoOfThree,
+        );
+
+        assert_eq!(sample_tx.output.len(), 1);
     }
 }
