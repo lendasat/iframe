@@ -33,7 +33,7 @@ pub async fn load_contracts_by_borrower_id(
             id,
             lender_id,
             borrower_id,
-            loan_id,
+            loan_deal_id,
             initial_ltv,
             initial_collateral_sats,
             origination_fee_sats,
@@ -42,6 +42,7 @@ pub async fn load_contracts_by_borrower_id(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            lender_loan_repayment_address,
             loan_type as "loan_type: crate::model::db::LoanType",
             lender_xpub,
             borrower_xpub,
@@ -82,7 +83,7 @@ pub async fn load_contracts_by_lender_id(
             id,
             lender_id,
             borrower_id,
-            loan_id,
+            loan_deal_id,
             initial_ltv,
             initial_collateral_sats,
             origination_fee_sats,
@@ -91,6 +92,7 @@ pub async fn load_contracts_by_lender_id(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            lender_loan_repayment_address,
             loan_type as "loan_type: crate::model::db::LoanType",
             lender_xpub,
             borrower_xpub,
@@ -128,7 +130,7 @@ async fn load_contract(pool: &Pool<Postgres>, contract_id: &str) -> Result<Contr
             id,
             lender_id,
             borrower_id,
-            loan_id,
+            loan_deal_id,
             initial_ltv,
             initial_collateral_sats,
             origination_fee_sats,
@@ -137,6 +139,7 @@ async fn load_contract(pool: &Pool<Postgres>, contract_id: &str) -> Result<Contr
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            lender_loan_repayment_address,
             loan_type as "loan_type: crate::model::db::LoanType",
             lender_xpub,
             borrower_xpub,
@@ -173,7 +176,7 @@ pub async fn load_contract_by_contract_id_and_borrower_id(
             id,
             lender_id,
             borrower_id,
-            loan_id,
+            loan_deal_id,
             initial_ltv,
             initial_collateral_sats,
             origination_fee_sats,
@@ -182,6 +185,7 @@ pub async fn load_contract_by_contract_id_and_borrower_id(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            lender_loan_repayment_address,
             loan_type as "loan_type: crate::model::db::LoanType",
             borrower_xpub,
             lender_xpub,
@@ -220,7 +224,7 @@ pub async fn load_contract_by_contract_id_and_lender_id(
             id,
             lender_id,
             borrower_id,
-            loan_id,
+            loan_deal_id,
             initial_ltv,
             initial_collateral_sats,
             origination_fee_sats,
@@ -229,6 +233,7 @@ pub async fn load_contract_by_contract_id_and_lender_id(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            lender_loan_repayment_address,
             loan_type as "loan_type: crate::model::db::LoanType",
             borrower_xpub,
             lender_xpub,
@@ -263,7 +268,7 @@ pub async fn load_open_contracts(pool: &Pool<Postgres>) -> Result<Vec<Contract>>
             id as "id!",
             lender_id as "lender_id!",
             borrower_id as "borrower_id!",
-            loan_id as "loan_id!",
+            loan_deal_id as "loan_deal_id!",
             initial_ltv as "initial_ltv!",
             initial_collateral_sats as "initial_collateral_sats!",
             origination_fee_sats as "origination_fee_sats!",
@@ -272,6 +277,7 @@ pub async fn load_open_contracts(pool: &Pool<Postgres>) -> Result<Vec<Contract>>
             borrower_btc_address as "borrower_btc_address!",
             borrower_pk,
             borrower_loan_address,
+            lender_loan_repayment_address,
             loan_type as "loan_type!: crate::model::db::LoanType",
             borrower_xpub as "borrower_xpub!",
             lender_xpub,
@@ -304,13 +310,14 @@ pub async fn insert_new_contract_request(
     id: Uuid,
     borrower_id: &str,
     lender_id: &str,
-    loan_id: &str,
+    loan_deal_id: &str,
     initial_ltv: Decimal,
     initial_collateral_sats: u64,
     origination_fee_sats: u64,
     loan_amount: Decimal,
     duration_days: i32,
     borrower_btc_address: Address<NetworkUnchecked>,
+    lender_loan_repayment_address: String,
     borrower_xpub: Xpub,
     borrower_loan_address: Option<&str>,
     loan_type: LoanType,
@@ -339,7 +346,7 @@ pub async fn insert_new_contract_request(
         &mut db_tx,
         borrower_id,
         lender_id,
-        loan_id,
+        loan_deal_id,
         &id,
         initial_ltv,
         loan_amount,
@@ -347,6 +354,7 @@ pub async fn insert_new_contract_request(
         borrower_btc_address,
         None,
         borrower_loan_address,
+        Some(lender_loan_repayment_address),
         initial_collateral_sats,
         origination_fee_sats,
         collateral_sats,
@@ -373,7 +381,7 @@ pub async fn insert_extension_contract_request(
     id: Uuid,
     borrower_id: &str,
     lender_id: &str,
-    loan_id: &str,
+    loan_deal_id: &str,
     initial_ltv: Decimal,
     initial_collateral_sats: u64,
     collateral_sats: u64,
@@ -382,6 +390,7 @@ pub async fn insert_extension_contract_request(
     extended_duration_days: i32,
     total_duration_days: i32,
     borrower_btc_address: Address<NetworkUnchecked>,
+    lender_loan_repayment_address: Option<String>,
     // May be `Some` if we are extending a legacy contract.
     borrower_pk: Option<PublicKey>,
     borrower_loan_address: Option<&str>,
@@ -418,7 +427,7 @@ pub async fn insert_extension_contract_request(
         db_tx,
         borrower_id,
         lender_id,
-        loan_id,
+        loan_deal_id,
         &id,
         initial_ltv,
         loan_amount,
@@ -426,6 +435,7 @@ pub async fn insert_extension_contract_request(
         borrower_btc_address,
         borrower_pk,
         borrower_loan_address,
+        lender_loan_repayment_address,
         initial_collateral_sats,
         origination_fee_sats,
         collateral_sats,
@@ -448,7 +458,7 @@ async fn insert_contract_request(
     db_tx: &mut sqlx::Transaction<'_, Postgres>,
     borrower_id: &str,
     lender_id: &str,
-    loan_id: &str,
+    loan_deal_id: &str,
     contract_id: &str,
     initial_ltv: Decimal,
     loan_amount: Decimal,
@@ -456,6 +466,7 @@ async fn insert_contract_request(
     borrower_btc_address: Address<NetworkUnchecked>,
     borrower_pk: Option<PublicKey>,
     borrower_loan_address: Option<&str>,
+    lender_loan_repayment_address: Option<String>,
     initial_collateral_sats: i64,
     origination_fee_sats: i64,
     collateral_sats: i64,
@@ -477,7 +488,7 @@ async fn insert_contract_request(
             id,
             lender_id,
             borrower_id,
-            loan_id,
+            loan_deal_id,
             initial_ltv,
             initial_collateral_sats,
             origination_fee_sats,
@@ -489,6 +500,7 @@ async fn insert_contract_request(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            lender_loan_repayment_address,
             loan_type,
             borrower_xpub,
             lender_xpub,
@@ -498,12 +510,12 @@ async fn insert_contract_request(
             created_at,
             expiry_date,
             interest_rate
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)
         RETURNING
             id,
             lender_id,
             borrower_id,
-            loan_id,
+            loan_deal_id,
             initial_ltv,
             initial_collateral_sats,
             origination_fee_sats,
@@ -512,6 +524,7 @@ async fn insert_contract_request(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            lender_loan_repayment_address,
             loan_type as "loan_type: crate::model::db::LoanType",
             borrower_xpub,
             lender_xpub,
@@ -529,7 +542,7 @@ async fn insert_contract_request(
         contract_id,
         lender_id,
         borrower_id,
-        loan_id,
+        loan_deal_id,
         initial_ltv,
         initial_collateral_sats,
         origination_fee_sats,
@@ -541,6 +554,7 @@ async fn insert_contract_request(
         borrower_btc_address.assume_checked().to_string(),
         borrower_pk.map(|p| p.to_string()) as Option<String>,
         borrower_loan_address,
+        lender_loan_repayment_address,
         loan_type as db::LoanType,
         borrower_xpub.to_string(),
         lender_xpub.to_string(),
@@ -580,7 +594,7 @@ pub async fn accept_contract_request(
             id,
             lender_id,
             borrower_id,
-            loan_id,
+            loan_deal_id,
             initial_ltv,
             initial_collateral_sats,
             origination_fee_sats,
@@ -589,6 +603,7 @@ pub async fn accept_contract_request(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            lender_loan_repayment_address,
             loan_type as "loan_type: crate::model::db::LoanType",
             borrower_xpub,
             lender_xpub,
@@ -760,7 +775,7 @@ pub async fn reject_contract_request(
             id,
             lender_id,
             borrower_id,
-            loan_id,
+            loan_deal_id,
             initial_ltv,
             initial_collateral_sats,
             origination_fee_sats,
@@ -769,6 +784,7 @@ pub async fn reject_contract_request(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            lender_loan_repayment_address,
             loan_type as "loan_type: crate::model::db::LoanType",
             borrower_xpub,
             lender_xpub,
@@ -811,7 +827,7 @@ pub(crate) async fn mark_liquidation_state_as(
             id,
             lender_id,
             borrower_id,
-            loan_id,
+            loan_deal_id,
             initial_ltv,
             initial_collateral_sats,
             origination_fee_sats,
@@ -820,6 +836,7 @@ pub(crate) async fn mark_liquidation_state_as(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            lender_loan_repayment_address,
             loan_type as "loan_type: crate::model::db::LoanType",
             borrower_xpub,
             lender_xpub,
@@ -1062,7 +1079,7 @@ pub async fn update_collateral(
             id,
             lender_id,
             borrower_id,
-            loan_id,
+            loan_deal_id,
             initial_ltv,
             initial_collateral_sats,
             origination_fee_sats,
@@ -1071,6 +1088,7 @@ pub async fn update_collateral(
             borrower_btc_address,
             borrower_pk,
             borrower_loan_address,
+            lender_loan_repayment_address,
             loan_type as "loan_type: crate::model::db::LoanType",
             borrower_xpub,
             lender_xpub,
@@ -1370,4 +1388,82 @@ pub(crate) async fn expire_approved_contracts(
     let contract_ids = rows.into_iter().map(|row| row.id).collect();
 
     Ok(contract_ids)
+}
+
+#[allow(clippy::too_many_arguments)]
+pub async fn insert_new_taken_contract_application(
+    pool: &Pool<Postgres>,
+    id: Uuid,
+    borrower_id: &str,
+    lender_id: &str,
+    loan_deal_id: &str,
+    initial_ltv: Decimal,
+    initial_collateral_sats: u64,
+    origination_fee_sats: u64,
+    loan_amount: Decimal,
+    duration_days: i32,
+    borrower_btc_address: Address<NetworkUnchecked>,
+    borrower_xpub: Xpub,
+    borrower_loan_address: Option<&str>,
+    lender_loan_repayment_address: String,
+    loan_type: LoanType,
+    lender_xpub: Xpub,
+    contract_version: ContractVersion,
+    interest_rate: Decimal,
+    contract_address: Address<NetworkUnchecked>,
+    contract_index: u32,
+) -> Result<Contract> {
+    let mut db_tx = pool
+        .begin()
+        .await
+        .context("Failed to start db transaction")?;
+
+    let id = id.to_string();
+    let initial_collateral_sats = initial_collateral_sats as i64;
+    let origination_fee_sats = origination_fee_sats as i64;
+    let collateral_sats = 0;
+    let loan_type = db::LoanType::from(loan_type);
+    let contract_version = contract_version as i32;
+
+    let created_at = OffsetDateTime::now_utc();
+    let expiry_date = expiry_date(created_at, duration_days as u64);
+
+    // TODO: we might want to use a different state here to differentiate between contracts which
+    // have been requested and approved or offered and taken. For now, we just treat them the
+    // same which simplifies the frontend as from this state, everything is the same though, i.e.
+    // next the borrower will need to fund the contract.
+    let status = db::ContractStatus::Approved;
+
+    let address = contract_address.assume_checked().to_string();
+    let contract = insert_contract_request(
+        &mut db_tx,
+        borrower_id,
+        lender_id,
+        loan_deal_id,
+        &id,
+        initial_ltv,
+        loan_amount,
+        duration_days,
+        borrower_btc_address,
+        None,
+        borrower_loan_address,
+        Some(lender_loan_repayment_address),
+        initial_collateral_sats,
+        origination_fee_sats,
+        collateral_sats,
+        loan_type,
+        contract_version,
+        created_at,
+        expiry_date,
+        status,
+        borrower_xpub,
+        lender_xpub,
+        Some(address.to_string()),
+        Some(contract_index as i32),
+        interest_rate,
+    )
+    .await?;
+
+    db_tx.commit().await?;
+    Ok(contract)
 }

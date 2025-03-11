@@ -272,22 +272,36 @@ pub struct CreateLoanOfferSchema {
     pub kyc_link: Option<Url>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct CreateLoanRequestSchema {
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+pub struct CreateLoanApplicationSchema {
+    #[serde(with = "rust_decimal::serde::float")]
     pub ltv: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
     pub interest_rate: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
     pub loan_amount: Decimal,
     pub duration_days: i32,
+    // TODO: we might want to accept a list here in case the borrower doesn't care about the asset
+    // and the `loan_type` supports multiple. For now, we stick with a single type
     pub loan_asset: LoanAsset,
+    pub loan_type: LoanType,
+    /// This is optional because certain integrations (such as Pay with Moon) define their own loan
+    /// address.
+    pub borrower_loan_address: Option<String>,
+    #[schema(value_type = String)]
+    pub borrower_btc_address: Address<NetworkUnchecked>,
+    #[schema(value_type = String)]
+    pub borrower_xpub: Xpub,
+    // TODO: do we want to enable KYC for the lender? I.e. the borrower requires the lender to do
+    // KYC?
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct ContractRequestSchema {
-    pub loan_id: String,
+    pub id: String,
     #[serde(with = "rust_decimal::serde::float")]
     pub loan_amount: Decimal,
     pub duration_days: i32,
-    // #[schema(schema_with = crate::open_api_schemas::address_schema_function)]
     #[schema(value_type = String)]
     pub borrower_btc_address: Address<NetworkUnchecked>,
     #[schema(value_type = String)]
@@ -323,9 +337,54 @@ pub enum LoanType {
     Fiat,
 }
 
+pub enum LoanDeal {
+    LoanOffer(LoanOffer),
+    LoanApplication(LoanApplication),
+}
+
+impl LoanDeal {
+    pub fn kyc_link(&self) -> Option<Url> {
+        match self {
+            LoanDeal::LoanOffer(a) => a.kyc_link.clone(),
+            LoanDeal::LoanApplication(_) => None,
+        }
+    }
+
+    pub fn loan_asset(&self) -> LoanAsset {
+        match self {
+            LoanDeal::LoanOffer(a) => a.loan_asset.clone(),
+            LoanDeal::LoanApplication(b) => b.loan_asset.clone(),
+        }
+    }
+}
+
+/// Represents an offer from a lender
+///
+/// Note: [`loan_deal_id`] is used to identify whether an opportunity is an `offer` or
+/// `application`. This is crucial once we insert the `contract` into the DB, because here we can
+/// only reference the `loan_deals`.
+///
+/// +-------------------+       +---------------------+       +-----------------+
+/// |  loan_offers        |       | loan_deals  |       |   loan_applications     |
+/// +-------------------+       +---------------------+       +-----------------+
+/// | id                |   |-->| id                  |<---|  | id              |
+/// | lender_id         |   |   | type: offer/application     |    |  | borrower_id     |
+/// | loan_deal_id    |---|   | created_at          |    |--| loan_deal_id  |
+/// | ...               |       +---------------------+       | ...             |
+/// +-------------------+               |                     +-----------------+
+///                                     |
+///                                     |
+///                             +----------------+
+///                             |   contracts    |
+///                             +----------------+
+///                             | id             |
+///                             | loan_deal_id |
+///                             | ...            |
+///                             +----------------+
 #[derive(Debug, FromRow, Clone)]
 pub struct LoanOffer {
-    pub id: String,
+    // the id of the opportunity
+    pub loan_deal_id: String,
     pub lender_id: String,
     pub name: String,
     pub min_ltv: Decimal,
@@ -402,9 +461,9 @@ pub enum LoanOfferStatus {
     Deleted,
 }
 
-#[derive(Debug, FromRow, Serialize, Deserialize, Clone)]
-pub struct LoanRequest {
-    pub id: String,
+#[derive(Debug, FromRow, Serialize, Deserialize, Clone, ToSchema)]
+pub struct LoanApplication {
+    pub loan_deal_id: String,
     pub borrower_id: String,
     #[serde(with = "rust_decimal::serde::float")]
     pub ltv: Decimal,
@@ -413,19 +472,28 @@ pub struct LoanRequest {
     #[serde(with = "rust_decimal::serde::float")]
     pub loan_amount: Decimal,
     pub duration_days: i32,
+    /// This is optional because certain integrations (such as Pay with Moon) define their own loan
+    /// address.
+    pub borrower_loan_address: Option<String>,
+    #[schema(value_type = String)]
+    pub borrower_btc_address: Address<NetworkUnchecked>,
     pub loan_asset: LoanAsset,
-    pub status: LoanRequestStatus,
+    pub loan_type: LoanType,
+    #[schema(value_type = String)]
+    pub borrower_xpub: Xpub,
+    pub status: LoanApplicationStatus,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
     #[serde(with = "time::serde::rfc3339")]
     pub updated_at: OffsetDateTime,
 }
 
-#[derive(Debug, Deserialize, sqlx::Type, Serialize, Clone)]
-#[sqlx(type_name = "loan_request_status")]
-pub enum LoanRequestStatus {
+#[derive(Debug, Deserialize, sqlx::Type, Serialize, Clone, ToSchema)]
+#[sqlx(type_name = "loan_application_status")]
+pub enum LoanApplicationStatus {
     Available,
     Unavailable,
+    Taken,
     Deleted,
 }
 
@@ -458,6 +526,7 @@ pub struct Contract {
     pub borrower_pk: Option<PublicKey>,
     /// Optional because fiat loans do not have loan addresses in the cryptocurrency sense.
     pub borrower_loan_address: Option<String>,
+    pub lender_loan_repayment_address: Option<String>,
     pub loan_type: LoanType,
     pub borrower_xpub: Xpub,
     pub lender_xpub: Option<Xpub>,
@@ -652,7 +721,7 @@ pub mod db {
         pub id: String,
         pub lender_id: String,
         pub borrower_id: String,
-        pub loan_id: String,
+        pub loan_deal_id: String,
         pub initial_ltv: Decimal,
         pub initial_collateral_sats: i64,
         pub origination_fee_sats: i64,
@@ -663,6 +732,7 @@ pub mod db {
         pub borrower_btc_address: String,
         pub borrower_pk: Option<String>,
         pub borrower_loan_address: Option<String>,
+        pub lender_loan_repayment_address: Option<String>,
         pub loan_type: LoanType,
         pub borrower_xpub: String,
         pub lender_xpub: Option<String>,
@@ -760,7 +830,7 @@ impl From<db::Contract> for Contract {
             id: value.id,
             lender_id: value.lender_id,
             borrower_id: value.borrower_id,
-            loan_id: value.loan_id,
+            loan_id: value.loan_deal_id,
             initial_ltv: value.initial_ltv,
             initial_collateral_sats: value.initial_collateral_sats as u64,
             origination_fee_sats: value.origination_fee_sats as u64,
@@ -774,6 +844,7 @@ impl From<db::Contract> for Contract {
                 .borrower_pk
                 .map(|p| PublicKey::from_str(&p).expect("valid pk")),
             borrower_loan_address: value.borrower_loan_address,
+            lender_loan_repayment_address: value.lender_loan_repayment_address,
             loan_type: value.loan_type.into(),
             borrower_xpub: Xpub::from_str(&value.borrower_xpub).expect("valid Xpub"),
             lender_xpub: value
@@ -892,7 +963,7 @@ impl From<Contract> for db::Contract {
             id: value.id,
             lender_id: value.lender_id,
             borrower_id: value.borrower_id,
-            loan_id: value.loan_id,
+            loan_deal_id: value.loan_id,
             initial_ltv: value.initial_ltv,
             initial_collateral_sats: value.initial_collateral_sats as i64,
             origination_fee_sats: value.origination_fee_sats as i64,
@@ -903,6 +974,7 @@ impl From<Contract> for db::Contract {
             borrower_btc_address: value.borrower_btc_address.assume_checked().to_string(),
             borrower_pk: value.borrower_pk.map(|p| p.to_string()),
             borrower_loan_address: value.borrower_loan_address,
+            lender_loan_repayment_address: value.lender_loan_repayment_address,
             loan_type: value.loan_type.into(),
             borrower_xpub: value.borrower_xpub.to_string(),
             lender_xpub: value.lender_xpub.map(|xpub| xpub.to_string()),

@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE loan_applications set\n            status = $1,\n            updated_at = $2\n        WHERE borrower_id = $3 and loan_deal_id = $4\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        {
+          "Custom": {
+            "name": "loan_application_status",
+            "kind": {
+              "Enum": [
+                "Available",
+                "Unavailable",
+                "Deleted",
+                "Taken"
+              ]
+            }
+          }
+        },
+        "Timestamptz",
+        "Bpchar",
+        "Bpchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b08a86394718f81a272ff32991dc86f966d04209ece96f51fec801e28bf6f0ea"
+}

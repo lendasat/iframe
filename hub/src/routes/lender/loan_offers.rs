@@ -34,37 +34,37 @@ use url::Url;
 pub(crate) fn router(app_state: Arc<AppState>) -> Router {
     Router::new()
         .route(
-            "/api/my-offers",
+            "/api/my-loans/offer",
             get(get_loan_offers_by_lender)
                 .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
         )
         .route(
-            "/api/my-offers/:id",
+            "/api/my-loans/offer/:id",
             get(get_loan_offer_by_lender_and_offer_id)
                 .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
         )
         .route(
-            "/api/my-offers/:id",
+            "/api/my-loans/offer/:id",
             delete(delete_loan_offer_by_lender_and_offer_id)
                 .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
         )
         .route(
-            "/api/my-offers/create",
+            "/api/my-loans/offer",
             post(create_loan_offer)
                 .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
         )
         .route(
-            "/api/offers",
+            "/api/loans/offer",
             get(get_loan_offers)
                 .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
         )
         .route(
-            "/api/offers/:id",
+            "/api/loans/offer/:id",
             get(get_loan_offer_by_id)
                 .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
         )
         .route(
-            "/api/offers/stats",
+            "/api/loans/offer-stats",
             get(get_latest_stats)
                 .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
         )
@@ -165,7 +165,7 @@ pub async fn create_loan_offer(
         })?;
 
     let offer = LoanOffer {
-        id: offer.id,
+        id: offer.loan_deal_id,
         lender: lender_stats,
         name: offer.name,
         min_ltv: offer.min_ltv,
@@ -266,7 +266,7 @@ pub async fn get_loan_offers_by_lender(
             })?;
 
         let offer = LoanOffer {
-            id: offer.id,
+            id: offer.loan_deal_id,
             lender: lender_stats,
             name: offer.name,
             min_ltv: offer.min_ltv,
@@ -339,7 +339,7 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
         })?;
 
     let loan = LoanOffer {
-        id: offer.id,
+        id: offer.loan_deal_id,
         lender: lender_stats,
         name: offer.name,
         min_ltv: offer.min_ltv,
@@ -406,7 +406,7 @@ pub async fn get_loan_offers(
             })?;
 
         ret.push(LoanOffer {
-            id: offer.id,
+            id: offer.loan_deal_id,
             lender: lender_stats,
             name: offer.name,
             min_ltv: offer.min_ltv,
@@ -479,7 +479,7 @@ pub async fn get_loan_offer_by_id(
         })?;
 
     let loan = LoanOffer {
-        id: offer.id,
+        id: offer.loan_deal_id,
         lender: lender_stats,
         name: offer.name,
         min_ltv: offer.min_ltv,

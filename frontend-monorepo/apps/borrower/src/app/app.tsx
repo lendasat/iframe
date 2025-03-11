@@ -19,7 +19,7 @@ import DashBoard from "./dashboard/dash-board";
 import ResolveDispute from "./disputes/dispute";
 import ErrorBoundary from "./ErrorBoundary";
 import History from "./History";
-import AvailableOffers from "./request-loan/available-offers";
+import AvailableOffers from "./loan-offers/available-offers";
 import Settings from "./settings/settings";
 import "../assets/styles.css";
 import type { User } from "@frontend/base-http-client";
@@ -35,13 +35,17 @@ import VerifyEmailForm from "./auth/verifyEmailForm";
 import BorrowerProfile from "./borrowerProfile";
 import Cards from "./cards/Cards";
 import LenderProfile from "./lenderProfile";
-import { LoanRequestFlow } from "./loan-requests/loan-request-flow";
+import { LoanRequestFlow } from "./loan-offers/loan-request-flow";
 import RestrictedAccessPage from "./RestrictedAccessPage";
 import { useEffect } from "react";
 import init from "browser-wallet";
 import browserWalletUrl from "browser-wallet/browser_wallet_bg.wasm?url";
 import Waitlist from "./waitlist/waitlist";
 import WaitlistSuccess from "./waitlist/success";
+import LoanApplication from "./loan-applications/loan-applications";
+import { FaHandHoldingDollar } from "react-icons/fa6";
+import AvailableLoanApplications from "./loan-applications/available-loan-applications";
+import { FaFileContract, FaMoneyCheckAlt } from "react-icons/fa";
 
 const menuItems = [
   {
@@ -76,6 +80,20 @@ const menuItems = [
         label: "Available offers",
         path: "/available-offers",
         icon: BsBank,
+        target: "_self",
+        visible: true,
+      },
+      {
+        label: "Apply for a loan",
+        path: "/loan-application",
+        icon: FaHandHoldingDollar,
+        target: "_self",
+        visible: true,
+      },
+      {
+        label: "My loan applications",
+        path: "/loan-applications",
+        icon: FaFileContract,
         target: "_self",
         visible: true,
       },
@@ -197,6 +215,11 @@ function MainLayoutComponents() {
             <Route path="/lender/:id" element={<LenderProfile />} />
             <Route path="/borrower/:id" element={<BorrowerProfile />} />
             <Route path="/available-offers" element={<AvailableOffers />} />
+            <Route path="/loan-application" element={<LoanApplication />} />
+            <Route
+              path="/loan-applications"
+              element={<AvailableLoanApplications />}
+            />
             <Route path="/disputes/:id" element={<ResolveDispute />} />
             <Route path="/restricted" element={<RestrictedAccessPage />} />
             <Route

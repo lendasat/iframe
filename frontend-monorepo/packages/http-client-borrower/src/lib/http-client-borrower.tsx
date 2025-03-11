@@ -17,9 +17,10 @@ import {
   Dispute,
   ExtendPostLoanRequest,
   LenderStats,
+  LoanApplication,
   LoanOffer,
   LoanRequest,
-  PostLoanRequest,
+  postLoanApplication,
   PutUpdateProfile,
   UserCardDetail,
 } from "./models";
@@ -46,11 +47,17 @@ interface BorrowerStatsRaw extends Omit<BorrowerStats, "joined_at"> {
   joined_at: string;
 }
 
+interface RawLoanApplication
+  extends Omit<LoanApplication, "created_at" | "updated_at"> {
+  created_at: string;
+  updated_at: string;
+}
+
 export class HttpClientBorrower extends BaseHttpClient {
   async getLoanOffers(): Promise<LoanOffer[] | undefined> {
     try {
       const response: AxiosResponse<LoanOffer[]> =
-        await this.httpClient.get("/api/offers");
+        await this.httpClient.get("/api/loans/offer");
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
@@ -69,7 +76,7 @@ export class HttpClientBorrower extends BaseHttpClient {
   async getLoanOffersByLender(lenderId: string): Promise<LoanOffer[]> {
     try {
       const response: AxiosResponse<LoanOffer[]> = await this.httpClient.get(
-        `/api/offers/bylender/${lenderId}`,
+        `/api/loans/offer/bylender/${lenderId}`,
       );
       return response.data;
     } catch (error) {
@@ -90,7 +97,7 @@ export class HttpClientBorrower extends BaseHttpClient {
   async getLoanOffer(id: string): Promise<LoanOffer | undefined> {
     try {
       const response: AxiosResponse<LoanOffer> = await this.httpClient.get(
-        `/api/offers/${id}`,
+        `/api/loans/offer/${id}`,
       );
       return response.data;
     } catch (error) {
@@ -108,12 +115,12 @@ export class HttpClientBorrower extends BaseHttpClient {
     }
   }
 
-  async postLoanRequest(
-    request: PostLoanRequest,
+  async postLoanApplication(
+    request: postLoanApplication,
   ): Promise<LoanRequest | undefined> {
     try {
       const response: AxiosResponse<LoanRequest> = await this.httpClient.post(
-        "/api/requests/create",
+        "/api/loans/application",
         request,
       );
       return response.data;
@@ -132,6 +139,25 @@ export class HttpClientBorrower extends BaseHttpClient {
         );
       }
     }
+  }
+
+  async getLoanApplications(): Promise<LoanApplication[] | undefined> {
+    const response: AxiosResponse<RawLoanApplication[]> =
+      await this.httpClient.get("/api/loans/application");
+
+    return response.data.map((application) => {
+      const createdAt = parseRFC3339Date(application.created_at);
+      const updatedAt = parseRFC3339Date(application.updated_at);
+      if (createdAt === undefined || updatedAt === undefined) {
+        throw new Error("Invalid date");
+      }
+
+      return {
+        ...application,
+        created_at: createdAt,
+        updated_at: updatedAt,
+      };
+    });
   }
 
   async postExtendLoanRequest(
@@ -587,7 +613,8 @@ type BorrowerHttpClientContextType = Pick<
   | "getLoanOffers"
   | "getLoanOffersByLender"
   | "getLoanOffer"
-  | "postLoanRequest"
+  | "postLoanApplication"
+  | "getLoanApplications"
   | "postExtendLoanRequest"
   | "postContractRequest"
   | "cancelContractRequest"
@@ -685,7 +712,8 @@ export const HttpClientBorrowerProvider: React.FC<HttpClientProviderProps> = ({
     getLoanOffers: httpClient.getLoanOffers.bind(httpClient),
     getLoanOffersByLender: httpClient.getLoanOffersByLender.bind(httpClient),
     getLoanOffer: httpClient.getLoanOffer.bind(httpClient),
-    postLoanRequest: httpClient.postLoanRequest.bind(httpClient),
+    postLoanApplication: httpClient.postLoanApplication.bind(httpClient),
+    getLoanApplications: httpClient.getLoanApplications.bind(httpClient),
     postExtendLoanRequest: httpClient.postExtendLoanRequest.bind(httpClient),
     postContractRequest: httpClient.postContractRequest.bind(httpClient),
     cancelContractRequest: httpClient.cancelContractRequest.bind(httpClient),

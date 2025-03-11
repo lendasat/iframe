@@ -67,13 +67,13 @@ async fn api_account_borrower() {
     };
 
     let res = lender
-        .post("http://localhost:7338/api/my-offers/create")
+        .post("http://localhost:7338/api/my-loans/offer")
         .json(&loan_offer)
         .send()
         .await
         .unwrap();
 
-    assert!(res.status().is_success());
+    assert!(res.status().is_success(), "{:?}", res.text().await);
 
     let loan_offer: LoanOffer = res.json().await.unwrap();
 
@@ -116,7 +116,7 @@ async fn api_account_borrower() {
         .unwrap();
 
     let contract_request = ContractRequestSchema {
-        loan_id: loan_offer.id,
+        id: loan_offer.id,
         loan_amount: dec!(500),
         duration_days: 7,
         borrower_btc_address,

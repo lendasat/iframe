@@ -45,7 +45,6 @@ use bitcoin::Amount;
 use bitcoin::PublicKey;
 use bitcoin::Transaction;
 use miniscript::Descriptor;
-use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
 use serde::Deserialize;
 use serde::Serialize;
@@ -110,11 +109,11 @@ async fn post_contract_request(
     Extension(connection_details): Extension<UserConnectionDetails>,
     AppJson(body): AppJson<ContractRequestSchema>,
 ) -> Result<AppJson<Contract>, Error> {
-    let offer = db::loan_offers::loan_by_id(&data.db, &body.loan_id)
+    let offer = db::loan_offers::loan_by_id(&data.db, &body.id)
         .await
         .map_err(Error::Database)?
         .ok_or(Error::MissingLoanOffer {
-            offer_id: body.loan_id.clone(),
+            id: body.id.clone(),
         })?;
 
     if !offer.is_valid_loan_duration(body.duration_days) {
@@ -234,8 +233,9 @@ async fn post_contract_request(
         .map_err(Error::BitMexPrice)?;
 
     let min_ltv = offer.min_ltv;
-    let initial_collateral = calculate_initial_collateral(body.loan_amount, min_ltv, initial_price)
-        .map_err(Error::InitialCollateralCalculation)?;
+    let initial_collateral =
+        contract_requests::calculate_initial_collateral(body.loan_amount, min_ltv, initial_price)
+            .map_err(Error::InitialCollateralCalculation)?;
 
     // TODO: Choose origination fee based on loan parameters. For now we only have one origination
     // fee anyway.
@@ -269,13 +269,14 @@ async fn post_contract_request(
         contract_id,
         user.id.as_str(),
         lender_id.as_str(),
-        &body.loan_id,
+        &body.id,
         min_ltv,
         initial_collateral.to_sat(),
         origination_fee_amount.to_sat(),
         body.loan_amount,
         body.duration_days,
         body.borrower_btc_address,
+        offer.loan_repayment_address,
         body.borrower_xpub,
         borrower_loan_address.as_deref(),
         body.loan_type,
@@ -794,10 +795,10 @@ pub struct Contract {
     pub borrower_btc_address: String,
     pub borrower_loan_address: Option<String>,
     pub contract_address: Option<String>,
+    pub loan_repayment_address: Option<String>,
     pub collateral_script: Option<String>,
     #[schema(value_type = String)]
     pub derivation_path: Option<DerivationPath>,
-    pub loan_repayment_address: String,
     pub lender: LenderStats,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
@@ -853,36 +854,14 @@ pub struct PrincipalRepaidQueryParam {
     pub txid: String,
 }
 
-fn calculate_initial_collateral(
-    loan_amount: Decimal,
-    ltv: Decimal,
-    initial_price: Decimal,
-) -> anyhow::Result<Amount> {
-    let collateral_value_usd = loan_amount
-        .checked_div(ltv)
-        .context("Failed to calculate collateral in USD")?;
-
-    let collateral_btc = collateral_value_usd
-        .checked_div(initial_price)
-        .context("Failed to calculate collateral in BTC")?;
-
-    let collateral_btc = collateral_btc.round_dp(8);
-    let collateral_btc = collateral_btc.to_f64().expect("to fit");
-
-    Ok(Amount::from_btc(collateral_btc).expect("to fit"))
-}
-
 /// Convert from a [`model::Contract`] to a [`Contract`].
 async fn map_to_api_contract(
     data: &Arc<AppState>,
     contract: model::Contract,
 ) -> Result<Contract, Error> {
-    let offer = db::loan_offers::loan_by_id(&data.db, &contract.loan_id)
+    let loan_deal = db::loan_deals::get_loan_deal_by_id(&data.db, &contract.loan_id)
         .await
-        .map_err(Error::Database)?
-        .ok_or_else(|| Error::MissingLoanOffer {
-            offer_id: contract.loan_id.clone(),
-        })?;
+        .map_err(Error::Database)?;
 
     let lender = db::lenders::get_user_by_id(&data.db, &contract.lender_id)
         .await
@@ -908,7 +887,7 @@ async fn map_to_api_contract(
             .await
             .map_err(|e| Error::Database(anyhow!(e)))?;
 
-    let kyc_info = match offer.kyc_link {
+    let kyc_info = match loan_deal.kyc_link() {
         Some(ref kyc_link) => {
             let is_kyc_done = db::kyc::get(&data.db, &lender.id, &contract.borrower_id)
                 .await
@@ -922,7 +901,7 @@ async fn map_to_api_contract(
         None => None,
     };
 
-    let new_offer = offer;
+    let new_offer = loan_deal;
 
     let lender_stats = user_stats::get_lender_stats(&data.db, lender.id.as_str())
         .await
@@ -987,7 +966,7 @@ async fn map_to_api_contract(
         collateral_sats: contract.collateral_sats,
         interest_rate: contract.interest_rate,
         initial_ltv: contract.initial_ltv,
-        loan_asset: new_offer.loan_asset,
+        loan_asset: new_offer.loan_asset(),
         status: contract.status,
         borrower_pk,
         borrower_btc_address: contract.borrower_btc_address.assume_checked().to_string(),
@@ -995,9 +974,9 @@ async fn map_to_api_contract(
         contract_address: contract
             .contract_address
             .map(|c| c.assume_checked().to_string()),
+        loan_repayment_address: contract.lender_loan_repayment_address,
         collateral_script,
         derivation_path: borrower_derivation_path,
-        loan_repayment_address: new_offer.loan_repayment_address,
         lender: lender_stats,
         created_at: contract.created_at,
         updated_at: contract.updated_at,
@@ -1105,7 +1084,7 @@ enum Error {
     /// Failed to interact with the database.
     Database(anyhow::Error),
     /// Referenced loan does not exist.
-    MissingLoanOffer { offer_id: String },
+    MissingLoanOffer { id: String },
     /// Referenced lender does not exist.
     MissingLender,
     /// Failed to provide borrower loan address for stablecoin loan.
@@ -1249,7 +1228,7 @@ impl IntoResponse for Error {
                     "Something went wrong".to_owned(),
                 )
             }
-            Error::MissingLoanOffer { offer_id } => {
+            Error::MissingLoanOffer { id: offer_id } => {
                 tracing::error!(offer_id, "Could not find referenced loan offer");
 
                 (
@@ -1532,7 +1511,7 @@ impl From<approve_contract::Error> for Error {
             approve_contract::Error::MissingBorrowerXpub => Error::MissingBorrowerXpub,
             approve_contract::Error::MissingLenderXpub => Error::MissingLenderXpub,
             approve_contract::Error::MissingLoanOffer { offer_id } => {
-                Error::MissingLoanOffer { offer_id }
+                Error::MissingLoanOffer { id: offer_id }
             }
             approve_contract::Error::MissingFiatLoanDetails => Error::MissingFiatLoanDetails,
             approve_contract::Error::ContractAddress(e) => Error::ContractAddress(e),
@@ -1550,7 +1529,7 @@ impl From<crate::contract_extension::Error> for Error {
         match value {
             crate::contract_extension::Error::Database(e) => Error::Database(e),
             crate::contract_extension::Error::MissingLoanOffer { offer_id } => {
-                Error::MissingLoanOffer { offer_id }
+                Error::MissingLoanOffer { id: offer_id }
             }
             crate::contract_extension::Error::LoanOfferLenderMismatch => {
                 Error::LoanOfferLenderMismatch

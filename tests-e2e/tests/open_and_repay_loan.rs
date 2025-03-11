@@ -68,7 +68,7 @@ async fn open_and_repay_loan() {
     };
 
     let res = lender
-        .post("http://localhost:7338/api/my-offers/create")
+        .post("http://localhost:7338/api/my-loans/offer")
         .json(&loan_offer)
         .send()
         .await
@@ -98,7 +98,7 @@ async fn open_and_repay_loan() {
         .unwrap();
 
     let contract_request = ContractRequestSchema {
-        loan_id: loan_offer.id,
+        id: loan_offer.id,
         // TODO: This loan amount can cause the collateral to be over the Mutinynet faucet limit
         // if the real price of Bitcoin changes enough. We should mock the price in
         // the `hub` for the e2e tests.

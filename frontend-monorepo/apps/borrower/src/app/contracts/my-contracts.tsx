@@ -126,14 +126,6 @@ function MyContracts() {
       return sortAsc ? dif : -dif;
     });
 
-  if (contracts.length === 0) {
-    return (
-      <p className={"text-font dark:text-font-dark"}>
-        You do not have any contracts yet.
-      </p>
-    );
-  }
-
   return (
     <Box className={"pb-20"}>
       <Box className={"px-6 py-4 md:px-8"}>

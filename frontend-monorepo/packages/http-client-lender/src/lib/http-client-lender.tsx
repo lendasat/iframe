@@ -6,7 +6,6 @@ import {
   BaseHttpClient,
   BaseHttpClientContext,
 } from "@frontend/base-http-client";
-import { Dispute, PutUpdateProfile } from "@frontend/http-client-borrower";
 import type { AxiosResponse } from "axios";
 import axios from "axios";
 import { createContext, useContext } from "react";
@@ -14,12 +13,16 @@ import {
   BorrowerStats,
   Contract,
   CreateLoanOfferRequest,
+  Dispute,
   GetLiquidationPsbtResponse,
   GetRecoveryPsbtResponse,
   LenderStats,
   LiquidationToStableCoinPsbt,
   LoanAndContractStats,
+  LoanApplication,
   LoanOffer,
+  PutUpdateProfile,
+  TakeLoanApplicationSchema,
 } from "./models";
 import { parseRFC3339Date } from "./utils";
 
@@ -50,6 +53,12 @@ interface BorrowerStatsRaw extends Omit<BorrowerStats, "joined_at"> {
   joined_at: string;
 }
 
+interface RawLoanApplication
+  extends Omit<LoanApplication, "created_at" | "updated_at"> {
+  created_at: string;
+  updated_at: string;
+}
+
 export function allowedPagesWithoutLogin(location: string) {
   // These need to be aligned with the routes in app.tsx
   return (
@@ -71,7 +80,7 @@ export class HttpClientLender extends BaseHttpClient {
   ): Promise<LoanOffer | undefined> {
     try {
       const response: AxiosResponse<LoanOffer> = await this.httpClient.post(
-        "/api/my-offers/create",
+        "/api/my-loans/offer",
         offer,
       );
       return response.data;
@@ -549,7 +558,7 @@ export class HttpClientLender extends BaseHttpClient {
   async getAllLoanOffers(): Promise<LoanOffer[]> {
     try {
       const response: AxiosResponse<RawLoanOffer[]> =
-        await this.httpClient.get("/api/offers");
+        await this.httpClient.get("/api/loans/offer");
 
       return response.data.map((offer) => {
         const createdAt = parseRFC3339Date(offer.created_at);
@@ -586,7 +595,7 @@ export class HttpClientLender extends BaseHttpClient {
   async getLoanOffer(id: string): Promise<LoanOffer> {
     try {
       const response: AxiosResponse<RawLoanOffer> = await this.httpClient.get(
-        `/api/offers/${id}`,
+        `/api/loans/offer/${id}`,
       );
       const createdAt = parseRFC3339Date(response.data.created_at);
       if (createdAt == null) {
@@ -619,8 +628,9 @@ export class HttpClientLender extends BaseHttpClient {
 
   async getMyLoanOffers(): Promise<LoanOffer[]> {
     try {
-      const response: AxiosResponse<RawLoanOffer[]> =
-        await this.httpClient.get("/api/my-offers");
+      const response: AxiosResponse<RawLoanOffer[]> = await this.httpClient.get(
+        "/api/my-loans/offer",
+      );
       return response.data.map((offer) => {
         const createdAt = parseRFC3339Date(offer.created_at);
         if (createdAt == null) {
@@ -656,7 +666,7 @@ export class HttpClientLender extends BaseHttpClient {
   async getMyLoanOffer(id: string): Promise<LoanOffer> {
     try {
       const response: AxiosResponse<RawLoanOffer> = await this.httpClient.get(
-        `/api/my-offers/${id}`,
+        `/api/my-loans/offer/${id}`,
       );
       const createdAt = parseRFC3339Date(response.data.created_at);
       if (createdAt == null) {
@@ -690,7 +700,7 @@ export class HttpClientLender extends BaseHttpClient {
 
   async deleteLoanOffer(id: string): Promise<void> {
     try {
-      await this.httpClient.delete(`/api/my-offers/${id}`);
+      await this.httpClient.delete(`/api/my-loans/offer/${id}`);
       return;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
@@ -710,7 +720,7 @@ export class HttpClientLender extends BaseHttpClient {
   async getLoanAndContractStats(): Promise<LoanAndContractStats> {
     try {
       const stats: AxiosResponse<LoanAndContractStats> =
-        await this.httpClient.get(`/api/offers/stats`);
+        await this.httpClient.get(`/api/loans/offer-stats`);
 
       return stats.data;
     } catch (error) {
@@ -745,6 +755,101 @@ export class HttpClientLender extends BaseHttpClient {
       }
     }
   }
+
+  async getLoanApplications(): Promise<LoanApplication[] | undefined> {
+    try {
+      const response: AxiosResponse<RawLoanApplication[]> =
+        await this.httpClient.get("/api/loans/application");
+
+      return response.data.map((application) => {
+        const createdAt = parseRFC3339Date(application.created_at);
+        const updatedAt = parseRFC3339Date(application.updated_at);
+        if (createdAt === undefined || updatedAt === undefined) {
+          throw new Error("Invalid date");
+        }
+
+        return {
+          ...application,
+          created_at: createdAt,
+          updated_at: updatedAt,
+        };
+      });
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to get loan applications: http: ${
+            error.response?.status
+          } and response: ${JSON.stringify(error.response?.data)}`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(
+          `Could not get loan application: ${JSON.stringify(error)}`,
+        );
+      }
+    }
+  }
+
+  async takeLoanApplication(
+    id: string,
+    body: TakeLoanApplicationSchema,
+  ): Promise<string> {
+    try {
+      const response: AxiosResponse<string> = await this.httpClient.post(
+        `/api/loans/application/${id}`,
+        body,
+      );
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to take loan application http: ${
+            error.response?.status
+          } and response: ${JSON.stringify(error.response?.data)}`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(
+          `Could not take loan application: ${JSON.stringify(error)}`,
+        );
+      }
+    }
+  }
+
+  async getLoanApplication(id: string): Promise<LoanApplication | undefined> {
+    try {
+      const response: AxiosResponse<RawLoanApplication> =
+        await this.httpClient.get(`/api/loans/application/${id}`);
+      let application = response.data;
+      const createdAt = parseRFC3339Date(application.created_at);
+      const updatedAt = parseRFC3339Date(application.updated_at);
+      if (createdAt === undefined || updatedAt === undefined) {
+        throw new Error("Invalid date");
+      }
+
+      return {
+        ...application,
+        created_at: createdAt,
+        updated_at: updatedAt,
+      };
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to get loan application http: ${
+            error.response?.status
+          } and response: ${JSON.stringify(error.response?.data)}`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(
+          `Could not get loan application: ${JSON.stringify(error)}`,
+        );
+      }
+    }
+  }
 }
 
 type LenderHttpClientContextType = Pick<
@@ -773,6 +878,9 @@ type LenderHttpClientContextType = Pick<
   | "getRecoveryPsbt"
   | "getLoanAndContractStats"
   | "putUpdateProfile"
+  | "getLoanApplications"
+  | "getLoanApplication"
+  | "takeLoanApplication"
 >;
 
 export const LenderHttpClientContext = createContext<
@@ -845,6 +953,9 @@ export const HttpClientLenderProvider: React.FC<HttpClientProviderProps> = ({
     getLoanAndContractStats:
       httpClient.getLoanAndContractStats.bind(httpClient),
     putUpdateProfile: httpClient.putUpdateProfile.bind(httpClient),
+    getLoanApplications: httpClient.getLoanApplications.bind(httpClient),
+    getLoanApplication: httpClient.getLoanApplication.bind(httpClient),
+    takeLoanApplication: httpClient.takeLoanApplication.bind(httpClient),
   };
 
   return (

@@ -57,14 +57,12 @@ export function LoanAddressInputField({
   return (
     <Flex direction={"column"} gap={"2"} className="w-full">
       {warning && renderWarning && (
-        <Box>
-          <Callout.Root color="amber" className="mb-3">
-            <Callout.Icon>
-              <FontAwesomeIcon icon={faInfoCircle} />
-            </Callout.Icon>
-            <Callout.Text>{warning}</Callout.Text>
-          </Callout.Root>
-        </Box>
+        <Callout.Root color="amber" className="mb-3">
+          <Callout.Icon>
+            <FontAwesomeIcon icon={faInfoCircle} />
+          </Callout.Icon>
+          <Callout.Text>{warning}</Callout.Text>
+        </Callout.Root>
       )}
 
       <TextField.Root

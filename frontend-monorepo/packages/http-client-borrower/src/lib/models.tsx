@@ -190,11 +190,16 @@ export interface LoanOffer {
   lender_xpub: string;
 }
 
-export interface PostLoanRequest {
+export interface postLoanApplication {
   ltv: number;
   interest_rate: number;
   loan_amount: number;
   duration_days: number;
+  loan_asset: LoanAsset;
+  loan_type: LoanType;
+  borrower_loan_address: string;
+  borrower_btc_address: string;
+  borrower_xpub: string;
 }
 
 export interface ExtendPostLoanRequest {
@@ -385,4 +390,43 @@ export interface BorrowerStats {
 
 export interface PutUpdateProfile {
   timezone: string;
+}
+
+export interface LoanApplication {
+  loan_deal_id: string;
+  borrower_id: string;
+  ltv: number;
+  interest_rate: number;
+  loan_amount: number;
+  duration_days: number;
+  borrower_loan_address?: string;
+  borrower_btc_address: string;
+  loan_asset: LoanAsset;
+  loan_type: LoanType;
+  borrower_xpub: string;
+  status: LoanApplicationStatus;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export enum LoanApplicationStatus {
+  Available = "Available",
+  Unavailable = "Unavailable",
+  Taken = "Taken",
+  Deleted = "Deleted",
+}
+
+export class LoanApplicationStatusHelper {
+  static print(status: LoanApplicationStatus): string {
+    switch (status) {
+      case LoanApplicationStatus.Available:
+        return "Available";
+      case LoanApplicationStatus.Unavailable:
+        return "Unavailable";
+      case LoanApplicationStatus.Taken:
+        return "Taken";
+      case LoanApplicationStatus.Deleted:
+        return "Deleted";
+    }
+  }
 }
