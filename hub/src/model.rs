@@ -1,4 +1,10 @@
 use crate::moon;
+use crate::utils::calculate_liquidation_price;
+use crate::utils::calculate_ltv;
+use crate::utils::legacy_calculate_liquidation_price;
+use crate::LEGACY_LTV_THRESHOLD_LIQUIDATION;
+use crate::LTV_THRESHOLD_LIQUIDATION;
+use anyhow::Result;
 use argon2::Argon2;
 use argon2::PasswordHash;
 use argon2::PasswordVerifier;
@@ -7,12 +13,14 @@ use bitcoin::bip32::Xpub;
 use bitcoin::Address;
 use bitcoin::Amount;
 use bitcoin::PublicKey;
+use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::Decimal;
 use serde::Deserialize;
 use serde::Deserializer;
 use serde::Serialize;
 use sqlx::FromRow;
 use std::str::FromStr;
+use time::macros::datetime;
 use time::OffsetDateTime;
 use url::Url;
 use utoipa::ToSchema;
@@ -464,6 +472,54 @@ pub struct Contract {
     pub updated_at: OffsetDateTime,
     #[serde(with = "rust_decimal::serde::float")]
     pub interest_rate: Decimal,
+}
+
+impl Contract {
+    pub fn ltv(&self, price: Decimal) -> Result<Decimal> {
+        calculate_ltv(
+            price,
+            self.loan_amount,
+            Decimal::from_u64(self.collateral_sats).expect("to fit into u64"),
+        )
+    }
+
+    /// Calculate the liquidation price of the contract based on its current `collateral_sats`.
+    ///
+    /// The liquidation price cannot be computed if `collateral_sats` is zero. In such a scenario,
+    /// we use the `initial_collateral_sats`, which should never be zero.
+    pub fn liquidation_price(&self) -> Decimal {
+        let collateral_sats = if self.collateral_sats == 0 {
+            self.initial_collateral_sats
+        } else {
+            self.collateral_sats
+        };
+
+        if self.has_new_liquidation_threshold() {
+            calculate_liquidation_price(
+                self.loan_amount,
+                Decimal::from_u64(collateral_sats).expect("to fit"),
+            )
+            .expect("valid liquidation price")
+        } else {
+            legacy_calculate_liquidation_price(
+                self.loan_amount,
+                Decimal::from_u64(collateral_sats).expect("to fit"),
+            )
+            .expect("valid liquidation price")
+        }
+    }
+
+    pub fn can_be_liquidated(&self, ltv: Decimal) -> bool {
+        if self.has_new_liquidation_threshold() {
+            ltv >= LTV_THRESHOLD_LIQUIDATION
+        } else {
+            ltv >= LEGACY_LTV_THRESHOLD_LIQUIDATION
+        }
+    }
+
+    fn has_new_liquidation_threshold(&self) -> bool {
+        self.created_at >= datetime!(2025-03-01 0:00 UTC)
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Copy)]

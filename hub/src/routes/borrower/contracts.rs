@@ -25,7 +25,6 @@ use crate::routes::user_connection_details_middleware::UserConnectionDetails;
 use crate::routes::AppState;
 use crate::user_stats;
 use crate::user_stats::LenderStats;
-use crate::utils::calculate_liquidation_price;
 use anyhow::anyhow;
 use anyhow::Context;
 use axum::extract::rejection::JsonRejection;
@@ -45,7 +44,6 @@ use bitcoin::Amount;
 use bitcoin::PublicKey;
 use bitcoin::Transaction;
 use miniscript::Descriptor;
-use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
 use serde::Deserialize;
@@ -881,8 +879,8 @@ async fn map_to_api_contract(
     let offer = db::loan_offers::loan_by_id(&data.db, &contract.loan_id)
         .await
         .map_err(Error::Database)?
-        .ok_or(Error::MissingLoanOffer {
-            offer_id: contract.loan_id,
+        .ok_or_else(|| Error::MissingLoanOffer {
+            offer_id: contract.loan_id.clone(),
         })?;
 
     let lender = db::lenders::get_user_by_id(&data.db, &contract.lender_id)
@@ -898,15 +896,7 @@ async fn map_to_api_contract(
         matches!(tx.transaction_type, TransactionType::PrincipalRepaid).then_some(tx.timestamp)
     });
 
-    let collateral = if contract.collateral_sats == 0 {
-        contract.initial_collateral_sats
-    } else {
-        contract.collateral_sats
-    };
-    let liquidation_price = calculate_liquidation_price(
-        contract.loan_amount,
-        Decimal::from_u64(collateral).expect("to fit"),
-    );
+    let liquidation_price = contract.liquidation_price();
 
     let parent_contract_id =
         db::contract_extensions::get_parent_by_extended(&data.db, contract.id.as_str())
