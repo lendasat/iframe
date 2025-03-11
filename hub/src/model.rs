@@ -466,7 +466,7 @@ pub struct Contract {
     pub interest_rate: Decimal,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Copy)]
 #[repr(u32)]
 pub enum ContractVersion {
     TwoOfFour = 0,
