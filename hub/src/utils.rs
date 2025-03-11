@@ -1,3 +1,4 @@
+use crate::LEGACY_LTV_THRESHOLD_LIQUIDATION;
 use crate::LTV_THRESHOLD_LIQUIDATION;
 use anyhow::bail;
 use rust_decimal::Decimal;
@@ -21,8 +22,18 @@ pub fn calculate_ltv(
     Ok(loan_amount / ((collateral_sats / dec!(100_000_000)) * price))
 }
 
-pub fn calculate_liquidation_price(loan_amount: Decimal, collateral_sats: Decimal) -> Decimal {
-    loan_amount / (collateral_sats / dec!(100_000_000) * LTV_THRESHOLD_LIQUIDATION)
+pub fn legacy_calculate_liquidation_price(
+    loan_amount: Decimal,
+    collateral_sats: Decimal,
+) -> Option<Decimal> {
+    loan_amount.checked_div(collateral_sats / dec!(100_000_000) * LEGACY_LTV_THRESHOLD_LIQUIDATION)
+}
+
+pub fn calculate_liquidation_price(
+    loan_amount: Decimal,
+    collateral_sats: Decimal,
+) -> Option<Decimal> {
+    loan_amount.checked_div(collateral_sats / dec!(100_000_000) * LTV_THRESHOLD_LIQUIDATION)
 }
 
 #[cfg(test)]
@@ -104,11 +115,36 @@ mod tests {
     }
 
     #[test]
+    fn test_legacy_liquidation_price_ltv_roundtrip() {
+        let loan_amount = dec!(50_000);
+        let collateral_sats = dec!(100_000_000); // 1 BTC
+        let liquidation_price =
+            legacy_calculate_liquidation_price(loan_amount, collateral_sats).unwrap();
+        let expected = dec!(52631.578947);
+
+        assert!(
+            (liquidation_price - expected).abs() < dec!(0.0001),
+            "({liquidation_price} - {expected}) < 0.0001"
+        );
+
+        let result =
+            calculate_ltv(liquidation_price, loan_amount, collateral_sats).expect("to work");
+        let expected = LEGACY_LTV_THRESHOLD_LIQUIDATION;
+
+        assert!(
+            (result - expected).abs() < dec!(0.0001),
+            "({} - {}).abs() < 0.0001",
+            result,
+            expected
+        );
+    }
+
+    #[test]
     fn test_liquidation_price_ltv_roundtrip() {
         let loan_amount = dec!(50_000);
         let collateral_sats = dec!(100_000_000); // 1 BTC
-        let liquidation_price = calculate_liquidation_price(loan_amount, collateral_sats);
-        let expected = dec!(52631.578947);
+        let liquidation_price = calculate_liquidation_price(loan_amount, collateral_sats).unwrap();
+        let expected = dec!(55555.55555);
 
         assert!(
             (liquidation_price - expected).abs() < dec!(0.0001),

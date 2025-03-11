@@ -2,7 +2,6 @@ use crate::config::Config;
 use crate::model::Borrower;
 use crate::model::Contract;
 use crate::model::Lender;
-use crate::utils::calculate_liquidation_price;
 use anyhow::bail;
 use anyhow::Context;
 use anyhow::Result;
@@ -265,11 +264,7 @@ impl Email {
 
         let current_ltv = (current_ltv * dec!(100)).round_dp(2).to_string();
 
-        let liquidation_price = calculate_liquidation_price(
-            contract.loan_amount,
-            Decimal::from_u64(contract.collateral_sats).expect("to fit"),
-        );
-        let liquidation_price = liquidation_price.round_dp(2).to_string();
+        let liquidation_price = contract.liquidation_price().round_dp(2).to_string();
 
         let data = serde_json::json!({
             "first_name": user.name.as_str(),
@@ -309,11 +304,8 @@ impl Email {
 
         let handlebars = Self::prepare_template(template_name)?;
 
-        let liquidation_price = calculate_liquidation_price(
-            contract.loan_amount,
-            Decimal::from_u64(contract.collateral_sats).expect("to fit"),
-        );
-        let liquidation_price = liquidation_price.round_dp(2).to_string();
+        let liquidation_price = contract.liquidation_price().round_dp(2).to_string();
+
         let price = price.round_dp(2).to_string();
 
         let data = serde_json::json!({

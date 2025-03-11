@@ -5,8 +5,6 @@ use crate::model;
 use crate::model::db::LiquidationStatus;
 use crate::model::Contract;
 use crate::notifications::Notifications;
-use crate::utils::calculate_ltv;
-use crate::LTV_THRESHOLD_LIQUIDATION;
 use crate::LTV_THRESHOLD_MARGIN_CALL_1;
 use crate::LTV_THRESHOLD_MARGIN_CALL_2;
 use anyhow::Context;
@@ -82,11 +80,7 @@ async fn check_margin_call_or_liquidation(
                     continue;
                 }
 
-                match calculate_ltv(
-                    latest_price,
-                    contract.loan_amount,
-                    Decimal::from_u64(contract.collateral_sats).expect("to fit into u64"),
-                ) {
+                match contract.ltv(latest_price) {
                     Ok(current_ltv) => {
                         tracing::trace!(
                             contract_id = contract.id,
@@ -95,7 +89,7 @@ async fn check_margin_call_or_liquidation(
                             "Checking for margin call"
                         );
 
-                        if current_ltv >= LTV_THRESHOLD_LIQUIDATION {
+                        if contract.can_be_liquidated(current_ltv) {
                             liquidate_contract(
                                 db,
                                 &contract,
