@@ -164,6 +164,8 @@ pub struct Contract {
     pub transactions: Vec<LoanTransaction>,
     pub loan_asset: LoanAsset,
     pub can_recover_collateral_manually: bool,
+    #[serde(with = "rust_decimal::serde::float")]
+    pub liquidation_price: Decimal,
     pub extends_contract: Option<String>,
     pub extended_by_contract: Option<String>,
     pub borrower_xpub: String,
@@ -995,8 +997,8 @@ async fn map_to_api_contract(
     let offer = db::loan_offers::loan_by_id(&data.db, &contract.loan_id)
         .await
         .map_err(Error::Database)?
-        .ok_or(Error::MissingLoanOffer {
-            offer_id: contract.loan_id,
+        .ok_or_else(|| Error::MissingLoanOffer {
+            offer_id: contract.loan_id.clone(),
         })?;
 
     let borrower = db::borrowers::get_user_by_id(&data.db, &contract.borrower_id)
@@ -1042,6 +1044,8 @@ async fn map_to_api_contract(
     };
 
     let new_offer = offer;
+
+    let liquidation_price = contract.liquidation_price();
 
     let lender_xpub = db::wallet_backups::get_xpub_for_lender(&data.db, contract.lender_id)
         .await
@@ -1100,6 +1104,7 @@ async fn map_to_api_contract(
         extends_contract: parent_contract_id,
         extended_by_contract: child_contract,
         can_recover_collateral_manually,
+        liquidation_price,
         borrower_xpub: contract.borrower_xpub.to_string(),
         lender_xpub,
         kyc_info,

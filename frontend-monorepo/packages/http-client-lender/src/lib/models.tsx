@@ -57,6 +57,7 @@ export interface Contract {
   transactions: LoanTransaction[];
   loan_asset: LoanAsset;
   can_recover_collateral_manually: boolean;
+  liquidation_price: number;
   extends_contract?: string;
   extended_by_contract?: string;
   borrower_xpub: string;
