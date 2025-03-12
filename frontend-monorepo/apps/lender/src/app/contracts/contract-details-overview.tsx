@@ -18,8 +18,10 @@ import {
   formatCurrency,
   getFormatedStringFromDays,
   InterestRateInfoLabel,
+  LiquidationPriceInfoLabel,
   LoanAssetHelper,
   LtvInfoLabel,
+  newFormatCurrency,
   ONE_YEAR,
   TransactionList,
 } from "@frontend/ui-shared";
@@ -145,6 +147,7 @@ function ContractDetails({ contract }: DetailsProps) {
     contract.liquidation_status === LiquidationStatus.SecondMarginCall;
   const liquidated =
     contract.liquidation_status === LiquidationStatus.Liquidated;
+  const liquidationPrice = contract.liquidation_price;
 
   if (firstMarginCall) {
     contractStatusLabel = "First Margin Call";
@@ -455,6 +458,35 @@ function ContractDetails({ contract }: DetailsProps) {
             >
               {collateral.toFixed(8)} BTC
             </Text>
+          </Flex>
+          <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
+
+          <Flex justify={"between"} align={"center"}>
+            <LiquidationPriceInfoLabel>
+              <Flex
+                align={"center"}
+                gap={"2"}
+                className="text-font dark:text-font-dark"
+              >
+                <Text
+                  size={"2"}
+                  weight={"medium"}
+                  className="text-font/70 dark:text-font-dark/70"
+                >
+                  Liquidation Price
+                </Text>
+                <FaInfoCircle />
+              </Flex>
+            </LiquidationPriceInfoLabel>
+            <div className="flex flex-col">
+              <Text className="text-font/70 dark:text-font-dark/70 text-[13px] font-semibold capitalize">
+                {newFormatCurrency({
+                  value: liquidationPrice,
+                  maxFraction: 0,
+                  minFraction: 1,
+                })}
+              </Text>
+            </div>
           </Flex>
           <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
 
