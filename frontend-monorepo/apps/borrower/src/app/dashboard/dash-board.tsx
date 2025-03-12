@@ -405,6 +405,7 @@ function DashBoard() {
                     ContractStatus.CollateralConfirmed,
                     ContractStatus.PrincipalGiven,
                     ContractStatus.RepaymentProvided,
+                    ContractStatus.RepaymentConfirmed,
                     ContractStatus.Defaulted,
                     ContractStatus.Undercollateralized,
                     ContractStatus.DisputeBorrowerStarted,
