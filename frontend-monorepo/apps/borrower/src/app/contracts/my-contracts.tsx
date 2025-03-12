@@ -60,6 +60,7 @@ function MyContracts() {
     ContractStatus.CollateralConfirmed,
     ContractStatus.PrincipalGiven,
     ContractStatus.RepaymentProvided,
+    ContractStatus.RepaymentConfirmed,
     ContractStatus.DisputeBorrowerStarted,
     ContractStatus.DisputeBorrowerResolved,
     ContractStatus.DisputeLenderStarted,
