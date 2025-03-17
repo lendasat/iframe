@@ -505,7 +505,7 @@ async fn get_liquidation_to_bitcoin_psbt(
         return Err((StatusCode::INTERNAL_SERVER_ERROR, Json(error_response)));
     }
 
-    let price = get_bitmex_index_price(OffsetDateTime::now_utc())
+    let price = get_bitmex_index_price(&data.config, OffsetDateTime::now_utc())
         .await
         .map_err(|e| {
             let error_response = ErrorResponse {

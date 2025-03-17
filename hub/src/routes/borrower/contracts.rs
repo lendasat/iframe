@@ -229,7 +229,7 @@ async fn post_contract_request(
         }
     };
 
-    let initial_price = get_bitmex_index_price(OffsetDateTime::now_utc())
+    let initial_price = get_bitmex_index_price(&data.config, OffsetDateTime::now_utc())
         .await
         .map_err(Error::BitMexPrice)?;
 
@@ -1056,7 +1056,7 @@ async fn post_extend_contract_request(
     Path(contract_id): Path<String>,
     AppJson(body): AppJson<ExtendContractRequestSchema>,
 ) -> Result<AppJson<Contract>, Error> {
-    let current_price = get_bitmex_index_price(OffsetDateTime::now_utc())
+    let current_price = get_bitmex_index_price(&data.config, OffsetDateTime::now_utc())
         .await
         .map_err(Error::BitMexPrice)?;
 
