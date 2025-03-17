@@ -30,6 +30,7 @@ use crate::routes::borrower::AUTH_TAG;
 use crate::routes::user_connection_details_middleware;
 use crate::routes::user_connection_details_middleware::UserConnectionDetails;
 use crate::routes::AppState;
+use crate::utils::is_valid_email;
 use anyhow::anyhow;
 use anyhow::Context;
 use axum::extract::rejection::JsonRejection;
@@ -170,6 +171,10 @@ async fn post_register(
     State(data): State<Arc<AppState>>,
     AppJson(body): AppJson<RegisterUserSchema>,
 ) -> Result<impl IntoResponse, Error> {
+    if !is_valid_email(body.email.as_str()) {
+        return Err(Error::InvalidEmail);
+    }
+
     let user_exists = user_exists(&data.db, body.email.as_str())
         .await
         .map_err(Error::Database)?;
@@ -356,7 +361,7 @@ async fn post_pake_login(
     let (user, password_auth_info) = get_user_by_email(&data.db, email.as_str())
         .await
         .map_err(|e| Error::Database(anyhow!(e)))?
-        .ok_or(Error::InvalidEmail)?;
+        .ok_or(Error::EmailOrPasswordInvalid)?;
 
     let borrower_id = user.id;
     tracing::Span::current().record("borrower_id", &borrower_id);
@@ -424,7 +429,7 @@ async fn post_pake_verify(
     let (user, password_auth_info) = get_user_by_email(&data.db, email.as_str())
         .await
         .map_err(Error::Database)?
-        .ok_or(Error::InvalidEmail)?;
+        .ok_or(Error::EmailOrPasswordInvalid)?;
 
     let borrower_id = &user.id;
     tracing::Span::current().record("borrower_id", borrower_id);
@@ -578,7 +583,7 @@ async fn post_start_upgrade_to_pake(
     let (user, password_auth_info) = get_user_by_email(&data.db, body.email.as_str())
         .await
         .map_err(Error::Database)?
-        .ok_or(Error::InvalidEmail)?;
+        .ok_or(Error::EmailOrPasswordInvalid)?;
 
     let borrower_id = &user.id;
     tracing::Span::current().record("borrower_id", borrower_id);
@@ -657,7 +662,7 @@ async fn post_finish_upgrade_to_pake(
     let (user, password_auth_info) = get_user_by_email(&data.db, body.email.as_str())
         .await
         .map_err(Error::Database)?
-        .ok_or(Error::InvalidEmail)?;
+        .ok_or(Error::EmailOrPasswordInvalid)?;
 
     let borrower_id = user.id.clone();
     tracing::Span::current().record("borrower_id", &borrower_id);
@@ -1104,7 +1109,7 @@ enum Error {
     /// User with this email already exists.
     UserExists,
     /// User with this email does not exist.
-    InvalidEmail,
+    EmailOrPasswordInvalid,
     /// No invite code provided.
     InviteCodeRequired,
     /// Invalid or expired referral code.
@@ -1139,6 +1144,8 @@ enum Error {
     NoLegacyResetAfterPake,
     /// User already in waiting list with this email.
     EmailExists,
+    /// Invalid email
+    InvalidEmail,
 }
 
 impl From<JsonRejection> for Error {
@@ -1192,7 +1199,7 @@ impl IntoResponse for Error {
 
                 (StatusCode::BAD_REQUEST, "Invalid referral code".to_owned())
             }
-            Error::InvalidEmail => (
+            Error::EmailOrPasswordInvalid => (
                 StatusCode::BAD_REQUEST,
                 "Invalid email or password".to_owned(),
             ),
@@ -1270,6 +1277,7 @@ impl IntoResponse for Error {
                 (StatusCode::BAD_REQUEST, "Something went wrong.".to_owned())
             }
             Error::EmailExists => (StatusCode::CONFLICT, "Email already used".to_owned()),
+            Error::InvalidEmail => (StatusCode::BAD_REQUEST, "Invalid email address".to_owned()),
         };
 
         (status, AppJson(ErrorResponse { message })).into_response()

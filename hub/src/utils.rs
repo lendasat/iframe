@@ -36,6 +36,75 @@ pub fn calculate_liquidation_price(
     loan_amount.checked_div(collateral_sats / dec!(100_000_000) * LTV_THRESHOLD_LIQUIDATION)
 }
 
+/// Validates if a given string is a valid email address.
+///
+/// This function checks for basic email format compliance:
+/// - Contains a single @ symbol
+/// - Has valid characters before the @ (alphanumeric, dots, underscores, hyphens, etc.)
+/// - Has a valid domain after the @ (with a valid TLD)
+/// - Follows general email formatting rules
+///
+/// # Examples
+///
+/// ```
+/// use hub::utils::is_valid_email;
+///
+/// let valid = is_valid_email("user@example.com");
+/// assert_eq!(valid, true);
+///
+/// let invalid = is_valid_email("invalid-email");
+/// assert_eq!(invalid, false);
+/// ```
+pub fn is_valid_email(email: &str) -> bool {
+    // Create a regex pattern for email validation
+    // This pattern follows RFC 5322 standards with some practical limitations
+    let email_regex = regex::Regex::new(r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$").expect("to be a valid regex");
+
+    // Check if the email matches the pattern
+    if !email_regex.is_match(email) {
+        return false;
+    }
+
+    // Additional validation: check for domain with at least one dot
+    let parts: Vec<&str> = email.split('@').collect();
+    if parts.len() != 2 {
+        return false; // Should have exactly one @ symbol
+    }
+
+    let domain = parts[1];
+    if !domain.contains('.') {
+        return false; // Domain must have at least one dot
+    }
+
+    // Check domain parts (ensure TLD is not numeric)
+    let domain_parts: Vec<&str> = domain.split('.').collect();
+    if domain_parts.is_empty() {
+        return false;
+    }
+
+    let tld = domain_parts.last();
+    match tld {
+        None => {
+            // No tld provided
+            false
+        }
+        Some(tld) => {
+            if tld.chars().all(|c| c.is_numeric()) {
+                // TLD shouldn't be all numeric
+                return false;
+            }
+
+            // Ensure the TLD is at least 2 characters
+            if tld.len() < 2 {
+                return false;
+            }
+
+            // Otherwise the email is valid
+            true
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -161,5 +230,30 @@ mod tests {
             result,
             expected
         );
+    }
+
+    #[test]
+    fn test_valid_emails() {
+        assert!(is_valid_email("user@example.com"));
+        assert!(is_valid_email("user.name@example.co.uk"));
+        assert!(is_valid_email("user+tag@example.org"));
+        assert!(is_valid_email("user-name@example.io"));
+        assert!(is_valid_email("user_name@example.dev"));
+    }
+
+    #[test]
+    fn test_invalid_emails() {
+        assert!(!is_valid_email(""));
+        assert!(!is_valid_email(" "));
+        assert!(!is_valid_email("user"));
+        assert!(!is_valid_email("user@"));
+        assert!(!is_valid_email("@example.com"));
+        assert!(!is_valid_email("user@example"));
+        assert!(!is_valid_email("user@.com"));
+        assert!(!is_valid_email("user@example"));
+        assert!(!is_valid_email("user@example."));
+        assert!(!is_valid_email("user@example.c"));
+        assert!(!is_valid_email("user@example.123"));
+        assert!(!is_valid_email("user@@example.com"));
     }
 }
