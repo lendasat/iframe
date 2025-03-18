@@ -20,8 +20,8 @@ pub(crate) mod api_keys;
 pub(crate) mod auth;
 pub(crate) mod contracts;
 pub(crate) mod health_check;
+pub(crate) mod loan_applications;
 pub(crate) mod loan_offers;
-pub(crate) mod loan_requests;
 pub(crate) mod profile;
 pub(crate) mod version;
 
@@ -145,7 +145,7 @@ pub async fn spawn_borrower_server(
         .nest("/api/health", health_check::router_openapi())
         .nest("/api/auth", auth::router_openapi(app_state.clone()))
         .nest(
-            "/api/offers",
+            "/api/loans/offer",
             loan_offers::router_openapi(app_state.clone()),
         )
         .nest(
@@ -173,7 +173,7 @@ pub async fn spawn_borrower_server(
                 .route_layer(middleware::from_fn_with_state(app_state.clone(), auth))
                 .with_state(app_state.clone()),
         )
-        .merge(loan_requests::router(app_state.clone()))
+        .merge(loan_applications::router(app_state.clone()))
         .merge(cards::router(app_state))
         // This is a relative path on the filesystem, which means, when deploying `hub` we will need
         // to have the frontend in this directory. Ideally we would bundle the frontend with

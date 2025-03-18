@@ -41,7 +41,7 @@ import { FaInfoCircle } from "react-icons/fa";
 import { FaCopy } from "react-icons/fa6";
 import { IoMdCloudDownload } from "react-icons/io";
 import { Await, Link, useParams } from "react-router-dom";
-import { Lender } from "../loan-requests/lender";
+import { Lender } from "../loan-offers/lender";
 import { AddCollateralModal } from "./add-collateral-modal";
 import { collateralForStatus } from "./collateralForStatus";
 import { CollateralContractDetails } from "./collateralize-contract";

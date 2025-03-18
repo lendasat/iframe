@@ -153,7 +153,7 @@ pub struct Contract {
     pub contract_address: Option<String>,
     pub collateral_script: Option<String>,
     pub derivation_path: Option<DerivationPath>,
-    pub loan_repayment_address: String,
+    pub loan_repayment_address: Option<String>,
     pub borrower: BorrowerProfile,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
@@ -614,7 +614,7 @@ async fn post_build_liquidation_to_stablecoin_psbt(
     }
 
     tracing::info!("Contract will be liquidated to stable coins");
-    let offer = db::loan_offers::loan_by_id(&data.db, contract.loan_id.as_str())
+    let loan_deal = db::loan_deals::get_loan_deal_by_id(&data.db, contract.loan_id.as_str())
         .await
         .map_err(|err| {
             tracing::error!(
@@ -623,10 +623,6 @@ async fn post_build_liquidation_to_stablecoin_psbt(
                 "Failed loading offer for contract {err:#}"
             );
             error_response(StatusCode::INTERNAL_SERVER_ERROR, "Database error")
-        })?
-        .ok_or_else(|| {
-            tracing::error!(contract_id, "Failed loading offer for contract");
-            error_response(StatusCode::BAD_REQUEST, "Invalid contract id")
         })?;
 
     let lender_amount = contract.loan_amount
@@ -636,15 +632,24 @@ async fn post_build_liquidation_to_stablecoin_psbt(
             contract.duration_days as u32,
         );
 
+    let loan_repayment_address =
+        contract
+            .lender_loan_repayment_address
+            .clone()
+            .ok_or(error_response(
+                StatusCode::SERVICE_UNAVAILABLE,
+                "Service unavailable",
+            ))?;
+
     let (shift_address, lender_amount, settle_address, settle_amount) = data
         .sideshift
         .create_shift(
-            offer.loan_asset,
+            loan_deal.loan_asset(),
             lender_amount,
             contract_id.to_string(),
             lender_ip.to_string(),
             body.bitcoin_refund_address.clone(),
-            offer.loan_repayment_address.clone(),
+            loan_repayment_address.clone(),
         )
         .await
         .map_err(|err| {
@@ -655,7 +660,7 @@ async fn post_build_liquidation_to_stablecoin_psbt(
             )
         })?;
 
-    let contract_index = contract.contract_index.ok_or_else(|| {
+    let contract_index = &contract.contract_index.ok_or_else(|| {
         error_response(
             StatusCode::INTERNAL_SERVER_ERROR,
             "Database error: missing contract index",
@@ -667,7 +672,7 @@ async fn post_build_liquidation_to_stablecoin_psbt(
         contract,
         shift_address,
         lender_amount,
-        contract_index,
+        *contract_index,
         data.mempool.clone(),
         body.fee_rate_sats_vbyte,
     )
@@ -991,12 +996,9 @@ async fn map_to_api_contract(
     data: &Arc<AppState>,
     contract: model::Contract,
 ) -> Result<Contract, Error> {
-    let offer = db::loan_offers::loan_by_id(&data.db, &contract.loan_id)
+    let loan_deal = db::loan_deals::get_loan_deal_by_id(&data.db, &contract.loan_id)
         .await
-        .map_err(Error::Database)?
-        .ok_or_else(|| Error::MissingLoanOffer {
-            offer_id: contract.loan_id.clone(),
-        })?;
+        .map_err(Error::Database)?;
 
     let borrower = db::borrowers::get_user_by_id(&data.db, &contract.borrower_id)
         .await
@@ -1026,7 +1028,7 @@ async fn map_to_api_contract(
             .await
             .map_err(|e| Error::Database(anyhow!(e)))?;
 
-    let kyc_info = match offer.kyc_link {
+    let kyc_info = match loan_deal.kyc_link() {
         Some(ref kyc_link) => {
             let is_kyc_done = db::kyc::get(&data.db, &contract.lender_id, &borrower.id)
                 .await
@@ -1040,7 +1042,7 @@ async fn map_to_api_contract(
         None => None,
     };
 
-    let new_offer = offer;
+    let new_offer = loan_deal;
 
     let liquidation_price = contract.liquidation_price();
 
@@ -1103,7 +1105,7 @@ async fn map_to_api_contract(
         collateral_sats: contract.collateral_sats,
         interest_rate: contract.interest_rate,
         initial_ltv: contract.initial_ltv,
-        loan_asset: new_offer.loan_asset,
+        loan_asset: new_offer.loan_asset(),
         status: contract.status,
         borrower_pk,
         borrower_btc_address: contract.borrower_btc_address.assume_checked().to_string(),
@@ -1113,7 +1115,7 @@ async fn map_to_api_contract(
             .map(|c| c.assume_checked().to_string()),
         collateral_script,
         derivation_path: lender_derivation_path,
-        loan_repayment_address: new_offer.loan_repayment_address,
+        loan_repayment_address: contract.lender_loan_repayment_address,
         borrower: BorrowerProfile {
             id: borrower.id,
             name: borrower.name,

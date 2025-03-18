@@ -222,7 +222,7 @@ async fn create_loan_request(
         id,
         borrower_id,
         offer.lender_id.as_str(),
-        offer.id.as_str(),
+        offer.loan_deal_id.as_str(),
         initial_ltv,
         initial_collateral_sats.to_u64().expect("to fit"),
         origination_fee_sats.to_u64().expect("to fit"),
@@ -230,6 +230,7 @@ async fn create_loan_request(
         offer.duration_days_max,
         Address::from_str("tb1qtsasnju08gh7ptqg7260qujgasvtexkf9t3yj3")
             .expect("to be valid address"),
+        "0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97".to_string(),
         borrower_xpub,
         Some("0x34e3f03F5efFaF7f70Bb1FfC50274697096ebe9d"),
         LoanType::StableCoin,

@@ -42,6 +42,9 @@ import MyLoanOffersOverview from "./my-offers/my-loan-offers-overview";
 import init from "browser-wallet";
 import browserWalletUrl from "browser-wallet/browser_wallet_bg.wasm?url";
 import { useEffect } from "react";
+import AvailableLoanApplications from "./loan-applications/available-loan-applications";
+import { FaFileContract } from "react-icons/fa";
+import TakeLoanApplication from "./loan-applications/loan-applications";
 
 const menuItems = [
   {
@@ -83,6 +86,13 @@ const menuItems = [
         label: "All Offers",
         path: "/offers",
         icon: TbWorldDollar,
+        target: "_self",
+        visible: true,
+      },
+      {
+        label: "Open loan applications",
+        path: "/loan-applications",
+        icon: FaFileContract,
         target: "_self",
         visible: true,
       },
@@ -172,6 +182,14 @@ function MainLayoutComponents() {
             <Route path="/disputes/:id" element={<ResolveDispute />} />
             <Route path="/settings/*" element={<Settings />} />
           </Route>
+          <Route
+            path="/loan-applications"
+            element={<AvailableLoanApplications />}
+          />
+          <Route
+            path="/loan-applications/:id"
+            element={<TakeLoanApplication />}
+          />
           <Route path="/lender/:id" element={<LenderProfile />} />
           <Route path="/borrower/:id" element={<BorrowerProfile />} />
           <Route path="/logout" element={<Logout />} />

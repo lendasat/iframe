@@ -2,7 +2,6 @@ import {
   FiatLoanDetailsResponse,
   type LoanFeature,
 } from "@frontend/base-http-client";
-import { OriginationFee } from "@frontend/http-client-borrower";
 import { LoanAsset, LoanTransaction } from "@frontend/ui-shared";
 
 export enum ContractStatus {
@@ -226,6 +225,12 @@ export enum LiquidationStatus {
   FirstMarginCall = "FirstMarginCall",
 }
 
+export interface OriginationFee {
+  from_day: number;
+  to_day: number;
+  fee: number;
+}
+
 export enum DisputeStatus {
   StartedBorrower = "StartedBorrower",
   StartedLender = "StartedLender",
@@ -335,4 +340,63 @@ export interface BorrowerStats {
   rating: number;
   joined_at: Date;
   timezone: string;
+}
+
+export interface PutUpdateProfile {
+  timezone: string;
+}
+
+export interface BorrowerProfile {
+  id: string;
+  name: string;
+}
+
+export interface LoanApplication {
+  id: string;
+  borrower: BorrowerProfile;
+  ltv: number;
+  interest_rate: number;
+  loan_amount: number;
+  duration_days: number;
+  liquidation_price: number;
+  borrower_loan_address?: string;
+  borrower_btc_address: string;
+  loan_asset: LoanAsset;
+  loan_type: LoanType;
+  borrower_xpub: string;
+  status: LoanApplicationStatus;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export enum LoanApplicationStatus {
+  Available = "Available",
+  Unavailable = "Unavailable",
+  Taken = "Taken",
+  Deleted = "Deleted",
+}
+
+export class LoanApplicationStatusHelper {
+  static print(status: LoanApplicationStatus): string {
+    switch (status) {
+      case LoanApplicationStatus.Available:
+        return "Available";
+      case LoanApplicationStatus.Unavailable:
+        return "Unavailable";
+      case LoanApplicationStatus.Taken:
+        return "Taken";
+      case LoanApplicationStatus.Deleted:
+        return "Deleted";
+    }
+  }
+}
+
+export enum LoanType {
+  StableCoin = "StableCoin",
+  Fiat = "Fiat",
+}
+
+export interface TakeLoanApplicationSchema {
+  lender_xpub: string;
+  loan_repayment_address: string;
 }

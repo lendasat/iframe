@@ -24,6 +24,25 @@ pub fn calculate_origination_fee(
     Amount::from_btc(fee_btc).context("couldn't parse to Amount")
 }
 
+pub fn calculate_initial_collateral(
+    loan_amount: Decimal,
+    ltv: Decimal,
+    initial_price: Decimal,
+) -> anyhow::Result<Amount> {
+    let collateral_value_usd = loan_amount
+        .checked_div(ltv)
+        .context("Failed to calculate collateral in USD")?;
+
+    let collateral_btc = collateral_value_usd
+        .checked_div(initial_price)
+        .context("Failed to calculate collateral in BTC")?;
+
+    let collateral_btc = collateral_btc.round_dp(8);
+    let collateral_btc = collateral_btc.to_f64().expect("to fit");
+
+    Ok(Amount::from_btc(collateral_btc).expect("to fit"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

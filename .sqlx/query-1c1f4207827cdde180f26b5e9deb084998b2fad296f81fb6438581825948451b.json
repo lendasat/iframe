@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO loan_deals (\n          id,\n          type,\n          created_at\n        )\n        VALUES ($1, 'application', DEFAULT)\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Bpchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "1c1f4207827cdde180f26b5e9deb084998b2fad296f81fb6438581825948451b"
+}

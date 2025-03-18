@@ -125,7 +125,7 @@ pub async fn get_all_available_loan_offers(
             })?;
 
         ret.push(LoanOffer {
-            id: loan_offer.id,
+            id: loan_offer.loan_deal_id,
             lender: lender_stats,
             name: loan_offer.name,
             min_ltv: loan_offer.min_ltv,
@@ -218,7 +218,7 @@ pub async fn get_available_loan_offers_by_lender(
             })?;
 
         ret.push(LoanOffer {
-            id: loan_offer.id,
+            id: loan_offer.loan_deal_id,
             lender: lender_stats,
             name: loan_offer.name,
             min_ltv: loan_offer.min_ltv,
@@ -317,7 +317,7 @@ pub async fn get_loan_offer(
             Ok((
                 StatusCode::OK,
                 Json(LoanOffer {
-                    id: loan_offer.id,
+                    id: loan_offer.loan_deal_id,
                     lender: lender_stats,
                     name: loan_offer.name,
                     min_ltv: loan_offer.min_ltv,

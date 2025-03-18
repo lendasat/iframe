@@ -1,0 +1,32 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT type as \"loan_deal_type: LoanDealType\"\n        FROM loan_deals\n        WHERE id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "loan_deal_type: LoanDealType",
+        "type_info": {
+          "Custom": {
+            "name": "loan_deal_type",
+            "kind": {
+              "Enum": [
+                "offer",
+                "application"
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bpchar"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "331c9eb960f7b79673fc7dbb8454363d470ecbf2a7cd14c8748d020f3d0b4d75"
+}

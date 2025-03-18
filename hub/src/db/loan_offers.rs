@@ -18,6 +18,7 @@ pub(crate) async fn load_all_available_loan_offers(
         r#"
         SELECT
             lo.id,
+            lo.loan_deal_id,
             lo.lender_id,
             lo.name,
             lo.min_ltv,
@@ -50,7 +51,7 @@ pub(crate) async fn load_all_available_loan_offers(
             lo.updated_at
         FROM loan_offers lo
             LEFT JOIN
-                contracts c ON lo.id = c.loan_id
+                contracts c ON lo.id = c.loan_deal_id
         WHERE lo.status = 'Available'
         GROUP BY
             lo.id
@@ -78,7 +79,7 @@ pub(crate) async fn load_all_available_loan_offers(
             // defined loan amount
             let loan_amount_max = row.loan_amount_max.min(loan_amount_reserve_remaining);
             Some(LoanOffer {
-                id: row.id,
+                loan_deal_id: row.loan_deal_id,
                 lender_id: row.lender_id,
                 name: row.name,
                 min_ltv: row.min_ltv,
@@ -127,6 +128,7 @@ pub async fn load_all_loan_offers_by_lender(
         r#"
         SELECT
             lo.id,
+            lo.loan_deal_id,
             lo.lender_id,
             lo.name,
             lo.min_ltv,
@@ -159,7 +161,7 @@ pub async fn load_all_loan_offers_by_lender(
             lo.updated_at
         FROM loan_offers lo
             LEFT JOIN
-                contracts c ON lo.id = c.loan_id
+                contracts c ON lo.id = c.loan_deal_id
         WHERE lo.lender_id = $1
         GROUP BY
             lo.id
@@ -179,7 +181,7 @@ pub async fn load_all_loan_offers_by_lender(
                 .map(|v| Decimal::from_str(&v.to_string()).unwrap_or(row.loan_amount_max));
 
             LoanOffer {
-                id: row.id,
+                loan_deal_id: row.loan_deal_id,
                 lender_id: row.lender_id,
                 name: row.name,
                 min_ltv: row.min_ltv,
@@ -214,6 +216,7 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
         r#"
         SELECT
             lo.id,
+            lo.loan_deal_id,
             lo.lender_id,
             lo.name,
             lo.min_ltv,
@@ -246,7 +249,7 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
             lo.updated_at
         FROM loan_offers lo
             LEFT JOIN
-                contracts c ON lo.id = c.loan_id
+                contracts c ON lo.id = c.loan_deal_id
         WHERE lo.lender_id = $1 and lo.id = $2
         GROUP BY
             lo.id
@@ -263,7 +266,7 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
         .map(|v| Decimal::from_str(&v.to_string()).unwrap_or(row.loan_amount_max));
 
     let loan_offer = LoanOffer {
-        id: row.id,
+        loan_deal_id: row.loan_deal_id,
         lender_id: row.lender_id,
         name: row.name,
         min_ltv: row.min_ltv,
@@ -317,13 +320,30 @@ pub async fn insert_loan_offer(
     offer: CreateLoanOfferSchema,
     lender_id: &str,
 ) -> Result<LoanOffer> {
+    let mut tx = pool.begin().await?;
+
     let id = uuid::Uuid::new_v4().to_string();
     let status = LoanOfferStatus::Available;
+
+    // First, insert the loan opportunity
+    sqlx::query!(
+        r#"
+        INSERT INTO loan_deals (
+          id,
+          type
+        )
+        VALUES ($1, 'offer')
+        "#,
+        id,
+    )
+    .execute(&mut *tx)
+    .await?;
 
     let row = sqlx::query!(
         r#"
         INSERT INTO loan_offers (
           id,
+          loan_deal_id,
           lender_id,
           name,
           min_ltv,
@@ -340,9 +360,10 @@ pub async fn insert_loan_offer(
           lender_xpub,
           kyc_link
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
         RETURNING
           id,
+          loan_deal_id,
           lender_id,
           name,
           min_ltv,
@@ -363,6 +384,7 @@ pub async fn insert_loan_offer(
           updated_at
         "#,
         id,
+        id,
         lender_id,
         offer.name,
         offer.min_ltv,
@@ -379,11 +401,14 @@ pub async fn insert_loan_offer(
         Some(offer.lender_xpub.to_string()),
         offer.kyc_link.map(|l| l.to_string()),
     )
-    .fetch_one(pool)
+    .fetch_one(&mut *tx)
     .await?;
 
+    // Commit the transaction
+    tx.commit().await?;
+
     let loan_offer = LoanOffer {
-        id: row.id,
+        loan_deal_id: row.loan_deal_id,
         lender_id: row.lender_id,
         name: row.name,
         min_ltv: row.min_ltv,
@@ -407,11 +432,15 @@ pub async fn insert_loan_offer(
     Ok(loan_offer)
 }
 
-pub(crate) async fn loan_by_id(pool: &Pool<Postgres>, loan_id: &str) -> Result<Option<LoanOffer>> {
+pub(crate) async fn loan_by_id(
+    pool: &Pool<Postgres>,
+    loan_deal_id: &str,
+) -> Result<Option<LoanOffer>> {
     let row = sqlx::query!(
         r#"
         SELECT
             lo.id,
+            lo.loan_deal_id,
             lo.lender_id,
             lo.name,
             lo.min_ltv,
@@ -444,12 +473,12 @@ pub(crate) async fn loan_by_id(pool: &Pool<Postgres>, loan_id: &str) -> Result<O
             lo.updated_at
         FROM loan_offers lo
             LEFT JOIN
-                contracts c ON lo.id = c.loan_id
+                contracts c ON lo.id = c.loan_deal_id
         WHERE lo.id = $1
         GROUP BY
             lo.id
     "#,
-        loan_id
+        loan_deal_id
     )
     .fetch_optional(pool)
     .await?;
@@ -462,7 +491,7 @@ pub(crate) async fn loan_by_id(pool: &Pool<Postgres>, loan_id: &str) -> Result<O
 
         // Map the result into the LoanOffer struct
         let loan_offer = LoanOffer {
-            id: row.id,
+            loan_deal_id: row.loan_deal_id,
             lender_id: row.lender_id,
             name: row.name,
             min_ltv: row.min_ltv,
@@ -528,7 +557,7 @@ pub async fn set_loan_offers_unavailable_by_contract_id(
             updated_at = CURRENT_TIMESTAMP
         WHERE 
             id IN (
-                SELECT loan_id 
+                SELECT loan_deal_id 
                 FROM contracts 
                 WHERE contracts.id = ANY($1)
             )
