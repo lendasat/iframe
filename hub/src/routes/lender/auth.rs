@@ -27,6 +27,7 @@ use crate::model::UpgradeToPakeResponse;
 use crate::model::WalletBackupData;
 use crate::routes::lender::auth::jwt_auth::auth;
 use crate::routes::AppState;
+use crate::utils::is_valid_email;
 use crate::wallet::derive_borrower_or_lender_pk;
 use axum::extract::Path;
 use axum::extract::State;
@@ -117,6 +118,15 @@ async fn post_register(
     State(data): State<Arc<AppState>>,
     Json(body): Json<RegisterUserSchema>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    if !is_valid_email(body.email.as_str()) {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ErrorResponse {
+                message: "Invalid email provided".to_string(),
+            }),
+        ));
+    }
+
     let user_exists = user_exists(&data.db, body.email.as_str())
         .await
         .map_err(|e| {

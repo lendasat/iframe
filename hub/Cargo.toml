@@ -29,6 +29,7 @@ miniscript = { version = "12", features = ["serde"] }
 native-tls = "0.2"
 pay-with-moon = { path = "../pay-with-moon" }
 rand = "0.8.5"
+regex = "1.11.1"
 reqwest = { version = "0.12.7", features = ["json"] }
 rust_decimal = { version = "1.35", features = ["serde-with-float"] }
 rust_decimal_macros = "1.35"
