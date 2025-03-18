@@ -4,14 +4,28 @@ use crate::routes::price_feed_ws;
 use crate::routes::profiles;
 use crate::routes::AppState;
 use anyhow::Result;
+use axum::body::Body;
+use axum::http::header::ACCEPT;
+use axum::http::header::ACCESS_CONTROL_ALLOW_HEADERS;
+use axum::http::header::ACCESS_CONTROL_ALLOW_ORIGIN;
+use axum::http::header::AUTHORIZATION;
+use axum::http::header::CONTENT_TYPE;
+use axum::http::header::ORIGIN;
+use axum::http::HeaderValue;
+use axum::http::Request;
+use axum::http::StatusCode;
 use axum::middleware;
+use axum::middleware::Next;
+use axum::response::Response;
 pub use contracts::ClaimCollateralPsbt;
 pub use contracts::ClaimTx;
 pub use contracts::Contract;
+use reqwest::Method;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::net::TcpListener;
 use tokio::task::JoinHandle;
+use tower_http::cors::CorsLayer;
 use tower_http::services::ServeDir;
 use tower_http::services::ServeFile;
 
@@ -186,31 +200,32 @@ pub async fn spawn_borrower_server(
             )),
         );
 
-    // let app = {
-    //     let cors = CorsLayer::new()
-    //         .allow_credentials(true)
-    //         .allow_methods(vec![Method::GET, Method::POST, Method::PUT, Method::DELETE])
-    //         .allow_headers(vec![
-    //             ORIGIN,
-    //             AUTHORIZATION,
-    //             ACCEPT,
-    //             ACCESS_CONTROL_ALLOW_HEADERS,
-    //             ACCESS_CONTROL_ALLOW_ORIGIN,
-    //             CONTENT_TYPE,
-    //         ]);
-    //
-    //     #[cfg(debug_assertions)]
-    //     let cors = cors.allow_origin([
-    //         "http://localhost:4200".parse::<HeaderValue>()?,
-    //         "http://localhost:4201".parse::<HeaderValue>()?,
-    //     ]);
-    //
-    //     #[cfg(not(debug_assertions))]
-    //     let cors =
-    //         cors.allow_origin(["https://borrow.signet.lendasat.com".parse::<HeaderValue>()?]);
-    //
-    //     app.layer(cors)
-    // };
+    let app = {
+        let cors = CorsLayer::new()
+            .allow_credentials(true)
+            .allow_methods(vec![Method::GET, Method::POST, Method::PUT, Method::DELETE])
+            .allow_headers(vec![
+                ORIGIN,
+                AUTHORIZATION,
+                ACCEPT,
+                ACCESS_CONTROL_ALLOW_HEADERS,
+                ACCESS_CONTROL_ALLOW_ORIGIN,
+                CONTENT_TYPE,
+            ]);
+
+        #[cfg(debug_assertions)]
+        let cors = cors.allow_origin([
+            "http://localhost:4200".parse::<HeaderValue>()?,
+            "http://localhost:4201".parse::<HeaderValue>()?,
+        ]);
+
+        #[cfg(not(debug_assertions))]
+        let cors =
+            cors.allow_origin(["https://borrow.signet.lendasat.com".parse::<HeaderValue>()?]);
+
+        app.layer(cors)
+            .layer(middleware::from_fn(cors_debug_middleware))
+    };
 
     let listener = TcpListener::bind(&config.borrower_listen_address).await?;
 
@@ -229,4 +244,70 @@ pub async fn spawn_borrower_server(
 
         tracing::error!("Borrower server stopped");
     }))
+}
+
+async fn cors_debug_middleware(req: Request<Body>, next: Next) -> Result<Response, StatusCode> {
+    tracing::debug!(target : "cors", "=== CORS Debug Middleware ===");
+    tracing::debug!(target : "cors", "Request method: {}", req.method());
+    tracing::debug!(target : "cors", "Request URI: {}", req.uri());
+
+    // Log all request headers
+    for (name, value) in req.headers() {
+        tracing::debug!(target : "cors", "Header: {} = {:?}", name, value);
+    }
+
+    // Check specific CORS headers
+    if let Some(origin) = req.headers().get("origin") {
+        tracing::debug!(target : "cors", "Origin: {:?}", origin);
+    } else {
+        tracing::debug!(target : "cors", "No Origin header");
+    }
+
+    if req.method() == "OPTIONS" {
+        tracing::debug!(target : "cors", "OPTIONS preflight request detected");
+
+        if let Some(req_method) = req.headers().get("access-control-request-method") {
+            tracing::debug!(target : "cors", "Requested method: {:?}", req_method);
+        }
+
+        if let Some(req_headers) = req.headers().get("access-control-request-headers") {
+            tracing::debug!(target : "cors", "Requested headers: {:?}", req_headers);
+        }
+    }
+
+    // Process the request through the rest of the middleware stack
+    let response = next.run(req).await;
+
+    // Log response status and headers
+    tracing::debug!(target : "cors", "Response status: {}", response.status());
+
+    for (name, value) in response.headers() {
+        tracing::debug!(target : "cors", "Response header: {} = {:?}", name, value);
+    }
+
+    // Check if CORS headers are present in the response
+    if let Some(allow_origin) = response.headers().get("access-control-allow-origin") {
+        tracing::debug!(target : "cors", "Allow-Origin set to: {:?}", allow_origin);
+    } else {
+        tracing::error!(
+            target : "cors",
+            "No Access-Control-Allow-Origin header in response!"
+        );
+    }
+
+    if let Some(allow_methods) = response.headers().get("access-control-allow-methods") {
+        tracing::debug!(target : "cors", "Allow-Methods set to: {:?}", allow_methods);
+    }
+
+    if let Some(allow_credentials) = response.headers().get("access-control-allow-credentials") {
+        tracing::debug!(
+            target : "cors",
+            "Allow-Credentials set to: {:?}",
+            allow_credentials
+        );
+    }
+
+    tracing::debug!(target : "cors", "=== End CORS Debug ===");
+
+    Ok(response)
 }
