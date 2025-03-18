@@ -96,13 +96,10 @@ export function ContractDefaulted({ contract }: ContractDefaultedProps) {
       </Row>
 
       {selectedLiquidationPreference === LiquidationPreference.bitcoin && (
-        <LiquidateToBitcoin contractId={contract.id} />
+        <LiquidateToBitcoin contract={contract} />
       )}
       {selectedLiquidationPreference === LiquidationPreference.stablecoin && (
-        <LiquidateToStablecoin
-          contractId={contract.id}
-          repaymentAddress={contract.loan_repayment_address}
-        />
+        <LiquidateToStablecoin contract={contract} />
       )}
     </Container>
   );

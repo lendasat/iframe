@@ -149,6 +149,7 @@ export interface Contract {
   borrower_btc_address: string;
   loan_repayment_address: string;
   contract_address?: string;
+  derivation_path?: string;
   borrower_loan_address: string;
   transactions: LoanTransaction[];
   loan_type: LoanType;

@@ -244,6 +244,7 @@ pub fn sign_claim_psbt(
     psbt: &str,
     collateral_descriptor: &str,
     own_pk: &str,
+    derivation_path: Option<&str>,
 ) -> Result<(String, Vec<TxOut>, bitcoin::params::Params)> {
     let psbt = hex::decode(psbt)?;
     let psbt = Psbt::deserialize(&psbt)?;
@@ -252,7 +253,14 @@ pub fn sign_claim_psbt(
 
     let own_pk = own_pk.parse()?;
 
-    let tx = wallet::sign_claim_psbt(psbt, collateral_descriptor, own_pk)?;
+    let derivation_path = derivation_path.map(|p| p.parse()).transpose()?;
+
+    let tx = wallet::sign_claim_psbt(
+        psbt,
+        collateral_descriptor,
+        own_pk,
+        derivation_path.as_ref(),
+    )?;
 
     let outputs = tx.output.clone();
     let params = wallet::consensus_params()?;
@@ -268,6 +276,7 @@ pub fn sign_liquidation_psbt(
     psbt: &str,
     collateral_descriptor: &str,
     own_pk: &str,
+    derivation_path: Option<&str>,
 ) -> Result<(String, Vec<TxOut>, bitcoin::params::Params)> {
     let psbt = hex::decode(psbt)?;
     let psbt = Psbt::deserialize(&psbt)?;
@@ -276,7 +285,14 @@ pub fn sign_liquidation_psbt(
 
     let own_pk = own_pk.parse()?;
 
-    let tx = wallet::sign_liquidation_psbt(psbt, collateral_descriptor, own_pk)?;
+    let derivation_path = derivation_path.map(|p| p.parse()).transpose()?;
+
+    let tx = wallet::sign_liquidation_psbt(
+        psbt,
+        collateral_descriptor,
+        own_pk,
+        derivation_path.as_ref(),
+    )?;
 
     let outputs = tx.output.clone();
     let params = wallet::consensus_params()?;

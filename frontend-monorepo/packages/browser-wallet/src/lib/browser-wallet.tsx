@@ -37,11 +37,13 @@ interface WalletContextType {
     psbt: string,
     collateralDescriptor: string,
     borrowerPk: string,
+    derivationPath?: string,
   ) => Promise<SignedTransaction>;
   signLiquidationPsbt: (
     psbt: string,
     collateralDescriptor: string,
     borrowerPk: string,
+    derivationPath?: string,
   ) => Promise<SignedTransaction>;
   getXpub: () => Promise<string>;
   encryptFiatLoanDetailsBorrower: (
@@ -128,9 +130,15 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
     psbt: string,
     collateralDescriptor: string,
     borrowerPk: string,
+    derivationPath?: string,
   ) => {
     if (isInitialized && isWalletLoaded) {
-      return sign_claim_psbt(psbt, collateralDescriptor, borrowerPk);
+      return sign_claim_psbt(
+        psbt,
+        collateralDescriptor,
+        borrowerPk,
+        derivationPath,
+      );
     } else {
       throw Error("Wallet not initialized");
     }
@@ -140,9 +148,15 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
     psbt: string,
     collateralDescriptor: string,
     lenderPk: string,
+    derivationPath?: string,
   ) => {
     if (isInitialized && isWalletLoaded) {
-      return sign_liquidation_psbt(psbt, collateralDescriptor, lenderPk);
+      return sign_liquidation_psbt(
+        psbt,
+        collateralDescriptor,
+        lenderPk,
+        derivationPath,
+      );
     } else {
       throw Error("Wallet not initialized");
     }

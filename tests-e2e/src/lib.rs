@@ -332,9 +332,13 @@ mod tests {
         let claim_psbt = hex::decode(claim_psbt).unwrap();
         let claim_psbt = Psbt::deserialize(&claim_psbt).unwrap();
 
-        let tx =
-            browser_wallet::wallet::sign_claim_psbt(claim_psbt, collateral_descriptor, borrower_pk)
-                .unwrap();
+        let tx = browser_wallet::wallet::sign_claim_psbt(
+            claim_psbt,
+            collateral_descriptor,
+            borrower_pk,
+            contract.derivation_path.as_ref(),
+        )
+        .unwrap();
 
         let tx_hex = bitcoin::consensus::encode::serialize_hex(&tx);
 
@@ -683,9 +687,13 @@ mod tests {
         let claim_psbt = hex::decode(claim_psbt).unwrap();
         let claim_psbt = Psbt::deserialize(&claim_psbt).unwrap();
 
-        let tx =
-            browser_wallet::wallet::sign_claim_psbt(claim_psbt, collateral_descriptor, borrower_pk)
-                .unwrap();
+        let tx = browser_wallet::wallet::sign_claim_psbt(
+            claim_psbt,
+            collateral_descriptor,
+            borrower_pk,
+            contract.derivation_path.as_ref(),
+        )
+        .unwrap();
 
         let tx_hex = bitcoin::consensus::encode::serialize_hex(&tx);
 
