@@ -29,7 +29,7 @@ pub struct ErrorResponse {
 pub struct AppState {
     pub db: Pool<Postgres>,
     pub pake_protocols: Arc<Mutex<HashMap<model::Email, PakeServerData>>>,
-    pub wallet: Arc<Mutex<Wallet>>,
+    pub wallet: Arc<Wallet>,
     pub config: Config,
     pub mempool: xtra::Address<mempool::Actor>,
     pub connections: Arc<Mutex<Vec<mpsc::UnboundedSender<Message>>>>,

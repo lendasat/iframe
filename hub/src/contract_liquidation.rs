@@ -9,10 +9,9 @@ use bitcoin::Psbt;
 use bitcoin::PublicKey;
 use bitcoin_units::Amount;
 use miniscript::Descriptor;
-use tokio::sync::MutexGuard;
 
 pub async fn prepare_liquidation_psbt(
-    wallet: &mut MutexGuard<'_, Wallet>,
+    wallet: &Wallet,
     contract: crate::model::Contract,
     address: Address<NetworkUnchecked>,
     lender_amount: Amount,

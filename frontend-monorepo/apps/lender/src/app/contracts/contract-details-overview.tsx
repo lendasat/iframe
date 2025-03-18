@@ -49,7 +49,7 @@ import { ContractPendingKyc } from "./contract-pending-kyc";
 import { ContractRecovery } from "./contract-recovery";
 import { ContractRequested } from "./contract-requested";
 import { ContractUndercollateralized } from "./contract-undercollateralized";
-import { downloadLocalStorage } from "./download-local-storage";
+import { downloadLocalStorage as downloadContractBackup } from "./download-local-storage";
 import LoanPrincipalStablecoinPayout from "./pay-loan-principal-stablecoin";
 import { FiatLoanDetails } from "@frontend/base-http-client";
 import RepaymentDetailsFiat from "./pay-loan-principal-fiat";
@@ -556,7 +556,7 @@ function ContractDetails({ contract }: DetailsProps) {
             <Button
               size="3"
               className="bg-btn dark:bg-dark-600 text-white"
-              onClick={() => downloadLocalStorage(backendVersion)}
+              onClick={() => downloadContractBackup(backendVersion, contract)}
             >
               <IoMdCloudDownload />
               Download

@@ -54,7 +54,7 @@ import { ContractRepaid } from "./contract-repaid";
 import { ContractRequested } from "./contract-requested";
 import { ContractUndercollateralized } from "./contract-undercollateralized";
 import { ExpandableDisputeCard } from "./dispute-card";
-import { downloadLocalStorage } from "./download-local-storage";
+import { downloadLocalStorage as downloadContractBackup } from "./download-local-storage";
 
 function ContractDetailsOverview() {
   const { innerHeight } = window;
@@ -707,7 +707,7 @@ function ContractDetails({ contract }: DetailsProps) {
           <Button
             size="3"
             className="bg-btn dark:bg-dark-600"
-            onClick={() => downloadLocalStorage(backendVersion)}
+            onClick={() => downloadContractBackup(backendVersion, contract)}
           >
             <IoMdCloudDownload />
             Download

@@ -9,7 +9,6 @@ use crate::wallet::Wallet;
 use anyhow::Context;
 use sqlx::PgPool;
 use std::sync::Arc;
-use tokio::sync::MutexGuard;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -46,7 +45,7 @@ pub enum Error {
 #[allow(clippy::too_many_arguments)]
 pub async fn approve_contract(
     db: &PgPool,
-    wallet: MutexGuard<'_, Wallet>,
+    wallet: &Wallet,
     mempool_actor: &xtra::Address<mempool::Actor>,
     config: &Config,
     contract_id: String,

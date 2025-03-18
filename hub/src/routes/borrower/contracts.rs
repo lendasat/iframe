@@ -38,6 +38,7 @@ use axum::response::IntoResponse;
 use axum::response::Response;
 use axum::Extension;
 use axum::Json;
+use bitcoin::bip32::DerivationPath;
 use bitcoin::bip32::Xpub;
 use bitcoin::consensus::encode::FromHexError;
 use bitcoin::Amount;
@@ -313,11 +314,9 @@ async fn post_contract_request(
     // We only want to auto-accept offers if KYC is not required and it is not a fiat loan. The
     // reason is that we need to collect banking details of the lender during approval process
     if offer.auto_accept && (!is_kyc_required && !offer.loan_asset.is_fiat()) {
-        let wallet = data.wallet.lock().await;
-
         approve_contract(
             &data.db,
-            wallet,
+            &data.wallet,
             &data.mempool,
             &data.config,
             contract.id.clone(),
@@ -671,9 +670,8 @@ async fn get_claim_collateral_psbt(
 
     let origination_fee = Amount::from_sat(contract.origination_fee_sats);
 
-    let mut wallet = data.wallet.lock().await;
-
-    let (psbt, collateral_descriptor, borrower_pk) = wallet
+    let (psbt, collateral_descriptor, borrower_pk) = data
+        .wallet
         .create_claim_collateral_psbt(
             &contract.borrower_xpub,
             contract.borrower_pk,
@@ -791,11 +789,14 @@ pub struct Contract {
     pub initial_ltv: Decimal,
     pub loan_asset: LoanAsset,
     pub status: ContractStatus,
-    #[schema(value_type = Option<String>)]
+    #[schema(value_type = String)]
     pub borrower_pk: Option<PublicKey>,
     pub borrower_btc_address: String,
     pub borrower_loan_address: Option<String>,
     pub contract_address: Option<String>,
+    pub collateral_script: Option<String>,
+    #[schema(value_type = String)]
+    pub derivation_path: Option<DerivationPath>,
     pub loan_repayment_address: String,
     pub lender: LenderStats,
     #[serde(with = "time::serde::rfc3339")]
@@ -953,6 +954,30 @@ async fn map_to_api_contract(
         })
     };
 
+    let (collateral_script, borrower_pk, borrower_derivation_path) = match contract.contract_index {
+        Some(contract_index) => {
+            let (collateral_descriptor, (borrower_pk, borrower_derivation_path), _) = data
+                .wallet
+                .collateral_descriptor(
+                    &contract.borrower_xpub,
+                    contract.borrower_pk,
+                    &lender_xpub,
+                    contract.contract_version,
+                    contract_index,
+                )
+                .map_err(Error::CannotBuildDescriptor)?;
+            let collateral_script = collateral_descriptor.script_code().expect("not taproot");
+            let collateral_script = collateral_script.to_hex_string();
+
+            (
+                Some(collateral_script),
+                Some(borrower_pk),
+                borrower_derivation_path,
+            )
+        }
+        None => (None, contract.borrower_pk, None),
+    };
+
     let contract = Contract {
         id: contract.id,
         loan_amount: contract.loan_amount,
@@ -964,12 +989,14 @@ async fn map_to_api_contract(
         initial_ltv: contract.initial_ltv,
         loan_asset: new_offer.loan_asset,
         status: contract.status,
-        borrower_pk: contract.borrower_pk,
+        borrower_pk,
         borrower_btc_address: contract.borrower_btc_address.assume_checked().to_string(),
         borrower_loan_address: contract.borrower_loan_address,
         contract_address: contract
             .contract_address
             .map(|c| c.assume_checked().to_string()),
+        collateral_script,
+        derivation_path: borrower_derivation_path,
         loan_repayment_address: new_offer.loan_repayment_address,
         lender: lender_stats,
         created_at: contract.created_at,
@@ -983,7 +1010,7 @@ async fn map_to_api_contract(
         extends_contract: parent_contract_id,
         extended_by_contract: child_contract,
         borrower_xpub: contract.borrower_xpub.to_string(),
-        lender_xpub,
+        lender_xpub: lender_xpub.to_string(),
         kyc_info,
         fiat_loan_details_borrower,
         fiat_loan_details_lender,
@@ -1169,6 +1196,8 @@ enum Error {
         duration_days_min: i32,
         duration_days_max: i32,
     },
+    /// Failed to build contract descriptor.
+    CannotBuildDescriptor(anyhow::Error),
 }
 
 impl From<JsonRejection> for Error {
@@ -1482,6 +1511,14 @@ impl IntoResponse for Error {
                 StatusCode::BAD_REQUEST,
                 format!("Invalid loan duration: {duration_days} days not in range {duration_days_min}-{duration_days_max}"),
             ),
+            Error::CannotBuildDescriptor(e) => {
+                tracing::error!("Failed to build collateral descriptor: {e:#}");
+
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
         };
 
         (status, AppJson(ErrorResponse { message })).into_response()

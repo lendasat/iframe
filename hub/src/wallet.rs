@@ -6,6 +6,7 @@ use anyhow::Result;
 use bitcoin::absolute::LockTime;
 use bitcoin::address::NetworkUnchecked;
 use bitcoin::bip32::ChildNumber;
+use bitcoin::bip32::DerivationPath;
 use bitcoin::bip32::Xpriv;
 use bitcoin::bip32::Xpub;
 use bitcoin::key::Keypair;
@@ -34,6 +35,7 @@ use miniscript::Descriptor;
 use sqlx::Pool;
 use sqlx::Postgres;
 use std::str::FromStr;
+use std::sync::Mutex;
 
 /// Everything below this value is counted as dust. Based on segwit and 1 input and 1 output
 const MIN_TX_OUTPUT_VALUE: u64 = 294;
@@ -47,7 +49,7 @@ pub struct Wallet {
     /// keep it around for [`ContractVersion::TwoOfFour`].
     deprecated_fallback_xpub: Xpub,
     network: Network,
-    hub_fee_wallet: DescriptorWallet,
+    hub_fee_wallet: Mutex<DescriptorWallet>,
     db: Pool<Postgres>,
 }
 
@@ -66,7 +68,7 @@ impl Wallet {
             hub_xpriv,
             deprecated_fallback_xpub: fallback_xpub,
             network,
-            hub_fee_wallet,
+            hub_fee_wallet: Mutex::new(hub_fee_wallet),
             db,
         })
     }
@@ -83,9 +85,9 @@ impl Wallet {
 
         // We use the same index for borrower and lender so that it's easier to recover the correct
         // borrower/lender keypair.
-        let lender_pk =
+        let (lender_pk, _) =
             derive_borrower_or_lender_pk(lender_xpub, index, self.hub_xpriv.network.is_mainnet())?;
-        let borrower_pk = derive_borrower_or_lender_pk(
+        let (borrower_pk, _) = derive_borrower_or_lender_pk(
             borrower_xpub,
             index,
             self.hub_xpriv.network.is_mainnet(),
@@ -119,7 +121,7 @@ impl Wallet {
 
         // We use the same index for the lender so that it's easier to recover the correct lender
         // keypair.
-        let lender_pk =
+        let (lender_pk, _) =
             derive_borrower_or_lender_pk(lender_xpub, index, self.hub_xpriv.network.is_mainnet())?;
 
         let descriptor = match contract_version {
@@ -139,6 +141,60 @@ impl Wallet {
         Ok((address, index))
     }
 
+    // TODO: Refactor this. We don't need this to be some kind of god function.
+    #[allow(clippy::type_complexity)]
+    pub fn collateral_descriptor(
+        &self,
+        borrower_xpub: &Xpub,
+        borrower_pk: Option<PublicKey>,
+        lender_xpub: &Xpub,
+        contract_version: ContractVersion,
+        contract_index: u32,
+    ) -> Result<(
+        Descriptor<PublicKey>,
+        (PublicKey, Option<DerivationPath>),
+        (PublicKey, DerivationPath),
+    )> {
+        let (hub_kp, fallback_pk) = self.get_keys_for_index(contract_index)?;
+        let hub_pk = PublicKey::new(hub_kp.public_key());
+
+        let is_mainnet = self.hub_xpriv.network.is_mainnet();
+        let (lender_pk, lender_derivation) =
+            derive_borrower_or_lender_pk(lender_xpub, contract_index, is_mainnet)?;
+
+        let (borrower_pk, borrower_derivation) = match borrower_pk {
+            // If we only have a `borrower_xpub`, use it to derive the descriptor.
+            None => {
+                let (borrower_pk, borrower_derivation) =
+                    derive_borrower_or_lender_pk(borrower_xpub, contract_index, is_mainnet)?;
+
+                (borrower_pk, Some(borrower_derivation))
+            }
+            // If the `borrower_pk` was ever set, we should use that one because we are dealing with
+            // a legacy contract.
+            Some(borrower_pk) => (borrower_pk, None),
+        };
+
+        // All collateral outputs share the same script.
+        let collateral_descriptor = match contract_version {
+            ContractVersion::TwoOfFour => two_of_four_collateral_contract_descriptor(
+                borrower_pk,
+                hub_pk,
+                fallback_pk,
+                lender_pk,
+            )?,
+            ContractVersion::TwoOfThree => {
+                two_of_three_collateral_contract_descriptor(borrower_pk, hub_pk, lender_pk)?
+            }
+        };
+
+        Ok((
+            collateral_descriptor,
+            (borrower_pk, borrower_derivation),
+            (lender_pk, lender_derivation),
+        ))
+    }
+
     /// Will create a PSBT to spend the whole output to 2 addresses:
     ///
     /// 1. The `borrower_address`.
@@ -146,7 +202,7 @@ impl Wallet {
     /// 2. A newly derived address from the `hub_fee_wallet`.
     #[allow(clippy::too_many_arguments)]
     pub fn create_dispute_claim_collateral_psbt(
-        &mut self,
+        &self,
         borrower_xpub: &Xpub,
         borrower_pk: Option<PublicKey>,
         lender_xpub: &Xpub,
@@ -161,28 +217,22 @@ impl Wallet {
         fee_rate_spvb: u64,
         contract_version: ContractVersion,
     ) -> Result<(Psbt, Descriptor<PublicKey>, PublicKey)> {
-        let (hub_kp, fallback_pk) = self.get_keys_for_index(contract_index)?;
+        let (hub_kp, _) = self.get_keys_for_index(contract_index)?;
         let hub_pk = PublicKey::new(hub_kp.public_key());
 
-        let lender_pk = derive_borrower_or_lender_pk(
+        let (collateral_descriptor, (borrower_pk, _), _) = self.collateral_descriptor(
+            borrower_xpub,
+            borrower_pk,
             lender_xpub,
+            contract_version,
             contract_index,
-            self.hub_xpriv.network.is_mainnet(),
         )?;
 
-        let borrower_pk = match borrower_pk {
-            // If we only have a `borrower_xpub`, use it to derive the descriptor.
-            None => derive_borrower_or_lender_pk(
-                borrower_xpub,
-                contract_index,
-                self.hub_xpriv.network.is_mainnet(),
-            )?,
-            // If the `borrower_pk` was ever set, we should use that one because we are dealing with
-            // a legacy contract.
-            Some(borrower_pk) => borrower_pk,
-        };
-
-        let liquidator_address_info = self.hub_fee_wallet.get_new_address()?;
+        let liquidator_address_info = self
+            .hub_fee_wallet
+            .lock()
+            .expect("to get lock")
+            .get_new_address()?;
         let liquidator_address =
             Address::from_str(liquidator_address_info.address.to_string().as_str())?;
         let outputs = [
@@ -214,7 +264,11 @@ impl Wallet {
             })
             .collect::<Vec<_>>();
 
-        let new_address = self.hub_fee_wallet.get_new_address()?;
+        let new_address = self
+            .hub_fee_wallet
+            .lock()
+            .expect("to get lock")
+            .get_new_address()?;
         let origination_fee_output = TxOut {
             value: Amount::from_sat(origination_fee),
             script_pubkey: ScriptBuf::from_bytes(new_address.address.script_pubkey().to_bytes()),
@@ -237,18 +291,6 @@ impl Wallet {
             contract_version,
         );
 
-        // All collateral outputs share the same script.
-        let collateral_descriptor = match contract_version {
-            ContractVersion::TwoOfFour => two_of_four_collateral_contract_descriptor(
-                borrower_pk,
-                hub_pk,
-                fallback_pk,
-                lender_pk,
-            )?,
-            ContractVersion::TwoOfThree => {
-                two_of_three_collateral_contract_descriptor(borrower_pk, hub_pk, lender_pk)?
-            }
-        };
         let witness_script = collateral_descriptor.script_code()?;
 
         let mut inputs = Vec::new();
@@ -299,7 +341,7 @@ impl Wallet {
 
     #[allow(clippy::too_many_arguments)]
     pub fn create_claim_collateral_psbt(
-        &mut self,
+        &self,
         borrower_xpub: &Xpub,
         borrower_pk: Option<PublicKey>,
         lender_xpub: &Xpub,
@@ -312,25 +354,16 @@ impl Wallet {
         fee_rate_spvb: u64,
         contract_version: ContractVersion,
     ) -> Result<(Psbt, Descriptor<PublicKey>, PublicKey)> {
-        let (hub_kp, fallback_pk) = self.get_keys_for_index(contract_index)?;
+        let (hub_kp, _) = self.get_keys_for_index(contract_index)?;
+        let hub_pk = PublicKey::new(hub_kp.public_key());
 
-        let lender_pk = derive_borrower_or_lender_pk(
+        let (collateral_descriptor, (borrower_pk, _), _) = self.collateral_descriptor(
+            borrower_xpub,
+            borrower_pk,
             lender_xpub,
+            contract_version,
             contract_index,
-            self.hub_xpriv.network.is_mainnet(),
         )?;
-
-        let borrower_pk = match borrower_pk {
-            // If we only have a `borrower_xpub`, use it to derive the descriptor.
-            None => derive_borrower_or_lender_pk(
-                borrower_xpub,
-                contract_index,
-                self.hub_xpriv.network.is_mainnet(),
-            )?,
-            // If the `borrower_pk` was ever set, we should use that one because we are dealing with
-            // a legacy contract.
-            Some(borrower_pk) => borrower_pk,
-        };
 
         let mut inputs = Vec::new();
         for (outpoint, _) in collateral_outputs.iter() {
@@ -352,7 +385,11 @@ impl Wallet {
             script_pubkey: borrower_btc_address.script_pubkey(),
         };
 
-        let new_address = self.hub_fee_wallet.get_new_address()?;
+        let new_address = self
+            .hub_fee_wallet
+            .lock()
+            .expect("to get lock")
+            .get_new_address()?;
 
         let origination_fee_output = TxOut {
             value: Amount::from_sat(origination_fee),
@@ -380,19 +417,6 @@ impl Wallet {
             output,
         };
 
-        // All collateral outputs share the same script.
-        let hub_pk = PublicKey::new(hub_kp.public_key());
-        let collateral_descriptor = match contract_version {
-            ContractVersion::TwoOfFour => two_of_four_collateral_contract_descriptor(
-                borrower_pk,
-                hub_pk,
-                fallback_pk,
-                lender_pk,
-            )?,
-            ContractVersion::TwoOfThree => {
-                two_of_three_collateral_contract_descriptor(borrower_pk, hub_pk, lender_pk)?
-            }
-        };
         let witness_script = collateral_descriptor.script_code()?;
 
         // TODO: we need to check if the output holds enough to cover the fee
@@ -451,7 +475,7 @@ impl Wallet {
 
     #[allow(clippy::too_many_arguments)]
     pub fn create_liquidation_psbt(
-        &mut self,
+        &self,
         borrower_xpub: &Xpub,
         borrower_pk: Option<PublicKey>,
         lender_xpub: &Xpub,
@@ -464,24 +488,15 @@ impl Wallet {
         fee_rate_spvb: u64,
         contract_version: ContractVersion,
     ) -> Result<(Psbt, Descriptor<PublicKey>, PublicKey)> {
-        let (hub_kp, fallback_pk) = self.get_keys_for_index(contract_index)?;
+        let (hub_kp, _) = self.get_keys_for_index(contract_index)?;
+        let hub_pk = PublicKey::new(hub_kp.public_key());
 
-        let borrower_pk = match borrower_pk {
-            // If we only have a `borrower_xpub`, use it to derive the descriptor.
-            None => derive_borrower_or_lender_pk(
-                borrower_xpub,
-                contract_index,
-                self.hub_xpriv.network.is_mainnet(),
-            )?,
-            // If the `borrower_pk` was ever set, we should use that one because we are dealing with
-            // a legacy contract.
-            Some(borrower_pk) => borrower_pk,
-        };
-
-        let lender_pk = derive_borrower_or_lender_pk(
+        let (collateral_descriptor, _, (lender_pk, _)) = self.collateral_descriptor(
+            borrower_xpub,
+            borrower_pk,
             lender_xpub,
+            contract_version,
             contract_index,
-            self.hub_xpriv.network.is_mainnet(),
         )?;
 
         let mut inputs = Vec::new();
@@ -516,7 +531,11 @@ impl Wallet {
         };
 
         let origination_fee_output = {
-            let address = self.hub_fee_wallet.get_new_address()?;
+            let address = self
+                .hub_fee_wallet
+                .lock()
+                .expect("to get lock")
+                .get_new_address()?;
 
             TxOut {
                 value: origination_fee,
@@ -541,19 +560,6 @@ impl Wallet {
             contract_version,
         );
 
-        // All collateral outputs share the same script.
-        let hub_pk = PublicKey::new(hub_kp.public_key());
-        let collateral_descriptor = match contract_version {
-            ContractVersion::TwoOfFour => two_of_four_collateral_contract_descriptor(
-                borrower_pk,
-                hub_pk,
-                fallback_pk,
-                lender_pk,
-            )?,
-            ContractVersion::TwoOfThree => {
-                two_of_three_collateral_contract_descriptor(borrower_pk, hub_pk, lender_pk)?
-            }
-        };
         let witness_script = collateral_descriptor.script_code()?;
 
         let mut inputs = Vec::new();
@@ -700,7 +706,7 @@ pub fn derive_borrower_or_lender_pk(
     lender_xpub: &Xpub,
     index: u32,
     is_mainnet: bool,
-) -> Result<PublicKey> {
+) -> Result<(PublicKey, DerivationPath)> {
     let secp = Secp256k1::new();
 
     let network_index = if is_mainnet {
@@ -709,18 +715,20 @@ pub fn derive_borrower_or_lender_pk(
         ChildNumber::from_normal_idx(1).expect("infallible")
     };
 
-    let pk = {
-        let path = [
-            ChildNumber::from_normal_idx(586).expect("infallible"),
-            network_index,
-            ChildNumber::from_normal_idx(index).expect("infallible"),
-        ];
+    let path = vec![
+        ChildNumber::from_normal_idx(586).expect("infallible"),
+        network_index,
+        ChildNumber::from_normal_idx(index).expect("infallible"),
+    ];
 
+    let pk = {
         let child_xpub = lender_xpub.derive_pub(&secp, &path)?;
         PublicKey::new(child_xpub.public_key)
     };
 
-    Ok(pk)
+    let derivation_path = DerivationPath::from(path);
+
+    Ok((pk, derivation_path))
 }
 
 /// Updates how much fee the transaction pays by reducing the amount sent to [`output`]
