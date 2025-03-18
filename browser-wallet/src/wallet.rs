@@ -39,7 +39,7 @@ mod fiat_loan_details;
 
 const SECRET_KEY_ENCRYPTION_NONCE: &[u8; 12] = b"SECRET_KEY!!";
 
-const NSEC_DERIVATION_PATH: &str = "m/44/0/0/0/0";
+const NOSTR_DERIVATION_PATH: &str = "m/44/0/0/0/0";
 
 /// Index used to derive new keypairs from the wallet's [`Xpub`].
 ///
@@ -762,7 +762,7 @@ fn encrypt_mnemonic(mnemonic: &Mnemonic, encryption_key: [u8; 32]) -> Result<Vec
 }
 
 fn derive_nsec_from_xprv(xprv: &Xpriv) -> Result<SecretKey> {
-    let path = DerivationPath::from_str(NSEC_DERIVATION_PATH).expect("to be valid");
+    let path = DerivationPath::from_str(NOSTR_DERIVATION_PATH).expect("to be valid");
 
     let secp = Secp256k1::new();
 
@@ -878,7 +878,7 @@ pub(crate) fn derive_nostr_room_pk(contract: String) -> Result<String> {
 pub(crate) fn derive_npub(xpub: String) -> Result<String> {
     let xpub = Xpub::from_str(xpub.as_str()).context("Invalid xpub provided")?;
 
-    let path = DerivationPath::from_str(NSEC_DERIVATION_PATH).expect("to be valid");
+    let path = DerivationPath::from_str(NOSTR_DERIVATION_PATH).expect("to be valid");
 
     let secp = Secp256k1::new();
 
