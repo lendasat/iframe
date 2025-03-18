@@ -4,14 +4,23 @@ use crate::routes::price_feed_ws;
 use crate::routes::profiles;
 use crate::routes::AppState;
 use anyhow::Result;
+use axum::http::header::ACCEPT;
+use axum::http::header::ACCESS_CONTROL_ALLOW_HEADERS;
+use axum::http::header::ACCESS_CONTROL_ALLOW_ORIGIN;
+use axum::http::header::AUTHORIZATION;
+use axum::http::header::CONTENT_TYPE;
+use axum::http::header::ORIGIN;
+use axum::http::HeaderValue;
 use axum::middleware;
 pub use contracts::ClaimCollateralPsbt;
 pub use contracts::ClaimTx;
 pub use contracts::Contract;
+use reqwest::Method;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::net::TcpListener;
 use tokio::task::JoinHandle;
+use tower_http::cors::CorsLayer;
 use tower_http::services::ServeDir;
 use tower_http::services::ServeFile;
 
@@ -48,19 +57,19 @@ const API_ACCOUNTS_TAG: &str = "api-accounts";
     info(
         title = "Lendasat Borrower API",
         description = r#"
-Interact with the lendasat server to 
-- register as a new user, 
+Interact with the lendasat server to
+- register as a new user,
 - manage personal api keys,
 - query available loan offers
 - create a contract request and
 - and manage open contracts.
-            
+
 ## How to get an API key
 
 To get started with an API key, follow these steps:
 
 1. Sign up a new user under https://borrow.lendasat.com
-2. Provide your user id to a Lendasat employee who will generate a master API key for you, e.g. `las-BTC21` 
+2. Provide your user id to a Lendasat employee who will generate a master API key for you, e.g. `las-BTC21`
 3. Now you can create new sub users. This API will return a new API key for this user
 ```bash
 curl -X POST "http://localhost:7337/api/create-api-account" \
@@ -186,18 +195,7 @@ pub async fn spawn_borrower_server(
             )),
         );
 
-    #[cfg(debug_assertions)]
     let app = {
-        use axum::http::header::ACCEPT;
-        use axum::http::header::ACCESS_CONTROL_ALLOW_HEADERS;
-        use axum::http::header::ACCESS_CONTROL_ALLOW_ORIGIN;
-        use axum::http::header::AUTHORIZATION;
-        use axum::http::header::CONTENT_TYPE;
-        use axum::http::header::ORIGIN;
-        use axum::http::HeaderValue;
-        use reqwest::Method;
-        use tower_http::cors::CorsLayer;
-
         let cors = CorsLayer::new()
             .allow_credentials(true)
             .allow_methods(vec![Method::GET, Method::POST, Method::PUT, Method::DELETE])
@@ -208,11 +206,17 @@ pub async fn spawn_borrower_server(
                 ACCESS_CONTROL_ALLOW_HEADERS,
                 ACCESS_CONTROL_ALLOW_ORIGIN,
                 CONTENT_TYPE,
-            ])
-            .allow_origin([
-                "http://localhost:4200".parse::<HeaderValue>()?,
-                "http://localhost:4201".parse::<HeaderValue>()?,
             ]);
+
+        #[cfg(debug_assertions)]
+        let cors = cors.allow_origin([
+            "http://localhost:4200".parse::<HeaderValue>()?,
+            "http://localhost:4201".parse::<HeaderValue>()?,
+        ]);
+
+        #[cfg(not(debug_assertions))]
+        let cors =
+            cors.allow_origin(["https://borrow.signet.lendasat.com".parse::<HeaderValue>()?]);
 
         app.layer(cors)
     };
