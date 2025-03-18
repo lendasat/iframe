@@ -3,7 +3,6 @@ import init, {
   does_wallet_exist,
   encrypt_fiat_loan_details,
   get_mnemonic,
-  get_next_pk,
   get_nsec,
   get_xpub,
   InnerFiatLoanDetails,
@@ -34,7 +33,6 @@ interface WalletContextType {
   getMnemonic: () => string;
   getNsec: () => string;
   getPubkeyFromContract: (passphrase: string) => string;
-  getNextPublicKey: () => Promise<string>;
   signClaimPsbt: (
     psbt: string,
     collateralDescriptor: string,
@@ -124,11 +122,6 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
 
   const getPubkeyFromContract = (contract: string) => {
     return derive_nostr_room_pk(contract);
-  };
-
-  const getNextPublicKey = async () => {
-    const key = await md5(email);
-    return get_next_pk(key);
   };
 
   const signClaimPsbt = async (
@@ -346,7 +339,6 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
     getMnemonic,
     getNsec,
     getPubkeyFromContract,
-    getNextPublicKey,
     signClaimPsbt,
     signLiquidationPsbt,
     getXpub,

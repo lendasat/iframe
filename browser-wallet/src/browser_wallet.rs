@@ -240,19 +240,6 @@ pub fn load(password: &str, key: &str) -> Result<()> {
     Ok(())
 }
 
-pub fn get_next_pk(key: &str) -> Result<String> {
-    let xpub = get_xpub(key)?;
-
-    let storage = local_storage()?;
-    let network = storage
-        .get_item::<String>(&derive_storage_key(key, NETWORK_KEY))?
-        .context("No network stored for wallet")?;
-
-    let pk = wallet::get_normal_pk_for_network(&xpub, &network)?;
-
-    Ok(pk.to_string())
-}
-
 pub fn sign_claim_psbt(
     psbt: &str,
     collateral_descriptor: &str,

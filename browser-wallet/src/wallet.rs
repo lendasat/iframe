@@ -41,11 +41,6 @@ const SECRET_KEY_ENCRYPTION_NONCE: &[u8; 12] = b"SECRET_KEY!!";
 
 const NOSTR_DERIVATION_PATH: &str = "m/44/0/0/0/0";
 
-/// Index used to derive new keypairs from the wallet's [`Xpub`].
-///
-/// At the moment, we use a constant value for simplicity, but we should change this.
-const KEY_INDEX: u32 = 0;
-
 static WALLET: LazyLock<Mutex<Option<Wallet>>> = LazyLock::new(|| Mutex::new(None));
 
 struct Wallet {
@@ -142,10 +137,6 @@ pub fn get_mnemonic() -> Result<String> {
     };
 
     Ok(mnemonic.to_string())
-}
-
-pub fn get_normal_pk_for_network(xpub: &str, network: &str) -> Result<PublicKey> {
-    get_normal_pk_for_network_and_index(xpub, network, KEY_INDEX)
 }
 
 pub fn get_normal_pk_for_network_and_index(
