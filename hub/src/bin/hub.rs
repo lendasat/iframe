@@ -82,7 +82,7 @@ async fn main() -> Result<()> {
         descriptor_wallet,
         db.clone(),
     )?;
-    let wallet = Arc::new(Mutex::new(wallet));
+    let wallet = Arc::new(wallet);
 
     let (telegram_bot_addr, telegram_bot_mailbox) = xtra::Mailbox::unbounded();
 

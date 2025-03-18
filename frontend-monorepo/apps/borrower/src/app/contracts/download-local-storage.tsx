@@ -1,9 +1,10 @@
 import type { Version } from "@frontend/base-http-client";
+import { Contract } from "@frontend/http-client-borrower";
 
-export function downloadLocalStorage(version: Version) {
-  const localStorageData = { version, ...localStorage };
+export function downloadLocalStorage(version: Version, contract: Contract) {
+  const data = { version, ...localStorage, contract };
 
-  const jsonData = JSON.stringify(localStorageData, null, 2);
+  const jsonData = JSON.stringify(data, null, 2);
 
   const blob = new Blob([jsonData], { type: "application/json" });
 

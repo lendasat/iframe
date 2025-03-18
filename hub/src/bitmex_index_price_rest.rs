@@ -1,19 +1,22 @@
+use crate::config::Config;
 use anyhow::Context;
+use bitcoin::Network;
 use rust_decimal::Decimal;
+use rust_decimal_macros::dec;
+use std::str::FromStr;
 use time::ext::NumericalDuration;
 use time::format_description;
 use time::OffsetDateTime;
 
-pub async fn get_bitmex_index_price(timestamp: OffsetDateTime) -> anyhow::Result<Decimal> {
-    #[derive(serde::Deserialize, Debug)]
-    #[serde(rename_all = "camelCase")]
-    struct Index {
-        #[serde(with = "time::serde::rfc3339")]
-        #[serde(rename = "timestamp")]
-        _timestamp: OffsetDateTime,
-        last_price: f64,
-        #[serde(rename = "reference")]
-        _reference: String,
+pub async fn get_bitmex_index_price(
+    config: &Config,
+    timestamp: OffsetDateTime,
+) -> anyhow::Result<Decimal> {
+    let network = Network::from_str(&config.network).expect("valid network");
+
+    #[cfg(debug_assertions)]
+    if !matches!(network, Network::Bitcoin) && config.use_fake_price {
+        return Ok(dec!(80_000));
     }
 
     let time_format = format_description::parse("[year]-[month]-[day] [hour]:[minute]")?;
@@ -44,4 +47,15 @@ pub async fn get_bitmex_index_price(timestamp: OffsetDateTime) -> anyhow::Result
     let index_price = Decimal::try_from(index.last_price)?;
 
     Ok(index_price)
+}
+
+#[derive(serde::Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+struct Index {
+    #[serde(with = "time::serde::rfc3339")]
+    #[serde(rename = "timestamp")]
+    _timestamp: OffsetDateTime,
+    last_price: f64,
+    #[serde(rename = "reference")]
+    _reference: String,
 }

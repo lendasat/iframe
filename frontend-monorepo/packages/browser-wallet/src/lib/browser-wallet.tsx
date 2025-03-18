@@ -3,7 +3,6 @@ import init, {
   does_wallet_exist,
   encrypt_fiat_loan_details,
   get_mnemonic,
-  get_next_pk,
   get_nsec,
   get_xpub,
   InnerFiatLoanDetails,
@@ -34,16 +33,17 @@ interface WalletContextType {
   getMnemonic: () => string;
   getNsec: () => string;
   getPubkeyFromContract: (passphrase: string) => string;
-  getNextPublicKey: () => Promise<string>;
   signClaimPsbt: (
     psbt: string,
     collateralDescriptor: string,
     borrowerPk: string,
+    derivationPath?: string,
   ) => Promise<SignedTransaction>;
   signLiquidationPsbt: (
     psbt: string,
     collateralDescriptor: string,
     borrowerPk: string,
+    derivationPath?: string,
   ) => Promise<SignedTransaction>;
   getXpub: () => Promise<string>;
   encryptFiatLoanDetailsBorrower: (
@@ -126,18 +126,19 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
     return derive_nostr_room_pk(contract);
   };
 
-  const getNextPublicKey = async () => {
-    const key = await md5(email);
-    return get_next_pk(key);
-  };
-
   const signClaimPsbt = async (
     psbt: string,
     collateralDescriptor: string,
     borrowerPk: string,
+    derivationPath?: string,
   ) => {
     if (isInitialized && isWalletLoaded) {
-      return sign_claim_psbt(psbt, collateralDescriptor, borrowerPk);
+      return sign_claim_psbt(
+        psbt,
+        collateralDescriptor,
+        borrowerPk,
+        derivationPath,
+      );
     } else {
       throw Error("Wallet not initialized");
     }
@@ -147,9 +148,15 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
     psbt: string,
     collateralDescriptor: string,
     lenderPk: string,
+    derivationPath?: string,
   ) => {
     if (isInitialized && isWalletLoaded) {
-      return sign_liquidation_psbt(psbt, collateralDescriptor, lenderPk);
+      return sign_liquidation_psbt(
+        psbt,
+        collateralDescriptor,
+        lenderPk,
+        derivationPath,
+      );
     } else {
       throw Error("Wallet not initialized");
     }
@@ -346,7 +353,6 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
     getMnemonic,
     getNsec,
     getPubkeyFromContract,
-    getNextPublicKey,
     signClaimPsbt,
     signLiquidationPsbt,
     getXpub,

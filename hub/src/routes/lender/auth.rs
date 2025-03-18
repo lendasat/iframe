@@ -622,7 +622,8 @@ async fn post_start_upgrade_to_pake(
         .filter_map(|c| match (c.lender_xpub, c.contract_index) {
             (Some(xpub), Some(index)) => Some(
                 derive_borrower_or_lender_pk(&xpub, index, matches!(network, Network::Bitcoin))
-                    .expect("valid PK"),
+                    .expect("valid PK")
+                    .0,
             ),
             _ => None,
         })

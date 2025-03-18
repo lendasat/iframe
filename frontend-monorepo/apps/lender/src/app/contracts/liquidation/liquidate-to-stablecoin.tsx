@@ -1,7 +1,7 @@
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { UnlockWalletModal, useWallet } from "@frontend/browser-wallet";
-import { useLenderHttpClient } from "@frontend/http-client-lender";
+import { useLenderHttpClient, Contract } from "@frontend/http-client-lender";
 import { useFees } from "@frontend/mempool";
 import { formatCurrency } from "@frontend/ui-shared";
 import { Box, Button, Callout, Flex, Heading, Text } from "@radix-ui/themes";
@@ -13,13 +13,11 @@ import { IoInformationCircleOutline } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
 
 export interface LiquidateToStablecoinProps {
-  repaymentAddress: string;
-  contractId: string;
+  contract: Contract;
 }
 
 export function LiquidateToStablecoin({
-  repaymentAddress,
-  contractId,
+  contract,
 }: LiquidateToStablecoinProps) {
   const { recommendedFees } = useFees();
   const { isWalletLoaded, signLiquidationPsbt } = useWallet();
@@ -102,7 +100,7 @@ export function LiquidateToStablecoin({
     }
 
     const res = await getLiquidationToStablecoinPsbt(
-      contractId,
+      contract.id,
       recommendedFees.fastestFee,
       address,
     );
@@ -113,6 +111,7 @@ export function LiquidateToStablecoin({
       res.psbt,
       res.collateral_descriptor,
       res.lender_pk,
+      contract.derivation_path,
     );
 
     console.log(`Signed liquidation PSBT '${tx.tx}'`);
@@ -134,7 +133,7 @@ export function LiquidateToStablecoin({
 
       console.log("Posting signed liquidation TX");
 
-      const txid = await postLiquidationTx(contractId, liquidationTx.tx);
+      const txid = await postLiquidationTx(contract.id, liquidationTx.tx);
 
       alert(`Liquidation transaction ${txid} was published!`);
 
@@ -189,7 +188,6 @@ export function LiquidateToStablecoin({
           show={showModal}
           handleClose={() => setShowModal(false)}
           handleConfirm={handleConfirm}
-          liquidationTx={liquidationTx}
           confirmSettleAddress={confirmSettleAddress}
           confirmSettleAmount={confirmSettleAmount}
         />
@@ -198,7 +196,7 @@ export function LiquidateToStablecoin({
         <Col>
           <Alert variant="info">
             <FontAwesomeIcon icon={faInfoCircle} /> You will receive your funds
-            at <strong>{repaymentAddress}</strong>.
+            at <strong>{contract.loan_repayment_address}</strong>.
             <br />
             <br />
             <strong>Note:</strong> We are using a third party service for the
@@ -264,7 +262,6 @@ type ConfirmationModalProps = {
   show: boolean;
   handleClose: () => void;
   handleConfirm: () => void;
-  liquidationTx: SignedTransaction;
   confirmSettleAddress: string;
   confirmSettleAmount: number;
 };
@@ -273,7 +270,6 @@ const ConfirmationModal = ({
   show,
   handleClose,
   handleConfirm,
-  liquidationTx,
   confirmSettleAddress,
   confirmSettleAmount,
 }: ConfirmationModalProps) => {

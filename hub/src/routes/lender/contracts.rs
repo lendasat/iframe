@@ -38,6 +38,7 @@ use axum::Extension;
 use axum::Json;
 use axum::Router;
 use bitcoin::address::NetworkUnchecked;
+use bitcoin::bip32::DerivationPath;
 use bitcoin::Address;
 use bitcoin::Amount;
 use bitcoin::PublicKey;
@@ -150,6 +151,8 @@ pub struct Contract {
     pub borrower_btc_address: String,
     pub borrower_loan_address: Option<String>,
     pub contract_address: Option<String>,
+    pub collateral_script: Option<String>,
+    pub derivation_path: Option<DerivationPath>,
     pub loan_repayment_address: String,
     pub borrower: BorrowerProfile,
     #[serde(with = "time::serde::rfc3339")]
@@ -239,13 +242,11 @@ pub async fn put_approve_contract(
     Extension(user): Extension<Lender>,
     body: Option<AppJson<model::FiatLoanDetailsWrapper>>,
 ) -> Result<AppJson<()>, Error> {
-    let wallet = data.wallet.lock().await;
-
     let fiat_loan_details = body.map(|f| f.0);
 
     approve_contract(
         &data.db,
-        wallet,
+        &data.wallet,
         &data.mempool,
         &data.config,
         contract_id,
@@ -441,12 +442,10 @@ async fn get_liquidation_to_bitcoin_psbt(
     Path(contract_id): Path<String>,
     query_params: Query<LiquidationPsbtQueryParams>,
 ) -> Result<Json<LiquidationPsbt>, (StatusCode, Json<ErrorResponse>)> {
-    let mut wallet = data.wallet.lock().await;
-
     let lender_address = query_params
         .address
         .clone()
-        .require_network(wallet.network())
+        .require_network(data.wallet.network())
         .map_err(|e| {
             let error_response = ErrorResponse {
                 message: format!("Invalid address: {e:#}"),
@@ -506,7 +505,7 @@ async fn get_liquidation_to_bitcoin_psbt(
         return Err((StatusCode::INTERNAL_SERVER_ERROR, Json(error_response)));
     }
 
-    let price = get_bitmex_index_price(OffsetDateTime::now_utc())
+    let price = get_bitmex_index_price(&data.config, OffsetDateTime::now_utc())
         .await
         .map_err(|e| {
             let error_response = ErrorResponse {
@@ -529,7 +528,7 @@ async fn get_liquidation_to_bitcoin_psbt(
     })?;
 
     let (collateral_descriptor, lender_pk, psbt) = contract_liquidation::prepare_liquidation_psbt(
-        &mut wallet,
+        &data.wallet,
         contract,
         lender_address.as_unchecked().clone(),
         lender_amount,
@@ -663,9 +662,8 @@ async fn post_build_liquidation_to_stablecoin_psbt(
         )
     })?;
 
-    let mut wallet = data.wallet.lock().await;
     let (collateral_descriptor, lender_pk, psbt) = contract_liquidation::prepare_liquidation_psbt(
-        &mut wallet,
+        &data.wallet,
         contract,
         shift_address,
         lender_amount,
@@ -868,12 +866,10 @@ async fn get_manual_recovery_psbt(
     Path(contract_id): Path<String>,
     query_params: Query<LiquidationPsbtQueryParams>,
 ) -> Result<Json<ManualRecoveryPsbt>, (StatusCode, Json<ErrorResponse>)> {
-    let mut wallet = data.wallet.lock().await;
-
     let lender_address = query_params
         .address
         .clone()
-        .require_network(wallet.network())
+        .require_network(data.wallet.network())
         .map_err(|e| {
             let error_response = ErrorResponse {
                 message: format!("Invalid address: {e:#}"),
@@ -948,7 +944,8 @@ async fn get_manual_recovery_psbt(
 
     let origination_fee = Amount::from_sat(contract.origination_fee_sats);
 
-    let (psbt, collateral_descriptor, lender_pk) = wallet
+    let (psbt, collateral_descriptor, lender_pk) = data
+        .wallet
         .create_liquidation_psbt(
             &contract.borrower_xpub,
             contract.borrower_pk,
@@ -1073,6 +1070,30 @@ async fn map_to_api_contract(
         })
     };
 
+    let (collateral_script, borrower_pk, lender_derivation_path) = match contract.contract_index {
+        Some(contract_index) => {
+            let (collateral_descriptor, (borrower_pk, _), (_, lender_derivation_path)) = data
+                .wallet
+                .collateral_descriptor(
+                    &contract.borrower_xpub,
+                    contract.borrower_pk,
+                    &lender_xpub,
+                    contract.contract_version,
+                    contract_index,
+                )
+                .map_err(Error::CannotBuildDescriptor)?;
+            let collateral_script = collateral_descriptor.script_code().expect("not taproot");
+            let collateral_script = collateral_script.to_hex_string();
+
+            (
+                Some(collateral_script),
+                Some(borrower_pk),
+                Some(lender_derivation_path),
+            )
+        }
+        None => (None, contract.borrower_pk, None),
+    };
+
     let contract = Contract {
         id: contract.id,
         loan_amount: contract.loan_amount,
@@ -1084,12 +1105,14 @@ async fn map_to_api_contract(
         initial_ltv: contract.initial_ltv,
         loan_asset: new_offer.loan_asset,
         status: contract.status,
-        borrower_pk: contract.borrower_pk,
+        borrower_pk,
         borrower_btc_address: contract.borrower_btc_address.assume_checked().to_string(),
         borrower_loan_address: contract.borrower_loan_address,
         contract_address: contract
             .contract_address
             .map(|c| c.assume_checked().to_string()),
+        collateral_script,
+        derivation_path: lender_derivation_path,
         loan_repayment_address: new_offer.loan_repayment_address,
         borrower: BorrowerProfile {
             id: borrower.id,
@@ -1106,7 +1129,7 @@ async fn map_to_api_contract(
         can_recover_collateral_manually,
         liquidation_price,
         borrower_xpub: contract.borrower_xpub.to_string(),
-        lender_xpub,
+        lender_xpub: lender_xpub.to_string(),
         kyc_info,
         fiat_loan_details_borrower,
         fiat_loan_details_lender,
@@ -1149,6 +1172,8 @@ enum Error {
     InvalidApproveRequest { status: ContractStatus },
     /// Referenced borrower does not exist.
     MissingBorrower,
+    /// Failed to build contract descriptor.
+    CannotBuildDescriptor(anyhow::Error),
 }
 
 impl From<JsonRejection> for Error {
@@ -1263,6 +1288,14 @@ impl IntoResponse for Error {
             }
             Error::MissingBorrower => {
                 tracing::error!("Borrower not found");
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
+            Error::CannotBuildDescriptor(e) => {
+                tracing::error!("Failed to build collateral descriptor: {e:#}");
+
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     "Something went wrong".to_owned(),

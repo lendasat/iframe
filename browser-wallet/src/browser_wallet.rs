@@ -240,23 +240,11 @@ pub fn load(password: &str, key: &str) -> Result<()> {
     Ok(())
 }
 
-pub fn get_next_pk(key: &str) -> Result<String> {
-    let xpub = get_xpub(key)?;
-
-    let storage = local_storage()?;
-    let network = storage
-        .get_item::<String>(&derive_storage_key(key, NETWORK_KEY))?
-        .context("No network stored for wallet")?;
-
-    let pk = wallet::get_normal_pk_for_network(&xpub, &network)?;
-
-    Ok(pk.to_string())
-}
-
 pub fn sign_claim_psbt(
     psbt: &str,
     collateral_descriptor: &str,
     own_pk: &str,
+    derivation_path: Option<&str>,
 ) -> Result<(String, Vec<TxOut>, bitcoin::params::Params)> {
     let psbt = hex::decode(psbt)?;
     let psbt = Psbt::deserialize(&psbt)?;
@@ -265,7 +253,14 @@ pub fn sign_claim_psbt(
 
     let own_pk = own_pk.parse()?;
 
-    let tx = wallet::sign_claim_psbt(psbt, collateral_descriptor, own_pk)?;
+    let derivation_path = derivation_path.map(|p| p.parse()).transpose()?;
+
+    let tx = wallet::sign_claim_psbt(
+        psbt,
+        collateral_descriptor,
+        own_pk,
+        derivation_path.as_ref(),
+    )?;
 
     let outputs = tx.output.clone();
     let params = wallet::consensus_params()?;
@@ -281,6 +276,7 @@ pub fn sign_liquidation_psbt(
     psbt: &str,
     collateral_descriptor: &str,
     own_pk: &str,
+    derivation_path: Option<&str>,
 ) -> Result<(String, Vec<TxOut>, bitcoin::params::Params)> {
     let psbt = hex::decode(psbt)?;
     let psbt = Psbt::deserialize(&psbt)?;
@@ -289,7 +285,14 @@ pub fn sign_liquidation_psbt(
 
     let own_pk = own_pk.parse()?;
 
-    let tx = wallet::sign_liquidation_psbt(psbt, collateral_descriptor, own_pk)?;
+    let derivation_path = derivation_path.map(|p| p.parse()).transpose()?;
+
+    let tx = wallet::sign_liquidation_psbt(
+        psbt,
+        collateral_descriptor,
+        own_pk,
+        derivation_path.as_ref(),
+    )?;
 
     let outputs = tx.output.clone();
     let params = wallet::consensus_params()?;

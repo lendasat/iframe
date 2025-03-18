@@ -47,6 +47,7 @@ function ResolveDispute() {
         res.psbt,
         res.collateral_descriptor,
         res.borrower_pk,
+        contract.derivation_path,
       );
       const txid = await postClaimTx(contract.id, claimTx.tx);
       alert(`Transaction ${txid} was published!`);

@@ -1,3 +1,4 @@
+use bitcoin::bip32::Xpub;
 use sqlx::Pool;
 use sqlx::Postgres;
 use sqlx::Result;
@@ -143,7 +144,7 @@ where
     .await
 }
 
-pub async fn get_xpub_for_lender<'a, E>(pool: E, lender_id: String) -> Result<String>
+pub async fn get_xpub_for_lender<'a, E>(pool: E, lender_id: String) -> Result<Xpub>
 where
     E: sqlx::Executor<'a, Database = Postgres>,
 {
@@ -159,6 +160,8 @@ where
     )
     .fetch_one(pool)
     .await?;
+
+    let xpub = xpub.parse().expect("valid xpub");
 
     Ok(xpub)
 }

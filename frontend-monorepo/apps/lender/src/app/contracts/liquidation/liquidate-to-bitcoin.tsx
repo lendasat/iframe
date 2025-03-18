@@ -1,7 +1,7 @@
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { UnlockWalletModal, useWallet } from "@frontend/browser-wallet";
-import { useLenderHttpClient } from "@frontend/http-client-lender";
+import { Contract, useLenderHttpClient } from "@frontend/http-client-lender";
 import { FeeSelector } from "@frontend/mempool";
 import { Box, Button, Callout, Flex, Heading, Text } from "@radix-ui/themes";
 import { Network, validate } from "bitcoin-address-validation";
@@ -12,10 +12,10 @@ import { IoInformationCircleOutline } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
 
 export interface LiquidateToBitcoinProps {
-  contractId: string;
+  contract: Contract;
 }
 
-export function LiquidateToBitcoin({ contractId }: LiquidateToBitcoinProps) {
+export function LiquidateToBitcoin({ contract }: LiquidateToBitcoinProps) {
   const { getLiquidationToBitcoinPsbt, postLiquidationTx } =
     useLenderHttpClient();
   const { isWalletLoaded, signLiquidationPsbt } = useWallet();
@@ -87,7 +87,7 @@ export function LiquidateToBitcoin({ contractId }: LiquidateToBitcoinProps) {
     }
 
     const res = await getLiquidationToBitcoinPsbt(
-      contractId,
+      contract.id,
       selectedFee,
       address,
     );
@@ -98,6 +98,7 @@ export function LiquidateToBitcoin({ contractId }: LiquidateToBitcoinProps) {
       res.psbt,
       res.collateral_descriptor,
       res.lender_pk,
+      contract.derivation_path,
     );
 
     console.log("Signed liquidation PSBT");
@@ -117,7 +118,7 @@ export function LiquidateToBitcoin({ contractId }: LiquidateToBitcoinProps) {
 
       console.log("Posting signed liquidation TX");
 
-      const txid = await postLiquidationTx(contractId, liquidationTx.tx);
+      const txid = await postLiquidationTx(contract.id, liquidationTx.tx);
 
       alert(`Liquidation transaction ${txid} was published!`);
 

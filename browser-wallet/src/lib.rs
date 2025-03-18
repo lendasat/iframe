@@ -170,20 +170,17 @@ pub fn get_mnemonic() -> Result<String, JsValue> {
 }
 
 #[wasm_bindgen]
-pub fn get_next_pk(key: String) -> Result<String, JsValue> {
-    map_err_to_js!(browser_wallet::get_next_pk(&key))
-}
-
-#[wasm_bindgen]
 pub fn sign_claim_psbt(
     psbt: String,
     collateral_descriptor: String,
     own_pk: String,
+    derivation_path: Option<String>,
 ) -> Result<SignedTransaction, JsValue> {
     let (tx, outputs, params) = map_err_to_js!(browser_wallet::sign_claim_psbt(
         &psbt,
         &collateral_descriptor,
-        &own_pk
+        &own_pk,
+        derivation_path.as_deref(),
     ))?;
 
     let outputs = map_err_to_js!(outputs
@@ -204,11 +201,13 @@ pub fn sign_liquidation_psbt(
     psbt: String,
     collateral_descriptor: String,
     own_pk: String,
+    derivation_path: Option<String>,
 ) -> Result<SignedTransaction, JsValue> {
     let (tx, outputs, params) = map_err_to_js!(browser_wallet::sign_liquidation_psbt(
         &psbt,
         &collateral_descriptor,
-        &own_pk
+        &own_pk,
+        derivation_path.as_deref(),
     ))?;
 
     let outputs = map_err_to_js!(outputs

@@ -11,6 +11,7 @@ pub struct Config {
     pub mempool_rest_url: String,
     pub mempool_ws_url: String,
     pub network: String,
+    pub use_fake_price: bool,
     pub seed_file: String,
     pub fallback_xpub: String,
     pub jwt_secret: String,
@@ -49,6 +50,12 @@ impl Config {
         let mempool_ws_url = std::env::var("MEMPOOL_WS_URL").expect("MEMPOOL_WS_URL must be set");
 
         let network = std::env::var("NETWORK").expect("NETWORK must be set");
+        let use_fake_price = {
+            let value = std::env::var("USE_FAKE_PRICE").ok();
+            let value = value.map(|v| bool::from_str(v.as_ref()).unwrap_or_default());
+
+            value.unwrap_or_default()
+        };
 
         let seed_file = std::env::var("SEED_FILE").expect("SEED_FILE must be set");
         let fallback_xpub = std::env::var("FALLBACK_XPUB").expect("FALLBACK_XPUB must be set");
@@ -152,6 +159,7 @@ impl Config {
             mempool_rest_url,
             mempool_ws_url,
             network,
+            use_fake_price,
             seed_file,
             fallback_xpub,
             jwt_secret,
