@@ -39,11 +39,11 @@ clippy:
 #     cd frontend-monorepo
 #     pnpm lint
 
-# check-frontend:
-#     #!/usr/bin/env bash
-#     set -euxo pipefail
-#     cd frontend-monorepo
-#     pnpm check-types
+check-frontend:
+    #!/usr/bin/env bash
+    set -euxo pipefail
+    cd frontend-monorepo
+    pnpm check-types
 
 ## ------------------------
 ## Test functions

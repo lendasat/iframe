@@ -4,7 +4,9 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "type": "module",
-  "scripts": {},
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
   "dependencies": {
     "@fortawesome/free-solid-svg-icons": "^6.6.0",
     "@fortawesome/react-fontawesome": "^0.2.2",
