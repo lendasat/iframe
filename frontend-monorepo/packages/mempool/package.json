@@ -5,6 +5,7 @@
   "types": "./src/index.ts",
   "type": "module",
   "scripts": {
+    "check-types": "tsc --noEmit",
     "test": "vitest"
   },
   "devDependencies": {

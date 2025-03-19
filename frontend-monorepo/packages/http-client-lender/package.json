@@ -4,7 +4,9 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "type": "module",
-  "scripts": {},
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
   "dependencies": {
     "@frontend/base-http-client": "workspace:*",
     "@frontend/http-client-borrower": "workspace:*",

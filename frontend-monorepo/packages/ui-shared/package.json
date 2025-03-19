@@ -4,6 +4,9 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "type": "module",
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
   "dependencies": {
     "@emotion/styled": "^11.10.5",
     "@fortawesome/free-solid-svg-icons": "^6.6.0",
