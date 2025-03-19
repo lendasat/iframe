@@ -58,7 +58,8 @@ jobs:
       - name: Deploy borrower
         uses: cloudflare/wrangler-action@v3
         with:
-          workingDirectory: frontend-monorepo
+          packageManager: pnpm
+          workingDirectory: 'frontend-monorepo'
           apiToken: ${{ secrets.CLOUDFLARE_SIGNET_TOKEN}}
           command: pages deploy apps/borrower/dist/ --project-name=lendasat-borrower-signet
 
