@@ -50,7 +50,7 @@ jobs:
         run: just build-frontend
 
       - name: Deploy lender
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@v3.6.0
         with:
           workingDirectory: frontend-monorepo
           apiToken: ${{ secrets.CLOUDFLARE_SIGNET_TOKEN}}
