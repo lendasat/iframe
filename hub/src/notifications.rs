@@ -113,20 +113,12 @@ impl Notifications {
         contract: Contract,
         contract_url: &str,
     ) {
-        if let Some(tgb) = &self.telegram_bot {
-            if let Err(e) = tgb
-                .send(crate::telegram_bot::Notification {
-                    user_id: lender.id.clone(),
-                    url: contract_url.to_string(),
-                    kind: crate::telegram_bot::NotificationTarget::Lender(
-                        crate::telegram_bot::LenderNotificationKind::LiquidationNotice,
-                    ),
-                })
-                .await
-            {
-                tracing::error!("Failed sending to telegram actor {e:#}");
-            }
-        }
+        self.send_tg_notification_lender(
+            &lender,
+            contract_url,
+            crate::telegram_bot::LenderNotificationKind::LiquidationNotice,
+        )
+        .await;
 
         if let Err(e) = self
             .email
@@ -138,20 +130,12 @@ impl Notifications {
     }
 
     pub async fn send_new_loan_request(&self, lender: Lender, url: &str) {
-        if let Some(tgb) = &self.telegram_bot {
-            if let Err(e) = tgb
-                .send(crate::telegram_bot::Notification {
-                    user_id: lender.id.clone(),
-                    url: url.to_string(),
-                    kind: crate::telegram_bot::NotificationTarget::Lender(
-                        crate::telegram_bot::LenderNotificationKind::NewLoanRequest,
-                    ),
-                })
-                .await
-            {
-                tracing::error!("Failed sending to telegram actor {e:#}");
-            }
-        }
+        self.send_tg_notification_lender(
+            &lender,
+            url,
+            crate::telegram_bot::LenderNotificationKind::NewLoanRequest,
+        )
+        .await;
 
         if let Err(e) = self.email.send_new_loan_request(lender, url).await {
             tracing::error!("Could not send email {e:#}");
@@ -165,20 +149,12 @@ impl Notifications {
     }
 
     pub async fn send_notification_about_auto_accepted_loan(&self, lender: Lender, url: &str) {
-        if let Some(tgb) = &self.telegram_bot {
-            if let Err(e) = tgb
-                .send(crate::telegram_bot::Notification {
-                    user_id: lender.id.clone(),
-                    url: url.to_string(),
-                    kind: crate::telegram_bot::NotificationTarget::Lender(
-                        crate::telegram_bot::LenderNotificationKind::RequestAutoApproved,
-                    ),
-                })
-                .await
-            {
-                tracing::error!("Failed sending to telegram actor {e:#}");
-            }
-        }
+        self.send_tg_notification_lender(
+            &lender,
+            url,
+            crate::telegram_bot::LenderNotificationKind::RequestAutoApproved,
+        )
+        .await;
 
         if let Err(e) = self
             .email
@@ -196,20 +172,12 @@ impl Notifications {
     }
 
     pub async fn send_loan_collateralized(&self, lender: Lender, url: &str) {
-        if let Some(tgb) = &self.telegram_bot {
-            if let Err(e) = tgb
-                .send(crate::telegram_bot::Notification {
-                    user_id: lender.id.clone(),
-                    url: url.to_string(),
-                    kind: crate::telegram_bot::NotificationTarget::Lender(
-                        crate::telegram_bot::LenderNotificationKind::Collateralized,
-                    ),
-                })
-                .await
-            {
-                tracing::error!("Failed sending to telegram actor {e:#}");
-            }
-        }
+        self.send_tg_notification_lender(
+            &lender,
+            url,
+            crate::telegram_bot::LenderNotificationKind::Collateralized,
+        )
+        .await;
 
         if let Err(e) = self.email.send_loan_collateralized(lender, url).await {
             tracing::error!("Could not send email {e:#}");
@@ -244,20 +212,12 @@ impl Notifications {
     }
 
     pub async fn send_loan_repaid(&self, lender: Lender, url: &str) {
-        if let Some(tgb) = &self.telegram_bot {
-            if let Err(e) = tgb
-                .send(crate::telegram_bot::Notification {
-                    user_id: lender.id.clone(),
-                    url: url.to_string(),
-                    kind: crate::telegram_bot::NotificationTarget::Lender(
-                        crate::telegram_bot::LenderNotificationKind::Repaid,
-                    ),
-                })
-                .await
-            {
-                tracing::error!("Failed sending to telegram actor {e:#}");
-            }
-        }
+        self.send_tg_notification_lender(
+            &lender,
+            url,
+            crate::telegram_bot::LenderNotificationKind::Repaid,
+        )
+        .await;
 
         if let Err(e) = self.email.send_loan_repaid(lender, url).await {
             tracing::error!("Could not send email {e:#}");
@@ -275,20 +235,12 @@ impl Notifications {
     }
 
     pub async fn send_loan_defaulted_lender(&self, lender: Lender, url: &str) {
-        if let Some(tgb) = &self.telegram_bot {
-            if let Err(e) = tgb
-                .send(crate::telegram_bot::Notification {
-                    user_id: lender.id.clone(),
-                    url: url.to_string(),
-                    kind: crate::telegram_bot::NotificationTarget::Lender(
-                        crate::telegram_bot::LenderNotificationKind::Defaulted,
-                    ),
-                })
-                .await
-            {
-                tracing::error!("Failed sending to telegram actor {e:#}");
-            }
-        }
+        self.send_tg_notification_lender(
+            &lender,
+            url,
+            crate::telegram_bot::LenderNotificationKind::Defaulted,
+        )
+        .await;
 
         if let Err(e) = self.email.send_loan_defaulted_lender(lender, url).await {
             tracing::error!("Could not send email {e:#}");
@@ -311,20 +263,12 @@ impl Notifications {
         }
     }
     pub async fn send_expired_loan_request_lender(&self, lender: Lender, url: &str) {
-        if let Some(tgb) = &self.telegram_bot {
-            if let Err(e) = tgb
-                .send(crate::telegram_bot::Notification {
-                    user_id: lender.id.clone(),
-                    url: url.to_string(),
-                    kind: crate::telegram_bot::NotificationTarget::Lender(
-                        crate::telegram_bot::LenderNotificationKind::RequestExpired,
-                    ),
-                })
-                .await
-            {
-                tracing::error!("Failed sending to telegram actor {e:#}");
-            }
-        }
+        self.send_tg_notification_lender(
+            &lender,
+            url,
+            crate::telegram_bot::LenderNotificationKind::RequestExpired,
+        )
+        .await;
 
         if let Err(e) = self
             .email
@@ -332,6 +276,26 @@ impl Notifications {
             .await
         {
             tracing::error!("Could not send email {e:#}");
+        }
+    }
+
+    async fn send_tg_notification_lender(
+        &self,
+        lender: &Lender,
+        contract_url: &str,
+        kind: crate::telegram_bot::LenderNotificationKind,
+    ) {
+        if let Some(tgb) = &self.telegram_bot {
+            if let Err(e) = tgb
+                .send(crate::telegram_bot::Notification {
+                    user_id: lender.id.clone(),
+                    url: contract_url.to_string(),
+                    kind: crate::telegram_bot::NotificationTarget::Lender(kind),
+                })
+                .await
+            {
+                tracing::error!("Failed sending to telegram actor {e:#}");
+            }
         }
     }
 }
