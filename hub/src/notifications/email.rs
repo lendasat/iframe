@@ -704,4 +704,58 @@ impl Email {
         )
         .await
     }
+
+    pub async fn send_new_chat_message_notification_lender(
+        &self,
+        lender: Lender,
+        create_new_offer_url: &str,
+    ) -> Result<()> {
+        let template_name = "new_chat_notification";
+        let handlebars = Self::prepare_template(template_name)?;
+
+        let data = serde_json::json!({
+            "first_name": &lender.name,
+            "subject": &template_name,
+            "url": create_new_offer_url
+        });
+
+        let content_template = handlebars.render(template_name, &data)?;
+
+        self.send_email(
+            "A contract request expired without response",
+            lender.name.as_str(),
+            lender.email.as_str(),
+            content_template,
+        )
+        .await
+    }
+
+    pub async fn send_new_chat_message_notification_borrower(
+        &self,
+        borrower: Borrower,
+        create_new_offer_url: &str,
+    ) -> Result<()> {
+        let template_name = "new_chat_notification";
+        let handlebars = Self::prepare_template(template_name)?;
+
+        let data = serde_json::json!({
+            "first_name": &borrower.name,
+            "subject": &template_name,
+            "url": create_new_offer_url
+        });
+
+        let content_template = handlebars.render(template_name, &data)?;
+
+        if let Some(email) = borrower.email {
+            self.send_email(
+                "A contract request expired without response",
+                borrower.name.as_str(),
+                email.as_str(),
+                content_template,
+            )
+            .await?;
+        }
+
+        Ok(())
+    }
 }

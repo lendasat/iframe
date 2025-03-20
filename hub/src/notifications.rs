@@ -365,6 +365,45 @@ impl Notifications {
         }
     }
 
+    pub async fn send_chat_notification_lender(&self, lender: Lender, contract_url: &str) {
+        tracing::debug!("Sending notitifaciton lender");
+
+        self.send_tg_notification_lender(
+            &lender,
+            contract_url,
+            crate::telegram_bot::LenderNotificationKind::NewChatMessage {
+                name: lender.name.clone(),
+            },
+        )
+        .await;
+        if let Err(e) = self
+            .email
+            .send_new_chat_message_notification_lender(lender, contract_url)
+            .await
+        {
+            tracing::error!("Could not send email {e:#}");
+        }
+    }
+    pub async fn send_chat_notification_borrower(&self, borrower: Borrower, contract_url: &str) {
+        tracing::debug!("Sending notitifaciton borrower ");
+        self.send_tg_notification_borrower(
+            &borrower,
+            contract_url,
+            crate::telegram_bot::BorrowerNotificationKind::NewChatMessage {
+                name: borrower.name.clone(),
+            },
+        )
+        .await;
+
+        if let Err(e) = self
+            .email
+            .send_new_chat_message_notification_borrower(borrower, contract_url)
+            .await
+        {
+            tracing::error!("Could not send email {e:#}");
+        }
+    }
+
     async fn send_tg_notification_lender(
         &self,
         lender: &Lender,

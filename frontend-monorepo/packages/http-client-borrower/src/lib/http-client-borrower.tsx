@@ -20,6 +20,7 @@ import {
   LoanApplication,
   LoanOffer,
   LoanRequest,
+  NotifyUser,
   postLoanApplication,
   PutUpdateProfile,
   UserCardDetail,
@@ -606,6 +607,24 @@ export class HttpClientBorrower extends BaseHttpClient {
       }
     }
   }
+
+  async newChatNotification(request: NotifyUser): Promise<void> {
+    try {
+      await this.httpClient.post("/api/chat/notification", request);
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to send notification ${
+            error.response?.status
+          } and response: ${JSON.stringify(error.response?.data)}`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not send notification: ${JSON.stringify(error)}`);
+      }
+    }
+  }
 }
 
 type BorrowerHttpClientContextType = Pick<
@@ -631,6 +650,7 @@ type BorrowerHttpClientContextType = Pick<
   | "getUserCards"
   | "getCardTransactions"
   | "putUpdateProfile"
+  | "newChatNotification"
 >;
 
 export const BorrowerHttpClientContext = createContext<
@@ -732,6 +752,7 @@ export const HttpClientBorrowerProvider: React.FC<HttpClientProviderProps> = ({
     getUserCards: httpClient.getUserCards.bind(httpClient),
     getCardTransactions: httpClient.getCardTransactions.bind(httpClient),
     putUpdateProfile: httpClient.putUpdateProfile.bind(httpClient),
+    newChatNotification: httpClient.newChatNotification.bind(httpClient),
   };
 
   return (

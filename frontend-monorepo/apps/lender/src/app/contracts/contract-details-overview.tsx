@@ -102,7 +102,7 @@ interface DetailsProps {
 }
 
 function ContractDetails({ contract }: DetailsProps) {
-  const { startDispute } = useLenderHttpClient();
+  const { startDispute, newChatNotification } = useLenderHttpClient();
   const { backendVersion } = useAuth();
 
   const [info, setInfo] = useState("");
@@ -207,6 +207,11 @@ function ContractDetails({ contract }: DetailsProps) {
       <ChatDrawer
         contractId={contract.id}
         counterpartyXPub={contract.borrower_xpub}
+        onNewMsgSent={async () => {
+          await newChatNotification({
+            contract_id: contract.id,
+          });
+        }}
       />
       <Box className="border-font/10 dark:border-font-dark/10 border-r">
         <Box className="border-font/10 dark:border-font-dark/10 border-b p-6 md:pl-8">

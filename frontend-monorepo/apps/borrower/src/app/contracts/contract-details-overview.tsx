@@ -181,6 +181,7 @@ interface DetailsProps {
 
 function ContractDetails({ contract }: DetailsProps) {
   const { backendVersion } = useAuth();
+  const { newChatNotification } = useBorrowerHttpClient();
 
   const [showAddCollateralModal, setShowAddCollateralModal] = useState(false);
 
@@ -294,6 +295,11 @@ function ContractDetails({ contract }: DetailsProps) {
       <ChatDrawer
         contractId={contract.id}
         counterpartyXPub={contract.lender_xpub}
+        onNewMsgSent={async () => {
+          await newChatNotification({
+            contract_id: contract.id,
+          });
+        }}
       />
 
       <Box className="border-font/10 dark:border-font-dark/10 border-b p-6 md:pl-8">

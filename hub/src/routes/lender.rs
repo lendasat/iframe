@@ -23,6 +23,7 @@ use tower_http::services::ServeFile;
 
 pub(crate) mod api_keys;
 pub(crate) mod auth;
+pub(crate) mod chat;
 pub(crate) mod contracts;
 pub(crate) mod dispute;
 pub(crate) mod health_check;
@@ -40,6 +41,7 @@ pub async fn spawn_lender_server(
         health_check::router()
             .merge(auth::router(app_state.clone()))
             .merge(profile::router(app_state.clone()))
+            .merge(chat::router(app_state.clone()))
             .merge(version::router(app_state.clone()))
             .merge(loan_offers::router(app_state.clone()))
             .merge(contracts::router(app_state.clone()))
