@@ -178,7 +178,18 @@ pub enum LenderNotificationKind {
     RequestExpired,
 }
 
-pub enum BorrowerNotificationKind {}
+pub enum BorrowerNotificationKind {
+    MarginCall,
+    LiquidationNotice,
+    RequestApproved,
+    RequestRejected,
+    LoanPaidOut,
+    CloseToExpiry,
+    MoonCardReady,
+    LiquidatedAfterDefault,
+    LoanDefaulted,
+    LoanRequestExpired,
+}
 
 impl xtra::Handler<Notification> for TelegramBot {
     type Return = ();
@@ -229,8 +240,68 @@ impl xtra::Handler<Notification> for TelegramBot {
                     url,
                 ), true)
             }
-            _ => {
-                unimplemented!()
+
+            NotificationTarget::Borrower(BorrowerNotificationKind::RequestApproved) => {
+                (format!(
+                    "Congratulations. Your loan request has been approved. Please log in to fund your contract \n\n[Contract Details]({})",
+                    url,
+                ), false)
+            }
+            NotificationTarget::Borrower(BorrowerNotificationKind::MarginCall) => {
+                (format!(
+                    "You have received a margin call for your loan contract. Please log in and add more collateral to avoid liquidation \n\n[Contract Details]({})",
+                    url,
+                ), false)
+            }
+            NotificationTarget::Borrower(BorrowerNotificationKind::LiquidationNotice) => {
+                (format!(
+                    "The reference price of XBTUSD recently dropped below your liquidation price. Because of this, your position has been taken over by the Liquidation Engine \n\n[Details]({})",
+                    url,
+                ), false)
+            }
+            NotificationTarget::Borrower(BorrowerNotificationKind::RequestRejected) => {
+                (format!(
+                    "Unfortunately, the lender declined your loan request. Feel free to request a new one from a different lender. \n\n[Details]({})",
+                    url,
+                ), false)
+            }
+            NotificationTarget::Borrower(BorrowerNotificationKind::LoanPaidOut) => {
+                (format!(
+                    "Congratulations! The lender sent the loan amount to your address. \n\n[Create New Offer]({})",
+                    url,
+                ), false)
+            }
+            NotificationTarget::Borrower(BorrowerNotificationKind::CloseToExpiry) => {
+                (format!(
+                    "Your loan is about to expire. Make sure to repay your loan or your collateral will get liquidated \n\n[Contract Details]({})",
+                    url,
+                ), false)
+            }
+            NotificationTarget::Borrower(BorrowerNotificationKind::MoonCardReady) => {
+                (format!(
+                    "Your debit card has been funded. Happy shopping 🥳 \n\n[Details]({})",
+                    url,
+                ), false)
+            }
+            NotificationTarget::Borrower(BorrowerNotificationKind::LiquidatedAfterDefault) => {
+                (format!(
+                    "We regret to inform you that you have defaulted on your loan. As such, the lender was able to liquidate your loan for their share of the collateral.
+                          Any remaining sats have been sent to your refund address.
+                          You can visit your contract details page for more info. \n\n[Contract Details]({})",
+                    url,
+                ), false)
+            }
+            NotificationTarget::Borrower(BorrowerNotificationKind::LoanDefaulted) => {
+                (format!(
+                    "Your loan has expired and your collateral will be liquidated. \n\n[Contract Details]({})",
+                    url,
+                ), false)
+            }
+            NotificationTarget::Borrower(BorrowerNotificationKind::LoanRequestExpired) => {
+                (format!(
+                    "Unfortunately, the lender did not respond in time to your contract request. As such, the request was cancelled. You can log in to have a look at other offers. \n\n[Find New Offer]({})",
+                    url,
+                ), false)
             }
         };
 

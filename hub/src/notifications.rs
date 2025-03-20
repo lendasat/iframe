@@ -76,15 +76,22 @@ impl Notifications {
 
     pub async fn send_borrower_margin_call(
         &self,
-        user: Borrower,
+        borrower: Borrower,
         contract: Contract,
         price: Decimal,
         current_ltv: Decimal,
         contract_url: &str,
     ) {
+        self.send_tg_notification_borrower(
+            &borrower,
+            contract_url,
+            crate::telegram_bot::BorrowerNotificationKind::MarginCall,
+        )
+        .await;
+
         if let Err(e) = self
             .email
-            .send_user_about_margin_call(user, contract, price, current_ltv, contract_url)
+            .send_user_about_margin_call(borrower, contract, price, current_ltv, contract_url)
             .await
         {
             tracing::error!("Could not send email {e:#}");
@@ -98,6 +105,13 @@ impl Notifications {
         price: Decimal,
         contract_url: &str,
     ) {
+        self.send_tg_notification_borrower(
+            &borrower,
+            contract_url,
+            crate::telegram_bot::BorrowerNotificationKind::LiquidationNotice,
+        )
+        .await;
+
         if let Err(e) = self
             .email
             .send_liquidation_notice_borrower(borrower, contract, price, contract_url)
@@ -142,8 +156,19 @@ impl Notifications {
         }
     }
 
-    pub async fn send_loan_request_approved(&self, borrower: Borrower, url: &str) {
-        if let Err(e) = self.email.send_loan_request_approved(borrower, url).await {
+    pub async fn send_loan_request_approved(&self, borrower: Borrower, contract_url: &str) {
+        self.send_tg_notification_borrower(
+            &borrower,
+            contract_url,
+            crate::telegram_bot::BorrowerNotificationKind::RequestApproved,
+        )
+        .await;
+
+        if let Err(e) = self
+            .email
+            .send_loan_request_approved(borrower, contract_url)
+            .await
+        {
             tracing::error!("Could not send email {e:#}");
         }
     }
@@ -165,8 +190,19 @@ impl Notifications {
         }
     }
 
-    pub async fn send_loan_request_rejected(&self, borrower: Borrower, url: &str) {
-        if let Err(e) = self.email.send_loan_request_rejected(borrower, url).await {
+    pub async fn send_loan_request_rejected(&self, borrower: Borrower, contract_url: &str) {
+        self.send_tg_notification_borrower(
+            &borrower,
+            contract_url,
+            crate::telegram_bot::BorrowerNotificationKind::RequestRejected,
+        )
+        .await;
+
+        if let Err(e) = self
+            .email
+            .send_loan_request_rejected(borrower, contract_url)
+            .await
+        {
             tracing::error!("Could not send email {e:#}");
         }
     }
@@ -184,29 +220,54 @@ impl Notifications {
         }
     }
 
-    pub async fn send_loan_paid_out(&self, user: Borrower, url: &str) {
-        if let Err(e) = self.email.send_loan_paid_out(user, url).await {
+    pub async fn send_loan_paid_out(&self, borrower: Borrower, contract_url: &str) {
+        self.send_tg_notification_borrower(
+            &borrower,
+            contract_url,
+            crate::telegram_bot::BorrowerNotificationKind::LoanPaidOut,
+        )
+        .await;
+
+        if let Err(e) = self.email.send_loan_paid_out(borrower, contract_url).await {
             tracing::error!("Could not send email {e:#}");
         }
     }
 
     pub async fn send_close_to_expiry_contract(
         &self,
-        user: Borrower,
+        borrower: Borrower,
         expiry_date: &str,
-        url: &str,
+        contract_url: &str,
     ) {
+        self.send_tg_notification_borrower(
+            &borrower,
+            contract_url,
+            crate::telegram_bot::BorrowerNotificationKind::CloseToExpiry,
+        )
+        .await;
+
         if let Err(e) = self
             .email
-            .send_close_to_expiry_contract(user, expiry_date, url)
+            .send_close_to_expiry_contract(borrower, expiry_date, contract_url)
             .await
         {
             tracing::error!("Could not send email {e:#}");
         }
     }
 
-    pub async fn send_moon_card_ready(&self, user: Borrower, url: &str) {
-        if let Err(e) = self.email.send_moon_card_ready(user, url).await {
+    pub async fn send_moon_card_ready(&self, borrower: Borrower, contract_url: &str) {
+        self.send_tg_notification_borrower(
+            &borrower,
+            contract_url,
+            crate::telegram_bot::BorrowerNotificationKind::MoonCardReady,
+        )
+        .await;
+
+        if let Err(e) = self
+            .email
+            .send_moon_card_ready(borrower, contract_url)
+            .await
+        {
             tracing::error!("Could not send email {e:#}");
         }
     }
@@ -224,10 +285,17 @@ impl Notifications {
         }
     }
 
-    pub async fn send_loan_liquidated_after_default(&self, user: Borrower, url: &str) {
+    pub async fn send_loan_liquidated_after_default(&self, borrower: Borrower, contract_url: &str) {
+        self.send_tg_notification_borrower(
+            &borrower,
+            contract_url,
+            crate::telegram_bot::BorrowerNotificationKind::LiquidatedAfterDefault,
+        )
+        .await;
+
         if let Err(e) = self
             .email
-            .send_loan_liquidated_after_default(user, url)
+            .send_loan_liquidated_after_default(borrower, contract_url)
             .await
         {
             tracing::error!("Could not send email {e:#}");
@@ -247,16 +315,34 @@ impl Notifications {
         }
     }
 
-    pub async fn send_loan_defaulted_borrower(&self, user: Borrower, url: &str) {
-        if let Err(e) = self.email.send_loan_defaulted_borrower(user, url).await {
+    pub async fn send_loan_defaulted_borrower(&self, borrower: Borrower, contract_url: &str) {
+        self.send_tg_notification_borrower(
+            &borrower,
+            contract_url,
+            crate::telegram_bot::BorrowerNotificationKind::LoanDefaulted,
+        )
+        .await;
+
+        if let Err(e) = self
+            .email
+            .send_loan_defaulted_borrower(borrower, contract_url)
+            .await
+        {
             tracing::error!("Could not send email {e:#}");
         }
     }
 
-    pub async fn send_expired_loan_request_borrower(&self, borrower: Borrower, url: &str) {
+    pub async fn send_expired_loan_request_borrower(&self, borrower: Borrower, contract_url: &str) {
+        self.send_tg_notification_borrower(
+            &borrower,
+            contract_url,
+            crate::telegram_bot::BorrowerNotificationKind::LoanRequestExpired,
+        )
+        .await;
+
         if let Err(e) = self
             .email
-            .send_expired_loan_request_borrower(borrower, url)
+            .send_expired_loan_request_borrower(borrower, contract_url)
             .await
         {
             tracing::error!("Could not send email {e:#}");
@@ -291,6 +377,26 @@ impl Notifications {
                     user_id: lender.id.clone(),
                     url: contract_url.to_string(),
                     kind: crate::telegram_bot::NotificationTarget::Lender(kind),
+                })
+                .await
+            {
+                tracing::error!("Failed sending to telegram actor {e:#}");
+            }
+        }
+    }
+
+    async fn send_tg_notification_borrower(
+        &self,
+        borrower: &Borrower,
+        contract_url: &str,
+        kind: crate::telegram_bot::BorrowerNotificationKind,
+    ) {
+        if let Some(tgb) = &self.telegram_bot {
+            if let Err(e) = tgb
+                .send(crate::telegram_bot::Notification {
+                    user_id: borrower.id.clone(),
+                    url: contract_url.to_string(),
+                    kind: crate::telegram_bot::NotificationTarget::Borrower(kind),
                 })
                 .await
             {
