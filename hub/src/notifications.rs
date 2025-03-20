@@ -116,9 +116,11 @@ impl Notifications {
         if let Some(tgb) = &self.telegram_bot {
             if let Err(e) = tgb
                 .send(crate::telegram_bot::Notification {
-                    lender_id: lender.id.clone(),
+                    user_id: lender.id.clone(),
                     url: contract_url.to_string(),
-                    kind: crate::telegram_bot::NotificationKind::LiquidationNotice,
+                    kind: crate::telegram_bot::NotificationTarget::Lender(
+                        crate::telegram_bot::LenderNotificationKind::LiquidationNotice,
+                    ),
                 })
                 .await
             {
@@ -139,9 +141,11 @@ impl Notifications {
         if let Some(tgb) = &self.telegram_bot {
             if let Err(e) = tgb
                 .send(crate::telegram_bot::Notification {
-                    lender_id: lender.id.clone(),
+                    user_id: lender.id.clone(),
                     url: url.to_string(),
-                    kind: crate::telegram_bot::NotificationKind::NewLoanRequest,
+                    kind: crate::telegram_bot::NotificationTarget::Lender(
+                        crate::telegram_bot::LenderNotificationKind::NewLoanRequest,
+                    ),
                 })
                 .await
             {
@@ -164,9 +168,11 @@ impl Notifications {
         if let Some(tgb) = &self.telegram_bot {
             if let Err(e) = tgb
                 .send(crate::telegram_bot::Notification {
-                    lender_id: lender.id.clone(),
+                    user_id: lender.id.clone(),
                     url: url.to_string(),
-                    kind: crate::telegram_bot::NotificationKind::RequestAutoApproved,
+                    kind: crate::telegram_bot::NotificationTarget::Lender(
+                        crate::telegram_bot::LenderNotificationKind::RequestAutoApproved,
+                    ),
                 })
                 .await
             {
@@ -193,9 +199,11 @@ impl Notifications {
         if let Some(tgb) = &self.telegram_bot {
             if let Err(e) = tgb
                 .send(crate::telegram_bot::Notification {
-                    lender_id: lender.id.clone(),
+                    user_id: lender.id.clone(),
                     url: url.to_string(),
-                    kind: crate::telegram_bot::NotificationKind::Collateralized,
+                    kind: crate::telegram_bot::NotificationTarget::Lender(
+                        crate::telegram_bot::LenderNotificationKind::Collateralized,
+                    ),
                 })
                 .await
             {
@@ -239,9 +247,11 @@ impl Notifications {
         if let Some(tgb) = &self.telegram_bot {
             if let Err(e) = tgb
                 .send(crate::telegram_bot::Notification {
-                    lender_id: lender.id.clone(),
+                    user_id: lender.id.clone(),
                     url: url.to_string(),
-                    kind: crate::telegram_bot::NotificationKind::Repaid,
+                    kind: crate::telegram_bot::NotificationTarget::Lender(
+                        crate::telegram_bot::LenderNotificationKind::Repaid,
+                    ),
                 })
                 .await
             {
@@ -268,9 +278,11 @@ impl Notifications {
         if let Some(tgb) = &self.telegram_bot {
             if let Err(e) = tgb
                 .send(crate::telegram_bot::Notification {
-                    lender_id: lender.id.clone(),
+                    user_id: lender.id.clone(),
                     url: url.to_string(),
-                    kind: crate::telegram_bot::NotificationKind::Defaulted,
+                    kind: crate::telegram_bot::NotificationTarget::Lender(
+                        crate::telegram_bot::LenderNotificationKind::Defaulted,
+                    ),
                 })
                 .await
             {
@@ -302,9 +314,11 @@ impl Notifications {
         if let Some(tgb) = &self.telegram_bot {
             if let Err(e) = tgb
                 .send(crate::telegram_bot::Notification {
-                    lender_id: lender.id.clone(),
+                    user_id: lender.id.clone(),
                     url: url.to_string(),
-                    kind: crate::telegram_bot::NotificationKind::RequestExpired,
+                    kind: crate::telegram_bot::NotificationTarget::Lender(
+                        crate::telegram_bot::LenderNotificationKind::RequestExpired,
+                    ),
                 })
                 .await
             {

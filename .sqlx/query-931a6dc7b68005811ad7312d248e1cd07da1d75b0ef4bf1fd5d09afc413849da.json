@@ -1,11 +1,11 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT \n            i.lender_id, \n            i.chat_id,\n            l.name as \"lender_name!\"\n        FROM \n            telegram_bot_chat_ids i\n            JOIN lenders l ON l.id = i.lender_id\n        WHERE \n            i.lender_id = $1\n        ",
+  "query": "\n        SELECT \n            i.lender_id as user_id, \n            i.chat_id,\n            l.name as \"user_name!\"\n        FROM \n            telegram_bot_chat_ids_lender i\n            JOIN lenders l ON l.id = i.lender_id\n        WHERE \n            i.lender_id = $1\n        ",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "lender_id",
+        "name": "user_id",
         "type_info": "Bpchar"
       },
       {
@@ -15,7 +15,7 @@
       },
       {
         "ordinal": 2,
-        "name": "lender_name!",
+        "name": "user_name!",
         "type_info": "Varchar"
       }
     ],
@@ -30,5 +30,5 @@
       false
     ]
   },
-  "hash": "87d13ac31ae88e9dd61bf6a8b2f2a16d000239e06ea20c88c57253acf86983f8"
+  "hash": "931a6dc7b68005811ad7312d248e1cd07da1d75b0ef4bf1fd5d09afc413849da"
 }

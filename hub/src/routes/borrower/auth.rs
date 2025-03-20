@@ -7,6 +7,7 @@ use crate::db::borrowers::register_password_auth_user;
 use crate::db::borrowers::update_password_reset_token_for_user;
 use crate::db::borrowers::user_exists;
 use crate::db::borrowers::verify_user;
+use crate::db::telegram_bot::TelegramBotToken;
 use crate::db::waitlist::WaitlistRole;
 use crate::db::wallet_backups::NewBorrowerWalletBackup;
 use crate::model;
@@ -290,6 +291,7 @@ struct FilteredUser {
     used_referral_code: Option<String>,
     personal_referral_codes: Vec<PersonalReferralCode>,
     timezone: Option<String>,
+    personal_telegram_token: String,
     #[serde(with = "rust_decimal::serde::float")]
     first_time_discount_rate: Decimal,
     #[serde(with = "time::serde::rfc3339")]
@@ -329,7 +331,11 @@ impl From<model::PersonalReferralCode> for PersonalReferralCode {
 }
 
 impl FilteredUser {
-    fn new_user(user: &Borrower, password_auth_info: &PasswordAuth) -> Self {
+    fn new_user(
+        user: &Borrower,
+        password_auth_info: &PasswordAuth,
+        personal_telegram_token: TelegramBotToken,
+    ) -> Self {
         let created_at_utc = user.created_at;
         let updated_at_utc = user.updated_at;
         Self {
@@ -346,6 +352,7 @@ impl FilteredUser {
                 .collect(),
             first_time_discount_rate: user.first_time_discount_rate_referee.unwrap_or_default(),
             timezone: user.timezone.clone(),
+            personal_telegram_token: personal_telegram_token.token,
             created_at: created_at_utc,
             updated_at: updated_at_utc,
         }
@@ -513,7 +520,12 @@ async fn post_pake_verify(
         });
     }
 
-    let filtered_user = FilteredUser::new_user(&user, &password_auth_info);
+    let personal_telegram_token =
+        db::telegram_bot::borrower::get_or_create_token_by_borrower_id(&data.db, user.id.as_str())
+            .await
+            .map_err(|error| Error::Database(anyhow!(error)))?;
+
+    let filtered_user = FilteredUser::new_user(&user, &password_auth_info, personal_telegram_token);
 
     let wallet_backup = db::wallet_backups::find_by_borrower_id(&data.db, borrower_id)
         .await
@@ -1013,7 +1025,17 @@ async fn get_me_handler(
     State(data): State<Arc<AppState>>,
     Extension((user, password_auth_info)): Extension<(Borrower, PasswordAuth)>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let filtered_user = FilteredUser::new_user(&user, &password_auth_info);
+    let personal_telegram_token =
+        db::telegram_bot::borrower::get_or_create_token_by_borrower_id(&data.db, user.id.as_str())
+            .await
+            .map_err(|error| {
+                let error_response = ErrorResponse {
+                    message: format!("Database error: {}", error),
+                };
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+            })?;
+
+    let filtered_user = FilteredUser::new_user(&user, &password_auth_info, personal_telegram_token);
 
     let features = db::borrower_features::load_borrower_features(&data.db, user.id.clone())
         .await

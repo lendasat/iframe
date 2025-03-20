@@ -100,18 +100,14 @@ impl xtra::Handler<Register> for TelegramBot {
         {
             Ok(token) => {
                 tracing::debug!(
-                    lender_id = token.lender_id,
+                    lender_id = token.user_id,
                     chat_id = message.id,
                     "Registered new chat for user"
                 );
 
                 build_message(
                     message.id.clone(),
-                    format!(
-                        "Welcome, {}. Registration was successful",
-                        token.lender_name
-                    )
-                    .as_str(),
+                    format!("Welcome, {}. Registration was successful", token.user_name).as_str(),
                 )
             }
             Err(error) => {
@@ -144,12 +140,7 @@ impl xtra::Handler<Unregister> for TelegramBot {
     type Return = Result<()>;
 
     async fn handle(&mut self, message: Unregister, _ctx: &mut Context<Self>) -> Self::Return {
-        match db::telegram_bot::delete_telegram_bot_chat_id_for_lender(
-            &self.db,
-            message.id.as_str(),
-        )
-        .await
-        {
+        match db::telegram_bot::delete_telegram_bot_chat_id(&self.db, message.id.as_str()).await {
             Ok(_) => {
                 let response =
                     build_message(message.id.clone(), "You won't receive any more updates");
@@ -167,12 +158,17 @@ impl xtra::Handler<Unregister> for TelegramBot {
 }
 
 pub struct Notification {
-    pub lender_id: String,
+    pub user_id: String,
     pub url: String,
-    pub kind: NotificationKind,
+    pub kind: NotificationTarget,
 }
 
-pub enum NotificationKind {
+pub enum NotificationTarget {
+    Borrower(BorrowerNotificationKind),
+    Lender(LenderNotificationKind),
+}
+
+pub enum LenderNotificationKind {
     NewLoanRequest,
     Collateralized,
     Repaid,
@@ -182,58 +178,71 @@ pub enum NotificationKind {
     RequestExpired,
 }
 
+pub enum BorrowerNotificationKind {}
+
 impl xtra::Handler<Notification> for TelegramBot {
     type Return = ();
 
     async fn handle(&mut self, message: Notification, _ctx: &mut Context<Self>) -> Self::Return {
         let url = message.url;
 
-        let text = match message.kind {
-            NotificationKind::NewLoanRequest => {
-                format!(
+        let (text, is_lender) = match message.kind {
+            NotificationTarget::Lender(LenderNotificationKind::NewLoanRequest) => {
+                (format!(
                     "You have received a new loan request! \n\nApprove or reject the request [here]({})",
                     url,
-                )
+                ), true)
             }
-            NotificationKind::RequestAutoApproved => {
-                format!(
+            NotificationTarget::Lender(LenderNotificationKind::RequestAutoApproved) => {
+                (format!(
                     "You have received a new loan request! \nThe request was automatically approved, as per your configuration. \n\nThe contract details can be found [here]({})",
                     url,
-                )
+                ), true)
             }
-            NotificationKind::Collateralized => {
-                format!(
+            NotificationTarget::Lender(LenderNotificationKind::Collateralized) => {
+                (format!(
                     "A borrower has deposited the Bitcoin collateral for one of your loans. It's your turn to disburse the funds. \n\nYou can find the borrower's loan address [here]({})",
                     url,
-                )
+                ), true)
             }
-            NotificationKind::Repaid => {
-                format!(
+            NotificationTarget::Lender(LenderNotificationKind::Repaid) => {
+                (format!(
                     "One of your loans has been repaid according to the borrower. You must confirm the repayment in order to release the borrower's collateral. \n\nConfirm the repayment [here]({})",
                     url,
-                )
+                ), true)
             }
-            NotificationKind::Defaulted => {
-                format!(
+            NotificationTarget::Lender(LenderNotificationKind::Defaulted) => {
+                (format!(
                     "A borrower has defaulted on one of your loans. \n\n Liquidate the collateral [here]({})",
                     url,
-                )
+                ), true)
             }
-            NotificationKind::LiquidationNotice => {
-                format!(
+            NotificationTarget::Lender(LenderNotificationKind::LiquidationNotice) => {
+                (format!(
                     "A loan is under collateralized. Please log in to liquidate the contract. \n\n[Contract details]({})",
                     url,
-                )
+                ), true)
             }
-            NotificationKind::RequestExpired => {
-                format!(
+            NotificationTarget::Lender(LenderNotificationKind::RequestExpired) => {
+                (format!(
                     "You did not respond in time. We have marked the loan request as expired and marked your loan offer as unavailable. Please log in to create a new offer whenever you are available \n\n[Create New Offer]({})",
                     url,
-                )
+                ), true)
+            }
+            _ => {
+                unimplemented!()
             }
         };
 
-        match db::telegram_bot::get_chat_ids_by_lender(&self.db, message.lender_id.as_str()).await {
+        let chat_ids = if is_lender {
+            db::telegram_bot::lender::get_chat_ids_by_lender(&self.db, message.user_id.as_str())
+                .await
+        } else {
+            db::telegram_bot::borrower::get_chat_ids_by_borrower(&self.db, message.user_id.as_str())
+                .await
+        };
+
+        match chat_ids {
             Ok(chat_ids) => {
                 for chat_id in chat_ids
                     .iter()

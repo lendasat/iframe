@@ -39,7 +39,7 @@ pub struct Config {
     pub sideshift_affiliate_id: String,
     pub sideshift_commision_rate: Option<Decimal>,
     pub fake_client_ip: Option<String>,
-    pub telegram_bot_lender: Option<String>,
+    pub telegram_bot_token: Option<String>,
 }
 
 impl Config {
@@ -152,7 +152,7 @@ impl Config {
         let sideshift_commision_rate = sideshift_commision_rate
             .map(|rate| Decimal::from_str(rate.as_str()).expect("to be a decimal"));
         let fake_client_ip = std::env::var("FAKE_CLIENT_IP").ok();
-        let telegram_bot_lender = std::env::var("TELEGRAM_TOKEN_LENDER").ok();
+        let telegram_bot_token = std::env::var("TELEGRAM_TOKEN").ok();
 
         Config {
             database_url,
@@ -192,7 +192,7 @@ impl Config {
             sideshift_affiliate_id,
             sideshift_commision_rate,
             fake_client_ip,
-            telegram_bot_lender,
+            telegram_bot_token,
         }
     }
 }

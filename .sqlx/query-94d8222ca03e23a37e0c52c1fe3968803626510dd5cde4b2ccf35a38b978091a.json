@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT \n            i.borrower_id as user_id, \n            i.chat_id,\n            l.name as \"user_name!\"\n        FROM \n            telegram_bot_chat_ids_borrower i\n            JOIN borrowers l ON l.id = i.borrower_id\n        WHERE \n            i.borrower_id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "chat_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "user_name!",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bpchar"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "94d8222ca03e23a37e0c52c1fe3968803626510dd5cde4b2ccf35a38b978091a"
+}

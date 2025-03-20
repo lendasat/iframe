@@ -1,0 +1,36 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            WITH upsert AS (\n                INSERT INTO telegram_bot_chat_ids_borrower (\n                    id, borrower_id, chat_id\n                )\n                VALUES (\n                    $1, $2, $3\n                )\n                RETURNING id, borrower_id, chat_id\n            )\n            SELECT \n                u.borrower_id as user_id,\n                u.chat_id,\n                l.name as \"user_name!\"\n            FROM upsert u\n            JOIN borrowers l ON l.id = u.borrower_id\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "chat_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "user_name!",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Bpchar",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "30671325a4f51311ed3d4b7ecb35bfcf341cbe127c78626b887a4cc3c8c1150a"
+}
