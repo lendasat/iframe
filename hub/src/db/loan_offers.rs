@@ -325,7 +325,7 @@ pub async fn insert_loan_offer(
     let id = uuid::Uuid::new_v4().to_string();
     let status = LoanOfferStatus::Available;
 
-    // First, insert the loan opportunity
+    // First, insert the loan deal.
     sqlx::query!(
         r#"
         INSERT INTO loan_deals (
@@ -552,13 +552,13 @@ pub async fn set_loan_offers_unavailable_by_contract_id(
     let records = sqlx::query!(
         r#"
         UPDATE loan_offers
-        SET 
+        SET
             status = 'Unavailable',
             updated_at = CURRENT_TIMESTAMP
-        WHERE 
+        WHERE
             id IN (
-                SELECT loan_deal_id 
-                FROM contracts 
+                SELECT loan_deal_id
+                FROM contracts
                 WHERE contracts.id = ANY($1)
             )
         RETURNING id

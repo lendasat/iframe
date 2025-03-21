@@ -358,11 +358,11 @@ impl LoanDeal {
     }
 }
 
-/// Represents an offer from a lender
+/// Represents an offer from a lender.
 ///
-/// Note: [`loan_deal_id`] is used to identify whether an opportunity is an `offer` or
-/// `application`. This is crucial once we insert the `contract` into the DB, because here we can
-/// only reference the `loan_deals`.
+/// Note: [`loan_deal_id`] is used to identify whether a deal is an `offer` or an `application`.
+/// This is crucial once we insert the `contract` into the DB, because here we can only reference
+/// the `loan_deals`.
 ///
 /// +-------------------+       +---------------------+       +-----------------+
 /// |  loan_offers        |       | loan_deals  |       |   loan_applications     |
@@ -383,7 +383,6 @@ impl LoanDeal {
 ///                             +----------------+
 #[derive(Debug, FromRow, Clone)]
 pub struct LoanOffer {
-    // the id of the opportunity
     pub loan_deal_id: String,
     pub lender_id: String,
     pub name: String,

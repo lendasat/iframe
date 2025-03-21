@@ -19,7 +19,7 @@ pub async fn get_loan_deal_by_id(pool: &Pool<Postgres>, loan_deal_id: &str) -> R
         loan_deal_type: LoanDealType,
     }
 
-    // First, determine the type of opportunity
+    // First, determine the type of deal.
     let loan_deal_type = sqlx::query_as!(
         DealTypeRecord,
         r#"
@@ -31,7 +31,7 @@ pub async fn get_loan_deal_by_id(pool: &Pool<Postgres>, loan_deal_id: &str) -> R
     )
     .fetch_optional(pool)
     .await?
-    .ok_or_else(|| anyhow::anyhow!("Loan opportunity not found"))?;
+    .ok_or_else(|| anyhow::anyhow!("Loan deal not found"))?;
 
     match loan_deal_type.loan_deal_type {
         LoanDealType::Offer => {
