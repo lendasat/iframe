@@ -430,3 +430,7 @@ export class LoanApplicationStatusHelper {
     }
   }
 }
+
+export interface NotifyUser {
+  contract_id: string;
+}

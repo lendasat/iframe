@@ -21,6 +21,7 @@ import {
   LoanAndContractStats,
   LoanApplication,
   LoanOffer,
+  NotifyUser,
   PutUpdateProfile,
   TakeLoanApplicationSchema,
 } from "./models";
@@ -850,6 +851,24 @@ export class HttpClientLender extends BaseHttpClient {
       }
     }
   }
+
+  async newChatNotification(request: NotifyUser): Promise<void> {
+    try {
+      await this.httpClient.post("/api/chat/notification", request);
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to send notification ${
+            error.response?.status
+          } and response: ${JSON.stringify(error.response?.data)}`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not send notification: ${JSON.stringify(error)}`);
+      }
+    }
+  }
 }
 
 type LenderHttpClientContextType = Pick<
@@ -881,6 +900,7 @@ type LenderHttpClientContextType = Pick<
   | "getLoanApplications"
   | "getLoanApplication"
   | "takeLoanApplication"
+  | "newChatNotification"
 >;
 
 export const LenderHttpClientContext = createContext<
@@ -956,6 +976,7 @@ export const HttpClientLenderProvider: React.FC<HttpClientProviderProps> = ({
     getLoanApplications: httpClient.getLoanApplications.bind(httpClient),
     getLoanApplication: httpClient.getLoanApplication.bind(httpClient),
     takeLoanApplication: httpClient.takeLoanApplication.bind(httpClient),
+    newChatNotification: httpClient.newChatNotification.bind(httpClient),
   };
 
   return (

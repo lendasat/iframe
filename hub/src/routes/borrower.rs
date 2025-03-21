@@ -43,6 +43,7 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_swagger_ui::SwaggerUi;
 
 mod cards;
+mod chat;
 mod dispute;
 
 const HEALTH_CHECK_TAG: &str = "health";
@@ -174,6 +175,7 @@ pub async fn spawn_borrower_server(
     let app = router
         .merge(auth::router(app_state.clone()))
         .merge(profile::router(app_state.clone()))
+        .merge(chat::router(app_state.clone()))
         .merge(version::router(app_state.clone()))
         .merge(dispute::router(app_state.clone()))
         .merge(price_feed_ws::router(app_state.clone()))

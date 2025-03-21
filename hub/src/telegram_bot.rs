@@ -176,6 +176,7 @@ pub enum LenderNotificationKind {
     LiquidationNotice,
     RequestAutoApproved,
     RequestExpired,
+    NewChatMessage { name: String },
 }
 
 pub enum BorrowerNotificationKind {
@@ -189,6 +190,7 @@ pub enum BorrowerNotificationKind {
     LiquidatedAfterDefault,
     LoanDefaulted,
     LoanRequestExpired,
+    NewChatMessage { name: String },
 }
 
 impl xtra::Handler<Notification> for TelegramBot {
@@ -237,6 +239,12 @@ impl xtra::Handler<Notification> for TelegramBot {
             NotificationTarget::Lender(LenderNotificationKind::RequestExpired) => {
                 (format!(
                     "You did not respond in time. We have marked the loan request as expired and marked your loan offer as unavailable. Please log in to create a new offer whenever you are available \n\n[Create New Offer]({})",
+                    url,
+                ), true)
+            }
+            NotificationTarget::Lender(LenderNotificationKind::NewChatMessage {name}) => {
+                (format!(
+                    "Hi, {name}. A borrower sent you a message. Log in now to read it. \n\n[Contract Details]({})",
                     url,
                 ), true)
             }
@@ -303,6 +311,13 @@ impl xtra::Handler<Notification> for TelegramBot {
                     url,
                 ), false)
             }
+
+            NotificationTarget::Borrower(BorrowerNotificationKind::NewChatMessage {name}) => {
+                (format!(
+                    "Hi, {name}. A lender sent you a message. Log in now to read it. \n\n[Contract Details]({})",
+                    url,
+                ), false)
+            }
         };
 
         let chat_ids = if is_lender {
@@ -315,6 +330,7 @@ impl xtra::Handler<Notification> for TelegramBot {
 
         match chat_ids {
             Ok(chat_ids) => {
+                tracing::debug!(user = message.user_id, chats = chat_ids.len(), "Notifying ");
                 for chat_id in chat_ids
                     .iter()
                     .filter_map(|chat_ids| chat_ids.chat_id.clone())
