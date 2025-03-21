@@ -244,7 +244,7 @@ impl xtra::Handler<Notification> for TelegramBot {
             }
             NotificationTarget::Lender(LenderNotificationKind::NewChatMessage {name}) => {
                 (format!(
-                    "Hi {name}. You received a chat notification. Login now to read it. \n\n[Contract Details]({})",
+                    "Hi, {name}. A borrower sent you a message. Log in now to read it. \n\n[Contract Details]({})",
                     url,
                 ), true)
             }
@@ -314,7 +314,7 @@ impl xtra::Handler<Notification> for TelegramBot {
 
             NotificationTarget::Borrower(BorrowerNotificationKind::NewChatMessage {name}) => {
                 (format!(
-                    "Hi {name}. received a chat notification. Login now to read it. \n\n[Contract Details]({})",
+                    "Hi, {name}. A lender sent you a message. Log in now to read it. \n\n[Contract Details]({})",
                     url,
                 ), false)
             }

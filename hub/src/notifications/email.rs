@@ -722,7 +722,7 @@ impl Email {
         let content_template = handlebars.render(template_name, &data)?;
 
         self.send_email(
-            "A contract request expired without response",
+            "New chat message",
             lender.name.as_str(),
             lender.email.as_str(),
             content_template,
@@ -748,7 +748,7 @@ impl Email {
 
         if let Some(email) = borrower.email {
             self.send_email(
-                "A contract request expired without response",
+                "New chat message",
                 borrower.name.as_str(),
                 email.as_str(),
                 content_template,
