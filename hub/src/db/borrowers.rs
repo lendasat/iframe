@@ -66,8 +66,8 @@ pub async fn register_password_auth_user(
     let row = sqlx::query!(
         r#"
         WITH inserted_borrower AS (
-            INSERT INTO borrowers (id, name)
-            VALUES ($1, $2)
+            INSERT INTO borrowers (id, name, email)
+            VALUES ($1, $2, $3)
             RETURNING *
         ), inserted_auth AS (
             INSERT INTO borrowers_password_auth (borrower_id, email, salt, verifier, verification_code)
