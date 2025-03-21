@@ -501,7 +501,7 @@ async fn post_pake_verify(
         .collect::<Vec<_>>();
 
     let personal_telegram_token =
-        db::telegram_bot::get_or_create_token_by_lender_id(&data.db, user.id.as_str())
+        db::telegram_bot::lender::get_or_create_token_by_lender_id(&data.db, user.id.as_str())
             .await
             .map_err(|error| {
                 let error_response = ErrorResponse {
@@ -1030,7 +1030,7 @@ async fn get_me_handler(
     Extension(user): Extension<Lender>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     let personal_telegram_token =
-        db::telegram_bot::get_or_create_token_by_lender_id(&data.db, user.id.as_str())
+        db::telegram_bot::lender::get_or_create_token_by_lender_id(&data.db, user.id.as_str())
             .await
             .map_err(|error| {
                 let error_response = ErrorResponse {

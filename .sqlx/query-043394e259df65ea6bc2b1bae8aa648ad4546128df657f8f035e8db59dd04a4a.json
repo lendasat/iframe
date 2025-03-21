@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT \n            token, lender_id \n        FROM \n            telegram_bot_tokens \n        WHERE \n            lender_id = $1\n        ",
+  "query": "\n        SELECT \n            token, borrower_id as user_id\n        FROM \n            telegram_bot_tokens_borrower \n        WHERE \n            borrower_id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -10,7 +10,7 @@
       },
       {
         "ordinal": 1,
-        "name": "lender_id",
+        "name": "user_id",
         "type_info": "Bpchar"
       }
     ],
@@ -24,5 +24,5 @@
       false
     ]
   },
-  "hash": "9a2cdce11afa450ca1ff9829d7ff1c683b882b630a02c7a4d533eaf608d74308"
+  "hash": "043394e259df65ea6bc2b1bae8aa648ad4546128df657f8f035e8db59dd04a4a"
 }

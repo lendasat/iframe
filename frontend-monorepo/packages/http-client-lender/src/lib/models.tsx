@@ -400,3 +400,7 @@ export interface TakeLoanApplicationSchema {
   lender_xpub: string;
   loan_repayment_address: string;
 }
+
+export interface NotifyUser {
+  contract_id: string;
+}

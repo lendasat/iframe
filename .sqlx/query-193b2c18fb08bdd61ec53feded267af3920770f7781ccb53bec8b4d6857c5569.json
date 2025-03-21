@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        INSERT INTO telegram_bot_tokens (\n            id, token, lender_id\n        )\n        VALUES (\n            $1, $2, $3\n        )\n        RETURNING \n            token, lender_id\n        ",
+  "query": "\n        INSERT INTO telegram_bot_tokens_lender (\n            id, token, lender_id\n        )\n        VALUES (\n            $1, $2, $3\n        )\n        RETURNING \n            token, lender_id as user_id\n        ",
   "describe": {
     "columns": [
       {
@@ -10,7 +10,7 @@
       },
       {
         "ordinal": 1,
-        "name": "lender_id",
+        "name": "user_id",
         "type_info": "Bpchar"
       }
     ],
@@ -26,5 +26,5 @@
       false
     ]
   },
-  "hash": "17ca53215b479a4c145519276c4a292637a9e4c7588ba6bd2980e82e8c542de3"
+  "hash": "193b2c18fb08bdd61ec53feded267af3920770f7781ccb53bec8b4d6857c5569"
 }

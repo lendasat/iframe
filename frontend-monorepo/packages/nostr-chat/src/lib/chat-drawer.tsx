@@ -10,51 +10,18 @@ import {
   LuX as X,
 } from "react-icons/lu";
 import { ChatMessage, useNostr } from "./useNostr";
-
-const Avatar = ({
-  initial,
-  fullString,
-  avatar,
-  position,
-}: {
-  initial: string;
-  fullString: string;
-  avatar?: string;
-  position: "left" | "right";
-}) => (
-  <Box
-    className={`flex h-8 w-8 items-center justify-center rounded-full ${
-      avatar
-        ? ""
-        : position === "left"
-          ? "bg-purple-100 dark:bg-purple-600"
-          : "bg-gray-200 dark:bg-gray-200"
-    } ${position === "left" ? "mr-2" : "ml-2"}`}
-  >
-    {avatar ? (
-      <img
-        src={avatar}
-        alt={`Avatar for ${fullString}`}
-        className="bg h-full w-full rounded-full object-cover"
-      />
-    ) : (
-      <span className="text-sm font-medium text-gray-500">
-        {initial.toUpperCase()}
-      </span>
-    )}
-  </Box>
-);
-
 interface NostrChatProps {
   otherUser: string;
   chatRoom: string;
   secretKey: string;
+  onNewMsgSent: () => Promise<void>;
 }
 
 const NostrChat = ({
   secretKey,
   chatRoom: chatRoomString,
   otherUser: otherUserString,
+  onNewMsgSent,
 }: NostrChatProps) => {
   loadWasmSync();
 
@@ -137,6 +104,7 @@ const NostrChat = ({
         console.log(`Failed sending message ${error}`);
       }
       setNewMessage("");
+      await onNewMsgSent();
     }
     setIsLoading(false);
   };
@@ -287,11 +255,13 @@ const NostrChat = ({
 interface ChatDrawerProps {
   contractId: string;
   counterpartyXPub: string;
+  onNewMsgSent: () => Promise<void>;
 }
 
 export const ChatDrawer = ({
   contractId,
   counterpartyXPub,
+  onNewMsgSent,
 }: ChatDrawerProps) => {
   console.log(`I'm reloading chat drawer`);
   const [isOpen, setIsOpen] = useState(false);
@@ -381,7 +351,7 @@ export const ChatDrawer = ({
         </Box>
 
         {isWalletLoaded && chatConfig ? (
-          <NostrChat {...chatConfig} />
+          <NostrChat {...chatConfig} onNewMsgSent={onNewMsgSent} />
         ) : (
           <Box className="flex h-96 items-center justify-center">
             <Button
