@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        WITH inserted_borrower AS (\n            INSERT INTO borrowers (id, name)\n            VALUES ($1, $2)\n            RETURNING *\n        ), inserted_auth AS (\n            INSERT INTO borrowers_password_auth (borrower_id, email, salt, verifier, verification_code)\n            VALUES ($1, $3, $4, $5, $6)\n            RETURNING *\n        )\n        SELECT\n            b.*,\n            rb.referral_code as used_referral_code,\n            rcb.first_time_discount_rate_referee\n        FROM inserted_borrower b\n        LEFT JOIN referred_borrowers rb ON rb.referred_borrower_id = b.id\n        LEFT JOIN referral_codes_borrowers rcb ON rcb.code = rb.referral_code\n    ",
+  "query": "\n        WITH inserted_borrower AS (\n            INSERT INTO borrowers (id, name, email)\n            VALUES ($1, $2, $3)\n            RETURNING *\n        ), inserted_auth AS (\n            INSERT INTO borrowers_password_auth (borrower_id, email, salt, verifier, verification_code)\n            VALUES ($1, $3, $4, $5, $6)\n            RETURNING *\n        )\n        SELECT\n            b.*,\n            rb.referral_code as used_referral_code,\n            rcb.first_time_discount_rate_referee\n        FROM inserted_borrower b\n        LEFT JOIN referred_borrowers rb ON rb.referred_borrower_id = b.id\n        LEFT JOIN referral_codes_borrowers rcb ON rcb.code = rb.referral_code\n    ",
   "describe": {
     "columns": [
       {
@@ -65,5 +65,5 @@
       true
     ]
   },
-  "hash": "e64937159b216341d9413ca755aa73dcffc00b1e070cf50bb769eebe46dfb3bc"
+  "hash": "e12e7385fc72082e7ba533b8f7fde91df774b5f26cc15964b402fb47b27cf2e0"
 }
