@@ -1,8 +1,11 @@
 import type { Version } from "@frontend/base-http-client";
 import { Contract } from "@frontend/http-client-lender";
+import { derive_npub } from "browser-wallet";
 
-export function downloadLocalStorage(version: Version, contract: Contract) {
-  const data = { version, ...localStorage, contract };
+export function downloadContractBackup(version: Version, contract: Contract) {
+  const counterpartyNpub = derive_npub(contract.borrower_xpub);
+
+  const data = { version, ...localStorage, contract, counterpartyNpub };
 
   const jsonData = JSON.stringify(data, null, 2);
 

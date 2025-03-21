@@ -49,7 +49,7 @@ import { ContractPendingKyc } from "./contract-pending-kyc";
 import { ContractRecovery } from "./contract-recovery";
 import { ContractRequested } from "./contract-requested";
 import { ContractUndercollateralized } from "./contract-undercollateralized";
-import { downloadLocalStorage as downloadContractBackup } from "./download-local-storage";
+import { downloadContractBackup } from "./download-contract-backup";
 import LoanPrincipalStablecoinPayout from "./pay-loan-principal-stablecoin";
 import { FiatLoanDetails } from "@frontend/base-http-client";
 import RepaymentDetailsFiat from "./pay-loan-principal-fiat";
