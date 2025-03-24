@@ -111,6 +111,10 @@ export const MnemonicComponent = () => {
               flow={"column"}
             >
               {mnemonic.map((word, index) => (
+                /**
+                 * biome-ignore lint/suspicious/noArrayIndexKey: key should be word, but i dont want to put the mnemonic words in the dom straight away
+                 * maybe over defensive, but i did not want to make the decision to
+                 */
                 <div key={index} className="group flex items-center gap-3">
                   <Label.Root className="flex w-full cursor-text items-center gap-3 border-b border-gray-200 pb-2">
                     <Text

@@ -58,6 +58,7 @@ const ContractOverview = ({
       return contractStatusFilter.includes(contract.status);
     })
     .sort((a, b) => {
+      // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
       let dif;
       switch (sortByColumn) {
         case "updatedAt":

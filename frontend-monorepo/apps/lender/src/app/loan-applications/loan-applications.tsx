@@ -228,8 +228,7 @@ export default function TakeLoanApplication() {
                   <div className="flex flex-col">
                     <Skeleton loading={loading} width={"100px"} height={"20px"}>
                       <Text className="text-font/70 dark:text-font-dark/70 text-[13px] font-semibold capitalize">
-                        {collateralAmountBtc?.toFixed(8)}{" "}
-                        BTC
+                        {collateralAmountBtc?.toFixed(8)} BTC
                       </Text>
                     </Skeleton>
                     <Text className="text-font/50 dark:text-font-dark/50 mt-0.5 self-end text-[11px]">
@@ -282,10 +281,10 @@ export default function TakeLoanApplication() {
                   >
                     <Skeleton loading={loading} width={"100px"} height={"20px"}>
                       {expiry?.toLocaleDateString([], {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
                     </Skeleton>
                   </Text>
                 </DataList.Value>

@@ -289,7 +289,6 @@ export interface UserCardDetail {
   expiration: string;
 }
 
-// biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
 export class FeatureMapper {
   private static readonly FEATURE_MAP: Record<string, LoanProductOption> = {
     [LoanProductOption.StableCoins]: LoanProductOption.StableCoins,

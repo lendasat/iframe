@@ -288,7 +288,6 @@ export enum LenderFeatureFlags {
   KycOffers = "kyc_offers",
 }
 
-// biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
 export class FeatureMapper {
   private static readonly FEATURE_MAP: Record<string, LenderFeatureFlags> = {
     [LenderFeatureFlags.AutoApproveLoanRequests]:

@@ -48,7 +48,9 @@ const NostrChat = ({
 
   const user = publicKey;
 
+  // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
   let chatRoom;
+  // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
   let otherUser;
   try {
     chatRoom = useMemo(() => PublicKey.parse(chatRoomString), [chatRoomString]);

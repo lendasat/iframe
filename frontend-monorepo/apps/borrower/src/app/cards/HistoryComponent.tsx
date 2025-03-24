@@ -1,5 +1,5 @@
 import type {
-  CardTransaction,
+  CardTransaction as CardTransactionType,
   DeclineData,
   TransactionData,
 } from "@frontend/http-client-borrower";
@@ -10,7 +10,7 @@ import { AiOutlineStop } from "react-icons/ai";
 import { GoArrowDownLeft, GoArrowUpRight } from "react-icons/go";
 
 interface HistoryProps {
-  transaction: CardTransaction;
+  transaction: CardTransactionType;
   lastFourCardDigits: string;
 }
 

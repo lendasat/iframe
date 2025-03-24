@@ -249,7 +249,7 @@ export const ContractDetailsTable = ({
           </Table.Cell>
         )}
 
-        {contracts.map((contract, index) => {
+        {contracts.map((contract) => {
           const collateral_btc = contract.initial_collateral_sats / 100000000;
 
           let contractStatus = contractStatusToLabelString(contract.status);
@@ -271,7 +271,7 @@ export const ContractDetailsTable = ({
           }
 
           return (
-            <Table.Row key={index}>
+            <Table.Row key={contract.id}>
               {shownColumns.amount && (
                 <Table.RowHeaderCell>
                   <Text

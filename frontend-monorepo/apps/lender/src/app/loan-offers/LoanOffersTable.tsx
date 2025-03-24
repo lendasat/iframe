@@ -244,11 +244,11 @@ export const LoanOffersTable = ({ offers }: ContractDetailsTableProps) => {
             </Table.Cell>
           </Table.Row>
         ) : (
-          sortedOffers.map((offer, index) => {
+          sortedOffers.map((offer) => {
             const loanAsset = offer.loan_asset;
 
             return (
-              <Table.Row key={index}>
+              <Table.Row key={offer.id}>
                 <Table.RowHeaderCell>
                   <Lender {...offer.lender} showAvatar={true} />
                 </Table.RowHeaderCell>

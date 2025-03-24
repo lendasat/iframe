@@ -43,6 +43,7 @@ function ResetPassword() {
     const network = import.meta.env.VITE_BITCOIN_NETWORK;
     const key = await md5(email);
 
+    // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
     let newWalletDetails;
     if (oldPasswordOrMnemonic.type === "oldPassword") {
       // If the old password is provided, we attempt to decrypt the local encrypted wallet, to then

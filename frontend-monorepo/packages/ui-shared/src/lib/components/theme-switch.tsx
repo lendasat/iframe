@@ -15,6 +15,7 @@ const ThemeSwitch: FC<ThemeSwitchProps> = ({ className }) => {
 
   return (
     <button
+      type="button"
       onClick={toggleTheme}
       className={className}
       aria-label="Toggle theme"

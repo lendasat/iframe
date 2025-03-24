@@ -287,9 +287,9 @@ const ConfirmationModal = ({
             <Flex className="dark:text-font-dark flex flex-col gap-3">
               <Text>Sending:</Text>
               <ul className="list-inside list-disc pl-5">
-                {liquidationTx.outputs.map((o, index) => (
+                {liquidationTx.outputs.map((o) => (
                   <li
-                    key={index}
+                    key={`${o.address}_${o.value}`}
                     className="overflow-hidden text-ellipsis whitespace-nowrap"
                   >
                     <strong>{formatter.format(o.value)}</strong> sats to{" "}

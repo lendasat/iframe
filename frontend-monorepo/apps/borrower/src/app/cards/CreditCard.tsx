@@ -36,8 +36,8 @@ const CardNumber = ({ pan, visible, setVisible }: CardNumberProps) => {
       style={{ fontFamily: "PayWithMoonFont" }}
       onClick={() => handleCopy()}
     >
-      {groups.map((group, index) => (
-        <span key={index}>{group}</span>
+      {groups.map((group) => (
+        <span key={group}>{group}</span>
       ))}
     </div>
   );

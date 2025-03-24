@@ -110,7 +110,6 @@ export function UpgradeToPake({ login, is_borrower }: UpgradeToPakeProps) {
 
     if ("must_upgrade_to_pake" in loginResponse) {
       throw new Error("Hub still thinks we need to upgrade to PAKE");
-      return;
     }
 
     console.log("Logged in using PAKE for the first time");

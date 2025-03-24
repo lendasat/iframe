@@ -204,7 +204,9 @@ export function LoanOfferTable({
 
           const searchValue = parseFloat(filterValue.replace(/[^0-9.]/g, ""));
           return (
-            !Number.isNaN(searchValue) && searchValue >= min && searchValue <= max
+            !Number.isNaN(searchValue) &&
+            searchValue >= min &&
+            searchValue <= max
           );
         },
       },
@@ -243,7 +245,9 @@ export function LoanOfferTable({
 
           const searchValue = parseFloat(filterValue.replace(/[^0-9.]/g, ""));
           return (
-            !Number.isNaN(searchValue) && searchValue >= min && searchValue <= max
+            !Number.isNaN(searchValue) &&
+            searchValue >= min &&
+            searchValue <= max
           );
         },
       },
@@ -495,6 +499,7 @@ export function LoanOfferTable({
           {loading ? (
             // Loading state for mobile
             [...Array(3)].map((_, i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
               <Box key={i} className="rounded-lg border p-4">
                 <Skeleton loading={true}>Loading</Skeleton>
               </Box>

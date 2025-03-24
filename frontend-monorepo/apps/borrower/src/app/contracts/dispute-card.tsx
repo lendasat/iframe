@@ -100,7 +100,10 @@ export const ExpandableDisputeCard = ({
             Dispute Information
           </Heading>
           <Collapsible.Trigger asChild>
-            <button className="text-violet11 shadow-blackA4 hover:bg-violet3 data-[state=open]:bg-violet3 dark:text-violet10 dark:shadow-blackA9 dark:data-[state=closed]:bg-dark dark:data-[state=open]:bg-violet4 dark:hover:bg-violet5 inline-flex size-[25px] items-center justify-center rounded-full shadow-[0_2px_10px] outline-none focus:shadow-[0_0_0_2px] focus:shadow-black data-[state=closed]:bg-white">
+            <button
+              type="button"
+              className="text-violet11 shadow-blackA4 hover:bg-violet3 data-[state=open]:bg-violet3 dark:text-violet10 dark:shadow-blackA9 dark:data-[state=closed]:bg-dark dark:data-[state=open]:bg-violet4 dark:hover:bg-violet5 inline-flex size-[25px] items-center justify-center rounded-full shadow-[0_2px_10px] outline-none focus:shadow-[0_0_0_2px] focus:shadow-black data-[state=closed]:bg-white"
+            >
               {open ? (
                 <RxCross2 className={"text-font dark:text-font-dark"} />
               ) : (
@@ -111,66 +114,66 @@ export const ExpandableDisputeCard = ({
         </div>
 
         <Collapsible.Content>
-            {getAlertContent()}
-            <Box>
-              <Select.Root
-                value={selectedReason}
-                onValueChange={(reason) => setSelectedReason(reason)}
-                size={"3"}
-              >
-                <Select.Trigger
-                  placeholder="Select reason"
-                  className="text-font dark:text-font-dark dark:bg-dark-700 z-50 w-full rounded-lg border p-3 text-sm font-normal shadow-none outline-none focus-visible:outline-none"
-                  variant="soft"
-                />
-                <Select.Content>
-                  {disputeReasons.map((reason, index) => (
-                    <Select.Item key={index} value={reason}>
-                      {reason}
-                    </Select.Item>
-                  ))}
-                </Select.Content>
-              </Select.Root>
-            </Box>
-            <TextArea
-              resize={"none"}
-              className="text-font dark:text-font-dark dark:bg-dark-700 h-40 rounded-lg p-2 outline-none focus-visible:outline-none"
-              variant="soft"
-              value={otherReason}
-              onChange={(e) => setOtherReason(e.target.value)}
-              placeholder="Please describe the reason for the dispute..."
-            />
-            {!disputeInProgress && error && (
-              <Box>
-                <AlertMessage variant="red" icon={faExclamationCircle}>
-                  {error}
-                </AlertMessage>
-              </Box>
-            )}
-            <Button
+          {getAlertContent()}
+          <Box>
+            <Select.Root
+              value={selectedReason}
+              onValueChange={(reason) => setSelectedReason(reason)}
               size={"3"}
-              color="purple"
-              className="w-full"
-              onClick={(event) => {
-                event.preventDefault();
-                setIsLoading(true);
-                setTimeout(() => {
-                  onStartDispute(selectedReason, otherReason);
-                  setIsLoading(false);
-                }, 1000);
-              }}
-              loading={isLoading}
-              disabled={
-                startingDisputeLoading ||
-                !selectedReason ||
-                !isOtherReasonValid ||
-                !otherReason ||
-                isLoading
-              }
             >
-              Start dispute
-            </Button>
-          </Collapsible.Content>
+              <Select.Trigger
+                placeholder="Select reason"
+                className="text-font dark:text-font-dark dark:bg-dark-700 z-50 w-full rounded-lg border p-3 text-sm font-normal shadow-none outline-none focus-visible:outline-none"
+                variant="soft"
+              />
+              <Select.Content>
+                {disputeReasons.map((reason) => (
+                  <Select.Item key={reason} value={reason}>
+                    {reason}
+                  </Select.Item>
+                ))}
+              </Select.Content>
+            </Select.Root>
+          </Box>
+          <TextArea
+            resize={"none"}
+            className="text-font dark:text-font-dark dark:bg-dark-700 h-40 rounded-lg p-2 outline-none focus-visible:outline-none"
+            variant="soft"
+            value={otherReason}
+            onChange={(e) => setOtherReason(e.target.value)}
+            placeholder="Please describe the reason for the dispute..."
+          />
+          {!disputeInProgress && error && (
+            <Box>
+              <AlertMessage variant="red" icon={faExclamationCircle}>
+                {error}
+              </AlertMessage>
+            </Box>
+          )}
+          <Button
+            size={"3"}
+            color="purple"
+            className="w-full"
+            onClick={(event) => {
+              event.preventDefault();
+              setIsLoading(true);
+              setTimeout(() => {
+                onStartDispute(selectedReason, otherReason);
+                setIsLoading(false);
+              }, 1000);
+            }}
+            loading={isLoading}
+            disabled={
+              startingDisputeLoading ||
+              !selectedReason ||
+              !isOtherReasonValid ||
+              !otherReason ||
+              isLoading
+            }
+          >
+            Start dispute
+          </Button>
+        </Collapsible.Content>
       </Box>
     </Collapsible.Root>
   );

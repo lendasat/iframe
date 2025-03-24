@@ -32,6 +32,7 @@ const RestrictedAccessPage = () => {
 
         <div className="relative my-8 h-64 w-full">
           <svg viewBox="0 0 500 200" className="h-full w-full">
+            <title>Circles</title>
             <path
               d="M30,100 Q150,50 250,100 T470,100"
               fill="none"
@@ -46,6 +47,7 @@ const RestrictedAccessPage = () => {
         </div>
 
         <button
+          type="button"
           onClick={() => window.history.back()}
           className="inline-flex items-center rounded-lg bg-purple-50 px-4 py-2 text-sm font-medium text-purple-600 transition-colors hover:bg-purple-100 dark:bg-purple-700 dark:text-purple-300 dark:hover:bg-purple-600"
         >

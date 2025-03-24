@@ -83,8 +83,8 @@ export const ClosedContracts = ({ contracts }: ClosedContractsProps) => {
           </Text>
         </Box>
         <Grid className="flex-grow grid-cols-3 md:grid-cols-5 xl:grid-cols-5">
-          {headers.map((header, index) => (
-            <Box key={index} className={header.className}>
+          {headers.map((header) => (
+            <Box key={header.label} className={header.className}>
               <Text
                 className="text-font/50 dark:text-font-dark/50"
                 size={"1"}
@@ -131,7 +131,7 @@ export const ClosedContracts = ({ contracts }: ClosedContractsProps) => {
 
           return (
             <Flex
-              key={index}
+              key={contract.id}
               align={"center"}
               className={`border-b ${
                 (index + 1) % 2 === 0
