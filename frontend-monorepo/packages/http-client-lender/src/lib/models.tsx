@@ -298,7 +298,7 @@ export class FeatureMapper {
 
   static mapEnabledFeatures(features: LoanFeature[]): LenderFeatureFlags[] {
     return features.flatMap((feature) => {
-      const mappedFeature = this.FEATURE_MAP[feature.id];
+      const mappedFeature = FeatureMapper.FEATURE_MAP[feature.id];
       return mappedFeature ? [mappedFeature] : [];
     });
   }

@@ -3,7 +3,7 @@ import { WaitlistForm } from "@frontend/ui-shared";
 import { useNavigate } from "react-router-dom";
 
 function Waitlist() {
-  const { joinWaitlist: joinWaitlist, check } = useBaseHttpClient();
+  const { joinWaitlist } = useBaseHttpClient();
   const navigate = useNavigate();
 
   const handleRegister = async (email: string) => {

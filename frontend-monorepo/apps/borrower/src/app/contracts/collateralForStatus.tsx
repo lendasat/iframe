@@ -7,7 +7,7 @@ export function collateralForStatus(
   initial: number,
   actual: number,
 ): number {
-  let collateral_btc;
+  let collateral_btc: number;
   switch (status) {
     case ContractStatus.Requested:
     case ContractStatus.RenewalRequested:

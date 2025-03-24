@@ -6,7 +6,7 @@
       "vite/client",
       "vitest",
       "vitest/globals",
-      "vitest/importMeta",
+      "vitest/importMeta"
     ]
   },
   "include": [

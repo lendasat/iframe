@@ -89,8 +89,8 @@ export default function Cards() {
               slideShadows: false,
             }}
           >
-            {userCardDetails.map((card, index) => (
-              <SwiperSlide key={index}>
+            {userCardDetails.map((card) => (
+              <SwiperSlide key={card.id}>
                 <CreditCard
                   card={card}
                   visible={visible}

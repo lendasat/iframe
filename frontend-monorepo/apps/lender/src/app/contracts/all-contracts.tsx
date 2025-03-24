@@ -94,6 +94,7 @@ export const AllContracts = ({
       return contractStatusFilter.includes(contract.status);
     })
     .sort((a, b) => {
+      // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
       let dif;
       switch (sortByColumn) {
         case "updatedAt":
@@ -115,8 +116,6 @@ export const AllContracts = ({
         case "collateral":
           dif = a.collateral_sats - b.collateral_sats;
           break;
-        case "status":
-        case "action":
         default:
           dif = a.status.localeCompare(b.status);
           break;
@@ -159,7 +158,7 @@ export const AllContracts = ({
                 <DropdownMenu.Item onSelect={(e) => e.preventDefault()}>
                   <Flex gap="2" align="center">
                     <Checkbox
-                      checked={shownColumns["amount"]}
+                      checked={shownColumns.amount}
                       onCheckedChange={() =>
                         toggleFilterOutContractDetails("amount")
                       }
@@ -172,7 +171,7 @@ export const AllContracts = ({
                 <DropdownMenu.Item onSelect={(e) => e.preventDefault()}>
                   <Flex gap="2" align="center">
                     <Checkbox
-                      checked={shownColumns["expiry"]}
+                      checked={shownColumns.expiry}
                       onCheckedChange={() =>
                         toggleFilterOutContractDetails("expiry")
                       }
@@ -185,7 +184,7 @@ export const AllContracts = ({
                 <DropdownMenu.Item onSelect={(e) => e.preventDefault()}>
                   <Flex gap="2" align="center">
                     <Checkbox
-                      checked={shownColumns["interest"]}
+                      checked={shownColumns.interest}
                       onCheckedChange={() =>
                         toggleFilterOutContractDetails("interest")
                       }
@@ -198,7 +197,7 @@ export const AllContracts = ({
                 <DropdownMenu.Item onSelect={(e) => e.preventDefault()}>
                   <Flex gap="2" align="center">
                     <Checkbox
-                      checked={shownColumns["ltv"]}
+                      checked={shownColumns.ltv}
                       onCheckedChange={() =>
                         toggleFilterOutContractDetails("ltv")
                       }
@@ -209,7 +208,7 @@ export const AllContracts = ({
                 <DropdownMenu.Item onSelect={(e) => e.preventDefault()}>
                   <Flex gap="2" align="center">
                     <Checkbox
-                      checked={shownColumns["collateral"]}
+                      checked={shownColumns.collateral}
                       onCheckedChange={() =>
                         toggleFilterOutContractDetails("collateral")
                       }
@@ -222,7 +221,7 @@ export const AllContracts = ({
                 <DropdownMenu.Item onSelect={(e) => e.preventDefault()}>
                   <Flex gap="2" align="center">
                     <Checkbox
-                      checked={shownColumns["status"]}
+                      checked={shownColumns.status}
                       onCheckedChange={() =>
                         toggleFilterOutContractDetails("status")
                       }

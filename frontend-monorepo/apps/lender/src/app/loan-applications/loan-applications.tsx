@@ -60,7 +60,7 @@ export default function TakeLoanApplication() {
     return undefined;
   }, [id]);
 
-  const interestRate = loanApplication && loanApplication.interest_rate;
+  const interestRate = loanApplication?.interest_rate;
 
   const actualInterest =
     loanApplication &&
@@ -76,7 +76,7 @@ export default function TakeLoanApplication() {
   const collateralUsdAmount =
     loanApplication && loanApplication.loan_amount / loanApplication.ltv;
 
-  const liquidationPrice = loanApplication && loanApplication.liquidation_price; // share this from the backend
+  const liquidationPrice = loanApplication?.liquidation_price; // share this from the backend
 
   const expiry =
     loanApplication && addDays(new Date(), loanApplication.duration_days);
@@ -228,8 +228,7 @@ export default function TakeLoanApplication() {
                   <div className="flex flex-col">
                     <Skeleton loading={loading} width={"100px"} height={"20px"}>
                       <Text className="text-font/70 dark:text-font-dark/70 text-[13px] font-semibold capitalize">
-                        {collateralAmountBtc && collateralAmountBtc.toFixed(8)}{" "}
-                        BTC
+                        {collateralAmountBtc?.toFixed(8)} BTC
                       </Text>
                     </Skeleton>
                     <Text className="text-font/50 dark:text-font-dark/50 mt-0.5 self-end text-[11px]">
@@ -281,12 +280,11 @@ export default function TakeLoanApplication() {
                     className={`text-font/70 dark:text-font-dark/70 text-[13px] font-semibold`}
                   >
                     <Skeleton loading={loading} width={"100px"} height={"20px"}>
-                      {expiry &&
-                        expiry.toLocaleDateString([], {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}
+                      {expiry?.toLocaleDateString([], {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
                     </Skeleton>
                   </Text>
                 </DataList.Value>

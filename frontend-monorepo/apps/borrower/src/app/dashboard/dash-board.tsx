@@ -58,6 +58,7 @@ const ContractOverview = ({
       return contractStatusFilter.includes(contract.status);
     })
     .sort((a, b) => {
+      // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
       let dif;
       switch (sortByColumn) {
         case "updatedAt":
@@ -79,8 +80,6 @@ const ContractOverview = ({
         case "collateral":
           dif = a.collateral_sats - b.collateral_sats;
           break;
-        case "status":
-        case "action":
         default:
           dif = a.status.localeCompare(b.status);
           break;

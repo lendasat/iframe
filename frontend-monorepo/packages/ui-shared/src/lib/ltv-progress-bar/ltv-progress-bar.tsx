@@ -19,7 +19,7 @@ export const LtvProgressBar: FC<LtvProgressBarNewProps> = ({
 
   let barColor = "";
 
-  const isNan = ltvRatio == null || isNaN(ltvRatio);
+  const isNan = ltvRatio == null || Number.isNaN(ltvRatio);
 
   const formattedValue = isNan ? "Loading" : ltvRatio.toFixed(0);
 

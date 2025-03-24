@@ -57,8 +57,8 @@ export default function CardHistory({
         align={"center"}
         className="grid-cols-4 bg-purple-50 px-6 py-1 md:px-8 dark:bg-purple-800/20"
       >
-        {headers.map((items, index) => (
-          <Box key={index} className={` ${items.className}`}>
+        {headers.map((items) => (
+          <Box key={items.label} className={` ${items.className}`}>
             <Text
               size={"1"}
               weight={"medium"}
@@ -88,11 +88,11 @@ export default function CardHistory({
         )}
 
         {!loading &&
-          transactionHistory.map((history, index) => (
+          transactionHistory.map((history) => (
             <HistoryComponent
               transaction={history}
               lastFourCardDigits={lastFourCardDigits}
-              key={index}
+              key={`${history.data.datetime}-${history.data.merchant}`}
             />
           ))}
       </Box>

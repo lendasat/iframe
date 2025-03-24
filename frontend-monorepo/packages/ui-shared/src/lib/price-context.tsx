@@ -38,7 +38,7 @@ export const PriceProvider: FC<{ url: string; children: ReactNode }> = ({
 
   useEffect(() => {
     const connect: WebSocketConnect = () => {
-      let wsUrl;
+      let wsUrl: string;
       if (websocketUrl.endsWith("/")) {
         wsUrl = `${websocketUrl}api/pricefeed`;
       } else {

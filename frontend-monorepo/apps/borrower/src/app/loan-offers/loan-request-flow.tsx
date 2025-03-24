@@ -52,6 +52,7 @@ export const LoanRequestFlow = () => {
     });
   };
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: conflicting rules for scrollToElement
   useEffect(() => {
     const service = searchParams.get("product") as LoanProductOption;
     const offer = searchParams.get("offer");

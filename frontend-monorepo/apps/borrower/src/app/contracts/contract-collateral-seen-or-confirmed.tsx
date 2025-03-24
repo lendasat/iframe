@@ -19,6 +19,7 @@ export function CollateralSeenOrConfirmed({
   collateralAddress,
   contract,
 }: CollateralSeenOrConfirmedProps) {
+  // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
   let info;
   switch (contract.loan_type) {
     case LoanType.PayWithMoon:

@@ -32,7 +32,7 @@ interface GroupProps {
   visible: boolean;
 }
 
-interface MenuItem {
+interface IMenuItem {
   group: GroupProps[];
   separator?: boolean;
 }
@@ -40,7 +40,7 @@ interface MenuItem {
 interface LayoutProps {
   user: User;
   children: ReactNode;
-  menuItems: MenuItem[];
+  menuItems: IMenuItem[];
   backendVersion: Version;
   logout: () => Promise<void>;
 }
@@ -126,17 +126,17 @@ export const Layout: FC<LayoutProps> = ({
           >
             {menuItems.map((items, index) => (
               <Box
-                key={index}
+                key={items.group.map((g) => g.label).join("-")}
                 className={index === 0 ? "px-3" : "px-3 pt-[5vh]"}
               >
-                {items.group.map((item, idx) => {
+                {items.group.map((item) => {
                   if (!item.visible) {
                     return "";
                   }
 
                   return (
                     <MenuItem
-                      key={idx}
+                      key={`${item.label}_${item.path}_${item.borrower}`}
                       component={
                         <NavLink
                           className={
@@ -176,7 +176,7 @@ export const Layout: FC<LayoutProps> = ({
                       radius="full"
                       fallback={user ? user.name.substring(0, 1) : "W"}
                     />
-                    {user && user.verified ? (
+                    {user?.verified ? (
                       <RiVerifiedBadgeFill
                         color="green"
                         className="absolute bottom-0 right-0 z-10"

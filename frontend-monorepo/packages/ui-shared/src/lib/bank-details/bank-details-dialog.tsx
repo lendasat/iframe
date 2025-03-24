@@ -94,22 +94,20 @@ function FormField({
         </Form.Message>
       </Flex>
       <Form.Control asChild>
-        <>
-          {inputType === FormFieldInputType.TextField && (
-            <TextField.Root
-              required={true}
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
-            />
-          )}
-          {inputType === FormFieldInputType.TextArea && (
-            <TextArea
-              required={true}
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
-            />
-          )}
-        </>
+        {inputType === FormFieldInputType.TextField && (
+          <TextField.Root
+            required={true}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+          />
+        )}
+        {inputType === FormFieldInputType.TextArea && (
+          <TextArea
+            required={true}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+          />
+        )}
       </Form.Control>
     </Form.Field>
   );

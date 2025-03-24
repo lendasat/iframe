@@ -26,18 +26,18 @@ fmt-frontend:
     #!/usr/bin/env bash
     set -euxo pipefail
     cd frontend-monorepo
-    pnpm format
+    pnpm biome format --write .
 
 
 clippy:
     cargo clippy --all-targets --all-features -- -D warnings
 
 # TODO: also update CI script when re-added
-# lint-frontend:
-#     #!/usr/bin/env bash
-#     set -euxo pipefail
-#     cd frontend-monorepo
-#     pnpm lint
+lint-frontend:
+    #!/usr/bin/env bash
+    set -euxo pipefail
+    cd frontend-monorepo
+    pnpm biome lint
 
 check-frontend:
     #!/usr/bin/env bash

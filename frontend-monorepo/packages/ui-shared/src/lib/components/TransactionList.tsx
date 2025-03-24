@@ -127,7 +127,7 @@ export const TransactionList: FC<TransactionListProps> = ({
 
   const loanAsset = contract.loan_asset;
 
-  let transactionName;
+  let transactionName: string;
   switch (transactionType) {
     case TransactionType.Funding:
       transactionName = "Funding";

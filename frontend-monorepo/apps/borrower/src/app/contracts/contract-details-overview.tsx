@@ -230,7 +230,7 @@ function ContractDetails({ contract }: DetailsProps) {
   const handleCloseAddCollateralModal = () => setShowAddCollateralModal(false);
   const handleOpenAddCollateralModal = () => setShowAddCollateralModal(true);
 
-  let canAddExtraCollateral;
+  let canAddExtraCollateral: boolean;
   switch (contract.status) {
     case ContractStatus.CollateralSeen:
     case ContractStatus.CollateralConfirmed:

@@ -28,7 +28,7 @@ export const Slider = ({
     if (!reset) {
       setValue(init);
     }
-  }, [setValue, init, reset]);
+  }, [init, reset]);
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const newValue = parseFloat(e.target.value); // Convert string to number
     setValue(newValue);
