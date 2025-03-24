@@ -1,37 +1,40 @@
 import "./App.css";
-import { Button } from "@/components/ui/button";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import PaymentWidget from "./Widget";
+import { useState } from "react";
 
 function App() {
+  const [label, setLabel] = useState("");
+  const handlePaymentSuccess = (data: string) => {
+    console.log("Payment successful!", data);
+    // Update UI or state based on successful payment
+    setLabel(data);
+  };
+
+  const handlePaymentCancel = () => {
+    console.log("Payment cancelled");
+    // Handle cancellation
+  };
+
+  const handlePaymentError = (error) => {
+    console.error("Payment error:", error);
+    // Display error message to user
+  };
+
   return (
-    <AlertDialog>
-      <AlertDialogTrigger>
-        <Button>Open</Button>
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete your
-            account and remove your data from our servers.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction>Continue</AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <div>
+      <h1>Your Shopping Cart</h1>
+      <div className="cart-total">Total: $99.99</div>
+      <p>{label}</p>
+
+      <PaymentWidget
+        amount={99.99}
+        currency="USD"
+        onSuccess={handlePaymentSuccess}
+        onCancel={handlePaymentCancel}
+        onError={handlePaymentError}
+        buttonText="Checkout Now"
+      />
+    </div>
   );
 }
 

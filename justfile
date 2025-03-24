@@ -130,6 +130,11 @@ button:
     cd frontend-monorepo
     pnpm --filter="@frontend/button" dev
 
+popup:
+    #!/usr/bin/env bash
+    cd frontend-monorepo
+    pnpm --filter="@frontend/popup" dev
+
 ## ------------------------
 ## Build frontend functions
 ## ------------------------
