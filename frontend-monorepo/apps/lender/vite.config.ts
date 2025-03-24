@@ -6,12 +6,12 @@ import svgr from "vite-plugin-svgr";
 export default defineConfig({
   envDir: "../../../",
   server: {
-    port: 4200,
+    port: 4201,
     host: "localhost",
   },
 
   preview: {
-    port: 4300,
+    port: 4301,
     host: "localhost",
   },
 
