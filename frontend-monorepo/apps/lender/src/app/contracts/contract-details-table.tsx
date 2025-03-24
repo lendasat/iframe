@@ -130,7 +130,7 @@ export const ContractDetailsTable = ({
     <Table.Root variant="surface" size={"2"} layout={"auto"}>
       <Table.Header>
         <Table.Row>
-          {shownColumns["amount"] && (
+          {shownColumns.amount && (
             <Table.ColumnHeaderCell className={"text-font dark:text-font-dark"}>
               <ColumnHeader
                 toggleSortByColumn={toggleSortByColumn}
@@ -141,7 +141,7 @@ export const ContractDetailsTable = ({
               />
             </Table.ColumnHeaderCell>
           )}
-          {shownColumns["expiry"] && (
+          {shownColumns.expiry && (
             <Table.ColumnHeaderCell className={"text-font dark:text-font-dark"}>
               <Box className="hidden md:flex">
                 <ColumnHeader
@@ -154,7 +154,7 @@ export const ContractDetailsTable = ({
               </Box>
             </Table.ColumnHeaderCell>
           )}
-          {shownColumns["interest"] && (
+          {shownColumns.interest && (
             <Table.ColumnHeaderCell className={"text-font dark:text-font-dark"}>
               <Box className="hidden md:flex">
                 <ColumnHeader
@@ -167,7 +167,7 @@ export const ContractDetailsTable = ({
               </Box>
             </Table.ColumnHeaderCell>
           )}
-          {shownColumns["ltv"] && (
+          {shownColumns.ltv && (
             <Table.ColumnHeaderCell
               justify={"center"}
               minWidth={"100px"}
@@ -182,7 +182,7 @@ export const ContractDetailsTable = ({
               />
             </Table.ColumnHeaderCell>
           )}
-          {shownColumns["collateral"] && (
+          {shownColumns.collateral && (
             <Table.ColumnHeaderCell className={"text-font dark:text-font-dark"}>
               <Box className={"hidden md:flex"}>
                 <ColumnHeader
@@ -195,7 +195,7 @@ export const ContractDetailsTable = ({
               </Box>
             </Table.ColumnHeaderCell>
           )}
-          {shownColumns["status"] && (
+          {shownColumns.status && (
             <Table.ColumnHeaderCell className={"text-font dark:text-font-dark"}>
               <Flex gap={"1"} align={"center"} className={"hidden md:flex"}>
                 <ColumnHeader
@@ -208,7 +208,7 @@ export const ContractDetailsTable = ({
               </Flex>
             </Table.ColumnHeaderCell>
           )}
-          {shownColumns["updatedAt"] && (
+          {shownColumns.updatedAt && (
             <Table.ColumnHeaderCell className={"text-font dark:text-font-dark"}>
               <Box className="hidden md:flex">
                 <ColumnHeader
@@ -221,7 +221,7 @@ export const ContractDetailsTable = ({
               </Box>
             </Table.ColumnHeaderCell>
           )}
-          {shownColumns["action"] && (
+          {shownColumns.action && (
             <Table.ColumnHeaderCell className={"text-font dark:text-font-dark"}>
               <Box className="hidden md:flex">
                 <ColumnHeader
@@ -272,7 +272,7 @@ export const ContractDetailsTable = ({
 
           return (
             <Table.Row key={index}>
-              {shownColumns["amount"] && (
+              {shownColumns.amount && (
                 <Table.RowHeaderCell>
                   <Text
                     className={"text-font dark:text-font-dark"}
@@ -283,7 +283,7 @@ export const ContractDetailsTable = ({
                   </Text>
                 </Table.RowHeaderCell>
               )}
-              {shownColumns["expiry"] && (
+              {shownColumns.expiry && (
                 <Table.Cell>
                   <Box className="hidden md:flex">
                     <Text
@@ -300,7 +300,7 @@ export const ContractDetailsTable = ({
                   </Box>
                 </Table.Cell>
               )}
-              {shownColumns["interest"] && (
+              {shownColumns.interest && (
                 <Table.Cell>
                   <Box className="hidden md:flex">
                     <Text
@@ -313,7 +313,7 @@ export const ContractDetailsTable = ({
                   </Box>
                 </Table.Cell>
               )}
-              {shownColumns["ltv"] && (
+              {shownColumns.ltv && (
                 <Table.Cell>
                   <LtvProgressBar
                     collateralBtc={collateral_btc}
@@ -321,7 +321,7 @@ export const ContractDetailsTable = ({
                   />
                 </Table.Cell>
               )}
-              {shownColumns["collateral"] && (
+              {shownColumns.collateral && (
                 <Table.Cell>
                   <Text
                     className={"text-font dark:text-font-dark hidden md:flex"}
@@ -332,7 +332,7 @@ export const ContractDetailsTable = ({
                   </Text>
                 </Table.Cell>
               )}
-              {shownColumns["status"] && (
+              {shownColumns.status && (
                 <Table.Cell>
                   <Box className="hidden md:flex">
                     <Badge
@@ -352,7 +352,7 @@ export const ContractDetailsTable = ({
                   </Box>
                 </Table.Cell>
               )}
-              {shownColumns["updatedAt"] && (
+              {shownColumns.updatedAt && (
                 <Table.RowHeaderCell>
                   <Box className="hidden md:flex">
                     <Text
@@ -367,7 +367,7 @@ export const ContractDetailsTable = ({
                   </Box>
                 </Table.RowHeaderCell>
               )}
-              {shownColumns["action"] && (
+              {shownColumns.action && (
                 <Table.Cell>
                   <Box className="hidden xl:flex">
                     <Button

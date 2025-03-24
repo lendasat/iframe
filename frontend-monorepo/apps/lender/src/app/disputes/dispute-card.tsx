@@ -98,7 +98,7 @@ export const ExpandableDisputeCard = ({
             Dispute Information
           </Heading>
           <Collapsible.Trigger asChild>
-            <button className="text-violet11 shadow-blackA4 hover:bg-violet3 data-[state=open]:bg-violet3 dark:text-violet10 dark:shadow-blackA9 dark:data-[state=closed]:bg-dark dark:data-[state=open]:bg-violet4 dark:hover:bg-violet5 inline-flex size-[25px] items-center justify-center rounded-full shadow-[0_2px_10px] outline-none focus:shadow-[0_0_0_2px] focus:shadow-black data-[state=closed]:bg-white">
+            <button type="button" className="text-violet11 shadow-blackA4 hover:bg-violet3 data-[state=open]:bg-violet3 dark:text-violet10 dark:shadow-blackA9 dark:data-[state=closed]:bg-dark dark:data-[state=open]:bg-violet4 dark:hover:bg-violet5 inline-flex size-[25px] items-center justify-center rounded-full shadow-[0_2px_10px] outline-none focus:shadow-[0_0_0_2px] focus:shadow-black data-[state=closed]:bg-white">
               {open ? (
                 <RxCross2 className={"text-font dark:text-font-dark"} />
               ) : (
@@ -109,7 +109,6 @@ export const ExpandableDisputeCard = ({
         </div>
 
         <Collapsible.Content>
-          <>
             {getAlertContent()}
             <Box>
               <Select.Root
@@ -169,8 +168,7 @@ export const ExpandableDisputeCard = ({
             >
               Start dispute
             </Button>
-          </>
-        </Collapsible.Content>
+          </Collapsible.Content>
       </Box>
     </Collapsible.Root>
   );

@@ -289,6 +289,7 @@ export interface UserCardDetail {
   expiration: string;
 }
 
+// biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
 export class FeatureMapper {
   private static readonly FEATURE_MAP: Record<string, LoanProductOption> = {
     [LoanProductOption.StableCoins]: LoanProductOption.StableCoins,
@@ -299,7 +300,7 @@ export class FeatureMapper {
 
   static mapEnabledFeatures(features: LoanFeature[]): LoanProductOption[] {
     return features.flatMap((feature) => {
-      const mappedFeature = this.FEATURE_MAP[feature.id];
+      const mappedFeature = FeatureMapper.FEATURE_MAP[feature.id];
       return mappedFeature ? [mappedFeature] : [];
     });
   }

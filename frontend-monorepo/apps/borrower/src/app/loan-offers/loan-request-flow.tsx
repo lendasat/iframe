@@ -71,7 +71,7 @@ export const LoanRequestFlow = () => {
         scrollToElement(confirmationRef);
       }, 100);
     }
-  }, [searchParams, selectedOfferId, selectedProduct]);
+  }, [searchParams, selectedOfferId, selectedProduct, scrollToElement]);
 
   const handleProductOptionSelect = (
     productOption: LoanProductOption | undefined,

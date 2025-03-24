@@ -111,7 +111,6 @@ export const ExpandableDisputeCard = ({
         </div>
 
         <Collapsible.Content>
-          <>
             {getAlertContent()}
             <Box>
               <Select.Root
@@ -171,8 +170,7 @@ export const ExpandableDisputeCard = ({
             >
               Start dispute
             </Button>
-          </>
-        </Collapsible.Content>
+          </Collapsible.Content>
       </Box>
     </Collapsible.Root>
   );

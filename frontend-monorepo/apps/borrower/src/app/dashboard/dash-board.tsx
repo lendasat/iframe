@@ -79,8 +79,6 @@ const ContractOverview = ({
         case "collateral":
           dif = a.collateral_sats - b.collateral_sats;
           break;
-        case "status":
-        case "action":
         default:
           dif = a.status.localeCompare(b.status);
           break;

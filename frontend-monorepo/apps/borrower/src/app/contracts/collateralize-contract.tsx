@@ -232,7 +232,7 @@ function encodeBip21(
   const scheme = urnScheme;
 
   if (options.amount !== undefined) {
-    if (!isFinite(options.amount)) {
+    if (!Number.isFinite(options.amount)) {
       throw new TypeError("Invalid amount");
     }
     if (options.amount < 0) {

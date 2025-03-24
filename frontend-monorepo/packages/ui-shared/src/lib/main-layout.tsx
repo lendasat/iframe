@@ -176,7 +176,7 @@ export const Layout: FC<LayoutProps> = ({
                       radius="full"
                       fallback={user ? user.name.substring(0, 1) : "W"}
                     />
-                    {user && user.verified ? (
+                    {user?.verified ? (
                       <RiVerifiedBadgeFill
                         color="green"
                         className="absolute bottom-0 right-0 z-10"

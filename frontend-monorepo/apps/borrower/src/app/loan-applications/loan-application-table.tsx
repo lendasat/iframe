@@ -166,7 +166,7 @@ export function LoanApplicationTable({
 
         const searchValue = parseFloat(filterValue.replace(/[^0-9.]/g, ""));
         return (
-          !isNaN(searchValue) && searchValue >= amount && searchValue <= amount
+          !Number.isNaN(searchValue) && searchValue >= amount && searchValue <= amount
         );
       },
     }),
@@ -191,7 +191,7 @@ export function LoanApplicationTable({
 
         const searchValue = parseFloat(filterValue.replace(/[^0-9.]/g, ""));
         return (
-          !isNaN(searchValue) &&
+          !Number.isNaN(searchValue) &&
           searchValue >= duration &&
           searchValue <= duration
         );

@@ -288,6 +288,7 @@ export enum LenderFeatureFlags {
   KycOffers = "kyc_offers",
 }
 
+// biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
 export class FeatureMapper {
   private static readonly FEATURE_MAP: Record<string, LenderFeatureFlags> = {
     [LenderFeatureFlags.AutoApproveLoanRequests]:
@@ -298,7 +299,7 @@ export class FeatureMapper {
 
   static mapEnabledFeatures(features: LoanFeature[]): LenderFeatureFlags[] {
     return features.flatMap((feature) => {
-      const mappedFeature = this.FEATURE_MAP[feature.id];
+      const mappedFeature = FeatureMapper.FEATURE_MAP[feature.id];
       return mappedFeature ? [mappedFeature] : [];
     });
   }

@@ -204,7 +204,7 @@ export function LoanOfferTable({
 
           const searchValue = parseFloat(filterValue.replace(/[^0-9.]/g, ""));
           return (
-            !isNaN(searchValue) && searchValue >= min && searchValue <= max
+            !Number.isNaN(searchValue) && searchValue >= min && searchValue <= max
           );
         },
       },
@@ -243,7 +243,7 @@ export function LoanOfferTable({
 
           const searchValue = parseFloat(filterValue.replace(/[^0-9.]/g, ""));
           return (
-            !isNaN(searchValue) && searchValue >= min && searchValue <= max
+            !Number.isNaN(searchValue) && searchValue >= min && searchValue <= max
           );
         },
       },

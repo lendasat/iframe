@@ -117,8 +117,6 @@ function MyContracts() {
         case "collateral":
           dif = a.collateral_sats - b.collateral_sats;
           break;
-        case "status":
-        case "action":
         default:
           dif = a.status.localeCompare(b.status);
           break;
@@ -159,7 +157,7 @@ function MyContracts() {
                 <DropdownMenu.Item onSelect={(e) => e.preventDefault()}>
                   <Flex gap="2" align="center">
                     <Checkbox
-                      checked={shownColumns["amount"]}
+                      checked={shownColumns.amount}
                       onCheckedChange={() =>
                         toggleFilterOutContractDetails("amount")
                       }
@@ -172,7 +170,7 @@ function MyContracts() {
                 <DropdownMenu.Item onSelect={(e) => e.preventDefault()}>
                   <Flex gap="2" align="center">
                     <Checkbox
-                      checked={shownColumns["expiry"]}
+                      checked={shownColumns.expiry}
                       onCheckedChange={() =>
                         toggleFilterOutContractDetails("expiry")
                       }
@@ -185,7 +183,7 @@ function MyContracts() {
                 <DropdownMenu.Item onSelect={(e) => e.preventDefault()}>
                   <Flex gap="2" align="center">
                     <Checkbox
-                      checked={shownColumns["interest"]}
+                      checked={shownColumns.interest}
                       onCheckedChange={() =>
                         toggleFilterOutContractDetails("interest")
                       }
@@ -198,7 +196,7 @@ function MyContracts() {
                 <DropdownMenu.Item onSelect={(e) => e.preventDefault()}>
                   <Flex gap="2" align="center">
                     <Checkbox
-                      checked={shownColumns["ltv"]}
+                      checked={shownColumns.ltv}
                       onCheckedChange={() =>
                         toggleFilterOutContractDetails("ltv")
                       }
@@ -209,7 +207,7 @@ function MyContracts() {
                 <DropdownMenu.Item onSelect={(e) => e.preventDefault()}>
                   <Flex gap="2" align="center">
                     <Checkbox
-                      checked={shownColumns["collateral"]}
+                      checked={shownColumns.collateral}
                       onCheckedChange={() =>
                         toggleFilterOutContractDetails("collateral")
                       }
@@ -222,7 +220,7 @@ function MyContracts() {
                 <DropdownMenu.Item onSelect={(e) => e.preventDefault()}>
                   <Flex gap="2" align="center">
                     <Checkbox
-                      checked={shownColumns["status"]}
+                      checked={shownColumns.status}
                       onCheckedChange={() =>
                         toggleFilterOutContractDetails("status")
                       }

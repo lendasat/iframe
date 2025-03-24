@@ -94,7 +94,6 @@ function FormField({
         </Form.Message>
       </Flex>
       <Form.Control asChild>
-        <>
           {inputType === FormFieldInputType.TextField && (
             <TextField.Root
               required={true}
@@ -109,8 +108,7 @@ function FormField({
               onChange={(e) => onChange(e.target.value)}
             />
           )}
-        </>
-      </Form.Control>
+        </Form.Control>
     </Form.Field>
   );
 }
