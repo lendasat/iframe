@@ -13,6 +13,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
+    "@radix-ui/react-alert-dialog": "^1.1.4",
     "@radix-ui/react-slot": "^1.1.2",
     "@tailwindcss/vite": "^4.0.15",
     "class-variance-authority": "^0.7.1",
