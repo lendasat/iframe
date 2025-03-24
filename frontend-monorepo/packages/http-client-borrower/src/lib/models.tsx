@@ -117,7 +117,7 @@ export interface BorrowerProfile {
 }
 
 export interface ContractRequest {
-  loan_id: string;
+  id: string;
   loan_amount: number;
   duration_days: number;
   borrower_btc_address: string;
