@@ -8,7 +8,8 @@
     "src/**"
   ],
   "scripts": {
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "lint": "eslint --fix"
   },
   "devDependencies": {
     "@types/node": "18.16.9",
