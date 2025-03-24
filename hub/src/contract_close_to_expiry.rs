@@ -72,11 +72,16 @@ async fn create_contract_close_to_expiry_check(
                                     let notifications = notifications.clone();
                                     let database = database.clone();
                                     async move {
-                                        let loan_url = format!(
-                                            "{}/my-contracts/{}",
-                                            config.borrower_frontend_origin,
-                                            contract_info.contract_id
-                                        );
+                                        let loan_url = config
+                                            .borrower_frontend_origin
+                                            .join(
+                                                format!(
+                                                    "/my-contracts/{}",
+                                                    contract_info.contract_id
+                                                )
+                                                .as_str(),
+                                            )
+                                            .expect("to be a correct URL");
 
                                         match db::borrowers::get_user_by_id(
                                             &database,
@@ -89,7 +94,7 @@ async fn create_contract_close_to_expiry_check(
                                                     .send_close_to_expiry_contract(
                                                         borrower,
                                                         &contract_info.formatted_expiry_date(),
-                                                        loan_url.as_str(),
+                                                        loan_url,
                                                     )
                                                     .await;
                                             }

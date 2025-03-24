@@ -241,17 +241,17 @@ async fn post_register(
     let verification_code = password_auth_info
         .verification_code
         .expect("to have verification code for new user");
-    let verification_url = format!(
-        "{}/verifyemail/{}",
-        data.config.borrower_frontend_origin.to_owned(),
-        verification_code.as_str()
-    );
+    let verification_url = data
+        .config
+        .borrower_frontend_origin
+        .join(format!("/verifyemail/{}", verification_code.as_str()).as_str())
+        .expect("to be a correct URL");
 
     data.notifications
         .send_verification_code(
             user.name.as_str(),
             email.as_str(),
-            verification_url.as_str(),
+            verification_url,
             verification_code.as_str(),
         )
         .await;
@@ -812,19 +812,24 @@ async fn forgot_password_handler(
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
             })?;
 
-    let mut password_reset_url = format!(
-        "{}/resetpassword/{}/{}",
-        data.config.borrower_frontend_origin.to_owned(),
-        password_reset_token,
-        password_auth_info.email
-    );
+    let mut password_reset_url = data
+        .config
+        .borrower_frontend_origin
+        .join(
+            format!(
+                "/resetpassword/{}/{}",
+                password_reset_token, password_auth_info.email
+            )
+            .as_str(),
+        )
+        .expect("to be a correct URL");
 
     // If this user has contracts before the PAKE upgrade, we do not allow them to reset their
     // password using a mnemonic. Using a mnemonic would remove the passphrase embedded in their
     // encrypted local wallet, and this passphrase is needed to spend contracts created before the
     // PAKE upgrade.
     if has_contracts_before_pake {
-        password_reset_url.push_str("?nomn=true");
+        password_reset_url = password_reset_url.join("?nomn=true").expect("to be valid");
     }
 
     data.notifications
@@ -832,7 +837,7 @@ async fn forgot_password_handler(
             user.name.as_str(),
             password_auth_info.email.as_str(),
             PASSWORD_TOKEN_EXPIRES_IN_MINUTES,
-            password_reset_url.as_str(),
+            password_reset_url,
         )
         .await;
 

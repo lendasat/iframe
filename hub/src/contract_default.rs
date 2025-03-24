@@ -143,17 +143,17 @@ async fn notify_borrower_about_defaulted_loan(
         return Ok(());
     }
 
-    let loan_url = format!(
-        "{}/my-contracts/{}",
-        config.borrower_frontend_origin, contract.contract_id
-    );
+    let loan_url = config
+        .borrower_frontend_origin
+        .join(format!("/my-contracts/{}", contract.contract_id).as_str())
+        .expect("to be a correct URL");
 
     let borrower = db::borrowers::get_user_by_id(&db, contract.borrower_id.as_str())
         .await?
         .context("Could not find borrower")?;
 
     notifications
-        .send_loan_defaulted_borrower(borrower, loan_url.as_str())
+        .send_loan_defaulted_borrower(borrower, loan_url)
         .await;
 
     db::contract_emails::mark_defaulted_loan_borrower_as_sent(&db, contract.contract_id.as_str())
@@ -175,17 +175,17 @@ async fn notify_lender_about_defaulted_loan(
         return Ok(());
     }
 
-    let loan_url = format!(
-        "{}/my-contracts/{}",
-        config.lender_frontend_origin, contract.contract_id
-    );
+    let loan_url = config
+        .lender_frontend_origin
+        .join(format!("/my-contracts/{}", contract.contract_id).as_str())
+        .expect("to be a correct URL");
 
     let lender = db::lenders::get_user_by_id(&db, contract.lender_id.as_str())
         .await?
         .context("Could not find lender")?;
 
     notifications
-        .send_loan_defaulted_lender(lender, loan_url.as_str())
+        .send_loan_defaulted_lender(lender, loan_url)
         .await;
 
     db::contract_emails::mark_defaulted_loan_lender_as_sent(&db, contract.contract_id.as_str())

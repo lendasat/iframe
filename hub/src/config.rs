@@ -3,6 +3,7 @@ use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use std::ops::Div;
 use std::str::FromStr;
+use url::Url;
 use uuid::Uuid;
 
 #[derive(Debug, Clone)]
@@ -21,9 +22,9 @@ pub struct Config {
     pub smtp_pass: String,
     pub smtp_from: String,
     pub smtp_disabled: bool,
-    pub borrower_frontend_origin: String,
+    pub borrower_frontend_origin: Url,
     pub borrower_listen_address: String,
-    pub lender_frontend_origin: String,
+    pub lender_frontend_origin: Url,
     pub lender_listen_address: String,
     pub hub_fee_descriptor: String,
     pub hub_fee_wallet_dir: Option<String>,
@@ -73,11 +74,15 @@ impl Config {
             std::env::var("BORROWER_LISTEN_ADDRESS").expect("BORROWER_LISTEN_ADDRESS must be set");
         let borrower_frontend_origin = std::env::var("BORROWER_FRONTEND_ORIGIN")
             .expect("BORROWER_FRONTEND_ORIGIN must be set");
+        let borrower_frontend_origin =
+            Url::parse(borrower_frontend_origin.as_str()).expect("to be a valid url");
 
         let lender_listen_address =
             std::env::var("LENDER_LISTEN_ADDRESS").expect("LENDER_LISTEN_ADDRESS must be set");
         let lender_frontend_origin =
             std::env::var("LENDER_FRONTEND_ORIGIN").expect("LENDER_FRONTEND_ORIGIN must be set");
+        let lender_frontend_origin =
+            Url::parse(lender_frontend_origin.as_str()).expect("to be a valid url");
 
         let hub_fee_descriptor =
             std::env::var("HUB_FEE_DESCRIPTOR").expect("HUB_FEE_DESCRIPTOR must be set");

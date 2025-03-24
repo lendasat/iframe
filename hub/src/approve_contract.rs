@@ -144,17 +144,16 @@ pub async fn approve_contract(
         .expect("actor to be alive")
         .map_err(Error::TrackContract)?;
 
-    let loan_url = format!(
-        "{}/my-contracts/{}",
-        config.borrower_frontend_origin.to_owned(),
-        contract.id
-    );
+    let loan_url = config
+        .borrower_frontend_origin
+        .join(format!("my-contracts/{}", contract.id.as_str()).as_str())
+        .expect("to be a correct URL");
 
     // We don't want to fail this upwards because the contract request has already been
     // approved.
     if let Err(e) = async {
         notifications
-            .send_loan_request_approved(borrower, loan_url.as_str())
+            .send_loan_request_approved(borrower, loan_url)
             .await;
 
         db::contract_emails::mark_loan_request_approved_as_sent(db, &contract.id)

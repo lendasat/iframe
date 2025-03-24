@@ -307,17 +307,17 @@ pub async fn put_principal_given(
     // We don't want to fail this upwards because the contract request has been already
     // approved.
     if let Err(e) = async {
-        let loan_url = format!(
-            "{}/my-contracts/{}",
-            data.config.borrower_frontend_origin.to_owned(),
-            contract_id
-        );
+        let loan_url = data
+            .config
+            .borrower_frontend_origin
+            .join(format!("/my-contracts/{}", contract_id).as_str())?;
+
         let borrower = db::borrowers::get_user_by_id(&data.db, contract.borrower_id.as_str())
             .await?
             .context("Borrower not found")?;
 
         data.notifications
-            .send_loan_paid_out(borrower, loan_url.as_str())
+            .send_loan_paid_out(borrower, loan_url)
             .await;
 
         db::contract_emails::mark_loan_paid_out_as_sent(&data.db, &contract.id)
@@ -355,18 +355,17 @@ pub async fn delete_reject_contract(
     // We don't want to fail this upwards because the contract request has been already
     // approved.
     if let Err(err) = async {
-        let loan_url = format!(
-            "{}/my-contracts/{}",
-            data.config.borrower_frontend_origin.to_owned(),
-            contract_id
-        );
+        let loan_url = data
+            .config
+            .borrower_frontend_origin
+            .join(format!("/my-contracts/{}", contract_id).as_str())?;
 
         let borrower = db::borrowers::get_user_by_id(&data.db, contract.borrower_id.as_str())
             .await?
             .context("Borrower not found")?;
 
         data.notifications
-            .send_loan_request_rejected(borrower, loan_url.as_str())
+            .send_loan_request_rejected(borrower, loan_url)
             .await;
 
         db::contract_emails::mark_loan_request_rejected_as_sent(&data.db, &contract.id)
@@ -791,11 +790,10 @@ async fn post_liquidation_tx(
             .await?
             .context("Borrower not found")?;
 
-        let loan_url = format!(
-            "{}/my-contracts/{}",
-            data.config.borrower_frontend_origin.to_owned(),
-            contract_id
-        );
+        let loan_url = data
+            .config
+            .borrower_frontend_origin
+            .join(format!("/my-contracts/{}", contract_id).as_str())?;
 
         let emails =
             db::contract_emails::load_contract_emails(&data.db, contract.id.as_str()).await?;
@@ -805,7 +803,7 @@ async fn post_liquidation_tx(
         }
 
         data.notifications
-            .send_loan_liquidated_after_default(borrower, loan_url.as_str())
+            .send_loan_liquidated_after_default(borrower, loan_url)
             .await;
 
         db::contract_emails::mark_defaulted_loan_liquidated_as_sent(&data.db, &contract.id)
