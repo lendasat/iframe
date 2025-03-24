@@ -1,9 +1,11 @@
 use anyhow::Result;
 use std::sync::Once;
+use telegram_bot::DetailsButton;
 use telegram_bot::MessageToUser;
 use telegram_bot::TelegramBot;
 use telegram_bot::TelegramResponse;
 use tokio::sync::mpsc;
+use url::Url;
 
 const TELEGRAM_BOT_TOKEN: &str = "token";
 
@@ -25,6 +27,10 @@ async fn main() -> Result<()> {
                             "Welcome\\! Your are registered: {} [details]({})",
                             register.token, "www.test.com"
                         ),
+                        details: Some(DetailsButton {
+                            title: "Click me".to_string(),
+                            url: Url::parse("https://testing.com").expect("to be valid"),
+                        }),
                     };
 
                     if let Err(e) = msg_tx.send(response).await {
@@ -35,6 +41,7 @@ async fn main() -> Result<()> {
                     let response = MessageToUser {
                         chat_id: unregister.id.clone(),
                         message: "You won't receive any more updated".to_string(),
+                        details: None,
                     };
 
                     if let Err(e) = msg_tx.send(response).await {

@@ -432,7 +432,7 @@ impl Notifications {
             if let Err(e) = tgb
                 .send(crate::telegram_bot::Notification {
                     user_id: borrower.id.clone(),
-                    url: contract_url.to_string(),
+                    url: contract_url,
                     kind: crate::telegram_bot::NotificationTarget::Borrower(kind),
                 })
                 .await

@@ -4,11 +4,13 @@ use anyhow::Result;
 use sqlx::Pool;
 use sqlx::Postgres;
 use std::sync::Arc;
+use telegram_bot::DetailsButton;
 use telegram_bot::MessageToUser;
 use telegram_bot::TelegramResponse;
 use tokio::sync::mpsc;
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::mpsc::Sender;
+use url::Url;
 use xtra::Context;
 use xtra::Mailbox;
 
@@ -108,6 +110,7 @@ impl xtra::Handler<Register> for TelegramBot {
                 build_message(
                     message.id.clone(),
                     format!("Welcome, {}. Registration was successful", token.user_name).as_str(),
+                    None,
                 )
             }
             Err(error) => {
@@ -116,6 +119,7 @@ impl xtra::Handler<Register> for TelegramBot {
                 build_message(
                     message.id.clone(),
                     "Could not register, please double check token or reach out to us",
+                    None,
                 )
             }
         };
@@ -142,8 +146,11 @@ impl xtra::Handler<Unregister> for TelegramBot {
     async fn handle(&mut self, message: Unregister, _ctx: &mut Context<Self>) -> Self::Return {
         match db::telegram_bot::delete_telegram_bot_chat_id(&self.db, message.id.as_str()).await {
             Ok(_) => {
-                let response =
-                    build_message(message.id.clone(), "You won't receive any more updates");
+                let response = build_message(
+                    message.id.clone(),
+                    "You won't receive any more updates",
+                    None,
+                );
 
                 if let Some(sender) = &self.msg_to_user_tx {
                     sender.send(response).await?
@@ -159,8 +166,17 @@ impl xtra::Handler<Unregister> for TelegramBot {
 
 pub struct Notification {
     pub user_id: String,
-    pub url: String,
+    pub url: Url,
     pub kind: NotificationTarget,
+}
+
+impl Notification {
+    pub fn is_lender(&self) -> bool {
+        match self.kind {
+            NotificationTarget::Borrower(_) => false,
+            NotificationTarget::Lender(_) => true,
+        }
+    }
 }
 
 pub enum NotificationTarget {
@@ -197,126 +213,126 @@ impl xtra::Handler<Notification> for TelegramBot {
     type Return = ();
 
     async fn handle(&mut self, message: Notification, _ctx: &mut Context<Self>) -> Self::Return {
-        let url = message.url;
+        let details_url = message.url.clone();
 
-        let (text, is_lender) = match message.kind {
-            NotificationTarget::Lender(LenderNotificationKind::NewLoanRequest) => {
-                (format!(
-                    "You have received a new loan request! \n\nApprove or reject the request [here]({})",
-                    url,
-                ), true)
-            }
+        let is_lender = message.is_lender();
+
+        let (text,  details_title) = match message.kind {
+            NotificationTarget::Lender(LenderNotificationKind::NewLoanRequest) => (
+                "You have received a new loan request! \n\nApprove or reject the request".to_string(),
+                "Details".to_string(),
+            ),
             NotificationTarget::Lender(LenderNotificationKind::RequestAutoApproved) => {
-                (format!(
-                    "You have received a new loan request! \nThe request was automatically approved, as per your configuration. \n\nThe contract details can be found [here]({})",
-                    url,
-                ), true)
+                (
+                    "You have received a new loan request! \nThe request was automatically approved, as per your configuration. ".to_string(), 
+                    "Contract Details".to_string(),
+                )
             }
             NotificationTarget::Lender(LenderNotificationKind::Collateralized) => {
-                (format!(
-                    "A borrower has deposited the Bitcoin collateral for one of your loans. It's your turn to disburse the funds. \n\nYou can find the borrower's loan address [here]({})",
-                    url,
-                ), true)
+                (
+                    "A borrower has deposited the Bitcoin collateral for one of your loans. It's your turn to disburse the funds. \n\nYou can find the borrower's on the contract details".to_string(), 
+                    "Click here".to_string(),
+                )
             }
             NotificationTarget::Lender(LenderNotificationKind::Repaid) => {
-                (format!(
-                    "One of your loans has been repaid according to the borrower. You must confirm the repayment in order to release the borrower's collateral. \n\nConfirm the repayment [here]({})",
-                    url,
-                ), true)
+                (
+                    "One of your loans has been repaid according to the borrower. You must confirm the repayment in order to release the borrower's collateral.".to_string(), 
+                    "Contract Details".to_string(),
+                )
             }
             NotificationTarget::Lender(LenderNotificationKind::Defaulted) => {
-                (format!(
-                    "A borrower has defaulted on one of your loans. \n\n Liquidate the collateral [here]({})",
-                    url,
-                ), true)
+                (
+                    "A borrower has defaulted on one of your loans. \n\n Liquidate the collateral".to_string(), 
+                    "Contract Details".to_string(),
+                )
             }
             NotificationTarget::Lender(LenderNotificationKind::LiquidationNotice) => {
-                (format!(
-                    "A loan is under collateralized. Please log in to liquidate the contract. \n\n[Contract details]({})",
-                    url,
-                ), true)
+                (
+                    "A loan is under collateralized. Please log in to liquidate the contract.".to_string(), 
+                    "Contract Details".to_string(),
+                )
             }
             NotificationTarget::Lender(LenderNotificationKind::RequestExpired) => {
-                (format!(
-                    "You did not respond in time. We have marked the loan request as expired and marked your loan offer as unavailable. Please log in to create a new offer whenever you are available \n\n[Create New Offer]({})",
-                    url,
-                ), true)
+                (
+                    "You did not respond in time. We have marked the loan request as expired and marked your loan offer as unavailable. Please log in to create a new offer whenever you are available.".to_string(), 
+                    "Create New Offer".to_string(),
+                )
             }
-            NotificationTarget::Lender(LenderNotificationKind::NewChatMessage {name}) => {
-                (format!(
-                    "Hi, {name}. A borrower sent you a message. Log in now to read it. \n\n[Contract Details]({})",
-                    url,
-                ), true)
+            NotificationTarget::Lender(LenderNotificationKind::NewChatMessage { name }) => {
+                (
+                    format!("Hi, {name}. A borrower sent you a message. Log in now to read it.",), 
+                    "Contract Details".to_string(),
+                )
             }
 
             NotificationTarget::Borrower(BorrowerNotificationKind::RequestApproved) => {
-                (format!(
-                    "Congratulations. Your loan request has been approved. Please log in to fund your contract \n\n[Contract Details]({})",
-                    url,
-                ), false)
+                (
+                    "Congratulations. Your loan request has been approved. Please log in to fund your contract.".to_string(), 
+                    "Contract Details".to_string(),
+                )
             }
             NotificationTarget::Borrower(BorrowerNotificationKind::MarginCall) => {
-                (format!(
-                    "You have received a margin call for your loan contract. Please log in and add more collateral to avoid liquidation \n\n[Contract Details]({})",
-                    url,
-                ), false)
+                (
+                    "You have received a margin call for your loan contract. Please log in and add more collateral to avoid liquidation.".to_string(), 
+                    "Contract Details".to_string(),
+                )
             }
             NotificationTarget::Borrower(BorrowerNotificationKind::LiquidationNotice) => {
-                (format!(
-                    "The reference price of XBTUSD recently dropped below your liquidation price. Because of this, your position has been taken over by the Liquidation Engine \n\n[Details]({})",
-                    url,
-                ), false)
+                (
+                    "The reference price of XBTUSD recently dropped below your liquidation price. Because of this, your position has been taken over by the Liquidation Engine.".to_string(), 
+                    "Contract Details".to_string(),
+                )
             }
             NotificationTarget::Borrower(BorrowerNotificationKind::RequestRejected) => {
-                (format!(
-                    "Unfortunately, the lender declined your loan request. Feel free to request a new one from a different lender. \n\n[Details]({})",
-                    url,
-                ), false)
+                (
+                    "Unfortunately, the lender declined your loan request. Feel free to request a new one from a different lender.".to_string(), 
+                    "Contract Details".to_string(),
+                )
             }
             NotificationTarget::Borrower(BorrowerNotificationKind::LoanPaidOut) => {
-                (format!(
-                    "Congratulations! The lender sent the loan amount to your address. \n\n[Create New Offer]({})",
-                    url,
-                ), false)
+                (
+                    "Congratulations! The lender sent the loan amount to your address.".to_string(),
+                    "Contract Details".to_string(),
+                )
             }
             NotificationTarget::Borrower(BorrowerNotificationKind::CloseToExpiry) => {
-                (format!(
-                    "Your loan is about to expire. Make sure to repay your loan or your collateral will get liquidated \n\n[Contract Details]({})",
-                    url,
-                ), false)
+                (
+                    "Your loan is about to expire. Make sure to repay your loan or your collateral will get liquidated.".to_string(), 
+                    "Contract Details".to_string(),
+                )
             }
             NotificationTarget::Borrower(BorrowerNotificationKind::MoonCardReady) => {
-                (format!(
-                    "Your debit card has been funded. Happy shopping 🥳 \n\n[Details]({})",
-                    url,
-                ), false)
+                (
+                    "Your debit card has been funded. Happy shopping 🥳.".to_string(), 
+                    "Card Details".to_string(),
+                )
             }
             NotificationTarget::Borrower(BorrowerNotificationKind::LiquidatedAfterDefault) => {
-                (format!(
+                (
                     "We regret to inform you that you have defaulted on your loan. As such, the lender was able to liquidate your loan for their share of the collateral.
                           Any remaining sats have been sent to your refund address.
-                          You can visit your contract details page for more info. \n\n[Contract Details]({})",
-                    url,
-                ), false)
+                          You can visit your contract details page for more info.".to_string(), 
+                    "Contract Details".to_string(),
+                )
             }
             NotificationTarget::Borrower(BorrowerNotificationKind::LoanDefaulted) => {
-                (format!(
-                    "Your loan has expired and your collateral will be liquidated. \n\n[Contract Details]({})",
-                    url,
-                ), false)
+                (
+                    "Your loan has expired and your collateral will be liquidated.".to_string(), 
+                     "Contract Details".to_string()
+                )
             }
             NotificationTarget::Borrower(BorrowerNotificationKind::LoanRequestExpired) => {
-                (format!(
-                    "Unfortunately, the lender did not respond in time to your contract request. As such, the request was cancelled. You can log in to have a look at other offers. \n\n[Find New Offer]({})",
-                    url,
-                ), false)
+                (
+                    "Unfortunately, the lender did not respond in time to your contract request. As such, the request was cancelled. You can log in to have a look at other offers.".to_string(), 
+                    "Find New Offer".to_string(),
+                )
             }
 
-            NotificationTarget::Borrower(BorrowerNotificationKind::NewChatMessage {name}) => {
-                (format!(
-                    "Hi, {name}. A lender sent you a message. Log in now to read it. \n\n[Contract Details]({})",
-                    url,
-                ), false)
+            NotificationTarget::Borrower(BorrowerNotificationKind::NewChatMessage { name }) => {
+                (
+                    format!("Hi, {name}. A lender sent you a message. Log in now to read it."), 
+                    "Contract Details".to_string(),
+                )
             }
         };
 
@@ -336,7 +352,14 @@ impl xtra::Handler<Notification> for TelegramBot {
                     .filter_map(|chat_ids| chat_ids.chat_id.clone())
                 {
                     if let Some(sender) = &self.msg_to_user_tx {
-                        if let Err(err) = sender.send(build_message(chat_id, text.as_str())).await {
+                        if let Err(err) = sender
+                            .send(build_message(
+                                chat_id,
+                                text.as_str(),
+                                Some((details_title.clone(), details_url.clone())),
+                            ))
+                            .await
+                        {
                             tracing::error!("Failed sending message to telegram bot {err:#}");
                         }
                     }
@@ -349,13 +372,16 @@ impl xtra::Handler<Notification> for TelegramBot {
     }
 }
 
-fn build_message(chat_id: String, message: &str) -> MessageToUser {
+fn build_message(chat_id: String, message: &str, details: Option<(String, Url)>) -> MessageToUser {
+    let details = details.map(|(title, url)| DetailsButton { title, url });
+
     MessageToUser {
         chat_id,
         // NOTE: when editing a message, please test each and everyone of them. It's very likely
         // you forgot to escape a character and then it fails during runtime!
         // Because of this we are using a function to escape all characters but it might still fail!
         message: escape_markdown_v2(message),
+        details,
     }
 }
 
