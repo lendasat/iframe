@@ -329,11 +329,11 @@ async fn post_contract_request(
         .map_err(Error::from)?;
     }
 
-    let lender_loan_url = format!(
-        "{}/my-contracts/{}",
-        data.config.lender_frontend_origin.to_owned(),
-        contract.id
-    );
+    let lender_loan_url = data
+        .config
+        .lender_frontend_origin
+        .join(format!("/my-contracts/{}", contract.id).as_str())
+        .expect("to be a correct URL");
 
     // We don't want to fail this upwards because the contract request has been sent already.
     if let Err(e) = async {
@@ -345,7 +345,7 @@ async fn post_contract_request(
         let borrower_id = user.id.clone();
         if offer.auto_accept {
             data.notifications
-                .send_notification_about_auto_accepted_loan(lender, lender_loan_url.as_str())
+                .send_notification_about_auto_accepted_loan(lender, lender_loan_url)
                 .await;
 
             db::contract_emails::mark_auto_accept_email_as_sent(&data.db, &contract.id)
@@ -360,7 +360,7 @@ async fn post_contract_request(
             );
         } else {
             data.notifications
-                .send_new_loan_request(lender, lender_loan_url.as_str())
+                .send_new_loan_request(lender, lender_loan_url)
                 .await;
 
             db::contract_emails::mark_loan_request_as_sent(&data.db, &contract.id)
@@ -578,20 +578,18 @@ async fn put_repayment_provided(
     .await
     .map_err(Error::Database)?;
 
-    let loan_url = format!(
-        "{}/my-contracts/{}",
-        data.config.lender_frontend_origin.to_owned(),
-        contract.id
-    );
+    let loan_url = data
+        .config
+        .lender_frontend_origin
+        .join(format!("/my-contracts/{}", contract.id).as_str())
+        .expect("to be valid url");
 
     if let Err(e) = async {
         let lender = db::lenders::get_user_by_id(&data.db, &contract.lender_id)
             .await?
             .context("Failed to find lender")?;
 
-        data.notifications
-            .send_loan_repaid(lender, loan_url.as_str())
-            .await;
+        data.notifications.send_loan_repaid(lender, loan_url).await;
 
         db::contract_emails::mark_loan_repaid_as_sent(&data.db, &contract.id)
             .await

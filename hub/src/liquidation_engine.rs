@@ -346,10 +346,9 @@ async fn send_notification(
         .await?
         .context("borrower not found")?;
 
-    let borrower_contract_url = format!(
-        "{}/my-contracts/{contract_id}",
-        config.borrower_frontend_origin
-    );
+    let borrower_contract_url = config
+        .borrower_frontend_origin
+        .join(format!("/my-contracts/{}", contract_id).as_str())?;
 
     match status {
         LiquidationStatus::Healthy => {
@@ -362,7 +361,7 @@ async fn send_notification(
                     contract.clone(),
                     price,
                     current_ltv,
-                    &borrower_contract_url,
+                    borrower_contract_url,
                 )
                 .await;
         }
@@ -372,7 +371,7 @@ async fn send_notification(
                     borrower,
                     contract.clone(),
                     price,
-                    &borrower_contract_url,
+                    borrower_contract_url,
                 )
                 .await;
 
@@ -380,13 +379,12 @@ async fn send_notification(
                 .await?
                 .context("lender not found")?;
 
-            let lender_contract_url = format!(
-                "{}/my-contracts/{contract_id}",
-                config.lender_frontend_origin
-            );
+            let lender_contract_url = config
+                .lender_frontend_origin
+                .join(format!("/my-contracts/{}", contract.id).as_str())?;
 
             notifications
-                .send_liquidation_notice_lender(lender, contract.clone(), &lender_contract_url)
+                .send_liquidation_notice_lender(lender, contract.clone(), lender_contract_url)
                 .await;
         }
     }

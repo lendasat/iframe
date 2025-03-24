@@ -176,14 +176,17 @@ async fn notify_borrower_about_expired_contracts(
         return Ok(());
     }
 
-    let loan_url = format!("{}/requests", config.borrower_frontend_origin,);
+    let loan_url = config
+        .borrower_frontend_origin
+        .join("requests")
+        .expect("to be a correct URL");
 
     let borrower = db::borrowers::get_user_by_id(db, contract.borrower_id.as_str())
         .await?
         .context("Could not find borrower")?;
 
     notifications
-        .send_expired_loan_request_borrower(borrower, loan_url.as_str())
+        .send_expired_loan_request_borrower(borrower, loan_url)
         .await;
 
     db::contract_emails::mark_loan_request_expired_borrower_as_sent(
@@ -227,14 +230,17 @@ async fn notify_lender_about_expired_offer(
         return Ok(());
     }
 
-    let loan_url = format!("{}/create-loan-offer", config.lender_frontend_origin,);
+    let loan_url = config
+        .lender_frontend_origin
+        .join("/create-loan-offer")
+        .expect("to be a correct URL");
 
     let lender = db::lenders::get_user_by_id(db, contract.lender_id.as_str())
         .await?
         .context("Could not find lender")?;
 
     notifications
-        .send_expired_loan_request_lender(lender, loan_url.as_str())
+        .send_expired_loan_request_lender(lender, loan_url)
         .await;
 
     db::contract_emails::mark_loan_request_expired_lender_as_sent(

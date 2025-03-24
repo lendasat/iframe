@@ -3,11 +3,14 @@ use teloxide::dispatching::dialogue::InMemStorage;
 use teloxide::dptree::case;
 use teloxide::dptree::deps;
 use teloxide::prelude::*;
+use teloxide::types::InlineKeyboardButton;
+use teloxide::types::InlineKeyboardMarkup;
 use teloxide::types::LinkPreviewOptions;
 use teloxide::types::ParseMode;
 use teloxide::utils::command::BotCommands;
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::mpsc::Sender;
+use url::Url;
 
 pub struct TelegramBot {
     inner: Bot,
@@ -39,11 +42,21 @@ impl TelegramBot {
                     tracing::debug!(
                         chat_id = message.chat_id,
                         message = message.message,
+                        details = ?message.details,
                         "Sending message to user"
                     );
 
+                    let mut keyboard: Vec<Vec<InlineKeyboardButton>> = vec![];
+                    if let Some(details) = message.details {
+                        let button = InlineKeyboardButton::url(details.title, details.url);
+                        keyboard.push(vec![button])
+                    }
+
+                    let keyboard = InlineKeyboardMarkup::new(keyboard);
+
                     if let Err(err) = bot
                         .send_message(message.chat_id.clone(), message.message)
+                        .reply_markup(keyboard)
                         .parse_mode(ParseMode::MarkdownV2)
                         .link_preview_options(LinkPreviewOptions {
                             is_disabled: false,
@@ -224,6 +237,14 @@ pub struct MessageToUser {
     pub chat_id: String,
     /// Message to send to the user
     pub message: String,
+    /// If present, the message will show an extra button
+    pub details: Option<DetailsButton>,
+}
+
+#[derive(Clone, Debug)]
+pub struct DetailsButton {
+    pub title: String,
+    pub url: Url,
 }
 
 #[derive(Clone, Debug)]

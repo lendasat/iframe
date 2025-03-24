@@ -4,6 +4,7 @@ use crate::model::Contract;
 use crate::model::Lender;
 use crate::telegram_bot::TelegramBot;
 use rust_decimal::Decimal;
+use url::Url;
 use xtra::Address;
 
 mod email;
@@ -21,7 +22,7 @@ impl Notifications {
         }
     }
 
-    pub async fn send_verification_code(&self, name: &str, email: &str, url: &str, code: &str) {
+    pub async fn send_verification_code(&self, name: &str, email: &str, url: Url, code: &str) {
         if let Err(e) = self
             .email
             .send_verification_code(name, email, url, code)
@@ -36,7 +37,7 @@ impl Notifications {
         name: &str,
         email: &str,
         token_expiry_minutes: i64,
-        url: &str,
+        url: Url,
     ) {
         if let Err(e) = self
             .email
@@ -80,11 +81,11 @@ impl Notifications {
         contract: Contract,
         price: Decimal,
         current_ltv: Decimal,
-        contract_url: &str,
+        contract_url: Url,
     ) {
         self.send_tg_notification_borrower(
             &borrower,
-            contract_url,
+            contract_url.clone(),
             crate::telegram_bot::BorrowerNotificationKind::MarginCall,
         )
         .await;
@@ -103,11 +104,11 @@ impl Notifications {
         borrower: Borrower,
         contract: Contract,
         price: Decimal,
-        contract_url: &str,
+        contract_url: Url,
     ) {
         self.send_tg_notification_borrower(
             &borrower,
-            contract_url,
+            contract_url.clone(),
             crate::telegram_bot::BorrowerNotificationKind::LiquidationNotice,
         )
         .await;
@@ -125,11 +126,11 @@ impl Notifications {
         &self,
         lender: Lender,
         contract: Contract,
-        contract_url: &str,
+        contract_url: Url,
     ) {
         self.send_tg_notification_lender(
             &lender,
-            contract_url,
+            contract_url.clone(),
             crate::telegram_bot::LenderNotificationKind::LiquidationNotice,
         )
         .await;
@@ -143,10 +144,10 @@ impl Notifications {
         }
     }
 
-    pub async fn send_new_loan_request(&self, lender: Lender, url: &str) {
+    pub async fn send_new_loan_request(&self, lender: Lender, url: Url) {
         self.send_tg_notification_lender(
             &lender,
-            url,
+            url.clone(),
             crate::telegram_bot::LenderNotificationKind::NewLoanRequest,
         )
         .await;
@@ -156,10 +157,10 @@ impl Notifications {
         }
     }
 
-    pub async fn send_loan_request_approved(&self, borrower: Borrower, contract_url: &str) {
+    pub async fn send_loan_request_approved(&self, borrower: Borrower, contract_url: Url) {
         self.send_tg_notification_borrower(
             &borrower,
-            contract_url,
+            contract_url.clone(),
             crate::telegram_bot::BorrowerNotificationKind::RequestApproved,
         )
         .await;
@@ -173,10 +174,10 @@ impl Notifications {
         }
     }
 
-    pub async fn send_notification_about_auto_accepted_loan(&self, lender: Lender, url: &str) {
+    pub async fn send_notification_about_auto_accepted_loan(&self, lender: Lender, url: Url) {
         self.send_tg_notification_lender(
             &lender,
-            url,
+            url.clone(),
             crate::telegram_bot::LenderNotificationKind::RequestAutoApproved,
         )
         .await;
@@ -190,10 +191,10 @@ impl Notifications {
         }
     }
 
-    pub async fn send_loan_request_rejected(&self, borrower: Borrower, contract_url: &str) {
+    pub async fn send_loan_request_rejected(&self, borrower: Borrower, contract_url: Url) {
         self.send_tg_notification_borrower(
             &borrower,
-            contract_url,
+            contract_url.clone(),
             crate::telegram_bot::BorrowerNotificationKind::RequestRejected,
         )
         .await;
@@ -207,10 +208,10 @@ impl Notifications {
         }
     }
 
-    pub async fn send_loan_collateralized(&self, lender: Lender, url: &str) {
+    pub async fn send_loan_collateralized(&self, lender: Lender, url: Url) {
         self.send_tg_notification_lender(
             &lender,
-            url,
+            url.clone(),
             crate::telegram_bot::LenderNotificationKind::Collateralized,
         )
         .await;
@@ -220,10 +221,10 @@ impl Notifications {
         }
     }
 
-    pub async fn send_loan_paid_out(&self, borrower: Borrower, contract_url: &str) {
+    pub async fn send_loan_paid_out(&self, borrower: Borrower, contract_url: Url) {
         self.send_tg_notification_borrower(
             &borrower,
-            contract_url,
+            contract_url.clone(),
             crate::telegram_bot::BorrowerNotificationKind::LoanPaidOut,
         )
         .await;
@@ -237,11 +238,11 @@ impl Notifications {
         &self,
         borrower: Borrower,
         expiry_date: &str,
-        contract_url: &str,
+        contract_url: Url,
     ) {
         self.send_tg_notification_borrower(
             &borrower,
-            contract_url,
+            contract_url.clone(),
             crate::telegram_bot::BorrowerNotificationKind::CloseToExpiry,
         )
         .await;
@@ -255,10 +256,10 @@ impl Notifications {
         }
     }
 
-    pub async fn send_moon_card_ready(&self, borrower: Borrower, contract_url: &str) {
+    pub async fn send_moon_card_ready(&self, borrower: Borrower, contract_url: Url) {
         self.send_tg_notification_borrower(
             &borrower,
-            contract_url,
+            contract_url.clone(),
             crate::telegram_bot::BorrowerNotificationKind::MoonCardReady,
         )
         .await;
@@ -272,10 +273,10 @@ impl Notifications {
         }
     }
 
-    pub async fn send_loan_repaid(&self, lender: Lender, url: &str) {
+    pub async fn send_loan_repaid(&self, lender: Lender, url: Url) {
         self.send_tg_notification_lender(
             &lender,
-            url,
+            url.clone(),
             crate::telegram_bot::LenderNotificationKind::Repaid,
         )
         .await;
@@ -285,10 +286,10 @@ impl Notifications {
         }
     }
 
-    pub async fn send_loan_liquidated_after_default(&self, borrower: Borrower, contract_url: &str) {
+    pub async fn send_loan_liquidated_after_default(&self, borrower: Borrower, contract_url: Url) {
         self.send_tg_notification_borrower(
             &borrower,
-            contract_url,
+            contract_url.clone(),
             crate::telegram_bot::BorrowerNotificationKind::LiquidatedAfterDefault,
         )
         .await;
@@ -302,10 +303,10 @@ impl Notifications {
         }
     }
 
-    pub async fn send_loan_defaulted_lender(&self, lender: Lender, url: &str) {
+    pub async fn send_loan_defaulted_lender(&self, lender: Lender, url: Url) {
         self.send_tg_notification_lender(
             &lender,
-            url,
+            url.clone(),
             crate::telegram_bot::LenderNotificationKind::Defaulted,
         )
         .await;
@@ -315,10 +316,10 @@ impl Notifications {
         }
     }
 
-    pub async fn send_loan_defaulted_borrower(&self, borrower: Borrower, contract_url: &str) {
+    pub async fn send_loan_defaulted_borrower(&self, borrower: Borrower, contract_url: Url) {
         self.send_tg_notification_borrower(
             &borrower,
-            contract_url,
+            contract_url.clone(),
             crate::telegram_bot::BorrowerNotificationKind::LoanDefaulted,
         )
         .await;
@@ -332,10 +333,10 @@ impl Notifications {
         }
     }
 
-    pub async fn send_expired_loan_request_borrower(&self, borrower: Borrower, contract_url: &str) {
+    pub async fn send_expired_loan_request_borrower(&self, borrower: Borrower, contract_url: Url) {
         self.send_tg_notification_borrower(
             &borrower,
-            contract_url,
+            contract_url.clone(),
             crate::telegram_bot::BorrowerNotificationKind::LoanRequestExpired,
         )
         .await;
@@ -348,10 +349,10 @@ impl Notifications {
             tracing::error!("Could not send email {e:#}");
         }
     }
-    pub async fn send_expired_loan_request_lender(&self, lender: Lender, url: &str) {
+    pub async fn send_expired_loan_request_lender(&self, lender: Lender, url: Url) {
         self.send_tg_notification_lender(
             &lender,
-            url,
+            url.clone(),
             crate::telegram_bot::LenderNotificationKind::RequestExpired,
         )
         .await;
@@ -365,10 +366,10 @@ impl Notifications {
         }
     }
 
-    pub async fn send_chat_notification_lender(&self, lender: Lender, contract_url: &str) {
+    pub async fn send_chat_notification_lender(&self, lender: Lender, contract_url: Url) {
         self.send_tg_notification_lender(
             &lender,
-            contract_url,
+            contract_url.clone(),
             crate::telegram_bot::LenderNotificationKind::NewChatMessage {
                 name: lender.name.clone(),
             },
@@ -382,10 +383,10 @@ impl Notifications {
             tracing::error!("Could not send email {e:#}");
         }
     }
-    pub async fn send_chat_notification_borrower(&self, borrower: Borrower, contract_url: &str) {
+    pub async fn send_chat_notification_borrower(&self, borrower: Borrower, contract_url: Url) {
         self.send_tg_notification_borrower(
             &borrower,
-            contract_url,
+            contract_url.clone(),
             crate::telegram_bot::BorrowerNotificationKind::NewChatMessage {
                 name: borrower.name.clone(),
             },
@@ -404,14 +405,14 @@ impl Notifications {
     async fn send_tg_notification_lender(
         &self,
         lender: &Lender,
-        contract_url: &str,
+        url: Url,
         kind: crate::telegram_bot::LenderNotificationKind,
     ) {
         if let Some(tgb) = &self.telegram_bot {
             if let Err(e) = tgb
                 .send(crate::telegram_bot::Notification {
                     user_id: lender.id.clone(),
-                    url: contract_url.to_string(),
+                    url,
                     kind: crate::telegram_bot::NotificationTarget::Lender(kind),
                 })
                 .await
@@ -424,14 +425,14 @@ impl Notifications {
     async fn send_tg_notification_borrower(
         &self,
         borrower: &Borrower,
-        contract_url: &str,
+        contract_url: Url,
         kind: crate::telegram_bot::BorrowerNotificationKind,
     ) {
         if let Some(tgb) = &self.telegram_bot {
             if let Err(e) = tgb
                 .send(crate::telegram_bot::Notification {
                     user_id: borrower.id.clone(),
-                    url: contract_url.to_string(),
+                    url: contract_url,
                     kind: crate::telegram_bot::NotificationTarget::Borrower(kind),
                 })
                 .await

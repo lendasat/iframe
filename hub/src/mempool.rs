@@ -1004,13 +1004,12 @@ async fn send_loan_collateralized_email_to_lender(
             .await?
             .context("Cannot send collateral-funded email to unknown lender")?;
 
-        let loan_url = format!(
-            "{}/my-contracts/{}",
-            config.lender_frontend_origin, contract_id
-        );
+        let loan_url = config
+            .lender_frontend_origin
+            .join(format!("/my-contracts/{}", contract_id).as_str())?;
 
         notifications
-            .send_loan_collateralized(lender, loan_url.as_str())
+            .send_loan_collateralized(lender, loan_url)
             .await;
 
         db::contract_emails::mark_collateral_funded_as_sent(db, contract_id)

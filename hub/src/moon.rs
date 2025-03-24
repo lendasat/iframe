@@ -298,11 +298,10 @@ impl Manager {
             .context("Failed loading borrower")?
             .context("Borrower not found")?;
 
-        let card_details_url =
-            format!("{}/cards", self.config.borrower_frontend_origin.to_owned(),);
+        let card_details_url = self.config.borrower_frontend_origin.join("/cards")?;
 
         self.notifications
-            .send_moon_card_ready(borrower, card_details_url.as_str())
+            .send_moon_card_ready(borrower, card_details_url)
             .await;
 
         Ok(())

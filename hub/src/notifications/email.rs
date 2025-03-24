@@ -19,6 +19,7 @@ use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use time::format_description;
 use time::Duration;
+use url::Url;
 
 static TEMPLATES_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/../templates");
 const DISPUTE_ADMIN_EMAIL: &str = "dispute-center@lendasat.com";
@@ -137,7 +138,7 @@ impl Email {
         &self,
         name: &str,
         email: &str,
-        url: &str,
+        url: Url,
         code: &str,
     ) -> Result<()> {
         let template_name = "verification_code";
@@ -161,7 +162,7 @@ impl Email {
         name: &str,
         email: &str,
         token_expiry_minutes: i64,
-        url: &str,
+        url: Url,
     ) -> Result<()> {
         let template_name = "reset_password";
         let handlebars = Self::prepare_template(template_name)?;
@@ -241,7 +242,7 @@ impl Email {
         contract: Contract,
         price: Decimal,
         current_ltv: Decimal,
-        contract_url: &str,
+        contract_url: Url,
     ) -> Result<()> {
         let template_name = "margin_call";
 
@@ -298,7 +299,7 @@ impl Email {
         borrower: Borrower,
         contract: Contract,
         price: Decimal,
-        contract_url: &str,
+        contract_url: Url,
     ) -> Result<()> {
         let template_name = "liquidated_borrower";
 
@@ -335,11 +336,13 @@ impl Email {
         &self,
         lender: Lender,
         contract: Contract,
-        contract_url: &str,
+        contract_url: Url,
     ) -> Result<()> {
         let template_name = "liquidated_lender";
 
         let handlebars = Self::prepare_template(template_name)?;
+
+        let contract_url = contract_url.as_str();
 
         let data = serde_json::json!({
             "first_name": lender.name.as_str(),
@@ -358,9 +361,10 @@ impl Email {
         .await
     }
 
-    pub async fn send_new_loan_request(&self, lender: Lender, url: &str) -> Result<()> {
+    pub async fn send_new_loan_request(&self, lender: Lender, url: Url) -> Result<()> {
         let template_name = "loan_requested";
         let handlebars = Self::prepare_template(template_name)?;
+        let url = url.as_str();
 
         let data = serde_json::json!({
             "first_name": &lender.name,
@@ -379,7 +383,7 @@ impl Email {
         .await
     }
 
-    pub async fn send_loan_request_approved(&self, borrower: Borrower, url: &str) -> Result<()> {
+    pub async fn send_loan_request_approved(&self, borrower: Borrower, url: Url) -> Result<()> {
         let template_name = "loan_request_approved";
         let handlebars = Self::prepare_template(template_name)?;
 
@@ -407,10 +411,11 @@ impl Email {
     pub async fn send_notification_about_auto_accepted_loan(
         &self,
         lender: Lender,
-        url: &str,
+        url: Url,
     ) -> Result<()> {
         let template_name = "loan_request_auto_approved";
         let handlebars = Self::prepare_template(template_name)?;
+        let url = url.as_str();
 
         let data = serde_json::json!({
             "first_name": &lender.name,
@@ -429,7 +434,7 @@ impl Email {
         .await
     }
 
-    pub async fn send_loan_request_rejected(&self, borrower: Borrower, url: &str) -> Result<()> {
+    pub async fn send_loan_request_rejected(&self, borrower: Borrower, url: Url) -> Result<()> {
         let template_name = "loan_request_rejected";
         let handlebars = Self::prepare_template(template_name)?;
 
@@ -454,9 +459,11 @@ impl Email {
         Ok(())
     }
 
-    pub async fn send_loan_collateralized(&self, user: Lender, url: &str) -> Result<()> {
+    pub async fn send_loan_collateralized(&self, user: Lender, url: Url) -> Result<()> {
         let template_name = "loan_collateralized";
         let handlebars = Self::prepare_template(template_name)?;
+
+        let url = url.as_str();
 
         let data = serde_json::json!({
             "first_name": &user.name,
@@ -475,7 +482,7 @@ impl Email {
         .await
     }
 
-    pub async fn send_loan_paid_out(&self, user: Borrower, url: &str) -> Result<()> {
+    pub async fn send_loan_paid_out(&self, user: Borrower, url: Url) -> Result<()> {
         let template_name = "loan_paid_out";
         let handlebars = Self::prepare_template(template_name)?;
 
@@ -504,7 +511,7 @@ impl Email {
         &self,
         user: Borrower,
         expiry_date: &str,
-        url: &str,
+        url: Url,
     ) -> Result<()> {
         let template_name = "loan_close_to_expiry";
         let handlebars = Self::prepare_template(template_name)?;
@@ -531,7 +538,7 @@ impl Email {
         Ok(())
     }
 
-    pub async fn send_moon_card_ready(&self, user: Borrower, url: &str) -> Result<()> {
+    pub async fn send_moon_card_ready(&self, user: Borrower, url: Url) -> Result<()> {
         let template_name = "pay_with_moon_ready";
         let handlebars = Self::prepare_template(template_name)?;
 
@@ -555,7 +562,7 @@ impl Email {
         Ok(())
     }
 
-    pub async fn send_loan_repaid(&self, user: Lender, url: &str) -> Result<()> {
+    pub async fn send_loan_repaid(&self, user: Lender, url: Url) -> Result<()> {
         let template_name = "loan_repaid";
         let handlebars = Self::prepare_template(template_name)?;
 
@@ -576,11 +583,7 @@ impl Email {
         .await
     }
 
-    pub async fn send_loan_liquidated_after_default(
-        &self,
-        user: Borrower,
-        url: &str,
-    ) -> Result<()> {
+    pub async fn send_loan_liquidated_after_default(&self, user: Borrower, url: Url) -> Result<()> {
         let template_name = "loan_liquidated_default";
         let handlebars = Self::prepare_template(template_name)?;
 
@@ -605,7 +608,7 @@ impl Email {
         Ok(())
     }
 
-    pub async fn send_loan_defaulted_lender(&self, user: Lender, url: &str) -> Result<()> {
+    pub async fn send_loan_defaulted_lender(&self, user: Lender, url: Url) -> Result<()> {
         let template_name = "loan_defaulted_lender";
         let handlebars = Self::prepare_template(template_name)?;
 
@@ -626,7 +629,7 @@ impl Email {
         .await
     }
 
-    pub async fn send_loan_defaulted_borrower(&self, user: Borrower, url: &str) -> Result<()> {
+    pub async fn send_loan_defaulted_borrower(&self, user: Borrower, url: Url) -> Result<()> {
         let template_name = "loan_defaulted_borrower";
         let handlebars = Self::prepare_template(template_name)?;
 
@@ -654,7 +657,7 @@ impl Email {
     pub async fn send_expired_loan_request_borrower(
         &self,
         borrower: Borrower,
-        offers_url: &str,
+        offers_url: Url,
     ) -> Result<()> {
         let template_name = "loan_request_expired_borrower";
         let handlebars = Self::prepare_template(template_name)?;
@@ -683,7 +686,7 @@ impl Email {
     pub async fn send_expired_loan_request_lender(
         &self,
         lender: Lender,
-        create_new_offer_url: &str,
+        create_new_offer_url: Url,
     ) -> Result<()> {
         let template_name = "loan_request_expired_lender";
         let handlebars = Self::prepare_template(template_name)?;
@@ -708,7 +711,7 @@ impl Email {
     pub async fn send_new_chat_message_notification_lender(
         &self,
         lender: Lender,
-        create_new_offer_url: &str,
+        create_new_offer_url: Url,
     ) -> Result<()> {
         let template_name = "new_chat_notification";
         let handlebars = Self::prepare_template(template_name)?;
@@ -733,7 +736,7 @@ impl Email {
     pub async fn send_new_chat_message_notification_borrower(
         &self,
         borrower: Borrower,
-        create_new_offer_url: &str,
+        create_new_offer_url: Url,
     ) -> Result<()> {
         let template_name = "new_chat_notification";
         let handlebars = Self::prepare_template(template_name)?;

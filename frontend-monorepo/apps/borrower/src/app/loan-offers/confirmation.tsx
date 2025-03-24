@@ -246,7 +246,7 @@ export const Confirmation = ({
       }
 
       const res = await postContractRequest({
-        loan_id: selectedOfferId,
+        id: selectedOfferId,
         loan_amount: selectedLoanAmount,
         duration_days: selectedLoanDuration,
         borrower_btc_address: bitcoinAddress,
