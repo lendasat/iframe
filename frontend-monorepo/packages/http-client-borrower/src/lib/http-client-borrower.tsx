@@ -621,7 +621,9 @@ export class HttpClientBorrower extends BaseHttpClient {
         );
         throw new Error(message);
       } else {
-        throw new Error(`Could not send notification: ${JSON.stringify(error)}`);
+        throw new Error(
+          `Could not send notification: ${JSON.stringify(error)}`,
+        );
       }
     }
   }
