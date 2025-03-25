@@ -7,6 +7,7 @@ import { Slider } from "./components/ui/slider";
 import { Separator } from "./components/ui/separator";
 import { useState } from "react";
 import AuthWizard from "@/AuthWizard.tsx";
+import LoanTerms from "@/LoanTerms.tsx";
 
 function App() {
   // const sendMessage = () => {
@@ -160,7 +161,7 @@ function LoginTab() {
 }
 
 function ConfirmTab() {
-  return <h2>Send collateral now.</h2>;
+  return <LoanTerms />;
 }
 
 export default App;
