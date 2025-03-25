@@ -1,28 +1,29 @@
-import { Button, Col, Container, Row } from "react-bootstrap";
 import { BiError } from "react-icons/bi";
 import { Link, useNavigate } from "react-router-dom";
 
 const ErrorBoundary = () => {
   const navigate = useNavigate();
   return (
-    <Container className="mt-5">
-      <Row className="justify-content-center">
-        <Col md={6} className="text-center">
-          <div className="d-flex justify-content-center mb-4">
-            <BiError size={80} color="#dc3545" />
-          </div>
-          <h2 className="mb-3">Oops! Something went wrong</h2>
-          <p className="text-font dark:text-font-dark mb-4">
-            {"We couldn't find what you were looking for."}
-          </p>
-          <Link to="/">
-            <Button variant="primary" onClick={() => navigate("/")}>
-              Home
-            </Button>
-          </Link>
-        </Col>
-      </Row>
-    </Container>
+    <div className="mt-5 flex justify-center">
+      <div className="w-full max-w-md text-center">
+        <div className="flex justify-center mb-4">
+          <BiError size={80} color="#dc3545" />
+        </div>
+        <h2 className="mb-3 text-2xl font-bold">Oops! Something went wrong</h2>
+        <p className="text-font dark:text-font-dark mb-4">
+          {"We couldn't find what you were looking for."}
+        </p>
+        <Link to="/">
+          <button
+            type="button"
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            onClick={() => navigate("/")}
+          >
+            Home
+          </button>
+        </Link>
+      </div>
+    </div>
   );
 };
 
