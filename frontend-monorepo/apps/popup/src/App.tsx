@@ -6,6 +6,7 @@ import { Label } from "./components/ui/label";
 import { Slider } from "./components/ui/slider";
 import { Separator } from "./components/ui/separator";
 import { useState } from "react";
+import AuthWizard from "@/AuthWizard.tsx";
 
 function App() {
   // const sendMessage = () => {
@@ -32,13 +33,19 @@ function App() {
           <TabsTrigger value="confirm">Confirm</TabsTrigger>
         </TabsList>
         <TabsContent value="configure">
-          <ConfigureTab />
+          <div className="min-w-[400px]">
+            <ConfigureTab />
+          </div>
         </TabsContent>
         <TabsContent value="login">
-          <LoginTab />
+          <div className="min-w-[400px]">
+            <LoginTab />
+          </div>
         </TabsContent>
         <TabsContent value="confirm">
-          <ConfirmTab />
+          <div className="min-w-[400px]">
+            <ConfirmTab />
+          </div>
         </TabsContent>
       </Tabs>
       <Button className="mx-auto w-[300px]">Next</Button>
@@ -75,7 +82,7 @@ function ConfigureTab() {
   }).format(totalOwed);
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col items-center gap-2">
       <Card className="w-[350px] gap-3 p-4">
         <CardHeader>
           <CardTitle>Collateral</CardTitle>
@@ -149,7 +156,7 @@ function ConfigureTab() {
 }
 
 function LoginTab() {
-  return <h2>Log in to continue.</h2>;
+  return <AuthWizard />;
 }
 
 function ConfirmTab() {
