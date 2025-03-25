@@ -45,11 +45,14 @@ function App() {
 
   return (
     <>
-      <div>Shop</div>
       <div>
-        <h1>Your Shopping Cart</h1>
-        <div className="cart-total">Total: $99.99</div>
-        <p>Transaction ID: {label}</p>
+        <h1 className="mb-4 text-2xl font-bold">Your Shopping Cart</h1>
+        <div className="mb-6 text-lg font-medium">Total: $99.99</div>
+        {label && (
+          <div className="mb-4 rounded-md bg-green-100 p-3 text-green-800">
+            {label}
+          </div>
+        )}
 
         <LendasatButton
           amount={99.99}
