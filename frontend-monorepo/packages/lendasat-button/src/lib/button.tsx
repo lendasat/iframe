@@ -1,12 +1,53 @@
-export const LendasatButton = ({
+import React, { CSSProperties, ButtonHTMLAttributes } from "react";
+
+// Define types for success, cancel, and error callbacks
+type SuccessData = {
+  transactionId?: string;
+  amount?: number;
+  [key: string]: any;
+};
+
+type ErrorData = {
+  error: string;
+  message: string;
+  [key: string]: any;
+};
+
+type CancelData = {
+  reason?: string;
+  [key: string]: any;
+};
+
+// Define props interface with proper typing
+interface LendasatButtonProps
+  extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "onClick"> {
+  amount: number;
+  currency?: string;
+  onSuccess?: (data: SuccessData) => void;
+  onCancel?: (data?: CancelData) => void;
+  onError?: (error: ErrorData) => void;
+  buttonText?: string;
+  clientId?: string;
+  widgetName?: string;
+  // Style options
+  buttonStyle?: CSSProperties;
+  className?: string;
+  containerClassName?: string;
+}
+
+export const LendasatButton: React.FC<LendasatButtonProps> = ({
   amount,
-  currency = "USD",
+  currency,
   onSuccess,
   onCancel,
   onError,
-  buttonText = "Pay Now",
-  clientId = "your-client-id",
-  widgetName = "PaymentWidget",
+  buttonText,
+  clientId,
+  widgetName,
+  buttonStyle,
+  className,
+  containerClassName,
+  ...buttonProps // Capture remaining button attributes like disabled, aria-label, etc.
 }) => {
   const openPaymentPopup = () => {
     // Calculate center position for the popup
@@ -30,10 +71,8 @@ export const LendasatButton = ({
       return;
     }
 
-    // Set the popup content and handle communication
-
     // Set up event listener for messages from the popup
-    const messageHandler = (event) => {
+    const messageHandler = (event: MessageEvent) => {
       // Validate origin of the message if needed
       // if (event.origin !== expectedOrigin) return;
 
@@ -44,7 +83,7 @@ export const LendasatButton = ({
       if (data.status === "success") {
         onSuccess?.(data.message);
       } else if (data.status === "cancelled") {
-        onCancel?.();
+        onCancel?.(data.data);
       } else if (data.status === "error") {
         onError?.(data);
       }
@@ -62,5 +101,25 @@ export const LendasatButton = ({
     }, 50);
   };
 
-  return <button onClick={openPaymentPopup}>{buttonText}</button>;
+  const defaultButtonStyle: CSSProperties = {
+    backgroundColor: "#4CAF50",
+    color: "white",
+    padding: "10px 20px",
+    border: "none",
+    borderRadius: "4px",
+    cursor: "pointer",
+    fontSize: "16px",
+    ...buttonStyle,
+  };
+
+  return (
+    <button
+      onClick={openPaymentPopup}
+      style={buttonStyle || defaultButtonStyle}
+      className={className}
+      {...buttonProps}
+    >
+      {buttonText}
+    </button>
+  );
 };
