@@ -1,10 +1,11 @@
 import * as React from "react";
-import { HomeIcon, SettingsIcon, UserIcon } from "lucide-react";
+import { Bitcoin, SettingsIcon, UserIcon } from "lucide-react";
 import { defineStepper } from "@/components/ui/stepper.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { ConfigureLoan } from "@/ConfigureLoan.tsx";
 import AuthWizard from "@/AuthWizard.tsx";
 import LoanTerms from "./LoanTerms";
+import { useState } from "react";
 
 const {
   StepperProvider,
@@ -16,18 +17,18 @@ const {
 } = defineStepper(
   {
     id: "step-1",
-    title: "Step 1",
-    icon: <HomeIcon />,
-  },
-  {
-    id: "step-2",
-    title: "Step 2",
+    title: "Configure",
     icon: <SettingsIcon />,
   },
   {
-    id: "step-3",
-    title: "Step 3",
+    id: "step-2",
+    title: "Authenticate",
     icon: <UserIcon />,
+  },
+  {
+    id: "step-3",
+    title: "Confirm",
+    icon: <Bitcoin />,
   },
 );
 
@@ -74,16 +75,48 @@ export default function Stepper() {
 }
 
 const Content = ({ id }: { id: string }) => {
-  let content = <ConfigureLoan />;
+  const [months, setMonths] = useState(4);
+
+  // TODO: These should come from button presser.
+  const loanAmount = 5000;
+  const ltvRatio = 50;
+
+  // This formula is completely arbitrary.
+  const yearlyInterestRate = 9.5 + months * 0.25;
+
+  let content = (
+    <ConfigureLoan
+      loanAmount={loanAmount}
+      months={months}
+      setMonths={setMonths}
+      ltvRatio={ltvRatio}
+      yearlyInterestRate={yearlyInterestRate}
+    />
+  );
   switch (id) {
     case "step-1":
-      content = <ConfigureLoan />;
+      content = (
+        <ConfigureLoan
+          loanAmount={loanAmount}
+          months={months}
+          setMonths={setMonths}
+          ltvRatio={ltvRatio}
+          yearlyInterestRate={yearlyInterestRate}
+        />
+      );
       break;
     case "step-2":
       content = <AuthWizard />;
       break;
     case "step-3":
-      content = <LoanTerms />;
+      content = (
+        <LoanTerms
+          loanAmount={loanAmount}
+          months={months}
+          yearlyInterestRate={yearlyInterestRate}
+          ltvRatio={ltvRatio}
+        />
+      );
       break;
   }
 

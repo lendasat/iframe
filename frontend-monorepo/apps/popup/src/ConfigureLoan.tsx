@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   Card,
   CardContent,
@@ -9,17 +8,26 @@ import { Label } from "@/components/ui/label.tsx";
 import { Slider } from "@/components/ui/slider.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
 
-export function ConfigureLoan() {
-  const [months, setMonths] = useState(4);
+interface ConfigureLoanProps {
+  loanAmount: number;
+  months: number;
+  setMonths: (months: number) => void;
+  ltvRatio: number;
+  yearlyInterestRate: number;
+}
 
-  // TODO: Should come from button presser.
-  const loanAmount = 5000;
+export function ConfigureLoan({
+  loanAmount,
+  months,
+  setMonths,
+  ltvRatio,
+  yearlyInterestRate,
+}: ConfigureLoanProps) {
   const loanAmountString = new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(loanAmount);
 
-  const yearlyInterestRate = 9.5 + months * 0.25;
   const yearlyInterestRateString = new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -38,15 +46,15 @@ export function ConfigureLoan() {
   }).format(totalOwed);
 
   return (
-    <div className="flex flex-col items-center gap-2">
-      <Card className="w-[350px] gap-3 p-4">
+    <div className="mx-auto flex max-w-md flex-col gap-y-4">
+      <Card className="gap-3 p-4">
         <CardHeader>
           <CardTitle>Collateral</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-1.5 rounded-lg bg-white p-2 ring-1 ring-gray-300">
           <div className="flex justify-between px-2">
             <Label>LTV ratio</Label>
-            <Label>50%</Label>
+            <Label>{ltvRatio}%</Label>
           </div>
           <div className="flex justify-between px-2">
             <Label>Collateral amount</Label>
@@ -55,7 +63,7 @@ export function ConfigureLoan() {
           <Label className="justify-center"></Label>
         </CardContent>
       </Card>
-      <Card className="w-[350px] gap-3 p-4">
+      <Card className="gap-3 p-4">
         <CardHeader>
           <CardTitle>Loan terms</CardTitle>
         </CardHeader>

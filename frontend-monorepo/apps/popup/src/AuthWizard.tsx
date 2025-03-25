@@ -28,7 +28,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 const AuthWizard = () => {
   // State management
   const [currentStep, setCurrentStep] = useState(1);
-  const [email, setEmail] = useState("sample@ledasat.com");
+  const [email, setEmail] = useState("borrower@lendasat.com");
   const [verificationCode, setVerificationCode] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -62,7 +62,7 @@ const AuthWizard = () => {
     } else if (currentStep === 2) {
       // Validate verification code
       if (!verificationCode || verificationCode.length < 4) {
-        setError("Please enter a valid verification code");
+        setError("Please enter a valid verification code.");
         return;
       }
 
@@ -72,7 +72,7 @@ const AuthWizard = () => {
       if (isExistingUser) {
         // Existing user just needs password
         if (!password) {
-          setError("Please enter your password");
+          setError("Please enter your password.");
           return;
         }
 
@@ -82,12 +82,12 @@ const AuthWizard = () => {
       } else {
         // New user needs to create and confirm password
         if (!password) {
-          setError("No password provided");
+          setError("No password provided.");
           return;
         }
 
         if (password !== confirmPassword) {
-          setError("Passwords do not match");
+          setError("Passwords do not match.");
           return;
         }
 
@@ -114,7 +114,7 @@ const AuthWizard = () => {
             <CardHeader>
               <CardTitle>Enter your email</CardTitle>
               <CardDescription>
-                We'll send a verification code to this email address.
+                We will send a verification code to this address.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -140,7 +140,7 @@ const AuthWizard = () => {
             <CardHeader>
               <CardTitle>Verify your email</CardTitle>
               <CardDescription>
-                Enter the verification code sent to {email}
+                Enter the verification code sent to {email}.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -168,7 +168,7 @@ const AuthWizard = () => {
                   className="h-auto p-0"
                   onClick={() => console.log("Resend code")}
                 >
-                  Didn't receive the code? Resend
+                  Did not receive the code? Resend.
                 </Button>
               </div>
             </CardContent>
@@ -184,8 +184,8 @@ const AuthWizard = () => {
               </CardTitle>
               <CardDescription>
                 {isExistingUser
-                  ? "Enter your password to continue"
-                  : "Create a secure password for your new account"}
+                  ? "Enter your password to continue."
+                  : "Choose a secure password for your new account."}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -196,9 +196,7 @@ const AuthWizard = () => {
                     id="password"
                     type="password"
                     placeholder={
-                      isExistingUser
-                        ? "Enter your password"
-                        : "Create a password"
+                      isExistingUser ? "Enter your password" : "Create password"
                     }
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -211,7 +209,7 @@ const AuthWizard = () => {
                     <Input
                       id="confirmPassword"
                       type="password"
-                      placeholder="Confirm your password"
+                      placeholder="Confirm password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                     />
@@ -230,12 +228,10 @@ const AuthWizard = () => {
                 {isExistingUser ? "Welcome back!" : "Account created!"}
               </CardTitle>
               <CardDescription className="text-center">
-                {isExistingUser
-                  ? "You have successfully signed in to your account."
-                  : "Your account has been successfully created."}
+                Press next to go ahead with your loan.
               </CardDescription>
             </CardHeader>
-            <CardContent className="flex justify-center pb-6">
+            <CardContent className="flex justify-center">
               <div className="flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
                 <CheckCheck className="h-10 w-10 text-green-600" />
               </div>
@@ -250,7 +246,7 @@ const AuthWizard = () => {
 
   return (
     <div className="mx-auto max-w-md">
-      <Card>
+      <Card className="gap-3 p-4">
         {getStepContent()}
 
         {error && (
@@ -288,9 +284,7 @@ const AuthWizard = () => {
                 )}
               </Button>
             </>
-          ) : (
-            <Button className="w-full">Continue</Button>
-          )}
+          ) : null}
         </CardFooter>
       </Card>
     </div>
