@@ -1,6 +1,6 @@
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Bitcoin } from "lucide-react";
+import { Bitcoin, Mail } from "lucide-react";
 import { Badge } from "./components/ui/badge";
 import {
   Accordion,
@@ -8,8 +8,50 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion.tsx";
+import { useState } from "react";
+import { LendasatButton } from "@frontend/lendasat-button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input.tsx";
 
 const CheckoutPage = () => {
+  const [success, setSuccess] = useState(false);
+
+  const handlePaymentSuccess = (data: {
+    transactionId?: string;
+    amount?: number;
+    [key: string]: any;
+  }) => {
+    console.log("Payment successful!", data);
+    // Update UI or state based on successful payment
+    setSuccess(true);
+  };
+
+  const handlePaymentCancel = (data?: {
+    reason?: string;
+    [key: string]: any;
+  }) => {
+    console.log("Payment cancelled", data?.reason);
+    // Handle cancellation
+  };
+
+  const handlePaymentError = (error: {
+    error: string;
+    message: string;
+    [key: string]: any;
+  }) => {
+    console.error("Payment error:", error.message);
+    // Display error message to user
+  };
+
   return (
     <div className="mx-auto max-w-6xl p-4 font-sans">
       <h1 className="mb-6 text-2xl font-bold">Order Summary</h1>
@@ -79,21 +121,6 @@ const CheckoutPage = () => {
               <p>$496.83</p>
             </div>
           </div>
-
-          {/* Shipping Address */}
-          {/*<section className="mb-8">*/}
-          {/*  <h2 className="mb-4 text-xl font-bold">Shipping</h2>*/}
-          {/*  <Card>*/}
-          {/*    <CardContent className="p-4">*/}
-          {/*      <div>*/}
-          {/*        <p className="font-bold">Sarah Johnson</p>*/}
-          {/*        <p>123 Main Street</p>*/}
-          {/*        <p>San Francisco, CA 94105</p>*/}
-          {/*        <p>sarah@example.com</p>*/}
-          {/*      </div>*/}
-          {/*    </CardContent>*/}
-          {/*  </Card>*/}
-          {/*</section>*/}
         </div>
 
         {/* Right Column - Payment Methods */}
@@ -157,10 +184,18 @@ const CheckoutPage = () => {
                         <Button variant="link" className="p-0 text-blue-600">
                           How does it work?
                         </Button>
-                        <Button className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600">
-                          <Bitcoin className="h-4 w-4" />
-                          Pay with Bitcoin Loan
-                        </Button>
+
+                        <LendasatButton
+                          amount={99.99}
+                          currency="USD"
+                          buttonText="Pay with Bitcoin Loan"
+                          widgetName="Bitcoin-backed loans"
+                          onSuccess={handlePaymentSuccess}
+                          onCancel={handlePaymentCancel}
+                          onError={handlePaymentError}
+                          disabled={success}
+                          aria-label="Complete checkout with Bitcoin loan"
+                        />
                       </div>
                     </div>
                   </AccordionContent>
@@ -168,72 +203,62 @@ const CheckoutPage = () => {
               </div>
             </Accordion>
           </section>
-          {/*<section>
-            <h2 className="mb-4 text-xl font-bold">Payment Method</h2>
-            <RadioGroup defaultValue="bitcoin">
-              <div className="mb-4 rounded-lg border p-4">
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="standard" id="standard" />
-                  <Label htmlFor="standard" className="font-bold">
-                    Standard Payment
-                  </Label>
-                </div>
-                <div className="ml-6 mt-2">
-                  <p className="mb-4 text-gray-700">
-                    Pay the full amount now using standard payment methods.
-                  </p>
-                  <div className="flex gap-2">
-                    <div className="flex h-8 w-12 items-center justify-center rounded p-2">
-                      <Badge>CARD</Badge>
-                    </div>
-                    <div className="flex h-8 w-12 items-center justify-center rounded p-2">
-                      <Badge>Visa</Badge>
-                    </div>
-                    <div className="flex h-8 w-12 items-center justify-center rounded p-2">
-                      <Badge>MasterCard</Badge>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-lg border border-orange-200 bg-orange-50 p-4">
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="bitcoin" id="bitcoin" />
-                  <Label
-                    htmlFor="bitcoin"
-                    className="flex items-center font-bold"
-                  >
-                    <Bitcoin className="mr-2 h-5 w-5 text-orange-500" />
-                    Bitcoin-Backed Loan
-                  </Label>
-                </div>
-                <div className="ml-6 mt-2">
-                  <p className="mb-4 text-gray-700">
-                    Use your Bitcoin as collateral to finance your purchase
-                    without selling. No credit check required.
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <p className="font-medium">Order Total:</p>
-                    <p className="font-bold">496.83</p>
-                  </div>
-                  <div className="mt-4 flex justify-between">
-                    <Button variant="link" className="p-0 text-blue-600">
-                      How does it work?
-                    </Button>
-                    <Button className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600">
-                      <Bitcoin className="h-4 w-4" />
-                      Pay with Bitcoin Loan
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </RadioGroup>
-          </section>*/}
 
           {/* Complete Purchase Button */}
-          <Button className="mt-8 w-full bg-green-600 py-6 text-lg hover:bg-green-700">
-            <span className="mr-2">🔒</span> Complete Purchase
-          </Button>
+          {/*<Button*/}
+          {/*  className="mt-8 w-full bg-green-600 py-6 text-lg hover:bg-green-700"*/}
+          {/*  disabled={!success}*/}
+          {/*>*/}
+          {/*  <span className="mr-2">🔒</span> Complete Purchase*/}
+          {/*</Button>*/}
+          <Dialog>
+            <DialogTrigger asChild>
+              <div
+                className="mt-6 flex w-full cursor-pointer items-center justify-center rounded-md bg-green-600 py-2 text-lg font-medium text-white hover:bg-green-700"
+                style={{
+                  pointerEvents: success ? "auto" : "none",
+                  opacity: success ? 1 : 0.5,
+                }}
+              >
+                <span className="mr-2">🔒</span> Complete Purchase
+              </div>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Thank you for playing</DialogTitle>
+                <DialogDescription>
+                  If you would like to see this widget in your webshop, please
+                  send us an email to:
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex items-center space-x-2">
+                <div className="grid flex-1 gap-2">
+                  <Label htmlFor="link" className="sr-only">
+                    Email
+                  </Label>
+                  <Input id="link" defaultValue="hello@lendasat.com" readOnly />
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="px-3"
+                  onClick={() =>
+                    (window.location.href = "mailto:hello@lendasat.com")
+                  }
+                >
+                  <span className="sr-only">Email us</span>
+                  <Mail />
+                </Button>
+              </div>
+              <DialogFooter className="sm:justify-start">
+                <DialogClose asChild>
+                  <div className="cursor-pointer rounded bg-gray-200 px-4 py-2 font-medium hover:bg-gray-300">
+                    Close
+                  </div>
+                </DialogClose>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </div>

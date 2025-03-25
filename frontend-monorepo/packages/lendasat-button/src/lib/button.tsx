@@ -1,4 +1,5 @@
 import React, { CSSProperties, ButtonHTMLAttributes } from "react";
+import { Bitcoin } from "lucide-react";
 
 // Define types for success, cancel, and error callbacks
 type SuccessData = {
@@ -32,21 +33,21 @@ interface LendasatButtonProps
   // Style options
   buttonStyle?: CSSProperties;
   className?: string;
-  containerClassName?: string;
+  showBitcoinIcon?: boolean;
 }
 
 export const LendasatButton: React.FC<LendasatButtonProps> = ({
   amount,
-  currency,
+  currency = "USD",
   onSuccess,
   onCancel,
   onError,
-  buttonText,
+  buttonText = "Pay with Bitcoin Loan",
   clientId,
-  widgetName,
+  widgetName = "PaymentWidget",
   buttonStyle,
   className,
-  containerClassName,
+  showBitcoinIcon = true,
   ...buttonProps // Capture remaining button attributes like disabled, aria-label, etc.
 }) => {
   const openPaymentPopup = () => {
@@ -82,10 +83,13 @@ export const LendasatButton: React.FC<LendasatButtonProps> = ({
 
       if (data.status === "success") {
         onSuccess?.(data.message);
+        popup.close();
       } else if (data.status === "cancelled") {
         onCancel?.(data.data);
+        popup.close();
       } else if (data.status === "error") {
         onError?.(data);
+        popup.close();
       }
     };
 
@@ -119,6 +123,7 @@ export const LendasatButton: React.FC<LendasatButtonProps> = ({
       className={className}
       {...buttonProps}
     >
+      {showBitcoinIcon && <Bitcoin className="h-4 w-4" />}
       {buttonText}
     </button>
   );
