@@ -7,12 +7,12 @@ import path from "path";
 export default defineConfig({
   envDir: "../../../",
   server: {
-    port: 4202,
+    port: 4203,
     host: "localhost",
   },
 
   preview: {
-    port: 4302,
+    port: 4303,
     host: "localhost",
   },
   build: {

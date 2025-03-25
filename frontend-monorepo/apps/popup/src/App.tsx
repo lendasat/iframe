@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button.tsx";
 function App() {
   const sendMessage = () => {
     console.log("sendMessage called");
+    console.log(window.opener);
+
     window.opener.postMessage(
       {
         status: "success",
@@ -11,6 +13,7 @@ function App() {
       },
       "*",
     );
+    console.log("sent");
   };
 
   return <Button onClick={sendMessage}>Lendasat</Button>;

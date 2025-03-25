@@ -125,15 +125,15 @@ lender:
     cd frontend-monorepo
     pnpm --filter="@frontend/lender" dev
 
-button:
-    #!/usr/bin/env bash
-    cd frontend-monorepo
-    pnpm --filter="@frontend/button" dev
-
 popup:
     #!/usr/bin/env bash
     cd frontend-monorepo
     pnpm --filter="@frontend/popup" dev
+
+shop:
+    #!/usr/bin/env bash
+    cd frontend-monorepo
+    pnpm --filter="@frontend/shop-demo" dev
 
 ## ------------------------
 ## Build frontend functions

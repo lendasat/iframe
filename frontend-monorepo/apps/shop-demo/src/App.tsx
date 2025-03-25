@@ -1,6 +1,6 @@
 import "./App.css";
-import PaymentWidget from "./Widget";
 import { useState } from "react";
+import { LendasatButton } from "@frontend/lendasat-button";
 
 function App() {
   const [label, setLabel] = useState("");
@@ -21,20 +21,23 @@ function App() {
   };
 
   return (
-    <div>
-      <h1>Your Shopping Cart</h1>
-      <div className="cart-total">Total: $99.99</div>
-      <p>{label}</p>
+    <>
+      <div>Shop</div>
+      <div>
+        <h1>Your Shopping Cart</h1>
+        <div className="cart-total">Total: $99.99</div>
+        <p>Waiting for stuff: {label}</p>
 
-      <PaymentWidget
-        amount={99.99}
-        currency="USD"
-        onSuccess={handlePaymentSuccess}
-        onCancel={handlePaymentCancel}
-        onError={handlePaymentError}
-        buttonText="Checkout Now"
-      />
-    </div>
+        <LendasatButton
+          amount={99.99}
+          currency="USD"
+          onSuccess={handlePaymentSuccess}
+          onCancel={handlePaymentCancel}
+          onError={handlePaymentError}
+          buttonText="Checkout Now"
+        />
+      </div>
+    </>
   );
 }
 

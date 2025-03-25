@@ -1,7 +1,4 @@
-// PaymentWidget.jsx - Main component to be used in host websites
-import { Button } from "@/components/ui/button";
-
-const PaymentWidget = ({
+export const LendasatButton = ({
   amount,
   currency = "USD",
   onSuccess,
@@ -20,7 +17,7 @@ const PaymentWidget = ({
 
     // Open the popup window
     const popup = window.open(
-      "http://localhost:4203",
+      "http://localhost:4202",
       widgetName,
       `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`,
     );
@@ -40,6 +37,8 @@ const PaymentWidget = ({
       // Validate origin of the message if needed
       // if (event.origin !== expectedOrigin) return;
 
+      console.log(`${JSON.stringify(event.data)}`);
+
       const data = event.data;
 
       if (data.status === "success") {
@@ -54,11 +53,6 @@ const PaymentWidget = ({
       window.removeEventListener("message", messageHandler);
     };
 
-    popup.postMessage(
-      "The user is 'bob' and the password is 'secret'",
-      "https://secure.example.net",
-    );
-
     window.addEventListener("message", messageHandler);
 
     // Handle popup being closed by user
@@ -71,7 +65,5 @@ const PaymentWidget = ({
     }, 50);
   };
 
-  return <Button onClick={openPaymentPopup}>{buttonText}</Button>;
+  return <button onClick={openPaymentPopup}>{buttonText}</button>;
 };
-
-export default PaymentWidget;
