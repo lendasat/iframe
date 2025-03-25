@@ -17,7 +17,6 @@ import {
 } from "@frontend/ui-shared";
 import QRCode from "qrcode.react";
 import { type FormEvent, useState } from "react";
-import { Alert, Form } from "react-bootstrap";
 import { useBorrowerHttpClient } from "@frontend/http-client-borrower";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
@@ -178,35 +177,38 @@ export const RepayStablecoins = ({
         </Callout.Root>
       </Box>
 
-      <Form onSubmit={onSubmit}>
-        <Form.Group controlId="formTxId" className="mb-3">
-          <Form.Label className={"text-font dark:text-font-dark"} column={"sm"}>
+      <form onSubmit={onSubmit} className="space-y-4">
+        <div className="mb-3">
+          <label
+            htmlFor="formTxId"
+            className="text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
             Repayment Transaction ID
-          </Form.Label>
-          <Form.Control
+          </label>
+          <input
+            id="formTxId"
             type="text"
             placeholder="e.g. 0x1b3b3d48df236c1e83ab5e7253f885a6f60699963691ad066aa3a5ae3b298d62"
-            className="bg-light dark:bg-dark text-font dark:text-font-dark p-3 dark:placeholder-gray-500"
-            style={{ width: "100%" }}
+            className="w-full rounded-md border border-gray-300 bg-white p-3 text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:ring focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100"
             value={txid}
-            required={true}
+            required
             onChange={(event) => setTxid(event.target.value)}
             disabled={submitted}
           />
-        </Form.Group>
+        </div>
         <Button type="submit" loading={isLoading} disabled={submitted}>
           Confirm Repayment
         </Button>
-      </Form>
+      </form>
 
       {error && (
-        <Alert variant="danger">
+        <div className="rounded border border-red-400 bg-red-100 px-4 py-3 text-red-700">
           <FontAwesomeIcon
             icon={faExclamationCircle}
             className="mr-2 h-4 w-4"
           />
           {error}
-        </Alert>
+        </div>
       )}
     </Flex>
   );

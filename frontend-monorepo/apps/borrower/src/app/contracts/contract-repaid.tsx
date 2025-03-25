@@ -6,7 +6,6 @@ import { useBorrowerHttpClient } from "@frontend/http-client-borrower";
 import { FeeSelector } from "@frontend/mempool";
 import { Callout, Heading } from "@radix-ui/themes";
 import { useState } from "react";
-import { Alert, Button, Col, Container, Row } from "react-bootstrap";
 import { IoInformationCircleOutline } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
 
@@ -112,57 +111,50 @@ export function ContractRepaid({
         handleClose={handleCloseUnlockWalletModal}
         handleSubmit={handleSubmitUnlockWalletModal}
       />
-      <Container fluid>
+      <div className="px-4">
         <Heading
-          className={"text-font dark:text-font-dark"}
-          size={"4"}
-          weight={"medium"}
+          className="text-font dark:text-font-dark"
+          size="4"
+          weight="medium"
         >
           Claim Collateral
         </Heading>
-        <Row className="mt-4">
-          <Col>
-            <div className="d-flex flex-column">
-              <p className="text-break text-font dark:text-font-dark mt-2">
-                To claim the collateral you will have to provide your{" "}
-                <strong>password</strong>.
-              </p>
-            </div>
-          </Col>
-        </Row>
-        <Row className="mt-2">
-          <Col>
-            <Alert variant="info">
-              <FontAwesomeIcon icon={faInfoCircle} /> The{" "}
-              <strong>{collateralBtc} BTC</strong>
-              {"  "}
-              collateral will be sent to your collateral refund address:{" "}
-              <strong>{refundAddress}</strong>.
-            </Alert>
-          </Col>
-        </Row>
-        <FeeSelector onSelectFee={setSelectedFee}></FeeSelector>
+        <div className="mt-4">
+          <p className="text-break text-font dark:text-font-dark mt-2">
+            To claim the collateral you will have to provide your{" "}
+            <strong>password</strong>.
+          </p>
+        </div>
+        <div className="mt-2">
+          <div className="rounded bg-blue-100 p-4 text-blue-800">
+            <FontAwesomeIcon icon={faInfoCircle} /> The{" "}
+            <strong>{collateralBtc} BTC</strong> collateral will be sent to your
+            collateral refund address: <strong>{refundAddress}</strong>.
+          </div>
+        </div>
+        <FeeSelector onSelectFee={setSelectedFee} />
 
-        <Row className="justify-content-between mt-4">
-          <Row className="mt-1">
-            <Col className="d-grid">
-              <Button variant="primary" onClick={onUnlockOrWithdraw}>
-                {isWalletLoaded ? "Withdraw Funds" : "Unlock Contract"}
-              </Button>
-              {error && (
-                <Col className="d-grid mt-4">
-                  <Callout.Root color="tomato">
-                    <Callout.Icon>
-                      <IoInformationCircleOutline />
-                    </Callout.Icon>
-                    <Callout.Text>{error}</Callout.Text>
-                  </Callout.Root>
-                </Col>
-              )}
-            </Col>
-          </Row>
-        </Row>
-      </Container>
+        <div className="mt-4">
+          <div className="mt-1">
+            <button
+              className="w-full rounded bg-blue-500 px-4 py-2 text-white"
+              onClick={onUnlockOrWithdraw}
+            >
+              {isWalletLoaded ? "Withdraw Funds" : "Unlock Contract"}
+            </button>
+            {error && (
+              <div className="mt-4">
+                <Callout.Root color="tomato">
+                  <Callout.Icon>
+                    <IoInformationCircleOutline />
+                  </Callout.Icon>
+                  <Callout.Text>{error}</Callout.Text>
+                </Callout.Root>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </>
   );
 }

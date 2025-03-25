@@ -8,8 +8,16 @@ import {
 } from "@frontend/http-client-borrower";
 import { FeeSelector } from "@frontend/mempool";
 import { Suspense, useState } from "react";
-import { Alert, Button } from "react-bootstrap";
 import { Await, useParams } from "react-router-dom";
+import {
+  Button,
+  Alert,
+  AlertDescription,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@frontend/shadcn";
 
 function ResolveDispute() {
   const { getDispute } = useBorrowerHttpClient();
@@ -66,9 +74,9 @@ function ResolveDispute() {
       <Await
         resolve={id ? getDispute(id) : null}
         errorElement={
-          <div className={"text-font dark:text-font-dark"}>
-            Could not load dispute
-          </div>
+          <Alert className="border-red-400 bg-red-100 text-red-700">
+            <AlertDescription>Could not load dispute</AlertDescription>
+          </Alert>
         }
         children={(dispute: Awaited<Dispute>) => (
           <div>
@@ -77,11 +85,11 @@ function ResolveDispute() {
               handleClose={handleCloseUnlockWalletModal}
               handleSubmit={() => handleSubmitUnlockWalletModal(dispute)}
             />
-            <div className="card my-3">
-              <div className="card-header">
-                <h5>Dispute: {dispute.id}</h5>
-              </div>
-              <div className="card-body">
+            <Card className="my-3">
+              <CardHeader>
+                <CardTitle>Dispute: {dispute.id}</CardTitle>
+              </CardHeader>
+              <CardContent>
                 <p>
                   <strong>Contract ID:</strong> {dispute.contract_id}
                 </p>
@@ -105,7 +113,6 @@ function ResolveDispute() {
                   <strong>Updated At:</strong>{" "}
                   {dispute.updated_at.toLocaleString()}
                 </p>
-
                 {dispute.lender_payout_sats && (
                   <p>
                     <strong>Lender Payout (sats):</strong>{" "}
@@ -122,20 +129,18 @@ function ResolveDispute() {
                   dispute={dispute}
                   onWithdrawAction={onWithdrawAction}
                   onFeeSelected={setSelectedFee}
-                ></ActionItem>
-                {error ? (
-                  <Alert variant="danger">
+                />
+                {error && (
+                  <Alert className="mt-3 border-red-400 bg-red-100 text-red-700">
                     <FontAwesomeIcon
                       icon={faExclamationCircle}
                       className="mr-2 h-4 w-4"
                     />
-                    {error}
+                    <AlertDescription>{error}</AlertDescription>
                   </Alert>
-                ) : (
-                  ""
                 )}
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           </div>
         )}
       />
@@ -169,23 +174,23 @@ const ActionItem = ({
 
   return (
     <>
-      {actionDisabled ? (
-        <Alert variant="warning">
+      {actionDisabled && (
+        <Alert className="mt-3 border-yellow-400 bg-yellow-100 text-yellow-700">
           <FontAwesomeIcon
             icon={faExclamationCircle}
             className="mr-2 h-4 w-4"
           />
-          {
-            "The dispute is still ongoing. Once it's been resolved you will be able to withdraw your collateral."
-          }
+          <AlertDescription>
+            The dispute is still ongoing. Once it's been resolved you will be
+            able to withdraw your collateral.
+          </AlertDescription>
         </Alert>
-      ) : (
-        ""
       )}
-      {!actionDisabled ? <FeeSelector onSelectFee={onFeeSelected} /> : null}
+      {!actionDisabled && <FeeSelector onSelectFee={onFeeSelected} />}
       <Button
         disabled={actionDisabled}
         onClick={() => onWithdrawAction(dispute)}
+        className="mt-3"
       >
         Withdraw collateral
       </Button>
