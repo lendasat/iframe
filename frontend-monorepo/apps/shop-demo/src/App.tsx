@@ -62,7 +62,6 @@ function App() {
           onSuccess={handlePaymentSuccess}
           onCancel={handlePaymentCancel}
           onError={handlePaymentError}
-          buttonStyle={buttonStyle}
           className="custom-payment-button"
           aria-label="Complete checkout process"
         />
