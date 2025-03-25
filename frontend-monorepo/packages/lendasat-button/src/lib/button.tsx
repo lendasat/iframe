@@ -48,9 +48,6 @@ export const LendasatButton = ({
       } else if (data.status === "error") {
         onError?.(data);
       }
-
-      // Clean up event listener when done
-      window.removeEventListener("message", messageHandler);
     };
 
     window.addEventListener("message", messageHandler);
