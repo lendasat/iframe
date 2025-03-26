@@ -76,7 +76,7 @@ export default function Stepper({ amount }: StepperProps) {
             ),
             "step-2": () => (
               <StepperPanel className="content-center rounded border bg-slate-50 p-8">
-                <AuthWizard />
+                <AuthWizard onComplete={() => setStep2Completed(true)} />
               </StepperPanel>
             ),
             "step-3": () => (
@@ -103,7 +103,7 @@ export default function Stepper({ amount }: StepperProps) {
             {methods.switch({
               "step-1": () => (
                 <Button
-                  onClick={methods.isLast ? methods.reset : methods.next}
+                  onClick={methods.next}
                   disabled={!step1Completed}
                 >
                   {"Next"}
@@ -111,7 +111,7 @@ export default function Stepper({ amount }: StepperProps) {
               ),
               "step-2": () => (
                 <Button
-                  onClick={methods.isLast ? methods.reset : methods.next}
+                  onClick={methods.next}
                   disabled={!step2Completed}
                 >
                   {"Next"}
@@ -119,10 +119,10 @@ export default function Stepper({ amount }: StepperProps) {
               ),
               "step-3": () => (
                 <Button
-                  onClick={methods.isLast ? methods.reset : methods.next}
+                  onClick={methods.reset}
                   disabled={!step3Completed}
                 >
-                  {"Reset"}
+                  {"Go back to webshop"}
                 </Button>
               ),
             })}

@@ -25,7 +25,11 @@ import {
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
-const AuthWizard = () => {
+interface AuthWizardProps {
+  onComplete: () => void;
+}
+
+const AuthWizard = ({ onComplete }: AuthWizardProps) => {
   // State management
   const [currentStep, setCurrentStep] = useState(1);
   const [email, setEmail] = useState("borrower@lendasat.com");
@@ -79,6 +83,7 @@ const AuthWizard = () => {
         // Login successful
         console.log("Login successful");
         setCurrentStep(4);
+        onComplete();
       } else {
         // New user needs to create and confirm password
         if (!password) {
@@ -94,6 +99,7 @@ const AuthWizard = () => {
         // Account creation successful
         console.log("Account created successfully");
         setCurrentStep(4);
+        onComplete();
       }
     }
   };
