@@ -59,7 +59,7 @@ export const LendasatButton: React.FC<LendasatButtonProps> = ({
 
     // Open the popup window
     const popup = window.open(
-      "http://localhost:4202",
+      `http://localhost:4202?amount=${amount}`,
       widgetName,
       `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`,
     );

@@ -186,7 +186,7 @@ const CheckoutPage = () => {
                         </Button>
 
                         <LendasatButton
-                          amount={99.99}
+                          amount={496.83}
                           currency="USD"
                           widgetName="Bitcoin-backed loans"
                           onSuccess={handlePaymentSuccess}

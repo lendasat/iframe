@@ -32,7 +32,11 @@ const {
   },
 );
 
-export default function Stepper() {
+interface StepperProps {
+  amount: number;
+}
+
+export default function Stepper({ amount }: StepperProps) {
   return (
     <StepperProvider className="space-y-4" variant="horizontal">
       {({ methods }) => (
@@ -50,9 +54,9 @@ export default function Stepper() {
             ))}
           </StepperNavigation>
           {methods.switch({
-            "step-1": (step) => <Content id={step.id} />,
-            "step-2": (step) => <Content id={step.id} />,
-            "step-3": (step) => <Content id={step.id} />,
+            "step-1": (step) => <Content id={step.id} amount={amount} />,
+            "step-2": (step) => <Content id={step.id} amount={amount} />,
+            "step-3": (step) => <Content id={step.id} amount={amount} />,
           })}
           <StepperControls>
             {!methods.isLast && (
@@ -74,25 +78,17 @@ export default function Stepper() {
   );
 }
 
-const Content = ({ id }: { id: string }) => {
-  const [months, setMonths] = useState(4);
+const Content = ({ id, amount }: { id: string; amount: number }) => {
+  const [months, setMonths] = useState(3);
 
   // TODO: These should come from button presser.
-  const loanAmount = 5000;
+  const loanAmount = amount;
   const ltvRatio = 50;
 
   // This formula is completely arbitrary.
   const yearlyInterestRate = 9.5 + months * 0.25;
 
-  let content = (
-    <ConfigureLoan
-      loanAmount={loanAmount}
-      months={months}
-      setMonths={setMonths}
-      ltvRatio={ltvRatio}
-      yearlyInterestRate={yearlyInterestRate}
-    />
-  );
+  let content = <>Empty</>;
   switch (id) {
     case "step-1":
       content = (

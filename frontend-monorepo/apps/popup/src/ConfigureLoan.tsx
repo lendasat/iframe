@@ -24,8 +24,8 @@ export function ConfigureLoan({
   yearlyInterestRate,
 }: ConfigureLoanProps) {
   const loanAmountString = new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(loanAmount);
 
   const yearlyInterestRateString = new Intl.NumberFormat("en-US", {
@@ -35,14 +35,14 @@ export function ConfigureLoan({
 
   const interest = (yearlyInterestRate / 100) * (months / 12) * loanAmount;
   const interestString = new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(interest);
 
   const totalOwed = loanAmount + interest;
   const totalOwedString = new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(totalOwed);
 
   return (
