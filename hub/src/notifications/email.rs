@@ -711,7 +711,7 @@ impl Email {
     pub async fn send_new_chat_message_notification_lender(
         &self,
         lender: Lender,
-        create_new_offer_url: Url,
+        contract_url: Url,
     ) -> Result<()> {
         let template_name = "new_chat_notification";
         let handlebars = Self::prepare_template(template_name)?;
@@ -719,7 +719,7 @@ impl Email {
         let data = serde_json::json!({
             "first_name": &lender.name,
             "subject": &template_name,
-            "url": create_new_offer_url
+            "contract_url": contract_url
         });
 
         let content_template = handlebars.render(template_name, &data)?;
@@ -736,7 +736,7 @@ impl Email {
     pub async fn send_new_chat_message_notification_borrower(
         &self,
         borrower: Borrower,
-        create_new_offer_url: Url,
+        contract_url: Url,
     ) -> Result<()> {
         let template_name = "new_chat_notification";
         let handlebars = Self::prepare_template(template_name)?;
@@ -744,7 +744,7 @@ impl Email {
         let data = serde_json::json!({
             "first_name": &borrower.name,
             "subject": &template_name,
-            "url": create_new_offer_url
+            "contract_url": contract_url
         });
 
         let content_template = handlebars.render(template_name, &data)?;
