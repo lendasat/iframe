@@ -125,7 +125,6 @@ const LoanTerms = ({
                 className="px-3"
                 onClick={() => {
                   navigator.clipboard.writeText(contractAddress);
-                  // Optional: Add toast notification here
                   toast.success("Copied address to clipboard");
                 }}
               >

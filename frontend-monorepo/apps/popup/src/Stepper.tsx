@@ -34,9 +34,10 @@ const {
 
 interface StepperProps {
   amount: number;
+  onComplete: () => void;
 }
 
-export default function Stepper({ amount }: StepperProps) {
+export default function Stepper({ amount, onComplete }: StepperProps) {
   const [step1Completed, _setStep1Completed] = useState(true);
   const [step2Completed, setStep2Completed] = useState(false);
   const [step3Completed, _setStep3Completed] = useState(true);
@@ -112,7 +113,9 @@ export default function Stepper({ amount }: StepperProps) {
                 </Button>
               ),
               "step-3": () => (
-                <Button onClick={methods.reset} disabled={!step3Completed}>
+                <Button onClick={() => {
+                  onComplete()
+                }} disabled={!step3Completed}>
                   {"Go back to webshop"}
                 </Button>
               ),
