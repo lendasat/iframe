@@ -48,15 +48,21 @@ jobs:
           envkey_VITE_TELEGRAM_BOT_NAME: "@lendasatsignetlenderbot"
           envkey_VITE_WEBSHOP_POPUP_URL: "https://popup.lendasat.com"
 
-      - name: Build borrower frontend
+      - name: Nothing is impossible
+        env:
+          NODE_OPTIONS: "--max_old_space_size=4096"
+
+      - name: Build frontend apps
         run: just build-frontend
 
       - name: Deploy lender
         uses: cloudflare/wrangler-action@v3
         with:
-          workingDirectory: frontend-monorepo
+          packageManager: pnpm
+          workingDirectory: 'frontend-monorepo'
           apiToken: ${{ secrets.CLOUDFLARE_SIGNET_TOKEN}}
           command: pages deploy apps/lender/dist/ --project-name=lendasat-lender-signet
+
       - name: Deploy borrower
         uses: cloudflare/wrangler-action@v3
         with:
@@ -80,7 +86,6 @@ jobs:
           workingDirectory: 'frontend-monorepo'
           apiToken: ${{ secrets.CLOUDFLARE_SIGNET_TOKEN}}
           command: pages deploy apps/popup/dist/ --project-name=lendasat-popup
-
 
   deploy-test:
     runs-on: ubuntu-latest
@@ -122,8 +127,15 @@ jobs:
           envkey_VITE_TELEGRAM_BOT_URL: "https://t.me/lendasatsignetlenderbot"
           envkey_VITE_TELEGRAM_BOT_NAME: "@lendasatsignetlenderbot"
 
+      - name: Nothing is impossible
+        env:
+          NODE_OPTIONS: "--max_old_space_size=4096"
+
       - name: Build borrower frontend
-        run: just build-frontend
+        run: just build-frontend borrower
+
+      - name: Build lender frontend
+        run: just build-frontend lender
 
       - name: Build hub
         run: cargo build --release --bin hub --target-dir ./target
