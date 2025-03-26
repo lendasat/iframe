@@ -57,9 +57,11 @@ export const LendasatButton: React.FC<LendasatButtonProps> = ({
     const left = window.screenX + (window.outerWidth - width) / 2;
     const top = window.screenY + (window.outerHeight - height) / 2;
 
+    let url: string = import.meta.env.VITE_WEBSHOP_POPUP_URL;
+
     // Open the popup window
     const popup = window.open(
-      `http://localhost:4202?amount=${amount}`,
+      `${url}?amount=${amount}`,
       widgetName,
       `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`,
     );
