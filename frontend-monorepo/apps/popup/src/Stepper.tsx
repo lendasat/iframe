@@ -37,6 +37,15 @@ interface StepperProps {
 }
 
 export default function Stepper({ amount }: StepperProps) {
+  const [step1Completed, _setStep1Completed] = useState(true);
+  const [step2Completed, setStep2Completed] = useState(false);
+  const [step3Completed, _setStep3Completed] = useState(true);
+  const [months, setMonths] = useState(3);
+
+  const ltvRatio = 50;
+  // This formula is completely arbitrary.
+  const yearlyInterestRate = 9.5 + months * 0.25;
+
   return (
     <StepperProvider className="space-y-4" variant="horizontal">
       {({ methods }) => (
@@ -54,9 +63,32 @@ export default function Stepper({ amount }: StepperProps) {
             ))}
           </StepperNavigation>
           {methods.switch({
-            "step-1": (step) => <Content id={step.id} amount={amount} />,
-            "step-2": (step) => <Content id={step.id} amount={amount} />,
-            "step-3": (step) => <Content id={step.id} amount={amount} />,
+            "step-1": () => (
+              <StepperPanel className="content-center rounded border bg-slate-50 p-8">
+                <ConfigureLoan
+                  loanAmount={amount}
+                  months={months}
+                  setMonths={setMonths}
+                  ltvRatio={ltvRatio}
+                  yearlyInterestRate={yearlyInterestRate}
+                />
+              </StepperPanel>
+            ),
+            "step-2": () => (
+              <StepperPanel className="content-center rounded border bg-slate-50 p-8">
+                <AuthWizard />
+              </StepperPanel>
+            ),
+            "step-3": () => (
+              <StepperPanel className="content-center rounded border bg-slate-50 p-8">
+                <LoanTerms
+                  loanAmount={amount}
+                  months={months}
+                  yearlyInterestRate={yearlyInterestRate}
+                  ltvRatio={ltvRatio}
+                />
+              </StepperPanel>
+            ),
           })}
           <StepperControls>
             {!methods.isLast && (
@@ -68,57 +100,35 @@ export default function Stepper({ amount }: StepperProps) {
                 Previous
               </Button>
             )}
-            <Button onClick={methods.isLast ? methods.reset : methods.next}>
-              {methods.isLast ? "Reset" : "Next"}
-            </Button>
+            {methods.switch({
+              "step-1": () => (
+                <Button
+                  onClick={methods.isLast ? methods.reset : methods.next}
+                  disabled={!step1Completed}
+                >
+                  {"Next"}
+                </Button>
+              ),
+              "step-2": () => (
+                <Button
+                  onClick={methods.isLast ? methods.reset : methods.next}
+                  disabled={!step2Completed}
+                >
+                  {"Next"}
+                </Button>
+              ),
+              "step-3": () => (
+                <Button
+                  onClick={methods.isLast ? methods.reset : methods.next}
+                  disabled={!step3Completed}
+                >
+                  {"Reset"}
+                </Button>
+              ),
+            })}
           </StepperControls>
         </React.Fragment>
       )}
     </StepperProvider>
   );
 }
-
-const Content = ({ id, amount }: { id: string; amount: number }) => {
-  const [months, setMonths] = useState(3);
-
-  // TODO: These should come from button presser.
-  const loanAmount = amount;
-  const ltvRatio = 50;
-
-  // This formula is completely arbitrary.
-  const yearlyInterestRate = 9.5 + months * 0.25;
-
-  let content = <>Empty</>;
-  switch (id) {
-    case "step-1":
-      content = (
-        <ConfigureLoan
-          loanAmount={loanAmount}
-          months={months}
-          setMonths={setMonths}
-          ltvRatio={ltvRatio}
-          yearlyInterestRate={yearlyInterestRate}
-        />
-      );
-      break;
-    case "step-2":
-      content = <AuthWizard />;
-      break;
-    case "step-3":
-      content = (
-        <LoanTerms
-          loanAmount={loanAmount}
-          months={months}
-          yearlyInterestRate={yearlyInterestRate}
-          ltvRatio={ltvRatio}
-        />
-      );
-      break;
-  }
-
-  return (
-    <StepperPanel className="content-center rounded border bg-slate-50 p-8">
-      {content}
-    </StepperPanel>
-  );
-};
