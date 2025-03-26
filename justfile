@@ -125,6 +125,16 @@ lender:
     cd frontend-monorepo
     pnpm --filter="@frontend/lender" dev
 
+popup:
+    #!/usr/bin/env bash
+    cd frontend-monorepo
+    pnpm --filter="@frontend/popup" dev
+
+shop:
+    #!/usr/bin/env bash
+    cd frontend-monorepo
+    pnpm --filter="@frontend/shop-demo" dev
+
 ## ------------------------
 ## Build frontend functions
 ## ------------------------
@@ -141,6 +151,12 @@ build-wallet:
 
 # build frontend
 build-frontend:
+    #!/usr/bin/env bash
+    cd frontend-monorepo
+    pnpm build
+
+# build lendasat-button
+build-button:
     #!/usr/bin/env bash
     cd frontend-monorepo
     pnpm build
