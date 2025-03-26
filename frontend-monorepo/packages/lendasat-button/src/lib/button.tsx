@@ -21,7 +21,7 @@ type CancelData = {
 
 // Define props interface with proper typing
 interface LendasatButtonProps
-  extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "onClick"> {
+  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "onClick"> {
   amount: number;
   currency?: string;
   onSuccess?: (data: SuccessData) => void;
@@ -31,20 +31,20 @@ interface LendasatButtonProps
   clientId?: string;
   widgetName?: string;
   // Style options
-  buttonStyle?: CSSProperties;
+  buttonStyle?: React.CSSProperties;
   className?: string;
   showBitcoinIcon?: boolean;
 }
 
 export const LendasatButton: React.FC<LendasatButtonProps> = ({
   amount,
-  currency = "USD",
+  currency,
   onSuccess,
   onCancel,
   onError,
-  buttonText = "Pay with Bitcoin Loan",
+  buttonText,
   clientId,
-  widgetName = "PaymentWidget",
+  widgetName,
   buttonStyle,
   className,
   showBitcoinIcon = true,
@@ -105,14 +105,17 @@ export const LendasatButton: React.FC<LendasatButtonProps> = ({
     }, 50);
   };
 
-  const defaultButtonStyle: CSSProperties = {
-    backgroundColor: "#4CAF50",
+  const defaultButtonStyle: React.CSSProperties = {
+    backgroundColor: "#f7931a",
     color: "white",
     padding: "10px 20px",
     border: "none",
     borderRadius: "4px",
     cursor: "pointer",
     fontSize: "16px",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
     ...buttonStyle,
   };
 
@@ -120,11 +123,11 @@ export const LendasatButton: React.FC<LendasatButtonProps> = ({
     <button
       onClick={openPaymentPopup}
       style={buttonStyle || defaultButtonStyle}
-      className={className}
+      className={`flex items-center gap-2 ${className || ""}`}
       {...buttonProps}
     >
       {showBitcoinIcon && <Bitcoin className="h-4 w-4" />}
-      {buttonText}
+      <span>{buttonText}</span>
     </button>
   );
 };

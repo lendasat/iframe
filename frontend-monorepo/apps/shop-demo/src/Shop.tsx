@@ -188,13 +188,19 @@ const CheckoutPage = () => {
                         <LendasatButton
                           amount={99.99}
                           currency="USD"
-                          buttonText="Pay with Bitcoin Loan"
                           widgetName="Bitcoin-backed loans"
                           onSuccess={handlePaymentSuccess}
                           onCancel={handlePaymentCancel}
                           onError={handlePaymentError}
                           disabled={success}
                           aria-label="Complete checkout with Bitcoin loan"
+                          buttonText="Finance with Bitcoin"
+                          buttonStyle={{
+                            backgroundColor: "#f7931a",
+                            borderRadius: "8px",
+                            padding: "12px 24px",
+                            color: "white",
+                          }}
                         />
                       </div>
                     </div>
