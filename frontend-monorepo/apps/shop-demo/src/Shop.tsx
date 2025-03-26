@@ -213,7 +213,7 @@ const CheckoutPage = () => {
           <Dialog>
             <DialogTrigger asChild>
               <Button
-                className="mt-6 flex w-full cursor-pointer items-center justify-center rounded-md py-2 text-lg font-medium text-white h-12"
+                className="mt-6 flex h-12 w-full cursor-pointer items-center justify-center rounded-md py-2 text-lg font-medium text-white"
                 variant="default"
                 disabled={!success}
               >
