@@ -149,18 +149,15 @@ deps-frontend:
 build-wallet:
     wasm-pack build browser-wallet --target web
 
-# build frontend
-build-frontend:
+# Build all or one of the frontend apps
+build-frontend target='':
     #!/usr/bin/env bash
     cd frontend-monorepo
-    pnpm build
-
-# build lendasat-button
-build-button:
-    #!/usr/bin/env bash
-    cd frontend-monorepo
-    pnpm build
-
+    if [ -n "{{target}}" ]; then \
+      pnpm build --filter @frontend/{{target}}
+    else \
+      pnpm build
+    fi
 
 ## ------------------------
 ## Build hub functions
