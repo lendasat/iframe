@@ -210,24 +210,15 @@ const CheckoutPage = () => {
             </Accordion>
           </section>
 
-          {/* Complete Purchase Button */}
-          {/*<Button*/}
-          {/*  className="mt-8 w-full bg-green-600 py-6 text-lg hover:bg-green-700"*/}
-          {/*  disabled={!success}*/}
-          {/*>*/}
-          {/*  <span className="mr-2">🔒</span> Complete Purchase*/}
-          {/*</Button>*/}
           <Dialog>
             <DialogTrigger asChild>
-              <div
-                className="mt-6 flex w-full cursor-pointer items-center justify-center rounded-md bg-green-600 py-2 text-lg font-medium text-white hover:bg-green-700"
-                style={{
-                  pointerEvents: success ? "auto" : "none",
-                  opacity: success ? 1 : 0.5,
-                }}
+              <Button
+                className="mt-6 flex w-full cursor-pointer items-center justify-center rounded-md py-2 text-lg font-medium text-white h-12"
+                variant="default"
+                disabled={!success}
               >
                 <span className="mr-2">🔒</span> Complete Purchase
-              </div>
+              </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
@@ -258,9 +249,9 @@ const CheckoutPage = () => {
               </div>
               <DialogFooter className="sm:justify-start">
                 <DialogClose asChild>
-                  <div className="cursor-pointer rounded bg-gray-200 px-4 py-2 font-medium hover:bg-gray-300">
+                  <Button variant="secondary" className="font-medium">
                     Close
-                  </div>
+                  </Button>
                 </DialogClose>
               </DialogFooter>
             </DialogContent>

@@ -113,9 +113,12 @@ export default function Stepper({ amount, onComplete }: StepperProps) {
                 </Button>
               ),
               "step-3": () => (
-                <Button onClick={() => {
-                  onComplete()
-                }} disabled={!step3Completed}>
+                <Button
+                  onClick={() => {
+                    onComplete();
+                  }}
+                  disabled={!step3Completed}
+                >
                   {"Go back to webshop"}
                 </Button>
               ),

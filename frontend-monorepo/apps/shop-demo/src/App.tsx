@@ -32,17 +32,6 @@ function App() {
     // Display error message to user
   };
 
-  // Custom styles
-  const buttonStyle = {
-    backgroundColor: "#3498db",
-    color: "white",
-    padding: "12px 24px",
-    borderRadius: "8px",
-    fontWeight: "bold",
-    transition: "background-color 0.3s",
-    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-  };
-
   return (
     <>
       <div>

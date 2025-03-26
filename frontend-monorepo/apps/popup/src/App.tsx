@@ -7,7 +7,6 @@ function App() {
 
   const amount = parseFloat(searchParams.get("amount") as string) || 1000;
 
-
   const onComplete = () => {
     window.opener.postMessage(
       {
@@ -16,11 +15,11 @@ function App() {
       },
       "*",
     );
-  }
+  };
 
   return (
     <div className="flex flex-col gap-5">
-      <Stepper amount={amount} onComplete={onComplete}/>
+      <Stepper amount={amount} onComplete={onComplete} />
     </div>
   );
 }
