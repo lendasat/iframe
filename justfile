@@ -155,6 +155,12 @@ build-frontend:
     cd frontend-monorepo
     pnpm build
 
+# build lendasat-button
+build-button:
+    #!/usr/bin/env bash
+    cd frontend-monorepo
+    pnpm build
+
 
 ## ------------------------
 ## Build hub functions
