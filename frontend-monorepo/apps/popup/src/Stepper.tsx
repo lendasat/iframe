@@ -102,26 +102,17 @@ export default function Stepper({ amount }: StepperProps) {
             )}
             {methods.switch({
               "step-1": () => (
-                <Button
-                  onClick={methods.next}
-                  disabled={!step1Completed}
-                >
+                <Button onClick={methods.next} disabled={!step1Completed}>
                   {"Next"}
                 </Button>
               ),
               "step-2": () => (
-                <Button
-                  onClick={methods.next}
-                  disabled={!step2Completed}
-                >
+                <Button onClick={methods.next} disabled={!step2Completed}>
                   {"Next"}
                 </Button>
               ),
               "step-3": () => (
-                <Button
-                  onClick={methods.reset}
-                  disabled={!step3Completed}
-                >
+                <Button onClick={methods.reset} disabled={!step3Completed}>
                   {"Go back to webshop"}
                 </Button>
               ),

@@ -10,6 +10,9 @@ import {
   DataListValue,
 } from "./components/ui/data-list";
 import { Badge } from "./components/ui/badge";
+import { QRCodeSVG } from "qrcode.react";
+import { toast } from "sonner";
+import { Input } from "./components/ui/input";
 
 interface LoanTermsProps {
   loanAmount: number;
@@ -52,6 +55,8 @@ const LoanTerms = ({
   };
 
   // TODO: Move ID to different place.
+  const contractAddress =
+    "tb1ps4wx9znwf972hqp9m6fz9cw807d3gcw42xegzqfclfgn8nr3ppks5ge5xt";
   return (
     <div className="mx-auto max-w-md">
       <Card className="gap-3 p-4">
@@ -105,12 +110,29 @@ const LoanTerms = ({
 
           <Separator className="my-4 border-gray-600" />
 
-          <div className="my-8 flex justify-center">
-            <img
-              src="/api/placeholder/200/200"
-              alt="QR Code"
-              className="h-40 w-40"
-            />
+          <div className="my-8 flex w-full max-w-md flex-col items-center justify-center">
+            <QRCodeSVG value={contractAddress} size={200} />
+
+            <div className="flex w-full items-center space-x-2 pt-4">
+              <Input
+                id="link"
+                defaultValue={contractAddress}
+                readOnly
+                className="flex-1"
+              />
+              <Button
+                size="sm"
+                className="px-3"
+                onClick={() => {
+                  navigator.clipboard.writeText(contractAddress);
+                  // Optional: Add toast notification here
+                  toast.success("Copied address to clipboard");
+                }}
+              >
+                <span className="sr-only">Copy</span>
+                <Copy />
+              </Button>
+            </div>
           </div>
 
           <Button
