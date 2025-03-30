@@ -469,8 +469,8 @@ const QuickLinks = ({
         variant="ghost"
         className={`text-font dark:text-font-dark flex min-h-40 flex-col gap-2 rounded-2xl ${
           isPulsing
-            ? "border-2 border-red-500/50 bg-red-50 dark:border-red-500/30 dark:bg-red-900/10"
-            : "border-font/10 dark:border-font-dark/20 border"
+            ? "border-solid border-red-500/50 bg-red-50 dark:border-red-500/30 dark:bg-red-900/10"
+            : "border-solid border-font/10 dark:border-font-dark/20 border"
         }`}
       >
         <Link to={url} target={target}>
