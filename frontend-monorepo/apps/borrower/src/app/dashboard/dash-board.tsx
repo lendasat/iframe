@@ -300,7 +300,7 @@ function DashBoard() {
             />
             <QuickLinks
               Icon={RiCustomerService2Fill}
-              url="https://lendasat.notion.site/"
+              url="https://faq.lendasat.com/"
               iconStyle="bg-gray-100 dark:bg-dark-700"
               label="Help Center"
               target={"_blank"}

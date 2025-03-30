@@ -14,7 +14,7 @@ export default function HeaderNav() {
         <IoNotifications className="text-font text-xl" />
       </Link>
       <Link
-        to={"https://lendasat.notion.site"}
+        to={"https://faq.lendasat.com"}
         className="hover:border-font-dark flex h-10 w-10 items-center justify-center rounded border transition-colors duration-300 ease-in hover:text-black"
         target="_blank"
       >

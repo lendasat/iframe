@@ -125,7 +125,7 @@ const menuItems = [
       },
       {
         label: "support",
-        path: "https://lendasat.notion.site",
+        path: "https://faq.lendasat.com",
         icon: HiOutlineSupport,
         target: "_blank",
         visible: true,
