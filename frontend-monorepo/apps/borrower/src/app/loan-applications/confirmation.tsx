@@ -199,16 +199,16 @@ export const Confirmation = ({
                 {selectedLoanDuration !== ONE_YEAR && (
                   <Flex gap={"2"}>
                     <Text className="text-font/70 dark:text-font-dark/70 text-[13px] font-semibold">
-                      {(actualInterest).toFixed(2)}%
+                      {actualInterest.toFixed(2)}%
                     </Text>
                     <Text className="text-font/70 dark:text-font-dark/50 mt-0.5 self-end text-[11px]">
-                      ({(interestRate).toFixed(1)}% p.a.)
+                      ({interestRate.toFixed(1)}% p.a.)
                     </Text>
                   </Flex>
                 )}
                 {selectedLoanDuration === ONE_YEAR && (
                   <Text className="text-font/70 dark:text-font-dark/70 text-[13px] font-semibold">
-                    {(actualInterest).toFixed(2)}% p.a.
+                    {actualInterest.toFixed(2)}% p.a.
                   </Text>
                 )}
                 <Text className="text-font/50 dark:text-font-dark/50 mt-0.5 self-end text-[11px]">

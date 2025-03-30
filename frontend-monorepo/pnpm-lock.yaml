@@ -114,9 +114,6 @@ importers:
       bitcoin-address-validation:
         specifier: ^2.2.3
         version: 2.2.3
-      bootstrap:
-        specifier: ^5.3.3
-        version: 5.3.3(@popperjs/core@2.11.8)
       browser-wallet:
         specifier: file:../../../browser-wallet/pkg
         version: file:../browser-wallet/pkg
@@ -135,9 +132,6 @@ importers:
       react:
         specifier: 19.0.0
         version: 19.0.0
-      react-bootstrap:
-        specifier: ^2.10.4
-        version: 2.10.9(@types/react@19.0.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       react-dom:
         specifier: 19.0.0
         version: 19.0.0(react@19.0.0)
@@ -241,6 +235,9 @@ importers:
       babel-jest:
         specifier: ^29.7.0
         version: 29.7.0(@babel/core@7.26.9)
+      bootstrap:
+        specifier: ^5.3.3
+        version: 5.3.3(@popperjs/core@2.11.8)
       eslint:
         specifier: ~8.57.0
         version: 8.57.1
@@ -280,6 +277,9 @@ importers:
       prettier-plugin-tailwindcss:
         specifier: ^0.6.11
         version: 0.6.11(prettier@3.5.0)
+      react-bootstrap:
+        specifier: ^2.10.4
+        version: 2.10.9(@types/react@19.0.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       sass:
         specifier: ^1.55.0
         version: 1.85.0

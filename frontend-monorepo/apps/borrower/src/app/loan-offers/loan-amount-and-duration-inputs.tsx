@@ -76,7 +76,7 @@ export function LoanAmountAndDurationInputs({
           size={"2"}
           weight={"medium"}
         >
-          How much do you wish to borrow? ????-
+          How much do you wish to borrow?
         </Text>
         <TextField.Root
           size={"3"}
