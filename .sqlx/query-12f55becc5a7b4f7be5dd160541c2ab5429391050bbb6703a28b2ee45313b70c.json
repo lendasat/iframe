@@ -1,0 +1,30 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE\n            loan_applications\n        SET\n            status = 'ApplicationExpired',\n            updated_at = $1\n        WHERE\n            status = 'Available' AND\n            created_at <= $2 AND\n            borrower_id IN (\n                SELECT la.borrower_id\n                FROM loan_applications la\n                LEFT JOIN (\n                    SELECT borrower_id, MAX(created_at) as last_login\n                    FROM borrower_login_activity\n                    GROUP BY borrower_id\n                ) bla ON la.borrower_id = bla.borrower_id\n                WHERE la.status = 'Available' AND\n                      (bla.last_login IS NULL OR bla.last_login <= $3)\n            )\n        RETURNING\n            id as \"application_id\",\n            borrower_id as \"borrower_id\"\n    ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "application_id",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "borrower_id",
+        "type_info": "Bpchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Timestamptz",
+        "Timestamptz",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "12f55becc5a7b4f7be5dd160541c2ab5429391050bbb6703a28b2ee45313b70c"
+}

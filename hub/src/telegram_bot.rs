@@ -206,6 +206,7 @@ pub enum BorrowerNotificationKind {
     LiquidatedAfterDefault,
     LoanDefaulted,
     LoanRequestExpired,
+    LoanApplicationExpired { days: i64 },
     NewChatMessage { name: String },
 }
 
@@ -324,6 +325,12 @@ impl xtra::Handler<Notification> for TelegramBot {
             NotificationTarget::Borrower(BorrowerNotificationKind::LoanRequestExpired) => {
                 (
                     "Unfortunately, the lender did not respond in time to your contract request. As such, the request was cancelled. You can log in to have a look at other offers.".to_string(), 
+                    "Find New Offer".to_string(),
+                )
+            }
+            NotificationTarget::Borrower(BorrowerNotificationKind::LoanApplicationExpired {days}) => {
+                (
+                    format!("Unfortunately, we couldn't find a match for your loan application after {days} days. Click below to find current available offers.").to_string(), 
                     "Find New Offer".to_string(),
                 )
             }
