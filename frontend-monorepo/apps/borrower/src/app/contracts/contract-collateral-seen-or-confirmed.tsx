@@ -5,7 +5,6 @@ import {
 import type { Contract } from "@frontend/http-client-borrower";
 import { formatCurrency } from "@frontend/ui-shared";
 import { Callout } from "@radix-ui/themes";
-import { Col, Container, Form, InputGroup, Row } from "react-bootstrap";
 import { FaInfoCircle } from "react-icons/fa";
 
 interface CollateralSeenOrConfirmedProps {
@@ -36,15 +35,15 @@ export function CollateralSeenOrConfirmed({
         <>
           Your loan amount of {formatCurrency(contract.loan_amount)} will be
           sent to this address.
-          <InputGroup className="mt-2">
-            <Form.Control
+          <div className="mt-2">
+            <input
               type="text"
               value={contract.borrower_loan_address}
               disabled
               readOnly
-              className="dark:bg-dark-700 text-font dark:text-font-dark bg-white"
+              className="w-full bg-white dark:bg-dark-700 text-font dark:text-font-dark p-2 border border-gray-300 rounded"
             />
-          </InputGroup>
+          </div>
         </>
       );
       break;
@@ -59,37 +58,28 @@ export function CollateralSeenOrConfirmed({
   }
 
   return (
-    <Container fluid>
-      <Row>
-        <h4 className={"text-font dark:text-font-dark"}>
-          {contractStatusToLabelString(contract.status)}
-        </h4>
-      </Row>
+    <div className="w-full">
+      <h4 className="text-font dark:text-font-dark">
+        {contractStatusToLabelString(contract.status)}
+      </h4>
 
-      <Row className="mt-4">
-        <Col className="text-center">
-          <div className="d-flex justify-content-center align-items-center flex-column">
-            <p className="text-break text-font dark:text-font-dark mt-2">
-              <strong>{collateral} BTC</strong> are locked in{" "}
-              <strong>{collateralAddress}</strong>.
-              {/*  TODO: add transaction id*/}
-            </p>
-          </div>
-        </Col>
-      </Row>
-      <Row className="justify-content-between mt-4">
-        <Callout.Root color={"teal"}>
+      <div className="mt-4 flex justify-center items-center flex-col">
+        <p className="text-font dark:text-font-dark break-words mt-2">
+          <strong>{collateral} BTC</strong> are locked in{" "}
+          <strong>{collateralAddress}</strong>.{/* TODO: add transaction id */}
+        </p>
+      </div>
+
+      <div className="mt-4">
+        <Callout.Root color="teal">
           <Callout.Icon>
-            <FaInfoCircle
-              className={"text-font dark:text-font-dark"}
-              size={"18"}
-            />
+            <FaInfoCircle className="text-font dark:text-font-dark" size="18" />
           </Callout.Icon>
-          <Callout.Text className={"text-font dark:text-font-dark"}>
+          <Callout.Text className="text-font dark:text-font-dark">
             {info}
           </Callout.Text>
         </Callout.Root>
-      </Row>
-    </Container>
+      </div>
+    </div>
   );
 }

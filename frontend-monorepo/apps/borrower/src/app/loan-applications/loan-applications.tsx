@@ -11,7 +11,6 @@ import {
 import { type ChangeEvent, useState } from "react";
 import SingleDurationSelector from "../loan-offers/DurationSelector";
 import { useSearchParams } from "react-router-dom";
-import { Form } from "react-bootstrap";
 import { LoanAsset, LoanAssetHelper } from "@frontend/ui-shared";
 import { Confirmation } from "./confirmation";
 
@@ -71,7 +70,7 @@ export default function LoanApplication() {
   );
   return (
     <ScrollArea type="always" scrollbars="vertical">
-      <Form className="space-y-4">
+      <form className="space-y-4">
         <Flex direction={"column"} gap={"4"}>
           <Flex direction={"column"} className="py-8">
             <Flex direction={"column"} mx="auto" className="text-center">
@@ -232,7 +231,7 @@ export default function LoanApplication() {
             />
           </Flex>
         </Flex>
-      </Form>
+      </form>
     </ScrollArea>
   );
 }

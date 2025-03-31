@@ -1,7 +1,88 @@
 import type { ChangeEvent } from "react";
 import { useEffect, useState } from "react";
-import { Button, ButtonGroup, Form, Row, Spinner } from "react-bootstrap";
 import { useFees } from "./mempool-fee";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Input,
+} from "@frontend/shadcn";
+
+interface FeeButtonProps {
+  onSelectFee: () => void;
+  title: string;
+  timeEstimate: string;
+  description: string;
+  isSelected: boolean;
+}
+
+const FeeButton = ({
+  onSelectFee,
+  isSelected,
+  title,
+  timeEstimate,
+  description,
+}: FeeButtonProps) => {
+  return (
+    <Card
+      className={`cursor-pointer transition-all duration-200 hover:shadow-md hover:border-blue-400 ${
+        isSelected
+          ? "border-solid border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+          : "border-gray-200 dark:border-gray-700 hover:-translate-y-0.5"
+      }`}
+      onClick={onSelectFee}
+    >
+      <CardHeader>
+        <CardTitle
+          className={`text-sm ${isSelected ? "text-blue-600 dark:text-blue-400" : ""}`}
+        >
+          {title}
+        </CardTitle>
+        <CardDescription className={`text-xs`}>{timeEstimate}</CardDescription>
+      </CardHeader>
+      <CardContent className={`text-sm`}>{description}</CardContent>
+    </Card>
+  );
+};
+
+interface CustomFeeButtonProps {
+  onSelectFee: () => void;
+  onFeeChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  selectedFee: string;
+  isSelected: boolean;
+}
+
+const CustomFeeButton = ({
+  onSelectFee,
+  selectedFee,
+  isSelected,
+  onFeeChange,
+}: CustomFeeButtonProps) => {
+  return (
+    <Card
+      className={`cursor-pointer transition-all duration-200 hover:shadow-md hover:border-blue-400 ${
+        isSelected
+          ? "border-solid border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+          : "border-gray-200 dark:border-gray-700 hover:-translate-y-0.5"
+      }`}
+      onClick={onSelectFee}
+    >
+      <CardHeader>
+        <CardTitle
+          className={isSelected ? "text-blue-600 dark:text-blue-400" : ""}
+        >
+          Custom
+        </CardTitle>
+        <CardDescription>Enter sats/vbyte</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Input value={selectedFee} onChange={onFeeChange} />
+      </CardContent>
+    </Card>
+  );
+};
 
 interface FeeSelectorProps {
   onSelectFee: (fee: number) => void;
@@ -63,85 +144,45 @@ export const FeeSelector = ({ onSelectFee }: FeeSelectorProps) => {
     onSelectFee(fee);
   };
 
-  if (isLoading) {
-    return (
-      <Spinner animation="border" role="status">
-        <span className="visually-hidden">Loading...</span>
-      </Spinner>
-    );
-  }
-
   return (
     <div>
-      <h1 className={"text-font dark:text-font-dark font-bold"}>
+      <h1 className="text-font dark:text-font-dark font-bold mb-2">
         Transaction Fee Rate
       </h1>
       {recommendedFees ? (
-        <ButtonGroup className="d-flex justify-content-between">
-          <Button
-            variant={
-              selectedFeeType === "slow"
-                ? "primary dark:bg-dark-700 dark:border-dark"
-                : "outline-primary dark:bg-dark dark:border-dark dark:hover:bg-dark-600"
-            }
-            onClick={() => handleFeeSelection("slow")}
-          >
-            <Row className={"dark:text-font-dark"}>
-              <p>Slow (~1d)</p>
-              <p>{recommendedFees.economyFee} sat/vB</p>
-            </Row>
-          </Button>
-          <Button
-            variant={
-              selectedFeeType === "medium"
-                ? "primary dark:bg-dark-700 dark:border-dark"
-                : "outline-primary dark:bg-dark dark:border-dark dark:hover:bg-dark-600"
-            }
-            onClick={() => handleFeeSelection("medium")}
-          >
-            <Row className={"dark:text-font-dark"}>
-              <p>Medium (~60m)</p>
-              <p>{recommendedFees.hourFee} sat/vB</p>
-            </Row>
-          </Button>
-          <Button
-            variant={
-              selectedFeeType === "fast"
-                ? "primary dark:bg-dark-700 dark:border-dark"
-                : "outline-primary dark:bg-dark dark:border-dark dark:hover:bg-dark-600"
-            }
-            onClick={() => handleFeeSelection("fast")}
-          >
-            <Row className={"dark:text-font-dark"}>
-              <p>Fast (~10m)</p>
-              <p>{recommendedFees.fastestFee} sat/vB</p>
-            </Row>
-          </Button>
-
-          <Button
-            variant={
-              selectedFeeType === "custom"
-                ? "primary dark:bg-dark-700 dark:border-dark"
-                : "outline-primary dark:bg-dark dark:border-dark dark:hover:bg-dark-600"
-            }
-            onClick={() => handleFeeSelection("custom")}
-          >
-            <p className={"dark:text-font-dark"}>Custom</p>
-            <Form.Group className="mt-3">
-              <Form.Control
-                type="number"
-                placeholder="Enter custom fee (sat/vB)"
-                value={customFee}
-                className={
-                  "dark:bg-dark dark:text-font-dark dark:placeholder:text-font-dark/60"
-                }
-                onChange={handleCustomFeeChange}
-              />
-            </Form.Group>
-          </Button>
-        </ButtonGroup>
+        <div className="grid grid-cols-3 gap-4">
+          <FeeButton
+            title={"Slow"}
+            isSelected={selectedFeeType === "slow"}
+            timeEstimate={"~1d"}
+            description={`${recommendedFees.economyFee} sat/vB`}
+            onSelectFee={() => handleFeeSelection("slow")}
+          />
+          <FeeButton
+            title={"Medium"}
+            isSelected={selectedFeeType === "medium"}
+            timeEstimate={"~60m"}
+            description={`${recommendedFees.hourFee} sat/vB`}
+            onSelectFee={() => handleFeeSelection("medium")}
+          />
+          <FeeButton
+            title={"Fast"}
+            isSelected={selectedFeeType === "fast"}
+            timeEstimate={"~10m"}
+            description={`${recommendedFees.fastestFee} sat/vB`}
+            onSelectFee={() => handleFeeSelection("fast")}
+          />
+          <div className="col-span-3">
+            <CustomFeeButton
+              isSelected={selectedFeeType === "custom"}
+              onSelectFee={() => handleFeeSelection("custom")}
+              onFeeChange={handleCustomFeeChange}
+              selectedFee={customFee}
+            />
+          </div>
+        </div>
       ) : (
-        <p className={"text-font dark:text-font-dark"}>
+        <p className="text-font dark:text-font-dark">
           Failed to load recommended fees. Please try again later.
         </p>
       )}

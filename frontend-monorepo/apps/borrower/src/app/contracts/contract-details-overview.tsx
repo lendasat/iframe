@@ -36,7 +36,6 @@ import {
   Text,
 } from "@radix-ui/themes";
 import { Suspense, useState } from "react";
-import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import { FaInfoCircle } from "react-icons/fa";
 import { FaCopy } from "react-icons/fa6";
 import { IoMdCloudDownload } from "react-icons/io";
@@ -96,8 +95,6 @@ function Details({ contract }: DetailsProps) {
   const collateralSats = collateralForStatus(
     contract.status,
     contract.initial_collateral_sats,
-    // The field `collateral_sats` includes the origination fee. But here we want to use the
-    // collateral as it pertains to the contract between borrower and lender.
     contract.collateral_sats - contract.origination_fee_sats,
   );
   const collateralBtc = collateralSats / 100000000;
@@ -113,13 +110,11 @@ function Details({ contract }: DetailsProps) {
     ((contract.interest_rate / ONE_YEAR) * contract.duration_days);
   const totalRepaymentAmount = accruedInterest + loanAmount;
 
-  // TODO: Let's calculate the initial price once, in the backend.
   const initialCollateralBtc = contract.initial_collateral_sats / 100000000;
   const initialPrice =
     loanAmount / (initialCollateralBtc * contract.initial_ltv);
   const loanOriginatorFeeUsd = (originationFeeBtc * initialPrice).toFixed(0);
 
-  // Expandable Dispute Card
   const [startingDisputeLoading, setStartingDisputeLoading] = useState(false);
   const [error, setError] = useState("");
   const { startDispute } = useBorrowerHttpClient();
@@ -175,10 +170,6 @@ function Details({ contract }: DetailsProps) {
   );
 }
 
-interface DetailsProps {
-  contract: Contract;
-}
-
 function ContractDetails({ contract }: DetailsProps) {
   const { backendVersion } = useAuth();
   const { newChatNotification } = useBorrowerHttpClient();
@@ -190,12 +181,9 @@ function ContractDetails({ contract }: DetailsProps) {
   const collateral = collateralForStatus(
     contract.status,
     contract.initial_collateral_sats,
-    // The field `collateral_sats` includes the origination fee. But here we want to use the
-    // collateral as it pertains to the contract between borrower and lender.
     contract.collateral_sats - contract.origination_fee_sats,
   );
 
-  // TODO: This is incorrect. The collateral can change throughout the lifetime of the loan.
   const collateralBtc = collateral / 100000000;
   const loanAmount = contract.loan_amount;
   const interestRate = contract.interest_rate;
@@ -556,18 +544,18 @@ function ContractDetails({ contract }: DetailsProps) {
             Origination Fee
           </Text>
           <Box className="max-w-sm text-end">
-            <OverlayTrigger
-              placement="top"
-              overlay={<Tooltip>${loanOriginatorFeeUsd}</Tooltip>}
-            >
+            <div className="group relative">
               <Text
-                className={"text-font dark:text-font-dark"}
-                size={"2"}
-                weight={"medium"}
+                className="text-font dark:text-font-dark cursor-pointer"
+                size="2"
+                weight="medium"
               >
                 {loanOriginatorFee.toFixed(8)} BTC
               </Text>
-            </OverlayTrigger>
+              <div className="absolute -top-8 left-1/2 hidden -translate-x-1/2 transform whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white group-hover:block">
+                ${loanOriginatorFeeUsd}
+              </div>
+            </div>
           </Box>
         </Flex>
         <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
@@ -654,15 +642,6 @@ function ContractDetails({ contract }: DetailsProps) {
             <Text className="text-font/50 dark:text-font-dark/50 mt-0.5 self-end text-[11px]">
               ≈ {formatCurrency(actualInterestUsdAmount, 1, 1)} in total
             </Text>
-
-            {/*
-            <Text className={"text-font dark:text-font-dark"} size={"2"} weight={"medium"}>
-              {(interestRate * 100).toFixed(2)}% per year
-            </Text>
-            <Text className="text-[11px] text-font/50 dark:text-font-dark/50 mt-0.5 self-end">
-              ≈ {formatCurrency(actualInterestUsdAmount, 1, 1)} in total
-            </Text>
-          */}
           </div>
         </Flex>
         <Separator size={"4"} className="bg-font/10 dark:bg-font-dark/10" />
@@ -807,7 +786,7 @@ const ContractStatusDetails = ({
         <CollateralContractDetails
           totalCollateral={totalCollateral}
           collateralAddress={contractAddress}
-          collateral_btc={contract.initial_collateral_sats / 100000000}
+          collateral_btc={contract.initial_collateral_sats / 100_000_000}
           loanOriginatorFeeUsd={loanOriginatorFeeUsd}
           loanOriginatorFee={loanOriginatorFee}
         />

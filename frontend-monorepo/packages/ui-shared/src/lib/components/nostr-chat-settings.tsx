@@ -1,25 +1,15 @@
 import { UnlockWalletModal, useWallet } from "@frontend/browser-wallet";
-import {
-  Box,
-  Callout,
-  Code,
-  Flex,
-  Heading,
-  IconButton,
-} from "@radix-ui/themes";
+import { Box, Callout, Code, Flex, Heading } from "@radix-ui/themes";
 import { useEffect, useState } from "react";
-import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
+import { FaLockOpen, FaRegEye, FaRegEyeSlash } from "react-icons/fa";
 import { Keys, loadWasmSync } from "@rust-nostr/nostr-sdk";
 import { CopyIcon } from "@radix-ui/react-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+import { FaLock } from "react-icons/fa6";
+import { Button } from "@frontend/shadcn";
 
 export const NostrChatSettings = () => {
-  const [showUnlockWalletModal, setShowUnlockWalletModal] = useState(false);
-
-  const handleCloseUnlockWalletModal = () => setShowUnlockWalletModal(false);
-  const handleOpenUnlockWalletModal = () => setShowUnlockWalletModal(true);
-
   const [isNsecVisible, setIsNsecVisible] = useState(false);
   const [nsec, setNsec] = useState<string>("");
 
@@ -40,22 +30,6 @@ export const NostrChatSettings = () => {
     }
   }, [isWalletLoaded, getNsec]);
 
-  const unlockWallet = async () => {
-    try {
-      if (!isWalletLoaded) {
-        handleOpenUnlockWalletModal();
-      }
-    } catch (err) {
-      console.error("Failed unlocking wallet", err);
-      throw err;
-    }
-  };
-
-  const handleSubmitUnlockWalletModal = async () => {
-    handleCloseUnlockWalletModal();
-    // setIsNsecVisible(true);
-  };
-
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(nsec);
@@ -66,12 +40,6 @@ export const NostrChatSettings = () => {
 
   return (
     <>
-      <UnlockWalletModal
-        show={showUnlockWalletModal}
-        handleClose={handleCloseUnlockWalletModal}
-        handleSubmit={handleSubmitUnlockWalletModal}
-      />
-
       <Box mt={"4"} className="grid max-w-lg gap-5 md:grid-cols-1">
         <Box>
           <Flex direction={"column"} gap={"1"}>
@@ -84,20 +52,28 @@ export const NostrChatSettings = () => {
                 Nsec
               </Heading>
 
-              <IconButton
-                variant="ghost"
-                type="button"
-                className="text-font dark:text-font-dark hover:bg-transparent"
+              {!isWalletLoaded ? (
+                <UnlockWalletModal handleSubmit={() => {}}>
+                  <Button variant="outline" size="icon">
+                    <FaLock />
+                  </Button>
+                </UnlockWalletModal>
+              ) : (
+                <Button variant="outline" size="icon" disabled={isWalletLoaded}>
+                  <FaLockOpen />
+                </Button>
+              )}
+
+              <Button
+                variant="outline"
+                size="icon"
+                disabled={!isWalletLoaded}
                 onClick={async () => {
-                  if (!isWalletLoaded) {
-                    await unlockWallet();
-                  } else {
-                    setIsNsecVisible(!isNsecVisible);
-                  }
+                  setIsNsecVisible(!isNsecVisible);
                 }}
               >
                 {isNsecVisible ? <FaRegEye /> : <FaRegEyeSlash />}
-              </IconButton>
+              </Button>
             </Flex>
             <Callout.Root color="blue" size={"2"}>
               <Callout.Icon>
@@ -110,24 +86,22 @@ export const NostrChatSettings = () => {
                 read chat messages.
               </Callout.Text>
             </Callout.Root>
-            <Flex direction={"row"} gap={"2"} mt={"4"}>
+            <Flex direction={"row"} gap={"2"} mt={"4"} align={"center"}>
               <Code>
                 {isNsecVisible
                   ? nsec
                   : "*******************************************************************"}
               </Code>
-              <IconButton
-                size="1"
-                aria-label="Copy value"
-                color="gray"
-                variant="ghost"
+              <Button
+                variant="outline"
+                size="icon"
                 disabled={!isWalletLoaded}
                 onClick={async () => {
                   await handleCopy();
                 }}
               >
                 <CopyIcon />
-              </IconButton>
+              </Button>
             </Flex>
           </Flex>
         </Box>

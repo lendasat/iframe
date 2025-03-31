@@ -237,14 +237,16 @@ export const ContractDetailsTable = ({
 
       <Table.Body>
         {contracts.length === 0 && (
-          <Table.Cell colSpan={8}>
-            <Callout.Root color={"blue"}>
-              <Callout.Icon>
-                <InfoCircledIcon />
-              </Callout.Icon>
-              <Callout.Text>No contracts found.</Callout.Text>
-            </Callout.Root>
-          </Table.Cell>
+          <Table.Row>
+            <Table.Cell colSpan={8}>
+              <Callout.Root color={"blue"}>
+                <Callout.Icon>
+                  <InfoCircledIcon />
+                </Callout.Icon>
+                <Callout.Text>No contracts found.</Callout.Text>
+              </Callout.Root>
+            </Table.Cell>
+          </Table.Row>
         )}
 
         {contracts.map((contract) => {

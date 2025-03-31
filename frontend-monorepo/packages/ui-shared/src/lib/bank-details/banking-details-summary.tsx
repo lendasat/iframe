@@ -92,34 +92,20 @@ export const BankingDetailsSummary = ({
 
   const [error, setError] = useState("");
 
-  const [showUnlockWalletModal, setShowUnlockWalletModal] = useState(false);
-  const handleCloseUnlockWalletModal = () => setShowUnlockWalletModal(false);
-  const handleOpenUnlockWalletModal = () => setShowUnlockWalletModal(true);
-  const handleSubmitUnlockWalletModal = async () => {
-    handleCloseUnlockWalletModal();
-  };
-
   const onUnlockWalletOrDecryptPaymentDetails = async () => {
-    if (!isWalletLoaded) {
-      setIsLoading(true);
-      handleOpenUnlockWalletModal();
-      setIsLoading(false);
-      return;
-    } else {
-      if (fiatLoanDetails) {
-        try {
-          const loanDetails = await decryptFiatLoanDetails(
-            fiatLoanDetails.details,
-            fiatLoanDetails.encrypted_encryption_key,
-          );
-          setLoanDetails(loanDetails);
-          setIsDecrypted(true);
-        } catch (e) {
-          console.error(`Failed to decrypt fiat payment details ${e}`);
-          setError(`${e}`);
-        } finally {
-          setIsLoading(false);
-        }
+    if (fiatLoanDetails) {
+      try {
+        const loanDetails = await decryptFiatLoanDetails(
+          fiatLoanDetails.details,
+          fiatLoanDetails.encrypted_encryption_key,
+        );
+        setLoanDetails(loanDetails);
+        setIsDecrypted(true);
+      } catch (e) {
+        console.error(`Failed to decrypt fiat payment details ${e}`);
+        setError(`${e}`);
+      } finally {
+        setIsLoading(false);
       }
     }
   };
@@ -130,12 +116,6 @@ export const BankingDetailsSummary = ({
 
   return (
     <Flex direction={"column"}>
-      <UnlockWalletModal
-        show={showUnlockWalletModal}
-        handleClose={handleCloseUnlockWalletModal}
-        handleSubmit={handleSubmitUnlockWalletModal}
-      />
-
       <Heading
         size="3"
         weight="bold"
@@ -234,13 +214,26 @@ export const BankingDetailsSummary = ({
         <DataList.Item>
           <DataList.Label minWidth="240px"></DataList.Label>
           <DataList.Value>
-            <Button
-              onClick={onUnlockWalletOrDecryptPaymentDetails}
-              loading={isLoading}
-              disabled={isDecrypted}
-            >
-              {isWalletLoaded ? "Decrypt payment details" : "Unlock Wallet"}
-            </Button>
+            {!isWalletLoaded ? (
+              <UnlockWalletModal handleSubmit={() => {}}>
+                <Button
+                  type={"button"}
+                  disabled={isWalletLoaded}
+                  className="mt-3"
+                >
+                  Confirm Secret
+                </Button>
+              </UnlockWalletModal>
+            ) : (
+              <Button
+                type="button"
+                disabled={isDecrypted}
+                loading={isLoading}
+                onClick={onUnlockWalletOrDecryptPaymentDetails}
+              >
+                {"Decrypt payment details"}
+              </Button>
+            )}
           </DataList.Value>
         </DataList.Item>
       </DataList.Root>
