@@ -277,7 +277,6 @@ impl Wallet {
             output: outputs,
         };
 
-        // TODO: We need to check if the output holds enough to cover the fee.
         update_fee(
             fee_rate_spvb,
             total_collateral_amount.to_sat(),
@@ -392,7 +391,6 @@ impl Wallet {
             output: outputs,
         };
 
-        // TODO: We need to check if the output holds enough to cover the fee.
         update_fee(
             fee_rate_spvb,
             total_collateral_amount.to_sat(),
@@ -508,7 +506,6 @@ impl Wallet {
 
         let total_collateral_amount = collateral_outputs.iter().fold(0, |acc, (_, a)| acc + a);
 
-        // TODO: We need to check if the output holds enough to cover the fee.
         update_fee(
             fee_rate_spvb,
             total_collateral_amount,
@@ -716,6 +713,8 @@ pub fn derive_borrower_or_lender_pk(
 }
 
 /// Updates how much fee the transaction pays by reducing the amount sent to [`output`]
+///
+/// TODO: We need to check if the "refund" output holds enough to cover the fee.
 fn update_fee(
     fee_rate_spvb: u64,
     total_collateral_amount: u64,
