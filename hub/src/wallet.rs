@@ -218,7 +218,6 @@ impl Wallet {
         contract_version: ContractVersion,
     ) -> Result<(Psbt, Descriptor<PublicKey>, PublicKey)> {
         let (hub_kp, _) = self.get_keys_for_index(contract_index)?;
-        let hub_pk = PublicKey::new(hub_kp.public_key());
 
         let (collateral_descriptor, (borrower_pk, _), _) = self.collateral_descriptor(
             borrower_xpub,
@@ -283,7 +282,7 @@ impl Wallet {
             output: outputs,
         };
 
-        // TODO: we need to check if the output holds enough to cover the fee
+        // TODO: We need to check if the output holds enough to cover the fee.
         update_fee(
             fee_rate_spvb,
             total_collateral_amount,
@@ -291,52 +290,15 @@ impl Wallet {
             contract_version,
         );
 
-        let witness_script = collateral_descriptor.script_code()?;
+        let mut psbt = Psbt::from_unsigned_tx(unsigned_claim_tx)?;
+        sign_spend_tx(
+            &mut psbt,
+            hub_kp,
+            collateral_outputs,
+            &collateral_descriptor,
+        )?;
 
-        let mut inputs = Vec::new();
-
-        // The order is important.
-        for (i, (_, amount_sats)) in collateral_outputs.iter().enumerate() {
-            let witness_script = witness_script.clone();
-            let amount_sats = Amount::from_sat(*amount_sats);
-
-            let sighash = SighashCache::new(&unsigned_claim_tx).p2wsh_signature_hash(
-                i,
-                &witness_script,
-                amount_sats,
-                EcdsaSighashType::All,
-            )?;
-
-            let mut input = psbt::Input {
-                witness_utxo: Some(TxOut {
-                    value: amount_sats,
-                    script_pubkey: collateral_descriptor.script_pubkey(),
-                }),
-                sighash_type: Some(PsbtSighashType::from_str("SIGHASH_ALL").expect("valid")),
-                witness_script: Some(witness_script),
-                ..Default::default()
-            };
-
-            let secp = Secp256k1::new();
-            let hub_sk = hub_kp.secret_key();
-            let sig = secp.sign_ecdsa(&sighash.into(), &hub_sk);
-
-            input.partial_sigs.insert(
-                hub_pk,
-                bitcoin::ecdsa::Signature {
-                    signature: sig,
-                    sighash_type: EcdsaSighashType::All,
-                },
-            );
-
-            inputs.push(input);
-        }
-
-        let mut claim_psbt = Psbt::from_unsigned_tx(unsigned_claim_tx)?;
-
-        claim_psbt.inputs = inputs;
-
-        Ok((claim_psbt, collateral_descriptor, borrower_pk))
+        Ok((psbt, collateral_descriptor, borrower_pk))
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -349,13 +311,12 @@ impl Wallet {
         collateral_outputs: Vec<(OutPoint, u64)>,
         // NOTE: In the DLC-based protocol, we will probably charge the origination fee when the
         // collateral is locked up.
-        origination_fee: u64,
+        origination_fee: Amount,
         borrower_btc_address: Address,
         fee_rate_spvb: u64,
         contract_version: ContractVersion,
     ) -> Result<(Psbt, Descriptor<PublicKey>, PublicKey)> {
         let (hub_kp, _) = self.get_keys_for_index(contract_index)?;
-        let hub_pk = PublicKey::new(hub_kp.public_key());
 
         let (collateral_descriptor, (borrower_pk, _), _) = self.collateral_descriptor(
             borrower_xpub,
@@ -375,39 +336,42 @@ impl Wallet {
             inputs.push(input)
         }
 
-        let total_collateral_amount = collateral_outputs.iter().fold(0, |acc, (_, a)| acc + a);
-        let claim_amount = total_collateral_amount
+        let total_collateral_amount =
+            Amount::from_sat(collateral_outputs.iter().fold(0, |acc, (_, a)| acc + a));
+        let borrower_amount = total_collateral_amount
             .checked_sub(origination_fee)
             .context("Negative claim amount")?;
 
-        let claim_output = TxOut {
-            value: Amount::from_sat(claim_amount),
+        let borrower_output = TxOut {
+            value: borrower_amount,
             script_pubkey: borrower_btc_address.script_pubkey(),
         };
 
-        let new_address = self
+        let origination_fee_address = self
             .hub_fee_wallet
             .lock()
             .expect("to get lock")
             .get_new_address()?;
 
         let origination_fee_output = TxOut {
-            value: Amount::from_sat(origination_fee),
-            script_pubkey: ScriptBuf::from_bytes(new_address.address.script_pubkey().to_bytes()),
+            value: origination_fee,
+            script_pubkey: ScriptBuf::from_bytes(
+                origination_fee_address.address.script_pubkey().to_bytes(),
+            ),
         };
 
-        let output = if claim_output.value.to_sat() < MIN_TX_OUTPUT_VALUE {
+        let output = if borrower_output.value.to_sat() < MIN_TX_OUTPUT_VALUE {
             vec![TxOut {
-                value: origination_fee_output.value + claim_output.value,
+                value: origination_fee_output.value + borrower_output.value,
                 script_pubkey: origination_fee_output.script_pubkey,
             }]
         } else if origination_fee_output.value.to_sat() < MIN_TX_OUTPUT_VALUE {
             vec![TxOut {
-                value: claim_output.value + origination_fee_output.value,
-                script_pubkey: claim_output.script_pubkey,
+                value: borrower_output.value + origination_fee_output.value,
+                script_pubkey: borrower_output.script_pubkey,
             }]
         } else {
-            vec![claim_output, origination_fee_output]
+            vec![borrower_output, origination_fee_output]
         };
 
         let mut unsigned_claim_tx = Transaction {
@@ -417,60 +381,23 @@ impl Wallet {
             output,
         };
 
-        let witness_script = collateral_descriptor.script_code()?;
-
-        // TODO: we need to check if the output holds enough to cover the fee
+        // TODO: We need to check if the output holds enough to cover the fee.
         update_fee(
             fee_rate_spvb,
-            total_collateral_amount,
-            &mut unsigned_claim_tx, // the refund output
+            total_collateral_amount.to_sat(),
+            &mut unsigned_claim_tx,
             contract_version,
         );
 
-        let mut inputs = Vec::new();
+        let mut psbt = Psbt::from_unsigned_tx(unsigned_claim_tx)?;
+        sign_spend_tx(
+            &mut psbt,
+            hub_kp,
+            collateral_outputs,
+            &collateral_descriptor,
+        )?;
 
-        // The order is important.
-        for (i, (_, amount_sats)) in collateral_outputs.iter().enumerate() {
-            let witness_script = witness_script.clone();
-            let amount_sats = Amount::from_sat(*amount_sats);
-
-            let sighash = SighashCache::new(&unsigned_claim_tx).p2wsh_signature_hash(
-                i,
-                &witness_script,
-                amount_sats,
-                EcdsaSighashType::All,
-            )?;
-
-            let mut input = psbt::Input {
-                witness_utxo: Some(TxOut {
-                    value: amount_sats,
-                    script_pubkey: collateral_descriptor.script_pubkey(),
-                }),
-                sighash_type: Some(PsbtSighashType::from_str("SIGHASH_ALL").expect("valid")),
-                witness_script: Some(witness_script),
-                ..Default::default()
-            };
-
-            let secp = Secp256k1::new();
-            let hub_sk = hub_kp.secret_key();
-            let sig = secp.sign_ecdsa(&sighash.into(), &hub_sk);
-
-            input.partial_sigs.insert(
-                hub_pk,
-                bitcoin::ecdsa::Signature {
-                    signature: sig,
-                    sighash_type: EcdsaSighashType::All,
-                },
-            );
-
-            inputs.push(input);
-        }
-
-        let mut claim_psbt = Psbt::from_unsigned_tx(unsigned_claim_tx)?;
-
-        claim_psbt.inputs = inputs;
-
-        Ok((claim_psbt, collateral_descriptor, borrower_pk))
+        Ok((psbt, collateral_descriptor, borrower_pk))
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -489,7 +416,6 @@ impl Wallet {
         contract_version: ContractVersion,
     ) -> Result<(Psbt, Descriptor<PublicKey>, PublicKey)> {
         let (hub_kp, _) = self.get_keys_for_index(contract_index)?;
-        let hub_pk = PublicKey::new(hub_kp.public_key());
 
         let (collateral_descriptor, _, (lender_pk, _)) = self.collateral_descriptor(
             borrower_xpub,
@@ -552,7 +478,7 @@ impl Wallet {
             output,
         };
 
-        // TODO: we need to check if the output holds enough to cover the fee
+        // TODO: We need to check if the output holds enough to cover the fee.
         update_fee(
             fee_rate_spvb,
             total_collateral_amount.to_sat(),
@@ -560,50 +486,13 @@ impl Wallet {
             contract_version,
         );
 
-        let witness_script = collateral_descriptor.script_code()?;
-
-        let mut inputs = Vec::new();
-
-        // The order is important.
-        for (i, (_, amount_sats)) in collateral_outputs.iter().enumerate() {
-            let witness_script = witness_script.clone();
-            let amount_sats = Amount::from_sat(*amount_sats);
-
-            let sighash = SighashCache::new(&unsigned_claim_tx).p2wsh_signature_hash(
-                i,
-                &witness_script,
-                amount_sats,
-                EcdsaSighashType::All,
-            )?;
-
-            let mut input = psbt::Input {
-                witness_utxo: Some(TxOut {
-                    value: amount_sats,
-                    script_pubkey: collateral_descriptor.script_pubkey(),
-                }),
-                sighash_type: Some(PsbtSighashType::from_str("SIGHASH_ALL").expect("valid")),
-                witness_script: Some(witness_script),
-                ..Default::default()
-            };
-
-            let secp = Secp256k1::new();
-            let hub_sk = hub_kp.secret_key();
-            let sig = secp.sign_ecdsa(&sighash.into(), &hub_sk);
-
-            input.partial_sigs.insert(
-                hub_pk,
-                bitcoin::ecdsa::Signature {
-                    signature: sig,
-                    sighash_type: EcdsaSighashType::All,
-                },
-            );
-
-            inputs.push(input);
-        }
-
         let mut psbt = Psbt::from_unsigned_tx(unsigned_claim_tx)?;
-
-        psbt.inputs = inputs;
+        sign_spend_tx(
+            &mut psbt,
+            hub_kp,
+            collateral_outputs,
+            &collateral_descriptor,
+        )?;
 
         Ok((psbt, collateral_descriptor, lender_pk))
     }
@@ -673,6 +562,60 @@ impl Wallet {
     pub fn network(&self) -> Network {
         self.network
     }
+}
+
+fn sign_spend_tx(
+    spend_psbt: &mut Psbt,
+    hub_kp: Keypair,
+    collateral_outputs: Vec<(OutPoint, u64)>,
+    collateral_descriptor: &Descriptor<PublicKey>,
+) -> Result<(), anyhow::Error> {
+    let spend_tx = &spend_psbt.unsigned_tx;
+
+    let hub_pk = PublicKey::new(hub_kp.public_key());
+
+    let script_pubkey = collateral_descriptor.script_pubkey();
+    let witness_script = collateral_descriptor.script_code()?;
+
+    let mut inputs = Vec::new();
+    for (i, (_, amount_sats)) in collateral_outputs.iter().enumerate() {
+        let amount_sats = Amount::from_sat(*amount_sats);
+
+        let sighash = SighashCache::new(spend_tx).p2wsh_signature_hash(
+            i,
+            &witness_script,
+            amount_sats,
+            EcdsaSighashType::All,
+        )?;
+
+        let mut input = psbt::Input {
+            witness_utxo: Some(TxOut {
+                value: amount_sats,
+                script_pubkey: script_pubkey.clone(),
+            }),
+            sighash_type: Some(PsbtSighashType::from_str("SIGHASH_ALL").expect("valid")),
+            witness_script: Some(witness_script.clone()),
+            ..Default::default()
+        };
+
+        let secp = Secp256k1::new();
+        let hub_sk = hub_kp.secret_key();
+        let sig = secp.sign_ecdsa(&sighash.into(), &hub_sk);
+
+        input.partial_sigs.insert(
+            hub_pk,
+            bitcoin::ecdsa::Signature {
+                signature: sig,
+                sighash_type: EcdsaSighashType::All,
+            },
+        );
+
+        inputs.push(input);
+    }
+
+    spend_psbt.inputs = inputs;
+
+    Ok(())
 }
 
 fn calculate_fee_rate(tx: Transaction, total_input_amount: Amount) -> FeeRate {

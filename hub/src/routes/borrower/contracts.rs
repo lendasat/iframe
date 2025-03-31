@@ -677,7 +677,7 @@ async fn get_claim_collateral_psbt(
             &lender_xpub,
             contract_index,
             collateral_outputs,
-            origination_fee.to_sat(),
+            origination_fee,
             contract.borrower_btc_address.assume_checked(),
             query_params.fee_rate,
             contract.contract_version,
