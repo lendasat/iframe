@@ -207,8 +207,6 @@ impl Wallet {
         lender_xpub: &Xpub,
         contract_index: u32,
         collateral_outputs: Vec<(OutPoint, u64)>,
-        // NOTE: In the DLC-based protocol, we will probably charge the origination fee when the
-        // collateral is locked up.
         origination_fee: Amount,
         borrower_address: Address,
         fee_rate_spvb: u64,
@@ -427,8 +425,6 @@ impl Wallet {
         borrower_address: Address<NetworkUnchecked>,
         borrower_amount: Amount,
         liquidator_amount: Amount,
-        // In the DLC-based protocol, we will probably charge the origination fee when the
-        // collateral is locked up.
         origination_fee: Amount,
         fee_rate_spvb: u64,
         contract_version: ContractVersion,
