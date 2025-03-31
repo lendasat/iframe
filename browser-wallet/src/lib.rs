@@ -229,6 +229,11 @@ pub fn get_nsec() -> Result<String, JsValue> {
 }
 
 #[wasm_bindgen]
+pub fn get_nostr_derivation_path() -> String {
+    wallet::NOSTR_DERIVATION_PATH.to_string()
+}
+
+#[wasm_bindgen]
 pub fn derive_nostr_room_pk(contract: String) -> Result<String, JsValue> {
     map_err_to_js!(wallet::derive_nostr_room_pk(contract))
 }
