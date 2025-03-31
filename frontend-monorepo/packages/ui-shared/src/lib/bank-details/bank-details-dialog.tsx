@@ -23,6 +23,8 @@ import {
 } from "@frontend/base-http-client";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCheckCircle } from "@fortawesome/free-solid-svg-icons";
+import { FaLock } from "react-icons/fa6";
+import { FaLockOpen } from "react-icons/fa";
 
 export interface FiatDialogFormDetails {
   bankDetails: BankDetails;
@@ -93,22 +95,25 @@ function FormField({
           {errorIfMismatch}
         </Form.Message>
       </Flex>
-      <Form.Control asChild>
-        {inputType === FormFieldInputType.TextField && (
+
+      {inputType === FormFieldInputType.TextField && (
+        <Form.Control asChild>
           <TextField.Root
             required={true}
             value={value}
             onChange={(e) => onChange(e.target.value)}
           />
-        )}
-        {inputType === FormFieldInputType.TextArea && (
+        </Form.Control>
+      )}
+      {inputType === FormFieldInputType.TextArea && (
+        <Form.Control asChild>
           <TextArea
             required={true}
             value={value}
             onChange={(e) => onChange(e.target.value)}
           />
-        )}
-      </Form.Control>
+        </Form.Control>
+      )}
     </Form.Field>
   );
 }
@@ -556,7 +561,8 @@ export const FiatTransferDetails = ({
     isWalletLoaded,
   } = useWallet();
 
-  const unlockWalletOrEncrypt = async () => {
+  const encrypt = async () => {
+    setError("");
     if (!fiatTransferDetails) {
       setError("No details provided");
       return;
@@ -651,15 +657,29 @@ export const FiatTransferDetails = ({
                 </Button>
               </FiatTransferDetailsDialog>
             </Flex>
-            <Button
-              loading={isLoading}
-              onClick={unlockWalletOrEncrypt}
-              mt={"3"}
-              color={"purple"}
-              disabled={dataEncrypted}
-            >
-              {isWalletLoaded ? "Encrypt Details" : "Unlock to Encrypt"}
-            </Button>
+            {!isWalletLoaded ? (
+              <UnlockWalletModal handleSubmit={() => {}}>
+                <Button
+                  loading={isLoading}
+                  mt={"3"}
+                  color={"purple"}
+                  type={"button"}
+                  disabled={dataEncrypted}
+                >
+                  Unlock to Encrypt
+                </Button>
+              </UnlockWalletModal>
+            ) : (
+              <Button
+                loading={isLoading}
+                onClick={encrypt}
+                mt={"3"}
+                color={"purple"}
+                disabled={dataEncrypted}
+              >
+                Encrypt Details
+              </Button>
+            )}
           </Callout.Text>
         </Callout.Root>
       )}
@@ -698,7 +718,7 @@ export const FiatTransferDetails = ({
             ) : (
               <Button
                 loading={isLoading}
-                onClick={unlockWalletOrEncrypt}
+                onClick={encrypt}
                 mt={"3"}
                 color={"purple"}
                 disabled={dataEncrypted}
