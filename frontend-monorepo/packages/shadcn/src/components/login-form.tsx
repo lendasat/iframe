@@ -12,6 +12,7 @@ import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
 import { type FormEvent, useState } from "react";
 import { AlertCircle, Loader2 } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 
 interface LoginFormProps extends React.ComponentProps<"div"> {
   handleLogin: (email: string, password: string) => Promise<void>;
@@ -36,6 +37,8 @@ export function LoginForm({
   const [password, setPassword] = useState(initialUserPassword);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const [visible, setVisible] = useState(false);
 
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -84,13 +87,23 @@ export function LoginForm({
                       Forgot your password?
                     </a>
                   </div>
-                  <Input
-                    id="password"
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
+                  <div className="flex w-full max-w-sm items-center space-x-2">
+                    <Input
+                      id="password"
+                      type={visible ? "text" : "password"}
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
+                    <Button
+                      type="button"
+                      variant={"outline"}
+                      size={"icon"}
+                      onClick={() => setVisible(!visible)}
+                    >
+                      {visible ? <EyeOff /> : <Eye />}
+                    </Button>
+                  </div>
                 </div>
                 {error && (
                   <Alert variant="destructive">
