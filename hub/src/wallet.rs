@@ -350,26 +350,46 @@ impl Wallet {
             script_pubkey: lender_address.script_pubkey(),
         };
 
-        let origination_fee_output = {
-            let address = self
-                .hub_fee_wallet
-                .lock()
-                .expect("to get lock")
-                .get_new_address()?;
-
-            TxOut {
-                value: origination_fee,
-                script_pubkey: ScriptBuf::from_bytes(address.address.script_pubkey().to_bytes()),
-            }
+        let mut outputs = if borrower_output.value.to_sat() < MIN_TX_OUTPUT_VALUE {
+            vec![TxOut {
+                value: lender_output.value + borrower_output.value,
+                script_pubkey: lender_output.script_pubkey,
+            }]
+        } else if lender_output.value.to_sat() < MIN_TX_OUTPUT_VALUE {
+            vec![TxOut {
+                value: borrower_output.value + lender_output.value,
+                script_pubkey: borrower_output.script_pubkey,
+            }]
+        } else {
+            vec![borrower_output, lender_output]
         };
 
-        let output = vec![borrower_output, lender_output, origination_fee_output];
+        if origination_fee.to_sat() < MIN_TX_OUTPUT_VALUE {
+            outputs[0].value += origination_fee;
+        } else {
+            let origination_fee_output = {
+                let address = self
+                    .hub_fee_wallet
+                    .lock()
+                    .expect("to get lock")
+                    .get_new_address()?;
+
+                TxOut {
+                    value: origination_fee,
+                    script_pubkey: ScriptBuf::from_bytes(
+                        address.address.script_pubkey().to_bytes(),
+                    ),
+                }
+            };
+
+            outputs.push(origination_fee_output);
+        };
 
         let mut unsigned_claim_tx = Transaction {
             version: Version::TWO,
             lock_time: LockTime::ZERO,
             input: inputs,
-            output,
+            output: outputs,
         };
 
         // TODO: We need to check if the output holds enough to cover the fee.
