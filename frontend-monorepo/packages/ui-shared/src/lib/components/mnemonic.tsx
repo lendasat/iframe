@@ -1,27 +1,15 @@
 import { UnlockWalletModal, useWallet } from "@frontend/browser-wallet";
+import { Button } from "@frontend/shadcn";
 import * as Checkbox from "@radix-ui/react-checkbox";
 import { CheckIcon } from "@radix-ui/react-icons";
 import * as Label from "@radix-ui/react-label";
-import {
-  Box,
-  Button,
-  Flex,
-  Grid,
-  Heading,
-  IconButton,
-  Text,
-} from "@radix-ui/themes";
+import { Box, Flex, Grid, Heading, Text } from "@radix-ui/themes";
 import { useEffect, useState } from "react";
 import { FaLockOpen, FaRegEye, FaRegEyeSlash } from "react-icons/fa";
 import { FaLock } from "react-icons/fa6";
 
 export const MnemonicComponent = () => {
-  const [showUnlockWalletModal, setShowUnlockWalletModal] = useState(false);
   const [hasBackedUp, setHasBackedUp] = useState(false);
-  console.log(`Has it backed up ${hasBackedUp}`);
-
-  const handleCloseUnlockWalletModal = () => setShowUnlockWalletModal(false);
-  const handleOpenUnlockWalletModal = () => setShowUnlockWalletModal(true);
 
   const [isMnemonicVisible, setIsMnemonicVisible] = useState(false);
   const [mnemonic, setMnemonic] = useState<string[]>([]);
@@ -49,33 +37,12 @@ export const MnemonicComponent = () => {
     setIsMnemonicVisible(false);
   };
 
-  const unlockWallet = async () => {
-    try {
-      if (!isWalletLoaded) {
-        handleOpenUnlockWalletModal();
-      }
-    } catch (err) {
-      console.error("Failed unlocking wallet", err);
-      throw err;
-    }
-  };
-
-  const handleSubmitUnlockWalletModal = async () => {
-    handleCloseUnlockWalletModal();
-  };
-
   return (
     <>
-      <UnlockWalletModal
-        show={showUnlockWalletModal}
-        handleClose={handleCloseUnlockWalletModal}
-        handleSubmit={handleSubmitUnlockWalletModal}
-      />
-
       <Box mt={"4"} className="grid max-w-lg gap-5 md:grid-cols-1">
         <Box>
           <Flex direction={"column"} gap={"1"}>
-            <Flex direction={"row"} gap={"4"}>
+            <Flex direction={"row"} gap={"4"} align={"center"}>
               <Heading
                 as="h4"
                 className="text-font dark:text-font-dark font-semibold capitalize"
@@ -84,23 +51,26 @@ export const MnemonicComponent = () => {
                 Mnemonic Seed Phrase
               </Heading>
 
-              <IconButton
-                variant="ghost"
-                type="button"
-                className="text-font dark:text-font-dark hover:bg-transparent"
-                onClick={unlockWallet}
-              >
-                {isWalletLoaded ? <FaLockOpen /> : <FaLock />}
-              </IconButton>
+              {!isWalletLoaded ? (
+                <UnlockWalletModal handleSubmit={() => {}}>
+                  <Button variant="outline" size="icon">
+                    <FaLock />
+                  </Button>
+                </UnlockWalletModal>
+              ) : (
+                <Button variant="outline" size="icon" disabled={isWalletLoaded}>
+                  <FaLockOpen />
+                </Button>
+              )}
+
               {mnemonic.length > 0 && (
-                <IconButton
-                  variant="ghost"
-                  type="button"
-                  className="text-font dark:text-font-dark hover:bg-transparent"
+                <Button
+                  variant="outline"
+                  size="icon"
                   onClick={() => setIsMnemonicVisible(!isMnemonicVisible)}
                 >
                   {isMnemonicVisible ? <FaRegEye /> : <FaRegEyeSlash />}
-                </IconButton>
+                </Button>
               )}
             </Flex>
             <Grid
@@ -165,7 +135,6 @@ export const MnemonicComponent = () => {
                   <Button
                     onClick={handleBackupConfirm}
                     disabled={!isMnemonicVisible || !isCheckboxTicked}
-                    size="2"
                   >
                     Confirm Backup
                   </Button>

@@ -27,20 +27,11 @@ function ResolveDispute() {
   const [error, setError] = useState("");
   const [selectedFee, setSelectedFee] = useState(1);
 
-  const [showUnlockWalletModal, setShowUnlockWalletModal] = useState(false);
-  const handleCloseUnlockWalletModal = () => setShowUnlockWalletModal(false);
-  const handleOpenUnlockWalletModal = () => setShowUnlockWalletModal(true);
-
-  const { isWalletLoaded, signClaimPsbt } = useWallet();
+  const { signClaimPsbt } = useWallet();
 
   const onWithdrawAction = async (dispute: Dispute) => {
     try {
-      if (!isWalletLoaded) {
-        handleOpenUnlockWalletModal();
-        return;
-      } else {
-        await claimCollateralRequest(dispute);
-      }
+      await claimCollateralRequest(dispute);
     } catch (err) {
       console.error("Failed to claim collateral", err);
     }
@@ -65,10 +56,6 @@ function ResolveDispute() {
     }
   };
 
-  const handleSubmitUnlockWalletModal = async (_: Dispute) => {
-    handleCloseUnlockWalletModal();
-  };
-
   return (
     <Suspense>
       <Await
@@ -80,11 +67,6 @@ function ResolveDispute() {
         }
         children={(dispute: Awaited<Dispute>) => (
           <div>
-            <UnlockWalletModal
-              show={showUnlockWalletModal}
-              handleClose={handleCloseUnlockWalletModal}
-              handleSubmit={() => handleSubmitUnlockWalletModal(dispute)}
-            />
             <Card className="my-3">
               <CardHeader>
                 <CardTitle>Dispute: {dispute.id}</CardTitle>
@@ -160,6 +142,7 @@ const ActionItem = ({
   onFeeSelected,
 }: ActionItemProps) => {
   let actionDisabled = true;
+  const { isWalletLoaded } = useWallet();
 
   switch (dispute.status) {
     case DisputeStatus.ResolvedBorrower:
@@ -187,13 +170,21 @@ const ActionItem = ({
         </Alert>
       )}
       {!actionDisabled && <FeeSelector onSelectFee={onFeeSelected} />}
-      <Button
-        disabled={actionDisabled}
-        onClick={() => onWithdrawAction(dispute)}
-        className="mt-3"
-      >
-        Withdraw collateral
-      </Button>
+      {!isWalletLoaded ? (
+        <UnlockWalletModal handleSubmit={() => {}}>
+          <Button type={"button"} disabled={isWalletLoaded} className="mt-3">
+            Confirm Secret
+          </Button>
+        </UnlockWalletModal>
+      ) : (
+        <Button
+          disabled={actionDisabled}
+          onClick={() => onWithdrawAction(dispute)}
+          className="mt-3"
+        >
+          Withdraw collateral
+        </Button>
+      )}
     </>
   );
 };

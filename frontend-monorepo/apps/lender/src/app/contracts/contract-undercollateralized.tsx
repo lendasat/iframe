@@ -38,37 +38,15 @@ export function ContractUndercollateralized({
     null,
   );
 
-  const [showUnlockWalletModal, setShowUnlockWalletModal] = useState(false);
-
   const [error, setError] = useState("");
-
-  const handleCloseUnlockWalletModal = () => setShowUnlockWalletModal(false);
-  const handleOpenUnlockWalletModal = () => setShowUnlockWalletModal(true);
 
   const { isWalletLoaded, signLiquidationPsbt } = useWallet();
 
   const liquidateCollateralIfWalletLoaded = async () => {
     try {
-      if (!isWalletLoaded) {
-        handleOpenUnlockWalletModal();
-        return;
-      } else {
-        await liquidateCollateral();
-      }
+      await liquidateCollateral();
     } catch (err) {
       console.error("Failed to liquidate collateral", err);
-      throw err;
-    }
-  };
-
-  const unlockWallet = async () => {
-    try {
-      if (!isWalletLoaded) {
-        handleOpenUnlockWalletModal();
-        return;
-      }
-    } catch (err) {
-      console.error("Failed unlocking wallet", err);
       throw err;
     }
   };
@@ -122,10 +100,6 @@ export function ContractUndercollateralized({
     }
   };
 
-  const handleSubmitUnlockWalletModal = async () => {
-    handleCloseUnlockWalletModal();
-  };
-
   const onUnlockOrLiquidate = async () => {
     setError("");
 
@@ -135,13 +109,6 @@ export function ContractUndercollateralized({
       } catch (e) {
         const err = e as Error;
         setError(`Failed to liquidate collateral: ${err.message}`);
-      }
-    } else {
-      try {
-        await unlockWallet();
-      } catch (e) {
-        const err = e as Error;
-        setError(`Failed to unlock contract: ${err.message}`);
       }
     }
   };
@@ -153,11 +120,6 @@ export function ContractUndercollateralized({
 
   return (
     <>
-      <UnlockWalletModal
-        show={showUnlockWalletModal}
-        handleClose={handleCloseUnlockWalletModal}
-        handleSubmit={handleSubmitUnlockWalletModal}
-      />
       {liquidationTx && (
         <ConfirmationModal
           show={showModal}
@@ -220,9 +182,21 @@ export function ContractUndercollateralized({
             <Row className="justify-content-between mt-4">
               <Row className="mt-1">
                 <Col className="d-grid">
-                  <Button type="submit" variant="primary">
-                    {isWalletLoaded ? "Liquidate" : "Unlock Contract"}
-                  </Button>
+                  {!isWalletLoaded ? (
+                    <UnlockWalletModal handleSubmit={() => {}}>
+                      <Button
+                        type={"button"}
+                        disabled={isWalletLoaded}
+                        className="mt-3"
+                      >
+                        Confirm Secret
+                      </Button>
+                    </UnlockWalletModal>
+                  ) : (
+                    <Button type="submit" variant="primary">
+                      {"Liquidate"}
+                    </Button>
+                  )}
                   {error && (
                     <Col className="d-grid mt-4">
                       <Callout.Root color="tomato">

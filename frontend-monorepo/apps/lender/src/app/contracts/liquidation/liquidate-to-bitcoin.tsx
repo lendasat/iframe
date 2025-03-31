@@ -29,12 +29,7 @@ export function LiquidateToBitcoin({ contract }: LiquidateToBitcoinProps) {
     null,
   );
   const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-
-  const [showUnlockWalletModal, setShowUnlockWalletModal] = useState(false);
-
-  const handleCloseUnlockWalletModal = () => setShowUnlockWalletModal(false);
-  const handleOpenUnlockWalletModal = () => setShowUnlockWalletModal(true);
+  const [_isLoading, setIsLoading] = useState(false);
 
   const onBitcoinAddressChange = (address: string) => {
     let network = Network.mainnet;
@@ -55,26 +50,9 @@ export function LiquidateToBitcoin({ contract }: LiquidateToBitcoinProps) {
 
   const liquidateCollateralIfWalletLoaded = async () => {
     try {
-      if (!isWalletLoaded) {
-        handleOpenUnlockWalletModal();
-        return;
-      } else {
-        await liquidateCollateral();
-      }
+      await liquidateCollateral();
     } catch (err) {
       console.error("Failed to liquidate collateral", err);
-      throw err;
-    }
-  };
-
-  const unlockWallet = async () => {
-    try {
-      if (!isWalletLoaded) {
-        handleOpenUnlockWalletModal();
-        return;
-      }
-    } catch (err) {
-      console.error("Failed unlocking wallet", err);
       throw err;
     }
   };
@@ -129,10 +107,6 @@ export function LiquidateToBitcoin({ contract }: LiquidateToBitcoinProps) {
     }
   };
 
-  const handleSubmitUnlockWalletModal = async () => {
-    handleCloseUnlockWalletModal();
-  };
-
   const onUnlockOrLiquidate = async () => {
     setError("");
     if (isWalletLoaded) {
@@ -141,13 +115,6 @@ export function LiquidateToBitcoin({ contract }: LiquidateToBitcoinProps) {
       } catch (e) {
         const err = e as Error;
         setError(`Failed to liquidate collateral: ${err.message}`);
-      }
-    } else {
-      try {
-        await unlockWallet();
-      } catch (e) {
-        const err = e as Error;
-        setError(`Failed to unlock contract: ${err.message}`);
       }
     }
   };
@@ -162,11 +129,6 @@ export function LiquidateToBitcoin({ contract }: LiquidateToBitcoinProps) {
 
   return (
     <>
-      <UnlockWalletModal
-        show={showUnlockWalletModal}
-        handleClose={handleCloseUnlockWalletModal}
-        handleSubmit={handleSubmitUnlockWalletModal}
-      />
       {liquidationTx && (
         <ConfirmationModal
           show={showModal}
@@ -215,9 +177,19 @@ export function LiquidateToBitcoin({ contract }: LiquidateToBitcoinProps) {
           <Row className="justify-content-between mt-4">
             <Row className="mt-1">
               <Col className="d-grid">
-                <Button type="submit" loading={isLoading} size={"3"}>
-                  {isWalletLoaded ? "Liquidate" : "Unlock Contract"}
-                </Button>
+                {!isWalletLoaded ? (
+                  <UnlockWalletModal handleSubmit={() => {}}>
+                    <Button
+                      type={"button"}
+                      disabled={isWalletLoaded}
+                      className="mt-3"
+                    >
+                      Confirm Secret
+                    </Button>
+                  </UnlockWalletModal>
+                ) : (
+                  <Button type="submit">{"Liquidate"}</Button>
+                )}
                 {error && (
                   <Col className="d-grid mt-4">
                     <Callout.Root color="tomato">

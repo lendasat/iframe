@@ -548,14 +548,8 @@ export const FiatTransferDetails = ({
     useState<FiatDialogFormDetails>(details);
   const [dataEncrypted, setDataEncrypted] = useState(false);
   const [error, setError] = useState("");
-
-  const [showUnlockWalletModal, setShowUnlockWalletModal] = useState(false);
-  const handleCloseUnlockWalletModal = () => setShowUnlockWalletModal(false);
-  const handleOpenUnlockWalletModal = () => setShowUnlockWalletModal(true);
-  const handleSubmitUnlockWalletModal = async () => {
-    handleCloseUnlockWalletModal();
-  };
   const [isLoading, setIsLoading] = useState(false);
+
   const {
     encryptFiatLoanDetailsBorrower,
     encryptFiatLoanDetailsLender,
@@ -563,13 +557,6 @@ export const FiatTransferDetails = ({
   } = useWallet();
 
   const unlockWalletOrEncrypt = async () => {
-    if (!isWalletLoaded) {
-      setIsLoading(true);
-      handleOpenUnlockWalletModal();
-      setIsLoading(false);
-      return;
-    }
-
     if (!fiatTransferDetails) {
       setError("No details provided");
       return;
@@ -642,11 +629,6 @@ export const FiatTransferDetails = ({
 
   return (
     <Box className={"w-full"}>
-      <UnlockWalletModal
-        show={showUnlockWalletModal}
-        handleClose={handleCloseUnlockWalletModal}
-        handleSubmit={handleSubmitUnlockWalletModal}
-      />
       {!dataEncrypted && (
         <Callout.Root color={"amber"} className="w-full">
           <Callout.Icon>
@@ -703,15 +685,27 @@ export const FiatTransferDetails = ({
                 </Button>
               </FiatTransferDetailsDialog>
             </Flex>
-            <Button
-              loading={isLoading}
-              onClick={unlockWalletOrEncrypt}
-              mt={"3"}
-              color={"purple"}
-              disabled={dataEncrypted}
-            >
-              {"Details encrypted"}
-            </Button>
+            {!isWalletLoaded ? (
+              <UnlockWalletModal handleSubmit={() => {}}>
+                <Button
+                  type={"button"}
+                  disabled={isWalletLoaded}
+                  className="mt-3"
+                >
+                  Confirm Secret
+                </Button>
+              </UnlockWalletModal>
+            ) : (
+              <Button
+                loading={isLoading}
+                onClick={unlockWalletOrEncrypt}
+                mt={"3"}
+                color={"purple"}
+                disabled={dataEncrypted}
+              >
+                {"Details encrypted"}
+              </Button>
+            )}
           </Callout.Text>
         </Callout.Root>
       )}

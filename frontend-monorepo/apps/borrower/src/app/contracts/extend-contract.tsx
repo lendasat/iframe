@@ -16,7 +16,6 @@ import {
 import {
   AlertDialog,
   Box,
-  Button,
   Callout,
   Flex,
   Separator,
@@ -24,12 +23,14 @@ import {
   Spinner,
   Text,
 } from "@radix-ui/themes";
+import { Button } from "@frontend/shadcn";
 import { addDays } from "date-fns";
 import { useMemo, useState } from "react";
 import { FaInfoCircle } from "react-icons/fa";
 import { GoAlertFill } from "react-icons/go";
 import { useNavigate } from "react-router-dom";
 import { useAsync } from "react-use";
+import { LuLoader } from "react-icons/lu";
 
 interface ConfirmationDialogProps {
   isOpen: boolean;
@@ -85,33 +86,10 @@ const SelectedLoanOffer = (props: SelectedLoanOfferProps) => {
   const [error, setError] = useState("");
   const { postExtendLoanRequest } = useBorrowerHttpClient();
 
-  const [walletSecretConfirmed, setWalletSecretConfirmed] =
-    useState(isWalletLoaded);
-  const [showUnlockWalletModal, setShowUnlockWalletModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [newContractId, setNewContractId] = useState("");
   const [isFinalConfirmationDialogOpen, setIsFinalConfirmationDialogOpen] =
     useState(false);
-
-  const handleCloseUnlockWalletModal = () => setShowUnlockWalletModal(false);
-  const handleOpenUnlockWalletModal = () => setShowUnlockWalletModal(true);
-
-  const handleSubmitUnlockWalletModal = async () => {
-    setWalletSecretConfirmed(true);
-    handleCloseUnlockWalletModal();
-  };
-
-  const UnlockWallet = async () => {
-    try {
-      if (!isWalletLoaded) {
-        handleOpenUnlockWalletModal();
-        return;
-      }
-    } catch (error) {
-      console.log(`Unexpected error happened: ${error}`);
-      setError(`Failed unlocking wallet: ${error}`);
-    }
-  };
 
   const actualInterest =
     props.totalInterestRate / (ONE_YEAR / props.totalDuration);
@@ -119,8 +97,6 @@ const SelectedLoanOffer = (props: SelectedLoanOfferProps) => {
   const extensionFeeBtc =
     (props.additionalOriginationFee * props.amount) / latestPrice;
   const extensionFeeUsd = props.additionalOriginationFee * props.amount;
-
-  const confirmOfferButtonEnabled = walletSecretConfirmed;
 
   const onExtendLoanContract = async () => {
     try {
@@ -152,11 +128,6 @@ const SelectedLoanOffer = (props: SelectedLoanOfferProps) => {
         isOpen={isFinalConfirmationDialogOpen}
         setIsOpen={setIsFinalConfirmationDialogOpen}
         onConfirm={onFinalConfirmationDialogClose}
-      />
-      <UnlockWalletModal
-        show={showUnlockWalletModal}
-        handleClose={handleCloseUnlockWalletModal}
-        handleSubmit={handleSubmitUnlockWalletModal}
       />
       <Box>
         <Box className="space-y-3 px-6 py-4">
@@ -209,36 +180,30 @@ const SelectedLoanOffer = (props: SelectedLoanOfferProps) => {
           </Flex>
 
           <Box className="flex justify-center space-x-4">
-            <Button
-              size={"3"}
-              variant="solid"
-              className={`text-white ${
-                !walletSecretConfirmed ? "bg-purple-950" : "bg-gray-400"
-              }`}
-              onClick={() => UnlockWallet()}
-              disabled={walletSecretConfirmed}
-              loading={isLoading}
-            >
-              <Text size={"2"} className="font-semibold">
+            <UnlockWalletModal handleSubmit={() => {}}>
+              <Button type={"button"} disabled={isWalletLoaded}>
                 Confirm Secret
-              </Text>
-            </Button>
+              </Button>
+            </UnlockWalletModal>
             <Button
-              size={"3"}
-              variant="solid"
+              type={"button"}
+              variant="default"
               className={`text-white ${
-                confirmOfferButtonEnabled ? "bg-purple-950" : "bg-gray-400"
+                isWalletLoaded ? "bg-purple-950" : "bg-gray-400"
               }`}
-              onClick={() => {
-                onExtendLoanContract();
+              onClick={async () => {
+                await onExtendLoanContract();
               }}
-              disabled={!confirmOfferButtonEnabled}
-              // TODO:
-              loading={isLoading}
+              disabled={!isWalletLoaded || isLoading}
             >
-              <Text size={"2"} className="font-semibold">
-                Confirm Offer
-              </Text>
+              {isLoading ? (
+                <>
+                  <LuLoader className="animate-spin" />
+                  Please wait
+                </>
+              ) : (
+                "Confirm Offer"
+              )}
             </Button>
           </Box>
 

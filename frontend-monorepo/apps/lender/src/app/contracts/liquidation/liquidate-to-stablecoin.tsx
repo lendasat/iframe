@@ -178,11 +178,6 @@ export function LiquidateToStablecoin({
 
   return (
     <>
-      <UnlockWalletModal
-        show={showUnlockWalletModal}
-        handleClose={handleCloseUnlockWalletModal}
-        handleSubmit={handleSubmitUnlockWalletModal}
-      />
       {liquidationTx && (
         <ConfirmationModal
           show={showModal}
@@ -236,9 +231,22 @@ export function LiquidateToStablecoin({
           <Row className="justify-content-between mt-4">
             <Row className="mt-1">
               <Col className="d-grid">
-                <Button type="submit" loading={isLoading} size={"3"}>
-                  {isWalletLoaded ? "Liquidate" : "Unlock Contract"}
-                </Button>
+                {!isWalletLoaded ? (
+                  <UnlockWalletModal handleSubmit={() => {}}>
+                    <Button
+                      type={"button"}
+                      disabled={isWalletLoaded}
+                      className="mt-3"
+                    >
+                      Confirm Secret
+                    </Button>
+                  </UnlockWalletModal>
+                ) : (
+                  <Button type="submit" loading={isLoading}>
+                    {"Liquidate"}
+                  </Button>
+                )}
+
                 {error && (
                   <Col className="d-grid mt-4">
                     <Callout.Root color="tomato">

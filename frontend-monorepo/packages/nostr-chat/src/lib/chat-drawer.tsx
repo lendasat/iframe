@@ -295,20 +295,6 @@ export const ChatDrawer = ({
     setIsOpen(!isOpen);
   };
 
-  const handleUnlock = () => {
-    try {
-      if (!doesWalletExist) {
-        throw new Error("Wallet does not exist. Try to log back in");
-      }
-      if (!isWalletLoaded) {
-        handleOpenUnlockWalletModal();
-        return;
-      }
-    } catch (error) {
-      console.log(`Unexpected error happened ${error}`);
-    }
-  };
-
   const chatConfig = useMemo(() => {
     if (!counterpartyNPub || !chatRoom || !nsec) {
       return null;
@@ -356,23 +342,18 @@ export const ChatDrawer = ({
           <NostrChat {...chatConfig} onNewMsgSent={onNewMsgSent} />
         ) : (
           <Box className="flex h-96 items-center justify-center">
-            <Button
-              onClick={handleUnlock}
-              size="4"
-              color="purple"
-              className="flex items-center gap-2"
-            >
-              <Unlock size={24} />
-              <Text>Unlock Chat</Text>
-            </Button>
+            <UnlockWalletModal handleSubmit={() => {}}>
+              <Button
+                type={"button"}
+                disabled={isWalletLoaded}
+                className="mt-3"
+              >
+                <Unlock /> Unlock Chat
+              </Button>
+            </UnlockWalletModal>
           </Box>
         )}
       </Box>
-      <UnlockWalletModal
-        show={showUnlockWalletModal}
-        handleClose={handleCloseUnlockWalletModal}
-        handleSubmit={handleSubmitUnlockWalletModal}
-      />
     </Box>
   );
 };
