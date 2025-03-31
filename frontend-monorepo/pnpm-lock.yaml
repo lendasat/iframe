@@ -346,6 +346,9 @@ importers:
       '@frontend/nostr-chat':
         specifier: workspace:*
         version: link:../../packages/nostr-chat
+      '@frontend/shadcn':
+        specifier: workspace:*
+        version: link:../../packages/shadcn
       '@frontend/ui-shared':
         specifier: workspace:*
         version: link:../../packages/ui-shared

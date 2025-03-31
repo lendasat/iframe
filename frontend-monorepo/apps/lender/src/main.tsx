@@ -1,6 +1,5 @@
 import { StrictMode } from "react";
 import * as ReactDOM from "react-dom/client";
-import "bootstrap/dist/css/bootstrap.min.css";
 import "@radix-ui/themes/styles.css";
 import { Theme } from "@radix-ui/themes";
 import { getDefaultConfig, RainbowKitProvider } from "@rainbow-me/rainbowkit";
@@ -30,7 +29,7 @@ const router = createBrowserRouter(
   createRoutesFromElements(<Route path="/*" element={<App />}></Route>),
 );
 
-const root = ReactDOM.createRoot(document.getElementById("root"));
+const root = ReactDOM.createRoot(document.getElementById("root")!);
 
 root.render(
   <StrictMode>

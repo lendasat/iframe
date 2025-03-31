@@ -1,7 +1,6 @@
 import { StrictMode } from "react";
 import * as ReactDOM from "react-dom/client";
 import "@radix-ui/themes/styles.css";
-
 import { Theme } from "@radix-ui/themes";
 import { getDefaultConfig, RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
