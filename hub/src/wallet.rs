@@ -73,6 +73,10 @@ impl Wallet {
         })
     }
 
+    pub fn network(&self) -> Network {
+        self.network
+    }
+
     /// Generate a collateral contract address for a borrower, using a [`PublicKey`] provided by the
     /// borrower.
     pub async fn contract_address(
@@ -193,112 +197,6 @@ impl Wallet {
             (borrower_pk, borrower_derivation),
             (lender_pk, lender_derivation),
         ))
-    }
-
-    /// Will create a PSBT to spend the whole output to 2 addresses:
-    ///
-    /// 1. The `borrower_address`.
-    ///
-    /// 2. A newly derived address from the `hub_fee_wallet`.
-    #[allow(clippy::too_many_arguments)]
-    pub fn create_dispute_claim_collateral_psbt(
-        &self,
-        borrower_xpub: &Xpub,
-        borrower_pk: Option<PublicKey>,
-        lender_xpub: &Xpub,
-        contract_index: u32,
-        collateral_outputs: Vec<(OutPoint, u64)>,
-        borrower_address: Address<NetworkUnchecked>,
-        borrower_amount_sats: u64,
-        liquidator_amount_sats: u64,
-        // In the DLC-based protocol, we will probably charge the origination fee when the
-        // collateral is locked up.
-        origination_fee: u64,
-        fee_rate_spvb: u64,
-        contract_version: ContractVersion,
-    ) -> Result<(Psbt, Descriptor<PublicKey>, PublicKey)> {
-        let (hub_kp, _) = self.get_keys_for_index(contract_index)?;
-
-        let (collateral_descriptor, (borrower_pk, _), _) = self.collateral_descriptor(
-            borrower_xpub,
-            borrower_pk,
-            lender_xpub,
-            contract_version,
-            contract_index,
-        )?;
-
-        let liquidator_address_info = self
-            .hub_fee_wallet
-            .lock()
-            .expect("to get lock")
-            .get_new_address()?;
-        let liquidator_address =
-            Address::from_str(liquidator_address_info.address.to_string().as_str())?;
-        let outputs = [
-            (borrower_address, borrower_amount_sats),
-            (liquidator_address, liquidator_amount_sats),
-        ];
-
-        let mut inputs = Vec::new();
-        for (outpoint, _) in collateral_outputs.iter() {
-            let input = TxIn {
-                previous_output: *outpoint,
-                ..Default::default()
-            };
-
-            inputs.push(input)
-        }
-
-        // Filter out small outputs
-        // TODO: if an output was filtered out, we shouldn't burn it as tx fee,
-        // instead credit it to the other party
-
-        let total_collateral_amount = collateral_outputs.iter().fold(0, |acc, (_, a)| acc + a);
-
-        let mut outputs = outputs
-            .into_iter()
-            .map(|(address, amount)| TxOut {
-                value: Amount::from_sat(amount),
-                script_pubkey: address.assume_checked().script_pubkey(),
-            })
-            .collect::<Vec<_>>();
-
-        let new_address = self
-            .hub_fee_wallet
-            .lock()
-            .expect("to get lock")
-            .get_new_address()?;
-        let origination_fee_output = TxOut {
-            value: Amount::from_sat(origination_fee),
-            script_pubkey: ScriptBuf::from_bytes(new_address.address.script_pubkey().to_bytes()),
-        };
-
-        outputs.push(origination_fee_output);
-
-        let mut unsigned_claim_tx = Transaction {
-            version: Version::TWO,
-            lock_time: LockTime::ZERO,
-            input: inputs,
-            output: outputs,
-        };
-
-        // TODO: We need to check if the output holds enough to cover the fee.
-        update_fee(
-            fee_rate_spvb,
-            total_collateral_amount,
-            &mut unsigned_claim_tx,
-            contract_version,
-        );
-
-        let mut psbt = Psbt::from_unsigned_tx(unsigned_claim_tx)?;
-        sign_spend_tx(
-            &mut psbt,
-            hub_kp,
-            collateral_outputs,
-            &collateral_descriptor,
-        )?;
-
-        Ok((psbt, collateral_descriptor, borrower_pk))
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -497,6 +395,112 @@ impl Wallet {
         Ok((psbt, collateral_descriptor, lender_pk))
     }
 
+    /// Will create a PSBT to spend the whole output to 2 addresses:
+    ///
+    /// 1. The `borrower_address`.
+    ///
+    /// 2. A newly derived address from the `hub_fee_wallet`.
+    #[allow(clippy::too_many_arguments)]
+    pub fn create_dispute_claim_collateral_psbt(
+        &self,
+        borrower_xpub: &Xpub,
+        borrower_pk: Option<PublicKey>,
+        lender_xpub: &Xpub,
+        contract_index: u32,
+        collateral_outputs: Vec<(OutPoint, u64)>,
+        borrower_address: Address<NetworkUnchecked>,
+        borrower_amount_sats: u64,
+        liquidator_amount_sats: u64,
+        // In the DLC-based protocol, we will probably charge the origination fee when the
+        // collateral is locked up.
+        origination_fee: u64,
+        fee_rate_spvb: u64,
+        contract_version: ContractVersion,
+    ) -> Result<(Psbt, Descriptor<PublicKey>, PublicKey)> {
+        let (hub_kp, _) = self.get_keys_for_index(contract_index)?;
+
+        let (collateral_descriptor, (borrower_pk, _), _) = self.collateral_descriptor(
+            borrower_xpub,
+            borrower_pk,
+            lender_xpub,
+            contract_version,
+            contract_index,
+        )?;
+
+        let liquidator_address_info = self
+            .hub_fee_wallet
+            .lock()
+            .expect("to get lock")
+            .get_new_address()?;
+        let liquidator_address =
+            Address::from_str(liquidator_address_info.address.to_string().as_str())?;
+        let outputs = [
+            (borrower_address, borrower_amount_sats),
+            (liquidator_address, liquidator_amount_sats),
+        ];
+
+        let mut inputs = Vec::new();
+        for (outpoint, _) in collateral_outputs.iter() {
+            let input = TxIn {
+                previous_output: *outpoint,
+                ..Default::default()
+            };
+
+            inputs.push(input)
+        }
+
+        // Filter out small outputs
+        // TODO: if an output was filtered out, we shouldn't burn it as tx fee,
+        // instead credit it to the other party
+
+        let total_collateral_amount = collateral_outputs.iter().fold(0, |acc, (_, a)| acc + a);
+
+        let mut outputs = outputs
+            .into_iter()
+            .map(|(address, amount)| TxOut {
+                value: Amount::from_sat(amount),
+                script_pubkey: address.assume_checked().script_pubkey(),
+            })
+            .collect::<Vec<_>>();
+
+        let new_address = self
+            .hub_fee_wallet
+            .lock()
+            .expect("to get lock")
+            .get_new_address()?;
+        let origination_fee_output = TxOut {
+            value: Amount::from_sat(origination_fee),
+            script_pubkey: ScriptBuf::from_bytes(new_address.address.script_pubkey().to_bytes()),
+        };
+
+        outputs.push(origination_fee_output);
+
+        let mut unsigned_claim_tx = Transaction {
+            version: Version::TWO,
+            lock_time: LockTime::ZERO,
+            input: inputs,
+            output: outputs,
+        };
+
+        // TODO: We need to check if the output holds enough to cover the fee.
+        update_fee(
+            fee_rate_spvb,
+            total_collateral_amount,
+            &mut unsigned_claim_tx,
+            contract_version,
+        );
+
+        let mut psbt = Psbt::from_unsigned_tx(unsigned_claim_tx)?;
+        sign_spend_tx(
+            &mut psbt,
+            hub_kp,
+            collateral_outputs,
+            &collateral_descriptor,
+        )?;
+
+        Ok((psbt, collateral_descriptor, borrower_pk))
+    }
+
     fn get_keys_for_index(&self, index: u32) -> Result<(Keypair, PublicKey)> {
         let secp = Secp256k1::new();
 
@@ -557,10 +561,6 @@ impl Wallet {
         let hub_pk = PublicKey::new(hub_kp.public_key());
 
         Ok((hub_pk, fallback_pk, index))
-    }
-
-    pub fn network(&self) -> Network {
-        self.network
     }
 }
 
