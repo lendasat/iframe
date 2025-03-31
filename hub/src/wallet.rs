@@ -224,15 +224,13 @@ impl Wallet {
             contract_index,
         )?;
 
-        let mut inputs = Vec::new();
-        for (outpoint, _) in collateral_outputs.iter() {
-            let input = TxIn {
+        let inputs = collateral_outputs
+            .iter()
+            .map(|(outpoint, _)| TxIn {
                 previous_output: *outpoint,
                 ..Default::default()
-            };
-
-            inputs.push(input)
-        }
+            })
+            .collect::<Vec<_>>();
 
         let total_collateral_amount =
             Amount::from_sat(collateral_outputs.iter().fold(0, |acc, (_, a)| acc + a));
@@ -323,15 +321,13 @@ impl Wallet {
             contract_index,
         )?;
 
-        let mut inputs = Vec::new();
-        for (outpoint, _) in collateral_outputs.iter() {
-            let input = TxIn {
+        let inputs = collateral_outputs
+            .iter()
+            .map(|(outpoint, _)| TxIn {
                 previous_output: *outpoint,
                 ..Default::default()
-            };
-
-            inputs.push(input)
-        }
+            })
+            .collect::<Vec<_>>();
 
         let total_collateral_amount =
             Amount::from_sat(collateral_outputs.iter().fold(0, |acc, (_, a)| acc + a));
@@ -439,15 +435,13 @@ impl Wallet {
             (liquidator_address, liquidator_amount_sats),
         ];
 
-        let mut inputs = Vec::new();
-        for (outpoint, _) in collateral_outputs.iter() {
-            let input = TxIn {
+        let inputs = collateral_outputs
+            .iter()
+            .map(|(outpoint, _)| TxIn {
                 previous_output: *outpoint,
                 ..Default::default()
-            };
-
-            inputs.push(input)
-        }
+            })
+            .collect::<Vec<_>>();
 
         // Filter out small outputs
         // TODO: if an output was filtered out, we shouldn't burn it as tx fee,
