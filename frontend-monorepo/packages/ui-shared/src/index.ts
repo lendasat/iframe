@@ -1,3 +1,5 @@
+import queryString from "query-string";
+
 export const ONE_YEAR = 360;
 export const ONE_MONTH = 30;
 
@@ -13,6 +15,57 @@ export function getFormatedStringFromDays(numberOfDays: number) {
   const daysDisplay = days > 0 ? days + (days === 1 ? " day" : " days") : "";
 
   return yearsDisplay + monthsDisplay + daysDisplay;
+}
+
+export const formatSatsToBitcoin = (sats?: number) => {
+  if (sats == null) return undefined;
+
+  // Convert sats to BTC (1 BTC = 100,000,000 sats)
+  const btcValue = sats / 100000000;
+
+  // Format to 8 decimal places
+  const formatted = btcValue.toFixed(8);
+
+  // Split into integer and decimal parts
+  const [integerPart, decimalPart] = formatted.split(".");
+
+  // Group the decimal part in triplets from right to left
+  let formattedDecimal = "";
+  for (let i = 0; i < decimalPart.length; i++) {
+    formattedDecimal += decimalPart[i];
+    // Add space after every third digit, counting from the right
+    if ((decimalPart.length - i - 1) % 3 === 0 && i < decimalPart.length - 1) {
+      formattedDecimal += " ";
+    }
+  }
+
+  // Combine parts
+  return `${integerPart}.${formattedDecimal}`;
+};
+
+interface EncodeOptions {
+  amount: number;
+  label: string;
+}
+
+export function encodeBip21(
+  address: string,
+  options: EncodeOptions,
+  urnScheme = "bitcoin",
+): string {
+  const scheme = urnScheme;
+
+  if (options.amount !== undefined) {
+    if (!Number.isFinite(options.amount)) {
+      throw new TypeError("Invalid amount");
+    }
+    if (options.amount < 0) {
+      throw new TypeError("Invalid amount");
+    }
+  }
+
+  const query = queryString.stringify(options);
+  return `${scheme}:${address}${(query ? "?" : "") + query}`;
 }
 
 export const validateEmail = (email: string) => {
