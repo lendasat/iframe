@@ -423,18 +423,6 @@ impl Wallet {
             contract_index,
         )?;
 
-        let liquidator_address_info = self
-            .hub_fee_wallet
-            .lock()
-            .expect("to get lock")
-            .get_new_address()?;
-        let liquidator_address =
-            Address::from_str(liquidator_address_info.address.to_string().as_str())?;
-        let outputs = [
-            (borrower_address, borrower_amount_sats),
-            (liquidator_address, liquidator_amount_sats),
-        ];
-
         let inputs = collateral_outputs
             .iter()
             .map(|(outpoint, _)| TxIn {
@@ -442,6 +430,12 @@ impl Wallet {
                 ..Default::default()
             })
             .collect::<Vec<_>>();
+
+        let liquidator_address = self.get_liquidator_address()?;
+        let outputs = [
+            (borrower_address, borrower_amount_sats),
+            (liquidator_address, liquidator_amount_sats),
+        ];
 
         // Filter out small outputs
         // TODO: if an output was filtered out, we shouldn't burn it as tx fee,
@@ -556,6 +550,19 @@ impl Wallet {
 
         Ok((hub_pk, fallback_pk, index))
     }
+
+    fn get_liquidator_address(&self) -> Result<Address<NetworkUnchecked>> {
+        let address_info = self
+            .hub_fee_wallet
+            .lock()
+            .expect("to get lock")
+            .get_new_address()?;
+
+        // HACK: We convert like this because we are using two different versions of `rust-bitcoin`.
+        let address = Address::from_str(address_info.address.to_string().as_str())?;
+
+        Ok(address)
+    }
 }
 
 fn sign_spend_tx(
@@ -563,7 +570,7 @@ fn sign_spend_tx(
     hub_kp: Keypair,
     collateral_outputs: Vec<(OutPoint, u64)>,
     collateral_descriptor: &Descriptor<PublicKey>,
-) -> Result<(), anyhow::Error> {
+) -> Result<()> {
     let spend_tx = &spend_psbt.unsigned_tx;
 
     let hub_pk = PublicKey::new(hub_kp.public_key());
