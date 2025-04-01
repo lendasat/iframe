@@ -71,7 +71,7 @@ pub(crate) async fn load_all_available_loan_applications(
             status AS "status: crate::model::LoanApplicationStatus",
             loan_type AS "loan_type: crate::model::db::LoanType",
             borrower_loan_address,
-            borrower_btc_address, 
+            borrower_btc_address,
             borrower_xpub,
             created_at,
             updated_at
@@ -106,7 +106,7 @@ pub async fn load_all_loan_applications_by_borrower(
             status AS "status: crate::model::LoanApplicationStatus",
             loan_type AS "loan_type: crate::model::db::LoanType",
             borrower_loan_address,
-            borrower_btc_address, 
+            borrower_btc_address,
             borrower_xpub,
             created_at,
             updated_at
@@ -143,7 +143,7 @@ pub async fn get_loan_application_by_borrower_and_application_id(
             status AS "status: crate::model::LoanApplicationStatus",
             loan_type AS "loan_type: crate::model::db::LoanType",
             borrower_loan_address,
-            borrower_btc_address, 
+            borrower_btc_address,
             borrower_xpub,
             created_at,
             updated_at
@@ -195,7 +195,7 @@ pub async fn insert_loan_application(
 
     let loan_type = db::LoanType::from(application.loan_type);
 
-    // First, insert the loan opportunity
+    // First, insert the loan deal.
     sqlx::query!(
         r#"
         INSERT INTO loan_deals (
@@ -241,7 +241,7 @@ pub async fn insert_loan_application(
             loan_type AS "loan_type: crate::model::db::LoanType",
             status AS "status: crate::model::LoanApplicationStatus",
             borrower_loan_address,
-            borrower_btc_address, 
+            borrower_btc_address,
             borrower_xpub,
             created_at,
             updated_at
@@ -288,7 +288,7 @@ pub async fn get_loan_by_id(
             status AS "status: crate::model::LoanApplicationStatus",
             loan_type AS "loan_type: crate::model::db::LoanType",
             borrower_loan_address,
-            borrower_btc_address, 
+            borrower_btc_address,
             borrower_xpub,
             created_at,
             updated_at

@@ -1,5 +1,5 @@
 -- Up Migration
--- Create an enum type for opportunity types
+-- Create an enum type for deal types
 CREATE TYPE loan_deal_type AS ENUM ('offer', 'application');
 
 -- Create the loan_deals table
@@ -162,4 +162,3 @@ WHERE status IN
        'Defaulted',
        'Undercollateralized',
        'RenewalRequested');
-

@@ -39,7 +39,7 @@ mod fiat_loan_details;
 
 const SECRET_KEY_ENCRYPTION_NONCE: &[u8; 12] = b"SECRET_KEY!!";
 
-const NOSTR_DERIVATION_PATH: &str = "m/44/0/0/0/0";
+pub const NOSTR_DERIVATION_PATH: &str = "m/44/0/0/0/0";
 
 static WALLET: LazyLock<Mutex<Option<Wallet>>> = LazyLock::new(|| Mutex::new(None));
 

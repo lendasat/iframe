@@ -191,10 +191,10 @@ jobs:
 
       - name: Build frontend
         run: just build-frontend
+
+      - name: Check frontend
+        run: just check-frontend
 # TODO: re-enable them
-#      - name: Check frontend
-#        run: just check-frontend
-#
 #      - name: Lint frontend
 #        run: just lint-frontend
 #

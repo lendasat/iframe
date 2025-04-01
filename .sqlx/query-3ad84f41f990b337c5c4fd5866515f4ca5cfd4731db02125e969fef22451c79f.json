@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            loan_deal_id,\n            borrower_id,\n            ltv,\n            interest_rate,\n            loan_amount,\n            duration_days,\n            loan_asset AS \"loan_asset: crate::model::LoanAsset\",\n            status AS \"status: crate::model::LoanApplicationStatus\",\n            loan_type AS \"loan_type: crate::model::db::LoanType\",\n            borrower_loan_address,\n            borrower_btc_address, \n            borrower_xpub,\n            created_at,\n            updated_at\n        FROM loan_applications\n        WHERE borrower_id = $1\n        ",
+  "query": "\n        SELECT\n            loan_deal_id,\n            borrower_id,\n            ltv,\n            interest_rate,\n            loan_amount,\n            duration_days,\n            loan_asset AS \"loan_asset: crate::model::LoanAsset\",\n            status AS \"status: crate::model::LoanApplicationStatus\",\n            loan_type AS \"loan_type: crate::model::db::LoanType\",\n            borrower_loan_address,\n            borrower_btc_address,\n            borrower_xpub,\n            created_at,\n            updated_at\n        FROM loan_applications\n        WHERE borrower_id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -140,5 +140,5 @@
       false
     ]
   },
-  "hash": "a0ea058367c848414b8afceba64eec2fb676a0e736d67095a09bf862dd6f0298"
+  "hash": "3ad84f41f990b337c5c4fd5866515f4ca5cfd4731db02125e969fef22451c79f"
 }

@@ -53,7 +53,7 @@ import { ContractRepaid } from "./contract-repaid";
 import { ContractRequested } from "./contract-requested";
 import { ContractUndercollateralized } from "./contract-undercollateralized";
 import { ExpandableDisputeCard } from "./dispute-card";
-import { downloadLocalStorage as downloadContractBackup } from "./download-local-storage";
+import { downloadContractBackup } from "./download-contract-backup";
 
 function ContractDetailsOverview() {
   const { innerHeight } = window;

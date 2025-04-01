@@ -358,32 +358,31 @@ impl LoanDeal {
     }
 }
 
-/// Represents an offer from a lender
+/// Represents an offer from a lender.
 ///
-/// Note: [`loan_deal_id`] is used to identify whether an opportunity is an `offer` or
-/// `application`. This is crucial once we insert the `contract` into the DB, because here we can
-/// only reference the `loan_deals`.
+/// Note: [`loan_deal_id`] is used to identify whether a deal is an `offer` or an `application`.
+/// This is crucial once we insert the `contract` into the DB, because here we can only reference
+/// the `loan_deals`.
 ///
-/// +-------------------+       +---------------------+       +-----------------+
-/// |  loan_offers        |       | loan_deals  |       |   loan_applications     |
-/// +-------------------+       +---------------------+       +-----------------+
-/// | id                |   |-->| id                  |<---|  | id              |
-/// | lender_id         |   |   | type: offer/application     |    |  | borrower_id     |
-/// | loan_deal_id    |---|   | created_at          |    |--| loan_deal_id  |
-/// | ...               |       +---------------------+       | ...             |
-/// +-------------------+               |                     +-----------------+
+/// +-------------------+       +-------------------------+       +------------------------+
+/// |    loan_offers    |       |        loan_deals       |       |   loan_applications    |
+/// +-------------------+       +-------------------------+       +------------------------+
+/// | id                |   |-->| id                      |<---|  | id                     |
+/// | lender_id         |   |   | type: offer/application |    |  | borrower_id            |
+/// | loan_deal_id      |---|   | created_at              |    |--| loan_deal_id           |
+/// | ...               |       +-------------------------+       | ...                    |
+/// +-------------------+               |                         +------------------------+
 ///                                     |
 ///                                     |
 ///                             +----------------+
 ///                             |   contracts    |
 ///                             +----------------+
 ///                             | id             |
-///                             | loan_deal_id |
+///                             | loan_deal_id   |
 ///                             | ...            |
 ///                             +----------------+
 #[derive(Debug, FromRow, Clone)]
 pub struct LoanOffer {
-    // the id of the opportunity
     pub loan_deal_id: String,
     pub lender_id: String,
     pub name: String,
