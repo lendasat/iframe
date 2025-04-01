@@ -1159,7 +1159,7 @@ pub struct PsbtQueryParams {
     pub fee_rate: u64,
 }
 
-#[derive(Debug, Deserialize, sqlx::Type, Serialize, Clone, ToSchema)]
+#[derive(Debug, Deserialize, sqlx::Type, Serialize, Clone, ToSchema, PartialEq)]
 #[sqlx(type_name = "transaction_type")]
 pub enum TransactionType {
     Funding,

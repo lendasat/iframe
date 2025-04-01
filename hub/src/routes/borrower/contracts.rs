@@ -816,6 +816,16 @@ pub struct Contract {
     pub fiat_loan_details_borrower: Option<FiatLoanDetailsWrapper>,
     pub fiat_loan_details_lender: Option<FiatLoanDetailsWrapper>,
     pub lender_npub: String,
+    pub timeline: Vec<TimelineEvent>,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct TimelineEvent {
+    #[serde(with = "time::serde::rfc3339")]
+    date: OffsetDateTime,
+    event: ContractStatus,
+    /// Only provided if it was a event caused by a transaction
+    txid: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -944,6 +954,73 @@ async fn map_to_api_contract(
         None => None,
     };
 
+    let event_logs =
+        db::contract_status_log::get_contract_status_logs(&data.db, contract.id.as_str())
+            .await
+            .map_err(|e| Error::Database(anyhow!(e)))?;
+
+    let mut timeline = vec![TimelineEvent {
+        date: contract.created_at,
+        event: ContractStatus::Requested,
+        txid: None,
+    }];
+
+    let timeline_1 = event_logs
+        .into_iter()
+        .map(|log| {
+            let txid = if log.new_status == ContractStatus::CollateralSeen
+                || log.new_status == ContractStatus::CollateralConfirmed
+            {
+                transactions.iter().find_map(|tx| {
+                    if tx.transaction_type == TransactionType::Funding {
+                        Some(tx.txid.clone())
+                    } else {
+                        None
+                    }
+                })
+            } else if log.new_status == ContractStatus::PrincipalGiven {
+                transactions.iter().find_map(|tx| {
+                    if tx.transaction_type == TransactionType::PrincipalGiven {
+                        Some(tx.txid.clone())
+                    } else {
+                        None
+                    }
+                })
+            } else if log.new_status == ContractStatus::RepaymentProvided
+                || log.new_status == ContractStatus::RepaymentConfirmed
+            {
+                transactions.iter().find_map(|tx| {
+                    if tx.transaction_type == TransactionType::PrincipalRepaid {
+                        Some(tx.txid.clone())
+                    } else {
+                        None
+                    }
+                })
+            } else if log.new_status == ContractStatus::Closing
+                || log.new_status == ContractStatus::Closed
+                || log.new_status == ContractStatus::Defaulted
+            {
+                transactions.iter().find_map(|tx| {
+                    if tx.transaction_type == TransactionType::ClaimCollateral {
+                        Some(tx.txid.clone())
+                    } else {
+                        None
+                    }
+                })
+            } else {
+                None
+            };
+
+            TimelineEvent {
+                date: log.changed_at,
+                event: log.new_status,
+                txid,
+            }
+        })
+        .collect::<Vec<_>>();
+
+    timeline.extend(timeline_1);
+
     let contract = Contract {
         id: contract.id,
         loan_amount: contract.loan_amount,
@@ -980,6 +1057,7 @@ async fn map_to_api_contract(
         fiat_loan_details_borrower,
         fiat_loan_details_lender,
         lender_npub: contract.lender_npub,
+        timeline,
     };
 
     Ok(contract)
