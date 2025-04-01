@@ -163,6 +163,14 @@ export interface Contract {
   borrower_pk: string;
   borrower_npub: string;
   borrower_derivation_path: string;
+  timeline: TimelineEvent[];
+}
+
+export interface TimelineEvent {
+  // TODO: this is a rfc3339 formatted date, but I failed to parse it correctly
+  date: string;
+  event: ContractStatus;
+  txid?: string;
 }
 
 export interface KycInfo {

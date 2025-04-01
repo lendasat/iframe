@@ -41,7 +41,8 @@ const AddCollateralDialog = ({
   contract,
 }: AddCollateralDialogProps) => {
   const [open, setOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [copiedAddress, setCopiedAddress] = useState(false);
+  const [copiedAmount, setCopiedAmount] = useState(false);
   const { latestPrice } = usePrice();
 
   const collateralBtc = contract?.initial_collateral_sats
@@ -65,18 +66,24 @@ const AddCollateralDialog = ({
   const minAmount = contract?.initial_collateral_sats;
   const mempoolLink = `${import.meta.env.VITE_MEMPOOL_REST_URL}/address/${depositAddress}`;
 
-  const minAmountBtc = formatSatsToBitcoin(minAmount);
+  const minAmountBtc = minAmount
+    ? Number.parseFloat((minAmount / 100000000).toFixed(8))
+    : undefined;
+  const minAmountBtcFormatted = formatSatsToBitcoin(minAmount);
   const minAmountUsd =
     latestPrice && minAmount
       ? ((minAmount / 100000000) * latestPrice).toFixed(2)
       : "0.00";
 
   const handleCopyAddress = async (address: string) => {
-    if (depositAddress) {
-      await navigator.clipboard.writeText(address);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
+    await navigator.clipboard.writeText(address);
+    setCopiedAddress(true);
+    setTimeout(() => setCopiedAddress(false), 2000);
+  };
+  const handleCopyAmount = async (amount: number) => {
+    await navigator.clipboard.writeText(amount.toFixed(8));
+    setCopiedAmount(true);
+    setTimeout(() => setCopiedAmount(false), 2000);
   };
 
   return (
@@ -119,7 +126,20 @@ const AddCollateralDialog = ({
                 <LuInfo className="h-4 w-4" />
                 <AlertTitle>Minimum deposit required</AlertTitle>
                 <AlertDescription>
-                  {minAmountBtc} BTC (${minAmountUsd})
+                  <div className="flex items-center space-x-2">
+                    {minAmountBtcFormatted} BTC (${minAmountUsd})
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      onClick={() => handleCopyAmount(minAmountBtc || 0)}
+                    >
+                      {copiedAmount ? (
+                        <LuCheck className="h-4 w-4" />
+                      ) : (
+                        <LuClipboard className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
                 </AlertDescription>
               </Alert>
             )}
@@ -141,7 +161,7 @@ const AddCollateralDialog = ({
                 variant="outline"
                 onClick={() => handleCopyAddress(depositAddress)}
               >
-                {copied ? (
+                {copiedAddress ? (
                   <LuCheck className="h-4 w-4" />
                 ) : (
                   <LuClipboard className="h-4 w-4" />

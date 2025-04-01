@@ -87,8 +87,8 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       title = "Collateral Confirmed";
       message = (
         <>
-          "Your collateral has been confirmed. The lender will send the
-          principal amount soon."
+          Your collateral has been confirmed. The lender will send the principal
+          amount soon.
         </>
       );
       break;

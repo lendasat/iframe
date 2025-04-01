@@ -66,6 +66,8 @@ export const Details = ({ contract }: DetailsProps) => {
   const interestRate = contract?.interest_rate
     ? `${(contract.interest_rate * 100).toFixed(2)}%`
     : undefined;
+  const lenderName = contract?.lender.name;
+  const lenderNameInitials = lenderName?.substr(0, 2);
 
   const handleCopy = async (text: string) => {
     try {
@@ -107,9 +109,9 @@ export const Details = ({ contract }: DetailsProps) => {
           <p className="text-sm text-gray-500">Lender</p>
           {lender ? (
             <div className="flex items-center justify-end">
-              <p className="mr-2">Alice The Lender</p>
+              <p className="mr-2">{lenderName}</p>
               <Avatar className="h-6 w-6">
-                <AvatarFallback>AL</AvatarFallback>
+                <AvatarFallback>{lenderNameInitials}</AvatarFallback>
               </Avatar>
             </div>
           ) : (
