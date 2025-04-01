@@ -21,6 +21,7 @@ use axum::routing::post;
 use axum::Extension;
 use axum::Json;
 use axum::Router;
+use bitcoin::Amount;
 use std::sync::Arc;
 use tracing::instrument;
 
@@ -252,9 +253,9 @@ pub async fn get_claim_collateral_psbt(
                     contract_index,
                     collateral_outputs,
                     contract.borrower_btc_address,
-                    dispute.borrower_payout_sats.expect("To be some") as u64,
-                    dispute.lender_payout_sats.expect("To be some") as u64,
-                    contract.origination_fee_sats,
+                    Amount::from_sat(dispute.borrower_payout_sats.expect("to be some") as u64),
+                    Amount::from_sat(dispute.lender_payout_sats.expect("to be some") as u64),
+                    Amount::from_sat(contract.origination_fee_sats),
                     query_params.fee_rate,
                     contract.contract_version,
                 )?;
