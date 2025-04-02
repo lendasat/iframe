@@ -8,11 +8,6 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
   Skeleton,
   Tabs,
   TabsContent,
@@ -32,6 +27,7 @@ import {
 import { useAsync } from "react-use";
 import AddCollateralDialog from "./add-collateral-dialog";
 import TransactionHistoryDialog from "./transaction-history";
+import ManageLoanDialog from "./manage-loan-dialog";
 
 export function contractStatusLabelColor(status?: ContractStatus): string {
   if (!status) {
@@ -84,7 +80,6 @@ const EnhancedBitcoinLoan = () => {
   const { getContract } = useBorrowerHttpClient();
   const { id } = useParams();
 
-  const [showManageLoanDialog, setShowManageLoanDialog] = useState(false);
   const [activeTab, setActiveTab] = useState("details");
 
   const {
@@ -192,12 +187,14 @@ const EnhancedBitcoinLoan = () => {
                   <Button>Fund Contract</Button>
                 </AddCollateralDialog>
               ) : (
-                <Button
-                  onClick={() => setShowManageLoanDialog(true)}
-                  className="bg-black text-white hover:bg-gray-800 flex items-center"
-                >
-                  Manage Loan <LuChevronRight className="ml-1 h-4 w-4" />
-                </Button>
+                <ManageLoanDialog contract={contract}>
+                  <Button
+                    type={"button"}
+                    className="bg-black text-white hover:bg-gray-800 flex items-center"
+                  >
+                    Manage Loan <LuChevronRight className="ml-1 h-4 w-4" />
+                  </Button>
+                </ManageLoanDialog>
               )}
             </CardFooter>
           </Card>
@@ -208,24 +205,6 @@ const EnhancedBitcoinLoan = () => {
           <Chat />
         </div>
       </div>
-
-      {/* Manage Loan Dialog */}
-      <Dialog
-        open={showManageLoanDialog}
-        onOpenChange={setShowManageLoanDialog}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Manage Loan</DialogTitle>
-          </DialogHeader>
-          {/* Dialog content would go here */}
-          <DialogFooter>
-            <Button onClick={() => setShowManageLoanDialog(false)}>
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

@@ -72,8 +72,8 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       title = "Collateral Pending";
       message = (
         <>
-          "Your collateral has been seen on the blockchain and is waiting for
-          confirmation."
+          Your collateral has been seen on the blockchain and is waiting for
+          confirmation.
         </>
       );
       break;
@@ -102,8 +102,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       title = "Loan Active";
       message = (
         <>
-          `Your loan is active and in good standing. Loan expires on $
-          {expiryDate}.)`
+          Your loan is active and in good standing. Loan expires on {expiryDate}
         </>
       );
       break;
@@ -116,9 +115,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       textColor = "text-teal-600";
       title = "Repayment Processing";
       message = (
-        <>
-          "Your repayment has been submitted and is waiting for confirmation."
-        </>
+        <>Your repayment has been submitted and is waiting for confirmation.</>
       );
       break;
 
@@ -130,7 +127,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       textColor = "text-emerald-600";
       title = "Repayment Confirmed";
       message = (
-        <>"Your repayment has been confirmed. The loan is now closing."</>
+        <>Your repayment has been confirmed. The loan is now closing.</>
       );
       break;
 
@@ -143,8 +140,8 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       title = "Margin Call";
       message = (
         <>
-          `Your loan is under-collateralized. Please add more collateral
-          immediately to avoid liquidation.)`
+          Your loan is under-collateralized. Please add more collateral
+          immediately to avoid liquidation.
         </>
       );
       break;
@@ -158,8 +155,8 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       title = "Loan Defaulted";
       message = (
         <>
-          `Your loan defaulted on ${expiryDate}. Your collateral will be
-          liquidated and the remaing funds returned to you.)`
+          Your loan defaulted on ${expiryDate}. Your collateral will be
+          liquidated and the remaining funds returned to you.
         </>
       );
       break;
@@ -171,7 +168,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       titleColor = "text-slate-800";
       textColor = "text-slate-600";
       title = "Loan Closing";
-      message = <>"Your loan is in the process of closing."</>;
+      message = <>Your loan is in the process of closing.</>;
       break;
 
     case ContractStatus.Closed:
@@ -181,7 +178,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       titleColor = "text-gray-800";
       textColor = "text-gray-600";
       title = "Loan Closed";
-      message = <>"This loan has been fully repaid and closed."</>;
+      message = <>This loan has been fully repaid and closed.</>;
       break;
 
     case ContractStatus.Extended:
@@ -192,7 +189,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       textColor = "text-purple-600";
       title = "Loan Extended";
       message = (
-        <>`Your loan term has been extended and replaced by a new loan.`</>
+        <>Your loan term has been extended and replaced by a new loan.</>
       );
       break;
 
@@ -203,7 +200,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       titleColor = "text-rose-800";
       textColor = "text-rose-600";
       title = "Loan Request Rejected";
-      message = <>"Your loan request has been rejected by the lender."</>;
+      message = <>Your loan request has been rejected by the lender.</>;
       break;
 
     case ContractStatus.DisputeBorrowerStarted:
@@ -218,8 +215,8 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       title = "Dispute Open";
       message = (
         <>
-          "A dispute has been opened for this loan. Please check the
-          communication channel."
+          A dispute has been opened for this loan. Please check the
+          communication channel.
         </>
       );
       break;
@@ -232,7 +229,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       titleColor = "text-lime-800";
       textColor = "text-lime-600";
       title = "Dispute Resolved";
-      message = <>"The dispute for this loan has been resolved."</>;
+      message = <>The dispute for this loan has been resolved.</>;
       break;
 
     case ContractStatus.Cancelled:
@@ -242,7 +239,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       titleColor = "text-zinc-800";
       textColor = "text-zinc-600";
       title = "Loan Cancelled";
-      message = <>"This loan request has been cancelled."</>;
+      message = <>This loan request has been cancelled.</>;
       break;
 
     case ContractStatus.RequestExpired:
@@ -253,7 +250,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       titleColor = "text-stone-800";
       textColor = "text-stone-600";
       title = "Loan Request Expired";
-      message = <>"This loan request has expired due to inactivity."</>;
+      message = <>This loan request has expired due to inactivity.</>;
       break;
   }
 

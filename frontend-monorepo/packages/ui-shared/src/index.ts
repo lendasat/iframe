@@ -79,22 +79,53 @@ export function getTxUrl(txid: string, assetType?: LoanAsset) {
   switch (assetType) {
     case LoanAsset.USDC_ETH:
     case LoanAsset.USDT_ETH:
-      url = "https://etherscan.io/tx";
+      url = `https://etherscan.io/tx/${txid}`;
       break;
     case LoanAsset.USDT_POL:
     case LoanAsset.USDC_POL:
-      url = "https://polygonscan.com/tx";
+      url = `https://polygonscan.com/tx/${txid}`;
       break;
     case LoanAsset.USDC_SN:
     case LoanAsset.USDT_SN:
-      url = "https://starkscan.co/tx";
+      url = `https://starkscan.co/tx/${txid}`;
       break;
     case LoanAsset.USDC_SOL:
     case LoanAsset.USDT_SOL:
-      url = "https://solscan.io/tx";
+      url = `https://solscan.io/tx/${txid}`;
       break;
     case LoanAsset.USDT_Liquid:
-      url = "https://liquid.network/tx";
+      url = `https://liquid.network/tx/${txid}`;
+      break;
+    case LoanAsset.EUR:
+    case LoanAsset.USD:
+    case LoanAsset.CHF:
+      url = "";
+      break;
+  }
+  return url;
+}
+
+export function getAddressUrl(address?: string, assetType?: LoanAsset) {
+  let url = `${import.meta.env.VITE_MEMPOOL_REST_URL}/address/${address}`;
+  switch (assetType) {
+    case LoanAsset.USDC_ETH:
+    case LoanAsset.USDT_ETH:
+      url = `https://etherscan.io/address/${address}`;
+      break;
+    case LoanAsset.USDT_POL:
+    case LoanAsset.USDC_POL:
+      url = `https://polygonscan.com/address/${address}`;
+      break;
+    case LoanAsset.USDC_SN:
+    case LoanAsset.USDT_SN:
+      url = `https://starkscan.co/address/${address}`;
+      break;
+    case LoanAsset.USDC_SOL:
+    case LoanAsset.USDT_SOL:
+      url = `https://solscan.io/address/${address}`;
+      break;
+    case LoanAsset.USDT_Liquid:
+      url = `https://liquid.network/address/${address}`;
       break;
     case LoanAsset.EUR:
     case LoanAsset.USD:
