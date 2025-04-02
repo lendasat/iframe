@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            id,\n            lender_id,\n            borrower_id,\n            loan_deal_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_derivation_path,\n            lender_pk,\n            lender_derivation_path,\n            borrower_loan_address,\n            lender_loan_repayment_address,\n            loan_type as \"loan_type: crate::model::db::LoanType\",\n            contract_address,\n            contract_index,\n            borrower_npub,\n            lender_npub,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_days,\n            expiry_date,\n            contract_version,\n            interest_rate,\n            created_at,\n            updated_at\n        FROM contracts\n        where lender_id = $1\n        ",
+  "query": "\n        SELECT\n            id,\n            lender_id,\n            borrower_id,\n            loan_deal_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_derivation_path,\n            lender_pk,\n            lender_derivation_path,\n            borrower_loan_address,\n            lender_loan_repayment_address,\n            loan_type as \"loan_type: crate::model::db::LoanType\",\n            contract_address,\n            contract_index,\n            borrower_npub,\n            lender_npub,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_days,\n            expiry_date,\n            contract_version,\n            interest_rate,\n            interest,\n            created_at,\n            updated_at\n        FROM contracts\n        where lender_id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -192,11 +192,16 @@
       },
       {
         "ordinal": 27,
+        "name": "interest",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 28,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 28,
+        "ordinal": 29,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -235,8 +240,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "41b1bc98594fcd580e1c1768342d922047175abed61b573b3268f1f8c3b1d6d1"
+  "hash": "06ce39c6e06b249a3d75732d4d3177dbc7d0944d616597a8ea3e7abccc927451"
 }

@@ -49,7 +49,6 @@ use serde::Deserialize;
 use serde::Serialize;
 use sqlx::Pool;
 use sqlx::Postgres;
-use std::str::FromStr;
 use std::sync::Arc;
 use time::OffsetDateTime;
 use tracing::instrument;
@@ -785,6 +784,8 @@ pub struct Contract {
     #[serde(with = "rust_decimal::serde::float")]
     pub interest_rate: Decimal,
     #[serde(with = "rust_decimal::serde::float")]
+    pub interest: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
     pub initial_ltv: Decimal,
     pub loan_asset: LoanAsset,
     pub status: ContractStatus,
@@ -967,6 +968,7 @@ async fn map_to_api_contract(
         origination_fee_sats: contract.origination_fee_sats,
         collateral_sats: contract.collateral_sats,
         interest_rate: contract.interest_rate,
+        interest: contract.interest,
         initial_ltv: contract.initial_ltv,
         loan_asset: new_offer.loan_asset(),
         status: contract.status,
