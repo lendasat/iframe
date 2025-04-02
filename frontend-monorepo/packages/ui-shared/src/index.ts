@@ -1,4 +1,5 @@
 import queryString from "query-string";
+import { LoanAsset, TransactionType } from "./lib/models";
 
 export const ONE_YEAR = 360;
 export const ONE_MONTH = 30;
@@ -72,6 +73,37 @@ export const validateEmail = (email: string) => {
   const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return regex.test(email);
 };
+
+export function getTxUrl(txid: string, assetType?: LoanAsset) {
+  let url = `${import.meta.env.VITE_MEMPOOL_REST_URL}/tx/${txid}`;
+  switch (assetType) {
+    case LoanAsset.USDC_ETH:
+    case LoanAsset.USDT_ETH:
+      url = "https://etherscan.io/tx";
+      break;
+    case LoanAsset.USDT_POL:
+    case LoanAsset.USDC_POL:
+      url = "https://polygonscan.com/tx";
+      break;
+    case LoanAsset.USDC_SN:
+    case LoanAsset.USDT_SN:
+      url = "https://starkscan.co/tx";
+      break;
+    case LoanAsset.USDC_SOL:
+    case LoanAsset.USDT_SOL:
+      url = "https://solscan.io/tx";
+      break;
+    case LoanAsset.USDT_Liquid:
+      url = "https://liquid.network/tx";
+      break;
+    case LoanAsset.EUR:
+    case LoanAsset.USD:
+    case LoanAsset.CHF:
+      url = "";
+      break;
+  }
+  return url;
+}
 
 export * from "./lib/components/loan-address-input-field";
 export * from "./lib/components/NotificationToast";

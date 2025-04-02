@@ -54,13 +54,6 @@ export const Details = ({ contract }: DetailsProps) => {
   const loanExpiryFormatted = contract?.expiry
     ? format(contract.expiry, "MMM, do yyyy - p")
     : undefined;
-  const collateralAmount = formatSatsToBitcoin(contract?.collateral_sats);
-  const collateralAmountUsd =
-    contract?.collateral_sats != null
-      ? contract.collateral_sats === 0
-        ? formatCurrency(0)
-        : formatCurrency((contract.collateral_sats / 100000000) * latestPrice)
-      : formatCurrency(0);
 
   const originationFee = formatSatsToBitcoin(contract?.origination_fee_sats);
   const interestRate = contract?.interest_rate
@@ -167,25 +160,14 @@ export const Details = ({ contract }: DetailsProps) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4  mt-4">
-        <div>
-          <p className="text-sm text-gray-500">Collateral</p>
-          {collateralAmount ? (
-            <p className="text-xl font-bold">{collateralAmount}</p>
-          ) : (
-            <Skeleton className="h-4 w-[150px] mb-2" />
-          )}
-
-          {collateralAmountUsd ? (
-            <p className="text-xs text-gray-500">{collateralAmountUsd}</p>
-          ) : (
-            <Skeleton className="h-4 w-[50px] mb-2" />
-          )}
-        </div>
+      <div className="grid grid-cols-2 md:grid-cols-2 gap-4  mt-4">
         <div>
           <p className="text-sm text-gray-500">Origination Fee</p>
           {originationFee ? (
-            <p>{originationFee}</p>
+            <div className={"flex items-center gap-3"}>
+              <p>BTC</p>
+              <p className={"font-mono"}>{originationFee}</p>
+            </div>
           ) : (
             <Skeleton className="h-4 w-[150px] mb-2" />
           )}

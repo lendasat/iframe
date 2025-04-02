@@ -327,20 +327,20 @@ export const Collateral = ({ contract }: CollateralProps) => {
               Healthy
             </span>
             <span
-              className={`absolute left-[${firstMarginCallThreshold}%] -translate-x-1/2 text-xs text-yellow-600 text-center`}
+              className={`absolute left-[70%] -translate-x-1/2 text-xs text-yellow-600 text-center`}
             >
               {firstMarginCallThreshold}%
               <br />
               <span className="hidden sm:inline">Warning</span>
             </span>
             <span
-              className={`absolute left-[${secondMarginCallThreshold}%] -translate-x-1/2 text-xs text-orange-600 text-center`}
+              className={`absolute left-[80%] -translate-x-1/2 text-xs text-orange-600 text-center`}
             >
               {secondMarginCallThreshold}% <br />
               <span className="hidden sm:inline">Margin Call</span>
             </span>
             <span
-              className={`absolute left-[${liquidationThreshold}%] -translate-x-1/2 text-xs text-red-600 text-center`}
+              className={`absolute left-[90%] -translate-x-1/2 text-xs text-red-600 text-center`}
             >
               {liquidationThreshold}% <br />
               <span className="hidden sm:inline">Liquidation</span>

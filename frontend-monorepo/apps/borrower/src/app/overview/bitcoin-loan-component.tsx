@@ -31,20 +31,7 @@ import {
 } from "@frontend/http-client-borrower";
 import { useAsync } from "react-use";
 import AddCollateralDialog from "./add-collateral-dialog";
-
-// Loan contract states
-// export const CONTRACT_STATES = {
-//   REQUEST: { label: 'Request', color:  },
-//   APPROVED: { label: 'Approved', color: '' },
-//   FUNDED: { label: 'Funded', color: '' },
-//   AWAITING_PRINCIPAL: { label: 'Awaiting Principal', color: 'bg-purple-100 text-purple-800' },
-//   ACTIVE: { label: 'Active', color: 'bg-green-100 text-green-700' },
-//   WARNING: { label: 'Warning', color: 'bg-yellow-100 text-yellow-800' },
-//   MARGIN_CALL: { label: 'Margin Call', color: 'bg-orange-100 text-orange-800' },
-//   LIQUIDATED: { label: 'Liquidated', color: 'bg-red-100 text-red-800' },
-//   DEFAULT: { label: 'Default', color: 'bg-slate-100 text-slate-800' },
-//   CLOSED: { label: 'Closed', color: 'bg-gray-100 text-gray-800' }
-// };
+import TransactionHistoryDialog from "./transaction-history";
 
 export function contractStatusLabelColor(status?: ContractStatus): string {
   if (!status) {
@@ -98,7 +85,6 @@ const EnhancedBitcoinLoan = () => {
   const { id } = useParams();
 
   const [showManageLoanDialog, setShowManageLoanDialog] = useState(false);
-  const [showTransactionHistory, setShowTransactionHistory] = useState(false);
   const [activeTab, setActiveTab] = useState("details");
 
   const {
@@ -184,13 +170,20 @@ const EnhancedBitcoinLoan = () => {
             </Tabs>
 
             <CardFooter className="flex justify-between border-t pt-4">
-              <Button
-                variant="outline"
-                onClick={() => setShowTransactionHistory(true)}
-                className="text-gray-700"
+              <TransactionHistoryDialog
+                transactions={contract?.transactions || []}
+                isLoading={loading}
+                contractStatus={contract?.status}
+                assetType={contract?.loan_asset}
               >
-                View Transaction History
-              </Button>
+                <Button
+                  variant="outline"
+                  typeof={"button"}
+                  className="text-gray-700"
+                >
+                  View Transaction History
+                </Button>
+              </TransactionHistoryDialog>
               {contract?.status === ContractStatus.Approved ? (
                 <AddCollateralDialog
                   isInitialFunding={true}
@@ -228,24 +221,6 @@ const EnhancedBitcoinLoan = () => {
           {/* Dialog content would go here */}
           <DialogFooter>
             <Button onClick={() => setShowManageLoanDialog(false)}>
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Transaction History Dialog */}
-      <Dialog
-        open={showTransactionHistory}
-        onOpenChange={setShowTransactionHistory}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Transaction History</DialogTitle>
-          </DialogHeader>
-          {/* Dialog content would go here */}
-          <DialogFooter>
-            <Button onClick={() => setShowTransactionHistory(false)}>
               Close
             </Button>
           </DialogFooter>

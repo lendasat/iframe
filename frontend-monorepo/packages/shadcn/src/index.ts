@@ -14,3 +14,5 @@ export * from "./components/ui/avatar";
 export * from "./components/ui/scroll-area";
 export * from "./components/ui/skeleton";
 export * from "./components/ui/label";
+export * from "./components/ui/dropdown-menu";
+export * from "./components/ui/tooltip";
