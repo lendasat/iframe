@@ -1,4 +1,4 @@
-import { LuCircleCheck, LuClipboard, LuClock, LuInfo } from "react-icons/lu";
+import { LuCircleCheck, LuClipboard, LuClock } from "react-icons/lu";
 import React, { useState } from "react";
 import {
   Avatar,
@@ -47,7 +47,7 @@ export const Details = ({ contract }: DetailsProps) => {
     : undefined;
   const loanDurationRemaining =
     contract?.created_at && contract?.expiry
-      ? formatDistanceToNow(contract?.expiry, {
+      ? formatDistanceToNow(contract.expiry, {
           addSuffix: true,
         })
       : undefined;
@@ -100,7 +100,7 @@ export const Details = ({ contract }: DetailsProps) => {
         </div>
         <div className="text-right">
           <p className="text-sm text-gray-500">Lender</p>
-          {lender ? (
+          {lender && lenderNameInitials ? (
             <div className="flex items-center justify-end">
               <p className="mr-2">{lenderName}</p>
               <Avatar className="h-6 w-6">

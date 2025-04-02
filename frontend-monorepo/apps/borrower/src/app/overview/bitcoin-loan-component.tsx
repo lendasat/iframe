@@ -22,6 +22,7 @@ import { useParams } from "react-router-dom";
 import {
   ContractStatus,
   contractStatusToLabelString,
+  LiquidationStatus,
   useBorrowerHttpClient,
 } from "@frontend/http-client-borrower";
 import { useAsync } from "react-use";
@@ -128,10 +129,25 @@ const EnhancedBitcoinLoan = () => {
                       </>
                     )}
                   </Badge>
-                  {contract?.status === ContractStatus.PrincipalGiven && (
+                  {contract?.liquidation_status ===
+                    LiquidationStatus.Healthy && (
                     <div className="flex items-center text-sm text-green-600">
                       <LuCircleCheck className="h-4 w-4 mr-1" />
                       <span>Healthy</span>
+                    </div>
+                  )}
+                  {contract?.liquidation_status ===
+                    LiquidationStatus.FirstMarginCall && (
+                    <div className="flex items-center text-sm text-orange-600">
+                      <LuCircleCheck className="h-4 w-4 mr-1" />
+                      <span>Margin Call</span>
+                    </div>
+                  )}
+                  {contract?.liquidation_status ===
+                    LiquidationStatus.SecondMarginCall && (
+                    <div className="flex items-center text-sm text-red-600">
+                      <LuCircleCheck className="h-4 w-4 mr-1" />
+                      <span>2nd Margin Call</span>
                     </div>
                   )}
                 </div>
