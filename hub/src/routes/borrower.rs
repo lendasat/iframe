@@ -219,6 +219,7 @@ pub async fn spawn_borrower_server(
         #[cfg(not(debug_assertions))]
         let cors = cors.allow_origin([
             "https://borrow.signet.lendasat.com".parse::<HeaderValue>()?,
+            "https://borrow.lendasat.com".parse::<HeaderValue>()?,
             "https://borrowsignet.lendasat.com".parse::<HeaderValue>()?,
         ]);
 

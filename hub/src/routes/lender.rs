@@ -83,6 +83,7 @@ pub async fn spawn_lender_server(
 
         #[cfg(not(debug_assertions))]
         let cors = cors.allow_origin([
+            "https://lend.lendasat.com".parse::<HeaderValue>()?,
             "https://lend.signet.lendasat.com".parse::<HeaderValue>()?,
             "https://lendsignet.lendasat.com".parse::<HeaderValue>()?,
         ]);
