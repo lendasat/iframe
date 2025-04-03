@@ -13,7 +13,9 @@
                 "Available",
                 "Unavailable",
                 "Deleted",
-                "Taken"
+                "Taken",
+                "Cancelled",
+                "ApplicationExpired"
               ]
             }
           }

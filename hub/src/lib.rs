@@ -19,6 +19,7 @@ pub mod contract_requests;
 pub mod db;
 pub mod expiry;
 pub mod liquidation_engine;
+pub mod loan_application_expiry;
 pub mod logger;
 pub mod mempool;
 pub mod model;

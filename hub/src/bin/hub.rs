@@ -12,6 +12,7 @@ use hub::contract_request_expiry::add_contract_request_expiry_job;
 use hub::db::connect_to_db;
 use hub::db::run_migration;
 use hub::liquidation_engine::monitor_positions;
+use hub::loan_application_expiry::add_loan_application_expiry_job;
 use hub::logger::init_tracing;
 use hub::mempool;
 use hub::moon;
@@ -203,6 +204,8 @@ async fn main() -> Result<()> {
     let sched = JobScheduler::new().await?;
 
     add_contract_request_expiry_job(&sched, db.clone(), config.clone(), notifications.clone())
+        .await?;
+    add_loan_application_expiry_job(&sched, db.clone(), config.clone(), notifications.clone())
         .await?;
     add_contract_default_job(&sched, config.clone(), db.clone(), notifications.clone()).await?;
     add_contract_close_to_expiry_job(&sched, config.clone(), db.clone(), notifications.clone())

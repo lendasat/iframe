@@ -349,6 +349,29 @@ impl Notifications {
             tracing::error!("Could not send email {e:#}");
         }
     }
+
+    pub async fn send_expired_loan_application_borrower(
+        &self,
+        borrower: Borrower,
+        days: i64,
+        contract_url: Url,
+    ) {
+        self.send_tg_notification_borrower(
+            &borrower,
+            contract_url.clone(),
+            crate::telegram_bot::BorrowerNotificationKind::LoanApplicationExpired { days },
+        )
+        .await;
+
+        if let Err(e) = self
+            .email
+            .send_expired_loan_application_borrower(borrower, days, contract_url)
+            .await
+        {
+            tracing::error!("Could not send email {e:#}");
+        }
+    }
+
     pub async fn send_expired_loan_request_lender(&self, lender: Lender, url: Url) {
         self.send_tg_notification_lender(
             &lender,

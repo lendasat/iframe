@@ -326,3 +326,52 @@ pub async fn mark_as_taken_by_borrower_and_application_id(
 
     Ok(())
 }
+
+#[derive(Clone)]
+pub struct ExpiredApplication {
+    pub application_id: String,
+    pub borrower_id: String,
+}
+
+/// Expires open loan applications if the borrower has not logged in a single time in the last
+/// [expiry_in_hours]
+pub(crate) async fn expire_loan_applications(
+    pool: &Pool<Postgres>,
+    expiry_in_hours: i64,
+) -> Result<Vec<ExpiredApplication>> {
+    let expiration_threshold = OffsetDateTime::now_utc() - time::Duration::hours(expiry_in_hours);
+
+    let expired = sqlx::query_as!(
+        ExpiredApplication,
+        r#"
+        UPDATE
+            loan_applications
+        SET
+            status = 'ApplicationExpired',
+            updated_at = $1
+        WHERE
+            status = 'Available' AND
+            created_at <= $2 AND
+            borrower_id IN (
+                SELECT la.borrower_id
+                FROM loan_applications la
+                LEFT JOIN (
+                    SELECT borrower_id, MAX(created_at) as last_login
+                    FROM borrower_login_activity
+                    GROUP BY borrower_id
+                ) bla ON la.borrower_id = bla.borrower_id
+                WHERE la.status = 'Available' AND
+                      (bla.last_login IS NULL OR bla.last_login <= $3)
+            )
+        RETURNING
+            id as "application_id",
+            borrower_id as "borrower_id"
+    "#,
+        OffsetDateTime::now_utc(),
+        expiration_threshold,
+        expiration_threshold
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(expired)
+}

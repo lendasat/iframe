@@ -494,6 +494,8 @@ pub enum LoanApplicationStatus {
     Unavailable,
     Taken,
     Deleted,
+    ApplicationExpired,
+    Cancelled,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

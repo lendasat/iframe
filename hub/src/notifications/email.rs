@@ -683,6 +683,37 @@ impl Email {
         Ok(())
     }
 
+    pub async fn send_expired_loan_application_borrower(
+        &self,
+        borrower: Borrower,
+        days: i64,
+        offers_url: Url,
+    ) -> Result<()> {
+        let template_name = "loan_application_expired_borrower";
+        let handlebars = Self::prepare_template(template_name)?;
+
+        let data = serde_json::json!({
+            "first_name": &borrower.name,
+            "subject": &template_name,
+            "url": offers_url,
+            "days": days
+        });
+
+        let content_template = handlebars.render(template_name, &data)?;
+
+        if let Some(email) = borrower.email {
+            self.send_email(
+                "Your loan application expired without response",
+                borrower.name.as_str(),
+                email.as_str(),
+                content_template,
+            )
+            .await?;
+        }
+
+        Ok(())
+    }
+
     pub async fn send_expired_loan_request_lender(
         &self,
         lender: Lender,
