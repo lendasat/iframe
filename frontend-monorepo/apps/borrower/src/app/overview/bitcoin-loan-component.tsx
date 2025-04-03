@@ -218,7 +218,8 @@ const EnhancedBitcoinLoan = () => {
               {contract?.status !== ContractStatus.Approved &&
                 contract?.status !== ContractStatus.Requested &&
                 contract?.status !== ContractStatus.Cancelled &&
-                contract?.status !== ContractStatus.Closed && (
+                contract?.status !== ContractStatus.Closed &&
+                contract?.status !== ContractStatus.RepaymentProvided && (
                   <ManageLoanDialog contract={contract}>
                     <Button
                       type={"button"}

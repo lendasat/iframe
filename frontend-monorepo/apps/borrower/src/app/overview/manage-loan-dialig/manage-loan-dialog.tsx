@@ -67,10 +67,6 @@ const ManageLoanDialog = ({ children, contract }: ManageLoanDialogProps) => {
           <Button variant="outline" onClick={() => setOpen(false)}>
             Back
           </Button>
-
-          {/*<Button variant="default" onClick={handleExtensionRequest}>*/}
-          {/*  Request Extension*/}
-          {/*</Button>*/}
         </DialogFooter>
       </DialogContent>
     </Dialog>
