@@ -8,6 +8,7 @@ interface LoginFormProps {
   initialUserEmail: string;
   initialUserPassword: string;
   infoMessage?: string;
+  waitlistLink: string;
 }
 
 export function LoginForm({
@@ -17,6 +18,7 @@ export function LoginForm({
   initialUserEmail,
   initialUserPassword,
   infoMessage,
+  waitlistLink,
 }: LoginFormProps) {
   return (
     <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10">
@@ -35,6 +37,7 @@ export function LoginForm({
           registrationLink={registrationLink}
           infoMessage={infoMessage}
           handleLogin={handleLogin}
+          waitlistLink={waitlistLink}
         />
       </div>
     </div>

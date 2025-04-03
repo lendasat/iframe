@@ -21,6 +21,7 @@ interface LoginFormProps extends React.ComponentProps<"div"> {
   initialUserEmail: string;
   initialUserPassword: string;
   infoMessage?: string;
+  waitlistLink: string;
 }
 
 export function LoginForm({
@@ -31,6 +32,7 @@ export function LoginForm({
   initialUserEmail,
   initialUserPassword,
   infoMessage,
+  waitlistLink,
   ...props
 }: LoginFormProps) {
   const [email, setEmail] = useState(initialUserEmail);
@@ -123,14 +125,25 @@ export function LoginForm({
                   )}
                 </Button>
               </div>
-              <div className="text-center text-sm">
-                Don&apos;t have an account?{" "}
-                <a
-                  href={registrationLink}
-                  className="underline underline-offset-4"
-                >
-                  Sign up
-                </a>
+              <div>
+                <div className="text-center text-sm">
+                  Don&apos;t have an account?{" "}
+                  <a
+                    href={registrationLink}
+                    className="underline underline-offset-4"
+                  >
+                    Sign up
+                  </a>
+                </div>
+                <div className="text-center text-sm">
+                  Don&apos;t have an invite code? Join our{" "}
+                  <a
+                    href={waitlistLink}
+                    className="underline underline-offset-4"
+                  >
+                    Waitlist
+                  </a>
+                </div>
               </div>
             </div>
           </form>

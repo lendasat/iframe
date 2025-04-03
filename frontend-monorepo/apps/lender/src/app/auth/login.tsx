@@ -90,6 +90,7 @@ function Login() {
       handleLogin={handleLogin}
       registrationLink={"/registration"}
       forgotPasswordLink={"/forgotpassword"}
+      waitlistLink={"/waitlist"}
       initialUserEmail={defaultUsername}
       initialUserPassword={defaultPassword}
       infoMessage={message}
