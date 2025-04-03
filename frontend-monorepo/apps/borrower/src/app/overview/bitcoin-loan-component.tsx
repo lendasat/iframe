@@ -28,7 +28,7 @@ import {
 import { useAsync } from "react-use";
 import AddCollateralDialog from "./add-collateral-dialog";
 import TransactionHistoryDialog from "./transaction-history";
-import ManageLoanDialog from "./manage-loan-dialog";
+import ManageLoanDialog from "./manage-loan-dialig/manage-loan-dialog";
 import CancelRequestDialog from "./cancel-request-dialog";
 
 export function contractStatusLabelColor(status?: ContractStatus): string {

@@ -1,14 +1,5 @@
 import React, { useState } from "react";
-import {
-  LuCalendarClock,
-  LuCheck,
-  LuCircleAlert,
-  LuClipboard,
-  LuExternalLink,
-  LuInfo,
-  LuLoader,
-  LuQrCode,
-} from "react-icons/lu";
+import { LuCalendarClock } from "react-icons/lu";
 import {
   Alert,
   AlertDescription,
@@ -36,14 +27,7 @@ import {
   useBorrowerHttpClient,
 } from "@frontend/http-client-borrower";
 import { format } from "date-fns";
-import {
-  formatCurrency,
-  getAddressUrl,
-  LoanAssetHelper,
-} from "@frontend/ui-shared";
-import QRCode from "qrcode.react";
-import { useNavigate } from "react-router-dom";
-import { Repayment } from "./manage-loan-dialig/repayment";
+import { Repayment } from "./repayment";
 
 const shortenUuid = (uuid?: string) => {
   if (!uuid) {
