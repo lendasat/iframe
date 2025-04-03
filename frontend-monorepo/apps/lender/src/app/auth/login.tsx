@@ -30,7 +30,6 @@ function Login() {
         restore_wallet(
           key,
           walletBackupData.mnemonic_ciphertext,
-          walletBackupData.xpub,
           walletBackupData.network,
         );
       } catch (error) {
@@ -54,7 +53,6 @@ function Login() {
       key,
       walletBackupData.mnemonic_ciphertext,
       walletBackupData.network,
-      walletBackupData.xpub,
     );
 
     if (!is_local_wallet_equal_to_remote_wallet) {

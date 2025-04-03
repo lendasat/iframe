@@ -206,7 +206,7 @@ function ContractDetails({ contract }: DetailsProps) {
     <Grid className="md:grid-cols-2">
       <ChatDrawer
         contractId={contract.id}
-        counterpartyXPub={contract.borrower_xpub}
+        counterpartyNPub={contract.borrower_npub}
         onNewMsgSent={async () => {
           await newChatNotification({
             contract_id: contract.id,
@@ -746,7 +746,7 @@ const ContractStatusDetails = ({
       } else {
         return (
           <ContractRequested
-            borrowerXpub={contract.borrower_xpub}
+            borrowerPk={contract.borrower_pk}
             loanAsset={contract.loan_asset}
             isLoading={isLoading}
             onContractApprove={(a) => onContractApprove(a)}
@@ -758,7 +758,7 @@ const ContractStatusDetails = ({
     case ContractStatus.RenewalRequested:
       return (
         <ContractRequested
-          borrowerXpub={contract.borrower_xpub}
+          borrowerPk={contract.borrower_pk}
           loanAsset={contract.loan_asset}
           isLoading={isLoading}
           onContractApprove={onContractApprove}

@@ -121,7 +121,9 @@ export interface ContractRequest {
   loan_amount: number;
   duration_days: number;
   borrower_btc_address: string;
-  borrower_xpub: string;
+  borrower_npub: string;
+  borrower_pk: string;
+  borrower_derivation_path: string;
   borrower_loan_address?: string;
   loan_type: LoanType;
   moon_card_id?: string;
@@ -145,22 +147,22 @@ export interface Contract {
   status: ContractStatus;
   liquidation_status: LiquidationStatus;
   lender: LenderStats;
-  borrower_pk: string;
   borrower_btc_address: string;
   loan_repayment_address: string;
   contract_address?: string;
-  derivation_path?: string;
   borrower_loan_address: string;
   transactions: LoanTransaction[];
   loan_type: LoanType;
   liquidation_price: number;
   extends_contract?: string;
   extended_by_contract?: string;
-  borrower_xpub: string;
-  lender_xpub: string;
   kyc_info?: KycInfo;
   fiat_loan_details_borrower?: FiatLoanDetailsResponse;
   fiat_loan_details_lender?: FiatLoanDetailsResponse;
+  lender_npub: string;
+  borrower_pk: string;
+  borrower_npub: string;
+  borrower_derivation_path: string;
 }
 
 export interface KycInfo {
@@ -187,10 +189,10 @@ export interface LoanOffer {
   origination_fee: OriginationFee[];
   extension_origination_fee: OriginationFee[];
   kyc_link?: string;
-  lender_xpub: string;
+  lender_pk: string;
 }
 
-export interface postLoanApplication {
+export interface PostLoanApplication {
   ltv: number;
   interest_rate: number;
   loan_amount: number;
@@ -199,7 +201,9 @@ export interface postLoanApplication {
   loan_type: LoanType;
   borrower_loan_address: string;
   borrower_btc_address: string;
-  borrower_xpub: string;
+  borrower_pk: string;
+  borrower_derivation_path: string;
+  borrower_npub: string;
 }
 
 export interface ExtendPostLoanRequest {
@@ -403,7 +407,6 @@ export interface LoanApplication {
   borrower_btc_address: string;
   loan_asset: LoanAsset;
   loan_type: LoanType;
-  borrower_xpub: string;
   status: LoanApplicationStatus;
   created_at: Date;
   updated_at: Date;

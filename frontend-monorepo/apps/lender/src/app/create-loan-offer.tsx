@@ -55,7 +55,7 @@ interface DurationRange {
 
 const CreateLoanOffer: FC = () => {
   const layout = window;
-  const { doesWalletExist, getXpub } = useWallet();
+  const { doesWalletExist, getNpub, getPkAndDerivationPath } = useWallet();
   const { enabledFeatures } = useAuth();
 
   const navigate = useNavigate();
@@ -112,7 +112,9 @@ const CreateLoanOffer: FC = () => {
   }, []);
 
   const mapToCreateLoanOfferSchema = (
-    lender_xpub: string,
+    lender_npub: string,
+    lender_pk: string,
+    lender_derivation_path: string,
   ): CreateLoanOfferRequest => {
     return {
       name: "Loan Offer",
@@ -126,7 +128,9 @@ const CreateLoanOffer: FC = () => {
       loan_asset: loanAsset,
       loan_repayment_address: loanRepaymentAddress,
       auto_accept: autoAccept,
-      lender_xpub: lender_xpub,
+      lender_npub,
+      lender_pk,
+      lender_derivation_path,
       kyc_link: kycLink || undefined,
     };
   };
@@ -142,8 +146,13 @@ const CreateLoanOffer: FC = () => {
     setError("");
 
     try {
-      const lender_xpub = await getXpub();
-      const data = mapToCreateLoanOfferSchema(lender_xpub);
+      const lender_npub = await getNpub();
+      const lender_pk = await getPkAndDerivationPath();
+      const data = mapToCreateLoanOfferSchema(
+        lender_npub,
+        lender_pk.pubkey,
+        lender_pk.path,
+      );
 
       setLoading(true);
       const res = await postLoanOffer(data);

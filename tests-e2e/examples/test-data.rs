@@ -1,10 +1,11 @@
 use anyhow::Context;
 use anyhow::Result;
-use bitcoin::bip32::Xpub;
+use bitcoin::bip32;
 use bitcoin::hex::Case;
 use bitcoin::hex::DisplayHex;
 use bitcoin::Address;
-use browser_wallet::wallet;
+use bitcoin::PublicKey;
+use browser_wallet::wallet::Wallet;
 use hub::config::Config;
 use hub::db;
 use hub::db::wallet_backups::NewBorrowerWalletBackup;
@@ -20,6 +21,8 @@ use hub::model::LoanOffer;
 use hub::model::LoanType;
 use hub::model::ONE_YEAR;
 use hub::moon::Card;
+use rand::thread_rng;
+use rand::Rng;
 use reqwest::Url;
 use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
@@ -53,21 +56,15 @@ async fn main() -> Result<()> {
     let pool = connect_to_db(config.database_url.as_str()).await?;
     run_migration(&pool).await?;
 
-    let (lender, lender_xpub) = insert_lender(&pool, network.as_str()).await?;
+    let (lender, mut lender_wallet) = init_lender(&pool, network.as_str()).await?;
     tracing::debug!(id = lender.id, email = lender.email, "Lender created");
-    let (borrower, borrower_xpub) = insert_borrower(&pool, network.as_str()).await?;
+
+    let (borrower, mut borrower_wallet) = init_borrower(&pool, network.as_str()).await?;
     tracing::debug!(id = borrower.id, email = borrower.email, "Borrower created");
 
-    let offers = create_loan_offers(&pool, lender.id.as_str(), lender_xpub).await?;
+    let offers = create_loan_offers(&pool, &lender, &mut lender_wallet).await?;
 
-    create_sample_contracts(
-        &pool,
-        &borrower,
-        &offers[1],
-        lender.id.as_str(),
-        borrower_xpub,
-    )
-    .await?;
+    create_sample_contracts(&pool, &borrower, &mut borrower_wallet, &lender, &offers[1]).await?;
 
     create_sample_card(&pool, &borrower).await?;
 
@@ -91,9 +88,9 @@ fn create_sha256(value: &[u8; 7]) -> String {
 async fn create_sample_contracts(
     pool: &Pool<Postgres>,
     borrower: &Borrower,
+    borrower_wallet: &mut Wallet,
+    lender: &Lender,
     offer: &LoanOffer,
-    lender_id: &str,
-    borrower_xpub: Xpub,
 ) -> Result<(Contract, Contract)> {
     let borrower_contracts =
         db::contracts::load_contracts_by_borrower_id(pool, borrower.id.as_str()).await?;
@@ -112,33 +109,36 @@ async fn create_sample_contracts(
         let approved = approved.first().cloned().expect("to be one").clone();
         (requested, approved)
     } else {
-        let lender_xpub = offer
-            .lender_xpub
-            .clone()
-            .parse()
-            .expect("valid lender Xpub");
+        let (pk, path) = borrower_wallet.next_hardened_pk()?;
+        let npub = "npub1hremptx4juv986t0grj3vdwqgxmfph6kr2syjtyy3runrfc0qp4s5aykjw";
+
         let contract1 = create_loan_request(
             pool,
             offer,
             offer.loan_amount_min,
             borrower.id.as_str(),
-            lender_xpub,
-            borrower_xpub,
+            pk,
+            path,
+            npub,
         )
         .await?;
+
+        let (pk, path) = borrower_wallet.next_hardened_pk()?;
         let contract2 = create_loan_request(
             pool,
             offer,
             offer.loan_amount_min + dec!(1),
             borrower.id.as_str(),
-            lender_xpub,
-            borrower_xpub,
+            pk,
+            path,
+            npub,
         )
         .await?;
+
         (contract1, contract2)
     };
 
-    accept_loan_request(pool, &contract2, lender_id).await?;
+    accept_loan_request(pool, &contract2, &lender.id).await?;
 
     Ok((contract1, contract2))
 }
@@ -208,8 +208,9 @@ async fn create_loan_request(
     offer: &LoanOffer,
     loan_amount: Decimal,
     borrower_id: &str,
-    lender_xpub: Xpub,
-    borrower_xpub: Xpub,
+    borrower_pk: PublicKey,
+    borrower_derivation_path: bip32::DerivationPath,
+    borrower_npub: &str,
 ) -> Result<Contract> {
     let id = Uuid::new_v4();
     let initial_ltv = dec!(0.5);
@@ -228,30 +229,38 @@ async fn create_loan_request(
         origination_fee_sats.to_u64().expect("to fit"),
         loan_amount,
         offer.duration_days_max,
+        borrower_pk,
+        borrower_derivation_path,
+        offer.lender_pk,
+        offer.lender_derivation_path.clone(),
         Address::from_str("tb1qtsasnju08gh7ptqg7260qujgasvtexkf9t3yj3")
             .expect("to be valid address"),
         "0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97".to_string(),
-        borrower_xpub,
         Some("0x34e3f03F5efFaF7f70Bb1FfC50274697096ebe9d"),
         LoanType::StableCoin,
-        lender_xpub,
         ContractVersion::TwoOfThree,
         offer.interest_rate,
+        borrower_npub,
+        &offer.lender_npub,
     )
     .await
 }
 
 async fn create_loan_offers(
     pool: &Pool<Postgres>,
-    lender_id: &str,
-    lender_xpub: Xpub,
+    lender: &Lender,
+    lender_wallet: &mut Wallet,
 ) -> Result<Vec<LoanOffer>> {
-    let offers = db::loan_offers::load_all_loan_offers_by_lender(pool, lender_id).await?;
+    let offers = db::loan_offers::load_all_loan_offers_by_lender(pool, &lender.id).await?;
     if !offers.is_empty() {
         tracing::debug!("DB already contains offer(s) by lender");
 
         return Ok(offers);
     }
+
+    let lender_npub = "npub10dgsmkm4x25ea22fyvll6hsmerqyac2um73tznvtqcam8r5htvxsfgf2n5".to_string();
+
+    let (pk, path) = lender_wallet.next_hardened_pk()?;
 
     let euro_offer = db::loan_offers::insert_loan_offer(
         pool,
@@ -266,13 +275,17 @@ async fn create_loan_offers(
             duration_days_max: ONE_YEAR as i32,
             loan_asset: LoanAsset::Eur,
             loan_repayment_address: "0x34e3f03F5efFaF7f70Bb1FfC50274697096ebe9d".to_string(),
+            lender_pk: pk,
+            lender_derivation_path: path,
             auto_accept: true,
-            lender_xpub,
             kyc_link: Some(Url::parse("https://nokycforlife.com").expect("to be valid")),
+            lender_npub: lender_npub.clone(),
         },
-        lender_id,
+        &lender.id,
     )
     .await?;
+
+    let (pk, path) = lender_wallet.next_hardened_pk()?;
 
     let poly_offer = db::loan_offers::insert_loan_offer(
         pool,
@@ -287,44 +300,45 @@ async fn create_loan_offers(
             duration_days_max: ONE_YEAR as i32,
             loan_asset: LoanAsset::UsdcPol,
             loan_repayment_address: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619".to_string(),
+            lender_pk: pk,
+            lender_derivation_path: path,
             auto_accept: true,
-            lender_xpub,
             kyc_link: None,
+            lender_npub,
         },
-        lender_id,
+        &lender.id,
     )
     .await?;
 
     Ok(vec![euro_offer, poly_offer])
 }
 
-async fn insert_lender(pool: &Pool<Postgres>, network: &str) -> Result<(Lender, Xpub)> {
+async fn init_lender(pool: &Pool<Postgres>, network: &str) -> Result<(Lender, Wallet)> {
+    let mnemonic =
+        "myself hollow clog kitchen glimpse hard submit media resource report educate luxury"
+            .parse()?;
+
+    let mut rng = thread_rng();
+    let contract_index = rng.gen_range(0..(2_u32.pow(31)));
+
+    let (wallet, mnemonic_ciphertext) =
+        Wallet::new(&mut rng, mnemonic, "password123", network, contract_index)?;
+
     let email = "lender@lendasat.com";
     if db::lenders::user_exists(pool, email).await? {
         tracing::debug!("DB already contains the lender, not inserting another one");
 
-        let maybe_user = db::lenders::get_user_by_email(pool, email)
+        let lender = db::lenders::get_user_by_email(pool, email)
             .await?
             .expect("expect to have user");
-        enable_lender_features(pool, maybe_user.id.as_str())
+        enable_lender_features(pool, lender.id.as_str())
             .await
             .expect("to be able to enable feature");
 
-        let lender_backup = db::wallet_backups::find_by_lender_id(pool, maybe_user.id.as_str())
-            .await
-            .expect("to get lender backup");
-        let xpub = lender_backup.xpub.parse().expect("valid Xpub");
-
-        return Ok((maybe_user, xpub));
+        return Ok((lender, wallet));
     }
 
-    let (mnemonic_ciphertext, network, xpub) = wallet::new_from_mnemonic(
-        "password123",
-        network,
-        "myself hollow clog kitchen glimpse hard submit media resource report educate luxury",
-    )?;
-
-    let user =
+    let lender =
         db::lenders::register_user(
             pool,
             "alice the lender",
@@ -333,28 +347,36 @@ async fn insert_lender(pool: &Pool<Postgres>, network: &str) -> Result<(Lender, 
             "8233a91075c28c58c7aea7b748fafc3bf8c563c863d740e4ecf815228cb92642644110fa5776ffe94e7f797570f039a523759324ff1ae11858b0da689dc5d9f46c9eee5b44df33094e76ee8a073851c48b3cef6d8c81a6953d3c64919ae1c29fb0a2a884244e4187b13578e68d72d7d8c83c045179eef062e2454b29fb87052a4d31cca7eff4fad75746db3cb468a5421dd6f56592af836723e478de327ab39238bbba47ceb6470fc0e92483a8f910279a883877fec38ced03574cfc09f1ad94da5630566300d87ea1838949a684e0fbd84086c4c012f1ad1562cb5b6e248dba67dc0f5c84048bbc023a4e0cc0596e37e234fba7070df96563d3f10153ad4e95",
             None
         ).await?;
-    let verification_code = user.verification_code.clone().expect("to exist");
+    let verification_code = lender.verification_code.clone().expect("to exist");
     db::lenders::verify_user(pool, verification_code.as_str()).await?;
 
-    enable_lender_features(pool, user.id.as_str())
+    enable_lender_features(pool, lender.id.as_str())
         .await
         .expect("to be able to enable feature");
 
     db::wallet_backups::insert_lender_backup(
         pool,
         NewLenderWalletBackup {
-            lender_id: user.id.clone(),
+            lender_id: lender.id.clone(),
             mnemonic_ciphertext: mnemonic_ciphertext.serialize(),
             network: network.to_string(),
-            xpub: xpub.to_string(),
         },
     )
     .await?;
 
-    Ok((user, xpub))
+    Ok((lender, wallet))
 }
 
-async fn insert_borrower(pool: &Pool<Postgres>, network: &str) -> Result<(Borrower, Xpub)> {
+async fn init_borrower(pool: &Pool<Postgres>, network: &str) -> Result<(Borrower, Wallet)> {
+    let mnemonic =
+        "black usage cross fiscal ostrich park glass canoe talk return live anchor".parse()?;
+
+    let mut rng = thread_rng();
+    let contract_index = rng.gen_range(0..(2_u32.pow(31)));
+
+    let (wallet, mnemonic_ciphertext) =
+        Wallet::new(&mut rng, mnemonic, "password123", network, contract_index)?;
+
     let email = "borrower@lendasat.com";
     if db::borrowers::user_exists(pool, email)
         .await
@@ -362,27 +384,22 @@ async fn insert_borrower(pool: &Pool<Postgres>, network: &str) -> Result<(Borrow
     {
         tracing::debug!("DB already contains the borrower, not inserting another one");
 
-        let (maybe_user, _) = db::borrowers::get_user_by_email(pool, email)
+        let (borrower, _) = db::borrowers::get_user_by_email(pool, email)
             .await?
             .expect("expect to have user");
-        enable_borrower_features(pool, maybe_user.id.as_str()).await?;
+        enable_borrower_features(pool, borrower.id.as_str()).await?;
 
-        let borrower_backup = db::wallet_backups::find_by_borrower_id(pool, maybe_user.id.as_str())
-            .await
-            .expect("to get lender backup");
-        let xpub = borrower_backup.xpub.parse().expect("valid Xpub");
-
-        return Ok((maybe_user, xpub));
+        return Ok((borrower, wallet));
     }
 
     let mut tx = pool.begin().await?;
-    let (user, password_auth_info) = db::borrowers::register_password_auth_user(&mut tx, "bob the borrower", email, "cd8c88861c37f137eb08ee009ba7974e", "9c09ebb870171a9dc4fee895a85bfee036b4a3021f685e16f55c2c4df2032fd68ccbf6aa823f130c0dbcdb59db682c54d98c4bbcb4d934a4a27223b361f3b5838970f4d708bb884078b438a7548c85d8625865af010fc9ca55ef7295eafe27dd38b2fed5b32c215f89536aaf8f989a6b155a60003ef9a161b0d25445d5338ae623893a42a5af14355d0416bd1da19e2f9af040a58f30f8a3619ff080b7e661da06d1a0afa8b7bdecf62db3066aeb28413b68fb51cea1091981b55f49aab5b9e3e6f79ac1adb5015eda5afb3a04839853f6f6e552703babd4d0420d13396b4f3a0c012e3fdac9a140b3b2ff72d27ab286690870aa251400203bc1acf7b2e2a3c0")
+    let (borrower, password_auth_info) = db::borrowers::register_password_auth_user(&mut tx, "bob the borrower", email, "cd8c88861c37f137eb08ee009ba7974e", "9c09ebb870171a9dc4fee895a85bfee036b4a3021f685e16f55c2c4df2032fd68ccbf6aa823f130c0dbcdb59db682c54d98c4bbcb4d934a4a27223b361f3b5838970f4d708bb884078b438a7548c85d8625865af010fc9ca55ef7295eafe27dd38b2fed5b32c215f89536aaf8f989a6b155a60003ef9a161b0d25445d5338ae623893a42a5af14355d0416bd1da19e2f9af040a58f30f8a3619ff080b7e661da06d1a0afa8b7bdecf62db3066aeb28413b68fb51cea1091981b55f49aab5b9e3e6f79ac1adb5015eda5afb3a04839853f6f6e552703babd4d0420d13396b4f3a0c012e3fdac9a140b3b2ff72d27ab286690870aa251400203bc1acf7b2e2a3c0")
         .await
         .context("register user failed")?;
     db::borrowers_referral_code::insert_referred_borrower(
         &mut *tx,
         "BETA_PHASE_1",
-        user.id.as_str(),
+        borrower.id.as_str(),
     )
     .await?;
 
@@ -391,7 +408,7 @@ async fn insert_borrower(pool: &Pool<Postgres>, network: &str) -> Result<(Borrow
     db::borrowers_referral_code::create_referral_code(
         pool,
         Some("demo".to_string()),
-        user.id.as_str(),
+        borrower.id.as_str(),
     )
     .await
     .context("insert referral code failed")?;
@@ -401,26 +418,19 @@ async fn insert_borrower(pool: &Pool<Postgres>, network: &str) -> Result<(Borrow
         .clone()
         .expect("to exist");
     db::borrowers::verify_user(pool, verification_code.as_str()).await?;
-    enable_borrower_features(pool, user.id.as_str()).await?;
-
-    let (mnemonic_ciphertext, network, xpub) = wallet::new_from_mnemonic(
-        "password123",
-        network,
-        "black usage cross fiscal ostrich park glass canoe talk return live anchor",
-    )?;
+    enable_borrower_features(pool, borrower.id.as_str()).await?;
 
     db::wallet_backups::insert_borrower_backup(
         pool,
         NewBorrowerWalletBackup {
-            borrower_id: user.id.clone(),
+            borrower_id: borrower.id.clone(),
             mnemonic_ciphertext: mnemonic_ciphertext.serialize(),
             network: network.to_string(),
-            xpub: xpub.to_string(),
         },
     )
     .await?;
 
-    Ok((user, xpub))
+    Ok((borrower, wallet))
 }
 
 async fn enable_borrower_features(pool: &Pool<Postgres>, user_id: &str) -> Result<()> {

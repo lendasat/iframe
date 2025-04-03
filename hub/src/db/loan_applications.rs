@@ -5,7 +5,6 @@ use crate::model::LoanApplicationStatus;
 use crate::model::LoanAsset;
 use crate::model::LoanType;
 use anyhow::Result;
-use bitcoin::bip32::Xpub;
 use bitcoin::Address;
 use rust_decimal::Decimal;
 use sqlx::FromRow;
@@ -24,9 +23,11 @@ pub struct LoanApplication {
     pub duration_days: i32,
     pub borrower_loan_address: Option<String>,
     pub borrower_btc_address: String,
-    pub borrower_xpub: String,
     pub loan_asset: LoanAsset,
     pub loan_type: LoanType,
+    pub borrower_pk: String,
+    pub borrower_derivation_path: String,
+    pub borrower_npub: String,
     pub status: LoanApplicationStatus,
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
@@ -44,9 +45,11 @@ impl From<LoanApplication> for model::LoanApplication {
             borrower_loan_address: value.borrower_loan_address,
             borrower_btc_address: Address::from_str(value.borrower_btc_address.as_str())
                 .expect("to be a valid address"),
-            borrower_xpub: Xpub::from_str(value.borrower_xpub.as_str()).expect("to be valid"),
             loan_asset: value.loan_asset,
             loan_type: value.loan_type,
+            borrower_pk: value.borrower_pk.parse().expect("valid pk"),
+            borrower_derivation_path: value.borrower_derivation_path.parse().expect("valid path"),
+            borrower_npub: value.borrower_npub,
             status: value.status,
             created_at: value.created_at,
             updated_at: value.updated_at,
@@ -70,9 +73,11 @@ pub(crate) async fn load_all_available_loan_applications(
             loan_asset AS "loan_asset: crate::model::LoanAsset",
             status AS "status: crate::model::LoanApplicationStatus",
             loan_type AS "loan_type: crate::model::db::LoanType",
+            borrower_pk,
+            borrower_derivation_path,
             borrower_loan_address,
             borrower_btc_address,
-            borrower_xpub,
+            borrower_npub,
             created_at,
             updated_at
         FROM loan_applications
@@ -105,9 +110,11 @@ pub async fn load_all_loan_applications_by_borrower(
             loan_asset AS "loan_asset: crate::model::LoanAsset",
             status AS "status: crate::model::LoanApplicationStatus",
             loan_type AS "loan_type: crate::model::db::LoanType",
+            borrower_pk,
+            borrower_derivation_path,
             borrower_loan_address,
             borrower_btc_address,
-            borrower_xpub,
+            borrower_npub,
             created_at,
             updated_at
         FROM loan_applications
@@ -142,9 +149,11 @@ pub async fn get_loan_application_by_borrower_and_application_id(
             loan_asset AS "loan_asset: crate::model::LoanAsset",
             status AS "status: crate::model::LoanApplicationStatus",
             loan_type AS "loan_type: crate::model::db::LoanType",
+            borrower_pk,
+            borrower_derivation_path,
             borrower_loan_address,
             borrower_btc_address,
-            borrower_xpub,
+            borrower_npub,
             created_at,
             updated_at
         FROM loan_applications
@@ -223,13 +232,15 @@ pub async fn insert_loan_application(
             duration_days,
             loan_asset,
             loan_type,
+            borrower_pk,
+            borrower_derivation_path,
             borrower_loan_address,
             borrower_btc_address,
-            borrower_xpub,
+            borrower_npub,
             status,
             loan_deal_id
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $1)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $1)
         RETURNING
             loan_deal_id,
             borrower_id,
@@ -240,9 +251,11 @@ pub async fn insert_loan_application(
             loan_asset AS "loan_asset: crate::model::LoanAsset",
             loan_type AS "loan_type: crate::model::db::LoanType",
             status AS "status: crate::model::LoanApplicationStatus",
+            borrower_pk,
+            borrower_derivation_path,
             borrower_loan_address,
             borrower_btc_address,
-            borrower_xpub,
+            borrower_npub,
             created_at,
             updated_at
         "#,
@@ -254,12 +267,14 @@ pub async fn insert_loan_application(
         application.duration_days,
         application.loan_asset as LoanAsset,
         loan_type as db::LoanType,
+        application.borrower_pk.to_string(),
+        application.borrower_derivation_path.to_string(),
         application.borrower_loan_address,
         application
             .borrower_btc_address
             .assume_checked()
             .to_string(),
-        application.borrower_xpub.to_string(),
+        application.borrower_npub,
         status as LoanApplicationStatus,
     )
     .fetch_one(&mut *tx)
@@ -287,9 +302,11 @@ pub async fn get_loan_by_id(
             loan_asset AS "loan_asset: crate::model::LoanAsset",
             status AS "status: crate::model::LoanApplicationStatus",
             loan_type AS "loan_type: crate::model::db::LoanType",
+            borrower_pk,
+            borrower_derivation_path,
             borrower_loan_address,
             borrower_btc_address,
-            borrower_xpub,
+            borrower_npub,
             created_at,
             updated_at
         FROM loan_applications

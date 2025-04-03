@@ -31,7 +31,7 @@ use rand::CryptoRng;
 use rand::Rng;
 use sha2::Digest;
 use sha2::Sha256;
-use std::str::FromStr;
+use std::str::FromStr as _;
 use std::sync::LazyLock;
 use std::sync::Mutex;
 
@@ -43,7 +43,7 @@ pub const NOSTR_DERIVATION_PATH: &str = "m/44/0/0/0/0";
 
 static WALLET: LazyLock<Mutex<Option<Wallet>>> = LazyLock::new(|| Mutex::new(None));
 
-struct Wallet {
+pub struct Wallet {
     /// We keep this so that we can display it to the user.
     mnemonic: Mnemonic,
     xprv: Xpriv,
@@ -55,32 +55,41 @@ struct Wallet {
     /// is derived using the `mnemonic` _plus_ a passphrase.
     legacy_xprv: Option<Xpriv>,
     network: Network,
+    /// This determines the next public key to be derived.
+    ///
+    /// Since a user can have the same wallet in multiple devices, we do not attempt to synchronize
+    /// across all devices. PK reuse is acceptable.
+    contract_index: u32,
 }
 
+#[derive(Clone)]
 pub struct MnemonicCiphertext {
     salt: [u8; 32],
     inner: Vec<u8>,
 }
 
-pub fn generate_new(password: &str, network: &str) -> Result<(MnemonicCiphertext, Network, Xpub)> {
+pub fn generate_new(password: &str, network: &str) -> Result<(MnemonicCiphertext, Network)> {
     log::info!("Generating new wallet");
 
     let mut rng = thread_rng();
 
     let mnemonic = generate_mnemonic(&mut rng)?;
 
-    let (wallet, mnemonic_ciphertext) = Wallet::new(&mut rng, mnemonic, password, network)?;
-    let network = wallet.network;
-    let xpub = Xpub::from_priv(&Secp256k1::new(), &wallet.xprv);
+    // Start from zero for a new wallet.
+    let contract_index = 0;
 
-    Ok((mnemonic_ciphertext, network, xpub))
+    let (wallet, mnemonic_ciphertext) =
+        Wallet::new(&mut rng, mnemonic, password, network, contract_index)?;
+    let network = wallet.network;
+
+    Ok((mnemonic_ciphertext, network))
 }
 
 pub fn new_from_mnemonic(
     password: &str,
     network: &str,
     mnemonic: &str,
-) -> Result<(MnemonicCiphertext, Network, Xpub)> {
+) -> Result<MnemonicCiphertext> {
     let mut guard = WALLET.lock().expect("to get lock");
     log::info!("Creating new wallet from mnemonic");
 
@@ -92,16 +101,23 @@ pub fn new_from_mnemonic(
 
     let mut rng = thread_rng();
 
-    let (wallet, mnemonic_ciphertext) = Wallet::new(&mut rng, mnemonic, password, network)?;
-    let network = wallet.network;
-    let xpub = Xpub::from_priv(&Secp256k1::new(), &wallet.xprv);
+    // Start from zero for a wallet restored from a mnemonic.
+    let contract_index = 0;
+
+    let (wallet, mnemonic_ciphertext) =
+        Wallet::new(&mut rng, mnemonic, password, network, contract_index)?;
 
     guard.replace(wallet);
 
-    Ok((mnemonic_ciphertext, network, xpub))
+    Ok(mnemonic_ciphertext)
 }
 
-pub fn load_wallet(password: &str, mnemonic_ciphertext: &str, network: &str) -> Result<()> {
+pub fn load_wallet(
+    password: &str,
+    mnemonic_ciphertext: &str,
+    network: &str,
+    contract_index: u32,
+) -> Result<()> {
     let mut guard = WALLET.lock().expect("to get lock");
 
     log::debug!("Loading wallet from input... start");
@@ -113,7 +129,7 @@ pub fn load_wallet(password: &str, mnemonic_ciphertext: &str, network: &str) -> 
     let mnemonic_ciphertext = MnemonicCiphertext::from_str(mnemonic_ciphertext)
         .context("Failed to deserialize mnemonic ciphertext")?;
 
-    let wallet = Wallet::from_ciphertext(mnemonic_ciphertext, password, network)?;
+    let wallet = Wallet::from_ciphertext(mnemonic_ciphertext, password, network, contract_index)?;
 
     guard.replace(wallet);
     log::debug!("Loading wallet from input.. done");
@@ -139,11 +155,7 @@ pub fn get_mnemonic() -> Result<String> {
     Ok(mnemonic.to_string())
 }
 
-pub fn get_normal_pk_for_network_and_index(
-    xpub: &str,
-    network: &str,
-    index: u32,
-) -> Result<PublicKey> {
+fn get_normal_pk_for_network_and_index(xpub: &str, network: &str, index: u32) -> Result<PublicKey> {
     let xpub = Xpub::from_str(xpub).context("Invalid Xpub")?;
     let network = Network::from_str(network).context("Invalid network")?;
     let network = NetworkKind::from(network);
@@ -215,7 +227,7 @@ fn get_kp_from_path(xprv: &Xpriv, derivation_path: &DerivationPath) -> Result<Ke
 
 /// Used by borrowers.
 pub fn sign_claim_psbt(
-    mut psbt: Psbt,
+    psbt: Psbt,
     collateral_descriptor: Descriptor<PublicKey>,
     own_pk: PublicKey,
     // Newer contracts use a derivation path decided by the hub.
@@ -234,49 +246,14 @@ pub fn sign_claim_psbt(
         }
     };
 
-    let kp = find_kp(wallet, derivation_path, &own_pk)?;
-
-    let sk = kp.secret_key();
-    let pk = PublicKey::new(kp.public_key());
-
-    let secp = Secp256k1::new();
-    for (i, input) in psbt.inputs.iter_mut().enumerate() {
-        let collateral_amount = input.clone().witness_utxo.context("No witness UTXO")?.value;
-
-        let sighash = SighashCache::new(&psbt.unsigned_tx)
-            .p2wsh_signature_hash(
-                i,
-                &collateral_descriptor
-                    .script_code()
-                    .context("No script code")?,
-                collateral_amount,
-                EcdsaSighashType::All,
-            )
-            .context("Can't produce sighash cache")?;
-
-        let sig = secp.sign_ecdsa(&sighash.into(), &sk);
-
-        input.partial_sigs.insert(
-            pk,
-            bitcoin::ecdsa::Signature {
-                signature: sig,
-                sighash_type: EcdsaSighashType::All,
-            },
-        );
-    }
-
-    let psbt = psbt
-        .finalize(&secp)
-        .map_err(|e| anyhow!("Failed to finalize PSBT: {e:?}"))?;
-
-    let tx = psbt.extract(&secp).context("Could not extract signed TX")?;
+    let tx = wallet.sign_claim_psbt(psbt, collateral_descriptor, own_pk, derivation_path)?;
 
     Ok(tx)
 }
 
 /// Used by lenders.
 pub fn sign_liquidation_psbt(
-    mut psbt: Psbt,
+    psbt: Psbt,
     collateral_descriptor: Descriptor<PublicKey>,
     own_pk: PublicKey,
     derivation_path: Option<&DerivationPath>,
@@ -289,40 +266,7 @@ pub fn sign_liquidation_psbt(
         }
     };
 
-    let kp = find_kp(wallet, derivation_path, &own_pk)?;
-    let sk = kp.secret_key();
-
-    let secp = Secp256k1::new();
-    for (i, input) in psbt.inputs.iter_mut().enumerate() {
-        let collateral_amount = input.clone().witness_utxo.context("No witness UTXO")?.value;
-
-        let sighash = SighashCache::new(&psbt.unsigned_tx)
-            .p2wsh_signature_hash(
-                i,
-                &collateral_descriptor
-                    .script_code()
-                    .context("No script code")?,
-                collateral_amount,
-                EcdsaSighashType::All,
-            )
-            .context("Can't produce sighash cache")?;
-
-        let sig = secp.sign_ecdsa(&sighash.into(), &sk);
-
-        input.partial_sigs.insert(
-            own_pk,
-            bitcoin::ecdsa::Signature {
-                signature: sig,
-                sighash_type: EcdsaSighashType::All,
-            },
-        );
-    }
-
-    let psbt = psbt
-        .finalize(&secp)
-        .map_err(|e| anyhow!("Failed to finalize PSBT: {e:?}"))?;
-
-    let tx = psbt.extract(&secp).context("Could not extract signed TX")?;
+    let tx = wallet.sign_liquidation_psbt(psbt, collateral_descriptor, own_pk, derivation_path)?;
 
     Ok(tx)
 }
@@ -489,7 +433,7 @@ pub fn upgrade_wallet(
     contract_pks: &[String],
     // Used to determine how to verify the `contract_pks`.
     is_borrower: bool,
-) -> Result<(MnemonicCiphertext, Xpub)> {
+) -> Result<MnemonicCiphertext> {
     let network = Network::from_str(network).context("Invalid network")?;
 
     let mnemonic_ciphertext = MnemonicCiphertext::from_str(mnemonic_ciphertext)
@@ -534,15 +478,6 @@ pub fn upgrade_wallet(
         }
     }
 
-    let new_xpub = {
-        // The password is _not_ used as a passphrase to allow the user to change it without
-        // changing the `Xpriv`.
-        let seed = mnemonic.to_seed("");
-        let xprv = Xpriv::new_master(network, &seed).context("Failed to derive new Xpriv")?;
-
-        Xpub::from_priv(&Secp256k1::new(), &xprv)
-    };
-
     let new_mnemonic_ciphertext = {
         let mut rng = thread_rng();
         let new_salt = rng.gen::<[u8; 32]>();
@@ -559,18 +494,15 @@ pub fn upgrade_wallet(
         }
     };
 
-    Ok((new_mnemonic_ciphertext, new_xpub))
+    Ok(new_mnemonic_ciphertext)
 }
 
 /// Decrypt `mnemonic_ciphertext` using `old_password` and re-encrypt using `new_password`.
 pub fn change_wallet_encryption(
     mnemonic_ciphertext: &str,
-    network: &str,
     old_password: &str,
     new_password: &str,
-) -> Result<(MnemonicCiphertext, Xpub)> {
-    let network = Network::from_str(network).context("Invalid network")?;
-
+) -> Result<MnemonicCiphertext> {
     let mnemonic_ciphertext = MnemonicCiphertext::from_str(mnemonic_ciphertext)
         .context("Failed to deserialize mnemonic ciphertext")?;
 
@@ -580,15 +512,6 @@ pub fn change_wallet_encryption(
     let (mnemonic, old_passphrase) =
         decrypt_mnemonic(mnemonic_ciphertext.inner, old_encryption_key)
             .context("Failed to decrypt mnemonic using old encryption key")?;
-
-    let new_xpub = {
-        // The password is _not_ used as a passphrase to allow the user to change it without
-        // changing the `Xpriv`.
-        let seed = mnemonic.to_seed("");
-        let xprv = Xpriv::new_master(network, &seed).context("Failed to derive new Xpriv")?;
-
-        Xpub::from_priv(&Secp256k1::new(), &xprv)
-    };
 
     let new_mnemonic_ciphertext = {
         let mut rng = thread_rng();
@@ -612,7 +535,7 @@ pub fn change_wallet_encryption(
         }
     };
 
-    Ok((new_mnemonic_ciphertext, new_xpub))
+    Ok(new_mnemonic_ciphertext)
 }
 
 /// Find the [`KeyPair`] corresponding to the given [`PublicKey`].
@@ -651,11 +574,12 @@ impl Wallet {
     ///
     /// The `password` is being used for two purposes to derive an encryption key with which to
     /// encrypt the `mnemonic`.
-    fn new<R>(
+    pub fn new<R>(
         rng: &mut R,
         mnemonic: Mnemonic,
         password: &str,
         network: &str,
+        contract_index: u32,
     ) -> Result<(Self, MnemonicCiphertext)>
     where
         R: Rng,
@@ -686,16 +610,18 @@ impl Wallet {
             xprv,
             legacy_xprv: None,
             network,
+            contract_index,
         };
 
         Ok((wallet, mnemonic_ciphertext))
     }
 
     /// Reconstruct a [`Wallet`] from a [`MnemonicCiphertext`], a `password` and a [`Network`].
-    fn from_ciphertext(
+    pub fn from_ciphertext(
         mnemonic_ciphertext: MnemonicCiphertext,
         password: &str,
         network: &str,
+        contract_index: u32,
     ) -> Result<Self> {
         let network = Network::from_str(network).context("Invalid network")?;
 
@@ -731,7 +657,125 @@ impl Wallet {
             xprv,
             legacy_xprv,
             network,
+            contract_index,
         })
+    }
+
+    pub fn next_hardened_pk(&mut self) -> Result<(PublicKey, DerivationPath)> {
+        let contract_index = self.contract_index;
+
+        self.contract_index += 1;
+
+        // This can be serialised as `m/10101'/0'/i'`, where i is based on the wallet's contract
+        // index.
+        let path = vec![
+            ChildNumber::from_hardened_idx(10101).expect("infallible"),
+            ChildNumber::from_hardened_idx(0).expect("infallible"),
+            ChildNumber::from_hardened_idx(contract_index).expect("infallible"),
+        ];
+        let path = DerivationPath::from(path);
+
+        let kp = get_kp_from_path(&self.xprv, &path)?;
+
+        Ok((kp.public_key().into(), path))
+    }
+
+    pub fn sign_claim_psbt(
+        &self,
+        mut psbt: Psbt,
+        collateral_descriptor: Descriptor<PublicKey>,
+        own_pk: PublicKey,
+        // Newer contracts use a derivation path decided by the hub.
+        //
+        // Older contracts used a local index, unknown to the hub and not backed up. To find the
+        // corresponding secret key, we use a heuristic: we look throught the first 100 keys using
+        // the common derivation path `586/0/*` (for mainnet) until we find one that
+        // matches our public key in the contract i.e. `own_pk`.
+        derivation_path: Option<&DerivationPath>,
+    ) -> Result<Transaction> {
+        let kp = find_kp(self, derivation_path, &own_pk)?;
+
+        let sk = kp.secret_key();
+        let pk = PublicKey::new(kp.public_key());
+
+        let secp = Secp256k1::new();
+        for (i, input) in psbt.inputs.iter_mut().enumerate() {
+            let collateral_amount = input.clone().witness_utxo.context("No witness UTXO")?.value;
+
+            let sighash = SighashCache::new(&psbt.unsigned_tx)
+                .p2wsh_signature_hash(
+                    i,
+                    &collateral_descriptor
+                        .script_code()
+                        .context("No script code")?,
+                    collateral_amount,
+                    EcdsaSighashType::All,
+                )
+                .context("Can't produce sighash cache")?;
+
+            let sig = secp.sign_ecdsa(&sighash.into(), &sk);
+
+            input.partial_sigs.insert(
+                pk,
+                bitcoin::ecdsa::Signature {
+                    signature: sig,
+                    sighash_type: EcdsaSighashType::All,
+                },
+            );
+        }
+
+        let psbt = psbt
+            .finalize(&secp)
+            .map_err(|e| anyhow!("Failed to finalize PSBT: {e:?}"))?;
+
+        let tx = psbt.extract(&secp).context("Could not extract signed TX")?;
+
+        Ok(tx)
+    }
+
+    pub fn sign_liquidation_psbt(
+        &self,
+        mut psbt: Psbt,
+        collateral_descriptor: Descriptor<PublicKey>,
+        own_pk: PublicKey,
+        derivation_path: Option<&DerivationPath>,
+    ) -> Result<Transaction> {
+        let kp = find_kp(self, derivation_path, &own_pk)?;
+        let sk = kp.secret_key();
+
+        let secp = Secp256k1::new();
+        for (i, input) in psbt.inputs.iter_mut().enumerate() {
+            let collateral_amount = input.clone().witness_utxo.context("No witness UTXO")?.value;
+
+            let sighash = SighashCache::new(&psbt.unsigned_tx)
+                .p2wsh_signature_hash(
+                    i,
+                    &collateral_descriptor
+                        .script_code()
+                        .context("No script code")?,
+                    collateral_amount,
+                    EcdsaSighashType::All,
+                )
+                .context("Can't produce sighash cache")?;
+
+            let sig = secp.sign_ecdsa(&sighash.into(), &sk);
+
+            input.partial_sigs.insert(
+                own_pk,
+                bitcoin::ecdsa::Signature {
+                    signature: sig,
+                    sighash_type: EcdsaSighashType::All,
+                },
+            );
+        }
+
+        let psbt = psbt
+            .finalize(&secp)
+            .map_err(|e| anyhow!("Failed to finalize PSBT: {e:?}"))?;
+
+        let tx = psbt.extract(&secp).context("Could not extract signed TX")?;
+
+        Ok(tx)
     }
 
     fn mnemonic(&self) -> &Mnemonic {
@@ -742,6 +786,28 @@ impl Wallet {
         let nsec = derive_nsec_from_xprv(&self.xprv)?;
         Ok(nsec)
     }
+
+    fn xpub(&self) -> Xpub {
+        Xpub::from_priv(&Secp256k1::new(), &self.xprv)
+    }
+}
+
+pub fn derive_next_normal_pk(
+    xpub: Xpub,
+    contract_index: u32,
+) -> Result<(PublicKey, DerivationPath)> {
+    // This can be serialised as `m/10101/0/i`, where i is based on the wallet's contract
+    // index.
+    let path = vec![
+        ChildNumber::from_normal_idx(10101).expect("infallible"),
+        ChildNumber::from_normal_idx(0).expect("infallible"),
+        ChildNumber::from_normal_idx(contract_index).expect("infallible"),
+    ];
+    let path = DerivationPath::from(path);
+
+    let pk = xpub.derive_pub(&Secp256k1::new(), &path)?;
+
+    Ok((pk.public_key.into(), path))
 }
 
 impl MnemonicCiphertext {
@@ -749,9 +815,13 @@ impl MnemonicCiphertext {
     pub fn serialize(&self) -> String {
         format!("{}${}", hex::encode(self.salt), hex::encode(&self.inner))
     }
+}
 
-    fn from_str(serialized: &str) -> Result<Self> {
-        let mut parts = serialized.split('$');
+impl std::str::FromStr for MnemonicCiphertext {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        let mut parts = s.split('$');
 
         let salt = parts.next().context("no salt in ciphertext")?;
         let mnemonic = parts.next().context("no mnemonic in ciphertext")?;
@@ -885,18 +955,31 @@ fn decrypt_mnemonic(
     Ok((mnemonic, old_passphrase))
 }
 
-/// Returns a nsec derived from the wallet Xprv in byte format
-pub(crate) fn get_nsec() -> Result<String> {
+/// Returns an Nsec derived from the wallet Xprv, encoded as hex.
+pub(crate) fn derive_nsec() -> Result<String> {
     let guard = WALLET.lock().expect("to get lock");
 
     let nsec = match *guard {
         Some(ref wallet) => wallet.nsec()?,
         None => {
-            bail!("Can't get nsec if wallet is not loaded");
+            bail!("Can't derive nsec if wallet is not loaded");
         }
     };
 
     Ok(nsec.secret_bytes().to_hex_string(Case::Lower))
+}
+
+pub(crate) fn derive_xpub() -> Result<Xpub> {
+    let guard = WALLET.lock().expect("to get lock");
+
+    let xpub = match *guard {
+        Some(ref wallet) => wallet.xpub(),
+        None => {
+            bail!("Can't derive Xpub if wallet is not loaded");
+        }
+    };
+
+    Ok(xpub)
 }
 
 /// Returns a pubkey derived from a [`contract`] in hex format
@@ -914,30 +997,13 @@ pub(crate) fn derive_nostr_room_pk(contract: String) -> Result<String> {
     Ok(public_key.to_string())
 }
 
-/// Returns a npub derived from a [`XPub`] in hex format
-pub(crate) fn derive_npub(xpub: String) -> Result<String> {
-    let xpub = Xpub::from_str(xpub.as_str()).context("Invalid xpub provided")?;
-
-    let path = DerivationPath::from_str(NOSTR_DERIVATION_PATH).expect("to be valid");
-
-    let secp = Secp256k1::new();
-
-    // Derive the child key at the specified path
-    let child_xprv = xpub.derive_pub(&secp, &path)?;
-
-    let public_key = child_xprv.public_key;
-
-    let (public_key, _) = public_key.x_only_public_key();
-    Ok(public_key.to_string())
-}
-
 /// Encrypt [`FiatLoanDetails`] so that they can be stored in the hub database.
 ///
 /// The caller can decrypt them after decrypting the `encrypted_encryption_key_own` with their
-/// [`Xpriv`].
+/// [`SecretKey`].
 ///
 /// The counterparty can decrypt them after decrypting the `encrypted_encryption_key_lender` with
-/// their [`Xpriv`].
+/// their [`SecretKey`].
 ///
 /// # Returns
 ///
@@ -946,10 +1012,10 @@ pub(crate) fn derive_npub(xpub: String) -> Result<String> {
 /// - The encrypted encryption key for the counterparty.
 pub fn encrypt_fiat_loan_details(
     fiat_loan_details: &FiatLoanDetails,
-    counterparty_xpub: String,
+    counterparty_pk: String,
 ) -> Result<(FiatLoanDetails, String, String)> {
-    let counterparty_xpub =
-        Xpub::from_str(counterparty_xpub.as_str()).context("Invalid counterparty Xpub provided")?;
+    let counterparty_pk =
+        PublicKey::from_str(counterparty_pk.as_str()).context("Invalid PK provided")?;
 
     let guard = WALLET.lock().expect("to get lock");
 
@@ -960,11 +1026,8 @@ pub fn encrypt_fiat_loan_details(
         }
     };
 
-    let secp = Secp256k1::new();
-    let xpub = Xpub::from_priv(&secp, &xprv);
-
     let (fiat_loan_details, encrypted_encryption_key_caller, encrypted_encryption_key_counterparty) =
-        fiat_loan_details::encrypt_fiat_loan_details(fiat_loan_details, &xpub, &counterparty_xpub)?;
+        fiat_loan_details::encrypt_fiat_loan_details(fiat_loan_details, &xprv, &counterparty_pk)?;
 
     Ok((
         fiat_loan_details,

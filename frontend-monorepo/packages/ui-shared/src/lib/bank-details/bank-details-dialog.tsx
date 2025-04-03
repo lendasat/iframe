@@ -540,14 +540,14 @@ interface FiatTransferDetailsProps {
   details: FiatDialogFormDetails;
   onConfirm: (details?: FiatLoanDetails) => void;
   isBorrower: boolean;
-  counterpartyXpub: string;
+  counterpartyPk: string;
 }
 
 export const FiatTransferDetails = ({
   details,
   onConfirm,
   isBorrower,
-  counterpartyXpub,
+  counterpartyPk,
 }: FiatTransferDetailsProps) => {
   const [fiatTransferDetails, setFiatTransferDetails] =
     useState<FiatDialogFormDetails>(details);
@@ -601,7 +601,7 @@ export const FiatTransferDetails = ({
             full_name: fiatTransferDetails.beneficiaryDetails.fullName,
             post_code: fiatTransferDetails.beneficiaryDetails.zipCode,
           },
-          counterpartyXpub,
+          counterpartyPk,
         );
         onConfirm(fiatDetails);
       } else {
@@ -621,7 +621,7 @@ export const FiatTransferDetails = ({
             full_name: fiatTransferDetails.beneficiaryDetails.fullName,
             post_code: fiatTransferDetails.beneficiaryDetails.zipCode,
           },
-          counterpartyXpub,
+          counterpartyPk,
         );
         onConfirm(fiatDetails);
       }

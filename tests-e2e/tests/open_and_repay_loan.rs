@@ -2,6 +2,7 @@
 
 use crate::common::init_tracing;
 use crate::common::log_in;
+use crate::common::new_wallet;
 use crate::common::random_txid;
 use crate::common::wait_until_contract_status;
 use crate::common::LoanOffer;
@@ -49,7 +50,14 @@ async fn open_and_repay_loan() {
     .await;
 
     // 1. Lender creates loan offer.
-    let lender_xpub = "tpubD6NzVbkrYhZ4Yon2URjspXp7Y7DKaBaX1ZVMCEnhc8zCrj1AuJyLrhmAKFmnkqVULW6znfEMLvgukHBVJD4fukpVYre3dpHXmkbcpvtviro".parse().unwrap();
+
+    let mut lender_wallet = new_wallet(
+        "gaze smile arm manual remember session endorse ask mention goose demise garlic",
+        &network,
+    );
+
+    let (lender_pk, lender_derivation_path) = lender_wallet.next_hardened_pk().unwrap();
+
     let loan_offer = CreateLoanOfferSchema {
         name: "a fantastic loan".to_string(),
         min_ltv: dec!(0.5),
@@ -62,9 +70,11 @@ async fn open_and_repay_loan() {
         loan_asset: LoanAsset::UsdcEth,
         loan_repayment_address:
             "0x055098f73c89ca554f98c0298ce900235d2e1b4205a7ca629ae017518521c2c3".to_string(),
+        lender_pk,
+        lender_derivation_path,
         auto_accept: false,
-        lender_xpub,
         kyc_link: None,
+        lender_npub: "npub1ur9aupjyaettv9rlan886m3khq7ysw3jl902afrkjg2r80uxdcnsmgu6rv".to_string(),
     };
 
     let res = lender
@@ -79,19 +89,12 @@ async fn open_and_repay_loan() {
     let loan_offer: LoanOffer = res.json().await.unwrap();
 
     // 2. Borrower takes loan offer by creating a contract request.
-    let borrower_xpub = {
-        let (mnemonic_ciphertext, network, xpub) =
-            browser_wallet::wallet::generate_new("borrower", "regtest").unwrap();
+    let mut borrower_wallet = new_wallet(
+        "ribbon remain host witness hawk lesson genius duck route social need juice",
+        &network,
+    );
 
-        browser_wallet::wallet::load_wallet(
-            "borrower",
-            &mnemonic_ciphertext.serialize(),
-            &network.to_string(),
-        )
-        .unwrap();
-
-        xpub
-    };
+    let (borrower_pk, borrower_derivation_path) = borrower_wallet.next_hardened_pk().unwrap();
 
     let borrower_btc_address = "tb1quw75h0w26rcrdfar6knvkfazpwyzq4z8vqmt37"
         .parse()
@@ -99,19 +102,19 @@ async fn open_and_repay_loan() {
 
     let contract_request = ContractRequestSchema {
         id: loan_offer.id,
-        // TODO: This loan amount can cause the collateral to be over the Mutinynet faucet limit
-        // if the real price of Bitcoin changes enough. We should mock the price in
-        // the `hub` for the e2e tests.
         loan_amount: dec!(500),
         duration_days: 7,
         borrower_btc_address,
-        borrower_xpub,
+        borrower_pk,
+        borrower_derivation_path,
         borrower_loan_address: Some(
             "0x055098f73c89ca554f98c0298ce900235d2e1b4205a7ca629ae017518521c2c3".to_string(),
         ),
         loan_type: LoanType::StableCoin,
         moon_card_id: None,
         fiat_loan_details: None,
+        borrower_npub: "npub1x4n3a7ld36fluzzanfg2jm4p7tzpxqp0s47xc8rcpjk4adlkz0qstg4xrp"
+            .to_string(),
     };
 
     let res = borrower
@@ -311,13 +314,14 @@ async fn open_and_repay_loan() {
     let claim_psbt = hex::decode(claim_psbt).unwrap();
     let claim_psbt = Psbt::deserialize(&claim_psbt).unwrap();
 
-    let tx = browser_wallet::wallet::sign_claim_psbt(
-        claim_psbt,
-        collateral_descriptor,
-        borrower_pk,
-        contract.derivation_path.as_ref(),
-    )
-    .unwrap();
+    let tx = borrower_wallet
+        .sign_claim_psbt(
+            claim_psbt,
+            collateral_descriptor,
+            borrower_pk,
+            contract.borrower_derivation_path.as_ref(),
+        )
+        .unwrap();
 
     let tx_hex = bitcoin::consensus::encode::serialize_hex(&tx);
 

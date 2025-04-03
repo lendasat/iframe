@@ -9,8 +9,9 @@ use anyhow::Context;
 use anyhow::Result;
 use bitcoin::bip32::DerivationPath;
 use bitcoin::bip32::Xpriv;
-use bitcoin::bip32::Xpub;
 use bitcoin::key::Secp256k1;
+use bitcoin::secp256k1;
+use bitcoin::PublicKey;
 use hkdf::Hkdf;
 use rand::thread_rng;
 use rand::Rng;
@@ -21,7 +22,7 @@ use std::str::FromStr;
 const NONCE: &[u8; 12] = b"6by2d6wxps3a";
 
 /// The derivation path for the public key to be used to encrypt/decrypt fiat loan details.
-const DERIVATION_PATH: &str = "m/77/0/0/0/0";
+const DERIVATION_PATH: &str = "m/77'/0'/0'/0'/0'";
 
 /// Symmetrically encrypt [`FiatLoanDetails`] with a randomly generated encryption key.
 ///
@@ -36,8 +37,8 @@ const DERIVATION_PATH: &str = "m/77/0/0/0/0";
 /// - The encrypted encryption key for the counterparty.
 pub fn encrypt_fiat_loan_details(
     fiat_loan_details: &FiatLoanDetails,
-    own_xpub: &Xpub,
-    counterparty_xpub: &Xpub,
+    own_xpriv: &Xpriv,
+    counterparty_pk: &PublicKey,
 ) -> Result<(FiatLoanDetails, String, String)> {
     let mut rng = thread_rng();
 
@@ -150,17 +151,15 @@ pub fn encrypt_fiat_loan_details(
     let secp = Secp256k1::new();
     let path = DerivationPath::from_str(DERIVATION_PATH).expect("to be valid");
 
-    let own_pk = own_xpub.derive_pub(&secp, &path)?;
+    let own_sk = own_xpriv.derive_priv(&secp, &path)?;
+    let own_pk = secp256k1::PublicKey::from_secret_key(&secp, &own_sk.private_key);
 
-    let encrypted_encryption_key_own =
-        ecies::encrypt(&own_pk.public_key.serialize(), &encryption_key)
-            .map_err(|e| anyhow!("failed to encrypt encryption key for caller: {e:?}"))?;
+    let encrypted_encryption_key_own = ecies::encrypt(&own_pk.serialize(), &encryption_key)
+        .map_err(|e| anyhow!("failed to encrypt encryption key for caller: {e:?}"))?;
     let encrypted_encryption_key_own = hex::encode(encrypted_encryption_key_own);
 
-    let counterparty_pk = counterparty_xpub.derive_pub(&secp, &path)?;
-
     let encrypted_encryption_key_counterparty =
-        ecies::encrypt(&counterparty_pk.public_key.serialize(), &encryption_key)
+        ecies::encrypt(&counterparty_pk.inner.serialize(), &encryption_key)
             .map_err(|e| anyhow!("failed to encrypt encryption key for counterparty: {e:?}"))?;
     let encrypted_encryption_key_counterparty = hex::encode(encrypted_encryption_key_counterparty);
 
@@ -364,18 +363,21 @@ mod tests {
             comments: Some("Heya".to_string()),
         };
 
+        let path = DerivationPath::from_str(DERIVATION_PATH).expect("to be valid");
+
         let secp = Secp256k1::new();
         let borrower_xpriv = Xpriv::new_master(Network::Regtest, &[0u8; 64]).unwrap();
-        let borrower_xpub = Xpub::from_priv(&secp, &borrower_xpriv);
 
         let lender_xpriv = Xpriv::new_master(Network::Regtest, &[1u8; 64]).unwrap();
-        let lender_xpub = Xpub::from_priv(&secp, &lender_xpriv);
+        let lender_sk = lender_xpriv.derive_priv(&secp, &path).unwrap();
+        let lender_pk = secp256k1::PublicKey::from_secret_key(&secp, &lender_sk.private_key);
+        let lender_pk = PublicKey::new(lender_pk);
 
         let (
             encrypted_fiat_loan_details,
             encrypted_encryption_key_borrower,
             encrypted_encryption_key_lender,
-        ) = encrypt_fiat_loan_details(&fiat_loan_details, &borrower_xpub, &lender_xpub).unwrap();
+        ) = encrypt_fiat_loan_details(&fiat_loan_details, &borrower_xpriv, &lender_pk).unwrap();
 
         let decrypted_fiat_loan_details_borrower = decrypt_fiat_loan_details(
             &encrypted_fiat_loan_details,

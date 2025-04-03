@@ -282,7 +282,7 @@ function ContractDetails({ contract }: DetailsProps) {
     <Box>
       <ChatDrawer
         contractId={contract.id}
-        counterpartyXPub={contract.lender_xpub}
+        counterpartyNPub={contract.lender_npub}
         onNewMsgSent={async () => {
           await newChatNotification({
             contract_id: contract.id,

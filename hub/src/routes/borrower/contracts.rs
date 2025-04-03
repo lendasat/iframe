@@ -39,7 +39,6 @@ use axum::response::Response;
 use axum::Extension;
 use axum::Json;
 use bitcoin::bip32::DerivationPath;
-use bitcoin::bip32::Xpub;
 use bitcoin::consensus::encode::FromHexError;
 use bitcoin::Amount;
 use bitcoin::PublicKey;
@@ -48,7 +47,6 @@ use miniscript::Descriptor;
 use rust_decimal::Decimal;
 use serde::Deserialize;
 use serde::Serialize;
-use std::str::FromStr;
 use std::sync::Arc;
 use time::OffsetDateTime;
 use tracing::instrument;
@@ -262,8 +260,6 @@ async fn post_contract_request(
     )
     .map_err(Error::OriginationFeeCalculation)?;
 
-    let lender_xpub = offer.lender_xpub;
-    let lender_xpub = Xpub::from_str(&lender_xpub).expect("valid lender Xpub");
     let contract = db::contracts::insert_new_contract_request(
         &data.db,
         contract_id,
@@ -275,14 +271,18 @@ async fn post_contract_request(
         origination_fee_amount.to_sat(),
         body.loan_amount,
         body.duration_days,
+        body.borrower_pk,
+        body.borrower_derivation_path,
+        offer.lender_pk,
+        offer.lender_derivation_path,
         body.borrower_btc_address,
         offer.loan_repayment_address,
-        body.borrower_xpub,
         borrower_loan_address.as_deref(),
         body.loan_type,
-        lender_xpub,
         ContractVersion::TwoOfThree,
         offer.interest_rate,
+        &body.borrower_npub,
+        &offer.lender_npub,
     )
     .await
     .map_err(Error::Database)?;
@@ -655,8 +655,6 @@ async fn get_claim_collateral_psbt(
         .contract_address
         .ok_or(Error::MissingCollateralAddress)?;
 
-    let lender_xpub = contract.lender_xpub.ok_or(Error::MissingLenderXpub)?;
-
     let collateral_outputs = data
         .mempool
         .send(mempool::GetCollateralOutputs(contract_address))
@@ -669,12 +667,11 @@ async fn get_claim_collateral_psbt(
 
     let origination_fee = Amount::from_sat(contract.origination_fee_sats);
 
-    let (psbt, collateral_descriptor, borrower_pk) = data
+    let (psbt, collateral_descriptor) = data
         .wallet
         .create_claim_collateral_psbt(
-            &contract.borrower_xpub,
             contract.borrower_pk,
-            &lender_xpub,
+            contract.lender_pk,
             contract_index,
             collateral_outputs,
             origination_fee,
@@ -689,7 +686,7 @@ async fn get_claim_collateral_psbt(
     let res = ClaimCollateralPsbt {
         psbt,
         collateral_descriptor,
-        borrower_pk,
+        borrower_pk: contract.borrower_pk,
     };
 
     Ok(AppJson(res))
@@ -789,14 +786,16 @@ pub struct Contract {
     pub loan_asset: LoanAsset,
     pub status: ContractStatus,
     #[schema(value_type = String)]
-    pub borrower_pk: Option<PublicKey>,
+    pub borrower_pk: PublicKey,
+    #[schema(value_type = String)]
+    pub borrower_derivation_path: Option<DerivationPath>,
+    #[schema(value_type = String)]
+    pub lender_pk: PublicKey,
     pub borrower_btc_address: String,
     pub borrower_loan_address: Option<String>,
     pub contract_address: Option<String>,
     pub loan_repayment_address: Option<String>,
     pub collateral_script: Option<String>,
-    #[schema(value_type = String)]
-    pub derivation_path: Option<DerivationPath>,
     pub lender: LenderStats,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
@@ -813,11 +812,10 @@ pub struct Contract {
     pub liquidation_price: Decimal,
     pub extends_contract: Option<String>,
     pub extended_by_contract: Option<String>,
-    pub borrower_xpub: String,
-    pub lender_xpub: String,
     pub kyc_info: Option<KycInfo>,
     pub fiat_loan_details_borrower: Option<FiatLoanDetailsWrapper>,
     pub fiat_loan_details_lender: Option<FiatLoanDetailsWrapper>,
+    pub lender_npub: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -905,10 +903,6 @@ async fn map_to_api_contract(
         .await
         .map_err(Error::from)?;
 
-    let lender_xpub = db::wallet_backups::get_xpub_for_lender(&data.db, contract.lender_id)
-        .await
-        .map_err(|e| Error::Database(anyhow!(e)))?;
-
     let fiat_loan_details_borrower = {
         let details = db::fiat_loan_details::get_borrower(&data.db, &contract.id)
             .await
@@ -931,14 +925,13 @@ async fn map_to_api_contract(
         })
     };
 
-    let (collateral_script, borrower_pk, borrower_derivation_path) = match contract.contract_index {
+    let collateral_script = match contract.contract_index {
         Some(contract_index) => {
-            let (collateral_descriptor, (borrower_pk, borrower_derivation_path), _) = data
+            let collateral_descriptor = data
                 .wallet
                 .collateral_descriptor(
-                    &contract.borrower_xpub,
                     contract.borrower_pk,
-                    &lender_xpub,
+                    contract.lender_pk,
                     contract.contract_version,
                     contract_index,
                 )
@@ -946,13 +939,9 @@ async fn map_to_api_contract(
             let collateral_script = collateral_descriptor.script_code().expect("not taproot");
             let collateral_script = collateral_script.to_hex_string();
 
-            (
-                Some(collateral_script),
-                Some(borrower_pk),
-                borrower_derivation_path,
-            )
+            Some(collateral_script)
         }
-        None => (None, contract.borrower_pk, None),
+        None => None,
     };
 
     let contract = Contract {
@@ -966,7 +955,9 @@ async fn map_to_api_contract(
         initial_ltv: contract.initial_ltv,
         loan_asset: new_offer.loan_asset(),
         status: contract.status,
-        borrower_pk,
+        borrower_pk: contract.borrower_pk,
+        borrower_derivation_path: contract.borrower_derivation_path,
+        lender_pk: contract.lender_pk,
         borrower_btc_address: contract.borrower_btc_address.assume_checked().to_string(),
         borrower_loan_address: contract.borrower_loan_address,
         contract_address: contract
@@ -974,7 +965,6 @@ async fn map_to_api_contract(
             .map(|c| c.assume_checked().to_string()),
         loan_repayment_address: contract.lender_loan_repayment_address,
         collateral_script,
-        derivation_path: borrower_derivation_path,
         lender: lender_stats,
         created_at: contract.created_at,
         updated_at: contract.updated_at,
@@ -986,11 +976,10 @@ async fn map_to_api_contract(
         liquidation_price,
         extends_contract: parent_contract_id,
         extended_by_contract: child_contract,
-        borrower_xpub: contract.borrower_xpub.to_string(),
-        lender_xpub: lender_xpub.to_string(),
         kyc_info,
         fiat_loan_details_borrower,
         fiat_loan_details_lender,
+        lender_npub: contract.lender_npub,
     };
 
     Ok(contract)
@@ -1127,10 +1116,6 @@ enum Error {
     MissingContractIndex,
     /// Can't claim collateral without collateral address.
     MissingCollateralAddress,
-    /// Can't do much of anything without borrower Xpub.
-    MissingBorrowerXpub,
-    /// Can't do much of anything without lender Xpub.
-    MissingLenderXpub,
     /// Failed to generate contract address.
     ContractAddress(anyhow::Error),
     /// Referenced borrower does not exist.
@@ -1355,22 +1340,6 @@ impl IntoResponse for Error {
                     "Something went wrong".to_owned(),
                 )
             }
-            Error::MissingBorrowerXpub => {
-                tracing::error!("Missing borrower Xpub");
-
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
-            Error::MissingLenderXpub => {
-                tracing::error!("Missing lender Xpub");
-
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
             Error::ContractAddress(e) => {
                 tracing::error!("Could not generate contract address: {e:#}");
 
@@ -1506,8 +1475,6 @@ impl From<approve_contract::Error> for Error {
     fn from(value: approve_contract::Error) -> Self {
         match value {
             approve_contract::Error::Database(e) => Error::Database(e),
-            approve_contract::Error::MissingBorrowerXpub => Error::MissingBorrowerXpub,
-            approve_contract::Error::MissingLenderXpub => Error::MissingLenderXpub,
             approve_contract::Error::MissingLoanOffer { offer_id } => {
                 Error::MissingLoanOffer { id: offer_id }
             }
@@ -1539,7 +1506,6 @@ impl From<crate::contract_extension::Error> for Error {
             crate::contract_extension::Error::OriginationFeeCalculation(e) => {
                 Error::OriginationFeeCalculation(e)
             }
-            crate::contract_extension::Error::MissingLenderXpub => Error::MissingLenderXpub,
         }
     }
 }

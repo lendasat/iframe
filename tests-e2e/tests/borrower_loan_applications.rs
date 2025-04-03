@@ -2,8 +2,9 @@
 
 use crate::common::init_tracing;
 use crate::common::log_in;
-use bitcoin::bip32::Xpub;
+use bitcoin::bip32;
 use bitcoin::Address;
+use bitcoin::PublicKey;
 use hub::model;
 use hub::model::CreateLoanApplicationSchema;
 use hub::model::LoanAsset;
@@ -41,7 +42,16 @@ async fn borrower_loan_applications() {
     .await;
 
     // 1. Borrower creates loan application, i.e. a request for a loan.
-    let borrower_xpub = "tpubD6NzVbkrYhZ4Yon2URjspXp7Y7DKaBaX1ZVMCEnhc8zCrj1AuJyLrhmAKFmnkqVULW6znfEMLvgukHBVJD4fukpVYre3dpHXmkbcpvtviro".parse().unwrap();
+
+    // This data is not necessarily correct. If the test is extended all this should come from the
+    // wallet.
+    let borrower_pk = "02f9b7d3cc922648d43c81f7859d55c2b1649eabb5bdbf075b4c1fd7afbe73b657"
+        .parse()
+        .unwrap();
+    let borrower_derivation_path = "586/1/0".parse().unwrap();
+    let borrower_npub =
+        "npub17mx98j4khcynw7cm6m0zfu5q2uv6dqs2lenaq8nfzn8paz5dt4hqs5utwq".to_string();
+
     let loan_application = CreateLoanApplicationSchema {
         ltv: dec!(0.5),
         interest_rate: dec!(0.12),
@@ -54,7 +64,9 @@ async fn borrower_loan_applications() {
         ),
         borrower_btc_address: Address::from_str("tb1q0la2pwu7l4raleuna064622grkwydnztu7ax9k")
             .expect("to be valid"),
-        borrower_xpub,
+        borrower_pk,
+        borrower_derivation_path,
+        borrower_npub,
     };
 
     let res = borrower
@@ -87,8 +99,13 @@ async fn borrower_loan_applications() {
     let res = lender
         .post(format!("http://localhost:7338/api/loans/application/{id}"))
         .json(&TakeLoanApplicationSchema {
-            lender_xpub: Xpub::from_str("tpubD6NzVbkrYhZ4Y8GthGPHWfMvNi3rs8F1ZDjyvmiB9qq4K1AsBDh2yaRznuHvuFNQEyXFFKxEYtUXTJB5cos9zJpjXU3sywyXVGTZMD8tzsh").expect("to be valid"),
+            lender_pk: "0243db39299918f1084f4c42216c3053cff4e3a37a863d39033a78c229b3884572"
+                .parse()
+                .unwrap(),
+            lender_derivation_path: "586/1/0".parse().unwrap(),
             loan_repayment_address: "just_some_random_address".to_string(),
+            lender_npub: "npub1w8yt6gww5cjlhqam95rq8nemk8lmceswj395sf7fzlpvdxve3uysy24gxg"
+                .to_string(),
         })
         .send()
         .await
@@ -104,6 +121,8 @@ pub struct LoanApplication {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct TakeLoanApplicationSchema {
-    pub lender_xpub: Xpub,
+    pub lender_pk: PublicKey,
+    pub lender_derivation_path: bip32::DerivationPath,
     pub loan_repayment_address: String,
+    pub lender_npub: String,
 }

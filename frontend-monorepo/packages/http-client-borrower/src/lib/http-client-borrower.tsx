@@ -21,7 +21,7 @@ import {
   LoanOffer,
   LoanRequest,
   NotifyUser,
-  postLoanApplication,
+  PostLoanApplication,
   PutUpdateProfile,
   UserCardDetail,
 } from "./models";
@@ -117,7 +117,7 @@ export class HttpClientBorrower extends BaseHttpClient {
   }
 
   async postLoanApplication(
-    request: postLoanApplication,
+    request: PostLoanApplication,
   ): Promise<LoanRequest | undefined> {
     try {
       const response: AxiosResponse<LoanRequest> = await this.httpClient.post(

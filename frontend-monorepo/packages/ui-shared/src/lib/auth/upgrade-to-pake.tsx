@@ -81,7 +81,6 @@ export function UpgradeToPake({ login, is_borrower }: UpgradeToPakeProps) {
     const newWalletBackupData = {
       mnemonic_ciphertext: newWalletDetails.mnemonic_ciphertext,
       network: newWalletDetails.network,
-      xpub: newWalletDetails.xpub,
     };
 
     console.log(

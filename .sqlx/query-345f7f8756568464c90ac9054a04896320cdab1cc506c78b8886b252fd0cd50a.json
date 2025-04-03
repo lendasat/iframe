@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT\n                id,\n                borrower_id,\n                mnemonic_ciphertext,\n                network,\n                xpub,\n                created_at\n            FROM borrower_wallet_backups\n            WHERE borrower_id = $1\n            ORDER BY created_at DESC\n            ",
+  "query": "\n            SELECT\n                id,\n                borrower_id,\n                mnemonic_ciphertext,\n                network,\n                created_at\n            FROM borrower_wallet_backups\n            WHERE borrower_id = $1\n            ORDER BY created_at DESC\n            ",
   "describe": {
     "columns": [
       {
@@ -25,11 +25,6 @@
       },
       {
         "ordinal": 4,
-        "name": "xpub",
-        "type_info": "Text"
-      },
-      {
-        "ordinal": 5,
         "name": "created_at",
         "type_info": "Timestamptz"
       }
@@ -44,9 +39,8 @@
       false,
       false,
       false,
-      false,
       false
     ]
   },
-  "hash": "e0b5a37aa2f79d5498977eee720b4cb0772e0078afec77d2c72a198912891d6a"
+  "hash": "345f7f8756568464c90ac9054a04896320cdab1cc506c78b8886b252fd0cd50a"
 }

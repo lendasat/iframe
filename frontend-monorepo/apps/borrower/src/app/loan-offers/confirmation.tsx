@@ -74,7 +74,7 @@ export const Confirmation = ({
   selectedLoanDuration: selectedLoanDurationString,
 }: ConfirmationProps) => {
   const navigate = useNavigate();
-  const { getXpub } = useWallet();
+  const { getNpub, getPkAndDerivationPath } = useWallet();
 
   const { getLoanOffer, getUserCards, postContractRequest } =
     useBorrowerHttpClient();
@@ -210,7 +210,8 @@ export const Confirmation = ({
       }
 
       setIsCreatingRequest(true);
-      const borrowerXpub = await getXpub();
+      const borrowerNpub = await getNpub();
+      const borrowerPk = await getPkAndDerivationPath();
 
       let loanType = LoanType.StableCoin;
       switch (selectedProduct) {
@@ -250,7 +251,9 @@ export const Confirmation = ({
         loan_amount: selectedLoanAmount,
         duration_days: selectedLoanDuration,
         borrower_btc_address: bitcoinAddress,
-        borrower_xpub: borrowerXpub,
+        borrower_npub: borrowerNpub,
+        borrower_pk: borrowerPk.pubkey,
+        borrower_derivation_path: borrowerPk.path,
         borrower_loan_address: loanAddress,
         loan_type: loanType,
         moon_card_id: moonCardId,
@@ -564,7 +567,7 @@ export const Confirmation = ({
                             setEncryptedFiatTransferDetails(data);
                             setFiatTransferDetailsConfirmed(true);
                           }}
-                          counterpartyXpub={selectedOffer.lender_xpub}
+                          counterpartyPk={selectedOffer.lender_pk}
                           isBorrower={true}
                         />
                       ) : (

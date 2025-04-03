@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        INSERT INTO borrower_wallet_backups (\n            borrower_id,\n            mnemonic_ciphertext,\n            network,\n            xpub\n        )\n        VALUES ($1, $2, $3, $4)\n        RETURNING id, borrower_id, mnemonic_ciphertext, network, xpub, created_at\n        ",
+  "query": "\n        INSERT INTO lender_wallet_backups (\n            lender_id,\n            mnemonic_ciphertext,\n            network\n        )\n        VALUES ($1, $2, $3)\n        RETURNING id, lender_id, mnemonic_ciphertext, network, created_at\n        ",
   "describe": {
     "columns": [
       {
@@ -10,7 +10,7 @@
       },
       {
         "ordinal": 1,
-        "name": "borrower_id",
+        "name": "lender_id",
         "type_info": "Bpchar"
       },
       {
@@ -25,11 +25,6 @@
       },
       {
         "ordinal": 4,
-        "name": "xpub",
-        "type_info": "Text"
-      },
-      {
-        "ordinal": 5,
         "name": "created_at",
         "type_info": "Timestamptz"
       }
@@ -38,8 +33,7 @@
       "Left": [
         "Bpchar",
         "Text",
-        "Varchar",
-        "Text"
+        "Varchar"
       ]
     },
     "nullable": [
@@ -47,9 +41,8 @@
       false,
       false,
       false,
-      false,
       false
     ]
   },
-  "hash": "ab73defb37548554cecbfaed21a5bbe49824638d6f8bbc9b7433deae3eec8888"
+  "hash": "bad80611dfdd8157d1f170661d7f07da3ecb4e606c54d8be175298095c67a857"
 }

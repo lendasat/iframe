@@ -24,7 +24,7 @@ interface ContractRequestedProps {
   onContractApprove: (fiatTransferDetails?: FiatLoanDetails) => Promise<void>;
   onContractReject: () => Promise<void>;
   loanAsset: LoanAsset;
-  borrowerXpub: string;
+  borrowerPk: string;
 }
 
 export const ContractRequested = ({
@@ -32,7 +32,7 @@ export const ContractRequested = ({
   onContractApprove,
   onContractReject,
   loanAsset,
-  borrowerXpub,
+  borrowerPk,
 }: ContractRequestedProps) => {
   const [error, setError] = useState("");
 
@@ -96,7 +96,7 @@ export const ContractRequested = ({
                       setEncryptedFiatTransferDetails(data);
                     }}
                     isBorrower={false}
-                    counterpartyXpub={borrowerXpub}
+                    counterpartyPk={borrowerPk}
                   />
                 ) : (
                   <FiatTransferDetailsDialog

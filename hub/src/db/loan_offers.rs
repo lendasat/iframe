@@ -28,7 +28,6 @@ pub(crate) async fn load_all_available_loan_offers(
             lo.duration_days_min,
             lo.duration_days_max,
             lo.loan_amount_reserve,
-            lo.lender_xpub,
             lo.kyc_link,
             lo.auto_accept,
             COALESCE(
@@ -47,6 +46,9 @@ pub(crate) async fn load_all_available_loan_offers(
             lo.loan_asset AS "loan_asset: LoanAsset",
             lo.status AS "status: LoanOfferStatus",
             lo.loan_repayment_address,
+            lo.lender_pk,
+            lo.lender_derivation_path,
+            lo.lender_npub,
             lo.created_at,
             lo.updated_at
         FROM loan_offers lo
@@ -86,18 +88,20 @@ pub(crate) async fn load_all_available_loan_offers(
                 interest_rate: row.interest_rate,
                 loan_amount_min: row.loan_amount_min,
                 loan_amount_max,
-                duration_days_min: row.duration_days_min,
-                duration_days_max: row.duration_days_max,
                 loan_amount_reserve: row.loan_amount_reserve,
                 loan_amount_reserve_remaining,
+                duration_days_min: row.duration_days_min,
+                duration_days_max: row.duration_days_max,
                 loan_asset: row.loan_asset,
                 status: row.status,
                 loan_repayment_address: row.loan_repayment_address,
+                lender_pk: row.lender_pk.parse().expect("valid PK"),
+                lender_derivation_path: row.lender_derivation_path.parse().expect("valid path"),
+                auto_accept: row.auto_accept,
+                kyc_link: row.kyc_link.map(|l| Url::parse(&l).expect("valid URL")),
+                lender_npub: row.lender_npub,
                 created_at: row.created_at,
                 updated_at: row.updated_at,
-                auto_accept: row.auto_accept,
-                lender_xpub: row.lender_xpub,
-                kyc_link: row.kyc_link.map(|l| Url::parse(&l).expect("valid URL")),
             })
         })
         .collect();
@@ -154,9 +158,11 @@ pub async fn load_all_loan_offers_by_lender(
             lo.loan_asset AS "loan_asset: LoanAsset",
             lo.status AS "status: LoanOfferStatus",
             lo.loan_repayment_address,
+            lo.lender_pk,
+            lo.lender_derivation_path,
             lo.auto_accept,
-            lo.lender_xpub,
             lo.kyc_link,
+            lo.lender_npub,
             lo.created_at,
             lo.updated_at
         FROM loan_offers lo
@@ -188,25 +194,28 @@ pub async fn load_all_loan_offers_by_lender(
                 interest_rate: row.interest_rate,
                 loan_amount_min: row.loan_amount_min,
                 loan_amount_max: row.loan_amount_max,
-                duration_days_min: row.duration_days_min,
-                duration_days_max: row.duration_days_max,
                 loan_amount_reserve: row.loan_amount_reserve,
                 loan_amount_reserve_remaining: loan_amount_reserve_remaining
                     .unwrap_or(row.loan_amount_reserve),
+                duration_days_min: row.duration_days_min,
+                duration_days_max: row.duration_days_max,
                 loan_asset: row.loan_asset,
                 status: row.status,
                 loan_repayment_address: row.loan_repayment_address,
+                lender_pk: row.lender_pk.parse().expect("valid PK"),
+                lender_derivation_path: row.lender_derivation_path.parse().expect("valid path"),
+                auto_accept: row.auto_accept,
+                kyc_link: row.kyc_link.map(|l| Url::parse(&l).expect("valid URL")),
+                lender_npub: row.lender_npub,
                 created_at: row.created_at,
                 updated_at: row.updated_at,
-                auto_accept: row.auto_accept,
-                lender_xpub: row.lender_xpub,
-                kyc_link: row.kyc_link.map(|l| Url::parse(&l).expect("valid URL")),
             }
         })
         .collect();
 
     Ok(loan_offers)
 }
+
 pub async fn get_loan_offer_by_lender_and_offer_id(
     pool: &Pool<Postgres>,
     lender_id: &str,
@@ -242,9 +251,11 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
             lo.loan_asset AS "loan_asset: LoanAsset",
             lo.status AS "status: LoanOfferStatus",
             lo.loan_repayment_address,
+            lo.lender_pk,
+            lo.lender_derivation_path,
             lo.auto_accept,
-            lo.lender_xpub,
             lo.kyc_link,
+            lo.lender_npub,
             lo.created_at,
             lo.updated_at
         FROM loan_offers lo
@@ -281,11 +292,13 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
         loan_asset: row.loan_asset,
         status: row.status,
         loan_repayment_address: row.loan_repayment_address,
+        lender_pk: row.lender_pk.parse().expect("valid PK"),
+        lender_derivation_path: row.lender_derivation_path.parse().expect("valid path"),
         created_at: row.created_at,
         updated_at: row.updated_at,
         auto_accept: row.auto_accept,
-        lender_xpub: row.lender_xpub,
         kyc_link: row.kyc_link.map(|l| Url::parse(&l).expect("valid URL")),
+        lender_npub: row.lender_npub,
     };
 
     Ok(loan_offer)
@@ -356,11 +369,13 @@ pub async fn insert_loan_offer(
           loan_asset,
           status,
           loan_repayment_address,
+          lender_pk,
+          lender_derivation_path,
           auto_accept,
-          lender_xpub,
-          kyc_link
+          kyc_link,
+          lender_npub
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
         RETURNING
           id,
           loan_deal_id,
@@ -377,9 +392,11 @@ pub async fn insert_loan_offer(
           loan_asset AS "loan_asset: LoanAsset",
           status AS "status: crate::model::LoanOfferStatus",
           loan_repayment_address,
+          lender_pk,
+          lender_derivation_path,
           auto_accept,
-          lender_xpub,
           kyc_link,
+          lender_npub,
           created_at,
           updated_at
         "#,
@@ -397,9 +414,11 @@ pub async fn insert_loan_offer(
         offer.loan_asset as LoanAsset,
         status as LoanOfferStatus,
         offer.loan_repayment_address,
+        offer.lender_pk.to_string(),
+        offer.lender_derivation_path.to_string(),
         offer.auto_accept,
-        Some(offer.lender_xpub.to_string()),
         offer.kyc_link.map(|l| l.to_string()),
+        offer.lender_npub
     )
     .fetch_one(&mut *tx)
     .await?;
@@ -415,18 +434,20 @@ pub async fn insert_loan_offer(
         interest_rate: row.interest_rate,
         loan_amount_min: row.loan_amount_min,
         loan_amount_max: row.loan_amount_max,
-        duration_days_min: row.duration_days_min,
-        duration_days_max: row.duration_days_max,
         loan_amount_reserve: row.loan_amount_reserve,
         loan_amount_reserve_remaining: row.loan_amount_reserve_remaining,
+        duration_days_min: row.duration_days_min,
+        duration_days_max: row.duration_days_max,
         loan_asset: row.loan_asset,
         status: row.status,
         loan_repayment_address: row.loan_repayment_address,
+        lender_pk: row.lender_pk.parse().expect("valid PK"),
+        lender_derivation_path: row.lender_derivation_path.parse().expect("valid path"),
+        auto_accept: row.auto_accept,
+        kyc_link: row.kyc_link.map(|l| Url::parse(&l).expect("valid URL")),
+        lender_npub: row.lender_npub,
         created_at: row.created_at,
         updated_at: row.updated_at,
-        auto_accept: row.auto_accept,
-        lender_xpub: row.lender_xpub,
-        kyc_link: row.kyc_link.map(|l| Url::parse(&l).expect("valid URL")),
     };
 
     Ok(loan_offer)
@@ -466,9 +487,11 @@ pub(crate) async fn loan_by_id(
             lo.loan_asset AS "loan_asset: LoanAsset",
             lo.status AS "status: LoanOfferStatus",
             lo.loan_repayment_address,
+            lo.lender_pk,
+            lo.lender_derivation_path,
             lo.auto_accept,
-            lo.lender_xpub,
             lo.kyc_link,
+            lo.lender_npub,
             lo.created_at,
             lo.updated_at
         FROM loan_offers lo
@@ -498,19 +521,24 @@ pub(crate) async fn loan_by_id(
             interest_rate: row.interest_rate,
             loan_amount_min: row.loan_amount_min,
             loan_amount_max: row.loan_amount_max,
-            duration_days_min: row.duration_days_min,
-            duration_days_max: row.duration_days_max,
             loan_amount_reserve: row.loan_amount_reserve,
             loan_amount_reserve_remaining: loan_amount_reserve_remaining
                 .unwrap_or(row.loan_amount_reserve),
+            duration_days_min: row.duration_days_min,
+            duration_days_max: row.duration_days_max,
             loan_asset: row.loan_asset,
             status: row.status,
             loan_repayment_address: row.loan_repayment_address,
+            lender_pk: row.lender_pk.parse().expect("valid PK"),
+            lender_derivation_path: row
+                .lender_derivation_path
+                .parse()
+                .expect("valid derivation path"),
+            auto_accept: row.auto_accept,
+            kyc_link: row.kyc_link.map(|l| Url::parse(&l).expect("valid URL")),
+            lender_npub: row.lender_npub,
             created_at: row.created_at,
             updated_at: row.updated_at,
-            auto_accept: row.auto_accept,
-            lender_xpub: row.lender_xpub,
-            kyc_link: row.kyc_link.map(|l| Url::parse(&l).expect("valid URL")),
         };
 
         Ok(Some(loan_offer))

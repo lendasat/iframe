@@ -4,7 +4,6 @@ import init, {
   encrypt_fiat_loan_details,
   get_mnemonic,
   get_nsec,
-  get_xpub,
   InnerFiatLoanDetails,
   is_wallet_loaded,
   load_wallet,
@@ -14,6 +13,8 @@ import init, {
   SwiftTransferDetails,
   IbanTransferDetails,
   SignedTransaction,
+  get_npub,
+  get_pk_and_derivation_path,
 } from "browser-wallet";
 import browserWalletUrl from "../../../../../browser-wallet/pkg/browser_wallet_bg.wasm?url";
 
@@ -25,13 +26,18 @@ import {
   InnerFiatLoanDetails as ReactInnerFiatLoanDetails,
 } from "@frontend/base-http-client";
 
+export interface PkAndPath {
+  pubkey: string;
+  path: string;
+}
+
 interface WalletContextType {
   isInitialized: boolean;
   isWalletLoaded: boolean;
   doesWalletExist?: boolean;
   loadWallet: (passphrase: string) => Promise<void>;
   getMnemonic: () => string;
-  getNsec: () => string;
+  getNsec: () => Promise<string>;
   getPubkeyFromContract: (passphrase: string) => string;
   signClaimPsbt: (
     psbt: string,
@@ -45,18 +51,19 @@ interface WalletContextType {
     borrowerPk: string,
     derivationPath?: string,
   ) => Promise<SignedTransaction>;
-  getXpub: () => Promise<string>;
+  getNpub: () => Promise<string>;
+  getPkAndDerivationPath: () => Promise<PkAndPath>;
   encryptFiatLoanDetailsBorrower: (
     details: ReactInnerFiatLoanDetails,
-    counterpartyXpub: string,
+    counterpartyPk: string,
   ) => Promise<ReactFiatLoanDetails>;
   encryptFiatLoanDetailsLender: (
     details: ReactInnerFiatLoanDetails,
-    counterpartyXpub: string,
+    counterpartyPk: string,
   ) => Promise<ReactFiatLoanDetails>;
   decryptFiatLoanDetails: (
     details: ReactInnerFiatLoanDetails,
-    counterpartyXpub: string,
+    counterpartyPk: string,
   ) => Promise<ReactInnerFiatLoanDetails>;
 }
 
@@ -115,9 +122,10 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
     throw Error("Wallet not initialized");
   };
 
-  const getNsec = () => {
-    if (isInitialized && isWalletLoaded) {
-      return get_nsec();
+  const getNsec = async () => {
+    if (isInitialized) {
+      const key = await md5(email);
+      return get_nsec(key);
     }
     throw Error("Wallet not initialized");
   };
@@ -162,27 +170,37 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
     }
   };
 
-  const getXpub = async () => {
+  const getNpub = async () => {
     const key = await md5(email);
-    return get_xpub(key);
+    return get_npub(key);
+  };
+
+  const getPkAndDerivationPath = async () => {
+    const key = await md5(email);
+    const res = get_pk_and_derivation_path(key);
+    return {
+      pubkey: res.pubkey,
+      path: res.path,
+    };
   };
 
   const encryptFiatLoanDetailsBorrower = async (
     details: ReactInnerFiatLoanDetails,
-    counterpartyXpub: string,
+    counterpartyPk: string,
   ) => {
-    return encryptFiatLoanDetails(details, counterpartyXpub, true);
+    return encryptFiatLoanDetails(details, counterpartyPk, true);
   };
+
   const encryptFiatLoanDetailsLender = async (
     details: ReactInnerFiatLoanDetails,
-    counterpartyXpub: string,
+    counterpartyPk: string,
   ) => {
-    return encryptFiatLoanDetails(details, counterpartyXpub, false);
+    return encryptFiatLoanDetails(details, counterpartyPk, false);
   };
 
   const encryptFiatLoanDetails = async (
     details: ReactInnerFiatLoanDetails,
-    counterpartyXpub: string,
+    counterpartyPk: string,
     isBorrower: boolean,
   ) => {
     let inputIbanTransferDetails = undefined;
@@ -219,7 +237,7 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
 
     const fiatLoanDetails = encrypt_fiat_loan_details(
       inputInnerFiatLoanDetails,
-      counterpartyXpub,
+      counterpartyPk,
     );
     let iban_transfer_details = undefined;
     if (fiatLoanDetails.inner.iban_transfer_details) {
@@ -352,10 +370,11 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
     loadWallet,
     getMnemonic,
     getNsec,
+    getNpub,
+    getPkAndDerivationPath,
     getPubkeyFromContract,
     signClaimPsbt,
     signLiquidationPsbt,
-    getXpub,
     encryptFiatLoanDetailsBorrower,
     encryptFiatLoanDetailsLender,
     decryptFiatLoanDetails,

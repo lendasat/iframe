@@ -73,6 +73,7 @@ export interface LoanFeature {
   id: string;
   name: string;
 }
+
 // Warning: only change the string values if you know what you are doing.
 // They are linked to the database and if changed some features might stop
 // working.
@@ -90,7 +91,6 @@ export interface MeResponse {
 export interface WalletBackupData {
   mnemonic_ciphertext: string;
   network: string;
-  xpub: string;
 }
 
 export interface IbanTransferDetails {

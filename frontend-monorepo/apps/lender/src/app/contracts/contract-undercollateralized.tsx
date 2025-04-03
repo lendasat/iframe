@@ -64,7 +64,7 @@ export function ContractUndercollateralized({
       res.psbt,
       res.collateral_descriptor,
       res.lender_pk,
-      contract.derivation_path,
+      contract.lender_derivation_path,
     );
 
     console.log("Signed liquidation PSBT");

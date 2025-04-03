@@ -5,19 +5,24 @@ use crate::wallet;
 use anyhow::bail;
 use anyhow::Context;
 use anyhow::Result;
+use bitcoin::bip32;
+use bitcoin::key::Secp256k1;
 use bitcoin::Psbt;
+use bitcoin::PublicKey;
 use bitcoin::TxOut;
+use nostr::ToBech32;
 
 const STORAGE_KEY_PREFIX: &str = "wallet-v2";
 
 const SEED_STORAGE_KEY: &str = "seed";
 const NETWORK_KEY: &str = "network";
+const CONTRACT_INDEX_KEY: &str = "index";
+const NSEC_KEY: &str = "nsec";
 const XPUB_KEY: &str = "xpub";
 
 pub struct WalletDetails {
     pub mnemonic_ciphertext: String,
     pub network: String,
-    pub xpub: String,
 }
 
 /// Create a new wallet from implicit entropy.
@@ -25,12 +30,11 @@ pub struct WalletDetails {
 /// The wallet is encrypted with `password` and works only for `network`. The `key` argument is used
 /// as part of the browser's local storage entry key for each wallet element.
 pub fn new(password: String, network: String) -> Result<WalletDetails> {
-    let (mnemonic_ciphertext, network, xpub) = wallet::generate_new(&password, &network)?;
+    let (mnemonic_ciphertext, network) = wallet::generate_new(&password, &network)?;
 
     Ok(WalletDetails {
         mnemonic_ciphertext: mnemonic_ciphertext.serialize(),
         network: network.to_string(),
-        xpub: xpub.to_string(),
     })
 }
 
@@ -38,12 +42,7 @@ pub fn new(password: String, network: String) -> Result<WalletDetails> {
 ///
 /// If we pass a `key` that is already used in local storage to hold a wallet, the wallet data for
 /// the existing wallet will be moved to a different key.
-pub fn persist_new_wallet(
-    mnemonic_ciphertext: String,
-    network: String,
-    xpub: String,
-    key: String,
-) -> Result<()> {
+pub fn persist_new_wallet(mnemonic_ciphertext: String, network: String, key: String) -> Result<()> {
     let storage = local_storage()?;
 
     move_wallet_to_other_key(&key).context("Failed to move wallet to other key")?;
@@ -54,8 +53,6 @@ pub fn persist_new_wallet(
     )?;
 
     storage.set_item(&derive_storage_key(&key, NETWORK_KEY), network)?;
-
-    storage.set_item(&derive_storage_key(&key, XPUB_KEY), xpub)?;
 
     Ok(())
 }
@@ -77,22 +74,18 @@ pub fn new_from_mnemonic(
 
     move_wallet_to_other_key(&key).context("Failed to move wallet to other key")?;
 
-    let (mnemonic_ciphertext, network, xpub) =
-        wallet::new_from_mnemonic(&password, &network, &mnemonic)?;
+    let mnemonic_ciphertext = wallet::new_from_mnemonic(&password, &network, &mnemonic)?;
 
     storage.set_item(
         &derive_storage_key(&key, SEED_STORAGE_KEY),
         mnemonic_ciphertext.serialize(),
     )?;
 
-    storage.set_item(&derive_storage_key(&key, NETWORK_KEY), network.to_string())?;
-
-    storage.set_item(&derive_storage_key(&key, XPUB_KEY), xpub)?;
+    storage.set_item(&derive_storage_key(&key, NETWORK_KEY), network.clone())?;
 
     Ok(WalletDetails {
         mnemonic_ciphertext: mnemonic_ciphertext.serialize(),
         network: network.to_string(),
-        xpub: xpub.to_string(),
     })
 }
 
@@ -100,12 +93,7 @@ pub fn new_from_mnemonic(
 ///
 /// If we pass a `key` that is already used in local storage to hold a wallet, the wallet data for
 /// the existing wallet will be moved to a different key.
-pub fn restore(
-    key: String,
-    mnemonic_ciphertext: String,
-    network: String,
-    xpub: String,
-) -> Result<()> {
+pub fn restore(key: String, mnemonic_ciphertext: String, network: String) -> Result<()> {
     let storage = local_storage()?;
 
     move_wallet_to_other_key(&key).context("Failed to move wallet to other key")?;
@@ -116,8 +104,6 @@ pub fn restore(
     )?;
 
     storage.set_item(&derive_storage_key(&key, NETWORK_KEY), network)?;
-
-    storage.set_item(&derive_storage_key(&key, XPUB_KEY), xpub)?;
 
     Ok(())
 }
@@ -136,7 +122,7 @@ pub fn upgrade_wallet(
 ) -> Result<WalletDetails> {
     let storage = local_storage()?;
 
-    let (new_mnemonic_ciphertext, new_xpub) = wallet::upgrade_wallet(
+    let new_mnemonic_ciphertext = wallet::upgrade_wallet(
         &mnemonic_ciphertext,
         &network,
         &old_password,
@@ -161,14 +147,9 @@ pub fn upgrade_wallet(
         .set_item(&derive_storage_key(&key, NETWORK_KEY), &network)
         .context("new network")?;
 
-    storage
-        .set_item(&derive_storage_key(&key, XPUB_KEY), new_xpub)
-        .context("new Xpub")?;
-
     Ok(WalletDetails {
         mnemonic_ciphertext: new_mnemonic_ciphertext.serialize(),
         network,
-        xpub: new_xpub.to_string(),
     })
 }
 
@@ -192,13 +173,9 @@ pub fn change_wallet_encryption(
         .get_item::<String>(&derive_storage_key(&key, NETWORK_KEY))?
         .context("No network stored for wallet")?;
 
-    let (new_mnemonic_ciphertext, new_xpub) = wallet::change_wallet_encryption(
-        &mnemonic_ciphertext,
-        &network,
-        &old_password,
-        &new_password,
-    )
-    .context("failed to generate upgraded wallet data")?;
+    let new_mnemonic_ciphertext =
+        wallet::change_wallet_encryption(&mnemonic_ciphertext, &old_password, &new_password)
+            .context("failed to generate upgraded wallet data")?;
 
     move_wallet_to_other_key(&key).context("Failed to move wallet to other key")?;
 
@@ -213,14 +190,9 @@ pub fn change_wallet_encryption(
         .set_item(&derive_storage_key(&key, NETWORK_KEY), &network)
         .context("new network")?;
 
-    storage
-        .set_item(&derive_storage_key(&key, XPUB_KEY), new_xpub)
-        .context("new Xpub")?;
-
     Ok(WalletDetails {
         mnemonic_ciphertext: new_mnemonic_ciphertext.serialize(),
         network,
-        xpub: new_xpub.to_string(),
     })
 }
 
@@ -235,9 +207,75 @@ pub fn load(password: &str, key: &str) -> Result<()> {
         .get_item::<String>(&derive_storage_key(key, NETWORK_KEY))?
         .context("No network stored for wallet")?;
 
-    wallet::load_wallet(password, &mnemonic_ciphertext, &network)?;
+    let contract_index_key = &derive_storage_key(key, CONTRACT_INDEX_KEY);
+
+    let contract_index = match storage.get_item::<u32>(contract_index_key)? {
+        Some(index) => index,
+        None => {
+            let index = 0;
+            storage.set_item(contract_index_key, index)?;
+            index
+        }
+    };
+
+    wallet::load_wallet(password, &mnemonic_ciphertext, &network, contract_index)?;
+
+    let nsec = wallet::derive_nsec()?;
+    let nsec_key = &derive_storage_key(key, NSEC_KEY);
+    storage.set_item(nsec_key, nsec)?;
+    log::debug!("Set Nsec in storage");
+
+    let xpub = wallet::derive_xpub()?;
+    let xpub_key = &derive_storage_key(key, XPUB_KEY);
+    storage.set_item(xpub_key, xpub)?;
+    log::debug!("Set Xpub in storage");
 
     Ok(())
+}
+
+pub fn get_next_normal_pk(key: String) -> Result<(PublicKey, bip32::DerivationPath)> {
+    let storage = local_storage()?;
+
+    let xpub_key = derive_storage_key(&key, XPUB_KEY);
+    let xpub = storage
+        .get_item::<String>(&xpub_key)?
+        .context(format!("No Xpub stored in storage key {xpub_key}"))?;
+
+    let xpub = xpub.parse()?;
+
+    let contract_index_key = &derive_storage_key(&key, CONTRACT_INDEX_KEY);
+
+    let contract_index = storage
+        .get_item::<u32>(contract_index_key)?
+        .unwrap_or_default();
+
+    let (pk, path) = wallet::derive_next_normal_pk(xpub, contract_index)?;
+
+    // After using the contract index, we increment it so that the next generated key is different.
+    storage.set_item(contract_index_key, contract_index + 1)?;
+
+    Ok((pk, path))
+}
+
+pub fn get_nsec(key: String) -> Result<String> {
+    let storage = local_storage()?;
+
+    let storage_key = derive_storage_key(key.as_str(), NSEC_KEY);
+    let nsec = storage
+        .get_item::<String>(&storage_key)?
+        .context(format!("No nsec stored in storage {storage_key}"))?;
+
+    Ok(nsec)
+}
+
+pub fn get_npub(key: String) -> Result<String> {
+    let nsec = get_nsec(key)?;
+    let nsec = nostr::SecretKey::parse(nsec.as_str())?;
+    let public_key = nsec.public_key(&Secp256k1::new());
+
+    let npub = nostr::key::PublicKey::from_slice(&public_key.x_only_public_key().0.serialize())?;
+
+    Ok(npub.to_bech32()?)
 }
 
 pub fn sign_claim_psbt(
@@ -314,12 +352,7 @@ pub fn does_wallet_exist(key: &str) -> Result<bool> {
 }
 
 /// Check if the wallet stored in local storage matches the arguments to this function.
-pub fn is_wallet_equal(
-    key: &str,
-    mnemonic_ciphertext: &str,
-    network: &str,
-    xpub: &str,
-) -> Result<bool> {
+pub fn is_wallet_equal(key: &str, mnemonic_ciphertext: &str, network: &str) -> Result<bool> {
     let storage = local_storage()?;
 
     let local_mnemonic_ciphertext =
@@ -333,24 +366,7 @@ pub fn is_wallet_equal(
         None => return Ok(false),
     };
 
-    let local_xpub = match storage.get_item::<String>(&derive_storage_key(key, XPUB_KEY))? {
-        Some(x) => x,
-        None => return Ok(false),
-    };
-
-    Ok(local_mnemonic_ciphertext == mnemonic_ciphertext
-        && local_network == network
-        && local_xpub == xpub)
-}
-
-pub fn get_xpub(key: &str) -> Result<String> {
-    let storage = local_storage()?;
-
-    let xpub = storage
-        .get_item::<String>(&derive_storage_key(key, XPUB_KEY))?
-        .context("No xpub found")?;
-
-    Ok(xpub)
+    Ok(local_mnemonic_ciphertext == mnemonic_ciphertext && local_network == network)
 }
 
 /// Move a wallet stored in local storage from `key` to `old-key`.
@@ -365,15 +381,13 @@ fn move_wallet_to_other_key(key: &str) -> Result<()> {
 
     let network = storage.get_item::<String>(&derive_storage_key(key, NETWORK_KEY))?;
 
-    let xpub = storage.get_item::<String>(&derive_storage_key(key, XPUB_KEY))?;
-
-    let (mnemonic_ciphertext, network, xpub) = match (mnemonic_ciphertext, network, xpub) {
+    let (mnemonic_ciphertext, network) = match (mnemonic_ciphertext, network) {
         // Nothing to move.
-        (None, None, None) => {
+        (None, None) => {
             return Ok(());
         }
         // Wallet present in local storage.
-        (Some(m), Some(n), Some(x)) => (m, n, x),
+        (Some(m), Some(n)) => (m, n),
         _ => {
             bail!("Cannot move incomplete wallet to other key");
         }
@@ -389,8 +403,6 @@ fn move_wallet_to_other_key(key: &str) -> Result<()> {
     )?;
 
     storage.set_item(&derive_storage_key(&other_key, NETWORK_KEY), network)?;
-
-    storage.set_item(&derive_storage_key(&other_key, XPUB_KEY), xpub)?;
 
     Ok(())
 }

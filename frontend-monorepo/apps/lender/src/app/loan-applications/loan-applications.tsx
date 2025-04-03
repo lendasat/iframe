@@ -39,7 +39,7 @@ import { addDays } from "date-fns";
 
 export default function TakeLoanApplication() {
   const navigate = useNavigate();
-  const { getXpub } = useWallet();
+  const { getNpub, getPkAndDerivationPath } = useWallet();
   const { id } = useParams();
   const { latestPrice } = usePrice();
 
@@ -89,14 +89,17 @@ export default function TakeLoanApplication() {
       }
 
       setIsTaking(true);
-      const lenderXpub = await getXpub();
+      const lenderNpub = await getNpub();
+      const pubkey = await getPkAndDerivationPath();
 
       if (!loanAddress || loanAddress.trim().length === 0) {
         setError("No loan address provided");
         return;
       }
       const contractId = await takeLoanApplication(id, {
-        lender_xpub: lenderXpub,
+        lender_npub: lenderNpub,
+        lender_pk: pubkey.pubkey,
+        lender_derivation_path: pubkey.path,
         loan_repayment_address: loanAddress,
       });
       //

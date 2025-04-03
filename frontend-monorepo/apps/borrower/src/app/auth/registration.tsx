@@ -35,7 +35,6 @@ function Registration() {
       {
         mnemonic_ciphertext: walletDetails.mnemonic_ciphertext,
         network: network,
-        xpub: walletDetails.xpub,
       },
       referralCode,
     );
@@ -44,7 +43,6 @@ function Registration() {
     persist_new_wallet(
       walletDetails.mnemonic_ciphertext,
       walletDetails.network,
-      walletDetails.xpub,
       key,
     );
     load_wallet(password, key);

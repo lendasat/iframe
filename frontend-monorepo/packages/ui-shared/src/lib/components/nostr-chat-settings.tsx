@@ -8,27 +8,32 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FaLock } from "react-icons/fa6";
 import { Button } from "@frontend/shadcn";
+import { useAsync } from "react-use";
 
 export const NostrChatSettings = () => {
   const [isNsecVisible, setIsNsecVisible] = useState(false);
   const [nsec, setNsec] = useState<string>("");
 
-  const { getNsec, isWalletLoaded } = useWallet();
+  const { getNsec } = useWallet();
+
+  const loadKeysAsync = useAsync(async () => {
+    loadWasmSync();
+    const nsecHex = await getNsec();
+
+    try {
+      const newKeys = Keys.parse(nsecHex);
+      return newKeys.secretKey.toBech32();
+    } catch (e) {
+      console.error(`Error received: ${e}`);
+      throw e;
+    }
+  }, [getNsec]);
 
   useEffect(() => {
-    if (isWalletLoaded) {
-      loadWasmSync();
-      const nsecHex = getNsec();
-      setNsec(nsecHex);
-      try {
-        const newKeys = Keys.parse(nsecHex);
-        console.log(`nsec ${newKeys.secretKey.toBech32()}`);
-        setNsec(newKeys.secretKey.toBech32());
-      } catch (e) {
-        console.error(`Error received: ${e}`);
-      }
+    if (loadKeysAsync.value) {
+      setNsec(loadKeysAsync.value);
     }
-  }, [isWalletLoaded, getNsec]);
+  }, [loadKeysAsync.value]);
 
   const handleCopy = async () => {
     try {
@@ -52,22 +57,9 @@ export const NostrChatSettings = () => {
                 Nsec
               </Heading>
 
-              {!isWalletLoaded ? (
-                <UnlockWalletModal handleSubmit={() => {}}>
-                  <Button variant="outline" size="icon">
-                    <FaLock />
-                  </Button>
-                </UnlockWalletModal>
-              ) : (
-                <Button variant="outline" size="icon" disabled={isWalletLoaded}>
-                  <FaLockOpen />
-                </Button>
-              )}
-
               <Button
                 variant="outline"
                 size="icon"
-                disabled={!isWalletLoaded}
                 onClick={async () => {
                   setIsNsecVisible(!isNsecVisible);
                 }}
@@ -95,7 +87,6 @@ export const NostrChatSettings = () => {
               <Button
                 variant="outline"
                 size="icon"
-                disabled={!isWalletLoaded}
                 onClick={async () => {
                   await handleCopy();
                 }}

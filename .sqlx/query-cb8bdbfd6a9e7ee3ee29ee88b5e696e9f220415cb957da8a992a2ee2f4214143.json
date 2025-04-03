@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            loan_deal_id,\n            borrower_id,\n            ltv,\n            interest_rate,\n            loan_amount,\n            duration_days,\n            loan_asset AS \"loan_asset: crate::model::LoanAsset\",\n            status AS \"status: crate::model::LoanApplicationStatus\",\n            loan_type AS \"loan_type: crate::model::db::LoanType\",\n            borrower_loan_address,\n            borrower_btc_address,\n            borrower_xpub,\n            created_at,\n            updated_at\n        FROM loan_applications\n        WHERE borrower_id = $1 and loan_deal_id = $2\n        ",
+  "query": "\n        SELECT\n            loan_deal_id,\n            borrower_id,\n            ltv,\n            interest_rate,\n            loan_amount,\n            duration_days,\n            loan_asset AS \"loan_asset: crate::model::LoanAsset\",\n            status AS \"status: crate::model::LoanApplicationStatus\",\n            loan_type AS \"loan_type: crate::model::db::LoanType\",\n            borrower_pk,\n            borrower_derivation_path,\n            borrower_loan_address,\n            borrower_btc_address,\n            borrower_npub,\n            created_at,\n            updated_at\n        FROM loan_applications\n        WHERE status = 'Available'\n        ",
   "describe": {
     "columns": [
       {
@@ -96,37 +96,46 @@
       },
       {
         "ordinal": 9,
-        "name": "borrower_loan_address",
+        "name": "borrower_pk",
         "type_info": "Text"
       },
       {
         "ordinal": 10,
-        "name": "borrower_btc_address",
+        "name": "borrower_derivation_path",
         "type_info": "Text"
       },
       {
         "ordinal": 11,
-        "name": "borrower_xpub",
+        "name": "borrower_loan_address",
         "type_info": "Text"
       },
       {
         "ordinal": 12,
+        "name": "borrower_btc_address",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 13,
+        "name": "borrower_npub",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 14,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 13,
+        "ordinal": 15,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
-      "Left": [
-        "Bpchar",
-        "Bpchar"
-      ]
+      "Left": []
     },
     "nullable": [
+      false,
+      false,
       false,
       false,
       false,
@@ -143,5 +152,5 @@
       false
     ]
   },
-  "hash": "35e92277645a087bb70274df7438eb5dacd5713689e5be1952d276c21e02c202"
+  "hash": "cb8bdbfd6a9e7ee3ee29ee88b5e696e9f220415cb957da8a992a2ee2f4214143"
 }

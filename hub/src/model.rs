@@ -10,7 +10,7 @@ use argon2::Argon2;
 use argon2::PasswordHash;
 use argon2::PasswordVerifier;
 use bitcoin::address::NetworkUnchecked;
-use bitcoin::bip32::Xpub;
+use bitcoin::bip32;
 use bitcoin::Address;
 use bitcoin::Amount;
 use bitcoin::PublicKey;
@@ -185,7 +185,6 @@ pub struct RegisterUserSchema {
 pub struct WalletBackupData {
     pub mnemonic_ciphertext: String,
     pub network: String,
-    pub xpub: String,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -267,11 +266,13 @@ pub struct CreateLoanOfferSchema {
     pub duration_days_max: i32,
     pub loan_asset: LoanAsset,
     pub loan_repayment_address: String,
+    pub lender_pk: PublicKey,
+    pub lender_derivation_path: bip32::DerivationPath,
     pub auto_accept: bool,
-    pub lender_xpub: Xpub,
     /// The lender can optionally provide a KYC link, so that the borrower can complete a KYC
     /// process.
     pub kyc_link: Option<Url>,
+    pub lender_npub: String,
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
@@ -293,7 +294,10 @@ pub struct CreateLoanApplicationSchema {
     #[schema(value_type = String)]
     pub borrower_btc_address: Address<NetworkUnchecked>,
     #[schema(value_type = String)]
-    pub borrower_xpub: Xpub,
+    pub borrower_pk: PublicKey,
+    #[schema(value_type = String)]
+    pub borrower_derivation_path: bip32::DerivationPath,
+    pub borrower_npub: String,
     // TODO: do we want to enable KYC for the lender? I.e. the borrower requires the lender to do
     // KYC?
 }
@@ -307,7 +311,9 @@ pub struct ContractRequestSchema {
     #[schema(value_type = String)]
     pub borrower_btc_address: Address<NetworkUnchecked>,
     #[schema(value_type = String)]
-    pub borrower_xpub: Xpub,
+    pub borrower_pk: PublicKey,
+    #[schema(value_type = String)]
+    pub borrower_derivation_path: bip32::DerivationPath,
     /// This is optional because certain integrations (such as Pay with Moon) define their own loan
     /// address.
     pub borrower_loan_address: Option<String>,
@@ -318,6 +324,7 @@ pub struct ContractRequestSchema {
     /// If the borrower chooses a `loan_id` that corresponds to a fiat loan (e.g. with `loan_asset`
     /// [`LoanAsset::Usd`] or [`LoanAsset::Eur`]), this field must be present.
     pub fiat_loan_details: Option<FiatLoanDetailsWrapper>,
+    pub borrower_npub: String,
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
@@ -399,11 +406,13 @@ pub struct LoanOffer {
     pub loan_asset: LoanAsset,
     pub status: LoanOfferStatus,
     pub loan_repayment_address: String,
+    pub lender_pk: PublicKey,
+    pub lender_derivation_path: bip32::DerivationPath,
+    pub auto_accept: bool,
+    pub kyc_link: Option<Url>,
+    pub lender_npub: String,
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
-    pub auto_accept: bool,
-    pub lender_xpub: String,
-    pub kyc_link: Option<Url>,
 }
 
 impl LoanOffer {
@@ -481,7 +490,10 @@ pub struct LoanApplication {
     pub loan_asset: LoanAsset,
     pub loan_type: LoanType,
     #[schema(value_type = String)]
-    pub borrower_xpub: Xpub,
+    pub borrower_pk: PublicKey,
+    #[schema(value_type = String)]
+    pub borrower_derivation_path: bip32::DerivationPath,
+    pub borrower_npub: String,
     pub status: LoanApplicationStatus,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
@@ -525,16 +537,23 @@ pub struct Contract {
     pub duration_days: i32,
     pub expiry_date: OffsetDateTime,
     pub borrower_btc_address: Address<NetworkUnchecked>,
-    /// Optional because we are phasing this field out, replacing it with the `borrower_xpub`.
-    pub borrower_pk: Option<PublicKey>,
+    /// Waiting for all contracts in prod to have this set. This is now the source of truth for the
+    /// borrower's PK in the multisig.
+    pub borrower_pk: PublicKey,
+    /// This is an [`Option`] because we don't know the derivation path for really old contracts.
+    pub borrower_derivation_path: Option<bip32::DerivationPath>,
+    /// Waiting for all contracts in prod to have this set. This is now the source of truth for the
+    /// lender's PK in the multisig.
+    pub lender_pk: PublicKey,
+    pub lender_derivation_path: bip32::DerivationPath,
     /// Optional because fiat loans do not have loan addresses in the cryptocurrency sense.
     pub borrower_loan_address: Option<String>,
     pub lender_loan_repayment_address: Option<String>,
     pub loan_type: LoanType,
-    pub borrower_xpub: Xpub,
-    pub lender_xpub: Option<Xpub>,
     pub contract_address: Option<Address<NetworkUnchecked>>,
     pub contract_index: Option<u32>,
+    pub borrower_npub: String,
+    pub lender_npub: String,
     pub status: ContractStatus,
     pub liquidation_status: LiquidationStatus,
     pub contract_version: ContractVersion,
@@ -763,14 +782,17 @@ pub mod db {
         pub duration_days: i32,
         pub expiry_date: OffsetDateTime,
         pub borrower_btc_address: String,
-        pub borrower_pk: Option<String>,
+        pub borrower_pk: String,
+        pub borrower_derivation_path: Option<String>,
+        pub lender_pk: String,
+        pub lender_derivation_path: String,
         pub borrower_loan_address: Option<String>,
         pub lender_loan_repayment_address: Option<String>,
         pub loan_type: LoanType,
-        pub borrower_xpub: String,
-        pub lender_xpub: Option<String>,
         pub contract_address: Option<String>,
         pub contract_index: Option<i32>,
+        pub borrower_npub: String,
+        pub lender_npub: String,
         pub status: ContractStatus,
         pub liquidation_status: LiquidationStatus,
         pub contract_version: i32,
@@ -873,21 +895,22 @@ impl From<db::Contract> for Contract {
             expiry_date: value.expiry_date,
             borrower_btc_address: Address::from_str(&value.borrower_btc_address)
                 .expect("valid address"),
-            borrower_pk: value
-                .borrower_pk
-                .map(|p| PublicKey::from_str(&p).expect("valid pk")),
+            borrower_pk: value.borrower_pk.parse().expect("valid pk"),
+            borrower_derivation_path: value
+                .borrower_derivation_path
+                .map(|d| d.parse().expect("valid path")),
+            lender_pk: value.lender_pk.parse().expect("valid pk"),
+            lender_derivation_path: value.lender_derivation_path.parse().expect("valid path"),
             borrower_loan_address: value.borrower_loan_address,
             lender_loan_repayment_address: value.lender_loan_repayment_address,
             loan_type: value.loan_type.into(),
-            borrower_xpub: Xpub::from_str(&value.borrower_xpub).expect("valid Xpub"),
-            lender_xpub: value
-                .lender_xpub
-                .map(|xpub| xpub.parse().expect("valid xpub")),
             contract_address: value
                 .contract_address
                 .map(|addr| addr.parse().expect("valid address")),
             contract_index: value.contract_index.map(|i| i as u32),
             interest_rate: value.interest_rate,
+            borrower_npub: value.borrower_npub,
+            lender_npub: value.lender_npub,
             status: value.status.into(),
             liquidation_status: value.liquidation_status.into(),
             contract_version: ContractVersion::from(value.contract_version),
@@ -1005,16 +1028,19 @@ impl From<Contract> for db::Contract {
             duration_days: value.duration_days,
             expiry_date: value.expiry_date,
             borrower_btc_address: value.borrower_btc_address.assume_checked().to_string(),
-            borrower_pk: value.borrower_pk.map(|p| p.to_string()),
+            borrower_pk: value.borrower_pk.to_string(),
+            borrower_derivation_path: value.borrower_derivation_path.map(|d| d.to_string()),
+            lender_pk: value.lender_pk.to_string(),
+            lender_derivation_path: value.lender_derivation_path.to_string(),
             borrower_loan_address: value.borrower_loan_address,
             lender_loan_repayment_address: value.lender_loan_repayment_address,
             loan_type: value.loan_type.into(),
-            borrower_xpub: value.borrower_xpub.to_string(),
-            lender_xpub: value.lender_xpub.map(|xpub| xpub.to_string()),
             contract_address: value
                 .contract_address
                 .map(|addr| addr.assume_checked().to_string()),
             contract_index: value.contract_index.map(|i| i as i32),
+            borrower_npub: value.borrower_npub,
+            lender_npub: value.lender_npub,
             status: value.status.into(),
             liquidation_status: value.liquidation_status.into(),
             contract_version: value.contract_version as i32,
@@ -1367,26 +1393,35 @@ mod tests {
             initial_collateral_sats: 50_000,
             origination_fee_sats: 5_000,
             collateral_sats: 55_000,
+            loan_amount,
+            duration_days,
             expiry_date: datetime!(2030-03-01 0:00 UTC),
             borrower_btc_address: "bc1pravj5kascdk5y3zqa9n0j8yassuaq0axgdj706fmjtmzvfhg02vsqvf25f"
                 .parse()
                 .unwrap(),
-            borrower_pk: None,
+            borrower_pk: "02afddf59ddf612bc0aee80dee376fb5cdf9def3f08863963896f9edbe8f600dda"
+                .parse()
+                .unwrap(),
+            borrower_derivation_path: None,
+            lender_pk: "026c06e2bcd10e37dc90f268df3cb54aee4a8b58500e523c53d505b6efa7206c78"
+                .parse()
+                .unwrap(),
+            lender_derivation_path: "m/586/0/0".parse().unwrap(),
             borrower_loan_address: None,
             lender_loan_repayment_address: None,
             loan_type: LoanType::StableCoin,
-            borrower_xpub: "tpubD6NzVbkrYhZ4Yon2URjspXp7Y7DKaBaX1ZVMCEnhc8zCrj1AuJyLrhmAKFmnkqVULW6znfEMLvgukHBVJD4fukpVYre3dpHXmkbcpvtviro".parse().unwrap(),
-            lender_xpub: None,
             contract_address: None,
             contract_index: None,
+            // Relevant for the test.
+            borrower_npub: "npub17mx98j4khcynw7cm6m0zfu5q2uv6dqs2lenaq8nfzn8paz5dt4hqs5utwq"
+                .to_string(),
+            lender_npub: "npub17mx98j4khcynw7cm6m0zfu5q2uv6dqs2lenaq8nfzn8paz5dt4hqs5utwq"
+                .to_string(),
             status: ContractStatus::PrincipalGiven,
             liquidation_status: LiquidationStatus::Healthy,
             contract_version: ContractVersion::TwoOfThree,
             created_at: datetime!(2025-03-01 0:00 UTC),
             updated_at: datetime!(2025-03-01 0:00 UTC),
-            // Relevant for the test.
-            loan_amount,
-            duration_days,
             interest_rate,
         }
     }

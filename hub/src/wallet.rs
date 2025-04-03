@@ -1,6 +1,5 @@
 use crate::db;
 use crate::model::ContractVersion;
-use anyhow::bail;
 use anyhow::Context;
 use anyhow::Result;
 use bitcoin::absolute::LockTime;
@@ -81,52 +80,11 @@ impl Wallet {
     /// borrower.
     pub async fn contract_address(
         &self,
-        borrower_xpub: &Xpub,
-        lender_xpub: &Xpub,
-        contract_version: ContractVersion,
-    ) -> Result<(Address, u32)> {
-        let (hub_pk, _, index) = self.derive_next_pks().await?;
-
-        // We use the same index for borrower and lender so that it's easier to recover the correct
-        // borrower/lender keypair.
-        let (lender_pk, _) =
-            derive_borrower_or_lender_pk(lender_xpub, index, self.hub_xpriv.network.is_mainnet())?;
-        let (borrower_pk, _) = derive_borrower_or_lender_pk(
-            borrower_xpub,
-            index,
-            self.hub_xpriv.network.is_mainnet(),
-        )?;
-
-        let descriptor = match contract_version {
-            ContractVersion::TwoOfFour => {
-                bail!("Two-of-four multisig contract not supported with borrower Xpub")
-            }
-            ContractVersion::TwoOfThree => {
-                two_of_three_collateral_contract_descriptor(borrower_pk, hub_pk, lender_pk)?
-            }
-        };
-
-        let address = descriptor.address(self.network)?;
-
-        Ok((address, index))
-    }
-
-    /// Generate a collateral contract address for a borrower, using a [`PublicKey`] provided by the
-    /// borrower.
-    ///
-    /// This is a legacy function. New contracts should use `contract_address`.
-    pub async fn contract_address_with_borrower_pk(
-        &self,
         borrower_pk: PublicKey,
-        lender_xpub: &Xpub,
+        lender_pk: PublicKey,
         contract_version: ContractVersion,
     ) -> Result<(Address, u32)> {
         let (hub_pk, fallback_pk, index) = self.derive_next_pks().await?;
-
-        // We use the same index for the lender so that it's easier to recover the correct lender
-        // keypair.
-        let (lender_pk, _) =
-            derive_borrower_or_lender_pk(lender_xpub, index, self.hub_xpriv.network.is_mainnet())?;
 
         let descriptor = match contract_version {
             ContractVersion::TwoOfFour => two_of_four_collateral_contract_descriptor(
@@ -149,35 +107,13 @@ impl Wallet {
     #[allow(clippy::type_complexity)]
     pub fn collateral_descriptor(
         &self,
-        borrower_xpub: &Xpub,
-        borrower_pk: Option<PublicKey>,
-        lender_xpub: &Xpub,
+        borrower_pk: PublicKey,
+        lender_pk: PublicKey,
         contract_version: ContractVersion,
         contract_index: u32,
-    ) -> Result<(
-        Descriptor<PublicKey>,
-        (PublicKey, Option<DerivationPath>),
-        (PublicKey, DerivationPath),
-    )> {
+    ) -> Result<Descriptor<PublicKey>> {
         let (hub_kp, fallback_pk) = self.get_keys_for_index(contract_index)?;
         let hub_pk = PublicKey::new(hub_kp.public_key());
-
-        let is_mainnet = self.hub_xpriv.network.is_mainnet();
-        let (lender_pk, lender_derivation) =
-            derive_borrower_or_lender_pk(lender_xpub, contract_index, is_mainnet)?;
-
-        let (borrower_pk, borrower_derivation) = match borrower_pk {
-            // If we only have a `borrower_xpub`, use it to derive the descriptor.
-            None => {
-                let (borrower_pk, borrower_derivation) =
-                    derive_borrower_or_lender_pk(borrower_xpub, contract_index, is_mainnet)?;
-
-                (borrower_pk, Some(borrower_derivation))
-            }
-            // If the `borrower_pk` was ever set, we should use that one because we are dealing with
-            // a legacy contract.
-            Some(borrower_pk) => (borrower_pk, None),
-        };
 
         // All collateral outputs share the same script.
         let collateral_descriptor = match contract_version {
@@ -192,35 +128,25 @@ impl Wallet {
             }
         };
 
-        Ok((
-            collateral_descriptor,
-            (borrower_pk, borrower_derivation),
-            (lender_pk, lender_derivation),
-        ))
+        Ok(collateral_descriptor)
     }
 
     #[allow(clippy::too_many_arguments)]
     pub fn create_claim_collateral_psbt(
         &self,
-        borrower_xpub: &Xpub,
-        borrower_pk: Option<PublicKey>,
-        lender_xpub: &Xpub,
+        borrower_pk: PublicKey,
+        lender_pk: PublicKey,
         contract_index: u32,
         collateral_outputs: Vec<(OutPoint, u64)>,
         origination_fee: Amount,
         borrower_address: Address,
         fee_rate_spvb: u64,
         contract_version: ContractVersion,
-    ) -> Result<(Psbt, Descriptor<PublicKey>, PublicKey)> {
+    ) -> Result<(Psbt, Descriptor<PublicKey>)> {
         let (hub_kp, _) = self.get_keys_for_index(contract_index)?;
 
-        let (collateral_descriptor, (borrower_pk, _), _) = self.collateral_descriptor(
-            borrower_xpub,
-            borrower_pk,
-            lender_xpub,
-            contract_version,
-            contract_index,
-        )?;
+        let collateral_descriptor =
+            self.collateral_descriptor(borrower_pk, lender_pk, contract_version, contract_index)?;
 
         let inputs = collateral_outputs
             .iter()
@@ -290,15 +216,14 @@ impl Wallet {
             &collateral_descriptor,
         )?;
 
-        Ok((psbt, collateral_descriptor, borrower_pk))
+        Ok((psbt, collateral_descriptor))
     }
 
     #[allow(clippy::too_many_arguments)]
     pub fn create_liquidation_psbt(
         &self,
-        borrower_xpub: &Xpub,
-        borrower_pk: Option<PublicKey>,
-        lender_xpub: &Xpub,
+        borrower_pk: PublicKey,
+        lender_pk: PublicKey,
         contract_index: u32,
         collateral_outputs: Vec<(OutPoint, u64)>,
         origination_fee: Amount,
@@ -310,13 +235,8 @@ impl Wallet {
     ) -> Result<(Psbt, Descriptor<PublicKey>, PublicKey)> {
         let (hub_kp, _) = self.get_keys_for_index(contract_index)?;
 
-        let (collateral_descriptor, _, (lender_pk, _)) = self.collateral_descriptor(
-            borrower_xpub,
-            borrower_pk,
-            lender_xpub,
-            contract_version,
-            contract_index,
-        )?;
+        let collateral_descriptor =
+            self.collateral_descriptor(borrower_pk, lender_pk, contract_version, contract_index)?;
 
         let inputs = collateral_outputs
             .iter()
@@ -427,9 +347,8 @@ impl Wallet {
     #[allow(clippy::too_many_arguments)]
     pub fn create_dispute_claim_collateral_psbt(
         &self,
-        borrower_xpub: &Xpub,
-        borrower_pk: Option<PublicKey>,
-        lender_xpub: &Xpub,
+        borrower_pk: PublicKey,
+        lender_pk: PublicKey,
         contract_index: u32,
         collateral_outputs: Vec<(OutPoint, u64)>,
         borrower_address: Address<NetworkUnchecked>,
@@ -441,13 +360,8 @@ impl Wallet {
     ) -> Result<(Psbt, Descriptor<PublicKey>, PublicKey)> {
         let (hub_kp, _) = self.get_keys_for_index(contract_index)?;
 
-        let (collateral_descriptor, (borrower_pk, _), _) = self.collateral_descriptor(
-            borrower_xpub,
-            borrower_pk,
-            lender_xpub,
-            contract_version,
-            contract_index,
-        )?;
+        let collateral_descriptor =
+            self.collateral_descriptor(borrower_pk, lender_pk, contract_version, contract_index)?;
 
         let inputs = collateral_outputs
             .iter()

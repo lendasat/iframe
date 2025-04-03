@@ -17,7 +17,6 @@ pub mod wallet;
 pub struct WalletDetails {
     mnemonic_ciphertext: String,
     network: String,
-    xpub: String,
 }
 
 #[wasm_bindgen]
@@ -30,10 +29,6 @@ impl WalletDetails {
     pub fn network(&self) -> String {
         self.network.clone()
     }
-    #[wasm_bindgen(getter)]
-    pub fn xpub(&self) -> String {
-        self.xpub.clone()
-    }
 }
 
 impl From<browser_wallet::WalletDetails> for WalletDetails {
@@ -41,7 +36,6 @@ impl From<browser_wallet::WalletDetails> for WalletDetails {
         WalletDetails {
             mnemonic_ciphertext: value.mnemonic_ciphertext,
             network: value.network,
-            xpub: value.xpub,
         }
     }
 }
@@ -61,13 +55,11 @@ pub fn new_wallet(password: String, network: String) -> Result<WalletDetails, Js
 pub fn persist_new_wallet(
     mnemonic_ciphertext: String,
     network: String,
-    xpub: String,
     key: String,
 ) -> Result<(), JsValue> {
     map_err_to_js!(browser_wallet::persist_new_wallet(
         mnemonic_ciphertext,
         network,
-        xpub,
         key
     ))
 }
@@ -89,15 +81,9 @@ pub fn new_wallet_from_mnemonic(
 pub fn restore_wallet(
     key: String,
     mnemonic_ciphertext: String,
-    xpub: String,
     network: String,
 ) -> Result<(), JsValue> {
-    map_err_to_js!(browser_wallet::restore(
-        key,
-        mnemonic_ciphertext,
-        network,
-        xpub
-    ))
+    map_err_to_js!(browser_wallet::restore(key, mnemonic_ciphertext, network))
 }
 
 #[wasm_bindgen]
@@ -154,13 +140,11 @@ pub fn is_wallet_equal(
     key: String,
     mnemonic_ciphertext: String,
     network: String,
-    xpub: String,
 ) -> Result<bool, JsValue> {
     map_err_to_js!(browser_wallet::is_wallet_equal(
         &key,
         &mnemonic_ciphertext,
         &network,
-        &xpub
     ))
 }
 
@@ -224,8 +208,13 @@ pub fn sign_liquidation_psbt(
 }
 
 #[wasm_bindgen]
-pub fn get_nsec() -> Result<String, JsValue> {
-    map_err_to_js!(wallet::get_nsec())
+pub fn get_nsec(key: String) -> Result<String, JsValue> {
+    map_err_to_js!(browser_wallet::get_nsec(key))
+}
+
+#[wasm_bindgen]
+pub fn get_npub(key: String) -> Result<String, JsValue> {
+    map_err_to_js!(browser_wallet::get_npub(key))
 }
 
 #[wasm_bindgen]
@@ -233,14 +222,26 @@ pub fn get_nostr_derivation_path() -> String {
     wallet::NOSTR_DERIVATION_PATH.to_string()
 }
 
-#[wasm_bindgen]
-pub fn derive_nostr_room_pk(contract: String) -> Result<String, JsValue> {
-    map_err_to_js!(wallet::derive_nostr_room_pk(contract))
+#[wasm_bindgen(getter_with_clone)]
+#[derive(Clone)]
+pub struct PkAndPath {
+    pub pubkey: String,
+    pub path: String,
 }
 
 #[wasm_bindgen]
-pub fn derive_npub(xpub: String) -> Result<String, JsValue> {
-    map_err_to_js!(wallet::derive_npub(xpub))
+pub fn get_pk_and_derivation_path(key: String) -> Result<PkAndPath, JsValue> {
+    map_err_to_js!(
+        browser_wallet::get_next_normal_pk(key).map(|(pk, path)| PkAndPath {
+            pubkey: pk.to_string(),
+            path: path.to_string()
+        })
+    )
+}
+
+#[wasm_bindgen]
+pub fn derive_nostr_room_pk(contract: String) -> Result<String, JsValue> {
+    map_err_to_js!(wallet::derive_nostr_room_pk(contract))
 }
 
 #[wasm_bindgen]
@@ -275,11 +276,6 @@ impl TxOut {
     pub fn address(&self) -> String {
         self.address.clone()
     }
-}
-
-#[wasm_bindgen]
-pub fn get_xpub(key: String) -> Result<String, JsValue> {
-    map_err_to_js!(browser_wallet::get_xpub(&key))
 }
 
 #[wasm_bindgen]
@@ -457,12 +453,12 @@ impl SwiftTransferDetails {
 #[wasm_bindgen]
 pub fn encrypt_fiat_loan_details(
     fiat_loan_details: InnerFiatLoanDetails,
-    counterparty_xpub: String,
+    counterparty_pk: String,
 ) -> Result<FiatLoanDetails, JsValue> {
     let (fiat_loan_details, encrypted_encryption_key_own, encrypted_encryption_key_counterparty) =
         map_err_to_js!(wallet::encrypt_fiat_loan_details(
             &fiat_loan_details.into(),
-            counterparty_xpub
+            counterparty_pk
         ))?;
 
     Ok(FiatLoanDetails {
