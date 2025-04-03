@@ -1,4 +1,4 @@
-import { LuChevronRight, LuCircleCheck } from "react-icons/lu";
+import { LuBan, LuChevronRight, LuCircleCheck } from "react-icons/lu";
 import React, { useState } from "react";
 import {
   Badge,
@@ -29,6 +29,7 @@ import { useAsync } from "react-use";
 import AddCollateralDialog from "./add-collateral-dialog";
 import TransactionHistoryDialog from "./transaction-history";
 import ManageLoanDialog from "./manage-loan-dialog";
+import CancelRequestDialog from "./cancel-request-dialog";
 
 export function contractStatusLabelColor(status?: ContractStatus): string {
   if (!status) {
@@ -129,13 +130,16 @@ const EnhancedBitcoinLoan = () => {
                       </>
                     )}
                   </Badge>
-                  {contract?.liquidation_status ===
-                    LiquidationStatus.Healthy && (
-                    <div className="flex items-center text-sm text-green-600">
-                      <LuCircleCheck className="h-4 w-4 mr-1" />
-                      <span>Healthy</span>
-                    </div>
-                  )}
+                  {contract?.status != ContractStatus.Requested &&
+                    contract?.status != ContractStatus.Cancelled &&
+                    contract?.status != ContractStatus.Closed &&
+                    contract?.liquidation_status ===
+                      LiquidationStatus.Healthy && (
+                      <div className="flex items-center text-sm text-green-600">
+                        <LuCircleCheck className="h-4 w-4 mr-1" />
+                        <span>Healthy</span>
+                      </div>
+                    )}
                   {contract?.liquidation_status ===
                     LiquidationStatus.FirstMarginCall && (
                     <div className="flex items-center text-sm text-orange-600">
@@ -195,23 +199,35 @@ const EnhancedBitcoinLoan = () => {
                   View Transaction History
                 </Button>
               </TransactionHistoryDialog>
-              {contract?.status === ContractStatus.Approved ? (
+              {contract?.status === ContractStatus.Approved && (
                 <AddCollateralDialog
                   isInitialFunding={true}
                   contract={contract}
                 >
                   <Button>Fund Contract</Button>
                 </AddCollateralDialog>
-              ) : (
-                <ManageLoanDialog contract={contract}>
-                  <Button
-                    type={"button"}
-                    className="bg-black text-white hover:bg-gray-800 flex items-center"
-                  >
-                    Manage Loan <LuChevronRight className="ml-1 h-4 w-4" />
-                  </Button>
-                </ManageLoanDialog>
               )}
+              {contract?.status === ContractStatus.Requested && (
+                <CancelRequestDialog contractId={contract?.id}>
+                  <Button type={"button"} variant="destructive">
+                    <LuBan className="mr-1 h-4 w-4" />
+                    Cancel Request
+                  </Button>
+                </CancelRequestDialog>
+              )}
+              {contract?.status !== ContractStatus.Approved &&
+                contract?.status !== ContractStatus.Requested &&
+                contract?.status !== ContractStatus.Cancelled &&
+                contract?.status !== ContractStatus.Closed && (
+                  <ManageLoanDialog contract={contract}>
+                    <Button
+                      type={"button"}
+                      className="bg-black text-white hover:bg-gray-800 flex items-center "
+                    >
+                      Manage Loan <LuChevronRight className="ml-1 h-4 w-4" />
+                    </Button>
+                  </ManageLoanDialog>
+                )}
             </CardFooter>
           </Card>
         </div>

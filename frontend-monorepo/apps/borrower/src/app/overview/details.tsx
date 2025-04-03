@@ -19,7 +19,7 @@ import {
 import { format, formatDistanceToNow } from "date-fns";
 import LoanStatusInformation from "./contract-status-text";
 
-const shortenUuid = (uuid: string) => {
+export const shortenUuid = (uuid: string) => {
   const firstSix = uuid.slice(0, 6);
   const lastFour = uuid.slice(-4);
 

@@ -43,7 +43,14 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
     case ContractStatus.Requested:
     case ContractStatus.RenewalRequested:
       icon = <LuClock className="h-5 w-5 text-blue-500 mr-2 mt-0.5" />;
-      message = <>"Your loan request is pending approval from the lender."</>;
+      message = (
+        <>
+          Your loan request is pending approval from the lender. The lender has{" "}
+          <span className="font-bold">{actionExpiresIn}</span> but not later
+          than <span className="font-bold">{actionExpiryDateFormated}</span> to
+          approve the request.
+        </>
+      );
       break;
 
     case ContractStatus.Approved:
@@ -127,7 +134,9 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       textColor = "text-emerald-600";
       title = "Repayment Confirmed";
       message = (
-        <>Your repayment has been confirmed. The loan is now closing.</>
+        <>
+          Your repayment has been confirmed. You can withdraw your collateral.
+        </>
       );
       break;
 

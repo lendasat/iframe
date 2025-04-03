@@ -178,7 +178,7 @@ const TransactionHistoryTimeline = ({
                     tx.transaction_type,
                   );
 
-                  const url = getTxUrl(tx.txid, tx.transaction_type, assetType);
+                  const url = getTxUrl(tx.txid, assetType);
 
                   return (
                     <div key={tx.txid} className="relative pl-14">
