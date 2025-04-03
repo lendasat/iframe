@@ -18,11 +18,8 @@ export function getFormatedStringFromDays(numberOfDays: number) {
   return yearsDisplay + monthsDisplay + daysDisplay;
 }
 
-export const formatSatsToBitcoin = (sats?: number) => {
-  if (sats == null) return undefined;
-
-  // Convert sats to BTC (1 BTC = 100,000,000 sats)
-  const btcValue = sats / 100000000;
+export const formatBitcoin = (btcValue?: number) => {
+  if (btcValue == null) return undefined;
 
   // Format to 8 decimal places
   const formatted = btcValue.toFixed(8);
@@ -42,6 +39,15 @@ export const formatSatsToBitcoin = (sats?: number) => {
 
   // Combine parts
   return `${integerPart}.${formattedDecimal}`;
+};
+
+export const formatSatsToBitcoin = (sats?: number) => {
+  if (sats == null) return undefined;
+
+  // Convert sats to BTC (1 BTC = 100,000,000 sats)
+  const btcValue = sats / 100000000;
+
+  return formatBitcoin(btcValue);
 };
 
 interface EncodeOptions {
