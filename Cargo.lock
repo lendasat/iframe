@@ -878,6 +878,7 @@ dependencies = [
  "hkdf",
  "log",
  "miniscript 12.2.0",
+ "once_cell",
  "rand",
  "sha2",
  "srp",
