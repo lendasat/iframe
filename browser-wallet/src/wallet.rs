@@ -335,6 +335,48 @@ fn find_kp(
     if let Some(derivation_path) = derivation_path {
         let kp = get_kp_from_path(&wallet.xprv, derivation_path)?;
 
+        let xpub = Xpub::from_priv(&Secp256k1::new(), &wallet.xprv);
+
+        log::debug!(
+            "Derived PK {} with derivation path {derivation_path} for Xpub {xpub}",
+            kp.public_key(),
+        );
+
+        if kp.public_key() != own_pk.inner {
+            match wallet.legacy_xprv {
+                Some(legacy_xprv) => {
+                    let kp = get_kp_from_path(&legacy_xprv, derivation_path)?;
+
+                    let legacy_xpub = Xpub::from_priv(&Secp256k1::new(), &legacy_xprv);
+
+                    log::debug!(
+                        "Derived PK {} with derivation path {derivation_path} \
+                         for legacy Xpub {legacy_xpub}",
+                        kp.public_key(),
+                    );
+
+                    if kp.public_key() != own_pk.inner {
+                        bail!(
+                            "Cannot derive PK {} using derivation path {derivation_path} \
+                             for either Xpub ({xpub} and {legacy_xpub})",
+                            own_pk.inner,
+                        );
+                    }
+
+                    // We use a keypair derived from the legacy Xprv.
+                    return Ok(kp);
+                }
+                None => {
+                    bail!(
+                        "Cannot derive PK {} using derivation path \
+                         {derivation_path} for Xpub {xpub}",
+                        own_pk.inner,
+                    );
+                }
+            }
+        }
+
+        // We use a keypair derived from the current Xprv.
         return Ok(kp);
     }
 
