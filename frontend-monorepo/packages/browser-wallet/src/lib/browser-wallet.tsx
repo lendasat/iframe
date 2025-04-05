@@ -10,6 +10,7 @@ import init, {
   sign_claim_psbt,
   sign_liquidation_psbt,
   decrypt_fiat_loan_details,
+  unlock_and_sign_claim_psbt,
   SwiftTransferDetails,
   IbanTransferDetails,
   SignedTransaction,
@@ -40,6 +41,13 @@ interface WalletContextType {
   getNsec: () => Promise<string>;
   getPubkeyFromContract: (passphrase: string) => string;
   signClaimPsbt: (
+    psbt: string,
+    collateralDescriptor: string,
+    borrowerPk: string,
+    derivationPath?: string,
+  ) => Promise<SignedTransaction>;
+  unlockAndSignClaimPsbt: (
+    password: stirng,
     psbt: string,
     collateralDescriptor: string,
     borrowerPk: string,
@@ -147,6 +155,44 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
         borrowerPk,
         derivationPath,
       );
+    } else {
+      throw Error("Wallet not initialized");
+    }
+  };
+
+  /**
+   * Unlocks the wallet and signs the PSBT in one call
+   *
+   * This is used in context where we are not sure if the wallet is unlocked, i.e. always :D
+   */
+  const unlockAndSignClaimPsbt = async (
+    password: string,
+    psbt: string,
+    collateralDescriptor: string,
+    borrowerPk: string,
+    derivationPath?: string,
+  ) => {
+    if (isInitialized) {
+      if (isWalletLoaded) {
+        return sign_claim_psbt(
+          psbt,
+          collateralDescriptor,
+          borrowerPk,
+          derivationPath,
+        );
+      }
+
+      const key = await md5(email);
+      const signedPsbt = unlock_and_sign_claim_psbt(
+        password,
+        key,
+        psbt,
+        collateralDescriptor,
+        borrowerPk,
+        derivationPath,
+      );
+      setIsWalletLoaded(true);
+      return signedPsbt;
     } else {
       throw Error("Wallet not initialized");
     }
@@ -378,6 +424,7 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
     encryptFiatLoanDetailsBorrower,
     encryptFiatLoanDetailsLender,
     decryptFiatLoanDetails,
+    unlockAndSignClaimPsbt,
   };
 
   return (

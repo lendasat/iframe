@@ -80,6 +80,11 @@ export const validateEmail = (email: string) => {
   return regex.test(email);
 };
 
+/**
+ * returns an url for the given txid
+ * @param txid
+ * @param assetType - if undefined, Bitcoin is assumed.
+ */
 export function getTxUrl(txid: string, assetType?: LoanAsset) {
   let url = `${import.meta.env.VITE_MEMPOOL_REST_URL}/tx/${txid}`;
   switch (assetType) {

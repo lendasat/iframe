@@ -1,4 +1,9 @@
-import { LuBan, LuChevronRight, LuCircleCheck } from "react-icons/lu";
+import {
+  LuBan,
+  LuChevronRight,
+  LuCircleCheck,
+  LuDownload,
+} from "react-icons/lu";
 import React, { useState } from "react";
 import {
   Badge,
@@ -30,6 +35,7 @@ import AddCollateralDialog from "./add-collateral-dialog";
 import TransactionHistoryDialog from "./transaction-history";
 import ManageLoanDialog from "./manage-loan-dialig/manage-loan-dialog";
 import CancelRequestDialog from "./cancel-request-dialog";
+import WithdrawCollateralDialog from "./manage-loan-dialig/withdraw-collateral";
 
 export function contractStatusLabelColor(status?: ContractStatus): string {
   if (!status) {
@@ -215,11 +221,27 @@ const EnhancedBitcoinLoan = () => {
                   </Button>
                 </CancelRequestDialog>
               )}
+              {contract?.status === ContractStatus.RepaymentConfirmed && (
+                <WithdrawCollateralDialog
+                  contract={contract}
+                  collateralAmountSats={contract.collateral_sats}
+                  collateralAddress={contract.borrower_btc_address}
+                  onWithdraw={async (password: string, txFeeRate: number) => {
+                    //
+                  }}
+                >
+                  <Button type={"button"} variant="default">
+                    <LuDownload className="mr-2 h-4 w-4" />
+                    Withdraw Collateral
+                  </Button>
+                </WithdrawCollateralDialog>
+              )}
               {contract?.status !== ContractStatus.Approved &&
                 contract?.status !== ContractStatus.Requested &&
                 contract?.status !== ContractStatus.Cancelled &&
                 contract?.status !== ContractStatus.Closed &&
-                contract?.status !== ContractStatus.RepaymentProvided && (
+                contract?.status !== ContractStatus.RepaymentProvided &&
+                contract?.status !== ContractStatus.RepaymentConfirmed && (
                   <ManageLoanDialog contract={contract}>
                     <Button
                       type={"button"}
