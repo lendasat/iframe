@@ -109,7 +109,7 @@ function ContractDetails({ contract }: DetailsProps) {
   const [error, setError] = useState("");
   const [startingDisputeLoading, setStartingDisputeLoading] = useState(false);
 
-  const collateral_sats = contract.initial_collateral_sats;
+  const collateral_sats = contract.collateral_sats;
   const collateral = collateral_sats / 100000000;
   const loanAmount = contract.loan_amount;
   const durationDays = contract.duration_days;

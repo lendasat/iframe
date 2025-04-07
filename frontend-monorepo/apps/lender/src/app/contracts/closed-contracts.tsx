@@ -109,7 +109,7 @@ export const ClosedContracts = ({ contracts }: ClosedContractsProps) => {
         )}
 
         {contracts.map((contract, index) => {
-          const collateral_btc = contract.initial_collateral_sats / 100000000;
+          const collateral_btc = contract.collateral_sats / 100000000;
 
           let contractStatus = contractStatusToLabelString(contract.status);
           const firstMarginCall =
