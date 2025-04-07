@@ -25,6 +25,7 @@ import { cn } from "@frontend/shadcn";
 import { formatSatsToBitcoin, getTxUrl } from "@frontend/ui-shared";
 import { useWallet } from "@frontend/browser-wallet";
 import type { Contract } from "@frontend/http-client-borrower";
+import { useNavigate } from "react-router-dom";
 
 interface WithdrawCollateralDialogProps {
   children: React.ReactNode;
@@ -61,10 +62,10 @@ const WithdrawCollateralDialog: React.FC<WithdrawCollateralDialogProps> = ({
   children,
   collateralAmountSats,
   collateralAddress = "",
-  onWithdraw,
   contract,
 }) => {
   const [open, setOpen] = useState(false);
+  const [success, setSuccess] = useState(false);
   const [password, setPassword] = useState("");
   const [feeRate, setFeeRate] = useState<number>(feeOptions[2].value); // Default to fast
   const [customFee, setCustomFee] = useState<string>("");
@@ -73,10 +74,16 @@ const WithdrawCollateralDialog: React.FC<WithdrawCollateralDialogProps> = ({
   const [txId, setTxId] = useState<string | null>(null);
   const { unlockAndSignClaimPsbt } = useWallet();
   const { getClaimCollateralPsbt, postClaimTx } = useBorrowerHttpClient();
+  const navigate = useNavigate();
 
   const handleWithdraw = async () => {
     if (!password) {
       setError("Password is required");
+      return;
+    }
+
+    if (!contract) {
+      setError("Contract is required");
       return;
     }
 
@@ -88,7 +95,7 @@ const WithdrawCollateralDialog: React.FC<WithdrawCollateralDialogProps> = ({
       const finalFeeRate = feeRate === 0 ? parseInt(customFee) : feeRate;
 
       console.log(`Final fee: ${finalFeeRate}`);
-      const res = await getClaimCollateralPsbt(contract.id, finalFeeRate);
+      const res = await getClaimCollateralPsbt(contract?.id, finalFeeRate);
 
       console.log("Signing claim collateral PSBT");
 
@@ -97,14 +104,13 @@ const WithdrawCollateralDialog: React.FC<WithdrawCollateralDialogProps> = ({
         res.psbt,
         res.collateral_descriptor,
         res.borrower_pk,
-        contract.derivation_path,
+        contract?.derivation_path,
       );
       console.log(`Successfully signed claim collateral PSBT`);
-      const txid = await postClaimTx(contract.id, claimTx.tx);
+      const txid = await postClaimTx(contract?.id, claimTx.tx);
       console.log(`Published transaction ${txid}`);
       setTxId(txid);
-      // await onWithdraw(password, finalFeeRate);
-      // setOpen(false);
+      setSuccess(true);
     } catch (err) {
       console.error("Failed to withdraw funds:", err);
       setError(
@@ -283,28 +289,35 @@ const WithdrawCollateralDialog: React.FC<WithdrawCollateralDialogProps> = ({
           >
             Cancel
           </Button>
-          <Button
-            variant="default"
-            onClick={handleWithdraw}
-            disabled={
-              isSubmitting ||
-              !password ||
-              (feeRate === 0 && !customFee) ||
-              txId !== null
-            }
-          >
-            {isSubmitting ? (
-              <>
-                <LuLoader className="mr-2 h-4 w-4 animate-spin" />
-                Processing...
-              </>
-            ) : (
-              <>
-                <LuWallet className="mr-2 h-4 w-4" />
-                Withdraw Funds
-              </>
-            )}
-          </Button>
+          {!success && (
+            <Button
+              variant="default"
+              onClick={handleWithdraw}
+              disabled={
+                isSubmitting ||
+                !password ||
+                (feeRate === 0 && !customFee) ||
+                txId !== null
+              }
+            >
+              {isSubmitting ? (
+                <>
+                  <LuLoader className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <LuWallet className="mr-2 h-4 w-4" />
+                  Withdraw Funds
+                </>
+              )}
+            </Button>
+          )}
+          {success && (
+            <Button variant="default" onClick={() => navigate(0)}>
+              <>Back to contract</>
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

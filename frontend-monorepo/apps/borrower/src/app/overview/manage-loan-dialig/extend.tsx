@@ -79,7 +79,7 @@ export function ExtendContract({ contract }: ExtendContractProps) {
         new_duration: extensionDays,
       });
       setIsSubmitting(false);
-      navigate(newContract?.id || "");
+      navigate(`/my-contracts/${newContract?.id || ""}`);
     } catch (error) {
       console.log(`Failed sending request ${error}`);
       setError(`Failed sending request ${error}`);
@@ -216,7 +216,7 @@ export function ExtendContract({ contract }: ExtendContractProps) {
                 <div className="flex justify-between items-center mt-1">
                   <span className="text-sm text-muted-foreground">In BTC</span>
                   {extensionFeeBtc ? (
-                    <span className="font-medium">
+                    <span className="text-sm text-muted-foreground">
                       {formatBitcoin(extensionFeeBtc)} BTC
                     </span>
                   ) : (

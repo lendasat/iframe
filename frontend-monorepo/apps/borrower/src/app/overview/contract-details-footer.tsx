@@ -1,0 +1,82 @@
+import TransactionHistoryDialog from "./transaction-history";
+import AddCollateralDialog from "./add-collateral-dialog";
+import CancelRequestDialog from "./cancel-request-dialog";
+import { LuBan, LuChevronRight, LuDownload } from "react-icons/lu";
+import WithdrawCollateralDialog from "./manage-loan-dialig/withdraw-collateral";
+import ManageLoanDialog from "./manage-loan-dialig/manage-loan-dialog";
+import React from "react";
+import { Contract, ContractStatus } from "@frontend/http-client-borrower";
+import { Button } from "@frontend/shadcn";
+
+interface ContractDetailsFooterProps {
+  contract?: Contract;
+  loading: boolean;
+}
+
+export function ContractDetailsFooter({
+  contract,
+  loading,
+}: ContractDetailsFooterProps) {
+  let button = undefined;
+
+  if (!contract) {
+    button = undefined;
+  } else if (contract.status === ContractStatus.Approved) {
+    button = (
+      <AddCollateralDialog isInitialFunding={true} contract={contract}>
+        <Button type={"button"}>Fund Contract</Button>
+      </AddCollateralDialog>
+    );
+  } else if (contract.status === ContractStatus.Requested) {
+    button = (
+      <CancelRequestDialog contractId={contract.id}>
+        <Button type={"button"} variant="destructive">
+          <LuBan className="mr-1 h-4 w-4" />
+          Cancel Request
+        </Button>
+      </CancelRequestDialog>
+    );
+  } else if (contract.status === ContractStatus.RepaymentConfirmed) {
+    button = (
+      <WithdrawCollateralDialog
+        contract={contract}
+        collateralAmountSats={contract.collateral_sats}
+        collateralAddress={contract.borrower_btc_address}
+      >
+        <Button type={"button"}>
+          <LuDownload className="mr-2 h-4 w-4" />
+          Withdraw Collateral
+        </Button>
+      </WithdrawCollateralDialog>
+    );
+  } else if (
+    contract.status !== ContractStatus.Cancelled &&
+    contract.status !== ContractStatus.Closed &&
+    contract.status !== ContractStatus.RepaymentProvided &&
+    contract.status !== ContractStatus.Extended
+  ) {
+    button = (
+      <ManageLoanDialog contract={contract}>
+        <Button type={"button"}>
+          Manage Loan <LuChevronRight className="ml-1 h-4 w-4" />
+        </Button>
+      </ManageLoanDialog>
+    );
+  }
+
+  return (
+    <>
+      <TransactionHistoryDialog
+        transactions={contract?.transactions || []}
+        isLoading={loading}
+        contractStatus={contract?.status}
+        assetType={contract?.loan_asset}
+      >
+        <Button variant="outline" typeof={"button"}>
+          View Transaction History
+        </Button>
+      </TransactionHistoryDialog>
+      {button}
+    </>
+  );
+}

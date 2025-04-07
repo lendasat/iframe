@@ -7,6 +7,7 @@ import {
   formatDistanceToNow,
   formatDistanceToNowStrict,
 } from "date-fns";
+import { Link } from "@radix-ui/themes";
 
 interface LoanStatusInformationProps {
   contract?: Contract;
@@ -25,10 +26,10 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
     );
   }
 
-  const expiryDate = format(contract.expiry, "MMM, do yyyy - p");
+  const expiryDate = format(contract.expiry, "MMM, dd yyyy - p");
 
   const actionExpiryDate = add(contract.created_at, { hours: 24 });
-  const actionExpiryDateFormated = format(actionExpiryDate, "MMM, do yyyy - p");
+  const actionExpiryDateFormated = format(actionExpiryDate, "MMM, dd yyyy - p");
   const actionExpiresIn = formatDistanceToNowStrict(actionExpiryDate);
 
   let icon = <LuInfo className="h-5 w-5 text-blue-500 mr-2 mt-0.5" />;
@@ -198,7 +199,13 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       textColor = "text-purple-600";
       title = "Loan Extended";
       message = (
-        <>Your loan term has been extended and replaced by a new loan.</>
+        <>
+          Your loan term has been extended and replaced by
+          <Link href={`/my-contracts/${contract.extended_by_contract}`}>
+            {" "}
+            a new loan.
+          </Link>
+        </>
       );
       break;
 

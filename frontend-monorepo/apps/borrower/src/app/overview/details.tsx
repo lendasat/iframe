@@ -52,7 +52,7 @@ export const Details = ({ contract }: DetailsProps) => {
         })
       : undefined;
   const loanExpiryFormatted = contract?.expiry
-    ? format(contract.expiry, "MMM, do yyyy - p")
+    ? format(contract.expiry, "MMM, dd yyyy - p")
     : undefined;
 
   const originationFee = formatSatsToBitcoin(contract?.origination_fee_sats);
@@ -140,8 +140,15 @@ export const Details = ({ contract }: DetailsProps) => {
           ) : (
             <Skeleton className="h-4 w-[150px] mb-2" />
           )}
-
-          <div className="flex items-center text-xs text-gray-500">
+        </div>
+        <div className="text-right md:col-span-1 col-span-2">
+          <p className="text-sm text-gray-500">Expiry</p>
+          {loanExpiryFormatted ? (
+            <p>{loanExpiryFormatted}</p>
+          ) : (
+            <Skeleton className="h-4 w-[150px] mb-2 ml-auto" />
+          )}
+          <div className="flex justify-end items-center text-xs text-gray-500">
             <LuClock className="h-3 w-3 mr-1" />
             {loanDurationRemaining ? (
               <span>{loanDurationRemaining}</span>
@@ -149,14 +156,6 @@ export const Details = ({ contract }: DetailsProps) => {
               <Skeleton className="h-4 w-[50px]" />
             )}
           </div>
-        </div>
-        <div className="text-right md:col-span-1 col-span-2">
-          <p className="text-sm text-gray-500">Expiry</p>
-          {loanExpiryFormatted ? (
-            <p>{loanExpiryFormatted}</p>
-          ) : (
-            <Skeleton className="h-4 w-[150px] mb-2" />
-          )}
         </div>
       </div>
 

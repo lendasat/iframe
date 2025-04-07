@@ -5,11 +5,12 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import type { Contract } from "@frontend/http-client-lender";
+import { Button } from "@frontend/shadcn";
 import { formatCurrency, LoanAssetHelper } from "@frontend/ui-shared";
 import { Heading } from "@radix-ui/themes";
 import QRCode from "qrcode.react";
 import { useState } from "react";
-import { Alert, Button, Col, Container, Row, Spinner } from "react-bootstrap";
+import { Alert, Col, Container, Row, Spinner } from "react-bootstrap";
 
 interface RepaymentDetailsProps {
   contract: Contract;

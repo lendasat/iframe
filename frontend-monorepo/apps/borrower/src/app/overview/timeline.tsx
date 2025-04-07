@@ -90,7 +90,7 @@ export const Timeline = ({ contract }: TimelineProps) => {
                     {contractStatusToLabelString(event.event)}
                   </p>
                   <Badge variant="outline" className="text-xs">
-                    {format(event.date, "MMM, do yyyy - p")}
+                    {format(event.date, "MMM, dd yyyy - p")}
                   </Badge>
                 </div>
                 {event.txid && url && (

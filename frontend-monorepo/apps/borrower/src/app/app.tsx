@@ -196,7 +196,7 @@ function MainLayoutComponents() {
             <Route index element={<DashBoard />} />
             <Route path="/my-contracts">
               <Route index element={<MyContracts />} />
-              <Route path={":id"} element={<ContractDetailsOverview />} />
+              <Route path={":id"} element={<BitcoinCollateralizedLoan />} />
             </Route>
             <Route path="/requests/*" element={<LoanRequestFlow />} />
 
@@ -223,7 +223,11 @@ function MainLayoutComponents() {
             />
             <Route path="/disputes/:id" element={<ResolveDispute />} />
             <Route path="/restricted" element={<RestrictedAccessPage />} />
-            <Route path="/test/:id" element={<BitcoinCollateralizedLoan />} />
+            {/*TODO: remove this later */}
+            <Route
+              path="/old-details/:id"
+              element={<ContractDetailsOverview />}
+            />
             <Route
               path="/resetpassword/:token/:email"
               element={<ResetPassword />}

@@ -40,7 +40,7 @@ import {
 
 // Helper to format date
 const formatDate = (date: Date) => {
-  return format(date, "MMM, do yyyy - p");
+  return format(date, "MMM, dd yyyy - p");
 };
 
 // Helper to shorten txid

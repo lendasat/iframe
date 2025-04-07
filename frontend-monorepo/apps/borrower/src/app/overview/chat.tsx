@@ -128,17 +128,14 @@ export const Chat = () => {
         </ScrollArea>
       </CardContent>
       <CardFooter className="border-t p-4">
-        <div className="flex w-full">
+        <div className="flex w-full gap-2">
           <Input
             placeholder="Type your message..."
             value={chatMessage}
             onChange={(e) => setChatMessage(e.target.value)}
             className="rounded-r-none"
           />
-          <Button
-            onClick={handleSendMessage}
-            className="rounded-l-none bg-black hover:bg-gray-800"
-          >
+          <Button onClick={handleSendMessage} variant={"outline"} size={"icon"}>
             <LuSend className="h-4 w-4" />
           </Button>
         </div>

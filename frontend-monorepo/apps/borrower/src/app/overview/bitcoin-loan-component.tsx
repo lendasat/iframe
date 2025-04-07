@@ -1,13 +1,6 @@
-import {
-  LuBan,
-  LuChevronRight,
-  LuCircleCheck,
-  LuDownload,
-} from "react-icons/lu";
-import React, { useState } from "react";
+import { LuCircleCheck } from "react-icons/lu";
 import {
   Badge,
-  Button,
   Card,
   CardDescription,
   CardFooter,
@@ -31,11 +24,7 @@ import {
   useBorrowerHttpClient,
 } from "@frontend/http-client-borrower";
 import { useAsync } from "react-use";
-import AddCollateralDialog from "./add-collateral-dialog";
-import TransactionHistoryDialog from "./transaction-history";
-import ManageLoanDialog from "./manage-loan-dialig/manage-loan-dialog";
-import CancelRequestDialog from "./cancel-request-dialog";
-import WithdrawCollateralDialog from "./manage-loan-dialig/withdraw-collateral";
+import { ContractDetailsFooter } from "./contract-details-footer";
 
 export function contractStatusLabelColor(status?: ContractStatus): string {
   if (!status) {
@@ -88,8 +77,6 @@ const EnhancedBitcoinLoan = () => {
   const { getContract } = useBorrowerHttpClient();
   const { id } = useParams();
 
-  const [activeTab, setActiveTab] = useState("details");
-
   const {
     value: contract,
     loading,
@@ -111,12 +98,12 @@ const EnhancedBitcoinLoan = () => {
     contract?.status && contractStatusToLabelString(contract.status);
 
   return (
-    <div className="max-w-full mx-4 my-4">
+    <div className="max-w-full mx-4 h-screen overflow-y-auto md:overflow-y-visible pb-10 pt-5">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Main loan details (2/3 width on large screens) */}
         <div className="lg:col-span-2">
-          <Card className="shadow-md">
-            <CardHeader className="pb-2">
+          <Card className="shadow-md h-full flex flex-col">
+            <CardHeader className="pb-2 flex-shrink-0">
               <div className="flex justify-between items-start">
                 <div>
                   <CardTitle className="text-2xl font-bold">
@@ -166,10 +153,9 @@ const EnhancedBitcoinLoan = () => {
 
             <Tabs
               defaultValue="details"
-              className="w-full"
-              onValueChange={setActiveTab}
+              className="w-full flex-grow flex flex-col"
             >
-              <div className="px-4">
+              <div className="px-4 flex-shrink-0">
                 <TabsList className="grid grid-cols-3 mb-2">
                   <TabsTrigger value="details">Loan Details</TabsTrigger>
                   <TabsTrigger value="collateral">Collateral</TabsTrigger>
@@ -177,86 +163,29 @@ const EnhancedBitcoinLoan = () => {
                 </TabsList>
               </div>
 
-              <TabsContent value="details" className="m-0">
-                <Details contract={contract} />
-              </TabsContent>
+              <div className="overflow-y-auto flex-grow">
+                <TabsContent value="details" className="m-0">
+                  <Details contract={contract} />
+                </TabsContent>
 
-              <TabsContent value="collateral" className="m-0">
-                <Collateral contract={contract} />
-              </TabsContent>
+                <TabsContent value="collateral" className="m-0">
+                  <Collateral contract={contract} />
+                </TabsContent>
 
-              <TabsContent value="timeline" className="m-0">
-                <Timeline contract={contract} />
-              </TabsContent>
+                <TabsContent value="timeline" className="m-0">
+                  <Timeline contract={contract} />
+                </TabsContent>
+              </div>
             </Tabs>
 
-            <CardFooter className="flex justify-between border-t pt-4">
-              <TransactionHistoryDialog
-                transactions={contract?.transactions || []}
-                isLoading={loading}
-                contractStatus={contract?.status}
-                assetType={contract?.loan_asset}
-              >
-                <Button
-                  variant="outline"
-                  typeof={"button"}
-                  className="text-gray-700"
-                >
-                  View Transaction History
-                </Button>
-              </TransactionHistoryDialog>
-              {contract?.status === ContractStatus.Approved && (
-                <AddCollateralDialog
-                  isInitialFunding={true}
-                  contract={contract}
-                >
-                  <Button>Fund Contract</Button>
-                </AddCollateralDialog>
-              )}
-              {contract?.status === ContractStatus.Requested && (
-                <CancelRequestDialog contractId={contract?.id}>
-                  <Button type={"button"} variant="destructive">
-                    <LuBan className="mr-1 h-4 w-4" />
-                    Cancel Request
-                  </Button>
-                </CancelRequestDialog>
-              )}
-              {contract?.status === ContractStatus.RepaymentConfirmed && (
-                <WithdrawCollateralDialog
-                  contract={contract}
-                  collateralAmountSats={contract.collateral_sats}
-                  collateralAddress={contract.borrower_btc_address}
-                  onWithdraw={async (password: string, txFeeRate: number) => {
-                    //
-                  }}
-                >
-                  <Button type={"button"} variant="default">
-                    <LuDownload className="mr-2 h-4 w-4" />
-                    Withdraw Collateral
-                  </Button>
-                </WithdrawCollateralDialog>
-              )}
-              {contract?.status !== ContractStatus.Approved &&
-                contract?.status !== ContractStatus.Requested &&
-                contract?.status !== ContractStatus.Cancelled &&
-                contract?.status !== ContractStatus.Closed &&
-                contract?.status !== ContractStatus.RepaymentProvided &&
-                contract?.status !== ContractStatus.RepaymentConfirmed && (
-                  <ManageLoanDialog contract={contract}>
-                    <Button
-                      type={"button"}
-                      className="bg-black text-white hover:bg-gray-800 flex items-center "
-                    >
-                      Manage Loan <LuChevronRight className="ml-1 h-4 w-4" />
-                    </Button>
-                  </ManageLoanDialog>
-                )}
+            <CardFooter className="flex-shrink-0 flex justify-between border-t pt-4">
+              <ContractDetailsFooter contract={contract} loading={loading} />
             </CardFooter>
           </Card>
         </div>
 
         {/* Chat section (1/3 width on large screens) */}
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 pb-10">
           <Chat />
         </div>
       </div>
