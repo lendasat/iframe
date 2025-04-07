@@ -13,7 +13,6 @@ use crate::model::LoanAsset;
 use crate::model::LoanTransaction;
 use crate::model::ManualCollateralRecovery;
 use crate::model::TransactionType;
-use crate::model::ONE_YEAR;
 use crate::routes::lender::auth::jwt_auth;
 use crate::routes::user_connection_details_middleware;
 use crate::routes::user_connection_details_middleware::UserConnectionDetails;
@@ -44,7 +43,6 @@ use bitcoin::Amount;
 use bitcoin::PublicKey;
 use bitcoin::Transaction;
 use miniscript::Descriptor;
-use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
 use serde::Deserialize;
 use serde::Serialize;
@@ -513,13 +511,7 @@ async fn get_liquidation_to_bitcoin_psbt(
             (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
         })?;
 
-    let lender_amount = calculate_lender_liquidation_amount(
-        contract.loan_amount,
-        contract.interest_rate,
-        contract.duration_days as u32,
-        price,
-    )
-    .map_err(|e| {
+    let lender_amount = contract.outstanding_balance_btc(price).map_err(|e| {
         let error_response = ErrorResponse {
             message: format!("Failed to calculate lender amount: {e:#}"),
         };
@@ -624,12 +616,7 @@ async fn post_build_liquidation_to_stablecoin_psbt(
             error_response(StatusCode::INTERNAL_SERVER_ERROR, "Database error")
         })?;
 
-    let lender_amount = contract.loan_amount
-        + calculate_interest(
-            contract.loan_amount,
-            contract.interest_rate,
-            contract.duration_days as u32,
-        );
+    let lender_amount = contract.outstanding_balance_usd();
 
     let loan_repayment_address =
         contract
@@ -820,39 +807,6 @@ async fn post_liquidation_tx(
     }
 
     Ok(claim_txid.to_string())
-}
-
-fn calculate_lender_liquidation_amount(
-    loan_amount_usd: Decimal,
-    yearly_interest_rate: Decimal,
-    duration_days: u32,
-    price: Decimal,
-) -> anyhow::Result<Amount> {
-    let owed_amount_usd =
-        loan_amount_usd + calculate_interest(loan_amount_usd, yearly_interest_rate, duration_days);
-
-    let owed_amount_btc = owed_amount_usd
-        .checked_div(price)
-        .ok_or_else(|| anyhow!("Division by zero"))?;
-
-    let owed_amount_btc = owed_amount_btc.round_dp(8);
-    let owed_amount_btc = owed_amount_btc.to_f64().expect("to fit");
-    let owed_amount = Amount::from_btc(owed_amount_btc).expect("to fit");
-
-    Ok(owed_amount)
-}
-
-/// Calculates the interest for the provided `duration_days`.
-///
-/// Note: does not compound interest
-fn calculate_interest(
-    loan_amount_usd: Decimal,
-    yearly_interest_rate: Decimal,
-    duration_days: u32,
-) -> Decimal {
-    let one_year = Decimal::from(ONE_YEAR);
-    let daily_interest_rate = yearly_interest_rate / one_year;
-    loan_amount_usd * daily_interest_rate * Decimal::from(duration_days)
 }
 
 #[derive(Debug, Serialize)]
@@ -1363,102 +1317,5 @@ impl From<approve_contract::Error> for Error {
                 Error::InvalidApproveRequest { status }
             }
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::model::ONE_MONTH;
-    use crate::model::ONE_YEAR;
-    use rust_decimal_macros::dec;
-
-    #[test]
-    fn test_calculate_lender_liquidation_amount() {
-        let loan_amount_usd = dec!(1_000);
-        let yearly_interest_rate = dec!(0.12);
-        let duration_days = ONE_MONTH * 3;
-        let price = dec!(100_000);
-
-        let amount = calculate_lender_liquidation_amount(
-            loan_amount_usd,
-            yearly_interest_rate,
-            duration_days,
-            price,
-        )
-        .unwrap();
-
-        assert_eq!(amount.to_sat(), 1030000);
-
-        let loan_amount_usd = dec!(10_000);
-        let yearly_interest_rate = dec!(0.20);
-        let duration_days = ONE_MONTH * 18;
-        let price = dec!(50_000);
-
-        let amount = calculate_lender_liquidation_amount(
-            loan_amount_usd,
-            yearly_interest_rate,
-            duration_days,
-            price,
-        )
-        .unwrap();
-
-        assert_eq!(amount.to_sat(), 26_000_000);
-
-        let loan_amount_usd = dec!(1_000);
-        let yearly_interest_rate = dec!(0.12);
-        let duration_days = ONE_YEAR;
-        let price = dec!(0);
-
-        let res = calculate_lender_liquidation_amount(
-            loan_amount_usd,
-            yearly_interest_rate,
-            duration_days,
-            price,
-        );
-
-        assert!(res.is_err())
-    }
-
-    #[test]
-    fn test_calculate_interest_daily() {
-        let loan_amount_usd = dec!(1_000);
-        let yearly_interest_rate = dec!(0.12);
-
-        let duration_days = 1;
-        let amount = calculate_interest(loan_amount_usd, yearly_interest_rate, duration_days);
-
-        let diff = amount - dec!(0.3333);
-        assert!(
-            diff < dec!(0.0001),
-            "interest was {amount} but it was {diff} too high"
-        );
-    }
-
-    #[test]
-    fn test_calculate_interest_yearly() {
-        let loan_amount_usd = dec!(1_000);
-        let yearly_interest_rate = dec!(0.12);
-
-        let duration_days = ONE_YEAR;
-        let amount = calculate_interest(loan_amount_usd, yearly_interest_rate, duration_days);
-
-        let diff = amount - dec!(119.9999);
-        assert!(diff < dec!(0.0001), "was {amount}");
-    }
-
-    #[test]
-    fn test_calculate_interest_15_months() {
-        let loan_amount_usd = dec!(1_000);
-        let yearly_interest_rate = dec!(0.12);
-
-        let duration_days = ONE_MONTH * 15;
-        let amount = calculate_interest(loan_amount_usd, yearly_interest_rate, duration_days);
-
-        let diff = amount - dec!(149.9999);
-        assert!(
-            diff < dec!(0.0001),
-            "interest was {amount} but it was {diff} too high"
-        );
     }
 }
