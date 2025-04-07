@@ -328,14 +328,24 @@ impl Wallet {
 
         let total_collateral_amount =
             Amount::from_sat(collateral_outputs.iter().fold(0, |acc, (_, a)| acc + a));
+
+        let lender_amount = if lender_amount >= (total_collateral_amount - origination_fee) {
+            tracing::warn!(
+                expected_lender_amount = %lender_amount,
+                %total_collateral_amount,
+                %origination_fee,
+                "Cannot cover for full lender amount");
+
+            total_collateral_amount - origination_fee
+        } else {
+            lender_amount
+        };
+
+        // this is already handled above where we check if there is enough collateral to cover for
+        // the lender
         let borrower_amount = total_collateral_amount
             .checked_sub(origination_fee + lender_amount)
-            .with_context(|| {
-                format!(
-                    "Collateral ({total_collateral_amount}) cannot cover lender amount \
-                     ({lender_amount}) origination_fee ({origination_fee})"
-                )
-            })?;
+            .unwrap_or_default();
 
         let borrower_output = TxOut {
             value: borrower_amount,
