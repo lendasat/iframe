@@ -9,7 +9,6 @@ import type { SignedTransaction } from "browser-wallet";
 import { useState } from "react";
 import {
   Alert,
-  Button,
   Col,
   Container,
   Form,
@@ -18,6 +17,7 @@ import {
 } from "react-bootstrap";
 import { IoInformationCircleOutline } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
+import { Button } from "@frontend/shadcn";
 
 interface ContractUndercollateralizedProps {
   contract: Contract;
@@ -187,13 +187,12 @@ export function ContractUndercollateralized({
                       <Button
                         type={"button"}
                         disabled={isWalletLoaded}
-                        className="mt-3"
                       >
                         Confirm Secret
                       </Button>
                     </UnlockWalletModal>
                   ) : (
-                    <Button type="submit" variant="primary">
+                    <Button type="submit">
                       {"Liquidate"}
                     </Button>
                   )}
