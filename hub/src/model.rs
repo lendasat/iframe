@@ -4,6 +4,7 @@ use crate::utils::calculate_ltv;
 use crate::utils::legacy_calculate_liquidation_price;
 use crate::LEGACY_LTV_THRESHOLD_LIQUIDATION;
 use crate::LTV_THRESHOLD_LIQUIDATION;
+use anyhow::Context;
 use anyhow::Result;
 use argon2::Argon2;
 use argon2::PasswordHash;
@@ -14,6 +15,7 @@ use bitcoin::Address;
 use bitcoin::Amount;
 use bitcoin::PublicKey;
 use rust_decimal::prelude::FromPrimitive;
+use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
 use serde::Deserialize;
 use serde::Deserializer;
@@ -546,11 +548,41 @@ pub struct Contract {
 
 impl Contract {
     pub fn ltv(&self, price: Decimal) -> Result<Decimal> {
+        let actual_collateral_sats =
+            Decimal::from_u64(self.actual_collateral().to_sat()).expect("to fit into u64");
+
         calculate_ltv(
             price,
-            self.loan_amount,
-            Decimal::from_u64(self.collateral_sats).expect("to fit into u64"),
+            self.outstanding_balance_usd(),
+            actual_collateral_sats,
         )
+    }
+
+    fn loan_interest_usd(&self) -> Decimal {
+        calculate_interest_usd(
+            self.loan_amount,
+            self.interest_rate,
+            self.duration_days as u32,
+        )
+    }
+
+    /// The [`Amount`] of collateral locked up on the blockchain, not including any sats in the
+    /// contract dedicated to the origination fee.
+    pub fn actual_collateral(&self) -> Amount {
+        Amount::from_sat(self.collateral_sats)
+            .checked_sub(Amount::from_sat(self.origination_fee_sats))
+            .unwrap_or_default()
+    }
+
+    /// What the borrower owes the lender.
+    pub fn outstanding_balance_usd(&self) -> Decimal {
+        self.loan_amount + self.loan_interest_usd()
+    }
+
+    pub fn outstanding_balance_btc(&self, price: Decimal) -> Result<Amount> {
+        let outstanding_balance_usd = self.outstanding_balance_usd();
+
+        usd_to_btc(outstanding_balance_usd, price)
     }
 
     /// Calculate the liquidation price of the contract based on its current `collateral_sats`.
@@ -558,21 +590,21 @@ impl Contract {
     /// The liquidation price cannot be computed if `collateral_sats` is zero. In such a scenario,
     /// we use the `initial_collateral_sats`, which should never be zero.
     pub fn liquidation_price(&self) -> Decimal {
-        let collateral_sats = if self.collateral_sats == 0 {
+        let collateral_sats = if self.actual_collateral() == Amount::ZERO {
             self.initial_collateral_sats
         } else {
-            self.collateral_sats
+            self.actual_collateral().to_sat()
         };
 
         if self.has_new_liquidation_threshold() {
             calculate_liquidation_price(
-                self.loan_amount,
+                self.outstanding_balance_usd(),
                 Decimal::from_u64(collateral_sats).expect("to fit"),
             )
             .expect("valid liquidation price")
         } else {
             legacy_calculate_liquidation_price(
-                self.loan_amount,
+                self.outstanding_balance_usd(),
                 Decimal::from_u64(collateral_sats).expect("to fit"),
             )
             .expect("valid liquidation price")
@@ -1223,4 +1255,139 @@ pub struct CreateApiAccountResponse {
     pub email: Option<String>,
     pub timezone: Option<String>,
     pub api_key: String,
+}
+
+/// Calculates the interest for the provided `duration_days`.
+///
+/// Note: does not compound interest
+fn calculate_interest_usd(
+    loan_amount_usd: Decimal,
+    yearly_interest_rate: Decimal,
+    duration_days: u32,
+) -> Decimal {
+    let one_year = Decimal::from(ONE_YEAR);
+    let daily_interest_rate = yearly_interest_rate / one_year;
+    loan_amount_usd * daily_interest_rate * Decimal::from(duration_days)
+}
+
+fn usd_to_btc(usd: Decimal, price: Decimal) -> Result<Amount> {
+    let owed_amount_btc = usd.checked_div(price).context("Division by zero")?;
+
+    let owed_amount_btc = owed_amount_btc.round_dp(8);
+    let owed_amount_btc = owed_amount_btc.to_f64().expect("to fit");
+    let owed_amount = Amount::from_btc(owed_amount_btc).expect("to fit");
+
+    Ok(owed_amount)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::model::ONE_MONTH;
+    use crate::model::ONE_YEAR;
+    use rust_decimal_macros::dec;
+
+    #[test]
+    fn test_calculate_interest_daily() {
+        let loan_amount_usd = dec!(1_000);
+        let yearly_interest_rate = dec!(0.12);
+
+        let duration_days = 1;
+        let amount = calculate_interest_usd(loan_amount_usd, yearly_interest_rate, duration_days);
+
+        let diff = amount - dec!(0.3333);
+        assert!(
+            diff < dec!(0.0001),
+            "interest was {amount} but it was {diff} too high"
+        );
+    }
+
+    #[test]
+    fn test_calculate_interest_yearly() {
+        let loan_amount_usd = dec!(1_000);
+        let yearly_interest_rate = dec!(0.12);
+
+        let duration_days = ONE_YEAR;
+        let amount = calculate_interest_usd(loan_amount_usd, yearly_interest_rate, duration_days);
+
+        let diff = amount - dec!(119.9999);
+        assert!(diff < dec!(0.0001), "was {amount}");
+    }
+
+    #[test]
+    fn test_calculate_interest_15_months() {
+        let loan_amount_usd = dec!(1_000);
+        let yearly_interest_rate = dec!(0.12);
+
+        let duration_days = ONE_MONTH * 15;
+        let amount = calculate_interest_usd(loan_amount_usd, yearly_interest_rate, duration_days);
+
+        let diff = amount - dec!(149.9999);
+        assert!(
+            diff < dec!(0.0001),
+            "interest was {amount} but it was {diff} too high"
+        );
+    }
+
+    #[test]
+    fn test_calculate_lender_liquidation_amount() {
+        let contract = build_contract(dec!(1_000), dec!(0.12), (ONE_MONTH * 3) as i32);
+        let price = dec!(100_000);
+
+        let outstanding_balance = contract.outstanding_balance_btc(price).unwrap();
+
+        assert_eq!(outstanding_balance.to_sat(), 1030000);
+
+        let contract = build_contract(dec!(10_000), dec!(0.20), (ONE_MONTH * 18) as i32);
+        let price = dec!(50_000);
+
+        let outstanding_balance = contract.outstanding_balance_btc(price).unwrap();
+
+        assert_eq!(outstanding_balance.to_sat(), 26_000_000);
+
+        let contract = build_contract(dec!(1_000), dec!(0.12), ONE_YEAR as i32);
+        let price = dec!(0);
+
+        let res = contract.outstanding_balance_btc(price);
+
+        assert!(res.is_err())
+    }
+
+    fn build_contract(
+        loan_amount: Decimal,
+        interest_rate: Decimal,
+        duration_days: i32,
+    ) -> Contract {
+        Contract {
+            id: "1dad3f62-31f1-4483-b6b4-9da0247a49c0".parse().unwrap(),
+            lender_id: "0979af4d-9531-4f68-acee-728116477841".parse().unwrap(),
+            borrower_id: "00c484d1-a395-4520-a042-b5ac35a0dca0".parse().unwrap(),
+            loan_id: "c9da701a-4031-4518-b627-5aa5237808d2".parse().unwrap(),
+            initial_ltv: dec!(0.5),
+            initial_collateral_sats: 50_000,
+            origination_fee_sats: 5_000,
+            collateral_sats: 55_000,
+            expiry_date: datetime!(2030-03-01 0:00 UTC),
+            borrower_btc_address: "bc1pravj5kascdk5y3zqa9n0j8yassuaq0axgdj706fmjtmzvfhg02vsqvf25f"
+                .parse()
+                .unwrap(),
+            borrower_pk: None,
+            borrower_loan_address: None,
+            lender_loan_repayment_address: None,
+            loan_type: LoanType::StableCoin,
+            borrower_xpub: "tpubD6NzVbkrYhZ4Yon2URjspXp7Y7DKaBaX1ZVMCEnhc8zCrj1AuJyLrhmAKFmnkqVULW6znfEMLvgukHBVJD4fukpVYre3dpHXmkbcpvtviro".parse().unwrap(),
+            lender_xpub: None,
+            contract_address: None,
+            contract_index: None,
+            status: ContractStatus::PrincipalGiven,
+            liquidation_status: LiquidationStatus::Healthy,
+            contract_version: ContractVersion::TwoOfThree,
+            created_at: datetime!(2025-03-01 0:00 UTC),
+            updated_at: datetime!(2025-03-01 0:00 UTC),
+            // Relevant for the test.
+            loan_amount,
+            duration_days,
+            interest_rate,
+        }
+    }
 }

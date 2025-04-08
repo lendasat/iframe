@@ -6,20 +6,20 @@ use rust_decimal_macros::dec;
 
 pub fn calculate_ltv(
     price: Decimal,
-    loan_amount: Decimal,
+    outstanding_balance: Decimal,
     collateral_sats: Decimal,
 ) -> anyhow::Result<Decimal> {
     if price.is_zero() || price.is_sign_negative() {
         bail!("Price cannot be zero or negative");
     }
-    if loan_amount.is_zero() || loan_amount.is_sign_negative() {
-        bail!("Loan amount cannot be zero or negative");
+    if outstanding_balance.is_zero() || outstanding_balance.is_sign_negative() {
+        bail!("Outstanding balance cannot be zero or negative");
     }
     if collateral_sats.is_zero() || collateral_sats.is_sign_negative() {
         bail!("Collateral cannot be zero or negative");
     }
 
-    Ok(loan_amount / ((collateral_sats / dec!(100_000_000)) * price))
+    Ok(outstanding_balance / ((collateral_sats / dec!(100_000_000)) * price))
 }
 
 pub fn legacy_calculate_liquidation_price(

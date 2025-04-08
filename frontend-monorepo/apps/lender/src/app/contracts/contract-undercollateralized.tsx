@@ -4,20 +4,14 @@ import { UnlockWalletModal, useWallet } from "@frontend/browser-wallet";
 import { useLenderHttpClient } from "@frontend/http-client-lender";
 import type { Contract } from "@frontend/http-client-lender";
 import { FeeSelector } from "@frontend/mempool";
-import { Box, Callout, Flex, Heading, Text } from "@radix-ui/themes";
+import { Callout, Heading } from "@radix-ui/themes";
 import type { SignedTransaction } from "browser-wallet";
 import { useState } from "react";
-import {
-  Alert,
-  Button,
-  Col,
-  Container,
-  Form,
-  Modal,
-  Row,
-} from "react-bootstrap";
+import { Alert, Col, Container, Form, Modal, Row } from "react-bootstrap";
 import { IoInformationCircleOutline } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
+import { Button } from "@frontend/shadcn";
+import { ConfirmLiquidationDialog } from "./liquidate-collateral-confirmation-dialog";
 
 interface ContractUndercollateralizedProps {
   contract: Contract;
@@ -121,7 +115,7 @@ export function ContractUndercollateralized({
   return (
     <>
       {liquidationTx && (
-        <ConfirmationModal
+        <ConfirmLiquidationDialog
           show={showModal}
           handleClose={() => setShowModal(false)}
           handleConfirm={handleConfirm}
@@ -179,111 +173,36 @@ export function ContractUndercollateralized({
             <Row className="mt-2">
               <FeeSelector onSelectFee={setSelectedFee}></FeeSelector>
             </Row>
-            <Row className="justify-content-between mt-4">
-              <Row className="mt-1">
-                <Col className="d-grid">
-                  {!isWalletLoaded ? (
-                    <UnlockWalletModal handleSubmit={() => {}}>
-                      <Button
-                        type={"button"}
-                        disabled={isWalletLoaded}
-                        className="mt-3"
-                      >
-                        Confirm Secret
-                      </Button>
-                    </UnlockWalletModal>
-                  ) : (
-                    <Button type="submit" variant="primary">
-                      {"Liquidate"}
-                    </Button>
-                  )}
-                  {error && (
-                    <Col className="d-grid mt-4">
-                      <Callout.Root color="tomato">
-                        <Callout.Icon>
-                          <IoInformationCircleOutline />
-                        </Callout.Icon>
-                        <Callout.Text>{error}</Callout.Text>
-                      </Callout.Root>
-                    </Col>
-                  )}
+            <div className="mt-3">
+              {!isWalletLoaded ? (
+                <UnlockWalletModal handleSubmit={() => {}}>
+                  <Button
+                    type={"button"}
+                    disabled={isWalletLoaded}
+                    className={"w-full"}
+                  >
+                    Confirm Secret
+                  </Button>
+                </UnlockWalletModal>
+              ) : (
+                <Button type="submit" className={"w-full"}>
+                  Liquidate
+                </Button>
+              )}
+              {error && (
+                <Col className="d-grid mt-4">
+                  <Callout.Root color="tomato">
+                    <Callout.Icon>
+                      <IoInformationCircleOutline />
+                    </Callout.Icon>
+                    <Callout.Text>{error}</Callout.Text>
+                  </Callout.Root>
                 </Col>
-              </Row>
-            </Row>
+              )}
+            </div>
           </Form.Group>
         </Form>
       </Container>
     </>
   );
 }
-
-type ConfirmationModalProps = {
-  show: boolean;
-  handleClose: () => void;
-  handleConfirm: () => void;
-  liquidationTx: SignedTransaction;
-};
-
-const ConfirmationModal = ({
-  show,
-  handleClose,
-  handleConfirm,
-  liquidationTx,
-}: ConfirmationModalProps) => {
-  const formatter = new Intl.NumberFormat("en-US");
-
-  return (
-    <Modal show={show} onHide={handleClose} centered>
-      <Box className={"dark:bg-dark-700 rounded-2 bg-white"}>
-        <Box className="px-4 pt-7">
-          <Box>
-            <Heading
-              as="h2"
-              className="text-font dark:text-font-dark mb-7 text-center text-xl font-semibold md:text-2xl lg:text-4xl"
-            >
-              Confirm Liquidation
-            </Heading>
-          </Box>
-          <Box className="mb-3">
-            <Flex className="flex flex-col gap-3">
-              <Alert variant={"info"} className="flex items-baseline gap-2">
-                <Box>
-                  <FontAwesomeIcon icon={faInfoCircle} />
-                </Box>
-                <Text>
-                  Please verify that the liquidation transaction pays the
-                  expected amount to your chosen address.
-                </Text>
-              </Alert>
-            </Flex>
-          </Box>
-          <Box className="mb-3">
-            <Flex className="dark:text-font-dark flex flex-col gap-3">
-              <Text>Sending:</Text>
-              <ul className="list-inside list-disc pl-5">
-                {liquidationTx.outputs.map((o) => (
-                  <li
-                    key={`${o.address}_${o.value}`}
-                    className="overflow-hidden text-ellipsis whitespace-nowrap"
-                  >
-                    <strong>{formatter.format(o.value)}</strong> sats to{" "}
-                    <em>{o.address}</em>.
-                  </li>
-                ))}
-              </ul>
-            </Flex>
-          </Box>
-        </Box>
-        <Box className="dark:bg-dark-700 rounded-2 mt-4 flex items-center justify-center bg-white px-4 pb-5">
-          <Button
-            variant="solid"
-            className="bg-btn h-12 w-full max-w-md rounded-lg text-white"
-            onClick={handleConfirm}
-          >
-            Confirm
-          </Button>
-        </Box>
-      </Box>
-    </Modal>
-  );
-};
