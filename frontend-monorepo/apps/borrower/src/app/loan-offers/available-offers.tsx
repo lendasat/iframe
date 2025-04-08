@@ -1,5 +1,5 @@
 import { useBorrowerHttpClient } from "@frontend/http-client-borrower";
-import { Box } from "@radix-ui/themes";
+import { Box, ScrollArea } from "@radix-ui/themes";
 import { useNavigate } from "react-router-dom";
 import { useAsync } from "react-use";
 import DashHeader from "../components/DashHeader";
@@ -18,10 +18,10 @@ function AvailableOffers() {
   const loanOffers = value || [];
 
   return (
-    <div>
+    <ScrollArea className="h-screen" type="always" scrollbars="vertical">
       <DashHeader label="Available Offers" />
       {/*TODO: re-implement filters if needed */}
-      <Box className="pt-3" px={"6"}>
+      <Box className="pt-3" px={"6"} pb={"8"}>
         <LoanOfferTable
           loading={loading}
           loanOffers={loanOffers}
@@ -46,7 +46,7 @@ function AvailableOffers() {
           }}
         />
       </Box>
-    </div>
+    </ScrollArea>
   );
 }
 
