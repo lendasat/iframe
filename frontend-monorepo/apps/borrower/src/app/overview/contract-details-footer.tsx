@@ -53,7 +53,9 @@ export function ContractDetailsFooter({
     contract.status !== ContractStatus.Cancelled &&
     contract.status !== ContractStatus.Closed &&
     contract.status !== ContractStatus.RepaymentProvided &&
-    contract.status !== ContractStatus.Extended
+    contract.status !== ContractStatus.Extended &&
+    contract.status !== ContractStatus.CollateralConfirmed &&
+    contract.status !== ContractStatus.CollateralSeen
   ) {
     button = (
       <ManageLoanDialog contract={contract}>
