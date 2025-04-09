@@ -47,7 +47,7 @@ interface WalletContextType {
     derivationPath?: string,
   ) => Promise<SignedTransaction>;
   unlockAndSignClaimPsbt: (
-    password: stirng,
+    password: string,
     psbt: string,
     collateralDescriptor: string,
     borrowerPk: string,
