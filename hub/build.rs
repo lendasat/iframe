@@ -13,10 +13,34 @@ fn main() {
         std::process::exit(1);
     }
 
-    let output = Command::new("git")
+    let git_commit_hash = Command::new("git")
         .args(["rev-parse", "HEAD"])
         .output()
-        .expect("to be able to get git commit hash");
-    let git_hash = String::from_utf8(output.stdout).expect("to be able to parse commit hash");
-    println!("cargo:rustc-env=GIT_HASH={}", git_hash);
+        .map(|output| {
+            if output.status.success() {
+                String::from_utf8_lossy(&output.stdout).trim().to_string()
+            } else {
+                "unknown".to_string()
+            }
+        })
+        .unwrap_or_else(|_| "unknown".to_string());
+
+    let git_tag = Command::new("git")
+        .args(["describe", "--tags", "--abbrev=0"])
+        .output()
+        .map(|output| {
+            if output.status.success() {
+                Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+            } else {
+                None
+            }
+        })
+        .unwrap_or(None);
+
+    println!("cargo:rustc-env=GIT_COMMIT_HASH={}", git_commit_hash);
+
+    println!(
+        "cargo:rustc-env=GIT_TAG={}",
+        git_tag.unwrap_or_else(|| "unknown".to_string())
+    );
 }

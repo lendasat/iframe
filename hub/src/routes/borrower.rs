@@ -114,7 +114,7 @@ curl -X POST "http://localhost:7337/api/contracts" \
     modifiers(&SecurityAddon),
     tags(
         (
-            name = HEALTH_CHECK_TAG, description = "Check if the server is available",
+            name = HEALTH_CHECK_TAG, description = "Check if the server is available and what version is running",
         ),
         (
             name = API_KEYS_TAG, description = "API to interact with API keys",
@@ -152,6 +152,7 @@ pub async fn spawn_borrower_server(
         }
     }
     let (router, api) = OpenApiRouter::with_openapi(ApiDoc::openapi())
+        .nest("/api/version", version::router_openapi())
         .nest("/api/health", health_check::router_openapi())
         .nest("/api/auth", auth::router_openapi(app_state.clone()))
         .nest(
@@ -176,7 +177,6 @@ pub async fn spawn_borrower_server(
         .merge(auth::router(app_state.clone()))
         .merge(profile::router(app_state.clone()))
         .merge(chat::router(app_state.clone()))
-        .merge(version::router(app_state.clone()))
         .merge(dispute::router(app_state.clone()))
         .merge(price_feed_ws::router(app_state.clone()))
         .merge(

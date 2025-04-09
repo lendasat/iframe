@@ -8,8 +8,8 @@ use axum::Router;
 use serde::Serialize;
 use std::sync::Arc;
 
-const VERSION: &str = env!("CARGO_PKG_VERSION");
-const GIT_HASH: &str = env!("GIT_HASH");
+const GIT_TAG: &str = env!("GIT_TAG");
+const GIT_HASH: &str = env!("GIT_COMMIT_HASH");
 
 pub(crate) fn router(app_state: Arc<AppState>) -> Router {
     Router::new()
@@ -20,13 +20,13 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
 
 #[derive(Serialize)]
 pub struct Version {
-    version: String,
+    tag: String,
     commit_hash: String,
 }
 
 pub async fn version() -> impl IntoResponse {
     Json(Version {
-        version: VERSION.to_owned(),
+        tag: GIT_TAG.to_owned(),
         commit_hash: GIT_HASH.to_owned(),
     })
 }
