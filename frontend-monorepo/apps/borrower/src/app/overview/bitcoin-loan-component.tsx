@@ -25,6 +25,7 @@ import {
 } from "@frontend/http-client-borrower";
 import { useAsync } from "react-use";
 import { ContractDetailsFooter } from "./contract-details-footer";
+import { ChatDrawer } from "@frontend/nostr-chat";
 
 export function contractStatusLabelColor(status?: ContractStatus): string {
   if (!status) {
@@ -76,6 +77,7 @@ export function contractStatusLabelColor(status?: ContractStatus): string {
 const EnhancedBitcoinLoan = () => {
   const { getContract } = useBorrowerHttpClient();
   const { id } = useParams();
+  const { newChatNotification } = useBorrowerHttpClient();
 
   const {
     value: contract,
@@ -186,7 +188,17 @@ const EnhancedBitcoinLoan = () => {
 
         {/* Chat section (1/3 width on large screens) */}
         <div className="lg:col-span-1 pb-10">
-          <Chat />
+          {/*TODO: implement chat*/}
+          {/*<Chat />*/}
+          {contract && <ChatDrawer
+            contractId={contract.id}
+            counterpartyXPub={contract.lender_xpub}
+            onNewMsgSent={async () => {
+              await newChatNotification({
+                contract_id: contract.id
+              });
+            }}
+          />}
         </div>
       </div>
     </div>
