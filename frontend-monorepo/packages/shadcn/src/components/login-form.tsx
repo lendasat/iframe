@@ -114,7 +114,11 @@ export function LoginForm({
                     <AlertDescription>{error}</AlertDescription>
                   </Alert>
                 )}
-                <Button type="submit" className="w-full" disabled={loading}>
+                <Button
+                  type="submit"
+                  className="w-full px-0"
+                  disabled={loading}
+                >
                   {loading ? (
                     <>
                       <Loader2 className="animate-spin" />

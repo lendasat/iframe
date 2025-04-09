@@ -46,6 +46,7 @@ import LoanApplication from "./loan-applications/loan-applications";
 import { FaHandHoldingDollar } from "react-icons/fa6";
 import AvailableLoanApplications from "./loan-applications/available-loan-applications";
 import { FaFileContract, FaMoneyCheckAlt } from "react-icons/fa";
+import BitcoinCollateralizedLoan from "./overview/bitcoin-loan-component";
 
 const menuItems = [
   {
@@ -195,7 +196,7 @@ function MainLayoutComponents() {
             <Route index element={<DashBoard />} />
             <Route path="/my-contracts">
               <Route index element={<MyContracts />} />
-              <Route path={":id"} element={<ContractDetailsOverview />} />
+              <Route path={":id"} element={<BitcoinCollateralizedLoan />} />
             </Route>
             <Route path="/requests/*" element={<LoanRequestFlow />} />
 
@@ -222,6 +223,11 @@ function MainLayoutComponents() {
             />
             <Route path="/disputes/:id" element={<ResolveDispute />} />
             <Route path="/restricted" element={<RestrictedAccessPage />} />
+            {/*TODO: remove this later */}
+            <Route
+              path="/old-details/:id"
+              element={<ContractDetailsOverview />}
+            />
             <Route
               path="/resetpassword/:token/:email"
               element={<ResetPassword />}

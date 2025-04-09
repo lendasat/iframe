@@ -13,6 +13,7 @@ pub mod borrowers;
 pub mod borrowers_referral_code;
 pub mod contract_emails;
 pub mod contract_extensions;
+pub mod contract_status_log;
 pub mod contracts;
 pub mod dispute;
 pub mod fiat_loan_details;

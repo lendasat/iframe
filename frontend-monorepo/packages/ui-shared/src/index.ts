@@ -1,3 +1,6 @@
+import queryString from "query-string";
+import { LoanAsset, TransactionType } from "./lib/models";
+
 export const ONE_YEAR = 360;
 export const ONE_MONTH = 30;
 
@@ -15,10 +18,134 @@ export function getFormatedStringFromDays(numberOfDays: number) {
   return yearsDisplay + monthsDisplay + daysDisplay;
 }
 
+export const formatBitcoin = (btcValue?: number) => {
+  if (btcValue == null) return undefined;
+
+  // Format to 8 decimal places
+  const formatted = btcValue.toFixed(8);
+
+  // Split into integer and decimal parts
+  const [integerPart, decimalPart] = formatted.split(".");
+
+  // Group the decimal part in triplets from right to left
+  let formattedDecimal = "";
+  for (let i = 0; i < decimalPart.length; i++) {
+    formattedDecimal += decimalPart[i];
+    // Add space after every third digit, counting from the right
+    if ((decimalPart.length - i - 1) % 3 === 0 && i < decimalPart.length - 1) {
+      formattedDecimal += " ";
+    }
+  }
+
+  // Combine parts
+  return `${integerPart}.${formattedDecimal}`;
+};
+
+export const formatSatsToBitcoin = (sats?: number) => {
+  if (sats == null) return undefined;
+
+  // Convert sats to BTC (1 BTC = 100,000,000 sats)
+  const btcValue = sats / 100000000;
+
+  return formatBitcoin(btcValue);
+};
+
+interface EncodeOptions {
+  amount: number;
+  label: string;
+}
+
+export function encodeBip21(
+  address: string,
+  options: EncodeOptions,
+  urnScheme = "bitcoin",
+): string {
+  const scheme = urnScheme;
+
+  if (options.amount !== undefined) {
+    if (!Number.isFinite(options.amount)) {
+      throw new TypeError("Invalid amount");
+    }
+    if (options.amount < 0) {
+      throw new TypeError("Invalid amount");
+    }
+  }
+
+  const query = queryString.stringify(options);
+  return `${scheme}:${address}${(query ? "?" : "") + query}`;
+}
+
 export const validateEmail = (email: string) => {
   const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return regex.test(email);
 };
+
+/**
+ * returns an url for the given txid
+ * @param txid
+ * @param assetType - if undefined, Bitcoin is assumed.
+ */
+export function getTxUrl(txid: string, assetType?: LoanAsset) {
+  let url = `${import.meta.env.VITE_MEMPOOL_REST_URL}/tx/${txid}`;
+  switch (assetType) {
+    case LoanAsset.USDC_ETH:
+    case LoanAsset.USDT_ETH:
+      url = `https://etherscan.io/tx/${txid}`;
+      break;
+    case LoanAsset.USDT_POL:
+    case LoanAsset.USDC_POL:
+      url = `https://polygonscan.com/tx/${txid}`;
+      break;
+    case LoanAsset.USDC_SN:
+    case LoanAsset.USDT_SN:
+      url = `https://starkscan.co/tx/${txid}`;
+      break;
+    case LoanAsset.USDC_SOL:
+    case LoanAsset.USDT_SOL:
+      url = `https://solscan.io/tx/${txid}`;
+      break;
+    case LoanAsset.USDT_Liquid:
+      url = `https://liquid.network/tx/${txid}`;
+      break;
+    case LoanAsset.EUR:
+    case LoanAsset.USD:
+    case LoanAsset.CHF:
+      url = "";
+      break;
+  }
+  return url;
+}
+
+export function getAddressUrl(address?: string, assetType?: LoanAsset) {
+  let url = `${import.meta.env.VITE_MEMPOOL_REST_URL}/address/${address}`;
+  switch (assetType) {
+    case LoanAsset.USDC_ETH:
+    case LoanAsset.USDT_ETH:
+      url = `https://etherscan.io/address/${address}`;
+      break;
+    case LoanAsset.USDT_POL:
+    case LoanAsset.USDC_POL:
+      url = `https://polygonscan.com/address/${address}`;
+      break;
+    case LoanAsset.USDC_SN:
+    case LoanAsset.USDT_SN:
+      url = `https://starkscan.co/address/${address}`;
+      break;
+    case LoanAsset.USDC_SOL:
+    case LoanAsset.USDT_SOL:
+      url = `https://solscan.io/address/${address}`;
+      break;
+    case LoanAsset.USDT_Liquid:
+      url = `https://liquid.network/address/${address}`;
+      break;
+    case LoanAsset.EUR:
+    case LoanAsset.USD:
+    case LoanAsset.CHF:
+      url = "";
+      break;
+  }
+  return url;
+}
 
 export * from "./lib/components/loan-address-input-field";
 export * from "./lib/components/NotificationToast";

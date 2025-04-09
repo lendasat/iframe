@@ -7,6 +7,7 @@ use crate::model::ContractVersion;
 use crate::model::LiquidationStatus;
 use crate::model::LoanOffer;
 use crate::model::LoanType;
+use crate::utils::calculate_interest;
 use anyhow::bail;
 use anyhow::Context;
 use anyhow::Error;
@@ -58,6 +59,7 @@ pub async fn load_contracts_by_borrower_id(
             expiry_date,
             contract_version,
             interest_rate,
+            interest,
             created_at,
             updated_at
         FROM contracts
@@ -111,6 +113,7 @@ pub async fn load_contracts_by_lender_id(
             expiry_date,
             contract_version,
             interest_rate,
+            interest,
             created_at,
             updated_at
         FROM contracts
@@ -161,6 +164,7 @@ async fn load_contract(pool: &Pool<Postgres>, contract_id: &str) -> Result<Contr
             expiry_date,
             contract_version,
             interest_rate,
+            interest,
             created_at,
             updated_at
         FROM contracts
@@ -210,6 +214,7 @@ pub async fn load_contract_by_contract_id_and_borrower_id(
             expiry_date,
             contract_version,
             interest_rate,
+            interest,
             created_at,
             updated_at
         FROM contracts
@@ -261,6 +266,7 @@ pub async fn load_contract_by_contract_id_and_lender_id(
             expiry_date,
             contract_version,
             interest_rate,
+            interest,
             created_at,
             updated_at
         FROM contracts
@@ -308,6 +314,7 @@ pub async fn load_open_contracts(pool: &Pool<Postgres>) -> Result<Vec<Contract>>
             expiry_date as "expiry_date!",
             contract_version as "contract_version!",
             interest_rate as "interest_rate!",
+            interest as "interest!",
             created_at as "created_at!",
             updated_at as "updated_at!"
         FROM contracts_to_be_watched"#,
@@ -365,6 +372,8 @@ pub async fn insert_new_contract_request(
 
     let status = db::ContractStatus::Requested;
 
+    let interest = calculate_interest(loan_amount, duration_days, interest_rate);
+
     let contract = insert_contract_request(
         &mut db_tx,
         borrower_id,
@@ -392,6 +401,7 @@ pub async fn insert_new_contract_request(
         None,
         None,
         interest_rate,
+        interest,
         borrower_npub,
         lender_npub,
     )
@@ -424,6 +434,11 @@ pub async fn insert_extension_contract_request(
     } else {
         db::ContractStatus::RenewalRequested
     };
+    let interest = calculate_interest(
+        original_contract.loan_amount,
+        total_duration_days,
+        interest_rate,
+    );
 
     insert_contract_request(
         db_tx,
@@ -454,6 +469,7 @@ pub async fn insert_extension_contract_request(
             .map(|address| address.assume_checked().to_string()),
         original_contract.contract_index.map(|index| index as i32),
         interest_rate,
+        interest,
         &original_contract.borrower_npub,
         &original_contract.lender_npub,
     )
@@ -488,6 +504,7 @@ async fn insert_contract_request(
     contract_address: Option<String>,
     contract_index: Option<i32>,
     interest_rate: Decimal,
+    interest: Decimal,
     borrower_npub: &str,
     lender_npub: &str,
 ) -> Result<Contract, Error> {
@@ -522,8 +539,9 @@ async fn insert_contract_request(
             lender_npub,
             created_at,
             expiry_date,
-            interest_rate
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28)
+            interest_rate,
+            interest
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29)
         RETURNING
             id,
             lender_id,
@@ -552,6 +570,7 @@ async fn insert_contract_request(
             expiry_date,
             contract_version,
             interest_rate,
+            interest,
             created_at,
             updated_at
         "#,
@@ -582,7 +601,8 @@ async fn insert_contract_request(
         lender_npub,
         created_at,
         expiry_date,
-        interest_rate
+        interest_rate,
+        interest
     )
         .fetch_one(&mut **db_tx)
         .await?;
@@ -637,6 +657,7 @@ pub async fn accept_contract_request(
             expiry_date,
             contract_version,
             interest_rate,
+            interest,
             created_at,
             updated_at
         "#,
@@ -821,6 +842,7 @@ pub async fn reject_contract_request(
             expiry_date,
             contract_version,
             interest_rate,
+            interest,
             created_at,
             updated_at
         "#,
@@ -876,6 +898,7 @@ pub(crate) async fn mark_liquidation_state_as(
             expiry_date,
             contract_version,
             interest_rate,
+            interest,
             created_at,
             updated_at
         "#,
@@ -1131,6 +1154,7 @@ pub async fn update_collateral(
             expiry_date,
             contract_version,
             interest_rate,
+            interest,
             created_at,
             updated_at
         "#,
@@ -1469,6 +1493,8 @@ pub async fn insert_new_taken_contract_application(
     // next the borrower will need to fund the contract.
     let status = db::ContractStatus::Approved;
 
+    let interest = calculate_interest(loan_amount, duration_days, interest_rate);
+
     let address = contract_address.assume_checked().to_string();
     let contract = insert_contract_request(
         &mut db_tx,
@@ -1497,6 +1523,7 @@ pub async fn insert_new_taken_contract_application(
         Some(address.to_string()),
         Some(contract_index as i32),
         interest_rate,
+        interest,
         borrower_npub,
         lender_npub,
     )

@@ -47,6 +47,8 @@ use miniscript::Descriptor;
 use rust_decimal::Decimal;
 use serde::Deserialize;
 use serde::Serialize;
+use sqlx::Pool;
+use sqlx::Postgres;
 use std::sync::Arc;
 use time::OffsetDateTime;
 use tracing::instrument;
@@ -782,6 +784,8 @@ pub struct Contract {
     #[serde(with = "rust_decimal::serde::float")]
     pub interest_rate: Decimal,
     #[serde(with = "rust_decimal::serde::float")]
+    pub interest: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
     pub initial_ltv: Decimal,
     pub loan_asset: LoanAsset,
     pub status: ContractStatus,
@@ -816,6 +820,16 @@ pub struct Contract {
     pub fiat_loan_details_borrower: Option<FiatLoanDetailsWrapper>,
     pub fiat_loan_details_lender: Option<FiatLoanDetailsWrapper>,
     pub lender_npub: String,
+    pub timeline: Vec<TimelineEvent>,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct TimelineEvent {
+    #[serde(with = "time::serde::rfc3339")]
+    date: OffsetDateTime,
+    event: ContractStatus,
+    /// Only provided if it was an event caused by a transaction
+    txid: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -944,6 +958,8 @@ async fn map_to_api_contract(
         None => None,
     };
 
+    let timeline = map_timeline(&contract, &transactions, &data.db).await?;
+
     let contract = Contract {
         id: contract.id,
         loan_amount: contract.loan_amount,
@@ -952,6 +968,7 @@ async fn map_to_api_contract(
         origination_fee_sats: contract.origination_fee_sats,
         collateral_sats: contract.collateral_sats,
         interest_rate: contract.interest_rate,
+        interest: contract.interest,
         initial_ltv: contract.initial_ltv,
         loan_asset: new_offer.loan_asset(),
         status: contract.status,
@@ -980,9 +997,99 @@ async fn map_to_api_contract(
         fiat_loan_details_borrower,
         fiat_loan_details_lender,
         lender_npub: contract.lender_npub,
+        timeline,
     };
 
     Ok(contract)
+}
+
+async fn map_timeline(
+    contract: &model::Contract,
+    transactions: &[LoanTransaction],
+    pool: &Pool<Postgres>,
+) -> Result<Vec<TimelineEvent>, Error> {
+    let event_logs = db::contract_status_log::get_contract_status_logs(pool, contract.id.as_str())
+        .await
+        .map_err(|e| Error::Database(anyhow!(e)))?;
+
+    // first, we add the contract request event
+    let mut timeline = vec![TimelineEvent {
+        date: contract.created_at,
+        event: ContractStatus::Requested,
+        txid: None,
+    }];
+
+    // then we go through funding transactions, there might be multiple, that's why we need to
+    // handle them separately
+    transactions.iter().for_each(|tx| {
+        if TransactionType::Funding == tx.transaction_type {
+            let event = TimelineEvent {
+                date: tx.timestamp,
+                // we assume each transaction has already been confirmed
+                event: ContractStatus::CollateralConfirmed,
+                txid: Some(tx.txid.clone()),
+            };
+            timeline.push(event);
+        }
+    });
+
+    // next we go through the events and enhance them with transaction ids if relevant
+    let timeline_1 = event_logs
+        .into_iter()
+        .filter_map(|log| {
+            let txid = match log.new_status {
+                ContractStatus::CollateralSeen => transactions.iter().find_map(|tx| {
+                    (tx.transaction_type == TransactionType::Funding).then(|| tx.txid.clone())
+                }),
+                ContractStatus::PrincipalGiven => transactions.iter().find_map(|tx| {
+                    (tx.transaction_type == TransactionType::PrincipalGiven)
+                        .then(|| tx.txid.clone())
+                }),
+                ContractStatus::RepaymentProvided | ContractStatus::RepaymentConfirmed => {
+                    transactions.iter().find_map(|tx| {
+                        (tx.transaction_type == TransactionType::PrincipalRepaid)
+                            .then(|| tx.txid.clone())
+                    })
+                }
+                ContractStatus::Closing | ContractStatus::Closed | ContractStatus::Defaulted => {
+                    transactions.iter().find_map(|tx| {
+                        (tx.transaction_type == TransactionType::ClaimCollateral)
+                            .then(|| tx.txid.clone())
+                    })
+                }
+
+                ContractStatus::Requested
+                | ContractStatus::RenewalRequested
+                | ContractStatus::Approved
+                | ContractStatus::Undercollateralized
+                | ContractStatus::Extended
+                | ContractStatus::Rejected
+                | ContractStatus::DisputeBorrowerStarted
+                | ContractStatus::DisputeLenderStarted
+                | ContractStatus::DisputeBorrowerResolved
+                | ContractStatus::DisputeLenderResolved
+                | ContractStatus::Cancelled
+                | ContractStatus::RequestExpired
+                | ContractStatus::ApprovalExpired => {
+                    // There are no transactions associated to these events
+                    None
+                }
+                ContractStatus::CollateralConfirmed => {
+                    // we handled this event already. Note: return None means we filter this event
+                    // out.
+                    return None;
+                }
+            };
+
+            Some(TimelineEvent {
+                date: log.changed_at,
+                event: log.new_status,
+                txid,
+            })
+        })
+        .collect::<Vec<_>>();
+    timeline.extend(timeline_1);
+    Ok(timeline)
 }
 
 #[derive(Debug, Deserialize, Serialize)]

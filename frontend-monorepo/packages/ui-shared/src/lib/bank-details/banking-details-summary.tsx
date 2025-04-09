@@ -1,24 +1,15 @@
 import { UnlockWalletModal, useWallet } from "@frontend/browser-wallet";
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   FiatLoanDetailsResponse,
   InnerFiatLoanDetails,
 } from "@frontend/base-http-client";
-import {
-  Button,
-  Code,
-  DataList,
-  Flex,
-  Heading,
-  IconButton,
-  Separator,
-  Skeleton,
-  Text,
-} from "@radix-ui/themes";
-import { Alert, Col, Row } from "react-bootstrap";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
-import { CopyIcon } from "@radix-ui/react-icons";
+import { Card, CardContent } from "@frontend/shadcn";
+import { Separator } from "@frontend/shadcn";
+import { Button } from "@frontend/shadcn";
+import { Skeleton } from "@frontend/shadcn";
+import { Alert, AlertDescription } from "@frontend/shadcn";
+import { LuLoader, LuCircleAlert, LuCopy, LuCheck } from "react-icons/lu";
 
 interface DataListItemProps {
   label: string;
@@ -40,39 +31,38 @@ function DataListItem({ label, value, loading }: DataListItemProps) {
   };
 
   return (
-    <DataList.Item align="center">
-      <DataList.Label minWidth="240px">{label}</DataList.Label>
-      <DataList.Value>
+    <div className="flex flex-row items-center justify-between py-3 border-b border-gray-100 dark:border-gray-800 last:border-0">
+      {/* Left-aligned label */}
+      <div className="w-1/3 min-w-[240px] text-sm font-medium text-gray-500 dark:text-gray-400 text-left">
+        {label}
+      </div>
+
+      {/* Container for the value content */}
+      <div className="w-2/3 text-sm justify-end">
         {loading ? (
-          <Skeleton loading={loading} width="120px" height="20px" />
+          <div className="flex justify-end">
+            <Skeleton className="h-5 w-[150px]" />
+          </div>
         ) : (
-          <Flex align="center" gap="2">
-            <Code variant="ghost"> {value}</Code>
-            <IconButton
-              size="1"
-              aria-label="Copy value"
-              color="gray"
+          <div className="flex items-center justify-end space-x-2">
+            <p className="font-mono text-sm font-semibold">{value}</p>
+            <Button
+              size="sm"
               variant="ghost"
-              onClick={() => {
-                handleCopy(value || "");
-              }}
+              className="h-8 w-8 p-0"
+              onClick={() => handleCopy(value || "")}
             >
-              <CopyIcon />
-            </IconButton>
-            {copied && (
-              <Text
-                size={"1"}
-                weight={"light"}
-                color={"green"}
-                className="text-success"
-              >
-                Copied to clipboard!
-              </Text>
-            )}
-          </Flex>
+              {copied ? (
+                <LuCheck className="h-4 w-4 text-green-600" />
+              ) : (
+                <LuCopy className="h-4 w-4" />
+              )}
+              <span className="sr-only">Copy value</span>
+            </Button>
+          </div>
         )}
-      </DataList.Value>
-    </DataList.Item>
+      </div>
+    </div>
   );
 }
 
@@ -94,6 +84,7 @@ export const BankingDetailsSummary = ({
 
   const onUnlockWalletOrDecryptPaymentDetails = async () => {
     if (fiatLoanDetails) {
+      setIsLoading(true);
       try {
         const loanDetails = await decryptFiatLoanDetails(
           fiatLoanDetails.details,
@@ -110,147 +101,142 @@ export const BankingDetailsSummary = ({
     }
   };
 
-  console.log(`loanDetails ${JSON.stringify(loanDetails)}`);
-
   const isIban = loanDetails?.iban_transfer_details !== undefined;
 
   return (
-    <Flex direction={"column"}>
-      <Heading
-        size="3"
-        weight="bold"
-        mt="3"
-        mb={"2"}
-        className={"text-font dark:text-font-dark"}
-      >
-        Banking Details
-      </Heading>
+    <div className="flex flex-col space-y-6">
+      <div>
+        <h3 className="text-xl font-bold mt-3 mb-2 text-gray-900 dark:text-gray-100">
+          Banking Details
+        </h3>
 
-      <DataList.Root>
-        {isIban && (
-          <>
-            <DataListItem
-              loading={isLoading || !isDecrypted}
-              label={"IBAN"}
-              value={loanDetails?.iban_transfer_details?.iban}
-            />
-            <DataListItem
-              loading={isLoading || !isDecrypted}
-              label={"BIC"}
-              value={loanDetails?.iban_transfer_details?.bic}
-            />
-          </>
-        )}
-        {!isIban && (
-          <>
-            <DataListItem
-              loading={isLoading || !isDecrypted}
-              label={"Account number"}
-              value={loanDetails?.swift_transfer_details?.account_number}
-            />
-            <DataListItem
-              loading={isLoading || !isDecrypted}
-              label={"SWIFT or BIC"}
-              value={loanDetails?.swift_transfer_details?.swift_or_bic}
-            />
-          </>
-        )}
-        <DataListItem
-          loading={isLoading || !isDecrypted}
-          label={"Bank Name"}
-          value={loanDetails?.bank_name}
-        />
-        <DataListItem
-          loading={isLoading || !isDecrypted}
-          label={"Bank Address"}
-          value={loanDetails?.bank_address}
-        />
-        <DataListItem
-          loading={isLoading || !isDecrypted}
-          label={"Bank Country"}
-          value={loanDetails?.bank_country}
-        />
-        <DataListItem
-          loading={isLoading || !isDecrypted}
-          label={"Payment purpose"}
-          value={loanDetails?.purpose_of_remittance}
-        />
-      </DataList.Root>
-      <Separator
-        orientation="horizontal"
-        size={"4"}
-        color={"purple"}
-        mt={"4"}
-      />
-      <DataList.Root>
-        <Heading
-          size="3"
-          weight="bold"
-          mt="3"
-          mb={"2"}
-          className={"text-font dark:text-font-dark"}
-        >
-          Beneficiary Details
-        </Heading>
-
-        <DataListItem
-          loading={isLoading || !isDecrypted}
-          label={"Full Name"}
-          value={loanDetails?.full_name}
-        />
-        <DataListItem
-          loading={isLoading || !isDecrypted}
-          label={"Address"}
-          value={`${loanDetails?.address}, ${loanDetails?.city}, ${loanDetails?.post_code}, ${loanDetails?.country}`}
-        />
-        <DataListItem
-          loading={isLoading || !isDecrypted}
-          label={"Additional comments"}
-          value={loanDetails?.comments}
-        />
-      </DataList.Root>
-
-      <DataList.Root mt={"6"}>
-        <DataList.Item>
-          <DataList.Label minWidth="240px"></DataList.Label>
-          <DataList.Value>
-            {!isWalletLoaded ? (
-              <UnlockWalletModal handleSubmit={() => {}}>
-                <Button
-                  type={"button"}
-                  disabled={isWalletLoaded}
-                  className="mt-3"
-                >
-                  Confirm Secret
-                </Button>
-              </UnlockWalletModal>
-            ) : (
-              <Button
-                type="button"
-                disabled={isDecrypted}
-                loading={isLoading}
-                onClick={onUnlockWalletOrDecryptPaymentDetails}
-              >
-                {"Decrypt payment details"}
-              </Button>
+        <Card className="border-gray-200 dark:border-gray-800">
+          <CardContent className="pt-6">
+            {isIban && (
+              <>
+                <DataListItem
+                  loading={isLoading || !isDecrypted}
+                  label="IBAN"
+                  value={loanDetails?.iban_transfer_details?.iban}
+                />
+                <DataListItem
+                  loading={isLoading || !isDecrypted}
+                  label="BIC"
+                  value={loanDetails?.iban_transfer_details?.bic}
+                />
+              </>
             )}
-          </DataList.Value>
-        </DataList.Item>
-      </DataList.Root>
+            {!isIban && (
+              <>
+                <DataListItem
+                  loading={isLoading || !isDecrypted}
+                  label="Account number"
+                  value={loanDetails?.swift_transfer_details?.account_number}
+                />
+                <DataListItem
+                  loading={isLoading || !isDecrypted}
+                  label="SWIFT or BIC"
+                  value={loanDetails?.swift_transfer_details?.swift_or_bic}
+                />
+              </>
+            )}
+            <DataListItem
+              loading={isLoading || !isDecrypted}
+              label="Bank Name"
+              value={loanDetails?.bank_name}
+            />
+            <DataListItem
+              loading={isLoading || !isDecrypted}
+              label="Bank Address"
+              value={loanDetails?.bank_address}
+            />
+            <DataListItem
+              loading={isLoading || !isDecrypted}
+              label="Bank Country"
+              value={loanDetails?.bank_country}
+            />
+            <DataListItem
+              loading={isLoading || !isDecrypted}
+              label="Payment purpose"
+              value={loanDetails?.purpose_of_remittance}
+            />
+          </CardContent>
+        </Card>
+      </div>
 
-      <Row className="mt-3">
-        <Col>
-          {error && (
-            <Alert variant="danger">
-              <FontAwesomeIcon
-                icon={faExclamationCircle}
-                className="mr-2 h-4 w-4"
-              />
-              {error}
-            </Alert>
+      <Separator className="bg-purple-500 h-px" />
+
+      <div>
+        <h3 className="text-xl font-bold mt-3 mb-2 text-gray-900 dark:text-gray-100">
+          Beneficiary Details
+        </h3>
+
+        <Card className="border-gray-200 dark:border-gray-800">
+          <CardContent className="pt-6">
+            <DataListItem
+              loading={isLoading || !isDecrypted}
+              label="Full Name"
+              value={loanDetails?.full_name}
+            />
+            <DataListItem
+              loading={isLoading || !isDecrypted}
+              label="Address"
+              value={
+                loanDetails
+                  ? `${loanDetails?.address || ""}, ${
+                      loanDetails?.city || ""
+                    }, ${loanDetails?.post_code || ""}, ${
+                      loanDetails?.country || ""
+                    }`
+                      .replace(/^, /, "")
+                      .replace(/, $/, "")
+                  : ""
+              }
+            />
+            <DataListItem
+              loading={isLoading || !isDecrypted}
+              label="Additional comments"
+              value={loanDetails?.comments}
+            />
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="flex justify-end mt-6">
+        <div className="min-w-[240px]"></div>
+        <div>
+          {!isWalletLoaded ? (
+            <UnlockWalletModal handleSubmit={() => {}}>
+              <Button type="button" disabled={isWalletLoaded} className="mt-3">
+                Confirm Secret
+              </Button>
+            </UnlockWalletModal>
+          ) : (
+            <Button
+              type="button"
+              disabled={isLoading || isDecrypted}
+              onClick={onUnlockWalletOrDecryptPaymentDetails}
+              className="flex items-center gap-2"
+            >
+              {isLoading ? (
+                <>
+                  <LuLoader className="h-4 w-4 animate-spin" />
+                  <span>Please wait</span>
+                </>
+              ) : (
+                "Decrypt payment details"
+              )}
+            </Button>
           )}
-        </Col>
-      </Row>
-    </Flex>
+        </div>
+      </div>
+
+      {error && (
+        <Alert variant="destructive" className="mt-3">
+          <LuCircleAlert className="h-4 w-4 mr-2" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+    </div>
   );
 };

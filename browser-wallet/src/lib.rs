@@ -154,6 +154,40 @@ pub fn get_mnemonic() -> Result<String, JsValue> {
 }
 
 #[wasm_bindgen]
+pub fn unlock_and_sign_claim_psbt(
+    password: String,
+    key: String,
+    psbt: String,
+    collateral_descriptor: String,
+    own_pk: String,
+    derivation_path: Option<String>,
+) -> Result<SignedTransaction, JsValue> {
+    if let Err(err) = browser_wallet::load(&password, &key) {
+        log::error!("Failed unlocking wallet {err:#}");
+        return Err(JsValue::from_str(&format!("{:#}", err)));
+    }
+
+    let (tx, outputs, params) = map_err_to_js!(browser_wallet::sign_claim_psbt(
+        &psbt,
+        &collateral_descriptor,
+        &own_pk,
+        derivation_path.as_deref(),
+    ))?;
+
+    let outputs = map_err_to_js!(outputs
+        .into_iter()
+        .map(|o| {
+            Ok(TxOut {
+                value: o.value.to_sat(),
+                address: Address::from_script(&o.script_pubkey, &params)?.to_string(),
+            })
+        })
+        .collect::<anyhow::Result<Vec<_>>>())?;
+
+    Ok(SignedTransaction { tx, outputs })
+}
+
+#[wasm_bindgen]
 pub fn sign_claim_psbt(
     psbt: String,
     collateral_descriptor: String,
