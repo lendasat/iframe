@@ -1493,7 +1493,7 @@ pub async fn insert_new_taken_contract_application(
     // next the borrower will need to fund the contract.
     let status = db::ContractStatus::Approved;
 
-    let interset = calculate_interest(loan_amount, duration_days, interest_rate);
+    let interest = calculate_interest(loan_amount, duration_days, interest_rate);
 
     let address = contract_address.assume_checked().to_string();
     let contract = insert_contract_request(
@@ -1523,7 +1523,7 @@ pub async fn insert_new_taken_contract_application(
         Some(address.to_string()),
         Some(contract_index as i32),
         interest_rate,
-        interset,
+        interest,
         borrower_npub,
         lender_npub,
     )

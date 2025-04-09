@@ -190,15 +190,17 @@ const EnhancedBitcoinLoan = () => {
         <div className="lg:col-span-1 pb-10">
           {/*TODO: implement chat*/}
           {/*<Chat />*/}
-          {contract && <ChatDrawer
-            contractId={contract.id}
-            counterpartyXPub={contract.lender_xpub}
-            onNewMsgSent={async () => {
-              await newChatNotification({
-                contract_id: contract.id
-              });
-            }}
-          />}
+          {contract && (
+            <ChatDrawer
+              contractId={contract.id}
+              counterpartyXPub={contract.lender_xpub}
+              onNewMsgSent={async () => {
+                await newChatNotification({
+                  contract_id: contract.id,
+                });
+              }}
+            />
+          )}
         </div>
       </div>
     </div>

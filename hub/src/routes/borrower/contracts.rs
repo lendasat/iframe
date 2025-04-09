@@ -828,7 +828,7 @@ pub struct TimelineEvent {
     #[serde(with = "time::serde::rfc3339")]
     date: OffsetDateTime,
     event: ContractStatus,
-    /// Only provided if it was a event caused by a transaction
+    /// Only provided if it was an event caused by a transaction
     txid: Option<String>,
 }
 
@@ -1033,7 +1033,7 @@ async fn map_timeline(
         }
     });
 
-    //
+    // next we go through the events and enhance them with transaction ids if relevant
     let timeline_1 = event_logs
         .into_iter()
         .filter_map(|log| {

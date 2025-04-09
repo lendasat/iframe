@@ -31,6 +31,7 @@ impl From<ContractStatusLogDb> for ContractStatusLog {
     }
 }
 
+/// Fetch the [`ContractStatus`] history for a given contract, from newest to oldest.
 pub async fn get_contract_status_logs(
     pool: &PgPool,
     contract_id: &str,
