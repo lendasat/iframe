@@ -28,7 +28,6 @@ use crate::model::WalletBackupData;
 use crate::routes::lender::auth::jwt_auth::auth;
 use crate::routes::AppState;
 use crate::utils::is_valid_email;
-use crate::wallet::derive_borrower_or_lender_pk;
 use axum::extract::Path;
 use axum::extract::State;
 use axum::http::header;
@@ -44,7 +43,6 @@ use axum::Json;
 use axum::Router;
 use axum_extra::extract::cookie::Cookie;
 use axum_extra::extract::cookie::SameSite;
-use bitcoin::Network;
 use jsonwebtoken::encode;
 use jsonwebtoken::EncodingKey;
 use jsonwebtoken::Header;
@@ -56,7 +54,6 @@ use serde_json::json;
 use sha2::Sha256;
 use srp::groups::G_2048;
 use srp::server::SrpServer;
-use std::str::FromStr;
 use std::sync::Arc;
 use time::OffsetDateTime;
 use tracing::instrument;
@@ -209,7 +206,6 @@ async fn post_register(
             lender_id: user.id.clone(),
             mnemonic_ciphertext: body.wallet_backup_data.mnemonic_ciphertext,
             network: body.wallet_backup_data.network,
-            xpub: body.wallet_backup_data.xpub,
         },
     )
     .await
@@ -249,7 +245,8 @@ async fn post_register(
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
     })?;
 
-    let user_response = serde_json::json!({"message": format!("We sent an email with a verification code to {}", email)});
+    let user_response =
+        serde_json::json!({"message": format!("We sent an email with a verificaode to {}", email)});
 
     Ok(Json(user_response))
 }
@@ -475,7 +472,6 @@ async fn post_pake_verify(
     let wallet_backup_data = WalletBackupData {
         mnemonic_ciphertext: wallet_backup.mnemonic_ciphertext,
         network: wallet_backup.network,
-        xpub: wallet_backup.xpub,
     };
 
     let features = db::lender_features::load_lender_features(&data.db, lender_id.clone())
@@ -593,7 +589,6 @@ async fn post_start_upgrade_to_pake(
     let old_wallet_backup_data = WalletBackupData {
         mnemonic_ciphertext: wallet_backup.mnemonic_ciphertext,
         network: wallet_backup.network,
-        xpub: wallet_backup.xpub,
     };
 
     let contracts = db::contracts::load_contracts_by_lender_id(&data.db, lender_id)
@@ -605,7 +600,6 @@ async fn post_start_upgrade_to_pake(
             (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
         })?;
 
-    let network = Network::from_str(&data.config.network).expect("valid network");
     let contract_pks = contracts
         .iter()
         // Contracts that are not yet closed or were never approved.
@@ -620,14 +614,7 @@ async fn post_start_upgrade_to_pake(
         })
         // Contracts that may have been funded.
         .filter(|c| c.contract_address.is_some())
-        .filter_map(|c| match (c.lender_xpub, c.contract_index) {
-            (Some(xpub), Some(index)) => Some(
-                derive_borrower_or_lender_pk(&xpub, index, matches!(network, Network::Bitcoin))
-                    .expect("valid PK")
-                    .0,
-            ),
-            _ => None,
-        })
+        .map(|c| c.lender_pk)
         .collect::<Vec<_>>();
 
     let response = Response::builder()
@@ -709,7 +696,6 @@ async fn post_finish_upgrade_to_pake(
             lender_id: lender_id.clone(),
             mnemonic_ciphertext: body.new_wallet_backup_data.mnemonic_ciphertext,
             network: body.new_wallet_backup_data.network,
-            xpub: body.new_wallet_backup_data.xpub,
         },
     )
     .await
@@ -915,23 +901,6 @@ async fn reset_password_handler(
     let lender_id = &user.id;
     tracing::Span::current().record("lender_id", lender_id);
 
-    let old_wallet_backup = db::wallet_backups::find_by_lender_id(&data.db, lender_id)
-        .await
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Failed reading wallet backup: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
-
-    // We can only run this check after a PAKE upgrade. The Xpub _changes_ after a PAKE upgrade.
-    if old_wallet_backup.xpub != body.new_wallet_backup_data.xpub {
-        let error_response = ErrorResponse {
-            message: "New Xpub does not match old one".to_string(),
-        };
-        return Err((StatusCode::INTERNAL_SERVER_ERROR, Json(error_response)));
-    }
-
     let mut db_tx = data.db.begin().await.map_err(|e| {
         let error_response = ErrorResponse {
             message: format!("Database error: {}", e),
@@ -945,7 +914,6 @@ async fn reset_password_handler(
             lender_id: lender_id.clone(),
             mnemonic_ciphertext: body.new_wallet_backup_data.mnemonic_ciphertext,
             network: body.new_wallet_backup_data.network,
-            xpub: body.new_wallet_backup_data.xpub,
         },
     )
     .await

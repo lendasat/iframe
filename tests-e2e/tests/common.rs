@@ -6,11 +6,13 @@ use bitcoin::Txid;
 use browser_wallet::auth::Salt;
 use browser_wallet::auth::ServerProof;
 use browser_wallet::auth::B;
+use browser_wallet::wallet::Wallet;
 use hub::model::ContractStatus;
 use hub::model::PakeLoginRequest;
 use hub::model::PakeLoginResponse;
 use hub::model::PakeVerifyRequest;
 use hub::routes::borrower::Contract;
+use rand::thread_rng;
 use rand::Rng;
 use reqwest::cookie::Jar;
 use reqwest::Client;
@@ -88,6 +90,22 @@ pub async fn log_in(port: u32, email: String, password: String) -> Client {
     client
 }
 
+pub fn new_wallet(mnemonic: &str, network: &str) -> Wallet {
+    let mut rng = thread_rng();
+    let contract_index = rng.gen_range(0..(2_u32.pow(31)));
+
+    let (wallet, _) = Wallet::new(
+        &mut rng,
+        mnemonic.parse().unwrap(),
+        "foo",
+        network,
+        contract_index,
+    )
+    .unwrap();
+
+    wallet
+}
+
 pub async fn wait_until_contract_status(
     client: &Client,
     url: &str,
@@ -135,7 +153,7 @@ pub async fn wait_until_contract_status(
 }
 
 pub fn random_txid() -> Txid {
-    let mut rng = rand::thread_rng();
+    let mut rng = thread_rng();
 
     let mut bytes = [0u8; 32];
     rng.fill(&mut bytes);

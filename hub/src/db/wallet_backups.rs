@@ -1,4 +1,3 @@
-use bitcoin::bip32::Xpub;
 use sqlx::Pool;
 use sqlx::Postgres;
 use sqlx::Result;
@@ -10,7 +9,6 @@ pub struct BorrowerWalletBackup {
     pub borrower_id: String,
     pub mnemonic_ciphertext: String,
     pub network: String,
-    pub xpub: String,
     pub created_at: OffsetDateTime,
 }
 
@@ -19,7 +17,6 @@ pub struct NewBorrowerWalletBackup {
     pub borrower_id: String,
     pub mnemonic_ciphertext: String,
     pub network: String,
-    pub xpub: String,
 }
 
 pub async fn find_by_borrower_id(
@@ -34,7 +31,6 @@ pub async fn find_by_borrower_id(
                 borrower_id,
                 mnemonic_ciphertext,
                 network,
-                xpub,
                 created_at
             FROM borrower_wallet_backups
             WHERE borrower_id = $1
@@ -59,16 +55,14 @@ where
         INSERT INTO borrower_wallet_backups (
             borrower_id,
             mnemonic_ciphertext,
-            network,
-            xpub
+            network
         )
-        VALUES ($1, $2, $3, $4)
-        RETURNING id, borrower_id, mnemonic_ciphertext, network, xpub, created_at
+        VALUES ($1, $2, $3)
+        RETURNING id, borrower_id, mnemonic_ciphertext, network, created_at
         "#,
         backup.borrower_id,
         backup.mnemonic_ciphertext,
         backup.network,
-        backup.xpub,
     )
     .fetch_one(pool)
     .await
@@ -80,7 +74,6 @@ pub struct LenderWalletBackup {
     pub lender_id: String,
     pub mnemonic_ciphertext: String,
     pub network: String,
-    pub xpub: String,
     pub created_at: OffsetDateTime,
 }
 
@@ -89,7 +82,6 @@ pub struct NewLenderWalletBackup {
     pub lender_id: String,
     pub mnemonic_ciphertext: String,
     pub network: String,
-    pub xpub: String,
 }
 
 pub async fn find_by_lender_id(
@@ -104,7 +96,6 @@ pub async fn find_by_lender_id(
                 lender_id,
                 mnemonic_ciphertext,
                 network,
-                xpub,
                 created_at
             FROM lender_wallet_backups
             WHERE lender_id = $1
@@ -129,39 +120,15 @@ where
         INSERT INTO lender_wallet_backups (
             lender_id,
             mnemonic_ciphertext,
-            network,
-            xpub
+            network
         )
-        VALUES ($1, $2, $3, $4)
-        RETURNING id, lender_id, mnemonic_ciphertext, network, xpub, created_at
+        VALUES ($1, $2, $3)
+        RETURNING id, lender_id, mnemonic_ciphertext, network, created_at
         "#,
         backup.lender_id,
         backup.mnemonic_ciphertext,
         backup.network,
-        backup.xpub,
     )
     .fetch_one(pool)
     .await
-}
-
-pub async fn get_xpub_for_lender<'a, E>(pool: E, lender_id: String) -> Result<Xpub>
-where
-    E: sqlx::Executor<'a, Database = Postgres>,
-{
-    let xpub = sqlx::query_scalar!(
-        r#"
-        SELECT xpub
-        FROM lender_wallet_backups
-        WHERE lender_id = $1
-        ORDER BY created_at DESC
-        LIMIT 1
-        "#,
-        lender_id
-    )
-    .fetch_one(pool)
-    .await?;
-
-    let xpub = xpub.parse().expect("valid xpub");
-
-    Ok(xpub)
 }

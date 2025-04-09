@@ -3,6 +3,9 @@ use sqlx::postgres::PgPoolOptions;
 use sqlx::Pool;
 use sqlx::Postgres;
 
+pub(crate) mod sideshift;
+pub(crate) mod telegram_bot;
+
 pub mod api_account_creator;
 pub mod api_keys;
 pub mod borrower_features;
@@ -22,14 +25,14 @@ pub mod loan_deals;
 pub mod loan_offers;
 pub mod manual_collateral_recovery;
 pub mod moon;
-pub(crate) mod sideshift;
-pub(crate) mod telegram_bot;
 pub mod transactions;
 pub mod user_logins;
 pub mod user_stats;
 pub mod waitlist;
 pub mod wallet_backups;
 pub mod wallet_index;
+
+pub mod migrate_pks;
 
 pub async fn connect_to_db(db_connection: &str) -> Result<Pool<Postgres>> {
     let pool = PgPoolOptions::new()

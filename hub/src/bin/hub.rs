@@ -53,6 +53,19 @@ async fn main() -> Result<()> {
     let db = connect_to_db(config.database_url.as_str()).await?;
     run_migration(&db).await?;
 
+    if config.custom_db_migration {
+        tracing::info!("Custom DB migration started");
+
+        hub::db::migrate_pks::migrate_pks(&db).await?;
+
+        tracing::info!(
+            "Custom DB migration done. \
+             You can unset the CUSTOM_DB_MIGRATION env variable now"
+        );
+
+        return Ok(());
+    }
+
     let network = config.network.clone().parse().context("Invalid network")?;
     tracing::info!("Running hub on {network}");
 

@@ -1,7 +1,6 @@
 import { UnlockWalletModal, useWallet } from "@frontend/browser-wallet";
 import { Box, Button, Flex, Heading, Text, TextField } from "@radix-ui/themes";
 import { loadWasmSync, PublicKey, Timestamp } from "@rust-nostr/nostr-sdk";
-import { derive_npub } from "browser-wallet";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { IoMdSend } from "react-icons/io";
 import {
@@ -10,6 +9,8 @@ import {
   LuX as X,
 } from "react-icons/lu";
 import { ChatMessage, useNostr } from "./useNostr";
+import { useAsync } from "react-use";
+
 interface NostrChatProps {
   otherUser: string;
   chatRoom: string;
@@ -64,7 +65,7 @@ const NostrChat = ({
       [otherUserString],
     );
   } catch (e) {
-    console.error(`Invalid other usd pk: ${e}`);
+    console.error(`Invalid other user pk: ${e}. Was ${otherUserString}`);
     throw e;
   }
 
@@ -256,20 +257,18 @@ const NostrChat = ({
 
 interface ChatDrawerProps {
   contractId: string;
-  counterpartyXPub: string;
+  counterpartyNPub: string;
   onNewMsgSent: () => Promise<void>;
 }
 
 export const ChatDrawer = ({
   contractId,
-  counterpartyXPub,
+  counterpartyNPub: counterpartyNPubNotMemorized,
   onNewMsgSent,
 }: ChatDrawerProps) => {
-  console.log(`I'm reloading chat drawer`);
   const [isOpen, setIsOpen] = useState(false);
   const [showUnlockWalletModal, setShowUnlockWalletModal] = useState(false);
-  const { doesWalletExist, isWalletLoaded, getNsec, getPubkeyFromContract } =
-    useWallet();
+  const { getNsec, getPubkeyFromContract } = useWallet();
   const handleCloseUnlockWalletModal = () => setShowUnlockWalletModal(false);
   const handleOpenUnlockWalletModal = () => setShowUnlockWalletModal(true);
   const handleSubmitUnlockWalletModal = async () => {
@@ -279,17 +278,22 @@ export const ChatDrawer = ({
   const contractIdMemorized = useMemo(() => {
     return contractId;
   }, [contractId]);
-  const counterpartyXPubMemorized = useMemo(() => {
-    return counterpartyXPub;
-  }, [counterpartyXPub]);
+  const counterpartyNPub = useMemo(() => {
+    return counterpartyNPubNotMemorized;
+  }, [counterpartyNPubNotMemorized]);
 
-  const nsec = isWalletLoaded ? getNsec() : null;
-  const chatRoom = isWalletLoaded
-    ? getPubkeyFromContract(contractIdMemorized)
-    : null;
-  const counterpartyNPub = isWalletLoaded
-    ? derive_npub(counterpartyXPubMemorized)
-    : null;
+  let buttonDisabled = false;
+
+  const { value: nsec, error } = useAsync(async () => {
+    return getNsec();
+  });
+
+  if (error) {
+    console.error(`Could not get nsec: ${error}`);
+    buttonDisabled = true;
+  }
+
+  const chatRoom = getPubkeyFromContract(contractIdMemorized);
 
   const toggleDrawer = () => {
     setIsOpen(!isOpen);
@@ -338,15 +342,15 @@ export const ChatDrawer = ({
           </Button>
         </Box>
 
-        {isWalletLoaded && chatConfig ? (
+        {chatConfig ? (
           <NostrChat {...chatConfig} onNewMsgSent={onNewMsgSent} />
         ) : (
           <Box className="flex h-96 items-center justify-center">
             <UnlockWalletModal handleSubmit={() => {}}>
               <Button
                 type={"button"}
-                disabled={isWalletLoaded}
                 className="mt-3"
+                disabled={buttonDisabled}
               >
                 <Unlock /> Unlock Chat
               </Button>

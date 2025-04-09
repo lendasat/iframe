@@ -48,11 +48,9 @@ export interface Contract {
   status: ContractStatus;
   liquidation_status: LiquidationStatus;
   borrower: BorrowerStats;
-  borrower_pk: string;
   borrower_btc_address: string;
   loan_repayment_address: string;
   contract_address?: string;
-  derivation_path?: string;
   borrower_loan_address: string;
   transactions: LoanTransaction[];
   loan_asset: LoanAsset;
@@ -60,11 +58,14 @@ export interface Contract {
   liquidation_price: number;
   extends_contract?: string;
   extended_by_contract?: string;
-  borrower_xpub: string;
-  lender_xpub: string;
   kyc_info?: KycInfo;
   fiat_loan_details_borrower?: FiatLoanDetailsResponse;
   fiat_loan_details_lender?: FiatLoanDetailsResponse;
+  lender_pk: string;
+  lender_npub: string;
+  lender_derivation_path: string;
+  borrower_npub: string;
+  borrower_pk: string;
 }
 
 export interface KycInfo {
@@ -84,7 +85,9 @@ export interface CreateLoanOfferRequest {
   loan_asset: LoanAsset;
   loan_repayment_address: string;
   auto_accept: boolean;
-  lender_xpub: string;
+  lender_npub: string;
+  lender_pk: string;
+  lender_derivation_path: string;
   kyc_link?: string;
 }
 
@@ -363,7 +366,6 @@ export interface LoanApplication {
   borrower_btc_address: string;
   loan_asset: LoanAsset;
   loan_type: LoanType;
-  borrower_xpub: string;
   status: LoanApplicationStatus;
   created_at: Date;
   updated_at: Date;
@@ -397,8 +399,10 @@ export enum LoanType {
 }
 
 export interface TakeLoanApplicationSchema {
-  lender_xpub: string;
+  lender_npub: string;
   loan_repayment_address: string;
+  lender_pk: string;
+  lender_derivation_path: string;
 }
 
 export interface NotifyUser {

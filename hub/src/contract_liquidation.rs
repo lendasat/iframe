@@ -1,4 +1,5 @@
 use crate::mempool;
+use crate::model::Contract;
 use crate::wallet::Wallet;
 use anyhow::anyhow;
 use anyhow::bail;
@@ -12,7 +13,7 @@ use miniscript::Descriptor;
 
 pub async fn prepare_liquidation_psbt(
     wallet: &Wallet,
-    contract: crate::model::Contract,
+    contract: Contract,
     address: Address<NetworkUnchecked>,
     lender_amount: Amount,
     contract_index: u32,
@@ -22,10 +23,6 @@ pub async fn prepare_liquidation_psbt(
     let contract_address = contract
         .contract_address
         .ok_or_else(|| anyhow!("Database error: missing contract address",))?;
-
-    let lender_xpub = contract
-        .lender_xpub
-        .ok_or_else(|| anyhow!("Database error: missing lender Xpub",))?;
 
     let collateral_outputs = mempool
         .send(mempool::GetCollateralOutputs(contract_address))
@@ -39,9 +36,8 @@ pub async fn prepare_liquidation_psbt(
     let origination_fee = Amount::from_sat(contract.origination_fee_sats);
 
     let (psbt, collateral_descriptor, lender_pk) = wallet.create_liquidation_psbt(
-        &contract.borrower_xpub,
         contract.borrower_pk,
-        &lender_xpub,
+        contract.lender_pk,
         contract_index,
         collateral_outputs,
         origination_fee,

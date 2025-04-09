@@ -47,7 +47,7 @@ pub async fn take_application(
     config: &Config,
     lender_id: &str,
     _notifications: Arc<Notifications>,
-    application_body: TakeLoanApplicationSchema,
+    take_application_body: TakeLoanApplicationSchema,
     loan_deal_id: &str,
 ) -> Result<String, Error> {
     let contract_id = Uuid::new_v4();
@@ -90,8 +90,8 @@ pub async fn take_application(
 
     let (contract_address, contract_index) = wallet
         .contract_address(
-            &loan_application.borrower_xpub,
-            &application_body.lender_xpub,
+            loan_application.borrower_pk,
+            take_application_body.lender_pk,
             ContractVersion::TwoOfThree,
         )
         .await
@@ -108,16 +108,20 @@ pub async fn take_application(
         origination_fee.to_sat(),
         loan_application.loan_amount,
         loan_application.duration_days,
+        loan_application.borrower_pk,
+        loan_application.borrower_derivation_path,
+        take_application_body.lender_pk,
+        take_application_body.lender_derivation_path,
         loan_application.borrower_btc_address,
-        loan_application.borrower_xpub,
         loan_application.borrower_loan_address.as_deref(),
-        application_body.loan_repayment_address,
+        take_application_body.loan_repayment_address,
         loan_application.loan_type,
-        application_body.lender_xpub,
         ContractVersion::TwoOfThree,
         loan_application.interest_rate,
         contract_address.as_unchecked().clone(),
         contract_index,
+        &loan_application.borrower_npub,
+        &take_application_body.lender_npub,
     )
     .await
     .map_err(Error::Database)?;

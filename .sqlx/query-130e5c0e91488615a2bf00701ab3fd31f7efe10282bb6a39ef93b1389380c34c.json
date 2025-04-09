@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE contracts\n        SET \n            lender_pk = $1,\n            lender_npub = $2\n        WHERE id = $3\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Bpchar",
+        "Text",
+        "Bpchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "130e5c0e91488615a2bf00701ab3fd31f7efe10282bb6a39ef93b1389380c34c"
+}

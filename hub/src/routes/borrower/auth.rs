@@ -231,7 +231,6 @@ async fn post_register(
             borrower_id: user.id.clone(),
             mnemonic_ciphertext: body.wallet_backup_data.mnemonic_ciphertext,
             network: body.wallet_backup_data.network,
-            xpub: body.wallet_backup_data.xpub,
         },
     )
     .await
@@ -534,7 +533,6 @@ async fn post_pake_verify(
     let wallet_backup_data = WalletBackupData {
         mnemonic_ciphertext: wallet_backup.mnemonic_ciphertext,
         network: wallet_backup.network,
-        xpub: wallet_backup.xpub,
     };
 
     let user_agent = connection_details
@@ -618,7 +616,6 @@ async fn post_start_upgrade_to_pake(
     let old_wallet_backup_data = WalletBackupData {
         mnemonic_ciphertext: wallet_backup.mnemonic_ciphertext,
         network: wallet_backup.network,
-        xpub: wallet_backup.xpub,
     };
 
     let contracts = db::contracts::load_contracts_by_borrower_id(&data.db, borrower_id)
@@ -639,7 +636,10 @@ async fn post_start_upgrade_to_pake(
         })
         // Contracts that may have been funded.
         .filter(|c| c.contract_address.is_some())
-        .filter_map(|c| c.borrower_pk)
+        .filter_map(|c| match c.borrower_derivation_path {
+            Some(_) => None,
+            None => Some(c.borrower_pk),
+        })
         .collect::<Vec<_>>();
 
     let response = Response::builder()
@@ -701,7 +701,6 @@ async fn post_finish_upgrade_to_pake(
             borrower_id,
             mnemonic_ciphertext: body.new_wallet_backup_data.mnemonic_ciphertext,
             network: body.new_wallet_backup_data.network,
-            xpub: body.new_wallet_backup_data.xpub,
         },
     )
     .await
@@ -887,24 +886,6 @@ async fn reset_password_handler(
     let borrower_id = &password_auth_info.borrower_id;
     tracing::Span::current().record("borrower_id", borrower_id);
 
-    let old_wallet_backup = db::wallet_backups::find_by_borrower_id(&data.db, borrower_id)
-        .await
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Failed reading wallet backup: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
-
-    // We can only run this check if the account is PAKE-compatible. The Xpub _changes_ after a PAKE
-    // upgrade.
-    if old_wallet_backup.xpub != body.new_wallet_backup_data.xpub {
-        let error_response = ErrorResponse {
-            message: "New Xpub does not match old one".to_string(),
-        };
-        return Err((StatusCode::INTERNAL_SERVER_ERROR, Json(error_response)));
-    }
-
     let mut db_tx = data.db.begin().await.map_err(|e| {
         let error_response = ErrorResponse {
             message: format!("Database error: {}", e),
@@ -918,7 +899,6 @@ async fn reset_password_handler(
             borrower_id: borrower_id.clone(),
             mnemonic_ciphertext: body.new_wallet_backup_data.mnemonic_ciphertext,
             network: body.new_wallet_backup_data.network,
-            xpub: body.new_wallet_backup_data.xpub,
         },
     )
     .await

@@ -14,6 +14,7 @@ use axum::http::StatusCode;
 use axum::middleware;
 use axum::response::IntoResponse;
 use axum::Json;
+use bitcoin::PublicKey;
 use rust_decimal::Decimal;
 use serde::Deserialize;
 use serde::Serialize;
@@ -57,8 +58,8 @@ pub struct LoanOffer {
     pub origination_fee: Vec<OriginationFee>,
     pub extension_origination_fee: Vec<OriginationFee>,
     pub kyc_link: Option<Url>,
-    // The `lender_xpub` is used to encrypt the [`lendasat_core::FiatLoanDetails`] of
-    pub lender_xpub: String,
+    #[schema(value_type = String)]
+    pub lender_pk: PublicKey,
 }
 
 /// Return all available offers
@@ -140,7 +141,7 @@ pub async fn get_all_available_loan_offers(
             origination_fee,
             extension_origination_fee,
             kyc_link: loan_offer.kyc_link,
-            lender_xpub: loan_offer.lender_xpub,
+            lender_pk: loan_offer.lender_pk,
         })
     }
 
@@ -233,7 +234,7 @@ pub async fn get_available_loan_offers_by_lender(
             origination_fee,
             extension_origination_fee,
             kyc_link: loan_offer.kyc_link,
-            lender_xpub: loan_offer.lender_xpub,
+            lender_pk: loan_offer.lender_pk,
         })
     }
 
@@ -332,7 +333,7 @@ pub async fn get_loan_offer(
                     origination_fee,
                     extension_origination_fee,
                     kyc_link: loan_offer.kyc_link,
-                    lender_xpub: loan_offer.lender_xpub,
+                    lender_pk: loan_offer.lender_pk,
                 }),
             ))
         }

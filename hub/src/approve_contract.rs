@@ -15,12 +15,6 @@ pub enum Error {
     /// Failed to interact with the database.
     #[error("Failed to interact with the database.")]
     Database(#[source] anyhow::Error),
-    /// Can't do much of anything without lender Xpub.
-    #[error("Missing lender Xpub")]
-    MissingLenderXpub,
-    /// Can't do much of anything without borrower Xpub.
-    #[error("Missing borrower Xpub")]
-    MissingBorrowerXpub,
     /// Referenced loan does not exist.
     #[error("Missing loan offer: {offer_id}")]
     MissingLoanOffer { offer_id: String },
@@ -97,25 +91,14 @@ pub async fn approve_contract(
             .map_err(Error::Database)?
     }
 
-    let lender_xpub = contract.lender_xpub.ok_or(Error::MissingLenderXpub)?;
-
-    let (contract_address, contract_index) = match contract.borrower_pk {
-        // If we only have a `borrower_xpub`, use it to derive the contract address.
-        None => wallet
-            .contract_address(
-                &contract.borrower_xpub,
-                &lender_xpub,
-                contract.contract_version,
-            )
-            .await
-            .map_err(Error::ContractAddress)?,
-        // If the `borrower_pk` was ever set, we should use that one because we are dealing with a
-        // legacy contract.
-        Some(borrower_pk) => wallet
-            .contract_address_with_borrower_pk(borrower_pk, &lender_xpub, contract.contract_version)
-            .await
-            .map_err(Error::ContractAddress)?,
-    };
+    let (contract_address, contract_index) = wallet
+        .contract_address(
+            contract.borrower_pk,
+            contract.lender_pk,
+            contract.contract_version,
+        )
+        .await
+        .map_err(Error::ContractAddress)?;
 
     let borrower = db::borrowers::get_user_by_id(db, contract.borrower_id.as_str())
         .await

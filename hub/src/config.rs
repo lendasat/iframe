@@ -41,6 +41,7 @@ pub struct Config {
     pub sideshift_commision_rate: Option<Decimal>,
     pub fake_client_ip: Option<String>,
     pub telegram_bot_token: Option<String>,
+    pub custom_db_migration: bool,
 }
 
 impl Config {
@@ -53,6 +54,13 @@ impl Config {
         let network = std::env::var("NETWORK").expect("NETWORK must be set");
         let use_fake_price = {
             let value = std::env::var("USE_FAKE_PRICE").ok();
+            let value = value.map(|v| bool::from_str(v.as_ref()).unwrap_or_default());
+
+            value.unwrap_or_default()
+        };
+
+        let custom_db_migration = {
+            let value = std::env::var("CUSTOM_DB_MIGRATION").ok();
             let value = value.map(|v| bool::from_str(v.as_ref()).unwrap_or_default());
 
             value.unwrap_or_default()
@@ -198,6 +206,7 @@ impl Config {
             sideshift_commision_rate,
             fake_client_ip,
             telegram_bot_token,
+            custom_db_migration,
         }
     }
 }

@@ -325,7 +325,6 @@ export function LoanApplicationTable({
           borrower_loan_address: "dummy",
           borrower_btc_address: "dummy",
           loan_type: LoanType.StableCoin,
-          borrower_xpub: "dummy",
           status: LoanApplicationStatus.Available,
           created_at: new Date(),
           updated_at: new Date(),

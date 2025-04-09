@@ -55,7 +55,7 @@ export const Confirmation = ({
   originationFee,
 }: ConfirmationProps) => {
   const navigate = useNavigate();
-  const { getXpub } = useWallet();
+  const { getNpub, getPkAndDerivationPath } = useWallet();
 
   const { postLoanApplication } = useBorrowerHttpClient();
   const { latestPrice } = usePrice();
@@ -121,7 +121,8 @@ export const Confirmation = ({
       }
 
       setIsCreatingRequest(true);
-      const borrowerXpub = await getXpub();
+      const borrowerNpub = await getNpub();
+      const borrowerPk = await getPkAndDerivationPath();
 
       if (
         LoanAssetHelper.isStableCoin(selectedAssetType) &&
@@ -142,7 +143,9 @@ export const Confirmation = ({
         ltv,
         loan_amount: selectedLoanAmount,
         duration_days: selectedLoanDuration,
-        borrower_xpub: borrowerXpub,
+        borrower_npub: borrowerNpub,
+        borrower_pk: borrowerPk.pubkey,
+        borrower_derivation_path: borrowerPk.path,
         loan_asset: selectedAssetType,
         loan_type: LoanType.StableCoin,
         interest_rate: interestRate / 100.0,

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        UPDATE contracts\n        SET\n            liquidation_status = $1,\n            updated_at = $2\n        WHERE id = $3\n        RETURNING\n            id,\n            lender_id,\n            borrower_id,\n            loan_deal_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_loan_address,\n            lender_loan_repayment_address,\n            loan_type as \"loan_type: crate::model::db::LoanType\",\n            borrower_xpub,\n            lender_xpub,\n            contract_address,\n            contract_index,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_days,\n            expiry_date,\n            contract_version,\n            interest_rate,\n            created_at,\n            updated_at\n        ",
+  "query": "\n        SELECT\n            id,\n            lender_id,\n            borrower_id,\n            loan_deal_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_derivation_path,\n            lender_pk,\n            lender_derivation_path,\n            borrower_loan_address,\n            lender_loan_repayment_address,\n            loan_type as \"loan_type: crate::model::db::LoanType\",\n            contract_address,\n            contract_index,\n            borrower_npub,\n            lender_npub,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_days,\n            expiry_date,\n            contract_version,\n            interest_rate,\n            created_at,\n            updated_at\n        FROM contracts\n        where id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -60,16 +60,31 @@
       },
       {
         "ordinal": 11,
-        "name": "borrower_loan_address",
+        "name": "borrower_derivation_path",
         "type_info": "Text"
       },
       {
         "ordinal": 12,
+        "name": "lender_pk",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 13,
+        "name": "lender_derivation_path",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 14,
+        "name": "borrower_loan_address",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 15,
         "name": "lender_loan_repayment_address",
         "type_info": "Text"
       },
       {
-        "ordinal": 13,
+        "ordinal": 16,
         "name": "loan_type: crate::model::db::LoanType",
         "type_info": {
           "Custom": {
@@ -85,27 +100,27 @@
         }
       },
       {
-        "ordinal": 14,
-        "name": "borrower_xpub",
-        "type_info": "Text"
-      },
-      {
-        "ordinal": 15,
-        "name": "lender_xpub",
-        "type_info": "Text"
-      },
-      {
-        "ordinal": 16,
+        "ordinal": 17,
         "name": "contract_address",
         "type_info": "Text"
       },
       {
-        "ordinal": 17,
+        "ordinal": 18,
         "name": "contract_index",
         "type_info": "Int4"
       },
       {
-        "ordinal": 18,
+        "ordinal": 19,
+        "name": "borrower_npub",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 20,
+        "name": "lender_npub",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 21,
         "name": "status: crate::model::db::ContractStatus",
         "type_info": {
           "Custom": {
@@ -139,7 +154,7 @@
         }
       },
       {
-        "ordinal": 19,
+        "ordinal": 22,
         "name": "liquidation_status: crate::model::db::LiquidationStatus",
         "type_info": {
           "Custom": {
@@ -156,52 +171,38 @@
         }
       },
       {
-        "ordinal": 20,
+        "ordinal": 23,
         "name": "duration_days",
         "type_info": "Int4"
       },
       {
-        "ordinal": 21,
+        "ordinal": 24,
         "name": "expiry_date",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 22,
+        "ordinal": 25,
         "name": "contract_version",
         "type_info": "Int4"
       },
       {
-        "ordinal": 23,
+        "ordinal": 26,
         "name": "interest_rate",
         "type_info": "Numeric"
       },
       {
-        "ordinal": 24,
+        "ordinal": 27,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 25,
+        "ordinal": 28,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
-        {
-          "Custom": {
-            "name": "liquidation_status",
-            "kind": {
-              "Enum": [
-                "Healthy",
-                "FirstMarginCall",
-                "SecondMarginCall",
-                "Liquidated"
-              ]
-            }
-          }
-        },
-        "Timestamptz",
         "Bpchar"
       ]
     },
@@ -216,14 +217,17 @@
       false,
       false,
       false,
-      true,
-      true,
+      false,
       true,
       false,
       false,
       true,
       true,
+      false,
       true,
+      true,
+      false,
+      false,
       false,
       false,
       false,
@@ -234,5 +238,5 @@
       false
     ]
   },
-  "hash": "d7ec9cf1659ebf8ab223f730b67992e5b32f7746034d4d1cb42e491778dc71d0"
+  "hash": "61dac25709ec1be4f659b22f4c68e6c7ed37672d5d7da3f0d1a10219a2306277"
 }

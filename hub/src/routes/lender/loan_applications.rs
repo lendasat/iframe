@@ -23,7 +23,8 @@ use axum::routing::post;
 use axum::Extension;
 use axum::Json;
 use axum::Router;
-use bitcoin::bip32::Xpub;
+use bitcoin::bip32;
+use bitcoin::PublicKey;
 use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::Decimal;
 use serde::Deserialize;
@@ -173,8 +174,10 @@ pub async fn get_loan_application(
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct TakeLoanApplicationSchema {
-    pub lender_xpub: Xpub,
+    pub lender_pk: PublicKey,
+    pub lender_derivation_path: bip32::DerivationPath,
     pub loan_repayment_address: String,
+    pub lender_npub: String,
 }
 
 #[instrument(skip_all, err(Debug))]

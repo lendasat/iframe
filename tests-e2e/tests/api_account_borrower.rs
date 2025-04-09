@@ -2,6 +2,7 @@
 
 use crate::common::init_tracing;
 use crate::common::log_in;
+use crate::common::new_wallet;
 use crate::common::random_txid;
 use crate::common::wait_until_contract_status;
 use crate::common::LoanOffer;
@@ -46,9 +47,13 @@ async fn api_account_borrower() {
     .await;
 
     // 2. Lender creates loan offer.
-    let lender_xpub =
-            "tpubD6NzVbkrYhZ4Yon2URjspXp7Y7DKaBaX1ZVMCEnhc8zCrj1AuJyLrhmAKFmnkqVULW6znfEMLvgukHBVJD4fukpVYre3dpHXmkbcpvtviro"
-            .parse().unwrap();
+    let mut lender_wallet = new_wallet(
+        "kitchen only catalog nest useless armed minimum orchard auction tourist destroy laugh",
+        &network,
+    );
+
+    let (lender_pk, lender_derivation_path) = lender_wallet.next_hardened_pk().unwrap();
+
     let loan_offer = CreateLoanOfferSchema {
         name: "a fantastic loan".to_string(),
         min_ltv: dec!(0.5),
@@ -61,9 +66,11 @@ async fn api_account_borrower() {
         loan_asset: LoanAsset::UsdcEth,
         loan_repayment_address:
             "0x055098f73c89ca554f98c0298ce900235d2e1b4205a7ca629ae017518521c2c3".to_string(),
+        lender_pk,
+        lender_derivation_path,
         auto_accept: false,
-        lender_xpub,
         kyc_link: None,
+        lender_npub: "npub1eeze2k0yz57p5s8q8fg8p7rs97mj8ya3qkk3m7njgadl7schvktsp7hsxg".to_string(),
     };
 
     let res = lender
@@ -97,19 +104,12 @@ async fn api_account_borrower() {
     let borrower_api_key = create_api_account_response.api_key;
 
     // 4. Borrower takes loan offer by creating a contract request.
-    let borrower_xpub = {
-        let (mnemonic_ciphertext, network, xpub) =
-            browser_wallet::wallet::generate_new("borrower", "regtest").unwrap();
+    let mut borrower_wallet = new_wallet(
+        "vibrant wood beach awful abandon assume hungry test mom round trigger suspect",
+        &network,
+    );
 
-        browser_wallet::wallet::load_wallet(
-            "borrower",
-            &mnemonic_ciphertext.serialize(),
-            &network.to_string(),
-        )
-        .unwrap();
-
-        xpub
-    };
+    let (borrower_pk, borrower_derivation_path) = borrower_wallet.next_hardened_pk().unwrap();
 
     let borrower_btc_address = "tb1quw75h0w26rcrdfar6knvkfazpwyzq4z8vqmt37"
         .parse()
@@ -120,13 +120,16 @@ async fn api_account_borrower() {
         loan_amount: dec!(500),
         duration_days: 7,
         borrower_btc_address,
-        borrower_xpub,
+        borrower_pk,
+        borrower_derivation_path,
         borrower_loan_address: Some(
             "0x055098f73c89ca554f98c0298ce900235d2e1b4205a7ca629ae017518521c2c3".to_string(),
         ),
         loan_type: LoanType::StableCoin,
         moon_card_id: None,
         fiat_loan_details: None,
+        borrower_npub: "npub193gpfqmzdpwjrgr6xnct7j2ks4qc5ywyvfzvqtm6twdpxx7m6xfsmvccj4"
+            .to_string(),
     };
 
     let borrower = {
@@ -336,13 +339,14 @@ async fn api_account_borrower() {
     let claim_psbt = hex::decode(claim_psbt).unwrap();
     let claim_psbt = Psbt::deserialize(&claim_psbt).unwrap();
 
-    let tx = browser_wallet::wallet::sign_claim_psbt(
-        claim_psbt,
-        collateral_descriptor,
-        borrower_pk,
-        contract.derivation_path.as_ref(),
-    )
-    .unwrap();
+    let tx = borrower_wallet
+        .sign_claim_psbt(
+            claim_psbt,
+            collateral_descriptor,
+            borrower_pk,
+            contract.borrower_derivation_path.as_ref(),
+        )
+        .unwrap();
 
     let tx_hex = bitcoin::consensus::encode::serialize_hex(&tx);
 

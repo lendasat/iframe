@@ -145,12 +145,13 @@ pub struct Contract {
     #[serde(with = "rust_decimal::serde::float")]
     pub initial_ltv: Decimal,
     pub status: ContractStatus,
-    pub borrower_pk: Option<PublicKey>,
+    pub lender_pk: PublicKey,
+    pub lender_derivation_path: DerivationPath,
+    pub borrower_pk: PublicKey,
     pub borrower_btc_address: String,
     pub borrower_loan_address: Option<String>,
     pub contract_address: Option<String>,
     pub collateral_script: Option<String>,
-    pub derivation_path: Option<DerivationPath>,
     pub loan_repayment_address: Option<String>,
     pub borrower: BorrowerProfile,
     #[serde(with = "time::serde::rfc3339")]
@@ -169,11 +170,10 @@ pub struct Contract {
     pub liquidation_price: Decimal,
     pub extends_contract: Option<String>,
     pub extended_by_contract: Option<String>,
-    pub borrower_xpub: String,
-    pub lender_xpub: String,
     pub kyc_info: Option<KycInfo>,
     pub fiat_loan_details_borrower: Option<FiatLoanDetailsWrapper>,
     pub fiat_loan_details_lender: Option<FiatLoanDetailsWrapper>,
+    pub borrower_npub: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -878,13 +878,6 @@ async fn get_manual_recovery_psbt(
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
     })?;
 
-    let lender_xpub = contract.lender_xpub.ok_or_else(|| {
-        let error_response = ErrorResponse {
-            message: "Database error: missing lender Xpub".to_string(),
-        };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?;
-
     let collateral_outputs = data
         .mempool
         .send(mempool::GetCollateralOutputs(contract_address))
@@ -904,9 +897,8 @@ async fn get_manual_recovery_psbt(
     let (psbt, collateral_descriptor, lender_pk) = data
         .wallet
         .create_liquidation_psbt(
-            &contract.borrower_xpub,
             contract.borrower_pk,
-            &lender_xpub,
+            contract.lender_pk,
             contract_index,
             collateral_outputs,
             origination_fee,
@@ -998,10 +990,6 @@ async fn map_to_api_contract(
 
     let liquidation_price = contract.liquidation_price();
 
-    let lender_xpub = db::wallet_backups::get_xpub_for_lender(&data.db, contract.lender_id)
-        .await
-        .map_err(|e| Error::Database(anyhow!(e)))?;
-
     let fiat_loan_details_borrower = {
         let details = db::fiat_loan_details::get_borrower(&data.db, &contract.id)
             .await
@@ -1024,14 +1012,13 @@ async fn map_to_api_contract(
         })
     };
 
-    let (collateral_script, borrower_pk, lender_derivation_path) = match contract.contract_index {
+    let collateral_script = match contract.contract_index {
         Some(contract_index) => {
-            let (collateral_descriptor, (borrower_pk, _), (_, lender_derivation_path)) = data
+            let collateral_descriptor = data
                 .wallet
                 .collateral_descriptor(
-                    &contract.borrower_xpub,
                     contract.borrower_pk,
-                    &lender_xpub,
+                    contract.lender_pk,
                     contract.contract_version,
                     contract_index,
                 )
@@ -1039,13 +1026,9 @@ async fn map_to_api_contract(
             let collateral_script = collateral_descriptor.script_code().expect("not taproot");
             let collateral_script = collateral_script.to_hex_string();
 
-            (
-                Some(collateral_script),
-                Some(borrower_pk),
-                Some(lender_derivation_path),
-            )
+            Some(collateral_script)
         }
-        None => (None, contract.borrower_pk, None),
+        None => None,
     };
 
     let contract = Contract {
@@ -1057,16 +1040,16 @@ async fn map_to_api_contract(
         collateral_sats: contract.collateral_sats,
         interest_rate: contract.interest_rate,
         initial_ltv: contract.initial_ltv,
-        loan_asset: new_offer.loan_asset(),
         status: contract.status,
-        borrower_pk,
+        lender_pk: contract.lender_pk,
+        lender_derivation_path: contract.lender_derivation_path,
+        borrower_pk: contract.borrower_pk,
         borrower_btc_address: contract.borrower_btc_address.assume_checked().to_string(),
         borrower_loan_address: contract.borrower_loan_address,
         contract_address: contract
             .contract_address
             .map(|c| c.assume_checked().to_string()),
         collateral_script,
-        derivation_path: lender_derivation_path,
         loan_repayment_address: contract.lender_loan_repayment_address,
         borrower: BorrowerProfile {
             id: borrower.id,
@@ -1078,15 +1061,15 @@ async fn map_to_api_contract(
         expiry: contract.expiry_date,
         liquidation_status: contract.liquidation_status,
         transactions,
-        extends_contract: parent_contract_id,
-        extended_by_contract: child_contract,
+        loan_asset: new_offer.loan_asset(),
         can_recover_collateral_manually,
         liquidation_price,
-        borrower_xpub: contract.borrower_xpub.to_string(),
-        lender_xpub: lender_xpub.to_string(),
+        extends_contract: parent_contract_id,
+        extended_by_contract: child_contract,
         kyc_info,
         fiat_loan_details_borrower,
         fiat_loan_details_lender,
+        borrower_npub: contract.borrower_npub,
     };
 
     Ok(contract)
@@ -1103,10 +1086,6 @@ enum Error {
     MissingLoanOffer { offer_id: String },
     /// Referenced lender does not exist.
     MissingLender,
-    /// Can't do much of anything without lender Xpub.
-    MissingLenderXpub,
-    /// Can't do much of anything without lender Xpub.
-    MissingBorrowerXpub,
     /// Loan extension was requested with an offer from a different lender which is currently not
     /// supported
     LoanOfferLenderMissmatch,
@@ -1194,14 +1173,6 @@ impl IntoResponse for Error {
                     "Something went wrong".to_owned(),
                 )
             }
-            Error::MissingLenderXpub => {
-                tracing::error!("Missing lender Xpub");
-
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
             Error::LoanOfferLenderMissmatch => (
                 StatusCode::BAD_REQUEST,
                 "Offer cannot be from a different lender".to_owned(),
@@ -1213,11 +1184,6 @@ impl IntoResponse for Error {
                     "Something went wrong".to_owned(),
                 )
             }
-
-            Error::MissingBorrowerXpub => (
-                StatusCode::BAD_REQUEST,
-                "Cannot approve without borrower xpub".to_owned(),
-            ),
             Error::MissingFiatLoanDetails => (
                 StatusCode::BAD_REQUEST,
                 "Cannot approve without fiat loan details".to_owned(),
@@ -1295,7 +1261,6 @@ impl From<crate::contract_extension::Error> for Error {
             crate::contract_extension::Error::OriginationFeeCalculation(e) => {
                 Error::OriginationFeeCalculation(e)
             }
-            crate::contract_extension::Error::MissingLenderXpub => Error::MissingLenderXpub,
         }
     }
 }
@@ -1304,8 +1269,6 @@ impl From<approve_contract::Error> for Error {
     fn from(value: approve_contract::Error) -> Self {
         match value {
             approve_contract::Error::Database(e) => Error::Database(e),
-            approve_contract::Error::MissingLenderXpub => Error::MissingLenderXpub,
-            approve_contract::Error::MissingBorrowerXpub => Error::MissingBorrowerXpub,
             approve_contract::Error::MissingLoanOffer { offer_id } => {
                 Error::MissingLoanOffer { offer_id }
             }

@@ -48,10 +48,12 @@ curl -X POST "http://localhost:7337/api/contracts" \
     "loan_amount": 100,
     "duration_days": 7,
     "borrower_btc_address": "tb1quw75h0w26rcrdfar6knvkfazpwyzq4z8vqmt37",
-    "borrower_xpub": "tpubD6NzVbkrYhZ4Y8GthGPHWfMvNi3rs8F1ZDjyvmiB9qq4K1AsBDh2yaRznuHvuFNQEyXFFKxEYtUXTJB5cos9zJpjXU3sywyXVGTZMD8tzsh",
+    "borrower_pk": "0207aa50b5f8ade421a8f4d0326319c20b5c135f01b01f2ab6c479c77970502c11",
+    "borrower_derivation_path": "m/586/0/0",
     "borrower_loan_address": "0x055098f73c89ca554f98c0298ce900235d2e1b4205a7ca629ae017518521c2c3",
     "loan_type": "StableCoin",
     "moon_card_id": null,
-    "fiat_loan_details": null
+    "fiat_loan_details": null,
+    "borrower_npub": "npub1l4vm7tmkesd0fujnvcfkeq3n9tku0q56vpj3xemkxaxytd8keapss7w2c0"
   }' | jq .
 ```

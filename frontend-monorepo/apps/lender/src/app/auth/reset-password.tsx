@@ -78,7 +78,6 @@ function ResetPassword() {
     const newWalletBackupData = {
       mnemonic_ciphertext: newWalletDetails.mnemonic_ciphertext,
       network: newWalletDetails.network,
-      xpub: newWalletDetails.xpub,
     };
 
     console.log(
