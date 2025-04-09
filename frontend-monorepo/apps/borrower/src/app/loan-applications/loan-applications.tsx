@@ -69,9 +69,9 @@ export default function LoanApplication() {
     LoanAssetHelper.isStableCoin(a),
   );
   return (
-    <ScrollArea type="always" scrollbars="vertical">
+    <ScrollArea className="h-screen" type="always" scrollbars="vertical">
       <form className="space-y-4">
-        <Flex direction={"column"} gap={"4"}>
+        <Flex direction={"column"} className={"pb-14"} gap={"4"}>
           <Flex direction={"column"} className="py-8">
             <Flex direction={"column"} mx="auto" className="text-center">
               <Heading

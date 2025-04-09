@@ -1,5 +1,5 @@
 import { useLenderHttpClient } from "@frontend/http-client-lender";
-import { Box, Flex, Heading } from "@radix-ui/themes";
+import { Box, Flex, Heading, ScrollArea } from "@radix-ui/themes";
 import { useAsync } from "react-use";
 import { LoanOffersTable } from "./LoanOffersTable";
 
@@ -15,18 +15,20 @@ export const LoanOffersOverview = () => {
   const loanOffers = value || [];
 
   return (
-    <Box className={"pb-20"}>
-      <Box className={"px-6 py-4 md:px-8"}>
-        <Flex gap={"1"} align={"center"}>
-          <Heading className={"text-font dark:text-font-dark"} size={"6"}>
-            All Loan Offers
-          </Heading>
-        </Flex>
-      </Box>
+    <ScrollArea className="h-screen" type="always" scrollbars="vertical">
+      <Box className={"pb-20"}>
+        <Box className={"px-6 py-4 md:px-8"}>
+          <Flex gap={"1"} align={"center"}>
+            <Heading className={"text-font dark:text-font-dark"} size={"6"}>
+              All Loan Offers
+            </Heading>
+          </Flex>
+        </Box>
 
-      <Box className={"px-6 py-4 md:px-8"}>
-        <LoanOffersTable offers={loanOffers} />
+        <Box className={"px-6 py-4 md:px-8"}>
+          <LoanOffersTable offers={loanOffers} />
+        </Box>
       </Box>
-    </Box>
+    </ScrollArea>
   );
 };

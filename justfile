@@ -10,6 +10,7 @@ mempool_logs := "$PWD/mempool.log"
 deps:
     cargo install cargo-watch
     cargo install sqlx-cli --no-default-features --features rustls,postgres
+    cargo install wasm-pack
 
 ## ------------------------
 ## Code quality functions
