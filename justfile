@@ -111,17 +111,57 @@ mempool-d:
 ## Serve frontend functions
 ## ------------------------
 
-fronts:
+frontend_version:
+    #!/usr/bin/env bash
+
+    # Get the git commit hash
+    GIT_COMMIT_HASH=$(git rev-parse HEAD)
+
+    # Get the git tag (if available)
+    GIT_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+
+    # Check if .env file exists
+    if [ -f .env ]; then
+        # For each variable, check if it exists and update it, or add it if it doesn't exist
+        if grep -q "^VITE_APP_GIT_COMMIT_HASH=" .env; then
+            # Update existing variable
+            sed -i.bak "s/^VITE_APP_GIT_COMMIT_HASH=.*/VITE_APP_GIT_COMMIT_HASH=$GIT_COMMIT_HASH/" .env
+            rm -f .env.bak
+        else
+            # Add new variable
+            echo "VITE_APP_GIT_COMMIT_HASH=$GIT_COMMIT_HASH" >> .env
+        fi
+
+        if grep -q "^VITE_APP_GIT_TAG=" .env; then
+            # Update existing variable
+            sed -i.bak "s/^VITE_APP_GIT_TAG=.*/VITE_APP_GIT_TAG=$GIT_TAG/" .env
+            rm -f .env.bak
+        else
+            # Add new variable
+            echo "VITE_APP_GIT_TAG=$GIT_TAG" >> .env
+        fi
+
+    else
+        # If .env doesn't exist, create it with our variables
+        echo "VITE_APP_GIT_COMMIT_HASH=$GIT_COMMIT_HASH" > .env
+        echo "VITE_APP_GIT_TAG=$GIT_TAG" >> .env
+    fi
+
+    echo "Environment variables updated:"
+    echo "VITE_APP_GIT_COMMIT_HASH=$GIT_COMMIT_HASH"
+    echo "VITE_APP_GIT_TAG=$GIT_TAG"
+
+fronts: frontend_version
     #!/usr/bin/env bash
     cd frontend-monorepo
     pnpm dev
 
-borrower:
+borrower: frontend_version
     #!/usr/bin/env bash
     cd frontend-monorepo
     pnpm --filter="@frontend/borrower" dev
 
-lender:
+lender: frontend_version
     #!/usr/bin/env bash
     cd frontend-monorepo
     pnpm --filter="@frontend/lender" dev

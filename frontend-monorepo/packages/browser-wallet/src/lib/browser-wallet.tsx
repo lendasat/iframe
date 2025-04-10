@@ -16,6 +16,7 @@ import init, {
   SignedTransaction,
   get_npub,
   get_pk_and_derivation_path,
+  get_version,
 } from "browser-wallet";
 import browserWalletUrl from "../../../../../browser-wallet/pkg/browser_wallet_bg.wasm?url";
 
@@ -30,6 +31,12 @@ import {
 export interface PkAndPath {
   pubkey: string;
   path: string;
+}
+
+export interface Version {
+  version: string;
+  commit_hash: string;
+  build_timestamp: bigint;
 }
 
 interface WalletContextType {
@@ -73,6 +80,7 @@ interface WalletContextType {
     details: ReactInnerFiatLoanDetails,
     counterpartyPk: string,
   ) => Promise<ReactInnerFiatLoanDetails>;
+  getVersion: () => Version;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -97,7 +105,7 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
     undefined,
   );
 
-  useEffect(() => {
+  function initialize() {
     init(browserWalletUrl)
       .then(async () => {
         setIsInitialized(true);
@@ -109,6 +117,10 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
       .catch((error) => {
         console.log(`Failed initializing wasm library ${error}`);
       });
+  }
+
+  useEffect(() => {
+    initialize();
   }, [email]);
 
   const loadWallet = async (passphrase: string) => {
@@ -409,6 +421,19 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
     };
   };
 
+  const getVersion = () => {
+    if (isInitialized) {
+      const version = get_version();
+      return {
+        version: version.version,
+        commit_hash: version.commit_hash,
+        build_timestamp: version.build_timestamp,
+      };
+    } else {
+      throw Error("Wasm not initialized");
+    }
+  };
+
   const value = {
     isInitialized,
     isWalletLoaded,
@@ -425,6 +450,7 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
     encryptFiatLoanDetailsLender,
     decryptFiatLoanDetails,
     unlockAndSignClaimPsbt,
+    getVersion,
   };
 
   return (
