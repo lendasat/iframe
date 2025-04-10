@@ -70,7 +70,7 @@ const WithdrawCollateralDialog: React.FC<WithdrawCollateralDialogProps> = ({
   const [feeRate, setFeeRate] = useState<number>(feeOptions[2].value); // Default to fast
   const [customFee, setCustomFee] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>("null");
+  const [error, setError] = useState<string | null>(null);
   const [txId, setTxId] = useState<string | null>(null);
   const { unlockAndSignClaimPsbt } = useWallet();
   const { getClaimCollateralPsbt, postClaimTx } = useBorrowerHttpClient();
@@ -104,7 +104,7 @@ const WithdrawCollateralDialog: React.FC<WithdrawCollateralDialogProps> = ({
         res.psbt,
         res.collateral_descriptor,
         res.borrower_pk,
-        contract?.derivation_path,
+        contract?.borrower_derivation_path,
       );
       console.log(`Successfully signed claim collateral PSBT`);
       const txid = await postClaimTx(contract?.id, claimTx.tx);
