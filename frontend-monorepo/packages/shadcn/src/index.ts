@@ -19,4 +19,5 @@ export * from "./components/ui/tooltip";
 export * from "./components/ui/radio-group";
 export * from "./components/ui/slider";
 export * from "./components/ui/sonner";
+export * from "./components/ui/select";
 export * from "./lib/utils";

@@ -9,12 +9,7 @@ import { Badge } from "@frontend/shadcn";
 import { Button } from "@frontend/shadcn";
 import { ReferralCodesTable } from "./referral-codes";
 import { format } from "date-fns";
-import {
-  LuCircleAlert,
-  LuCircleCheck,
-  LuLoader,
-  LuPencil,
-} from "react-icons/lu";
+import { LuCircleAlert, LuLoader, LuPencil } from "react-icons/lu";
 import { toast } from "sonner";
 
 export function Profile() {
@@ -49,58 +44,50 @@ export function Profile() {
 
   return (
     <div className="h-[calc(100vh-4rem)] overflow-y-auto pr-2">
-      <div className="space-y-6">
-        <h4 className="text-xl font-semibold">Profile</h4>
+      <div className="space-y-4 max-w-3xl mx-auto">
+        <h1 className="text-xl font-semibold py-2 z-10">Profile</h1>
 
-        <Card>
-          <CardContent className="p-4">
+        <Card className="shadow-sm">
+          <CardContent className="p-3">
             <div className="flex items-center gap-3">
-              <Avatar className="h-14 w-14">
+              <Avatar className="h-12 w-12">
                 <AvatarImage
                   src="https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?&w=256&h=256&q=70&crop=focalpoint&fp-x=0.5&fp-y=0.3&fp-z=1&fit=crop"
                   alt={user.name}
                 />
                 <AvatarFallback>{user.name.substring(0, 1)}</AvatarFallback>
               </Avatar>
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-0.5">
                 <h4 className="text-base font-medium">{user.name}</h4>
                 <p className="text-xs text-gray-500">
                   {format(user.created_at, "MMM, dd yyyy - p")}
                 </p>
-                {user.verified && (
-                  <div className="flex items-center gap-1">
-                    <LuCircleCheck className="text-green-500" size={14} />
-                    <span className="text-xs font-medium text-green-500">
-                      Verified
-                    </span>
-                  </div>
-                )}
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <h4 className="text-base font-semibold">Personal information</h4>
+        <Card className="shadow-sm">
+          <CardHeader className="pb-1 pt-3 px-4">
+            <h4 className="text-sm font-semibold">Personal information</h4>
           </CardHeader>
-          <CardContent>
-            <div className="grid gap-5 md:grid-cols-2">
-              <div className="flex flex-col gap-1">
+          <CardContent className="p-4 pt-2">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="flex flex-col gap-0.5">
                 <label className="text-xs text-gray-500 font-medium">
                   Full Name
                 </label>
                 <p className="text-sm font-medium">{user.name}</p>
               </div>
 
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-0.5">
                 <label className="text-xs text-gray-500 font-medium">
                   Email Address
                 </label>
                 <p className="text-sm font-medium">{user.email}</p>
               </div>
 
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-0.5">
                 <label className="text-xs text-gray-500 font-medium">
                   Password
                 </label>
@@ -117,13 +104,13 @@ export function Profile() {
                         <LuLoader className="animate-spin" />
                       </>
                     ) : (
-                      <LuPencil className="mr-2 h-4 w-4" />
+                      <LuPencil className="h-4 w-4" />
                     )}
                   </Button>
                 </div>
               </div>
 
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-0.5">
                 <label className="text-xs text-gray-500 font-medium">
                   Timezone
                 </label>
@@ -137,7 +124,7 @@ export function Profile() {
                 />
               </div>
 
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-0.5">
                 <label className="text-xs text-gray-500 font-medium">
                   Joined on
                 </label>
@@ -146,7 +133,7 @@ export function Profile() {
                 </p>
               </div>
 
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-0.5">
                 <label className="text-xs text-gray-500 font-medium">
                   Used referral code
                 </label>
@@ -155,7 +142,7 @@ export function Profile() {
                 </Badge>
               </div>
 
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-0.5">
                 <label className="text-xs text-gray-500 font-medium">
                   Current discount on origination fee
                 </label>
@@ -167,11 +154,11 @@ export function Profile() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <h4 className="text-base font-semibold">Personal referral codes</h4>
+        <Card className="shadow-sm pb-24">
+          <CardHeader className="pb-1 pt-3 px-4">
+            <h4 className="text-sm font-semibold">Personal referral codes</h4>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 pt-2">
             {user.personal_referral_codes && (
               <ReferralCodesTable
                 referralCodes={user.personal_referral_codes}
@@ -180,9 +167,9 @@ export function Profile() {
 
             {!user.personal_referral_codes ||
               (user.personal_referral_codes?.length === 0 && (
-                <Alert variant="warning">
+                <Alert variant="warning" className="text-sm">
                   <LuCircleAlert className="h-4 w-4" />
-                  <AlertDescription>
+                  <AlertDescription className="text-xs">
                     You don't have a personal referral code yet. Reach out to us
                     if you want to take part in the affiliation program
                   </AlertDescription>
@@ -192,9 +179,9 @@ export function Profile() {
         </Card>
 
         {error && (
-          <Alert variant="destructive">
+          <Alert variant="destructive" className="text-sm my-4">
             <LuCircleAlert className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription className="text-xs">{error}</AlertDescription>
           </Alert>
         )}
       </div>
