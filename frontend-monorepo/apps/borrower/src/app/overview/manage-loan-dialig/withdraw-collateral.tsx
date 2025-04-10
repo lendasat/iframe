@@ -104,7 +104,7 @@ const WithdrawCollateralDialog: React.FC<WithdrawCollateralDialogProps> = ({
         res.psbt,
         res.collateral_descriptor,
         res.borrower_pk,
-        contract?.derivation_path,
+        contract?.borrower_derivation_path,
       );
       console.log(`Successfully signed claim collateral PSBT`);
       const txid = await postClaimTx(contract?.id, claimTx.tx);
@@ -143,7 +143,7 @@ const WithdrawCollateralDialog: React.FC<WithdrawCollateralDialogProps> = ({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Withdraw Collateral</DialogTitle>
           <DialogDescription>
@@ -259,7 +259,7 @@ const WithdrawCollateralDialog: React.FC<WithdrawCollateralDialogProps> = ({
             <Alert variant="destructive">
               <LuCircleAlert className="h-4 w-4" />
               <AlertTitle>Error</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription className="max-w-sm break-words">{error}</AlertDescription>
             </Alert>
           )}
           {txId && (
