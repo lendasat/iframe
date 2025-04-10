@@ -150,6 +150,9 @@ importers:
       semver:
         specifier: ^7.6.3
         version: 7.7.1
+      sonner:
+        specifier: ^2.0.1
+        version: 2.0.1(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       starknetkit:
         specifier: ^2.3.3
         version: 2.6.1(bufferutil@4.0.9)(starknet@6.23.1)(utf-8-validate@5.0.10)
@@ -1196,6 +1199,12 @@ importers:
       lucide-react:
         specifier: ^0.476.0
         version: 0.476.0(react@19.0.0)
+      next-themes:
+        specifier: ^0.4.6
+        version: 0.4.6(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      sonner:
+        specifier: ^2.0.1
+        version: 2.0.1(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       tailwind-merge:
         specifier: ^3.0.2
         version: 3.0.2
