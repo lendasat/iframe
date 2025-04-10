@@ -70,7 +70,7 @@ const WithdrawCollateralDialog: React.FC<WithdrawCollateralDialogProps> = ({
   const [feeRate, setFeeRate] = useState<number>(feeOptions[2].value); // Default to fast
   const [customFee, setCustomFee] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>("null");
   const [txId, setTxId] = useState<string | null>(null);
   const { unlockAndSignClaimPsbt } = useWallet();
   const { getClaimCollateralPsbt, postClaimTx } = useBorrowerHttpClient();
@@ -143,7 +143,7 @@ const WithdrawCollateralDialog: React.FC<WithdrawCollateralDialogProps> = ({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Withdraw Collateral</DialogTitle>
           <DialogDescription>
@@ -259,7 +259,7 @@ const WithdrawCollateralDialog: React.FC<WithdrawCollateralDialogProps> = ({
             <Alert variant="destructive">
               <LuCircleAlert className="h-4 w-4" />
               <AlertTitle>Error</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription className="max-w-sm break-words">{error}</AlertDescription>
             </Alert>
           )}
           {txId && (
