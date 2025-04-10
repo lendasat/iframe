@@ -569,6 +569,29 @@ impl From<models::FiatLoanDetails> for InnerFiatLoanDetails {
     }
 }
 
+#[wasm_bindgen(getter_with_clone)]
+#[derive(Clone)]
+pub struct Version {
+    pub version: String,
+    pub commit_hash: String,
+    pub build_timestamp: u64,
+}
+
+#[wasm_bindgen]
+pub fn get_version() -> Version {
+    let commit_hash = option_env!("GIT_COMMIT_HASH")
+        .unwrap_or("unknown")
+        .to_string();
+    let version = option_env!("GIT_TAG").unwrap_or("unknown").to_string();
+    let build_timestamp = env!("BUILD_TIMESTAMP").parse::<u64>().unwrap_or(0);
+
+    Version {
+        version,
+        commit_hash,
+        build_timestamp,
+    }
+}
+
 #[macro_export]
 macro_rules! map_err_to_js {
     ($e:expr) => {
