@@ -28,11 +28,6 @@ export type PersonalReferralCode = {
   expires_at: string; // RFC 3339 date string - ideally we would convert this to a date, but it's not worth the effort
 };
 
-export interface Version {
-  commit_hash: string;
-  version: SemVer;
-}
-
 export interface LoginResponse {
   token: string;
   enabled_features: LoanFeature[];
@@ -126,4 +121,9 @@ export interface FiatLoanDetails {
 export interface FiatLoanDetailsResponse {
   details: InnerFiatLoanDetails;
   encrypted_encryption_key: string;
+}
+
+export interface Version {
+  tag: string;
+  commit_hash: string;
 }

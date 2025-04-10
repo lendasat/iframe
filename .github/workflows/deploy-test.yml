@@ -40,6 +40,13 @@ jobs:
           cd frontend-monorepo
           pnpm install
 
+      - name: Set Git Variables
+        id: git-vars
+        run: |
+          echo "GIT_COMMIT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          GIT_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "GIT_TAG=$GIT_TAG" >> $GITHUB_ENV
+
       - name: Make .env file for Vite build
         uses: SpicyPizza/create-envfile@v2.0
         with:
@@ -50,6 +57,8 @@ jobs:
           envkey_VITE_TELEGRAM_BOT_URL: "https://t.me/lendasatsignetlenderbot"
           envkey_VITE_TELEGRAM_BOT_NAME: "@lendasatsignetlenderbot"
           envkey_VITE_WEBSHOP_POPUP_URL: "https://popup.lendasat.com"
+          envkey_VITE_APP_GIT_COMMIT_HASH: ${{ env.GIT_COMMIT_HASH }}
+          envkey_VITE_APP_GIT_TAG: ${{ env.GIT_TAG }}
 
       - name: Build frontend apps
         run: just build-frontend

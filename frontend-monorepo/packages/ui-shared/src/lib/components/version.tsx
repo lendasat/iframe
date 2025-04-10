@@ -1,0 +1,151 @@
+import { useBaseHttpClient } from "@frontend/base-http-client";
+import { useWallet, Version as WasmVersion } from "@frontend/browser-wallet";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Separator,
+  Skeleton,
+} from "@frontend/shadcn";
+import { useAsync } from "react-use";
+import { Info } from "lucide-react";
+import React, { useEffect, useState } from "react";
+
+const truncateHash = (hash?: string, visibleChars = 8) => {
+  if (!hash || hash.length <= visibleChars) return hash;
+  return `${hash.substring(0, visibleChars)}`;
+};
+
+export const VersionInfo = () => {
+  const { getVersion: getWasmVersion, isInitialized } = useWallet();
+  const { getVersion } = useBaseHttpClient();
+  const [wasmVersion, setWasmVersion] = useState<WasmVersion | undefined>(
+    undefined,
+  );
+
+  const frontendCommitHash = import.meta.env.VITE_APP_GIT_COMMIT_HASH;
+  const frontendGitVersion = import.meta.env.VITE_APP_GIT_TAG;
+
+  const {
+    loading: backendVersionLoading,
+    error: backendVersionError,
+    value: backendVersion,
+  } = useAsync(async () => {
+    return getVersion();
+  });
+
+  if (backendVersionError) {
+    console.error(backendVersionError);
+  }
+
+  useEffect(() => {
+    if (!isInitialized) {
+      return undefined;
+    }
+    const version = getWasmVersion();
+    try {
+      setWasmVersion(version);
+    } catch (error) {
+      console.error(`Failed fetching wasm version ${error}`);
+    }
+  }, [isInitialized]);
+
+  return (
+    <div className="w-full mx-auto pt-4">
+      <Card className="shadow-md">
+        <CardHeader className="pb-2">
+          <div className="flex items-center gap-2">
+            <Info className="h-5 w-5 text-muted-foreground" />
+            <CardTitle className="text-lg font-semibold">
+              Version Information
+            </CardTitle>
+          </div>
+          <CardDescription>
+            System component versions and build details
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* WASM Version Section */}
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium flex items-center">
+              WASM Version Details
+            </h3>
+            <Separator className="my-2" />
+            <div className="grid grid-cols-2 gap-1 text-sm">
+              <span className="text-muted-foreground">Version:</span>
+              {!wasmVersion ? (
+                <Skeleton className="h-5 w-14 " />
+              ) : (
+                <span className="font-mono" title={wasmVersion.version}>
+                  {truncateHash(wasmVersion.version)}
+                </span>
+              )}
+
+              <span className="text-muted-foreground">Build Timestamp:</span>
+              {!wasmVersion ? (
+                <Skeleton className="h-5 w-14 " />
+              ) : (
+                <span
+                  className="font-mono"
+                  title={wasmVersion.build_timestamp.toString()}
+                >
+                  {wasmVersion.build_timestamp}
+                </span>
+              )}
+
+              <span className="text-muted-foreground">Commit:</span>
+
+              {!wasmVersion ? (
+                <Skeleton className="h-5 w-14 " />
+              ) : (
+                <span className="font-mono" title={wasmVersion.commit_hash}>
+                  {truncateHash(wasmVersion.commit_hash)}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Frontend Version Section */}
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium flex items-center">
+              Frontend Version Details
+            </h3>
+            <Separator className="my-2" />
+            <div className="grid grid-cols-2 gap-1 text-sm">
+              <span className="text-muted-foreground">Version:</span>
+              <span className="font-mono">{frontendGitVersion}</span>
+
+              <span className="text-muted-foreground">Commit:</span>
+              <span className="font-mono" title={frontendCommitHash}>
+                {truncateHash(frontendCommitHash)}
+              </span>
+            </div>
+          </div>
+
+          {/* Backend Version Section */}
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium flex items-center">
+              Backend Version Details
+            </h3>
+            <Separator className="my-2" />
+            <div className="grid grid-cols-2 gap-1 text-sm">
+              <span className="text-muted-foreground">Version:</span>
+              <span className="font-mono">{backendVersion?.tag}</span>
+
+              <span className="text-muted-foreground">Commit:</span>
+              {backendVersionLoading ? (
+                <Skeleton className="h-5 w-14 " />
+              ) : (
+                <span className="font-mono" title={backendVersion?.commit_hash}>
+                  {truncateHash(backendVersion?.commit_hash)}
+                </span>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};

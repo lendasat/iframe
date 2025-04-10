@@ -1,12 +1,11 @@
-import { UnlockWalletModal, useWallet } from "@frontend/browser-wallet";
+import { useWallet } from "@frontend/browser-wallet";
 import { Box, Callout, Code, Flex, Heading } from "@radix-ui/themes";
 import { useEffect, useState } from "react";
-import { FaLockOpen, FaRegEye, FaRegEyeSlash } from "react-icons/fa";
+import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
 import { Keys, loadWasmSync } from "@rust-nostr/nostr-sdk";
 import { CopyIcon } from "@radix-ui/react-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
-import { FaLock } from "react-icons/fa6";
 import { Button } from "@frontend/shadcn";
 import { useAsync } from "react-use";
 

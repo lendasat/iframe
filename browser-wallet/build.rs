@@ -1,18 +1,6 @@
-use std::fs;
 use std::process::Command;
 
 fn main() {
-    // ensure that the directory exists which needs to be embedded in our binary
-    let directory_path = "../frontend-monorepo/dist/apps/borrower";
-    if fs::create_dir_all(directory_path).is_err() {
-        std::process::exit(1);
-    }
-    // ensure that the directory exists which needs to be embedded in our binary
-    let directory_path = "../frontend-monorepo/dist/apps/lender";
-    if fs::create_dir_all(directory_path).is_err() {
-        std::process::exit(1);
-    }
-
     let git_commit_hash = Command::new("git")
         .args(["rev-parse", "HEAD"])
         .output()
@@ -43,4 +31,11 @@ fn main() {
         "cargo:rustc-env=GIT_TAG={}",
         git_tag.unwrap_or_else(|| "unknown".to_string())
     );
+
+    let timestamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .expect("Time went backwards")
+        .as_secs();
+
+    println!("cargo:rustc-env=BUILD_TIMESTAMP={}", timestamp);
 }

@@ -5,6 +5,7 @@ import { Profile } from "./profile";
 import { Wallet } from "./wallet";
 import { NostrChatSettingsPage } from "./nostr-chat-settings";
 import { NotificationSettings } from "./notification-settings";
+import { VersionPage } from "./version-page";
 
 function Settings() {
   const location = useLocation();
@@ -51,6 +52,13 @@ function Settings() {
               >
                 <Link to="chat">Chat (Nostr)</Link>
               </TabNav.Link>
+              <TabNav.Link
+                asChild
+                active={location.pathname.includes("version")}
+                className="data-[state=inactive]:text-font/70 flex-1 rounded-full px-4 py-2 text-center font-medium capitalize hover:bg-transparent data-[state=active]:bg-purple-800/20 data-[state=active]:font-semibold data-[state=active]:text-purple-800 md:flex-none md:py-3 md:text-left dark:data-[state=active]:bg-purple-700/20 dark:data-[state=active]:text-purple-300 dark:data-[state=inactive]:text-gray-400"
+              >
+                <Link to="version">Version Info</Link>
+              </TabNav.Link>
             </Box>
           </Box>
           <Box pt="3" className="flex-grow">
@@ -60,6 +68,7 @@ function Settings() {
               <Route path="wallet" element={<Wallet />} />
               <Route path="notifications" element={<NotificationSettings />} />
               <Route path="chat" element={<NostrChatSettingsPage />} />
+              <Route path="version" element={<VersionPage />} />
             </Routes>
           </Box>
         </TabNav.Root>
