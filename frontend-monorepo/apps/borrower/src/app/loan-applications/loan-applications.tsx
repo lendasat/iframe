@@ -143,7 +143,7 @@ export default function LoanApplication() {
                     onValueChange={(value) => onAssetChange(value as LoanAsset)}
                   >
                     <Select.Trigger />
-                    <Select.Content>
+                    <Select.Content className={"bg-light dark:bg-dark"}>
                       <Select.Group>
                         {availableLoanAssets.map((asset: LoanAsset) => (
                           <Select.Item key={asset.toString()} value={asset}>
