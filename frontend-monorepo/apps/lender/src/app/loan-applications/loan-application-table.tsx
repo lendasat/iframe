@@ -500,7 +500,9 @@ export function LoanApplicationTable({
                 />
               ))
           ) : (
-            <Box className="p-4 text-center text-gray-500">No results.</Box>
+            <Box className="p-4 text-center text-font dark:text-font-dark">
+              No results.
+            </Box>
           )}
         </Box>
       </Box>

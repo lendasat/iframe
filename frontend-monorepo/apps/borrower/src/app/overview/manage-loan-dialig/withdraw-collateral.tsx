@@ -259,7 +259,9 @@ const WithdrawCollateralDialog: React.FC<WithdrawCollateralDialogProps> = ({
             <Alert variant="destructive">
               <LuCircleAlert className="h-4 w-4" />
               <AlertTitle>Error</AlertTitle>
-              <AlertDescription className="max-w-sm break-words">{error}</AlertDescription>
+              <AlertDescription className="max-w-sm break-words">
+                {error}
+              </AlertDescription>
             </Alert>
           )}
           {txId && (

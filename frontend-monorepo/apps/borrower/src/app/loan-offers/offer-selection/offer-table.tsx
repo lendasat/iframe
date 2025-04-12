@@ -483,7 +483,7 @@ export function LoanOfferTable({
                 <Table.Row>
                   <Table.Cell
                     colSpan={columns.length}
-                    className="h-24 text-center"
+                    className="h-24 text-font dark:text-font-dark text-center"
                   >
                     No results.
                   </Table.Cell>
@@ -523,7 +523,9 @@ export function LoanOfferTable({
                 />
               ))
           ) : (
-            <Box className="p-4 text-center text-gray-500">No results.</Box>
+            <Box className="p-4 text-center text-font dark:text-font-dark">
+              No results.
+            </Box>
           )}
         </Box>
       </Box>
