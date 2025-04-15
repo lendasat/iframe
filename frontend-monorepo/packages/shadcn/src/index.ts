@@ -20,4 +20,8 @@ export * from "./components/ui/radio-group";
 export * from "./components/ui/slider";
 export * from "./components/ui/sonner";
 export * from "./components/ui/select";
+export * from "./components/ui/sidebar";
+export * from "./components/ui/collapsible";
+export * from "./components/ui/switch";
+export * from "./components/ui/toggle";
 export * from "./lib/utils";

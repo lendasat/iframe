@@ -1,5 +1,5 @@
 import queryString from "query-string";
-import { LoanAsset, TransactionType } from "./lib/models";
+import { LoanAsset } from "./lib/models";
 
 export const ONE_YEAR = 360;
 export const ONE_MONTH = 30;
@@ -181,3 +181,5 @@ export * from "./lib/bank-details/bank-details-dialog";
 export * from "./lib/bank-details/banking-details-summary";
 export * from "./lib/components/NotificationToast";
 export * from "./lib/components/version";
+export * from "./lib/components/Logout";
+export * from "./lib/components/theme-switch";

@@ -29,7 +29,6 @@ fmt-frontend:
     cd frontend-monorepo
     pnpm biome format --write .
 
-
 clippy:
     cargo clippy --all-targets --all-features -- -D warnings
 
