@@ -14,7 +14,7 @@ function Settings() {
   const currentPath = location.pathname.split("/").pop();
 
   return (
-    <div className="container py-6">
+    <div className="container py-6 px-6">
       <Card>
         <CardHeader className="border-b px-6 py-4">
           <Tabs value={currentPath || "profile"} className="w-full">

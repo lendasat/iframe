@@ -1,23 +1,16 @@
+import { useState } from "react";
 import { useBaseHttpClient } from "@frontend/base-http-client";
 import { useAuth, useBorrowerHttpClient } from "@frontend/http-client-borrower";
 import { EditableTimezoneField } from "@frontend/ui-shared";
-import {
-  Avatar,
-  Badge,
-  Box,
-  Button,
-  Callout,
-  Flex,
-  Heading,
-  Spinner,
-  Text,
-} from "@radix-ui/themes";
-import { useState } from "react";
-import { BiSolidError } from "react-icons/bi";
-import { GoVerified } from "react-icons/go";
-import { IoIosUnlock } from "react-icons/io";
-import { MdEdit } from "react-icons/md";
+import { Card, CardHeader, CardContent } from "@frontend/shadcn";
+import { Avatar, AvatarImage, AvatarFallback } from "@frontend/shadcn";
+import { Alert, AlertDescription } from "@frontend/shadcn";
+import { Badge } from "@frontend/shadcn";
+import { Button } from "@frontend/shadcn";
 import { ReferralCodesTable } from "./referral-codes";
+import { format } from "date-fns";
+import { LuCircleAlert, LuLoader, LuPencil } from "react-icons/lu";
+import { toast } from "sonner";
 
 export function Profile() {
   const { user } = useAuth();
@@ -25,13 +18,14 @@ export function Profile() {
   const { putUpdateProfile } = useBorrowerHttpClient();
   const [isLoading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
   const handleResetPassword = async () => {
     setLoading(true);
     try {
       const successMsg = await forgotPassword(user?.email ?? "");
-      setSuccess(successMsg);
+      toast.success(successMsg, {
+        description: format(new Date(), "MMM, dd yyyy - p"),
+      });
     } catch (err) {
       console.error("Failed resetting password: ", err);
       setError(`Failed resetting password. ${err}`);
@@ -48,137 +42,78 @@ export function Profile() {
     return <>This should not happen</>;
   }
 
-  // Format date options
-  const options: Intl.DateTimeFormatOptions = {
-    weekday: "short",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  };
-
   return (
-    <Box className="md:pl-8">
-      <Heading
-        as="h4"
-        className="text-font dark:text-font-dark font-semibold"
-        size={"5"}
-      >
-        Profile
-      </Heading>
-      <Box mt={"6"} className="space-y-4">
-        <Box
-          p={"4"}
-          className="rounded-2xl border border-purple-400/20 dark:border-gray-500/50"
-        >
-          <Flex align={"center"} gap={"3"}>
-            <Avatar
-              src="https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?&w=256&h=256&q=70&crop=focalpoint&fp-x=0.5&fp-y=0.3&fp-z=1&fit=crop"
-              size={"7"}
-              radius="full"
-              color="purple"
-              fallback={user.name.substring(0, 1)}
-            />
-            <Flex align={"start"} direction={"column"} gap={"1"}>
-              <Heading
-                as="h4"
-                weight={"medium"}
-                className="text-font dark:text-font-dark"
-                size={"4"}
-              >
-                {user.name}
-              </Heading>
-              <Text size={"2"} className="text-font/50 dark:text-font-dark/50">
-                {new Date(user.created_at).toLocaleDateString("en-CA", options)}
-              </Text>
-              {user.verified && (
-                <Flex gap={"1"}>
-                  <GoVerified color="green" />
-                  <Text size={"1"} weight={"medium"} color="green">
-                    Verified
-                  </Text>
-                </Flex>
-              )}
-            </Flex>
-          </Flex>
-        </Box>
+    <div className="h-[calc(100vh-4rem)] overflow-y-auto pr-2">
+      <div className="space-y-4 max-w-3xl mx-auto">
+        <h1 className="text-xl font-semibold py-2 z-10">Profile</h1>
 
-        <Box className="rounded-2xl border border-purple-400/20 px-5 py-6 dark:border-gray-500/50">
-          <Heading
-            as="h4"
-            className="text-font dark:text-font-dark font-semibold"
-            size={"3"}
-          >
-            Personal information
-          </Heading>
-          <Box mt={"4"} className="grid max-w-lg gap-5 md:grid-cols-2">
-            <Box>
-              <Flex direction={"column"} gap={"1"}>
-                <Text
-                  as="label"
-                  weight={"medium"}
-                  size={"2"}
-                  className="text-font/50 dark:text-font-dark/50"
-                >
+        <Card className="shadow-sm">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-3">
+              <Avatar className="h-12 w-12">
+                <AvatarImage
+                  src="https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?&w=256&h=256&q=70&crop=focalpoint&fp-x=0.5&fp-y=0.3&fp-z=1&fit=crop"
+                  alt={user.name}
+                />
+                <AvatarFallback>{user.name.substring(0, 1)}</AvatarFallback>
+              </Avatar>
+              <div className="flex flex-col gap-0.5">
+                <h4 className="text-base font-medium">{user.name}</h4>
+                <p className="text-xs text-gray-500">
+                  {format(user.created_at, "MMM, dd yyyy - p")}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-sm">
+          <CardHeader className="pb-1 pt-3 px-4">
+            <h4 className="text-sm font-semibold">Personal information</h4>
+          </CardHeader>
+          <CardContent className="p-4 pt-2">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="flex flex-col gap-0.5">
+                <label className="text-xs text-gray-500 font-medium">
                   Full Name
-                </Text>
-                <Text
-                  size={"3"}
-                  weight={"medium"}
-                  className="text-font dark:text-font-dark"
-                >
-                  {user.name}
-                </Text>
-              </Flex>
-            </Box>
+                </label>
+                <p className="text-sm font-medium">{user.name}</p>
+              </div>
 
-            <Box>
-              <Flex direction={"column"} gap={"1"}>
-                <Text
-                  as="label"
-                  weight={"medium"}
-                  size={"2"}
-                  className="text-font/50 dark:text-font-dark/50"
-                >
+              <div className="flex flex-col gap-0.5">
+                <label className="text-xs text-gray-500 font-medium">
                   Email Address
-                </Text>
-                <Text
-                  size={"3"}
-                  weight={"medium"}
-                  className="text-font dark:text-font-dark"
-                >
-                  {user.email}
-                </Text>
-              </Flex>
-            </Box>
-            <Box>
-              <Flex direction={"column"} gap={"1"}>
-                <Text
-                  as="label"
-                  weight={"medium"}
-                  size={"2"}
-                  className="text-font/50 dark:text-font-dark/50"
-                >
+                </label>
+                <p className="text-sm font-medium">{user.email}</p>
+              </div>
+
+              <div className="flex flex-col gap-0.5">
+                <label className="text-xs text-gray-500 font-medium">
                   Password
-                </Text>
-                <Text
-                  size={"3"}
-                  weight={"medium"}
-                  className="text-font dark:text-font-dark"
-                >
-                  ********
-                </Text>
-              </Flex>
-            </Box>
-            <Box>
-              <Flex direction={"column"} gap={"1"}>
-                <Text
-                  as="label"
-                  weight={"medium"}
-                  size={"2"}
-                  className="text-font/50 dark:text-font-dark/50"
-                >
+                </label>
+                <div className="flex flex-row justify-between">
+                  <p className="text-sm font-medium">********</p>
+                  <Button
+                    onClick={handleResetPassword}
+                    variant={"ghost"}
+                    disabled={isLoading}
+                    size={"icon"}
+                  >
+                    {isLoading ? (
+                      <>
+                        <LuLoader className="animate-spin" />
+                      </>
+                    ) : (
+                      <LuPencil className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-0.5">
+                <label className="text-xs text-gray-500 font-medium">
                   Timezone
-                </Text>
+                </label>
                 <EditableTimezoneField
                   onSave={async (newVal) => {
                     await putUpdateProfile({
@@ -187,133 +122,69 @@ export function Profile() {
                   }}
                   initialValue={user.timezone}
                 />
-              </Flex>
-            </Box>
-            <Box>
-              <Flex direction={"column"} gap={"1"}>
-                <Text
-                  as="label"
-                  weight={"medium"}
-                  size={"2"}
-                  className="text-font/50 dark:text-font-dark/50"
-                >
+              </div>
+
+              <div className="flex flex-col gap-0.5">
+                <label className="text-xs text-gray-500 font-medium">
                   Joined on
-                </Text>
-                <Text
-                  size={"3"}
-                  weight={"medium"}
-                  className="text-font dark:text-font-dark"
-                >
-                  {new Date(user.created_at).toLocaleDateString(
-                    "en-CA",
-                    options,
-                  )}
-                </Text>
-              </Flex>
-            </Box>
-            <Box>
-              <Flex direction={"column"} gap={"1"}>
-                <Text
-                  as="label"
-                  weight={"medium"}
-                  size={"2"}
-                  className="text-font/50 dark:text-font-dark/50"
-                >
+                </label>
+                <p className="text-sm font-medium">
+                  {format(user.created_at, "MMM, dd yyyy - p")}
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-0.5">
+                <label className="text-xs text-gray-500 font-medium">
                   Used referral code
-                </Text>
-                <Text
-                  size={"3"}
-                  weight={"medium"}
-                  className="text-font dark:text-font-dark"
-                >
-                  <Badge size={"3"}>{user.used_referral_code || "None"}</Badge>
-                </Text>
-              </Flex>
-            </Box>
+                </label>
+                <Badge variant="outline">
+                  {user.used_referral_code || "None"}
+                </Badge>
+              </div>
 
-            <Box>
-              <Flex direction={"column"} gap={"1"}>
-                <Text
-                  as="label"
-                  weight={"medium"}
-                  size={"2"}
-                  className="text-font/50 dark:text-font-dark/50"
-                >
+              <div className="flex flex-col gap-0.5">
+                <label className="text-xs text-gray-500 font-medium">
                   Current discount on origination fee
-                </Text>
-                <Text
-                  size={"3"}
-                  weight={"medium"}
-                  className="text-font dark:text-font-dark"
-                >
+                </label>
+                <p className="text-sm font-medium">
                   {(-discountRate * 100).toFixed(2)}%
-                </Text>
-              </Flex>
-            </Box>
-          </Box>
-        </Box>
-        <Box className="rounded-2xl border border-purple-400/20 px-5 py-6 dark:border-gray-500/50">
-          <Heading
-            as="h4"
-            className="text-font dark:text-font-dark font-semibold"
-            size={"3"}
-          >
-            Personal referral codes
-          </Heading>
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-          <Flex direction={"column"} gap={"1"} className={"mt-5"}>
+        <Card className="shadow-sm pb-24">
+          <CardHeader className="pb-1 pt-3 px-4">
+            <h4 className="text-sm font-semibold">Personal referral codes</h4>
+          </CardHeader>
+          <CardContent className="p-4 pt-2">
             {user.personal_referral_codes && (
               <ReferralCodesTable
                 referralCodes={user.personal_referral_codes}
               />
             )}
+
             {!user.personal_referral_codes ||
               (user.personal_referral_codes?.length === 0 && (
-                <Callout.Root color="orange">
-                  <Callout.Icon>
-                    <BiSolidError />
-                  </Callout.Icon>
-                  <Callout.Text>
-                    {
-                      "You don't have a personal referral code yet. Reach out to us if you want to take part in the affiliation program"
-                    }
-                  </Callout.Text>
-                </Callout.Root>
+                <Alert variant="warning" className="text-sm">
+                  <LuCircleAlert className="h-4 w-4" />
+                  <AlertDescription className="text-xs">
+                    You don't have a personal referral code yet. Reach out to us
+                    if you want to take part in the affiliation program
+                  </AlertDescription>
+                </Alert>
               ))}
-          </Flex>
-        </Box>
+          </CardContent>
+        </Card>
+
         {error && (
-          <Callout.Root color="red">
-            <Callout.Icon>
-              <BiSolidError />
-            </Callout.Icon>
-            <Callout.Text>{error}</Callout.Text>
-          </Callout.Root>
+          <Alert variant="destructive" className="text-sm my-4">
+            <LuCircleAlert className="h-4 w-4" />
+            <AlertDescription className="text-xs">{error}</AlertDescription>
+          </Alert>
         )}
-
-        {success && (
-          <Callout.Root color="green">
-            <Callout.Icon>
-              <IoIosUnlock />
-            </Callout.Icon>
-            <Callout.Text>{success}</Callout.Text>
-          </Callout.Root>
-        )}
-
-        <Box className="md:pt-5">
-          <Flex justify={"end"}>
-            <Button
-              size={"3"}
-              onClick={handleResetPassword}
-              disabled={isLoading}
-              className="bg-btn text-sm dark:bg-gray-900"
-            >
-              {isLoading ? <Spinner size={"3"} /> : <MdEdit />}
-              Recover Password
-            </Button>
-          </Flex>
-        </Box>
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 }

@@ -47,6 +47,7 @@ import { FaHandHoldingDollar } from "react-icons/fa6";
 import AvailableLoanApplications from "./loan-applications/available-loan-applications";
 import { FaFileContract, FaMoneyCheckAlt } from "react-icons/fa";
 import BitcoinCollateralizedLoan from "./overview/bitcoin-loan-component";
+import { Toaster } from "@frontend/shadcn";
 
 const menuItems = [
   {
@@ -236,6 +237,7 @@ function MainLayoutComponents() {
             <Route path="*" element={<DashBoard />} />
           </Route>
         </Routes>
+        <Toaster />
       </Layout>
     </WalletProvider>
   );

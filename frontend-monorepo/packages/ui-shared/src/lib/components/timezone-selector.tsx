@@ -1,4 +1,13 @@
-import { Box, Button, Flex, Select } from "@radix-ui/themes";
+import {
+  Button,
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@frontend/shadcn";
 import { FormEvent, useState } from "react";
 import { LuCheck, LuPencil } from "react-icons/lu";
 
@@ -16,18 +25,20 @@ export const TimezoneSelect = ({
   const timezones: string[] = Intl.supportedValuesOf("timeZone");
 
   return (
-    <Select.Root value={value} onValueChange={onValueChange}>
-      <Select.Trigger placeholder="Pick a timezone" />
-      <Select.Content>
-        <Select.Group>
+    <Select value={value} onValueChange={onValueChange}>
+      <SelectTrigger className="w-[180px]">
+        <SelectValue placeholder="Select a timezone" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectGroup className="overflow-y-auto max-h-[10rem]">
           {timezones.map((timezone) => (
-            <Select.Item key={timezone} value={timezone}>
+            <SelectItem value={timezone} key={timezone}>
               {timezone}
-            </Select.Item>
+            </SelectItem>
           ))}
-        </Select.Group>
-      </Select.Content>
-    </Select.Root>
+        </SelectGroup>
+      </SelectContent>
+    </Select>
   );
 };
 
@@ -50,34 +61,32 @@ export const EditableTimezoneField = ({
   };
 
   return (
-    <Box className="w-full">
-      <Flex className="flex flex-col gap-1">
-        <Flex className="flex items-center justify-between">
-          {isEditing ? (
-            <form onSubmit={handleSubmit} className="flex w-full items-center">
-              <TimezoneSelect onValueChange={setValue} value={value} />
-              <Button
-                type="submit"
-                className="rounded-md bg-transparent p-1 hover:bg-gray-100 dark:hover:bg-gray-700"
-              >
-                <LuCheck className="h-4 w-4 text-green-600 dark:text-green-400" />
-              </Button>
-            </form>
-          ) : (
-            <>
-              <span className="text-base font-medium text-gray-900 dark:text-gray-100">
-                {value || <i>Not Configured</i>}
-              </span>
-              <Button
-                onClick={() => setIsEditing(true)}
-                className="rounded-md bg-transparent p-1 hover:bg-gray-100 dark:hover:bg-gray-700"
-              >
-                <LuPencil className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-              </Button>
-            </>
-          )}
-        </Flex>
-      </Flex>
-    </Box>
+    <div className="flex flex-col gap-1 w-full">
+      {isEditing ? (
+        <form
+          onSubmit={handleSubmit}
+          className="flex items-center justify-between"
+        >
+          <TimezoneSelect onValueChange={setValue} value={value} />
+          <Button type="submit" variant="ghost" size="icon">
+            <LuCheck className="h-4 w-4" />
+          </Button>
+        </form>
+      ) : (
+        <div className={"flex items-center justify-between"}>
+          <span className="text-sm font-medium">
+            {value || <span className="italic">Not Configured</span>}
+          </span>
+          <Button
+            onClick={() => setIsEditing(true)}
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+          >
+            <LuPencil className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+    </div>
   );
 };
