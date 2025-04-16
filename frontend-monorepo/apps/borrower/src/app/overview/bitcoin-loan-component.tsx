@@ -102,12 +102,12 @@ const EnhancedBitcoinLoan = () => {
     contract?.status && contractStatusToLabelString(contract.status);
 
   return (
-    <ScrollArea className="overflow-y-auto md:overflow-y-visible max-h-[650px]">
-      <div className="max-w-full mx-4 overflow-y-auto md:overflow-y-visible pb-20 pt-5">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-[650px]">
+    <ScrollArea className="h-screen w-full overflow-auto">
+      <div className="max-w-full mx-4 pb-20 pt-5">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-[680px]">
           {/* Main loan details (2/3 width on large screens) */}
           <div className="lg:col-span-2 h-full">
-            <Card className="shadow-md h-full flex flex-col">
+            <Card className="h-full flex flex-col">
               <CardHeader className="pb-2 flex-shrink-0">
                 <div className="flex justify-between items-start">
                   <div>
@@ -168,19 +168,22 @@ const EnhancedBitcoinLoan = () => {
                   </TabsList>
                 </div>
 
-                <div className="overflow-y-auto flex-grow">
-                  <TabsContent value="details" className="m-0">
-                    <Details contract={contract} />
-                  </TabsContent>
+                {/* Inner ScrollArea for tab content */}
+                <ScrollArea className="flex-grow">
+                  <div className="p-4">
+                    <TabsContent value="details" className="m-0">
+                      <Details contract={contract} />
+                    </TabsContent>
 
-                  <TabsContent value="collateral" className="m-0">
-                    <Collateral contract={contract} />
-                  </TabsContent>
+                    <TabsContent value="collateral" className="m-0">
+                      <Collateral contract={contract} />
+                    </TabsContent>
 
-                  <TabsContent value="timeline" className="m-0">
-                    <Timeline contract={contract} />
-                  </TabsContent>
-                </div>
+                    <TabsContent value="timeline" className="m-0">
+                      <Timeline contract={contract} />
+                    </TabsContent>
+                  </div>
+                </ScrollArea>
               </Tabs>
 
               <CardFooter className="flex-shrink-0 flex justify-between border-t pt-4">
@@ -190,22 +193,20 @@ const EnhancedBitcoinLoan = () => {
           </div>
 
           {/* Chat section (1/3 width on large screens) */}
-          <div className="lg:col-span-1 h-full">
-            <Card className="h-full flex flex-col flex-grow overflow-y-auto">
-              <Chat
-                contractId={contract?.id}
-                counterpartyNpub={contract?.lender_npub}
-                counterpartyName={contract?.lender.name}
-                personalName={user?.name}
-                onNewMsgSent={async () => {
-                  if (contract) {
-                    await newChatNotification({
-                      contract_id: contract?.id,
-                    });
-                  }
-                }}
-              />
-            </Card>
+          <div className="lg:col-span-1 h-full flex flex-col">
+            <Chat
+              contractId={contract?.id}
+              counterpartyNpub={contract?.lender_npub}
+              counterpartyName={contract?.lender.name}
+              personalName={user?.name}
+              onNewMsgSent={async () => {
+                if (contract) {
+                  await newChatNotification({
+                    contract_id: contract?.id,
+                  });
+                }
+              }}
+            />
           </div>
         </div>
       </div>

@@ -212,7 +212,7 @@ export const Chat = ({
   );
 
   return (
-    <Card className="shadow-md h-full flex flex-col">
+    <Card className="h-full flex flex-col">
       <CardHeader className="pb-2">
         <CardTitle className="text-lg">Communication Channel</CardTitle>
         <CardDescription>Chat with the other party</CardDescription>
