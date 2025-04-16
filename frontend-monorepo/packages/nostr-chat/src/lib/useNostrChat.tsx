@@ -30,7 +30,7 @@ export interface NostrMessageEvent {
   author: PublicKey;
   content: string;
   createdAt: Timestamp;
-  tags: Tag[]
+  tags: Tag[];
 }
 
 const RELAYS = [
@@ -50,9 +50,7 @@ interface UseNostrResult {
     room: string,
     content: string,
   ) => Promise<EventId | null>;
-  onNewMessage: (
-    callback: (msg: NostrMessageEvent) => void,
-  ) => void;
+  onNewMessage: (callback: (msg: NostrMessageEvent) => void) => void;
   subscribeToMessages: (
     counterpartyNpubString?: string,
     contractNpub?: string,
@@ -72,9 +70,7 @@ const useNostr = (): UseNostrResult => {
   const relayConnections = useRef<Record<string, Relay>>({});
   const subscriptions = useRef<Record<string, any>>({});
   const onNewMessageCallback =
-    useRef<(msg: NostrMessageEvent) => void | null>(
-      null,
-    );
+    useRef<(msg: NostrMessageEvent) => void | null>(null);
   const clientRef = useRef<Client | undefined>(undefined);
   const relaysRef = useRef<string[]>(RELAYS);
 
@@ -194,15 +190,13 @@ const useNostr = (): UseNostrResult => {
                   })
                 ) {
                   if (onNewMessageCallback?.current && counterpartyPubKey) {
-                    onNewMessageCallback.current(
-                      {
-                        id: event.id,
-                        content: unwrappedGift.rumor.content,
-                        author: counterpartyPubKey,
-                        createdAt: unwrappedGift.rumor.createdAt,
-                        tags: unwrappedGift.rumor.tags,
-                      },
-                    );
+                    onNewMessageCallback.current({
+                      id: event.id,
+                      content: unwrappedGift.rumor.content,
+                      author: counterpartyPubKey,
+                      createdAt: unwrappedGift.rumor.createdAt,
+                      tags: unwrappedGift.rumor.tags,
+                    });
                   } else {
                     console.error(
                       "Can't send message if callback is not defined",
@@ -276,15 +270,13 @@ const useNostr = (): UseNostrResult => {
         );
 
         if (onNewMessageCallback?.current) {
-          onNewMessageCallback.current(
-            {
-              id: personalDm.id,
-              content: content,
-              author: personalPublicKey,
-              createdAt: Timestamp.now(),
-              tags: [Tag.publicKey(chatRoom)]
-            },
-          );
+          onNewMessageCallback.current({
+            id: personalDm.id,
+            content: content,
+            author: personalPublicKey,
+            createdAt: Timestamp.now(),
+            tags: [Tag.publicKey(chatRoom)],
+          });
         } else {
           console.error("Can't send message if callback is not defined");
         }
@@ -302,9 +294,7 @@ const useNostr = (): UseNostrResult => {
   const onNewMessage = useCallback(
     (callback: (msg: NostrMessageEvent) => void) => {
       // We need to adapt the callback to the ref's type
-      onNewMessageCallback.current = (
-        msg: NostrMessageEvent,
-      ) => {
+      onNewMessageCallback.current = (msg: NostrMessageEvent) => {
         callback(msg);
       };
     },
@@ -364,7 +354,7 @@ const useNostr = (): UseNostrResult => {
                 author: unwrappedGift.rumor.pubkey,
                 content: unwrappedGift.rumor.content,
                 createdAt: unwrappedGift.rumor.createdAt,
-                tags: unwrappedGift.rumor.tags
+                tags: unwrappedGift.rumor.tags,
               });
             }
           } catch (error) {
