@@ -81,9 +81,9 @@ pub(crate) fn router_openapi(app_state: Arc<AppState>) -> OpenApiRouter {
         .with_state(app_state)
 }
 
-/// Post a contract request
+/// Post a contract request.
 ///
-/// A contract request will be sent to the lender.
+/// The contract request will be forwarded to the lender.
 #[utoipa::path(
 post,
 request_body = ContractRequestSchema,
@@ -102,7 +102,7 @@ security(
     )
 )
 )]
-#[instrument(skip_all, err(Debug))]
+#[instrument(skip_all, fields(borrower_id = user.id, contract_id, body), ret, err(Debug))]
 async fn post_contract_request(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Borrower>,
@@ -111,7 +111,7 @@ async fn post_contract_request(
 ) -> Result<AppJson<Contract>, Error> {
     let offer = db::loan_offers::loan_by_id(&data.db, &body.id)
         .await
-        .map_err(Error::Database)?
+        .map_err(Error::database)?
         .ok_or(Error::MissingLoanOffer {
             id: body.id.clone(),
         })?;
@@ -141,7 +141,7 @@ async fn post_contract_request(
         // TODO: this should be a db transaction
         db::kyc::insert(&data.db, lender_id, &user.id)
             .await
-            .map_err(Error::Database)?;
+            .map_err(Error::database)?;
     }
 
     let (borrower_loan_address, moon_invoice, fiat_loan_details) = match body.loan_type {
@@ -163,7 +163,7 @@ async fn post_contract_request(
 
                     let card = db::moon::get_card_by_id(&data.db, &card_id.to_string())
                         .await
-                        .map_err(Error::Database)?
+                        .map_err(Error::database)?
                         .ok_or(Error::CannotTopUpNonexistentCard)?;
 
                     let current_balance = card.balance;
@@ -179,7 +179,7 @@ async fn post_contract_request(
                         .ip
                         .ok_or(Error::CannotTopUpMoonCardWithoutIp)?;
 
-                    let is_us_ip = is_us_ip(&client_ip).await.map_err(Error::GeoJs)?;
+                    let is_us_ip = is_us_ip(&client_ip).await.map_err(Error::geo_js)?;
 
                     if is_us_ip {
                         return Err(Error::CannotTopUpMoonCardFromUs);
@@ -193,7 +193,7 @@ async fn post_contract_request(
                         .moon
                         .create_card(user.id.clone())
                         .await
-                        .map_err(Error::MoonCardGeneration)?;
+                        .map_err(Error::moon_card_generation)?;
 
                     card.id
                 }
@@ -209,7 +209,7 @@ async fn post_contract_request(
                     user.id.as_str(),
                 )
                 .await
-                .map_err(Error::MoonInvoiceGeneration)?;
+                .map_err(Error::moon_invoice_generation)?;
 
             (Some(invoice.address.clone()), Some(invoice), None)
         }
@@ -230,12 +230,12 @@ async fn post_contract_request(
 
     let initial_price = get_bitmex_index_price(&data.config, OffsetDateTime::now_utc())
         .await
-        .map_err(Error::BitMexPrice)?;
+        .map_err(Error::bitmex_price)?;
 
     let min_ltv = offer.min_ltv;
     let initial_collateral =
         contract_requests::calculate_initial_collateral(body.loan_amount, min_ltv, initial_price)
-            .map_err(Error::InitialCollateralCalculation)?;
+            .map_err(Error::initial_collateral_calculation)?;
 
     // TODO: Choose origination fee based on loan parameters. For now we only have one origination
     // fee anyway.
@@ -260,7 +260,7 @@ async fn post_contract_request(
         origination_fee_rate,
         initial_price,
     )
-    .map_err(Error::OriginationFeeCalculation)?;
+    .map_err(Error::origination_fee_calculation)?;
 
     let contract = db::contracts::insert_new_contract_request(
         &data.db,
@@ -287,7 +287,7 @@ async fn post_contract_request(
         &offer.lender_npub,
     )
     .await
-    .map_err(Error::Database)?;
+    .map_err(Error::database)?;
 
     if let Some(fiat_loan_details) = fiat_loan_details {
         if fiat_loan_details.details.swift_transfer_details.is_none()
@@ -302,7 +302,7 @@ async fn post_contract_request(
             fiat_loan_details,
         )
         .await
-        .map_err(Error::Database)?;
+        .map_err(Error::database)?;
     }
 
     let contract = map_to_api_contract(&data, contract).await?;
@@ -311,7 +311,7 @@ async fn post_contract_request(
         data.moon
             .persist_invoice(&invoice)
             .await
-            .map_err(Error::Database)?;
+            .map_err(Error::database)?;
     }
 
     // We only want to auto-accept offers if KYC is not required and it is not a fiat loan. The
@@ -386,7 +386,7 @@ async fn post_contract_request(
     Ok(AppJson(contract))
 }
 
-/// Cancel a request
+/// Cancel a contract request or a contract renewal request.
 #[utoipa::path(
 delete,
 path = "/{id}",
@@ -408,7 +408,7 @@ security(
     )
 )
 ]
-#[instrument(skip(data, user), err(Debug), ret)]
+#[instrument(skip_all, fields(borrower_id = user.id, contract_id), ret, err(Debug))]
 async fn cancel_contract_request(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Borrower>,
@@ -420,7 +420,7 @@ async fn cancel_contract_request(
         user.id.as_str(),
     )
     .await
-    .map_err(Error::Database)?;
+    .map_err(Error::database)?;
 
     if contract.status != ContractStatus::Requested
         && contract.status != ContractStatus::RenewalRequested
@@ -435,24 +435,25 @@ async fn cancel_contract_request(
         let parent =
             db::contract_extensions::get_parent_by_extended(&data.db, contract_id.as_str())
                 .await
-                .map_err(|e| Error::Database(anyhow!(e)))?
+                .map_err(|e| Error::database(anyhow!(e)))?
                 .ok_or(Error::MissingParentContract(contract_id.clone()))?;
         db::contracts::cancel_extension(&data.db, parent.as_str())
             .await
-            .map_err(Error::Database)?;
         db::contract_extensions::delete_with_parent(&data.db, parent.as_str())
+            .map_err(Error::database)?;
             .await
-            .map_err(|e| Error::Database(anyhow!(e)))?;
+            .map_err(|e| Error::database(anyhow!(e)))?;
     }
 
     db::contracts::mark_contract_as_cancelled(&data.db, contract_id.as_str())
         .await
-        .map_err(Error::Database)?;
+        .map_err(Error::database)?;
+
 
     Ok(())
 }
 
-/// Get all personal contracts
+/// Get all personal contracts.
 #[utoipa::path(
 get,
 path = "/",
@@ -470,13 +471,14 @@ security(
     )
 )
 ]
+#[instrument(skip_all, fields(borrower_id = user.id, contract_id), err(Debug))]
 async fn get_contracts(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Borrower>,
 ) -> Result<AppJson<Vec<Contract>>, Error> {
     let contracts = db::contracts::load_contracts_by_borrower_id(&data.db, user.id.as_str())
         .await
-        .map_err(Error::Database)?;
+        .map_err(Error::database)?;
 
     let mut contracts_api = Vec::new();
     for contract in contracts {
@@ -488,7 +490,7 @@ async fn get_contracts(
     Ok(AppJson(contracts_api))
 }
 
-/// Get a contract by id
+/// Get a contract by ID.
 #[utoipa::path(
 get,
 path = "/{id}",
@@ -511,6 +513,7 @@ security(
     )
 )
 ]
+#[instrument(skip_all, fields(borrower_id = user.id, contract_id), err(Debug))]
 async fn get_contract(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Borrower>,
@@ -522,7 +525,7 @@ async fn get_contract(
         &user.id,
     )
     .await
-    .map_err(Error::Database)?;
+    .map_err(Error::database)?;
 
     let contract = map_to_api_contract(&data, contract).await?;
 
@@ -552,7 +555,7 @@ security(
     )
     )
 ]
-#[instrument(skip(data, user), err(Debug))]
+#[instrument(skip_all, fields(borrower_id = user.id, contract_id, repayment_txid = query_params.txid), ret, err(Debug))]
 async fn put_repayment_provided(
     State(data): State<Arc<AppState>>,
     Path(contract_id): Path<String>,
@@ -565,12 +568,12 @@ async fn put_repayment_provided(
         &user.id,
     )
     .await
-    .map_err(Error::Database)?;
+    .map_err(Error::database)?;
 
     // TODO: Use a database transaction.
     db::contracts::mark_contract_as_repayment_provided(&data.db, contract.id.as_str())
         .await
-        .map_err(Error::Database)?;
+        .map_err(Error::database)?;
 
     db::transactions::insert_principal_repaid_txid(
         &data.db,
@@ -578,7 +581,7 @@ async fn put_repayment_provided(
         query_params.txid.as_str(),
     )
     .await
-    .map_err(Error::Database)?;
+    .map_err(Error::database)?;
 
     let loan_url = data
         .config
@@ -607,9 +610,7 @@ async fn put_repayment_provided(
     Ok(())
 }
 
-// This API is only needed for the version of the protocol _without_ DLCs. With DLCs, the borrower
-// will be able to unilaterally reclaim the collateral after they learn the loan secret.
-/// Get the claim transaction
+/// Get a claim-collateral PSBT, to be completed with your own signature on the collateral contract.
 #[utoipa::path(
 get,
 path = "/{id}/claim",
@@ -632,7 +633,7 @@ security(
     )
 )
 ]
-#[instrument(skip_all, fields(borrower_id = user.id, contract_id), err(Debug), ret)]
+#[instrument(skip_all, fields(borrower_id = user.id, contract_id, fee_rate = query_params.fee_rate), ret, err(Debug))]
 async fn get_claim_collateral_psbt(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Borrower>,
@@ -645,7 +646,7 @@ async fn get_claim_collateral_psbt(
         &user.id,
     )
     .await
-    .map_err(Error::Database)?;
+    .map_err(Error::database)?;
 
     if contract.status != ContractStatus::RepaymentConfirmed {
         return Err(Error::PrincipalNotRepaid);
@@ -681,7 +682,7 @@ async fn get_claim_collateral_psbt(
             query_params.fee_rate,
             contract.contract_version,
         )
-        .map_err(Error::CreateClaimCollateralPsbt)?;
+        .map_err(Error::create_claim_collateral_psbt)?;
 
     let psbt = psbt.serialize_hex();
 
@@ -694,10 +695,7 @@ async fn get_claim_collateral_psbt(
     Ok(AppJson(res))
 }
 
-// We don't need the borrower to publish the claim TX through the hub, but it is convenient to be
-// able to move the contract state forward. Eventually we could remove this and publish from the
-// borrower client.
-/// Get all personal contracts
+/// Get all personal contracts.
 #[utoipa::path(
 post,
 path = "/{id}",
@@ -721,7 +719,7 @@ security(
     )
 )
 ]
-#[instrument(skip(data, user), err(Debug), ret)]
+#[instrument(skip_all, fields(borrower_id = user.id, contract_id, claim_tx = body.tx), ret, err(Debug))]
 async fn post_claim_tx(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Borrower>,
@@ -734,7 +732,7 @@ async fn post_claim_tx(
         &user.id,
     )
     .await
-    .map_err(Error::Database)?;
+    .map_err(Error::database)?;
 
     if !belongs_to_borrower {
         return Err(Error::NotYourContract);
@@ -753,23 +751,75 @@ async fn post_claim_tx(
         })
         .await
         .expect("actor to be alive")
-        .map_err(Error::TrackClaimTx)?;
+        .map_err(Error::track_claim_tx)?;
 
     data.mempool
         .send(mempool::PostTx(signed_claim_tx_str))
         .await
         .expect("actor to be alive")
-        .map_err(Error::PostClaimTx)?;
+        .map_err(Error::post_claim_tx)?;
 
     // TODO: Use a database transaction.
     db::transactions::insert_claim_txid(&data.db, contract_id.as_str(), &claim_txid)
         .await
-        .map_err(Error::Database)?;
+        .map_err(Error::database)?;
     db::contracts::mark_contract_as_closing(&data.db, contract_id.as_str())
         .await
-        .map_err(Error::Database)?;
+        .map_err(Error::database)?;
 
     Ok(claim_txid.to_string())
+}
+
+/// Post a request to extend the contract.
+#[utoipa::path(
+post,
+path = "/{id}/extend",
+params(
+    (
+    "id" = String, Path, description = "Contract id"
+    )
+),
+request_body = PrincipalRepaidQueryParam,
+tag = CONTRACTS_TAG,
+responses(
+    (
+    status = 200,
+    description = "Ok if successful",
+    body = Contract,
+    )
+),
+security(
+    (
+    "api_key" = [])
+    )
+)
+]
+#[instrument(skip_all, fields(borrower_id = user.id, %contract_id, body = ?body), ret, err(Debug))]
+async fn post_extend_contract_request(
+    State(data): State<Arc<AppState>>,
+    Extension(user): Extension<Borrower>,
+    Path(contract_id): Path<String>,
+    AppJson(body): AppJson<ExtendContractRequestSchema>,
+) -> Result<AppJson<Contract>, Error> {
+    let current_price = get_bitmex_index_price(&data.config, OffsetDateTime::now_utc())
+        .await
+        .map_err(Error::bitmex_price)?;
+
+    let new_contract = crate::contract_extension::request_contract_extension(
+        &data.db,
+        &data.config,
+        contract_id.as_str(),
+        body.loan_id.as_str(),
+        user.id.as_str(),
+        body.new_duration,
+        current_price,
+    )
+    .await
+    .map_err(Error::from)?;
+
+    let contract = map_to_api_contract(&data, new_contract).await?;
+
+    Ok(AppJson(contract))
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -864,6 +914,12 @@ pub struct PrincipalRepaidQueryParam {
     pub txid: String,
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ExtendContractRequestSchema {
+    pub loan_id: String,
+    pub new_duration: i32,
+}
+
 /// Convert from a [`model::Contract`] to a [`Contract`].
 async fn map_to_api_contract(
     data: &Arc<AppState>,
@@ -871,16 +927,16 @@ async fn map_to_api_contract(
 ) -> Result<Contract, Error> {
     let loan_deal = db::loan_deals::get_loan_deal_by_id(&data.db, &contract.loan_id)
         .await
-        .map_err(Error::Database)?;
+        .map_err(Error::database)?;
 
     let lender = db::lenders::get_user_by_id(&data.db, &contract.lender_id)
         .await
-        .map_err(Error::Database)?
+        .map_err(Error::database)?
         .ok_or(Error::MissingLender)?;
 
     let transactions = db::transactions::get_all_for_contract_id(&data.db, contract.id.as_str())
         .await
-        .map_err(Error::Database)?;
+        .map_err(Error::database)?;
 
     let repaid_at = transactions.iter().find_map(|tx| {
         matches!(tx.transaction_type, TransactionType::PrincipalRepaid).then_some(tx.timestamp)
@@ -891,17 +947,17 @@ async fn map_to_api_contract(
     let parent_contract_id =
         db::contract_extensions::get_parent_by_extended(&data.db, contract.id.as_str())
             .await
-            .map_err(|e| Error::Database(anyhow!(e)))?;
+            .map_err(|e| Error::database(anyhow!(e)))?;
     let child_contract =
         db::contract_extensions::get_extended_by_parent(&data.db, contract.id.as_str())
             .await
-            .map_err(|e| Error::Database(anyhow!(e)))?;
+            .map_err(|e| Error::database(anyhow!(e)))?;
 
     let kyc_info = match loan_deal.kyc_link() {
         Some(ref kyc_link) => {
             let is_kyc_done = db::kyc::get(&data.db, &lender.id, &contract.borrower_id)
                 .await
-                .map_err(Error::Database)?;
+                .map_err(Error::database)?;
 
             Some(KycInfo {
                 kyc_link: kyc_link.clone(),
@@ -920,7 +976,7 @@ async fn map_to_api_contract(
     let fiat_loan_details_borrower = {
         let details = db::fiat_loan_details::get_borrower(&data.db, &contract.id)
             .await
-            .map_err(Error::Database)?;
+            .map_err(Error::database)?;
 
         details.map(|d| FiatLoanDetailsWrapper {
             details: d.details,
@@ -931,7 +987,7 @@ async fn map_to_api_contract(
     let fiat_loan_details_lender = {
         let details = db::fiat_loan_details::get_lender(&data.db, &contract.id)
             .await
-            .map_err(Error::Database)?;
+            .map_err(Error::database)?;
 
         details.map(|d| FiatLoanDetailsWrapper {
             details: d.details,
@@ -949,7 +1005,7 @@ async fn map_to_api_contract(
                     contract.contract_version,
                     contract_index,
                 )
-                .map_err(Error::CannotBuildDescriptor)?;
+                .map_err(Error::cannot_build_descriptor)?;
             let collateral_script = collateral_descriptor.script_code().expect("not taproot");
             let collateral_script = collateral_script.to_hex_string();
 
@@ -1010,7 +1066,7 @@ async fn map_timeline(
 ) -> Result<Vec<TimelineEvent>, Error> {
     let event_logs = db::contract_status_log::get_contract_status_logs(pool, contract.id.as_str())
         .await
-        .map_err(|e| Error::Database(anyhow!(e)))?;
+        .map_err(|e| Error::database(anyhow!(e)))?;
 
     // first, we add the contract request event
     let mut timeline = vec![TimelineEvent {
@@ -1092,64 +1148,6 @@ async fn map_timeline(
     Ok(timeline)
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct ExtendContractRequestSchema {
-    pub loan_id: String,
-    pub new_duration: i32,
-}
-
-/// Post a request to extend the contract
-#[utoipa::path(
-post,
-path = "/{id}/extend",
-params(
-    (
-    "id" = String, Path, description = "Contract id"
-    )
-),
-request_body = PrincipalRepaidQueryParam,
-tag = CONTRACTS_TAG,
-responses(
-    (
-    status = 200,
-    description = "Ok if successful",
-    body = Contract,
-    )
-),
-security(
-    (
-    "api_key" = [])
-    )
-)
-]
-#[instrument(skip_all, err(Debug))]
-async fn post_extend_contract_request(
-    State(data): State<Arc<AppState>>,
-    Extension(user): Extension<Borrower>,
-    Path(contract_id): Path<String>,
-    AppJson(body): AppJson<ExtendContractRequestSchema>,
-) -> Result<AppJson<Contract>, Error> {
-    let current_price = get_bitmex_index_price(&data.config, OffsetDateTime::now_utc())
-        .await
-        .map_err(Error::BitMexPrice)?;
-
-    let new_contract = crate::contract_extension::request_contract_extension(
-        &data.db,
-        &data.config,
-        contract_id.as_str(),
-        body.loan_id.as_str(),
-        user.id.as_str(),
-        body.new_duration,
-        current_price,
-    )
-    .await
-    .map_err(Error::from)?;
-
-    let contract = map_to_api_contract(&data, new_contract).await?;
-
-    Ok(AppJson(contract))
-}
-
 async fn is_us_ip(ip: &str) -> anyhow::Result<bool> {
     #[derive(Deserialize)]
     struct GeoInfo {
@@ -1170,13 +1168,15 @@ async fn is_us_ip(ip: &str) -> anyhow::Result<bool> {
     Ok(country_code == "US")
 }
 
+// Error fields are allowed to be dead code because they are actually used when printed in logs.
+#[allow(dead_code)]
 /// All the errors related to the `contracts` REST API.
 #[derive(Debug)]
 enum Error {
     /// The request body contained invalid JSON.
     JsonRejection(JsonRejection),
     /// Failed to interact with the database.
-    Database(anyhow::Error),
+    Database(String),
     /// Referenced loan does not exist.
     MissingLoanOffer { id: String },
     /// Referenced lender does not exist.
@@ -1196,21 +1196,21 @@ enum Error {
     /// Moon cards cannot be topped up if we don't know the client IP.
     CannotTopUpMoonCardWithoutIp,
     /// Failed to get country code of IP from GeoJS.
-    GeoJs(anyhow::Error),
+    GeoJs(String),
     /// Moon cards cannot be topped up from the US.
     CannotTopUpMoonCardFromUs,
     /// Failed to create Moon card.
-    MoonCardGeneration(anyhow::Error),
+    MoonCardGeneration(String),
     /// Failed to generate Moon invoice.
-    MoonInvoiceGeneration(anyhow::Error),
+    MoonInvoiceGeneration(String),
     /// Failed to get price from BitMEX.
-    BitMexPrice(anyhow::Error),
+    BitMexPrice(String),
     /// Failed to calculate initial collateral.
-    InitialCollateralCalculation(anyhow::Error),
+    InitialCollateralCalculation(String),
     /// No origination fee configured.
     MissingOriginationFee,
     /// Failed to calculate origination fee in sats.
-    OriginationFeeCalculation(anyhow::Error),
+    OriginationFeeCalculation(String),
     /// Can't approve a contract request with a [`ContractStatus`] different to
     /// [`ContractStatus::Requested`] or [`ContractStatus::RenewalRequested`].
     InvalidApproveRequest { status: ContractStatus },
@@ -1224,21 +1224,21 @@ enum Error {
     /// Can't claim collateral without collateral address.
     MissingCollateralAddress,
     /// Failed to generate contract address.
-    ContractAddress(anyhow::Error),
+    ContractAddress(String),
     /// Referenced borrower does not exist.
     MissingBorrower,
     /// Failed to track accepted contract using Mempool API.
-    TrackContract(anyhow::Error),
+    TrackContract(String),
     /// Can't find collateral outputs to claim.
     MissingCollateralOutputs,
     /// Failed to create claim-collateral PSBT.
-    CreateClaimCollateralPsbt(anyhow::Error),
+    CreateClaimCollateralPsbt(String),
     /// Failed to parse signed claim-collateral transaction.
     ParseClaimTx(FromHexError),
     /// Failed to track claim-collateral transaction.
-    TrackClaimTx(anyhow::Error),
+    TrackClaimTx(String),
     /// Failed to post claim-collateral transaction.
-    PostClaimTx(anyhow::Error),
+    PostClaimTx(String),
     /// The borrower is trying to interact with a contract that is not theirs, according to our
     /// records.
     NotYourContract,
@@ -1246,8 +1246,8 @@ enum Error {
     /// supported
     LoanOfferLenderMismatch,
     /// We failed at calculating the interest rate. Cannot do much without this
-    InterestRateCalculation(anyhow::Error),
-    /// Can't cancel a extend contract request if the parent does not exist
+    InterestRateCalculation(String),
+    /// Can't cancel a contract extension request if the parent does not exist.
     MissingParentContract(String),
     /// Discounted origination fee rate was not valid
     InvalidDiscountRate { fee: Decimal },
@@ -1266,7 +1266,69 @@ enum Error {
         duration_days_max: i32,
     },
     /// Failed to build contract descriptor.
-    CannotBuildDescriptor(anyhow::Error),
+    CannotBuildDescriptor(String),
+}
+
+impl Error {
+    // Since these errors are just meant to be displayed, it's okay to store `String`s. Ideally, we
+    // would log the `anyhow::Error` via `tracing` using the alternate selector, but that's not
+    // supported yet: https://github.com/tokio-rs/tracing/issues/1311.
+
+    fn database(e: anyhow::Error) -> Self {
+        Self::Database(format!("{e:#}"))
+    }
+
+    fn geo_js(e: anyhow::Error) -> Self {
+        Self::GeoJs(format!("{e:#}"))
+    }
+
+    fn moon_card_generation(e: anyhow::Error) -> Self {
+        Self::MoonCardGeneration(format!("{e:#}"))
+    }
+
+    fn moon_invoice_generation(e: anyhow::Error) -> Self {
+        Self::MoonInvoiceGeneration(format!("{e:#}"))
+    }
+
+    fn bitmex_price(e: anyhow::Error) -> Self {
+        Self::BitMexPrice(format!("{e:#}"))
+    }
+
+    fn initial_collateral_calculation(e: anyhow::Error) -> Self {
+        Self::InitialCollateralCalculation(format!("{e:#}"))
+    }
+
+    fn origination_fee_calculation(e: anyhow::Error) -> Self {
+        Self::OriginationFeeCalculation(format!("{e:#}"))
+    }
+
+    fn cannot_build_descriptor(e: anyhow::Error) -> Self {
+        Self::CannotBuildDescriptor(format!("{e:#}"))
+    }
+
+    fn interest_rate_calculation(e: anyhow::Error) -> Self {
+        Self::InterestRateCalculation(format!("{e:#}"))
+    }
+
+    fn contract_address(e: anyhow::Error) -> Self {
+        Self::ContractAddress(format!("{e:#}"))
+    }
+
+    fn track_contract(e: anyhow::Error) -> Self {
+        Self::TrackContract(format!("{e:#}"))
+    }
+
+    fn create_claim_collateral_psbt(e: anyhow::Error) -> Self {
+        Self::CreateClaimCollateralPsbt(format!("{e:#}"))
+    }
+
+    fn track_claim_tx(e: anyhow::Error) -> Self {
+        Self::TrackClaimTx(format!("{e:#}"))
+    }
+
+    fn post_claim_tx(e: anyhow::Error) -> Self {
+        Self::PostClaimTx(format!("{e:#}"))
+    }
 }
 
 impl From<JsonRejection> for Error {
@@ -1293,8 +1355,6 @@ where
 }
 
 /// Tell `axum` how [`AppError`] should be converted into a response.
-///
-/// This is also a convenient place to log errors.
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
         /// How we want error responses to be serialized.
@@ -1305,35 +1365,36 @@ impl IntoResponse for Error {
 
         let (status, message) = match self {
             Error::JsonRejection(rejection) => {
-                // This error is caused by bad user input so don't log it
                 (rejection.status(), rejection.body_text())
             }
-            Error::Database(e) => {
-                // If we configure `tracing` properly, we don't need to add extra context here!
-                tracing::error!("Database error: {e:#}");
-
-                // Don't expose any details about the error to the client.
+            Error::Database(_) |
+            Error::MissingLoanOffer { .. } |
+            Error::MissingLender |
+            Error::MoonCardGeneration(_) |
+            Error::MoonInvoiceGeneration(_) |
+            Error::BitMexPrice(_) |
+            Error::InitialCollateralCalculation(_) |
+            Error::MissingOriginationFee |
+            Error::OriginationFeeCalculation(_) |
+            Error::MissingContractIndex |
+            Error::MissingCollateralAddress |
+            Error::ContractAddress(_) |
+            Error::MissingBorrower |
+            Error::TrackContract(_) |
+            Error::MissingCollateralOutputs |
+            Error::TrackClaimTx(_) |
+            Error::PostClaimTx(_) |
+            Error::InterestRateCalculation(_) |
+            Error::MissingParentContract(_) |
+            Error::InvalidDiscountRate { .. } |
+            Error::CreateClaimCollateralPsbt(_) |
+            Error::CannotBuildDescriptor(_) |
+            Error::GeoJs(_) => {
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     "Something went wrong".to_owned(),
                 )
-            }
-            Error::MissingLoanOffer { id: offer_id } => {
-                tracing::error!(offer_id, "Could not find referenced loan offer");
-
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
-            Error::MissingLender => {
-                tracing::error!("Could not find referenced lender");
-
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
+            },
             Error::MissingBorrowerLoanAddress => (
                 StatusCode::BAD_REQUEST,
                 "Failed to provide borrower loan address for stablecoin loan".to_owned(),
@@ -1363,66 +1424,11 @@ impl IntoResponse for Error {
                 StatusCode::UNAVAILABLE_FOR_LEGAL_REASONS,
                 "Request IP required".to_owned(),
             ),
-            Error::GeoJs(e) => {
-                tracing::error!("Failed to top up Moon card: {e:#}");
-
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
             Error::CannotTopUpMoonCardFromUs => (
                 StatusCode::UNAVAILABLE_FOR_LEGAL_REASONS,
                 "Cannot top up Moon card from the US".to_owned(),
             ),
-            Error::MoonCardGeneration(e) => {
-                tracing::error!("Failed to generate Moon card: {e:#}");
 
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
-            Error::MoonInvoiceGeneration(e) => {
-                tracing::error!("Failed to generate Moon invoice: {e:#}");
-
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
-            Error::BitMexPrice(e) => {
-                tracing::error!("Failed to get price from BitMEX: {e:#}");
-
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
-            Error::InitialCollateralCalculation(e) => {
-                tracing::error!("Failed to calculate initial collateral: {e:#}");
-
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
-            Error::MissingOriginationFee => {
-                tracing::error!("Missing origination fee");
-
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
-            Error::OriginationFeeCalculation(e) => {
-                tracing::error!("Failed to calculate origination fee: {e:#}");
-
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
             Error::InvalidCancelRequest { status } => (
                 StatusCode::BAD_REQUEST,
                 format!("Cannot cancel a contract request with status {status:?}"),
@@ -1431,119 +1437,24 @@ impl IntoResponse for Error {
                 StatusCode::BAD_REQUEST,
                 "Cannot claim collateral until loan has been repaid".to_owned(),
             ),
-            Error::MissingContractIndex => {
-                tracing::error!("Missing contract index");
 
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
-            Error::MissingCollateralAddress => {
-                tracing::error!("Missing collateral address");
-
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
-            Error::ContractAddress(e) => {
-                tracing::error!("Could not generate contract address: {e:#}");
-
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
-            Error::MissingBorrower => {
-                tracing::error!("Could not find referenced borrower");
-
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
-            Error::TrackContract(e) => {
-                tracing::error!("Failed to track accepted contract: {e:#}");
-
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
-            Error::MissingCollateralOutputs => {
-                tracing::error!("Could not find collateral outputs to claim");
-
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
-            Error::CreateClaimCollateralPsbt(e) => {
-                tracing::error!("Could not create claim-collateral PSBT: {e:#}");
-
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
-            Error::ParseClaimTx(e) => {
-                tracing::error!("Failed to parse signed claim-collateral TX: {e:#}");
+            Error::ParseClaimTx(_) => {
                 (
                     StatusCode::BAD_REQUEST,
                     "Failed to parse signed claim TX".to_owned(),
                 )
             }
-            Error::TrackClaimTx(e) => {
-                tracing::error!("Failed to track claim-collateral transaction: {e:#}");
 
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
-            Error::PostClaimTx(e) => {
-                tracing::error!("Failed to post claim-collateral transaction: {e:#}");
-
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
             Error::NotYourContract => (StatusCode::NOT_FOUND, "Contract not found".to_owned()),
             Error::LoanOfferLenderMismatch => (
                 StatusCode::BAD_REQUEST,
                 "Offer cannot be from a different lender".to_owned(),
             ),
-            Error::InterestRateCalculation(e) => {
-                tracing::error!("Failed at calculating interest rate {e:#}");
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
-            Error::MissingParentContract(contract_id) => {
-                tracing::error!(
-                    contract_id,
-                    "Failed at cancelling contract extension request as contract was not extended"
-                );
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
+
             Error::InvalidApproveRequest { status } => (
                 StatusCode::BAD_REQUEST,
                 format!("Cannot cancel a contract request with status {status:?}"),
             ),
-            Error::InvalidDiscountRate { fee } => {
-                tracing::error!(fee = fee.to_string(), "Invalid origination fee discount");
-
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
             Error::MissingFiatLoanDetails => (
                 StatusCode::BAD_REQUEST,
                 "Failed to provide bank details for fiat loan".to_owned(),
@@ -1564,14 +1475,6 @@ impl IntoResponse for Error {
                 StatusCode::BAD_REQUEST,
                 format!("Invalid loan duration: {duration_days} days not in range {duration_days_min}-{duration_days_max}"),
             ),
-            Error::CannotBuildDescriptor(e) => {
-                tracing::error!("Failed to build collateral descriptor: {e:#}");
-
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
         };
 
         (status, AppJson(ErrorResponse { message })).into_response()
@@ -1581,14 +1484,14 @@ impl IntoResponse for Error {
 impl From<approve_contract::Error> for Error {
     fn from(value: approve_contract::Error) -> Self {
         match value {
-            approve_contract::Error::Database(e) => Error::Database(e),
+            approve_contract::Error::Database(e) => Error::database(e),
             approve_contract::Error::MissingLoanOffer { offer_id } => {
                 Error::MissingLoanOffer { id: offer_id }
             }
             approve_contract::Error::MissingFiatLoanDetails => Error::MissingFiatLoanDetails,
-            approve_contract::Error::ContractAddress(e) => Error::ContractAddress(e),
+            approve_contract::Error::ContractAddress(e) => Error::contract_address(e),
             approve_contract::Error::MissingBorrower => Error::MissingBorrower,
-            approve_contract::Error::TrackContract(e) => Error::TrackContract(e),
+            approve_contract::Error::TrackContract(e) => Error::track_contract(e),
             approve_contract::Error::InvalidApproveRequest { status } => {
                 Error::InvalidApproveRequest { status }
             }
@@ -1599,7 +1502,7 @@ impl From<approve_contract::Error> for Error {
 impl From<crate::contract_extension::Error> for Error {
     fn from(value: crate::contract_extension::Error) -> Self {
         match value {
-            crate::contract_extension::Error::Database(e) => Error::Database(e),
+            crate::contract_extension::Error::Database(e) => Error::database(e),
             crate::contract_extension::Error::MissingLoanOffer { offer_id } => {
                 Error::MissingLoanOffer { id: offer_id }
             }
@@ -1607,11 +1510,11 @@ impl From<crate::contract_extension::Error> for Error {
                 Error::LoanOfferLenderMismatch
             }
             crate::contract_extension::Error::InterestRateCalculation(e) => {
-                Error::InterestRateCalculation(e)
+                Error::interest_rate_calculation(e)
             }
             crate::contract_extension::Error::MissingOriginationFee => Error::MissingOriginationFee,
             crate::contract_extension::Error::OriginationFeeCalculation(e) => {
-                Error::OriginationFeeCalculation(e)
+                Error::origination_fee_calculation(e)
             }
         }
     }
@@ -1624,7 +1527,7 @@ impl From<discounted_origination_fee::Error> for Error {
                 Error::InvalidDiscountRate { fee }
             }
             discounted_origination_fee::Error::Database(sql_error) => {
-                Error::Database(anyhow!(sql_error))
+                Error::database(anyhow!(sql_error))
             }
         }
     }
@@ -1633,7 +1536,7 @@ impl From<discounted_origination_fee::Error> for Error {
 impl From<user_stats::Error> for Error {
     fn from(value: user_stats::Error) -> Self {
         match value {
-            user_stats::Error::Database(e) => Error::Database(anyhow!(e)),
+            user_stats::Error::Database(e) => Error::database(anyhow!(e)),
         }
     }
 }
