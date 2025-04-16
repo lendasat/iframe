@@ -6,6 +6,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
+  ScrollArea,
   Skeleton,
   Tabs,
   TabsContent,
@@ -101,112 +102,114 @@ const EnhancedBitcoinLoan = () => {
     contract?.status && contractStatusToLabelString(contract.status);
 
   return (
-    <div className="max-w-full mx-4 overflow-y-auto md:overflow-y-visible pb-20 pt-5">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-[700px]">
-        {/* Main loan details (2/3 width on large screens) */}
-        <div className="lg:col-span-2 h-full">
-          <Card className="shadow-md h-full flex flex-col">
-            <CardHeader className="pb-2 flex-shrink-0">
-              <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle className="text-2xl font-bold">
-                    Collateralized Loan Contract
-                  </CardTitle>
-                  <CardDescription>
-                    Secure lending agreement between parties
-                  </CardDescription>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Badge className={`color: ${currentStateColor}`}>
-                    {currentStateLabel ? (
-                      currentStateLabel
-                    ) : (
-                      <>
-                        <Skeleton className="h-4 w-[50px]" />
-                      </>
-                    )}
-                  </Badge>
-                  {contract?.status != ContractStatus.Requested &&
-                    contract?.status != ContractStatus.Cancelled &&
-                    contract?.status != ContractStatus.Closed &&
-                    contract?.liquidation_status ===
-                    LiquidationStatus.Healthy && (
-                      <div className="flex items-center text-sm text-green-600">
-                        <LuCircleCheck className="h-4 w-4 mr-1" />
-                        <span>Healthy</span>
-                      </div>
-                    )}
-                  {contract?.liquidation_status ===
-                    LiquidationStatus.FirstMarginCall && (
+    <ScrollArea className="overflow-y-auto md:overflow-y-visible max-h-[650px]">
+      <div className="max-w-full mx-4 overflow-y-auto md:overflow-y-visible pb-20 pt-5">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-[650px]">
+          {/* Main loan details (2/3 width on large screens) */}
+          <div className="lg:col-span-2 h-full">
+            <Card className="shadow-md h-full flex flex-col">
+              <CardHeader className="pb-2 flex-shrink-0">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle className="text-2xl font-bold">
+                      Collateralized Loan Contract
+                    </CardTitle>
+                    <CardDescription>
+                      Secure lending agreement between parties
+                    </CardDescription>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Badge className={`color: ${currentStateColor}`}>
+                      {currentStateLabel ? (
+                        currentStateLabel
+                      ) : (
+                        <>
+                          <Skeleton className="h-4 w-[50px]" />
+                        </>
+                      )}
+                    </Badge>
+                    {contract?.status != ContractStatus.Requested &&
+                      contract?.status != ContractStatus.Cancelled &&
+                      contract?.status != ContractStatus.Closed &&
+                      contract?.liquidation_status ===
+                        LiquidationStatus.Healthy && (
+                        <div className="flex items-center text-sm text-green-600">
+                          <LuCircleCheck className="h-4 w-4 mr-1" />
+                          <span>Healthy</span>
+                        </div>
+                      )}
+                    {contract?.liquidation_status ===
+                      LiquidationStatus.FirstMarginCall && (
                       <div className="flex items-center text-sm text-orange-600">
                         <LuCircleCheck className="h-4 w-4 mr-1" />
                         <span>Margin Call</span>
                       </div>
                     )}
-                  {contract?.liquidation_status ===
-                    LiquidationStatus.SecondMarginCall && (
+                    {contract?.liquidation_status ===
+                      LiquidationStatus.SecondMarginCall && (
                       <div className="flex items-center text-sm text-red-600">
                         <LuCircleCheck className="h-4 w-4 mr-1" />
                         <span>2nd Margin Call</span>
                       </div>
                     )}
+                  </div>
                 </div>
-              </div>
-            </CardHeader>
+              </CardHeader>
 
-            <Tabs
-              defaultValue="details"
-              className="w-full flex-grow flex flex-col"
-            >
-              <div className="px-4 flex-shrink-0">
-                <TabsList className="grid grid-cols-3">
-                  <TabsTrigger value="details">Loan Details</TabsTrigger>
-                  <TabsTrigger value="collateral">Collateral</TabsTrigger>
-                  <TabsTrigger value="timeline">Timeline</TabsTrigger>
-                </TabsList>
-              </div>
+              <Tabs
+                defaultValue="details"
+                className="w-full flex-grow flex flex-col"
+              >
+                <div className="px-4 flex-shrink-0">
+                  <TabsList className="grid grid-cols-3">
+                    <TabsTrigger value="details">Loan Details</TabsTrigger>
+                    <TabsTrigger value="collateral">Collateral</TabsTrigger>
+                    <TabsTrigger value="timeline">Timeline</TabsTrigger>
+                  </TabsList>
+                </div>
 
-              <div className="overflow-y-auto flex-grow">
-                <TabsContent value="details" className="m-0">
-                  <Details contract={contract} />
-                </TabsContent>
+                <div className="overflow-y-auto flex-grow">
+                  <TabsContent value="details" className="m-0">
+                    <Details contract={contract} />
+                  </TabsContent>
 
-                <TabsContent value="collateral" className="m-0">
-                  <Collateral contract={contract} />
-                </TabsContent>
+                  <TabsContent value="collateral" className="m-0">
+                    <Collateral contract={contract} />
+                  </TabsContent>
 
-                <TabsContent value="timeline" className="m-0">
-                  <Timeline contract={contract} />
-                </TabsContent>
-              </div>
-            </Tabs>
+                  <TabsContent value="timeline" className="m-0">
+                    <Timeline contract={contract} />
+                  </TabsContent>
+                </div>
+              </Tabs>
 
-            <CardFooter className="flex-shrink-0 flex justify-between border-t pt-4">
-              <ContractDetailsFooter contract={contract} loading={loading} />
-            </CardFooter>
-          </Card>
-        </div>
+              <CardFooter className="flex-shrink-0 flex justify-between border-t pt-4">
+                <ContractDetailsFooter contract={contract} loading={loading} />
+              </CardFooter>
+            </Card>
+          </div>
 
-        {/* Chat section (1/3 width on large screens) */}
-        <div className="lg:col-span-1 h-full">
-          <Card className="h-full flex flex-col flex-grow overflow-y-auto">
-            <Chat
-              contractId={contract?.id}
-              counterpartyNpub={contract?.lender_npub}
-              counterpartyName={contract?.lender.name}
-              personalName={user?.name}
-              onNewMsgSent={async () => {
-                if (contract) {
-                  await newChatNotification({
-                    contract_id: contract?.id,
-                  });
-                }
-              }}
-            />
-          </Card>
+          {/* Chat section (1/3 width on large screens) */}
+          <div className="lg:col-span-1 h-full">
+            <Card className="h-full flex flex-col flex-grow overflow-y-auto">
+              <Chat
+                contractId={contract?.id}
+                counterpartyNpub={contract?.lender_npub}
+                counterpartyName={contract?.lender.name}
+                personalName={user?.name}
+                onNewMsgSent={async () => {
+                  if (contract) {
+                    await newChatNotification({
+                      contract_id: contract?.id,
+                    });
+                  }
+                }}
+              />
+            </Card>
+          </div>
         </div>
       </div>
-    </div>
+    </ScrollArea>
   );
 };
 
