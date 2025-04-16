@@ -1111,12 +1111,15 @@ importers:
       '@frontend/browser-wallet':
         specifier: workspace:*
         version: link:../browser-wallet
+      '@frontend/shadcn':
+        specifier: workspace:*
+        version: link:../shadcn
       '@radix-ui/themes':
         specifier: ^3.1.3
         version: 3.2.0(@types/react-dom@18.3.0)(@types/react@19.0.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       '@rust-nostr/nostr-sdk':
-        specifier: ^0.39.0
-        version: 0.39.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+        specifier: ^0.41.1
+        version: 0.41.1(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       browser-wallet:
         specifier: file:../../../browser-wallet/pkg
         version: file:../browser-wallet/pkg
@@ -4083,6 +4086,10 @@ packages:
 
   '@rust-nostr/nostr-sdk@0.39.0':
     resolution: {integrity: sha512-8si319YxMfk5EI/rKPTzQkibZMTHvXmOwcwUanXmL+IbgaqgPx69i6c5P3VYr1lXyj/I8mNxmd77LeZelt6taw==}
+    engines: {node: '>= 10'}
+
+  '@rust-nostr/nostr-sdk@0.41.1':
+    resolution: {integrity: sha512-j8Onh82mxEjSU1dEWLbec8poXNeepQffqvM/yBRyMh2Qf66IxqNI45VPNjy/EJHaxFa/1DxiLYPUrEuabr4x+Q==}
     engines: {node: '>= 10'}
 
   '@safe-global/safe-apps-provider@0.18.5':
@@ -12719,6 +12726,14 @@ snapshots:
       - '@types/node'
 
   '@rust-nostr/nostr-sdk@0.39.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
+    dependencies:
+      pako: 2.1.0
+      ws: 8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
+  '@rust-nostr/nostr-sdk@0.41.1(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
     dependencies:
       pako: 2.1.0
       ws: 8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)

@@ -12,7 +12,6 @@ import {
   TabsList,
   TabsTrigger,
 } from "@frontend/shadcn";
-import { Chat } from "./chat";
 import { Details } from "./details";
 import { Collateral } from "./collateral";
 import { Timeline } from "./timeline";
@@ -21,11 +20,12 @@ import {
   ContractStatus,
   contractStatusToLabelString,
   LiquidationStatus,
+  useAuth,
   useBorrowerHttpClient,
 } from "@frontend/http-client-borrower";
 import { useAsync } from "react-use";
 import { ContractDetailsFooter } from "./contract-details-footer";
-import { ChatDrawer } from "@frontend/nostr-chat";
+import { Chat } from "@frontend/nostr-chat";
 
 export function contractStatusLabelColor(status?: ContractStatus): string {
   if (!status) {
@@ -78,6 +78,7 @@ const EnhancedBitcoinLoan = () => {
   const { getContract } = useBorrowerHttpClient();
   const { id } = useParams();
   const { newChatNotification } = useBorrowerHttpClient();
+  const { user } = useAuth();
 
   const {
     value: contract,
@@ -188,19 +189,30 @@ const EnhancedBitcoinLoan = () => {
 
         {/* Chat section (1/3 width on large screens) */}
         <div className="lg:col-span-1 pb-10">
-          {/*TODO: implement chat*/}
-          {/*<Chat />*/}
-          {contract && (
-            <ChatDrawer
-              contractId={contract.id}
-              counterpartyXPub={contract.lender_xpub}
-              onNewMsgSent={async () => {
+          <Chat
+            contractId={contract?.id}
+            counterpartyNpub={contract?.lender_npub}
+            counterpartyName={contract?.lender.name}
+            personalName={user?.name}
+            onNewMsgSent={async () => {
+              if (contract) {
                 await newChatNotification({
-                  contract_id: contract.id,
+                  contract_id: contract?.id,
                 });
-              }}
-            />
-          )}
+              }
+            }}
+          />
+          {/*{contract && (*/}
+          {/*  <ChatDrawer*/}
+          {/*    contractId={contract.id}*/}
+          {/*    counterpartyNPub={contract.lender_npub}*/}
+          {/*    onNewMsgSent={async () => {*/}
+          {/*      await newChatNotification({*/}
+          {/*        contract_id: contract.id,*/}
+          {/*      });*/}
+          {/*    }}*/}
+          {/*  />*/}
+          {/*)}*/}
         </div>
       </div>
     </div>
