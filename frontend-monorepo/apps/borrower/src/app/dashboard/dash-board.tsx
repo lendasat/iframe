@@ -28,6 +28,7 @@ import type {
   ColumnFilterKey,
 } from "../contracts/contract-details-table";
 import { ContractDetailsTable } from "../contracts/contract-details-table";
+import { MembersGetMemberSection } from "./members-get-members";
 
 interface ContractOverviewProps {
   contracts: Contract[];
@@ -317,6 +318,20 @@ function DashBoard() {
               </Callout.Text>
             </Callout.Root>
           )}
+        </Box>
+
+        {/* Add the Members Get Member section here */}
+        <Box
+          id="members_get_member"
+          gridColumnStart={{
+            initial: "1",
+          }}
+          gridColumnEnd={{
+            initial: "2",
+            sm: "4",
+          }}
+        >
+          <MembersGetMemberSection />
         </Box>
 
         <Box
