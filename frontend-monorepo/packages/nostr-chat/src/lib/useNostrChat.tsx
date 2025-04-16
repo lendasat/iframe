@@ -30,6 +30,7 @@ export interface NostrMessageEvent {
   author: PublicKey;
   content: string;
   createdAt: Timestamp;
+  tags: Tag[]
 }
 
 const RELAYS = [
@@ -50,7 +51,7 @@ interface UseNostrResult {
     content: string,
   ) => Promise<EventId | null>;
   onNewMessage: (
-    callback: (msg: NostrMessageEvent, contractNpub: PublicKey) => void,
+    callback: (msg: NostrMessageEvent) => void,
   ) => void;
   subscribeToMessages: (
     counterpartyNpubString?: string,
@@ -71,7 +72,7 @@ const useNostr = (): UseNostrResult => {
   const relayConnections = useRef<Record<string, Relay>>({});
   const subscriptions = useRef<Record<string, any>>({});
   const onNewMessageCallback =
-    useRef<(msg: NostrMessageEvent, contractNpub: PublicKey) => void | null>(
+    useRef<(msg: NostrMessageEvent) => void | null>(
       null,
     );
   const clientRef = useRef<Client | undefined>(undefined);
@@ -199,8 +200,8 @@ const useNostr = (): UseNostrResult => {
                         content: unwrappedGift.rumor.content,
                         author: counterpartyPubKey,
                         createdAt: unwrappedGift.rumor.createdAt,
+                        tags: unwrappedGift.rumor.tags,
                       },
-                      chatRoom,
                     );
                   } else {
                     console.error(
@@ -281,8 +282,8 @@ const useNostr = (): UseNostrResult => {
               content: content,
               author: personalPublicKey,
               createdAt: Timestamp.now(),
+              tags: [Tag.publicKey(chatRoom)]
             },
-            chatRoom,
           );
         } else {
           console.error("Can't send message if callback is not defined");
@@ -299,13 +300,12 @@ const useNostr = (): UseNostrResult => {
   );
 
   const onNewMessage = useCallback(
-    (callback: (msg: NostrMessageEvent, contractNpub: PublicKey) => void) => {
+    (callback: (msg: NostrMessageEvent) => void) => {
       // We need to adapt the callback to the ref's type
       onNewMessageCallback.current = (
         msg: NostrMessageEvent,
-        contractNpub: PublicKey,
       ) => {
-        callback(msg, contractNpub);
+        callback(msg);
       };
     },
     [],
@@ -364,6 +364,7 @@ const useNostr = (): UseNostrResult => {
                 author: unwrappedGift.rumor.pubkey,
                 content: unwrappedGift.rumor.content,
                 createdAt: unwrappedGift.rumor.createdAt,
+                tags: unwrappedGift.rumor.tags
               });
             }
           } catch (error) {
@@ -374,7 +375,7 @@ const useNostr = (): UseNostrResult => {
 
       if (onNewMessageCallback?.current) {
         for (const event of unwrappedEvents) {
-          onNewMessageCallback.current(event, chatRoom);
+          onNewMessageCallback.current(event);
         }
       } else {
         console.error("Can't send message if callback is not defined");

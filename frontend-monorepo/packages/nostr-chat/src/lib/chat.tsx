@@ -61,8 +61,9 @@ export const Chat = ({
       const fetchedNsec = await getNsec();
       setNsec(fetchedNsec);
       if (contractId) {
-        const fetchedContractNpub = await getPubkeyFromContract(contractId);
-        setContractNpub(fetchedContractNpub);
+        const contracNpubHex = getPubkeyFromContract(contractId);
+        console.log(`Got contract npub hex: ${contracNpubHex}`);
+        setContractNpub(contracNpubHex);
       }
     };
 
@@ -146,6 +147,17 @@ export const Chat = ({
 
   useEffect(() => {
     onNewMessage((msg) => {
+      if (
+        !msg.tags.some((tag) => {
+          return tag.content() === contractNpub;
+        })
+      ) {
+        console.debug(
+          `ignoring message ${msg.tags.map((tag) => tag.content())} but want ${contractNpub}`,
+        );
+        return;
+      }
+
       setMessages((prevMessages) => {
         // Avoid duplicates by ID
         if (prevMessages.some((existingMsg) => existingMsg.id === msg.id)) {
@@ -159,7 +171,7 @@ export const Chat = ({
         return updatedMessages;
       });
     });
-  }, [onNewMessage, setMessages]);
+  }, [onNewMessage, setMessages, contractNpub]);
 
   const handleSendMessage = useCallback(async () => {
     if (isInitialized && counterpartyNpub && contractNpub && newMessage) {
