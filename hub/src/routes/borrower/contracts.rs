@@ -430,25 +430,34 @@ async fn cancel_contract_request(
         });
     }
 
-    // TODO(bonomat): make use of database transaction
+    let mut db_tx = data
+        .db
+        .begin()
+        .await
+        .map_err(|e| Error::database(anyhow!(e)))?;
+
     if contract.status == ContractStatus::RenewalRequested {
         let parent =
             db::contract_extensions::get_parent_by_extended(&data.db, contract_id.as_str())
                 .await
                 .map_err(|e| Error::database(anyhow!(e)))?
                 .ok_or(Error::MissingParentContract(contract_id.clone()))?;
-        db::contracts::cancel_extension(&data.db, parent.as_str())
+        db::contracts::cancel_extension(&mut *db_tx, parent.as_str())
             .await
-        db::contract_extensions::delete_with_parent(&data.db, parent.as_str())
             .map_err(Error::database)?;
+        db::contract_extensions::delete_with_parent(&mut *db_tx, parent.as_str())
             .await
             .map_err(|e| Error::database(anyhow!(e)))?;
     }
 
-    db::contracts::mark_contract_as_cancelled(&data.db, contract_id.as_str())
+    db::contracts::mark_contract_as_cancelled(&mut *db_tx, contract_id.as_str())
         .await
         .map_err(Error::database)?;
 
+    db_tx
+        .commit()
+        .await
+        .map_err(|e| Error::database(anyhow!(e)))?;
 
     Ok(())
 }
@@ -1059,6 +1068,8 @@ async fn map_to_api_contract(
     Ok(contract)
 }
 
+// TODO: This does not properly handle a contract going from `Extended` back to `PrincipalGiven`
+// after the lender rejects an extension request.
 async fn map_timeline(
     contract: &model::Contract,
     transactions: &[LoanTransaction],

@@ -89,6 +89,13 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
             )),
         )
         .route(
+            "/api/contracts/:contract_id/reject-extension",
+            put(put_reject_extension_request).route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                jwt_auth::auth,
+            )),
+        )
+        .route(
             "/api/contracts/:contract_id/principalconfirmed",
             put(put_confirm_repayment).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
@@ -377,6 +384,59 @@ async fn delete_reject_contract(
     {
         tracing::error!("Failed notifying borrower {err:#}");
     }
+
+    Ok(())
+}
+
+/// Reject a contract extension request.
+#[instrument(skip_all, fields(lender_id = user.id, contract_id), err(Debug), ret)]
+async fn put_reject_extension_request(
+    State(data): State<Arc<AppState>>,
+    Path(contract_id): Path<String>,
+    Extension(user): Extension<Lender>,
+) -> Result<(), Error> {
+    let contract = db::contracts::load_contract_by_contract_id_and_lender_id(
+        &data.db,
+        contract_id.as_str(),
+        user.id.as_str(),
+    )
+    .await
+    .map_err(Error::database)?;
+
+    if contract.status != ContractStatus::RenewalRequested {
+        return Err(Error::InvalidRejectRequest {
+            status: contract.status,
+        });
+    }
+
+    let mut db_tx = data
+        .db
+        .begin()
+        .await
+        .map_err(|e| Error::database(anyhow!(e)))?;
+
+    let parent_contract_id =
+        db::contract_extensions::get_parent_by_extended(&data.db, contract_id.as_str())
+            .await
+            .map_err(|e| Error::database(anyhow!(e)))?
+            .ok_or(Error::MissingParentContract(contract_id.clone()))?;
+
+    db::contracts::cancel_extension(&mut *db_tx, &parent_contract_id)
+        .await
+        .map_err(Error::database)?;
+
+    db::contract_extensions::delete_with_parent(&mut *db_tx, &parent_contract_id)
+        .await
+        .map_err(|e| Error::database(anyhow!(e)))?;
+
+    db::contracts::mark_contract_as_cancelled(&mut *db_tx, contract_id.as_str())
+        .await
+        .map_err(Error::database)?;
+
+    db_tx
+        .commit()
+        .await
+        .map_err(|e| Error::database(anyhow!(e)))?;
 
     Ok(())
 }
