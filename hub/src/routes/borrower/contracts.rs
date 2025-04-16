@@ -1278,6 +1278,8 @@ enum Error {
     },
     /// Failed to build contract descriptor.
     CannotBuildDescriptor(String),
+    /// Cannot approve renewal without contract address.
+    MissingContractAddress,
 }
 
 impl Error {
@@ -1400,7 +1402,7 @@ impl IntoResponse for Error {
             Error::InvalidDiscountRate { .. } |
             Error::CreateClaimCollateralPsbt(_) |
             Error::CannotBuildDescriptor(_) |
-            Error::GeoJs(_) => {
+            Error::GeoJs(_) | Error::MissingContractAddress => {
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     "Something went wrong".to_owned(),
@@ -1506,6 +1508,7 @@ impl From<approve_contract::Error> for Error {
             approve_contract::Error::InvalidApproveRequest { status } => {
                 Error::InvalidApproveRequest { status }
             }
+            approve_contract::Error::MissingContractAddress => Error::MissingContractAddress,
         }
     }
 }

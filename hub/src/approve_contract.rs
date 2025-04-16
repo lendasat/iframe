@@ -1,6 +1,7 @@
 use crate::config::Config;
 use crate::db;
 use crate::mempool;
+use crate::mempool::AssociateNewContract;
 use crate::mempool::TrackContractFunding;
 use crate::model::ContractStatus;
 use crate::model::FiatLoanDetailsWrapper;
@@ -34,6 +35,9 @@ pub enum Error {
     /// The contract was in an invalid state
     #[error("The contract was in an invalid state: {status:?}")]
     InvalidApproveRequest { status: ContractStatus },
+    /// Cannot approve renewal without contract address.
+    #[error("Cannot approve renewal without contract address.")]
+    MissingContractAddress,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -67,6 +71,18 @@ pub async fn approve_contract(
         db::contracts::accept_extend_contract_request(db, lender_id, contract.id.as_str())
             .await
             .map_err(Error::Database)?;
+
+        let contract_address = contract
+            .contract_address
+            .ok_or(Error::MissingContractAddress)?
+            .assume_checked();
+
+        mempool_actor
+            .send(AssociateNewContract::new(contract_id, contract_address))
+            .await
+            .expect("actor to be alive")
+            .map_err(Error::TrackContract)?;
+
         return Ok(());
     }
 

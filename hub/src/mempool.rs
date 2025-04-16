@@ -501,6 +501,48 @@ impl xtra::Handler<TrackContractFunding> for Actor {
     }
 }
 
+/// Message to tell the [`Actor`] to change the contract associated with an address that is already
+/// being tracked.
+#[derive(Debug)]
+pub struct AssociateNewContract {
+    contract_id: String,
+    contract_address: Address,
+}
+
+impl AssociateNewContract {
+    pub fn new(contract_id: String, contract_address: Address) -> Self {
+        Self {
+            contract_id,
+            contract_address,
+        }
+    }
+}
+
+impl xtra::Handler<AssociateNewContract> for Actor {
+    type Return = Result<()>;
+
+    async fn handle(
+        &mut self,
+        msg: AssociateNewContract,
+        _: &mut xtra::Context<Self>,
+    ) -> Self::Return {
+        if let Some(tracked_contract) = self.tracked_contracts.get_mut(&msg.contract_address) {
+            let old_contract_id = tracked_contract.contract_id.clone();
+
+            tracked_contract.contract_id = msg.contract_id;
+
+            tracing::debug!(
+                old_contract_id,
+                new_contract_id = tracked_contract.contract_id,
+                collateral_address = %msg.contract_address,
+                "Associated new contract with collateral address"
+            );
+        }
+
+        Ok(())
+    }
+}
+
 /// Message to tell the [`Actor`] to track the status of a collateral-claim transaction.
 #[derive(Debug)]
 pub struct TrackCollateralClaim {

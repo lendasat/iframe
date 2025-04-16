@@ -1171,6 +1171,8 @@ enum Error {
     CannotBuildDescriptor(String),
     /// Can't cancel a contract extension request if the parent does not exist.
     MissingParentContract(String),
+    /// Cannot approve renewal without contract address.
+    MissingContractAddress,
 }
 
 impl Error {
@@ -1231,7 +1233,8 @@ impl IntoResponse for Error {
             | Error::TrackContract(_)
             | Error::MissingBorrower
             | Error::CannotBuildDescriptor(_)
-            | Error::MissingParentContract(_) => (
+            | Error::MissingParentContract(_)
+            | Error::MissingContractAddress => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "Something went wrong".to_owned(),
             ),
@@ -1309,6 +1312,7 @@ impl From<approve_contract::Error> for Error {
             approve_contract::Error::InvalidApproveRequest { status } => {
                 Error::InvalidApproveRequest { status }
             }
+            approve_contract::Error::MissingContractAddress => Error::MissingContractAddress,
         }
     }
 }
