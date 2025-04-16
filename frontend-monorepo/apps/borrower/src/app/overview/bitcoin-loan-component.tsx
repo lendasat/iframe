@@ -101,10 +101,10 @@ const EnhancedBitcoinLoan = () => {
     contract?.status && contractStatusToLabelString(contract.status);
 
   return (
-    <div className="max-w-full mx-4 h-screen overflow-y-auto md:overflow-y-visible pb-10 pt-5">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <div className="max-w-full mx-4 overflow-y-auto md:overflow-y-visible pb-20 pt-5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-[700px]">
         {/* Main loan details (2/3 width on large screens) */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 h-full">
           <Card className="shadow-md h-full flex flex-col">
             <CardHeader className="pb-2 flex-shrink-0">
               <div className="flex justify-between items-start">
@@ -130,7 +130,7 @@ const EnhancedBitcoinLoan = () => {
                     contract?.status != ContractStatus.Cancelled &&
                     contract?.status != ContractStatus.Closed &&
                     contract?.liquidation_status ===
-                      LiquidationStatus.Healthy && (
+                    LiquidationStatus.Healthy && (
                       <div className="flex items-center text-sm text-green-600">
                         <LuCircleCheck className="h-4 w-4 mr-1" />
                         <span>Healthy</span>
@@ -138,18 +138,18 @@ const EnhancedBitcoinLoan = () => {
                     )}
                   {contract?.liquidation_status ===
                     LiquidationStatus.FirstMarginCall && (
-                    <div className="flex items-center text-sm text-orange-600">
-                      <LuCircleCheck className="h-4 w-4 mr-1" />
-                      <span>Margin Call</span>
-                    </div>
-                  )}
+                      <div className="flex items-center text-sm text-orange-600">
+                        <LuCircleCheck className="h-4 w-4 mr-1" />
+                        <span>Margin Call</span>
+                      </div>
+                    )}
                   {contract?.liquidation_status ===
                     LiquidationStatus.SecondMarginCall && (
-                    <div className="flex items-center text-sm text-red-600">
-                      <LuCircleCheck className="h-4 w-4 mr-1" />
-                      <span>2nd Margin Call</span>
-                    </div>
-                  )}
+                      <div className="flex items-center text-sm text-red-600">
+                        <LuCircleCheck className="h-4 w-4 mr-1" />
+                        <span>2nd Margin Call</span>
+                      </div>
+                    )}
                 </div>
               </div>
             </CardHeader>
@@ -159,7 +159,7 @@ const EnhancedBitcoinLoan = () => {
               className="w-full flex-grow flex flex-col"
             >
               <div className="px-4 flex-shrink-0">
-                <TabsList className="grid grid-cols-3 mb-2">
+                <TabsList className="grid grid-cols-3">
                   <TabsTrigger value="details">Loan Details</TabsTrigger>
                   <TabsTrigger value="collateral">Collateral</TabsTrigger>
                   <TabsTrigger value="timeline">Timeline</TabsTrigger>
@@ -188,31 +188,22 @@ const EnhancedBitcoinLoan = () => {
         </div>
 
         {/* Chat section (1/3 width on large screens) */}
-        <div className="lg:col-span-1 pb-10">
-          <Chat
-            contractId={contract?.id}
-            counterpartyNpub={contract?.lender_npub}
-            counterpartyName={contract?.lender.name}
-            personalName={user?.name}
-            onNewMsgSent={async () => {
-              if (contract) {
-                await newChatNotification({
-                  contract_id: contract?.id,
-                });
-              }
-            }}
-          />
-          {/*{contract && (*/}
-          {/*  <ChatDrawer*/}
-          {/*    contractId={contract.id}*/}
-          {/*    counterpartyNPub={contract.lender_npub}*/}
-          {/*    onNewMsgSent={async () => {*/}
-          {/*      await newChatNotification({*/}
-          {/*        contract_id: contract.id,*/}
-          {/*      });*/}
-          {/*    }}*/}
-          {/*  />*/}
-          {/*)}*/}
+        <div className="lg:col-span-1 h-full">
+          <Card className="h-full flex flex-col flex-grow overflow-y-auto">
+            <Chat
+              contractId={contract?.id}
+              counterpartyNpub={contract?.lender_npub}
+              counterpartyName={contract?.lender.name}
+              personalName={user?.name}
+              onNewMsgSent={async () => {
+                if (contract) {
+                  await newChatNotification({
+                    contract_id: contract?.id,
+                  });
+                }
+              }}
+            />
+          </Card>
         </div>
       </div>
     </div>

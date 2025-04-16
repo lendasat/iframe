@@ -254,9 +254,6 @@ const useNostr = (): UseNostrResult => {
           content,
           [Tag.publicKey(chatRoom)],
         );
-        console.log(
-          `message sent to ${personalPublicKey.toBech32()} with id ${personalDm.id.toBech32()}`,
-        );
 
         const counterpartyPubKey = PublicKey.parse(receiver);
 
@@ -264,9 +261,6 @@ const useNostr = (): UseNostrResult => {
           counterpartyPubKey,
           content,
           [Tag.publicKey(chatRoom)],
-        );
-        console.log(
-          `message sent to ${counterpartyPubKey.toBech32()} with id ${newVar.id.toBech32()}`,
         );
 
         if (onNewMessageCallback?.current) {

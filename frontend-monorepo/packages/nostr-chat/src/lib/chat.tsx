@@ -1,5 +1,11 @@
 import { LuLoader, LuSend } from "react-icons/lu";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Avatar,
   AvatarFallback,
@@ -33,7 +39,9 @@ export const Chat = ({
 }: ChatProps) => {
   const [nsec, setNsec] = useState<string | undefined>();
   const [contractNpub, setContractNpub] = useState<string | undefined>();
-  const [messages, setMessages] = useState<NostrMessageEvent[]>([]);
+  const [messagesMap, setMessagesMap] = useState<
+    Map<string, NostrMessageEvent>
+  >(new Map());
   const [newMessage, setNewMessage] = useState("");
   const [isInitialized, setIsInitialized] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -98,7 +106,7 @@ export const Chat = ({
 
       return () => {
         isMounted = false;
-        console.debug("Unsubscribing from fetching messages (cleanup)");
+        console.debug("Unsubscribing from fetching messagesMap (cleanup)");
         setHasFetched(false);
       };
     }
@@ -123,7 +131,7 @@ export const Chat = ({
         isMounted = false;
         if (unsubscribeMessages.current) {
           unsubscribeMessages.current();
-          console.debug("Unsubscribing from messages (cleanup)");
+          console.debug("Unsubscribing from messagesMap (cleanup)");
           setIsSubscribed(false);
         }
       };
@@ -143,7 +151,7 @@ export const Chat = ({
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, scrollToBottom]);
+  }, [messagesMap, scrollToBottom]);
 
   useEffect(() => {
     onNewMessage((msg) => {
@@ -152,26 +160,31 @@ export const Chat = ({
           return tag.content() === contractNpub;
         })
       ) {
-        console.debug(
-          `ignoring message ${msg.tags.map((tag) => tag.content())} but want ${contractNpub}`,
-        );
+        // ignoring as not relevant for us
         return;
       }
 
-      setMessages((prevMessages) => {
-        // Avoid duplicates by ID
-        if (prevMessages.some((existingMsg) => existingMsg.id === msg.id)) {
-          return prevMessages;
-        }
-        const updatedMessages = [...prevMessages, msg];
-        // Sort by timestamp (createdAt) in ascending order
-        updatedMessages.sort(
+      setMessagesMap((prevMap) => {
+        // Create a new Map to avoid mutating state
+        const newMap = new Map(prevMap);
+
+        // Add the new message (automatically overwrites if ID exists)
+        newMap.set(msg.id.toBech32(), msg);
+
+        // Get sorted array of messages
+        const sortedMessages = Array.from(newMap.values()).sort(
           (a, b) => a.createdAt.asSecs() - b.createdAt.asSecs(),
         );
-        return updatedMessages;
+
+        // Create a new map from the sorted messages
+        const map = sortedMessages.map(
+          (message) =>
+            [message.id.toBech32(), message] as [string, NostrMessageEvent],
+        );
+        return new Map(map);
       });
     });
-  }, [onNewMessage, setMessages, contractNpub]);
+  }, [onNewMessage, setMessagesMap, contractNpub]);
 
   const handleSendMessage = useCallback(async () => {
     if (isInitialized && counterpartyNpub && contractNpub && newMessage) {
@@ -190,6 +203,14 @@ export const Chat = ({
     onNewMsgSent,
   ]);
 
+  const messages = useMemo(
+    () =>
+      Array.from(messagesMap.values()).sort(
+        (a, b) => a.createdAt.asSecs() - b.createdAt.asSecs(),
+      ),
+    [messagesMap],
+  );
+
   return (
     <Card className="shadow-md h-full flex flex-col">
       <CardHeader className="pb-2">
@@ -197,7 +218,7 @@ export const Chat = ({
         <CardDescription>Chat with the other party</CardDescription>
       </CardHeader>
       <CardContent className="flex-grow overflow-hidden p-0">
-        <ScrollArea className="h-[400px] p-4" ref={messagesEndRef}>
+        <ScrollArea className="h-[500px] p-4" ref={messagesEndRef}>
           {messages.map((msg) => (
             <div
               key={msg.id.toBech32()}
