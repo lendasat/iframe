@@ -30,9 +30,11 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarFooter,
 } from "@frontend/shadcn";
 import { NavMain } from "./nav-main";
 import { getPreferredTheme, useTheme } from "@frontend/ui-shared";
+import { NavFooter } from "./nav-footer";
 
 const lowMenuItems = [
   {
@@ -104,41 +106,6 @@ export function AppSidebar({ onLogout, username }: AppSidebarProps) {
               side="top"
               className="w-[--radix-popper-anchor-width]"
             >
-              <DropdownMenuGroup>
-                <DropdownMenuLabel>Settings</DropdownMenuLabel>
-                <Link to="/settings/profile">
-                  <DropdownMenuItem className="cursor-pointer">
-                    <User />
-                    <span>Profile</span>
-                  </DropdownMenuItem>
-                </Link>
-                <Link to="/settings/wallet">
-                  <DropdownMenuItem className="cursor-pointer">
-                    <Wallet />
-                    <span>Wallet</span>
-                  </DropdownMenuItem>
-                </Link>
-                <Link to="/settings/notifications">
-                  <DropdownMenuItem className="cursor-pointer">
-                    <Bell />
-                    <span>Notifications</span>
-                  </DropdownMenuItem>
-                </Link>
-                <Link to="/settings/chat">
-                  <DropdownMenuItem className="cursor-pointer">
-                    <MessageCircle />
-                    <span>Nostr chat</span>
-                  </DropdownMenuItem>
-                </Link>
-                <Link to="/settings/version">
-                  <DropdownMenuItem className="cursor-pointer">
-                    <Code />
-                    <span>Version</span>
-                  </DropdownMenuItem>
-                </Link>
-                <ThemeSwitch />
-              </DropdownMenuGroup>
-              <DropdownMenuSeparator />
               <DropdownMenuItem className="cursor-pointer" onClick={onLogout}>
                 <LogOut />
                 <span>Log out</span>
@@ -199,6 +166,10 @@ export function AppSidebar({ onLogout, username }: AppSidebarProps) {
           </SidebarGroup>
         ))}
       </SidebarContent>
+
+      <SidebarFooter>
+        <NavFooter />
+      </SidebarFooter>
     </Sidebar>
   );
 }
