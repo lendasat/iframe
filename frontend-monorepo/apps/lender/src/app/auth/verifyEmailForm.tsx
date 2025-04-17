@@ -17,6 +17,9 @@ function VerifyEmailForm() {
     <EmailVerificationForm
       handleVerification={handleVerification}
       initialVerificationCode={token || ""}
+      onBack={() => navigate(-1)}
+      loginLink={"/login"}
+      waitlistLink={"/waitlist"}
     />
   );
 }

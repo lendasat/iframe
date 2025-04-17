@@ -25,3 +25,5 @@ export * from "./components/ui/collapsible";
 export * from "./components/ui/switch";
 export * from "./components/ui/toggle";
 export * from "./lib/utils";
+export * from "./components/registration-form";
+export * from "./components/email-verification-form";

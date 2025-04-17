@@ -54,6 +54,8 @@ function Registration() {
     <RegistrationForm
       handleRegister={handleRegister}
       referralCode={referralCode}
+      waitlistLink={"/waitlist"}
+      loginLink={"/login"}
     />
   );
 }
