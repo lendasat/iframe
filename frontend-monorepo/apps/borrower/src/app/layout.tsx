@@ -45,13 +45,10 @@ export interface User {
 }
 
 const App = ({ children }: AppProps) => {
-
   return (
     <>
       <main className="dark:from-dark dark:to-dark relative flex h-screen w-full flex-col overflow-hidden bg-gradient-to-tr from-[#FBFAF8] to-pink-700/5">
-        <Box className="dark:bg-dark flex-1 lg:rounded-tl-2xl">
-          {children}
-        </Box>
+        <Box className="dark:bg-dark flex-1 lg:rounded-tl-2xl">{children}</Box>
       </main>
     </>
   );
