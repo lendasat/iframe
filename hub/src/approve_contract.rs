@@ -13,6 +13,9 @@ use std::sync::Arc;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
+    /// Missing contract.
+    #[error("Missing contract: {0}")]
+    MissingContract(String),
     /// Failed to interact with the database.
     #[error("Failed to interact with the database.")]
     Database(#[source] anyhow::Error),
@@ -57,7 +60,8 @@ pub async fn approve_contract(
         lender_id,
     )
     .await
-    .map_err(Error::Database)?;
+    .map_err(Error::Database)?
+    .ok_or_else(|| Error::MissingContract(contract_id.clone()))?;
 
     if contract.status != ContractStatus::Requested
         && contract.status != ContractStatus::RenewalRequested

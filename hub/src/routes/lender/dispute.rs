@@ -100,7 +100,14 @@ pub(crate) async fn create_dispute(
             message: format!("Database error: {}", error),
         };
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+    })?
+    .ok_or_else(|| {
+        let error_response = ErrorResponse {
+            message: format!("Missing contract: {}", body.contract_id),
+        };
+        (StatusCode::BAD_REQUEST, Json(error_response))
     })?;
+
     let dispute = db::dispute::load_disputes_by_lender_and_contract_id(
         &data.db,
         user.id.as_str(),

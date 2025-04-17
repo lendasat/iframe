@@ -1280,6 +1280,8 @@ enum Error {
     CannotBuildDescriptor(String),
     /// Cannot approve renewal without contract address.
     MissingContractAddress,
+    /// Missing contract.
+    MissingContract(String),
 }
 
 impl Error {
@@ -1378,117 +1380,117 @@ impl IntoResponse for Error {
 
         let (status, message) = match self {
             Error::JsonRejection(rejection) => {
-                (rejection.status(), rejection.body_text())
-            }
+                        (rejection.status(), rejection.body_text())
+                    }
             Error::Database(_) |
-            Error::MissingLoanOffer { .. } |
-            Error::MissingLender |
-            Error::MoonCardGeneration(_) |
-            Error::MoonInvoiceGeneration(_) |
-            Error::BitMexPrice(_) |
-            Error::InitialCollateralCalculation(_) |
-            Error::MissingOriginationFee |
-            Error::OriginationFeeCalculation(_) |
-            Error::MissingContractIndex |
-            Error::MissingCollateralAddress |
-            Error::ContractAddress(_) |
-            Error::MissingBorrower |
-            Error::TrackContract(_) |
-            Error::MissingCollateralOutputs |
-            Error::TrackClaimTx(_) |
-            Error::PostClaimTx(_) |
-            Error::InterestRateCalculation(_) |
-            Error::MissingParentContract(_) |
-            Error::InvalidDiscountRate { .. } |
-            Error::CreateClaimCollateralPsbt(_) |
-            Error::CannotBuildDescriptor(_) |
-            Error::GeoJs(_) | Error::MissingContractAddress => {
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            },
+                    Error::MissingLoanOffer { .. } |
+                    Error::MissingLender |
+                    Error::MoonCardGeneration(_) |
+                    Error::MoonInvoiceGeneration(_) |
+                    Error::BitMexPrice(_) |
+                    Error::InitialCollateralCalculation(_) |
+                    Error::MissingOriginationFee |
+                    Error::OriginationFeeCalculation(_) |
+                    Error::MissingContractIndex |
+                    Error::MissingCollateralAddress |
+                    Error::ContractAddress(_) |
+                    Error::MissingBorrower |
+                    Error::TrackContract(_) |
+                    Error::MissingCollateralOutputs |
+                    Error::TrackClaimTx(_) |
+                    Error::PostClaimTx(_) |
+                    Error::InterestRateCalculation(_) |
+                    Error::MissingParentContract(_) |
+                    Error::InvalidDiscountRate { .. } |
+                    Error::CreateClaimCollateralPsbt(_) |
+                    Error::CannotBuildDescriptor(_) |
+                    Error::GeoJs(_) | Error::MissingContractAddress => {
+                        (
+                            StatusCode::INTERNAL_SERVER_ERROR,
+                            "Something went wrong".to_owned(),
+                        )
+                    },
             Error::MissingBorrowerLoanAddress => (
-                StatusCode::BAD_REQUEST,
-                "Failed to provide borrower loan address for stablecoin loan".to_owned(),
-            ),
+                        StatusCode::BAD_REQUEST,
+                        "Failed to provide borrower loan address for stablecoin loan".to_owned(),
+                    ),
             Error::InvalidMoonLoanRequest { asset } => (
-                StatusCode::BAD_REQUEST,
-                format!(
-                    "Cannot create loan request for Moon card with asset {asset:?}. \
+                        StatusCode::BAD_REQUEST,
+                        format!(
+                            "Cannot create loan request for Moon card with asset {asset:?}. \
                      Moon only supports USDC on Polygon"
-                ),
-            ),
+                        ),
+                    ),
             Error::CannotTopUpNonexistentCard => {
-                (StatusCode::NOT_FOUND, "Card not found".to_owned())
-            }
+                        (StatusCode::NOT_FOUND, "Card not found".to_owned())
+                    }
             Error::CannotTopUpOverLimit {
-                current_balance,
-                loan_amount,
-                limit,
-            } => (
-                StatusCode::BAD_REQUEST,
-                format!(
-                    "Invalid Moon card top-up request: current balance ({current_balance}) \
+                        current_balance,
+                        loan_amount,
+                        limit,
+                    } => (
+                        StatusCode::BAD_REQUEST,
+                        format!(
+                            "Invalid Moon card top-up request: current balance ({current_balance}) \
                      + loan amount ({loan_amount}) > limit ({limit})"
-                ),
-            ),
+                        ),
+                    ),
             Error::CannotTopUpMoonCardWithoutIp => (
-                StatusCode::UNAVAILABLE_FOR_LEGAL_REASONS,
-                "Request IP required".to_owned(),
-            ),
+                        StatusCode::UNAVAILABLE_FOR_LEGAL_REASONS,
+                        "Request IP required".to_owned(),
+                    ),
             Error::CannotTopUpMoonCardFromUs => (
-                StatusCode::UNAVAILABLE_FOR_LEGAL_REASONS,
-                "Cannot top up Moon card from the US".to_owned(),
-            ),
-
+                        StatusCode::UNAVAILABLE_FOR_LEGAL_REASONS,
+                        "Cannot top up Moon card from the US".to_owned(),
+                    ),
             Error::InvalidCancelRequest { status } => (
-                StatusCode::BAD_REQUEST,
-                format!("Cannot cancel a contract request with status {status:?}"),
-            ),
+                        StatusCode::BAD_REQUEST,
+                        format!("Cannot cancel a contract request with status {status:?}"),
+                    ),
             Error::PrincipalNotRepaid => (
-                StatusCode::BAD_REQUEST,
-                "Cannot claim collateral until loan has been repaid".to_owned(),
-            ),
-
+                        StatusCode::BAD_REQUEST,
+                        "Cannot claim collateral until loan has been repaid".to_owned(),
+                    ),
             Error::ParseClaimTx(_) => {
-                (
-                    StatusCode::BAD_REQUEST,
-                    "Failed to parse signed claim TX".to_owned(),
-                )
-            }
-
+                        (
+                            StatusCode::BAD_REQUEST,
+                            "Failed to parse signed claim TX".to_owned(),
+                        )
+                    }
             Error::NotYourContract => (StatusCode::NOT_FOUND, "Contract not found".to_owned()),
             Error::LoanOfferLenderMismatch => (
-                StatusCode::BAD_REQUEST,
-                "Offer cannot be from a different lender".to_owned(),
-            ),
-
+                        StatusCode::BAD_REQUEST,
+                        "Offer cannot be from a different lender".to_owned(),
+                    ),
             Error::InvalidApproveRequest { status } => (
-                StatusCode::BAD_REQUEST,
-                format!("Cannot cancel a contract request with status {status:?}"),
-            ),
+                        StatusCode::BAD_REQUEST,
+                        format!("Cannot cancel a contract request with status {status:?}"),
+                    ),
             Error::MissingFiatLoanDetails => (
-                StatusCode::BAD_REQUEST,
-                "Failed to provide bank details for fiat loan".to_owned(),
-            ),
+                        StatusCode::BAD_REQUEST,
+                        "Failed to provide bank details for fiat loan".to_owned(),
+                    ),
             Error::FiatLoanWithoutFiatAsset { asset } => (
-                StatusCode::BAD_REQUEST,
-                format!("Cannot create fiat contract with asset: {asset:?}"),
-            ),
+                        StatusCode::BAD_REQUEST,
+                        format!("Cannot create fiat contract with asset: {asset:?}"),
+                    ),
             Error::InvalidLoanAmount {
-                amount,
-                loan_amount_min,
-                loan_amount_max,
-            } => (
-                StatusCode::BAD_REQUEST,
-                format!("Invalid loan amount: ${amount} not in range ${loan_amount_min}-${loan_amount_max}"),
-            ),
+                        amount,
+                        loan_amount_min,
+                        loan_amount_max,
+                    } => (
+                        StatusCode::BAD_REQUEST,
+                        format!("Invalid loan amount: ${amount} not in range ${loan_amount_min}-${loan_amount_max}"),
+                    ),
             Error::InvalidLoanDuration { duration_days, duration_days_min, duration_days_max } => (
-                StatusCode::BAD_REQUEST,
-                format!("Invalid loan duration: {duration_days} days not in range {duration_days_min}-{duration_days_max}"),
-            ),
-        };
+                        StatusCode::BAD_REQUEST,
+                        format!("Invalid loan duration: {duration_days} days not in range {duration_days_min}-{duration_days_max}"),
+                    ),
+            Error::MissingContract(contract_id) => (
+                        StatusCode::BAD_REQUEST,
+                        format!("Missing contract: {contract_id}"),
+                    ),
+            };
 
         (status, AppJson(ErrorResponse { message })).into_response()
     }
@@ -1509,6 +1511,9 @@ impl From<approve_contract::Error> for Error {
                 Error::InvalidApproveRequest { status }
             }
             approve_contract::Error::MissingContractAddress => Error::MissingContractAddress,
+            approve_contract::Error::MissingContract(contract_id) => {
+                Error::MissingContract(contract_id)
+            }
         }
     }
 }

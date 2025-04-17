@@ -233,7 +233,8 @@ async fn get_contract(
         user.id.as_str(),
     )
     .await
-    .map_err(Error::database)?;
+    .map_err(Error::database)?
+    .ok_or_else(|| Error::MissingContract(contract_id))?;
 
     let contract = map_to_api_contract(&data, contract).await?;
 
@@ -284,7 +285,8 @@ async fn put_principal_given(
             &user.id,
         )
         .await
-        .context("Failed to load contract request")?;
+        .context("Failed to load contract request")?
+        .context("Missing contract")?;
 
         db::contracts::mark_contract_as_principal_given(
             &data.db,
@@ -401,7 +403,8 @@ async fn put_reject_extension_request(
         user.id.as_str(),
     )
     .await
-    .map_err(Error::database)?;
+    .map_err(Error::database)?
+    .ok_or_else(|| Error::MissingContract(contract_id.clone()))?;
 
     if contract.status != ContractStatus::RenewalRequested {
         return Err(Error::InvalidRejectRequest {
@@ -454,7 +457,8 @@ async fn put_confirm_repayment(
             &user.id,
         )
         .await
-        .context("Failed to load contract request")?;
+        .context("Failed to load contract request")?
+        .context("Missing contract")?;
 
         db::contracts::mark_contract_as_repayment_confirmed(&data.db, contract.id.as_str())
             .await
@@ -522,6 +526,12 @@ async fn get_liquidation_to_bitcoin_psbt(
             message: format!("Database error: {e:#}"),
         };
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+    })?
+    .ok_or_else(|| {
+        let error_response = ErrorResponse {
+            message: format!("Missing contract: {contract_id}"),
+        };
+        (StatusCode::BAD_REQUEST, Json(error_response))
     })?;
 
     if !matches!(
@@ -653,6 +663,12 @@ async fn post_build_liquidation_to_stablecoin_psbt(
             StatusCode::INTERNAL_SERVER_ERROR,
             format!("Database error: {e:#}").as_str(),
         )
+    })?
+    .ok_or_else(|| {
+        let error_response = ErrorResponse {
+            message: format!("Missing contract: {contract_id}"),
+        };
+        (StatusCode::BAD_REQUEST, Json(error_response))
     })?;
 
     if !matches!(
@@ -829,7 +845,8 @@ async fn post_liquidation_tx(
             &user.id,
         )
         .await
-        .context("Contract not found")?;
+        .context("Failed to load contract")?
+        .context("Missing contract")?;
 
         let borrower = db::borrowers::get_user_by_id(&data.db, contract.borrower_id.as_str())
             .await?
@@ -903,6 +920,12 @@ async fn get_manual_recovery_psbt(
             message: format!("Database error: {e:#}"),
         };
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+    })?
+    .ok_or_else(|| {
+        let error_response = ErrorResponse {
+            message: format!("Missing contract: {contract_id}"),
+        };
+        (StatusCode::BAD_REQUEST, Json(error_response))
     })?;
 
     let ManualCollateralRecovery { lender_amount, .. } =
@@ -1138,6 +1161,8 @@ async fn map_to_api_contract(
 /// All the errors related to the `contracts` REST API.
 #[derive(Debug)]
 enum Error {
+    /// Missing contract.
+    MissingContract(String),
     /// The request body contained invalid JSON.
     JsonRejection(JsonRejection),
     /// Failed to interact with the database.
@@ -1242,18 +1267,20 @@ impl IntoResponse for Error {
                 StatusCode::BAD_REQUEST,
                 "Offer cannot be from a different lender".to_owned(),
             ),
-
             Error::MissingFiatLoanDetails => (
                 StatusCode::BAD_REQUEST,
                 "Cannot approve without fiat loan details".to_owned(),
             ),
-
             Error::InvalidApproveRequest { .. } => {
                 (StatusCode::BAD_REQUEST, "Cannot approve request".to_owned())
             }
             Error::InvalidRejectRequest { .. } => {
                 (StatusCode::BAD_REQUEST, "Cannot reject request".to_owned())
             }
+            Error::MissingContract(contract_id) => (
+                StatusCode::BAD_REQUEST,
+                format!("Contract does not exist: {contract_id}"),
+            ),
         };
 
         (status, AppJson(ErrorResponse { message })).into_response()
@@ -1313,6 +1340,9 @@ impl From<approve_contract::Error> for Error {
                 Error::InvalidApproveRequest { status }
             }
             approve_contract::Error::MissingContractAddress => Error::MissingContractAddress,
+            approve_contract::Error::MissingContract(contract_id) => {
+                Error::MissingContract(contract_id)
+            }
         }
     }
 }
