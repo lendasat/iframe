@@ -53,6 +53,7 @@ import { downloadContractBackup } from "./download-contract-backup";
 import LoanPrincipalStablecoinPayout from "./pay-loan-principal-stablecoin";
 import { FiatLoanDetails } from "@frontend/base-http-client";
 import RepaymentDetailsFiat from "./pay-loan-principal-fiat";
+import { Chat } from "@frontend/nostr-chat";
 
 function ContractDetailsOverview() {
   const { innerHeight } = window;
@@ -103,7 +104,7 @@ interface DetailsProps {
 
 function ContractDetails({ contract }: DetailsProps) {
   const { startDispute, newChatNotification } = useLenderHttpClient();
-  const { backendVersion } = useAuth();
+  const { backendVersion, user } = useAuth();
 
   const [info, setInfo] = useState("");
   const [error, setError] = useState("");
@@ -206,7 +207,9 @@ function ContractDetails({ contract }: DetailsProps) {
     <Grid className="md:grid-cols-2">
       <ChatDrawer
         contractId={contract.id}
-        counterpartyNPub={contract.borrower_npub}
+        counterpartyNpub={contract.borrower_npub}
+        counterpartyName={contract?.borrower.name}
+        personalName={user?.name}
         onNewMsgSent={async () => {
           await newChatNotification({
             contract_id: contract.id,

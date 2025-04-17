@@ -59,6 +59,7 @@ export const Details = ({ contract }: DetailsProps) => {
   const interestRate = contract?.interest_rate
     ? `${(contract.interest_rate * 100).toFixed(2)}%`
     : undefined;
+  const interestAmount = contract?.interest;
   const lenderName = contract?.lender.name;
   const lenderNameInitials = lenderName?.substr(0, 2);
 
@@ -71,6 +72,11 @@ export const Details = ({ contract }: DetailsProps) => {
       console.error("Failed to copy text: ", err);
     }
   };
+
+  // Simple skeleton component for loading state
+  const Skeleton = ({ className }: { className: string }) => (
+    <div className={`bg-gray-200 rounded animate-pulse ${className}`}></div>
+  );
 
   return (
     <CardContent className="pt-2">
@@ -118,72 +124,203 @@ export const Details = ({ contract }: DetailsProps) => {
 
       <Separator className="my-4" />
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        <div>
-          <p className="text-sm text-gray-500">Loan Amount</p>
-          {loanAmount ? (
-            <p className="text-xl font-bold">{loanAmount}</p>
-          ) : (
-            <Skeleton className="h-4 w-[150px] mb-2" />
-          )}
-
-          {loanAsset ? (
-            <p className="text-xs text-gray-500">{loanAsset}</p>
-          ) : (
-            <Skeleton className="h-4 w-[150px] mb-2" />
-          )}
-        </div>
-        <div>
-          <p className="text-sm text-gray-500">Duration</p>
-          {loanDuration ? (
-            <p>{loanDuration}</p>
-          ) : (
-            <Skeleton className="h-4 w-[150px] mb-2" />
-          )}
-        </div>
-        <div className="text-right md:col-span-1 col-span-2">
-          <p className="text-sm text-gray-500">Expiry</p>
-          {loanExpiryFormatted ? (
-            <p>{loanExpiryFormatted}</p>
-          ) : (
-            <Skeleton className="h-4 w-[150px] mb-2 ml-auto" />
-          )}
-          <div className="flex justify-end items-center text-xs text-gray-500">
-            <LuClock className="h-3 w-3 mr-1" />
-            {loanDurationRemaining ? (
-              <span>{loanDurationRemaining}</span>
-            ) : (
-              <Skeleton className="h-4 w-[50px]" />
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-2 gap-4  mt-4">
-        <div>
-          <p className="text-sm text-gray-500">Origination Fee</p>
-          {originationFee ? (
-            <div className={"flex items-center gap-3"}>
-              <p>BTC</p>
-              <p className={"font-mono"}>{originationFee}</p>
-            </div>
-          ) : (
-            <Skeleton className="h-4 w-[150px] mb-2" />
-          )}
-        </div>
-        <div className="text-right md:col-span-1 col-span-2">
-          <p className="text-sm text-gray-500">Interest Rate</p>
-          {interestRate ? (
-            <p>{interestRate}</p>
-          ) : (
-            <Skeleton className="h-4 w-[150px] mb-2" />
-          )}
-        </div>
-      </div>
+      <LoanDetails
+        loanAsset={loanAsset}
+        originationFee={originationFee}
+        loanAmount={loanAmount}
+        loanDuration={loanDuration}
+        loanDurationRemaining={loanDurationRemaining}
+        interestRate={interestRate}
+        interestAmount={interestAmount}
+        loanExpiryFormatted={loanExpiryFormatted}
+      />
 
       <Separator className="my-4" />
 
       <LoanStatusInformation contract={contract} />
     </CardContent>
+  );
+};
+
+interface LoanDetailsProps {
+  loanAmount?: string;
+  loanAsset?: string;
+  loanDuration?: string;
+  loanExpiryFormatted?: string;
+  loanDurationRemaining?: string;
+  originationFee?: string;
+  interestRate?: string;
+  interestAmount?: number;
+}
+
+// Main component with typed props
+const LoanDetails: React.FC<LoanDetailsProps> = ({
+  loanAmount,
+  loanAsset,
+  loanDuration,
+  loanExpiryFormatted,
+  loanDurationRemaining,
+  originationFee,
+  interestRate,
+  interestAmount,
+}) => {
+  // Component now split into mobile and desktop layouts
+  return (
+    <>
+      {/* Mobile layout - visible only on small screens */}
+      <div className="sm:hidden">
+        <div className="space-y-4">
+          {/* Loan Amount */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm text-gray-500">Loan Amount</p>
+              {loanAmount ? (
+                <p className={"text-xl font-bold"}>{loanAmount}</p>
+              ) : (
+                <Skeleton className="h-4 w-[80px] mb-2" />
+              )}
+              {loanAsset ? (
+                <p className="text-xs text-gray-500">{loanAsset}</p>
+              ) : (
+                <Skeleton className="h-4 w-[150px] mb-2" />
+              )}
+            </div>
+            <div className="text-right">
+              <p className="text-sm text-gray-500">Interest Rate</p>
+              {interestRate ? (
+                <p>{interestRate} p.a.</p>
+              ) : (
+                <Skeleton className="h-4 w-[80px] mb-2 ml-auto" />
+              )}
+              {interestAmount ? (
+                <p className="text-xs text-gray-500">
+                  {formatCurrency(interestAmount)}
+                </p>
+              ) : (
+                <Skeleton className="h-4 w-[150px] mb-2" />
+              )}
+            </div>
+          </div>
+
+          {/* Expiry */}
+          <div className="grid grid-cols-2">
+            <div>
+              <p className="text-sm text-gray-500">Expiry</p>
+              {loanExpiryFormatted ? (
+                <p className="whitespace-nowrap">{loanExpiryFormatted}</p>
+              ) : (
+                <Skeleton className="h-4 w-[150px] mb-2" />
+              )}
+              <div className="flex items-center text-xs text-gray-500">
+                <LuClock className="h-3 w-3 mr-1" />
+                {loanDurationRemaining ? (
+                  <span>{loanDurationRemaining}</span>
+                ) : (
+                  <Skeleton className="h-3 w-[50px]" />
+                )}
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-sm text-gray-500">Duration</p>
+              {loanDuration ? (
+                <p>{loanDuration}</p>
+              ) : (
+                <Skeleton className="h-4 w-[80px] mb-2 ml-auto" />
+              )}
+            </div>
+          </div>
+
+          {/* Origination Fee */}
+          <div>
+            <p className="text-sm text-gray-500">Origination Fee</p>
+            {originationFee ? (
+              <div className="flex items-center gap-3">
+                <p className="font-mono">{originationFee}</p>
+              </div>
+            ) : (
+              <Skeleton className="h-4 w-[150px] mb-2" />
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop layout - visible on sm screens and up */}
+      <div className="hidden sm:block">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-sm text-gray-500">Loan Amount</p>
+            {loanAmount ? (
+              <p className="text-xl font-bold">{loanAmount}</p>
+            ) : (
+              <Skeleton className="h-4 w-[150px] mb-2" />
+            )}
+
+            {loanAsset ? (
+              <p className="text-xs text-gray-500">{loanAsset}</p>
+            ) : (
+              <Skeleton className="h-4 w-[150px] mb-2" />
+            )}
+          </div>
+          <div className="text-right md:col-span-1 col-span-2">
+            <div>
+              <p className="text-sm text-gray-500">Interest Rate</p>
+              {interestRate ? (
+                <p>{interestRate} p.a.</p>
+              ) : (
+                <Skeleton className="h-4 w-[150px] mb-2" />
+              )}
+
+              {interestAmount ? (
+                <p className="text-xs text-gray-500">
+                  {formatCurrency(interestAmount)}
+                </p>
+              ) : (
+                <Skeleton className="h-4 w-[150px] mb-2" />
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 mt-4">
+          <div>
+            <p className="text-sm text-gray-500">Duration</p>
+            {loanDuration ? (
+              <p>{loanDuration}</p>
+            ) : (
+              <Skeleton className="h-4 w-[150px] mb-2" />
+            )}
+          </div>
+          <div className="text-right md:col-span-1 col-span-2">
+            <p className="text-sm text-gray-500">Expiry</p>
+            {loanExpiryFormatted ? (
+              <p>{loanExpiryFormatted}</p>
+            ) : (
+              <Skeleton className="h-4 w-[150px] mb-2 ml-auto" />
+            )}
+            <div className="flex justify-end items-center text-xs text-gray-500">
+              <LuClock className="h-3 w-3 mr-1" />
+              {loanDurationRemaining ? (
+                <span>{loanDurationRemaining}</span>
+              ) : (
+                <Skeleton className="h-4 w-[50px]" />
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-2 gap-4 mt-4">
+          <div>
+            <p className="text-sm text-gray-500">Origination Fee</p>
+            {originationFee ? (
+              <div className="flex items-center gap-3">
+                <p className="font-mono">BTC {originationFee}</p>
+              </div>
+            ) : (
+              <Skeleton className="h-4 w-[150px] mb-2" />
+            )}
+          </div>
+        </div>
+      </div>
+    </>
   );
 };

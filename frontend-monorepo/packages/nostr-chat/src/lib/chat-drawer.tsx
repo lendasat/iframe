@@ -1,314 +1,28 @@
-import { UnlockWalletModal, useWallet } from "@frontend/browser-wallet";
-import { Box, Button, Flex, Heading, Text, TextField } from "@radix-ui/themes";
-import { loadWasmSync, PublicKey, Timestamp } from "@rust-nostr/nostr-sdk";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { IoMdSend } from "react-icons/io";
-import {
-  LuMessageCircle as MessageCircle,
-  LuUnlink2 as Unlock,
-  LuX as X,
-} from "react-icons/lu";
-import { ChatMessage, useNostr } from "./useNostr";
-import { useAsync } from "react-use";
-
-interface NostrChatProps {
-  otherUser: string;
-  chatRoom: string;
-  secretKey: string;
-  onNewMsgSent: () => Promise<void>;
-}
-
-const NostrChat = ({
-  secretKey,
-  chatRoom: chatRoomString,
-  otherUser: otherUserString,
-  onNewMsgSent,
-}: NostrChatProps) => {
-  loadWasmSync();
-
-  const secret = useMemo(() => secretKey, [secretKey]);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [newMessage, setNewMessage] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement | null>(null);
-
-  const {
-    isLoading: isInitializing,
-    error,
-    publishNote,
-    subscribe,
-    publicKey,
-    client,
-    fetchChatMessages,
-    unsubscribeWithId,
-  } = useNostr(secret);
-
-  if (error) {
-    console.error(`Nostr error: ${error}`);
-  }
-
-  const user = publicKey;
-
-  // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
-  let chatRoom;
-  // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
-  let otherUser;
-  try {
-    chatRoom = useMemo(() => PublicKey.parse(chatRoomString), [chatRoomString]);
-  } catch (e) {
-    console.error(`Invalid chatRoomPk: ${e}`);
-    throw e;
-  }
-  try {
-    otherUser = useMemo(
-      () => PublicKey.parse(otherUserString),
-      [otherUserString],
-    );
-  } catch (e) {
-    console.error(`Invalid other user pk: ${e}. Was ${otherUserString}`);
-    throw e;
-  }
-
-  const handleEvent = useCallback((event: ChatMessage) => {
-    setMessages((prevEvents) => {
-      const eventExists = prevEvents.some(
-        (prevEvent) => prevEvent.eventId.toHex() === event.eventId.toHex(),
-      );
-      if (!eventExists) {
-        return [...prevEvents, event];
-      }
-      return prevEvents;
-    });
-  }, []);
-
-  const handleSend = async () => {
-    setIsLoading(true);
-    if (!user) {
-      console.error("Can't send without local user");
-      return;
-    }
-
-    if (newMessage.trim()) {
-      try {
-        await publishNote(otherUser, chatRoom, newMessage.trim());
-        const sendEventOutput2 = await publishNote(
-          user,
-          chatRoom,
-          newMessage.trim(),
-        );
-        handleEvent({
-          sender: user.toBech32(),
-          eventId: sendEventOutput2.id,
-          content: newMessage.trim(),
-          createdAt: Timestamp.now(),
-          tags: [],
-        });
-      } catch (error) {
-        console.log(`Failed sending message ${error}`);
-      }
-      setNewMessage("");
-      await onNewMsgSent();
-    }
-    setIsLoading(false);
-  };
-
-  const cleanup = useCallback(async () => {
-    if (client) {
-      console.log("Unsubscribing from chat messages");
-      await unsubscribeWithId("dms");
-    }
-  }, [client, unsubscribeWithId]);
-
-  useEffect(() => {
-    if (!client || !user) {
-      console.log("Not ready to sync yet");
-      return;
-    }
-
-    const initializeChat = async () => {
-      setIsLoading(true);
-      try {
-        await fetchChatMessages(user, otherUser, chatRoom, handleEvent);
-        await subscribe(user, "dms", chatRoom, handleEvent);
-      } catch (error) {
-        console.log(`Failed fetching/subscribing to messages: ${error}`);
-        await cleanup();
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    initializeChat();
-
-    return () => {
-      cleanup();
-    };
-  }, [
-    client,
-    user,
-    otherUser,
-    chatRoom,
-    handleEvent,
-    cleanup,
-    fetchChatMessages,
-    subscribe,
-  ]);
-
-  const sortedMessages = messages.sort(
-    (a, b) => a.createdAt.asSecs() - b.createdAt.asSecs(),
-  );
-
-  // Scroll to bottom function
-  const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, []);
-
-  // Effect to scroll on new messages
-  useEffect(() => {
-    scrollToBottom();
-  }, [sortedMessages, scrollToBottom]);
-
-  console.log(`Other user ${otherUser.toBech32()}`);
-  console.log(`Local user ${user?.toBech32()}`);
-  console.log(`Chat room ${chatRoom?.toBech32()}`);
-
-  return (
-    <>
-      <Box className="h-96 space-y-4 overflow-y-auto p-4">
-        {sortedMessages.map((message) => (
-          <div
-            key={message.eventId.toHex()}
-            className={`flex items-start ${
-              message.sender === user?.toBech32()
-                ? "justify-start"
-                : "justify-end"
-            }`}
-          >
-            <Box
-              className={`rounded-lg p-3 ${
-                message.sender === user?.toBech32()
-                  ? "rounded-br-none bg-gray-200 dark:bg-gray-700"
-                  : "rounded-br-none bg-purple-100 dark:bg-purple-900"
-              }`}
-            >
-              <Flex direction={"column"}>
-                <Text
-                  size={"1"}
-                  className={`text-gray-900 dark:text-gray-100`}
-                  weight={"light"}
-                >
-                  {message.sender.substring(0, 8)}:
-                  {message.sender.substring(
-                    message.sender.length - 9,
-                    message.sender.length - 1,
-                  )}
-                </Text>
-                <Text size={"2"} className={`text-gray-900 dark:text-gray-100`}>
-                  {message.content}
-                </Text>
-                <Text size={"1"}>
-                  {new Date(message.createdAt.asSecs() * 1000).toLocaleString(
-                    undefined,
-                    {
-                      year: "numeric",
-                      month: "short",
-                      day: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      second: "2-digit",
-                    },
-                  )}
-                </Text>
-              </Flex>
-            </Box>
-          </div>
-        ))}
-
-        {/* Invisible div at the bottom for scrolling */}
-        <div ref={messagesEndRef} />
-      </Box>
-
-      <form
-        onSubmit={async (e) => {
-          e.preventDefault();
-          await handleSend();
-        }}
-        className="flex gap-2 border-t border-gray-200 p-4 dark:border-gray-700"
-      >
-        <TextField.Root
-          value={newMessage}
-          size={"3"}
-          onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="Type a message..."
-          className="flex-grow bg-white px-3 py-2 text-gray-900 placeholder-gray-500 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400"
-        />
-        <Button
-          type="submit"
-          color={"purple"}
-          loading={isLoading || isInitializing}
-          size={"3"}
-        >
-          <IoMdSend className="h-4 w-4" />
-        </Button>
-      </form>
-    </>
-  );
-};
+import { Box, Button, Heading, Text } from "@radix-ui/themes";
+import { useState } from "react";
+import { LuMessageCircle as MessageCircle, LuX as X } from "react-icons/lu";
+import Chat from "./chat";
 
 interface ChatDrawerProps {
-  contractId: string;
-  counterpartyNPub: string;
-  onNewMsgSent: () => Promise<void>;
+  contractId?: string;
+  counterpartyNpub?: string;
+  personalName?: string;
+  counterpartyName?: string;
+  onNewMsgSent?: () => Promise<void>;
 }
 
 export const ChatDrawer = ({
   contractId,
-  counterpartyNPub: counterpartyNPubNotMemorized,
+  counterpartyNpub,
   onNewMsgSent,
+  personalName,
+  counterpartyName,
 }: ChatDrawerProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [showUnlockWalletModal, setShowUnlockWalletModal] = useState(false);
-  const { getNsec, getPubkeyFromContract } = useWallet();
-  const handleCloseUnlockWalletModal = () => setShowUnlockWalletModal(false);
-  const handleOpenUnlockWalletModal = () => setShowUnlockWalletModal(true);
-  const handleSubmitUnlockWalletModal = async () => {
-    handleCloseUnlockWalletModal();
-  };
-
-  const contractIdMemorized = useMemo(() => {
-    return contractId;
-  }, [contractId]);
-  const counterpartyNPub = useMemo(() => {
-    return counterpartyNPubNotMemorized;
-  }, [counterpartyNPubNotMemorized]);
-
-  let buttonDisabled = false;
-
-  const { value: nsec, error } = useAsync(async () => {
-    return getNsec();
-  });
-
-  if (error) {
-    console.error(`Could not get nsec: ${error}`);
-    buttonDisabled = true;
-  }
-
-  const chatRoom = getPubkeyFromContract(contractIdMemorized);
 
   const toggleDrawer = () => {
     setIsOpen(!isOpen);
   };
-
-  const chatConfig = useMemo(() => {
-    if (!counterpartyNPub || !chatRoom || !nsec) {
-      return null;
-    }
-    return {
-      otherUser: counterpartyNPub,
-      chatRoom: chatRoom,
-      secretKey: nsec,
-    };
-  }, [counterpartyNPub, chatRoom, nsec]);
 
   return (
     <Box className="fixed bottom-0 right-0 z-50">
@@ -342,21 +56,13 @@ export const ChatDrawer = ({
           </Button>
         </Box>
 
-        {chatConfig ? (
-          <NostrChat {...chatConfig} onNewMsgSent={onNewMsgSent} />
-        ) : (
-          <Box className="flex h-96 items-center justify-center">
-            <UnlockWalletModal handleSubmit={() => {}}>
-              <Button
-                type={"button"}
-                className="mt-3"
-                disabled={buttonDisabled}
-              >
-                <Unlock /> Unlock Chat
-              </Button>
-            </UnlockWalletModal>
-          </Box>
-        )}
+        <Chat
+          contractId={contractId}
+          counterpartyNpub={counterpartyNpub}
+          counterpartyName={counterpartyName}
+          personalName={personalName}
+          onNewMsgSent={onNewMsgSent}
+        />
       </Box>
     </Box>
   );
