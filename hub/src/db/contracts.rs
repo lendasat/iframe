@@ -234,7 +234,7 @@ pub async fn load_contract_by_contract_id_and_lender_id(
     pool: &Pool<Postgres>,
     contract_id: &str,
     lender_id: &str,
-) -> Result<Contract> {
+) -> Result<Option<Contract>> {
     let contract = sqlx::query_as!(
         db::Contract,
         r#"
@@ -276,10 +276,10 @@ pub async fn load_contract_by_contract_id_and_lender_id(
         contract_id,
         lender_id
     )
-    .fetch_one(pool)
+    .fetch_optional(pool)
     .await?;
 
-    Ok(contract.into())
+    Ok(contract.map(|c| c.into()))
 }
 
 pub async fn load_open_contracts(pool: &Pool<Postgres>) -> Result<Vec<Contract>> {
@@ -748,7 +748,10 @@ pub async fn mark_contract_as_repayment_confirmed(
     mark_contract_state_as(pool, contract_id, db::ContractStatus::RepaymentConfirmed).await
 }
 
-pub async fn mark_contract_as_cancelled(pool: &Pool<Postgres>, contract_id: &str) -> Result<()> {
+pub async fn mark_contract_as_cancelled<'a, E>(pool: E, contract_id: &str) -> Result<()>
+where
+    E: sqlx::Executor<'a, Database = Postgres>,
+{
     mark_contract_state_as(pool, contract_id, db::ContractStatus::Cancelled).await
 }
 
@@ -759,6 +762,8 @@ where
     mark_contract_state_as(pool, contract_id, db::ContractStatus::Extended).await
 }
 
+/// Move back a [`Contract`] with [`ContractStatus::Extended`] to
+/// [`ContractStatus::PrincipalGiven`].
 pub async fn cancel_extension<'a, E>(pool_executor: E, contract_id: &str) -> Result<()>
 where
     E: sqlx::Executor<'a, Database = Postgres>,

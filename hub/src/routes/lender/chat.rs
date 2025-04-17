@@ -53,7 +53,8 @@ async fn new_chat_notification(
         user.id.as_str(),
     )
     .await
-    .map_err(|_| Error::InvalidContract)?;
+    .map_err(Error::Database)?
+    .ok_or_else(|| Error::InvalidContract)?;
 
     let borrower = db::borrowers::get_user_by_id(&data.db, contract.borrower_id.as_str())
         .await
@@ -82,6 +83,7 @@ enum Error {
     /// User tried to send a notification for a non existing contract
     InvalidContract,
 }
+
 // Create our own JSON extractor by wrapping `axum::Json`. This makes it easy to override the
 // rejection and provide our own which formats errors to match our application.
 //

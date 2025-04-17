@@ -89,6 +89,13 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
             )),
         )
         .route(
+            "/api/contracts/:contract_id/reject-extension",
+            put(put_reject_extension_request).route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                jwt_auth::auth,
+            )),
+        )
+        .route(
             "/api/contracts/:contract_id/principalconfirmed",
             put(put_confirm_repayment).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
@@ -195,14 +202,14 @@ pub struct BorrowerProfile {
     pub(crate) name: String,
 }
 
-#[instrument(skip_all, err(Debug))]
-pub async fn get_active_contracts(
+#[instrument(skip_all, fields(lender_id = user.id), err(Debug))]
+async fn get_active_contracts(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Lender>,
 ) -> Result<AppJson<Vec<Contract>>, Error> {
     let contracts = db::contracts::load_contracts_by_lender_id(&data.db, user.id.as_str())
         .await
-        .map_err(Error::Database)?;
+        .map_err(Error::database)?;
 
     let mut contracts_2 = Vec::new();
     for contract in contracts {
@@ -214,8 +221,8 @@ pub async fn get_active_contracts(
     Ok(AppJson(contracts_2))
 }
 
-#[instrument(skip_all, err(Debug))]
-pub async fn get_contract(
+#[instrument(skip_all, fields(lender_id = user.id, contract_id), err(Debug))]
+async fn get_contract(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Lender>,
     Path(contract_id): Path<String>,
@@ -226,15 +233,16 @@ pub async fn get_contract(
         user.id.as_str(),
     )
     .await
-    .map_err(Error::Database)?;
+    .map_err(Error::database)?
+    .ok_or_else(|| Error::MissingContract(contract_id))?;
 
     let contract = map_to_api_contract(&data, contract).await?;
 
     Ok(AppJson(contract))
 }
 
-#[instrument(skip(data, user), err(Debug))]
-pub async fn put_approve_contract(
+#[instrument(skip_all, fields(lender_id = user.id, contract_id), err(Debug), ret)]
+async fn put_approve_contract(
     State(data): State<Arc<AppState>>,
     Path(contract_id): Path<String>,
     Extension(user): Extension<Lender>,
@@ -263,8 +271,8 @@ pub struct PrincipalGivenQueryParam {
     pub txid: Option<String>,
 }
 
-#[instrument(skip(data, user), err(Debug))]
-pub async fn put_principal_given(
+#[instrument(skip_all, fields(lender_id = user.id, contract_id), err(Debug), ret)]
+async fn put_principal_given(
     State(data): State<Arc<AppState>>,
     Path(contract_id): Path<String>,
     query_params: Query<PrincipalGivenQueryParam>,
@@ -277,7 +285,8 @@ pub async fn put_principal_given(
             &user.id,
         )
         .await
-        .context("Failed to load contract request")?;
+        .context("Failed to load contract request")?
+        .context("Missing contract")?;
 
         db::contracts::mark_contract_as_principal_given(
             &data.db,
@@ -300,7 +309,7 @@ pub async fn put_principal_given(
         anyhow::Ok(contract)
     }
     .await
-    .map_err(Error::Database)?;
+    .map_err(Error::database)?;
 
     // We don't want to fail this upwards because the contract request has been already
     // approved.
@@ -334,8 +343,9 @@ pub async fn put_principal_given(
     Ok(AppJson(contract))
 }
 
-#[instrument(skip_all, err(Debug))]
-pub async fn delete_reject_contract(
+/// Reject a contract request.
+#[instrument(skip_all, fields(lender_id = user.id, contract_id), err(Debug), ret)]
+async fn delete_reject_contract(
     State(data): State<Arc<AppState>>,
     Path(contract_id): Path<String>,
     Extension(user): Extension<Lender>,
@@ -380,8 +390,62 @@ pub async fn delete_reject_contract(
     Ok(())
 }
 
-#[instrument(skip(data, user), err(Debug))]
-pub async fn put_confirm_repayment(
+/// Reject a contract extension request.
+#[instrument(skip_all, fields(lender_id = user.id, contract_id), err(Debug), ret)]
+async fn put_reject_extension_request(
+    State(data): State<Arc<AppState>>,
+    Path(contract_id): Path<String>,
+    Extension(user): Extension<Lender>,
+) -> Result<(), Error> {
+    let contract = db::contracts::load_contract_by_contract_id_and_lender_id(
+        &data.db,
+        contract_id.as_str(),
+        user.id.as_str(),
+    )
+    .await
+    .map_err(Error::database)?
+    .ok_or_else(|| Error::MissingContract(contract_id.clone()))?;
+
+    if contract.status != ContractStatus::RenewalRequested {
+        return Err(Error::InvalidRejectRequest {
+            status: contract.status,
+        });
+    }
+
+    let mut db_tx = data
+        .db
+        .begin()
+        .await
+        .map_err(|e| Error::database(anyhow!(e)))?;
+
+    let parent_contract_id =
+        db::contract_extensions::get_parent_by_extended(&data.db, contract_id.as_str())
+            .await
+            .map_err(|e| Error::database(anyhow!(e)))?
+            .ok_or(Error::MissingParentContract(contract_id.clone()))?;
+
+    db::contracts::cancel_extension(&mut *db_tx, &parent_contract_id)
+        .await
+        .map_err(Error::database)?;
+
+    db::contract_extensions::delete_with_parent(&mut *db_tx, &parent_contract_id)
+        .await
+        .map_err(|e| Error::database(anyhow!(e)))?;
+
+    db::contracts::mark_contract_as_cancelled(&mut *db_tx, contract_id.as_str())
+        .await
+        .map_err(Error::database)?;
+
+    db_tx
+        .commit()
+        .await
+        .map_err(|e| Error::database(anyhow!(e)))?;
+
+    Ok(())
+}
+
+#[instrument(skip_all, fields(lender_id = user.id, contract_id), err(Debug), ret)]
+async fn put_confirm_repayment(
     State(data): State<Arc<AppState>>,
     Path(contract_id): Path<String>,
     Extension(user): Extension<Lender>,
@@ -393,7 +457,8 @@ pub async fn put_confirm_repayment(
             &user.id,
         )
         .await
-        .context("Failed to load contract request")?;
+        .context("Failed to load contract request")?
+        .context("Missing contract")?;
 
         db::contracts::mark_contract_as_repayment_confirmed(&data.db, contract.id.as_str())
             .await
@@ -432,7 +497,7 @@ pub struct LiquidationPsbt {
     pub lender_pk: PublicKey,
 }
 
-#[instrument(skip_all, fields(lender_id = user.id, contract_id), err(Debug), ret)]
+#[instrument(skip_all, fields(lender_id = user.id, contract_id, query_params), err(Debug), ret)]
 async fn get_liquidation_to_bitcoin_psbt(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Lender>,
@@ -461,6 +526,12 @@ async fn get_liquidation_to_bitcoin_psbt(
             message: format!("Database error: {e:#}"),
         };
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+    })?
+    .ok_or_else(|| {
+        let error_response = ErrorResponse {
+            message: format!("Missing contract: {contract_id}"),
+        };
+        (StatusCode::BAD_REQUEST, Json(error_response))
     })?;
 
     if !matches!(
@@ -563,7 +634,7 @@ pub struct LiquidationToStableCoinPsbt {
     pub settle_amount: Decimal,
 }
 
-#[instrument(skip_all, fields(lender_id = user.id, contract_id), err(Debug), ret)]
+#[instrument(skip_all, fields(lender_id = user.id, contract_id, body), err(Debug), ret)]
 async fn post_build_liquidation_to_stablecoin_psbt(
     State(data): State<Arc<AppState>>,
     Path(contract_id): Path<String>,
@@ -592,6 +663,12 @@ async fn post_build_liquidation_to_stablecoin_psbt(
             StatusCode::INTERNAL_SERVER_ERROR,
             format!("Database error: {e:#}").as_str(),
         )
+    })?
+    .ok_or_else(|| {
+        let error_response = ErrorResponse {
+            message: format!("Missing contract: {contract_id}"),
+        };
+        (StatusCode::BAD_REQUEST, Json(error_response))
     })?;
 
     if !matches!(
@@ -688,10 +765,7 @@ pub struct LiquidationTx {
     pub tx: String,
 }
 
-// We don't need the lender to publish the liquidation TX through the hub, but it is convenient to
-// be able to move the contract state forward. Eventually we could remove this and publish from the
-// liquidation client.
-#[instrument(skip(data, user), err(Debug), ret)]
+#[instrument(skip_all, fields(lender_id = user.id, contract_id, body), err(Debug), ret)]
 async fn post_liquidation_tx(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Lender>,
@@ -771,7 +845,8 @@ async fn post_liquidation_tx(
             &user.id,
         )
         .await
-        .context("Contract not found")?;
+        .context("Failed to load contract")?
+        .context("Missing contract")?;
 
         let borrower = db::borrowers::get_user_by_id(&data.db, contract.borrower_id.as_str())
             .await?
@@ -816,7 +891,7 @@ pub struct ManualRecoveryPsbt {
     pub lender_pk: PublicKey,
 }
 
-#[instrument(skip_all, fields(lender_id = user.id, contract_id), err(Debug), ret)]
+#[instrument(skip_all, fields(lender_id = user.id, contract_id, query_params), err(Debug), ret)]
 async fn get_manual_recovery_psbt(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Lender>,
@@ -845,6 +920,12 @@ async fn get_manual_recovery_psbt(
             message: format!("Database error: {e:#}"),
         };
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+    })?
+    .ok_or_else(|| {
+        let error_response = ErrorResponse {
+            message: format!("Missing contract: {contract_id}"),
+        };
+        (StatusCode::BAD_REQUEST, Json(error_response))
     })?;
 
     let ManualCollateralRecovery { lender_amount, .. } =
@@ -942,16 +1023,16 @@ async fn map_to_api_contract(
 ) -> Result<Contract, Error> {
     let loan_deal = db::loan_deals::get_loan_deal_by_id(&data.db, &contract.loan_id)
         .await
-        .map_err(Error::Database)?;
+        .map_err(Error::database)?;
 
     let borrower = db::borrowers::get_user_by_id(&data.db, &contract.borrower_id)
         .await
-        .map_err(Error::Database)?
+        .map_err(Error::database)?
         .ok_or(Error::MissingLender)?;
 
     let transactions = db::transactions::get_all_for_contract_id(&data.db, contract.id.as_str())
         .await
-        .map_err(Error::Database)?;
+        .map_err(Error::database)?;
 
     let repaid_at = transactions.iter().find_map(|tx| {
         matches!(tx.transaction_type, TransactionType::PrincipalRepaid).then_some(tx.timestamp)
@@ -960,23 +1041,23 @@ async fn map_to_api_contract(
     let can_recover_collateral_manually =
         db::manual_collateral_recovery::load_manual_collateral_recovery(&data.db, &contract.id)
             .await
-            .map_err(Error::Database)?
+            .map_err(Error::database)?
             .is_some();
 
     let parent_contract_id =
         db::contract_extensions::get_parent_by_extended(&data.db, contract.id.as_str())
             .await
-            .map_err(|e| Error::Database(anyhow!(e)))?;
+            .map_err(|e| Error::database(anyhow!(e)))?;
     let child_contract =
         db::contract_extensions::get_extended_by_parent(&data.db, contract.id.as_str())
             .await
-            .map_err(|e| Error::Database(anyhow!(e)))?;
+            .map_err(|e| Error::database(anyhow!(e)))?;
 
     let kyc_info = match loan_deal.kyc_link() {
         Some(ref kyc_link) => {
             let is_kyc_done = db::kyc::get(&data.db, &contract.lender_id, &borrower.id)
                 .await
-                .map_err(Error::Database)?;
+                .map_err(Error::database)?;
 
             Some(KycInfo {
                 kyc_link: kyc_link.clone(),
@@ -993,7 +1074,7 @@ async fn map_to_api_contract(
     let fiat_loan_details_borrower = {
         let details = db::fiat_loan_details::get_borrower(&data.db, &contract.id)
             .await
-            .map_err(Error::Database)?;
+            .map_err(Error::database)?;
 
         details.map(|d| FiatLoanDetailsWrapper {
             details: d.details,
@@ -1004,7 +1085,7 @@ async fn map_to_api_contract(
     let fiat_loan_details_lender = {
         let details = db::fiat_loan_details::get_lender(&data.db, &contract.id)
             .await
-            .map_err(Error::Database)?;
+            .map_err(Error::database)?;
 
         details.map(|d| FiatLoanDetailsWrapper {
             details: d.details,
@@ -1022,7 +1103,7 @@ async fn map_to_api_contract(
                     contract.contract_version,
                     contract_index,
                 )
-                .map_err(Error::CannotBuildDescriptor)?;
+                .map_err(Error::cannot_build_descriptor)?;
             let collateral_script = collateral_descriptor.script_code().expect("not taproot");
             let collateral_script = collateral_script.to_hex_string();
 
@@ -1075,13 +1156,17 @@ async fn map_to_api_contract(
     Ok(contract)
 }
 
+// Error fields are allowed to be dead code because they are actually used when printed in logs.
+#[allow(dead_code)]
 /// All the errors related to the `contracts` REST API.
 #[derive(Debug)]
 enum Error {
+    /// Missing contract.
+    MissingContract(String),
     /// The request body contained invalid JSON.
     JsonRejection(JsonRejection),
     /// Failed to interact with the database.
-    Database(anyhow::Error),
+    Database(String),
     /// Referenced loan does not exist.
     MissingLoanOffer { offer_id: String },
     /// Referenced lender does not exist.
@@ -1090,23 +1175,55 @@ enum Error {
     /// supported
     LoanOfferLenderMissmatch,
     /// We failed at calculating the interest rate. Cannot do much without this
-    InterestRateCalculation(anyhow::Error),
+    InterestRateCalculation(String),
     /// No origination fee configured.
     MissingOriginationFee,
     /// Failed to calculate origination fee in sats.
-    OriginationFeeCalculation(anyhow::Error),
+    OriginationFeeCalculation(String),
     /// Fiat loan details were not provided
     MissingFiatLoanDetails,
     /// Failed to generate contract address.
-    ContractAddress(anyhow::Error),
+    ContractAddress(String),
     /// Failed to track accepted contract using Mempool API.
-    TrackContract(anyhow::Error),
-    /// The contract was in an invalid state
+    TrackContract(String),
+    /// The contract was in an invalid state to approve a request or an extension.
     InvalidApproveRequest { status: ContractStatus },
+    /// The contract was in an invalid state to reject a request or an extension.
+    InvalidRejectRequest { status: ContractStatus },
     /// Referenced borrower does not exist.
     MissingBorrower,
     /// Failed to build contract descriptor.
-    CannotBuildDescriptor(anyhow::Error),
+    CannotBuildDescriptor(String),
+    /// Can't cancel a contract extension request if the parent does not exist.
+    MissingParentContract(String),
+    /// Cannot approve renewal without contract address.
+    MissingContractAddress,
+}
+
+impl Error {
+    fn database(e: anyhow::Error) -> Self {
+        Self::Database(format!("{e:#}"))
+    }
+
+    fn interest_rate_calculation(e: anyhow::Error) -> Self {
+        Self::InterestRateCalculation(format!("{e:#}"))
+    }
+
+    fn origination_fee_calculation(e: anyhow::Error) -> Self {
+        Self::OriginationFeeCalculation(format!("{e:#}"))
+    }
+
+    fn contract_address(e: anyhow::Error) -> Self {
+        Self::ContractAddress(format!("{e:#}"))
+    }
+
+    fn track_contract(e: anyhow::Error) -> Self {
+        Self::TrackContract(format!("{e:#}"))
+    }
+
+    fn cannot_build_descriptor(e: anyhow::Error) -> Self {
+        Self::CannotBuildDescriptor(format!("{e:#}"))
+    }
 }
 
 impl From<JsonRejection> for Error {
@@ -1131,96 +1248,39 @@ impl IntoResponse for Error {
                 // This error is caused by bad user input so don't log it
                 (rejection.status(), rejection.body_text())
             }
-            Error::Database(e) => {
-                // If we configure `tracing` properly, we don't need to add extra context here!
-                tracing::error!("Database error: {e:#}");
-
-                // Don't expose any details about the error to the client.
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
-            Error::MissingLoanOffer { offer_id } => {
-                tracing::error!(offer_id, "Could not find referenced loan offer");
-
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
-            Error::MissingLender => {
-                tracing::error!("Could not find referenced lender");
-
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
-            Error::MissingOriginationFee => {
-                tracing::error!("Missing origination fee");
-
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
-            Error::OriginationFeeCalculation(e) => {
-                tracing::error!("Failed to calculate origination fee: {e:#}");
-
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
+            Error::Database(_)
+            | Error::MissingLoanOffer { .. }
+            | Error::MissingLender
+            | Error::MissingOriginationFee
+            | Error::OriginationFeeCalculation(_)
+            | Error::InterestRateCalculation(_)
+            | Error::ContractAddress(_)
+            | Error::TrackContract(_)
+            | Error::MissingBorrower
+            | Error::CannotBuildDescriptor(_)
+            | Error::MissingParentContract(_)
+            | Error::MissingContractAddress => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Something went wrong".to_owned(),
+            ),
             Error::LoanOfferLenderMissmatch => (
                 StatusCode::BAD_REQUEST,
                 "Offer cannot be from a different lender".to_owned(),
             ),
-            Error::InterestRateCalculation(e) => {
-                tracing::error!("Failed at calculating interest rate {e:#}");
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
             Error::MissingFiatLoanDetails => (
                 StatusCode::BAD_REQUEST,
                 "Cannot approve without fiat loan details".to_owned(),
             ),
-            Error::ContractAddress(error) => {
-                tracing::error!("Failed creating contract address {error:#}");
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
-            Error::TrackContract(e) => {
-                tracing::error!("Failed tracking contract contract address {e:#}");
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
-            Error::InvalidApproveRequest { status } => {
-                tracing::error!("Failed approving request {status:?}");
+            Error::InvalidApproveRequest { .. } => {
                 (StatusCode::BAD_REQUEST, "Cannot approve request".to_owned())
             }
-            Error::MissingBorrower => {
-                tracing::error!("Borrower not found");
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
+            Error::InvalidRejectRequest { .. } => {
+                (StatusCode::BAD_REQUEST, "Cannot reject request".to_owned())
             }
-            Error::CannotBuildDescriptor(e) => {
-                tracing::error!("Failed to build collateral descriptor: {e:#}");
-
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
+            Error::MissingContract(contract_id) => (
+                StatusCode::BAD_REQUEST,
+                format!("Contract does not exist: {contract_id}"),
+            ),
         };
 
         (status, AppJson(ErrorResponse { message })).into_response()
@@ -1247,7 +1307,7 @@ where
 impl From<crate::contract_extension::Error> for Error {
     fn from(value: crate::contract_extension::Error) -> Self {
         match value {
-            crate::contract_extension::Error::Database(e) => Error::Database(e),
+            crate::contract_extension::Error::Database(e) => Error::database(e),
             crate::contract_extension::Error::MissingLoanOffer { offer_id } => {
                 Error::MissingLoanOffer { offer_id }
             }
@@ -1255,11 +1315,11 @@ impl From<crate::contract_extension::Error> for Error {
                 Error::LoanOfferLenderMissmatch
             }
             crate::contract_extension::Error::InterestRateCalculation(e) => {
-                Error::InterestRateCalculation(e)
+                Error::interest_rate_calculation(e)
             }
             crate::contract_extension::Error::MissingOriginationFee => Error::MissingOriginationFee,
             crate::contract_extension::Error::OriginationFeeCalculation(e) => {
-                Error::OriginationFeeCalculation(e)
+                Error::origination_fee_calculation(e)
             }
         }
     }
@@ -1268,16 +1328,20 @@ impl From<crate::contract_extension::Error> for Error {
 impl From<approve_contract::Error> for Error {
     fn from(value: approve_contract::Error) -> Self {
         match value {
-            approve_contract::Error::Database(e) => Error::Database(e),
+            approve_contract::Error::Database(e) => Error::database(e),
             approve_contract::Error::MissingLoanOffer { offer_id } => {
                 Error::MissingLoanOffer { offer_id }
             }
             approve_contract::Error::MissingFiatLoanDetails => Error::MissingFiatLoanDetails,
-            approve_contract::Error::ContractAddress(error) => Error::ContractAddress(error),
+            approve_contract::Error::ContractAddress(error) => Error::contract_address(error),
             approve_contract::Error::MissingBorrower => Error::MissingBorrower,
-            approve_contract::Error::TrackContract(error) => Error::TrackContract(error),
+            approve_contract::Error::TrackContract(error) => Error::track_contract(error),
             approve_contract::Error::InvalidApproveRequest { status } => {
                 Error::InvalidApproveRequest { status }
+            }
+            approve_contract::Error::MissingContractAddress => Error::MissingContractAddress,
+            approve_contract::Error::MissingContract(contract_id) => {
+                Error::MissingContract(contract_id)
             }
         }
     }

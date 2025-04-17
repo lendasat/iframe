@@ -648,6 +648,7 @@ const ContractStatusDetails = ({
     rejectKyc,
     approveContract,
     rejectContract,
+    rejectContractExtension,
     principalGiven,
     markPrincipalConfirmed,
   } = useLenderHttpClient();
@@ -704,6 +705,18 @@ const ContractStatusDetails = ({
       setIsLoading(false);
     }
   };
+  const onContractExtensionReject = async () => {
+    try {
+      setIsLoading(true);
+      await rejectContractExtension(contract.id);
+      onSuccess();
+    } catch (error) {
+      onError(`${error}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const onPrincipalGiven = async () => {
     try {
       setIsLoading(true);
@@ -762,7 +775,7 @@ const ContractStatusDetails = ({
           loanAsset={contract.loan_asset}
           isLoading={isLoading}
           onContractApprove={onContractApprove}
-          onContractReject={onContractReject}
+          onContractReject={onContractExtensionReject}
         />
       );
     case ContractStatus.Approved:

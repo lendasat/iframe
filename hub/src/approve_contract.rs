@@ -1,6 +1,7 @@
 use crate::config::Config;
 use crate::db;
 use crate::mempool;
+use crate::mempool::AssociateNewContract;
 use crate::mempool::TrackContractFunding;
 use crate::model::ContractStatus;
 use crate::model::FiatLoanDetailsWrapper;
@@ -12,6 +13,9 @@ use std::sync::Arc;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
+    /// Missing contract.
+    #[error("Missing contract: {0}")]
+    MissingContract(String),
     /// Failed to interact with the database.
     #[error("Failed to interact with the database.")]
     Database(#[source] anyhow::Error),
@@ -34,6 +38,9 @@ pub enum Error {
     /// The contract was in an invalid state
     #[error("The contract was in an invalid state: {status:?}")]
     InvalidApproveRequest { status: ContractStatus },
+    /// Cannot approve renewal without contract address.
+    #[error("Cannot approve renewal without contract address.")]
+    MissingContractAddress,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -53,7 +60,8 @@ pub async fn approve_contract(
         lender_id,
     )
     .await
-    .map_err(Error::Database)?;
+    .map_err(Error::Database)?
+    .ok_or_else(|| Error::MissingContract(contract_id.clone()))?;
 
     if contract.status != ContractStatus::Requested
         && contract.status != ContractStatus::RenewalRequested
@@ -67,6 +75,18 @@ pub async fn approve_contract(
         db::contracts::accept_extend_contract_request(db, lender_id, contract.id.as_str())
             .await
             .map_err(Error::Database)?;
+
+        let contract_address = contract
+            .contract_address
+            .ok_or(Error::MissingContractAddress)?
+            .assume_checked();
+
+        mempool_actor
+            .send(AssociateNewContract::new(contract_id, contract_address))
+            .await
+            .expect("actor to be alive")
+            .map_err(Error::TrackContract)?;
+
         return Ok(());
     }
 

@@ -276,6 +276,26 @@ export class HttpClientLender extends BaseHttpClient {
     }
   }
 
+  async rejectContractExtension(id: string): Promise<void> {
+    try {
+      await this.httpClient.put(`/api/contracts/${id}/reject-extension`);
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = JSON.stringify(error.response?.data);
+        console.error(
+          `Failed to reject contract: http: ${
+            error.response?.status
+          } and response: ${JSON.stringify(error.response?.data)}`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(
+          `Could not reject contract extension: ${JSON.stringify(error)}`,
+        );
+      }
+    }
+  }
+
   async principalGiven(id: string, txid?: string): Promise<void> {
     let url = `/api/contracts/${id}/principalgiven`;
 
@@ -882,6 +902,7 @@ type LenderHttpClientContextType = Pick<
   | "rejectKyc"
   | "approveContract"
   | "rejectContract"
+  | "rejectContractExtension"
   | "principalGiven"
   | "markPrincipalConfirmed"
   | "startDispute"
@@ -953,6 +974,8 @@ export const HttpClientLenderProvider: React.FC<HttpClientProviderProps> = ({
     getContract: httpClient.getContract.bind(httpClient),
     approveContract: httpClient.approveContract.bind(httpClient),
     rejectContract: httpClient.rejectContract.bind(httpClient),
+    rejectContractExtension:
+      httpClient.rejectContractExtension.bind(httpClient),
     approveKyc: httpClient.approveKyc.bind(httpClient),
     rejectKyc: httpClient.rejectKyc.bind(httpClient),
     principalGiven: httpClient.principalGiven.bind(httpClient),
