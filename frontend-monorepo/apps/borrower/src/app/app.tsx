@@ -5,7 +5,8 @@ import {
   AuthProviderBorrower,
   useAuth,
 } from "@frontend/http-client-borrower";
-import { Layout, PriceProvider } from "@frontend/ui-shared";
+import { Layout } from "./layout";
+import { PriceProvider } from "@frontend/ui-shared";
 import { BsBank } from "react-icons/bs";
 import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import ForgotPassword from "./auth/forgot-password";

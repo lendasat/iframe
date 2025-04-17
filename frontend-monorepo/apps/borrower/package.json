@@ -44,6 +44,7 @@
     "browser-wallet": "file:../../../browser-wallet/pkg",
     "date-fns": "3.6.0",
     "hash-wasm": "^4.12.0",
+    "lucide-react": "^0.483.0",
     "qrcode.react": "3.1.0",
     "query-string": "^9.1.1",
     "react": "19.0.0",
