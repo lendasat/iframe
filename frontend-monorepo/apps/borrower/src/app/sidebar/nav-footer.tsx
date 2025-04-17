@@ -1,45 +1,26 @@
 import {
   Bell,
-  ChevronRight,
   Code,
-  Folder,
-  Library,
-  LogOut,
-  Mails,
   MessageCircle,
   MoreHorizontal,
-  ScrollText,
-  Search,
-  Send,
   Settings2,
-  Share,
-  Trash2,
   User,
   Wallet,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
   useSidebar,
 } from "@frontend/shadcn";
-import { LuLogOut } from "react-icons/lu";
 
 const loanNavItems = [
   {
@@ -106,46 +87,42 @@ export function NavFooter() {
 
   return (
     <>
-      {loanNavItems.map((item) => (
-        <>
-          <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-            <SidebarMenu>
-              {loanNavItems.map((item) => (
-                <SidebarMenuItem key={item.name}>
-                  <SidebarMenuButton asChild>
-                    <Link to={item.url}>
-                      <item.icon />
-                      <span>{item.name}</span>
+      <SidebarGroup className="group-data-[collapsible=icon]:hidden">
+        <SidebarMenu>
+          {loanNavItems.map((item) => (
+            <SidebarMenuItem key={item.name}>
+              <SidebarMenuButton asChild>
+                <Link to={item.url}>
+                  <item.icon />
+                  <span>{item.name}</span>
+                </Link>
+              </SidebarMenuButton>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <SidebarMenuAction showOnHover>
+                    <MoreHorizontal />
+                    <span className="sr-only">More</span>
+                  </SidebarMenuAction>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  className="w-48"
+                  side={isMobile ? "bottom" : "right"}
+                  align={isMobile ? "end" : "start"}
+                >
+                  {item.items.map((innerItem) => (
+                    <Link to={innerItem.url}>
+                      <DropdownMenuItem>
+                        <innerItem.icon className="text-muted-foreground" />
+                        <span>{innerItem.name}</span>
+                      </DropdownMenuItem>
                     </Link>
-                  </SidebarMenuButton>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <SidebarMenuAction showOnHover>
-                        <MoreHorizontal />
-                        <span className="sr-only">More</span>
-                      </SidebarMenuAction>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                      className="w-48"
-                      side={isMobile ? "bottom" : "right"}
-                      align={isMobile ? "end" : "start"}
-                    >
-                      {item.items.map((innerItem) => (
-                        <Link to={innerItem.url}>
-                          <DropdownMenuItem>
-                            <innerItem.icon className="text-muted-foreground" />
-                            <span>{innerItem.name}</span>
-                          </DropdownMenuItem>
-                        </Link>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroup>
-        </>
-      ))}
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+      </SidebarGroup>
     </>
   );
 }
