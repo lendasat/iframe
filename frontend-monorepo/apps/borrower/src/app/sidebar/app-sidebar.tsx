@@ -24,14 +24,12 @@ import {
   DropdownMenuTrigger,
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarTrigger,
 } from "@frontend/shadcn";
 import { NavMain } from "./nav-main";
 import { getPreferredTheme, useTheme } from "@frontend/ui-shared";
@@ -201,11 +199,6 @@ export function AppSidebar({ onLogout, username }: AppSidebarProps) {
           </SidebarGroup>
         ))}
       </SidebarContent>
-      <SidebarFooter>
-        <div className="flex justify-end">
-          <SidebarTrigger />
-        </div>
-      </SidebarFooter>
     </Sidebar>
   );
 }
