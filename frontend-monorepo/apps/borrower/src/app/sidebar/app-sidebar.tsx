@@ -11,12 +11,6 @@ import {
   Bell,
   MessageCircle,
   Code,
-  Library,
-  Search,
-  ScrollText,
-  Send,
-  Mails,
-  ChevronRight,
 } from "lucide-react";
 import Lendasat from "../../assets/lendasat-icon.png";
 import {
@@ -38,52 +32,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarTrigger,
-  SidebarGroupLabel,
-  Collapsible,
-  CollapsibleTrigger,
-  CollapsibleContent,
-  SidebarMenuSub,
-  SidebarMenuSubItem,
-  SidebarMenuSubButton,
 } from "@frontend/shadcn";
 import { NavMain } from "./nav-main";
 import { getPreferredTheme, useTheme } from "@frontend/ui-shared";
-import { LuLoader } from "react-icons/lu";
-
-const loanNavItems = [
-  {
-    title: "Loans",
-    url: "#",
-    icon: ScrollText,
-    isActive: true,
-    items: [
-      {
-        icon: Search,
-        title: "Find offer",
-        url: "/requests",
-        isActive: false,
-      },
-      {
-        icon: Library,
-        title: "See all offers",
-        url: "/available-offers",
-        isActive: false,
-      },
-      {
-        icon: Send,
-        title: "Apply",
-        url: "/loan-application",
-        isActive: false,
-      },
-      {
-        icon: Mails,
-        title: "Applications",
-        url: "/loan-applications",
-        isActive: false,
-      },
-    ],
-  },
-];
 
 const lowMenuItems = [
   {
@@ -123,8 +74,6 @@ const ThemeSwitch = () => {
 };
 
 // TODOs:
-// - Too much space between 'Loans' and other buttons.
-// - 'Loans' clickable area is differnt to other buttons (collapsed and expanded).
 // - Lendasat logo shifts slightly when collapsing sidebar.
 // - Lendasat logo clickable area is weird when sidebar is collapsed.
 // - Username transition animation is bad.
@@ -233,56 +182,12 @@ export function AppSidebar({ onLogout, username }: AppSidebarProps) {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {loanNavItems.map((item) => (
-          <Collapsible
-            key={item.title}
-            title={item.title}
-            defaultOpen
-            asChild
-            className="group/collapsible -mt-4 -mb-5"
-          >
-            <SidebarGroup>
-              <SidebarGroupLabel
-                asChild
-                className="group/label text-sm hover:bg-gray-200"
-              >
-                <CollapsibleTrigger>
-                  <item.icon className={"h-4 w-4 mr-2"} />
-                  <span>{item.title}2</span>{" "}
-                  <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
-                </CollapsibleTrigger>
-              </SidebarGroupLabel>
-              <CollapsibleContent>
-                <SidebarGroupContent>
-                  <SidebarMenuSub>
-                    {item.items.map((item) => (
-                      <SidebarMenuSubItem
-                        key={item.title}
-                        className={"hover:bg-gray-200"}
-                      >
-                        <SidebarMenuSubButton
-                          asChild
-                          isActive={location.pathname.includes(item.url)}
-                        >
-                          <Link to={item.url}>
-                            {item.icon && <item.icon />}
-                            <span>{item.title}</span>
-                          </Link>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                    ))}
-                  </SidebarMenuSub>
-                </SidebarGroupContent>
-              </CollapsibleContent>
-            </SidebarGroup>
-          </Collapsible>
-        ))}
+        <NavMain />
 
-        <NavMain items={loanNavItems} />
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {lowMenuItems.map((item) => (
+        {lowMenuItems.map((item) => (
+          <SidebarGroup key={item.title}>
+            <SidebarGroupContent>
+              <SidebarMenu>
                 <SidebarMenuItem className="hover:bg-gray-200" key={item.title}>
                   <SidebarMenuButton asChild>
                     <Link to={item.url}>
@@ -291,10 +196,10 @@ export function AppSidebar({ onLogout, username }: AppSidebarProps) {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
       <SidebarFooter>
         <div className="flex justify-end">

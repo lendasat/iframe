@@ -1,10 +1,19 @@
-import { ChevronRight, type LucideIcon } from "lucide-react";
+import {
+  ChevronRight,
+  Library,
+  Mails,
+  ScrollText,
+  Search,
+  Send,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
   SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -14,78 +23,109 @@ import {
   useSidebar,
 } from "@frontend/shadcn";
 
-export function NavMain({
-  items,
-}: {
-  items: {
-    title: string;
-    url: string;
-    icon?: LucideIcon;
-    isActive?: boolean;
-    items?: {
-      icon?: LucideIcon;
-      title: string;
-      url: string;
-    }[];
-  }[];
-}) {
+const loanNavItems = [
+  {
+    title: "Loans",
+    url: "#",
+    icon: ScrollText,
+    isActive: true,
+    items: [
+      {
+        icon: Search,
+        title: "Find offer",
+        url: "/requests",
+        isActive: false,
+      },
+      {
+        icon: Library,
+        title: "See all offers",
+        url: "/available-offers",
+        isActive: false,
+      },
+      {
+        icon: Send,
+        title: "Apply",
+        url: "/loan-application",
+        isActive: false,
+      },
+      {
+        icon: Mails,
+        title: "Applications",
+        url: "/loan-applications",
+        isActive: false,
+      },
+    ],
+  },
+];
+
+export function NavMain() {
   const { state } = useSidebar();
 
+  if (state === "collapsed") {
+    return (
+      <SidebarGroup>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            <SidebarMenuItem className="hover:bg-gray-200" key="loans">
+              <SidebarMenuButton asChild>
+                <Link to="/requests">
+                  <ScrollText />
+                  <span>Loans</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+    );
+  }
+
   return (
-    <SidebarGroup className="hover:bg-area relative flex w-full min-w-0 flex-col p-2 py-0">
-      <SidebarMenu>
-        {items.map((item) => (
-          <Collapsible
-            key={item.title}
-            asChild
-            defaultOpen={item.isActive}
-            className="group/collapsible mr-5"
-          >
-            <SidebarMenuItem>
-              <CollapsibleTrigger
-                asChild
-                className="group-data-[collapsible=icon]:p-x-0 p-2 group-data-[collapsible=icon]:hover:space-x-0"
-              >
-                <SidebarMenuButton
-                  className="hover:bg-gray-200"
-                  tooltip={item.title}
-                >
-                  {state === "expanded" ? (
-                    <>
-                      {item.icon && <item.icon className="h-4 w-4" />}
-                      <span className="group-data-[collapsible=icon]:hidden">
-                        {item.title}
-                      </span>
-                      <ChevronRight className="ml-auto transition-transform duration-200 group-data-[collapsible=icon]:hidden group-data-[state=open]/collapsible:rotate-90" />
-                    </>
-                  ) : (
-                    <Link to="requests">
-                      {item.icon && <item.icon className="h-4 w-4" />}
-                    </Link>
-                  )}
-                </SidebarMenuButton>
+    <>
+      {loanNavItems.map((item) => (
+        <Collapsible
+          key={item.title}
+          title={item.title}
+          defaultOpen
+          asChild
+          className="group/collapsible"
+        >
+          <SidebarGroup>
+            <SidebarGroupLabel
+              asChild
+              className="group/label text-sm hover:bg-gray-200"
+            >
+              <CollapsibleTrigger>
+                <item.icon className={"h-4 w-4 mr-2"} />
+                <span>{item.title}</span>{" "}
+                <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
               </CollapsibleTrigger>
-              <CollapsibleContent>
+            </SidebarGroupLabel>
+            <CollapsibleContent>
+              <SidebarGroupContent>
                 <SidebarMenuSub>
-                  {item.items?.map((subItem) => (
-                    <SidebarMenuSubItem key={subItem.title}>
+                  {item.items.map((item) => (
+                    <SidebarMenuSubItem
+                      key={item.title}
+                      className={"hover:bg-gray-200"}
+                    >
                       <SidebarMenuSubButton
-                        className="hover:bg-gray-200"
                         asChild
+                        isActive={location.pathname.includes(item.url)}
                       >
-                        <Link to={subItem.url}>
-                          {subItem.icon && <subItem.icon />}
-                          <span>{subItem.title}</span>
+                        <Link to={item.url}>
+                          {item.icon && <item.icon />}
+                          <span>{item.title}</span>
                         </Link>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                   ))}
                 </SidebarMenuSub>
-              </CollapsibleContent>
-            </SidebarMenuItem>
-          </Collapsible>
-        ))}
-      </SidebarMenu>
-    </SidebarGroup>
+              </SidebarGroupContent>
+            </CollapsibleContent>
+          </SidebarGroup>
+        </Collapsible>
+      ))}
+    </>
   );
 }
