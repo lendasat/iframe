@@ -971,8 +971,6 @@ pub struct DefaultedContract {
 pub(crate) async fn default_expired_contracts(
     pool: &Pool<Postgres>,
 ) -> Result<Vec<DefaultedContract>> {
-    // TODO: We should "start the timer" from the time the principal is disbursed, not from the time
-    // the contract is created in the database.
     let rows = sqlx::query!(
         r#"
             UPDATE
@@ -981,7 +979,8 @@ pub(crate) async fn default_expired_contracts(
                 status = $1,
                 updated_at = $2
             WHERE
-                id IN (SELECT id FROM expired_open_contracts)
+                id IN (SELECT id FROM expired_open_contracts) AND
+                status != $1
             RETURNING id, borrower_id, lender_id;
         "#,
         db::ContractStatus::Defaulted as db::ContractStatus,
