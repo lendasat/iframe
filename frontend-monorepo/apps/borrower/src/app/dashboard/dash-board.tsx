@@ -35,7 +35,7 @@ interface ContractOverviewProps {
   contractStatusFilter: ContractStatus[];
 }
 
-export const ContractOverview = ({
+const ContractOverview = ({
   contracts: unfilteredContracts,
   contractStatusFilter,
 }: ContractOverviewProps) => {

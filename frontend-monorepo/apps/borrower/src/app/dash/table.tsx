@@ -13,13 +13,12 @@ import {
 } from "@frontend/shadcn";
 import { useAsync } from "react-use";
 import {
-  getAllContractStatuses,
   isActionRequired,
   isContractClosed,
   isContractOpen,
   useBorrowerHttpClient,
 } from "@frontend/http-client-borrower";
-import { ContractOverview } from "../dashboard/dash-board";
+import { ContractOverview } from "./contract-overview";
 
 export function DataTable() {
   const { getContracts } = useBorrowerHttpClient();
@@ -63,9 +62,7 @@ export function DataTable() {
             <SelectItem value="closed">Closed</SelectItem>
           </SelectContent>
         </Select>
-        <TabsList
-          className="md:flex hidden"
-        >
+        <TabsList className="md:flex hidden">
           <TabsTrigger value="action-required">Action Required</TabsTrigger>
           <TabsTrigger value="open" className="gap-1">
             Open{" "}
@@ -92,27 +89,17 @@ export function DataTable() {
         className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6"
       >
         <div className="overflow-hidden rounded-lg">
-          <ContractOverview
-            contracts={actionRequiredContracts}
-            // TODO: this extra filter is unnecessary but this component is used elsewhere. We filtered the list already, and just say add another filter which is basicaly always true.
-            contractStatusFilter={getAllContractStatuses()}
-          />
+          <ContractOverview contracts={actionRequiredContracts} />
         </div>
       </TabsContent>
       <TabsContent value="open" className="flex flex-col px-4 lg:px-6">
         <div className="overflow-hidden rounded-lg">
-          <ContractOverview
-            contracts={openContracts}
-            contractStatusFilter={getAllContractStatuses()}
-          />
+          <ContractOverview contracts={openContracts} />
         </div>
       </TabsContent>
       <TabsContent value="closed" className="flex flex-col px-4 lg:px-6">
         <div className="overflow-hidden rounded-lg">
-          <ContractOverview
-            contracts={closedContracts}
-            contractStatusFilter={getAllContractStatuses()}
-          />
+          <ContractOverview contracts={closedContracts} />
         </div>
       </TabsContent>
     </Tabs>
