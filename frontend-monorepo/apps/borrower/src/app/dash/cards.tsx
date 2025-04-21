@@ -1,14 +1,69 @@
-import { TrendingDownIcon, TrendingUpIcon } from "lucide-react";
-import { Badge } from "@frontend/shadcn";
+import {
+  SquareArrowOutUpRight,
+  TrendingDownIcon,
+  TrendingUpIcon,
+} from "lucide-react";
+import { Badge, Skeleton } from "@frontend/shadcn";
 import {
   Card,
   CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
+  Button,
 } from "@frontend/shadcn";
+import {
+  Contract,
+  ContractStatus,
+  isContractOpen,
+} from "@frontend/http-client-borrower";
+import { formatCurrency, formatSatsToBitcoin } from "@frontend/ui-shared";
+import { format } from "date-fns";
+import { useNavigate } from "react-router-dom";
 
-export function SectionCards() {
+interface SectionCardsProps {
+  isLoading: boolean;
+  contracts: Contract[];
+}
+
+export function SectionCards({ isLoading, contracts }: SectionCardsProps) {
+  const navigate = useNavigate();
+
+  // All the contracts that were at least approved by the lender.
+  const allValidContracts = contracts?.filter(
+    (loan) =>
+      loan.status !== ContractStatus.Rejected &&
+      loan.status !== ContractStatus.RequestExpired &&
+      loan.status !== ContractStatus.ApprovalExpired &&
+      loan.status !== ContractStatus.Cancelled,
+  ).length;
+
+  const totalActiveContracts = contracts.filter((loan) =>
+    isContractOpen(loan.status),
+  );
+
+  const contractWithEarliestExpiry = totalActiveContracts.reduce(
+    (earliest: Contract | undefined, current) => {
+      // If there's no earliest yet, or the current contract has an earlier expiry
+      if (!earliest || current.expiry < earliest.expiry) {
+        return current;
+      }
+      return earliest;
+    },
+    undefined,
+  );
+
+  const lockedSats = totalActiveContracts
+    .map((c) => c.collateral_sats)
+    .reduce((sum, amount) => sum + amount, 0);
+  const lockedUsd = totalActiveContracts
+    .map((c) => c.loan_amount)
+    .reduce((sum, amount) => sum + amount, 0);
+
+  const openInterest = totalActiveContracts
+    .map((c) => c.interest)
+    .reduce((sum, amount) => sum + amount, 0);
+
   return (
     <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div
@@ -18,103 +73,68 @@ export function SectionCards() {
       >
         <Card className="@container/card">
           <CardHeader className="relative">
-            <CardDescription>Total Revenue</CardDescription>
+            <CardDescription>Total Loan Outstanding</CardDescription>
             <CardTitle className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums">
-              $1,250.00
+              {isLoading ? (
+                <Skeleton>$1,250.00</Skeleton>
+              ) : (
+                formatCurrency(lockedUsd)
+              )}
             </CardTitle>
-            <div className="absolute right-4 top-4">
-              <Badge
-                variant="outline"
-                className="flex gap-1 rounded-lg text-xs"
-              >
-                <TrendingUpIcon className="size-3" />
-                +12.5%
-              </Badge>
-            </div>
           </CardHeader>
-          <CardFooter className="flex-col items-start gap-1 text-sm">
-            <div className="line-clamp-1 flex gap-2 font-medium">
-              Trending up this month <TrendingUpIcon className="size-4" />
-            </div>
-            <div className="text-muted-foreground">
-              Visitors for the last 6 months
-            </div>
-          </CardFooter>
         </Card>
         <Card className="@container/card">
           <CardHeader className="relative">
-            <CardDescription>New Customers</CardDescription>
+            <CardDescription>Open Interest</CardDescription>
             <CardTitle className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums">
-              1,234
+              {isLoading ? (
+                <Skeleton>$1,250.00</Skeleton>
+              ) : (
+                formatCurrency(openInterest)
+              )}
             </CardTitle>
-            <div className="absolute right-4 top-4">
-              <Badge
-                variant="outline"
-                className="flex gap-1 rounded-lg text-xs"
-              >
-                <TrendingDownIcon className="size-3" />
-                -20%
-              </Badge>
-            </div>
           </CardHeader>
-          <CardFooter className="flex-col items-start gap-1 text-sm">
-            <div className="line-clamp-1 flex gap-2 font-medium">
-              Down 20% this period <TrendingDownIcon className="size-4" />
-            </div>
-            <div className="text-muted-foreground">
-              Acquisition needs attention
-            </div>
-          </CardFooter>
         </Card>
+
         <Card className="@container/card">
           <CardHeader className="relative">
-            <CardDescription>Active Accounts</CardDescription>
+            <CardDescription>Locked Collateral</CardDescription>
             <CardTitle className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums">
-              45,678
+              {isLoading ? (
+                <Skeleton>1.0</Skeleton>
+              ) : (
+                <span className="whitespace-nowrap">{`${formatSatsToBitcoin(lockedSats)} BTC`}</span>
+              )}
             </CardTitle>
-            <div className="absolute right-4 top-4">
-              <Badge
-                variant="outline"
-                className="flex gap-1 rounded-lg text-xs"
-              >
-                <TrendingUpIcon className="size-3" />
-                +12.5%
-              </Badge>
-            </div>
           </CardHeader>
-          <CardFooter className="flex-col items-start gap-1 text-sm">
-            <div className="line-clamp-1 flex gap-2 font-medium">
-              Strong user retention <TrendingUpIcon className="size-4" />
-            </div>
-            <div className="text-muted-foreground">
-              Engagement exceed targets
-            </div>
-          </CardFooter>
         </Card>
+
         <Card className="@container/card">
           <CardHeader className="relative">
-            <CardDescription>Growth Rate</CardDescription>
+            <CardDescription>Next Expiry</CardDescription>
             <CardTitle className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums">
-              4.5%
+              {isLoading || !contractWithEarliestExpiry ? (
+                <Skeleton>03.01.2009</Skeleton>
+              ) : (
+                format(contractWithEarliestExpiry.expiry, "MMM, dd yyyy")
+              )}
+              <div className="absolute right-4 top-4">
+                {contractWithEarliestExpiry && (
+                  <Button
+                    size={"icon"}
+                    variant={"outline"}
+                    onClick={() => {
+                      navigate(
+                        `/my-contracts/${contractWithEarliestExpiry?.id}`,
+                      );
+                    }}
+                  >
+                    <SquareArrowOutUpRight className={"h-4 w-4"} />
+                  </Button>
+                )}
+              </div>
             </CardTitle>
-            <div className="absolute right-4 top-4">
-              <Badge
-                variant="outline"
-                className="flex gap-1 rounded-lg text-xs"
-              >
-                <TrendingUpIcon className="size-3" />
-                +4.5%
-              </Badge>
-            </div>
           </CardHeader>
-          <CardFooter className="flex-col items-start gap-1 text-sm">
-            <div className="line-clamp-1 flex gap-2 font-medium">
-              Steady performance <TrendingUpIcon className="size-4" />
-            </div>
-            <div className="text-muted-foreground">
-              Meets growth projections
-            </div>
-          </CardFooter>
         </Card>
       </div>
     </div>

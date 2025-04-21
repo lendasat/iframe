@@ -11,24 +11,23 @@ import {
   TabsList,
   TabsTrigger,
 } from "@frontend/shadcn";
-import { useAsync } from "react-use";
 import {
+  Contract,
   isActionRequired,
   isContractClosed,
   isContractOpen,
-  useBorrowerHttpClient,
 } from "@frontend/http-client-borrower";
 import { ContractOverview } from "./contract-overview";
 
-export function DataTable() {
-  const { getContracts } = useBorrowerHttpClient();
+interface DataTableProps {
+  contracts: Contract[];
+  isLoading: boolean;
+}
 
-  const { value: maybeContracts } = useAsync(async () => {
-    return await getContracts();
-  }, []);
-
-  const allContracts = maybeContracts || [];
-
+export function DataTable({
+  contracts: allContracts,
+  isLoading,
+}: DataTableProps) {
   const openContracts = allContracts.filter((c) => {
     return isContractOpen(c.status);
   });
@@ -46,31 +45,31 @@ export function DataTable() {
       defaultValue={
         actionRequiredContracts.length > 0 ? "open" : "action-required"
       }
-      className="flex w-full flex-col justify-start gap-2"
+      className="flex w-full flex-col justify-start gap-0"
     >
       <div className="flex items-center justify-between px-4 lg:px-6">
         <Label htmlFor="view-selector" className="sr-only">
           View
         </Label>
-        <Select defaultValue="outline">
-          <SelectTrigger className="md:hidden flex w-fit" id="view-selector">
-            <SelectValue placeholder="Select a view" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="action-required">Action Required</SelectItem>
-            <SelectItem value="open">Open</SelectItem>
-            <SelectItem value="closed">Closed</SelectItem>
-          </SelectContent>
-        </Select>
-        <TabsList className="md:flex hidden">
-          <TabsTrigger value="action-required">Action Required</TabsTrigger>
+        <TabsList className="flex">
+          <TabsTrigger value="action-required" className="gap-1">
+            Action Required{" "}
+            <Badge
+              variant="secondary"
+              className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-foreground/30"
+            >
+              {actionRequiredContracts.length > 0
+                ? actionRequiredContracts.length
+                : ""}
+            </Badge>
+          </TabsTrigger>
           <TabsTrigger value="open" className="gap-1">
             Open{" "}
             <Badge
               variant="secondary"
               className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-foreground/30"
             >
-              3
+              {openContracts.length > 0 ? openContracts.length : ""}
             </Badge>
           </TabsTrigger>
           <TabsTrigger value="closed" className="gap-1">
@@ -79,7 +78,7 @@ export function DataTable() {
               variant="secondary"
               className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-foreground/30"
             >
-              2
+              {closedContracts.length > 0 ? closedContracts.length : ""}
             </Badge>
           </TabsTrigger>
         </TabsList>
