@@ -75,6 +75,7 @@ enum ConfirmationState {
 struct TrackedClaimTx {
     contract_id: String,
     txid: Txid,
+    claim_type: ClaimTxType,
 }
 
 impl Actor {
@@ -108,6 +109,7 @@ impl Actor {
         for TrackedClaimTx {
             contract_id,
             txid: claim_txid,
+            claim_type,
         } in self.tracked_claim_txs.clone().values()
         {
             // TODO: We could look for claim TXs directly in the block.
@@ -115,7 +117,7 @@ impl Actor {
             // We use 5 attempts since the caller is a background task.
             let attempts = 5;
             if let Err(e) = self
-                .update_claim_tx_status(contract_id, claim_txid, attempts)
+                .update_claim_tx_status(contract_id, claim_txid, attempts, claim_type)
                 .await
             {
                 tracing::error!(
@@ -134,6 +136,7 @@ impl Actor {
         contract_id: &str,
         claim_txid: &Txid,
         attempts: usize,
+        claim_type: &ClaimTxType,
     ) -> Result<()> {
         let get_tx = || async { self.rest_client.get_tx(claim_txid).await };
         let tx = get_tx
@@ -161,10 +164,20 @@ impl Actor {
             tracing::info!(
                 contract_id,
                 %claim_txid,
+                ?claim_type,
                 "Claim TX confirmed"
             );
 
-            db::transactions::insert_claim_txid(&self.db, contract_id, claim_txid).await?;
+            match claim_type {
+                ClaimTxType::Repaid => {
+                    db::transactions::insert_claim_txid(&self.db, contract_id, claim_txid).await?;
+                }
+                ClaimTxType::Liquidated => {
+                    db::transactions::insert_liquidation_txid(&self.db, contract_id, claim_txid)
+                        .await?;
+                }
+            }
+
             db::contracts::mark_contract_as_closed(&self.db, contract_id)
                 .await
                 .context("Failed to mark contract as closed")?;
@@ -543,11 +556,18 @@ impl xtra::Handler<AssociateNewContract> for Actor {
     }
 }
 
+#[derive(Debug, Clone)]
+pub enum ClaimTxType {
+    Repaid,
+    Liquidated,
+}
+
 /// Message to tell the [`Actor`] to track the status of a collateral-claim transaction.
 #[derive(Debug)]
 pub struct TrackCollateralClaim {
     pub contract_id: String,
     pub claim_txid: Txid,
+    pub claim_type: ClaimTxType,
 }
 
 impl xtra::Handler<TrackCollateralClaim> for Actor {
@@ -570,12 +590,13 @@ impl xtra::Handler<TrackCollateralClaim> for Actor {
             TrackedClaimTx {
                 contract_id: msg.contract_id.clone(),
                 txid: msg.claim_txid,
+                claim_type: msg.claim_type.clone(),
             },
         );
 
         // Only two attempts so that the caller doesn't hang.
         let attempts = 2;
-        self.update_claim_tx_status(&msg.contract_id, &msg.claim_txid, attempts)
+        self.update_claim_tx_status(&msg.contract_id, &msg.claim_txid, attempts, &msg.claim_type)
             .await?;
 
         Ok(())
