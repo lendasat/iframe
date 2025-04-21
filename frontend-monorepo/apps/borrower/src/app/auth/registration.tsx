@@ -1,4 +1,5 @@
 import { useBaseHttpClient } from "@frontend/base-http-client";
+import { ShadCnRegistrationForm } from "@frontend/shadcn";
 import { RegistrationForm } from "@frontend/ui-shared";
 import {
   begin_registration,
@@ -54,6 +55,8 @@ function Registration() {
     <RegistrationForm
       handleRegister={handleRegister}
       referralCode={referralCode}
+      waitlistLink={"/waitlist"}
+      loginLink={"/login"}
     />
   );
 }
