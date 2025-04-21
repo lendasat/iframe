@@ -241,7 +241,7 @@ async fn get_contract(
     Ok(AppJson(contract))
 }
 
-#[instrument(skip_all, fields(lender_id = user.id, contract_id), err(Debug), ret)]
+#[instrument(skip_all, fields(lender_id = user.id, contract_id, body = ?body), err(Debug))]
 async fn put_approve_contract(
     State(data): State<Arc<AppState>>,
     Path(contract_id): Path<String>,
@@ -271,7 +271,7 @@ pub struct PrincipalGivenQueryParam {
     pub txid: Option<String>,
 }
 
-#[instrument(skip_all, fields(lender_id = user.id, contract_id), err(Debug), ret)]
+#[instrument(skip_all, fields(lender_id = user.id, contract_id, txid = query_params.txid ), err(Debug), ret)]
 async fn put_principal_given(
     State(data): State<Arc<AppState>>,
     Path(contract_id): Path<String>,
@@ -482,7 +482,7 @@ pub enum LiquidationType {
     StableCoin,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct LiquidationPsbtQueryParams {
     /// Fee rate in sats/vbyte.
     pub fee_rate: u64,
@@ -634,7 +634,7 @@ pub struct LiquidationToStableCoinPsbt {
     pub settle_amount: Decimal,
 }
 
-#[instrument(skip_all, fields(lender_id = user.id, contract_id, body), err(Debug), ret)]
+#[instrument(skip_all, fields(lender_id = user.id, contract_id, connection_details, body), err(Debug), ret)]
 async fn post_build_liquidation_to_stablecoin_psbt(
     State(data): State<Arc<AppState>>,
     Path(contract_id): Path<String>,

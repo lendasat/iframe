@@ -100,6 +100,7 @@ pub async fn get_disputes_by_id(
     Ok((StatusCode::OK, Json(dispute)))
 }
 
+#[instrument(skip_all, fields(borrower_id = user.id, body), ret, err(Debug))]
 pub(crate) async fn create_dispute(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Borrower>,

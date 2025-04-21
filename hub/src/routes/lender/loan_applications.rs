@@ -180,7 +180,7 @@ pub struct TakeLoanApplicationSchema {
     pub lender_npub: String,
 }
 
-#[instrument(skip_all, err(Debug))]
+#[instrument(skip_all, fields(lender_id = user.id, loan_deal_id, body), err(Debug), ret)]
 pub async fn take_loan_application(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Lender>,
