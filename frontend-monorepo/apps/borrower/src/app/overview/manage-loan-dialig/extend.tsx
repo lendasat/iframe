@@ -128,6 +128,8 @@ export function ExtendContract({ contract }: ExtendContractProps) {
 
   const notAllowedDurations = populateNotAllowedDurations(offers);
 
+  const noAvailableOffer = unfilteredOffers.length === 0;
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -141,14 +143,27 @@ export function ExtendContract({ contract }: ExtendContractProps) {
         )}
       </div>
 
-      <Alert className="my-4">
-        <LuCalendarClock className="h-4 w-4" />
-        <AlertTitle>Request Extension</AlertTitle>
-        <AlertDescription>
-          You can request to extend your loan term. The lender will need to
-          approve this request, and an extension fee may apply.
-        </AlertDescription>
-      </Alert>
+      {noAvailableOffer && (
+        <Alert className="my-4" variant={"destructive"}>
+          <LuCalendarClock className="h-4 w-4" />
+          <AlertTitle>Loan extension not available</AlertTitle>
+          <AlertDescription>
+            The lender has either disabled loan extensions or no suitable offer
+            is available. Please reach out to the lender directly via the chat.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {!noAvailableOffer && (
+        <Alert className="my-4">
+          <LuCalendarClock className="h-4 w-4" />
+          <AlertTitle>Request Extension</AlertTitle>
+          <AlertDescription>
+            You can request to extend your loan term. The lender will need to
+            approve this request, and an extension fee may apply.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="space-y-6">
         <div className="space-y-2">
@@ -157,7 +172,7 @@ export function ExtendContract({ contract }: ExtendContractProps) {
           </div>
           <SingleDurationSelector
             onDurationChange={(d) => setExtensionDays(d)}
-            disabled={false}
+            disabled={noAvailableOffer}
             selectedDuration={extensionDays}
             disabledDurations={notAllowedDurations}
           />
@@ -171,7 +186,7 @@ export function ExtendContract({ contract }: ExtendContractProps) {
               <div className="flex justify-between items-center">
                 <span className="text-sm">New Expiry Date</span>
                 <span className="font-medium">
-                  {newExpiry ? (
+                  {!noAvailableOffer && newExpiry ? (
                     format(newExpiry, "yyyy-MM-dd")
                   ) : (
                     <Skeleton className="h-4 w-[100px]" />
@@ -184,7 +199,11 @@ export function ExtendContract({ contract }: ExtendContractProps) {
                   <span className="text-sm">Annual Interest Rate</span>
                 </div>
                 <span className="font-medium">
-                  {(totalInterestRate * 100).toFixed(2)}%
+                  {!noAvailableOffer ? (
+                    <span>(totalInterestRate * 100).toFixed(2){"%"})</span>
+                  ) : (
+                    <Skeleton className="h-4 w-[100px]" />
+                  )}
                 </span>
               </div>
 
@@ -233,7 +252,7 @@ export function ExtendContract({ contract }: ExtendContractProps) {
             type={"button"}
             className="w-full px-0"
             onClick={() => handleSubmitExtension(bestOffer?.id)}
-            disabled={isSubmitting}
+            disabled={noAvailableOffer || isSubmitting}
           >
             {isSubmitting ? (
               <>
