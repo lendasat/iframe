@@ -806,6 +806,7 @@ async fn post_liquidation_tx(
         .send(mempool::TrackCollateralClaim {
             contract_id: contract_id.clone(),
             claim_txid,
+            claim_type: mempool::ClaimTxType::Liquidated,
         })
         .await
         .expect("actor to be alive")

@@ -757,6 +757,7 @@ async fn post_claim_tx(
         .send(mempool::TrackCollateralClaim {
             contract_id: contract_id.clone(),
             claim_txid,
+            claim_type: mempool::ClaimTxType::Repaid,
         })
         .await
         .expect("actor to be alive")
