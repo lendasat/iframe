@@ -150,7 +150,7 @@ export function StablecoinRepayment({ contract }: StablecoinRepaymentProps) {
           </div>
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 mb-4">
           <div className="grid flex-1 gap-2">
             <Label htmlFor="payment-address" className="sr-only">
               Payment Address
