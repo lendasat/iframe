@@ -49,6 +49,7 @@ import AvailableLoanApplications from "./loan-applications/available-loan-applic
 import { FaFileContract, FaMoneyCheckAlt } from "react-icons/fa";
 import BitcoinCollateralizedLoan from "./overview/bitcoin-loan-component";
 import { Toaster } from "@frontend/shadcn";
+import { Dashboard } from "./dash/dash";
 
 const menuItems = [
   {
@@ -196,6 +197,7 @@ function MainLayoutComponents() {
             errorElement={<ErrorBoundary />}
           >
             <Route index element={<DashBoard />} />
+            <Route path="/dash" element={<Dashboard />} />
             <Route path="/my-contracts">
               <Route index element={<MyContracts />} />
               <Route path={":id"} element={<BitcoinCollateralizedLoan />} />
