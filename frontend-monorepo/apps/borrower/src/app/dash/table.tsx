@@ -13,7 +13,6 @@ import {
 } from "@frontend/shadcn";
 import { useAsync } from "react-use";
 import {
-  ContractStatus,
   getAllContractStatuses,
   isActionRequired,
   isContractClosed,
@@ -30,17 +29,14 @@ export function DataTable() {
   }, []);
 
   const allContracts = maybeContracts || [];
-  console.log(`allContracts ${allContracts.length}`);
 
   const openContracts = allContracts.filter((c) => {
     return isContractOpen(c.status);
   });
-  console.log(`openContracts ${openContracts.length}`);
 
   const actionRequiredContracts = allContracts.filter((c) => {
     return isActionRequired(c.status);
   });
-  console.log(`actionRequiredContracts ${actionRequiredContracts.length}`);
 
   const closedContracts = allContracts.filter((c) => {
     return isContractClosed(c.status);
@@ -48,7 +44,9 @@ export function DataTable() {
 
   return (
     <Tabs
-      defaultValue="outline"
+      defaultValue={
+        actionRequiredContracts.length > 0 ? "open" : "action-required"
+      }
       className="flex w-full flex-col justify-start gap-2"
     >
       <div className="flex items-center justify-between px-4 lg:px-6">
@@ -65,7 +63,9 @@ export function DataTable() {
             <SelectItem value="closed">Closed</SelectItem>
           </SelectContent>
         </Select>
-        <TabsList className="md:flex hidden">
+        <TabsList
+          className="md:flex hidden"
+        >
           <TabsTrigger value="action-required">Action Required</TabsTrigger>
           <TabsTrigger value="open" className="gap-1">
             Open{" "}

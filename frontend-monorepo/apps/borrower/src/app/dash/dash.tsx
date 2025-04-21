@@ -7,7 +7,6 @@ export const Dashboard = () => {
   return (
     <ScrollArea className="h-[90vh] w-full">
       <SectionCards />
-      <ChartAreaInteractive />
       <DataTable />
     </ScrollArea>
   );
