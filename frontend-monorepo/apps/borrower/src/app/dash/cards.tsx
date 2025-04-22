@@ -1,22 +1,13 @@
-import {
-  SquareArrowOutUpRight,
-  TrendingDownIcon,
-  TrendingUpIcon,
-} from "lucide-react";
-import { Badge, Skeleton } from "@frontend/shadcn";
+import { SquareArrowOutUpRight } from "lucide-react";
+import { Skeleton } from "@frontend/shadcn";
 import {
   Card,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
   Button,
 } from "@frontend/shadcn";
-import {
-  Contract,
-  ContractStatus,
-  isContractOpen,
-} from "@frontend/http-client-borrower";
+import { Contract, isContractOpen } from "@frontend/http-client-borrower";
 import { formatCurrency, formatSatsToBitcoin } from "@frontend/ui-shared";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
@@ -28,15 +19,6 @@ interface SectionCardsProps {
 
 export function SectionCards({ isLoading, contracts }: SectionCardsProps) {
   const navigate = useNavigate();
-
-  // All the contracts that were at least approved by the lender.
-  const allValidContracts = contracts?.filter(
-    (loan) =>
-      loan.status !== ContractStatus.Rejected &&
-      loan.status !== ContractStatus.RequestExpired &&
-      loan.status !== ContractStatus.ApprovalExpired &&
-      loan.status !== ContractStatus.Cancelled,
-  ).length;
 
   const totalActiveContracts = contracts.filter((loan) =>
     isContractOpen(loan.status),

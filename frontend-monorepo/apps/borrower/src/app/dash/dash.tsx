@@ -1,5 +1,4 @@
 import { SectionCards } from "./cards";
-import { ChartAreaInteractive } from "./charts";
 import { ScrollArea } from "@radix-ui/themes";
 import { DataTable } from "./table";
 import { useAsync } from "react-use";

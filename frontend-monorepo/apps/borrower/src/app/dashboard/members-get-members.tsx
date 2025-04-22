@@ -1,12 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@frontend/http-client-borrower";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@frontend/shadcn";
+import { Card, CardFooter, CardHeader, CardTitle } from "@frontend/shadcn";
 import { Input } from "@frontend/shadcn";
 import { Button } from "@frontend/shadcn";
 import { LuCopy, LuCheck, LuShare, LuInfo } from "react-icons/lu";

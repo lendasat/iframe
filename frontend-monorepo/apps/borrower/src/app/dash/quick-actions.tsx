@@ -1,10 +1,4 @@
-import {
-  CircleHelp,
-  Library,
-  Settings,
-  Signature,
-  WalletMinimal,
-} from "lucide-react";
+import { CircleHelp, Library, Settings, Signature } from "lucide-react";
 import {
   Card,
   CardDescription,
