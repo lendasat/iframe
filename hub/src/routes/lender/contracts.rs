@@ -241,7 +241,7 @@ async fn get_contract(
     Ok(AppJson(contract))
 }
 
-#[instrument(skip_all, fields(lender_id = user.id, contract_id, body = ?body), err(Debug))]
+#[instrument(skip_all, fields(lender_id = user.id, contract_id, body = ?body), ret, err(Debug))]
 async fn put_approve_contract(
     State(data): State<Arc<AppState>>,
     Path(contract_id): Path<String>,
