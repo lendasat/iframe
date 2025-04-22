@@ -15,6 +15,7 @@ use axum::Extension;
 use axum::Json;
 use axum::Router;
 use std::sync::Arc;
+use tracing::instrument;
 
 pub(crate) fn router(app_state: Arc<AppState>) -> Router {
     Router::new()
@@ -84,6 +85,7 @@ pub async fn get_disputes_by_id(
     Ok((StatusCode::OK, Json(disputes)))
 }
 
+#[instrument(skip_all, fields(lender_id = user.id, contract_id = body.contract_id, body), err(Debug), ret)]
 pub(crate) async fn create_dispute(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Lender>,
