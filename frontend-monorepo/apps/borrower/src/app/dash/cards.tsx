@@ -65,7 +65,7 @@ export function SectionCards({ isLoading, contracts }: SectionCardsProps) {
     .reduce((sum, amount) => sum + amount, 0);
 
   return (
-    <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+    <div className="flex flex-col gap-4 mt-4 mb-4 md:gap-6">
       <div
         className={
           "grid gap-4 xs:grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 px-6"
