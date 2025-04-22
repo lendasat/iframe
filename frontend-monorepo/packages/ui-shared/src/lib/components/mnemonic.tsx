@@ -1,18 +1,34 @@
 import { UnlockWalletModal, useWallet } from "@frontend/browser-wallet";
-import { Button } from "@frontend/shadcn";
-import * as Checkbox from "@radix-ui/react-checkbox";
-import { CheckIcon } from "@radix-ui/react-icons";
-import * as Label from "@radix-ui/react-label";
-import { Box, Flex, Grid, Heading, Text } from "@radix-ui/themes";
+import {
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Checkbox,
+  Label,
+} from "@frontend/shadcn";
+import { LuEye, LuEyeOff } from "react-icons/lu";
 import { useEffect, useState } from "react";
-import { FaLockOpen, FaRegEye, FaRegEyeSlash } from "react-icons/fa";
-import { FaLock } from "react-icons/fa6";
 
 export const MnemonicComponent = () => {
   const [hasBackedUp, setHasBackedUp] = useState(false);
-
   const [isMnemonicVisible, setIsMnemonicVisible] = useState(false);
-  const [mnemonic, setMnemonic] = useState<string[]>([]);
+  const [mnemonic, setMnemonic] = useState<string[]>([
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+  ]);
   const [isCheckboxTicked, setIsCheckboxTicked] = useState(false);
 
   const { getMnemonic, isWalletLoaded } = useWallet();
@@ -38,112 +54,86 @@ export const MnemonicComponent = () => {
   };
 
   return (
-    <>
-      <Box mt={"4"} className="grid max-w-lg gap-5 md:grid-cols-1">
-        <Box>
-          <Flex direction={"column"} gap={"1"}>
-            <Flex direction={"row"} gap={"4"} align={"center"}>
-              <Heading
-                as="h4"
-                className="text-font dark:text-font-dark font-semibold capitalize"
-                size={"3"}
+    <div className="mx-auto max-w-3xl space-y-4">
+      <Card className="shadow-sm">
+        <CardHeader className="px-4 pb-1 pt-3">
+          <div className="flex justify-between">
+            <CardTitle className="text-sm font-semibold">
+              Mnemonic Seed Phrase
+            </CardTitle>
+
+            {!isWalletLoaded ? (
+              <UnlockWalletModal
+                handleSubmit={() => setIsMnemonicVisible(!isMnemonicVisible)}
+                description="Your password is needed to decrypt your wallet and display the mnemonic seed phrase."
               >
-                Mnemonic Seed Phrase
-              </Heading>
-
-              {!isWalletLoaded ? (
-                <UnlockWalletModal handleSubmit={() => {}}>
-                  <Button variant="outline" size="icon">
-                    <FaLock />
-                  </Button>
-                </UnlockWalletModal>
-              ) : (
-                <Button variant="outline" size="icon" disabled={isWalletLoaded}>
-                  <FaLockOpen />
+                <Button variant="outline" size="icon">
+                  <LuEye />
                 </Button>
-              )}
-
-              {mnemonic.length > 0 && (
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setIsMnemonicVisible(!isMnemonicVisible)}
-                >
-                  {isMnemonicVisible ? <FaRegEye /> : <FaRegEyeSlash />}
-                </Button>
-              )}
-            </Flex>
-            <Grid
-              columns={"2"}
-              gap={"4"}
-              className={"max-w-lg p-4"}
-              rows="repeat(6, 1fr)"
-              flow={"column"}
-            >
-              {mnemonic.map((word, index) => (
-                /**
-                 * biome-ignore lint/suspicious/noArrayIndexKey: key should be word, but i dont want to put the mnemonic words in the dom straight away
-                 * maybe over defensive, but i did not want to make the decision to
-                 */
-                <div key={index} className="group flex items-center gap-3">
-                  <Label.Root className="flex w-full cursor-text items-center gap-3 border-b border-gray-200 pb-2">
-                    <Text
-                      size={"3"}
-                      weight={"medium"}
-                      className="text-font/60 dark:text-font-dark/60 text-gray-400"
-                    >
-                      {index + 1}.
-                    </Text>
-                    <Text
-                      size={"3"}
-                      weight={"medium"}
-                      className="text-font/60 dark:text-font-dark/60"
-                    >
-                      {isMnemonicVisible ? word : "****"}
-                    </Text>
-                  </Label.Root>
-                </div>
-              ))}
-            </Grid>
-
-            {isWalletLoaded && isMnemonicVisible && !hasBackedUp && (
-              <div className="mt-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox.Root
-                      className="hover:bg-violet3 flex size-[25px] appearance-none items-center justify-center rounded bg-white shadow-[0_1px_5px] outline-none focus:shadow-[0_0_0_2px_black]"
-                      disabled={!isMnemonicVisible}
-                      checked={isCheckboxTicked}
-                      onCheckedChange={(change) =>
-                        setIsCheckboxTicked(change === true)
-                      }
-                      id="backup"
-                    >
-                      <Checkbox.Indicator className="text-violet11">
-                        <CheckIcon />
-                      </Checkbox.Indicator>
-                    </Checkbox.Root>
-
-                    <label
-                      htmlFor="backup"
-                      className="text-font/60 dark:text-font-dark/60 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      I've created a secure backup
-                    </label>
-                  </div>
-
-                  <Button
-                    onClick={handleBackupConfirm}
-                    disabled={!isMnemonicVisible || !isCheckboxTicked}
-                  >
-                    Confirm Backup
-                  </Button>
-                </div>
-              </div>
+              </UnlockWalletModal>
+            ) : (
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setIsMnemonicVisible(!isMnemonicVisible)}
+              >
+                {isMnemonicVisible ? <LuEyeOff /> : <LuEye />}
+              </Button>
             )}
-          </Flex>
-        </Box>
-      </Box>
-    </>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <CardDescription>
+            This seed is used to derive the keys that secure loan collateral.
+            Back it up!
+          </CardDescription>
+
+          <div className="grid max-w-lg grid-cols-2 gap-4 p-4">
+            {mnemonic.map((word, index) => (
+              <div key={index} className="group flex items-center gap-3">
+                <Label className="flex w-full cursor-text items-center gap-3 border-b border-gray-200 pb-2">
+                  <span className="text-font/60 dark:text-font-dark/60 text-gray-400 inline-block w-5 ">
+                    {index + 1}.
+                  </span>
+                  <span className="text-font/60 dark:text-font-dark/60">
+                    {isMnemonicVisible ? word : "****"}
+                  </span>
+                </Label>
+              </div>
+            ))}
+          </div>
+
+          {!hasBackedUp && (
+            <div className="mt-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    className="hover:bg-violet3 focus:shadow-outline flex h-[25px] w-[25px] appearance-none items-center justify-center rounded bg-white shadow-md outline-none"
+                    disabled={!isMnemonicVisible}
+                    checked={isCheckboxTicked}
+                    onCheckedChange={(change) =>
+                      setIsCheckboxTicked(change === true)
+                    }
+                    id="backup"
+                  ></Checkbox>
+                  <label
+                    htmlFor="backup"
+                    className="text-font/60 dark:text-font-dark/60 text-sm font-medium leading-none"
+                  >
+                    I've created a secure backup
+                  </label>
+                </div>
+                <Button
+                  onClick={handleBackupConfirm}
+                  disabled={!isMnemonicVisible || !isCheckboxTicked}
+                >
+                  Confirm Backup
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 };
