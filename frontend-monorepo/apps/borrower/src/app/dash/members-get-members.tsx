@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@frontend/http-client-borrower";
-import { Card, CardContent, CardHeader, CardTitle } from "@frontend/shadcn";
+import { Card, CardFooter, CardHeader, CardTitle } from "@frontend/shadcn";
 import { Input } from "@frontend/shadcn";
 import { Button } from "@frontend/shadcn";
 import { LuCopy, LuCheck, LuShare, LuInfo } from "react-icons/lu";
@@ -66,65 +66,67 @@ export function MembersGetMemberSection() {
   }
 
   return (
-    <Card className="dark:bg-dark-700 h-full min-h-42">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-font dark:text-font-dark text-lg font-medium">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-font dark:text-font-dark text-lg font-medium">
-              Refer Your Friends!
-            </CardTitle>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => {
-                navigate("settings/profile");
-              }}
-            >
-              <LuInfo className="h-4 w-4" />
-            </Button>
-          </div>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <p className="text-font/70 dark:text-font-dark/70 text-sm">
-            Share your personal referral link and earn rewards when friends
-            join!
-          </p>
-
-          <div className="border-font/10 dark:border-font-dark/20 rounded-lg border p-3">
-            <div className="flex items-center gap-2">
-              <Input
-                value={referralUrl}
-                readOnly
-                className="text-font dark:text-font-dark flex-1"
-              />
+    <div className="flex flex-col mt-4 mb-4">
+      <Card className="dark:bg-dark-700 h-60">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-font dark:text-font-dark text-lg font-medium">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-font dark:text-font-dark text-lg font-medium">
+                Refer Your Friends!
+              </CardTitle>
               <Button
-                onClick={copyToClipboard}
-                variant="outline"
+                variant="ghost"
                 size="icon"
-                className="h-10 w-10"
+                className="h-8 w-8"
+                onClick={() => {
+                  navigate("/settings/profile");
+                }}
               >
-                {copied ? (
-                  <LuCheck className="h-4 w-4" />
-                ) : (
-                  <LuCopy className="h-4 w-4" />
-                )}
-              </Button>
-              <Button
-                onClick={shareReferralLink}
-                variant="outline"
-                size="icon"
-                className="h-10 w-10"
-              >
-                <LuShare className="h-4 w-4" />
+                <LuInfo className="h-4 w-4" />
               </Button>
             </div>
+          </CardTitle>
+        </CardHeader>
+        <CardFooter>
+          <div className="space-y-4 mt-6">
+            <p className="text-font/70 dark:text-font-dark/70 text-sm">
+              Share your personal referral link and earn rewards when friends
+              join!
+            </p>
+
+            <div className="border-font/10 dark:border-font-dark/20 rounded-lg border p-3">
+              <div className="flex items-center gap-2">
+                <Input
+                  value={referralUrl}
+                  readOnly
+                  className="text-font dark:text-font-dark flex-1"
+                />
+                <Button
+                  onClick={copyToClipboard}
+                  variant="outline"
+                  size="icon"
+                  className="h-10 w-10"
+                >
+                  {copied ? (
+                    <LuCheck className="h-4 w-4" />
+                  ) : (
+                    <LuCopy className="h-4 w-4" />
+                  )}
+                </Button>
+                <Button
+                  onClick={shareReferralLink}
+                  variant="outline"
+                  size="icon"
+                  className="h-10 w-10"
+                >
+                  <LuShare className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardFooter>
+      </Card>
+    </div>
   );
 }
 

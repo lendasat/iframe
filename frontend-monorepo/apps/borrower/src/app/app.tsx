@@ -16,7 +16,6 @@ import Registration from "./auth/registration";
 import ResetPassword from "./auth/reset-password";
 import ContractDetailsOverview from "./contracts/contract-details-overview";
 import MyContracts from "./contracts/my-contracts";
-import DashBoard from "./dashboard/dash-board";
 import ResolveDispute from "./disputes/dispute";
 import ErrorBoundary from "./ErrorBoundary";
 import History from "./History";
@@ -49,6 +48,7 @@ import AvailableLoanApplications from "./loan-applications/available-loan-applic
 import { FaFileContract, FaMoneyCheckAlt } from "react-icons/fa";
 import BitcoinCollateralizedLoan from "./overview/bitcoin-loan-component";
 import { Toaster } from "@frontend/shadcn";
+import { Dashboard } from "./dash/dash";
 
 const menuItems = [
   {
@@ -195,7 +195,7 @@ function MainLayoutComponents() {
             }
             errorElement={<ErrorBoundary />}
           >
-            <Route index element={<DashBoard />} />
+            <Route index element={<Dashboard />} />
             <Route path="/my-contracts">
               <Route index element={<MyContracts />} />
               <Route path={":id"} element={<BitcoinCollateralizedLoan />} />
@@ -235,7 +235,7 @@ function MainLayoutComponents() {
               element={<ResetPassword />}
             />
             <Route path="/error" element={<ErrorBoundary />} />
-            <Route path="*" element={<DashBoard />} />
+            <Route path="*" element={<Dashboard />} />
           </Route>
         </Routes>
         <Toaster />

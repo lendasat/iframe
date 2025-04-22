@@ -30,6 +30,70 @@ export enum ContractStatus {
   ApprovalExpired = "ApprovalExpired",
 }
 
+export const isActionRequired = (status: ContractStatus) => {
+  switch (status) {
+    case ContractStatus.Requested:
+    case ContractStatus.Undercollateralized:
+    case ContractStatus.Defaulted:
+    case ContractStatus.Closing:
+    case ContractStatus.Closed:
+    case ContractStatus.Extended:
+    case ContractStatus.Rejected:
+    case ContractStatus.Cancelled:
+    case ContractStatus.RequestExpired:
+    case ContractStatus.ApprovalExpired:
+    case ContractStatus.CollateralSeen:
+    case ContractStatus.CollateralConfirmed:
+    case ContractStatus.PrincipalGiven:
+    case ContractStatus.RepaymentProvided:
+    case ContractStatus.RenewalRequested:
+      return false;
+    case ContractStatus.Approved:
+    case ContractStatus.RepaymentConfirmed:
+    case ContractStatus.DisputeBorrowerStarted:
+    case ContractStatus.DisputeLenderStarted:
+    case ContractStatus.DisputeBorrowerResolved:
+    case ContractStatus.DisputeLenderResolved:
+      return true;
+  }
+};
+
+export const isContractOpen = (status: ContractStatus) => {
+  switch (status) {
+    case ContractStatus.Requested:
+    case ContractStatus.Undercollateralized:
+    case ContractStatus.Defaulted:
+    case ContractStatus.Closing:
+    case ContractStatus.Closed:
+    case ContractStatus.Extended:
+    case ContractStatus.Rejected:
+    case ContractStatus.Cancelled:
+    case ContractStatus.RequestExpired:
+    case ContractStatus.ApprovalExpired:
+      return false;
+    case ContractStatus.Approved:
+    case ContractStatus.CollateralSeen:
+    case ContractStatus.CollateralConfirmed:
+    case ContractStatus.PrincipalGiven:
+    case ContractStatus.RepaymentProvided:
+    case ContractStatus.RepaymentConfirmed:
+    case ContractStatus.RenewalRequested:
+    case ContractStatus.DisputeBorrowerStarted:
+    case ContractStatus.DisputeLenderStarted:
+    case ContractStatus.DisputeBorrowerResolved:
+    case ContractStatus.DisputeLenderResolved:
+      return true;
+  }
+};
+
+export const isContractClosed = (status: ContractStatus) => {
+  return !isContractOpen(status);
+};
+
+export const getAllContractStatuses = (): ContractStatus[] => {
+  return Object.values(ContractStatus);
+};
+
 export function contractStatusToLabelString(status: ContractStatus): string {
   switch (status) {
     case ContractStatus.Requested:
