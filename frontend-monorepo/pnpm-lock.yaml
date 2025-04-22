@@ -180,9 +180,6 @@ importers:
       wagmi:
         specifier: ^2.12.19
         version: 2.14.11(@tanstack/query-core@5.66.0)(@tanstack/react-query@5.66.0(react@19.0.0))(@types/react@19.0.0)(bufferutil@4.0.9)(react@19.0.0)(typescript@5.7.3)(utf-8-validate@5.0.10)(viem@2.23.2(bufferutil@4.0.9)(typescript@5.7.3)(utf-8-validate@5.0.10)(zod@3.24.3))(zod@3.24.3)
-      zod:
-        specifier: ^3.24.3
-        version: 3.24.3
     devDependencies:
       '@babel/core':
         specifier: ^7.14.5
@@ -19940,7 +19937,8 @@ snapshots:
 
   zod@3.22.3: {}
 
-  zod@3.24.3: {}
+  zod@3.24.3:
+    optional: true
 
   zustand@5.0.0(@types/react@19.0.0)(react@19.0.0)(use-sync-external-store@1.4.0(react@19.0.0)):
     optionalDependencies:
