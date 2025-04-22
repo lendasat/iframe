@@ -12,7 +12,7 @@ export function QuickActions() {
   const navigate = useNavigate();
 
   return (
-    <div className="flex flex-col gap-4 mt-4 mb-8">
+    <div className="flex flex-col gap-4 mt-4 mb-2">
       <div className={"grid gap-4 grid-cols-2"}>
         <Card className="@container/card">
           <CardHeader className="relative flex flex-col items-center">

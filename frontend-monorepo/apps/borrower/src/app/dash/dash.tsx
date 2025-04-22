@@ -3,7 +3,7 @@ import { ScrollArea } from "@radix-ui/themes";
 import { DataTable } from "./table";
 import { useAsync } from "react-use";
 import { useBorrowerHttpClient } from "@frontend/http-client-borrower";
-import MembersGetMemberSection from "../dashboard/members-get-members";
+import MembersGetMemberSection from "./members-get-members";
 import { QuickActions } from "./quick-actions";
 
 export const Dashboard = () => {
