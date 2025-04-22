@@ -5,6 +5,7 @@ import { DataTable } from "./table";
 import { useAsync } from "react-use";
 import { useBorrowerHttpClient } from "@frontend/http-client-borrower";
 import MembersGetMemberSection from "../dashboard/members-get-members";
+import { QuickActions } from "./quick-actions";
 
 export const Dashboard = () => {
   const { getContracts } = useBorrowerHttpClient();
@@ -18,7 +19,12 @@ export const Dashboard = () => {
   return (
     <ScrollArea className="h-[90vh] w-full">
       <SectionCards contracts={contracts} isLoading={loading} />
-      <MembersGetMemberSection />
+      <div
+        className={"grid xs:grid-cols-1 grid-cols-1 lg:grid-cols-2 px-6 gap-4"}
+      >
+        <QuickActions />
+        <MembersGetMemberSection />
+      </div>
       <DataTable contracts={contracts} isLoading={loading} />
     </ScrollArea>
   );

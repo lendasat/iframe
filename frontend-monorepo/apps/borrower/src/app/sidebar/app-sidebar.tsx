@@ -80,7 +80,6 @@ const ThemeSwitch = () => {
 // - Dark mode is ugly and does not apply to desktop sidebar.
 export function AppSidebar({ onLogout, username }: AppSidebarProps) {
   const location = useLocation();
-  console.log(`${location.pathname}`);
 
   return (
     <Sidebar collapsible="icon">
