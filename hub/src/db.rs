@@ -11,6 +11,7 @@ pub mod api_keys;
 pub mod borrower_features;
 pub mod borrowers;
 pub mod borrowers_referral_code;
+pub mod contract_disputes;
 pub mod contract_emails;
 pub mod contract_extensions;
 pub mod contract_status_log;
@@ -25,6 +26,7 @@ pub mod loan_applications;
 pub mod loan_deals;
 pub mod loan_offers;
 pub mod manual_collateral_recovery;
+pub mod migrate_pks;
 pub mod moon;
 pub mod transactions;
 pub mod user_logins;
@@ -32,8 +34,6 @@ pub mod user_stats;
 pub mod waitlist;
 pub mod wallet_backups;
 pub mod wallet_index;
-
-pub mod migrate_pks;
 
 pub async fn connect_to_db(db_connection: &str) -> Result<Pool<Postgres>> {
     let pool = PgPoolOptions::new()

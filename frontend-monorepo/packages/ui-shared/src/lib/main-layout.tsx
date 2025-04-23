@@ -59,7 +59,7 @@ export const Layout: FC<LayoutProps> = ({
   logout,
 }) => {
   const versionString = `${
-    backendVersion.version
+    backendVersion.tag
   }-${backendVersion.commit_hash.substring(0, 5)}`;
   const [toggled, setToggled] = useState(false);
   const [broken, setBroken] = useState(false);

@@ -1537,3 +1537,69 @@ pub async fn insert_new_taken_contract_application(
     db_tx.commit().await?;
     Ok(contract)
 }
+
+/// Rolls back the status of a contract to the state before the dispute.
+///
+/// This function:
+/// 1. Finds the current status of the contract and checks if it was actually a dispute status
+/// 2. Finds the previous status from the contracts_status_log table
+/// 3. Updates the contract to the previous status
+pub async fn resolve_dispute(
+    tx: &mut sqlx::Transaction<'_, Postgres>,
+    contract: &Contract,
+) -> Result<()> {
+    let current_status = db::ContractStatus::from(contract.status);
+    let contract_id = &contract.id;
+
+    // Check if the contract is actually in a dispute status
+    if current_status != db::ContractStatus::DisputeBorrowerStarted
+        && current_status != db::ContractStatus::DisputeLenderStarted
+    {
+        bail!("Contract not in dispute state. {current_status:?}");
+    }
+
+    struct ContractStatusLog {
+        old_status: db::ContractStatus,
+    }
+
+    // 1. Find the previous status from the status log
+    let previous_status_record: Option<ContractStatusLog> = sqlx::query_as!(
+        ContractStatusLog,
+        r#"SELECT
+            old_status as "old_status: crate::model::db::ContractStatus" 
+         FROM 
+            contracts_status_log
+         WHERE 
+            contract_id = $1 AND new_status = $2
+         ORDER BY changed_at DESC LIMIT 1"#,
+        contract_id,
+        current_status as db::ContractStatus
+    )
+    .fetch_optional(&mut **tx)
+    .await?;
+
+    // Check if a previous status was found
+    let previous_status = match previous_status_record {
+        Some(record) => record.old_status,
+        None => {
+            // we do not roll back here as we throw an error and expect the caller to roll back
+            bail!("Nothing to roll back on");
+        }
+    };
+
+    // 2. Update the contract to the previous status
+    sqlx::query!(
+        r#"UPDATE 
+            contracts 
+        SET 
+            status = $1, 
+            updated_at = CURRENT_TIMESTAMP 
+        WHERE id = $2"#,
+        previous_status as db::ContractStatus,
+        contract_id
+    )
+    .execute(&mut **tx)
+    .await?;
+
+    Ok(())
+}

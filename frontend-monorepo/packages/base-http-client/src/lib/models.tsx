@@ -1,7 +1,7 @@
 import type { SemVer } from "semver";
 
 export interface User {
-  id: number;
+  id: string;
   name: string;
   email: string;
   verified: boolean;

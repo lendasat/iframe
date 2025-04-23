@@ -806,7 +806,7 @@ pub mod db {
         pub updated_at: OffsetDateTime,
     }
 
-    #[derive(Debug, Deserialize, sqlx::Type, Serialize)]
+    #[derive(Debug, Deserialize, sqlx::Type, Serialize, PartialEq)]
     #[sqlx(type_name = "contract_status")]
     pub enum ContractStatus {
         Requested,

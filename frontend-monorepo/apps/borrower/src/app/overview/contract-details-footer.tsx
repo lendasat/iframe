@@ -19,18 +19,23 @@ export function ContractDetailsFooter({
 }: ContractDetailsFooterProps) {
   let button = undefined;
 
+  const buttonDisabled =
+    contract?.status === ContractStatus.DisputeLenderStarted ||
+    contract?.status === ContractStatus.DisputeBorrowerStarted;
   if (!contract) {
     button = undefined;
   } else if (contract.status === ContractStatus.Approved) {
     button = (
       <AddCollateralDialog isInitialFunding={true} contract={contract}>
-        <Button type={"button"}>Fund Contract</Button>
+        <Button type={"button"} disabled={buttonDisabled}>
+          Fund Contract
+        </Button>
       </AddCollateralDialog>
     );
   } else if (contract.status === ContractStatus.Requested) {
     button = (
       <CancelRequestDialog contractId={contract.id}>
-        <Button type={"button"} variant="destructive">
+        <Button type={"button"} variant="destructive" disabled={buttonDisabled}>
           <LuBan className="mr-1 h-4 w-4" />
           Cancel Request
         </Button>
@@ -43,7 +48,7 @@ export function ContractDetailsFooter({
         collateralAmountSats={contract.collateral_sats}
         collateralAddress={contract.borrower_btc_address}
       >
-        <Button type={"button"}>
+        <Button type={"button"} disabled={buttonDisabled}>
           <LuDownload className="mr-2 h-4 w-4" />
           Withdraw Collateral
         </Button>
@@ -59,7 +64,7 @@ export function ContractDetailsFooter({
   ) {
     button = (
       <ManageLoanDialog contract={contract}>
-        <Button type={"button"}>
+        <Button type={"button"} disabled={buttonDisabled}>
           Manage Loan <LuChevronRight className="ml-1 h-4 w-4" />
         </Button>
       </ManageLoanDialog>
@@ -74,9 +79,24 @@ export function ContractDetailsFooter({
         contractStatus={contract?.status}
         assetType={contract?.loan_asset}
       >
-        <Button variant="outline" typeof={"button"}>
-          View Transaction History
-        </Button>
+        <div>
+          <Button
+            variant="outline"
+            typeof={"button"}
+            disabled={buttonDisabled}
+            className={"flex xs:hidden"}
+          >
+            View History
+          </Button>
+          <Button
+            variant="outline"
+            typeof={"button"}
+            disabled={buttonDisabled}
+            className={"hidden md:flex"}
+          >
+            View Transaction History
+          </Button>
+        </div>
       </TransactionHistoryDialog>
       {button}
     </>
