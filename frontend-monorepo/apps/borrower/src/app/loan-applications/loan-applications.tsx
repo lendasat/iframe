@@ -212,7 +212,7 @@ export default function LoanApplication() {
                     defaultValue={[50]}
                     onValueChange={(val) => onInterestRateChange(val)}
                     value={[Number.parseInt(interestRate)]}
-                    min={5}
+                    min={1}
                     max={20}
                     step={0.5}
                   ></Slider>
