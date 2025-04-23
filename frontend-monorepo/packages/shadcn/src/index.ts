@@ -34,3 +34,4 @@ export * from "./components/ui/chart";
 export * from "./components/ui/toggle-group";
 export * from "./components/ui/checkbox";
 export * from "./components/ui/sheet";
+export * from "./components/ui/form";

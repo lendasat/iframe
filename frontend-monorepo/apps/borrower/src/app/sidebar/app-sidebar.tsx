@@ -6,6 +6,13 @@ import {
   CreditCard,
   LogOut,
   HomeIcon,
+  Settings2,
+  User,
+  Wallet,
+  Bell,
+  MessageCircle,
+  Code,
+  MoreHorizontal,
 } from "lucide-react";
 import { ReactComponent as Lendasat } from "../../assets/lendasat_black.svg";
 import {
@@ -24,21 +31,60 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarFooter,
+  SidebarMenuAction,
+  useSidebar,
 } from "@frontend/shadcn";
 import { NavMain } from "./nav-main";
-import { NavFooter } from "./nav-footer";
 
 const lowMenuItems = [
   {
     title: "Contracts",
     url: "/my-contracts",
     icon: Signature,
+    items: [],
   },
   {
     title: "Cards",
     url: "/cards",
     icon: CreditCard,
+    items: [],
+  },
+  {
+    title: "Settings",
+    url: "/settings",
+    icon: Settings2,
+    items: [
+      {
+        icon: User,
+        name: "Profile",
+        url: "/settings/profile",
+        isActive: false,
+      },
+      {
+        icon: Wallet,
+        name: "Wallet",
+        url: "/settings/wallet",
+        isActive: false,
+      },
+      {
+        icon: Bell,
+        name: "Notifications",
+        url: "/settings/notifications",
+        isActive: false,
+      },
+      {
+        icon: MessageCircle,
+        name: "Nostr chat",
+        url: "/settings/chat",
+        isActive: false,
+      },
+      {
+        icon: Code,
+        name: "Version",
+        url: "/settings/version",
+        isActive: false,
+      },
+    ],
   },
 ];
 
@@ -53,6 +99,8 @@ interface AppSidebarProps {
 // - Username transition animation is bad.
 // - Dark mode is ugly and does not apply to desktop sidebar.
 export function AppSidebar({ onLogout, username }: AppSidebarProps) {
+  const { isMobile } = useSidebar();
+
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
@@ -127,16 +175,37 @@ export function AppSidebar({ onLogout, username }: AppSidebarProps) {
                       <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
+
+                  {item.items.length > 0 && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <SidebarMenuAction showOnHover>
+                          <MoreHorizontal />
+                          <span className="sr-only">More</span>
+                        </SidebarMenuAction>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        className="w-48"
+                        side={isMobile ? "bottom" : "right"}
+                        align={isMobile ? "end" : "start"}
+                      >
+                        {item.items.map((innerItem) => (
+                          <Link to={innerItem.url} key={innerItem.name}>
+                            <DropdownMenuItem>
+                              <innerItem.icon className="text-muted-foreground" />
+                              <span>{innerItem.name}</span>
+                            </DropdownMenuItem>
+                          </Link>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
                 </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
         ))}
       </SidebarContent>
-
-      <SidebarFooter>
-        <NavFooter />
-      </SidebarFooter>
     </Sidebar>
   );
 }

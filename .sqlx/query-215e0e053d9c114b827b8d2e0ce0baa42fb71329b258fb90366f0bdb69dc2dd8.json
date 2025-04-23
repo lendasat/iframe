@@ -69,7 +69,8 @@
               "Enum": [
                 "PayWithMoon",
                 "StableCoin",
-                "Fiat"
+                "Fiat",
+                "Bringin"
               ]
             }
           }
@@ -172,7 +173,8 @@
               "Enum": [
                 "PayWithMoon",
                 "StableCoin",
-                "Fiat"
+                "Fiat",
+                "Bringin"
               ]
             }
           }

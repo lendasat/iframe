@@ -42,6 +42,10 @@ pub struct Config {
     pub fake_client_ip: Option<String>,
     pub telegram_bot_token: Option<String>,
     pub custom_db_migration: bool,
+    pub bringin_url: Url,
+    pub bringin_api_secret: String,
+    pub bringin_api_key: String,
+    pub bringin_webhook_url: Url,
 }
 
 impl Config {
@@ -167,6 +171,19 @@ impl Config {
         let fake_client_ip = std::env::var("FAKE_CLIENT_IP").ok();
         let telegram_bot_token = std::env::var("TELEGRAM_TOKEN").ok();
 
+        let bringin_url = std::env::var("BRINGIN_URL").expect("BRINGIN_URL must be set");
+        let bringin_url = Url::parse(bringin_url.as_str()).expect("to be a valid URL");
+
+        let bringin_api_secret =
+            std::env::var("BRINGIN_API_SECRET").expect("BRINGIN_API_SECRET must be set");
+        let bringin_api_key =
+            std::env::var("BRINGIN_API_KEY").expect("BRINGIN_API_KEY must be set");
+
+        let bringin_webhook_url =
+            std::env::var("BRINGIN_WEBHOOK_URL").expect("BRINGIN_WEBHOOK_URL must be set");
+        let bringin_webhook_url =
+            Url::parse(bringin_webhook_url.as_str()).expect("to be a valid URL");
+
         Config {
             database_url,
             mempool_rest_url,
@@ -177,20 +194,20 @@ impl Config {
             fallback_xpub,
             jwt_secret,
             smtp_host: smtp_host.unwrap_or_default(),
-            smtp_pass: smtp_pass.unwrap_or_default(),
-            smtp_user: smtp_user.unwrap_or_default(),
             smtp_port: smtp_port
                 .map(|port| port.parse::<u16>().expect("to be able to parse"))
                 .unwrap_or_default(),
+            smtp_user: smtp_user.unwrap_or_default(),
+            smtp_pass: smtp_pass.unwrap_or_default(),
             smtp_from: smtp_from.unwrap_or_default(),
-            borrower_listen_address,
-            borrower_frontend_origin,
-            lender_listen_address,
-            lender_frontend_origin,
             smtp_disabled: any_smtp_not_configured
                 || smtp_disabled
                     .map(|disabled| disabled.parse::<bool>().expect("to be able to parse"))
                     .unwrap_or_default(),
+            borrower_frontend_origin,
+            borrower_listen_address,
+            lender_frontend_origin,
+            lender_listen_address,
             hub_fee_descriptor,
             hub_fee_wallet_dir,
             origination_fee,
@@ -207,6 +224,10 @@ impl Config {
             fake_client_ip,
             telegram_bot_token,
             custom_db_migration,
+            bringin_url,
+            bringin_api_secret,
+            bringin_api_key,
+            bringin_webhook_url,
         }
     }
 }

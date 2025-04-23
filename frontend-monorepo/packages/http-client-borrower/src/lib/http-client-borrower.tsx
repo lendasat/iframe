@@ -27,11 +27,13 @@ import type {
   UserCardDetail,
   Version,
   WalletBackupData,
+  HasApiKey,
+  BringinConnectResponse,
 } from "./models";
 import { isAllowedPageWithoutLogin, parseRFC3339Date } from "./utils";
 import { IsRegisteredResponse } from "@frontend/base-http-client";
 
-// Keep all your existing interfaces as-is
+// Interface for the raw data received from the API
 interface RawContract
   extends Omit<Contract, "created_at" | "repaid_at" | "updated_at" | "expiry"> {
   created_at: string;
@@ -175,6 +177,12 @@ export interface HttpClient {
   ) => Promise<CardTransaction[] | undefined>;
   putUpdateProfile: (request: PutUpdateProfile) => Promise<void>;
   newChatNotification: (request: NotifyUser) => Promise<void>;
+
+  // Bringin methods
+  postBringinConnect: (
+    bringinEmail: string,
+  ) => Promise<BringinConnectResponse | undefined>;
+  hasBringinApiKey: () => Promise<boolean | undefined>;
 }
 
 // Create a factory function to create our client
@@ -858,6 +866,34 @@ export const createHttpClient = (
     }
   };
 
+  const postBringinConnect = async (
+    bringinEmail: string,
+  ): Promise<BringinConnectResponse | undefined> => {
+    try {
+      const res: AxiosResponse<BringinConnectResponse> = await axiosClient.post(
+        "/api/bringin/connect",
+        {
+          bringin_email: bringinEmail,
+        },
+      );
+
+      return res.data;
+    } catch (error) {
+      handleError(error, "connecting Lendasat to Bringin");
+    }
+  };
+
+  const hasBringinApiKey = async (): Promise<boolean | undefined> => {
+    try {
+      const axiosResponse: AxiosResponse<HasApiKey> = await axiosClient.get(
+        "/api/bringin/api-key",
+      );
+      return axiosResponse.data.has_key;
+    } catch (error) {
+      handleError(error, "checking if user has Bringin API key");
+    }
+  };
+
   // Return all functions bundled as our client
   return {
     register,
@@ -901,6 +937,8 @@ export const createHttpClient = (
     putUpdateProfile,
     newChatNotification,
     getIsRegistered,
+    postBringinConnect,
+    hasBringinApiKey,
   };
 };
 

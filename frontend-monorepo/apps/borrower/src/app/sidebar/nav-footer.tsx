@@ -126,7 +126,3 @@ export function NavFooter() {
     </>
   );
 }
-
-// TODO:
-// 1. check if token is being refreshed automatically
-// 2 check why we have weird redirects to login page first before going to correct page

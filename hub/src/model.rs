@@ -348,6 +348,7 @@ pub enum LoanType {
     PayWithMoon,
     StableCoin,
     Fiat,
+    Bringin,
 }
 
 pub enum LoanDeal {
@@ -365,8 +366,8 @@ impl LoanDeal {
 
     pub fn loan_asset(&self) -> LoanAsset {
         match self {
-            LoanDeal::LoanOffer(a) => a.loan_asset.clone(),
-            LoanDeal::LoanApplication(b) => b.loan_asset.clone(),
+            LoanDeal::LoanOffer(a) => a.loan_asset,
+            LoanDeal::LoanApplication(b) => b.loan_asset,
         }
     }
 }
@@ -444,7 +445,7 @@ pub enum LoanPayout {
     Indirect,
 }
 
-#[derive(Debug, Deserialize, sqlx::Type, Serialize, Clone, PartialEq, ToSchema)]
+#[derive(Debug, Deserialize, sqlx::Type, Serialize, Clone, Copy, PartialEq, ToSchema)]
 #[sqlx(type_name = "loan_asset")]
 pub enum LoanAsset {
     UsdcPol,
@@ -866,6 +867,7 @@ pub mod db {
         PayWithMoon,
         StableCoin,
         Fiat,
+        Bringin,
     }
 
     #[derive(Debug, Deserialize, sqlx::Type, Serialize)]
@@ -989,6 +991,7 @@ impl From<db::LoanType> for LoanType {
             db::LoanType::PayWithMoon => Self::PayWithMoon,
             db::LoanType::StableCoin => Self::StableCoin,
             db::LoanType::Fiat => Self::Fiat,
+            db::LoanType::Bringin => Self::Bringin,
         }
     }
 }
@@ -999,6 +1002,7 @@ impl From<LoanType> for db::LoanType {
             LoanType::PayWithMoon => Self::PayWithMoon,
             LoanType::StableCoin => Self::StableCoin,
             LoanType::Fiat => Self::Fiat,
+            LoanType::Bringin => Self::Bringin,
         }
     }
 }

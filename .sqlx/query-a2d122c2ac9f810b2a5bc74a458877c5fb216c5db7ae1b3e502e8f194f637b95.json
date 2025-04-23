@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO bringin_api_keys (borrower_id, api_key)\n        VALUES ($1, $2)\n        ON CONFLICT (borrower_id) DO UPDATE SET api_key = $2\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Bpchar",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a2d122c2ac9f810b2a5bc74a458877c5fb216c5db7ae1b3e502e8f194f637b95"
+}

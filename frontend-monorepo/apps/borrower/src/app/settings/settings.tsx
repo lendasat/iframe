@@ -14,6 +14,7 @@ import { Wallet } from "./wallet";
 import { NostrChatSettingsPage } from "./nostr-chat-settings";
 import { NotificationSettings } from "./notification-settings";
 import { VersionPage } from "./version-page";
+import { IntegrationSettings } from "./integration-settings";
 
 function Settings() {
   const location = useLocation();
@@ -38,6 +39,9 @@ function Settings() {
                 <TabsTrigger value="chat" asChild>
                   <Link to="chat">Chat</Link>
                 </TabsTrigger>
+                <TabsTrigger value="integrations" asChild>
+                  <Link to="integrations">Integrations</Link>
+                </TabsTrigger>
                 <TabsTrigger value="version" asChild>
                   <Link to="version">Version</Link>
                 </TabsTrigger>
@@ -55,6 +59,7 @@ function Settings() {
               <Route path="wallet" element={<Wallet />} />
               <Route path="notifications" element={<NotificationSettings />} />
               <Route path="chat" element={<NostrChatSettingsPage />} />
+              <Route path="integrations" element={<IntegrationSettings />} />
               <Route path="version" element={<VersionPage />} />
             </Routes>
           </CardContent>

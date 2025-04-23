@@ -27,6 +27,7 @@ use tower_http::services::ServeFile;
 pub(crate) mod api_accounts;
 pub(crate) mod api_keys;
 pub(crate) mod auth;
+pub(crate) mod bringin;
 pub(crate) mod contracts;
 pub(crate) mod health_check;
 pub(crate) mod loan_applications;
@@ -185,7 +186,8 @@ pub async fn spawn_borrower_server(
                 .with_state(app_state.clone()),
         )
         .merge(loan_applications::router(app_state.clone()))
-        .merge(cards::router(app_state))
+        .merge(cards::router(app_state.clone()))
+        .merge(bringin::router(app_state))
         // This is a relative path on the filesystem, which means, when deploying `hub` we will need
         // to have the frontend in this directory. Ideally we would bundle the frontend with
         // the binary, but so far we failed at handling requests which are meant to be handled by

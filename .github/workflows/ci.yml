@@ -119,6 +119,10 @@ jobs:
           envkey_SIDESHIFT_AFFILIATE_ID: "affiliate_id"
           envkey_SIDESHIFT_API_BASE_URL: "https://example.com"
           envkey_SIDESHIFT_COMMISSION_RATE: 0
+          envkey_BRINGIN_URL: "https://dev.bringin.xyz/api/v0"
+          envkey_BRINGIN_API_SECRET: "secret"
+          envkey_BRINGIN_API_KEY: "key"
+          envkey_BRINGIN_WEBHOOK_URL: "https://webhook.site/0be287da-5ac6-4e99-b6fb-d5e26ac3e6b3"
           file_name: .env
 
       - name: Show disk space before test run

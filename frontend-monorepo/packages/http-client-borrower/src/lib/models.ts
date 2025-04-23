@@ -388,6 +388,7 @@ export enum LoanProductOption {
   PayWithMoonDebitCard = "pay_with_moon",
   StableCoins = "stable_coins",
   Fiat = "fiat",
+  Bringin = "bringin",
 }
 
 export class FeatureMapper {
@@ -410,6 +411,7 @@ export enum LoanType {
   PayWithMoon = "PayWithMoon",
   StableCoin = "StableCoin",
   Fiat = "Fiat",
+  Bringin = "Bringin",
 }
 
 export enum CardTransactionStatus {
@@ -650,4 +652,12 @@ export interface User {
   first_time_discount_rate: number;
   created_at: Date;
   personal_telegram_token?: string;
+}
+
+export interface HasApiKey {
+  has_key: boolean;
+}
+
+export interface BringinConnectResponse {
+  signup_url?: string;
 }
