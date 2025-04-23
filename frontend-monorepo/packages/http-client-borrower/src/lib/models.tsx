@@ -90,10 +90,6 @@ export const isContractClosed = (status: ContractStatus) => {
   return !isContractOpen(status);
 };
 
-export const getAllContractStatuses = (): ContractStatus[] => {
-  return Object.values(ContractStatus);
-};
-
 export function contractStatusToLabelString(status: ContractStatus): string {
   switch (status) {
     case ContractStatus.Requested:
@@ -509,4 +505,56 @@ export class LoanApplicationStatusHelper {
 
 export interface NotifyUser {
   contract_id: string;
+}
+
+// Enum for dispute initiator type
+export enum DisputeInitiatorType {
+  Borrower = "Borrower",
+  Lender = "Lender",
+}
+
+// Enum for dispute status
+export enum ContractDisputeStatus {
+  DisputeStartedBorrower = "DisputeStartedBorrower",
+  DisputeStartedLender = "DisputeStartedLender",
+  InProgress = "InProgress",
+  Closed = "Closed",
+  Cancelled = "Cancelled",
+}
+
+// Enum for message sender type
+export enum SenderType {
+  Borrower = "Borrower",
+  Lender = "Lender",
+  PlatformAdmin = "PlatformAdmin",
+}
+
+// Interface for contract dispute
+export interface ContractDispute {
+  id: string;
+  contract_id: string;
+  initiator_type: DisputeInitiatorType;
+  initiator_id: string;
+  status: ContractDisputeStatus;
+  reason: string;
+  created_at: Date;
+  updated_at: Date;
+  resolved_at?: Date;
+  resolution_notes?: string;
+}
+
+// Interface for contract dispute message
+export interface ContractDisputeMessage {
+  id: string;
+  dispute_id: string;
+  sender_type: SenderType;
+  sender_id: string;
+  message: string;
+  is_read: boolean;
+  created_at: Date;
+}
+
+// Interface that combines a dispute with its messages
+export interface DisputeWithMessages extends ContractDispute {
+  messages: ContractDisputeMessage[];
 }

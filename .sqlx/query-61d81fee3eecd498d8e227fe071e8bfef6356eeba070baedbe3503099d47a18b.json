@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE contract_disputes \n                set status = $1\n            where \n                id = $2 and initiator_id = $3\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        {
+          "Custom": {
+            "name": "contract_dispute_status",
+            "kind": {
+              "Enum": [
+                "DisputeStartedBorrower",
+                "DisputeStartedLender",
+                "InProgress",
+                "Closed",
+                "Cancelled"
+              ]
+            }
+          }
+        },
+        "Uuid",
+        "Bpchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "61d81fee3eecd498d8e227fe071e8bfef6356eeba070baedbe3503099d47a18b"
+}

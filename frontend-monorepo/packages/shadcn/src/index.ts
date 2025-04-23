@@ -28,6 +28,8 @@ export * from "./lib/utils";
 export * from "./lib/use-mobile";
 export * from "./components/registration-form";
 export * from "./components/email-verification-form";
+export * from "./components/ui/alert-dialog";
+export * from "./components/ui/textarea";
 export * from "./components/ui/chart";
 export * from "./components/ui/toggle-group";
 export * from "./components/ui/checkbox";

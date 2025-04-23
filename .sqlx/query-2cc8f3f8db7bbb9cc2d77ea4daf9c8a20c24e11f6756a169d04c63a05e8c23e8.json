@@ -1,0 +1,78 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO contract_dispute_messages \n                (id, dispute_id, sender_type, sender_id, message)\n            VALUES \n                ($1, $2, $3, $4, $5)\n            RETURNING \n                id, \n                dispute_id, \n                sender_type as \"sender_type: SenderType\", \n                sender_id, \n                message, \n                created_at \n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "dispute_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "sender_type: SenderType",
+        "type_info": {
+          "Custom": {
+            "name": "contract_dispute_sender_type_enum",
+            "kind": {
+              "Enum": [
+                "borrower",
+                "lender",
+                "platform_admin"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "sender_id",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "message",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        {
+          "Custom": {
+            "name": "contract_dispute_sender_type_enum",
+            "kind": {
+              "Enum": [
+                "borrower",
+                "lender",
+                "platform_admin"
+              ]
+            }
+          }
+        },
+        "Bpchar",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "2cc8f3f8db7bbb9cc2d77ea4daf9c8a20c24e11f6756a169d04c63a05e8c23e8"
+}

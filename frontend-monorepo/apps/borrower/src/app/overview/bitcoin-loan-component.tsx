@@ -27,6 +27,7 @@ import {
 import { useAsync } from "react-use";
 import { ContractDetailsFooter } from "./contract-details-footer";
 import { Chat } from "@frontend/nostr-chat";
+import DisputesComponent from "./disputes/disputes";
 
 export function contractStatusLabelColor(status?: ContractStatus): string {
   if (!status) {
@@ -101,6 +102,10 @@ const EnhancedBitcoinLoan = () => {
   const currentStateLabel =
     contract?.status && contractStatusToLabelString(contract.status);
 
+  const disputeOngoing =
+    ContractStatus.DisputeBorrowerStarted === contract?.status ||
+    ContractStatus.DisputeLenderStarted === contract?.status;
+
   return (
     <ScrollArea className="h-screen w-full overflow-auto">
       <div className="max-w-full mx-4 pb-20 pt-5">
@@ -128,7 +133,8 @@ const EnhancedBitcoinLoan = () => {
                         </>
                       )}
                     </Badge>
-                    {contract?.status != ContractStatus.Requested &&
+                    {!disputeOngoing &&
+                      contract?.status != ContractStatus.Requested &&
                       contract?.status != ContractStatus.Cancelled &&
                       contract?.status != ContractStatus.Closed &&
                       contract?.liquidation_status ===
@@ -161,29 +167,34 @@ const EnhancedBitcoinLoan = () => {
                 className="w-full flex-grow flex flex-col"
               >
                 <div className="px-4 flex-shrink-0">
-                  <TabsList className="grid grid-cols-3">
+                  <TabsList className="grid grid-cols-4">
                     <TabsTrigger value="details">Loan Details</TabsTrigger>
                     <TabsTrigger value="collateral">Collateral</TabsTrigger>
                     <TabsTrigger value="timeline">Timeline</TabsTrigger>
+                    <TabsTrigger value="disputes">Disputes</TabsTrigger>
                   </TabsList>
                 </div>
 
                 {/* Inner ScrollArea for tab content */}
-                <ScrollArea className="flex-grow">
-                  <div className="p-4">
-                    <TabsContent value="details" className="m-0">
-                      <Details contract={contract} />
-                    </TabsContent>
+                {/*<ScrollArea>*/}
+                <div className="p-4">
+                  <TabsContent value="details" className="m-0">
+                    <Details contract={contract} />
+                  </TabsContent>
 
-                    <TabsContent value="collateral" className="m-0">
-                      <Collateral contract={contract} />
-                    </TabsContent>
+                  <TabsContent value="collateral" className="m-0">
+                    <Collateral contract={contract} />
+                  </TabsContent>
 
-                    <TabsContent value="timeline" className="m-0">
-                      <Timeline contract={contract} />
-                    </TabsContent>
-                  </div>
-                </ScrollArea>
+                  <TabsContent value="timeline" className="m-0">
+                    <Timeline contract={contract} />
+                  </TabsContent>
+
+                  <TabsContent value="disputes" className="m-0">
+                    <DisputesComponent contractId={contract?.id} />
+                  </TabsContent>
+                </div>
+                {/*</ScrollArea>*/}
               </Tabs>
 
               <CardFooter className="flex-shrink-0 flex justify-between border-t pt-4">

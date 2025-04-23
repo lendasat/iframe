@@ -1,15 +1,9 @@
 use crate::db;
-use crate::mempool;
 use crate::model::Borrower;
 use crate::model::DisputeRequestBodySchema;
-use crate::model::DisputeStatus;
-use crate::model::PsbtQueryParams;
 use crate::routes::borrower::auth::jwt_or_api_auth;
-use crate::routes::borrower::ClaimCollateralPsbt;
 use crate::routes::AppState;
 use crate::routes::ErrorResponse;
-use anyhow::bail;
-use anyhow::Context;
 use axum::extract::Path;
 use axum::extract::Query;
 use axum::extract::State;
@@ -18,32 +12,20 @@ use axum::middleware;
 use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::routing::post;
+use axum::routing::put;
 use axum::Extension;
 use axum::Json;
 use axum::Router;
-use bitcoin::Amount;
+use serde::Deserialize;
 use std::sync::Arc;
 use tracing::instrument;
+use uuid::Uuid;
 
 pub(crate) fn router(app_state: Arc<AppState>) -> Router {
     Router::new()
         .route(
             "/api/disputes",
-            get(get_all_disputes).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_or_api_auth::auth,
-            )),
-        )
-        .route(
-            "/api/disputes/:dispute_id",
-            get(get_disputes_by_id).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_or_api_auth::auth,
-            )),
-        )
-        .route(
-            "/api/disputes/:dispute_id/claim",
-            get(get_claim_collateral_psbt).route_layer(middleware::from_fn_with_state(
+            get(get_all_disputes_for_contract).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
                 jwt_or_api_auth::auth,
             )),
@@ -55,33 +37,35 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
                 jwt_or_api_auth::auth,
             )),
         )
+        .route(
+            "/api/disputes/:dispute_id",
+            put(add_message_to_dispute).route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                jwt_or_api_auth::auth,
+            )),
+        )
+        .route(
+            "/api/disputes/:dispute_id/resolve",
+            put(put_resolve_dispute).route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                jwt_or_api_auth::auth,
+            )),
+        )
         .with_state(app_state)
 }
 
-pub async fn get_all_disputes(
-    State(data): State<Arc<AppState>>,
-    Extension(user): Extension<Borrower>,
-) -> anyhow::Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let disputes = db::dispute::load_disputes_by_borrower(&data.db, user.id.as_str())
-        .await
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
-    Ok((StatusCode::OK, Json(disputes)))
+#[derive(Deserialize)]
+pub struct DisputeQueryParams {
+    pub contract_id: String,
 }
 
-pub async fn get_disputes_by_id(
+pub async fn get_all_disputes_for_contract(
     State(data): State<Arc<AppState>>,
-    Extension(user): Extension<Borrower>,
-    Path(dispute_id): Path<String>,
+    query_params: Query<DisputeQueryParams>,
 ) -> anyhow::Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let dispute = db::dispute::load_disputes_by_borrower_and_dispute_id(
+    let disputes = db::contract_disputes::get_disputes_with_messages_by_contract(
         &data.db,
-        user.id.as_str(),
-        dispute_id.as_str(),
+        query_params.contract_id.as_str(),
     )
     .await
     .map_err(|error| {
@@ -90,14 +74,8 @@ pub async fn get_disputes_by_id(
         };
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
     })?;
-    if dispute.is_none() {
-        let error_response = ErrorResponse {
-            message: "Dispute not found".to_string(),
-        };
 
-        return Err((StatusCode::NOT_FOUND, Json(error_response)));
-    }
-    Ok((StatusCode::OK, Json(dispute)))
+    Ok((StatusCode::OK, Json(disputes)))
 }
 
 #[instrument(skip_all, fields(borrower_id = user.id, ?body), ret, err(Debug))]
@@ -118,37 +96,33 @@ pub(crate) async fn create_dispute(
         };
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
     })?;
-    let dispute = db::dispute::load_disputes_by_borrower_and_contract_id(
-        &data.db,
-        user.id.as_str(),
-        body.contract_id.as_str(),
-    )
-    .await
-    .map_err(|error| {
+    let disputes =
+        db::contract_disputes::get_disputes_by_contract(&data.db, body.contract_id.as_str())
+            .await
+            .map_err(|error| {
+                let error_response = ErrorResponse {
+                    message: format!("Database error: {}", error),
+                };
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+            })?;
+
+    if disputes.iter().any(|d| {
+        d.status == db::contract_disputes::DisputeStatus::DisputeStartedBorrower
+            || d.status == db::contract_disputes::DisputeStatus::DisputeStartedLender
+            || d.status == db::contract_disputes::DisputeStatus::InProgress
+    }) {
         let error_response = ErrorResponse {
-            message: format!("Database error: {}", error),
+            message: "Dispute already in progress".parse().unwrap(),
         };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?;
-
-    let dispute_already_started = !dispute.is_empty();
-
-    if dispute_already_started {
-        tracing::warn!(
-            borrower_id = user.id,
-            contract_id = body.contract_id,
-            "There is already a dispute running, we allow multiple disputes for now."
-        )
+        return Err((StatusCode::BAD_REQUEST, Json(error_response)));
     }
 
     let comment = format!("{}. {}", body.reason, body.comment);
-    let dispute = db::dispute::start_new_dispute_borrower(
+    let dispute = db::contract_disputes::start_dispute_borrower(
         &data.db,
-        body.contract_id.as_str(),
+        contract.id.as_str(),
         user.id.as_str(),
-        contract.lender_id.as_str(),
         comment.as_str(),
-        dispute_already_started,
     )
     .await
     .map_err(|error| {
@@ -160,14 +134,18 @@ pub(crate) async fn create_dispute(
 
     if let Some(ref email) = user.email {
         data.notifications
-            .send_start_dispute(user.name.as_str(), email.as_str(), dispute.id.as_str())
+            .send_start_dispute(
+                user.name.as_str(),
+                email.as_str(),
+                dispute.id.to_string().as_str(),
+            )
             .await;
     }
 
     data.notifications
         .send_notify_admin_about_dispute(
             user,
-            dispute.id.as_str(),
+            dispute.id.to_string().as_str(),
             contract.lender_id.as_str(),
             contract.borrower_id.as_str(),
             contract.id.as_str(),
@@ -177,109 +155,46 @@ pub(crate) async fn create_dispute(
     Ok(Json(dispute))
 }
 
-#[instrument(skip_all, fields(borrower_id = user.id, contract_id), err(Debug), ret)]
-pub async fn get_claim_collateral_psbt(
+#[derive(Deserialize, Debug)]
+pub struct DisputeMessage {
+    message: String,
+}
+
+#[instrument(skip_all, fields(borrower_id = user.id, dispute_id), err(Debug), ret)]
+pub async fn add_message_to_dispute(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Borrower>,
-    Path(dispute_id): Path<String>,
-    query_params: Query<PsbtQueryParams>,
+    Path(dispute_id): Path<Uuid>,
+    Json(body): Json<DisputeMessage>,
 ) -> anyhow::Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let dispute = db::dispute::load_disputes_by_borrower_and_dispute_id(
-        &data.db,
-        user.id.as_str(),
-        dispute_id.as_str(),
-    )
-    .await
-    .map_err(|error| {
-        let error_response = ErrorResponse {
-            message: format!("Database error: {}", error),
-        };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?;
+    db::contract_disputes::add_borrower_message(&data.db, dispute_id, user.id, body.message)
+        .await
+        .map_err(|err| {
+            tracing::error!("Failed adding message to dispute {err:#}");
 
-    let dispute = match dispute {
-        None => {
             let error_response = ErrorResponse {
-                message: "Dispute not found".to_string(),
+                message: "Something went wrong".to_string(),
             };
-            return Err((StatusCode::BAD_REQUEST, Json(error_response)));
-        }
-        Some(dispute) => dispute,
-    };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
+    Ok(())
+}
 
-    if dispute.status != DisputeStatus::ResolvedLender
-        && dispute.status != DisputeStatus::ResolvedBorrower
-    {
-        let error_response = ErrorResponse {
-            message: "Dispute not yet resolved".to_string(),
-        };
-        return Err((StatusCode::BAD_REQUEST, Json(error_response)));
-    }
+#[instrument(skip_all, fields(borrower_id = user.id, dispute_id), err(Debug), ret)]
+pub async fn put_resolve_dispute(
+    State(data): State<Arc<AppState>>,
+    Extension(user): Extension<Borrower>,
+    Path(dispute_id): Path<Uuid>,
+) -> anyhow::Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    db::contract_disputes::resolve_borrower(&data.db, dispute_id, user.id.as_str())
+        .await
+        .map_err(|err| {
+            tracing::error!("Failed resolve dispute {err:#}");
 
-    let psbt = async {
-        let contract = db::contracts::load_contract_by_contract_id_and_borrower_id(
-            &data.db,
-            dispute.contract_id.as_str(),
-            &user.id,
-        )
-        .await?;
-
-        let psbt = async {
-            let contract_index = contract
-                .contract_index
-                .context("Can't generate claim PSBT without contract index")?;
-
-            let contract_address = contract
-                .contract_address
-                .context("Cannot claim collateral without collateral address")?;
-
-            let collateral_outputs = data
-                .mempool
-                .send(mempool::GetCollateralOutputs(contract_address))
-                .await?;
-
-            if collateral_outputs.is_empty() {
-                bail!("Unaware of any collateral outputs to claim");
-            }
-
-            let (psbt, collateral_descriptor, borrower_pk) =
-                data.wallet.create_dispute_claim_collateral_psbt(
-                    contract.borrower_pk,
-                    contract.lender_pk,
-                    contract_index,
-                    collateral_outputs,
-                    contract.borrower_btc_address,
-                    Amount::from_sat(dispute.borrower_payout_sats.expect("to be some") as u64),
-                    Amount::from_sat(dispute.lender_payout_sats.expect("to be some") as u64),
-                    Amount::from_sat(contract.origination_fee_sats),
-                    query_params.fee_rate,
-                    contract.contract_version,
-                )?;
-
-            let txid = psbt.clone().extract_tx_unchecked_fee_rate().compute_txid();
-            db::transactions::insert_dispute_txid(&data.db, contract.id.as_str(), &txid).await?;
-
-            let psbt = psbt.serialize_hex();
-
-            let res = ClaimCollateralPsbt {
-                psbt,
-                collateral_descriptor,
-                borrower_pk,
+            let error_response = ErrorResponse {
+                message: "Something went wrong".to_string(),
             };
-
-            anyhow::Ok(res)
-        }
-        .await?;
-
-        anyhow::Ok(psbt)
-    }
-    .await
-    .map_err(|error| {
-        let error_response = ErrorResponse {
-            message: format!("Database error: {}", error),
-        };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?;
-
-    Ok((StatusCode::OK, Json(psbt)))
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
+    Ok(())
 }
