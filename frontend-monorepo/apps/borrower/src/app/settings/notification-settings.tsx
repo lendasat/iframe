@@ -1,5 +1,13 @@
-import { Box, Callout, Heading } from "@radix-ui/themes";
-import { IoInformationCircleOutline } from "react-icons/io5";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@frontend/shadcn";
 import TelegramBotDetails from "./TelegramBotDetails";
 import { useAuth } from "@frontend/http-client-borrower";
 
@@ -24,43 +32,36 @@ export function NotificationSettings() {
   const personalTelegramToken = maybePersonalTelegramToken || "";
 
   return (
-    <Box className="md:pl-8">
-      <Heading
-        as="h4"
-        className="text-font dark:text-font-dark font-semibold"
-        size={"5"}
-      >
-        Notification Settings
-      </Heading>
-      <Box mt={"6"} className="space-y-4">
-        <Box className="rounded-2xl border border-purple-400/20 px-5 py-6 dark:border-gray-500/50">
-          <Heading
-            as="h4"
-            className="text-font dark:text-font-dark font-semibold capitalize"
-            size={"3"}
-          >
-            Telegram Bot
-          </Heading>
+    <div className="mx-auto max-w-3xl space-y-4">
+      <Card className="shadow-sm">
+        <CardHeader className="px-4 pb-1 pt-3">
+          <div>
+            <CardTitle className="text-sm font-semibold">Telegram</CardTitle>
+            <CardDescription>
+              Stay up to date on the status of your contracts with Telegram
+              notifications.
+            </CardDescription>
+          </div>
+        </CardHeader>
+        <CardContent>
           {error ? (
-            <Callout.Root color="orange">
-              <Callout.Icon>
-                <IoInformationCircleOutline />
-              </Callout.Icon>
-              <Callout.Text>
-                Telegram bot has not been configured correctly
-              </Callout.Text>
-            </Callout.Root>
+            <Alert variant="warning" className="mt-4">
+              <AlertTitle>Woops!</AlertTitle>
+              <AlertDescription>
+                Telegram notifications are currently unavailable.
+              </AlertDescription>
+            </Alert>
           ) : (
-            <Box mt={"4"} className="w-full">
+            <div className="mt-4">
               <TelegramBotDetails
                 token={personalTelegramToken}
                 botUrl={botUrl}
                 botName={botName}
               />
-            </Box>
+            </div>
           )}
-        </Box>
-      </Box>
-    </Box>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
