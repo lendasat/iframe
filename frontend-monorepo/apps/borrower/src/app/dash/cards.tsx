@@ -11,6 +11,7 @@ import { Contract, isContractOpen } from "@frontend/http-client-borrower";
 import { formatCurrency, formatSatsToBitcoin } from "@frontend/ui-shared";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
+import React from "react";
 
 interface SectionCardsProps {
   isLoading: boolean;
@@ -58,7 +59,7 @@ export function SectionCards({ isLoading, contracts }: SectionCardsProps) {
             <CardDescription>Total Loan Outstanding</CardDescription>
             <CardTitle className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums">
               {isLoading ? (
-                <Skeleton>$1,250.00</Skeleton>
+                <Skeleton className="h-8 w-[150px]" />
               ) : (
                 formatCurrency(lockedUsd)
               )}
@@ -70,7 +71,7 @@ export function SectionCards({ isLoading, contracts }: SectionCardsProps) {
             <CardDescription>Open Interest</CardDescription>
             <CardTitle className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums">
               {isLoading ? (
-                <Skeleton>$1,250.00</Skeleton>
+                <Skeleton className="h-8 w-[150px]" />
               ) : (
                 formatCurrency(openInterest)
               )}
@@ -83,7 +84,7 @@ export function SectionCards({ isLoading, contracts }: SectionCardsProps) {
             <CardDescription>Locked Collateral</CardDescription>
             <CardTitle className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums">
               {isLoading ? (
-                <Skeleton>1.0</Skeleton>
+                <Skeleton className="h-8 w-[150px]" />
               ) : (
                 <span className="whitespace-nowrap">{`${formatSatsToBitcoin(lockedSats)} BTC`}</span>
               )}
@@ -96,7 +97,7 @@ export function SectionCards({ isLoading, contracts }: SectionCardsProps) {
             <CardDescription>Next Expiry</CardDescription>
             <CardTitle className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums">
               {isLoading || !contractWithEarliestExpiry ? (
-                <Skeleton>03.01.2009</Skeleton>
+                <Skeleton className="h-8 w-[150px]" />
               ) : (
                 format(contractWithEarliestExpiry.expiry, "MMM, dd yyyy")
               )}

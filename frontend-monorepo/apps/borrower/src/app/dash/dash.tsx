@@ -24,7 +24,7 @@ export const Dashboard = () => {
         <QuickActions />
         <MembersGetMemberSection />
       </div>
-      <DataTable contracts={contracts} isLoading={loading} />
+      <DataTable contracts={contracts} />
     </ScrollArea>
   );
 };
