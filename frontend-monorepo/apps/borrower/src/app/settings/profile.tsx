@@ -186,6 +186,15 @@ export function Profile() {
           <AlertDescription className="text-xs">{error}</AlertDescription>
         </Alert>
       )}
+
+      <Alert variant="default" className="mt-4">
+        <div className="flex items-center">
+          <LuCircleAlert className="mr-2 h-4 w-4 flex-shrink-0" />
+          <AlertDescription className="mt-0">
+            Do not disclose your password to anyone, not even Lendasat support.
+          </AlertDescription>
+        </div>
+      </Alert>
     </div>
   );
 }
