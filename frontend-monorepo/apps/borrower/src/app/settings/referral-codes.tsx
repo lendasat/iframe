@@ -1,7 +1,15 @@
-import { Badge, Box, Table, Text } from "@radix-ui/themes";
-import { useState } from "react";
-import { FaCheckCircle, FaCopy } from "react-icons/fa";
-import { NotificationToast } from "@frontend/ui-shared";
+import {
+  Badge,
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@frontend/shadcn";
+import { LuCopy } from "react-icons/lu";
+import { toast } from "sonner";
 
 type PersonalReferralCode = {
   code: string;
@@ -20,140 +28,91 @@ type ReferralCodesTableProps = {
 export const ReferralCodesTable = ({
   referralCodes,
 }: ReferralCodesTableProps) => {
-  const [copied, setCopied] = useState(false);
-
   const filteredCodes = referralCodes.filter((code) => code.active);
 
   const handleCopyLink = async (code: string) => {
     try {
       const baseUrl = window.location.origin;
-      await navigator.clipboard.writeText(
-        `${baseUrl}/registration?ref=${code}`,
-      );
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      const refCode = `${baseUrl}/registration?ref=${code}`;
+      await navigator.clipboard.writeText(refCode);
+      toast.success(`Copied referral code.`);
     } catch (e) {
-      console.error(`Failed to copy text to clipboard: ${e}`);
+      console.error(`Failed to copy referral code: ${e}`);
+      toast.error(`Failed to copy referral code.`);
     }
   };
 
   return (
-    <Table.Root variant="surface">
-      <Table.Header>
-        <Table.Row>
-          <Table.ColumnHeaderCell>
-            <Text
-              className={"text-font dark:text-font-dark"}
-              size={"2"}
-              weight={"medium"}
-            >
-              Code
-            </Text>
-          </Table.ColumnHeaderCell>
-          <Table.ColumnHeaderCell>
-            <Text
-              className={"text-font dark:text-font-dark"}
-              size={"2"}
-              weight={"medium"}
-            >
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>
+            <div className={"text-font dark:text-font-dark"}>Code</div>
+          </TableHead>
+          <TableHead>
+            <div className={"text-font dark:text-font-dark"}>
               Referred user discount
-            </Text>
-          </Table.ColumnHeaderCell>
-          <Table.ColumnHeaderCell>
-            <Text
-              className={"text-font dark:text-font-dark"}
-              size={"2"}
-              weight={"medium"}
-            >
+            </div>
+          </TableHead>
+          <TableHead>
+            <div className={"text-font dark:text-font-dark"}>
               First loan commission
-            </Text>
-          </Table.ColumnHeaderCell>
-          <Table.ColumnHeaderCell>
-            <Text
-              className={"text-font dark:text-font-dark"}
-              size={"2"}
-              weight={"medium"}
-            >
+            </div>
+          </TableHead>
+          <TableHead>
+            <div className={"text-font dark:text-font-dark"}>
               Other loan commission
-            </Text>
-          </Table.ColumnHeaderCell>
-        </Table.Row>
-      </Table.Header>
+            </div>
+          </TableHead>
+        </TableRow>
+      </TableHeader>
 
-      <Table.Body>
+      <TableBody>
         {filteredCodes.map((code) => (
-          <Table.Row key={code.code}>
-            <Table.Cell>
-              <Box className="flex items-center">
-                <Text
-                  className={"text-font dark:text-font-dark mr-2"}
-                  size={"1"}
-                  weight={"medium"}
-                >
-                  <Badge size={"3"}>
+          <TableRow key={code.code}>
+            <TableCell>
+              <div className="flex items-center">
+                <div className={"text-font dark:text-font-dark mr-2"}>
+                  <Badge>
                     <code>{code.code}</code>
                   </Badge>
-                </Text>
-                <NotificationToast
-                  description={code.code}
-                  title={"Referral link copied"}
+                </div>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => handleCopyLink(code.code)}
                 >
-                  {copied ? (
-                    <FaCheckCircle
-                      className={"text-font dark:text-font-dark"}
-                    />
-                  ) : (
-                    <FaCopy
-                      onClick={() => handleCopyLink(code.code)}
-                      className={"text-font dark:text-font-dark"}
-                    />
-                  )}
-                </NotificationToast>
-              </Box>
-            </Table.Cell>
-            <Table.Cell>
-              <Text
-                className={"text-font dark:text-font-dark"}
-                size={"1"}
-                weight={"medium"}
-              >
+                  <LuCopy />
+                </Button>
+              </div>
+            </TableCell>
+            <TableCell>
+              <div className={"text-font dark:text-font-dark"}>
                 -{(code.first_time_discount_rate_referee * 100).toFixed(1)}%
-              </Text>
-            </Table.Cell>
-            <Table.Cell>
-              <Text
-                className={"text-font dark:text-font-dark"}
-                size={"1"}
-                weight={"medium"}
-              >
+              </div>
+            </TableCell>
+            <TableCell>
+              <div className={"text-font dark:text-font-dark"}>
                 {(code.first_time_commission_rate_referrer * 100).toFixed(1)}%
-              </Text>
-            </Table.Cell>
-            <Table.Cell>
-              <Text
-                className={"text-font dark:text-font-dark"}
-                size={"1"}
-                weight={"medium"}
-              >
+              </div>
+            </TableCell>
+            <TableCell>
+              <div className={"text-font dark:text-font-dark"}>
                 {(code.commission_rate_referrer * 100).toFixed(1)}%
-              </Text>
-            </Table.Cell>
-          </Table.Row>
+              </div>
+            </TableCell>
+          </TableRow>
         ))}
         {referralCodes.length === 0 && (
-          <Table.Row>
-            <Table.Cell colSpan={5} align="center">
-              <Text
-                className={"text-font dark:text-font-dark"}
-                size={"1"}
-                weight={"medium"}
-              >
+          <TableRow>
+            <TableCell colSpan={5} align="center">
+              <div className={"text-font dark:text-font-dark"}>
                 No referral codes found
-              </Text>
-            </Table.Cell>
-          </Table.Row>
+              </div>
+            </TableCell>
+          </TableRow>
         )}
-      </Table.Body>
-    </Table.Root>
+      </TableBody>
+    </Table>
   );
 };

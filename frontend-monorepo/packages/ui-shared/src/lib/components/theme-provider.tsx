@@ -47,7 +47,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     applyTheme(newTheme);
   };
 
-  const applyTheme = (newTheme) => {
+  const applyTheme = (newTheme: string) => {
     setTheme(newTheme);
     // remove both light and dark classes so that only the saved theme is really used.
     document.documentElement.classList.remove("light");

@@ -1,6 +1,5 @@
-import { Box, Flex } from "@radix-ui/themes";
-import React, { ReactNode, useRef, useState } from "react";
-import { MdOutlineVisibility, MdOutlineVisibilityOff } from "react-icons/md";
+import { ReactNode, useRef, useState } from "react";
+import { LuEye, LuEyeOff } from "react-icons/lu";
 import { useWallet } from "./browser-wallet";
 import {
   Alert,
@@ -13,19 +12,20 @@ import {
   Input,
   Button,
   DialogTrigger,
-  DialogClose,
+  DialogFooter,
 } from "@frontend/shadcn";
-import { FaInfoCircle } from "react-icons/fa";
-import { LuLoader } from "react-icons/lu";
+import { LuLoader, LuInfo } from "react-icons/lu";
 
 interface WalletModalProps {
   handleSubmit: () => void;
   children: ReactNode;
+  description?: string;
 }
 
 export function UnlockWalletModal({
   handleSubmit,
   children,
+  description,
 }: WalletModalProps) {
   const [password, setPassword] = useState("");
   const [passVisibility, setPassVisibility] = useState<boolean>(false);
@@ -61,9 +61,12 @@ export function UnlockWalletModal({
     closeRef.current?.click();
   };
 
+  const defaultDescription =
+    "Please provide your password. It is needed to access your encrypted contract data.";
+
   return (
     <Dialog
-      onOpenChange={(open) => {
+      onOpenChange={(_) => {
         setPassword("");
         setError("");
       }}
@@ -72,9 +75,8 @@ export function UnlockWalletModal({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Input Password</DialogTitle>
-          <DialogDescription className="flex flex-col gap-3 mt-3">
-            Please provide your password. It is needed to access your encrypted
-            contract data.
+          <DialogDescription className="mt-3 flex flex-col gap-3">
+            {description ? description : defaultDescription}
           </DialogDescription>
         </DialogHeader>
         <form
@@ -97,48 +99,32 @@ export function UnlockWalletModal({
               onClick={() => setPassVisibility(!passVisibility)}
             >
               {passVisibility ? (
-                <MdOutlineVisibilityOff
+                <LuEyeOff
                   size={24}
                   className="text-font/50 dark:text-font-dark/50"
                 />
               ) : (
-                <MdOutlineVisibility
+                <LuEye
                   size={24}
                   className="text-font/50 dark:text-font-dark/50"
                 />
               )}
             </Button>
           </div>
-          <Box className="dark:bg-dark-700 rounded-2 mt-4 bg-white pb-5">
-            <div className="flex justify-end space-x-2 pt-4">
-              <DialogClose asChild ref={closeRef}>
-                <Button type="button" variant="secondary">
-                  Cancel
-                </Button>
-              </DialogClose>
-              <Button
-                variant="default"
-                className={`w-full`}
-                type="submit"
-                disabled={loading}
-              >
-                {loading ? (
-                  <>
-                    <LuLoader className="animate-spin" />
-                    Please wait
-                  </>
-                ) : (
-                  "Submit"
-                )}
+          {error && (
+            <Alert variant="destructive" className={"mt-4"}>
+              <LuInfo className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <DialogFooter className="dark:bg-dark-700 rounded-2 mt-4 bg-white">
+            <div className="flex">
+              <Button variant="default" type="submit" disabled={loading}>
+                {loading ? <LuLoader className="animate-spin" /> : "Submit"}
               </Button>
             </div>
-            {error && (
-              <Alert variant="destructive" className={"mt-4"}>
-                <FaInfoCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-          </Box>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

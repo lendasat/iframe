@@ -1,8 +1,14 @@
-import { LuCircleAlert } from "react-icons/lu";
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
-import { Card, CardContent, CardHeader } from "@frontend/shadcn";
-import { Tabs, TabsList, TabsTrigger } from "@frontend/shadcn";
-import { Alert, AlertDescription } from "@frontend/shadcn";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  ScrollArea,
+  ScrollBar,
+} from "@frontend/shadcn";
 import { Profile } from "./profile";
 import { Wallet } from "./wallet";
 import { NostrChatSettingsPage } from "./nostr-chat-settings";
@@ -14,50 +20,48 @@ function Settings() {
   const currentPath = location.pathname.split("/").pop();
 
   return (
-    <div className="container py-6 px-6">
+    <div className="bg-white px-6 py-6 dark:bg-black">
       <Card>
         <CardHeader className="border-b px-6 py-4">
           <Tabs value={currentPath || "profile"} className="w-full">
-            <TabsList className="w-full justify-start">
-              <TabsTrigger value="profile" asChild>
-                <Link to="profile">Profile</Link>
-              </TabsTrigger>
-              <TabsTrigger value="wallet" asChild>
-                <Link to="wallet">Wallet</Link>
-              </TabsTrigger>
-              <TabsTrigger value="notifications" asChild>
-                <Link to="notifications">Notifications</Link>
-              </TabsTrigger>
-              <TabsTrigger value="chat" asChild>
-                <Link to="chat">Chat</Link>
-              </TabsTrigger>
-              <TabsTrigger value="version" asChild>
-                <Link to="version">Version</Link>
-              </TabsTrigger>
-            </TabsList>
+            <ScrollArea>
+              <TabsList className="w-full justify-start">
+                <TabsTrigger value="profile" asChild>
+                  <Link to="profile">Profile</Link>
+                </TabsTrigger>
+                <TabsTrigger value="wallet" asChild>
+                  <Link to="wallet">Wallet</Link>
+                </TabsTrigger>
+                <TabsTrigger value="notifications" asChild>
+                  <Link to="notifications">Notifications</Link>
+                </TabsTrigger>
+                <TabsTrigger value="chat" asChild>
+                  <Link to="chat">Chat</Link>
+                </TabsTrigger>
+                <TabsTrigger value="version" asChild>
+                  <Link to="version">Version</Link>
+                </TabsTrigger>
+              </TabsList>
+              <ScrollBar orientation="horizontal" />
+            </ScrollArea>
           </Tabs>
         </CardHeader>
 
-        <CardContent className="p-6">
-          <Routes>
-            <Route path="/" element={<Navigate to="profile" replace />} />
-            <Route path="profile" element={<Profile />} />
-            <Route path="wallet" element={<Wallet />} />
-            <Route path="notifications" element={<NotificationSettings />} />
-            <Route path="chat" element={<NostrChatSettingsPage />} />
-            <Route path="version" element={<VersionPage />} />
-          </Routes>
-        </CardContent>
+        <ScrollArea className="bg-white px-6 py-6 dark:bg-black w-full">
+          <CardContent className="p-6 h-[70vh]">
+            <Routes>
+              <Route path="/" element={<Navigate to="profile" replace />} />
+              <Route path="profile" element={<Profile />} />
+              <Route path="wallet" element={<Wallet />} />
+              <Route path="notifications" element={<NotificationSettings />} />
+              <Route path="chat" element={<NostrChatSettingsPage />} />
+              <Route path="version" element={<VersionPage />} />
+            </Routes>
+          </CardContent>
+          <ScrollBar />
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
       </Card>
-
-      <Alert variant="default" className="mt-4">
-        <div className="flex items-center">
-          <LuCircleAlert className="h-4 w-4 mr-2 flex-shrink-0" />
-          <AlertDescription className="mt-0">
-            Do not disclose your password to anyone, including Lendasat support.
-          </AlertDescription>
-        </div>
-      </Alert>
     </div>
   );
 }

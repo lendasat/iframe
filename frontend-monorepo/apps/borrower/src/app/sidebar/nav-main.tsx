@@ -96,7 +96,7 @@ export function NavMain() {
               className="group/label text-sm hover:bg-gray-200"
             >
               <CollapsibleTrigger>
-                <item.icon className={"h-4 w-4 mr-2"} />
+                <item.icon className={"mr-2 h-4 w-4"} />
                 <span>{item.title}</span>{" "}
                 <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
               </CollapsibleTrigger>

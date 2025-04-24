@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            UPDATE\n                contracts\n            SET\n                status = $1,\n                updated_at = $2\n            WHERE\n                id IN (SELECT id FROM expired_open_contracts)\n            RETURNING id, borrower_id, lender_id;\n        ",
+  "query": "\n            UPDATE\n                contracts\n            SET\n                status = $1,\n                updated_at = $2\n            WHERE\n                id IN (SELECT id FROM expired_open_contracts) AND\n                status != $1\n            RETURNING id, borrower_id, lender_id;\n        ",
   "describe": {
     "columns": [
       {
@@ -60,5 +60,5 @@
       false
     ]
   },
-  "hash": "f24da879fdd681795749432a05b54ca1128942da8b4116d979809cf78d9ecfdf"
+  "hash": "175a30d5c82b27e654692b84bf88f804b4cf141d33616e8b926b092ae0cd4308"
 }
