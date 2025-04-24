@@ -1,11 +1,6 @@
 import {
   Badge,
   Label,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
   Tabs,
   TabsContent,
   TabsList,
@@ -21,13 +16,9 @@ import { ContractOverview } from "./contract-overview";
 
 interface DataTableProps {
   contracts: Contract[];
-  isLoading: boolean;
 }
 
-export function DataTable({
-  contracts: allContracts,
-  isLoading,
-}: DataTableProps) {
+export function DataTable({ contracts: allContracts }: DataTableProps) {
   const openContracts = allContracts.filter((c) => {
     return isContractOpen(c.status);
   });
@@ -54,32 +45,43 @@ export function DataTable({
         <TabsList className="flex">
           <TabsTrigger value="action-required" className="gap-1">
             Action Required{" "}
-            <Badge
-              variant="secondary"
-              className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-foreground/30"
-            >
-              {actionRequiredContracts.length > 0
-                ? actionRequiredContracts.length
-                : ""}
-            </Badge>
+            {actionRequiredContracts.length > 0 ? (
+              <Badge
+                variant="secondary"
+                className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-foreground/30"
+              >
+                {" "}
+                {actionRequiredContracts.length}
+              </Badge>
+            ) : (
+              ""
+            )}
           </TabsTrigger>
           <TabsTrigger value="open" className="gap-1">
             Open{" "}
-            <Badge
-              variant="secondary"
-              className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-foreground/30"
-            >
-              {openContracts.length > 0 ? openContracts.length : ""}
-            </Badge>
+            {openContracts.length > 0 ? (
+              <Badge
+                variant="secondary"
+                className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-foreground/30"
+              >
+                {openContracts.length}
+              </Badge>
+            ) : (
+              ""
+            )}
           </TabsTrigger>
           <TabsTrigger value="closed" className="gap-1">
             Closed{" "}
-            <Badge
-              variant="secondary"
-              className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-foreground/30"
-            >
-              {closedContracts.length > 0 ? closedContracts.length : ""}
-            </Badge>
+            {closedContracts.length > 0 ? (
+              <Badge
+                variant="secondary"
+                className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-foreground/30"
+              >
+                {closedContracts.length}
+              </Badge>
+            ) : (
+              ""
+            )}
           </TabsTrigger>
         </TabsList>
       </div>
