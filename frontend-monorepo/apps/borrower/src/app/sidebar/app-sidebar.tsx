@@ -7,7 +7,7 @@ import {
   LogOut,
   HomeIcon,
 } from "lucide-react";
-import Lendasat from "../../assets/lendasat-icon.png";
+import { ReactComponent as Lendasat } from "../../assets/lendasat_black.svg";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -59,12 +59,8 @@ export function AppSidebar({ onLogout, username }: AppSidebarProps) {
         <SidebarMenu>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <SidebarMenuButton className="w-auto hover:bg-gray-200 group-data-[collapsible=icon]:px-1">
-                <img
-                  src={Lendasat}
-                  alt="Logo"
-                  className="h-6 w-auto px-0 dark:invert"
-                />
+              <SidebarMenuButton className="w-auto hover:bg-gray-200 group-data-[collapsible=icon]:px-1 [&>svg]:size-6">
+                <Lendasat />
                 <span className="text-base font-semibold group-data-[collapsible=icon]:hidden">
                   {username}
                 </span>
