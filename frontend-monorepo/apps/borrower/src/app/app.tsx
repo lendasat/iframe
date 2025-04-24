@@ -254,7 +254,7 @@ function App() {
     (async () => {
       await init(browserWalletUrl);
     })();
-  });
+  }, []);
 
   return (
     <AuthProviderBorrower baseUrl={baseUrl}>
