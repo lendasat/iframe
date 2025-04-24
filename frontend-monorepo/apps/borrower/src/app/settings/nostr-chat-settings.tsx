@@ -70,7 +70,7 @@ export function NostrChatSettingsPage() {
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="mt-4">
           <div className="space-y-4">
             <p className="text-font dark:text-font-dark leading-relaxed">
               Your Nostr secret key (Nsec) can be imported into Nostr clients

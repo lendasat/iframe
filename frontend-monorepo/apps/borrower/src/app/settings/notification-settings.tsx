@@ -43,22 +43,20 @@ export function NotificationSettings() {
             </CardDescription>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="mt-4">
           {error ? (
-            <Alert variant="warning" className="mt-4">
+            <Alert variant="warning">
               <AlertTitle>Woops!</AlertTitle>
               <AlertDescription>
                 Telegram notifications are currently unavailable.
               </AlertDescription>
             </Alert>
           ) : (
-            <div className="mt-4">
-              <TelegramBotDetails
-                token={personalTelegramToken}
-                botUrl={botUrl}
-                botName={botName}
-              />
-            </div>
+            <TelegramBotDetails
+              token={personalTelegramToken}
+              botUrl={botUrl}
+              botName={botName}
+            />
           )}
         </CardContent>
       </Card>

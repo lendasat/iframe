@@ -60,7 +60,7 @@ export const MnemonicComponent = () => {
           <div className="flex justify-between">
             <div>
               <CardTitle className="text-sm font-semibold">
-                Mnemonic Seed Phrase
+                Mnemonic seed phrase
               </CardTitle>
               <CardDescription>
                 This seed is used to derive the keys that secure loan
@@ -88,8 +88,8 @@ export const MnemonicComponent = () => {
             )}
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="grid max-w-lg grid-cols-2 gap-4 p-4">
+        <CardContent className="mt-4">
+          <div className="grid max-w-lg grid-cols-2 gap-4 px-4">
             {mnemonic.map((word, index) => (
               <div key={index} className="group flex items-center gap-3">
                 <Label className="flex w-full cursor-text items-center gap-3 border-b border-gray-200 pb-2">
