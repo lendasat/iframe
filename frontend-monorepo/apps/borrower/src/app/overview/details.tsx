@@ -1,4 +1,11 @@
-import { LuCircleCheck, LuClipboard, LuClock } from "react-icons/lu";
+import { toast } from "sonner";
+import { downloadContractBackup } from "../contracts/download-contract-backup";
+import {
+  LuCircleCheck,
+  LuClipboard,
+  LuClock,
+  LuDownload,
+} from "react-icons/lu";
 import React, { useState } from "react";
 import {
   Avatar,
@@ -8,13 +15,12 @@ import {
   Separator,
   Skeleton,
 } from "@frontend/shadcn";
-import { Contract } from "@frontend/http-client-borrower";
+import { Contract, useAuth } from "@frontend/http-client-borrower";
 import {
   formatCurrency,
   formatSatsToBitcoin,
   getFormatedStringFromDays,
   LoanAssetHelper,
-  usePrice,
 } from "@frontend/ui-shared";
 import { format, formatDistanceToNow } from "date-fns";
 import LoanStatusInformation from "./contract-status-text";
@@ -31,8 +37,8 @@ interface DetailsProps {
 }
 
 export const Details = ({ contract }: DetailsProps) => {
+  const { backendVersion } = useAuth();
   const [contractIdCopied, setContractIdCopied] = useState(false);
-  const { latestPrice } = usePrice();
 
   const contractId = contract?.id;
   const lender = contract?.lender;
@@ -77,6 +83,20 @@ export const Details = ({ contract }: DetailsProps) => {
   const Skeleton = ({ className }: { className: string }) => (
     <div className={`bg-gray-200 rounded animate-pulse ${className}`}></div>
   );
+
+  const downloadBackupFn = () => {
+    if (contract) {
+      try {
+        downloadContractBackup(backendVersion, contract);
+        toast.success("Downloading contract backup...");
+      } catch (e) {
+        console.log("Failed to download contract backup:", e);
+        toast.error("Failed to download contract backup.");
+      }
+    } else {
+      toast.error("Failed to download contract backup.");
+    }
+  };
 
   return (
     <CardContent className="pt-2">
@@ -133,6 +153,7 @@ export const Details = ({ contract }: DetailsProps) => {
         interestRate={interestRate}
         interestAmount={interestAmount}
         loanExpiryFormatted={loanExpiryFormatted}
+        downloadBackup={downloadBackupFn}
       />
 
       <Separator className="my-4" />
@@ -151,6 +172,7 @@ interface LoanDetailsProps {
   originationFee?: string;
   interestRate?: string;
   interestAmount?: number;
+  downloadBackup: () => void;
 }
 
 // Main component with typed props
@@ -163,6 +185,7 @@ const LoanDetails: React.FC<LoanDetailsProps> = ({
   originationFee,
   interestRate,
   interestAmount,
+  downloadBackup,
 }) => {
   // Component now split into mobile and desktop layouts
   return (
@@ -231,15 +254,22 @@ const LoanDetails: React.FC<LoanDetailsProps> = ({
           </div>
 
           {/* Origination Fee */}
-          <div>
-            <p className="text-sm text-gray-500">Origination Fee</p>
-            {originationFee ? (
-              <div className="flex items-center gap-3">
-                <p className="font-mono">{originationFee}</p>
-              </div>
-            ) : (
-              <Skeleton className="h-4 w-[150px] mb-2" />
-            )}
+          <div className="grid grid-cols-2">
+            <div>
+              <p className="text-sm text-gray-500">Origination Fee</p>
+              {originationFee ? (
+                <div className="flex items-center gap-3">
+                  <p className="font-mono">{originationFee}</p>
+                </div>
+              ) : (
+                <Skeleton className="h-4 w-[150px] mb-2" />
+              )}
+            </div>
+            <div className="text-right">
+              <Button variant="ghost" onClick={downloadBackup}>
+                <LuDownload />
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -318,6 +348,11 @@ const LoanDetails: React.FC<LoanDetailsProps> = ({
             ) : (
               <Skeleton className="h-4 w-[150px] mb-2" />
             )}
+          </div>
+          <div className="text-right md:col-span-1 col-span-2">
+            <Button variant="ghost" onClick={downloadBackup}>
+              <LuDownload /> Download backup
+            </Button>
           </div>
         </div>
       </div>
