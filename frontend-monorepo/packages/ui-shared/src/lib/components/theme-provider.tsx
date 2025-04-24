@@ -35,10 +35,11 @@ export const ThemeContext = createContext<Theme>({
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const [theme, setTheme] = useState<string>("light");
 
-  useEffect(() => {
-    const savedTheme = getPreferredTheme();
-    applyTheme(savedTheme);
-  }, [theme]);
+  // TODO: fixme: once we enable darkmode again we should preferred system settings
+  // useEffect(() => {
+  //   const savedTheme = getPreferredTheme();
+  //   applyTheme(savedTheme);
+  // }, [theme]);
 
   const toggleTheme = () => {
     const newTheme = theme === "light" ? "dark" : "light";
