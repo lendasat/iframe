@@ -84,7 +84,7 @@ export function ContractDetailsFooter({
             variant="outline"
             typeof={"button"}
             disabled={buttonDisabled}
-            className={"flex xs:hidden"}
+            className={"flex sm:hidden"}
           >
             View History
           </Button>
