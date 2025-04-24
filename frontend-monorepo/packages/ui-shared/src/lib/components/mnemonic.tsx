@@ -58,9 +58,15 @@ export const MnemonicComponent = () => {
       <Card className="shadow-sm">
         <CardHeader className="px-4 pb-1 pt-3">
           <div className="flex justify-between">
-            <CardTitle className="text-sm font-semibold">
-              Mnemonic Seed Phrase
-            </CardTitle>
+            <div>
+              <CardTitle className="text-sm font-semibold">
+                Mnemonic Seed Phrase
+              </CardTitle>
+              <CardDescription>
+                This seed is used to derive the keys that secure loan
+                collateral. Back it up!
+              </CardDescription>
+            </div>
 
             {!isWalletLoaded ? (
               <UnlockWalletModal
@@ -83,11 +89,6 @@ export const MnemonicComponent = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <CardDescription>
-            This seed is used to derive the keys that secure loan collateral.
-            Back it up!
-          </CardDescription>
-
           <div className="grid max-w-lg grid-cols-2 gap-4 p-4">
             {mnemonic.map((word, index) => (
               <div key={index} className="group flex items-center gap-3">
