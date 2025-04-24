@@ -172,8 +172,8 @@ export function Profile() {
               <Alert variant="warning" className="text-sm">
                 <LuCircleAlert className="h-4 w-4" />
                 <AlertDescription className="text-xs">
-                  You don't have a personal referral code yet. Reach out to us
-                  if you want to take part in the affiliation program
+                  You don't have a personal referral code yet. Please contact us
+                  if you're interested in joining our affiliate program.
                 </AlertDescription>
               </Alert>
             ))}
