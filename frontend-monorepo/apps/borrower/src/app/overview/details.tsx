@@ -191,7 +191,7 @@ const LoanDetails: React.FC<LoanDetailsProps> = ({
   return (
     <>
       {/* Mobile layout - visible only on small screens */}
-      <div className="sm:hidden">
+      <div className="md:hidden">
         <div className="space-y-4">
           {/* Loan Amount */}
           <div className="grid grid-cols-2 gap-4">
@@ -274,8 +274,8 @@ const LoanDetails: React.FC<LoanDetailsProps> = ({
         </div>
       </div>
 
-      {/* Desktop layout - visible on sm screens and up */}
-      <div className="hidden sm:block">
+      {/* Desktop layout - visible on md screens and up */}
+      <div className="hidden md:block">
         <div className="grid grid-cols-2 gap-4">
           <div>
             <p className="text-sm text-gray-500">Loan Amount</p>
