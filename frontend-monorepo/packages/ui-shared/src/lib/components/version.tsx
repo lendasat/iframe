@@ -10,8 +10,7 @@ import {
   Skeleton,
 } from "@frontend/shadcn";
 import { useAsync } from "react-use";
-import { Info } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 const truncateHash = (hash?: string, visibleChars = 8) => {
   if (!hash || hash.length <= visibleChars) return hash;
@@ -53,25 +52,22 @@ export const VersionInfo = () => {
   }, [isInitialized]);
 
   return (
-    <div className="w-full mx-auto pt-4">
+    <div className="mx-auto max-w-3xl space-y-4">
       <Card className="shadow-md">
-        <CardHeader className="pb-2">
-          <div className="flex items-center gap-2">
-            <Info className="h-5 w-5 text-muted-foreground" />
-            <CardTitle className="text-lg font-semibold">
-              Version Information
+        <CardHeader className="px-4 pb-1 pt-3">
+          <div>
+            <CardTitle className="text-sm font-semibold">
+              Build details
             </CardTitle>
+            <CardDescription>
+              System component versions and build details.
+            </CardDescription>
           </div>
-          <CardDescription>
-            System component versions and build details
-          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="mt-4 space-y-6">
           {/* WASM Version Section */}
           <div className="space-y-2">
-            <h3 className="text-sm font-medium flex items-center">
-              WASM Version Details
-            </h3>
+            <h3 className="text-sm font-medium flex items-center">WASM</h3>
             <Separator className="my-2" />
             <div className="grid grid-cols-2 gap-1 text-sm">
               <span className="text-muted-foreground">Version:</span>
@@ -109,9 +105,7 @@ export const VersionInfo = () => {
 
           {/* Frontend Version Section */}
           <div className="space-y-2">
-            <h3 className="text-sm font-medium flex items-center">
-              Frontend Version Details
-            </h3>
+            <h3 className="text-sm font-medium flex items-center">Frontend</h3>
             <Separator className="my-2" />
             <div className="grid grid-cols-2 gap-1 text-sm">
               <span className="text-muted-foreground">Version:</span>
@@ -126,9 +120,7 @@ export const VersionInfo = () => {
 
           {/* Backend Version Section */}
           <div className="space-y-2">
-            <h3 className="text-sm font-medium flex items-center">
-              Backend Version Details
-            </h3>
+            <h3 className="text-sm font-medium flex items-center">Backend</h3>
             <Separator className="my-2" />
             <div className="grid grid-cols-2 gap-1 text-sm">
               <span className="text-muted-foreground">Version:</span>
