@@ -12,7 +12,7 @@ import {
   Input,
   Button,
   DialogTrigger,
-  DialogClose,
+  DialogFooter,
 } from "@frontend/shadcn";
 import { LuLoader, LuInfo } from "react-icons/lu";
 
@@ -111,36 +111,20 @@ export function UnlockWalletModal({
               )}
             </Button>
           </div>
-          <div className="dark:bg-dark-700 rounded-2 mt-4 bg-white pb-5">
-            <div className="flex justify-end space-x-2 pt-4">
-              <DialogClose asChild ref={closeRef}>
-                <Button type="button" variant="secondary">
-                  Cancel
-                </Button>
-              </DialogClose>
-              <Button
-                variant="default"
-                className={`w-full`}
-                type="submit"
-                disabled={loading}
-              >
-                {loading ? (
-                  <>
-                    <LuLoader className="animate-spin" />
-                    Please wait
-                  </>
-                ) : (
-                  "Submit"
-                )}
+          {error && (
+            <Alert variant="destructive" className={"mt-4"}>
+              <LuInfo className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <DialogFooter className="dark:bg-dark-700 rounded-2 mt-4 bg-white">
+            <div className="flex">
+              <Button variant="default" type="submit" disabled={loading}>
+                {loading ? <LuLoader className="animate-spin" /> : "Submit"}
               </Button>
             </div>
-            {error && (
-              <Alert variant="destructive" className={"mt-4"}>
-                <LuInfo className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-          </div>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
