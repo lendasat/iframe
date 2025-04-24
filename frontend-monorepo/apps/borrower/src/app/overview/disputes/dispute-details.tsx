@@ -5,7 +5,7 @@ import {
   ContractDisputeStatus,
   DisputeWithMessages,
   useAuth,
-  useBorrowerHttpClient,
+  useHttpClientBorrower,
 } from "@frontend/http-client-borrower";
 import {
   AlertDialog,
@@ -47,7 +47,7 @@ export const DisputeDetails: React.FC<DisputeDetailsProps> = ({ dispute }) => {
   const [isSending, setIsSending] = useState(false);
   const [isResolving, setIsResolving] = useState(false);
 
-  const { commentOnDispute, resolveDispute } = useBorrowerHttpClient();
+  const { commentOnDispute, resolveDispute } = useHttpClientBorrower();
 
   const handleSendMessage = async () => {
     if (!newComment.trim()) return;

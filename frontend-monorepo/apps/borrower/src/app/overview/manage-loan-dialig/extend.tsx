@@ -13,7 +13,7 @@ import {
 import {
   Contract,
   LoanOffer,
-  useBorrowerHttpClient,
+  useHttpClientBorrower,
 } from "@frontend/http-client-borrower";
 import { format, addDays } from "date-fns";
 import {
@@ -32,13 +32,13 @@ interface ExtendContractProps {
 }
 
 export function ExtendContract({ contract }: ExtendContractProps) {
-  const { getLoanOffersByLender } = useBorrowerHttpClient();
+  const { getLoanOffersByLender } = useHttpClientBorrower();
 
   const [extensionDays, setExtensionDays] = useState(7);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
-  const { postExtendLoanRequest } = useBorrowerHttpClient();
+  const { postExtendLoanRequest } = useHttpClientBorrower();
   const { latestPrice } = usePrice();
 
   const lenderIdMemorized = useMemo(() => {

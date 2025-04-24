@@ -1,6 +1,6 @@
 import { SidebarInset, SidebarProvider } from "@frontend/shadcn";
 import { AppSidebar } from "./sidebar/app-sidebar";
-import type { Version } from "@frontend/base-http-client";
+import type { Version } from "@frontend/http-client-borrower";
 import type { ReactNode } from "react";
 import type { FC } from "react";
 import type { IconType } from "react-icons";

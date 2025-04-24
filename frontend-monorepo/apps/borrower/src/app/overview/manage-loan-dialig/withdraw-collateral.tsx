@@ -6,7 +6,7 @@ import {
   LuLoader,
   LuCircleAlert,
 } from "react-icons/lu";
-import { useBorrowerHttpClient } from "@frontend/http-client-borrower";
+import { useHttpClientBorrower } from "@frontend/http-client-borrower";
 import {
   Dialog,
   DialogContent,
@@ -73,7 +73,7 @@ const WithdrawCollateralDialog: React.FC<WithdrawCollateralDialogProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [txId, setTxId] = useState<string | null>(null);
   const { unlockAndSignClaimPsbt } = useWallet();
-  const { getClaimCollateralPsbt, postClaimTx } = useBorrowerHttpClient();
+  const { getClaimCollateralPsbt, postClaimTx } = useHttpClientBorrower();
   const navigate = useNavigate();
 
   const handleWithdraw = async () => {

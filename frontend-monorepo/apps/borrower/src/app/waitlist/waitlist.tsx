@@ -1,9 +1,9 @@
-import { useBaseHttpClient } from "@frontend/base-http-client";
+import { useHttpClientBorrower } from "@frontend/http-client-borrower";
 import { WaitlistForm } from "@frontend/ui-shared";
 import { useNavigate } from "react-router-dom";
 
 function Waitlist() {
-  const { joinWaitlist } = useBaseHttpClient();
+  const { joinWaitlist } = useHttpClientBorrower();
   const navigate = useNavigate();
 
   const handleRegister = async (email: string) => {

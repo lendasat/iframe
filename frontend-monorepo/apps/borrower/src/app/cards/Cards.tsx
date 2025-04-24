@@ -1,4 +1,4 @@
-import { useBorrowerHttpClient } from "@frontend/http-client-borrower";
+import { useHttpClientBorrower } from "@frontend/http-client-borrower";
 import { CurrencyFormatter } from "@frontend/ui-shared";
 import {
   Box,
@@ -30,7 +30,7 @@ export default function Cards() {
   const [visible, setVisible] = useState<boolean>(false);
   const [activeCardIndex, setActiveCardIndex] = useState<number>(0);
 
-  const { getUserCards } = useBorrowerHttpClient();
+  const { getUserCards } = useHttpClientBorrower();
 
   const {
     loading,

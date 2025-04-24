@@ -19,7 +19,7 @@ import {
 import { Textarea } from "@frontend/shadcn";
 import { Label } from "@frontend/shadcn";
 import { AlertCircle, CheckCircle2, XCircle } from "lucide-react";
-import { useBorrowerHttpClient } from "@frontend/http-client-borrower";
+import { useHttpClientBorrower } from "@frontend/http-client-borrower";
 
 interface DisputeDialogProps {
   contractId: string;
@@ -33,7 +33,7 @@ const disputeReasons = [
 ];
 
 const StartDisputeDialog = ({ contractId, children }: DisputeDialogProps) => {
-  const { startDispute } = useBorrowerHttpClient();
+  const { startDispute } = useHttpClientBorrower();
 
   const [disputeReason, setDisputeReason] = useState(disputeReasons[0]);
   const [disputeDetails, setDisputeDetails] = useState("");

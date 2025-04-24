@@ -12,7 +12,7 @@ import {
 import { Button } from "@frontend/shadcn";
 import { Alert, AlertDescription, AlertTitle } from "@frontend/shadcn";
 import { shortenUuid } from "./details";
-import { useBorrowerHttpClient } from "@frontend/http-client-borrower";
+import { useHttpClientBorrower } from "@frontend/http-client-borrower";
 import { useNavigate } from "react-router-dom";
 
 interface CancelRequestDialogProps {
@@ -27,7 +27,7 @@ const CancelRequestDialog = ({
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [cancelError, setCancelError] = useState<string | undefined>();
-  const { cancelContractRequest } = useBorrowerHttpClient();
+  const { cancelContractRequest } = useHttpClientBorrower();
   const navigate = useNavigate();
 
   const handleCancel = async () => {

@@ -4,7 +4,7 @@ import { UnlockWalletModal, useWallet } from "@frontend/browser-wallet";
 import {
   Contract,
   LoanOffer,
-  useBorrowerHttpClient,
+  useHttpClientBorrower,
 } from "@frontend/http-client-borrower";
 import {
   formatCurrency,
@@ -84,7 +84,7 @@ const SelectedLoanOffer = (props: SelectedLoanOfferProps) => {
   const { isWalletLoaded } = useWallet();
   const { latestPrice } = usePrice();
   const [error, setError] = useState("");
-  const { postExtendLoanRequest } = useBorrowerHttpClient();
+  const { postExtendLoanRequest } = useHttpClientBorrower();
 
   const [isLoading, setIsLoading] = useState(false);
   const [newContractId, setNewContractId] = useState("");
@@ -248,7 +248,7 @@ export const ExtendContract = ({
   resetSelectedAction,
 }: ExtendContractProps) => {
   const [sliderDuration, setSliderDuration] = useState<number | undefined>();
-  const { getLoanOffersByLender } = useBorrowerHttpClient();
+  const { getLoanOffersByLender } = useHttpClientBorrower();
 
   const lenderIdMemorized = useMemo(() => {
     return contract.lender.id;

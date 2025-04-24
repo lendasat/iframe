@@ -1,4 +1,4 @@
-import { useBaseHttpClient } from "@frontend/base-http-client";
+import { useHttpClientBorrower } from "@frontend/http-client-borrower";
 import { ResetPasswordForm } from "@frontend/ui-shared";
 import {
   begin_registration,
@@ -14,7 +14,7 @@ type Mnemonic = { type: "mnemonic"; value: string };
 type OldPasswordOrMnemonic = OldPassword | Mnemonic;
 
 function ResetPassword() {
-  const { resetPassword } = useBaseHttpClient();
+  const { resetPassword } = useHttpClientBorrower();
   const { token, email } = useParams();
 
   const queryParams = new URLSearchParams(useLocation().search);
@@ -87,11 +87,13 @@ function ResetPassword() {
       `Generated new wallet backup data: ${JSON.stringify(newWalletBackupData)}`,
     );
 
-    return await resetPassword(
-      registrationData.verifier,
-      registrationData.salt,
-      newWalletBackupData,
-      token,
+    return (
+      (await resetPassword(
+        registrationData.verifier,
+        registrationData.salt,
+        newWalletBackupData,
+        token,
+      )) || ""
     );
   };
 

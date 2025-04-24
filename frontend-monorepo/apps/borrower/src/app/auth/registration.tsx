@@ -1,5 +1,4 @@
-import { useBaseHttpClient } from "@frontend/base-http-client";
-import { ShadCnRegistrationForm } from "@frontend/shadcn";
+import { useHttpClientBorrower } from "@frontend/http-client-borrower";
 import { RegistrationForm } from "@frontend/ui-shared";
 import {
   begin_registration,
@@ -11,7 +10,7 @@ import { md5 } from "hash-wasm";
 import { useNavigate, useLocation } from "react-router-dom";
 
 function Registration() {
-  const { register } = useBaseHttpClient();
+  const { register } = useHttpClientBorrower();
   const navigate = useNavigate();
 
   const queryParams = new URLSearchParams(useLocation().search);

@@ -2,12 +2,12 @@ import { SectionCards } from "./cards";
 import { ScrollArea } from "@radix-ui/themes";
 import { DataTable } from "./table";
 import { useAsync } from "react-use";
-import { useBorrowerHttpClient } from "@frontend/http-client-borrower";
+import { useHttpClientBorrower } from "@frontend/http-client-borrower";
 import MembersGetMemberSection from "./members-get-members";
 import { QuickActions } from "./quick-actions";
 
 export const Dashboard = () => {
-  const { getContracts } = useBorrowerHttpClient();
+  const { getContracts } = useHttpClientBorrower();
 
   const { loading, value: maybeContracts } = useAsync(async () => {
     return await getContracts();

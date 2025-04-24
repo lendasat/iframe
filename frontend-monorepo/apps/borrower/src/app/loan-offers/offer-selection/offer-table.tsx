@@ -350,6 +350,7 @@ export function LoanOfferTable({
           duration_days_max: 0,
           loan_asset: LoanAsset.USDT_POL,
           origination_fee: [],
+          extension_origination_fee: [],
           lender_pk: "dummy",
         },
       ];

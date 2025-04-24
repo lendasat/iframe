@@ -1,11 +1,14 @@
 import { faCheckCircle, faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { FiatLoanDetails, LoanProductOption } from "@frontend/base-http-client";
+import {
+  FiatLoanDetails,
+  LoanProductOption,
+} from "@frontend/http-client-borrower";
 import { useWallet } from "@frontend/browser-wallet";
 import {
   LoanType,
   useAuth,
-  useBorrowerHttpClient,
+  useHttpClientBorrower,
 } from "@frontend/http-client-borrower";
 import {
   AbbreviationExplanationInfo,
@@ -77,7 +80,7 @@ export const Confirmation = ({
   const { getNpub, getPkAndDerivationPath } = useWallet();
 
   const { getLoanOffer, getUserCards, postContractRequest } =
-    useBorrowerHttpClient();
+    useHttpClientBorrower();
   const { latestPrice } = usePrice();
   const { user } = useAuth();
   const [bitcoinAddressInputError, setBitcoinAddressInputError] = useState("");

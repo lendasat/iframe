@@ -4,7 +4,7 @@ import {
   contractStatusToLabelString,
   LiquidationStatus,
   useAuth,
-  useBorrowerHttpClient,
+  useHttpClientBorrower,
 } from "@frontend/http-client-borrower";
 import { ChatDrawer } from "@frontend/nostr-chat";
 import {
@@ -57,7 +57,7 @@ import { downloadContractBackup } from "./download-contract-backup";
 
 function ContractDetailsOverview() {
   const { innerHeight } = window;
-  const { getContract } = useBorrowerHttpClient();
+  const { getContract } = useHttpClientBorrower();
   const { id } = useParams();
 
   return (
@@ -117,7 +117,7 @@ function Details({ contract }: DetailsProps) {
 
   const [startingDisputeLoading, setStartingDisputeLoading] = useState(false);
   const [error, setError] = useState("");
-  const { startDispute } = useBorrowerHttpClient();
+  const { startDispute } = useHttpClientBorrower();
 
   const disputeInProgress =
     contract.status === ContractStatus.DisputeBorrowerResolved ||
@@ -172,7 +172,7 @@ function Details({ contract }: DetailsProps) {
 
 function ContractDetails({ contract }: DetailsProps) {
   const { backendVersion } = useAuth();
-  const { newChatNotification } = useBorrowerHttpClient();
+  const { newChatNotification } = useHttpClientBorrower();
 
   const [showAddCollateralModal, setShowAddCollateralModal] = useState(false);
 
@@ -280,16 +280,6 @@ function ContractDetails({ contract }: DetailsProps) {
 
   return (
     <Box>
-      <ChatDrawer
-        contractId={contract.id}
-        counterpartyNPub={contract.lender_npub}
-        onNewMsgSent={async () => {
-          await newChatNotification({
-            contract_id: contract.id,
-          });
-        }}
-      />
-
       <Box className="border-font/10 dark:border-font-dark/10 border-b p-6 md:pl-8">
         <Heading className={"text-font dark:text-font-dark"} size={"6"}>
           Contract Details

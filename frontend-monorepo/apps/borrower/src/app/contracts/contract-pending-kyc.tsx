@@ -1,4 +1,4 @@
-import { useBorrowerHttpClient } from "@frontend/http-client-borrower";
+import { useHttpClientBorrower } from "@frontend/http-client-borrower";
 import {
   Box,
   Button,
@@ -24,7 +24,7 @@ export function ContractPendingKyc({
   isKycDone,
 }: ContractPendingKycProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const { cancelContractRequest } = useBorrowerHttpClient();
+  const { cancelContractRequest } = useHttpClientBorrower();
   const [error, setError] = useState("");
   const navigate = useNavigate();
 

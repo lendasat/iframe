@@ -1,9 +1,9 @@
-import { useBaseHttpClient } from "@frontend/base-http-client";
+import { useHttpClientBorrower } from "@frontend/http-client-borrower";
 import { EmailVerificationForm } from "@frontend/ui-shared";
 import { useNavigate, useParams } from "react-router-dom";
 
 function VerifyEmailForm() {
-  const { verifyEmail } = useBaseHttpClient();
+  const { verifyEmail } = useHttpClientBorrower();
   const navigate = useNavigate();
   const { token } = useParams();
 

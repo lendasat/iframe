@@ -1,11 +1,11 @@
 import { faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { LoanProductOption } from "@frontend/base-http-client";
+import { LoanProductOption } from "@frontend/http-client-borrower";
 import { useWallet } from "@frontend/browser-wallet";
 import {
   LoanType,
   useAuth,
-  useBorrowerHttpClient,
+  useHttpClientBorrower,
 } from "@frontend/http-client-borrower";
 import {
   AbbreviationExplanationInfo,
@@ -57,7 +57,7 @@ export const Confirmation = ({
   const navigate = useNavigate();
   const { getNpub, getPkAndDerivationPath } = useWallet();
 
-  const { postLoanApplication } = useBorrowerHttpClient();
+  const { postLoanApplication } = useHttpClientBorrower();
   const { latestPrice } = usePrice();
   const { user } = useAuth();
   const [bitcoinAddressInputError, setBitcoinAddressInputError] = useState("");

@@ -1,4 +1,4 @@
-import { useBorrowerHttpClient } from "@frontend/http-client-borrower";
+import { useHttpClientBorrower } from "@frontend/http-client-borrower";
 import {
   Box,
   Button,
@@ -25,7 +25,7 @@ export function ContractRequested({
 }: ContractRequestedProps) {
   const [timeRemaining, setTimeRemaining] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { cancelContractRequest } = useBorrowerHttpClient();
+  const { cancelContractRequest } = useHttpClientBorrower();
   const [error, setError] = useState("");
   const navigate = useNavigate();
 

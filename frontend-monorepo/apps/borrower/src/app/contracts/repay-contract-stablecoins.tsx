@@ -17,7 +17,7 @@ import {
 } from "@frontend/ui-shared";
 import QRCode from "qrcode.react";
 import { type FormEvent, useState } from "react";
-import { useBorrowerHttpClient } from "@frontend/http-client-borrower";
+import { useHttpClientBorrower } from "@frontend/http-client-borrower";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
 
@@ -43,7 +43,7 @@ export const RepayStablecoins = ({
   const [txid, setTxid] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { markAsRepaymentProvided } = useBorrowerHttpClient();
+  const { markAsRepaymentProvided } = useHttpClientBorrower();
   const [submitted, setSubmitted] = useState(false);
 
   const handleCopy = async (text: string) => {

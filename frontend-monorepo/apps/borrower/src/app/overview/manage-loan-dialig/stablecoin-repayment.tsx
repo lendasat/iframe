@@ -12,7 +12,7 @@ import {
 import QRCode from "qrcode.react";
 import {
   Contract,
-  useBorrowerHttpClient,
+  useHttpClientBorrower,
 } from "@frontend/http-client-borrower";
 import {
   formatCurrency,
@@ -39,7 +39,7 @@ export function StablecoinRepayment({ contract }: StablecoinRepaymentProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [transactionId, setTransactionId] = useState<string>("");
 
-  const { markAsRepaymentProvided } = useBorrowerHttpClient();
+  const { markAsRepaymentProvided } = useHttpClientBorrower();
   const navigate = useNavigate();
 
   const loanAmount = contract?.loan_amount;

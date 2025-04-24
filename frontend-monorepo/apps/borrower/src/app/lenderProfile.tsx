@@ -1,6 +1,6 @@
 import {
   LenderStats,
-  useBorrowerHttpClient,
+  useHttpClientBorrower,
 } from "@frontend/http-client-borrower";
 import { UserStats } from "@frontend/ui-shared";
 import { Suspense } from "react";
@@ -8,7 +8,7 @@ import { Await, useParams } from "react-router-dom";
 
 export function LenderProfile() {
   const { id } = useParams();
-  const { getLenderProfile } = useBorrowerHttpClient();
+  const { getLenderProfile } = useHttpClientBorrower();
 
   return (
     <Suspense>

@@ -1,5 +1,5 @@
 import { Link, Text } from "@radix-ui/themes";
-import { LoanProductOption } from "@frontend/base-http-client";
+import { LoanProductOption } from "@frontend/http-client-borrower";
 
 interface ToSProps {
   product?: LoanProductOption;
