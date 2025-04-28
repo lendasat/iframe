@@ -580,29 +580,29 @@ const Checkout: React.FC = () => {
                           {getBasketTotal().toFixed(2)}
                         </p>
                       </div>
-                      <div className="mt-4 flex justify-between">
+                      <div className="mt-4 flex justify-between align-middle items-end">
                         <Button variant="link" className="p-0 text-blue-600">
                           How does it work?
                         </Button>
 
                         {/*TODO: pass in the order id as well*/}
-                        <LendasatButton
-                          amount={getBasketTotal()}
-                          currency="USD"
-                          widgetName="Bitcoin-backed loans"
-                          onSuccess={handlePaymentSuccess}
-                          onCancel={handlePaymentCancel}
-                          onError={handlePaymentError}
-                          disabled={success || !orderCreated}
-                          aria-label="Complete checkout with Bitcoin loan"
-                          buttonText="Finance with Bitcoin"
-                          buttonStyle={{
-                            backgroundColor: "#f7931a",
-                            borderRadius: "8px",
-                            padding: "12px 24px",
-                            color: "white",
-                          }}
-                        />
+                        <div>
+                          <LendasatButton
+                            amount={50}
+                            onSuccess={handlePaymentSuccess}
+                            onCancel={handlePaymentCancel}
+                            onError={handlePaymentError}
+                          >
+                            <Button
+                              variant={"default"}
+                              disabled={success || !orderCreated}
+                              className={"bg-orange-400 hover:bg-orange-500"}
+                            >
+                              <Bitcoin className="h-4 w-4" />
+                              <span>Finance with Bitcoin</span>
+                            </Button>
+                          </LendasatButton>
+                        </div>
                       </div>
                     </div>
                   </AccordionContent>
@@ -611,12 +611,12 @@ const Checkout: React.FC = () => {
             </Accordion>
 
             <Button
-              className="mt-6 flex h-12 w-full cursor-pointer items-center justify-center rounded-md py-2 text-lg font-medium text-white"
+              className="mt-6 flex h-12 w-full items-center justify-center py-2 text-lg font-medium"
               variant="default"
               disabled={!success}
               onClick={() => navigate(`/order/${orderId}`)}
             >
-              <span className="mr-2">🔒</span> Complete Purchase
+              <span className="mr-2">🚀</span> Complete Purchase
             </Button>
           </CardContent>
         </Card>
