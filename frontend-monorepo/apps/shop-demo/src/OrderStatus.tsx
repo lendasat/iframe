@@ -1,24 +1,31 @@
-import React, { useState, useEffect } from 'react';
-import { checkOrderStatus } from './apiService';
-import { Order } from './types';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Loader2, CheckCircle, Truck, Package, AlertCircle } from 'lucide-react';
-import { Separator } from "@/components/ui/separator";
+import React, { useState, useEffect } from "react";
+import { checkOrderStatus } from "./apiService";
+import { Order, OrderStatusType } from "./types";
 import {
-  Alert,
-  AlertDescription,
-  AlertTitle
-} from "@/components/ui/alert";
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  Loader2,
+  CheckCircle,
+  Truck,
+  Package,
+  AlertCircle,
+} from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useParams, useNavigate } from "react-router-dom";
 
-interface OrderStatusProps {
-  orderId: string | null;
-}
-
-const OrderStatus: React.FC<OrderStatusProps> = ({ orderId }) => {
+const OrderStatus: React.FC = () => {
+  const { orderId } = useParams<{ orderId: string }>();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const fetchOrderStatus = async () => {
     if (!orderId) {
@@ -33,8 +40,8 @@ const OrderStatus: React.FC<OrderStatusProps> = ({ orderId }) => {
       setOrder(orderData);
       setError(null);
     } catch (err) {
-      console.error('Error fetching order status:', err);
-      setError('Failed to load order status. Please try again.');
+      console.error("Error fetching order status:", err);
+      setError("Failed to load order status. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -51,36 +58,37 @@ const OrderStatus: React.FC<OrderStatusProps> = ({ orderId }) => {
   }, [orderId]);
 
   const getStatusIcon = (status: string) => {
-    switch(status) {
-      case 'pending':
+    console.log(`Order status: ${status}`);
+    switch (status) {
+      case "Pending":
         return <AlertCircle className="h-6 w-6 text-yellow-500" />;
-      case 'processing':
-        return <Package className="h-6 w-6 text-blue-500" />;
-      case 'shipped':
+      case "PaymentProcessing":
+        return <Package className="h-6 w-6 text-cyan-500" />;
+      case "PaymentProcessed":
+        return <Package className="h-6 w-6 text-blue-400" />;
+      case "Shipped":
         return <Truck className="h-6 w-6 text-purple-500" />;
-      case 'delivered':
+      case "Delivered":
         return <CheckCircle className="h-6 w-6 text-green-500" />;
-      case 'cancelled':
+      case "Cancelled":
         return <AlertCircle className="h-6 w-6 text-red-500" />;
-      default:
-        return <AlertCircle className="h-6 w-6 text-gray-500" />;
     }
   };
 
-  const getStatusText = (status: string) => {
-    switch(status) {
-      case 'pending':
-        return 'Your order is pending confirmation.';
-      case 'processing':
-        return 'Your order is being processed.';
-      case 'shipped':
-        return 'Your order has been shipped!';
-      case 'delivered':
-        return 'Your order has been delivered!';
-      case 'cancelled':
-        return 'Your order has been cancelled.';
-      default:
-        return 'Status unknown.';
+  const getStatusText = (status: OrderStatusType) => {
+    switch (status) {
+      case "Pending":
+        return "Your order is pending confirmation.";
+      case "PaymentProcessing":
+        return "Your payment is being processed.";
+      case "PaymentProcessed":
+        return "Your payment has been processed.";
+      case "Shipped":
+        return "Your order has been shipped!";
+      case "Delivered":
+        return "Your order has been delivered!";
+      case "Cancelled":
+        return "Your order has been cancelled.";
     }
   };
 
@@ -98,9 +106,7 @@ const OrderStatus: React.FC<OrderStatusProps> = ({ orderId }) => {
       <Alert variant="destructive" className="max-w-md mx-auto">
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>Error</AlertTitle>
-        <AlertDescription>
-          {error || "No order ID found."}
-        </AlertDescription>
+        <AlertDescription>{error || "No order ID found."}</AlertDescription>
       </Alert>
     );
   }
@@ -149,14 +155,16 @@ const OrderStatus: React.FC<OrderStatusProps> = ({ orderId }) => {
             <div className="space-y-2">
               {order.items.map((item) => (
                 <div key={item.id} className="flex justify-between">
-                  <span>{item.quantity}x {item.name}</span>
+                  <span>
+                    {item.quantity}x {item.name}
+                  </span>
                   <span>${(item.price * item.quantity).toFixed(2)}</span>
                 </div>
               ))}
               <Separator />
               <div className="flex justify-between font-bold">
                 <span>Total</span>
-                <span>${order.total.toFixed(2)}</span>
+                <span>${order.total_price.toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -167,7 +175,8 @@ const OrderStatus: React.FC<OrderStatusProps> = ({ orderId }) => {
               <p className="text-sm">{order.customer_name}</p>
               <p className="text-sm">{order.shipping_address.street}</p>
               <p className="text-sm">
-                {order.shipping_address.city}, {order.shipping_address.state} {order.shipping_address.postal_code}
+                {order.shipping_address.city}, {order.shipping_address.state}{" "}
+                {order.shipping_address.postal_code}
               </p>
               <p className="text-sm">{order.shipping_address.country}</p>
             </div>
@@ -175,10 +184,10 @@ const OrderStatus: React.FC<OrderStatusProps> = ({ orderId }) => {
             <div>
               <h3 className="font-medium text-lg mb-2">Order Date</h3>
               <p className="text-sm">
-                {new Date(order.created_at).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
+                {new Date(order.created_at * 1000).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
                 })}
               </p>
               <h3 className="font-medium text-lg mt-4 mb-2">Contact</h3>
@@ -188,7 +197,7 @@ const OrderStatus: React.FC<OrderStatusProps> = ({ orderId }) => {
         </CardContent>
 
         <CardFooter>
-          <Button onClick={() => window.location.href = '/'} className="w-full">
+          <Button onClick={() => navigate("/")} className="w-full">
             Continue Shopping
           </Button>
         </CardFooter>

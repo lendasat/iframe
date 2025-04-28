@@ -1,6 +1,12 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Item, BasketItem } from './types';
-import { fetchItems } from './apiService';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
+import { Item, BasketItem } from "./types";
+import { fetchItems } from "./apiService";
 
 interface ShopContextType {
   items: Item[];
@@ -19,7 +25,7 @@ const ShopContext = createContext<ShopContextType | undefined>(undefined);
 export const useShop = (): ShopContextType => {
   const context = useContext(ShopContext);
   if (!context) {
-    throw new Error('useShop must be used within a ShopProvider');
+    throw new Error("useShop must be used within a ShopProvider");
   }
   return context;
 };
@@ -41,8 +47,8 @@ export const ShopProvider: React.FC<ShopProviderProps> = ({ children }) => {
         const data = await fetchItems();
         setItems(data);
       } catch (err) {
-        setError('Failed to load items. Please try again later.');
-        console.error('Error fetching items:', err);
+        setError("Failed to load items. Please try again later.");
+        console.error("Error fetching items:", err);
       } finally {
         setLoading(false);
       }
@@ -52,14 +58,14 @@ export const ShopProvider: React.FC<ShopProviderProps> = ({ children }) => {
   }, []);
 
   const addToBasket = (item: Item) => {
-    setBasket(prevBasket => {
-      const existingItemIndex = prevBasket.findIndex(i => i.id === item.id);
+    setBasket((prevBasket) => {
+      const existingItemIndex = prevBasket.findIndex((i) => i.id === item.id);
 
       if (existingItemIndex >= 0) {
         const updatedBasket = [...prevBasket];
         updatedBasket[existingItemIndex] = {
           ...updatedBasket[existingItemIndex],
-          quantity: updatedBasket[existingItemIndex].quantity + 1
+          quantity: updatedBasket[existingItemIndex].quantity + 1,
         };
         return updatedBasket;
       } else {
@@ -69,7 +75,7 @@ export const ShopProvider: React.FC<ShopProviderProps> = ({ children }) => {
   };
 
   const removeFromBasket = (itemId: string) => {
-    setBasket(prevBasket => prevBasket.filter(item => item.id !== itemId));
+    setBasket((prevBasket) => prevBasket.filter((item) => item.id !== itemId));
   };
 
   const updateQuantity = (itemId: string, quantity: number) => {
@@ -78,10 +84,10 @@ export const ShopProvider: React.FC<ShopProviderProps> = ({ children }) => {
       return;
     }
 
-    setBasket(prevBasket =>
-      prevBasket.map(item =>
-        item.id === itemId ? { ...item, quantity } : item
-      )
+    setBasket((prevBasket) =>
+      prevBasket.map((item) =>
+        item.id === itemId ? { ...item, quantity } : item,
+      ),
     );
   };
 
@@ -90,7 +96,10 @@ export const ShopProvider: React.FC<ShopProviderProps> = ({ children }) => {
   };
 
   const getBasketTotal = () => {
-    return basket.reduce((total, item) => total + (item.price * item.quantity), 0);
+    return basket.reduce(
+      (total, item) => total + item.price * item.quantity,
+      0,
+    );
   };
 
   const value = {
@@ -102,7 +111,7 @@ export const ShopProvider: React.FC<ShopProviderProps> = ({ children }) => {
     removeFromBasket,
     updateQuantity,
     clearBasket,
-    getBasketTotal
+    getBasketTotal,
   };
 
   return <ShopContext.Provider value={value}>{children}</ShopContext.Provider>;

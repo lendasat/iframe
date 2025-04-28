@@ -1,46 +1,55 @@
-import React, { useState } from 'react';
-import { useShop } from './ShopContext';
-import { createOrder } from './apiService';
-import { Address, CreateOrderRequest, OrderItemRequest } from './types';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useState } from "react";
+import { useShop } from "./ShopContext";
+import { createOrder } from "./apiService";
+import { Address, CreateOrderRequest, OrderItemRequest } from "./types";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2 } from 'lucide-react';
+import { Loader2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
-interface CheckoutProps {
-  onOrderCreated: (orderId: string) => void;
-}
-
-const Checkout: React.FC<CheckoutProps> = ({ onOrderCreated }) => {
+const Checkout: React.FC = () => {
   const { basket, getBasketTotal, clearBasket } = useShop();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [customerName, setCustomerName] = useState('');
-  const [customerEmail, setCustomerEmail] = useState('');
+  const [customerName, setCustomerName] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
   const [shippingAddress, setShippingAddress] = useState<Address>({
-    street: '',
-    city: '',
-    state: '',
-    postal_code: '',
-    country: ''
+    street: "",
+    city: "",
+    state: "",
+    postal_code: "",
+    country: "",
   });
   const [billingAddress, setBillingAddress] = useState<Address>({
-    street: '',
-    city: '',
-    state: '',
-    postal_code: '',
-    country: ''
+    street: "",
+    city: "",
+    state: "",
+    postal_code: "",
+    country: "",
   });
   const [sameAsBilling, setSameAsBilling] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const navigate = useNavigate();
 
   if (basket.length === 0) {
     return (
       <div className="text-center py-8">
         <p>Your cart is empty. Add some items before checking out.</p>
-        <Button className="mt-4" variant="outline" onClick={() => onOrderCreated('')}>
+        <Button
+          className="mt-4"
+          variant="outline"
+          onClick={() => navigate("/")}
+        >
           Return to Shop
         </Button>
       </div>
@@ -50,27 +59,37 @@ const Checkout: React.FC<CheckoutProps> = ({ onOrderCreated }) => {
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!customerName.trim()) newErrors.customerName = 'Name is required';
+    if (!customerName.trim()) newErrors.customerName = "Name is required";
     if (!customerEmail.trim()) {
-      newErrors.customerEmail = 'Email is required';
+      newErrors.customerEmail = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(customerEmail)) {
-      newErrors.customerEmail = 'Email is invalid';
+      newErrors.customerEmail = "Email is invalid";
     }
 
     // Validate shipping address
-    if (!shippingAddress.street.trim()) newErrors.shippingStreet = 'Street is required';
-    if (!shippingAddress.city.trim()) newErrors.shippingCity = 'City is required';
-    if (!shippingAddress.state.trim()) newErrors.shippingState = 'State is required';
-    if (!shippingAddress.postal_code.trim()) newErrors.shippingPostalCode = 'Postal code is required';
-    if (!shippingAddress.country.trim()) newErrors.shippingCountry = 'Country is required';
+    if (!shippingAddress.street.trim())
+      newErrors.shippingStreet = "Street is required";
+    if (!shippingAddress.city.trim())
+      newErrors.shippingCity = "City is required";
+    if (!shippingAddress.state.trim())
+      newErrors.shippingState = "State is required";
+    if (!shippingAddress.postal_code.trim())
+      newErrors.shippingPostalCode = "Postal code is required";
+    if (!shippingAddress.country.trim())
+      newErrors.shippingCountry = "Country is required";
 
     // Validate billing address if not same as shipping
     if (!sameAsBilling) {
-      if (!billingAddress.street.trim()) newErrors.billingStreet = 'Street is required';
-      if (!billingAddress.city.trim()) newErrors.billingCity = 'City is required';
-      if (!billingAddress.state.trim()) newErrors.billingState = 'State is required';
-      if (!billingAddress.postal_code.trim()) newErrors.billingPostalCode = 'Postal code is required';
-      if (!billingAddress.country.trim()) newErrors.billingCountry = 'Country is required';
+      if (!billingAddress.street.trim())
+        newErrors.billingStreet = "Street is required";
+      if (!billingAddress.city.trim())
+        newErrors.billingCity = "City is required";
+      if (!billingAddress.state.trim())
+        newErrors.billingState = "State is required";
+      if (!billingAddress.postal_code.trim())
+        newErrors.billingPostalCode = "Postal code is required";
+      if (!billingAddress.country.trim())
+        newErrors.billingCountry = "Country is required";
     }
 
     setErrors(newErrors);
@@ -87,9 +106,9 @@ const Checkout: React.FC<CheckoutProps> = ({ onOrderCreated }) => {
     setIsSubmitting(true);
 
     try {
-      const orderItems: OrderItemRequest[] = basket.map(item => ({
+      const orderItems: OrderItemRequest[] = basket.map((item) => ({
         item_id: item.id,
-        quantity: item.quantity
+        quantity: item.quantity,
       }));
 
       const orderData: CreateOrderRequest = {
@@ -97,16 +116,19 @@ const Checkout: React.FC<CheckoutProps> = ({ onOrderCreated }) => {
         customer_name: customerName,
         customer_email: customerEmail,
         shipping_address: shippingAddress,
-        billing_address: sameAsBilling ? shippingAddress : billingAddress
+        billing_address: sameAsBilling ? shippingAddress : billingAddress,
       };
 
       const response = await createOrder(orderData);
       clearBasket();
-      onOrderCreated(response.id);
+      toast("Order Placed!", {
+        description: "Your order has been successfully placed.",
+      });
+      navigate(`/order/${response.id}`);
     } catch (error) {
-      console.error('Error creating order:', error);
+      console.error("Error creating order:", error);
       setErrors({
-        submit: 'Failed to create order. Please try again.'
+        submit: "Failed to create order. Please try again.",
       });
     } finally {
       setIsSubmitting(false);
@@ -114,16 +136,16 @@ const Checkout: React.FC<CheckoutProps> = ({ onOrderCreated }) => {
   };
 
   const handleShippingAddressChange = (field: keyof Address, value: string) => {
-    setShippingAddress(prev => ({ ...prev, [field]: value }));
+    setShippingAddress((prev) => ({ ...prev, [field]: value }));
 
     // If same as billing is checked, update billing address too
     if (sameAsBilling) {
-      setBillingAddress(prev => ({ ...prev, [field]: value }));
+      setBillingAddress((prev) => ({ ...prev, [field]: value }));
     }
   };
 
   const handleBillingAddressChange = (field: keyof Address, value: string) => {
-    setBillingAddress(prev => ({ ...prev, [field]: value }));
+    setBillingAddress((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSameAsBillingChange = (checked: boolean) => {
@@ -151,10 +173,12 @@ const Checkout: React.FC<CheckoutProps> = ({ onOrderCreated }) => {
                     id="customerName"
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
-                    className={errors.customerName ? 'border-red-500' : ''}
+                    className={errors.customerName ? "border-red-500" : ""}
                   />
                   {errors.customerName && (
-                    <p className="text-red-500 text-sm mt-1">{errors.customerName}</p>
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.customerName}
+                    </p>
                   )}
                 </div>
 
@@ -165,10 +189,12 @@ const Checkout: React.FC<CheckoutProps> = ({ onOrderCreated }) => {
                     type="email"
                     value={customerEmail}
                     onChange={(e) => setCustomerEmail(e.target.value)}
-                    className={errors.customerEmail ? 'border-red-500' : ''}
+                    className={errors.customerEmail ? "border-red-500" : ""}
                   />
                   {errors.customerEmail && (
-                    <p className="text-red-500 text-sm mt-1">{errors.customerEmail}</p>
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.customerEmail}
+                    </p>
                   )}
                 </div>
               </CardContent>
@@ -182,11 +208,15 @@ const Checkout: React.FC<CheckoutProps> = ({ onOrderCreated }) => {
                   <Input
                     id="shippingStreet"
                     value={shippingAddress.street}
-                    onChange={(e) => handleShippingAddressChange('street', e.target.value)}
-                    className={errors.shippingStreet ? 'border-red-500' : ''}
+                    onChange={(e) =>
+                      handleShippingAddressChange("street", e.target.value)
+                    }
+                    className={errors.shippingStreet ? "border-red-500" : ""}
                   />
                   {errors.shippingStreet && (
-                    <p className="text-red-500 text-sm mt-1">{errors.shippingStreet}</p>
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.shippingStreet}
+                    </p>
                   )}
                 </div>
 
@@ -196,11 +226,15 @@ const Checkout: React.FC<CheckoutProps> = ({ onOrderCreated }) => {
                     <Input
                       id="shippingCity"
                       value={shippingAddress.city}
-                      onChange={(e) => handleShippingAddressChange('city', e.target.value)}
-                      className={errors.shippingCity ? 'border-red-500' : ''}
+                      onChange={(e) =>
+                        handleShippingAddressChange("city", e.target.value)
+                      }
+                      className={errors.shippingCity ? "border-red-500" : ""}
                     />
                     {errors.shippingCity && (
-                      <p className="text-red-500 text-sm mt-1">{errors.shippingCity}</p>
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.shippingCity}
+                      </p>
                     )}
                   </div>
                   <div>
@@ -208,11 +242,15 @@ const Checkout: React.FC<CheckoutProps> = ({ onOrderCreated }) => {
                     <Input
                       id="shippingState"
                       value={shippingAddress.state}
-                      onChange={(e) => handleShippingAddressChange('state', e.target.value)}
-                      className={errors.shippingState ? 'border-red-500' : ''}
+                      onChange={(e) =>
+                        handleShippingAddressChange("state", e.target.value)
+                      }
+                      className={errors.shippingState ? "border-red-500" : ""}
                     />
                     {errors.shippingState && (
-                      <p className="text-red-500 text-sm mt-1">{errors.shippingState}</p>
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.shippingState}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -223,11 +261,20 @@ const Checkout: React.FC<CheckoutProps> = ({ onOrderCreated }) => {
                     <Input
                       id="shippingPostalCode"
                       value={shippingAddress.postal_code}
-                      onChange={(e) => handleShippingAddressChange('postal_code', e.target.value)}
-                      className={errors.shippingPostalCode ? 'border-red-500' : ''}
+                      onChange={(e) =>
+                        handleShippingAddressChange(
+                          "postal_code",
+                          e.target.value,
+                        )
+                      }
+                      className={
+                        errors.shippingPostalCode ? "border-red-500" : ""
+                      }
                     />
                     {errors.shippingPostalCode && (
-                      <p className="text-red-500 text-sm mt-1">{errors.shippingPostalCode}</p>
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.shippingPostalCode}
+                      </p>
                     )}
                   </div>
                   <div>
@@ -235,11 +282,15 @@ const Checkout: React.FC<CheckoutProps> = ({ onOrderCreated }) => {
                     <Input
                       id="shippingCountry"
                       value={shippingAddress.country}
-                      onChange={(e) => handleShippingAddressChange('country', e.target.value)}
-                      className={errors.shippingCountry ? 'border-red-500' : ''}
+                      onChange={(e) =>
+                        handleShippingAddressChange("country", e.target.value)
+                      }
+                      className={errors.shippingCountry ? "border-red-500" : ""}
                     />
                     {errors.shippingCountry && (
-                      <p className="text-red-500 text-sm mt-1">{errors.shippingCountry}</p>
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.shippingCountry}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -252,7 +303,9 @@ const Checkout: React.FC<CheckoutProps> = ({ onOrderCreated }) => {
                       handleSameAsBillingChange(checked as boolean)
                     }
                   />
-                  <Label htmlFor="sameAsBilling">Billing address same as shipping</Label>
+                  <Label htmlFor="sameAsBilling">
+                    Billing address same as shipping
+                  </Label>
                 </div>
               </CardContent>
 
@@ -267,11 +320,15 @@ const Checkout: React.FC<CheckoutProps> = ({ onOrderCreated }) => {
                       <Input
                         id="billingStreet"
                         value={billingAddress.street}
-                        onChange={(e) => handleBillingAddressChange('street', e.target.value)}
-                        className={errors.billingStreet ? 'border-red-500' : ''}
+                        onChange={(e) =>
+                          handleBillingAddressChange("street", e.target.value)
+                        }
+                        className={errors.billingStreet ? "border-red-500" : ""}
                       />
                       {errors.billingStreet && (
-                        <p className="text-red-500 text-sm mt-1">{errors.billingStreet}</p>
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.billingStreet}
+                        </p>
                       )}
                     </div>
 
@@ -281,11 +338,15 @@ const Checkout: React.FC<CheckoutProps> = ({ onOrderCreated }) => {
                         <Input
                           id="billingCity"
                           value={billingAddress.city}
-                          onChange={(e) => handleBillingAddressChange('city', e.target.value)}
-                          className={errors.billingCity ? 'border-red-500' : ''}
+                          onChange={(e) =>
+                            handleBillingAddressChange("city", e.target.value)
+                          }
+                          className={errors.billingCity ? "border-red-500" : ""}
                         />
                         {errors.billingCity && (
-                          <p className="text-red-500 text-sm mt-1">{errors.billingCity}</p>
+                          <p className="text-red-500 text-sm mt-1">
+                            {errors.billingCity}
+                          </p>
                         )}
                       </div>
                       <div>
@@ -293,11 +354,17 @@ const Checkout: React.FC<CheckoutProps> = ({ onOrderCreated }) => {
                         <Input
                           id="billingState"
                           value={billingAddress.state}
-                          onChange={(e) => handleBillingAddressChange('state', e.target.value)}
-                          className={errors.billingState ? 'border-red-500' : ''}
+                          onChange={(e) =>
+                            handleBillingAddressChange("state", e.target.value)
+                          }
+                          className={
+                            errors.billingState ? "border-red-500" : ""
+                          }
                         />
                         {errors.billingState && (
-                          <p className="text-red-500 text-sm mt-1">{errors.billingState}</p>
+                          <p className="text-red-500 text-sm mt-1">
+                            {errors.billingState}
+                          </p>
                         )}
                       </div>
                     </div>
@@ -308,11 +375,20 @@ const Checkout: React.FC<CheckoutProps> = ({ onOrderCreated }) => {
                         <Input
                           id="billingPostalCode"
                           value={billingAddress.postal_code}
-                          onChange={(e) => handleBillingAddressChange('postal_code', e.target.value)}
-                          className={errors.billingPostalCode ? 'border-red-500' : ''}
+                          onChange={(e) =>
+                            handleBillingAddressChange(
+                              "postal_code",
+                              e.target.value,
+                            )
+                          }
+                          className={
+                            errors.billingPostalCode ? "border-red-500" : ""
+                          }
                         />
                         {errors.billingPostalCode && (
-                          <p className="text-red-500 text-sm mt-1">{errors.billingPostalCode}</p>
+                          <p className="text-red-500 text-sm mt-1">
+                            {errors.billingPostalCode}
+                          </p>
                         )}
                       </div>
                       <div>
@@ -320,11 +396,20 @@ const Checkout: React.FC<CheckoutProps> = ({ onOrderCreated }) => {
                         <Input
                           id="billingCountry"
                           value={billingAddress.country}
-                          onChange={(e) => handleBillingAddressChange('country', e.target.value)}
-                          className={errors.billingCountry ? 'border-red-500' : ''}
+                          onChange={(e) =>
+                            handleBillingAddressChange(
+                              "country",
+                              e.target.value,
+                            )
+                          }
+                          className={
+                            errors.billingCountry ? "border-red-500" : ""
+                          }
                         />
                         {errors.billingCountry && (
-                          <p className="text-red-500 text-sm mt-1">{errors.billingCountry}</p>
+                          <p className="text-red-500 text-sm mt-1">
+                            {errors.billingCountry}
+                          </p>
                         )}
                       </div>
                     </div>
@@ -337,7 +422,11 @@ const Checkout: React.FC<CheckoutProps> = ({ onOrderCreated }) => {
                   <p className="text-red-500">{errors.submit}</p>
                 )}
                 <div className="flex gap-4">
-                  <Button type="button" variant="outline" onClick={() => onOrderCreated('')}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => navigate("/")}
+                  >
                     Cancel
                   </Button>
                   <Button type="submit" disabled={isSubmitting}>
@@ -347,7 +436,7 @@ const Checkout: React.FC<CheckoutProps> = ({ onOrderCreated }) => {
                         Processing...
                       </>
                     ) : (
-                      'Place Order'
+                      "Place Order"
                     )}
                   </Button>
                 </div>
@@ -398,12 +487,30 @@ const Checkout: React.FC<CheckoutProps> = ({ onOrderCreated }) => {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-gray-500 mb-4">
-                This is a secure checkout process. Your information is encrypted and securely processed.
+                This is a secure checkout process. Your information is encrypted
+                and securely processed.
               </p>
               <div className="flex items-center gap-2">
-                <svg className="h-8 w-8" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M9 12L11 14L15 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <svg
+                  className="h-8 w-8"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M9 12L11 14L15 10"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
                 </svg>
                 <span className="text-sm">SSL Secure Payment</span>
               </div>

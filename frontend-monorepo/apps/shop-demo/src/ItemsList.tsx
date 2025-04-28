@@ -1,7 +1,13 @@
-import React from 'react';
-import { useShop } from './ShopContext';
-import { getImageUrl } from './apiService';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import React from "react";
+import { useShop } from "./ShopContext";
+import { getImageUrl } from "./apiService";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -10,7 +16,7 @@ const ItemsList: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
         {[...Array(8)].map((_, index) => (
           <Card key={index} className="overflow-hidden">
             <div className="aspect-square w-full">
@@ -47,8 +53,8 @@ const ItemsList: React.FC = () => {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-6">Our Products</h2>
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <h2 className="text-2xl font-bold">Our Products</h2>
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
         {items.map((item) => (
           <Card key={item.id} className="overflow-hidden flex flex-col">
             <div className="aspect-square w-full overflow-hidden">
@@ -63,13 +69,12 @@ const ItemsList: React.FC = () => {
             </CardHeader>
             <CardContent className="flex-grow">
               <p className="text-gray-500">{item.description}</p>
-              <p className="mt-2 text-lg font-semibold">${item.price.toFixed(2)}</p>
+              <p className="mt-2 text-lg font-semibold">
+                ${item.price.toFixed(2)}
+              </p>
             </CardContent>
             <CardFooter>
-              <Button
-                className="w-full"
-                onClick={() => addToBasket(item)}
-              >
+              <Button className="w-full" onClick={() => addToBasket(item)}>
                 Add to Cart
               </Button>
             </CardFooter>

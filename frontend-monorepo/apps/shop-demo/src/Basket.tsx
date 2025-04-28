@@ -1,17 +1,22 @@
-import React from 'react';
-import { useShop } from './ShopContext';
-import { getImageUrl } from './apiService';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import React from "react";
+import { useShop } from "./ShopContext";
+import { getImageUrl } from "./apiService";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Trash2, Plus, Minus } from 'lucide-react';
+import { Trash2, Plus, Minus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
-interface BasketProps {
-  onCheckout: () => void;
-}
-
-const Basket: React.FC<BasketProps> = ({ onCheckout }) => {
-  const { basket, removeFromBasket, updateQuantity, getBasketTotal } = useShop();
+const Basket: React.FC = () => {
+  const { basket, removeFromBasket, updateQuantity, getBasketTotal } =
+    useShop();
+  const navigate = useNavigate();
 
   if (basket.length === 0) {
     return null;
@@ -25,7 +30,10 @@ const Basket: React.FC<BasketProps> = ({ onCheckout }) => {
         </CardHeader>
         <CardContent>
           {basket.map((item) => (
-            <div key={item.id} className="flex items-center py-4 border-b last:border-b-0">
+            <div
+              key={item.id}
+              className="flex items-center py-4 border-b last:border-b-0"
+            >
               <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded">
                 <img
                   src={getImageUrl(item.image_url)}
@@ -35,7 +43,9 @@ const Basket: React.FC<BasketProps> = ({ onCheckout }) => {
               </div>
               <div className="ml-4 flex-grow">
                 <h3 className="font-medium">{item.name}</h3>
-                <p className="text-sm text-gray-500">${item.price.toFixed(2)}</p>
+                <p className="text-sm text-gray-500">
+                  ${item.price.toFixed(2)}
+                </p>
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -76,16 +86,22 @@ const Basket: React.FC<BasketProps> = ({ onCheckout }) => {
                 </Button>
               </div>
               <div className="ml-4 w-24 text-right">
-                <span className="font-medium">${(item.price * item.quantity).toFixed(2)}</span>
+                <span className="font-medium">
+                  ${(item.price * item.quantity).toFixed(2)}
+                </span>
               </div>
             </div>
           ))}
         </CardContent>
         <CardFooter className="flex justify-between">
           <div>
-            <p className="text-lg font-bold">Total: ${getBasketTotal().toFixed(2)}</p>
+            <p className="text-lg font-bold">
+              Total: ${getBasketTotal().toFixed(2)}
+            </p>
           </div>
-          <Button onClick={onCheckout}>Proceed to Checkout</Button>
+          <Button onClick={() => navigate("/checkout")}>
+            Proceed to Checkout
+          </Button>
         </CardFooter>
       </Card>
     </div>

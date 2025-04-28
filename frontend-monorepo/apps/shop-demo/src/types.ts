@@ -31,14 +31,23 @@ export interface CreateOrderRequest {
   billing_address: Address;
 }
 
+export enum OrderStatusType {
+  Pending = "Pending",
+  PaymentProcessing = "PaymentProcessing",
+  PaymentProcessed = "PaymentProcessed",
+  Shipped = "Shipped",
+  Delivered = "Delivered",
+  Cancelled = "Cancelled",
+}
+
 export interface Order {
   id: string;
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  status: OrderStatusType;
   items: BasketItem[];
   customer_name: string;
   customer_email: string;
   shipping_address: Address;
   billing_address: Address;
-  total: number;
-  created_at: string;
+  total_price: number;
+  created_at: number;
 }
