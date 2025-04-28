@@ -17,7 +17,6 @@ const Basket: React.FC = () => {
     useShop();
   const navigate = useNavigate();
 
-
   return (
     <div className="mt-8">
       <Card>
@@ -26,10 +25,7 @@ const Basket: React.FC = () => {
         </CardHeader>
         <CardContent>
           {basket.map((item) => (
-            <div
-              key={item.id}
-              className="flex py-4 border-b last:border-b-0"
-            >
+            <div key={item.name} className="flex py-4 border-b last:border-b-0">
               <div className="ml-4 flex-grow flex flex-col">
                 {/* Top: Item name and price */}
                 <div className="mb-4">
@@ -95,7 +91,10 @@ const Basket: React.FC = () => {
               Total: ${getBasketTotal().toFixed(2)}
             </p>
           </div>
-          <Button onClick={() => navigate("/checkout")} disabled={basket.length === 0}>
+          <Button
+            onClick={() => navigate("/checkout")}
+            disabled={basket.length === 0}
+          >
             Proceed to Checkout
           </Button>
         </CardFooter>

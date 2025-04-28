@@ -23,15 +23,14 @@ const App: React.FC = () => {
               <Route
                 path="/"
                 element={
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                      <div className="md:col-span-2">
-                        <ItemsList />
-                      </div>
-                      <div className="md:col-span-1">
-                        <Basket />
-                      </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div className="md:col-span-2">
+                      <ItemsList />
                     </div>
+                    <div className="md:col-span-1">
+                      <Basket />
+                    </div>
+                  </div>
                 }
               />
               <Route path="/checkout" element={<Checkout />} />

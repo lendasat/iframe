@@ -13,15 +13,25 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2 } from "lucide-react";
+import { Bitcoin, Loader2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion.tsx";
+import { LendasatButton } from "@frontend/lendasat-button";
 
 const Checkout: React.FC = () => {
-  const { basket, getBasketTotal, clearBasket } = useShop();
+  const { basket, getBasketTotal } = useShop();
+  const [success, setSuccess] = useState(false);
+  const [orderCreated, setOrderCreated] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [customerName, setCustomerName] = useState("");
+  const [orderId, setOrderId] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [shippingAddress, setShippingAddress] = useState<Address>({
     street: "",
@@ -120,11 +130,11 @@ const Checkout: React.FC = () => {
       };
 
       const response = await createOrder(orderData);
-      clearBasket();
       toast("Order Placed!", {
         description: "Your order has been successfully placed.",
       });
-      navigate(`/order/${response.id}`);
+      setOrderId(response.id);
+      setOrderCreated(true);
     } catch (error) {
       console.error("Error creating order:", error);
       setErrors({
@@ -155,297 +165,39 @@ const Checkout: React.FC = () => {
     }
   };
 
+  const handlePaymentSuccess = (data: {
+    transactionId?: string;
+    amount?: number;
+    [key: string]: any;
+  }) => {
+    console.log("Payment successful!", data);
+    // Update UI or state based on successful payment
+    setSuccess(true);
+  };
+
+  const handlePaymentCancel = (data?: {
+    reason?: string;
+    [key: string]: any;
+  }) => {
+    console.log("Payment cancelled", data?.reason);
+    // Handle cancellation
+  };
+
+  const handlePaymentError = (error: {
+    error: string;
+    message: string;
+    [key: string]: any;
+  }) => {
+    console.error("Payment error:", error.message);
+    // Display error message to user
+  };
+
   return (
     <div className="max-w-4xl mx-auto">
       <h2 className="text-2xl font-bold mb-6">Checkout</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <form onSubmit={handleSubmit}>
-            <Card>
-              <CardHeader>
-                <CardTitle>Customer Information</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="customerName">Full Name</Label>
-                  <Input
-                    id="customerName"
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    className={errors.customerName ? "border-red-500" : ""}
-                  />
-                  {errors.customerName && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.customerName}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <Label htmlFor="customerEmail">Email</Label>
-                  <Input
-                    id="customerEmail"
-                    type="email"
-                    value={customerEmail}
-                    onChange={(e) => setCustomerEmail(e.target.value)}
-                    className={errors.customerEmail ? "border-red-500" : ""}
-                  />
-                  {errors.customerEmail && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.customerEmail}
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-
-              <CardHeader>
-                <CardTitle>Shipping Address</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="shippingStreet">Street</Label>
-                  <Input
-                    id="shippingStreet"
-                    value={shippingAddress.street}
-                    onChange={(e) =>
-                      handleShippingAddressChange("street", e.target.value)
-                    }
-                    className={errors.shippingStreet ? "border-red-500" : ""}
-                  />
-                  {errors.shippingStreet && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.shippingStreet}
-                    </p>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="shippingCity">City</Label>
-                    <Input
-                      id="shippingCity"
-                      value={shippingAddress.city}
-                      onChange={(e) =>
-                        handleShippingAddressChange("city", e.target.value)
-                      }
-                      className={errors.shippingCity ? "border-red-500" : ""}
-                    />
-                    {errors.shippingCity && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.shippingCity}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="shippingState">State</Label>
-                    <Input
-                      id="shippingState"
-                      value={shippingAddress.state}
-                      onChange={(e) =>
-                        handleShippingAddressChange("state", e.target.value)
-                      }
-                      className={errors.shippingState ? "border-red-500" : ""}
-                    />
-                    {errors.shippingState && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.shippingState}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="shippingPostalCode">Postal Code</Label>
-                    <Input
-                      id="shippingPostalCode"
-                      value={shippingAddress.postal_code}
-                      onChange={(e) =>
-                        handleShippingAddressChange(
-                          "postal_code",
-                          e.target.value,
-                        )
-                      }
-                      className={
-                        errors.shippingPostalCode ? "border-red-500" : ""
-                      }
-                    />
-                    {errors.shippingPostalCode && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.shippingPostalCode}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="shippingCountry">Country</Label>
-                    <Input
-                      id="shippingCountry"
-                      value={shippingAddress.country}
-                      onChange={(e) =>
-                        handleShippingAddressChange("country", e.target.value)
-                      }
-                      className={errors.shippingCountry ? "border-red-500" : ""}
-                    />
-                    {errors.shippingCountry && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.shippingCountry}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-2 pt-2">
-                  <Checkbox
-                    id="sameAsBilling"
-                    checked={sameAsBilling}
-                    onCheckedChange={(checked) =>
-                      handleSameAsBillingChange(checked as boolean)
-                    }
-                  />
-                  <Label htmlFor="sameAsBilling">
-                    Billing address same as shipping
-                  </Label>
-                </div>
-              </CardContent>
-
-              {!sameAsBilling && (
-                <>
-                  <CardHeader>
-                    <CardTitle>Billing Address</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <Label htmlFor="billingStreet">Street</Label>
-                      <Input
-                        id="billingStreet"
-                        value={billingAddress.street}
-                        onChange={(e) =>
-                          handleBillingAddressChange("street", e.target.value)
-                        }
-                        className={errors.billingStreet ? "border-red-500" : ""}
-                      />
-                      {errors.billingStreet && (
-                        <p className="text-red-500 text-sm mt-1">
-                          {errors.billingStreet}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="billingCity">City</Label>
-                        <Input
-                          id="billingCity"
-                          value={billingAddress.city}
-                          onChange={(e) =>
-                            handleBillingAddressChange("city", e.target.value)
-                          }
-                          className={errors.billingCity ? "border-red-500" : ""}
-                        />
-                        {errors.billingCity && (
-                          <p className="text-red-500 text-sm mt-1">
-                            {errors.billingCity}
-                          </p>
-                        )}
-                      </div>
-                      <div>
-                        <Label htmlFor="billingState">State</Label>
-                        <Input
-                          id="billingState"
-                          value={billingAddress.state}
-                          onChange={(e) =>
-                            handleBillingAddressChange("state", e.target.value)
-                          }
-                          className={
-                            errors.billingState ? "border-red-500" : ""
-                          }
-                        />
-                        {errors.billingState && (
-                          <p className="text-red-500 text-sm mt-1">
-                            {errors.billingState}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="billingPostalCode">Postal Code</Label>
-                        <Input
-                          id="billingPostalCode"
-                          value={billingAddress.postal_code}
-                          onChange={(e) =>
-                            handleBillingAddressChange(
-                              "postal_code",
-                              e.target.value,
-                            )
-                          }
-                          className={
-                            errors.billingPostalCode ? "border-red-500" : ""
-                          }
-                        />
-                        {errors.billingPostalCode && (
-                          <p className="text-red-500 text-sm mt-1">
-                            {errors.billingPostalCode}
-                          </p>
-                        )}
-                      </div>
-                      <div>
-                        <Label htmlFor="billingCountry">Country</Label>
-                        <Input
-                          id="billingCountry"
-                          value={billingAddress.country}
-                          onChange={(e) =>
-                            handleBillingAddressChange(
-                              "country",
-                              e.target.value,
-                            )
-                          }
-                          className={
-                            errors.billingCountry ? "border-red-500" : ""
-                          }
-                        />
-                        {errors.billingCountry && (
-                          <p className="text-red-500 text-sm mt-1">
-                            {errors.billingCountry}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </>
-              )}
-
-              <CardFooter className="flex justify-between">
-                {errors.submit && (
-                  <p className="text-red-500">{errors.submit}</p>
-                )}
-                <div className="flex gap-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => navigate("/")}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      "Place Order"
-                    )}
-                  </Button>
-                </div>
-              </CardFooter>
-            </Card>
-          </form>
-        </div>
-
-        <div>
+        <div className="grid grid-cols-1 gap-2">
           <Card>
             <CardHeader>
               <CardTitle>Order Summary</CardTitle>
@@ -481,42 +233,393 @@ const Checkout: React.FC = () => {
             </CardContent>
           </Card>
 
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>Secure Checkout</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-500 mb-4">
-                This is a secure checkout process. Your information is encrypted
-                and securely processed.
-              </p>
-              <div className="flex items-center gap-2">
-                <svg
-                  className="h-8 w-8"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+          <form onSubmit={handleSubmit}>
+            <Card>
+              <CardHeader>
+                <CardTitle>Customer Information</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="customerName">Full Name</Label>
+                  <Input
+                    id="customerName"
+                    value={customerName}
+                    disabled={orderCreated}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    className={errors.customerName ? "border-red-500" : ""}
                   />
-                  <path
-                    d="M9 12L11 14L15 10"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+                  {errors.customerName && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.customerName}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="customerEmail">Email</Label>
+                  <Input
+                    id="customerEmail"
+                    type="email"
+                    value={customerEmail}
+                    disabled={orderCreated}
+                    onChange={(e) => setCustomerEmail(e.target.value)}
+                    className={errors.customerEmail ? "border-red-500" : ""}
                   />
-                </svg>
-                <span className="text-sm">SSL Secure Payment</span>
-              </div>
-            </CardContent>
-          </Card>
+                  {errors.customerEmail && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.customerEmail}
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+
+              <CardHeader>
+                <CardTitle>Shipping Address</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="shippingStreet">Street</Label>
+                  <Input
+                    id="shippingStreet"
+                    value={shippingAddress.street}
+                    disabled={orderCreated}
+                    onChange={(e) =>
+                      handleShippingAddressChange("street", e.target.value)
+                    }
+                    className={errors.shippingStreet ? "border-red-500" : ""}
+                  />
+                  {errors.shippingStreet && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.shippingStreet}
+                    </p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="shippingCity">City</Label>
+                    <Input
+                      id="shippingCity"
+                      value={shippingAddress.city}
+                      disabled={orderCreated}
+                      onChange={(e) =>
+                        handleShippingAddressChange("city", e.target.value)
+                      }
+                      className={errors.shippingCity ? "border-red-500" : ""}
+                    />
+                    {errors.shippingCity && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.shippingCity}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="shippingState">State</Label>
+                    <Input
+                      id="shippingState"
+                      value={shippingAddress.state}
+                      disabled={orderCreated}
+                      onChange={(e) =>
+                        handleShippingAddressChange("state", e.target.value)
+                      }
+                      className={errors.shippingState ? "border-red-500" : ""}
+                    />
+                    {errors.shippingState && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.shippingState}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="shippingPostalCode">Postal Code</Label>
+                    <Input
+                      id="shippingPostalCode"
+                      value={shippingAddress.postal_code}
+                      disabled={orderCreated}
+                      onChange={(e) =>
+                        handleShippingAddressChange(
+                          "postal_code",
+                          e.target.value,
+                        )
+                      }
+                      className={
+                        errors.shippingPostalCode ? "border-red-500" : ""
+                      }
+                    />
+                    {errors.shippingPostalCode && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.shippingPostalCode}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="shippingCountry">Country</Label>
+                    <Input
+                      id="shippingCountry"
+                      value={shippingAddress.country}
+                      disabled={orderCreated}
+                      onChange={(e) =>
+                        handleShippingAddressChange("country", e.target.value)
+                      }
+                      className={errors.shippingCountry ? "border-red-500" : ""}
+                    />
+                    {errors.shippingCountry && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.shippingCountry}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2 pt-2">
+                  <Checkbox
+                    id="sameAsBilling"
+                    checked={sameAsBilling}
+                    disabled={orderCreated}
+                    onCheckedChange={(checked) =>
+                      handleSameAsBillingChange(checked as boolean)
+                    }
+                  />
+                  <Label htmlFor="sameAsBilling">
+                    Billing address same as shipping
+                  </Label>
+                </div>
+              </CardContent>
+
+              {!sameAsBilling && (
+                <>
+                  <CardHeader>
+                    <CardTitle>Billing Address</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label htmlFor="billingStreet">Street</Label>
+                      <Input
+                        id="billingStreet"
+                        value={billingAddress.street}
+                        disabled={orderCreated}
+                        onChange={(e) =>
+                          handleBillingAddressChange("street", e.target.value)
+                        }
+                        className={errors.billingStreet ? "border-red-500" : ""}
+                      />
+                      {errors.billingStreet && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.billingStreet}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="billingCity">City</Label>
+                        <Input
+                          id="billingCity"
+                          value={billingAddress.city}
+                          disabled={orderCreated}
+                          onChange={(e) =>
+                            handleBillingAddressChange("city", e.target.value)
+                          }
+                          className={errors.billingCity ? "border-red-500" : ""}
+                        />
+                        {errors.billingCity && (
+                          <p className="text-red-500 text-sm mt-1">
+                            {errors.billingCity}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <Label htmlFor="billingState">State</Label>
+                        <Input
+                          id="billingState"
+                          value={billingAddress.state}
+                          disabled={orderCreated}
+                          onChange={(e) =>
+                            handleBillingAddressChange("state", e.target.value)
+                          }
+                          className={
+                            errors.billingState ? "border-red-500" : ""
+                          }
+                        />
+                        {errors.billingState && (
+                          <p className="text-red-500 text-sm mt-1">
+                            {errors.billingState}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="billingPostalCode">Postal Code</Label>
+                        <Input
+                          id="billingPostalCode"
+                          value={billingAddress.postal_code}
+                          disabled={orderCreated}
+                          onChange={(e) =>
+                            handleBillingAddressChange(
+                              "postal_code",
+                              e.target.value,
+                            )
+                          }
+                          className={
+                            errors.billingPostalCode ? "border-red-500" : ""
+                          }
+                        />
+                        {errors.billingPostalCode && (
+                          <p className="text-red-500 text-sm mt-1">
+                            {errors.billingPostalCode}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <Label htmlFor="billingCountry">Country</Label>
+                        <Input
+                          id="billingCountry"
+                          value={billingAddress.country}
+                          disabled={orderCreated}
+                          onChange={(e) =>
+                            handleBillingAddressChange(
+                              "country",
+                              e.target.value,
+                            )
+                          }
+                          className={
+                            errors.billingCountry ? "border-red-500" : ""
+                          }
+                        />
+                        {errors.billingCountry && (
+                          <p className="text-red-500 text-sm mt-1">
+                            {errors.billingCountry}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </>
+              )}
+
+              <CardFooter className="flex justify-between">
+                {errors.submit && (
+                  <p className="text-red-500">{errors.submit}</p>
+                )}
+                <div className="flex gap-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={orderCreated}
+                    onClick={() => navigate("/")}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={isSubmitting || orderCreated}>
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      "Place Order"
+                    )}
+                  </Button>
+                </div>
+              </CardFooter>
+            </Card>
+          </form>
         </div>
+
+        <Card className="w-full">
+          <CardHeader>
+            <CardTitle>Payment Method</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Accordion type="multiple" defaultValue={["item-2"]}>
+              <div className="mb-4 rounded-lg border p-4">
+                <AccordionItem value="item-1">
+                  <AccordionTrigger>
+                    <div className="flex items-center space-x-2">
+                      <Label htmlFor="standard" className="font-bold">
+                        Standard Payment
+                      </Label>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="ml-6 mt-2">
+                      <p className="mb-4 text-gray-700">
+                        Just kidding, this is not an option.
+                      </p>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </div>
+              <div className="rounded-lg border border-orange-200 bg-orange-50 p-4">
+                <AccordionItem value="item-2">
+                  <AccordionTrigger>
+                    <div className="flex items-center space-x-2">
+                      <Label
+                        htmlFor="bitcoin"
+                        className="flex items-center font-bold"
+                      >
+                        <Bitcoin className="mr-2 h-5 w-5 text-orange-500" />
+                        Bitcoin-Backed Loan
+                      </Label>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="ml-6 mt-2">
+                      <p className="mb-4 text-gray-700">
+                        Use your Bitcoin as collateral to finance your purchase
+                        without selling. No credit check required.
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <p className="font-medium">Order Total:</p>
+                        <p className="font-bold">
+                          {getBasketTotal().toFixed(2)}
+                        </p>
+                      </div>
+                      <div className="mt-4 flex justify-between">
+                        <Button variant="link" className="p-0 text-blue-600">
+                          How does it work?
+                        </Button>
+
+                        {/*TODO: pass in the order id as well*/}
+                        <LendasatButton
+                          amount={getBasketTotal()}
+                          currency="USD"
+                          widgetName="Bitcoin-backed loans"
+                          onSuccess={handlePaymentSuccess}
+                          onCancel={handlePaymentCancel}
+                          onError={handlePaymentError}
+                          disabled={success || !orderCreated}
+                          aria-label="Complete checkout with Bitcoin loan"
+                          buttonText="Finance with Bitcoin"
+                          buttonStyle={{
+                            backgroundColor: "#f7931a",
+                            borderRadius: "8px",
+                            padding: "12px 24px",
+                            color: "white",
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </div>
+            </Accordion>
+
+            <Button
+              className="mt-6 flex h-12 w-full cursor-pointer items-center justify-center rounded-md py-2 text-lg font-medium text-white"
+              variant="default"
+              disabled={!success}
+              onClick={() => navigate(`/order/${orderId}`)}
+            >
+              <span className="mr-2">🔒</span> Complete Purchase
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
