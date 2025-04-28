@@ -1584,10 +1584,10 @@ pub async fn resolve_dispute(
     let previous_status_record: Option<ContractStatusLog> = sqlx::query_as!(
         ContractStatusLog,
         r#"SELECT
-            old_status as "old_status: crate::model::db::ContractStatus" 
-         FROM 
+            old_status as "old_status: crate::model::db::ContractStatus"
+         FROM
             contracts_status_log
-         WHERE 
+         WHERE
             contract_id = $1 AND new_status = $2
          ORDER BY changed_at DESC LIMIT 1"#,
         contract_id,
@@ -1607,11 +1607,11 @@ pub async fn resolve_dispute(
 
     // 2. Update the contract to the previous status
     sqlx::query!(
-        r#"UPDATE 
-            contracts 
-        SET 
-            status = $1, 
-            updated_at = CURRENT_TIMESTAMP 
+        r#"UPDATE
+            contracts
+        SET
+            status = $1,
+            updated_at = CURRENT_TIMESTAMP
         WHERE id = $2"#,
         previous_status as db::ContractStatus,
         contract_id

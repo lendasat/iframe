@@ -12,6 +12,7 @@ import {
   LoanAddressInputField,
   LoanAsset,
   LoanAssetHelper,
+  LoanPayout,
   LtvInfoLabel,
   ONE_MONTH,
   parseLoanAsset,
@@ -77,6 +78,7 @@ const CreateLoanOffer: FC = () => {
   const [ltv, setLtv] = useState<number>(50);
   const [interest, setInterest] = useState<number>(7.5);
   const [loanAsset, setLoanAsset] = useState<LoanAsset>(LoanAsset.USDT_ETH);
+  const [loanPayout, setLoanPayout] = useState<LoanPayout>(LoanPayout.Direct);
   const [loanRepaymentAddress, setLoanRepaymentAddress] = useState<string>("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -126,6 +128,8 @@ const CreateLoanOffer: FC = () => {
       duration_days_min: loanDuration.min,
       duration_days_max: loanDuration.max,
       loan_asset: loanAsset,
+      // We choose to only allow direct payout offers through the Lendasat UI.
+      loan_payout: LoanPayout.Direct,
       loan_repayment_address: loanRepaymentAddress,
       auto_accept: autoAccept,
       lender_npub,
@@ -324,9 +328,9 @@ const CreateLoanOffer: FC = () => {
                       className="shadow-blackA4 hover:bg-violet3 flex size-[25px] appearance-none items-center justify-center rounded bg-white shadow-[0_2px_10px] outline-none focus:shadow-[0_0_0_2px_black] dark:bg-gray-300"
                       checked={autoAccept}
                       disabled={!autoApproveEnabled && !isKycRequired}
-                      onCheckedChange={(checked) =>
-                        setAutoAccept(checked === true)
-                      }
+                      onCheckedChange={(checked) => {
+                        setAutoAccept(checked === true);
+                      }}
                     >
                       <Checkbox.Indicator className="text-violet11">
                         <CheckIcon />
@@ -469,7 +473,6 @@ const CreateLoanOffer: FC = () => {
                   </TextField.Root>
                 </Box>
 
-                {/* Stable Coin */}
                 <Box className="space-y-1">
                   <Text
                     as="label"
@@ -739,6 +742,7 @@ const CreateLoanOffer: FC = () => {
                   {loanAsset ? LoanAssetHelper.print(loanAsset) : ""}
                 </Text>
               </Flex>
+
               {kycOffersEnabled && (
                 <>
                   <Separator size={"4"} color={"gray"} className="opacity-50" />
@@ -794,6 +798,7 @@ const CreateLoanOffer: FC = () => {
               </Flex>
             </Box>
           </Box>
+
           <Box className="mb-20 block w-full space-y-6 px-6 lg:hidden">
             {/* Error Message */}
             {error && (

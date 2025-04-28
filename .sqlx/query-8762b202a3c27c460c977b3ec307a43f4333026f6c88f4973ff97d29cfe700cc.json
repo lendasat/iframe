@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            lo.id,\n            lo.loan_deal_id,\n            lo.lender_id,\n            lo.name,\n            lo.min_ltv,\n            lo.interest_rate,\n            lo.loan_amount_min,\n            lo.loan_amount_max,\n            lo.duration_days_min,\n            lo.duration_days_max,\n            lo.loan_amount_reserve,\n            COALESCE(\n                lo.loan_amount_reserve - COALESCE(\n                    SUM(\n                        CASE\n                            WHEN c.status NOT IN ('Cancelled', 'RequestExpired')\n                            THEN c.loan_amount\n                            ELSE 0\n                        END\n                    ),\n                    0\n                ),\n                lo.loan_amount_reserve\n            ) AS loan_amount_reserve_remaining,\n            lo.loan_asset AS \"loan_asset: LoanAsset\",\n            lo.status AS \"status: LoanOfferStatus\",\n            lo.loan_repayment_address,\n            lo.lender_pk,\n            lo.lender_derivation_path,\n            lo.auto_accept,\n            lo.kyc_link,\n            lo.lender_npub,\n            lo.created_at,\n            lo.updated_at\n        FROM loan_offers lo\n            LEFT JOIN\n                contracts c ON lo.id = c.loan_deal_id\n        WHERE lo.lender_id = $1 and lo.id = $2\n        GROUP BY\n            lo.id\n        ",
+  "query": "\n        SELECT\n            lo.id,\n            lo.loan_deal_id,\n            lo.lender_id,\n            lo.name,\n            lo.min_ltv,\n            lo.interest_rate,\n            lo.loan_amount_min,\n            lo.loan_amount_max,\n            lo.duration_days_min,\n            lo.duration_days_max,\n            lo.loan_amount_reserve,\n            COALESCE(\n                lo.loan_amount_reserve - COALESCE(\n                    SUM(\n                        CASE\n                            WHEN c.status NOT IN ('Cancelled', 'RequestExpired')\n                            THEN c.loan_amount\n                            ELSE 0\n                        END\n                    ),\n                    0\n                ),\n                lo.loan_amount_reserve\n            ) AS loan_amount_reserve_remaining,\n            lo.loan_asset AS \"loan_asset: LoanAsset\",\n            lo.loan_payout AS \"loan_payout: LoanPayout\",\n            lo.status AS \"status: LoanOfferStatus\",\n            lo.loan_repayment_address,\n            lo.lender_pk,\n            lo.lender_derivation_path,\n            lo.auto_accept,\n            lo.kyc_link,\n            lo.lender_npub,\n            lo.created_at,\n            lo.updated_at\n        FROM loan_offers lo\n            LEFT JOIN\n                contracts c ON lo.id = c.loan_deal_id\n        WHERE lo.lender_id = $1 and lo.id = $2\n        GROUP BY\n            lo.id\n        ",
   "describe": {
     "columns": [
       {
@@ -91,6 +91,21 @@
       },
       {
         "ordinal": 13,
+        "name": "loan_payout: LoanPayout",
+        "type_info": {
+          "Custom": {
+            "name": "loan_payout",
+            "kind": {
+              "Enum": [
+                "Direct",
+                "Indirect"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 14,
         "name": "status: LoanOfferStatus",
         "type_info": {
           "Custom": {
@@ -106,42 +121,42 @@
         }
       },
       {
-        "ordinal": 14,
+        "ordinal": 15,
         "name": "loan_repayment_address",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 15,
+        "ordinal": 16,
         "name": "lender_pk",
         "type_info": "Bpchar"
       },
       {
-        "ordinal": 16,
+        "ordinal": 17,
         "name": "lender_derivation_path",
         "type_info": "Text"
       },
       {
-        "ordinal": 17,
+        "ordinal": 18,
         "name": "auto_accept",
         "type_info": "Bool"
       },
       {
-        "ordinal": 18,
+        "ordinal": 19,
         "name": "kyc_link",
         "type_info": "Text"
       },
       {
-        "ordinal": 19,
+        "ordinal": 20,
         "name": "lender_npub",
         "type_info": "Text"
       },
       {
-        "ordinal": 20,
+        "ordinal": 21,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 21,
+        "ordinal": 22,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -171,11 +186,12 @@
       false,
       false,
       false,
+      false,
       true,
       false,
       false,
       false
     ]
   },
-  "hash": "f9c2407731f2aa37cf6b4368b3091cf42613eea8564a97fbed3f64e66ac2905a"
+  "hash": "8762b202a3c27c460c977b3ec307a43f4333026f6c88f4973ff97d29cfe700cc"
 }

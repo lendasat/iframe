@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        INSERT INTO loan_offers (\n          id,\n          loan_deal_id,\n          lender_id,\n          name,\n          min_ltv,\n          interest_rate,\n          loan_amount_min,\n          loan_amount_max,\n          loan_amount_reserve,\n          duration_days_min,\n          duration_days_max,\n          loan_asset,\n          status,\n          loan_repayment_address,\n          lender_pk,\n          lender_derivation_path,\n          auto_accept,\n          kyc_link,\n          lender_npub\n        )\n        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)\n        RETURNING\n          id,\n          loan_deal_id,\n          lender_id,\n          name,\n          min_ltv,\n          interest_rate,\n          loan_amount_min,\n          loan_amount_max,\n          loan_amount_reserve,\n          loan_amount_reserve as loan_amount_reserve_remaining,\n          duration_days_min,\n          duration_days_max,\n          loan_asset AS \"loan_asset: LoanAsset\",\n          status AS \"status: crate::model::LoanOfferStatus\",\n          loan_repayment_address,\n          lender_pk,\n          lender_derivation_path,\n          auto_accept,\n          kyc_link,\n          lender_npub,\n          created_at,\n          updated_at\n        ",
+  "query": "\n        INSERT INTO loan_offers (\n          id,\n          loan_deal_id,\n          lender_id,\n          name,\n          min_ltv,\n          interest_rate,\n          loan_amount_min,\n          loan_amount_max,\n          loan_amount_reserve,\n          duration_days_min,\n          duration_days_max,\n          loan_asset,\n          loan_payout,\n          status,\n          loan_repayment_address,\n          lender_pk,\n          lender_derivation_path,\n          auto_accept,\n          kyc_link,\n          lender_npub\n        )\n        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)\n        RETURNING\n          id,\n          loan_deal_id,\n          lender_id,\n          name,\n          min_ltv,\n          interest_rate,\n          loan_amount_min,\n          loan_amount_max,\n          loan_amount_reserve,\n          loan_amount_reserve as loan_amount_reserve_remaining,\n          duration_days_min,\n          duration_days_max,\n          loan_asset AS \"loan_asset: LoanAsset\",\n          loan_payout AS \"loan_payout: LoanPayout\",\n          status AS \"status: crate::model::LoanOfferStatus\",\n          loan_repayment_address,\n          lender_pk,\n          lender_derivation_path,\n          auto_accept,\n          kyc_link,\n          lender_npub,\n          created_at,\n          updated_at\n        ",
   "describe": {
     "columns": [
       {
@@ -91,6 +91,21 @@
       },
       {
         "ordinal": 13,
+        "name": "loan_payout: LoanPayout",
+        "type_info": {
+          "Custom": {
+            "name": "loan_payout",
+            "kind": {
+              "Enum": [
+                "Direct",
+                "Indirect"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 14,
         "name": "status: crate::model::LoanOfferStatus",
         "type_info": {
           "Custom": {
@@ -106,42 +121,42 @@
         }
       },
       {
-        "ordinal": 14,
+        "ordinal": 15,
         "name": "loan_repayment_address",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 15,
+        "ordinal": 16,
         "name": "lender_pk",
         "type_info": "Bpchar"
       },
       {
-        "ordinal": 16,
+        "ordinal": 17,
         "name": "lender_derivation_path",
         "type_info": "Text"
       },
       {
-        "ordinal": 17,
+        "ordinal": 18,
         "name": "auto_accept",
         "type_info": "Bool"
       },
       {
-        "ordinal": 18,
+        "ordinal": 19,
         "name": "kyc_link",
         "type_info": "Text"
       },
       {
-        "ordinal": 19,
+        "ordinal": 20,
         "name": "lender_npub",
         "type_info": "Text"
       },
       {
-        "ordinal": 20,
+        "ordinal": 21,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 21,
+        "ordinal": 22,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -177,6 +192,17 @@
                 "Chf",
                 "Unknown",
                 "UsdtLiquid"
+              ]
+            }
+          }
+        },
+        {
+          "Custom": {
+            "name": "loan_payout",
+            "kind": {
+              "Enum": [
+                "Direct",
+                "Indirect"
               ]
             }
           }
@@ -220,11 +246,12 @@
       false,
       false,
       false,
+      false,
       true,
       false,
       false,
       false
     ]
   },
-  "hash": "7b3bb0317e7795c88ea278480169daa8df85381a9d116586ca606a8e1bf2cdfc"
+  "hash": "dd2d7191154639bdd510d723b5db4a59e266bf5ae81d220804bcdb03a5a918b8"
 }

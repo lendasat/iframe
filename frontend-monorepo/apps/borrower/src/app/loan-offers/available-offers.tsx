@@ -7,7 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { useAsync } from "react-use";
 import DashHeader from "../components/DashHeader";
 import { LoanOfferTable } from "./offer-selection/offer-table";
-import { LoanAssetHelper } from "@frontend/ui-shared";
+import { LoanAssetHelper, LoanPayout } from "@frontend/ui-shared";
 
 function AvailableOffers() {
   const { getLoanOffers } = useHttpClientBorrower();
@@ -18,6 +18,9 @@ function AvailableOffers() {
   });
 
   const loanOffers = value || [];
+  const filteredLoanOffers = loanOffers.filter(
+    (offer) => offer.loan_payout === LoanPayout.Direct,
+  );
 
   return (
     <ScrollArea className="h-screen" type="always" scrollbars="vertical">
@@ -26,7 +29,7 @@ function AvailableOffers() {
       <Box className="pt-3" px={"6"} pb={"8"}>
         <LoanOfferTable
           loading={loading}
-          loanOffers={loanOffers}
+          loanOffers={filteredLoanOffers}
           columnFilters={[]}
           onColumnFiltersChange={() => {
             // ignored

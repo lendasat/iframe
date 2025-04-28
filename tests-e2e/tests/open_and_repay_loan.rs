@@ -11,6 +11,7 @@ use hub::model::ContractRequestSchema;
 use hub::model::ContractStatus;
 use hub::model::CreateLoanOfferSchema;
 use hub::model::LoanAsset;
+use hub::model::LoanPayout;
 use hub::model::LoanType;
 use hub::model::ONE_YEAR;
 use hub::routes::borrower::ClaimCollateralPsbt;
@@ -68,6 +69,7 @@ async fn open_and_repay_loan() {
         duration_days_min: 7,
         duration_days_max: ONE_YEAR as i32,
         loan_asset: LoanAsset::UsdcEth,
+        loan_payout: LoanPayout::Direct,
         loan_repayment_address:
             "0x055098f73c89ca554f98c0298ce900235d2e1b4205a7ca629ae017518521c2c3".to_string(),
         lender_pk,

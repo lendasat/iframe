@@ -3,6 +3,7 @@ use crate::approve_contract::approve_contract;
 use crate::bitmex_index_price_rest::get_bitmex_index_price;
 use crate::contract_liquidation;
 use crate::db;
+use crate::mark_as_principal_given::mark_as_principal_given;
 use crate::mempool;
 use crate::model;
 use crate::model::ContractStatus;
@@ -280,65 +281,16 @@ async fn put_principal_given(
     query_params: Query<PrincipalGivenQueryParam>,
     Extension(user): Extension<Lender>,
 ) -> Result<AppJson<Contract>, Error> {
-    let contract = async {
-        let contract = db::contracts::load_contract_by_contract_id_and_lender_id(
-            &data.db,
-            contract_id.as_str(),
-            &user.id,
-        )
-        .await
-        .context("Failed to load contract request")?
-        .context("Missing contract")?;
-
-        db::contracts::mark_contract_as_principal_given(
-            &data.db,
-            contract_id.as_str(),
-            contract.duration_days,
-        )
-        .await
-        .context("Failed to mark contract as repaid")?;
-
-        if let Some(txid) = &query_params.txid {
-            db::transactions::insert_principal_given_txid(
-                &data.db,
-                contract_id.as_str(),
-                txid.as_str(),
-            )
-            .await
-            .context("Failed inserting principal given tx id")?;
-        }
-
-        anyhow::Ok(contract)
-    }
+    let contract = mark_as_principal_given(
+        &data.db,
+        &data.config,
+        &data.notifications,
+        &contract_id,
+        &user.id,
+        query_params.txid.clone(),
+    )
     .await
     .map_err(Error::database)?;
-
-    // We don't want to fail this upwards because the contract request has been already
-    // approved.
-    if let Err(e) = async {
-        let loan_url = data
-            .config
-            .borrower_frontend_origin
-            .join(format!("/my-contracts/{}", contract_id).as_str())?;
-
-        let borrower = db::borrowers::get_user_by_id(&data.db, contract.borrower_id.as_str())
-            .await?
-            .context("Borrower not found")?;
-
-        data.notifications
-            .send_loan_paid_out(borrower, loan_url)
-            .await;
-
-        db::contract_emails::mark_loan_paid_out_as_sent(&data.db, &contract.id)
-            .await
-            .context("Failed to mark loan-paid-out email as sent")?;
-
-        anyhow::Ok(())
-    }
-    .await
-    {
-        tracing::error!("Failed at notifying borrower about loan payout: {e:#}");
-    }
 
     let contract = map_to_api_contract(&data, contract).await?;
 

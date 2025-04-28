@@ -1,6 +1,7 @@
 use crate::db;
 use crate::model::LoanAsset;
 use crate::model::LoanOfferStatus;
+use crate::model::LoanPayout;
 use crate::model::OriginationFee;
 use crate::routes::borrower::auth::jwt_or_api_auth;
 use crate::routes::borrower::LOAN_OFFERS_TAG;
@@ -53,6 +54,7 @@ pub struct LoanOffer {
     pub duration_days_min: i32,
     pub duration_days_max: i32,
     pub loan_asset: LoanAsset,
+    pub loan_payout: LoanPayout,
     pub status: LoanOfferStatus,
     pub loan_repayment_address: String,
     pub origination_fee: Vec<OriginationFee>,
@@ -136,6 +138,7 @@ pub async fn get_all_available_loan_offers(
             duration_days_min: loan_offer.duration_days_min,
             duration_days_max: loan_offer.duration_days_max,
             loan_asset: loan_offer.loan_asset,
+            loan_payout: loan_offer.loan_payout,
             status: loan_offer.status,
             loan_repayment_address: loan_offer.loan_repayment_address,
             origination_fee,
@@ -229,6 +232,7 @@ pub async fn get_available_loan_offers_by_lender(
             duration_days_min: loan_offer.duration_days_min,
             duration_days_max: loan_offer.duration_days_max,
             loan_asset: loan_offer.loan_asset,
+            loan_payout: loan_offer.loan_payout,
             status: loan_offer.status,
             loan_repayment_address: loan_offer.loan_repayment_address,
             origination_fee,
@@ -328,6 +332,7 @@ pub async fn get_loan_offer(
                     duration_days_min: loan_offer.duration_days_min,
                     duration_days_max: loan_offer.duration_days_max,
                     loan_asset: loan_offer.loan_asset,
+                    loan_payout: loan_offer.loan_payout,
                     status: loan_offer.status,
                     loan_repayment_address: loan_offer.loan_repayment_address,
                     origination_fee,
