@@ -89,6 +89,7 @@ jobs:
           envkey_VITE_TELEGRAM_BOT_NAME: "@lendasatlendernotificationbot"
           envkey_VITE_APP_GIT_COMMIT_HASH: ${{ env.GIT_COMMIT_HASH }}
           envkey_VITE_APP_GIT_TAG: ${{ github.event.inputs.version }}
+          envkey_VITE_WEBSHOP_URL: "http://apishop.lendasat.com"
 
 
       - name: Build frontend

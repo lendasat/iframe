@@ -1,5 +1,4 @@
-import React, { CSSProperties, ButtonHTMLAttributes } from "react";
-import { Bitcoin } from "lucide-react";
+import React, { ReactElement, cloneElement } from "react";
 
 // Define types for success, cancel, and error callbacks
 type SuccessData = {
@@ -19,21 +18,22 @@ type CancelData = {
   [key: string]: any;
 };
 
-// Define props interface with proper typing
-interface LendasatButtonProps
-  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "onClick"> {
+// Define button element props to properly type the children
+type ButtonElementProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  onClick?: React.MouseEventHandler<HTMLButtonElement>;
+};
+
+// Define props interface with proper children typing
+interface LendasatButtonProps {
   amount: number;
   currency?: string;
   onSuccess?: (data: SuccessData) => void;
   onCancel?: (data?: CancelData) => void;
   onError?: (error: ErrorData) => void;
-  buttonText?: string;
   clientId?: string;
   widgetName?: string;
-  // Style options
-  buttonStyle?: React.CSSProperties;
-  className?: string;
-  showBitcoinIcon?: boolean;
+  // The children should be a React element (button) with button props
+  children: ReactElement<ButtonElementProps>;
 }
 
 export const LendasatButton: React.FC<LendasatButtonProps> = ({
@@ -42,13 +42,9 @@ export const LendasatButton: React.FC<LendasatButtonProps> = ({
   onSuccess,
   onCancel,
   onError,
-  buttonText,
   clientId,
   widgetName,
-  buttonStyle,
-  className,
-  showBitcoinIcon = true,
-  ...buttonProps // Capture remaining button attributes like disabled, aria-label, etc.
+  children,
 }) => {
   const openPaymentPopup = () => {
     // Calculate center position for the popup
@@ -107,29 +103,16 @@ export const LendasatButton: React.FC<LendasatButtonProps> = ({
     }, 50);
   };
 
-  const defaultButtonStyle: React.CSSProperties = {
-    backgroundColor: "#f7931a",
-    color: "white",
-    padding: "10px 20px",
-    border: "none",
-    borderRadius: "4px",
-    cursor: "pointer",
-    fontSize: "16px",
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    ...buttonStyle,
-  };
+  // Clone the child element (button) and attach our onClick handler
+  return cloneElement(children, {
+    onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
+      // Call the original onClick if it exists
+      if (children.props.onClick) {
+        children.props.onClick(e);
+      }
 
-  return (
-    <button
-      onClick={openPaymentPopup}
-      style={buttonStyle || defaultButtonStyle}
-      className={`flex items-center gap-2 ${className || ""}`}
-      {...buttonProps}
-    >
-      {showBitcoinIcon && <Bitcoin className="h-4 w-4" />}
-      <span>{buttonText}</span>
-    </button>
-  );
+      // Then call our handler
+      openPaymentPopup();
+    },
+  } as ButtonElementProps);
 };
