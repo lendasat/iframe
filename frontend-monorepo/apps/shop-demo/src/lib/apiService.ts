@@ -1,8 +1,10 @@
 import axios from "axios";
-import { Item, CreateOrderRequest, Order } from "./types";
+import { Item, CreateOrderRequest, Order } from "../types.ts";
+
+export const BASE_URL = "http://localhost:3211";
 
 const api = axios.create({
-  baseURL: "http://localhost:3211",
+  baseURL: BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },

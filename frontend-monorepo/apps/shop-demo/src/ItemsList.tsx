@@ -1,6 +1,6 @@
 import React from "react";
 import { useShop } from "./ShopContext";
-import { getImageUrl } from "./apiService";
+import { getImageUrl } from "./lib/apiService.ts";
 import {
   Card,
   CardContent,

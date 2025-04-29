@@ -6,7 +6,7 @@ import React, {
   ReactNode,
 } from "react";
 import { Item, BasketItem } from "./types";
-import { fetchItems } from "./apiService";
+import { fetchItems } from "./lib/apiService.ts";
 
 interface ShopContextType {
   items: Item[];

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useShop } from "./ShopContext";
-import { createOrder } from "./apiService";
+import { createOrder } from "./lib/apiService.ts";
 import { Address, CreateOrderRequest, OrderItemRequest } from "./types";
 import {
   Card,
