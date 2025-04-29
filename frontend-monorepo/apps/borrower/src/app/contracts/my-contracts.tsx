@@ -4,7 +4,7 @@ import {
   contractStatusToLabelString,
 } from "@frontend/http-client-borrower";
 import { ALL_CONTRACT_STATUSES } from "@frontend/http-client-lender";
-import { useState, MouseEvent } from "react";
+import { useState, MouseEvent, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAsync } from "react-use";
 import {
@@ -37,6 +37,13 @@ function MyContracts() {
 
   const unfilteredContracts = value || [];
 
+  const BREAKPOINTS = {
+    sm: 640,
+    md: 768,
+    lg: 1024,
+    xl: 1280,
+  };
+
   const [shownColumns, setShownColumns] = useState<ColumnFilter>({
     updatedAt: true,
     amount: true,
@@ -47,6 +54,63 @@ function MyContracts() {
     status: true,
     action: true,
   });
+
+  // Function to update columns based on screen width
+  const updateColumnsForScreenSize = () => {
+    const width = window.innerWidth;
+
+    if (width < BREAKPOINTS.md) {
+      // For small screens, show minimal columns
+      setShownColumns({
+        updatedAt: false,
+        amount: true,
+        expiry: true,
+        interest: false,
+        ltv: true,
+        collateral: false,
+        status: true,
+        action: true,
+      });
+    } else if (width < BREAKPOINTS.lg) {
+      // For medium screens, show more columns
+      setShownColumns({
+        updatedAt: false,
+        amount: true,
+        expiry: true,
+        interest: false,
+        ltv: true,
+        collateral: true,
+        status: true,
+        action: true,
+      });
+    } else {
+      // For large screens, show all columns
+      setShownColumns({
+        updatedAt: true,
+        amount: true,
+        expiry: true,
+        interest: true,
+        ltv: true,
+        collateral: true,
+        status: true,
+        action: true,
+      });
+    }
+  };
+
+  // Set initial columns and add resize listener
+  useEffect(() => {
+    // Set initial column visibility based on current screen size
+    updateColumnsForScreenSize();
+
+    // Add event listener for window resize
+    window.addEventListener("resize", updateColumnsForScreenSize);
+
+    // Clean up event listener on component unmount
+    return () => {
+      window.removeEventListener("resize", updateColumnsForScreenSize);
+    };
+  }, []);
 
   const [contractStatusFilter, setContractStatusFilter] = useState<
     ContractStatus[]

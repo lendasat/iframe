@@ -111,7 +111,7 @@ export const ContractDetailsTable = ({
             </TableHead>
           )}
           {shownColumns.interest && (
-            <TableHead className="hidden md:table-cell">
+            <TableHead>
               <ColumnHeader
                 toggleSortByColumn={toggleSortByColumn}
                 sortByColumn={sortByColumn}
@@ -145,7 +145,7 @@ export const ContractDetailsTable = ({
             </TableHead>
           )}
           {shownColumns.status && (
-            <TableHead className="hidden md:table-cell">
+            <TableHead>
               <ColumnHeader
                 toggleSortByColumn={toggleSortByColumn}
                 sortByColumn={sortByColumn}
@@ -156,7 +156,7 @@ export const ContractDetailsTable = ({
             </TableHead>
           )}
           {shownColumns.updatedAt && (
-            <TableHead className="hidden md:table-cell">
+            <TableHead>
               <ColumnHeader
                 toggleSortByColumn={toggleSortByColumn}
                 sortByColumn={sortByColumn}
@@ -167,7 +167,7 @@ export const ContractDetailsTable = ({
             </TableHead>
           )}
           {shownColumns.action && (
-            <TableHead className="hidden md:table-cell">
+            <TableHead>
               <ColumnHeader
                 toggleSortByColumn={toggleSortByColumn}
                 sortByColumn={sortByColumn}
@@ -244,7 +244,7 @@ export const ContractDetailsTable = ({
                 </TableCell>
               )}
               {shownColumns.interest && (
-                <TableCell className="hidden md:table-cell">
+                <TableCell>
                   {(contract.interest_rate * 100).toFixed(2)}%
                 </TableCell>
               )}
@@ -262,12 +262,12 @@ export const ContractDetailsTable = ({
                 <TableCell>{collateral_btc} BTC</TableCell>
               )}
               {shownColumns.status && (
-                <TableCell className="hidden md:table-cell">
+                <TableCell>
                   <Badge variant={badgeVariant}>{contractStatus}</Badge>
                 </TableCell>
               )}
               {shownColumns.updatedAt && (
-                <TableCell className="hidden md:table-cell">
+                <TableCell>
                   {formatDistance(contract.updated_at, new Date(), {
                     addSuffix: true,
                   })}
