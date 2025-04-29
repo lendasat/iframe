@@ -1,6 +1,5 @@
 import React from "react";
 import { useShop } from "./ShopContext";
-import { getImageUrl } from "./lib/apiService.ts";
 import {
   Card,
   CardContent,
@@ -59,7 +58,7 @@ const ItemsList: React.FC = () => {
           <Card key={item.id} className="overflow-hidden flex flex-col">
             <div className="aspect-square w-full overflow-hidden">
               <img
-                src={getImageUrl(item.image_url)}
+                src={item.image_url}
                 alt={item.name}
                 className="h-full w-full object-cover transition-transform hover:scale-105"
               />

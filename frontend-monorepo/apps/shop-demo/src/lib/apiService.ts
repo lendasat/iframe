@@ -1,7 +1,7 @@
 import axios from "axios";
 import { Item, CreateOrderRequest, Order } from "../types.ts";
 
-export const BASE_URL = "http://localhost:3211";
+export const BASE_URL = import.meta.env.VITE_WEBSHOP_URL;
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -25,10 +25,4 @@ export const createOrder = async (
 export const checkOrderStatus = async (orderId: string): Promise<Order> => {
   const response = await api.get<Order>(`/api/orders/${orderId}`);
   return response.data;
-};
-
-export const getImageUrl = (path: string): string => {
-  // this is useful if we want to map to use cloudflare in production
-  const url = `http://localhost:3211${path}`;
-  return url;
 };

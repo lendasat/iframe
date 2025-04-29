@@ -19,6 +19,8 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useParams, useNavigate } from "react-router-dom";
 import { useOrderWebSocket } from "@/lib/useOrderWebsocketHook.ts";
+import { BASE_URL } from "@/lib/apiService.ts";
+import { changeProtocolToWSS } from "@/lib/utils.ts";
 
 const OrderStatus: React.FC = () => {
   const { orderId } = useParams<{ orderId: string }>();
@@ -27,7 +29,8 @@ const OrderStatus: React.FC = () => {
   // Use useMemo to create the WebSocket URL to prevent it from changing on re-renders
   const wsUrl = useMemo(() => {
     if (!orderId) return null;
-    return `ws://localhost:3211/api/ws/order-status?order_id=${orderId}`;
+
+    return `${changeProtocolToWSS(BASE_URL)}api/ws/order-status?order_id=${orderId}`;
   }, [orderId]);
 
   // Only use the hook if we have a valid orderId and URL
