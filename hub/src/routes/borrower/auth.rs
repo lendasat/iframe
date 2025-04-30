@@ -77,8 +77,6 @@ pub(crate) mod jwt_or_api_auth;
 
 /// Expiry time of a session cookie
 const COOKIE_EXPIRY_HOURS: i64 = 1;
-/// Expiry time of an activation code
-const VERIFICATION_TOKEN_EXPIRY_MINUTES: i64 = 60;
 /// Expiry time of a password reset token
 const PASSWORD_TOKEN_EXPIRES_IN_MINUTES: i64 = 10;
 const PASSWORD_RESET_TOKEN_LENGTH: usize = 20;
@@ -95,6 +93,13 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
         )
         .route("/api/auth/pake-login", post(post_pake_login))
         .route("/api/auth/pake-verify", post(post_pake_verify))
+        .route(
+            "/api/auth/refresh-token",
+            post(refresh_token_handler).route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                jwt_auth::auth,
+            )),
+        )
         .route(
             "/api/auth/logout",
             get(logout_handler).route_layer(middleware::from_fn_with_state(
@@ -475,7 +480,7 @@ async fn post_pake_verify(
 
     let now = OffsetDateTime::now_utc();
     let iat = now.unix_timestamp();
-    let exp = (now + time::Duration::minutes(VERIFICATION_TOKEN_EXPIRY_MINUTES)).unix_timestamp();
+    let exp = (now + time::Duration::hours(COOKIE_EXPIRY_HOURS)).unix_timestamp();
     let claims: TokenClaims = TokenClaims {
         user_id: borrower_id.clone(),
         exp,
@@ -1088,6 +1093,53 @@ async fn post_add_to_waitlist(
         .map_err(Error::from)?;
 
     Ok(Json(()))
+}
+
+#[instrument(skip_all, fields(borrower_id = user.id), err(Debug))]
+async fn refresh_token_handler(
+    State(data): State<Arc<AppState>>,
+    Extension((user, _)): Extension<(Borrower, PasswordAuth)>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    let now = OffsetDateTime::now_utc();
+    let iat = now.unix_timestamp();
+    let exp = (now + time::Duration::hours(COOKIE_EXPIRY_HOURS)).unix_timestamp();
+    let claims: TokenClaims = TokenClaims {
+        user_id: user.id.clone(),
+        exp,
+        iat,
+    };
+
+    let token = encode(
+        &Header::default(),
+        &claims,
+        &EncodingKey::from_secret(data.config.jwt_secret.as_ref()),
+    )
+    .map_err(|error| {
+        let error_response = ErrorResponse {
+            message: format!("Failed to create new token: {}", error),
+        };
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+    })?;
+
+    let cookie = Cookie::build(("token", token.to_owned()))
+        .path("/")
+        .max_age(time::Duration::hours(COOKIE_EXPIRY_HOURS))
+        .same_site(SameSite::Lax)
+        .http_only(true);
+
+    let mut response =
+        Response::new(json!({"message": "Token refreshed successfully"}).to_string());
+    response.headers_mut().insert(
+        header::SET_COOKIE,
+        cookie.to_string().parse().map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Failed parsing cookie: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?,
+    );
+
+    Ok(response)
 }
 
 // Create our own JSON extractor by wrapping `axum::Json`. This makes it easy to override the

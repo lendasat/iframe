@@ -3,10 +3,12 @@ import { FaInfoCircle } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { BankingDetailsSummary } from "@frontend/ui-shared";
 import { type FormEvent, useState } from "react";
-import { useBorrowerHttpClient } from "@frontend/http-client-borrower";
+import {
+  useHttpClientBorrower,
+  FiatLoanDetailsResponse,
+} from "@frontend/http-client-borrower";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
-import { FiatLoanDetailsResponse } from "@frontend/base-http-client";
 
 interface RepayFiatProps {
   contractId: string;
@@ -19,7 +21,7 @@ export const RepayFiat = ({ contractId, fiatLoanDetails }: RepayFiatProps) => {
   const [txid, setTxid] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { markAsRepaymentProvided } = useBorrowerHttpClient();
+  const { markAsRepaymentProvided } = useHttpClientBorrower();
   const [submitted, setSubmitted] = useState(false);
 
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {

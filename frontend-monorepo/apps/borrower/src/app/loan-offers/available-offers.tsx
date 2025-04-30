@@ -1,14 +1,16 @@
-import { useBorrowerHttpClient } from "@frontend/http-client-borrower";
+import {
+  LoanProductOption,
+  useHttpClientBorrower,
+} from "@frontend/http-client-borrower";
 import { Box, ScrollArea } from "@radix-ui/themes";
 import { useNavigate } from "react-router-dom";
 import { useAsync } from "react-use";
 import DashHeader from "../components/DashHeader";
 import { LoanOfferTable } from "./offer-selection/offer-table";
 import { LoanAssetHelper } from "@frontend/ui-shared";
-import { LoanProductOption } from "@frontend/base-http-client";
 
 function AvailableOffers() {
-  const { getLoanOffers } = useBorrowerHttpClient();
+  const { getLoanOffers } = useHttpClientBorrower();
   const navigate = useNavigate();
 
   const { loading, value } = useAsync(async () => {

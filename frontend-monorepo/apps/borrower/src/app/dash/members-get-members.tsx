@@ -4,7 +4,7 @@ import { Card, CardFooter, CardHeader, CardTitle } from "@frontend/shadcn";
 import { Input } from "@frontend/shadcn";
 import { Button } from "@frontend/shadcn";
 import { LuCopy, LuCheck, LuShare, LuInfo } from "react-icons/lu";
-import { PersonalReferralCode } from "@frontend/base-http-client";
+import { PersonalReferralCode } from "@frontend/http-client-borrower";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 

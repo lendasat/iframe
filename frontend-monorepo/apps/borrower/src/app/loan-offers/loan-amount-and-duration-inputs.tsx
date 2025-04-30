@@ -1,4 +1,4 @@
-import { LoanProductOption } from "@frontend/base-http-client";
+import { LoanProductOption } from "@frontend/http-client-borrower";
 import { Box, Flex, RadioCards, Text, TextField } from "@radix-ui/themes";
 import type { ChangeEvent, ReactNode } from "react";
 import { ReactComponent as Defi } from "../../assets/defi.svg";

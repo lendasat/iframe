@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { useBaseHttpClient } from "@frontend/base-http-client";
-import { useAuth, useBorrowerHttpClient } from "@frontend/http-client-borrower";
+import { useAuth, useHttpClientBorrower } from "@frontend/http-client-borrower";
 import { EditableTimezoneField } from "@frontend/ui-shared";
 import {
   Card,
@@ -21,8 +20,8 @@ import { toast } from "sonner";
 
 export function Profile() {
   const { user } = useAuth();
-  const { forgotPassword } = useBaseHttpClient();
-  const { putUpdateProfile } = useBorrowerHttpClient();
+  const { forgotPassword } = useHttpClientBorrower();
+  const { putUpdateProfile } = useHttpClientBorrower();
   const [isLoading, setLoading] = useState(false);
   const [error, setError] = useState("");
 

@@ -1,4 +1,4 @@
-import { useBorrowerHttpClient } from "@frontend/http-client-borrower";
+import { useHttpClientBorrower } from "@frontend/http-client-borrower";
 import { BorrowerStats } from "@frontend/http-client-lender";
 import { UserStats } from "@frontend/ui-shared";
 import { Suspense } from "react";
@@ -6,7 +6,7 @@ import { Await, useParams } from "react-router-dom";
 
 export function BorrowerProfile() {
   const { id } = useParams();
-  const { getBorrowerProfile } = useBorrowerHttpClient();
+  const { getBorrowerProfile } = useHttpClientBorrower();
 
   return (
     <Suspense>

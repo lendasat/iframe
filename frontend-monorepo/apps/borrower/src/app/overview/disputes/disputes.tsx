@@ -16,7 +16,7 @@ import {
   ContractDisputeStatus,
   DisputeInitiatorType,
   SenderType,
-  useBorrowerHttpClient,
+  useHttpClientBorrower,
 } from "@frontend/http-client-borrower";
 import { useAsync } from "react-use";
 import { DisputeDetails } from "./dispute-details";
@@ -73,7 +73,7 @@ interface DisputesComponentProps {
 export const DisputesComponent: React.FC<DisputesComponentProps> = ({
   contractId,
 }) => {
-  const { fetchDisputeWithMessages } = useBorrowerHttpClient();
+  const { fetchDisputeWithMessages } = useHttpClientBorrower();
 
   const [selectedDisputeId, setSelectedDisputeId] = useState<string | null>(
     null,

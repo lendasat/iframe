@@ -6,7 +6,7 @@ import {
 import { Box, Flex, Separator, Text, Tooltip } from "@radix-ui/themes";
 import { RepayStablecoins } from "./repay-contract-stablecoins";
 import { RepayFiat } from "./repay-contract-fiat";
-import { FiatLoanDetailsResponse } from "@frontend/base-http-client";
+import { FiatLoanDetailsResponse } from "@frontend/http-client-borrower";
 
 interface RepayContractProps {
   contractId: string;

@@ -110,7 +110,7 @@ export function NavFooter() {
                   align={isMobile ? "end" : "start"}
                 >
                   {item.items.map((innerItem) => (
-                    <Link to={innerItem.url}>
+                    <Link to={innerItem.url} key={innerItem.name}>
                       <DropdownMenuItem>
                         <innerItem.icon className="text-muted-foreground" />
                         <span>{innerItem.name}</span>
@@ -126,3 +126,7 @@ export function NavFooter() {
     </>
   );
 }
+
+// TODO:
+// 1. check if token is being refreshed automatically
+// 2 check why we have weird redirects to login page first before going to correct page

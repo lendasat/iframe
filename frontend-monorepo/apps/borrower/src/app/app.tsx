@@ -2,7 +2,8 @@ import { WalletProvider } from "@frontend/browser-wallet";
 import {
   AuthIsNotSignedIn,
   AuthIsSignedIn,
-  AuthProviderBorrower,
+  AuthProvider,
+  HttpClientProvider,
   useAuth,
 } from "@frontend/http-client-borrower";
 import { Layout } from "./layout";
@@ -22,8 +23,7 @@ import History from "./History";
 import AvailableOffers from "./loan-offers/available-offers";
 import Settings from "./settings/settings";
 import "../assets/styles.css";
-import type { User } from "@frontend/base-http-client";
-import { LoanProductOption } from "@frontend/base-http-client";
+import { LoanProductOption, User } from "@frontend/http-client-borrower";
 import { FeeProvider } from "@frontend/mempool";
 import { FiHome } from "react-icons/fi";
 import { GoGitPullRequest } from "react-icons/go";
@@ -45,7 +45,7 @@ import WaitlistSuccess from "./waitlist/success";
 import LoanApplication from "./loan-applications/loan-applications";
 import { FaHandHoldingDollar } from "react-icons/fa6";
 import AvailableLoanApplications from "./loan-applications/available-loan-applications";
-import { FaFileContract, FaMoneyCheckAlt } from "react-icons/fa";
+import { FaFileContract } from "react-icons/fa";
 import BitcoinCollateralizedLoan from "./overview/bitcoin-loan-component";
 import { Toaster } from "@frontend/shadcn";
 import { Dashboard } from "./dash/dash";
@@ -254,48 +254,53 @@ function App() {
     (async () => {
       await init(browserWalletUrl);
     })();
-  });
+  }, []);
 
   return (
-    <AuthProviderBorrower baseUrl={baseUrl}>
-      <AuthIsSignedIn>
-        <PriceProvider url={baseUrl}>
-          <FeeProvider mempoolUrl={import.meta.env.VITE_MEMPOOL_REST_URL}>
-            <MainLayoutComponents />
-          </FeeProvider>
-        </PriceProvider>
-      </AuthIsSignedIn>
-      <AuthIsNotSignedIn>
-        <Routes>
-          <Route
-            element={
-              <div>
-                <Outlet />
-              </div>
-            }
-            errorElement={<ErrorBoundary />}
-          >
-            <Route index element={<Login />} />
-            <Route path="/registration" element={<Registration />} />
-            <Route path="/waitlist">
-              <Route index element={<Waitlist />} />
-              <Route path={"success"} element={<WaitlistSuccess />} />
-            </Route>
-
-            <Route path="/forgotpassword" element={<ForgotPassword />} />
+    <HttpClientProvider baseUrl={baseUrl}>
+      <AuthProvider>
+        <AuthIsSignedIn>
+          <PriceProvider url={baseUrl}>
+            <FeeProvider mempoolUrl={import.meta.env.VITE_MEMPOOL_REST_URL}>
+              <MainLayoutComponents />
+            </FeeProvider>
+          </PriceProvider>
+        </AuthIsSignedIn>
+        <AuthIsNotSignedIn>
+          <Routes>
             <Route
-              path="/resetpassword/:token/:email"
-              element={<ResetPassword />}
-            />
-            <Route path="/verifyemail/:token?" element={<VerifyEmailForm />} />
-            <Route path="/logout" element={<Logout />} />
-            <Route path="/login/:status?" element={<Login />} />
-            <Route path="/upgrade-to-pake" element={<UpgradeToPake />} />
-            <Route path="/error" element={<ErrorBoundary />} />
-          </Route>
-        </Routes>
-      </AuthIsNotSignedIn>
-    </AuthProviderBorrower>
+              element={
+                <div>
+                  <Outlet />
+                </div>
+              }
+              errorElement={<ErrorBoundary />}
+            >
+              <Route index element={<Login />} />
+              <Route path="/registration" element={<Registration />} />
+              <Route path="/waitlist">
+                <Route index element={<Waitlist />} />
+                <Route path={"success"} element={<WaitlistSuccess />} />
+              </Route>
+
+              <Route path="/forgotpassword" element={<ForgotPassword />} />
+              <Route
+                path="/resetpassword/:token/:email"
+                element={<ResetPassword />}
+              />
+              <Route
+                path="/verifyemail/:token?"
+                element={<VerifyEmailForm />}
+              />
+              <Route path="/logout" element={<Logout />} />
+              <Route path="/login/:status?" element={<Login />} />
+              <Route path="/upgrade-to-pake" element={<UpgradeToPake />} />
+              <Route path="/error" element={<ErrorBoundary />} />
+            </Route>
+          </Routes>
+        </AuthIsNotSignedIn>
+      </AuthProvider>
+    </HttpClientProvider>
   );
 }
 

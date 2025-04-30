@@ -1,8 +1,8 @@
 // Types
-import { LoanProductOption } from "@frontend/base-http-client";
+import { LoanProductOption } from "@frontend/http-client-borrower";
 import { Box, Flex, Heading, ScrollArea, Text } from "@radix-ui/themes";
 import { ColumnFiltersState } from "@tanstack/react-table";
-import { useEffect, useRef, useState } from "react";
+import { RefObject, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Confirmation } from "./confirmation";
 import { LoanAmountAndDurationInputs } from "./loan-amount-and-duration-inputs";
@@ -34,7 +34,7 @@ export const LoanRequestFlow = () => {
   const confirmationRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-  const scrollToElement = (ref: React.RefObject<HTMLDivElement>) => {
+  const scrollToElement = (ref: RefObject<HTMLDivElement>) => {
     if (!ref.current || !scrollAreaRef.current) return;
 
     const scrollArea = scrollAreaRef.current;

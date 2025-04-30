@@ -63,8 +63,6 @@ pub(crate) mod jwt_auth;
 
 /// Expiry time of a session cookie
 const COOKIE_EXPIRY_HOURS: i64 = 1;
-/// Expiry time of an activation code
-const VERIFICATION_TOKEN_EXPIRY_MINUTES: i64 = 60;
 /// Expiry time of a password reset token
 const PASSWORD_TOKEN_EXPIRES_IN_MINUTES: i64 = 10;
 const PASSWORD_RESET_TOKEN_LENGTH: usize = 20;
@@ -435,7 +433,7 @@ async fn post_pake_verify(
 
     let now = OffsetDateTime::now_utc();
     let iat = now.unix_timestamp();
-    let exp = (now + time::Duration::minutes(VERIFICATION_TOKEN_EXPIRY_MINUTES)).unix_timestamp();
+    let exp = (now + time::Duration::hours(COOKIE_EXPIRY_HOURS)).unix_timestamp();
     let claims: TokenClaims = TokenClaims {
         user_id: lender_id.clone(),
         exp,

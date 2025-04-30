@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { LuInfo, LuLoader } from "react-icons/lu";
 import {
   Contract,
-  useBorrowerHttpClient,
+  useHttpClientBorrower,
 } from "@frontend/http-client-borrower";
 import {
   BankingDetailsSummary,
@@ -29,7 +29,7 @@ export function FiatRepayment({ contract }: FiatRepaymentProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [transferDescription, setTransferDescription] = useState<string>("");
 
-  const { markAsRepaymentProvided } = useBorrowerHttpClient();
+  const { markAsRepaymentProvided } = useHttpClientBorrower();
   const navigate = useNavigate();
 
   const loanAmount = contract?.loan_amount;

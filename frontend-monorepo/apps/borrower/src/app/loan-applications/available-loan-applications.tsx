@@ -1,4 +1,4 @@
-import { useBorrowerHttpClient } from "@frontend/http-client-borrower";
+import { useHttpClientBorrower } from "@frontend/http-client-borrower";
 import { Box } from "@radix-ui/themes";
 import { useNavigate } from "react-router-dom";
 import { useAsync } from "react-use";
@@ -6,7 +6,7 @@ import DashHeader from "../components/DashHeader";
 import { LoanApplicationTable } from "./loan-application-table";
 
 function AvailableLoanApplications() {
-  const { getLoanApplications } = useBorrowerHttpClient();
+  const { getLoanApplications } = useHttpClientBorrower();
   const navigate = useNavigate();
 
   const { loading, value } = useAsync(async () => {

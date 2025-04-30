@@ -4,7 +4,7 @@ import { UnlockWalletModal, useWallet } from "@frontend/browser-wallet";
 import type { Dispute } from "@frontend/http-client-borrower";
 import {
   DisputeStatus,
-  useBorrowerHttpClient,
+  useHttpClientBorrower,
 } from "@frontend/http-client-borrower";
 import { FeeSelector } from "@frontend/mempool";
 import { Suspense, useState } from "react";
@@ -20,10 +20,10 @@ import {
 } from "@frontend/shadcn";
 
 function ResolveDispute() {
-  const { getDispute } = useBorrowerHttpClient();
+  const { getDispute } = useHttpClientBorrower();
   const { id } = useParams();
   const { getClaimDisputeCollateralPsbt, postClaimTx, getContract } =
-    useBorrowerHttpClient();
+    useHttpClientBorrower();
   const [error, setError] = useState("");
   const [selectedFee, setSelectedFee] = useState(1);
 

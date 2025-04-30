@@ -22,7 +22,7 @@ import {
   contractStatusToLabelString,
   LiquidationStatus,
   useAuth,
-  useBorrowerHttpClient,
+  useHttpClientBorrower,
 } from "@frontend/http-client-borrower";
 import { useAsync } from "react-use";
 import { ContractDetailsFooter } from "./contract-details-footer";
@@ -77,9 +77,9 @@ export function contractStatusLabelColor(status?: ContractStatus): string {
 }
 
 const EnhancedBitcoinLoan = () => {
-  const { getContract } = useBorrowerHttpClient();
+  const { getContract } = useHttpClientBorrower();
   const { id } = useParams();
-  const { newChatNotification } = useBorrowerHttpClient();
+  const { newChatNotification } = useHttpClientBorrower();
   const { user } = useAuth();
 
   const {

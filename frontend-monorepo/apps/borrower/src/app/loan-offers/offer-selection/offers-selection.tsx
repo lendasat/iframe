@@ -1,7 +1,7 @@
 import { faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { LoanProductOption } from "@frontend/base-http-client";
-import { useBorrowerHttpClient } from "@frontend/http-client-borrower";
+import { LoanProductOption } from "@frontend/http-client-borrower";
+import { useHttpClientBorrower } from "@frontend/http-client-borrower";
 import { Box, Callout } from "@radix-ui/themes";
 import { ColumnFiltersState, OnChangeFn } from "@tanstack/react-table";
 import { useAsync } from "react-use";
@@ -23,7 +23,7 @@ export const OffersSelectionTable = ({
   columnFilters,
   setColumnFilters,
 }: OffersTableProps) => {
-  const { getLoanOffers } = useBorrowerHttpClient();
+  const { getLoanOffers } = useHttpClientBorrower();
 
   const {
     loading,

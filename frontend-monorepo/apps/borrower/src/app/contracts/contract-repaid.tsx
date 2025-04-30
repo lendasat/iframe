@@ -2,7 +2,7 @@ import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { UnlockWalletModal, useWallet } from "@frontend/browser-wallet";
 import type { Contract } from "@frontend/http-client-borrower";
-import { useBorrowerHttpClient } from "@frontend/http-client-borrower";
+import { useHttpClientBorrower } from "@frontend/http-client-borrower";
 import { FeeSelector } from "@frontend/mempool";
 import { Callout, Heading } from "@radix-ui/themes";
 import { useState } from "react";
@@ -21,7 +21,7 @@ export function ContractRepaid({
 }: ContractRepaidProps) {
   const refundAddress = contract.borrower_btc_address;
 
-  const { getClaimCollateralPsbt, postClaimTx } = useBorrowerHttpClient();
+  const { getClaimCollateralPsbt, postClaimTx } = useHttpClientBorrower();
   const navigate = useNavigate();
 
   const [selectedFee, setSelectedFee] = useState(1);

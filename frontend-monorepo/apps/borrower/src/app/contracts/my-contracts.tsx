@@ -1,4 +1,4 @@
-import { useBorrowerHttpClient } from "@frontend/http-client-borrower";
+import { useHttpClientBorrower } from "@frontend/http-client-borrower";
 import {
   ContractStatus,
   contractStatusToLabelString,
@@ -24,7 +24,7 @@ import { Card, CardContent, CardHeader } from "@frontend/shadcn";
 import { SlidersHorizontal } from "lucide-react";
 
 function MyContracts() {
-  const { getContracts } = useBorrowerHttpClient();
+  const { getContracts } = useHttpClientBorrower();
 
   const { value, error } = useAsync(async () => {
     return getContracts();
