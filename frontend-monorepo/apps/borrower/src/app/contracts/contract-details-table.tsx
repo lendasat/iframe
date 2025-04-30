@@ -6,22 +6,21 @@ import {
   LiquidationStatus,
 } from "@frontend/http-client-borrower";
 import { CurrencyFormatter, LtvProgressBar } from "@frontend/ui-shared";
-import { InfoCircledIcon } from "@radix-ui/react-icons";
-import {
-  Badge,
-  Box,
-  Button,
-  Callout,
-  DropdownMenu,
-  Flex,
-  Heading,
-  Table,
-  Text,
-} from "@radix-ui/themes";
-import { formatDistance } from "date-fns";
-import { BsThreeDotsVertical } from "react-icons/bs";
-import { IoCaretDownOutline, IoCaretUp } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
+import { formatDistance } from "date-fns";
+import { Info } from "lucide-react";
+import { CaretSortIcon } from "@radix-ui/react-icons";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@frontend/shadcn";
+import { Button } from "@frontend/shadcn";
+import { Badge } from "@frontend/shadcn";
+import { Alert, AlertDescription, AlertTitle } from "@frontend/shadcn";
 
 export type ColumnFilterKey =
   | "updatedAt"
@@ -35,77 +34,38 @@ export type ColumnFilterKey =
 
 export type ColumnFilter = Record<ColumnFilterKey, boolean>;
 
-function getCaretColor(
-  sortByColumn: ColumnFilterKey,
-  currentColumnKey: ColumnFilterKey,
-  sortAsc: boolean,
-) {
-  if (sortByColumn !== currentColumnKey) {
-    return "text-font/40 dark:text-font-dark/40";
-  }
-
-  return sortAsc
-    ? "text-font dark:text-font-dark"
-    : "text-font/40 dark:text-font-dark/40";
-}
-
-function getColumnHeaderColor(
-  sortByColumn: ColumnFilterKey,
-  currentColumnKey: ColumnFilterKey,
-) {
-  if (sortByColumn !== currentColumnKey) {
-    return "text-font/40 dark:text-font-dark/40";
-  }
-
-  return "text-font dark:text-font-dark";
-}
-
 interface ColumnHeaderProps {
   toggleSortByColumn: (column: ColumnFilterKey) => void;
   sortByColumn: ColumnFilterKey;
   currentColumn: ColumnFilterKey;
   sortAsc: boolean;
   label: string;
+  className?: string;
 }
 
 const ColumnHeader = ({
   toggleSortByColumn,
   sortByColumn,
   currentColumn,
-  sortAsc,
   label,
-}: ColumnHeaderProps) => (
-  <Button
-    onClick={() => toggleSortByColumn(currentColumn)}
-    className="bg-transparent px-0"
-  >
-    <Flex gap={"1"} align={"center"}>
-      <Text
-        size={"1"}
-        weight={"medium"}
-        className={getColumnHeaderColor(sortByColumn, currentColumn)}
-      >
-        {label}
-      </Text>
-      <Box>
-        <IoCaretUp
-          className={`-mb-1 text-[10px] ${getCaretColor(
-            sortByColumn,
-            currentColumn,
-            sortAsc,
-          )}`}
-        />
-        <IoCaretDownOutline
-          className={`-mb-1 text-[10px] ${getCaretColor(
-            sortByColumn,
-            currentColumn,
-            !sortAsc,
-          )}`}
-        />
-      </Box>
-    </Flex>
-  </Button>
-);
+  className = "",
+}: ColumnHeaderProps) => {
+  const isActive = sortByColumn === currentColumn;
+
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      className={`h-8 p-0 font-medium ${className} ${
+        isActive ? "text-foreground" : "text-muted-foreground"
+      }`}
+      onClick={() => toggleSortByColumn(currentColumn)}
+    >
+      {label}
+      <CaretSortIcon className="ml-1 h-4 w-4" />
+    </Button>
+  );
+};
 
 export interface ContractDetailsTableProps {
   shownColumns: ColumnFilter;
@@ -125,128 +85,112 @@ export const ContractDetailsTable = ({
   const navigate = useNavigate();
 
   return (
-    <Table.Root variant="surface" size={"2"} layout={"auto"}>
-      <Table.Header>
-        <Table.Row>
+    <Table>
+      <TableHeader>
+        <TableRow>
           {shownColumns.amount && (
-            <Table.ColumnHeaderCell className={"text-font dark:text-font-dark"}>
+            <TableHead>
               <ColumnHeader
                 toggleSortByColumn={toggleSortByColumn}
                 sortByColumn={sortByColumn}
                 sortAsc={sortAsc}
-                currentColumn={"amount"}
-                label={"Amount"}
+                currentColumn="amount"
+                label="Amount"
               />
-            </Table.ColumnHeaderCell>
+            </TableHead>
           )}
           {shownColumns.expiry && (
-            <Table.ColumnHeaderCell className={"text-font dark:text-font-dark"}>
-              <Box className="hidden md:flex">
-                <ColumnHeader
-                  toggleSortByColumn={toggleSortByColumn}
-                  sortByColumn={sortByColumn}
-                  sortAsc={sortAsc}
-                  currentColumn={"expiry"}
-                  label={"Expiry"}
-                />
-              </Box>
-            </Table.ColumnHeaderCell>
-          )}
-          {shownColumns.interest && (
-            <Table.ColumnHeaderCell className={"text-font dark:text-font-dark"}>
-              <Box className="hidden md:flex">
-                <ColumnHeader
-                  toggleSortByColumn={toggleSortByColumn}
-                  sortByColumn={sortByColumn}
-                  sortAsc={sortAsc}
-                  currentColumn={"interest"}
-                  label={"Interest"}
-                />
-              </Box>
-            </Table.ColumnHeaderCell>
-          )}
-          {shownColumns.ltv && (
-            <Table.ColumnHeaderCell
-              justify={"center"}
-              minWidth={"100px"}
-              className={"text-font dark:text-font-dark"}
-            >
+            <TableHead>
               <ColumnHeader
                 toggleSortByColumn={toggleSortByColumn}
                 sortByColumn={sortByColumn}
                 sortAsc={sortAsc}
-                currentColumn={"ltv"}
-                label={"LTV"}
+                currentColumn="expiry"
+                label="Expiry"
               />
-            </Table.ColumnHeaderCell>
+            </TableHead>
+          )}
+          {shownColumns.interest && (
+            <TableHead>
+              <ColumnHeader
+                toggleSortByColumn={toggleSortByColumn}
+                sortByColumn={sortByColumn}
+                sortAsc={sortAsc}
+                currentColumn="interest"
+                label="Interest"
+              />
+            </TableHead>
+          )}
+          {shownColumns.ltv && (
+            <TableHead className="min-w-[100px] text-center">
+              <ColumnHeader
+                toggleSortByColumn={toggleSortByColumn}
+                sortByColumn={sortByColumn}
+                sortAsc={sortAsc}
+                currentColumn="ltv"
+                label="LTV"
+                className="justify-center"
+              />
+            </TableHead>
           )}
           {shownColumns.collateral && (
-            <Table.ColumnHeaderCell className={"text-font dark:text-font-dark"}>
-              <Box className={"hidden md:flex"}>
-                <ColumnHeader
-                  toggleSortByColumn={toggleSortByColumn}
-                  sortByColumn={sortByColumn}
-                  sortAsc={sortAsc}
-                  currentColumn={"collateral"}
-                  label={"Collateral"}
-                />
-              </Box>
-            </Table.ColumnHeaderCell>
+            <TableHead>
+              <ColumnHeader
+                toggleSortByColumn={toggleSortByColumn}
+                sortByColumn={sortByColumn}
+                sortAsc={sortAsc}
+                currentColumn="collateral"
+                label="Collateral"
+              />
+            </TableHead>
           )}
           {shownColumns.status && (
-            <Table.ColumnHeaderCell className={"text-font dark:text-font-dark"}>
-              <Flex gap={"1"} align={"center"} className={"hidden md:flex"}>
-                <ColumnHeader
-                  toggleSortByColumn={toggleSortByColumn}
-                  sortByColumn={sortByColumn}
-                  sortAsc={sortAsc}
-                  currentColumn={"status"}
-                  label={"Status"}
-                />
-              </Flex>
-            </Table.ColumnHeaderCell>
+            <TableHead>
+              <ColumnHeader
+                toggleSortByColumn={toggleSortByColumn}
+                sortByColumn={sortByColumn}
+                sortAsc={sortAsc}
+                currentColumn="status"
+                label="Status"
+              />
+            </TableHead>
           )}
           {shownColumns.updatedAt && (
-            <Table.ColumnHeaderCell className={"text-font dark:text-font-dark"}>
-              <Box className="hidden md:flex">
-                <ColumnHeader
-                  toggleSortByColumn={toggleSortByColumn}
-                  sortByColumn={sortByColumn}
-                  sortAsc={sortAsc}
-                  currentColumn={"updatedAt"}
-                  label={"Last Update"}
-                />
-              </Box>
-            </Table.ColumnHeaderCell>
+            <TableHead>
+              <ColumnHeader
+                toggleSortByColumn={toggleSortByColumn}
+                sortByColumn={sortByColumn}
+                sortAsc={sortAsc}
+                currentColumn="updatedAt"
+                label="Last Update"
+              />
+            </TableHead>
           )}
           {shownColumns.action && (
-            <Table.ColumnHeaderCell className={"text-font dark:text-font-dark"}>
-              <Box className="hidden md:flex">
-                <ColumnHeader
-                  toggleSortByColumn={toggleSortByColumn}
-                  sortByColumn={sortByColumn}
-                  sortAsc={sortAsc}
-                  currentColumn={"action"}
-                  label={"Action"}
-                />
-              </Box>
-            </Table.ColumnHeaderCell>
+            <TableHead>
+              <ColumnHeader
+                toggleSortByColumn={toggleSortByColumn}
+                sortByColumn={sortByColumn}
+                sortAsc={sortAsc}
+                currentColumn="action"
+                label="Action"
+              />
+            </TableHead>
           )}
-        </Table.Row>
-      </Table.Header>
+        </TableRow>
+      </TableHeader>
 
-      <Table.Body>
+      <TableBody>
         {contracts.length === 0 && (
-          <Table.Row>
-            <Table.Cell colSpan={8}>
-              <Callout.Root color={"blue"}>
-                <Callout.Icon>
-                  <InfoCircledIcon />
-                </Callout.Icon>
-                <Callout.Text>No contracts found.</Callout.Text>
-              </Callout.Root>
-            </Table.Cell>
-          </Table.Row>
+          <TableRow>
+            <TableCell colSpan={8}>
+              <Alert variant="default">
+                <Info className="h-4 w-4" />
+                <AlertTitle>Info</AlertTitle>
+                <AlertDescription>No contracts found.</AlertDescription>
+              </Alert>
+            </TableCell>
+          </TableRow>
         )}
 
         {contracts.map((contract) => {
@@ -270,124 +214,89 @@ export const ContractDetailsTable = ({
             contractStatus = "Liquidated";
           }
 
+          let badgeVariant: "default" | "destructive" | "success" = "default";
+
+          if (
+            contract.status === ContractStatus.Requested ||
+            contract.status === ContractStatus.RenewalRequested
+          ) {
+            badgeVariant = "default";
+          } else if (contract.status === ContractStatus.Approved) {
+            badgeVariant = "success";
+          } else if (contract.status === ContractStatus.Rejected) {
+            badgeVariant = "destructive";
+          }
+
           return (
-            <Table.Row key={contract.id}>
+            <TableRow key={contract.id}>
               {shownColumns.amount && (
-                <Table.RowHeaderCell>
-                  <Text
-                    className={"text-font dark:text-font-dark"}
-                    size={"1"}
-                    weight={"medium"}
-                  >
-                    <CurrencyFormatter value={contract.loan_amount} />
-                  </Text>
-                </Table.RowHeaderCell>
+                <TableCell className="font-medium">
+                  <CurrencyFormatter value={contract.loan_amount} />
+                </TableCell>
               )}
               {shownColumns.expiry && (
-                <Table.Cell>
-                  <Box className="hidden md:flex">
-                    <Text
-                      className={"text-font dark:text-font-dark"}
-                      size={"1"}
-                      weight={"medium"}
-                    >
-                      {contract.expiry?.toLocaleDateString([], {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      })}
-                    </Text>
-                  </Box>
-                </Table.Cell>
+                <TableCell>
+                  {contract.expiry?.toLocaleDateString([], {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </TableCell>
               )}
               {shownColumns.interest && (
-                <Table.Cell>
-                  <Box className="hidden md:flex">
-                    <Text
-                      className={"text-font dark:text-font-dark"}
-                      size={"1"}
-                      weight={"medium"}
-                    >
-                      {(contract.interest_rate * 100).toFixed(2)}%
-                    </Text>
-                  </Box>
-                </Table.Cell>
+                <TableCell>
+                  {(contract.interest_rate * 100).toFixed(2)}%
+                </TableCell>
               )}
               {shownColumns.ltv && (
-                <Table.Cell>
-                  <LtvProgressBar
-                    collateralBtc={collateral_btc}
-                    loanAmount={contract.loan_amount}
-                  />
-                </Table.Cell>
+                <>
+                  <TableCell>
+                    <LtvProgressBar
+                      collateralBtc={collateral_btc}
+                      loanAmount={contract.loan_amount}
+                    />
+                  </TableCell>
+                </>
               )}
               {shownColumns.collateral && (
-                <Table.Cell>
-                  <Text
-                    className={"text-font dark:text-font-dark hidden md:flex"}
-                    size={"1"}
-                    weight={"medium"}
-                  >
-                    {collateral_btc} BTC
-                  </Text>
-                </Table.Cell>
+                <TableCell>{collateral_btc} BTC</TableCell>
               )}
               {shownColumns.status && (
-                <Table.Cell>
-                  <Box className="hidden md:flex">
-                    <Badge
-                      color={
-                        contract.status === ContractStatus.Requested ||
-                        contract.status === ContractStatus.RenewalRequested
-                          ? "amber"
-                          : contract.status === ContractStatus.Approved
-                            ? "green"
-                            : contract.status === ContractStatus.Rejected
-                              ? "red"
-                              : "gray"
-                      }
-                      size={"2"}
-                    >
-                      {contractStatus}
-                    </Badge>
-                  </Box>
-                </Table.Cell>
+                <TableCell>
+                  <Badge variant={badgeVariant}>{contractStatus}</Badge>
+                </TableCell>
               )}
               {shownColumns.updatedAt && (
-                <Table.RowHeaderCell>
-                  <Box className="hidden md:flex">
-                    <Text
-                      className={"text-font dark:text-font-dark"}
-                      size={"1"}
-                      weight={"medium"}
-                    >
-                      {formatDistance(contract.updated_at, new Date(), {
-                        addSuffix: true,
-                      })}
-                    </Text>
-                  </Box>
-                </Table.RowHeaderCell>
+                <TableCell>
+                  {formatDistance(contract.updated_at, new Date(), {
+                    addSuffix: true,
+                  })}
+                </TableCell>
               )}
               {shownColumns.action && (
-                <Table.Cell>
-                  <Box className="flex">
-                    <Button
-                      size={"2"}
-                      variant="solid"
-                      className="bg-btn dark:bg-dark-600 rounded-lg text-white"
-                      onClick={() => navigate(`/my-contracts/${contract.id}`)}
-                    >
-                      <Text size={"1"} className="font-semibold">
-                        {actionFromStatus(contract.status)}
-                      </Text>
-                    </Button>
-                  </Box>
-                </Table.Cell>
+                <TableCell>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => navigate(`/my-contracts/${contract.id}`)}
+                    className="hidden md:block font-semibold"
+                  >
+                    {actionFromStatus(contract.status)}
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="icon"
+                    onClick={() => navigate(`/my-contracts/${contract.id}`)}
+                    className="md:hidden"
+                  >
+                    <Info className={"w-6 h-6"} />
+                  </Button>
+                </TableCell>
               )}
-            </Table.Row>
+            </TableRow>
           );
         })}
-      </Table.Body>
-    </Table.Root>
+      </TableBody>
+    </Table>
   );
 };

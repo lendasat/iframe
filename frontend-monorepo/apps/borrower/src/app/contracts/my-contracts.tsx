@@ -4,18 +4,7 @@ import {
   contractStatusToLabelString,
 } from "@frontend/http-client-borrower";
 import { ALL_CONTRACT_STATUSES } from "@frontend/http-client-lender";
-import { MixerHorizontalIcon } from "@radix-ui/react-icons";
-import * as Label from "@radix-ui/react-label";
-import {
-  Box,
-  Button,
-  Checkbox,
-  DropdownMenu,
-  Flex,
-  Heading,
-  Text,
-} from "@radix-ui/themes";
-import { useState } from "react";
+import { useState, MouseEvent, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAsync } from "react-use";
 import {
@@ -23,6 +12,16 @@ import {
   ColumnFilterKey,
   ContractDetailsTable,
 } from "./contract-details-table";
+import { Button, ScrollArea } from "@frontend/shadcn";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@frontend/shadcn";
+import { Label } from "@frontend/shadcn";
+import { Card, CardContent, CardHeader } from "@frontend/shadcn";
+import { SlidersHorizontal } from "lucide-react";
 
 function MyContracts() {
   const { getContracts } = useBorrowerHttpClient();
@@ -38,6 +37,13 @@ function MyContracts() {
 
   const unfilteredContracts = value || [];
 
+  const BREAKPOINTS = {
+    sm: 640,
+    md: 768,
+    lg: 1024,
+    xl: 1280,
+  };
+
   const [shownColumns, setShownColumns] = useState<ColumnFilter>({
     updatedAt: true,
     amount: true,
@@ -48,6 +54,63 @@ function MyContracts() {
     status: true,
     action: true,
   });
+
+  // Function to update columns based on screen width
+  const updateColumnsForScreenSize = () => {
+    const width = window.innerWidth;
+
+    if (width < BREAKPOINTS.md) {
+      // For small screens, show minimal columns
+      setShownColumns({
+        updatedAt: false,
+        amount: true,
+        expiry: true,
+        interest: false,
+        ltv: true,
+        collateral: false,
+        status: true,
+        action: true,
+      });
+    } else if (width < BREAKPOINTS.lg) {
+      // For medium screens, show more columns
+      setShownColumns({
+        updatedAt: false,
+        amount: true,
+        expiry: true,
+        interest: false,
+        ltv: true,
+        collateral: true,
+        status: true,
+        action: true,
+      });
+    } else {
+      // For large screens, show all columns
+      setShownColumns({
+        updatedAt: true,
+        amount: true,
+        expiry: true,
+        interest: true,
+        ltv: true,
+        collateral: true,
+        status: true,
+        action: true,
+      });
+    }
+  };
+
+  // Set initial columns and add resize listener
+  useEffect(() => {
+    // Set initial column visibility based on current screen size
+    updateColumnsForScreenSize();
+
+    // Add event listener for window resize
+    window.addEventListener("resize", updateColumnsForScreenSize);
+
+    // Clean up event listener on component unmount
+    return () => {
+      window.removeEventListener("resize", updateColumnsForScreenSize);
+    };
+  }, []);
 
   const [contractStatusFilter, setContractStatusFilter] = useState<
     ContractStatus[]
@@ -72,13 +135,23 @@ function MyContracts() {
     useState<ColumnFilterKey>("updatedAt");
   const [sortAsc, setSortAsc] = useState(false);
 
-  const toggleFilterOutContractDetails = (filterName: ColumnFilterKey) => {
+  const toggleFilterOutContractDetails = (
+    e: MouseEvent<HTMLDivElement>,
+    filterName: ColumnFilterKey,
+  ) => {
+    e.preventDefault();
     setShownColumns((prev) => ({
       ...prev,
       [filterName]: !prev[filterName],
     }));
   };
-  const toggleContractStatusFilter = (filterName: ContractStatus) => {
+
+  const toggleContractStatusFilter = (
+    e: MouseEvent<HTMLDivElement>,
+    filterName: ContractStatus,
+  ) => {
+    e.preventDefault();
+
     setContractStatusFilter((prev) =>
       prev.includes(filterName)
         ? prev.filter((status) => status !== filterName)
@@ -126,171 +199,114 @@ function MyContracts() {
     });
 
   return (
-    <Box className={"pb-20"}>
-      <Box className={"px-6 py-4 md:px-8"}>
-        <Flex align={"center"} justify={"between"}>
-          <Heading className={"text-font dark:text-font-dark"} size={"6"}>
-            My Contracts
-          </Heading>
-          <Button asChild color="purple" className="text-sm" size={"3"}>
-            <Link to={"/requests"}>New Request</Link>
-          </Button>
-        </Flex>
-
-        <div className="mt-5 w-full max-w-md space-y-4">
+    <div className="pb-20">
+      <Card className="border-0 shadow-none">
+        <CardHeader className="px-6 py-4 md:px-8">
           <div className="flex items-center justify-between">
-            <Label.Root
-              className="text-font dark:text-font-dark text-sm font-medium text-gray-700"
-              htmlFor="fields-switch"
-            >
-              Show/hide Fields
-            </Label.Root>
-            <DropdownMenu.Root>
-              <DropdownMenu.Trigger>
-                <Button variant="outline" size="2">
-                  <MixerHorizontalIcon />
-                </Button>
-              </DropdownMenu.Trigger>
-              <DropdownMenu.Content
-                size="1"
-                className={"bg-light dark:bg-dark"}
-              >
-                <DropdownMenu.Item onSelect={(e) => e.preventDefault()}>
-                  <Flex gap="2" align="center">
-                    <Checkbox
-                      checked={shownColumns.amount}
-                      onCheckedChange={() =>
-                        toggleFilterOutContractDetails("amount")
-                      }
-                    />
-                    <Text className="text-font dark:text-font-dark">
-                      Amount
-                    </Text>
-                  </Flex>
-                </DropdownMenu.Item>
-                <DropdownMenu.Item onSelect={(e) => e.preventDefault()}>
-                  <Flex gap="2" align="center">
-                    <Checkbox
-                      checked={shownColumns.expiry}
-                      onCheckedChange={() =>
-                        toggleFilterOutContractDetails("expiry")
-                      }
-                    />
-                    <Text className="text-font dark:text-font-dark">
-                      Expiry
-                    </Text>
-                  </Flex>
-                </DropdownMenu.Item>
-                <DropdownMenu.Item onSelect={(e) => e.preventDefault()}>
-                  <Flex gap="2" align="center">
-                    <Checkbox
-                      checked={shownColumns.interest}
-                      onCheckedChange={() =>
-                        toggleFilterOutContractDetails("interest")
-                      }
-                    />
-                    <Text className="text-font dark:text-font-dark">
-                      Interest
-                    </Text>
-                  </Flex>
-                </DropdownMenu.Item>
-                <DropdownMenu.Item onSelect={(e) => e.preventDefault()}>
-                  <Flex gap="2" align="center">
-                    <Checkbox
-                      checked={shownColumns.ltv}
-                      onCheckedChange={() =>
-                        toggleFilterOutContractDetails("ltv")
-                      }
-                    />
-                    <Text className="text-font dark:text-font-dark">LTV</Text>
-                  </Flex>
-                </DropdownMenu.Item>
-                <DropdownMenu.Item onSelect={(e) => e.preventDefault()}>
-                  <Flex gap="2" align="center">
-                    <Checkbox
-                      checked={shownColumns.collateral}
-                      onCheckedChange={() =>
-                        toggleFilterOutContractDetails("collateral")
-                      }
-                    />
-                    <Text className="text-font dark:text-font-dark">
-                      Collateral
-                    </Text>
-                  </Flex>
-                </DropdownMenu.Item>
-                <DropdownMenu.Item onSelect={(e) => e.preventDefault()}>
-                  <Flex gap="2" align="center">
-                    <Checkbox
-                      checked={shownColumns.status}
-                      onCheckedChange={() =>
-                        toggleFilterOutContractDetails("status")
-                      }
-                    />
-                    <Text className="text-font dark:text-font-dark">
-                      Status
-                    </Text>
-                  </Flex>
-                </DropdownMenu.Item>
-              </DropdownMenu.Content>
-            </DropdownMenu.Root>
+            <h1 className="text-2xl font-bold">My Contracts</h1>
+            <Button asChild variant="default">
+              <Link to="/requests">New Request</Link>
+            </Button>
           </div>
+        </CardHeader>
 
-          <div className="flex items-center justify-between">
-            <Flex className={"flex items-center justify-between"} gap={"4"}>
-              <Label.Root
-                className="text-font dark:text-font-dark text-sm font-medium text-gray-700"
-                htmlFor="contracts-switch"
-              >
-                Show/hide Contracts
-              </Label.Root>
-              <Text
-                className={"text-font dark:text-font-dark"}
-                size={"1"}
-                weight={"medium"}
-              >
-                ({contracts.length}/{unfilteredContracts.length} displayed)
-              </Text>
-            </Flex>
-            <DropdownMenu.Root>
-              <DropdownMenu.Trigger>
-                <Button variant={"outline"} size="2">
-                  <MixerHorizontalIcon />
-                </Button>
-              </DropdownMenu.Trigger>
+        <CardContent className="px-6 md:px-8">
+          <div className="mt-5 w-full max-w-md space-y-4">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="fields-switch" className="text-sm font-medium">
+                Show/hide Fields
+              </Label>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <SlidersHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 h-48">
+                  <DropdownMenuCheckboxItem
+                    checked={shownColumns.amount}
+                    onClick={(e) => toggleFilterOutContractDetails(e, "amount")}
+                  >
+                    Amount
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem
+                    checked={shownColumns.expiry}
+                    onClick={(e) => toggleFilterOutContractDetails(e, "expiry")}
+                  >
+                    Expiry
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem
+                    checked={shownColumns.interest}
+                    onClick={(e) =>
+                      toggleFilterOutContractDetails(e, "interest")
+                    }
+                  >
+                    Interest
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem
+                    checked={shownColumns.ltv}
+                    onClick={(e) => toggleFilterOutContractDetails(e, "ltv")}
+                  >
+                    LTV
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem
+                    checked={shownColumns.collateral}
+                    onClick={(e) =>
+                      toggleFilterOutContractDetails(e, "collateral")
+                    }
+                  >
+                    Collateral
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem
+                    checked={shownColumns.status}
+                    onClick={(e) => toggleFilterOutContractDetails(e, "status")}
+                  >
+                    Status
+                  </DropdownMenuCheckboxItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
 
-              <DropdownMenu.Content
-                className={"bg-light dark:bg-dark"}
-                size="1"
-              >
-                {ALL_CONTRACT_STATUSES.map((contractStatus) => {
-                  return (
-                    <DropdownMenu.Item
-                      onSelect={(e) => e.preventDefault()}
-                      key={contractStatus.toLowerCase()}
-                    >
-                      <Flex gap="2" align="center">
-                        <Checkbox
-                          checked={contractStatusFilter.includes(
-                            contractStatus,
-                          )}
-                          onCheckedChange={() =>
-                            toggleContractStatusFilter(contractStatus)
-                          }
-                        />
-                        <Text className="text-font dark:text-font-dark">
-                          {contractStatusToLabelString(contractStatus)}
-                        </Text>
-                      </Flex>
-                    </DropdownMenu.Item>
-                  );
-                })}
-              </DropdownMenu.Content>
-            </DropdownMenu.Root>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Label
+                  htmlFor="contracts-switch"
+                  className="text-sm font-medium"
+                >
+                  Show/hide Contracts
+                </Label>
+                <span className="text-xs font-medium">
+                  ({contracts.length}/{unfilteredContracts.length} displayed)
+                </span>
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <SlidersHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 sm:h-48 h-80">
+                  <ScrollArea>
+                    {ALL_CONTRACT_STATUSES.map((contractStatus) => (
+                      <DropdownMenuCheckboxItem
+                        id={`status-${contractStatus}`}
+                        checked={contractStatusFilter.includes(contractStatus)}
+                        onClick={(e) =>
+                          toggleContractStatusFilter(e, contractStatus)
+                        }
+                      >
+                        {contractStatusToLabelString(contractStatus)}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </ScrollArea>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
-        </div>
-      </Box>
+        </CardContent>
+      </Card>
 
-      <Box className={"px-6 py-4 md:px-8"}>
+      <div className="px-6 py-4 md:px-8">
         <ContractDetailsTable
           shownColumns={shownColumns}
           toggleSortByColumn={toggleSortByColumn}
@@ -298,8 +314,8 @@ function MyContracts() {
           sortAsc={sortAsc}
           contracts={contracts}
         />
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 }
 
