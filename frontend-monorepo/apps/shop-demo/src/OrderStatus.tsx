@@ -17,28 +17,33 @@ import {
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useOrderWebSocket } from "@/lib/useOrderWebsocketHook.ts";
 import { BASE_URL } from "@/lib/apiService.ts";
 import { changeProtocolToWSS } from "@/lib/utils.ts";
 
 const OrderStatus: React.FC = () => {
-  const { orderId } = useParams<{ orderId: string }>();
+  const [searchParams, _setSearchParams] = useSearchParams();
+
+  const orderId = searchParams.get("orderId");
+  const contractId = searchParams.get("contractId");
+
   const navigate = useNavigate();
 
   // Use useMemo to create the WebSocket URL to prevent it from changing on re-renders
   const wsUrl = useMemo(() => {
     if (!orderId) return null;
 
-    return `${changeProtocolToWSS(BASE_URL)}api/ws/order-status?order_id=${orderId}`;
-  }, [orderId]);
+    return `${changeProtocolToWSS(BASE_URL)}api/ws/order-status?order_id=${orderId}&contract_id=${contractId}`;
+  }, [orderId, contractId]);
 
   // Only use the hook if we have a valid orderId and URL
   const { order, isConnected, error, reconnect } =
     orderId && wsUrl
       ? useOrderWebSocket(orderId, {
           url: wsUrl,
-          onError: (err) => console.error("WebSocket error:", err),
+          onError: (err) =>
+            console.error(`WebSocket error: ${JSON.stringify(err)}.`, err),
           reconnectAttempts: 5,
           reconnectInterval: 3000,
         })
@@ -54,6 +59,8 @@ const OrderStatus: React.FC = () => {
       </Alert>
     );
   }
+
+  console.log(`Received order details: ${JSON.stringify(order)}`);
 
   const getStatusIcon = (status?: OrderStatusType) => {
     if (!status) {

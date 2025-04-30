@@ -91,6 +91,8 @@ export const useOrderWebSocket = (
         try {
           const message = JSON.parse(event.data);
 
+          console.log(`Received ws message: ${JSON.stringify(message)}`);
+
           if (typeof message === "object") {
             if (typeof message.payload !== "string") {
               setOrder(message);

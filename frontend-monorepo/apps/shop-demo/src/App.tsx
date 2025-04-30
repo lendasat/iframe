@@ -34,7 +34,7 @@ const App: React.FC = () => {
                 }
               />
               <Route path="/checkout" element={<Checkout />} />
-              <Route path="/order/:orderId" element={<OrderStatus />} />
+              <Route path="/order" element={<OrderStatus />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>

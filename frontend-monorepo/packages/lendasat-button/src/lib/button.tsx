@@ -2,9 +2,7 @@ import React, { ReactElement, cloneElement } from "react";
 
 // Define types for success, cancel, and error callbacks
 type SuccessData = {
-  transactionId?: string;
-  amount?: number;
-  [key: string]: any;
+  contractId: string;
 };
 
 type ErrorData = {

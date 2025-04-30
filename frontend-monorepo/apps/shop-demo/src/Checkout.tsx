@@ -32,6 +32,7 @@ const Checkout: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [customerName, setCustomerName] = useState("");
   const [orderId, setOrderId] = useState("");
+  const [contractId, setContractId] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [shippingAddress, setShippingAddress] = useState<Address>({
     street: "",
@@ -165,13 +166,10 @@ const Checkout: React.FC = () => {
     }
   };
 
-  const handlePaymentSuccess = (data: {
-    transactionId?: string;
-    amount?: number;
-    [key: string]: any;
-  }) => {
+  const handlePaymentSuccess = (data: { contractId: string }) => {
     console.log("Payment successful!", data);
     // Update UI or state based on successful payment
+    setContractId(data.contractId);
     setSuccess(true);
   };
 
@@ -601,7 +599,7 @@ const Checkout: React.FC = () => {
                           >
                             <Button
                               variant={"default"}
-                              disabled={success || !orderCreated}
+                              disabled={success || orderCreated}
                               className={"bg-orange-400 hover:bg-orange-500"}
                             >
                               <Bitcoin className="h-4 w-4" />
@@ -620,7 +618,9 @@ const Checkout: React.FC = () => {
               className="mt-6 flex h-12 w-full items-center justify-center py-2 text-lg font-medium"
               variant="default"
               disabled={!success}
-              onClick={() => navigate(`/order/${orderId}`)}
+              onClick={() =>
+                navigate(`/order?orderId=${orderId}&contractId=${contractId}`)
+              }
             >
               <span className="mr-2">🚀</span> Complete Purchase
             </Button>
