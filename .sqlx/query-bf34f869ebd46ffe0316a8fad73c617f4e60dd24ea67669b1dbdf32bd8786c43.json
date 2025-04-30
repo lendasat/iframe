@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            id,\n            lender_id,\n            borrower_id,\n            loan_deal_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_derivation_path,\n            lender_pk,\n            lender_derivation_path,\n            borrower_loan_address,\n            lender_loan_repayment_address,\n            loan_type as \"loan_type: crate::model::db::LoanType\",\n            contract_address,\n            contract_index,\n            borrower_npub,\n            lender_npub,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_days,\n            expiry_date,\n            contract_version,\n            interest_rate,\n            interest,\n            created_at,\n            updated_at\n        FROM contracts\n        where id = $1 AND\n        borrower_id = $2\n        ",
+  "query": "\n        SELECT\n            id,\n            lender_id,\n            borrower_id,\n            loan_deal_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_derivation_path,\n            lender_pk,\n            lender_derivation_path,\n            borrower_loan_address,\n            lender_loan_repayment_address,\n            loan_type as \"loan_type: crate::model::db::LoanType\",\n            contract_address,\n            contract_index,\n            borrower_npub,\n            lender_npub,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_days,\n            expiry_date,\n            contract_version,\n            interest_rate,\n            interest,\n            client_contract_id,\n            created_at,\n            updated_at\n        FROM contracts\n        where id = $1 AND\n        borrower_id = $2\n        ",
   "describe": {
     "columns": [
       {
@@ -197,11 +197,16 @@
       },
       {
         "ordinal": 28,
+        "name": "client_contract_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 29,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 29,
+        "ordinal": 30,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -241,9 +246,10 @@
       false,
       false,
       false,
+      true,
       false,
       false
     ]
   },
-  "hash": "b2c28e20a02f18b8e3adb27ab82554594777b7264ff90d025c724b61ef27e215"
+  "hash": "bf34f869ebd46ffe0316a8fad73c617f4e60dd24ea67669b1dbdf32bd8786c43"
 }

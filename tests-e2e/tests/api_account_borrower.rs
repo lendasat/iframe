@@ -130,6 +130,7 @@ async fn api_account_borrower() {
         fiat_loan_details: None,
         borrower_npub: "npub193gpfqmzdpwjrgr6xnct7j2ks4qc5ywyvfzvqtm6twdpxx7m6xfsmvccj4"
             .to_string(),
+        client_contract_id: None,
     };
 
     let borrower = {

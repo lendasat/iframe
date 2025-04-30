@@ -122,6 +122,7 @@ pub async fn take_application(
         contract_index,
         &loan_application.borrower_npub,
         &take_application_body.lender_npub,
+        loan_application.client_contract_id,
     )
     .await
     .map_err(Error::Database)?;

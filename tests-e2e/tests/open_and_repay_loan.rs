@@ -115,6 +115,7 @@ async fn open_and_repay_loan() {
         fiat_loan_details: None,
         borrower_npub: "npub1x4n3a7ld36fluzzanfg2jm4p7tzpxqp0s47xc8rcpjk4adlkz0qstg4xrp"
             .to_string(),
+        client_contract_id: None,
     };
 
     let res = borrower

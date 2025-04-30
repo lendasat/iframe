@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            loan_deal_id,\n            borrower_id,\n            ltv,\n            interest_rate,\n            loan_amount,\n            duration_days,\n            loan_asset AS \"loan_asset: crate::model::LoanAsset\",\n            status AS \"status: crate::model::LoanApplicationStatus\",\n            loan_type AS \"loan_type: crate::model::db::LoanType\",\n            borrower_pk,\n            borrower_derivation_path,\n            borrower_loan_address,\n            borrower_btc_address,\n            borrower_npub,\n            created_at,\n            updated_at\n        FROM loan_applications\n        WHERE status = 'Available'\n        ",
+  "query": "\n        SELECT\n            loan_deal_id,\n            borrower_id,\n            ltv,\n            interest_rate,\n            loan_amount,\n            duration_days,\n            loan_asset AS \"loan_asset: crate::model::LoanAsset\",\n            status AS \"status: crate::model::LoanApplicationStatus\",\n            loan_type AS \"loan_type: crate::model::db::LoanType\",\n            borrower_pk,\n            borrower_derivation_path,\n            borrower_loan_address,\n            borrower_btc_address,\n            borrower_npub,\n            client_contract_id,\n            created_at,\n            updated_at\n        FROM loan_applications\n        WHERE borrower_id = $1 and loan_deal_id = $2\n        ",
   "describe": {
     "columns": [
       {
@@ -121,17 +121,25 @@
       },
       {
         "ordinal": 14,
+        "name": "client_contract_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 15,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 15,
+        "ordinal": 16,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
-      "Left": []
+      "Left": [
+        "Bpchar",
+        "Bpchar"
+      ]
     },
     "nullable": [
       false,
@@ -148,9 +156,10 @@
       true,
       false,
       false,
+      true,
       false,
       false
     ]
   },
-  "hash": "cb8bdbfd6a9e7ee3ee29ee88b5e696e9f220415cb957da8a992a2ee2f4214143"
+  "hash": "2e1df5b3213356bbd9fa0b429f49a82ea233676394bb6ef0691d4b15b767cd7f"
 }
