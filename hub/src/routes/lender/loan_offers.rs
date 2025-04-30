@@ -36,7 +36,7 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
     Router::new()
         .route(
             "/api/my-loans/offer",
-            get(get_loan_offers_by_lender)
+            get(get_my_loan_offers)
                 .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
         )
         .route(
@@ -165,6 +165,13 @@ pub async fn create_loan_offer(
             (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
         })?;
 
+    if matches!(offer.loan_payout, LoanPayout::Indirect) && !offer.auto_accept {
+        let error_response = ErrorResponse {
+            message: "Indirect payouts require auto-accept to be enabled".to_string(),
+        };
+        return Err((StatusCode::BAD_REQUEST, Json(error_response)));
+    }
+
     let offer = LoanOffer {
         id: offer.loan_deal_id,
         lender: lender_stats,
@@ -224,7 +231,7 @@ pub struct LoanOffer {
 }
 
 #[instrument(skip_all, err(Debug))]
-pub async fn get_loan_offers_by_lender(
+pub async fn get_my_loan_offers(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Lender>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {

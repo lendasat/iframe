@@ -78,7 +78,7 @@ const CreateLoanOffer: FC = () => {
   const [ltv, setLtv] = useState<number>(50);
   const [interest, setInterest] = useState<number>(7.5);
   const [loanAsset, setLoanAsset] = useState<LoanAsset>(LoanAsset.USDT_ETH);
-  const [loanPayout, setLoanPayout] = useState<LoanPayout>(LoanPayout.Direct);
+
   const [loanRepaymentAddress, setLoanRepaymentAddress] = useState<string>("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);

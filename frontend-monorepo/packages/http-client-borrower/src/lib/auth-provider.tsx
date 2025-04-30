@@ -9,7 +9,6 @@ import {
   Version,
   LoanProductOption,
   LoginResponseOrUpgrade,
-  PakeVerifyResponse,
 } from "./models";
 import { process_login_response, verify_server } from "browser-wallet";
 import { isAllowedPageWithoutLogin } from "./utils";
@@ -37,6 +36,7 @@ export const useAuth = () => {
 
 interface AuthProviderProps {
   children: ReactNode;
+  shouldHandleAuthError: boolean;
 }
 
 export const AuthIsSignedIn = ({ children }: { children: ReactNode }) => {
@@ -49,7 +49,10 @@ export const AuthIsNotSignedIn = ({ children }: { children: ReactNode }) => {
   return context?.user ? null : children;
 };
 
-export const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
+export const AuthProvider: FC<AuthProviderProps> = ({
+  children,
+  shouldHandleAuthError = true,
+}) => {
   const navigate = useNavigate();
   const location = useLocation();
   const baseUrl = import.meta.env.VITE_BORROWER_BASE_URL;
@@ -68,7 +71,10 @@ export const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
       });
     };
 
-    return createHttpClient(baseUrl, handleAuthError);
+    return createHttpClient(
+      baseUrl,
+      shouldHandleAuthError ? handleAuthError : undefined,
+    );
   }, [baseUrl, navigate]);
 
   const [user, setUser] = useState<User | null>(null);

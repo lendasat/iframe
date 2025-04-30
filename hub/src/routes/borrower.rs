@@ -214,6 +214,7 @@ pub async fn spawn_borrower_server(
         let cors = cors.allow_origin([
             "http://localhost:4200".parse::<HeaderValue>()?,
             "http://localhost:4201".parse::<HeaderValue>()?,
+            "http://localhost:4202".parse::<HeaderValue>()?,
         ]);
 
         #[cfg(not(debug_assertions))]

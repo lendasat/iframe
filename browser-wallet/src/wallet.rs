@@ -792,15 +792,32 @@ impl Wallet {
     }
 }
 
-pub fn derive_next_normal_pk(
+pub fn derive_next_normal_pk_multisig(
     xpub: Xpub,
+    contract_index: u32,
+) -> Result<(PublicKey, DerivationPath)> {
+    derive_next_normal_pk(xpub, 0, contract_index)
+}
+
+pub fn derive_next_normal_pk_singlesig(
+    xpub: Xpub,
+    contract_index: u32,
+) -> Result<(PublicKey, DerivationPath)> {
+    derive_next_normal_pk(xpub, 1, contract_index)
+}
+
+fn derive_next_normal_pk(
+    xpub: Xpub,
+    // The purpose of the derived key is determined by this value. At the time of writing, `0` is
+    // used for multisig addresses (loan collateral) and 1 for singlesig addresses (payouts).
+    purpose: u32,
     contract_index: u32,
 ) -> Result<(PublicKey, DerivationPath)> {
     // This can be serialised as `m/10101/0/i`, where i is based on the wallet's contract
     // index.
     let path = vec![
         ChildNumber::from_normal_idx(10101).expect("infallible"),
-        ChildNumber::from_normal_idx(0).expect("infallible"),
+        ChildNumber::from_normal_idx(purpose).expect("infallible"),
         ChildNumber::from_normal_idx(contract_index).expect("infallible"),
     ];
     let path = DerivationPath::from(path);

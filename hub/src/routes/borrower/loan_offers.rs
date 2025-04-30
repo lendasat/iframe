@@ -30,11 +30,11 @@ pub(crate) fn router_openapi(app_state: Arc<AppState>) -> OpenApiRouter {
     OpenApiRouter::new()
         .routes(routes!(get_all_available_loan_offers))
         .routes(routes!(get_loan_offer))
-        .routes(routes!(get_available_loan_offers_by_lender))
         .route_layer(middleware::from_fn_with_state(
             app_state.clone(),
             jwt_or_api_auth::auth,
         ))
+        .routes(routes!(get_available_loan_offers_by_lender))
         .with_state(app_state)
 }
 
@@ -168,10 +168,6 @@ responses(
     body = [LoanOffer]
     )
 ),
-security(
-    (
-    "api_key" = [])
-    )
 )
 ]
 #[instrument(skip_all, err(Debug))]
@@ -199,7 +195,7 @@ pub async fn get_available_loan_offers_by_lender(
             };
             (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
         })?
-        .context("No lender found for contract")
+        .context("No lender found for offer")
         .map_err(|error| {
             let error_response = ErrorResponse {
                 message: format!("Illegal state error: {}", error),

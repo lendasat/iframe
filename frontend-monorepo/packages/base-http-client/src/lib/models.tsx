@@ -127,3 +127,8 @@ export interface Version {
   tag: string;
   commit_hash: string;
 }
+
+export interface IsRegisteredResponse {
+  is_registered: boolean;
+  is_verified: boolean;
+}

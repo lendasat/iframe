@@ -1,4 +1,5 @@
 import init, {
+  get_next_address,
   derive_nostr_room_pk,
   does_wallet_exist,
   encrypt_fiat_loan_details,
@@ -68,6 +69,7 @@ interface WalletContextType {
   ) => Promise<SignedTransaction>;
   getNpub: () => Promise<string>;
   getPkAndDerivationPath: () => Promise<PkAndPath>;
+  getNextAddress: () => Promise<string>;
   encryptFiatLoanDetailsBorrower: (
     details: ReactInnerFiatLoanDetails,
     counterpartyPk: string,
@@ -240,6 +242,11 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
       pubkey: res.pubkey,
       path: res.path,
     };
+  };
+
+  const getNextAddress = async () => {
+    const key = await md5(email);
+    return get_next_address(key);
   };
 
   const encryptFiatLoanDetailsBorrower = async (
@@ -443,6 +450,7 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
     getNsec,
     getNpub,
     getPkAndDerivationPath,
+    getNextAddress,
     getPubkeyFromContract,
     signClaimPsbt,
     signLiquidationPsbt,
