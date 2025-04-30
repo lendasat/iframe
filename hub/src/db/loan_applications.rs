@@ -12,6 +12,7 @@ use sqlx::Pool;
 use sqlx::Postgres;
 use std::str::FromStr;
 use time::OffsetDateTime;
+use uuid::Uuid;
 
 #[derive(Debug, FromRow, Clone)]
 pub struct LoanApplication {
@@ -29,6 +30,7 @@ pub struct LoanApplication {
     pub borrower_derivation_path: String,
     pub borrower_npub: String,
     pub status: LoanApplicationStatus,
+    pub client_contract_id: Option<Uuid>,
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
 }
@@ -51,6 +53,7 @@ impl From<LoanApplication> for model::LoanApplication {
             borrower_derivation_path: value.borrower_derivation_path.parse().expect("valid path"),
             borrower_npub: value.borrower_npub,
             status: value.status,
+            client_contract_id: value.client_contract_id,
             created_at: value.created_at,
             updated_at: value.updated_at,
         }
@@ -78,6 +81,7 @@ pub(crate) async fn load_all_available_loan_applications(
             borrower_loan_address,
             borrower_btc_address,
             borrower_npub,
+            client_contract_id,
             created_at,
             updated_at
         FROM loan_applications
@@ -115,6 +119,7 @@ pub async fn load_all_loan_applications_by_borrower(
             borrower_loan_address,
             borrower_btc_address,
             borrower_npub,
+            client_contract_id,
             created_at,
             updated_at
         FROM loan_applications
@@ -154,6 +159,7 @@ pub async fn get_loan_application_by_borrower_and_application_id(
             borrower_loan_address,
             borrower_btc_address,
             borrower_npub,
+            client_contract_id,
             created_at,
             updated_at
         FROM loan_applications
@@ -199,7 +205,7 @@ pub async fn insert_loan_application(
 ) -> Result<model::LoanApplication> {
     let mut tx = pool.begin().await?;
 
-    let id = uuid::Uuid::new_v4().to_string();
+    let id = Uuid::new_v4().to_string();
     let status = LoanApplicationStatus::Available;
 
     let loan_type = db::LoanType::from(application.loan_type);
@@ -237,10 +243,11 @@ pub async fn insert_loan_application(
             borrower_loan_address,
             borrower_btc_address,
             borrower_npub,
+            client_contract_id,
             status,
             loan_deal_id
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $1)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $1)
         RETURNING
             loan_deal_id,
             borrower_id,
@@ -256,6 +263,7 @@ pub async fn insert_loan_application(
             borrower_loan_address,
             borrower_btc_address,
             borrower_npub,
+            client_contract_id,
             created_at,
             updated_at
         "#,
@@ -275,6 +283,7 @@ pub async fn insert_loan_application(
             .assume_checked()
             .to_string(),
         application.borrower_npub,
+        application.client_contract_id,
         status as LoanApplicationStatus,
     )
     .fetch_one(&mut *tx)
@@ -307,6 +316,7 @@ pub async fn get_loan_by_id(
             borrower_loan_address,
             borrower_btc_address,
             borrower_npub,
+            client_contract_id,
             created_at,
             updated_at
         FROM loan_applications

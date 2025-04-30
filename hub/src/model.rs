@@ -298,6 +298,7 @@ pub struct CreateLoanApplicationSchema {
     #[schema(value_type = String)]
     pub borrower_derivation_path: bip32::DerivationPath,
     pub borrower_npub: String,
+    pub client_contract_id: Option<Uuid>,
     // TODO: do we want to enable KYC for the lender? I.e. the borrower requires the lender to do
     // KYC?
 }
@@ -325,6 +326,8 @@ pub struct ContractRequestSchema {
     /// [`LoanAsset::Usd`] or [`LoanAsset::Eur`]), this field must be present.
     pub fiat_loan_details: Option<FiatLoanDetailsWrapper>,
     pub borrower_npub: String,
+    /// Optional client id for this contract
+    pub client_contract_id: Option<Uuid>,
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
@@ -495,6 +498,7 @@ pub struct LoanApplication {
     pub borrower_derivation_path: bip32::DerivationPath,
     pub borrower_npub: String,
     pub status: LoanApplicationStatus,
+    pub client_contract_id: Option<Uuid>,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
     #[serde(with = "time::serde::rfc3339")]
@@ -557,6 +561,7 @@ pub struct Contract {
     pub status: ContractStatus,
     pub liquidation_status: LiquidationStatus,
     pub contract_version: ContractVersion,
+    pub client_contract_id: Option<Uuid>,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
     #[serde(with = "time::serde::rfc3339")]
@@ -769,6 +774,7 @@ pub mod db {
     use serde::Serialize;
     use sqlx::FromRow;
     use time::OffsetDateTime;
+    use uuid::Uuid;
 
     #[derive(Debug, FromRow, Serialize, Deserialize)]
     pub struct Contract {
@@ -800,6 +806,7 @@ pub mod db {
         pub contract_version: i32,
         pub interest_rate: Decimal,
         pub interest: Decimal,
+        pub client_contract_id: Option<Uuid>,
         #[serde(with = "time::serde::rfc3339")]
         pub created_at: OffsetDateTime,
         #[serde(with = "time::serde::rfc3339")]
@@ -918,6 +925,7 @@ impl From<db::Contract> for Contract {
             status: value.status.into(),
             liquidation_status: value.liquidation_status.into(),
             contract_version: ContractVersion::from(value.contract_version),
+            client_contract_id: value.client_contract_id,
             created_at: value.created_at,
             updated_at: value.updated_at,
         }
@@ -1050,6 +1058,7 @@ impl From<Contract> for db::Contract {
             contract_version: value.contract_version as i32,
             interest_rate: value.interest_rate,
             interest: value.interest,
+            client_contract_id: value.client_contract_id,
             created_at: value.created_at,
             updated_at: value.updated_at,
         }
@@ -1425,6 +1434,7 @@ mod tests {
             status: ContractStatus::PrincipalGiven,
             liquidation_status: LiquidationStatus::Healthy,
             contract_version: ContractVersion::TwoOfThree,
+            client_contract_id: None,
             created_at: datetime!(2025-03-01 0:00 UTC),
             updated_at: datetime!(2025-03-01 0:00 UTC),
             interest_rate,

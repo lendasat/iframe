@@ -50,6 +50,7 @@ use std::sync::Arc;
 use time::OffsetDateTime;
 use tracing::instrument;
 use url::Url;
+use uuid::Uuid;
 
 pub(crate) fn router(app_state: Arc<AppState>) -> Router {
     Router::new()
@@ -181,6 +182,7 @@ pub struct Contract {
     pub fiat_loan_details_borrower: Option<FiatLoanDetailsWrapper>,
     pub fiat_loan_details_lender: Option<FiatLoanDetailsWrapper>,
     pub borrower_npub: String,
+    pub client_contract_id: Option<Uuid>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -1152,6 +1154,7 @@ async fn map_to_api_contract(
         fiat_loan_details_borrower,
         fiat_loan_details_lender,
         borrower_npub: contract.borrower_npub,
+        client_contract_id: contract.client_contract_id,
     };
 
     Ok(contract)

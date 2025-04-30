@@ -242,6 +242,7 @@ async fn create_loan_request(
         offer.interest_rate,
         borrower_npub,
         &offer.lender_npub,
+        Some(Uuid::new_v4()),
     )
     .await
 }

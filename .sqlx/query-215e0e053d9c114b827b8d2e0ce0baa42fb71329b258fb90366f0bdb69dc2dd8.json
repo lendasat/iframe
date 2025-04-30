@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        INSERT INTO loan_applications (\n            id,\n            borrower_id,\n            ltv,\n            interest_rate,\n            loan_amount,\n            duration_days,\n            loan_asset,\n            loan_type,\n            borrower_pk,\n            borrower_derivation_path,\n            borrower_loan_address,\n            borrower_btc_address,\n            borrower_npub,\n            status,\n            loan_deal_id\n        )\n        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $1)\n        RETURNING\n            loan_deal_id,\n            borrower_id,\n            ltv,\n            interest_rate,\n            loan_amount,\n            duration_days,\n            loan_asset AS \"loan_asset: crate::model::LoanAsset\",\n            loan_type AS \"loan_type: crate::model::db::LoanType\",\n            status AS \"status: crate::model::LoanApplicationStatus\",\n            borrower_pk,\n            borrower_derivation_path,\n            borrower_loan_address,\n            borrower_btc_address,\n            borrower_npub,\n            created_at,\n            updated_at\n        ",
+  "query": "\n        INSERT INTO loan_applications (\n            id,\n            borrower_id,\n            ltv,\n            interest_rate,\n            loan_amount,\n            duration_days,\n            loan_asset,\n            loan_type,\n            borrower_pk,\n            borrower_derivation_path,\n            borrower_loan_address,\n            borrower_btc_address,\n            borrower_npub,\n            client_contract_id,\n            status,\n            loan_deal_id\n        )\n        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $1)\n        RETURNING\n            loan_deal_id,\n            borrower_id,\n            ltv,\n            interest_rate,\n            loan_amount,\n            duration_days,\n            loan_asset AS \"loan_asset: crate::model::LoanAsset\",\n            loan_type AS \"loan_type: crate::model::db::LoanType\",\n            status AS \"status: crate::model::LoanApplicationStatus\",\n            borrower_pk,\n            borrower_derivation_path,\n            borrower_loan_address,\n            borrower_btc_address,\n            borrower_npub,\n            client_contract_id,\n            created_at,\n            updated_at\n        ",
   "describe": {
     "columns": [
       {
@@ -121,11 +121,16 @@
       },
       {
         "ordinal": 14,
+        "name": "client_contract_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 15,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 15,
+        "ordinal": 16,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -177,6 +182,7 @@
         "Text",
         "Text",
         "Text",
+        "Uuid",
         {
           "Custom": {
             "name": "loan_application_status",
@@ -209,9 +215,10 @@
       true,
       false,
       false,
+      true,
       false,
       false
     ]
   },
-  "hash": "57cd9fd7e24daf9dc3f8eb58748d8642c832c81054b048ed2a7a22081560e2f9"
+  "hash": "215e0e053d9c114b827b8d2e0ce0baa42fb71329b258fb90366f0bdb69dc2dd8"
 }

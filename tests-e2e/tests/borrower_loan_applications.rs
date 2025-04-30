@@ -13,6 +13,7 @@ use rust_decimal_macros::dec;
 use serde::Deserialize;
 use serde::Serialize;
 use std::str::FromStr;
+use uuid::Uuid;
 
 pub mod common;
 
@@ -67,6 +68,7 @@ async fn borrower_loan_applications() {
         borrower_pk,
         borrower_derivation_path,
         borrower_npub,
+        client_contract_id: Some(Uuid::new_v4()),
     };
 
     let res = borrower

@@ -285,6 +285,7 @@ async fn post_contract_request(
         offer.interest_rate,
         &body.borrower_npub,
         &offer.lender_npub,
+        body.client_contract_id,
     )
     .await
     .map_err(Error::database)?;
@@ -881,6 +882,7 @@ pub struct Contract {
     pub fiat_loan_details_lender: Option<FiatLoanDetailsWrapper>,
     pub lender_npub: String,
     pub timeline: Vec<TimelineEvent>,
+    pub client_contract_id: Option<Uuid>,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -1064,6 +1066,7 @@ async fn map_to_api_contract(
         fiat_loan_details_lender,
         lender_npub: contract.lender_npub,
         timeline,
+        client_contract_id: contract.client_contract_id,
     };
 
     Ok(contract)

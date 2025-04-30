@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            loan_deal_id,\n            borrower_id,\n            ltv,\n            interest_rate,\n            loan_amount,\n            duration_days,\n            loan_asset AS \"loan_asset: crate::model::LoanAsset\",\n            status AS \"status: crate::model::LoanApplicationStatus\",\n            loan_type AS \"loan_type: crate::model::db::LoanType\",\n            borrower_pk,\n            borrower_derivation_path,\n            borrower_loan_address,\n            borrower_btc_address,\n            borrower_npub,\n            created_at,\n            updated_at\n        FROM loan_applications\n        WHERE loan_deal_id = $1\n        ",
+  "query": "\n        SELECT\n            loan_deal_id,\n            borrower_id,\n            ltv,\n            interest_rate,\n            loan_amount,\n            duration_days,\n            loan_asset AS \"loan_asset: crate::model::LoanAsset\",\n            status AS \"status: crate::model::LoanApplicationStatus\",\n            loan_type AS \"loan_type: crate::model::db::LoanType\",\n            borrower_pk,\n            borrower_derivation_path,\n            borrower_loan_address,\n            borrower_btc_address,\n            borrower_npub,\n            client_contract_id,\n            created_at,\n            updated_at\n        FROM loan_applications\n        WHERE status = 'Available'\n        ",
   "describe": {
     "columns": [
       {
@@ -121,19 +121,22 @@
       },
       {
         "ordinal": 14,
+        "name": "client_contract_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 15,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 15,
+        "ordinal": 16,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
-      "Left": [
-        "Bpchar"
-      ]
+      "Left": []
     },
     "nullable": [
       false,
@@ -150,9 +153,10 @@
       true,
       false,
       false,
+      true,
       false,
       false
     ]
   },
-  "hash": "c861d220c1db282552173f59b8af51b388e9323a66239f9034a74b83bcf2f4ef"
+  "hash": "7c8a6e9af97b8f64a756a7d9e170880a2cfd308bea9f3b944979ed6d135ccf95"
 }

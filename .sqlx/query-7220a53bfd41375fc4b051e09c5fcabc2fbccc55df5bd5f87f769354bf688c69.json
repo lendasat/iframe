@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            loan_deal_id,\n            borrower_id,\n            ltv,\n            interest_rate,\n            loan_amount,\n            duration_days,\n            loan_asset AS \"loan_asset: crate::model::LoanAsset\",\n            status AS \"status: crate::model::LoanApplicationStatus\",\n            loan_type AS \"loan_type: crate::model::db::LoanType\",\n            borrower_pk,\n            borrower_derivation_path,\n            borrower_loan_address,\n            borrower_btc_address,\n            borrower_npub,\n            created_at,\n            updated_at\n        FROM loan_applications\n        WHERE borrower_id = $1\n        ",
+  "query": "\n        SELECT\n            loan_deal_id,\n            borrower_id,\n            ltv,\n            interest_rate,\n            loan_amount,\n            duration_days,\n            loan_asset AS \"loan_asset: crate::model::LoanAsset\",\n            status AS \"status: crate::model::LoanApplicationStatus\",\n            loan_type AS \"loan_type: crate::model::db::LoanType\",\n            borrower_pk,\n            borrower_derivation_path,\n            borrower_loan_address,\n            borrower_btc_address,\n            borrower_npub,\n            client_contract_id,\n            created_at,\n            updated_at\n        FROM loan_applications\n        WHERE borrower_id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -121,11 +121,16 @@
       },
       {
         "ordinal": 14,
+        "name": "client_contract_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 15,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 15,
+        "ordinal": 16,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -150,9 +155,10 @@
       true,
       false,
       false,
+      true,
       false,
       false
     ]
   },
-  "hash": "6c0349ae811f024b8b78819140b8b038e8e36008f57d91f73c7c1a87f2a0d24e"
+  "hash": "7220a53bfd41375fc4b051e09c5fcabc2fbccc55df5bd5f87f769354bf688c69"
 }
