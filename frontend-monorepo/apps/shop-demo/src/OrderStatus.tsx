@@ -188,7 +188,13 @@ const OrderStatusComponent: React.FC = () => {
                 {!isConnected && (
                   <span className="text-sm text-red-500">Disconnected</span>
                 )}
-                <Button variant="outline" onClick={() => {}} size="sm">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    navigate(0);
+                  }}
+                  size="sm"
+                >
                   Refresh{" "}
                   <DotIcon
                     className={`w-5 h-5 ${isConnected ? "text-green-500" : "text-red-500"}`}

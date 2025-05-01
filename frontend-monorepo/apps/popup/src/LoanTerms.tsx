@@ -4,12 +4,21 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Check, Copy, Loader2, SquareArrowOutUpRight } from "lucide-react";
 import { Separator } from "@/components/ui/separator.tsx";
-import { DataList, DataListItem, DataListLabel, DataListValue } from "./components/ui/data-list";
+import {
+  DataList,
+  DataListItem,
+  DataListLabel,
+  DataListValue,
+} from "./components/ui/data-list";
 import { Badge } from "./components/ui/badge";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import { Input } from "./components/ui/input";
-import { Contract, ContractStatus, useHttpClientBorrower } from "@frontend/http-client-borrower";
+import {
+  Contract,
+  ContractStatus,
+  useHttpClientBorrower,
+} from "@frontend/http-client-borrower";
 import { useAsync, useAsyncFn } from "react-use";
 import { LuInfo } from "react-icons/lu";
 import { Alert, AlertDescription, AlertTitle } from "./components/ui/alert";
