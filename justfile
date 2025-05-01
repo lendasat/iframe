@@ -268,6 +268,10 @@ wipe-mempool:
     pkill -9 mempool-mock && echo "Stopped mock mempool server" || echo "Mock mempool server not running, skipped"
     [ ! -e "{{mempool_logs}}" ] || mv -f {{mempool_logs}} {{mempool_logs}}.old
 
+wipe-frontend:
+    find . -type d -name "node_modules" -o -name ".turbo" -o -name "dist" | xargs rm -rf
+    echo go ahead and redo "just build-wallet deps-frontend"
+
 ## ------------------------
 ## Local dev setup help functions
 ## ------------------------
