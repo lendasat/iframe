@@ -22,6 +22,7 @@ function AppInternal() {
 
   const amount = parseFloat(searchParams.get("amount") as string) || 1000;
   const lenderId = searchParams.get("lender_id") || "";
+  const orderId = searchParams.get("order_id") || "";
   const inviteCode = searchParams.get("code") || "";
 
   // Send information to the Lendasat button window about the contract being funded.
@@ -56,6 +57,7 @@ function AppInternal() {
         <Stepper
           amount={amount}
           lenderId={lenderId}
+          orderId={orderId}
           inviteCode={inviteCode}
           login={login}
           onPrincipalGiven={onPrincipalGiven}

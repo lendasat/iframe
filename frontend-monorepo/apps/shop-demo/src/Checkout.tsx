@@ -587,12 +587,12 @@ const Checkout: React.FC = () => {
                           How does it work?
                         </Button>
 
-                        {/*TODO: pass in the order id as well*/}
                         <div>
                           {lenderId ? (
                             <LendasatButton
                               amount={getBasketTotal()}
                               lenderId={lenderId}
+                              orderId={orderId}
                               network="test"
                               borrowerInviteCode="BETA_PHASE_1"
                               onSuccess={handlePaymentSuccess}

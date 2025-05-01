@@ -204,6 +204,7 @@ export interface ContractRequest {
   loan_type: LoanType;
   moon_card_id?: string;
   fiat_loan_details?: FiatLoanDetails;
+  client_contract_id?: string;
 }
 
 export interface Contract {
@@ -241,6 +242,7 @@ export interface Contract {
   borrower_npub: string;
   borrower_derivation_path: string;
   timeline: TimelineEvent[];
+  client_contract_id?: string;
 }
 
 export interface TimelineEvent {

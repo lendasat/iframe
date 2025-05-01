@@ -27,6 +27,7 @@ type ButtonElementProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 interface LendasatButtonProps {
   amount: number;
   lenderId: string;
+  orderId: string;
   borrowerInviteCode: string;
   network: Network;
   onSuccess?: (data: SuccessData) => void;
@@ -40,6 +41,7 @@ interface LendasatButtonProps {
 export const LendasatButton: React.FC<LendasatButtonProps> = ({
   amount,
   lenderId,
+  orderId,
   network,
   borrowerInviteCode,
   onSuccess,
@@ -65,7 +67,7 @@ export const LendasatButton: React.FC<LendasatButtonProps> = ({
 
     // Open the popup window
     const popup = window.open(
-      `${url}?amount=${amount}&lender_id=${lenderId}&code=${borrowerInviteCode}`,
+      `${url}?amount=${amount}&lender_id=${lenderId}&order_id=${orderId}&code=${borrowerInviteCode}`,
       widgetName,
       `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`,
     );

@@ -187,10 +187,7 @@ const OrderStatusComponent: React.FC = () => {
         <Card>
           <CardHeader>
             <div className="flex justify-between items-center">
-              <CardTitle>
-                Order #
-                {orderStatus?.id ? orderStatus.id.substring(0, 8) : "Unknown"}
-              </CardTitle>
+              <CardTitle>Order #{orderId?.substring(0, 8)}</CardTitle>
               <div className="flex items-center gap-2">
                 {!isConnected && (
                   <span className="text-sm text-red-500">Disconnected</span>
