@@ -79,6 +79,9 @@ pub async fn spawn_lender_server(
         let cors = cors.allow_origin([
             "http://localhost:4200".parse::<HeaderValue>()?,
             "http://localhost:4201".parse::<HeaderValue>()?,
+            "http://localhost:4202".parse::<HeaderValue>()?,
+            "http://localhost:4203".parse::<HeaderValue>()?,
+            "http://localhost:4204".parse::<HeaderValue>()?,
         ]);
 
         #[cfg(not(debug_assertions))]
