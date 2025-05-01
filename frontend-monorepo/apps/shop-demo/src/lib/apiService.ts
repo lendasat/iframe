@@ -1,5 +1,5 @@
 import axios from "axios";
-import { Item, CreateOrderRequest, Order } from "../types.ts";
+import { Item, CreateOrderRequest, Me } from "../types.ts";
 
 export const BASE_URL = import.meta.env.VITE_WEBSHOP_URL;
 
@@ -22,7 +22,7 @@ export const createOrder = async (
   return response.data;
 };
 
-export const checkOrderStatus = async (orderId: string): Promise<Order> => {
-  const response = await api.get<Order>(`/api/orders/${orderId}`);
+export const fetchMe = async (): Promise<Me> => {
+  const response = await api.get<Me>("/api/me");
   return response.data;
 };

@@ -24,6 +24,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion.tsx";
 import { LendasatButton } from "@frontend/lendasat-button";
+import useMe from "@/lib/useMeHook.ts";
 
 const Checkout: React.FC = () => {
   const { basket, getBasketTotal } = useShop();
@@ -190,7 +191,8 @@ const Checkout: React.FC = () => {
     // Display error message to user
   };
 
-  const lenderId = import.meta.env.VITE_WEBSHOP_LENDER_ID;
+  const me = useMe();
+  const lenderId = me?.id;
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -587,25 +589,36 @@ const Checkout: React.FC = () => {
 
                         {/*TODO: pass in the order id as well*/}
                         <div>
-                          <LendasatButton
-                            amount={getBasketTotal()}
-                            lenderId={lenderId}
-                            network="test"
-                            borrowerInviteCode="BETA_PHASE_1"
-                            onSuccess={handlePaymentSuccess}
-                            onCancel={handlePaymentCancel}
-                            onError={handlePaymentError}
-                            widgetName="Bitcoin-backed loans"
-                          >
+                          {lenderId ? (
+                            <LendasatButton
+                              amount={getBasketTotal()}
+                              lenderId={lenderId}
+                              network="test"
+                              borrowerInviteCode="BETA_PHASE_1"
+                              onSuccess={handlePaymentSuccess}
+                              onCancel={handlePaymentCancel}
+                              onError={handlePaymentError}
+                              widgetName="Bitcoin-backed loans"
+                            >
+                              <Button
+                                variant={"default"}
+                                disabled={!orderCreated}
+                                className={"bg-orange-400 hover:bg-orange-500"}
+                              >
+                                <Bitcoin className="h-4 w-4" />
+                                <span>Finance with Bitcoin</span>
+                              </Button>
+                            </LendasatButton>
+                          ) : (
                             <Button
                               variant={"default"}
-                              disabled={!orderCreated}
+                              disabled={true}
                               className={"bg-orange-400 hover:bg-orange-500"}
                             >
                               <Bitcoin className="h-4 w-4" />
                               <span>Finance with Bitcoin</span>
                             </Button>
-                          </LendasatButton>
+                          )}
                         </div>
                       </div>
                     </div>

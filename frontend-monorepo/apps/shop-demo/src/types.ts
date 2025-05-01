@@ -75,3 +75,7 @@ export type WsErrorResponse = {
   data: ErrorResponse;
 };
 export type WsResponse = WsOrderResponse | WsErrorResponse;
+
+export interface Me {
+  id: string;
+}
