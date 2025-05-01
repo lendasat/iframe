@@ -43,6 +43,7 @@ export enum OrderStatusType {
 export interface ErrorResponse {
   OrderNotFound?: boolean;
   ContractNotFound?: boolean;
+  ConnectionError?: boolean;
 }
 
 interface OrderItemResponse {

@@ -154,6 +154,9 @@ const OrderStatusComponent: React.FC = () => {
 
     ws.onerror = (error: Event): void => {
       console.error("WebSocket error:", error);
+      setErrorMessage({
+        ConnectionError: true
+      })
     };
 
     // Cleanup function to close the WebSocket connection when the component unmounts
@@ -163,6 +166,11 @@ const OrderStatusComponent: React.FC = () => {
       }
     };
   }, [orderId, contractId, websocketUrl]);
+
+
+  if (errorMessage?.ConnectionError) {
+    return <p>Could not connect websocket. Please check logs</p>;
+  }
 
   if (errorMessage?.OrderNotFound) {
     return <p>Order not found.</p>;
