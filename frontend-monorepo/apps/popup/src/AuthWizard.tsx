@@ -180,10 +180,17 @@ const AuthWizard = ({ login, inviteCode, onComplete }: AuthWizardProps) => {
           return;
         }
 
-        await logIn(email, password, login, (error: string) => {
-          setError(error);
+        try {
+          await logIn(email, password, login);
+        } catch (error) {
+          if (error instanceof Error) {
+            setError(`Failed to log in: ${error.message}`);
+          } else {
+            setError(`Failed to log in: ${error}`);
+          }
+
           return;
-        });
+        }
 
         setCurrentStep(4);
         onComplete();
@@ -207,10 +214,17 @@ const AuthWizard = ({ login, inviteCode, onComplete }: AuthWizardProps) => {
         return;
       }
 
-      await logIn(email, password, login, (error: string) => {
-        setError(error);
+      try {
+        await logIn(email, password, login);
+      } catch (error) {
+        if (error instanceof Error) {
+          setError(`Failed to log in: ${error.message}`);
+        } else {
+          setError(`Failed to log in: ${error}`);
+        }
+
         return;
-      });
+      }
 
       setCurrentStep(4);
       onComplete();
@@ -219,6 +233,13 @@ const AuthWizard = ({ login, inviteCode, onComplete }: AuthWizardProps) => {
 
   const handlePreviousStep = () => {
     setError("");
+
+    setEmail("");
+    setPassword("");
+    setConfirmPassword("");
+    setVerificationCode("");
+    setIsRegistered(false);
+    setIsVerified(false);
 
     // Always go back to the very beginning.
     setCurrentStep(1);
@@ -412,26 +433,24 @@ async function logIn(
   email: string,
   password: string,
   loginFn: (email: string, password: string) => Promise<LoginResponseOrUpgrade>,
-  onError: (error: string) => void,
 ) {
   let walletBackupData;
   try {
     const loginResponse = await loginFn(email, password);
 
     if ("must_upgrade_to_pake" in loginResponse) {
-      onError("Please upgrade your account by logging in through Lendasat");
-      return;
+      throw new Error(
+        "Please upgrade your account by logging in through Lendasat",
+      );
     }
 
     walletBackupData = loginResponse.wallet_backup_data;
   } catch (error) {
     if (error instanceof Error) {
-      onError(`Failed to log in: ${error.message}`);
+      throw new Error(`Failed to log in: ${error.message}`);
     } else {
-      onError(`Failed to log in: ${error}`);
+      throw new Error(`Failed to log in: ${error}`);
     }
-
-    return;
   }
 
   const key = await md5(email);
@@ -444,12 +463,10 @@ async function logIn(
       );
     } catch (error) {
       if (error instanceof Error) {
-        onError(`Failed to restore Lendasat wallet: ${error.message}`);
+        throw new Error(`Failed to restore Lendasat wallet: ${error.message}`);
       } else {
-        onError(`Failed to restore Lendasat wallet: ${error}`);
+        throw new Error(`Failed to restore Lendasat wallet: ${error}`);
       }
-
-      return;
     }
   }
 
@@ -457,12 +474,10 @@ async function logIn(
     load_wallet(password, key);
   } catch (error) {
     if (error instanceof Error) {
-      onError(`Failed to load Lendasat wallet: ${error.message}`);
+      throw new Error(`Failed to load Lendasat wallet: ${error.message}`);
     } else {
-      onError(`Failed to load Lendasat wallet: ${error}`);
+      throw new Error(`Failed to load Lendasat wallet: ${error}`);
     }
-
-    return;
   }
 
   console.log("Login successful");
