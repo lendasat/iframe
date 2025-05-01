@@ -29,6 +29,7 @@ import type {
   WalletBackupData,
 } from "./models";
 import { isAllowedPageWithoutLogin, parseRFC3339Date } from "./utils";
+import { IsRegisteredResponse } from "@frontend/base-http-client";
 
 // Keep all your existing interfaces as-is
 interface RawContract
@@ -100,6 +101,7 @@ export interface HttpClient {
   ) => Promise<PakeVerifyResponse | undefined>;
   forgotPassword: (email: string) => Promise<string | undefined>;
   verifyEmail: (token: string) => Promise<string | undefined>;
+  getIsRegistered: (email: string) => Promise<IsRegisteredResponse>;
   resetPassword: (
     verifier: string,
     salt: string,
@@ -215,6 +217,23 @@ export const createHttpClient = (
   };
 
   // Auth related methods
+  const getIsRegistered = async (email: string) => {
+    try {
+      const response: AxiosResponse<IsRegisteredResponse> =
+        await axiosClient.get(`/api/auth/is-registered?email=${email}`);
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        console.log(error.response);
+        const message = error.response.data.message;
+
+        throw new Error(message);
+      } else {
+        throw error;
+      }
+    }
+  };
+
   const register = async (
     name: string,
     email: string,
@@ -861,6 +880,7 @@ export const createHttpClient = (
     getCardTransactions,
     putUpdateProfile,
     newChatNotification,
+    getIsRegistered,
   };
 };
 

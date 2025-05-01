@@ -7,6 +7,9 @@ use anyhow::Context;
 use anyhow::Result;
 use bitcoin::bip32;
 use bitcoin::key::Secp256k1;
+use bitcoin::Address;
+use bitcoin::CompressedPublicKey;
+use bitcoin::Network;
 use bitcoin::Psbt;
 use bitcoin::PublicKey;
 use bitcoin::TxOut;
@@ -249,7 +252,7 @@ pub fn get_next_normal_pk(key: String) -> Result<(PublicKey, bip32::DerivationPa
         .get_item::<u32>(contract_index_key)?
         .unwrap_or_default();
 
-    let (pk, path) = wallet::derive_next_normal_pk(xpub, contract_index)?;
+    let (pk, path) = wallet::derive_next_normal_pk_multisig(xpub, contract_index)?;
 
     // After using the contract index, we increment it so that the next generated key is different.
     storage.set_item(contract_index_key, contract_index + 1)?;
@@ -367,6 +370,43 @@ pub fn is_wallet_equal(key: &str, mnemonic_ciphertext: &str, network: &str) -> R
     };
 
     Ok(local_mnemonic_ciphertext == mnemonic_ciphertext && local_network == network)
+}
+
+/// Generate a single-sig [`bitcoin::Address`] based on the Xpub stored in local storage.
+///
+/// This function is meant to be used to send sats directly to the owner of this browser wallet.
+/// This is only used for convenience (better UX), as it is usually preferable to let the user
+/// choose and address from an external wallet.
+pub fn get_next_address(key: String) -> Result<Address> {
+    let storage = local_storage()?;
+
+    let xpub_key = derive_storage_key(&key, XPUB_KEY);
+    let xpub = storage
+        .get_item::<String>(&xpub_key)?
+        .context(format!("No Xpub stored in storage key {xpub_key}"))?;
+
+    let xpub = xpub.parse()?;
+
+    let contract_index_key = &derive_storage_key(&key, CONTRACT_INDEX_KEY);
+
+    let contract_index = storage
+        .get_item::<u32>(contract_index_key)?
+        .unwrap_or_default();
+
+    let (pk, _) = wallet::derive_next_normal_pk_singlesig(xpub, contract_index)?;
+
+    let network_key = &derive_storage_key(&key, NETWORK_KEY);
+    let network = storage
+        .get_item::<String>(network_key)?
+        .context(format!("No network stored in storage key {network_key}"))?;
+    let network: Network = network.parse().context("Invalid network")?;
+
+    let address = Address::p2wpkh(&CompressedPublicKey(pk.inner), network);
+
+    // After using the contract index, we increment it so that the next generated key is different.
+    storage.set_item(contract_index_key, contract_index + 1)?;
+
+    Ok(address)
 }
 
 /// Move a wallet stored in local storage from `key` to `old-key`.

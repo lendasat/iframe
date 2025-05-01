@@ -37,6 +37,7 @@ use anyhow::Context;
 use axum::extract::rejection::JsonRejection;
 use axum::extract::FromRequest;
 use axum::extract::Path;
+use axum::extract::Query;
 use axum::extract::State;
 use axum::http::header;
 use axum::http::StatusCode;
@@ -83,6 +84,7 @@ const PASSWORD_RESET_TOKEN_LENGTH: usize = 20;
 
 pub(crate) fn router(app_state: Arc<AppState>) -> Router {
     Router::new()
+        .route("/api/auth/is-registered", get(get_is_registered))
         .route(
             "/api/auth/upgrade-to-pake",
             post(post_start_upgrade_to_pake),
@@ -148,6 +150,45 @@ pub(crate) fn router_openapi(app_state: Arc<AppState>) -> OpenApiRouter {
     OpenApiRouter::new()
         .routes(routes!(post_register))
         .with_state(app_state)
+}
+
+#[derive(Deserialize)]
+struct IsRegisteredParams {
+    email: String,
+}
+
+#[derive(Serialize)]
+struct IsRegisteredResponse {
+    is_registered: bool,
+    is_verified: bool,
+}
+
+async fn get_is_registered(
+    State(data): State<Arc<AppState>>,
+    query_params: Query<IsRegisteredParams>,
+) -> Result<AppJson<IsRegisteredResponse>, Error> {
+    let email = &query_params.email;
+
+    if !is_valid_email(email) {
+        return Err(Error::InvalidEmail);
+    }
+
+    let res = get_user_by_email(&data.db, email)
+        .await
+        .map_err(Error::Database)?;
+
+    let res = match res {
+        Some((_, auth)) => IsRegisteredResponse {
+            is_registered: true,
+            is_verified: auth.verified,
+        },
+        None => IsRegisteredResponse {
+            is_registered: false,
+            is_verified: false,
+        },
+    };
+
+    Ok(AppJson(res))
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]

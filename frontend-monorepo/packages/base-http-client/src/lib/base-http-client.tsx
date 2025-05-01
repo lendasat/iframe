@@ -2,6 +2,7 @@ import type { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import axios from "axios";
 import { createContext, useContext } from "react";
 import type {
+  IsRegisteredResponse,
   MeResponse,
   PakeLoginResponse,
   PakeLoginResponseOrUpgrade,
@@ -45,6 +46,23 @@ export class BaseHttpClient {
         throw new Error(message);
       } else {
         throw new Error(`Could not fetch version ${JSON.stringify(error)}`);
+      }
+    }
+  }
+
+  async getIsRegistered(email: string): Promise<IsRegisteredResponse> {
+    try {
+      const response: AxiosResponse<IsRegisteredResponse> =
+        await this.httpClient.get(`/api/auth/is-registered?email=${email}`);
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        console.log(error.response);
+        const message = error.response.data.message;
+
+        throw new Error(message);
+      } else {
+        throw error;
       }
     }
   }
@@ -361,6 +379,7 @@ export class BaseHttpClient {
 export type BaseHttpClientContextType = Pick<
   BaseHttpClient,
   | "register"
+  | "getIsRegistered"
   | "pakeLoginRequest"
   | "pakeVerifyRequest"
   | "upgradeToPake"
@@ -404,6 +423,7 @@ export const HttpClientProvider: React.FC<HttpClientProviderProps> = ({
 
   const baseClientFunctions: BaseHttpClientContextType = {
     register: httpClient.register.bind(httpClient),
+    getIsRegistered: httpClient.getIsRegistered.bind(httpClient),
     pakeLoginRequest: httpClient.pakeLoginRequest.bind(httpClient),
     pakeVerifyRequest: httpClient.pakeVerifyRequest.bind(httpClient),
     upgradeToPake: httpClient.upgradeToPake.bind(httpClient),

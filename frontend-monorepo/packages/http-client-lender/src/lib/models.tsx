@@ -2,7 +2,7 @@ import {
   FiatLoanDetailsResponse,
   type LoanFeature,
 } from "@frontend/base-http-client";
-import { LoanAsset, LoanTransaction } from "@frontend/ui-shared";
+import { LoanAsset, LoanPayout, LoanTransaction } from "@frontend/ui-shared";
 
 export enum ContractStatus {
   Requested = "Requested",
@@ -83,6 +83,7 @@ export interface CreateLoanOfferRequest {
   duration_days_min: number;
   duration_days_max: number;
   loan_asset: LoanAsset;
+  loan_payout: LoanPayout;
   loan_repayment_address: string;
   auto_accept: boolean;
   lender_npub: string;
@@ -109,6 +110,7 @@ export interface LoanOffer {
   duration_days_min: number;
   duration_days_max: number;
   loan_asset: LoanAsset;
+  loan_payout: LoanPayout;
   origination_fee: OriginationFee[];
   status: LoanOfferStatus;
   auto_accept: boolean;

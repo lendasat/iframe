@@ -4,6 +4,7 @@ use crate::model::CreateLoanOfferSchema;
 use crate::model::Lender;
 use crate::model::LoanAsset;
 use crate::model::LoanOfferStatus;
+use crate::model::LoanPayout;
 use crate::model::OriginationFee;
 use crate::routes::lender::auth;
 use crate::routes::lender::AppState;
@@ -35,7 +36,7 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
     Router::new()
         .route(
             "/api/my-loans/offer",
-            get(get_loan_offers_by_lender)
+            get(get_my_loan_offers)
                 .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
         )
         .route(
@@ -164,6 +165,13 @@ pub async fn create_loan_offer(
             (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
         })?;
 
+    if matches!(offer.loan_payout, LoanPayout::Indirect) && !offer.auto_accept {
+        let error_response = ErrorResponse {
+            message: "Indirect payouts require auto-accept to be enabled".to_string(),
+        };
+        return Err((StatusCode::BAD_REQUEST, Json(error_response)));
+    }
+
     let offer = LoanOffer {
         id: offer.loan_deal_id,
         lender: lender_stats,
@@ -177,6 +185,7 @@ pub async fn create_loan_offer(
         duration_days_min: offer.duration_days_min,
         duration_days_max: offer.duration_days_max,
         loan_asset: offer.loan_asset,
+        loan_payout: offer.loan_payout,
         status: offer.status,
         auto_accept: offer.auto_accept,
         loan_repayment_address: offer.loan_repayment_address,
@@ -210,6 +219,7 @@ pub struct LoanOffer {
     pub duration_days_min: i32,
     pub duration_days_max: i32,
     pub loan_asset: LoanAsset,
+    pub loan_payout: LoanPayout,
     pub status: LoanOfferStatus,
     pub loan_repayment_address: String,
     pub origination_fee: Vec<OriginationFee>,
@@ -221,7 +231,7 @@ pub struct LoanOffer {
 }
 
 #[instrument(skip_all, err(Debug))]
-pub async fn get_loan_offers_by_lender(
+pub async fn get_my_loan_offers(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Lender>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
@@ -278,6 +288,7 @@ pub async fn get_loan_offers_by_lender(
             loan_amount_reserve: offer.loan_amount_reserve,
             loan_amount_reserve_remaining: offer.loan_amount_reserve_remaining,
             loan_asset: offer.loan_asset,
+            loan_payout: offer.loan_payout,
             status: offer.status,
             auto_accept: offer.auto_accept,
             loan_repayment_address: offer.loan_repayment_address,
@@ -351,6 +362,7 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
         duration_days_min: offer.duration_days_min,
         duration_days_max: offer.duration_days_max,
         loan_asset: offer.loan_asset,
+        loan_payout: offer.loan_payout,
         status: offer.status,
         auto_accept: offer.auto_accept,
         loan_repayment_address: offer.loan_repayment_address,
@@ -418,6 +430,7 @@ pub async fn get_loan_offers(
             duration_days_min: offer.duration_days_min,
             duration_days_max: offer.duration_days_max,
             loan_asset: offer.loan_asset,
+            loan_payout: offer.loan_payout,
             status: offer.status,
             auto_accept: offer.auto_accept,
             loan_repayment_address: offer.loan_repayment_address,
@@ -491,6 +504,7 @@ pub async fn get_loan_offer_by_id(
         duration_days_min: offer.duration_days_min,
         duration_days_max: offer.duration_days_max,
         loan_asset: offer.loan_asset,
+        loan_payout: offer.loan_payout,
         status: offer.status,
         auto_accept: offer.auto_accept,
         loan_repayment_address: offer.loan_repayment_address,

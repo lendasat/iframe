@@ -1,5 +1,5 @@
 import { InnerFiatLoanDetails, LoanFeature } from "@frontend/base-http-client";
-import { LoanAsset, LoanTransaction } from "@frontend/ui-shared";
+import { LoanAsset, LoanPayout, LoanTransaction } from "@frontend/ui-shared";
 
 export type PersonalReferralCode = {
   code: string;
@@ -271,6 +271,7 @@ export interface LoanOffer {
   duration_days_min: number;
   duration_days_max: number;
   loan_asset: LoanAsset;
+  loan_payout: LoanPayout;
   origination_fee: OriginationFee[];
   extension_origination_fee: OriginationFee[];
   kyc_link?: string;

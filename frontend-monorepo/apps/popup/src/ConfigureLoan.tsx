@@ -7,43 +7,111 @@ import {
 import { Label } from "@/components/ui/label.tsx";
 import { Slider } from "@/components/ui/slider.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
+import { useHttpClientBorrower } from "@frontend/http-client-borrower";
+import { useAsync } from "react-use";
+import { useEffect, useMemo } from "react";
+import { usePrice } from "./price-context";
+import { Skeleton } from "./components/ui/skeleton";
+
+enum LoanPayout {
+  Direct = "Direct",
+  Indirect = "Indirect",
+}
 
 interface ConfigureLoanProps {
   loanAmount: number;
-  months: number;
-  setMonths: (months: number) => void;
-  ltvRatio: number;
-  yearlyInterestRate: number;
+  lenderId: string;
+  setLoanOfferId: (id: string) => void;
+  days: number;
+  setDays: (days: number) => void;
 }
 
 export function ConfigureLoan({
   loanAmount,
-  months,
-  setMonths,
-  ltvRatio,
-  yearlyInterestRate,
+  lenderId,
+  setLoanOfferId,
+  days,
+  setDays,
 }: ConfigureLoanProps) {
+  // formatting strings
   const loanAmountString = new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(loanAmount);
 
-  const yearlyInterestRateString = new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(yearlyInterestRate);
+  const { getLoanOffersByLender } = useHttpClientBorrower();
+  const { latestPrice } = usePrice();
 
-  const interest = (yearlyInterestRate / 100) * (months / 12) * loanAmount;
-  const interestString = new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(interest);
+  // Fetch loan offers once when lenderId changes
+  const {
+    value: loanOffers,
+    error,
+    loading,
+  } = useAsync(async () => {
+    return getLoanOffersByLender(lenderId);
+  }, [lenderId]);
 
-  const totalOwed = loanAmount + interest;
-  const totalOwedString = new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(totalOwed);
+  // Derive loan offer details only after loan offers are fetched
+  const loanOffer = useMemo(() => {
+    return loanOffers?.filter((o) => o.loan_payout === LoanPayout.Indirect)[0];
+  }, [loanOffers]);
+
+  // Update loan offer ID when loan offer changes
+  useEffect(() => {
+    if (loanOffer) {
+      setLoanOfferId(loanOffer.id);
+    }
+  }, [loanOffer, setLoanOfferId]);
+
+  // Only proceed with computation if loanOffer is valid
+  const computeLoanDetails = useMemo(() => {
+    if (!loanOffer) return {};
+
+    const yearlyInterestRate = loanOffer.interest_rate;
+    const collateralAmount = loanAmount / latestPrice / loanOffer.min_ltv;
+    const interest = yearlyInterestRate * (days / 360) * loanAmount;
+    const totalOwed = loanAmount + interest;
+
+    return {
+      yearlyInterestRate,
+      yearlyInterestRateString: new Intl.NumberFormat("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(yearlyInterestRate * 100),
+      interestString: new Intl.NumberFormat("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(interest),
+      totalOwedString: new Intl.NumberFormat("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(totalOwed),
+      collateralAmountString: new Intl.NumberFormat("en-US", {
+        minimumFractionDigits: 8,
+        maximumFractionDigits: 8,
+      }).format(collateralAmount),
+    };
+  }, [loanOffer, loanAmount, latestPrice, days]);
+
+  // Loading and error handling
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-md">
+        <Skeleton className="h-24 mb-4" />
+        <Skeleton className="h-12 mb-4" />
+        <Skeleton className="h-12 mb-4" />
+        <Skeleton className="h-12 mb-4" />
+      </div>
+    );
+  }
+
+  if (error || !loanOffers || !loanOffer) {
+    return (
+      <div className="mx-auto max-w-md text-center text-red-500">
+        <p>No offers available.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto flex max-w-md flex-col gap-y-4">
@@ -54,13 +122,16 @@ export function ConfigureLoan({
         <CardContent className="flex flex-col gap-1.5 rounded-lg bg-white p-2 ring-1 ring-gray-300">
           <div className="flex justify-between px-2">
             <Label>LTV ratio</Label>
-            <Label>{ltvRatio}%</Label>
+            <Label>{loanOffer?.min_ltv}%</Label>
           </div>
           <div className="flex justify-between px-2">
             <Label>Collateral amount</Label>
-            <Label>₿ 0.13 370 000</Label>
+            {computeLoanDetails.collateralAmountString === "NaN" ? (
+              <Skeleton className="h-4 w-25" />
+            ) : (
+              <Label>{computeLoanDetails.collateralAmountString} BTC</Label>
+            )}
           </div>
-          <Label className="justify-center"></Label>
         </CardContent>
       </Card>
       <Card className="gap-3 p-4">
@@ -71,15 +142,15 @@ export function ConfigureLoan({
           <Label className="px-2">Duration</Label>
           <div className="flex flex-col gap-3">
             <Label className="flex justify-center text-center text-xs">
-              {months} months
+              {days} days
             </Label>
             <Slider
-              defaultValue={[months]}
+              defaultValue={[days]}
               onValueChange={([x]) => {
-                setMonths(x);
+                setDays(x);
               }}
-              min={1}
-              max={12}
+              min={loanOffer?.duration_days_min}
+              max={loanOffer?.duration_days_max}
               step={1}
               className={"w-full px-2"}
             />
@@ -88,14 +159,8 @@ export function ConfigureLoan({
         <CardContent className="flex flex-col gap-1.5 rounded-lg bg-white p-2 ring-1 ring-gray-300">
           <div className="flex justify-between px-2">
             <Label>Interest rate</Label>
-            <Label>{yearlyInterestRateString}% p.a.</Label>
+            <Label>{computeLoanDetails.yearlyInterestRateString}% p.a.</Label>
           </div>
-          <Label className="text-xs">
-            <em>
-              This rate is fixed based on your selected duration and current
-              market conditions.
-            </em>
-          </Label>
         </CardContent>
         <CardContent className="flex flex-col gap-1.5 rounded-lg bg-white p-2 ring-1 ring-gray-300">
           <div className="flex justify-between px-2">
@@ -104,13 +169,13 @@ export function ConfigureLoan({
           </div>
           <div className="flex justify-between px-2">
             <Label>Interest</Label>
-            <Label>${interestString}</Label>
+            <Label>${computeLoanDetails.interestString}</Label>
           </div>
           <Separator className="w-1/2 border-t border-gray-600" />
           <div className="flex justify-between px-2">
             <Label>Total owed</Label>
             <Label>
-              <strong>${totalOwedString}</strong>
+              <strong>${computeLoanDetails.totalOwedString}</strong>
             </Label>
           </div>
         </CardContent>

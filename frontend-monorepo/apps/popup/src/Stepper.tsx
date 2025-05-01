@@ -1,11 +1,19 @@
 import * as React from "react";
-import { Bitcoin, SettingsIcon, UserIcon } from "lucide-react";
+import { LuBitcoin, LuSettings, LuUser } from "react-icons/lu";
 import { defineStepper } from "@/components/ui/stepper.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { ConfigureLoan } from "@/ConfigureLoan.tsx";
 import AuthWizard from "@/AuthWizard.tsx";
 import LoanTerms from "./LoanTerms";
 import { useState } from "react";
+import {
+  Contract,
+  LoanType,
+  useHttpClientBorrower,
+} from "@frontend/http-client-borrower";
+import { LoginResponseOrUpgrade } from "@frontend/base-http-client";
+import { useWallet } from "@frontend/browser-wallet";
+import { toast } from "sonner";
 
 const {
   StepperProvider,
@@ -18,34 +26,48 @@ const {
   {
     id: "step-1",
     title: "Configure",
-    icon: <SettingsIcon />,
+    icon: <LuSettings />,
   },
   {
     id: "step-2",
     title: "Authenticate",
-    icon: <UserIcon />,
+    icon: <LuUser />,
   },
   {
     id: "step-3",
     title: "Confirm",
-    icon: <Bitcoin />,
+    icon: <LuBitcoin />,
   },
 );
 
 interface StepperProps {
   amount: number;
-  onComplete: () => void;
+  lenderId: string;
+  inviteCode: string;
+  login: (email: string, password: string) => Promise<LoginResponseOrUpgrade>;
+  onPrincipalGiven: (contractId: string) => void;
+  onDone: (contractId: string) => void;
 }
 
-export default function Stepper({ amount, onComplete }: StepperProps) {
-  const [step1Completed, _setStep1Completed] = useState(true);
-  const [step2Completed, setStep2Completed] = useState(false);
-  const [step3Completed, _setStep3Completed] = useState(true);
-  const [months, setMonths] = useState(3);
+export default function Stepper({
+  amount,
+  lenderId,
+  inviteCode,
+  login,
+  onPrincipalGiven,
+  onDone,
+}: StepperProps) {
+  // TODO: We force the user to authenticate every time. This is not
+  // always necessary.
+  const [authComplete, setAuthComplete] = useState(false);
 
-  const ltvRatio = 50;
-  // This formula is completely arbitrary.
-  const yearlyInterestRate = 9.5 + months * 0.25;
+  const [loanOfferId, setLoanOfferId] = useState<string | undefined>(undefined);
+  const [days, setDays] = useState(7);
+  const [contractId, setContractId] = useState<string | undefined>(undefined);
+
+  const { postContractRequest } = useHttpClientBorrower();
+
+  const { getNpub, getPkAndDerivationPath, getNextAddress } = useWallet();
 
   return (
     <StepperProvider className="space-y-4" variant="horizontal">
@@ -53,12 +75,7 @@ export default function Stepper({ amount, onComplete }: StepperProps) {
         <React.Fragment>
           <StepperNavigation>
             {methods.all.map((step) => (
-              <StepperStep
-                key={step.id}
-                of={step.id}
-                onClick={() => methods.goTo(step.id)}
-                icon={step.icon}
-              >
+              <StepperStep key={step.id} of={step.id} icon={step.icon}>
                 <StepperTitle>{step.title}</StepperTitle>
               </StepperStep>
             ))}
@@ -68,25 +85,30 @@ export default function Stepper({ amount, onComplete }: StepperProps) {
               <StepperPanel className="content-center rounded border bg-slate-50 p-8">
                 <ConfigureLoan
                   loanAmount={amount}
-                  months={months}
-                  setMonths={setMonths}
-                  ltvRatio={ltvRatio}
-                  yearlyInterestRate={yearlyInterestRate}
+                  lenderId={lenderId}
+                  days={days}
+                  setDays={setDays}
+                  setLoanOfferId={setLoanOfferId}
                 />
               </StepperPanel>
             ),
             "step-2": () => (
               <StepperPanel className="content-center rounded border bg-slate-50 p-8">
-                <AuthWizard onComplete={() => setStep2Completed(true)} />
+                <AuthWizard
+                  login={login}
+                  inviteCode={inviteCode}
+                  onComplete={() => setAuthComplete(true)}
+                />
               </StepperPanel>
             ),
             "step-3": () => (
               <StepperPanel className="content-center rounded border bg-slate-50 p-8">
                 <LoanTerms
-                  loanAmount={amount}
-                  months={months}
-                  yearlyInterestRate={yearlyInterestRate}
-                  ltvRatio={ltvRatio}
+                  sendContractRequest={sendContractRequest}
+                  onPrincipalGiven={(contractId: string) => {
+                    setContractId(contractId);
+                    onPrincipalGiven(contractId);
+                  }}
                 />
               </StepperPanel>
             ),
@@ -103,23 +125,30 @@ export default function Stepper({ amount, onComplete }: StepperProps) {
             )}
             {methods.switch({
               "step-1": () => (
-                <Button onClick={methods.next} disabled={!step1Completed}>
+                <Button
+                  onClick={methods.next}
+                  disabled={loanOfferId === undefined}
+                >
                   {"Next"}
                 </Button>
               ),
               "step-2": () => (
-                <Button onClick={methods.next} disabled={!step2Completed}>
+                <Button onClick={methods.next} disabled={!authComplete}>
                   {"Next"}
                 </Button>
               ),
               "step-3": () => (
                 <Button
                   onClick={() => {
-                    onComplete();
+                    if (contractId) {
+                      onDone(contractId);
+                    } else {
+                      toast.error("Contract not ready yet.");
+                    }
                   }}
-                  disabled={!step3Completed}
+                  disabled={!contractId}
                 >
-                  {"Go back to webshop"}
+                  {"Back to shop"}
                 </Button>
               ),
             })}
@@ -128,4 +157,25 @@ export default function Stepper({ amount, onComplete }: StepperProps) {
       )}
     </StepperProvider>
   );
+
+  async function sendContractRequest(): Promise<Contract | undefined> {
+    const npub = await getNpub();
+    const pkAndPath = await getPkAndDerivationPath();
+    const address = await getNextAddress();
+
+    if (!loanOfferId) {
+      throw new Error("Must choose an offer before sending contract request");
+    }
+
+    return await postContractRequest({
+      id: loanOfferId,
+      loan_amount: amount,
+      duration_days: days,
+      borrower_btc_address: address,
+      borrower_npub: npub,
+      borrower_pk: pkAndPath.pubkey,
+      borrower_derivation_path: pkAndPath.path,
+      loan_type: LoanType.StableCoin,
+    });
+  }
 }

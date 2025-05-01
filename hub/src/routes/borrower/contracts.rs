@@ -13,6 +13,7 @@ use crate::model::ContractVersion;
 use crate::model::FiatLoanDetails;
 use crate::model::LiquidationStatus;
 use crate::model::LoanAsset;
+use crate::model::LoanPayout;
 use crate::model::LoanTransaction;
 use crate::model::LoanType;
 use crate::model::PsbtQueryParams;
@@ -145,9 +146,12 @@ async fn post_contract_request(
     }
 
     let (borrower_loan_address, moon_invoice, fiat_loan_details) = match body.loan_type {
-        LoanType::StableCoin => match body.borrower_loan_address {
-            Some(borrower_loan_address) => (Some(borrower_loan_address), None, None),
-            None => return Err(Error::MissingBorrowerLoanAddress),
+        LoanType::StableCoin => match offer.loan_payout {
+            LoanPayout::Direct => match body.borrower_loan_address {
+                Some(borrower_loan_address) => (Some(borrower_loan_address), None, None),
+                None => return Err(Error::MissingBorrowerLoanAddress),
+            },
+            LoanPayout::Indirect => (None, None, None),
         },
         LoanType::PayWithMoon => {
             if offer.loan_asset != LoanAsset::UsdcPol {

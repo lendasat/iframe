@@ -1,6 +1,7 @@
 use crate::db;
 use crate::model::LoanAsset;
 use crate::model::LoanOfferStatus;
+use crate::model::LoanPayout;
 use crate::model::OriginationFee;
 use crate::routes::borrower::auth::jwt_or_api_auth;
 use crate::routes::borrower::LOAN_OFFERS_TAG;
@@ -29,11 +30,11 @@ pub(crate) fn router_openapi(app_state: Arc<AppState>) -> OpenApiRouter {
     OpenApiRouter::new()
         .routes(routes!(get_all_available_loan_offers))
         .routes(routes!(get_loan_offer))
-        .routes(routes!(get_available_loan_offers_by_lender))
         .route_layer(middleware::from_fn_with_state(
             app_state.clone(),
             jwt_or_api_auth::auth,
         ))
+        .routes(routes!(get_available_loan_offers_by_lender))
         .with_state(app_state)
 }
 
@@ -53,6 +54,7 @@ pub struct LoanOffer {
     pub duration_days_min: i32,
     pub duration_days_max: i32,
     pub loan_asset: LoanAsset,
+    pub loan_payout: LoanPayout,
     pub status: LoanOfferStatus,
     pub loan_repayment_address: String,
     pub origination_fee: Vec<OriginationFee>,
@@ -136,6 +138,7 @@ pub async fn get_all_available_loan_offers(
             duration_days_min: loan_offer.duration_days_min,
             duration_days_max: loan_offer.duration_days_max,
             loan_asset: loan_offer.loan_asset,
+            loan_payout: loan_offer.loan_payout,
             status: loan_offer.status,
             loan_repayment_address: loan_offer.loan_repayment_address,
             origination_fee,
@@ -165,10 +168,6 @@ responses(
     body = [LoanOffer]
     )
 ),
-security(
-    (
-    "api_key" = [])
-    )
 )
 ]
 #[instrument(skip_all, err(Debug))]
@@ -196,7 +195,7 @@ pub async fn get_available_loan_offers_by_lender(
             };
             (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
         })?
-        .context("No lender found for contract")
+        .context("No lender found for offer")
         .map_err(|error| {
             let error_response = ErrorResponse {
                 message: format!("Illegal state error: {}", error),
@@ -229,6 +228,7 @@ pub async fn get_available_loan_offers_by_lender(
             duration_days_min: loan_offer.duration_days_min,
             duration_days_max: loan_offer.duration_days_max,
             loan_asset: loan_offer.loan_asset,
+            loan_payout: loan_offer.loan_payout,
             status: loan_offer.status,
             loan_repayment_address: loan_offer.loan_repayment_address,
             origination_fee,
@@ -328,6 +328,7 @@ pub async fn get_loan_offer(
                     duration_days_min: loan_offer.duration_days_min,
                     duration_days_max: loan_offer.duration_days_max,
                     loan_asset: loan_offer.loan_asset,
+                    loan_payout: loan_offer.loan_payout,
                     status: loan_offer.status,
                     loan_repayment_address: loan_offer.loan_repayment_address,
                     origination_fee,

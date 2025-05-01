@@ -265,6 +265,7 @@ pub struct CreateLoanOfferSchema {
     pub duration_days_min: i32,
     pub duration_days_max: i32,
     pub loan_asset: LoanAsset,
+    pub loan_payout: LoanPayout,
     pub loan_repayment_address: String,
     pub lender_pk: PublicKey,
     pub lender_derivation_path: bip32::DerivationPath,
@@ -407,6 +408,7 @@ pub struct LoanOffer {
     pub duration_days_min: i32,
     pub duration_days_max: i32,
     pub loan_asset: LoanAsset,
+    pub loan_payout: LoanPayout,
     pub status: LoanOfferStatus,
     pub loan_repayment_address: String,
     pub lender_pk: PublicKey,
@@ -430,6 +432,16 @@ impl LoanOffer {
     pub fn is_valid_loan_amount(&self, loan_amount: Decimal) -> bool {
         (self.loan_amount_min..=self.loan_amount_max).contains(&loan_amount)
     }
+}
+
+#[derive(Debug, Deserialize, sqlx::Type, Serialize, Clone, PartialEq, ToSchema)]
+#[sqlx(type_name = "loan_payout")]
+pub enum LoanPayout {
+    /// The loan is paid out directly i.e. the borrower receives the [`LoanAsset`].
+    Direct,
+    /// The loan is paid out indirectly i.e. the borrower receives a good or service valued at the
+    /// `loan_amount` price.
+    Indirect,
 }
 
 #[derive(Debug, Deserialize, sqlx::Type, Serialize, Clone, PartialEq, ToSchema)]
@@ -813,7 +825,7 @@ pub mod db {
         pub updated_at: OffsetDateTime,
     }
 
-    #[derive(Debug, Deserialize, sqlx::Type, Serialize, PartialEq)]
+    #[derive(Clone, Copy, Debug, Deserialize, sqlx::Type, Serialize, PartialEq)]
     #[sqlx(type_name = "contract_status")]
     pub enum ContractStatus {
         Requested,

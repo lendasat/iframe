@@ -192,6 +192,8 @@ const Checkout: React.FC = () => {
     // Display error message to user
   };
 
+  const lenderId = import.meta.env.VITE_WEBSHOP_LENDER_ID;
+
   return (
     <div className="max-w-4xl mx-auto">
       <h2 className="text-2xl font-bold mb-6">Checkout</h2>
@@ -588,10 +590,14 @@ const Checkout: React.FC = () => {
                         {/*TODO: pass in the order id as well*/}
                         <div>
                           <LendasatButton
-                            amount={50}
+                            amount={getBasketTotal()}
+                            lenderId={lenderId}
+                            network="test"
+                            borrowerInviteCode="BETA_PHASE_1"
                             onSuccess={handlePaymentSuccess}
                             onCancel={handlePaymentCancel}
                             onError={handlePaymentError}
+                            widgetName="Bitcoin-backed loans"
                           >
                             <Button
                               variant={"default"}

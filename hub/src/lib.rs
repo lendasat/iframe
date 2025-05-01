@@ -21,6 +21,7 @@ pub mod expiry;
 pub mod liquidation_engine;
 pub mod loan_application_expiry;
 pub mod logger;
+pub mod mark_as_principal_given;
 pub mod mempool;
 pub mod model;
 pub mod moon;

@@ -29,6 +29,11 @@ export enum LoanAsset {
   CHF = "Chf",
 }
 
+export enum LoanPayout {
+  Direct = "Direct",
+  Indirect = "Indirect",
+}
+
 export function parseLoanAsset(value: string): LoanAsset {
   if (Object.values(LoanAsset).includes(value as LoanAsset)) {
     return value as LoanAsset;

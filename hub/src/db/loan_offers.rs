@@ -2,6 +2,7 @@ use crate::model::CreateLoanOfferSchema;
 use crate::model::LoanAsset;
 use crate::model::LoanOffer;
 use crate::model::LoanOfferStatus;
+use crate::model::LoanPayout;
 use anyhow::Result;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
@@ -44,6 +45,7 @@ pub(crate) async fn load_all_available_loan_offers(
                 lo.loan_amount_reserve
             ) AS loan_amount_reserve_remaining,
             lo.loan_asset AS "loan_asset: LoanAsset",
+            lo.loan_payout AS "loan_payout: LoanPayout",
             lo.status AS "status: LoanOfferStatus",
             lo.loan_repayment_address,
             lo.lender_pk,
@@ -93,6 +95,7 @@ pub(crate) async fn load_all_available_loan_offers(
                 duration_days_min: row.duration_days_min,
                 duration_days_max: row.duration_days_max,
                 loan_asset: row.loan_asset,
+                loan_payout: row.loan_payout,
                 status: row.status,
                 loan_repayment_address: row.loan_repayment_address,
                 lender_pk: row.lender_pk.parse().expect("valid PK"),
@@ -156,6 +159,7 @@ pub async fn load_all_loan_offers_by_lender(
                 lo.loan_amount_reserve
             ) AS loan_amount_reserve_remaining,
             lo.loan_asset AS "loan_asset: LoanAsset",
+            lo.loan_payout AS "loan_payout: LoanPayout",
             lo.status AS "status: LoanOfferStatus",
             lo.loan_repayment_address,
             lo.lender_pk,
@@ -200,6 +204,7 @@ pub async fn load_all_loan_offers_by_lender(
                 duration_days_min: row.duration_days_min,
                 duration_days_max: row.duration_days_max,
                 loan_asset: row.loan_asset,
+                loan_payout: row.loan_payout,
                 status: row.status,
                 loan_repayment_address: row.loan_repayment_address,
                 lender_pk: row.lender_pk.parse().expect("valid PK"),
@@ -249,6 +254,7 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
                 lo.loan_amount_reserve
             ) AS loan_amount_reserve_remaining,
             lo.loan_asset AS "loan_asset: LoanAsset",
+            lo.loan_payout AS "loan_payout: LoanPayout",
             lo.status AS "status: LoanOfferStatus",
             lo.loan_repayment_address,
             lo.lender_pk,
@@ -290,6 +296,7 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
         loan_amount_reserve_remaining: loan_amount_reserve_remaining
             .unwrap_or(row.loan_amount_reserve),
         loan_asset: row.loan_asset,
+        loan_payout: row.loan_payout,
         status: row.status,
         loan_repayment_address: row.loan_repayment_address,
         lender_pk: row.lender_pk.parse().expect("valid PK"),
@@ -367,6 +374,7 @@ pub async fn insert_loan_offer(
           duration_days_min,
           duration_days_max,
           loan_asset,
+          loan_payout,
           status,
           loan_repayment_address,
           lender_pk,
@@ -375,7 +383,7 @@ pub async fn insert_loan_offer(
           kyc_link,
           lender_npub
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
         RETURNING
           id,
           loan_deal_id,
@@ -390,6 +398,7 @@ pub async fn insert_loan_offer(
           duration_days_min,
           duration_days_max,
           loan_asset AS "loan_asset: LoanAsset",
+          loan_payout AS "loan_payout: LoanPayout",
           status AS "status: crate::model::LoanOfferStatus",
           loan_repayment_address,
           lender_pk,
@@ -412,6 +421,7 @@ pub async fn insert_loan_offer(
         offer.duration_days_min,
         offer.duration_days_max,
         offer.loan_asset as LoanAsset,
+        offer.loan_payout as LoanPayout,
         status as LoanOfferStatus,
         offer.loan_repayment_address,
         offer.lender_pk.to_string(),
@@ -439,6 +449,7 @@ pub async fn insert_loan_offer(
         duration_days_min: row.duration_days_min,
         duration_days_max: row.duration_days_max,
         loan_asset: row.loan_asset,
+        loan_payout: row.loan_payout,
         status: row.status,
         loan_repayment_address: row.loan_repayment_address,
         lender_pk: row.lender_pk.parse().expect("valid PK"),
@@ -485,6 +496,7 @@ pub(crate) async fn loan_by_id(
                 lo.loan_amount_reserve
             ) AS loan_amount_reserve_remaining,
             lo.loan_asset AS "loan_asset: LoanAsset",
+            lo.loan_payout AS "loan_payout: LoanPayout",
             lo.status AS "status: LoanOfferStatus",
             lo.loan_repayment_address,
             lo.lender_pk,
@@ -527,6 +539,7 @@ pub(crate) async fn loan_by_id(
             duration_days_min: row.duration_days_min,
             duration_days_max: row.duration_days_max,
             loan_asset: row.loan_asset,
+            loan_payout: row.loan_payout,
             status: row.status,
             loan_repayment_address: row.loan_repayment_address,
             lender_pk: row.lender_pk.parse().expect("valid PK"),

@@ -1,5 +1,7 @@
 use crate::config::Config;
 use crate::db;
+use crate::mark_as_principal_given::mark_as_principal_given;
+use crate::model::LoanPayout;
 use crate::notifications::Notifications;
 use anyhow::anyhow;
 use anyhow::Context;
@@ -187,6 +189,62 @@ impl Actor {
 
         Ok(())
     }
+}
+
+async fn update_collateral(
+    db: Pool<Postgres>,
+    config: Config,
+    notifications: Arc<Notifications>,
+    contract_id: &str,
+    confirmed_collateral_sats: u64,
+) -> Result<()> {
+    // As a side-effect, here we are checking if the contract address was reused: if this is a
+    // newly approved contract (still in the `Requested` state) and the address already has
+    // money in it, this contract address most likely belongs to a different contract already!
+    // Thus we cannot proceed safely.
+    let (contract, is_newly_confirmed) =
+        db::contracts::update_collateral(&db, contract_id, confirmed_collateral_sats).await?;
+
+    if is_newly_confirmed {
+        if let Err(err) = send_loan_collateralized_email_to_lender(
+            &db,
+            config.clone(),
+            &contract.id,
+            &contract.lender_id,
+            notifications.clone(),
+        )
+        .await
+        {
+            tracing::error!(
+                contract_id = contract.id,
+                "Failed to notify lender about collateralized contract: {err:?}"
+            );
+        }
+
+        let loan_offer = db::loan_offers::loan_by_id(&db, &contract.loan_id)
+            .await?
+            .context("Missing loan")?;
+
+        // If the loan is paid out indirectly, it means that we don't need to wait for the
+        // lender to self-report the disbursement. We can assume that the loan is automatically
+        // paid out as soon as the collateral is confirmed.
+        //
+        // We do this in two steps (first `CollateralConfirmed`, then `PrincipalGiven`) so that
+        // the contract status log doesn't look odd.
+        if loan_offer.loan_payout == LoanPayout::Indirect {
+            mark_as_principal_given(
+                &db,
+                &config,
+                &notifications,
+                contract_id,
+                &contract.lender_id,
+                None,
+            )
+            .await?;
+        }
+    }
+
+    Ok(())
 }
 
 fn calculate_confirmations(known_tip: u64, tx_block_height: u64) -> u64 {
@@ -468,25 +526,14 @@ impl xtra::Handler<TrackContractFunding> for Actor {
 
         let contract_id = &msg.contract_id;
 
-        // As a side-effect, here we are checking if the contract address was reused: if this is a
-        // newly approved contract (still in the `Requested` state) and the address already has
-        // money in it, this contract address most likely belongs to a different contract already!
-        // Thus we cannot proceed safely.
-        let (contract, is_newly_confirmed) =
-            db::contracts::update_collateral(&self.db, contract_id, confirmed_collateral_sats)
-                .await?;
-
-        if is_newly_confirmed {
-            send_loan_collateralized_email_to_lender(
-                &self.db,
-                self.config.clone(),
-                contract_id,
-                &contract.lender_id,
-                self.notifications.clone(),
-            )
-            .await
-            .context("Failed to send loan collateralized email to lender")?;
-        }
+        update_collateral(
+            self.db.clone(),
+            self.config.clone(),
+            self.notifications.clone(),
+            contract_id,
+            confirmed_collateral_sats,
+        )
+        .await?;
 
         // TODO: Wrap DB calls in transaction.
         for output in collateral_outputs_vec {
@@ -742,36 +789,17 @@ impl xtra::Handler<NewBlockHeight> for Actor {
                     .collect::<Vec<_>>(),
             );
 
-            let (contract, is_newly_confirmed) = match db::contracts::update_collateral(
-                &self.db,
+            if let Err(e) = update_collateral(
+                self.db.clone(),
+                self.config.clone(),
+                self.notifications.clone(),
                 &contract.contract_id,
                 updated_confirmed_collateral_sats,
             )
             .await
             {
-                Ok(res) => res,
-                Err(e) => {
-                    tracing::error!(?contract, "Failed to update collateral: {e:#}");
-                    continue;
-                }
+                tracing::error!(?contract, "Failed to update collateral: {e:#}");
             };
-
-            if is_newly_confirmed {
-                if let Err(err) = send_loan_collateralized_email_to_lender(
-                    &self.db,
-                    self.config.clone(),
-                    &contract.id,
-                    &contract.lender_id,
-                    self.notifications.clone(),
-                )
-                .await
-                {
-                    tracing::error!(
-                        contract_id = contract.id,
-                        "Failed at notifying lender about funded contract {err:?}"
-                    );
-                }
-            }
         }
 
         self.update_claim_txs_status().await;

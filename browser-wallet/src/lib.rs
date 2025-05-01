@@ -592,6 +592,13 @@ pub fn get_version() -> Version {
     }
 }
 
+#[wasm_bindgen]
+pub fn get_next_address(key: String) -> Result<String, JsValue> {
+    let address = map_err_to_js!(browser_wallet::get_next_address(key))?;
+
+    Ok(address.to_string())
+}
+
 #[macro_export]
 macro_rules! map_err_to_js {
     ($e:expr) => {
