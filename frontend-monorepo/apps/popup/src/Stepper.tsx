@@ -43,6 +43,7 @@ const {
 interface StepperProps {
   amount: number;
   lenderId: string;
+  orderId: string;
   inviteCode: string;
   login: (email: string, password: string) => Promise<LoginResponseOrUpgrade>;
   onPrincipalGiven: (contractId: string) => void;
@@ -52,6 +53,7 @@ interface StepperProps {
 export default function Stepper({
   amount,
   lenderId,
+  orderId,
   inviteCode,
   login,
   onPrincipalGiven,
@@ -176,6 +178,7 @@ export default function Stepper({
       borrower_pk: pkAndPath.pubkey,
       borrower_derivation_path: pkAndPath.path,
       loan_type: LoanType.StableCoin,
+      client_contract_id: orderId,
     });
   }
 }

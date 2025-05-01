@@ -308,13 +308,39 @@ async fn create_loan_offers(
             lender_derivation_path: path,
             auto_accept: true,
             kyc_link: None,
+            lender_npub: lender_npub.clone(),
+        },
+        &lender.id,
+    )
+    .await?;
+
+    let (pk, path) = lender_wallet.next_hardened_pk()?;
+
+    let direct_poly_offer = db::loan_offers::insert_loan_offer(
+        pool,
+        CreateLoanOfferSchema {
+            name: "poly-usdc".to_string(),
+            min_ltv: dec!(0.7),
+            interest_rate: dec!(0.08),
+            loan_amount_min: dec!(10),
+            loan_amount_max: dec!(100_000),
+            loan_amount_reserve: dec!(100_000),
+            duration_days_min: 7,
+            duration_days_max: ONE_YEAR as i32,
+            loan_asset: LoanAsset::UsdcPol,
+            loan_payout: LoanPayout::Indirect,
+            loan_repayment_address: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619".to_string(),
+            lender_pk: pk,
+            lender_derivation_path: path,
+            auto_accept: true,
+            kyc_link: None,
             lender_npub,
         },
         &lender.id,
     )
     .await?;
 
-    Ok(vec![euro_offer, poly_offer])
+    Ok(vec![euro_offer, poly_offer, direct_poly_offer])
 }
 
 async fn init_lender(pool: &Pool<Postgres>, network: &str) -> Result<(Lender, Wallet)> {

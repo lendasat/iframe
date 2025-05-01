@@ -33,7 +33,6 @@ export function ConfigureLoan({
   days,
   setDays,
 }: ConfigureLoanProps) {
-  // formatting strings
   const loanAmountString = new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -42,7 +41,6 @@ export function ConfigureLoan({
   const { getLoanOffersByLender } = useHttpClientBorrower();
   const { latestPrice } = usePrice();
 
-  // Fetch loan offers once when lenderId changes
   const {
     value: loanOffers,
     error,
@@ -51,19 +49,16 @@ export function ConfigureLoan({
     return getLoanOffersByLender(lenderId);
   }, [lenderId]);
 
-  // Derive loan offer details only after loan offers are fetched
   const loanOffer = useMemo(() => {
     return loanOffers?.filter((o) => o.loan_payout === LoanPayout.Indirect)[0];
   }, [loanOffers]);
 
-  // Update loan offer ID when loan offer changes
   useEffect(() => {
     if (loanOffer) {
       setLoanOfferId(loanOffer.id);
     }
   }, [loanOffer, setLoanOfferId]);
 
-  // Only proceed with computation if loanOffer is valid
   const computeLoanDetails = useMemo(() => {
     if (!loanOffer) return {};
 
@@ -93,7 +88,6 @@ export function ConfigureLoan({
     };
   }, [loanOffer, loanAmount, latestPrice, days]);
 
-  // Loading and error handling
   if (loading) {
     return (
       <div className="mx-auto max-w-md">
