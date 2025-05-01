@@ -56,9 +56,10 @@ jobs:
           envkey_VITE_MEMPOOL_REST_URL: "https://mutinynet.com"
           envkey_VITE_TELEGRAM_BOT_URL: "https://t.me/lendasatsignetlenderbot"
           envkey_VITE_TELEGRAM_BOT_NAME: "@lendasatsignetlenderbot"
-          envkey_VITE_WEBSHOP_POPUP_URL: "https://popup.lendasat.com"
           envkey_VITE_APP_GIT_COMMIT_HASH: ${{ env.GIT_COMMIT_HASH }}
           envkey_VITE_APP_GIT_TAG: ${{ env.GIT_TAG }}
+          envkey_VITE_WEBSHOP_POPUP_MAIN_URL: "https://popup.lendasat.com"
+          envkey_VITE_WEBSHOP_POPUP_TEST_URL: "https://popupsignet.lendasat.com"
           envkey_VITE_WEBSHOP_URL: "https://apishopsignet.lendasat.com"
 
       - name: Build frontend apps
@@ -86,7 +87,7 @@ jobs:
           packageManager: pnpm
           workingDirectory: 'frontend-monorepo'
           apiToken: ${{ secrets.CLOUDFLARE_SIGNET_TOKEN}}
-          command: pages deploy apps/shop-demo/dist/ --project-name=lendasat-webshop
+          command: pages deploy apps/shop-demo/dist/ --project-name=lendasat-webshop-signet
 
       - name: Deploy demo-popup
         uses: cloudflare/wrangler-action@v3
@@ -94,7 +95,7 @@ jobs:
           packageManager: pnpm
           workingDirectory: 'frontend-monorepo'
           apiToken: ${{ secrets.CLOUDFLARE_SIGNET_TOKEN}}
-          command: pages deploy apps/popup/dist/ --project-name=lendasat-popup
+          command: pages deploy apps/popup/dist/ --project-name=lendasat-popup-signet
 
   deploy-test:
     runs-on: ubuntu-latest
