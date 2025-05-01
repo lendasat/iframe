@@ -59,7 +59,7 @@ jobs:
           envkey_VITE_WEBSHOP_POPUP_URL: "https://popup.lendasat.com"
           envkey_VITE_APP_GIT_COMMIT_HASH: ${{ env.GIT_COMMIT_HASH }}
           envkey_VITE_APP_GIT_TAG: ${{ env.GIT_TAG }}
-          envkey_VITE_WEBSHOP_URL: "http://apishopsignet.lendasat.com"
+          envkey_VITE_WEBSHOP_URL: "https://apishopsignet.lendasat.com"
 
       - name: Build frontend apps
         run: just build-frontend
@@ -146,7 +146,7 @@ jobs:
           envkey_VITE_TELEGRAM_BOT_NAME: "@lendasatsignetlenderbot"
           envkey_VITE_APP_GIT_COMMIT_HASH: ${{ env.GIT_COMMIT_HASH }}
           envkey_VITE_APP_GIT_TAG: ${{ env.GIT_TAG }}
-          envkey_VITE_WEBSHOP_URL: "http://apishopsignet.lendasat.com"
+          envkey_VITE_WEBSHOP_URL: "https://apishopsignet.lendasat.com"
 
       - name: Build borrower frontend
         run: just build-frontend borrower
