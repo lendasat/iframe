@@ -10,7 +10,7 @@ import Navbar from "./NavBar";
 import ItemsList from "./ItemsList";
 import Basket from "./Basket";
 import Checkout from "./Checkout";
-import OrderStatus from "./OrderStatus";
+import OrderStatusComponent from "./OrderStatus";
 
 const App: React.FC = () => {
   return (
@@ -34,7 +34,7 @@ const App: React.FC = () => {
                 }
               />
               <Route path="/checkout" element={<Checkout />} />
-              <Route path="/order" element={<OrderStatus />} />
+              <Route path="/order" element={<OrderStatusComponent />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>

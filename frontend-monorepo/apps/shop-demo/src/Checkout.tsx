@@ -599,7 +599,7 @@ const Checkout: React.FC = () => {
                           >
                             <Button
                               variant={"default"}
-                              disabled={success || orderCreated}
+                              disabled={!orderCreated}
                               className={"bg-orange-400 hover:bg-orange-500"}
                             >
                               <Bitcoin className="h-4 w-4" />

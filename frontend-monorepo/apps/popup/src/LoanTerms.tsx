@@ -2,23 +2,14 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Copy, Loader2, SquareArrowOutUpRight } from "lucide-react";
+import { Check, Copy, Loader2, SquareArrowOutUpRight } from "lucide-react";
 import { Separator } from "@/components/ui/separator.tsx";
-import {
-  DataList,
-  DataListItem,
-  DataListLabel,
-  DataListValue,
-} from "./components/ui/data-list";
+import { DataList, DataListItem, DataListLabel, DataListValue } from "./components/ui/data-list";
 import { Badge } from "./components/ui/badge";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import { Input } from "./components/ui/input";
-import {
-  Contract,
-  ContractStatus,
-  useHttpClientBorrower,
-} from "@frontend/http-client-borrower";
+import { Contract, ContractStatus, useHttpClientBorrower } from "@frontend/http-client-borrower";
 import { useAsync, useAsyncFn } from "react-use";
 import { LuInfo } from "react-icons/lu";
 import { Alert, AlertDescription, AlertTitle } from "./components/ui/alert";
@@ -49,8 +40,7 @@ const LoanTerms = ({
 
   const [state, fetchContract] = useAsyncFn(async () => {
     if (contract?.id) {
-      const data = await getContract(contract.id);
-      return data;
+      return await getContract(contract.id);
     }
   }, [contract?.id]);
 
@@ -218,7 +208,19 @@ const LoanTerms = ({
           <Separator className="my-4 border-gray-600" />
 
           <div className="my-8 flex w-full max-w-md flex-col items-center justify-center">
-            <QRCodeSVG value={contractAddress} size={200} />
+            <div className="relative inline-block">
+              {/* QR Code */}
+              <QRCodeSVG value={contractAddress || ""} size={200} />
+
+              {/* Overlay with checkmark when success is true */}
+              {contractStatus === ContractStatus.PrincipalGiven && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="bg-green-200 bg-opacity-10 rounded-full w-32 h-32 flex items-center justify-center">
+                    <Check color="white" size={64} strokeWidth={3} />
+                  </div>
+                </div>
+              )}
+            </div>
 
             <Alert className="mt-4">
               <LuInfo className="h-4 w-4" />

@@ -40,14 +40,37 @@ export enum OrderStatusType {
   Cancelled = "Cancelled",
 }
 
-export interface Order {
+export interface ErrorResponse {
+  OrderNotFound?: boolean;
+  ContractNotFound?: boolean;
+}
+
+interface OrderItemResponse {
+  id: string;
+  name: string;
+  quantity: number;
+  price: number;
+}
+
+export interface OrderResponse {
   id: string;
   status: OrderStatusType;
-  items: BasketItem[];
   customer_name: string;
   customer_email: string;
   shipping_address: Address;
   billing_address: Address;
+  items: OrderItemResponse[];
   total_price: number;
   created_at: number;
 }
+
+export type WsOrderResponse = {
+  type: "order";
+  data: OrderResponse;
+};
+
+export type WsErrorResponse = {
+  type: "error";
+  data: ErrorResponse;
+};
+export type WsResponse = WsOrderResponse | WsErrorResponse;

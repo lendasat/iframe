@@ -105,6 +105,8 @@ export function ConfigureLoan({
     );
   }
 
+  console.log(`Loan offers ${loanOffers}`);
+
   if (error || !loanOffers || !loanOffer) {
     return (
       <div className="mx-auto max-w-md text-center text-red-500">
