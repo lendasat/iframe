@@ -53,9 +53,24 @@ const AuthWizard = ({ login, inviteCode, onComplete }: AuthWizardProps) => {
   // Step 4: Done, contract request sent.
   const [currentStep, setCurrentStep] = useState(1);
 
-  const [email, setEmail] = useState("borrower@lendasat.com");
+  let defaultUsername = "";
+  let defaultPassword = "";
+  if (
+    import.meta.env.VITE_BITCOIN_NETWORK === "regtest" ||
+    import.meta.env.VITE_BITCOIN_NETWORK === "signet"
+  ) {
+    defaultUsername = import.meta.env.VITE_BORROWER_USERNAME;
+  }
+  if (
+    import.meta.env.VITE_BITCOIN_NETWORK === "regtest" ||
+    import.meta.env.VITE_BITCOIN_NETWORK === "signet"
+  ) {
+    defaultPassword = import.meta.env.VITE_BORROWER_PASSWORD;
+  }
+
+  const [email, setEmail] = useState(defaultUsername);
   const [verificationCode, setVerificationCode] = useState("");
-  const [password, setPassword] = useState("");
+  const [password, setPassword] = useState(defaultPassword);
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isRegistered, setIsRegistered] = useState(false);
   const [error, setError] = useState("");

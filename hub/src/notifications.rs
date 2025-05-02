@@ -28,7 +28,7 @@ impl Notifications {
             .send_verification_code(name, email, url, code)
             .await
         {
-            tracing::error!("Could not send email {e:#}");
+            tracing::error!("Could not verifcation code {e:#}");
         }
     }
 
@@ -45,7 +45,7 @@ impl Notifications {
             .await
         {
             {
-                tracing::error!("Could not send email {e:#}");
+                tracing::error!("Could not send reset password token {e:#}");
             }
         }
     }
@@ -53,7 +53,7 @@ impl Notifications {
     pub async fn send_start_dispute(&self, name: &str, email: &str, dispute_id: &str) {
         if let Err(e) = self.email.send_start_dispute(name, email, dispute_id).await {
             {
-                tracing::error!("Could not send email {e:#}");
+                tracing::error!("Could not send email to start dispute {e:#}");
             }
         }
     }
@@ -71,7 +71,7 @@ impl Notifications {
             .send_notify_admin_about_dispute(user, dispute_id, lender_id, borrower_id, contract_id)
             .await
         {
-            tracing::error!("Could not send email {e:#}");
+            tracing::error!("Could not send notification about dispute {e:#}");
         }
     }
 
@@ -95,7 +95,7 @@ impl Notifications {
             .send_user_about_margin_call(borrower, contract, price, current_ltv, contract_url)
             .await
         {
-            tracing::error!("Could not send email {e:#}");
+            tracing::error!("Could not send margin call notification borrower {e:#}");
         }
     }
 
@@ -118,7 +118,7 @@ impl Notifications {
             .send_liquidation_notice_borrower(borrower, contract, price, contract_url)
             .await
         {
-            tracing::error!("Could not send email {e:#}");
+            tracing::error!("Could not send tg notification borrower {e:#}");
         }
     }
 
@@ -140,7 +140,7 @@ impl Notifications {
             .send_liquidation_notice_lender(lender, contract, contract_url)
             .await
         {
-            tracing::error!("Could not send email {e:#}");
+            tracing::error!("Could not send liquidation notice lender {e:#}");
         }
     }
 
@@ -153,7 +153,7 @@ impl Notifications {
         .await;
 
         if let Err(e) = self.email.send_new_loan_request(lender, url).await {
-            tracing::error!("Could not send email {e:#}");
+            tracing::error!("Could not send new loan request {e:#}");
         }
     }
 
@@ -170,7 +170,7 @@ impl Notifications {
             .send_loan_request_approved(borrower, contract_url)
             .await
         {
-            tracing::error!("Could not send email {e:#}");
+            tracing::error!("Could not send loan request approved {e:#}");
         }
     }
 
@@ -187,7 +187,7 @@ impl Notifications {
             .send_notification_about_auto_accepted_loan(lender, url)
             .await
         {
-            tracing::error!("Could not send email {e:#}");
+            tracing::error!("Could not send auto accept notification {e:#}");
         }
     }
 
@@ -204,7 +204,7 @@ impl Notifications {
             .send_loan_request_rejected(borrower, contract_url)
             .await
         {
-            tracing::error!("Could not send email {e:#}");
+            tracing::error!("Could not send request rejected {e:#}");
         }
     }
 
@@ -217,7 +217,7 @@ impl Notifications {
         .await;
 
         if let Err(e) = self.email.send_loan_collateralized(lender, url).await {
-            tracing::error!("Could not send email {e:#}");
+            tracing::error!("Could not send loan collateralized {e:#}");
         }
     }
 
@@ -230,7 +230,7 @@ impl Notifications {
         .await;
 
         if let Err(e) = self.email.send_loan_paid_out(borrower, contract_url).await {
-            tracing::error!("Could not send email {e:#}");
+            tracing::error!("Could not send loan paid out {e:#}");
         }
     }
 
@@ -252,7 +252,7 @@ impl Notifications {
             .send_close_to_expiry_contract(borrower, expiry_date, contract_url)
             .await
         {
-            tracing::error!("Could not send email {e:#}");
+            tracing::error!("Could not send loan close to expiry {e:#}");
         }
     }
 
@@ -269,7 +269,7 @@ impl Notifications {
             .send_moon_card_ready(borrower, contract_url)
             .await
         {
-            tracing::error!("Could not send email {e:#}");
+            tracing::error!("Could not send moon card ready {e:#}");
         }
     }
 
@@ -282,7 +282,7 @@ impl Notifications {
         .await;
 
         if let Err(e) = self.email.send_loan_repaid(lender, url).await {
-            tracing::error!("Could not send email {e:#}");
+            tracing::error!("Could not send loan repaid {e:#}");
         }
     }
 
@@ -299,7 +299,7 @@ impl Notifications {
             .send_loan_liquidated_after_default(borrower, contract_url)
             .await
         {
-            tracing::error!("Could not send email {e:#}");
+            tracing::error!("Could not send loan liquidated after default {e:#}");
         }
     }
 
@@ -312,7 +312,7 @@ impl Notifications {
         .await;
 
         if let Err(e) = self.email.send_loan_defaulted_lender(lender, url).await {
-            tracing::error!("Could not send email {e:#}");
+            tracing::error!("Could not send loan defaulted lender notification {e:#}");
         }
     }
 
@@ -329,7 +329,7 @@ impl Notifications {
             .send_loan_defaulted_borrower(borrower, contract_url)
             .await
         {
-            tracing::error!("Could not send email {e:#}");
+            tracing::error!("Could not send loan defaulted borrower {e:#}");
         }
     }
 
@@ -346,7 +346,7 @@ impl Notifications {
             .send_expired_loan_request_borrower(borrower, contract_url)
             .await
         {
-            tracing::error!("Could not send email {e:#}");
+            tracing::error!("Could not send loan request expired borrower {e:#}");
         }
     }
 
@@ -368,7 +368,7 @@ impl Notifications {
             .send_expired_loan_application_borrower(borrower, days, contract_url)
             .await
         {
-            tracing::error!("Could not send email {e:#}");
+            tracing::error!("Could not send loan application expired borrower {e:#}");
         }
     }
 
@@ -385,7 +385,7 @@ impl Notifications {
             .send_expired_loan_request_lender(lender, url)
             .await
         {
-            tracing::error!("Could not send email {e:#}");
+            tracing::error!("Could not send loan request expired lender {e:#}");
         }
     }
 
@@ -403,7 +403,7 @@ impl Notifications {
             .send_new_chat_message_notification_lender(lender, contract_url)
             .await
         {
-            tracing::error!("Could not send email {e:#}");
+            tracing::error!("Could not send chat notification email lender {e:#}");
         }
     }
     pub async fn send_chat_notification_borrower(&self, borrower: Borrower, contract_url: Url) {
@@ -421,7 +421,7 @@ impl Notifications {
             .send_new_chat_message_notification_borrower(borrower, contract_url)
             .await
         {
-            tracing::error!("Could not send email {e:#}");
+            tracing::error!("Could not send chat notification borrower {e:#}");
         }
     }
 
