@@ -141,7 +141,7 @@ const AuthWizard = ({ login, inviteCode, onComplete }: AuthWizardProps) => {
 
         try {
           await register(
-            email,
+            "Anon",
             email,
             registrationData.verifier,
             registrationData.salt,
