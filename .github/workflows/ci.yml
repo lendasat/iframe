@@ -31,10 +31,6 @@ jobs:
           cache: pnpm
           cache-dependency-path: "frontend-monorepo/pnpm-lock.yaml"
 
-      # - name: Install dependencies
-      #   working-directory: frontend-monorepo
-      #   run: pnpm install --frozen-lockfile
-
       - name: Run frontend prettier
         working-directory: frontend-monorepo
         run: |
