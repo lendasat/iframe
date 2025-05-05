@@ -7,12 +7,15 @@ import {
   restore_wallet,
 } from "browser-wallet";
 import { md5 } from "hash-wasm";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const { status } = useParams();
+
+  const location = useLocation();
+  const returnUrl: String | undefined = location.state?.returnUrl;
 
   const handleLogin = async (email: string, password: string) => {
     const loginResponse = await login(email, password);
@@ -59,6 +62,11 @@ function Login() {
       alert(
         "Your local encrypted wallet does not match your remote encrypted wallet. Please do not request new loans, and reach out to Lendasat support as this can lead to loss of funds.",
       );
+    }
+    if (returnUrl) {
+      navigate(`${returnUrl}`);
+    } else {
+      navigate("/");
     }
   };
 
