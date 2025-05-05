@@ -10,17 +10,14 @@ import { LoanOfferTable } from "./offer-selection/offer-table";
 import { LoanAssetHelper, LoanPayout } from "@frontend/ui-shared";
 
 function AvailableOffers() {
-  const { getLoanOffers } = useHttpClientBorrower();
+  const { getDirectLoanOffers } = useHttpClientBorrower();
   const navigate = useNavigate();
 
   const { loading, value } = useAsync(async () => {
-    return await getLoanOffers();
+    return await getDirectLoanOffers();
   });
 
-  const loanOffers = value || [];
-  const filteredLoanOffers = loanOffers.filter(
-    (offer) => offer.loan_payout === LoanPayout.Direct,
-  );
+  const filteredLoanOffers = value || [];
 
   return (
     <ScrollArea className="h-screen" type="always" scrollbars="vertical">
