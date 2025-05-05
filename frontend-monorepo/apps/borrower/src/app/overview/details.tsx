@@ -300,7 +300,7 @@ const LoanDetails: React.FC<LoanDetailsProps> = ({
                 <Skeleton className="h-4 w-[150px] mb-2" />
               )}
 
-              {interestAmount ? (
+              {interestAmount != undefined ? (
                 <p className="text-xs text-gray-500">
                   {formatCurrency(interestAmount)}
                 </p>
