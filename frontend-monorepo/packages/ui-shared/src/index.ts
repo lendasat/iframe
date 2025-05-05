@@ -163,7 +163,6 @@ export * from "./lib/auth/email-verification-form";
 export * from "./lib/auth/login-form";
 export * from "./lib/auth/forgot-password-form";
 export * from "./lib/auth/reset-password-form";
-export * from "./lib/main-layout";
 export * from "./lib/header-component";
 export * from "./lib/usd";
 export * from "./lib/price-context";
