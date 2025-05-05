@@ -1,4 +1,4 @@
-import { useBaseHttpClient } from "@frontend/base-http-client";
+import { useBaseHttpClient, Version } from "@frontend/base-http-client";
 import { useWallet, Version as WasmVersion } from "@frontend/browser-wallet";
 import {
   Card,
@@ -17,9 +17,13 @@ const truncateHash = (hash?: string, visibleChars = 8) => {
   return `${hash.substring(0, visibleChars)}`;
 };
 
-export const VersionInfo = () => {
+interface VersionInfoProps {
+  getVersion: () => Promise<Version | undefined>;
+}
+
+export const VersionInfo = ({ getVersion }: VersionInfoProps) => {
   const { getVersion: getWasmVersion, isInitialized } = useWallet();
-  const { getVersion } = useBaseHttpClient();
+
   const [wasmVersion, setWasmVersion] = useState<WasmVersion | undefined>(
     undefined,
   );
