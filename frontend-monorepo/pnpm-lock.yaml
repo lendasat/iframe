@@ -415,6 +415,9 @@ importers:
       hash-wasm:
         specifier: ^4.12.0
         version: 4.12.0
+      lucide-react:
+        specifier: ^0.503.0
+        version: 0.503.0(react@19.0.0)
       qrcode.react:
         specifier: 3.1.0
         version: 3.1.0(react@19.0.0)
@@ -7586,6 +7589,11 @@ packages:
 
   lucide-react@0.483.0:
     resolution: {integrity: sha512-WldsY17Qb/T3VZdMnVQ9C3DDIP7h1ViDTHVdVGnLZcvHNg30zH/MTQ04RTORjexoGmpsXroiQXZ4QyR0kBy0FA==}
+    peerDependencies:
+      react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
+
+  lucide-react@0.503.0:
+    resolution: {integrity: sha512-HGGkdlPWQ0vTF8jJ5TdIqhQXZi6uh3LnNgfZ8MHiuxFfX3RZeA79r2MW2tHAZKlAVfoNE8esm3p+O6VkIvpj6w==}
     peerDependencies:
       react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
@@ -18158,6 +18166,10 @@ snapshots:
       react: 19.0.0
 
   lucide-react@0.483.0(react@19.0.0):
+    dependencies:
+      react: 19.0.0
+
+  lucide-react@0.503.0(react@19.0.0):
     dependencies:
       react: 19.0.0
 

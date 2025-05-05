@@ -10,7 +10,6 @@ import type { FC, ReactNode } from "react";
 import { useCallback } from "react";
 import { createContext, useContext, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { SemVer } from "semver";
 import {
   allowedPagesWithoutLogin,
   HttpClientLenderProvider,
@@ -88,7 +87,7 @@ const LenderAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) => {
     [],
   );
   const [backendVersion, setBackendVersion] = useState<Version>({
-    version: new SemVer("0.0.0"),
+    tag: "0.0.0",
     commit_hash: "unknown",
   });
   const {

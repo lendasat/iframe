@@ -23,13 +23,9 @@ import History from "./History";
 import AvailableOffers from "./loan-offers/available-offers";
 import Settings from "./settings/settings";
 import "../assets/styles.css";
-import { LoanProductOption, User } from "@frontend/http-client-borrower";
+import type { User } from "@frontend/base-http-client";
+import { LoanProductOption } from "@frontend/base-http-client";
 import { FeeProvider } from "@frontend/mempool";
-import { FiHome } from "react-icons/fi";
-import { GoGitPullRequest } from "react-icons/go";
-import { HiOutlineSupport } from "react-icons/hi";
-import { IoCardOutline, IoWalletOutline } from "react-icons/io5";
-import { LuActivity, LuSettings } from "react-icons/lu";
 import UpgradeToPake from "./auth/upgrade-to-pake";
 import VerifyEmailForm from "./auth/verifyEmailForm";
 import BorrowerProfile from "./borrowerProfile";
@@ -43,100 +39,10 @@ import browserWalletUrl from "browser-wallet/browser_wallet_bg.wasm?url";
 import Waitlist from "./waitlist/waitlist";
 import WaitlistSuccess from "./waitlist/success";
 import LoanApplication from "./loan-applications/loan-applications";
-import { FaHandHoldingDollar } from "react-icons/fa6";
 import AvailableLoanApplications from "./loan-applications/available-loan-applications";
-import { FaFileContract } from "react-icons/fa";
 import BitcoinCollateralizedLoan from "./overview/bitcoin-loan-component";
 import { Toaster } from "@frontend/shadcn";
 import { Dashboard } from "./dash/dash";
-
-const menuItems = [
-  {
-    group: [
-      {
-        label: "home",
-        path: "/",
-        icon: FiHome,
-        target: "_self",
-        visible: true,
-      },
-      {
-        label: "activities",
-        path: "/history",
-        icon: LuActivity,
-        target: "_self",
-        visible: false,
-      },
-    ],
-    separator: true,
-  },
-  {
-    group: [
-      {
-        label: "Request Loan",
-        path: "/requests",
-        icon: GoGitPullRequest,
-        target: "_self",
-        visible: true,
-      },
-      {
-        label: "Available offers",
-        path: "/available-offers",
-        icon: BsBank,
-        target: "_self",
-        visible: true,
-      },
-      {
-        label: "Apply for a loan",
-        path: "/loan-application",
-        icon: FaHandHoldingDollar,
-        target: "_self",
-        visible: true,
-      },
-      {
-        label: "My loan applications",
-        path: "/loan-applications",
-        icon: FaFileContract,
-        target: "_self",
-        visible: true,
-      },
-      {
-        label: "Card",
-        path: "/cards",
-        icon: IoCardOutline,
-        target: "_self",
-        visible: true,
-      },
-      {
-        label: "My Contracts",
-        path: "/my-contracts",
-        icon: IoWalletOutline,
-        target: "_self",
-        visible: true,
-      },
-    ],
-    separator: true,
-  },
-  {
-    group: [
-      {
-        label: "settings",
-        path: "/settings",
-        icon: LuSettings,
-        target: "_self",
-        visible: true,
-      },
-      {
-        label: "support",
-        path: "https://faq.lendasat.com",
-        icon: HiOutlineSupport,
-        target: "_blank",
-        visible: true,
-      },
-    ],
-    separator: false,
-  },
-];
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -186,12 +92,7 @@ function MainLayoutComponents() {
 
   return (
     <WalletProvider email={user.email}>
-      <Layout
-        user={user}
-        menuItems={menuItems}
-        backendVersion={backendVersion}
-        logout={onLogout}
-      >
+      <Layout user={user} backendVersion={backendVersion} logout={onLogout}>
         <Routes>
           <Route
             element={
@@ -264,7 +165,7 @@ function App() {
 
   return (
     <HttpClientProvider baseUrl={baseUrl}>
-      <AuthProvider>
+      <AuthProvider shouldHandleAuthError={true}>
         <AuthIsSignedIn>
           <PriceProvider url={baseUrl}>
             <FeeProvider mempoolUrl={import.meta.env.VITE_MEMPOOL_REST_URL}>
