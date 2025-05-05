@@ -38,7 +38,7 @@ export function ConfigureLoan({
     maximumFractionDigits: 2,
   }).format(loanAmount);
 
-  const { getLoanOffersByLender } = useHttpClientBorrower();
+  const { getIndirectLoanOffersByLender } = useHttpClientBorrower();
   const { latestPrice } = usePrice();
 
   const {
@@ -46,11 +46,11 @@ export function ConfigureLoan({
     error,
     loading,
   } = useAsync(async () => {
-    return getLoanOffersByLender(lenderId);
+    return getIndirectLoanOffersByLender(lenderId);
   }, [lenderId]);
 
   const loanOffer = useMemo(() => {
-    return loanOffers?.filter((o) => o.loan_payout === LoanPayout.Indirect)[0];
+    return loanOffers ? loanOffers[0] : undefined;
   }, [loanOffers]);
 
   useEffect(() => {

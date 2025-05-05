@@ -118,6 +118,9 @@ export interface HttpClient {
   // Loan related methods
   getLoanOffers: () => Promise<LoanOffer[] | undefined>;
   getLoanOffersByLender: (lenderId: string) => Promise<LoanOffer[] | undefined>;
+  getIndirectLoanOffersByLender: (
+    lenderId: string,
+  ) => Promise<LoanOffer[] | undefined>;
   getLoanOffer: (id: string) => Promise<LoanOffer | undefined>;
   postLoanApplication: (
     request: PostLoanApplication,
@@ -449,6 +452,18 @@ export const createHttpClient = (
     try {
       const response: AxiosResponse<LoanOffer[]> = await axiosClient.get(
         `/api/loans/offer/bylender/${lenderId}`,
+      );
+      return response.data;
+    } catch (error) {
+      handleError(error, "fetching loan offer by lender");
+    }
+  };
+  const getIndirectLoanOffersByLender = async (
+    lenderId: string,
+  ): Promise<LoanOffer[] | undefined> => {
+    try {
+      const response: AxiosResponse<LoanOffer[]> = await axiosClient.get(
+        `/api/loans/offer/bylender/${lenderId}?loan_type=Indirect`,
       );
       return response.data;
     } catch (error) {
@@ -857,6 +872,7 @@ export const createHttpClient = (
     refreshToken,
     getLoanOffers,
     getLoanOffersByLender,
+    getIndirectLoanOffersByLender,
     getLoanOffer,
     postLoanApplication,
     getLoanApplications,
