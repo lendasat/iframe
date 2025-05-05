@@ -10,6 +10,7 @@ use crate::user_stats;
 use crate::user_stats::LenderStats;
 use anyhow::Context;
 use axum::extract::Path;
+use axum::extract::Query;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::middleware;
@@ -64,11 +65,26 @@ pub struct LoanOffer {
     pub lender_pk: PublicKey,
 }
 
+#[derive(Debug, Deserialize, ToSchema)]
+pub enum QueryParamLoanType {
+    Direct,
+    Indirect,
+    All,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct LoanQueryParams {
+    pub loan_type: Option<QueryParamLoanType>,
+}
+
 /// Return all available offers
 #[utoipa::path(
 get,
 path = "/",
 tag = LOAN_OFFERS_TAG,
+params(
+    ("loan_type" = Option<QueryParamLoanType>, Query, description = "Filter by loan type: direct, indirect. If none is provided, `direct` only will be returned")
+),
 responses(
     (
     status = 200,
@@ -85,6 +101,7 @@ security(
 #[instrument(skip_all, err(Debug))]
 pub async fn get_all_available_loan_offers(
     State(data): State<Arc<AppState>>,
+    Query(params): Query<LoanQueryParams>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     let loans = db::loan_offers::load_all_available_loan_offers(&data.db)
         .await
@@ -97,7 +114,25 @@ pub async fn get_all_available_loan_offers(
 
     let mut ret = vec![];
 
+    let filter_by = params.loan_type.unwrap_or(QueryParamLoanType::Direct);
+
     for loan_offer in loans {
+        match filter_by {
+            QueryParamLoanType::Direct => {
+                if loan_offer.loan_payout != LoanPayout::Direct {
+                    continue; // Skip this offer
+                }
+            }
+            QueryParamLoanType::Indirect => {
+                if loan_offer.loan_payout != LoanPayout::Indirect {
+                    continue; // Skip this offer
+                }
+            }
+            QueryParamLoanType::All => {
+                // we take all offers
+            }
+        }
+
         let lender = db::lenders::get_user_by_id(&data.db, &loan_offer.lender_id)
             .await
             .map_err(|error| {
@@ -157,6 +192,10 @@ get,
 path = "/bylender/{id}",
 params(
     (
+    "loan_type" = Option<QueryParamLoanType>, Query, description = "Filter by loan type: direct, indirect. If none is provided, `direct` only will be returned")
+    ),
+params(
+    (
     "id" = String, Path, description = "Lender id"
     )
 ),
@@ -174,6 +213,7 @@ responses(
 pub async fn get_available_loan_offers_by_lender(
     State(data): State<Arc<AppState>>,
     Path(lender_id): Path<String>,
+    Query(params): Query<LoanQueryParams>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     let available_loans =
         db::loan_offers::load_available_loan_offers_by_lender(&data.db, lender_id.as_str())
@@ -203,7 +243,24 @@ pub async fn get_available_loan_offers_by_lender(
             (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
         })?;
 
+    let filter_by = params.loan_type.unwrap_or(QueryParamLoanType::Direct);
+
     for loan_offer in available_loans {
+        match filter_by {
+            QueryParamLoanType::Direct => {
+                if loan_offer.loan_payout != LoanPayout::Direct {
+                    continue; // Skip this offer
+                }
+            }
+            QueryParamLoanType::Indirect => {
+                if loan_offer.loan_payout != LoanPayout::Indirect {
+                    continue; // Skip this offer
+                }
+            }
+            QueryParamLoanType::All => {
+                // we take all offers
+            }
+        }
         // TODO: filter available origination fees once we have more than one
         let origination_fee = data.config.origination_fee.clone();
         let extension_origination_fee = data.config.extension_origination_fee.clone();

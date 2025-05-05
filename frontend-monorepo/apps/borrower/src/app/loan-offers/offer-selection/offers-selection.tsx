@@ -23,14 +23,14 @@ export const OffersSelectionTable = ({
   columnFilters,
   setColumnFilters,
 }: OffersTableProps) => {
-  const { getLoanOffers } = useHttpClientBorrower();
+  const { getDirectLoanOffers } = useHttpClientBorrower();
 
   const {
     loading,
     value: maybeAvailableOffers,
     error: loadingError,
   } = useAsync(async () => {
-    return getLoanOffers();
+    return getDirectLoanOffers();
   }, []);
 
   if (loadingError) {

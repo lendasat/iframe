@@ -116,8 +116,11 @@ export interface HttpClient {
   refreshToken: () => Promise<void>;
 
   // Loan related methods
-  getLoanOffers: () => Promise<LoanOffer[] | undefined>;
-  getLoanOffersByLender: (lenderId: string) => Promise<LoanOffer[] | undefined>;
+  getDirectLoanOffers: () => Promise<LoanOffer[] | undefined>;
+  getDirectLoanOffersByLender: (lenderId: string) => Promise<LoanOffer[] | undefined>;
+  getIndirectLoanOffersByLender: (
+    lenderId: string,
+  ) => Promise<LoanOffer[] | undefined>;
   getLoanOffer: (id: string) => Promise<LoanOffer | undefined>;
   postLoanApplication: (
     request: PostLoanApplication,
@@ -434,21 +437,33 @@ export const createHttpClient = (
   };
 
   // Loan related methods
-  const getLoanOffers = async (): Promise<LoanOffer[] | undefined> => {
+  const getDirectLoanOffers = async (): Promise<LoanOffer[] | undefined> => {
     try {
-      const response = await axiosClient.get("/api/loans/offer");
+      const response = await axiosClient.get("/api/loans/offer?loan_type=Direct");
       return response.data;
     } catch (error) {
       handleError(error, "fetching loan offers");
     }
   };
 
-  const getLoanOffersByLender = async (
+  const getDirectLoanOffersByLender = async (
     lenderId: string,
   ): Promise<LoanOffer[] | undefined> => {
     try {
       const response: AxiosResponse<LoanOffer[]> = await axiosClient.get(
-        `/api/loans/offer/bylender/${lenderId}`,
+        `/api/loans/offer/bylender/${lenderId}?loan_type=Direct`,
+      );
+      return response.data;
+    } catch (error) {
+      handleError(error, "fetching loan offer by lender");
+    }
+  };
+  const getIndirectLoanOffersByLender = async (
+    lenderId: string,
+  ): Promise<LoanOffer[] | undefined> => {
+    try {
+      const response: AxiosResponse<LoanOffer[]> = await axiosClient.get(
+        `/api/loans/offer/bylender/${lenderId}?loan_type=Indirect`,
       );
       return response.data;
     } catch (error) {
@@ -855,8 +870,9 @@ export const createHttpClient = (
     me,
     check,
     refreshToken,
-    getLoanOffers,
-    getLoanOffersByLender,
+    getDirectLoanOffers,
+    getDirectLoanOffersByLender,
+    getIndirectLoanOffersByLender,
     getLoanOffer,
     postLoanApplication,
     getLoanApplications,

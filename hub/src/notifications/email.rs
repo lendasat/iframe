@@ -142,7 +142,8 @@ impl Email {
         code: &str,
     ) -> Result<()> {
         let template_name = "verification_code";
-        let handlebars = Self::prepare_template(template_name).context("failed preparing template")?;
+        let handlebars =
+            Self::prepare_template(template_name).context("failed preparing template")?;
 
         let data = serde_json::json!({
             "first_name": name,
@@ -151,7 +152,9 @@ impl Email {
             "code": code,
         });
 
-        let content_template = handlebars.render(template_name, &data).context("failed rendering template")?;
+        let content_template = handlebars
+            .render(template_name, &data)
+            .context("failed rendering template")?;
 
         self.send_email("Lendasat email verification", name, email, content_template)
             .await
