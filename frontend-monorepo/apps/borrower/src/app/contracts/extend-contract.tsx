@@ -248,7 +248,7 @@ export const ExtendContract = ({
   resetSelectedAction,
 }: ExtendContractProps) => {
   const [sliderDuration, setSliderDuration] = useState<number | undefined>();
-  const { getLoanOffersByLender } = useHttpClientBorrower();
+  const { getDirectLoanOffersByLender } = useHttpClientBorrower();
 
   const lenderIdMemorized = useMemo(() => {
     return contract.lender.id;
@@ -259,7 +259,7 @@ export const ExtendContract = ({
     value,
     loading,
   } = useAsync(async () => {
-    return getLoanOffersByLender(lenderIdMemorized);
+    return getDirectLoanOffersByLender(lenderIdMemorized);
   }, [lenderIdMemorized]);
 
   if (loading) {

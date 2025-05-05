@@ -32,7 +32,7 @@ interface ExtendContractProps {
 }
 
 export function ExtendContract({ contract }: ExtendContractProps) {
-  const { getLoanOffersByLender } = useHttpClientBorrower();
+  const { getDirectLoanOffersByLender } = useHttpClientBorrower();
 
   const [extensionDays, setExtensionDays] = useState(7);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -47,7 +47,7 @@ export function ExtendContract({ contract }: ExtendContractProps) {
 
   const { error: loadingError, value } = useAsync(async () => {
     if (lenderIdMemorized) {
-      return getLoanOffersByLender(lenderIdMemorized);
+      return getDirectLoanOffersByLender(lenderIdMemorized);
     }
   }, [lenderIdMemorized]);
 
