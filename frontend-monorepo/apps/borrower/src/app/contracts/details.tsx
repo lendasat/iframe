@@ -1,5 +1,5 @@
 import { toast } from "sonner";
-import { downloadContractBackup } from "../contracts/download-contract-backup";
+import { downloadContractBackup } from "./download-contract-backup";
 import {
   LuCircleCheck,
   LuClipboard,

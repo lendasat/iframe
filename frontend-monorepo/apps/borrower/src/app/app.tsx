@@ -15,7 +15,6 @@ import Login from "./auth/login";
 import Logout from "./auth/logout";
 import Registration from "./auth/registration";
 import ResetPassword from "./auth/reset-password";
-import ContractDetailsOverview from "./contracts/contract-details-overview";
 import MyContracts from "./contracts/my-contracts";
 import ResolveDispute from "./disputes/dispute";
 import ErrorBoundary from "./ErrorBoundary";
@@ -40,7 +39,7 @@ import Waitlist from "./waitlist/waitlist";
 import WaitlistSuccess from "./waitlist/success";
 import LoanApplication from "./loan-applications/loan-applications";
 import AvailableLoanApplications from "./loan-applications/available-loan-applications";
-import BitcoinCollateralizedLoan from "./overview/bitcoin-loan-component";
+import BitcoinCollateralizedLoan from "./contracts/bitcoin-loan-component";
 import { Toaster } from "@frontend/shadcn";
 import { Dashboard } from "./dash/dash";
 
@@ -132,11 +131,6 @@ function MainLayoutComponents() {
             />
             <Route path="/disputes/:id" element={<ResolveDispute />} />
             <Route path="/restricted" element={<RestrictedAccessPage />} />
-            {/*TODO: remove this later */}
-            <Route
-              path="/old-details/:id"
-              element={<ContractDetailsOverview />}
-            />
             <Route
               path="/resetpassword/:token/:email"
               element={<ResetPassword />}
