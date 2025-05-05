@@ -8,7 +8,6 @@ import {
 } from "@frontend/http-client-borrower";
 import { Layout } from "./layout";
 import { PriceProvider } from "@frontend/ui-shared";
-import { BsBank } from "react-icons/bs";
 import { Navigate, Outlet, Route, Routes, useNavigate } from "react-router-dom";
 import ForgotPassword from "./auth/forgot-password";
 import Login from "./auth/login";
