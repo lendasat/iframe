@@ -9,7 +9,7 @@ import {
 import { Layout } from "./layout";
 import { PriceProvider } from "@frontend/ui-shared";
 import { BsBank } from "react-icons/bs";
-import { Navigate, Outlet, Route, Routes } from "react-router-dom";
+import { Navigate, Outlet, Route, Routes, useNavigate } from "react-router-dom";
 import ForgotPassword from "./auth/forgot-password";
 import Login from "./auth/login";
 import Logout from "./auth/logout";
@@ -162,6 +162,7 @@ const FeatureFlagProtectedRoute = ({
 
 function MainLayoutComponents() {
   const { backendVersion, user: borrowerUser, logout } = useAuth();
+  const navigate = useNavigate();
 
   // Mapping function to normalize user objects
   const mapBorrowerUser = (borrowerUser: User) => ({
@@ -178,13 +179,18 @@ function MainLayoutComponents() {
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const user = mapBorrowerUser(borrowerUser!);
 
+  const onLogout = async () => {
+    await logout();
+    navigate("/login");
+  };
+
   return (
     <WalletProvider email={user.email}>
       <Layout
         user={user}
         menuItems={menuItems}
         backendVersion={backendVersion}
-        logout={logout}
+        logout={onLogout}
       >
         <Routes>
           <Route
