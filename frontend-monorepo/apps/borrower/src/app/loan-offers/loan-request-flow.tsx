@@ -1,4 +1,3 @@
-// Types
 import { LoanProductOption } from "@frontend/http-client-borrower";
 import { Box, Flex, Heading, ScrollArea, Text } from "@radix-ui/themes";
 import { ColumnFiltersState } from "@tanstack/react-table";

@@ -6,8 +6,7 @@ import {
   AuthProviderLender,
 } from "@frontend/http-client-lender";
 import { useAuth } from "@frontend/http-client-lender";
-import { Layout, PriceProvider } from "@frontend/ui-shared";
-import { BsBank } from "react-icons/bs";
+import { PriceProvider } from "@frontend/ui-shared";
 import { Outlet, Route, Routes } from "react-router-dom";
 import { SemVer } from "semver";
 import ForgotPassword from "./auth/forgot-password";
@@ -25,11 +24,6 @@ import ResolveDispute from "./disputes/dispute";
 import Settings from "./settings/settings";
 import "../assets/styles.css";
 import { FeeProvider } from "@frontend/mempool";
-import { FiHome } from "react-icons/fi";
-import { HiOutlineSupport } from "react-icons/hi";
-import { IoCreateOutline, IoWalletOutline } from "react-icons/io5";
-import { LuActivity, LuSettings } from "react-icons/lu";
-import { TbWorldDollar } from "react-icons/tb";
 import ErrorBoundary from "./auth/ErrorBoundary";
 import VerifyEmailForm from "./auth/verifyEmailForm";
 import BorrowerProfile from "./borrowerProfile";
@@ -43,90 +37,8 @@ import init from "browser-wallet";
 import browserWalletUrl from "browser-wallet/browser_wallet_bg.wasm?url";
 import { useEffect } from "react";
 import AvailableLoanApplications from "./loan-applications/available-loan-applications";
-import { FaFileContract } from "react-icons/fa";
 import TakeLoanApplication from "./loan-applications/loan-applications";
-
-const menuItems = [
-  {
-    group: [
-      {
-        label: "home",
-        path: "/",
-        icon: FiHome,
-        target: "_self",
-        visible: true,
-      },
-      {
-        label: "activities",
-        path: "/history",
-        icon: LuActivity,
-        target: "_self",
-        visible: false,
-      },
-    ],
-    separator: true,
-  },
-  {
-    group: [
-      {
-        label: "Create offer",
-        path: "/create-loan-offer",
-        icon: IoCreateOutline,
-        target: "_self",
-        visible: true,
-      },
-      {
-        label: "My Offers",
-        path: "/my-offers",
-        icon: BsBank,
-        target: "_self",
-        visible: true,
-      },
-      {
-        label: "All Offers",
-        path: "/offers",
-        icon: TbWorldDollar,
-        target: "_self",
-        visible: true,
-      },
-      {
-        label: "Open loan applications",
-        path: "/loan-applications",
-        icon: FaFileContract,
-        target: "_self",
-        visible: true,
-      },
-
-      {
-        label: "My Contracts",
-        path: "/my-contracts",
-        icon: IoWalletOutline,
-        target: "_self",
-        visible: true,
-      },
-    ],
-    separator: true,
-  },
-  {
-    group: [
-      {
-        label: "settings",
-        path: "/settings",
-        icon: LuSettings,
-        target: "_self",
-        visible: true,
-      },
-      {
-        label: "support",
-        path: "https://lendasat.notion.site",
-        icon: HiOutlineSupport,
-        target: "_blank",
-        visible: true,
-      },
-    ],
-    separator: false,
-  },
-];
+import { Layout } from "./layout";
 
 function MainLayoutComponents() {
   const { backendVersion, user: lenderUser, logout } = useAuth();
@@ -152,12 +64,7 @@ function MainLayoutComponents() {
 
   return (
     <WalletProvider email={user.email}>
-      <Layout
-        user={user}
-        menuItems={menuItems}
-        backendVersion={version}
-        logout={logout}
-      >
+      <Layout user={user} backendVersion={version} logout={logout}>
         <Routes>
           <Route
             element={

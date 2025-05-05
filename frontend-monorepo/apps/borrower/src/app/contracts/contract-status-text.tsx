@@ -1,12 +1,7 @@
 import { Contract, ContractStatus } from "@frontend/http-client-borrower";
 import { Skeleton } from "@frontend/shadcn";
 import { LuInfo, LuTriangleAlert, LuCheck, LuX, LuClock } from "react-icons/lu";
-import {
-  add,
-  format,
-  formatDistanceToNow,
-  formatDistanceToNowStrict,
-} from "date-fns";
+import { add, format, formatDistanceToNowStrict } from "date-fns";
 import { Link } from "@radix-ui/themes";
 
 interface LoanStatusInformationProps {
