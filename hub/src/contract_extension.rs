@@ -2,34 +2,37 @@ use crate::config::Config;
 use crate::contract_requests::calculate_origination_fee;
 use crate::db;
 use crate::model::Contract;
+use crate::model::ExtensionRequestError;
 use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
 use rust_decimal::Decimal;
 use sqlx::Pool;
 use sqlx::Postgres;
+use time::OffsetDateTime;
 use uuid::Uuid;
 
 pub enum Error {
     /// Failed to interact with the database.
     Database(anyhow::Error),
-    /// Referenced loan does not exist.
-    MissingLoanOffer { offer_id: String },
-    /// Loan offer from different lenders
-    LoanOfferLenderMismatch,
     /// We failed at calculating interest rate
     InterestRateCalculation(anyhow::Error),
     /// No origination fee configured.
     MissingOriginationFee,
     /// Failed to calculate origination fee in sats.
     OriginationFeeCalculation(anyhow::Error),
+    /// Extension is not currently supported for this contract.
+    NotAllowed,
+    /// Extension will be possible at a later time.
+    TooSoon,
+    /// Extension is only possible for `max_duration_days`.
+    TooManyDays { max_duration_days: u64 },
 }
 
 pub async fn request_contract_extension(
     pool: &Pool<Postgres>,
     config: &Config,
     original_contract_id: &str,
-    new_offer_id: &str,
     borrower_id: &str,
     extended_duration_days: i32,
     current_price: Decimal,
@@ -43,17 +46,17 @@ pub async fn request_contract_extension(
     .context("failed loading contract from db")
     .map_err(Error::Database)?;
 
-    let extension_loan_offer = db::loan_offers::loan_by_id(pool, new_offer_id)
-        .await
-        .map_err(Error::Database)?
-        .ok_or(Error::MissingLoanOffer {
-            offer_id: new_offer_id.to_string(),
-        })?;
+    let now = OffsetDateTime::now_utc();
 
-    if original_contract.lender_id != extension_loan_offer.lender_id {
-        // We do not support this at the moment
-        return Err(Error::LoanOfferLenderMismatch);
-    }
+    let extension_interest_rate =
+        match original_contract.handle_extension_request(now, extended_duration_days as u64) {
+            Ok(rate) => rate,
+            Err(ExtensionRequestError::NotAllowed) => return Err(Error::NotAllowed),
+            Err(ExtensionRequestError::TooSoon) => return Err(Error::TooSoon),
+            Err(ExtensionRequestError::TooManyDays { max_duration_days }) => {
+                return Err(Error::TooManyDays { max_duration_days })
+            }
+        };
 
     let mut db_tx = pool
         .begin()
@@ -81,7 +84,7 @@ pub async fn request_contract_extension(
     let interest_rate = calculate_new_interest_rate(
         original_contract.interest_rate,
         original_contract.duration_days,
-        extension_loan_offer.interest_rate,
+        extension_interest_rate,
         extended_duration_days,
     )
     .map_err(Error::InterestRateCalculation)?;
@@ -91,7 +94,6 @@ pub async fn request_contract_extension(
         &mut db_tx,
         new_contract_id,
         original_contract,
-        &extension_loan_offer,
         total_origination_fee,
         extended_duration_days,
         interest_rate,

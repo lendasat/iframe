@@ -11,12 +11,14 @@ use crate::model::Borrower;
 use crate::model::ContractRequestSchema;
 use crate::model::ContractStatus;
 use crate::model::ContractVersion;
+use crate::model::ExtensionPolicy;
 use crate::model::FiatLoanDetails;
 use crate::model::LiquidationStatus;
 use crate::model::LoanAsset;
 use crate::model::LoanPayout;
 use crate::model::LoanTransaction;
 use crate::model::LoanType;
+use crate::model::OriginationFee;
 use crate::model::PsbtQueryParams;
 use crate::model::TransactionType;
 use crate::moon::MOON_CARD_MAX_BALANCE;
@@ -309,6 +311,8 @@ async fn post_contract_request(
         &body.borrower_npub,
         &offer.lender_npub,
         body.client_contract_id,
+        // The contract inherits the extension policy of the loan offer.
+        offer.extension_policy,
     )
     .await
     .map_err(Error::database)?;
@@ -843,7 +847,6 @@ async fn post_extend_contract_request(
         &data.db,
         &data.config,
         contract_id.as_str(),
-        body.loan_id.as_str(),
         user.id.as_str(),
         body.new_duration,
         current_price,
@@ -906,6 +909,10 @@ pub struct Contract {
     pub lender_npub: String,
     pub timeline: Vec<TimelineEvent>,
     pub client_contract_id: Option<Uuid>,
+    pub extension_max_duration_days: u64,
+    #[serde(with = "rust_decimal::serde::float_option")]
+    pub extension_interest_rate: Option<Decimal>,
+    pub extension_origination_fee: Vec<OriginationFee>,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -951,7 +958,7 @@ pub struct PrincipalRepaidQueryParam {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ExtendContractRequestSchema {
-    pub loan_id: String,
+    /// The number of days to be added on top of the current duration.
     pub new_duration: i32,
 }
 
@@ -1051,6 +1058,16 @@ async fn map_to_api_contract(
 
     let timeline = map_timeline(&contract, &transactions, &data.db).await?;
 
+    let (extension_max_duration_days, extension_interest_rate) = match contract.extension_policy {
+        ExtensionPolicy::DoNotExtend => (0, None),
+        ExtensionPolicy::AfterHalfway {
+            max_duration_days,
+            interest_rate,
+        } => (max_duration_days, Some(interest_rate)),
+    };
+
+    let extension_origination_fee = data.config.extension_origination_fee.clone();
+
     let contract = Contract {
         id: contract.id,
         loan_amount: contract.loan_amount,
@@ -1090,6 +1107,9 @@ async fn map_to_api_contract(
         lender_npub: contract.lender_npub,
         timeline,
         client_contract_id: contract.client_contract_id,
+        extension_max_duration_days,
+        extension_interest_rate,
+        extension_origination_fee,
     };
 
     Ok(contract)
@@ -1280,9 +1300,6 @@ enum Error {
     /// The borrower is trying to interact with a contract that is not theirs, according to our
     /// records.
     NotYourContract,
-    /// Loan extension was requested with an offer from a different lender which is currently not
-    /// supported
-    LoanOfferLenderMismatch,
     /// We failed at calculating the interest rate. Cannot do much without this
     InterestRateCalculation(String),
     /// Can't cancel a contract extension request if the parent does not exist.
@@ -1326,6 +1343,12 @@ enum Error {
         max: Decimal,
         loan_amount: Decimal,
     },
+    /// Extension is not currently supported for this contract.
+    ExtensionNotAllowed,
+    /// Extension will be possible at a later time.
+    ExtensionTooSoon,
+    /// Extension is only possible for `max_duration_days`.
+    ExtensionTooManyDays { max_duration_days: u64 },
 }
 
 impl Error {
@@ -1508,10 +1531,6 @@ impl IntoResponse for Error {
                                 )
                             }
             Error::NotYourContract => (StatusCode::NOT_FOUND, "Contract not found".to_owned()),
-            Error::LoanOfferLenderMismatch => (
-                                StatusCode::BAD_REQUEST,
-                                "Offer cannot be from a different lender".to_owned(),
-                            ),
             Error::InvalidApproveRequest { status } => (
                                 StatusCode::BAD_REQUEST,
                                 format!("Cannot cancel a contract request with status {status:?}"),
@@ -1559,8 +1578,23 @@ impl IntoResponse for Error {
                                 StatusCode::BAD_REQUEST,
                                 format!("Invalid loan amount for Bringin: {loan_amount}. Amount must be within {min}-{max}"),
                             ),
-        };
-
+            Error::ExtensionNotAllowed => (
+                        StatusCode::BAD_REQUEST,
+                        "The contract cannnot be extended".to_string(),
+                     ),
+            Error::ExtensionTooSoon => (
+                        StatusCode::BAD_REQUEST,
+                        "The contract can only be extended after \
+                         half of the duration has passed".to_string(),
+                     ),
+            Error::ExtensionTooManyDays { max_duration_days } => (
+                        StatusCode::BAD_REQUEST,
+                        format!(
+                            "The contract cannot be extended for that long. \
+                             Maximum extension is {max_duration_days} days"
+                        ),
+                     ),
+            };
         (status, AppJson(ErrorResponse { message })).into_response()
     }
 }
@@ -1591,18 +1625,17 @@ impl From<crate::contract_extension::Error> for Error {
     fn from(value: crate::contract_extension::Error) -> Self {
         match value {
             crate::contract_extension::Error::Database(e) => Error::database(e),
-            crate::contract_extension::Error::MissingLoanOffer { offer_id } => {
-                Error::MissingLoanOffer { id: offer_id }
-            }
-            crate::contract_extension::Error::LoanOfferLenderMismatch => {
-                Error::LoanOfferLenderMismatch
-            }
             crate::contract_extension::Error::InterestRateCalculation(e) => {
                 Error::interest_rate_calculation(e)
             }
             crate::contract_extension::Error::MissingOriginationFee => Error::MissingOriginationFee,
             crate::contract_extension::Error::OriginationFeeCalculation(e) => {
                 Error::origination_fee_calculation(e)
+            }
+            crate::contract_extension::Error::NotAllowed => Error::ExtensionNotAllowed,
+            crate::contract_extension::Error::TooSoon => Error::ExtensionTooSoon,
+            crate::contract_extension::Error::TooManyDays { max_duration_days } => {
+                Error::ExtensionTooManyDays { max_duration_days }
             }
         }
     }

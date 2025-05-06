@@ -243,6 +243,9 @@ export interface Contract {
   borrower_derivation_path: string;
   timeline: TimelineEvent[];
   client_contract_id?: string;
+  extension_max_duration_days: number;
+  extension_interest_rate: number;
+  extension_origination_fee: OriginationFee[];
 }
 
 export interface TimelineEvent {
@@ -275,7 +278,6 @@ export interface LoanOffer {
   loan_asset: LoanAsset;
   loan_payout: LoanPayout;
   origination_fee: OriginationFee[];
-  extension_origination_fee: OriginationFee[];
   kyc_link?: string;
   lender_pk: string;
 }
@@ -295,7 +297,6 @@ export interface PostLoanApplication {
 }
 
 export interface ExtendPostLoanRequest {
-  loan_id: string;
   new_duration: number;
 }
 

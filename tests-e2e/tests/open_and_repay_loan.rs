@@ -77,6 +77,8 @@ async fn open_and_repay_loan() {
         auto_accept: false,
         kyc_link: None,
         lender_npub: "npub1ur9aupjyaettv9rlan886m3khq7ysw3jl902afrkjg2r80uxdcnsmgu6rv".to_string(),
+        extension_duration_days: Some(7),
+        extension_interest_rate: Some(dec!(0.12)),
     };
 
     let res = lender

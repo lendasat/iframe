@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        UPDATE contracts\n        SET status = $1,\n            updated_at = $2,\n            contract_address = $3,\n            contract_index = $4\n        WHERE lender_id = $5\n          AND id = $6\n        RETURNING\n            id,\n            lender_id,\n            borrower_id,\n            loan_deal_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_derivation_path,\n            lender_pk,\n            lender_derivation_path,\n            borrower_loan_address,\n            lender_loan_repayment_address,\n            loan_type as \"loan_type: crate::model::db::LoanType\",\n            contract_address,\n            contract_index,\n            borrower_npub,\n            lender_npub,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_days,\n            expiry_date,\n            contract_version,\n            interest_rate,\n            interest,\n            client_contract_id,\n            created_at,\n            updated_at\n        ",
+  "query": "\n        UPDATE contracts\n        SET\n            liquidation_status = $1,\n            updated_at = $2\n        WHERE id = $3\n        RETURNING\n            id,\n            lender_id,\n            borrower_id,\n            loan_deal_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_derivation_path,\n            lender_pk,\n            lender_derivation_path,\n            borrower_loan_address,\n            lender_loan_repayment_address,\n            loan_type as \"loan_type: crate::model::db::LoanType\",\n            contract_address,\n            contract_index,\n            borrower_npub,\n            lender_npub,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_days,\n            expiry_date,\n            contract_version,\n            interest_rate,\n            interest,\n            client_contract_id,\n            extension_duration_days,\n            extension_interest_rate,\n            created_at,\n            updated_at\n        ",
   "describe": {
     "columns": [
       {
@@ -203,11 +203,21 @@
       },
       {
         "ordinal": 29,
+        "name": "extension_duration_days",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 30,
+        "name": "extension_interest_rate",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 31,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 30,
+        "ordinal": 32,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -216,38 +226,18 @@
       "Left": [
         {
           "Custom": {
-            "name": "contract_status",
+            "name": "liquidation_status",
             "kind": {
               "Enum": [
-                "Requested",
-                "Approved",
-                "CollateralSeen",
-                "CollateralConfirmed",
-                "PrincipalGiven",
-                "RepaymentProvided",
-                "RepaymentConfirmed",
-                "Closing",
-                "Closed",
-                "Rejected",
-                "DisputeBorrowerStarted",
-                "DisputeLenderStarted",
-                "DisputeBorrowerResolved",
-                "DisputeLenderResolved",
-                "Cancelled",
-                "RequestExpired",
-                "Defaulted",
-                "Undercollateralized",
-                "RenewalRequested",
-                "Extended",
-                "ApprovalExpired"
+                "Healthy",
+                "FirstMarginCall",
+                "SecondMarginCall",
+                "Liquidated"
               ]
             }
           }
         },
         "Timestamptz",
-        "Text",
-        "Int4",
-        "Bpchar",
         "Bpchar"
       ]
     },
@@ -282,8 +272,10 @@
       false,
       true,
       false,
+      false,
+      false,
       false
     ]
   },
-  "hash": "4c5876b944fac91c0589397051bf12d422e798b0d0075e6486592afe1c23aafa"
+  "hash": "b8b3ac332608df5e9e4520f0830b59064e5c1eda0eb6eb9d023bb49ba1aa5396"
 }

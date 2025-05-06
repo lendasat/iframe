@@ -1,3 +1,4 @@
+use crate::db::map_to_model_extension_policy;
 use crate::model::CreateLoanOfferSchema;
 use crate::model::LoanAsset;
 use crate::model::LoanOffer;
@@ -51,6 +52,8 @@ pub(crate) async fn load_all_available_loan_offers(
             lo.lender_pk,
             lo.lender_derivation_path,
             lo.lender_npub,
+            lo.extension_duration_days,
+            lo.extension_interest_rate,
             lo.created_at,
             lo.updated_at
         FROM loan_offers lo
@@ -67,7 +70,7 @@ pub(crate) async fn load_all_available_loan_offers(
     // Map the rows to LoanOffer structs
     let loan_offers: Vec<LoanOffer> = rows
         .into_iter()
-        .filter_map(|row| {
+        .filter_map(|row| -> Option<LoanOffer> {
             // Manually handle the loan_amount_reserve_remaining calculation
             let loan_amount_reserve_remaining: Option<Decimal> = row
                 .loan_amount_reserve_remaining
@@ -82,6 +85,12 @@ pub(crate) async fn load_all_available_loan_offers(
             // The max amount a user can take is the smaller value of either the reserve or the max
             // defined loan amount
             let loan_amount_max = row.loan_amount_max.min(loan_amount_reserve_remaining);
+
+            let extension_policy = map_to_model_extension_policy(
+                row.extension_duration_days,
+                row.extension_interest_rate,
+            );
+
             Some(LoanOffer {
                 loan_deal_id: row.loan_deal_id,
                 lender_id: row.lender_id,
@@ -103,6 +112,7 @@ pub(crate) async fn load_all_available_loan_offers(
                 auto_accept: row.auto_accept,
                 kyc_link: row.kyc_link.map(|l| Url::parse(&l).expect("valid URL")),
                 lender_npub: row.lender_npub,
+                extension_policy,
                 created_at: row.created_at,
                 updated_at: row.updated_at,
             })
@@ -167,6 +177,8 @@ pub async fn load_all_loan_offers_by_lender(
             lo.auto_accept,
             lo.kyc_link,
             lo.lender_npub,
+            lo.extension_duration_days,
+            lo.extension_interest_rate,
             lo.created_at,
             lo.updated_at
         FROM loan_offers lo
@@ -184,11 +196,16 @@ pub async fn load_all_loan_offers_by_lender(
     // Map the rows to LoanOffer structs
     let loan_offers: Vec<LoanOffer> = rows
         .into_iter()
-        .map(|row| {
+        .map(|row| -> LoanOffer {
             // Manually handle the loan_amount_reserve_remaining calculation
             let loan_amount_reserve_remaining: Option<Decimal> = row
                 .loan_amount_reserve_remaining
                 .map(|v| Decimal::from_str(&v.to_string()).unwrap_or(row.loan_amount_max));
+
+            let extension_policy = map_to_model_extension_policy(
+                row.extension_duration_days,
+                row.extension_interest_rate,
+            );
 
             LoanOffer {
                 loan_deal_id: row.loan_deal_id,
@@ -212,6 +229,7 @@ pub async fn load_all_loan_offers_by_lender(
                 auto_accept: row.auto_accept,
                 kyc_link: row.kyc_link.map(|l| Url::parse(&l).expect("valid URL")),
                 lender_npub: row.lender_npub,
+                extension_policy,
                 created_at: row.created_at,
                 updated_at: row.updated_at,
             }
@@ -262,6 +280,8 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
             lo.auto_accept,
             lo.kyc_link,
             lo.lender_npub,
+            lo.extension_duration_days,
+            lo.extension_interest_rate,
             lo.created_at,
             lo.updated_at
         FROM loan_offers lo
@@ -282,6 +302,9 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
         .loan_amount_reserve_remaining
         .map(|v| Decimal::from_str(&v.to_string()).unwrap_or(row.loan_amount_max));
 
+    let extension_policy =
+        map_to_model_extension_policy(row.extension_duration_days, row.extension_interest_rate);
+
     let loan_offer = LoanOffer {
         loan_deal_id: row.loan_deal_id,
         lender_id: row.lender_id,
@@ -290,22 +313,23 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
         interest_rate: row.interest_rate,
         loan_amount_min: row.loan_amount_min,
         loan_amount_max: row.loan_amount_max,
-        duration_days_min: row.duration_days_min,
-        duration_days_max: row.duration_days_max,
         loan_amount_reserve: row.loan_amount_reserve,
         loan_amount_reserve_remaining: loan_amount_reserve_remaining
             .unwrap_or(row.loan_amount_reserve),
+        duration_days_min: row.duration_days_min,
+        duration_days_max: row.duration_days_max,
         loan_asset: row.loan_asset,
         loan_payout: row.loan_payout,
         status: row.status,
         loan_repayment_address: row.loan_repayment_address,
         lender_pk: row.lender_pk.parse().expect("valid PK"),
         lender_derivation_path: row.lender_derivation_path.parse().expect("valid path"),
-        created_at: row.created_at,
-        updated_at: row.updated_at,
         auto_accept: row.auto_accept,
         kyc_link: row.kyc_link.map(|l| Url::parse(&l).expect("valid URL")),
         lender_npub: row.lender_npub,
+        extension_policy,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
     };
 
     Ok(loan_offer)
@@ -345,6 +369,9 @@ pub async fn insert_loan_offer(
     let id = uuid::Uuid::new_v4().to_string();
     let status = LoanOfferStatus::Available;
 
+    // We choose a safe default value of 20% if the extension interest rate is not specified.
+    let extension_interest_rate = offer.extension_interest_rate.unwrap_or(dec!(0.20));
+
     // First, insert the loan deal.
     sqlx::query!(
         r#"
@@ -381,9 +408,11 @@ pub async fn insert_loan_offer(
           lender_derivation_path,
           auto_accept,
           kyc_link,
-          lender_npub
+          lender_npub,
+          extension_duration_days,
+          extension_interest_rate
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
         RETURNING
           id,
           loan_deal_id,
@@ -406,6 +435,8 @@ pub async fn insert_loan_offer(
           auto_accept,
           kyc_link,
           lender_npub,
+          extension_duration_days,
+          extension_interest_rate,
           created_at,
           updated_at
         "#,
@@ -428,13 +459,18 @@ pub async fn insert_loan_offer(
         offer.lender_derivation_path.to_string(),
         offer.auto_accept,
         offer.kyc_link.map(|l| l.to_string()),
-        offer.lender_npub
+        offer.lender_npub,
+        offer.extension_duration_days.unwrap_or_default() as i32,
+        extension_interest_rate,
     )
     .fetch_one(&mut *tx)
     .await?;
 
     // Commit the transaction
     tx.commit().await?;
+
+    let extension_policy =
+        map_to_model_extension_policy(row.extension_duration_days, row.extension_interest_rate);
 
     let loan_offer = LoanOffer {
         loan_deal_id: row.loan_deal_id,
@@ -457,6 +493,7 @@ pub async fn insert_loan_offer(
         auto_accept: row.auto_accept,
         kyc_link: row.kyc_link.map(|l| Url::parse(&l).expect("valid URL")),
         lender_npub: row.lender_npub,
+        extension_policy,
         created_at: row.created_at,
         updated_at: row.updated_at,
     };
@@ -504,6 +541,8 @@ pub(crate) async fn loan_by_id(
             lo.auto_accept,
             lo.kyc_link,
             lo.lender_npub,
+            lo.extension_duration_days,
+            lo.extension_interest_rate,
             lo.created_at,
             lo.updated_at
         FROM loan_offers lo
@@ -523,6 +562,9 @@ pub(crate) async fn loan_by_id(
         let loan_amount_reserve_remaining: Option<Decimal> = row
             .loan_amount_reserve_remaining
             .map(|v| Decimal::from_str(&v.to_string()).unwrap_or(row.loan_amount_max));
+
+        let extension_policy =
+            map_to_model_extension_policy(row.extension_duration_days, row.extension_interest_rate);
 
         // Map the result into the LoanOffer struct
         let loan_offer = LoanOffer {
@@ -550,6 +592,7 @@ pub(crate) async fn loan_by_id(
             auto_accept: row.auto_accept,
             kyc_link: row.kyc_link.map(|l| Url::parse(&l).expect("valid URL")),
             lender_npub: row.lender_npub,
+            extension_policy,
             created_at: row.created_at,
             updated_at: row.updated_at,
         };

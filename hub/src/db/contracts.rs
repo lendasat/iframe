@@ -1,11 +1,12 @@
 use crate::db::contract_emails;
+use crate::db::map_to_db_extension_policy;
 use crate::expiry::expiry_date;
 use crate::model::db;
 use crate::model::Contract;
 use crate::model::ContractStatus;
 use crate::model::ContractVersion;
+use crate::model::ExtensionPolicy;
 use crate::model::LiquidationStatus;
-use crate::model::LoanOffer;
 use crate::model::LoanType;
 use crate::utils::calculate_interest;
 use anyhow::bail;
@@ -61,6 +62,8 @@ pub async fn load_contracts_by_borrower_id(
             interest_rate,
             client_contract_id,
             interest,
+            extension_duration_days,
+            extension_interest_rate,
             created_at,
             updated_at
         FROM contracts
@@ -116,6 +119,8 @@ pub async fn load_contracts_by_lender_id(
             interest_rate,
             interest,
             client_contract_id,
+            extension_duration_days,
+            extension_interest_rate,
             created_at,
             updated_at
         FROM contracts
@@ -168,6 +173,8 @@ async fn load_contract(pool: &Pool<Postgres>, contract_id: &str) -> Result<Contr
             interest_rate,
             interest,
             client_contract_id,
+            extension_duration_days,
+            extension_interest_rate,
             created_at,
             updated_at
         FROM contracts
@@ -219,6 +226,8 @@ pub async fn load_contract_by_contract_id_and_borrower_id(
             interest_rate,
             interest,
             client_contract_id,
+            extension_duration_days,
+            extension_interest_rate,
             created_at,
             updated_at
         FROM contracts
@@ -272,6 +281,8 @@ pub async fn load_contract_by_contract_id_and_lender_id(
             interest_rate,
             interest,
             client_contract_id,
+            extension_duration_days,
+            extension_interest_rate,
             created_at,
             updated_at
         FROM contracts
@@ -320,6 +331,8 @@ pub async fn load_open_contracts(pool: &Pool<Postgres>) -> Result<Vec<Contract>>
             contract_version as "contract_version!",
             interest_rate as "interest_rate!",
             interest as "interest!",
+            extension_duration_days as "extension_duration_days!",
+            extension_interest_rate as "extension_interest_rate!",
             created_at as "created_at!",
             updated_at as "updated_at!",
             client_contract_id
@@ -361,6 +374,7 @@ pub async fn insert_new_contract_request(
     borrower_npub: &str,
     lender_npub: &str,
     client_contract_id: Option<Uuid>,
+    extension_policy: ExtensionPolicy,
 ) -> Result<Contract> {
     let mut db_tx = pool
         .begin()
@@ -412,6 +426,7 @@ pub async fn insert_new_contract_request(
         borrower_npub,
         lender_npub,
         client_contract_id,
+        extension_policy,
     )
     .await?;
 
@@ -423,7 +438,6 @@ pub async fn insert_extension_contract_request(
     db_tx: &mut sqlx::Transaction<'_, Postgres>,
     new_contract_id: Uuid,
     original_contract: Contract,
-    extension_loan_offer: &LoanOffer,
     // The origination fee for the original contract plus this extension.
     total_origination_fee_sats: u64,
     extended_duration_days: i32,
@@ -437,11 +451,8 @@ pub async fn insert_extension_contract_request(
 
     // If the contract can be automatically accepted, we immediately go into
     // `ContractStatus::PrincipalGiven`, because the original contract has been funded already.
-    let status = if extension_loan_offer.auto_accept {
-        db::ContractStatus::PrincipalGiven
-    } else {
-        db::ContractStatus::RenewalRequested
-    };
+    let status = db::ContractStatus::PrincipalGiven;
+
     let interest = calculate_interest(
         original_contract.loan_amount,
         total_duration_days,
@@ -452,7 +463,7 @@ pub async fn insert_extension_contract_request(
         db_tx,
         &original_contract.borrower_id,
         &original_contract.lender_id,
-        &extension_loan_offer.loan_deal_id,
+        &original_contract.loan_id,
         &new_contract_id.to_string(),
         original_contract.initial_ltv,
         original_contract.loan_amount,
@@ -481,6 +492,8 @@ pub async fn insert_extension_contract_request(
         &original_contract.borrower_npub,
         &original_contract.lender_npub,
         original_contract.client_contract_id,
+        // An extended contract inherits the extension policy of the parent contract.
+        original_contract.extension_policy,
     )
     .await
 }
@@ -517,7 +530,11 @@ async fn insert_contract_request(
     borrower_npub: &str,
     lender_npub: &str,
     client_contract_id: Option<Uuid>,
+    extension_policy: ExtensionPolicy,
 ) -> Result<Contract, Error> {
+    let (extension_duration_days, extension_interest_rate) =
+        map_to_db_extension_policy(extension_policy);
+
     let contract = sqlx::query_as!(
         db::Contract,
         r#"
@@ -551,8 +568,10 @@ async fn insert_contract_request(
             expiry_date,
             interest_rate,
             interest,
-            client_contract_id
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30)
+            client_contract_id,
+            extension_duration_days,
+            extension_interest_rate
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32)
         RETURNING
             id,
             lender_id,
@@ -583,6 +602,8 @@ async fn insert_contract_request(
             interest_rate,
             interest,
             client_contract_id,
+            extension_duration_days,
+            extension_interest_rate,
             created_at,
             updated_at
         "#,
@@ -615,7 +636,9 @@ async fn insert_contract_request(
         expiry_date,
         interest_rate,
         interest,
-        client_contract_id
+        client_contract_id,
+        extension_duration_days,
+        extension_interest_rate
     )
         .fetch_one(&mut **db_tx)
         .await?;
@@ -672,6 +695,8 @@ pub async fn accept_contract_request(
             interest_rate,
             interest,
             client_contract_id,
+            extension_duration_days,
+            extension_interest_rate,
             created_at,
             updated_at
         "#,
@@ -863,6 +888,8 @@ pub async fn reject_contract_request(
             interest_rate,
             interest,
             client_contract_id,
+            extension_duration_days,
+            extension_interest_rate,
             created_at,
             updated_at
         "#,
@@ -920,6 +947,8 @@ pub(crate) async fn mark_liquidation_state_as(
             interest_rate,
             interest,
             client_contract_id,
+            extension_duration_days,
+            extension_interest_rate,
             created_at,
             updated_at
         "#,
@@ -1176,6 +1205,8 @@ pub async fn update_collateral(
             interest_rate,
             interest,
             client_contract_id,
+            extension_duration_days,
+            extension_interest_rate,
             created_at,
             updated_at
         "#,
@@ -1549,6 +1580,8 @@ pub async fn insert_new_taken_contract_application(
         borrower_npub,
         lender_npub,
         client_contract_id,
+        // By default, contracts created from a loan application are set to do-not-extend.
+        ExtensionPolicy::DoNotExtend,
     )
     .await?;
 
@@ -1618,6 +1651,42 @@ pub async fn resolve_dispute(
     )
     .execute(&mut **tx)
     .await?;
+
+    Ok(())
+}
+
+/// Update the extension policty of a contract by applying the given [`ExtensionPolicy`].
+pub(crate) async fn update_extension_policy(
+    pool: &Pool<Postgres>,
+    id: &str,
+    new_extension_policy: ExtensionPolicy,
+) -> Result<()> {
+    let (extension_duration_days, extension_interest_rate) =
+        map_to_db_extension_policy(new_extension_policy);
+
+    let rows_affected = sqlx::query!(
+        r#"
+            UPDATE
+                contracts
+            SET
+                extension_duration_days = $1,
+                extension_interest_rate = $2
+            WHERE
+                id = $3
+        "#,
+        extension_duration_days,
+        extension_interest_rate,
+        id,
+    )
+    .execute(pool)
+    .await?
+    .rows_affected();
+
+    if rows_affected == 0 {
+        return Err(anyhow::anyhow!(
+            "Could not update contract extension policy"
+        ));
+    }
 
     Ok(())
 }

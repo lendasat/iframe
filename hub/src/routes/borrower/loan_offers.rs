@@ -59,7 +59,6 @@ pub struct LoanOffer {
     pub status: LoanOfferStatus,
     pub loan_repayment_address: String,
     pub origination_fee: Vec<OriginationFee>,
-    pub extension_origination_fee: Vec<OriginationFee>,
     pub kyc_link: Option<Url>,
     #[schema(value_type = String)]
     pub lender_pk: PublicKey,
@@ -151,7 +150,6 @@ pub async fn get_all_available_loan_offers(
 
         // TODO: filter available origination fees once we have more than one
         let origination_fee = data.config.origination_fee.clone();
-        let extension_origination_fee = data.config.extension_origination_fee.clone();
 
         let lender_stats = user_stats::get_lender_stats(&data.db, lender.id.as_str())
             .await
@@ -177,7 +175,6 @@ pub async fn get_all_available_loan_offers(
             status: loan_offer.status,
             loan_repayment_address: loan_offer.loan_repayment_address,
             origination_fee,
-            extension_origination_fee,
             kyc_link: loan_offer.kyc_link,
             lender_pk: loan_offer.lender_pk,
         })
@@ -263,7 +260,6 @@ pub async fn get_available_loan_offers_by_lender(
         }
         // TODO: filter available origination fees once we have more than one
         let origination_fee = data.config.origination_fee.clone();
-        let extension_origination_fee = data.config.extension_origination_fee.clone();
 
         let lender_stats = user_stats::get_lender_stats(&data.db, lender.id.as_str())
             .await
@@ -289,7 +285,6 @@ pub async fn get_available_loan_offers_by_lender(
             status: loan_offer.status,
             loan_repayment_address: loan_offer.loan_repayment_address,
             origination_fee,
-            extension_origination_fee,
             kyc_link: loan_offer.kyc_link,
             lender_pk: loan_offer.lender_pk,
         })
@@ -361,7 +356,6 @@ pub async fn get_loan_offer(
 
             // TODO: filter available origination fees once we have more than one
             let origination_fee = data.config.origination_fee.clone();
-            let extension_origination_fee = data.config.extension_origination_fee.clone();
 
             let lender_stats = user_stats::get_lender_stats(&data.db, lender.id.as_str())
                 .await
@@ -389,7 +383,6 @@ pub async fn get_loan_offer(
                     status: loan_offer.status,
                     loan_repayment_address: loan_offer.loan_repayment_address,
                     origination_fee,
-                    extension_origination_fee,
                     kyc_link: loan_offer.kyc_link,
                     lender_pk: loan_offer.lender_pk,
                 }),

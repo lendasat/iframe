@@ -113,7 +113,7 @@ async fn create_sample_contracts(
         let (pk, path) = borrower_wallet.next_hardened_pk()?;
         let npub = "npub1hremptx4juv986t0grj3vdwqgxmfph6kr2syjtyy3runrfc0qp4s5aykjw";
 
-        let contract1 = create_loan_request(
+        let contract1 = create_contract_request(
             pool,
             offer,
             offer.loan_amount_min,
@@ -125,7 +125,7 @@ async fn create_sample_contracts(
         .await?;
 
         let (pk, path) = borrower_wallet.next_hardened_pk()?;
-        let contract2 = create_loan_request(
+        let contract2 = create_contract_request(
             pool,
             offer,
             offer.loan_amount_min + dec!(1),
@@ -204,7 +204,7 @@ async fn accept_loan_request(
     Ok(contract)
 }
 
-async fn create_loan_request(
+async fn create_contract_request(
     pool: &Pool<Postgres>,
     offer: &LoanOffer,
     loan_amount: Decimal,
@@ -244,6 +244,7 @@ async fn create_loan_request(
         borrower_npub,
         &offer.lender_npub,
         Some(Uuid::new_v4()),
+        offer.extension_policy,
     )
     .await
 }
@@ -283,6 +284,8 @@ async fn create_loan_offers(
             auto_accept: true,
             kyc_link: Some(Url::parse("https://nokycforlife.com").expect("to be valid")),
             lender_npub: lender_npub.clone(),
+            extension_duration_days: Some(7),
+            extension_interest_rate: Some(dec!(0.12)),
         },
         &lender.id,
     )
@@ -309,6 +312,8 @@ async fn create_loan_offers(
             auto_accept: true,
             kyc_link: None,
             lender_npub: lender_npub.clone(),
+            extension_duration_days: Some(7),
+            extension_interest_rate: Some(dec!(0.12)),
         },
         &lender.id,
     )
@@ -335,6 +340,8 @@ async fn create_loan_offers(
             auto_accept: true,
             kyc_link: None,
             lender_npub,
+            extension_duration_days: Some(7),
+            extension_interest_rate: Some(dec!(0.8)),
         },
         &lender.id,
     )

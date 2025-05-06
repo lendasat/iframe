@@ -1,5 +1,5 @@
 import { LuCalendarClock, LuLoader } from "react-icons/lu";
-import React, { useState, useMemo } from "react";
+import { useState } from "react";
 import {
   Alert,
   AlertDescription,
@@ -12,7 +12,6 @@ import {
 } from "@frontend/shadcn";
 import {
   Contract,
-  LoanOffer,
   useHttpClientBorrower,
 } from "@frontend/http-client-borrower";
 import { format, addDays } from "date-fns";
@@ -25,50 +24,35 @@ import {
 } from "@frontend/ui-shared";
 import { useNavigate } from "react-router-dom";
 import SingleDurationSelector, { AllowedDurations } from "./duration-selector";
-import { useAsync } from "react-use";
 
 interface ExtendContractProps {
   contract?: Contract;
-  onSumbitted: () => void;
+  onSubmitted: () => void;
 }
 
-export function ExtendContract({ contract, onSumbitted }: ExtendContractProps) {
-  const { getDirectLoanOffersByLender } = useHttpClientBorrower();
+export function ExtendContract({
+  contract,
+  onSubmitted: onSubmitted,
+}: ExtendContractProps) {
+  const extensionAllowed = contract?.extension_max_duration_days !== 0;
 
-  const [extensionDays, setExtensionDays] = useState(7);
+  const [extensionDays, setExtensionDays] = useState(
+    contract?.extension_max_duration_days || 7,
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
   const { postExtendLoanRequest } = useHttpClientBorrower();
   const { latestPrice } = usePrice();
 
-  const lenderIdMemorized = useMemo(() => {
-    return contract?.lender.id;
-  }, [contract]);
-
-  const { error: loadingError, value } = useAsync(async () => {
-    if (lenderIdMemorized) {
-      return getDirectLoanOffersByLender(lenderIdMemorized);
-    }
-  }, [lenderIdMemorized]);
-
   // Contract values
   const currentExpiryDate = contract?.expiry;
   const loanCurrency = contract && LoanAssetHelper.toCoin(contract.loan_asset);
 
-  const maxDuration = ONE_YEAR;
-
   // Handle extension request submission
-  const handleSubmitExtension = async (selectedOfferId?: string) => {
-    console.log("handleSubmitExtension");
+  const handleSubmitExtension = async () => {
     setError("");
     if (!contract?.id) {
-      return;
-    }
-
-    if (!selectedOfferId) {
-      // TODO: set error
-      console.log("2");
       return;
     }
 
@@ -76,11 +60,10 @@ export function ExtendContract({ contract, onSumbitted }: ExtendContractProps) {
     console.log("Extension requested for", extensionDays, "days");
     try {
       const newContract = await postExtendLoanRequest(contract?.id, {
-        loan_id: selectedOfferId,
         new_duration: extensionDays,
       });
       setIsSubmitting(false);
-      onSumbitted();
+      onSubmitted();
       navigate(`/my-contracts/${newContract?.id || ""}`);
     } catch (error) {
       console.log(`Failed sending request ${error}`);
@@ -90,47 +73,29 @@ export function ExtendContract({ contract, onSumbitted }: ExtendContractProps) {
     }
   };
 
-  const unfilteredOffers = value || [];
-  const offers = unfilteredOffers
-    .filter((offer) => contract && offer.loan_asset === contract.loan_asset)
-    .filter((offer) => {
-      return (
-        contract &&
-        offer.loan_amount_min <= contract.loan_amount &&
-        offer.loan_amount_max >= contract.loan_amount
-      );
-    });
+  const totalInterestRate = contract
+    ? (contract.extension_interest_rate * extensionDays +
+        contract.interest_rate * contract.duration_days) /
+      (extensionDays + contract?.duration_days)
+    : 0.0;
 
-  const selectedDurationDays = extensionDays || maxDuration;
-  const bestOffer = findBestOffer(offers, selectedDurationDays);
-  //
-  const totalInterestRate =
-    bestOffer && contract
-      ? (bestOffer.interest_rate * selectedDurationDays +
-          contract.interest_rate * contract.duration_days) /
-        (selectedDurationDays + contract?.duration_days)
-      : 0.0;
-
-  const totalDuration = contract
-    ? selectedDurationDays + contract.duration_days
-    : 0;
+  const totalDuration = contract ? extensionDays + contract.duration_days : 0;
   const creationDate = contract?.expiry;
   const newExpiry = creationDate
-    ? addDays(creationDate, selectedDurationDays)
+    ? addDays(creationDate, extensionDays)
     : undefined;
   const actualInterestRate = totalInterestRate / (ONE_YEAR / totalDuration);
   const totalInterestUsd =
     contract && contract.loan_amount * actualInterestRate;
 
   const extensionFeeUsd =
-    bestOffer &&
     contract &&
-    bestOffer.extension_origination_fee[0].fee * contract.loan_amount;
+    contract.extension_origination_fee[0].fee * contract.loan_amount;
   const extensionFeeBtc = extensionFeeUsd && extensionFeeUsd / latestPrice;
 
-  const notAllowedDurations = populateNotAllowedDurations(offers);
-
-  const noAvailableOffer = unfilteredOffers.length === 0;
+  const notAllowedDurations =
+    contract &&
+    populateNotAllowedDurations(contract.extension_max_duration_days);
 
   return (
     <div className="space-y-4">
@@ -145,18 +110,18 @@ export function ExtendContract({ contract, onSumbitted }: ExtendContractProps) {
         )}
       </div>
 
-      {noAvailableOffer && (
+      {!extensionAllowed && (
         <Alert className="my-4" variant={"destructive"}>
           <LuCalendarClock className="h-4 w-4" />
           <AlertTitle>Loan extension not available</AlertTitle>
           <AlertDescription>
-            The lender has either disabled loan extensions or no suitable offer
-            is available. Please reach out to the lender directly via the chat.
+            The lender has disabled extensions for this contract. Please reach
+            out to them directly via the chat.
           </AlertDescription>
         </Alert>
       )}
 
-      {!noAvailableOffer && (
+      {extensionAllowed && (
         <Alert className="my-4">
           <LuCalendarClock className="h-4 w-4" />
           <AlertTitle>Request Extension</AlertTitle>
@@ -174,9 +139,9 @@ export function ExtendContract({ contract, onSumbitted }: ExtendContractProps) {
           </div>
           <SingleDurationSelector
             onDurationChange={(d) => setExtensionDays(d)}
-            disabled={noAvailableOffer}
+            disabled={!extensionAllowed}
             selectedDuration={extensionDays}
-            disabledDurations={notAllowedDurations}
+            disabledDurations={notAllowedDurations || allDurations}
           />
         </div>
 
@@ -188,7 +153,7 @@ export function ExtendContract({ contract, onSumbitted }: ExtendContractProps) {
               <div className="flex justify-between items-center">
                 <span className="text-sm">New Expiry Date</span>
                 <span className="font-medium">
-                  {!noAvailableOffer && newExpiry ? (
+                  {extensionAllowed && newExpiry ? (
                     format(newExpiry, "yyyy-MM-dd")
                   ) : (
                     <Skeleton className="h-4 w-[100px]" />
@@ -201,14 +166,10 @@ export function ExtendContract({ contract, onSumbitted }: ExtendContractProps) {
                   <span className="text-sm">Annual Interest Rate</span>
                 </div>
                 <span className="font-medium">
-                  {!noAvailableOffer ? (
-                    <span>
-                      {(totalInterestRate * 100).toFixed(2)}
-                      {"%"}
-                    </span>
-                  ) : (
-                    <Skeleton className="h-4 w-[100px]" />
-                  )}
+                  <span>
+                    {(totalInterestRate * 100).toFixed(2)}
+                    {"%"}
+                  </span>
                 </span>
               </div>
 
@@ -228,7 +189,7 @@ export function ExtendContract({ contract, onSumbitted }: ExtendContractProps) {
                   <div className="flex items-center">
                     <span className="text-sm">Extension Fee</span>
                   </div>
-                  {extensionFeeUsd ? (
+                  {extensionFeeUsd !== undefined ? (
                     <span className="font-medium">
                       {formatCurrency(extensionFeeUsd)} {loanCurrency}
                     </span>
@@ -239,7 +200,7 @@ export function ExtendContract({ contract, onSumbitted }: ExtendContractProps) {
 
                 <div className="flex justify-between items-center mt-1">
                   <span className="text-sm text-muted-foreground">In BTC</span>
-                  {extensionFeeBtc ? (
+                  {extensionFeeBtc !== undefined ? (
                     <span className="text-sm text-muted-foreground">
                       {formatBitcoin(extensionFeeBtc)} BTC
                     </span>
@@ -255,55 +216,33 @@ export function ExtendContract({ contract, onSumbitted }: ExtendContractProps) {
         <div className="pt-2">
           <Button
             type={"button"}
-            className="w-full px-0"
-            onClick={() => handleSubmitExtension(bestOffer?.id)}
-            disabled={noAvailableOffer || isSubmitting}
+            className="w-full md:w-48 px-0"
+            onClick={handleSubmitExtension}
+            disabled={!extensionAllowed || isSubmitting}
           >
             {isSubmitting ? (
-              <>
-                <LuLoader className="mr-2 h-4 w-4 animate-spin" />
-                Please wait
-              </>
+              <div className="flex items-center justify-center space-x-2">
+                <LuLoader className="h-4 w-4 animate-spin" />
+                <span>Please wait</span>
+              </div>
             ) : (
-              "Confirm Extension Request"
+              <span>Confirm Extension Request</span>
             )}
           </Button>
         </div>
-        {(loadingError || error) && (
-          <p className="text-sm font-medium text-red-500">
-            {error || loadingError?.message}
-          </p>
-        )}
+        {error && <p className="text-sm font-medium text-red-500">{error}</p>}
       </div>
     </div>
   );
 }
 
-const findBestOffer = (offers: LoanOffer[], days: number) => {
-  const loanOffers = offers.filter(
-    (offer) =>
-      offer.duration_days_min <= days && offer.duration_days_max >= days,
-  );
-  if (loanOffers.length === 0) {
-    return undefined;
-  }
-  return loanOffers.reduce((best, current) =>
-    current.interest_rate < best.interest_rate ? current : best,
-  );
-};
+const allDurations: AllowedDurations[] = ["7d", "1m", "3m", "6m", "12m"];
 
-function populateNotAllowedDurations(offers: LoanOffer[]) {
-  const maxAvailableDays = Math.max(
-    ...offers.map((offer) => offer.duration_days_max),
-  );
-  const minAvailableDays = Math.min(
-    ...offers.map((offer) => offer.duration_days_min),
-  );
+function populateNotAllowedDurations(extension_max_duration_days: number) {
+  const maxAvailableDays = extension_max_duration_days;
+  const minAvailableDays = 7;
 
   let notAllowedDurations: AllowedDurations[] = [];
-
-  // Define all possible durations
-  const allDurations: AllowedDurations[] = ["7d", "1m", "3m", "6m", "12m"];
 
   // Convert durations to days for comparison
   const durationToDays = {
