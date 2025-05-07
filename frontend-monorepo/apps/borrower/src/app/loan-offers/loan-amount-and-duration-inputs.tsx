@@ -64,6 +64,8 @@ export function LoanAmountAndDurationInputs({
   onLoanProductSelect,
   selectedOption,
 }: LoanAmountAndDurationInputsProps) {
+  const isBringinEnabled = import.meta.env.VITE_BRINGIN_ENABLE === "true";
+
   const onLoanAmountChange = (e: ChangeEvent<HTMLInputElement>) => {
     e.preventDefault();
     setLoanAmount(e.target.value);
@@ -177,7 +179,7 @@ export function LoanAmountAndDurationInputs({
         <Box className="mx-auto">
           <RadioCards.Root
             value={selectedOption}
-            columns={{ initial: "1", sm: "4" }}
+            columns={{ initial: "1", sm: isBringinEnabled ? "4" : "3" }}
             size={"3"}
             onValueChange={(e) => {
               onLoanProductSelect(e as LoanProductOption);
@@ -199,13 +201,15 @@ export function LoanAmountAndDurationInputs({
               img={<MoonCard width="100%" height="100%" />}
             />
 
-            <LoanProductRadioCardItem
-              key={"bringin"}
-              value={LoanProductOption.Bringin.toString()}
-              header={"Bringin"}
-              subHeader={"A bank account in Euros"}
-              img={<Bringin width="100%" height="100%" />}
-            />
+            {isBringinEnabled ? (
+              <LoanProductRadioCardItem
+                key={"bringin"}
+                value={LoanProductOption.Bringin.toString()}
+                header={"Bringin"}
+                subHeader={"A bank account in Euros"}
+                img={<Bringin width="100%" height="100%" />}
+              />
+            ) : null}
 
             <LoanProductRadioCardItem
               key={"fiat"}

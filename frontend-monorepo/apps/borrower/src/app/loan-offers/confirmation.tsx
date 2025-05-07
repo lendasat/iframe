@@ -704,15 +704,15 @@ export const Confirmation = ({
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>API Key Required</AlertTitle>
               <AlertDescription>
-                You have not connected Lendasat with your Bringin account. You
-                can do this from the{" "}
+                You have not connected Lendasat with your Bringin account yet.
+                You can do this from{" "}
                 <Link
                   to={"/settings/integrations"}
                   className="inline-flex items-center"
                 >
-                  settings <ExternalLink className={"w-4 h-4 ml-0.5"} />
+                  <em>Settings</em>
+                  <ExternalLink className={"w-4 h-4 ml-0.5"} />
                 </Link>
-                .
               </AlertDescription>
             </Alert>
           )}

@@ -24,6 +24,12 @@ import { useAsync } from "react-use";
 import { LuCheck } from "react-icons/lu";
 
 export function IntegrationSettings() {
+  const isBringinEnabled = import.meta.env.VITE_BRINGIN_ENABLE === "true";
+
+  if (!isBringinEnabled) {
+    return <p>No integrations are available at this time.</p>;
+  }
+
   return (
     <Card className="shadow-sm">
       <CardHeader>
@@ -34,7 +40,7 @@ export function IntegrationSettings() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <BringinForm></BringinForm>
+        <BringinForm />
       </CardContent>
     </Card>
   );
