@@ -61,6 +61,7 @@ jobs:
           envkey_VITE_WEBSHOP_POPUP_MAIN_URL: "https://popup.lendasat.com"
           envkey_VITE_WEBSHOP_POPUP_TEST_URL: "https://popupsignet.lendasat.com"
           envkey_VITE_WEBSHOP_URL: "https://apishopsignet.lendasat.com"
+          envkey_VITE_BRINGIN_ENABLE: true
 
       - name: Build frontend apps
         run: just build-frontend
@@ -96,89 +97,3 @@ jobs:
           workingDirectory: 'frontend-monorepo'
           apiToken: ${{ secrets.CLOUDFLARE_SIGNET_TOKEN}}
           command: pages deploy apps/popup/dist/ --project-name=lendasat-popup-signet
-
-  deploy-test:
-    runs-on: ubuntu-latest
-    env:
-      NODE_OPTIONS: "--max_old_space_size=4096"
-    steps:
-      - name: Check out commit
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up rust toolchain
-        run: rustup show
-
-      - uses: Swatinem/rust-cache@v2
-
-      - uses: extractions/setup-just@v1
-
-      - name: Install wasm-pack
-        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
-      - name: Build browser wallet
-        run: just build-wallet
-
-      - name: Install frontend deps
-        run: |
-          cd frontend-monorepo
-          pnpm install
-
-      - name: Set Git Variables
-        id: git-vars
-        run: |
-          echo "GIT_COMMIT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-          GIT_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-          echo "GIT_TAG=$GIT_TAG" >> $GITHUB_ENV
-
-      - name: Make .env file for Vite build
-        uses: SpicyPizza/create-envfile@v2.0
-        with:
-          envkey_VITE_BORROWER_BASE_URL: "https://apiborrowersignet.lendasat.com"
-          envkey_VITE_LENDER_BASE_URL: "https://apilendersignet.lendasat.com"
-          envkey_VITE_BITCOIN_NETWORK: "signet"
-          envkey_VITE_MEMPOOL_REST_URL: "https://mutinynet.com"
-          envkey_VITE_TELEGRAM_BOT_URL: "https://t.me/lendasatsignetlenderbot"
-          envkey_VITE_TELEGRAM_BOT_NAME: "@lendasatsignetlenderbot"
-          envkey_VITE_APP_GIT_COMMIT_HASH: ${{ env.GIT_COMMIT_HASH }}
-          envkey_VITE_APP_GIT_TAG: ${{ env.GIT_TAG }}
-          envkey_VITE_WEBSHOP_URL: "https://apishopsignet.lendasat.com"
-          envkey_VITE_BRINGIN_ENABLE: true
-
-      - name: Build borrower frontend
-        run: just build-frontend borrower
-
-      - name: Build lender frontend
-        run: just build-frontend lender
-
-      - name: Build hub
-        run: cargo build --release --bin hub --target-dir ./target
-
-      - name: Compress frontend directory
-        run: tar -czvf hub-frontend.tar.gz ./frontend-monorepo/apps/borrower/dist ./frontend-monorepo/apps/lender/dist
-
-      - name: Copy ssh key
-        run: |
-          install -m 600 -D /dev/null ~/.ssh/id_rsa
-          echo "${{ secrets.TEST_VM_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-
-      - name: Upload hub-frontend.tar.gz to server
-        run: |
-          scp -v -o StrictHostKeyChecking=no -i /.ssh/id_rsa ./hub-frontend.tar.gz ${{secrets.TEST_VM_USERNAME}}@${{secrets.TEST_VM_SSH_HOST}}:/home/${{secrets.TEST_VM_USERNAME}}/uploads/
-
-      - name: Create hub-frontend.confirmed file on server
-        run: |
-          ssh -v -o StrictHostKeyChecking=no -i  /.ssh/id_rsa ${{secrets.TEST_VM_USERNAME}}@${{secrets.TEST_VM_SSH_HOST}} 'touch /home/${{secrets.TEST_VM_USERNAME}}/uploads/hub-frontend.confirmed'
-
-      - name: Upload hub binary to server
-        run: |
-          scp -v -o StrictHostKeyChecking=no -i /.ssh/id_rsa ./target/release/hub ${{secrets.TEST_VM_USERNAME}}@${{secrets.TEST_VM_SSH_HOST}}:/home/${{secrets.TEST_VM_USERNAME}}/uploads/hub
-
-      - name: Create hub.confirmed file on server
-        run: |
-          ssh -v -o StrictHostKeyChecking=no -i  /.ssh/id_rsa ${{secrets.TEST_VM_USERNAME}}@${{secrets.TEST_VM_SSH_HOST}} 'touch /home/${{secrets.TEST_VM_USERNAME}}/uploads/hub.confirmed'
