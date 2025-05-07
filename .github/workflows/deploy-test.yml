@@ -148,6 +148,7 @@ jobs:
           envkey_VITE_APP_GIT_COMMIT_HASH: ${{ env.GIT_COMMIT_HASH }}
           envkey_VITE_APP_GIT_TAG: ${{ env.GIT_TAG }}
           envkey_VITE_WEBSHOP_URL: "https://apishopsignet.lendasat.com"
+          envkey_VITE_BRINGIN_ENABLE: true
 
       - name: Build borrower frontend
         run: just build-frontend borrower

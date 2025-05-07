@@ -55,6 +55,11 @@ export const OffersSelectionTable = ({
         returnValue = offer.loan_asset === LoanAsset.USDC_POL;
         break;
 
+      case LoanProductOption.Bringin:
+        // only usdc on polygon can be used for Bringin at the moment
+        returnValue = offer.loan_asset === LoanAsset.USDC_POL;
+        break;
+
       case LoanProductOption.StableCoins:
         // all offers are stable coin offers at the moment - it also helps us to capture unwanted filter errors.
         if (LoanAssetHelper.isFiat(offer.loan_asset)) {

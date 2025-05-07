@@ -76,6 +76,7 @@ export enum LoanProductOption {
   PayWithMoonDebitCard = "pay_with_moon",
   StableCoins = "stable_coins",
   Fiat = "fiat",
+  Bringin = "bringin",
 }
 
 export interface MeResponse {

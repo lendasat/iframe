@@ -11,6 +11,7 @@ pub mod api_keys;
 pub mod borrower_features;
 pub mod borrowers;
 pub mod borrowers_referral_code;
+pub mod bringin;
 pub mod contract_disputes;
 pub mod contract_emails;
 pub mod contract_extensions;

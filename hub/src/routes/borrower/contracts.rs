@@ -1,6 +1,7 @@
 use crate::approve_contract;
 use crate::approve_contract::approve_contract;
 use crate::bitmex_index_price_rest::get_bitmex_index_price;
+use crate::bringin;
 use crate::contract_requests;
 use crate::db;
 use crate::discounted_origination_fee;
@@ -229,6 +230,24 @@ async fn post_contract_request(
                 .ok_or(Error::MissingFiatLoanDetails)?;
 
             (None, None, Some(fiat_loan_details))
+        }
+        LoanType::Bringin => {
+            let ip_address = connection_details
+                .ip
+                .ok_or_else(|| Error::CannotUseBringinWithoutIp)?;
+
+            let address = bringin::get_address(
+                &data.db,
+                &data.config.bringin_url,
+                offer.loan_asset,
+                &user.id,
+                &ip_address,
+                body.loan_amount,
+            )
+            .await
+            .map_err(Error::from)?;
+
+            (Some(address), None, None)
         }
     };
 
@@ -1290,6 +1309,23 @@ enum Error {
     MissingContractAddress,
     /// Missing contract.
     MissingContract(String),
+    /// Cannot open loan with Bringin as loan address without the borrower's IP.
+    CannotUseBringinWithoutIp,
+    /// Bringin does not support this loan asset.
+    InvalidBringinAsset {
+        invalid_asset: LoanAsset,
+        supported_assets: Vec<LoanAsset>,
+    },
+    /// No Bringin API key associated with this borrower.
+    NoBringinApiKey,
+    /// An error coming from Bringin.
+    Bringin(String),
+    /// The requested loan amount is out of the bounds imposed by Bringin.
+    BringinLoanAmountOutOfBounds {
+        min: Decimal,
+        max: Decimal,
+        loan_amount: Decimal,
+    },
 }
 
 impl Error {
@@ -1352,6 +1388,10 @@ impl Error {
     fn post_claim_tx(e: anyhow::Error) -> Self {
         Self::PostClaimTx(format!("{e:#}"))
     }
+
+    fn bringin(e: anyhow::Error) -> Self {
+        Self::Bringin(format!("{e:#}"))
+    }
 }
 
 impl From<JsonRejection> for Error {
@@ -1388,117 +1428,138 @@ impl IntoResponse for Error {
 
         let (status, message) = match self {
             Error::JsonRejection(rejection) => {
-                        (rejection.status(), rejection.body_text())
-                    }
+                                (rejection.status(), rejection.body_text())
+                            }
             Error::Database(_) |
-                    Error::MissingLoanOffer { .. } |
-                    Error::MissingLender |
-                    Error::MoonCardGeneration(_) |
-                    Error::MoonInvoiceGeneration(_) |
-                    Error::BitMexPrice(_) |
-                    Error::InitialCollateralCalculation(_) |
-                    Error::MissingOriginationFee |
-                    Error::OriginationFeeCalculation(_) |
-                    Error::MissingContractIndex |
-                    Error::MissingCollateralAddress |
-                    Error::ContractAddress(_) |
-                    Error::MissingBorrower |
-                    Error::TrackContract(_) |
-                    Error::MissingCollateralOutputs |
-                    Error::TrackClaimTx(_) |
-                    Error::PostClaimTx(_) |
-                    Error::InterestRateCalculation(_) |
-                    Error::MissingParentContract(_) |
-                    Error::InvalidDiscountRate { .. } |
-                    Error::CreateClaimCollateralPsbt(_) |
-                    Error::CannotBuildDescriptor(_) |
-                    Error::GeoJs(_) | Error::MissingContractAddress => {
-                        (
-                            StatusCode::INTERNAL_SERVER_ERROR,
-                            "Something went wrong".to_owned(),
-                        )
-                    },
+                            Error::MissingLoanOffer { .. } |
+                            Error::MissingLender |
+                            Error::MoonCardGeneration(_) |
+                            Error::MoonInvoiceGeneration(_) |
+                            Error::BitMexPrice(_) |
+                            Error::InitialCollateralCalculation(_) |
+                            Error::MissingOriginationFee |
+                            Error::OriginationFeeCalculation(_) |
+                            Error::MissingContractIndex |
+                            Error::MissingCollateralAddress |
+                            Error::ContractAddress(_) |
+                            Error::MissingBorrower |
+                            Error::TrackContract(_) |
+                            Error::MissingCollateralOutputs |
+                            Error::TrackClaimTx(_) |
+                            Error::PostClaimTx(_) |
+                            Error::InterestRateCalculation(_) |
+                            Error::MissingParentContract(_) |
+                            Error::InvalidDiscountRate { .. } |
+                            Error::CreateClaimCollateralPsbt(_) |
+                            Error::CannotBuildDescriptor(_) |
+                            Error::GeoJs(_) |
+                            Error::MissingContractAddress |
+                            Error::Bringin(_) => {
+                                (
+                                    StatusCode::INTERNAL_SERVER_ERROR,
+                                    "Something went wrong".to_owned(),
+                                )
+                            },
             Error::MissingBorrowerLoanAddress => (
-                        StatusCode::BAD_REQUEST,
-                        "Failed to provide borrower loan address for stablecoin loan".to_owned(),
-                    ),
+                                StatusCode::BAD_REQUEST,
+                                "Failed to provide borrower loan address for stablecoin loan".to_owned(),
+                            ),
             Error::InvalidMoonLoanRequest { asset } => (
-                        StatusCode::BAD_REQUEST,
-                        format!(
-                            "Cannot create loan request for Moon card with asset {asset:?}. \
+                                StatusCode::BAD_REQUEST,
+                                format!(
+                                    "Cannot create loan request for Moon card with asset {asset:?}. \
                      Moon only supports USDC on Polygon"
-                        ),
-                    ),
+                                ),
+                            ),
             Error::CannotTopUpNonexistentCard => {
-                        (StatusCode::NOT_FOUND, "Card not found".to_owned())
-                    }
+                                (StatusCode::NOT_FOUND, "Card not found".to_owned())
+                            }
             Error::CannotTopUpOverLimit {
-                        current_balance,
-                        loan_amount,
-                        limit,
-                    } => (
-                        StatusCode::BAD_REQUEST,
-                        format!(
-                            "Invalid Moon card top-up request: current balance ({current_balance}) \
+                                current_balance,
+                                loan_amount,
+                                limit,
+                            } => (
+                                StatusCode::BAD_REQUEST,
+                                format!(
+                                    "Invalid Moon card top-up request: current balance ({current_balance}) \
                      + loan amount ({loan_amount}) > limit ({limit})"
-                        ),
-                    ),
+                                ),
+                            ),
             Error::CannotTopUpMoonCardWithoutIp => (
-                        StatusCode::UNAVAILABLE_FOR_LEGAL_REASONS,
-                        "Request IP required".to_owned(),
-                    ),
+                                StatusCode::UNAVAILABLE_FOR_LEGAL_REASONS,
+                                "Request IP required".to_owned(),
+                            ),
             Error::CannotTopUpMoonCardFromUs => (
-                        StatusCode::UNAVAILABLE_FOR_LEGAL_REASONS,
-                        "Cannot top up Moon card from the US".to_owned(),
-                    ),
+                                StatusCode::UNAVAILABLE_FOR_LEGAL_REASONS,
+                                "Cannot top up Moon card from the US".to_owned(),
+                            ),
             Error::InvalidCancelRequest { status } => (
-                        StatusCode::BAD_REQUEST,
-                        format!("Cannot cancel a contract request with status {status:?}"),
-                    ),
+                                StatusCode::BAD_REQUEST,
+                                format!("Cannot cancel a contract request with status {status:?}"),
+                            ),
             Error::PrincipalNotRepaid => (
-                        StatusCode::BAD_REQUEST,
-                        "Cannot claim collateral until loan has been repaid".to_owned(),
-                    ),
+                                StatusCode::BAD_REQUEST,
+                                "Cannot claim collateral until loan has been repaid".to_owned(),
+                            ),
             Error::ParseClaimTx(_) => {
-                        (
-                            StatusCode::BAD_REQUEST,
-                            "Failed to parse signed claim TX".to_owned(),
-                        )
-                    }
+                                (
+                                    StatusCode::BAD_REQUEST,
+                                    "Failed to parse signed claim TX".to_owned(),
+                                )
+                            }
             Error::NotYourContract => (StatusCode::NOT_FOUND, "Contract not found".to_owned()),
             Error::LoanOfferLenderMismatch => (
-                        StatusCode::BAD_REQUEST,
-                        "Offer cannot be from a different lender".to_owned(),
-                    ),
+                                StatusCode::BAD_REQUEST,
+                                "Offer cannot be from a different lender".to_owned(),
+                            ),
             Error::InvalidApproveRequest { status } => (
-                        StatusCode::BAD_REQUEST,
-                        format!("Cannot cancel a contract request with status {status:?}"),
-                    ),
+                                StatusCode::BAD_REQUEST,
+                                format!("Cannot cancel a contract request with status {status:?}"),
+                            ),
             Error::MissingFiatLoanDetails => (
-                        StatusCode::BAD_REQUEST,
-                        "Failed to provide bank details for fiat loan".to_owned(),
-                    ),
+                                StatusCode::BAD_REQUEST,
+                                "Failed to provide bank details for fiat loan".to_owned(),
+                            ),
             Error::FiatLoanWithoutFiatAsset { asset } => (
-                        StatusCode::BAD_REQUEST,
-                        format!("Cannot create fiat contract with asset: {asset:?}"),
-                    ),
+                                StatusCode::BAD_REQUEST,
+                                format!("Cannot create fiat contract with asset: {asset:?}"),
+                            ),
             Error::InvalidLoanAmount {
-                        amount,
-                        loan_amount_min,
-                        loan_amount_max,
-                    } => (
-                        StatusCode::BAD_REQUEST,
-                        format!("Invalid loan amount: ${amount} not in range ${loan_amount_min}-${loan_amount_max}"),
-                    ),
+                                amount,
+                                loan_amount_min,
+                                loan_amount_max,
+                            } => (
+                                StatusCode::BAD_REQUEST,
+                                format!("Invalid loan amount: ${amount} not in range ${loan_amount_min}-${loan_amount_max}"),
+                            ),
             Error::InvalidLoanDuration { duration_days, duration_days_min, duration_days_max } => (
-                        StatusCode::BAD_REQUEST,
-                        format!("Invalid loan duration: {duration_days} days not in range {duration_days_min}-{duration_days_max}"),
-                    ),
+                                StatusCode::BAD_REQUEST,
+                                format!("Invalid loan duration: {duration_days} days not in range {duration_days_min}-{duration_days_max}"),
+                            ),
             Error::MissingContract(contract_id) => (
-                        StatusCode::BAD_REQUEST,
-                        format!("Missing contract: {contract_id}"),
-                    ),
-            };
+                                StatusCode::BAD_REQUEST,
+                                format!("Missing contract: {contract_id}"),
+            ),
+            Error::InvalidBringinAsset { invalid_asset, supported_assets } => (
+                                StatusCode::BAD_REQUEST,
+                                format!(
+                                    "Bringin does not support loan asset {invalid_asset:?}. \
+                                     List of supported assets {supported_assets:?}"
+                                ),
+            ),
+            Error::CannotUseBringinWithoutIp => (
+                                StatusCode::BAD_REQUEST,
+                                "Cannot use Bringin without IP address".to_string()
+                            ),
+            Error::NoBringinApiKey => (
+                                StatusCode::BAD_REQUEST,
+                                "Cannot use Bringin without a Bringin API key".to_string()
+                            ),
+            Error::BringinLoanAmountOutOfBounds { min, max, loan_amount } => (
+                                StatusCode::BAD_REQUEST,
+                                format!("Invalid loan amount for Bringin: {loan_amount}. Amount must be within {min}-{max}"),
+                            ),
+        };
 
         (status, AppJson(ErrorResponse { message })).into_response()
     }
@@ -1564,6 +1625,36 @@ impl From<user_stats::Error> for Error {
     fn from(value: user_stats::Error) -> Self {
         match value {
             user_stats::Error::Database(e) => Error::database(anyhow!(e)),
+        }
+    }
+}
+
+impl From<bringin::Error> for Error {
+    fn from(value: bringin::Error) -> Self {
+        match value {
+            bringin::Error::LoanAssetNotSupported {
+                invalid_asset,
+                supported_assets,
+            } => Error::InvalidBringinAsset {
+                invalid_asset,
+                supported_assets,
+            },
+            bringin::Error::Database(e) => Self::database(e),
+            bringin::Error::NoApiKey => Self::NoBringinApiKey,
+            bringin::Error::LoanAmountOutOfBounds {
+                min,
+                max,
+                loan_amount,
+            } => Self::BringinLoanAmountOutOfBounds {
+                min,
+                max,
+                loan_amount,
+            },
+            bringin::Error::RequestError(e) => Self::bringin(anyhow!(e)),
+            bringin::Error::JsonError(e) => Self::bringin(anyhow!(e)),
+            bringin::Error::ApiError { status, message } => {
+                Self::bringin(anyhow!(format!("Bringin API error: {status}, {message}")))
+            }
         }
     }
 }

@@ -3,6 +3,7 @@ import { Box, Flex, RadioCards, Text, TextField } from "@radix-ui/themes";
 import type { ChangeEvent, ReactNode } from "react";
 import { ReactComponent as Defi } from "../../assets/defi.svg";
 import { ReactComponent as Fiat } from "../../assets/fiat.svg";
+import { ReactComponent as Bringin } from "../../assets/bringin.svg";
 import { ReactComponent as MoonCard } from "../../assets/moon_card_satoshi_nakamoto.svg";
 import SingleDurationSelector from "./DurationSelector";
 import { Alert, AlertDescription, AlertTitle } from "@frontend/shadcn";
@@ -63,6 +64,8 @@ export function LoanAmountAndDurationInputs({
   onLoanProductSelect,
   selectedOption,
 }: LoanAmountAndDurationInputsProps) {
+  const isBringinEnabled = import.meta.env.VITE_BRINGIN_ENABLE === "true";
+
   const onLoanAmountChange = (e: ChangeEvent<HTMLInputElement>) => {
     e.preventDefault();
     setLoanAmount(e.target.value);
@@ -176,7 +179,7 @@ export function LoanAmountAndDurationInputs({
         <Box className="mx-auto">
           <RadioCards.Root
             value={selectedOption}
-            columns={{ initial: "1", sm: "3" }}
+            columns={{ initial: "1", sm: isBringinEnabled ? "4" : "3" }}
             size={"3"}
             onValueChange={(e) => {
               onLoanProductSelect(e as LoanProductOption);
@@ -197,6 +200,16 @@ export function LoanAmountAndDurationInputs({
               subHeader={"A prepaid visa card"}
               img={<MoonCard width="100%" height="100%" />}
             />
+
+            {isBringinEnabled ? (
+              <LoanProductRadioCardItem
+                key={"bringin"}
+                value={LoanProductOption.Bringin.toString()}
+                header={"Bringin"}
+                subHeader={"A bank account in Euros"}
+                img={<Bringin width="100%" height="100%" />}
+              />
+            ) : null}
 
             <LoanProductRadioCardItem
               key={"fiat"}

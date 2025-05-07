@@ -110,7 +110,7 @@ mempool-d:
 ## Serve frontend functions
 ## ------------------------
 
-frontend_version:
+frontend-version:
     #!/usr/bin/env bash
 
     # Get the git commit hash
@@ -150,17 +150,17 @@ frontend_version:
     echo "VITE_APP_GIT_COMMIT_HASH=$GIT_COMMIT_HASH"
     echo "VITE_APP_GIT_TAG=$GIT_TAG"
 
-fronts: frontend_version
+fronts: frontend-version
     #!/usr/bin/env bash
     cd frontend-monorepo
     pnpm dev
 
-borrower: frontend_version
+borrower: frontend-version
     #!/usr/bin/env bash
     cd frontend-monorepo
     pnpm --filter="@frontend/borrower" dev
 
-lender: frontend_version
+lender: frontend-version
     #!/usr/bin/env bash
     cd frontend-monorepo
     pnpm --filter="@frontend/lender" dev

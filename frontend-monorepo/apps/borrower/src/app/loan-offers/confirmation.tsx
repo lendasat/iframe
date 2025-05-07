@@ -28,7 +28,6 @@ import {
 } from "@frontend/ui-shared";
 import {
   Box,
-  Button,
   Callout,
   DataList,
   Flex,
@@ -44,12 +43,15 @@ import { Network, validate } from "bitcoin-address-validation";
 import { useState } from "react";
 import { FaInfoCircle } from "react-icons/fa";
 import { IoInformationCircleOutline } from "react-icons/io5";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAsync } from "react-use";
 import { KycDialog } from "./kyc-dialog";
 import { Lender } from "./lender";
 import { MoonCardDropdown } from "./MoonCardDropdown";
 import { ToS } from "./tos";
+import { AlertCircle, ExternalLink } from "lucide-react";
+import { Button, Alert, AlertDescription, AlertTitle } from "@frontend/shadcn";
+import { LuLoader } from "react-icons/lu";
 
 async function isInUS(): Promise<boolean> {
   try {
@@ -78,6 +80,13 @@ export const Confirmation = ({
 }: ConfirmationProps) => {
   const navigate = useNavigate();
   const { getNpub, getPkAndDerivationPath } = useWallet();
+  const { hasBringinApiKey: getHasBringinApiKey } = useHttpClientBorrower();
+
+  const { loading: apiKeyLoading, value: maybeApiKey } = useAsync(async () => {
+    return await getHasBringinApiKey();
+  });
+
+  const hasBriningApiKey = !apiKeyLoading && maybeApiKey;
 
   const { getLoanOffer, getUserCards, postContractRequest } =
     useHttpClientBorrower();
@@ -227,6 +236,9 @@ export const Confirmation = ({
         case LoanProductOption.Fiat:
           loanType = LoanType.Fiat;
           break;
+        case LoanProductOption.Bringin:
+          loanType = LoanType.Bringin;
+          break;
       }
 
       if (
@@ -285,13 +297,21 @@ export const Confirmation = ({
       !kycFormDialogConfirmed &&
       selectedOffer.kyc_link.length > 0,
   );
-  const buttonDisabled =
-    isStillLoading || fiatButNoEncryptedDataPresent || kycButNoKycConfirmed;
 
-  const showStablecoinLoadAddressInput = Boolean(
+  const bringinButNoKey =
+    selectedProduct === LoanProductOption.Bringin && !hasBriningApiKey;
+
+  const buttonDisabled =
+    isStillLoading ||
+    fiatButNoEncryptedDataPresent ||
+    kycButNoKycConfirmed ||
+    bringinButNoKey;
+
+  const showStablecoinLoanAddressInput = Boolean(
     selectedOffer?.loan_asset &&
       LoanAssetHelper.isStableCoin(selectedOffer.loan_asset) &&
-      selectedProduct !== LoanProductOption.PayWithMoonDebitCard,
+      selectedProduct !== LoanProductOption.PayWithMoonDebitCard &&
+      selectedProduct !== LoanProductOption.Bringin,
   );
 
   return (
@@ -582,7 +602,7 @@ export const Confirmation = ({
                           }}
                         >
                           <Box width="100%">
-                            <Button size="2" style={{ width: "100%" }}>
+                            <Button className={"w-full"}>
                               Add loan transfer details
                             </Button>
                           </Box>
@@ -650,7 +670,7 @@ export const Confirmation = ({
                 </DataList.Value>
               </DataList.Item>
             )}
-            {showStablecoinLoadAddressInput && (
+            {showStablecoinLoanAddressInput && (
               <DataList.Item>
                 <DataList.Label minWidth="88px">Loan address</DataList.Label>
                 <DataList.Value className="w-full">
@@ -679,13 +699,36 @@ export const Confirmation = ({
               </DataList.Item>
             )}
           </DataList.Root>
+          {bringinButNoKey && (
+            <Alert variant={"destructive"}>
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>API Key Required</AlertTitle>
+              <AlertDescription>
+                You have not connected Lendasat with your Bringin account yet.
+                You can do this from{" "}
+                <Link
+                  to={"/settings/integrations"}
+                  className="inline-flex items-center"
+                >
+                  <em>Settings</em>
+                  <ExternalLink className={"w-4 h-4 ml-0.5"} />
+                </Link>
+              </AlertDescription>
+            </Alert>
+          )}
           <Button
-            size={"3"}
+            className={"w-full"}
             onClick={unlockWalletOrCreateOfferRequest}
-            loading={isCreatingRequest}
             disabled={buttonDisabled}
           >
-            Pick Offer
+            {isCreatingRequest ? (
+              <>
+                <LuLoader className="animate-spin" />
+                Please wait
+              </>
+            ) : (
+              "Pick Offer"
+            )}
           </Button>
           {createRequestError ? (
             <Box px={"2"} className="md:col-span-2">

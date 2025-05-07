@@ -1,5 +1,8 @@
+import { useHttpClientBorrower } from "@frontend/http-client-borrower";
 import { VersionInfo } from "@frontend/ui-shared";
 
 export function VersionPage() {
-  return <VersionInfo />;
+  let { getVersion } = useHttpClientBorrower();
+
+  return <VersionInfo getVersion={getVersion} />;
 }
