@@ -5,6 +5,8 @@ import { ReactComponent as Defi } from "../../assets/defi.svg";
 import { ReactComponent as Fiat } from "../../assets/fiat.svg";
 import { ReactComponent as MoonCard } from "../../assets/moon_card_satoshi_nakamoto.svg";
 import SingleDurationSelector from "./DurationSelector";
+import { Alert, AlertDescription, AlertTitle } from "@frontend/shadcn";
+import { InfoCircledIcon } from "@radix-ui/react-icons";
 
 interface LoanAmountAndDurationInputsProps {
   setLoanAmount: (amount: string) => void;
@@ -65,6 +67,48 @@ export function LoanAmountAndDurationInputs({
     e.preventDefault();
     setLoanAmount(e.target.value);
   };
+
+  let disclaimer = <></>;
+  switch (selectedOption) {
+    case LoanProductOption.Fiat:
+      disclaimer = (
+        <Alert>
+          <InfoCircledIcon className="h-4 w-4" />
+          <AlertTitle>Heads up!</AlertTitle>
+          <AlertDescription>
+            Most fiat loans will require KYC. Make sure to have your details
+            ready.
+          </AlertDescription>
+        </Alert>
+      );
+      break;
+    case LoanProductOption.StableCoins:
+      disclaimer = (
+        <Alert>
+          <InfoCircledIcon className="h-4 w-4" />
+          <AlertTitle>Heads up!</AlertTitle>
+          <AlertDescription>
+            When borrowing against stable coins, you will receive your loan
+            amount in a wallet picked by you.
+          </AlertDescription>
+        </Alert>
+      );
+
+      break;
+    case LoanProductOption.PayWithMoonDebitCard:
+      disclaimer = (
+        <Alert>
+          <InfoCircledIcon className="h-4 w-4" />
+          <AlertTitle>Heads up!</AlertTitle>
+          <AlertDescription>
+            A Moon Visa® Card has a spending limit of $4,000/month and a fee of
+            1% per transaction.
+          </AlertDescription>
+        </Alert>
+      );
+
+      break;
+  }
 
   return (
     <div className="space-y-4">
@@ -163,6 +207,7 @@ export function LoanAmountAndDurationInputs({
             />
           </RadioCards.Root>
         </Box>
+        <div className={"mt-4 -mb-2"}>{disclaimer}</div>
       </Flex>
     </div>
   );
