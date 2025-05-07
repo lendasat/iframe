@@ -59,7 +59,10 @@ const ManageLoanDialog = ({ children, contract }: ManageLoanDialogProps) => {
           </TabsContent>
 
           <TabsContent value="extend" className="space-y-4 py-4">
-            <ExtendContract contract={contract} />
+            <ExtendContract
+              contract={contract}
+              onSumbitted={() => setOpen(false)}
+            />
           </TabsContent>
         </Tabs>
 

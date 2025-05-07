@@ -44,7 +44,7 @@ import { IoMdCloudDownload } from "react-icons/io";
 import { Await, Link, useNavigate, useParams } from "react-router-dom";
 import { ExpandableDisputeCard } from "../disputes/dispute-card";
 import { Borrower } from "./borrower";
-import { ContractDefaulted } from "./contract-defaulted";
+import { DefaultedContractDialog } from "./contract-defaulted";
 import { ContractPendingKyc } from "./contract-pending-kyc";
 import { ContractRecovery } from "./contract-recovery";
 import { ContractRequested } from "./contract-requested";
@@ -860,7 +860,7 @@ const ContractStatusDetails = ({
     case ContractStatus.Undercollateralized:
       return <ContractUndercollateralized contract={contract} />;
     case ContractStatus.Defaulted:
-      return <ContractDefaulted contract={contract} />;
+      return <DefaultedContractDialog contract={contract} />;
     case ContractStatus.Closed:
     case ContractStatus.Extended:
     case ContractStatus.Closing:

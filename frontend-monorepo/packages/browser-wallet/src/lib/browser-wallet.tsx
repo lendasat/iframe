@@ -18,6 +18,10 @@ import init, {
   get_npub,
   get_pk_and_derivation_path,
   get_version,
+  sign_liquidation_psbt_with_password,
+  encrypt_fiat_loan_details_with_password,
+  FiatLoanDetails,
+  decrypt_fiat_loan_details_with_password,
 } from "browser-wallet";
 import browserWalletUrl from "../../../../../browser-wallet/pkg/browser_wallet_bg.wasm?url";
 
@@ -67,6 +71,13 @@ interface WalletContextType {
     borrowerPk: string,
     derivationPath?: string,
   ) => Promise<SignedTransaction>;
+  signLiquidationPsbtWithPassword: (
+    password: string,
+    psbt: string,
+    collateralDescriptor: string,
+    borrowerPk: string,
+    derivationPath?: string,
+  ) => Promise<SignedTransaction>;
   getNpub: () => Promise<string>;
   getPkAndDerivationPath: () => Promise<PkAndPath>;
   getNextAddress: () => Promise<string>;
@@ -78,7 +89,17 @@ interface WalletContextType {
     details: ReactInnerFiatLoanDetails,
     counterpartyPk: string,
   ) => Promise<ReactFiatLoanDetails>;
+  encryptFiatLoanDetailsLenderWithPassword: (
+    password: string,
+    details: ReactInnerFiatLoanDetails,
+    counterpartyPk: string,
+  ) => Promise<ReactFiatLoanDetails>;
   decryptFiatLoanDetails: (
+    details: ReactInnerFiatLoanDetails,
+    counterpartyPk: string,
+  ) => Promise<ReactInnerFiatLoanDetails>;
+  decryptFiatLoanDetailsWithPassword: (
+    password: string,
     details: ReactInnerFiatLoanDetails,
     counterpartyPk: string,
   ) => Promise<ReactInnerFiatLoanDetails>;
@@ -230,6 +251,24 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
     }
   };
 
+  const signLiquidationPsbtWithPassword = async (
+    password: string,
+    psbt: string,
+    collateralDescriptor: string,
+    lenderPk: string,
+    derivationPath?: string,
+  ) => {
+    const key = await md5(email);
+    return sign_liquidation_psbt_with_password(
+      password,
+      key,
+      psbt,
+      collateralDescriptor,
+      lenderPk,
+      derivationPath,
+    );
+  };
+
   const getNpub = async () => {
     const key = await md5(email);
     return get_npub(key);
@@ -263,10 +302,19 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
     return encryptFiatLoanDetails(details, counterpartyPk, false);
   };
 
+  const encryptFiatLoanDetailsLenderWithPassword = async (
+    password: string,
+    details: ReactInnerFiatLoanDetails,
+    counterpartyPk: string,
+  ) => {
+    return encryptFiatLoanDetails(details, counterpartyPk, false, password);
+  };
+
   const encryptFiatLoanDetails = async (
     details: ReactInnerFiatLoanDetails,
     counterpartyPk: string,
     isBorrower: boolean,
+    password?: string,
   ) => {
     let inputIbanTransferDetails = undefined;
 
@@ -300,10 +348,23 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
       details.comments,
     );
 
-    const fiatLoanDetails = encrypt_fiat_loan_details(
-      inputInnerFiatLoanDetails,
-      counterpartyPk,
-    );
+    let fiatLoanDetails: FiatLoanDetails;
+
+    if (password) {
+      const key = await md5(email);
+      fiatLoanDetails = encrypt_fiat_loan_details_with_password(
+        password,
+        key,
+        inputInnerFiatLoanDetails,
+        counterpartyPk,
+      );
+    } else {
+      fiatLoanDetails = encrypt_fiat_loan_details(
+        inputInnerFiatLoanDetails,
+        counterpartyPk,
+      );
+    }
+
     let iban_transfer_details = undefined;
     if (fiatLoanDetails.inner.iban_transfer_details) {
       iban_transfer_details = {
@@ -428,6 +489,84 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
     };
   };
 
+  const decryptFiatLoanDetailsWithPassword = async (
+    password: string,
+    details: ReactInnerFiatLoanDetails,
+    ownEncryptedEncryptionKey: string,
+  ) => {
+    let inputIbanTransferDetails = undefined;
+
+    if (details.iban_transfer_details) {
+      inputIbanTransferDetails = new IbanTransferDetails(
+        details.iban_transfer_details.iban,
+        details.iban_transfer_details.bic,
+      );
+    }
+
+    let inputSwiftTransferDetails = undefined;
+    if (details.swift_transfer_details) {
+      inputSwiftTransferDetails = new SwiftTransferDetails(
+        details.swift_transfer_details.swift_or_bic,
+        details.swift_transfer_details.account_number,
+      );
+    }
+
+    const inputInnerFiatLoanDetails = new InnerFiatLoanDetails(
+      inputIbanTransferDetails,
+      inputSwiftTransferDetails,
+      details.bank_name,
+      details.bank_address,
+      details.bank_country,
+      details.purpose_of_remittance,
+      details.full_name,
+      details.address,
+      details.city,
+      details.post_code,
+      details.country,
+      details.comments,
+    );
+
+    const key = await md5(email);
+
+    const fiatLoanDetails = decrypt_fiat_loan_details_with_password(
+      password,
+      key,
+      inputInnerFiatLoanDetails,
+      ownEncryptedEncryptionKey,
+    );
+
+    let iban_transfer_details = undefined;
+    if (fiatLoanDetails.iban_transfer_details) {
+      iban_transfer_details = {
+        iban: fiatLoanDetails.iban_transfer_details.iban,
+        bic: fiatLoanDetails.iban_transfer_details.bic,
+      };
+    }
+
+    let swift_transfer_details = undefined;
+    if (fiatLoanDetails.swift_transfer_details) {
+      swift_transfer_details = {
+        account_number: fiatLoanDetails.swift_transfer_details.account_number,
+        swift_or_bic: fiatLoanDetails.swift_transfer_details.bic_or_swift,
+      };
+    }
+
+    return {
+      iban_transfer_details,
+      swift_transfer_details,
+      bank_name: fiatLoanDetails.bank_name,
+      bank_address: fiatLoanDetails.bank_address,
+      bank_country: fiatLoanDetails.bank_country,
+      purpose_of_remittance: fiatLoanDetails.purpose_of_remittance,
+      full_name: fiatLoanDetails.full_name,
+      address: fiatLoanDetails.address,
+      city: fiatLoanDetails.city,
+      post_code: fiatLoanDetails.post_code,
+      country: fiatLoanDetails.country,
+      comments: fiatLoanDetails.comments,
+    };
+  };
+
   const getVersion = () => {
     if (isInitialized) {
       const version = get_version();
@@ -454,9 +593,12 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
     getPubkeyFromContract,
     signClaimPsbt,
     signLiquidationPsbt,
+    signLiquidationPsbtWithPassword,
     encryptFiatLoanDetailsBorrower,
     encryptFiatLoanDetailsLender,
+    encryptFiatLoanDetailsLenderWithPassword,
     decryptFiatLoanDetails,
+    decryptFiatLoanDetailsWithPassword,
     unlockAndSignClaimPsbt,
     getVersion,
   };

@@ -29,9 +29,10 @@ import { useAsync } from "react-use";
 
 interface ExtendContractProps {
   contract?: Contract;
+  onSumbitted: () => void;
 }
 
-export function ExtendContract({ contract }: ExtendContractProps) {
+export function ExtendContract({ contract, onSumbitted }: ExtendContractProps) {
   const { getDirectLoanOffersByLender } = useHttpClientBorrower();
 
   const [extensionDays, setExtensionDays] = useState(7);
@@ -79,6 +80,7 @@ export function ExtendContract({ contract }: ExtendContractProps) {
         new_duration: extensionDays,
       });
       setIsSubmitting(false);
+      onSumbitted();
       navigate(`/my-contracts/${newContract?.id || ""}`);
     } catch (error) {
       console.log(`Failed sending request ${error}`);
@@ -200,7 +202,10 @@ export function ExtendContract({ contract }: ExtendContractProps) {
                 </div>
                 <span className="font-medium">
                   {!noAvailableOffer ? (
-                    <span>(totalInterestRate * 100).toFixed(2){"%"})</span>
+                    <span>
+                      {(totalInterestRate * 100).toFixed(2)}
+                      {"%"}
+                    </span>
                   ) : (
                     <Skeleton className="h-4 w-[100px]" />
                   )}

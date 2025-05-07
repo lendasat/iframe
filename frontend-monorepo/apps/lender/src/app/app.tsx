@@ -17,8 +17,8 @@ import Waitlist from "./waitlist/waitlist";
 import WaitlistSuccess from "./waitlist/success";
 import ResetPassword from "./auth/reset-password";
 import UpgradeToPake from "./auth/upgrade-to-pake";
-import ContractDetailsOverview from "./contracts/contract-details-overview";
-import MyContracts from "./contracts/my-contracts";
+import BitcoinCollateralizedLoan from "./contracts/bitcoin-loan-component";
+import MyContracts from "./contracts_old/my-contracts";
 import CreateLoanOffer from "./create-loan-offer";
 import ResolveDispute from "./disputes/dispute";
 import Settings from "./settings/settings";
@@ -39,6 +39,8 @@ import { useEffect } from "react";
 import AvailableLoanApplications from "./loan-applications/available-loan-applications";
 import TakeLoanApplication from "./loan-applications/loan-applications";
 import { Layout } from "./layout";
+import { Details } from "./contracts/details";
+import { Toaster } from "sonner";
 
 function MainLayoutComponents() {
   const { backendVersion, user: lenderUser, logout } = useAuth();
@@ -77,7 +79,7 @@ function MainLayoutComponents() {
             <Route path="/create-loan-offer" element={<CreateLoanOffer />} />
             <Route path="/my-contracts">
               <Route index element={<MyContracts />} />
-              <Route path={":id"} element={<ContractDetailsOverview />} />
+              <Route path={":id"} element={<BitcoinCollateralizedLoan />} />
             </Route>
             <Route path="/my-offers">
               <Route index element={<MyLoanOffersOverview />} />
@@ -106,6 +108,7 @@ function MainLayoutComponents() {
           />
           <Route path="*" element={<Dashboard />} />
         </Routes>
+        <Toaster />
       </Layout>
     </WalletProvider>
   );

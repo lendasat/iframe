@@ -1,5 +1,3 @@
-import type { SemVer } from "semver";
-
 export interface User {
   id: string;
   name: string;

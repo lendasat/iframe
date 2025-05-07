@@ -47,6 +47,8 @@ use miniscript::Descriptor;
 use rust_decimal::Decimal;
 use serde::Deserialize;
 use serde::Serialize;
+use sqlx::Pool;
+use sqlx::Postgres;
 use std::sync::Arc;
 use time::OffsetDateTime;
 use tracing::instrument;
@@ -152,6 +154,8 @@ pub struct Contract {
     #[serde(with = "rust_decimal::serde::float")]
     pub interest_rate: Decimal,
     #[serde(with = "rust_decimal::serde::float")]
+    pub interest: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
     pub initial_ltv: Decimal,
     pub status: ContractStatus,
     pub lender_pk: PublicKey,
@@ -184,6 +188,7 @@ pub struct Contract {
     pub fiat_loan_details_lender: Option<FiatLoanDetailsWrapper>,
     pub borrower_npub: String,
     pub client_contract_id: Option<Uuid>,
+    pub timeline: Vec<TimelineEvent>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -236,8 +241,7 @@ async fn get_contract(
         user.id.as_str(),
     )
     .await
-    .map_err(Error::database)?
-    .ok_or_else(|| Error::MissingContract(contract_id))?;
+    .map_err(Error::database)?;
 
     let contract = map_to_api_contract(&data, contract).await?;
 
@@ -357,8 +361,7 @@ async fn put_reject_extension_request(
         user.id.as_str(),
     )
     .await
-    .map_err(Error::database)?
-    .ok_or_else(|| Error::MissingContract(contract_id.clone()))?;
+    .map_err(Error::database)?;
 
     if contract.status != ContractStatus::RenewalRequested {
         return Err(Error::InvalidRejectRequest {
@@ -411,8 +414,7 @@ async fn put_confirm_repayment(
             &user.id,
         )
         .await
-        .context("Failed to load contract request")?
-        .context("Missing contract")?;
+        .context("Failed to load contract request")?;
 
         db::contracts::mark_contract_as_repayment_confirmed(&data.db, contract.id.as_str())
             .await
@@ -480,12 +482,6 @@ async fn get_liquidation_to_bitcoin_psbt(
             message: format!("Database error: {e:#}"),
         };
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?
-    .ok_or_else(|| {
-        let error_response = ErrorResponse {
-            message: format!("Missing contract: {contract_id}"),
-        };
-        (StatusCode::BAD_REQUEST, Json(error_response))
     })?;
 
     if !matches!(
@@ -617,12 +613,6 @@ async fn post_build_liquidation_to_stablecoin_psbt(
             StatusCode::INTERNAL_SERVER_ERROR,
             format!("Database error: {e:#}").as_str(),
         )
-    })?
-    .ok_or_else(|| {
-        let error_response = ErrorResponse {
-            message: format!("Missing contract: {contract_id}"),
-        };
-        (StatusCode::BAD_REQUEST, Json(error_response))
     })?;
 
     if !matches!(
@@ -800,8 +790,7 @@ async fn post_liquidation_tx(
             &user.id,
         )
         .await
-        .context("Failed to load contract")?
-        .context("Missing contract")?;
+        .context("Failed to load contract")?;
 
         let borrower = db::borrowers::get_user_by_id(&data.db, contract.borrower_id.as_str())
             .await?
@@ -875,12 +864,6 @@ async fn get_manual_recovery_psbt(
             message: format!("Database error: {e:#}"),
         };
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?
-    .ok_or_else(|| {
-        let error_response = ErrorResponse {
-            message: format!("Missing contract: {contract_id}"),
-        };
-        (StatusCode::BAD_REQUEST, Json(error_response))
     })?;
 
     let ManualCollateralRecovery { lender_amount, .. } =
@@ -1067,6 +1050,8 @@ async fn map_to_api_contract(
         None => None,
     };
 
+    let timeline = map_timeline(&contract, &transactions, &data.db).await?;
+
     let contract = Contract {
         id: contract.id,
         loan_amount: contract.loan_amount,
@@ -1075,6 +1060,7 @@ async fn map_to_api_contract(
         origination_fee_sats: contract.origination_fee_sats,
         collateral_sats: contract.collateral_sats,
         interest_rate: contract.interest_rate,
+        interest: contract.interest,
         initial_ltv: contract.initial_ltv,
         status: contract.status,
         lender_pk: contract.lender_pk,
@@ -1107,9 +1093,110 @@ async fn map_to_api_contract(
         fiat_loan_details_lender,
         borrower_npub: contract.borrower_npub,
         client_contract_id: contract.client_contract_id,
+        timeline,
     };
 
     Ok(contract)
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TimelineEvent {
+    #[serde(with = "time::serde::rfc3339")]
+    date: OffsetDateTime,
+    event: ContractStatus,
+    /// Only provided if it was an event caused by a transaction
+    txid: Option<String>,
+}
+
+// TODO: This does not properly handle a contract going from `Extended` back to `PrincipalGiven`
+// after the lender rejects an extension request.
+async fn map_timeline(
+    contract: &model::Contract,
+    transactions: &[LoanTransaction],
+    pool: &Pool<Postgres>,
+) -> Result<Vec<TimelineEvent>, Error> {
+    let event_logs = db::contract_status_log::get_contract_status_logs(pool, contract.id.as_str())
+        .await
+        .map_err(|e| Error::database(anyhow!(e)))?;
+
+    // first, we add the contract request event
+    let mut timeline = vec![TimelineEvent {
+        date: contract.created_at,
+        event: ContractStatus::Requested,
+        txid: None,
+    }];
+
+    // then we go through funding transactions, there might be multiple, that's why we need to
+    // handle them separately
+    transactions.iter().for_each(|tx| {
+        if TransactionType::Funding == tx.transaction_type {
+            let event = TimelineEvent {
+                date: tx.timestamp,
+                // we assume each transaction has already been confirmed
+                event: ContractStatus::CollateralConfirmed,
+                txid: Some(tx.txid.clone()),
+            };
+            timeline.push(event);
+        }
+    });
+
+    // next we go through the events and enhance them with transaction ids if relevant
+    let timeline_1 = event_logs
+        .into_iter()
+        .filter_map(|log| {
+            let txid = match log.new_status {
+                ContractStatus::CollateralSeen => transactions.iter().find_map(|tx| {
+                    (tx.transaction_type == TransactionType::Funding).then(|| tx.txid.clone())
+                }),
+                ContractStatus::PrincipalGiven => transactions.iter().find_map(|tx| {
+                    (tx.transaction_type == TransactionType::PrincipalGiven)
+                        .then(|| tx.txid.clone())
+                }),
+                ContractStatus::RepaymentProvided | ContractStatus::RepaymentConfirmed => {
+                    transactions.iter().find_map(|tx| {
+                        (tx.transaction_type == TransactionType::PrincipalRepaid)
+                            .then(|| tx.txid.clone())
+                    })
+                }
+                ContractStatus::Closing | ContractStatus::Closed | ContractStatus::Defaulted => {
+                    transactions.iter().find_map(|tx| {
+                        (tx.transaction_type == TransactionType::ClaimCollateral)
+                            .then(|| tx.txid.clone())
+                    })
+                }
+
+                ContractStatus::Requested
+                | ContractStatus::RenewalRequested
+                | ContractStatus::Approved
+                | ContractStatus::Undercollateralized
+                | ContractStatus::Extended
+                | ContractStatus::Rejected
+                | ContractStatus::DisputeBorrowerStarted
+                | ContractStatus::DisputeLenderStarted
+                | ContractStatus::DisputeBorrowerResolved
+                | ContractStatus::DisputeLenderResolved
+                | ContractStatus::Cancelled
+                | ContractStatus::RequestExpired
+                | ContractStatus::ApprovalExpired => {
+                    // There are no transactions associated to these events
+                    None
+                }
+                ContractStatus::CollateralConfirmed => {
+                    // we handled this event already. Note: return None means we filter this event
+                    // out.
+                    return None;
+                }
+            };
+
+            Some(TimelineEvent {
+                date: log.changed_at,
+                event: log.new_status,
+                txid,
+            })
+        })
+        .collect::<Vec<_>>();
+    timeline.extend(timeline_1);
+    Ok(timeline)
 }
 
 // Error fields are allowed to be dead code because they are actually used when printed in logs.

@@ -209,7 +209,7 @@ impl Email {
 
     pub async fn send_notify_admin_about_dispute(
         &self,
-        user: Borrower,
+        user_name: &str,
         dispute_id: &str,
         lender_id: &str,
         borrower_id: &str,
@@ -220,7 +220,7 @@ impl Email {
         let handlebars = Self::prepare_template(template_name)?;
 
         let data = serde_json::json!({
-            "first_name": user.name.as_str(),
+            "first_name": user_name,
             "subject": &template_name,
             "lender_id": lender_id,
             "borrower_id": borrower_id,

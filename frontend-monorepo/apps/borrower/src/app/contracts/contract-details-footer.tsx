@@ -60,6 +60,7 @@ export function ContractDetailsFooter({
     contract.status !== ContractStatus.RepaymentProvided &&
     contract.status !== ContractStatus.Extended &&
     contract.status !== ContractStatus.CollateralConfirmed &&
+    contract.status !== ContractStatus.Undercollateralized &&
     contract.status !== ContractStatus.CollateralSeen
   ) {
     button = (

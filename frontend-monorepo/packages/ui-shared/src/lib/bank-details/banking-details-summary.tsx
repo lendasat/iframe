@@ -1,11 +1,10 @@
-import { UnlockWalletModal, useWallet } from "@frontend/browser-wallet";
+import { useWallet } from "@frontend/browser-wallet";
 import React, { useState } from "react";
 import {
   FiatLoanDetailsResponse,
   InnerFiatLoanDetails,
 } from "@frontend/base-http-client";
-import { Card, CardContent } from "@frontend/shadcn";
-import { Separator } from "@frontend/shadcn";
+import { Card, CardContent, Input, Label } from "@frontend/shadcn";
 import { Button } from "@frontend/shadcn";
 import { Skeleton } from "@frontend/shadcn";
 import { Alert, AlertDescription } from "@frontend/shadcn";
@@ -73,8 +72,9 @@ interface BankingDetailsSummaryProps {
 export const BankingDetailsSummary = ({
   fiatLoanDetails,
 }: BankingDetailsSummaryProps) => {
-  const { isWalletLoaded, decryptFiatLoanDetails } = useWallet();
+  const { decryptFiatLoanDetailsWithPassword } = useWallet();
   const [isLoading, setIsLoading] = useState(false);
+  const [password, setPassword] = useState("");
   const [isDecrypted, setIsDecrypted] = useState(false);
   const [loanDetails, setLoanDetails] = useState<
     InnerFiatLoanDetails | undefined
@@ -82,11 +82,13 @@ export const BankingDetailsSummary = ({
 
   const [error, setError] = useState("");
 
-  const onUnlockWalletOrDecryptPaymentDetails = async () => {
+  const decryptPaymentDetails = async () => {
     if (fiatLoanDetails) {
       setIsLoading(true);
+
       try {
-        const loanDetails = await decryptFiatLoanDetails(
+        const loanDetails = await decryptFiatLoanDetailsWithPassword(
+          password,
           fiatLoanDetails.details,
           fiatLoanDetails.encrypted_encryption_key,
         );
@@ -164,8 +166,6 @@ export const BankingDetailsSummary = ({
         </Card>
       </div>
 
-      <Separator className="bg-purple-500 h-px" />
-
       <div>
         <h3 className="text-xl font-bold mt-3 mb-2 text-gray-900 dark:text-gray-100">
           Beneficiary Details
@@ -202,32 +202,35 @@ export const BankingDetailsSummary = ({
         </Card>
       </div>
 
+      <div className="grid w-full">
+        <Label htmlFor="password">Password</Label>
+        <Input
+          type="password"
+          id="password"
+          value={password}
+          className={"w-full"}
+          onChange={(val) => setPassword(val.target.value)}
+        />
+      </div>
+
       <div className="flex justify-end mt-6">
         <div className="min-w-[240px]"></div>
         <div>
-          {!isWalletLoaded ? (
-            <UnlockWalletModal handleSubmit={() => {}}>
-              <Button type="button" disabled={isWalletLoaded} className="mt-3">
-                Confirm Secret
-              </Button>
-            </UnlockWalletModal>
-          ) : (
-            <Button
-              type="button"
-              disabled={isLoading || isDecrypted}
-              onClick={onUnlockWalletOrDecryptPaymentDetails}
-              className="flex items-center gap-2"
-            >
-              {isLoading ? (
-                <>
-                  <LuLoader className="h-4 w-4 animate-spin" />
-                  <span>Please wait</span>
-                </>
-              ) : (
-                "Decrypt payment details"
-              )}
-            </Button>
-          )}
+          <Button
+            type="button"
+            disabled={isLoading || isDecrypted}
+            onClick={decryptPaymentDetails}
+            className="flex items-center gap-2"
+          >
+            {isLoading ? (
+              <>
+                <LuLoader className="h-4 w-4 animate-spin" />
+                <span>Please wait</span>
+              </>
+            ) : (
+              "Decrypt payment details"
+            )}
+          </Button>
         </div>
       </div>
 

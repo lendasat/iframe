@@ -242,6 +242,40 @@ pub fn sign_liquidation_psbt(
 }
 
 #[wasm_bindgen]
+pub fn sign_liquidation_psbt_with_password(
+    password: String,
+    key: String,
+    psbt: String,
+    collateral_descriptor: String,
+    own_pk: String,
+    derivation_path: Option<String>,
+) -> Result<SignedTransaction, JsValue> {
+    if let Err(err) = browser_wallet::load(&password, &key) {
+        log::error!("Failed unlocking wallet {err:#}");
+        return Err(JsValue::from_str(&format!("{:#}", err)));
+    }
+
+    let (tx, outputs, params) = map_err_to_js!(browser_wallet::sign_liquidation_psbt(
+        &psbt,
+        &collateral_descriptor,
+        &own_pk,
+        derivation_path.as_deref(),
+    ))?;
+
+    let outputs = map_err_to_js!(outputs
+        .into_iter()
+        .map(|o| {
+            Ok(TxOut {
+                value: o.value.to_sat(),
+                address: Address::from_script(&o.script_pubkey, &params)?.to_string(),
+            })
+        })
+        .collect::<anyhow::Result<Vec<_>>>())?;
+
+    Ok(SignedTransaction { tx, outputs })
+}
+
+#[wasm_bindgen]
 pub fn get_nsec(key: String) -> Result<String, JsValue> {
     map_err_to_js!(browser_wallet::get_nsec(key))
 }
@@ -503,10 +537,55 @@ pub fn encrypt_fiat_loan_details(
 }
 
 #[wasm_bindgen]
+pub fn encrypt_fiat_loan_details_with_password(
+    password: String,
+    key: String,
+    fiat_loan_details: InnerFiatLoanDetails,
+    counterparty_pk: String,
+) -> Result<FiatLoanDetails, JsValue> {
+    if let Err(err) = browser_wallet::load(&password, &key) {
+        log::error!("Failed encrypting details {err:#}");
+        return Err(JsValue::from_str(&format!("{:#}", err)));
+    }
+
+    let (fiat_loan_details, encrypted_encryption_key_own, encrypted_encryption_key_counterparty) =
+        map_err_to_js!(wallet::encrypt_fiat_loan_details(
+            &fiat_loan_details.into(),
+            counterparty_pk
+        ))?;
+
+    Ok(FiatLoanDetails {
+        inner: fiat_loan_details.into(),
+        encrypted_encryption_key_own,
+        encrypted_encryption_key_counterparty,
+    })
+}
+
+#[wasm_bindgen]
 pub fn decrypt_fiat_loan_details(
     fiat_loan_details: InnerFiatLoanDetails,
     encrypted_encryption_key: String,
 ) -> Result<InnerFiatLoanDetails, JsValue> {
+    let fiat_loan_details = map_err_to_js!(wallet::decrypt_fiat_loan_details(
+        &fiat_loan_details.into(),
+        encrypted_encryption_key
+    ))?;
+
+    Ok(fiat_loan_details.into())
+}
+
+#[wasm_bindgen]
+pub fn decrypt_fiat_loan_details_with_password(
+    password: String,
+    key: String,
+    fiat_loan_details: InnerFiatLoanDetails,
+    encrypted_encryption_key: String,
+) -> Result<InnerFiatLoanDetails, JsValue> {
+    if let Err(err) = browser_wallet::load(&password, &key) {
+        log::error!("Failed decrypting details {err:#}");
+        return Err(JsValue::from_str(&format!("{:#}", err)));
+    }
+
     let fiat_loan_details = map_err_to_js!(wallet::decrypt_fiat_loan_details(
         &fiat_loan_details.into(),
         encrypted_encryption_key

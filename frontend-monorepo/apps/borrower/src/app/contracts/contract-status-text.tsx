@@ -137,16 +137,16 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       break;
 
     case ContractStatus.Undercollateralized:
-      icon = <LuTriangleAlert className="h-5 w-5 text-amber-500 mr-2 mt-0.5" />;
-      bgColor = "bg-amber-50";
-      borderColor = "border-amber-200";
-      titleColor = "text-amber-800";
-      textColor = "text-amber-600";
+      icon = <LuTriangleAlert className="h-5 w-5 text-red-500 mr-2 mt-0.5" />;
+      bgColor = "bg-red-50";
+      borderColor = "border-red-200";
+      titleColor = "text-red-800";
+      textColor = "text-red-600";
       title = "Margin Call";
       message = (
         <>
-          Your loan is under-collateralized. Please add more collateral
-          immediately to avoid liquidation.
+          Your loan is under-collateralized and the lender has been informed to
+          liquidate it.
         </>
       );
       break;

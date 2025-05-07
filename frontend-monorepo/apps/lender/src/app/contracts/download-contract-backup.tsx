@@ -1,5 +1,4 @@
-import type { Version } from "@frontend/base-http-client";
-import { Contract } from "@frontend/http-client-lender";
+import { Version, Contract } from "@frontend/http-client-lender";
 import { get_nostr_derivation_path } from "browser-wallet";
 
 export function downloadContractBackup(version: Version, contract: Contract) {

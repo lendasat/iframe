@@ -218,7 +218,8 @@ export const DisputeDetails: React.FC<DisputeDetailsProps> = ({ dispute }) => {
           </div>
           <div className="flex justify-end mt-4">
             {!dispute.status?.includes("resolved") &&
-              dispute.status !== ContractDisputeStatus.Cancelled && (
+              dispute.status ===
+                ContractDisputeStatus.DisputeStartedBorrower && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button>Resolve Dispute</Button>

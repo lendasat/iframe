@@ -238,7 +238,7 @@ pub async fn load_contract_by_contract_id_and_lender_id(
     pool: &Pool<Postgres>,
     contract_id: &str,
     lender_id: &str,
-) -> Result<Option<Contract>> {
+) -> Result<Contract> {
     let contract = sqlx::query_as!(
         db::Contract,
         r#"
@@ -281,10 +281,10 @@ pub async fn load_contract_by_contract_id_and_lender_id(
         contract_id,
         lender_id
     )
-    .fetch_optional(pool)
+    .fetch_one(pool)
     .await?;
 
-    Ok(contract.map(|c| c.into()))
+    Ok(contract.into())
 }
 
 pub async fn load_open_contracts(pool: &Pool<Postgres>) -> Result<Vec<Contract>> {

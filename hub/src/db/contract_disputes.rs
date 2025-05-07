@@ -107,6 +107,36 @@ pub async fn start_dispute_borrower(
 
     Ok(dispute)
 }
+pub async fn start_dispute_lender(
+    pool: &PgPool,
+    contract_id: &str,
+    lender_id: &str,
+    reason: &str,
+) -> Result<ContractDispute, anyhow::Error> {
+    let mut transaction = pool.begin().await?;
+
+    let dispute = create_dispute(
+        &mut transaction,
+        contract_id,
+        lender_id,
+        reason,
+        DisputeInitiatorType::Lender,
+        DisputeStatus::DisputeStartedLender,
+    )
+    .await?;
+
+    db::contracts::mark_contract_state_as(
+        &mut *transaction,
+        contract_id,
+        ContractStatus::DisputeLenderStarted,
+    )
+    .await
+    .context("Failed marking contract as dispute started.")?;
+
+    transaction.commit().await?;
+
+    Ok(dispute)
+}
 
 /// Create a new dispute initiated by a lender
 pub async fn create_lender_dispute(
@@ -263,7 +293,7 @@ pub async fn get_disputes_by_contract(
 }
 
 /// Get a dispute by dispute ID
-async fn get_dispute_by_dispute_id(
+pub async fn get_dispute_by_dispute_id(
     pool: &PgPool,
     dispute_id: Uuid,
 ) -> Result<ContractDispute, Error> {
@@ -355,6 +385,37 @@ pub async fn resolve_borrower(
         &mut transaction,
         dispute_id,
         borrower_id,
+        DisputeStatus::Closed,
+    )
+    .await?;
+
+    db::contracts::resolve_dispute(&mut transaction, &contract)
+        .await
+        .context("Failed rolling back contract status.")?;
+
+    transaction.commit().await?;
+
+    Ok(())
+}
+
+pub async fn resolve_lender(
+    pool: &PgPool,
+    dispute_id: Uuid,
+    lender_id: &str,
+) -> anyhow::Result<()> {
+    let dispute = get_dispute_by_dispute_id(pool, dispute_id).await?;
+    let contract = db::contracts::load_contract_by_contract_id_and_lender_id(
+        pool,
+        dispute.contract_id.as_str(),
+        lender_id,
+    )
+    .await?;
+    let mut transaction = pool.begin().await?;
+
+    update_dispute(
+        &mut transaction,
+        dispute_id,
+        lender_id,
         DisputeStatus::Closed,
     )
     .await?;
