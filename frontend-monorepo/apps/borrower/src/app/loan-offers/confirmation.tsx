@@ -128,6 +128,9 @@ export const Confirmation = ({
       },
     });
 
+  const [ownPk, setOwnPk] = useState<string | undefined>(undefined);
+  const [ownPath, setOwnPath] = useState<string | undefined>(undefined);
+
   // inside KYC dialog
   const [isKycChecked, setIsKycChecked] = useState(false);
   // outside
@@ -223,7 +226,6 @@ export const Confirmation = ({
 
       setIsCreatingRequest(true);
       const borrowerNpub = await getNpub();
-      const borrowerPk = await getPkAndDerivationPath();
 
       let loanType = LoanType.StableCoin;
       switch (selectedProduct) {
@@ -261,14 +263,27 @@ export const Confirmation = ({
         return;
       }
 
+      let pk;
+      let path;
+
+      if (ownPk && ownPath) {
+        pk = ownPk;
+        path = ownPath;
+      } else {
+        const pkAndPath = await getPkAndDerivationPath();
+
+        pk = pkAndPath.pubkey;
+        path = pkAndPath.path;
+      }
+
       const res = await postContractRequest({
         id: selectedOfferId,
         loan_amount: selectedLoanAmount,
         duration_days: selectedLoanDuration,
         borrower_btc_address: bitcoinAddress,
         borrower_npub: borrowerNpub,
-        borrower_pk: borrowerPk.pubkey,
-        borrower_derivation_path: borrowerPk.path,
+        borrower_pk: pk,
+        borrower_derivation_path: path,
         borrower_loan_address: loanAddress,
         loan_type: loanType,
         moon_card_id: moonCardId,
@@ -586,9 +601,21 @@ export const Confirmation = ({
                       {fiatTransferDetailsConfirmed ? (
                         <FiatTransferDetails
                           details={fiatTransferDetails}
-                          onConfirm={(data?: FiatLoanDetails) => {
-                            setEncryptedFiatTransferDetails(data);
-                            setFiatTransferDetailsConfirmed(true);
+                          onConfirm={async (
+                            encryptFn?: (
+                              ownEncryptionPk: string,
+                            ) => Promise<FiatLoanDetails>,
+                          ) => {
+                            if (encryptFn) {
+                              const pkAndPath = await getPkAndDerivationPath();
+                              const details = await encryptFn(pkAndPath.pubkey);
+
+                              setOwnPk(pkAndPath.pubkey);
+                              setOwnPath(pkAndPath.path);
+
+                              setEncryptedFiatTransferDetails(details);
+                              setFiatTransferDetailsConfirmed(true);
+                            }
                           }}
                           counterpartyPk={selectedOffer.lender_pk}
                           isBorrower={true}

@@ -10,7 +10,6 @@ import init, {
   load_wallet,
   sign_claim_psbt,
   sign_liquidation_psbt,
-  decrypt_fiat_loan_details,
   unlock_and_sign_claim_psbt,
   SwiftTransferDetails,
   IbanTransferDetails,
@@ -19,7 +18,6 @@ import init, {
   get_pk_and_derivation_path,
   get_version,
   sign_liquidation_psbt_with_password,
-  encrypt_fiat_loan_details_with_password,
   FiatLoanDetails,
   decrypt_fiat_loan_details_with_password,
 } from "browser-wallet";
@@ -82,25 +80,19 @@ interface WalletContextType {
   getNextAddress: () => Promise<string>;
   encryptFiatLoanDetailsBorrower: (
     details: ReactInnerFiatLoanDetails,
+    ownPk: string,
     counterpartyPk: string,
   ) => Promise<ReactFiatLoanDetails>;
   encryptFiatLoanDetailsLender: (
     details: ReactInnerFiatLoanDetails,
+    ownPk: string,
     counterpartyPk: string,
   ) => Promise<ReactFiatLoanDetails>;
-  encryptFiatLoanDetailsLenderWithPassword: (
-    password: string,
-    details: ReactInnerFiatLoanDetails,
-    counterpartyPk: string,
-  ) => Promise<ReactFiatLoanDetails>;
-  decryptFiatLoanDetails: (
-    details: ReactInnerFiatLoanDetails,
-    counterpartyPk: string,
-  ) => Promise<ReactInnerFiatLoanDetails>;
   decryptFiatLoanDetailsWithPassword: (
     password: string,
     details: ReactInnerFiatLoanDetails,
-    counterpartyPk: string,
+    ownEncryptedEncryptionKey: string,
+    ownDerivationPath: string,
   ) => Promise<ReactInnerFiatLoanDetails>;
   getVersion: () => Version;
 }
@@ -257,7 +249,7 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
     lenderPk: string,
     derivationPath?: string,
   ) => {
-    const key = await md5(email);
+    const key = await md5CaseInsensitive(email);
     return sign_liquidation_psbt_with_password(
       password,
       key,
@@ -289,31 +281,25 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
 
   const encryptFiatLoanDetailsBorrower = async (
     details: ReactInnerFiatLoanDetails,
+    ownPk: string,
     counterpartyPk: string,
   ) => {
-    return encryptFiatLoanDetails(details, counterpartyPk, true);
+    return encryptFiatLoanDetails(details, ownPk, counterpartyPk, true);
   };
 
   const encryptFiatLoanDetailsLender = async (
     details: ReactInnerFiatLoanDetails,
+    ownPk: string,
     counterpartyPk: string,
   ) => {
-    return encryptFiatLoanDetails(details, counterpartyPk, false);
-  };
-
-  const encryptFiatLoanDetailsLenderWithPassword = async (
-    password: string,
-    details: ReactInnerFiatLoanDetails,
-    counterpartyPk: string,
-  ) => {
-    return encryptFiatLoanDetails(details, counterpartyPk, false, password);
+    return encryptFiatLoanDetails(details, ownPk, counterpartyPk, false);
   };
 
   const encryptFiatLoanDetails = async (
     details: ReactInnerFiatLoanDetails,
+    ownPk: string,
     counterpartyPk: string,
     isBorrower: boolean,
-    password?: string,
   ) => {
     let inputIbanTransferDetails = undefined;
 
@@ -349,20 +335,11 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
 
     let fiatLoanDetails: FiatLoanDetails;
 
-    if (password) {
-      const key = await md5(email);
-      fiatLoanDetails = encrypt_fiat_loan_details_with_password(
-        password,
-        key,
-        inputInnerFiatLoanDetails,
-        counterpartyPk,
-      );
-    } else {
-      fiatLoanDetails = encrypt_fiat_loan_details(
-        inputInnerFiatLoanDetails,
-        counterpartyPk,
-      );
-    }
+    fiatLoanDetails = encrypt_fiat_loan_details(
+      inputInnerFiatLoanDetails,
+      ownPk,
+      counterpartyPk,
+    );
 
     let iban_transfer_details = undefined;
     if (fiatLoanDetails.inner.iban_transfer_details) {
@@ -415,83 +392,11 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
     }
   };
 
-  const decryptFiatLoanDetails = async (
-    details: ReactInnerFiatLoanDetails,
-    ownEncryptedEncryptionKey: string,
-  ) => {
-    let inputIbanTransferDetails = undefined;
-
-    if (details.iban_transfer_details) {
-      inputIbanTransferDetails = new IbanTransferDetails(
-        details.iban_transfer_details.iban,
-        details.iban_transfer_details.bic,
-      );
-    }
-
-    let inputSwiftTransferDetails = undefined;
-    if (details.swift_transfer_details) {
-      inputSwiftTransferDetails = new SwiftTransferDetails(
-        details.swift_transfer_details.swift_or_bic,
-        details.swift_transfer_details.account_number,
-      );
-    }
-
-    const inputInnerFiatLoanDetails = new InnerFiatLoanDetails(
-      inputIbanTransferDetails,
-      inputSwiftTransferDetails,
-      details.bank_name,
-      details.bank_address,
-      details.bank_country,
-      details.purpose_of_remittance,
-      details.full_name,
-      details.address,
-      details.city,
-      details.post_code,
-      details.country,
-      details.comments,
-    );
-
-    const fiatLoanDetails = decrypt_fiat_loan_details(
-      inputInnerFiatLoanDetails,
-      ownEncryptedEncryptionKey,
-    );
-
-    let iban_transfer_details = undefined;
-    if (fiatLoanDetails.iban_transfer_details) {
-      iban_transfer_details = {
-        iban: fiatLoanDetails.iban_transfer_details.iban,
-        bic: fiatLoanDetails.iban_transfer_details.bic,
-      };
-    }
-
-    let swift_transfer_details = undefined;
-    if (fiatLoanDetails.swift_transfer_details) {
-      swift_transfer_details = {
-        account_number: fiatLoanDetails.swift_transfer_details.account_number,
-        swift_or_bic: fiatLoanDetails.swift_transfer_details.bic_or_swift,
-      };
-    }
-
-    return {
-      iban_transfer_details,
-      swift_transfer_details,
-      bank_name: fiatLoanDetails.bank_name,
-      bank_address: fiatLoanDetails.bank_address,
-      bank_country: fiatLoanDetails.bank_country,
-      purpose_of_remittance: fiatLoanDetails.purpose_of_remittance,
-      full_name: fiatLoanDetails.full_name,
-      address: fiatLoanDetails.address,
-      city: fiatLoanDetails.city,
-      post_code: fiatLoanDetails.post_code,
-      country: fiatLoanDetails.country,
-      comments: fiatLoanDetails.comments,
-    };
-  };
-
   const decryptFiatLoanDetailsWithPassword = async (
     password: string,
     details: ReactInnerFiatLoanDetails,
     ownEncryptedEncryptionKey: string,
+    ownDerivationPath: string,
   ) => {
     let inputIbanTransferDetails = undefined;
 
@@ -525,13 +430,14 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
       details.comments,
     );
 
-    const key = await md5(email);
+    const key = await md5CaseInsensitive(email);
 
     const fiatLoanDetails = decrypt_fiat_loan_details_with_password(
       password,
       key,
       inputInnerFiatLoanDetails,
       ownEncryptedEncryptionKey,
+      ownDerivationPath,
     );
 
     let iban_transfer_details = undefined;
@@ -595,8 +501,6 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
     signLiquidationPsbtWithPassword,
     encryptFiatLoanDetailsBorrower,
     encryptFiatLoanDetailsLender,
-    encryptFiatLoanDetailsLenderWithPassword,
-    decryptFiatLoanDetails,
     decryptFiatLoanDetailsWithPassword,
     unlockAndSignClaimPsbt,
     getVersion,

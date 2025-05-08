@@ -21,6 +21,7 @@ const RepaymentDetailsFiat = ({
     <Flex direction={"column"}>
       <BankingDetailsSummary
         fiatLoanDetails={contract.fiat_loan_details_borrower}
+        ownDerivationPath={contract.lender_derivation_path}
       />
 
       <Button onClick={onConfirm} disabled={isLoading}>

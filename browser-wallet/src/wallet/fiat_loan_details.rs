@@ -16,19 +16,15 @@ use hkdf::Hkdf;
 use rand::thread_rng;
 use rand::Rng;
 use sha2::Sha256;
-use std::str::FromStr;
 
 /// It is safe to reuse this nonce because we use AES-CGM-SIV.
 const NONCE: &[u8; 12] = b"6by2d6wxps3a";
 
-/// The derivation path for the public key to be used to encrypt/decrypt fiat loan details.
-const DERIVATION_PATH: &str = "m/77'/0'/0'/0'/0'";
-
 /// Symmetrically encrypt [`FiatLoanDetails`] with a randomly generated encryption key.
 ///
-/// The encryption key is itself encrypted against an own public key and a counterparty public
-/// key. The two encrypted encryption keys can then be stored in the hub database, since the hub
-/// will not be able to decrypt them.
+/// The encryption key is itself encrypted against an own public key and a counterparty public key.
+/// The two encrypted encryption keys can then be stored in the hub database, since the hub will not
+/// be able to decrypt them.
 ///
 /// # Returns
 ///
@@ -37,7 +33,7 @@ const DERIVATION_PATH: &str = "m/77'/0'/0'/0'/0'";
 /// - The encrypted encryption key for the counterparty.
 pub fn encrypt_fiat_loan_details(
     fiat_loan_details: &FiatLoanDetails,
-    own_xpriv: &Xpriv,
+    own_pk: &PublicKey,
     counterparty_pk: &PublicKey,
 ) -> Result<(FiatLoanDetails, String, String)> {
     let mut rng = thread_rng();
@@ -148,14 +144,9 @@ pub fn encrypt_fiat_loan_details(
         comments,
     };
 
-    let secp = Secp256k1::new();
-    let path = DerivationPath::from_str(DERIVATION_PATH).expect("to be valid");
-
-    let own_sk = own_xpriv.derive_priv(&secp, &path)?;
-    let own_pk = secp256k1::PublicKey::from_secret_key(&secp, &own_sk.private_key);
-
-    let encrypted_encryption_key_own = ecies::encrypt(&own_pk.serialize(), &encryption_key)
-        .map_err(|e| anyhow!("failed to encrypt encryption key for caller: {e:?}"))?;
+    let encrypted_encryption_key_own =
+        ecies::encrypt(&own_pk.inner.serialize(), &encryption_key)
+            .map_err(|e| anyhow!("failed to encrypt encryption key for caller: {e:?}"))?;
     let encrypted_encryption_key_own = hex::encode(encrypted_encryption_key_own);
 
     let encrypted_encryption_key_counterparty =
@@ -183,19 +174,14 @@ pub fn decrypt_fiat_loan_details(
     fiat_loan_details: &FiatLoanDetails,
     encrypted_encryption_key: &str,
     own_xpriv: &Xpriv,
+    derivation_path: &DerivationPath,
 ) -> Result<FiatLoanDetails> {
     let encrypted_encryption_key = hex::decode(encrypted_encryption_key)?;
 
-    let secp = Secp256k1::new();
-    let path = DerivationPath::from_str(DERIVATION_PATH).expect("to be valid");
+    let own_sk = own_encryption_sk(own_xpriv, derivation_path)?;
 
-    let own_sk = own_xpriv.derive_priv(&secp, &path)?;
-
-    let encryption_key_vec = ecies::decrypt(
-        &own_sk.private_key.secret_bytes(),
-        &encrypted_encryption_key,
-    )
-    .map_err(|e| anyhow!("failed to decrypt encryption key: {e:?}"))?;
+    let encryption_key_vec = ecies::decrypt(&own_sk.secret_bytes(), &encrypted_encryption_key)
+        .map_err(|e| anyhow!("failed to decrypt encryption key: {e:?}"))?;
 
     let mut encryption_key = [0u8; 32];
     encryption_key.copy_from_slice(&encryption_key_vec);
@@ -282,6 +268,14 @@ pub fn decrypt_fiat_loan_details(
     Ok(fiat_loan_details)
 }
 
+fn own_encryption_sk(own_xpriv: &Xpriv, path: &DerivationPath) -> Result<secp256k1::SecretKey> {
+    let secp = Secp256k1::new();
+
+    let own_sk = own_xpriv.derive_priv(&secp, &path)?;
+
+    Ok(own_sk.private_key)
+}
+
 fn derive_encryption_key(secret: &[u8; 32], salt: &[u8]) -> Result<[u8; 32]> {
     let h = Hkdf::<Sha256>::new(Some(salt), secret);
     let mut enc_key = [0u8; 32];
@@ -363,13 +357,19 @@ mod tests {
             comments: Some("Heya".to_string()),
         };
 
-        let path = DerivationPath::from_str(DERIVATION_PATH).expect("to be valid");
-
         let secp = Secp256k1::new();
+
+        let borrower_path = "m/10/10/1".parse().expect("to be valid");
+
         let borrower_xpriv = Xpriv::new_master(Network::Regtest, &[0u8; 64]).unwrap();
+        let borrower_sk = borrower_xpriv.derive_priv(&secp, &borrower_path).unwrap();
+        let borrower_pk = secp256k1::PublicKey::from_secret_key(&secp, &borrower_sk.private_key);
+        let borrower_pk = PublicKey::new(borrower_pk);
+
+        let lender_path = "m/10/10/2".parse().expect("to be valid");
 
         let lender_xpriv = Xpriv::new_master(Network::Regtest, &[1u8; 64]).unwrap();
-        let lender_sk = lender_xpriv.derive_priv(&secp, &path).unwrap();
+        let lender_sk = lender_xpriv.derive_priv(&secp, &lender_path).unwrap();
         let lender_pk = secp256k1::PublicKey::from_secret_key(&secp, &lender_sk.private_key);
         let lender_pk = PublicKey::new(lender_pk);
 
@@ -377,12 +377,13 @@ mod tests {
             encrypted_fiat_loan_details,
             encrypted_encryption_key_borrower,
             encrypted_encryption_key_lender,
-        ) = encrypt_fiat_loan_details(&fiat_loan_details, &borrower_xpriv, &lender_pk).unwrap();
+        ) = encrypt_fiat_loan_details(&fiat_loan_details, &borrower_pk, &lender_pk).unwrap();
 
         let decrypted_fiat_loan_details_borrower = decrypt_fiat_loan_details(
             &encrypted_fiat_loan_details,
             &encrypted_encryption_key_borrower,
             &borrower_xpriv,
+            &borrower_path,
         )
         .unwrap();
 
@@ -392,6 +393,7 @@ mod tests {
             &encrypted_fiat_loan_details,
             &encrypted_encryption_key_lender,
             &lender_xpriv,
+            &lender_path,
         )
         .unwrap();
 

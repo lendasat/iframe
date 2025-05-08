@@ -763,6 +763,7 @@ const ContractStatusDetails = ({
         return (
           <ContractRequested
             borrowerPk={contract.borrower_pk}
+            lenderPk={contract.lender_pk}
             loanAsset={contract.loan_asset}
             isLoading={isLoading}
             onContractApprove={(a) => onContractApprove(a)}
@@ -775,6 +776,7 @@ const ContractStatusDetails = ({
       return (
         <ContractRequested
           borrowerPk={contract.borrower_pk}
+          lenderPk={contract.lender_pk}
           loanAsset={contract.loan_asset}
           isLoading={isLoading}
           onContractApprove={onContractApprove}

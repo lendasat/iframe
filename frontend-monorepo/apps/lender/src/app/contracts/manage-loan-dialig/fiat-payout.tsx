@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { LuInfo, LuLoader } from "react-icons/lu";
 import { Contract, useLenderHttpClient } from "@frontend/http-client-lender";
@@ -98,6 +98,7 @@ export function FiatPayout({ contract }: FiatPayoutProps) {
       <div className={"pt-4"}>
         <BankingDetailsSummary
           fiatLoanDetails={contract.fiat_loan_details_borrower}
+          ownDerivationPath={contract.lender_derivation_path}
         />
       </div>
 

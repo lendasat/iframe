@@ -1,5 +1,5 @@
 import { useWallet } from "@frontend/browser-wallet";
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   FiatLoanDetailsResponse,
   InnerFiatLoanDetails,
@@ -67,10 +67,12 @@ function DataListItem({ label, value, loading }: DataListItemProps) {
 
 interface BankingDetailsSummaryProps {
   fiatLoanDetails?: FiatLoanDetailsResponse;
+  ownDerivationPath?: string;
 }
 
 export const BankingDetailsSummary = ({
   fiatLoanDetails,
+  ownDerivationPath,
 }: BankingDetailsSummaryProps) => {
   const { decryptFiatLoanDetailsWithPassword } = useWallet();
   const [isLoading, setIsLoading] = useState(false);
@@ -83,7 +85,7 @@ export const BankingDetailsSummary = ({
   const [error, setError] = useState("");
 
   const decryptPaymentDetails = async () => {
-    if (fiatLoanDetails) {
+    if (fiatLoanDetails && ownDerivationPath) {
       setIsLoading(true);
 
       try {
@@ -91,6 +93,7 @@ export const BankingDetailsSummary = ({
           password,
           fiatLoanDetails.details,
           fiatLoanDetails.encrypted_encryption_key,
+          ownDerivationPath,
         );
         setLoanDetails(loanDetails);
         setIsDecrypted(true);
