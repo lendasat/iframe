@@ -4,10 +4,9 @@ import {
   WalletBackupData,
 } from "@frontend/base-http-client";
 import { begin_registration, upgrade_wallet } from "browser-wallet";
-
-import { md5 } from "hash-wasm";
 import { useNavigate } from "react-router-dom";
 import { UpgradeToPakeForm } from "./upgrade-to-pake-form";
+import { md5CaseInsensitive } from "@frontend/browser-wallet";
 
 interface UpgradeToPakeProps {
   login: (email: string, password: string) => Promise<LoginResponseOrUpgrade>;
@@ -67,7 +66,7 @@ export function UpgradeToPake({ login, is_borrower }: UpgradeToPakeProps) {
     // passphrase).
     //
     // 3. Producing a new wallet backup encrypted under the `newPassword`.
-    const key = await md5(email);
+    const key = await md5CaseInsensitive(email);
     const newWalletDetails = upgrade_wallet(
       key,
       oldWalletBackupData.mnemonic_ciphertext,

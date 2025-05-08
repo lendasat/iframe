@@ -1,12 +1,12 @@
 import { useBaseHttpClient } from "@frontend/base-http-client";
 import { RegistrationForm } from "@frontend/ui-shared";
+import { md5CaseInsensitive } from "@frontend/browser-wallet";
 import {
   begin_registration,
   load_wallet,
   new_wallet,
   persist_new_wallet,
 } from "browser-wallet";
-import { md5 } from "hash-wasm";
 import { useNavigate, useLocation } from "react-router-dom";
 
 function Registration() {
@@ -39,7 +39,7 @@ function Registration() {
       referralCode,
     );
 
-    const key = await md5(email);
+    const key = await md5CaseInsensitive(email);
     persist_new_wallet(
       walletDetails.mnemonic_ciphertext,
       walletDetails.network,

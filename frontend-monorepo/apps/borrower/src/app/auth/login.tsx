@@ -1,3 +1,4 @@
+import { md5CaseInsensitive } from "@frontend/browser-wallet";
 import { useAuth } from "@frontend/http-client-borrower";
 import { LoginForm } from "@frontend/ui-shared";
 import {
@@ -6,7 +7,6 @@ import {
   load_wallet,
   restore_wallet,
 } from "browser-wallet";
-import { md5 } from "hash-wasm";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 function Login() {
@@ -27,7 +27,7 @@ function Login() {
 
     const walletBackupData = loginResponse.wallet_backup_data;
 
-    const key = await md5(email);
+    const key = await md5CaseInsensitive(email);
     if (!does_wallet_exist(key)) {
       try {
         restore_wallet(

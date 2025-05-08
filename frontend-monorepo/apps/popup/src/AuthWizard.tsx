@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { md5 } from "hash-wasm";
 import {
   InputOTP,
   InputOTPGroup,
@@ -37,6 +36,7 @@ import {
   persist_new_wallet,
   restore_wallet,
 } from "browser-wallet";
+import { md5CaseInsensitive } from "@frontend/browser-wallet";
 
 interface AuthWizardProps {
   login: (email: string, password: string) => Promise<LoginResponseOrUpgrade>;
@@ -162,7 +162,7 @@ const AuthWizard = ({ login, inviteCode, onComplete }: AuthWizardProps) => {
         }
 
         try {
-          const key = await md5(email);
+          const key = await md5CaseInsensitive(email);
           persist_new_wallet(
             walletDetails.mnemonic_ciphertext,
             walletDetails.network,
@@ -468,7 +468,7 @@ async function logIn(
     }
   }
 
-  const key = await md5(email);
+  const key = await md5CaseInsensitive(email);
   if (!does_wallet_exist(key)) {
     try {
       restore_wallet(

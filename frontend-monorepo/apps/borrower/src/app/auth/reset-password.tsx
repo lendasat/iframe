@@ -1,11 +1,11 @@
 import { useHttpClientBorrower } from "@frontend/http-client-borrower";
 import { ResetPasswordForm } from "@frontend/ui-shared";
+import { md5CaseInsensitive } from "@frontend/browser-wallet";
 import {
   begin_registration,
   change_wallet_encryption,
   new_wallet_from_mnemonic,
 } from "browser-wallet";
-import { md5 } from "hash-wasm";
 import { useLocation, useParams } from "react-router-dom";
 
 type OldPassword = { type: "oldPassword"; value: string };
@@ -44,7 +44,7 @@ function ResetPassword() {
     );
 
     const network = import.meta.env.VITE_BITCOIN_NETWORK;
-    const key = await md5(email);
+    const key = await md5CaseInsensitive(email);
 
     // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
     let newWalletDetails;
