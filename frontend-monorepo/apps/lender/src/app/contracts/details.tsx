@@ -66,7 +66,6 @@ export const Details = ({ contract }: DetailsProps) => {
     ? `${(contract.interest_rate * 100).toFixed(2)}%`
     : undefined;
   const interestAmount = contract?.interest;
-  console.log(`Interest amount ${interestAmount} for ${contractId}`);
   const borrowerName = contract?.borrower.name;
   const borrowerNameInitials = borrowerName?.substr(0, 2);
 
@@ -221,7 +220,7 @@ const LoanDetails: React.FC<LoanDetailsProps> = ({
                   {formatCurrency(interestAmount)}
                 </p>
               ) : (
-                <Skeleton className="h-4 w-[150px] mb-2" />
+                <Skeleton className="h-4 w-[150px] mb-2 ml-auto" />
               )}
             </div>
           </div>
@@ -293,20 +292,19 @@ const LoanDetails: React.FC<LoanDetailsProps> = ({
             )}
           </div>
           <div className="text-right md:col-span-1 col-span-2">
-            <div>
+            <div className="text-right">
               <p className="text-sm text-gray-500">Interest Rate</p>
               {interestRate ? (
                 <p>{interestRate} p.a.</p>
               ) : (
-                <Skeleton className="h-4 w-[150px] mb-2" />
+                <Skeleton className="h-4 w-[80px] mb-2 ml-auto" />
               )}
-
-              {interestAmount != undefined ? (
+              {interestAmount ? (
                 <p className="text-xs text-gray-500">
                   {formatCurrency(interestAmount)}
                 </p>
               ) : (
-                <Skeleton className="h-4 w-[150px] mb-2" />
+                <Skeleton className="h-4 w-[150px] mb-2 ml-auto" />
               )}
             </div>
           </div>
