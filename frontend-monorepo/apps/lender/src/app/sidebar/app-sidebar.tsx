@@ -183,7 +183,7 @@ export function AppSidebar({ onLogout, username }: AppSidebarProps) {
                         align={isMobile ? "end" : "start"}
                       >
                         {item.items.map((innerItem) => (
-                          <Link to={innerItem.url}>
+                          <Link to={innerItem.url} key={innerItem.name}>
                             <DropdownMenuItem>
                               <innerItem.icon className="text-muted-foreground" />
                               <span>{innerItem.name}</span>

@@ -12,8 +12,11 @@ import { createContext, useContext } from "react";
 import {
   BorrowerStats,
   Contract,
+  ContractDispute,
+  ContractDisputeMessage,
   CreateLoanOfferRequest,
   Dispute,
+  DisputeWithMessages,
   GetLiquidationPsbtResponse,
   GetRecoveryPsbtResponse,
   LenderStats,
@@ -73,6 +76,22 @@ export function allowedPagesWithoutLogin(location: string) {
     location.includes(`upgrade-to-pake`) ||
     location.includes(`waitlist`)
   );
+}
+
+interface RawContractDispute
+  extends Omit<ContractDispute, "created_at" | "updated_at" | "resolved_at"> {
+  created_at: string;
+  updated_at: string;
+  resolved_at?: string;
+}
+
+interface RawContractDisputeMessage
+  extends Omit<ContractDisputeMessage, "created_at"> {
+  created_at: string;
+}
+
+interface RawDisputeWithMessages extends RawContractDispute {
+  messages: RawContractDisputeMessage[];
 }
 
 export class HttpClientLender extends BaseHttpClient {
@@ -460,69 +479,6 @@ export class HttpClientLender extends BaseHttpClient {
     }
   }
 
-  async startDispute(
-    contract_id: string,
-    reason: string,
-    comment: string,
-  ): Promise<Dispute> {
-    try {
-      const response: AxiosResponse<Dispute> = await this.httpClient.post(
-        `/api/disputes`,
-        {
-          contract_id,
-          reason,
-          comment,
-        },
-      );
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        const message = JSON.stringify(error.response?.data);
-        console.error(
-          `Failed to create dispute: http: ${
-            error.response?.status
-          } and response: ${JSON.stringify(error.response?.data)}`,
-        );
-        throw new Error(message);
-      } else {
-        throw new Error(`Could not start dispute ${JSON.stringify(error)}`);
-      }
-    }
-  }
-
-  async getDispute(disputeId: string): Promise<Dispute> {
-    try {
-      const response: AxiosResponse<RawDispute> = await this.httpClient.get(
-        `/api/disputes/${disputeId}`,
-      );
-      const dispute = response.data;
-
-      const createdAt = parseRFC3339Date(dispute.created_at);
-      const updatedAt = parseRFC3339Date(dispute.updated_at);
-      if (createdAt == null || updatedAt == null) {
-        throw new Error("Invalid date");
-      }
-
-      return {
-        ...dispute,
-        created_at: createdAt,
-        updated_at: updatedAt,
-      };
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        const message = error.response.data.message;
-        console.error(
-          `Failed to fetch dispute: http: ${
-            error.response?.status
-          } and response: ${JSON.stringify(error.response?.data)}`,
-        );
-        throw new Error(message);
-      } else {
-        throw new Error(`Could not fetch dispute ${JSON.stringify(error)}`);
-      }
-    }
-  }
-
   async getLenderProfile(id: string): Promise<LenderStats> {
     try {
       const response: AxiosResponse<LenderStatsRaw> = await this.httpClient.get(
@@ -891,6 +847,193 @@ export class HttpClientLender extends BaseHttpClient {
       }
     }
   }
+
+  startDispute = async (
+    contract_id: string,
+    reason: string,
+    comment: string,
+  ): Promise<Dispute | undefined> => {
+    try {
+      const response: AxiosResponse<Dispute> = await this.httpClient.post(
+        `/api/disputes`,
+        {
+          contract_id,
+          reason,
+          comment,
+        },
+      );
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to start dispute ${
+            error.response?.status
+          } and response: ${JSON.stringify(error.response?.data)}`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not start dispute: ${JSON.stringify(error)}`);
+      }
+    }
+  };
+
+  async getDispute(disputeId: string): Promise<Dispute> {
+    try {
+      const response: AxiosResponse<RawDispute> = await this.httpClient.get(
+        `/api/disputes/${disputeId}`,
+      );
+      const dispute = response.data;
+
+      const createdAt = parseRFC3339Date(dispute.created_at);
+      const updatedAt = parseRFC3339Date(dispute.updated_at);
+      if (createdAt == null || updatedAt == null) {
+        throw new Error("Invalid date");
+      }
+
+      return {
+        ...dispute,
+        created_at: createdAt,
+        updated_at: updatedAt,
+      };
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to fetch dispute: http: ${
+            error.response?.status
+          } and response: ${JSON.stringify(error.response?.data)}`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not fetch dispute ${JSON.stringify(error)}`);
+      }
+    }
+  }
+
+  resolveDispute = async (disputeId: string): Promise<void> => {
+    try {
+      await this.httpClient.put(`/api/disputes/${disputeId}/resolve`);
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to resolve dispute: http: ${
+            error.response?.status
+          } and response: ${JSON.stringify(error.response?.data)}`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(`Could not resolve dispute ${JSON.stringify(error)}`);
+      }
+    }
+  };
+
+  commentOnDispute = async (
+    disputeId: string,
+    message: string,
+  ): Promise<void> => {
+    try {
+      await this.httpClient.put(`/api/disputes/${disputeId}`, {
+        message: message,
+      });
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to comment on dispute ${
+            error.response?.status
+          } and response: ${JSON.stringify(error.response?.data)}`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(
+          `Could not comment on dispute: ${JSON.stringify(error)}`,
+        );
+      }
+    }
+  };
+
+  fetchDisputeWithMessages = async (
+    contractId: string,
+  ): Promise<DisputeWithMessages[] | undefined> => {
+    try {
+      const response: AxiosResponse<RawDisputeWithMessages[]> =
+        await this.httpClient.get(`/api/disputes?contract_id=${contractId}`);
+      const rawDisputes = response.data;
+
+      // Handle empty response
+      if (!rawDisputes || rawDisputes.length === 0) {
+        return [];
+      }
+
+      // Process each dispute in the list
+      return rawDisputes.map((rawDispute) => {
+        // Parse the main dispute dates
+        const createdAt = parseRFC3339Date(rawDispute.created_at);
+        const updatedAt = parseRFC3339Date(rawDispute.updated_at);
+
+        // Optional date that might be null
+        let resolvedAt = undefined;
+        if (rawDispute.resolved_at) {
+          resolvedAt = parseRFC3339Date(rawDispute.resolved_at);
+          if (resolvedAt === null) {
+            throw new Error(
+              `Invalid resolved_at date format in dispute ID: ${rawDispute.id}`,
+            );
+          }
+        }
+
+        if (createdAt === null || updatedAt === null) {
+          throw new Error(
+            `Invalid date format in dispute ID: ${rawDispute.id}`,
+          );
+        }
+
+        // Parse dates in all messages
+        const parsedMessages: ContractDisputeMessage[] = (
+          rawDispute.messages || []
+        ).map((msg) => {
+          const messageCreatedAt = parseRFC3339Date(msg.created_at);
+          if (messageCreatedAt === null) {
+            throw new Error(`Invalid date format in message ID: ${msg.id}`);
+          }
+
+          return {
+            dispute_id: msg.dispute_id,
+            created_at: messageCreatedAt!,
+            message: msg.message,
+            id: msg.id,
+            is_read: msg.is_read,
+            sender_id: msg.sender_id,
+            sender_type: msg.sender_type,
+          };
+        });
+
+        return {
+          ...rawDispute,
+          created_at: createdAt!,
+          updated_at: updatedAt!,
+          resolved_at: resolvedAt,
+          messages: parsedMessages,
+        };
+      });
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to fetch dispute messages ${
+            error.response?.status
+          } and response: ${JSON.stringify(error.response?.data)}`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(
+          `Could not fetch dispute messages: ${JSON.stringify(error)}`,
+        );
+      }
+    }
+  };
 }
 
 type LenderHttpClientContextType = Pick<
@@ -905,8 +1048,6 @@ type LenderHttpClientContextType = Pick<
   | "rejectContractExtension"
   | "principalGiven"
   | "markPrincipalConfirmed"
-  | "startDispute"
-  | "getDispute"
   | "getLenderProfile"
   | "getBorrowerProfile"
   | "getAllLoanOffers"
@@ -924,6 +1065,11 @@ type LenderHttpClientContextType = Pick<
   | "getLoanApplication"
   | "takeLoanApplication"
   | "newChatNotification"
+  | "startDispute"
+  | "getDispute"
+  | "fetchDisputeWithMessages"
+  | "commentOnDispute"
+  | "resolveDispute"
 >;
 
 export const LenderHttpClientContext = createContext<
@@ -980,8 +1126,6 @@ export const HttpClientLenderProvider: React.FC<HttpClientProviderProps> = ({
     rejectKyc: httpClient.rejectKyc.bind(httpClient),
     principalGiven: httpClient.principalGiven.bind(httpClient),
     markPrincipalConfirmed: httpClient.markPrincipalConfirmed.bind(httpClient),
-    startDispute: httpClient.startDispute.bind(httpClient),
-    getDispute: httpClient.getDispute.bind(httpClient),
     getLenderProfile: httpClient.getLenderProfile.bind(httpClient),
     getBorrowerProfile: httpClient.getBorrowerProfile.bind(httpClient),
     getAllLoanOffers: httpClient.getAllLoanOffers.bind(httpClient),
@@ -1002,6 +1146,12 @@ export const HttpClientLenderProvider: React.FC<HttpClientProviderProps> = ({
     getLoanApplication: httpClient.getLoanApplication.bind(httpClient),
     takeLoanApplication: httpClient.takeLoanApplication.bind(httpClient),
     newChatNotification: httpClient.newChatNotification.bind(httpClient),
+    startDispute: httpClient.startDispute.bind(httpClient),
+    getDispute: httpClient.getDispute.bind(httpClient),
+    fetchDisputeWithMessages:
+      httpClient.fetchDisputeWithMessages.bind(httpClient),
+    commentOnDispute: httpClient.commentOnDispute.bind(httpClient),
+    resolveDispute: httpClient.resolveDispute.bind(httpClient),
   };
 
   return (

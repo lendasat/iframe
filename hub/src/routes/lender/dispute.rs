@@ -5,30 +5,27 @@ use crate::routes::lender::auth::jwt_auth;
 use crate::routes::AppState;
 use crate::routes::ErrorResponse;
 use axum::extract::Path;
+use axum::extract::Query;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::middleware;
 use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::routing::post;
+use axum::routing::put;
 use axum::Extension;
 use axum::Json;
 use axum::Router;
+use serde::Deserialize;
 use std::sync::Arc;
 use tracing::instrument;
+use uuid::Uuid;
 
 pub(crate) fn router(app_state: Arc<AppState>) -> Router {
     Router::new()
         .route(
             "/api/disputes",
-            get(get_all_disputes).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_auth::auth,
-            )),
-        )
-        .route(
-            "/api/disputes/:dispute_id",
-            get(get_disputes_by_id).route_layer(middleware::from_fn_with_state(
+            get(get_all_disputes_for_contract).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
                 jwt_auth::auth,
             )),
@@ -40,33 +37,35 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
                 jwt_auth::auth,
             )),
         )
+        .route(
+            "/api/disputes/:dispute_id",
+            put(add_message_to_dispute).route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                jwt_auth::auth,
+            )),
+        )
+        .route(
+            "/api/disputes/:dispute_id/resolve",
+            put(put_resolve_dispute).route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                jwt_auth::auth,
+            )),
+        )
         .with_state(app_state)
 }
 
-pub async fn get_all_disputes(
-    State(data): State<Arc<AppState>>,
-    Extension(user): Extension<Lender>,
-) -> anyhow::Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let disputes = db::dispute::load_disputes_by_lender(&data.db, user.id.as_str())
-        .await
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
-    Ok((StatusCode::OK, Json(disputes)))
+#[derive(Deserialize)]
+pub struct DisputeQueryParams {
+    pub contract_id: String,
 }
 
-pub async fn get_disputes_by_id(
+pub async fn get_all_disputes_for_contract(
     State(data): State<Arc<AppState>>,
-    Extension(user): Extension<Lender>,
-    Path(dispute_id): Path<String>,
+    query_params: Query<DisputeQueryParams>,
 ) -> anyhow::Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let disputes = db::dispute::load_disputes_by_lender_and_dispute_id(
+    let disputes = db::contract_disputes::get_disputes_with_messages_by_contract(
         &data.db,
-        user.id.as_str(),
-        dispute_id.as_str(),
+        query_params.contract_id.as_str(),
     )
     .await
     .map_err(|error| {
@@ -75,17 +74,11 @@ pub async fn get_disputes_by_id(
         };
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
     })?;
-    if disputes.is_none() {
-        let error_response = ErrorResponse {
-            message: "Dispute not found".to_string(),
-        };
 
-        return Err((StatusCode::NOT_FOUND, Json(error_response)));
-    }
     Ok((StatusCode::OK, Json(disputes)))
 }
 
-#[instrument(skip_all, fields(lender_id = user.id, contract_id = body.contract_id, body), err(Debug), ret)]
+#[instrument(skip_all, fields(lender_id = user.id, ?body), ret, err(Debug))]
 pub(crate) async fn create_dispute(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Lender>,
@@ -105,42 +98,38 @@ pub(crate) async fn create_dispute(
     })?
     .ok_or_else(|| {
         let error_response = ErrorResponse {
-            message: format!("Missing contract: {}", body.contract_id),
+            message: "Contract not found".to_string(),
         };
         (StatusCode::BAD_REQUEST, Json(error_response))
     })?;
 
-    let dispute = db::dispute::load_disputes_by_lender_and_contract_id(
-        &data.db,
-        user.id.as_str(),
-        body.contract_id.as_str(),
-    )
-    .await
-    .map_err(|error| {
+    let disputes =
+        db::contract_disputes::get_disputes_by_contract(&data.db, body.contract_id.as_str())
+            .await
+            .map_err(|error| {
+                let error_response = ErrorResponse {
+                    message: format!("Database error: {}", error),
+                };
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+            })?;
+
+    if disputes.iter().any(|d| {
+        d.status == db::contract_disputes::DisputeStatus::DisputeStartedBorrower
+            || d.status == db::contract_disputes::DisputeStatus::DisputeStartedLender
+            || d.status == db::contract_disputes::DisputeStatus::InProgress
+    }) {
         let error_response = ErrorResponse {
-            message: format!("Database error: {}", error),
+            message: "Dispute already in progress".parse().unwrap(),
         };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?;
-
-    let dispute_already_started = !dispute.is_empty();
-
-    if dispute_already_started {
-        tracing::warn!(
-            borrower_id = user.id,
-            contract_id = body.contract_id,
-            "There is already a dispute running, we allow multiple disputes for now."
-        )
+        return Err((StatusCode::BAD_REQUEST, Json(error_response)));
     }
 
     let comment = format!("{}. {}", body.reason, body.comment);
-    let dispute = db::dispute::start_new_dispute_lender(
+    let dispute = db::contract_disputes::start_dispute_lender(
         &data.db,
-        body.contract_id.as_str(),
-        contract.borrower_id.as_str(),
+        contract.id.as_str(),
         user.id.as_str(),
         comment.as_str(),
-        dispute_already_started,
     )
     .await
     .map_err(|error| {
@@ -152,11 +141,85 @@ pub(crate) async fn create_dispute(
 
     data.notifications
         .send_start_dispute(
-            user.name().as_str(),
-            user.email().as_str(),
-            dispute.id.as_str(),
+            user.name.as_str(),
+            user.email.as_str(),
+            dispute.id.to_string().as_str(),
+        )
+        .await;
+
+    data.notifications
+        .send_notify_admin_about_dispute_lender(
+            user,
+            dispute.id.to_string().as_str(),
+            contract.lender_id.as_str(),
+            contract.borrower_id.as_str(),
+            contract.id.as_str(),
         )
         .await;
 
     Ok(Json(dispute))
+}
+
+#[derive(Deserialize, Debug)]
+pub struct DisputeMessage {
+    message: String,
+}
+
+#[instrument(skip_all, fields(lender_id = user.id, dispute_id), err(Debug), ret)]
+pub async fn add_message_to_dispute(
+    State(data): State<Arc<AppState>>,
+    Extension(user): Extension<Lender>,
+    Path(dispute_id): Path<Uuid>,
+    Json(body): Json<DisputeMessage>,
+) -> anyhow::Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    db::contract_disputes::add_lender_message(&data.db, dispute_id, user.id, body.message)
+        .await
+        .map_err(|err| {
+            tracing::error!("Failed adding message to dispute {err:#}");
+
+            let error_response = ErrorResponse {
+                message: "Something went wrong".to_string(),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
+    Ok(())
+}
+
+#[instrument(skip_all, fields(lender_id = user.id, dispute_id), err(Debug), ret)]
+pub async fn put_resolve_dispute(
+    State(data): State<Arc<AppState>>,
+    Extension(user): Extension<Lender>,
+    Path(dispute_id): Path<Uuid>,
+) -> anyhow::Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    let dispute = db::contract_disputes::get_dispute_by_dispute_id(&data.db, dispute_id)
+        .await
+        .map_err(|err| {
+            tracing::error!("Failed adding message to dispute {err:#}");
+
+            let error_response = ErrorResponse {
+                message: "Something went wrong".to_string(),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
+
+    if dispute.status != db::contract_disputes::DisputeStatus::DisputeStartedLender {
+        tracing::error!("Dispute was not started by lender");
+
+        let error_response = ErrorResponse {
+            message: "Dispute was not started by you".to_string(),
+        };
+        return Err((StatusCode::BAD_REQUEST, Json(error_response)));
+    }
+
+    db::contract_disputes::resolve_lender(&data.db, dispute_id, user.id.as_str())
+        .await
+        .map_err(|err| {
+            tracing::error!("Failed resolve dispute {err:#}");
+
+            let error_response = ErrorResponse {
+                message: "Something went wrong".to_string(),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
+    Ok(())
 }

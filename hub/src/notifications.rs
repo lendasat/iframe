@@ -58,7 +58,7 @@ impl Notifications {
         }
     }
 
-    pub async fn send_notify_admin_about_dispute(
+    pub async fn send_notify_admin_about_dispute_borrower(
         &self,
         user: Borrower,
         dispute_id: &str,
@@ -68,7 +68,36 @@ impl Notifications {
     ) {
         if let Err(e) = self
             .email
-            .send_notify_admin_about_dispute(user, dispute_id, lender_id, borrower_id, contract_id)
+            .send_notify_admin_about_dispute(
+                user.name.as_str(),
+                dispute_id,
+                lender_id,
+                borrower_id,
+                contract_id,
+            )
+            .await
+        {
+            tracing::error!("Could not send notification about dispute {e:#}");
+        }
+    }
+
+    pub async fn send_notify_admin_about_dispute_lender(
+        &self,
+        user: Lender,
+        dispute_id: &str,
+        lender_id: &str,
+        borrower_id: &str,
+        contract_id: &str,
+    ) {
+        if let Err(e) = self
+            .email
+            .send_notify_admin_about_dispute(
+                user.name.as_str(),
+                dispute_id,
+                lender_id,
+                borrower_id,
+                contract_id,
+            )
             .await
         {
             tracing::error!("Could not send notification about dispute {e:#}");

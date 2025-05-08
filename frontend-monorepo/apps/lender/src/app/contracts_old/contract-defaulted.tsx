@@ -15,7 +15,7 @@ enum LiquidationPreference {
   stablecoin = "1",
 }
 
-export function ContractDefaulted({ contract }: ContractDefaultedProps) {
+export function DefaultedContractDialog({ contract }: ContractDefaultedProps) {
   const [selectedLiquidationPreference, setSelectedLiquidationPreference] =
     useState(LiquidationPreference.bitcoin);
 

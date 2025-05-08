@@ -3,8 +3,8 @@ import type { Contract } from "@frontend/http-client-lender";
 import { usePrice } from "@frontend/ui-shared";
 import { Box, Heading, Tabs, Text } from "@radix-ui/themes";
 import { useState } from "react";
-import type { ColumnFilterKey } from "../contracts/contract-details-table";
-import { ContractDetailsTable } from "../contracts/contract-details-table";
+import type { ColumnFilterKey } from "../contracts_old/contract-details-table";
+import { ContractDetailsTable } from "../contracts_old/contract-details-table";
 
 interface TabHeaderProps {
   thisIndex: string;

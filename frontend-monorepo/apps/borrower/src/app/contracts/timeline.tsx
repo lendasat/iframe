@@ -168,7 +168,7 @@ export function contractStatusDescription(status: ContractStatus): string {
     case ContractStatus.RepaymentConfirmed:
       return "The lender has received the repayment";
     case ContractStatus.Undercollateralized:
-      return "Your contract is under collateralilzed";
+      return "Your contract is awaiting liquidation";
     case ContractStatus.Defaulted:
       return "You have not paid back in time";
     case ContractStatus.Closing:

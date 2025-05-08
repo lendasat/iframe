@@ -50,7 +50,7 @@ export function contractStatusLabelColor(status?: ContractStatus): string {
     case ContractStatus.RepaymentConfirmed:
       return "bg-emerald-100 text-emerald-800";
     case ContractStatus.Undercollateralized:
-      return "bg-amber-100 text-amber-800";
+      return "bg-red-100 text-red-800";
     case ContractStatus.Defaulted:
       return "bg-red-100 text-red-800";
     case ContractStatus.Closing:

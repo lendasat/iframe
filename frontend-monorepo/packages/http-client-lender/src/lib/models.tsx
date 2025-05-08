@@ -41,6 +41,7 @@ export interface Contract {
   repaid_at: Date | undefined;
   expiry: Date;
   interest_rate: number;
+  interest: number;
   initial_collateral_sats: number;
   origination_fee_sats: number;
   collateral_sats: number;
@@ -66,6 +67,14 @@ export interface Contract {
   lender_derivation_path: string;
   borrower_npub: string;
   borrower_pk: string;
+  timeline: TimelineEvent[];
+}
+
+export interface TimelineEvent {
+  // TODO: this is a rfc3339 formatted date, but I failed to parse it correctly
+  date: string;
+  event: ContractStatus;
+  txid?: string;
 }
 
 export interface KycInfo {
@@ -176,7 +185,7 @@ export function contractStatusToLabelString(status: ContractStatus): string {
       statusText = "Collateral Confirmed";
       break;
     case ContractStatus.PrincipalGiven:
-      statusText = "Principal Disbursed";
+      statusText = "Open";
       break;
     case ContractStatus.RepaymentProvided:
       statusText = "Repayment Provided";
@@ -185,7 +194,7 @@ export function contractStatusToLabelString(status: ContractStatus): string {
       statusText = "Repayment Confirmed";
       break;
     case ContractStatus.Undercollateralized:
-      statusText = "Undercollateralized";
+      statusText = "Awaiting Liquidation";
       break;
     case ContractStatus.Defaulted:
       statusText = "Defaulted";
@@ -409,4 +418,56 @@ export interface TakeLoanApplicationSchema {
 
 export interface NotifyUser {
   contract_id: string;
+}
+
+// Enum for message sender type
+export enum SenderType {
+  Borrower = "Borrower",
+  Lender = "Lender",
+  PlatformAdmin = "PlatformAdmin",
+}
+
+// Enum for dispute initiator type
+export enum DisputeInitiatorType {
+  Borrower = "Borrower",
+  Lender = "Lender",
+}
+
+// Enum for dispute status
+export enum ContractDisputeStatus {
+  DisputeStartedBorrower = "DisputeStartedBorrower",
+  DisputeStartedLender = "DisputeStartedLender",
+  InProgress = "InProgress",
+  Closed = "Closed",
+  Cancelled = "Cancelled",
+}
+
+// Interface for contract dispute
+export interface ContractDispute {
+  id: string;
+  contract_id: string;
+  initiator_type: DisputeInitiatorType;
+  initiator_id: string;
+  status: ContractDisputeStatus;
+  reason: string;
+  created_at: Date;
+  updated_at: Date;
+  resolved_at?: Date;
+  resolution_notes?: string;
+}
+
+// Interface for contract dispute message
+export interface ContractDisputeMessage {
+  id: string;
+  dispute_id: string;
+  sender_type: SenderType;
+  sender_id: string;
+  message: string;
+  is_read: boolean;
+  created_at: Date;
+}
+
+// Interface that combines a dispute with its messages
+export interface DisputeWithMessages extends ContractDispute {
+  messages: ContractDisputeMessage[];
 }

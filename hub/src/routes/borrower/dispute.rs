@@ -143,7 +143,7 @@ pub(crate) async fn create_dispute(
     }
 
     data.notifications
-        .send_notify_admin_about_dispute(
+        .send_notify_admin_about_dispute_borrower(
             user,
             dispute.id.to_string().as_str(),
             contract.lender_id.as_str(),
@@ -186,6 +186,26 @@ pub async fn put_resolve_dispute(
     Extension(user): Extension<Borrower>,
     Path(dispute_id): Path<Uuid>,
 ) -> anyhow::Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    let dispute = db::contract_disputes::get_dispute_by_dispute_id(&data.db, dispute_id)
+        .await
+        .map_err(|err| {
+            tracing::error!("Failed adding message to dispute {err:#}");
+
+            let error_response = ErrorResponse {
+                message: "Something went wrong".to_string(),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
+
+    if dispute.status != db::contract_disputes::DisputeStatus::DisputeStartedBorrower {
+        tracing::error!("Dispute was not started by borrower");
+
+        let error_response = ErrorResponse {
+            message: "Dispute was not started by you".to_string(),
+        };
+        return Err((StatusCode::BAD_REQUEST, Json(error_response)));
+    }
+
     db::contract_disputes::resolve_borrower(&data.db, dispute_id, user.id.as_str())
         .await
         .map_err(|err| {

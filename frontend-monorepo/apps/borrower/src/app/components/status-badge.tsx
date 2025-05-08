@@ -74,7 +74,7 @@ export function StatusBadge({ status }: StatusBadgeProps) {
       break;
     case ContractStatus.Undercollateralized:
       color = "red";
-      label = "Undercollateralized";
+      label = "Awaiting Liquidation";
       break;
     case ContractStatus.Defaulted:
       color = "red";
