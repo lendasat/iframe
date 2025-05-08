@@ -53,7 +53,8 @@ async fn new_chat_notification(
         user.id.as_str(),
     )
     .await
-    .map_err(Error::Database)?;
+    .map_err(Error::Database)?
+    .ok_or(Error::MissingContract)?;
 
     let borrower = db::borrowers::get_user_by_id(&data.db, contract.borrower_id.as_str())
         .await
@@ -79,6 +80,7 @@ enum Error {
     Database(anyhow::Error),
     /// Borrower not found
     MissingBorrower,
+    MissingContract,
 }
 
 // Create our own JSON extractor by wrapping `axum::Json`. This makes it easy to override the
@@ -121,6 +123,7 @@ impl IntoResponse for Error {
                 )
             }
             Error::MissingBorrower => (StatusCode::BAD_REQUEST, "Lender not found".to_owned()),
+            Error::MissingContract => (StatusCode::BAD_REQUEST, "Contract not found".to_owned()),
         };
         (status, AppJson(ErrorResponse { message })).into_response()
     }

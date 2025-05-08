@@ -409,7 +409,8 @@ pub async fn resolve_lender(
         dispute.contract_id.as_str(),
         lender_id,
     )
-    .await?;
+    .await?
+    .context("contract not found")?;
     let mut transaction = pool.begin().await?;
 
     update_dispute(

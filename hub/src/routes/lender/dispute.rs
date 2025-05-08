@@ -95,6 +95,12 @@ pub(crate) async fn create_dispute(
             message: format!("Database error: {}", error),
         };
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+    })?
+    .ok_or_else(|| {
+        let error_response = ErrorResponse {
+            message: "Contract not found".to_string(),
+        };
+        (StatusCode::BAD_REQUEST, Json(error_response))
     })?;
 
     let disputes =

@@ -18,7 +18,8 @@ pub async fn mark_as_principal_given(
     let contract =
         db::contracts::load_contract_by_contract_id_and_lender_id(pool, contract_id, lender_id)
             .await
-            .context("Failed to load contract request")?;
+            .context("Failed to load contract request")?
+            .context("contract not found")?;
 
     db::contracts::mark_contract_as_principal_given(pool, contract_id, contract.duration_days)
         .await

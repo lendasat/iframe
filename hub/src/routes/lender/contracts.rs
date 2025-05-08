@@ -241,7 +241,8 @@ async fn get_contract(
         user.id.as_str(),
     )
     .await
-    .map_err(Error::database)?;
+    .map_err(Error::database)?
+    .ok_or(Error::MissingContract(contract_id.clone()))?;
 
     let contract = map_to_api_contract(&data, contract).await?;
 
@@ -361,7 +362,8 @@ async fn put_reject_extension_request(
         user.id.as_str(),
     )
     .await
-    .map_err(Error::database)?;
+    .map_err(Error::database)?
+    .ok_or(Error::MissingContract(contract_id.clone()))?;
 
     if contract.status != ContractStatus::RenewalRequested {
         return Err(Error::InvalidRejectRequest {
@@ -414,7 +416,8 @@ async fn put_confirm_repayment(
             &user.id,
         )
         .await
-        .context("Failed to load contract request")?;
+        .context("Failed to load contract request")?
+        .context("contract not found")?;
 
         db::contracts::mark_contract_as_repayment_confirmed(&data.db, contract.id.as_str())
             .await
@@ -482,6 +485,12 @@ async fn get_liquidation_to_bitcoin_psbt(
             message: format!("Database error: {e:#}"),
         };
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+    })?
+    .ok_or_else(|| {
+        let error_response = ErrorResponse {
+            message: "Contract not found".to_string(),
+        };
+        (StatusCode::BAD_REQUEST, Json(error_response))
     })?;
 
     if !matches!(
@@ -613,6 +622,12 @@ async fn post_build_liquidation_to_stablecoin_psbt(
             StatusCode::INTERNAL_SERVER_ERROR,
             format!("Database error: {e:#}").as_str(),
         )
+    })?
+    .ok_or_else(|| {
+        let error_response = ErrorResponse {
+            message: "Contract not found".to_string(),
+        };
+        (StatusCode::BAD_REQUEST, Json(error_response))
     })?;
 
     if !matches!(
@@ -790,7 +805,8 @@ async fn post_liquidation_tx(
             &user.id,
         )
         .await
-        .context("Failed to load contract")?;
+        .context("Failed to load contract")?
+        .context("contract not found")?;
 
         let borrower = db::borrowers::get_user_by_id(&data.db, contract.borrower_id.as_str())
             .await?
@@ -864,6 +880,12 @@ async fn get_manual_recovery_psbt(
             message: format!("Database error: {e:#}"),
         };
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+    })?
+    .ok_or_else(|| {
+        let error_response = ErrorResponse {
+            message: "Contract not found".to_string(),
+        };
+        (StatusCode::BAD_REQUEST, Json(error_response))
     })?;
 
     let ManualCollateralRecovery { lender_amount, .. } =

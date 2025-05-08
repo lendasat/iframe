@@ -341,7 +341,6 @@ fn decrypt_field(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bip39::Mnemonic;
     use bitcoin::Network;
 
     #[test]
