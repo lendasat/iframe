@@ -20,14 +20,13 @@ import init, {
   get_version,
 } from "browser-wallet";
 import browserWalletUrl from "../../../../../browser-wallet/pkg/browser_wallet_bg.wasm?url";
-
-import { md5 } from "hash-wasm";
 import type { ReactNode } from "react";
 import { createContext, useContext, useEffect, useState } from "react";
 import {
   FiatLoanDetails as ReactFiatLoanDetails,
   InnerFiatLoanDetails as ReactInnerFiatLoanDetails,
 } from "@frontend/base-http-client";
+import { md5CaseInsensitive } from "../index";
 
 export interface PkAndPath {
   pubkey: string;
@@ -111,7 +110,7 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
     init(browserWalletUrl)
       .then(async () => {
         setIsInitialized(true);
-        const key = await md5(email);
+        const key = await md5CaseInsensitive(email);
 
         setDoesWalletExist(does_wallet_exist(key));
         setIsWalletLoaded(is_wallet_loaded());
@@ -128,7 +127,7 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
   const loadWallet = async (passphrase: string) => {
     console.log("loading wallet");
     if (isInitialized) {
-      const key = await md5(email);
+      const key = await md5CaseInsensitive(email);
       load_wallet(passphrase, key);
       setIsWalletLoaded(true);
       console.log("wallet loaded successfully");
@@ -146,7 +145,7 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
 
   const getNsec = async () => {
     if (isInitialized) {
-      const key = await md5(email);
+      const key = await md5CaseInsensitive(email);
       return get_nsec(key);
     }
     throw Error("Wallet not initialized");
@@ -196,7 +195,7 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
         );
       }
 
-      const key = await md5(email);
+      const key = await md5CaseInsensitive(email);
       const signedPsbt = unlock_and_sign_claim_psbt(
         password,
         key,
@@ -231,12 +230,12 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
   };
 
   const getNpub = async () => {
-    const key = await md5(email);
+    const key = await md5CaseInsensitive(email);
     return get_npub(key);
   };
 
   const getPkAndDerivationPath = async () => {
-    const key = await md5(email);
+    const key = await md5CaseInsensitive(email);
     const res = get_pk_and_derivation_path(key);
     return {
       pubkey: res.pubkey,
@@ -245,7 +244,7 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
   };
 
   const getNextAddress = async () => {
-    const key = await md5(email);
+    const key = await md5CaseInsensitive(email);
     return get_next_address(key);
   };
 

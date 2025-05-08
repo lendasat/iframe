@@ -1,5 +1,6 @@
 import queryString from "query-string";
 import { LoanAsset } from "./lib/models";
+import { md5 } from "hash-wasm";
 
 export const ONE_YEAR = 360;
 export const ONE_MONTH = 30;
