@@ -5,6 +5,7 @@ use crate::routes::borrower::auth::jwt_or_api_auth;
 use crate::routes::user_connection_details_middleware;
 use crate::routes::AppState;
 use crate::utils::is_valid_email;
+use anyhow::anyhow;
 use axum::extract::FromRequest;
 use axum::extract::Path;
 use axum::extract::State;
@@ -118,14 +119,21 @@ pub struct PostVerificationStatus {
     pub verification_status: String,
 }
 
-#[instrument(skip_all, fields(borrower_id = body.reference, bringing_user_id = body.user_id), err(Debug), ret)]
+#[instrument(skip_all, err(Debug), ret)]
 #[axum::debug_handler]
 async fn post_verification_status(
     State(data): State<Arc<AppState>>,
-    Json(body): Json<PostVerificationStatus>,
+    payload: Json<Value>,
 ) -> Result<(), Error> {
-    tracing::info!(status = ?body, "Received verification status update");
-    db::bringin::insert_api_key(&data.db, &body.user_id, &body.apikey)
+    tracing::info!(
+        payload = payload.0.to_string(),
+        "Received verification status update"
+    );
+
+    let status = serde_json::from_value::<PostVerificationStatus>(payload.0)
+        .map_err(|e| Error::bringin(anyhow!(e)))?;
+
+    db::bringin::insert_api_key(&data.db, &status.user_id, &status.apikey)
         .await
         .map_err(Error::database)?;
 
@@ -135,7 +143,10 @@ async fn post_verification_status(
 #[instrument(skip_all, err(Debug), ret)]
 #[axum::debug_handler]
 async fn post_order_status_update_callback(payload: Json<Value>) -> Result<(), Error> {
-    tracing::info!(payload = ?payload, "Received order status update");
+    tracing::info!(
+        payload = payload.0.to_string(),
+        "Received order status update"
+    );
 
     Ok(())
 }
@@ -150,14 +161,22 @@ pub struct PostUserConnectedRequest {
     pub reference: String,
 }
 
-#[instrument(skip_all, fields(borrower_id, bringing_user_id = body.user_id), err(Debug), ret)]
+#[instrument(skip_all, err(Debug), ret)]
 #[axum::debug_handler]
 async fn post_user_connected_callback(
     State(data): State<Arc<AppState>>,
     Path(borrower_id): Path<String>,
-    Json(body): Json<PostUserConnectedRequest>,
+    payload: Json<Value>,
 ) -> Result<(), Error> {
-    db::bringin::insert_api_key(&data.db, &borrower_id, &body.apikey)
+    tracing::info!(
+        payload = payload.0.to_string(),
+        "Received verification status update"
+    );
+
+    let status = serde_json::from_value::<PostUserConnectedRequest>(payload.0)
+        .map_err(|e| Error::bringin(anyhow!(e)))?;
+
+    db::bringin::insert_api_key(&data.db, &borrower_id, &status.apikey)
         .await
         .map_err(Error::database)?;
 
