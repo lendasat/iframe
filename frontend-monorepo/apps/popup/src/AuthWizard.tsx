@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   InputOTP,
   InputOTPGroup,
@@ -12,18 +14,19 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import {
-  AlertCircle,
-  ArrowLeft,
-  ArrowRight,
-  CheckCircle,
-  CheckCheck,
-} from "lucide-react";
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle, CheckCircle } from "lucide-react";
 import {
   LoginResponseOrUpgrade,
   useHttpClientBorrower,
@@ -38,21 +41,33 @@ import {
 } from "browser-wallet";
 import { md5CaseInsensitive } from "@frontend/browser-wallet";
 
-interface AuthWizardProps {
+type FormState = "initial" | "login" | "register" | "verify" | "success";
+
+interface AuthFormProps {
   login: (email: string, password: string) => Promise<LoginResponseOrUpgrade>;
   inviteCode: string;
   onComplete: () => void;
 }
 
-const AuthWizard = ({ login, inviteCode, onComplete }: AuthWizardProps) => {
-  // Step 1: Check if email exists and if it is verified.
-  // Step 2(a): If exists + verified, log in with password.
-  // Step 2(b): If does not exist, register with password.
-  // Step 2(c): If exists + unverified, verify before login.
-  // Step 3(optional): After registering, verify account.
-  // Step 4: Done, contract request sent.
-  const [currentStep, setCurrentStep] = useState(1);
+// Form schemas
+const formSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(1, "Password is required"),
+  confirmPassword: z.string().optional(),
+  verificationCode: z.string().optional(),
+});
 
+const AuthForm = ({ login, inviteCode, onComplete }: AuthFormProps) => {
+  const [formState, setFormState] = useState<FormState>("initial");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [_, setIsEmailVerified] = useState(false);
+  const [isUserRegistered, setIsUserRegistered] = useState(false);
+  const [emailChecked, setEmailChecked] = useState(false);
+
+  const { getIsRegistered, register, verifyEmail } = useHttpClientBorrower();
+
+  // Set default values for development environments
   let defaultUsername = "";
   let defaultPassword = "";
   if (
@@ -60,390 +75,394 @@ const AuthWizard = ({ login, inviteCode, onComplete }: AuthWizardProps) => {
     import.meta.env.VITE_BITCOIN_NETWORK === "signet"
   ) {
     defaultUsername = import.meta.env.VITE_BORROWER_USERNAME;
-  }
-  if (
-    import.meta.env.VITE_BITCOIN_NETWORK === "regtest" ||
-    import.meta.env.VITE_BITCOIN_NETWORK === "signet"
-  ) {
     defaultPassword = import.meta.env.VITE_BORROWER_PASSWORD;
   }
 
-  const [email, setEmail] = useState(defaultUsername);
-  const [verificationCode, setVerificationCode] = useState("");
-  const [password, setPassword] = useState(defaultPassword);
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [isRegistered, setIsRegistered] = useState(false);
-  const [error, setError] = useState("");
-  const [isVerified, setIsVerified] = useState(false);
+  // Setup form with zod validation
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: defaultUsername,
+      password: defaultPassword,
+      confirmPassword: defaultPassword,
+      verificationCode: "",
+    },
+  });
 
-  const { getIsRegistered, register, verifyEmail } = useHttpClientBorrower();
+  // Add dynamic validation for password confirmation
+  useEffect(() => {
+    if (formState === "register") {
+      form.register("confirmPassword", {
+        validate: (value) =>
+          value === form.getValues("password") || "Passwords do not match",
+      });
+    }
+  }, [formState, form]);
 
-  const handleNextStep = async () => {
-    setError("");
+  // Check the email when entered
+  const checkEmail = async (email: string) => {
+    if (!email || !email.includes("@")) return;
 
-    if (currentStep === 1) {
-      // Validate email.
-      if (!email || !email.includes("@")) {
-        setError("Please enter a valid email address");
-        return;
-      }
+    try {
+      setIsLoading(true);
+      setError("");
 
-      // Check if user is registered and verified.
       const res = await getIsRegistered(email);
+      setIsUserRegistered(res.is_registered);
+      setIsEmailVerified(res.is_verified);
+      setEmailChecked(true);
 
-      setIsRegistered(res.is_registered);
-      setIsVerified(res.is_verified);
-
-      setCurrentStep(2);
-    } else if (currentStep === 2) {
-      if (!isRegistered) {
-        // Register new user.
-
-        if (!password) {
-          setError("Please choose a password.");
-          return;
-        }
-
-        if (password !== confirmPassword) {
-          setError("Passwords do not match.");
-          return;
-        }
-
-        let registrationData;
-        try {
-          registrationData = begin_registration(email, password);
-        } catch (error) {
-          if (error instanceof Error) {
-            setError(
-              `Failed to generate registration parameters: ${error.message}`,
-            );
-          } else {
-            setError(`Failed to generate registration parameters: ${error}`);
-          }
-
-          return;
-        }
-
-        const network = import.meta.env.VITE_BITCOIN_NETWORK;
-
-        let walletDetails;
-        try {
-          walletDetails = new_wallet(password, network);
-        } catch (error) {
-          if (error instanceof Error) {
-            setError(`Failed to create wallet: ${error.message}`);
-          } else {
-            setError(`Failed to create wallet: ${error}`);
-          }
-
-          return;
-        }
-
-        try {
-          await register(
-            "Anon",
-            email,
-            registrationData.verifier,
-            registrationData.salt,
-            {
-              mnemonic_ciphertext: walletDetails.mnemonic_ciphertext,
-              network: network,
-            },
-            inviteCode,
-          );
-        } catch (error) {
-          if (error instanceof Error) {
-            setError(`Failed to register: ${error.message}`);
-          } else {
-            setError(`Failed to register: ${error}`);
-          }
-
-          return;
-        }
-
-        try {
-          const key = await md5CaseInsensitive(email);
-          persist_new_wallet(
-            walletDetails.mnemonic_ciphertext,
-            walletDetails.network,
-            key,
-          );
-        } catch (error) {
-          if (error instanceof Error) {
-            setError(`Failed to persist wallet: ${error.message}`);
-          } else {
-            setError(`Failed to persist wallet: ${error}`);
-          }
-
-          return;
-        }
-
-        // Time for email verification.
-        setCurrentStep(3);
+      // Update form state based on user status
+      if (res.is_registered) {
+        setFormState(res.is_verified ? "login" : "verify");
       } else {
-        // Log in user.
-
-        if (!password) {
-          setError("Please enter your password.");
-          return;
-        }
-
-        // TODO: This is an edge case where the user has an unverified account with us already. We
-        // should add an API to ask for a new verification code.
-        if (!isVerified) {
-          setCurrentStep(3);
-          return;
-        }
-
-        try {
-          await logIn(email, password, login);
-        } catch (error) {
-          if (error instanceof Error) {
-            setError(`Failed to log in: ${error.message}`);
-          } else {
-            setError(`Failed to log in: ${error}`);
-          }
-
-          return;
-        }
-
-        setCurrentStep(4);
-        onComplete();
+        setFormState("register");
       }
-    } else if (currentStep === 3) {
-      // Validate verification code.
-      if (!verificationCode || verificationCode.length != 6) {
-        setError("Please enter a valid verification code.");
-        return;
-      }
-
-      try {
-        await verifyEmail(verificationCode);
-      } catch (error) {
-        if (error instanceof Error) {
-          setError(`Failed to verify email: ${error.message}`);
-        } else {
-          setError(`Failed to verify email: ${error}`);
-        }
-
-        return;
-      }
-
-      try {
-        await logIn(email, password, login);
-      } catch (error) {
-        if (error instanceof Error) {
-          setError(`Failed to log in: ${error.message}`);
-        } else {
-          setError(`Failed to log in: ${error}`);
-        }
-
-        return;
-      }
-
-      setCurrentStep(4);
-      onComplete();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handlePreviousStep = () => {
+  // Handle email blur to check status
+  const handleEmailBlur = async () => {
+    const email = form.getValues("email");
+    if (email && !emailChecked) {
+      await checkEmail(email);
+    }
+  };
+
+  // Handle form submission
+  const onSubmit = async (data: z.infer<typeof formSchema>) => {
     setError("");
+    setIsLoading(true);
 
-    setEmail("");
-    setPassword("");
-    setConfirmPassword("");
-    setVerificationCode("");
-    setIsRegistered(false);
-    setIsVerified(false);
+    try {
+      // If email hasn't been checked yet, check it first
+      if (!emailChecked) {
+        await checkEmail(data.email);
+        setIsLoading(false);
+        return;
+      }
 
-    // Always go back to the very beginning.
-    setCurrentStep(1);
-  };
-
-  // Helper function to get content based on current step
-  const getStepContent = () => {
-    switch (currentStep) {
-      case 1:
-        return (
-          <>
-            <CardHeader>
-              <CardTitle>Enter your email</CardTitle>
-              <CardDescription>To register or log back in.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email address</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </>
-        );
-
-      case 2:
-        return (
-          <>
-            <CardHeader>
-              <CardTitle>
-                {isRegistered ? "Welcome back!" : "Create your account"}
-              </CardTitle>
-              <CardDescription>
-                {isRegistered
-                  ? "Enter your password to continue."
-                  : "Choose a secure password for your new account."}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder={
-                      isRegistered ? "Enter your password" : "Create password"
-                    }
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                </div>
-
-                {!isRegistered && (
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Confirm password</Label>
-                    <Input
-                      id="confirmPassword"
-                      type="password"
-                      placeholder="Confirm password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                    />
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </>
-        );
-
-      case 3:
-        return (
-          <>
-            <CardHeader>
-              <CardTitle>Verify your email</CardTitle>
-              <CardDescription>
-                Enter the verification code sent to {email}.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col items-center space-y-4">
-                <InputOTP
-                  maxLength={6}
-                  value={verificationCode}
-                  onChange={(e) => setVerificationCode(e)}
-                >
-                  <InputOTPGroup>
-                    <InputOTPSlot index={0} />
-                    <InputOTPSlot index={1} />
-                    <InputOTPSlot index={2} />
-                  </InputOTPGroup>
-                  <InputOTPSeparator />
-                  <InputOTPGroup>
-                    <InputOTPSlot index={3} />
-                    <InputOTPSlot index={4} />
-                    <InputOTPSlot index={5} />
-                  </InputOTPGroup>
-                </InputOTP>
-
-                <Button
-                  variant="link"
-                  className="h-auto p-0"
-                  onClick={() => console.log("Resend code")}
-                >
-                  Did not receive the code? Resend.
-                </Button>
-              </div>
-            </CardContent>
-          </>
-        );
-
-      case 4:
-        return (
-          <>
-            <CardHeader>
-              <CardTitle className="text-center">
-                {isRegistered ? "Welcome back!" : "Account created!"}
-              </CardTitle>
-              <CardDescription className="text-center">
-                Press next to go ahead with your loan.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex justify-center">
-              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
-                <CheckCheck className="h-10 w-10 text-green-600" />
-              </div>
-            </CardContent>
-          </>
-        );
-
-      default:
-        return null;
+      // Handle based on the current form state
+      switch (formState) {
+        case "login":
+          await handleLogin(data);
+          break;
+        case "register":
+          await handleRegister(data);
+          break;
+        case "verify":
+          await handleVerify(data);
+          break;
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsLoading(false);
     }
   };
+
+  // Handle login flow
+  const handleLogin = async (data: z.infer<typeof formSchema>) => {
+    try {
+      await logIn(data.email, data.password, login);
+      setFormState("success");
+      onComplete();
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  // Handle registration flow
+  const handleRegister = async (data: z.infer<typeof formSchema>) => {
+    try {
+      // Validate password confirmation
+      if (data.password !== data.confirmPassword) {
+        throw new Error("Passwords do not match");
+      }
+
+      // Begin registration process
+      const registrationData = begin_registration(data.email, data.password);
+      const network = import.meta.env.VITE_BITCOIN_NETWORK;
+      const walletDetails = new_wallet(data.password, network);
+
+      // Register the user
+      await register(
+        "Anon",
+        data.email,
+        registrationData.verifier,
+        registrationData.salt,
+        {
+          mnemonic_ciphertext: walletDetails.mnemonic_ciphertext,
+          network: network,
+        },
+        inviteCode,
+      );
+
+      // Persist the wallet
+      const key = await md5CaseInsensitive(data.email);
+      persist_new_wallet(
+        walletDetails.mnemonic_ciphertext,
+        walletDetails.network,
+        key,
+      );
+
+      // Move to verification step
+      setFormState("verify");
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  // Handle verification flow
+  const handleVerify = async (data: z.infer<typeof formSchema>) => {
+    try {
+      if (!data.verificationCode || data.verificationCode.length !== 6) {
+        throw new Error("Please enter a valid verification code");
+      }
+
+      // Verify the email
+      await verifyEmail(data.verificationCode);
+
+      // Log the user in
+      await logIn(data.email, data.password, login);
+
+      setFormState("success");
+      onComplete();
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  // Helper function to reset the form
+  const resetForm = () => {
+    form.reset();
+    setFormState("initial");
+    setError("");
+    setEmailChecked(false);
+  };
+
+  // Get the title and description based on the current form state
+  const getCardHeader = () => {
+    switch (formState) {
+      case "initial":
+        return {
+          title: "Welcome",
+          description: "Enter your email to get started",
+        };
+      case "login":
+        return {
+          title: "Welcome back",
+          description: "Enter your password to continue",
+        };
+      case "register":
+        return {
+          title: "Create your account",
+          description: "Choose a secure password for your new account",
+        };
+      case "verify":
+        return {
+          title: "Verify your email",
+          description: `Enter the verification code sent to ${form.getValues("email")}`,
+        };
+      case "success":
+        return {
+          title: isUserRegistered ? "Welcome back!" : "Account created!",
+          description: "Press continue to go ahead with your loan",
+        };
+    }
+  };
+
+  const header = getCardHeader();
 
   return (
     <div className="mx-auto max-w-md">
       <Card className="gap-3 p-4">
-        {getStepContent()}
-
-        {error && (
-          <CardContent className="pt-0">
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          </CardContent>
-        )}
-
-        <CardFooter className="flex justify-between">
-          {currentStep < 4 ? (
-            <>
-              <Button
-                variant="outline"
-                onClick={handlePreviousStep}
-                disabled={currentStep === 1}
+        <CardHeader>
+          <CardTitle>{header.title}</CardTitle>
+          <CardDescription>{header.description}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {formState !== "success" ? (
+            <Form {...form}>
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-4"
               >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back
-              </Button>
+                {/* Email field (always shown in initial state, read-only otherwise) */}
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email address</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          placeholder="you@example.com"
+                          type="email"
+                          autoComplete="email"
+                          disabled={formState !== "initial" && emailChecked}
+                          onBlur={() => {
+                            field.onBlur();
+                            handleEmailBlur();
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <Button onClick={handleNextStep}>
-                {currentStep === 3 ? (
-                  <>
-                    {isRegistered ? "Sign In" : "Create Account"}
-                    <CheckCircle className="ml-2 h-4 w-4" />
-                  </>
-                ) : (
-                  <>
-                    Next
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </>
+                {/* Password field (shown for login and register) */}
+                {(formState === "login" ||
+                  formState === "register" ||
+                  formState === "verify") && (
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            type="password"
+                            autoComplete={
+                              formState === "register"
+                                ? "new-password"
+                                : "current-password"
+                            }
+                            placeholder={
+                              formState === "register"
+                                ? "Create password"
+                                : "Enter password"
+                            }
+                            disabled={formState === "verify"}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 )}
+
+                {/* Confirm password (shown only for register) */}
+                {(formState === "register" || formState === "verify") && (
+                  <FormField
+                    control={form.control}
+                    name="confirmPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Confirm password</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            type="password"
+                            autoComplete="new-password"
+                            placeholder="Confirm password"
+                            disabled={formState === "verify"}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                {/* Verification code (shown only for verify) */}
+                {formState === "verify" && (
+                  <FormField
+                    control={form.control}
+                    name="verificationCode"
+                    render={({ field }) => (
+                      <FormItem className="space-y-4">
+                        <FormLabel>Verification code</FormLabel>
+                        <FormControl>
+                          <div className="flex flex-col items-center">
+                            <InputOTP
+                              maxLength={6}
+                              value={field.value || ""}
+                              onChange={field.onChange}
+                            >
+                              <InputOTPGroup>
+                                <InputOTPSlot index={0} />
+                                <InputOTPSlot index={1} />
+                                <InputOTPSlot index={2} />
+                              </InputOTPGroup>
+                              <InputOTPSeparator />
+                              <InputOTPGroup>
+                                <InputOTPSlot index={3} />
+                                <InputOTPSlot index={4} />
+                                <InputOTPSlot index={5} />
+                              </InputOTPGroup>
+                            </InputOTP>
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                {/* Error message */}
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+
+                {/* Action buttons */}
+                <div className="flex justify-between pt-2">
+                  {formState !== "initial" && formState !== "success" && (
+                    <Button
+                      variant="outline"
+                      type="button"
+                      onClick={resetForm}
+                      disabled={isLoading}
+                    >
+                      Back
+                    </Button>
+                  )}
+                  <Button
+                    type="submit"
+                    className={formState === "initial" ? "w-full" : ""}
+                    disabled={isLoading}
+                  >
+                    {isLoading
+                      ? "Processing..."
+                      : formState === "login"
+                        ? "Sign In"
+                        : formState === "register"
+                          ? "Create Account"
+                          : formState === "verify"
+                            ? "Verify & Continue"
+                            : "Continue"}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-4">
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-green-100 mb-4">
+                <CheckCircle className="h-10 w-10 text-green-600" />
+              </div>
+              <Button onClick={onComplete} className="w-full">
+                Continue to Loan
               </Button>
-            </>
-          ) : null}
-        </CardFooter>
+            </div>
+          )}
+        </CardContent>
       </Card>
     </div>
   );
 };
 
+// Function to handle login logic with wallet management
 async function logIn(
   email: string,
   password: string,
@@ -498,4 +517,4 @@ async function logIn(
   console.log("Login successful");
 }
 
-export default AuthWizard;
+export default AuthForm;
