@@ -17,8 +17,6 @@ export const LtvProgressBar: FC<LtvProgressBarNewProps> = ({
     ? (loanAmount / (collateralBtc * latestPrice)) * 100
     : 0;
 
-  console.log(ltvRatio);
-
   // If the price is 0.
   const isNan = Number.isNaN(ltvRatio);
 

@@ -11,9 +11,9 @@ use axum::http::StatusCode;
 use axum::middleware;
 use axum::response::IntoResponse;
 use axum::response::Response;
-use axum::routing::delete;
 use axum::routing::get;
 use axum::routing::post;
+use axum::routing::put;
 use axum::Extension;
 use axum::Json;
 use axum::Router;
@@ -35,10 +35,14 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
             get(get_loan_application_by_application_and_application_id),
         )
         .route(
-            "/api/loans/application/:id",
-            delete(delete_loan_application_by_borrower_and_application_id),
+            "/api/loans/application/delete/:id",
+            put(put_mark_loan_application_as_deleted),
         )
         .route("/api/loans/application", post(create_loan_application))
+        .route(
+            "/api/loans/application/edit/:id",
+            put(put_edit_loan_application),
+        )
         .route_layer(middleware::from_fn_with_state(
             app_state.clone(),
             jwt_or_api_auth::auth,
@@ -73,7 +77,7 @@ pub async fn create_loan_application(
 
     let loan = db::loan_applications::insert_loan_application(&data.db, body, user.id.as_str())
         .await
-        .map_err(Error::Database)?;
+        .map_err(Error::database)?;
 
     Ok(AppJson(loan))
 }
@@ -86,7 +90,7 @@ pub async fn get_loan_applications_by_borrower(
     let loans =
         db::loan_applications::load_all_loan_applications_by_borrower(&data.db, user.id.as_str())
             .await
-            .map_err(Error::Database)?;
+            .map_err(Error::database)?;
 
     Ok(AppJson(loans))
 }
@@ -103,13 +107,14 @@ pub async fn get_loan_application_by_application_and_application_id(
         loan_deal_id.as_str(),
     )
     .await
-    .map_err(Error::Database)?;
+    .map_err(Error::database)?
+    .ok_or(Error::MissingLoanApplication)?;
 
     Ok(AppJson(loan))
 }
 
 #[instrument(skip_all, fields(borrower_id = user.id, loan_deal_id), ret, err(Debug))]
-pub async fn delete_loan_application_by_borrower_and_application_id(
+pub async fn put_mark_loan_application_as_deleted(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Borrower>,
     Path(loan_deal_id): Path<String>,
@@ -120,9 +125,72 @@ pub async fn delete_loan_application_by_borrower_and_application_id(
         loan_deal_id.as_str(),
     )
     .await
-    .map_err(Error::Database)?;
+    .map_err(Error::database)?;
 
     Ok(AppJson(()))
+}
+
+#[derive(serde::Deserialize, Debug)]
+struct EditLoanApplicationRequest {
+    #[serde(with = "rust_decimal::serde::float")]
+    loan_amount: Decimal,
+    duration_days: i32,
+    #[serde(with = "rust_decimal::serde::float")]
+    interest_rate: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
+    ltv: Decimal,
+}
+
+#[instrument(skip_all, fields(borrower_id = user.id, loan_deal_id), ret, err(Debug))]
+/// Edit a loan application.
+///
+/// In practice, we replace the loan application with a new one with the new values, and mark the
+/// old one as deleted.
+pub async fn put_edit_loan_application(
+    State(data): State<Arc<AppState>>,
+    Extension(user): Extension<Borrower>,
+    Path(loan_deal_id): Path<String>,
+    Json(body): Json<EditLoanApplicationRequest>,
+) -> Result<AppJson<LoanApplication>, Error> {
+    let old_application =
+        db::loan_applications::get_loan_application_by_borrower_and_application_id(
+            &data.db,
+            &user.id,
+            &loan_deal_id,
+        )
+        .await
+        .map_err(Error::database)?
+        .ok_or(Error::MissingLoanApplication)?;
+
+    let create_body = CreateLoanApplicationSchema {
+        ltv: body.ltv,
+        interest_rate: body.interest_rate,
+        loan_amount: body.loan_amount,
+        duration_days: body.duration_days,
+        loan_asset: old_application.loan_asset,
+        loan_type: old_application.loan_type,
+        borrower_loan_address: old_application.borrower_loan_address,
+        borrower_btc_address: old_application.borrower_btc_address,
+        borrower_pk: old_application.borrower_pk,
+        borrower_derivation_path: old_application.borrower_derivation_path,
+        borrower_npub: old_application.borrower_npub,
+        client_contract_id: old_application.client_contract_id,
+    };
+
+    let new_application =
+        db::loan_applications::insert_loan_application(&data.db, create_body, user.id.as_str())
+            .await
+            .map_err(Error::database)?;
+
+    db::loan_applications::mark_as_deleted_by_borrower_and_application_id(
+        &data.db,
+        user.id.as_str(),
+        loan_deal_id.as_str(),
+    )
+    .await
+    .map_err(Error::database)?;
+
+    Ok(AppJson(new_application))
 }
 
 // Create our own JSON extractor by wrapping `axum::Json`. This makes it easy to override the
@@ -143,10 +211,12 @@ where
 }
 
 /// All the errors related to the `contracts` REST API.
+#[allow(dead_code)]
 #[derive(Debug)]
 enum Error {
     /// Failed to interact with the database.
-    Database(anyhow::Error),
+    Database(String),
+    MissingLoanApplication,
     InvalidLtv {
         ltv: Decimal,
     },
@@ -158,9 +228,13 @@ enum Error {
     },
 }
 
+impl Error {
+    fn database(error: anyhow::Error) -> Self {
+        Self::Database(format!("{error:#}"))
+    }
+}
+
 /// Tell `axum` how [`AppError`] should be converted into a response.
-///
-/// This is also a convenient place to log errors.
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
         /// How we want error responses to be serialized.
@@ -170,16 +244,14 @@ impl IntoResponse for Error {
         }
 
         let (status, message) = match self {
-            Error::Database(e) => {
-                // If we configure `tracing` properly, we don't need to add extra context here!
-                tracing::error!("Database error: {e:#}");
-
-                // Don't expose any details about the error to the client.
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
+            Error::Database(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Something went wrong".to_owned(),
+            ),
+            Error::MissingLoanApplication => (
+                StatusCode::BAD_REQUEST,
+                "Loan application does not exist".to_string(),
+            ),
             Error::InvalidLtv { ltv } => (
                 StatusCode::BAD_REQUEST,
                 format!("LTV must be between 0 and 1 but was {}", ltv),

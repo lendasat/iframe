@@ -1,15 +1,14 @@
 import { useHttpClientBorrower } from "@frontend/http-client-borrower";
 import { Box } from "@radix-ui/themes";
-import { useNavigate } from "react-router-dom";
-import { useAsync } from "react-use";
-import DashHeader from "../components/DashHeader";
+import { Link } from "react-router-dom";
+import { useAsyncRetry } from "react-use";
 import { LoanApplicationTable } from "./loan-application-table";
+import { Button } from "@frontend/shadcn";
 
 function AvailableLoanApplications() {
   const { getLoanApplications } = useHttpClientBorrower();
-  const navigate = useNavigate();
 
-  const { loading, value } = useAsync(async () => {
+  const { loading, value, retry } = useAsyncRetry(async () => {
     return await getLoanApplications();
   });
 
@@ -17,25 +16,17 @@ function AvailableLoanApplications() {
 
   return (
     <div>
-      <DashHeader label="My loan requests" />
+      <div className="flex justify-end m-4 mx-8">
+        <Button asChild variant="default" className="justify-end">
+          <Link to="/loan-application">New Request</Link>
+        </Button>
+      </div>
       {/*TODO: re-implement filters if needed */}
       <Box className="pt-3" px={"6"}>
         <LoanApplicationTable
           loading={loading}
           loanApplications={loanApplications}
-          columnFilters={[]}
-          onColumnFiltersChange={() => {
-            // ignored
-          }}
-          enableRowSelection={false}
-          onOfferSelect={() => {
-            // ignored
-          }}
-          selectedOfferId={undefined}
-          enableActionColumn={false}
-          onActionColumnAction={(value) => {
-            // TODO: implement edit for application
-          }}
+          triggerRefresh={retry}
         />
       </Box>
     </div>
