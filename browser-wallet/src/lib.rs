@@ -521,12 +521,14 @@ impl SwiftTransferDetails {
 #[wasm_bindgen]
 pub fn encrypt_fiat_loan_details(
     fiat_loan_details: InnerFiatLoanDetails,
-    counterparty_pk: String,
+    own_encryption_pk: String,
+    counterparty_encryption_pk: String,
 ) -> Result<FiatLoanDetails, JsValue> {
     let (fiat_loan_details, encrypted_encryption_key_own, encrypted_encryption_key_counterparty) =
         map_err_to_js!(wallet::encrypt_fiat_loan_details(
             &fiat_loan_details.into(),
-            counterparty_pk
+            &own_encryption_pk,
+            &counterparty_encryption_pk
         ))?;
 
     Ok(FiatLoanDetails {
@@ -534,44 +536,6 @@ pub fn encrypt_fiat_loan_details(
         encrypted_encryption_key_own,
         encrypted_encryption_key_counterparty,
     })
-}
-
-#[wasm_bindgen]
-pub fn encrypt_fiat_loan_details_with_password(
-    password: String,
-    key: String,
-    fiat_loan_details: InnerFiatLoanDetails,
-    counterparty_pk: String,
-) -> Result<FiatLoanDetails, JsValue> {
-    if let Err(err) = browser_wallet::load(&password, &key) {
-        log::error!("Failed encrypting details {err:#}");
-        return Err(JsValue::from_str(&format!("{:#}", err)));
-    }
-
-    let (fiat_loan_details, encrypted_encryption_key_own, encrypted_encryption_key_counterparty) =
-        map_err_to_js!(wallet::encrypt_fiat_loan_details(
-            &fiat_loan_details.into(),
-            counterparty_pk
-        ))?;
-
-    Ok(FiatLoanDetails {
-        inner: fiat_loan_details.into(),
-        encrypted_encryption_key_own,
-        encrypted_encryption_key_counterparty,
-    })
-}
-
-#[wasm_bindgen]
-pub fn decrypt_fiat_loan_details(
-    fiat_loan_details: InnerFiatLoanDetails,
-    encrypted_encryption_key: String,
-) -> Result<InnerFiatLoanDetails, JsValue> {
-    let fiat_loan_details = map_err_to_js!(wallet::decrypt_fiat_loan_details(
-        &fiat_loan_details.into(),
-        encrypted_encryption_key
-    ))?;
-
-    Ok(fiat_loan_details.into())
 }
 
 #[wasm_bindgen]
@@ -580,6 +544,7 @@ pub fn decrypt_fiat_loan_details_with_password(
     key: String,
     fiat_loan_details: InnerFiatLoanDetails,
     encrypted_encryption_key: String,
+    derivation_path: String,
 ) -> Result<InnerFiatLoanDetails, JsValue> {
     if let Err(err) = browser_wallet::load(&password, &key) {
         log::error!("Failed decrypting details {err:#}");
@@ -588,7 +553,8 @@ pub fn decrypt_fiat_loan_details_with_password(
 
     let fiat_loan_details = map_err_to_js!(wallet::decrypt_fiat_loan_details(
         &fiat_loan_details.into(),
-        encrypted_encryption_key
+        &encrypted_encryption_key,
+        &derivation_path
     ))?;
 
     Ok(fiat_loan_details.into())

@@ -323,8 +323,8 @@ pub struct ContractRequestSchema {
     /// If the `loan_type` field is set to `LoanType::PayWithMoon`, this field indicates whether
     /// the contract corresponds to a new card or an existing one.
     pub moon_card_id: Option<Uuid>,
-    /// If the borrower chooses a `loan_id` that corresponds to a fiat loan (e.g. with `loan_asset`
-    /// [`LoanAsset::Usd`] or [`LoanAsset::Eur`]), this field must be present.
+    /// If the borrower chooses a `loan_id` that corresponds to a fiat loan (e.g.
+    /// [`LoanType::Fiat`), this field must be present.
     pub fiat_loan_details: Option<FiatLoanDetailsWrapper>,
     pub borrower_npub: String,
     /// Optional client id for this contract

@@ -1016,11 +1016,11 @@ pub(crate) fn derive_nostr_room_pk(contract: String) -> Result<String> {
 
 /// Encrypt [`FiatLoanDetails`] so that they can be stored in the hub database.
 ///
-/// The caller can decrypt them after decrypting the `encrypted_encryption_key_own` with their
-/// [`SecretKey`].
-///
-/// The counterparty can decrypt them after decrypting the `encrypted_encryption_key_lender` with
+/// The caller can decrypt the details after decrypting the `encrypted_encryption_key_own` with
 /// their [`SecretKey`].
+///
+/// The counterparty can decrypt the details after decrypting the
+/// `encrypted_encryption_key_counterparty` with their [`SecretKey`].
 ///
 /// # Returns
 ///
@@ -1029,22 +1029,18 @@ pub(crate) fn derive_nostr_room_pk(contract: String) -> Result<String> {
 /// - The encrypted encryption key for the counterparty.
 pub fn encrypt_fiat_loan_details(
     fiat_loan_details: &FiatLoanDetails,
-    counterparty_pk: String,
+    own_encryption_pk: &str,
+    counterparty_encryption_pk: &str,
 ) -> Result<(FiatLoanDetails, String, String)> {
-    let counterparty_pk =
-        PublicKey::from_str(counterparty_pk.as_str()).context("Invalid PK provided")?;
-
-    let guard = WALLET.lock().expect("to get lock");
-
-    let xprv = match *guard {
-        Some(ref wallet) => wallet.xprv,
-        None => {
-            bail!("Can't encrypt fiat loan details if wallet is not loaded");
-        }
-    };
+    let own_encryption_pk = own_encryption_pk.parse()?;
+    let counterparty_encryption_pk = counterparty_encryption_pk.parse()?;
 
     let (fiat_loan_details, encrypted_encryption_key_caller, encrypted_encryption_key_counterparty) =
-        fiat_loan_details::encrypt_fiat_loan_details(fiat_loan_details, &xprv, &counterparty_pk)?;
+        fiat_loan_details::encrypt_fiat_loan_details(
+            fiat_loan_details,
+            &own_encryption_pk,
+            &counterparty_encryption_pk,
+        )?;
 
     Ok((
         fiat_loan_details,
@@ -1063,7 +1059,8 @@ pub fn encrypt_fiat_loan_details(
 /// An instance of [`FiatLoanDetails`] with plaintext values in each field.
 pub fn decrypt_fiat_loan_details(
     fiat_loan_details: &FiatLoanDetails,
-    encrypted_encryption_key: String,
+    encrypted_encryption_key: &str,
+    derivation_path: &str,
 ) -> Result<FiatLoanDetails> {
     let guard = WALLET.lock().expect("to get lock");
 
@@ -1074,10 +1071,13 @@ pub fn decrypt_fiat_loan_details(
         }
     };
 
+    let derivation_path = derivation_path.parse()?;
+
     let fiat_loan_details = fiat_loan_details::decrypt_fiat_loan_details(
         fiat_loan_details,
-        &encrypted_encryption_key,
+        encrypted_encryption_key,
         &xprv,
+        &derivation_path,
     )?;
 
     Ok(fiat_loan_details)

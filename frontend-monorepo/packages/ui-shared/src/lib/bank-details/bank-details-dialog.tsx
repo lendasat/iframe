@@ -23,8 +23,6 @@ import {
 } from "@frontend/base-http-client";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCheckCircle } from "@fortawesome/free-solid-svg-icons";
-import { FaLock } from "react-icons/fa6";
-import { FaLockOpen } from "react-icons/fa";
 
 export interface FiatDialogFormDetails {
   bankDetails: BankDetails;
@@ -538,7 +536,9 @@ export function FiatTransferDetailsDialog({
 
 interface FiatTransferDetailsProps {
   details: FiatDialogFormDetails;
-  onConfirm: (details?: FiatLoanDetails) => void;
+  onConfirm: (
+    encryptFn?: (ownEncryptionPk: string) => Promise<FiatLoanDetails>,
+  ) => Promise<void>;
   isBorrower: boolean;
   counterpartyPk: string;
 }
@@ -553,7 +553,6 @@ export const FiatTransferDetails = ({
     useState<FiatDialogFormDetails>(details);
   const [dataEncrypted, setDataEncrypted] = useState(false);
   const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
 
   const {
     encryptFiatLoanDetailsBorrower,
@@ -585,46 +584,61 @@ export const FiatTransferDetails = ({
 
     try {
       if (isBorrower) {
-        const fiatDetails = await encryptFiatLoanDetailsBorrower(
-          {
-            iban_transfer_details: ibanTransferDetails,
-            swift_transfer_details: swiftTransferDetails,
-            bank_address: fiatTransferDetails.bankDetails.bankAddress,
-            bank_country: fiatTransferDetails.bankDetails.bankCountry,
-            bank_name: fiatTransferDetails.bankDetails.bankName,
-            purpose_of_remittance: fiatTransferDetails.bankDetails.purpose,
-            // personal fiatTransferDetails
-            address: fiatTransferDetails.beneficiaryDetails.address,
-            city: fiatTransferDetails.beneficiaryDetails.city,
-            comments: fiatTransferDetails.beneficiaryDetails.additionalComments,
-            country: fiatTransferDetails.beneficiaryDetails.country,
-            full_name: fiatTransferDetails.beneficiaryDetails.fullName,
-            post_code: fiatTransferDetails.beneficiaryDetails.zipCode,
-          },
-          counterpartyPk,
-        );
-        onConfirm(fiatDetails);
+        const encrypt = async (
+          ownEncryptionPk: string,
+        ): Promise<FiatLoanDetails> => {
+          return await encryptFiatLoanDetailsBorrower(
+            {
+              iban_transfer_details: ibanTransferDetails,
+              swift_transfer_details: swiftTransferDetails,
+              bank_address: fiatTransferDetails.bankDetails.bankAddress,
+              bank_country: fiatTransferDetails.bankDetails.bankCountry,
+              bank_name: fiatTransferDetails.bankDetails.bankName,
+              purpose_of_remittance: fiatTransferDetails.bankDetails.purpose,
+              // personal fiatTransferDetails
+              address: fiatTransferDetails.beneficiaryDetails.address,
+              city: fiatTransferDetails.beneficiaryDetails.city,
+              comments:
+                fiatTransferDetails.beneficiaryDetails.additionalComments,
+              country: fiatTransferDetails.beneficiaryDetails.country,
+              full_name: fiatTransferDetails.beneficiaryDetails.fullName,
+              post_code: fiatTransferDetails.beneficiaryDetails.zipCode,
+            },
+            ownEncryptionPk,
+            counterpartyPk,
+          );
+        };
+
+        onConfirm(encrypt);
       } else {
-        const fiatDetails = await encryptFiatLoanDetailsLender(
-          {
-            iban_transfer_details: ibanTransferDetails,
-            swift_transfer_details: swiftTransferDetails,
-            bank_address: fiatTransferDetails.bankDetails.bankAddress,
-            bank_country: fiatTransferDetails.bankDetails.bankCountry,
-            bank_name: fiatTransferDetails.bankDetails.bankName,
-            purpose_of_remittance: fiatTransferDetails.bankDetails.purpose,
-            // personal fiatTransferDetails
-            address: fiatTransferDetails.beneficiaryDetails.address,
-            city: fiatTransferDetails.beneficiaryDetails.city,
-            comments: fiatTransferDetails.beneficiaryDetails.additionalComments,
-            country: fiatTransferDetails.beneficiaryDetails.country,
-            full_name: fiatTransferDetails.beneficiaryDetails.fullName,
-            post_code: fiatTransferDetails.beneficiaryDetails.zipCode,
-          },
-          counterpartyPk,
-        );
-        onConfirm(fiatDetails);
+        const encrypt = async (
+          ownEncryptionPk: string,
+        ): Promise<FiatLoanDetails> => {
+          return await encryptFiatLoanDetailsLender(
+            {
+              iban_transfer_details: ibanTransferDetails,
+              swift_transfer_details: swiftTransferDetails,
+              bank_address: fiatTransferDetails.bankDetails.bankAddress,
+              bank_country: fiatTransferDetails.bankDetails.bankCountry,
+              bank_name: fiatTransferDetails.bankDetails.bankName,
+              purpose_of_remittance: fiatTransferDetails.bankDetails.purpose,
+              // personal fiatTransferDetails
+              address: fiatTransferDetails.beneficiaryDetails.address,
+              city: fiatTransferDetails.beneficiaryDetails.city,
+              comments:
+                fiatTransferDetails.beneficiaryDetails.additionalComments,
+              country: fiatTransferDetails.beneficiaryDetails.country,
+              full_name: fiatTransferDetails.beneficiaryDetails.fullName,
+              post_code: fiatTransferDetails.beneficiaryDetails.zipCode,
+            },
+            ownEncryptionPk,
+            counterpartyPk,
+          );
+        };
+
+        onConfirm(encrypt);
       }
+
       setDataEncrypted(true);
     } catch (error) {
       console.log(`Failed encrypting fiat loan details ${error}`);
@@ -657,29 +671,14 @@ export const FiatTransferDetails = ({
                 </Button>
               </FiatTransferDetailsDialog>
             </Flex>
-            {!isWalletLoaded ? (
-              <UnlockWalletModal handleSubmit={() => {}}>
-                <Button
-                  loading={isLoading}
-                  mt={"3"}
-                  color={"purple"}
-                  type={"button"}
-                  disabled={dataEncrypted}
-                >
-                  Unlock to Encrypt
-                </Button>
-              </UnlockWalletModal>
-            ) : (
-              <Button
-                loading={isLoading}
-                onClick={encrypt}
-                mt={"3"}
-                color={"purple"}
-                disabled={dataEncrypted}
-              >
-                Encrypt Details
-              </Button>
-            )}
+            <Button
+              onClick={encrypt}
+              mt={"3"}
+              color={"purple"}
+              disabled={dataEncrypted}
+            >
+              Encrypt Details
+            </Button>
           </Callout.Text>
         </Callout.Root>
       )}
@@ -705,27 +704,15 @@ export const FiatTransferDetails = ({
                 </Button>
               </FiatTransferDetailsDialog>
             </Flex>
-            {!isWalletLoaded ? (
-              <UnlockWalletModal handleSubmit={() => {}}>
-                <Button
-                  type={"button"}
-                  disabled={isWalletLoaded}
-                  className="mt-3"
-                >
-                  Confirm Secret
-                </Button>
-              </UnlockWalletModal>
-            ) : (
-              <Button
-                loading={isLoading}
-                onClick={encrypt}
-                mt={"3"}
-                color={"purple"}
-                disabled={dataEncrypted}
-              >
-                {"Details encrypted"}
-              </Button>
-            )}
+
+            <Button
+              onClick={encrypt}
+              mt={"3"}
+              color={"purple"}
+              disabled={dataEncrypted}
+            >
+              {"Details encrypted"}
+            </Button>
           </Callout.Text>
         </Callout.Root>
       )}

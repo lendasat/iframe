@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { LuInfo, LuLoader } from "react-icons/lu";
 import {
@@ -106,6 +106,7 @@ export function FiatRepayment({ contract }: FiatRepaymentProps) {
       <div className={"pt-4"}>
         <BankingDetailsSummary
           fiatLoanDetails={contract?.fiat_loan_details_lender}
+          ownDerivationPath={contract?.borrower_derivation_path}
         />
       </div>
 

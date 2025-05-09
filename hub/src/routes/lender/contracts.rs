@@ -194,7 +194,6 @@ pub struct Contract {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FiatLoanDetailsWrapper {
     pub details: FiatLoanDetails,
-    /// The lender's encrypted encryption key.
     pub encrypted_encryption_key: String,
 }
 

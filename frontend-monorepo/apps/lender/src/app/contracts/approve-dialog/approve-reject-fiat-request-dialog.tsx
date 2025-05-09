@@ -1,4 +1,4 @@
-import React, { ReactNode, useState } from "react";
+import { ReactNode, useState } from "react";
 import { LuTriangleAlert, LuX } from "react-icons/lu";
 import {
   Card,
@@ -89,7 +89,6 @@ const beneficiaryDetailsSchema = z.object({
 const formSchema = z.object({
   bankDetails: bankDetailsSchema,
   beneficiaryDetails: beneficiaryDetailsSchema,
-  password: z.string().min(1, { message: "Password is required" }),
 });
 
 // Types based on the schema
@@ -130,7 +129,7 @@ const ApproveOrRejectFiatDialog = ({
   const [approveError, setApproveError] = useState<string | undefined>();
   const { approveContract, rejectContract } = useLenderHttpClient();
   const navigate = useNavigate();
-  const { encryptFiatLoanDetailsLenderWithPassword } = useWallet();
+  const { encryptFiatLoanDetailsLender } = useWallet();
 
   const contractId = contract.id;
   const loanAmount = contract.loan_amount;
@@ -218,8 +217,7 @@ const ApproveOrRejectFiatDialog = ({
         };
       }
 
-      fiatLoanDetails = await encryptFiatLoanDetailsLenderWithPassword(
-        values.password,
+      fiatLoanDetails = await encryptFiatLoanDetailsLender(
         {
           address: values.beneficiaryDetails.address,
           city: values.beneficiaryDetails.city,
@@ -234,6 +232,7 @@ const ApproveOrRejectFiatDialog = ({
           swift_transfer_details: swiftTransferDetails,
           purpose_of_remittance: values.bankDetails.purpose,
         },
+        contract.lender_pk,
         contract.borrower_pk,
       );
     } catch (error) {
@@ -715,33 +714,13 @@ const ApproveOrRejectFiatDialog = ({
                 </CardContent>
               </Card>
 
-              <div className="mt-4">
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Password</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="password"
-                          placeholder="******"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
               <Alert variant="default" className={"mt-4"}>
                 <InfoCircledIcon className="h-4 w-4" />
                 <AlertTitle>Info</AlertTitle>
                 <AlertDescription>
                   {isKycLoan &&
-                    " The borrower also filled out the KYC details. This is handled outside of our system at the moment. Please make sure to verify. By approving this loan, you also approve his KYC details."}
-                  . Your banking details are encrypted and will be securely
+                    "The borrower also filled out the KYC details. This is handled outside of our system at the moment. Please make sure to verify. By approving this loan, you also approve their KYC details. "}
+                  Your banking details are encrypted and will be securely
                   stored.
                 </AlertDescription>
               </Alert>
