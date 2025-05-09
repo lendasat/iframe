@@ -13,11 +13,6 @@ import { useEffect, useMemo } from "react";
 import { usePrice } from "./price-context";
 import { Skeleton } from "./components/ui/skeleton";
 
-enum LoanPayout {
-  Direct = "Direct",
-  Indirect = "Indirect",
-}
-
 interface ConfigureLoanProps {
   loanAmount: number;
   lenderId: string;
@@ -52,6 +47,12 @@ export function ConfigureLoan({
   const loanOffer = useMemo(() => {
     return loanOffers ? loanOffers[0] : undefined;
   }, [loanOffers]);
+
+  useEffect(() => {
+    if (loanOffer) {
+      setDays(loanOffer?.duration_days_min);
+    }
+  }, [loanOffer]);
 
   useEffect(() => {
     if (loanOffer) {
