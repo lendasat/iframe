@@ -8,59 +8,59 @@ import {
 import {
   formatCurrency,
   getFormatedStringFromDays,
-  InterestRateInfoLabel,
   LoanAddressInputField,
   LoanAsset,
   LoanAssetHelper,
   LoanPayout,
-  LtvInfoLabel,
-  ONE_MONTH,
   parseLoanAsset,
 } from "@frontend/ui-shared";
-import * as Checkbox from "@radix-ui/react-checkbox";
-import { CheckIcon } from "@radix-ui/react-icons";
-import {
-  Box,
-  Button,
-  Callout,
-  Flex,
-  Grid,
-  Heading,
-  Separator,
-  Skeleton,
-  Spinner,
-  Tabs,
-  Text,
-  TextField,
-} from "@radix-ui/themes";
-import { FC, FormEvent, useCallback, useEffect } from "react";
-import { useState } from "react";
-import { Form } from "react-bootstrap";
-import { FaInfoCircle } from "react-icons/fa";
+import { useCallback, useEffect, useState } from "react";
 import { MdOutlineSwapCalls } from "react-icons/md";
+import { FaInfoCircle } from "react-icons/fa";
 import { PiInfo, PiWarningCircle } from "react-icons/pi";
 import { useNavigate } from "react-router-dom";
-import { useAsync } from "react-use";
 import { KycLinkInputField } from "./components/KycLinkInputField";
 import DurationSelector from "./LoanDurationSelector";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  loanOfferSchema,
+  LoanOfferFormValues,
+  defaultLoanOfferValues,
+} from "./loanOfferSchema";
+import { Button } from "@frontend/shadcn";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@frontend/shadcn";
+import { Input } from "@frontend/shadcn";
+import { Separator } from "@frontend/shadcn";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@frontend/shadcn";
+import { Alert, AlertDescription } from "@frontend/shadcn";
+import { Checkbox } from "@frontend/shadcn";
+import { Card } from "@frontend/shadcn";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@frontend/shadcn";
+import { ScrollArea } from "@frontend/shadcn";
+import { LuLoader } from "react-icons/lu";
 
-export interface LoanAmount {
-  min: number;
-  max: number;
-}
+type FormValues = LoanOfferFormValues;
 
-interface DurationRange {
-  min: number;
-  max: number;
-}
-
-const CreateLoanOffer: FC = () => {
-  const layout = window;
-  const { doesWalletExist, getNpub, getPkAndDerivationPath } = useWallet();
+const CreateLoanOffer = () => {
+  const { getNpub, getPkAndDerivationPath } = useWallet();
   const { enabledFeatures } = useAuth();
+  const [hideWalletConnectButton, setHideWalletConnectButton] = useState(false);
 
   const navigate = useNavigate();
-  const { postLoanOffer, getLoanAndContractStats } = useLenderHttpClient();
+  const { postLoanOffer } = useLenderHttpClient();
 
   const autoApproveEnabled = enabledFeatures.includes(
     LenderFeatureFlags.AutoApproveLoanRequests,
@@ -69,80 +69,70 @@ const CreateLoanOffer: FC = () => {
     LenderFeatureFlags.KycOffers,
   );
 
-  const [loanAmount, setLoanAmount] = useState<LoanAmount>({
-    min: 1000,
-    max: 100000,
-  });
-  const [loanReserve, setLoanReserve] = useState(loanAmount.max);
-  const [autoAccept, setAutoAccept] = useState(autoApproveEnabled);
-  const [ltv, setLtv] = useState<number>(50);
-  const [interest, setInterest] = useState<number>(7.5);
-  const [loanAsset, setLoanAsset] = useState<LoanAsset>(LoanAsset.USDT_ETH);
+  const handleHideWalletConnectButton = useCallback((value: boolean) => {
+    setHideWalletConnectButton(value);
+  }, []);
 
-  const [loanRepaymentAddress, setLoanRepaymentAddress] = useState<string>("");
+  // Initialize the form with default values
+  const form = useForm<FormValues>({
+    resolver: zodResolver(loanOfferSchema),
+    defaultValues: {
+      ...defaultLoanOfferValues,
+      autoAccept: autoApproveEnabled,
+    },
+  });
+
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [hideWalletConnectButton, setHideWalletConnectButton] = useState(false);
 
-  const [loanDuration, setLoanDuration] = useState<DurationRange>({
-    min: 7,
-    max: ONE_MONTH * 6,
-  });
-
-  const [isKycRequired, setIsKycRequired] = useState(false);
-  const [kycLink, setKycLink] = useState<string>("");
+  const handleStableCoinChange = useCallback(
+    (coinString: string) => {
+      const coin = parseLoanAsset(coinString);
+      form.setValue("loanAsset", coin);
+      form.setValue("loanRepaymentAddress", "");
+      setHideWalletConnectButton(false);
+    },
+    [form, setHideWalletConnectButton],
+  );
 
   const handleRangeChange = (start: number, end: number) => {
-    setLoanDuration({ min: start, max: end });
+    form.setValue("loanDuration", { min: start, max: end });
   };
-
-  useEffect(() => {
-    if (doesWalletExist === false) {
-      setError(
-        "Cannot load wallet. Try to log back in. If the error persists, reach out to support",
-      );
-    } else {
-      setError("");
-    }
-  }, [doesWalletExist]);
-
-  const handleStableCoinChange = useCallback((coinString: string) => {
-    const coin = parseLoanAsset(coinString);
-    setLoanAsset(coin);
-    setLoanRepaymentAddress("");
-    setHideWalletConnectButton(false);
-  }, []);
 
   const mapToCreateLoanOfferSchema = (
     lender_npub: string,
     lender_pk: string,
     lender_derivation_path: string,
   ): CreateLoanOfferRequest => {
+    const values = form.getValues();
+
+    console.log(`Auto approve is ${values.autoAccept}`);
+
     return {
       name: "Loan Offer",
-      min_ltv: ltv / 100,
-      interest_rate: interest / 100,
-      loan_amount_min: loanAmount.min,
-      loan_amount_max: loanAmount.max,
-      loan_amount_reserve: loanReserve,
-      duration_days_min: loanDuration.min,
-      duration_days_max: loanDuration.max,
-      loan_asset: loanAsset,
+      min_ltv: values.ltv / 100,
+      interest_rate: values.interest / 100,
+      loan_amount_min: values.loanAmount.min,
+      loan_amount_max: values.loanAmount.max,
+      loan_amount_reserve: values.loanReserve,
+      duration_days_min: values.loanDuration.min,
+      duration_days_max: values.loanDuration.max,
+      loan_asset: values.loanAsset as LoanAsset,
       // We choose to only allow direct payout offers through the Lendasat UI.
       loan_payout: LoanPayout.Direct,
-      loan_repayment_address: loanRepaymentAddress,
-      auto_accept: autoAccept,
+      loan_repayment_address: values.loanRepaymentAddress || "",
+      auto_accept: values.autoAccept,
       lender_npub,
       lender_pk,
       lender_derivation_path,
-      kyc_link: kycLink || undefined,
+      kyc_link: values.isKycRequired ? values.kycLink || undefined : undefined,
     };
   };
 
-  const handleSubmit = async (event: FormEvent) => {
-    event.preventDefault();
+  const onSubmit = async (data: FormValues) => {
+    console.log(`Submitting ${JSON.stringify(data)}`);
 
-    if (loanReserve < loanAmount.max) {
+    if (data.loanReserve < data.loanAmount.max) {
       setError("Loan reserve cannot be smaller than max loan amount.");
       return;
     }
@@ -152,14 +142,14 @@ const CreateLoanOffer: FC = () => {
     try {
       const lender_npub = await getNpub();
       const lender_pk = await getPkAndDerivationPath();
-      const data = mapToCreateLoanOfferSchema(
+      const requestData = mapToCreateLoanOfferSchema(
         lender_npub,
         lender_pk.pubkey,
         lender_pk.path,
       );
 
       setLoading(true);
-      const res = await postLoanOffer(data);
+      const res = await postLoanOffer(requestData);
       if (res !== undefined) {
         navigate(`/my-offers/${res.id}`);
       } else {
@@ -174,658 +164,546 @@ const CreateLoanOffer: FC = () => {
     }
   };
 
-  const {
-    loading: statsLoading,
-    value: stats,
-    error: loadingStatsError,
-  } = useAsync(async () => {
-    return await getLoanAndContractStats();
-  });
+  const watchLoanAsset = form.watch("loanAsset");
+  const watchLoanAmount = form.watch("loanAmount");
+  const watchLoanDuration = form.watch("loanDuration");
+  const watchLtv = form.watch("ltv");
+  const watchInterest = form.watch("interest");
+  const watchIsKycRequired = form.watch("isKycRequired");
+  const watchLoanRepaymentAddress = form.watch("loanRepaymentAddress");
 
-  if (loadingStatsError) {
-    console.error(
-      `Failed loading loan and contract stats ${loadingStatsError}`,
-    );
-  }
-
-  const isRepaymentAddressRequired = LoanAssetHelper.isStableCoin(loanAsset);
+  const isRepaymentAddressRequired = LoanAssetHelper.isStableCoin(
+    watchLoanAsset as LoanAsset,
+  );
 
   const disableCreateOfferButton =
-    loanAmount.max === 0 ||
-    loanDuration.max === 0 ||
-    ltv === 0 ||
+    watchLoanAmount.max === 0 ||
+    watchLoanDuration.max === 0 ||
+    watchLtv === 0 ||
     loading ||
-    !doesWalletExist ||
-    (isKycRequired && kycLink.length === 0) ||
-    (isRepaymentAddressRequired && loanRepaymentAddress.length === 0);
+    (watchIsKycRequired &&
+      (!form.watch("kycLink") || form.watch("kycLink")?.length === 0)) ||
+    (isRepaymentAddressRequired &&
+      (!watchLoanRepaymentAddress || watchLoanRepaymentAddress.length === 0));
 
   return (
-    <Form onSubmit={handleSubmit}>
-      <Box
-        style={{
-          height: layout.innerHeight - 130,
-          overflowY: "scroll",
-        }}
-      >
-        <Box className="w-full lg:grid lg:grid-cols-7 xl:grid-cols-6">
-          <Box className="border-font/10 dark:from-dark/0 dark:to-dark dark:border-font-dark/10 space-y-5 border-r bg-gradient-to-br from-white/0 to-white py-7 md:col-span-4 lg:pb-14">
-            <Box className="px-6 md:px-8">
-              <Heading size={"7"} className="text-font dark:text-font-dark">
-                Create Loan Offer
-              </Heading>
-              <Text size={"2"} className="text-font/60 dark:text-font-dark/60">
-                Create a loan on your own terms.
-              </Text>
-            </Box>
-
-            <Separator size={"4"} my={"5"} className="opacity-50" />
-
-            <Box className="px-6 md:px-8">
-              <Box
-                width={"100%"}
-                className="border-font/10 dark:border-font-dark/10 space-y-6 rounded-xl border px-6 py-10 md:px-8"
-              >
-                {/* Amount */}
-                <Box className="space-y-1">
-                  <Text
-                    as="label"
-                    size={"2"}
-                    weight={"medium"}
-                    className="text-font/60 dark:text-font-dark/60"
+    <div className="flex w-full">
+      <ScrollArea className="max-h-[90vh] overflow-y-auto">
+        <div className="grid w-full grid-cols-1 lg:grid-cols-7 xl:grid-cols-6">
+          <div className="border-r border-border/10 bg-gradient-to-br from-background/0 to-background py-7 md:col-span-4 lg:pb-14">
+            <div className="px-6 md:px-8">
+              <Card className="border-border/10 px-6 py-10 md:px-8">
+                <Form {...form}>
+                  <form
+                    onSubmit={form.handleSubmit(onSubmit)}
+                    className="space-y-6"
                   >
-                    Amount to Lend
-                  </Text>
-                  <Flex align={"center"} gap={"15px"}>
-                    <TextField.Root
-                      size="3"
-                      color="purple"
-                      className="text-font dark:text-font-dark flex-1 rounded-lg text-sm"
-                      type="number"
-                      placeholder="Min Amount"
-                      value={loanAmount.min}
-                      onChange={(e) =>
-                        setLoanAmount({
-                          ...loanAmount,
-                          min: Number(e.target.value),
-                        })
-                      }
-                    />
-
-                    <MdOutlineSwapCalls />
-
-                    <TextField.Root
-                      size="3"
-                      type="number"
-                      className="text-font dark:text-font-dark flex-1 rounded-lg text-sm"
-                      color="purple"
-                      placeholder="Max Amount"
-                      value={loanAmount.max}
-                      variant="surface"
-                      onChange={(e) =>
-                        setLoanAmount({
-                          ...loanAmount,
-                          max: Number(e.target.value),
-                        })
-                      }
-                    />
-                  </Flex>
-                </Box>
-
-                {/* Reserve */}
-                <Box className="space-y-1">
-                  <Flex
-                    align={"center"}
-                    gap={"2"}
-                    className="text-font dark:text-font-dark"
-                  >
-                    <Text
-                      as="label"
-                      size={"2"}
-                      weight={"medium"}
-                      className="text-font/60 dark:text-font-dark/60"
-                    >
-                      Reserve (max amount across all requests for this offer)
-                    </Text>
-                  </Flex>
-
-                  <TextField.Root
-                    size="3"
-                    className="text-font dark:text-font-dark flex-1 rounded-lg text-sm"
-                    type="number"
-                    placeholder="Loan Reserve"
-                    color="purple"
-                    value={loanReserve}
-                    min={loanAmount.max}
-                    step={1}
-                    disabled={!autoApproveEnabled}
-                    onChange={(e) => {
-                      setLoanReserve(Number(e.target.value));
-                      setAutoAccept(true);
-                    }}
-                  ></TextField.Root>
-                </Box>
-
-                {/* Auto Accept */}
-                <Box className="space-y-1">
-                  <Flex
-                    align={"center"}
-                    gap={"2"}
-                    className="text-font dark:text-font-dark"
-                  >
-                    <Text
-                      as="label"
-                      size={"2"}
-                      weight={"medium"}
-                      className="text-font/60 dark:text-font-dark/60"
-                    >
-                      Auto Accept (Requests within Loan Reserve will be
-                      automatically accepted)
-                    </Text>
-                  </Flex>
-
-                  <div className="flex items-center">
-                    <Checkbox.Root
-                      className="shadow-blackA4 hover:bg-violet3 flex size-[25px] appearance-none items-center justify-center rounded bg-white shadow-[0_2px_10px] outline-none focus:shadow-[0_0_0_2px_black] dark:bg-gray-300"
-                      checked={autoAccept}
-                      disabled={!autoApproveEnabled && !isKycRequired}
-                      onCheckedChange={(checked) => {
-                        setAutoAccept(checked === true);
-                      }}
-                    >
-                      <Checkbox.Indicator className="text-violet11">
-                        <CheckIcon />
-                      </Checkbox.Indicator>
-                    </Checkbox.Root>
-                    <label
-                      className="dark:text-font-dark/60 pl-[15px] text-[15px]"
-                      htmlFor="c1"
-                    >
-                      Auto accept requests within Loan Reserve
-                    </label>
-                  </div>
-                  {!autoApproveEnabled && (
-                    <Callout.Root color="orange">
-                      <Callout.Icon>
-                        <PiInfo />
-                      </Callout.Icon>
-
-                      <Callout.Text>
-                        {
-                          "You do not qualify for the auto approval feature yet. Please reach out to us via discord if you want it."
-                        }
-                      </Callout.Text>
-                    </Callout.Root>
-                  )}
-                </Box>
-
-                {/* Duration */}
-                <Box className="space-y-1">
-                  <Flex align={"center"} gap={"1"}>
-                    <Text
-                      as="label"
-                      size={"2"}
-                      weight={"medium"}
-                      className="text-font/60 dark:text-font-dark/60"
-                    >
-                      Duration
-                    </Text>
-                    <Text
-                      as="span"
-                      className="text-font/50 dark:text-font-dark/50"
-                      weight={"medium"}
-                      size={"1"}
-                    >
-                      (Days)
-                    </Text>
-                  </Flex>
-                  <Flex align={"center"} gap={"15px"}>
-                    <DurationSelector onRangeChange={handleRangeChange} />
-                  </Flex>
-                </Box>
-
-                {/* LTV */}
-                <Box className="space-y-1">
-                  <LtvInfoLabel>
-                    <Flex
-                      align={"center"}
-                      gap={"2"}
-                      className="text-font dark:text-font-dark"
-                    >
-                      <Text
-                        as="label"
-                        size={"2"}
-                        weight={"medium"}
-                        className="text-font/60 dark:text-font-dark/60"
-                      >
-                        Loan to value (LTV)
-                      </Text>
-                      <FaInfoCircle />
-                    </Flex>
-                  </LtvInfoLabel>
-                  <TextField.Root
-                    size="3"
-                    className="text-font dark:text-font-dark flex-1 rounded-lg text-sm"
-                    type="number"
-                    placeholder="LTV (1-70%)"
-                    color="purple"
-                    value={ltv}
-                    min={1}
-                    max={70}
-                    step={1}
-                    onChange={(e) => setLtv(Number(e.target.value))}
-                  >
-                    <TextField.Slot className="pr-0" />
-                    <TextField.Slot>
-                      <Text size={"2"} weight={"medium"}>
-                        1% - 70%
-                      </Text>
-                    </TextField.Slot>
-                  </TextField.Root>
-                </Box>
-
-                {/* Interest Rate */}
-                <Box className="space-y-1">
-                  <Flex align={"center"} gap={"2"}>
-                    <InterestRateInfoLabel>
-                      <Text
-                        as="label"
-                        size={"2"}
-                        weight={"medium"}
-                        className="text-font/60 dark:text-font-dark/60"
-                      >
-                        Interest Rate
-                      </Text>
-                      <FaInfoCircle className="text-font dark:text-font-dark" />
-                    </InterestRateInfoLabel>
-                    <Skeleton loading={statsLoading}>
-                      {stats && (
-                        <Text
-                          as="label"
-                          size={"2"}
-                          weight={"medium"}
-                          className="text-font/50 dark:text-font-dark/50"
-                        >
-                          (current best offer:{" "}
-                          {(stats?.loan_offer_stats.min * 100).toFixed(2)}%)
-                        </Text>
-                      )}
-                    </Skeleton>
-                  </Flex>
-
-                  <TextField.Root
-                    size="3"
-                    className="text-font dark:text-font-dark flex-1 rounded-lg text-sm"
-                    type="number"
-                    placeholder="Interest Rate"
-                    color="purple"
-                    value={interest}
-                    min={0}
-                    max={100}
-                    step={0.5}
-                    onChange={(e) => setInterest(Number(e.target.value))}
-                  >
-                    <TextField.Slot className="pr-0" />
-                    <TextField.Slot>
-                      <Text size={"2"} weight={"medium"}>
-                        0% - 100%
-                      </Text>
-                    </TextField.Slot>
-                  </TextField.Root>
-                </Box>
-
-                <Box className="space-y-1">
-                  <Text
-                    as="label"
-                    size={"2"}
-                    weight={"medium"}
-                    className="text-font/60 dark:text-font-dark/60"
-                  >
-                    What asset will you lend?
-                  </Text>
-                  <Tabs.Root defaultValue="stablecoins">
-                    <Tabs.List>
-                      <Tabs.Trigger value="stablecoins">
-                        Stablecoins
-                      </Tabs.Trigger>
-                      <Tabs.Trigger value="fiat">Fiat</Tabs.Trigger>
-                    </Tabs.List>
-
-                    <Box pt="3">
-                      <Tabs.Content value="stablecoins">
-                        <Flex direction={"column"} gap={"3"}>
-                          <Grid
-                            align={"center"}
-                            columns={{ initial: "1", md: "3" }}
-                            gap="3"
-                            width="auto"
-                          >
-                            {LoanAssetHelper.allStableCoins().map((asset) => (
-                              <Button
-                                key={asset}
-                                variant="outline"
-                                type="button"
-                                size={"2"}
-                                className="h-10 rounded-lg"
-                                color={loanAsset === asset ? "purple" : "gray"}
-                                onClick={() => handleStableCoinChange(asset)}
-                              >
-                                {LoanAssetHelper.print(asset)}
-                              </Button>
-                            ))}
-                          </Grid>
-                          {/* Repayment Address */}
-                          <Box className="space-y-1">
-                            <Text
-                              as="label"
-                              size={"2"}
-                              weight={"medium"}
-                              className="text-font/60 dark:text-font-dark/60"
-                            >
-                              Loan Repayment Address
-                            </Text>
-                            <LoanAddressInputField
-                              loanAddress={loanRepaymentAddress}
-                              setLoanAddress={setLoanRepaymentAddress}
-                              loanAsset={loanAsset}
-                              hideButton={hideWalletConnectButton}
-                              setHideButton={setHideWalletConnectButton}
+                    {/* Amount */}
+                    <FormField
+                      control={form.control}
+                      name="loanAmount"
+                      render={() => (
+                        <FormItem className="space-y-1">
+                          <FormLabel className="text-muted-foreground">
+                            Amount to Lend
+                          </FormLabel>
+                          <div className="flex items-center gap-3">
+                            <Input
+                              type="number"
+                              placeholder="Min Amount"
+                              value={form.watch("loanAmount.min")}
+                              onChange={(e) => {
+                                form.setValue(
+                                  "loanAmount.min",
+                                  Number(e.target.value),
+                                );
+                              }}
+                              className="flex-1"
                             />
-                          </Box>
-                        </Flex>
-                      </Tabs.Content>
+                            <MdOutlineSwapCalls className="text-muted-foreground" />
+                            <Input
+                              type="number"
+                              placeholder="Max Amount"
+                              value={form.watch("loanAmount.max")}
+                              onChange={(e) => {
+                                form.setValue(
+                                  "loanAmount.max",
+                                  Number(e.target.value),
+                                );
+                              }}
+                              className="flex-1"
+                            />
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                      <Tabs.Content value="fiat">
-                        <Flex direction={"column"} gap={"3"}>
-                          <Grid
-                            align={"center"}
-                            columns={{ initial: "1", md: "3" }}
-                            gap="3"
-                            width="auto"
-                          >
-                            {LoanAssetHelper.allFiatCoins().map((asset) => (
-                              <Button
-                                key={asset}
-                                variant="outline"
-                                type="button"
-                                size={"2"}
-                                className="h-10 rounded-lg"
-                                color={loanAsset === asset ? "purple" : "gray"}
-                                onClick={() => handleStableCoinChange(asset)}
-                              >
-                                {LoanAssetHelper.print(asset)}
-                              </Button>
-                            ))}
-                          </Grid>
-                          <Callout.Root color="orange">
-                            <Callout.Icon>
-                              <PiInfo />
-                            </Callout.Icon>
+                    {/* Reserve */}
+                    <FormField
+                      control={form.control}
+                      name="loanReserve"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1">
+                          <FormLabel className="text-muted-foreground">
+                            Reserve (max amount across all requests for this
+                            offer)
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              placeholder="Loan Reserve"
+                              {...field}
+                              value={field.value}
+                              onChange={(e) => {
+                                field.onChange(Number(e.target.value));
+                                form.setValue("autoAccept", true);
+                              }}
+                              min={form.watch("loanAmount.max")}
+                              disabled={!autoApproveEnabled}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                            <Callout.Text>
-                              {"You will need to provide your banking details when approving a request. " +
-                                "These details will be e2e encrypted and only shared with the corresponding borrower."}
-                            </Callout.Text>
-                          </Callout.Root>
-                        </Flex>
-                      </Tabs.Content>
-                    </Box>
-                  </Tabs.Root>
-                </Box>
+                    {/* Auto Accept */}
+                    <FormField
+                      control={form.control}
+                      name="autoAccept"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1">
+                          <div className="flex flex-col space-y-2">
+                            <div className="flex items-center space-x-2">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                  disabled={
+                                    !autoApproveEnabled &&
+                                    !form.watch("isKycRequired")
+                                  }
+                                />
+                              </FormControl>
+                              <FormLabel className="font-normal">
+                                Auto Accept (Requests within the "Reserve" will
+                                be automatically accepted)
+                              </FormLabel>
+                            </div>
+                          </div>
+                          {!autoApproveEnabled && (
+                            <Alert variant="warning">
+                              <PiInfo className="h-4 w-4" />
+                              <AlertDescription>
+                                You do not qualify for the auto approval feature
+                                yet. Please reach out to us via discord if you
+                                want it.
+                              </AlertDescription>
+                            </Alert>
+                          )}
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                {kycOffersEnabled && (
-                  <KycLinkInputField
-                    link={kycLink}
-                    setLink={setKycLink}
-                    isKycRequired={isKycRequired}
-                    setIsKycRequired={(isRequired) => {
-                      if (isRequired) {
-                        // If KYC is required, we can't do autoaccept
-                        setAutoAccept(false);
-                      }
-                      setIsKycRequired(isRequired);
-                    }}
-                  />
-                )}
+                    {/* Duration */}
+                    <FormField
+                      control={form.control}
+                      name="loanDuration"
+                      render={() => (
+                        <FormItem className="space-y-1">
+                          <div className="flex items-center gap-1">
+                            <FormLabel className="text-muted-foreground">
+                              Duration
+                            </FormLabel>
+                            <span className="text-muted-foreground/50 text-xs font-medium">
+                              (Days)
+                            </span>
+                          </div>
+                          <FormControl>
+                            <DurationSelector
+                              onRangeChange={handleRangeChange}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <Box className="hidden space-y-6 lg:block">
-                  {/* Error Message */}
-                  {error && (
-                    <Callout.Root color="red">
-                      <Callout.Icon>
-                        <PiWarningCircle />
-                      </Callout.Icon>
-                      <Callout.Text>{error}</Callout.Text>
-                    </Callout.Root>
-                  )}
+                    {/* LTV */}
+                    <FormField
+                      control={form.control}
+                      name="ltv"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="flex items-center gap-2">
+                                  <FormLabel className="text-muted-foreground">
+                                    Loan to value (LTV)
+                                  </FormLabel>
+                                  <FaInfoCircle className="h-4 w-4 text-muted-foreground" />
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent className="w-80">
+                                <p>
+                                  The loan-to-value (LTV) ratio is a financial
+                                  term used to express the ratio of a loan to
+                                  the value of an asset purchased.
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          <div className="flex items-center gap-4">
+                            <FormControl className="flex-1">
+                              <Input
+                                type="number"
+                                placeholder="LTV (1-70%)"
+                                min={1}
+                                max={70}
+                                step={1}
+                                {...field}
+                                value={field.value}
+                                onChange={(e) =>
+                                  field.onChange(Number(e.target.value))
+                                }
+                              />
+                            </FormControl>
+                            <span className="text-sm font-medium">
+                              1% - 70%
+                            </span>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  {/* Submit */}
-                  <Button
-                    color="purple"
-                    type="submit"
-                    size={"3"}
-                    variant="solid"
-                    radius="large"
-                    disabled={disableCreateOfferButton}
-                    className="h-12 w-full"
-                  >
-                    {loading ? <Spinner size={"3"} /> : "Create Offer"}
-                  </Button>
-                </Box>
-              </Box>
-            </Box>
-          </Box>
-          <Box className="flex flex-col justify-center px-6 py-12 lg:col-span-3 xl:col-span-2">
-            <Text
-              size={"2"}
-              weight={"medium"}
-              className="text-font/50 dark:text-font-dark/50 text-center"
-            >
+                    {/* Interest Rate */}
+                    <FormField
+                      control={form.control}
+                      name="interest"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="flex items-center gap-2">
+                                  <FormLabel className="text-muted-foreground">
+                                    Interest Rate
+                                  </FormLabel>
+                                  <FaInfoCircle className="h-4 w-4 text-muted-foreground" />
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent className="w-80">
+                                <p>
+                                  The interest rate is the amount a lender
+                                  charges a borrower for the use of assets,
+                                  expressed as a percentage of the principal.
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          <div className="flex items-center gap-4">
+                            <FormControl className="flex-1">
+                              <Input
+                                type="number"
+                                placeholder="Interest Rate"
+                                min={0}
+                                max={100}
+                                step={0.5}
+                                {...field}
+                                value={field.value}
+                                onChange={(e) =>
+                                  field.onChange(Number(e.target.value))
+                                }
+                              />
+                            </FormControl>
+                            <span className="text-sm font-medium">
+                              0% - 100%
+                            </span>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Asset to Lend */}
+                    <FormItem className="space-y-1">
+                      <FormLabel className="text-muted-foreground">
+                        What asset will you lend?
+                      </FormLabel>
+                      <Tabs defaultValue="stablecoins" className="w-full">
+                        <TabsList className="grid w-full grid-cols-2">
+                          <TabsTrigger value="stablecoins">
+                            Stablecoins
+                          </TabsTrigger>
+                          <TabsTrigger value="fiat">Fiat</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="stablecoins" className="pt-3">
+                          <div className="flex flex-col gap-3">
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                              {LoanAssetHelper.allStableCoins().map((asset) => (
+                                <Button
+                                  key={asset}
+                                  variant={
+                                    watchLoanAsset === asset
+                                      ? "default"
+                                      : "outline"
+                                  }
+                                  type="button"
+                                  className="h-10 rounded-lg"
+                                  onClick={() => handleStableCoinChange(asset)}
+                                >
+                                  {LoanAssetHelper.print(asset)}
+                                </Button>
+                              ))}
+                            </div>
+                            {/* Repayment Address */}
+                            <FormField
+                              control={form.control}
+                              name="loanRepaymentAddress"
+                              render={() => (
+                                <FormItem className="space-y-1">
+                                  <FormLabel className="text-muted-foreground">
+                                    Loan Repayment Address
+                                  </FormLabel>
+                                  <FormControl>
+                                    <LoanAddressInputField
+                                      loanAddress={
+                                        form.watch("loanRepaymentAddress") || ""
+                                      }
+                                      setLoanAddress={(address) =>
+                                        form.setValue(
+                                          "loanRepaymentAddress",
+                                          address,
+                                        )
+                                      }
+                                      loanAsset={watchLoanAsset as LoanAsset}
+                                      hideButton={hideWalletConnectButton}
+                                      setHideButton={
+                                        handleHideWalletConnectButton
+                                      }
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        </TabsContent>
+                        <TabsContent value="fiat" className="pt-3">
+                          <div className="flex flex-col gap-3">
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                              {LoanAssetHelper.allFiatCoins().map((asset) => (
+                                <Button
+                                  key={asset}
+                                  variant={
+                                    watchLoanAsset === asset
+                                      ? "default"
+                                      : "outline"
+                                  }
+                                  type="button"
+                                  className="h-10 rounded-lg"
+                                  onClick={() => handleStableCoinChange(asset)}
+                                >
+                                  {LoanAssetHelper.print(asset)}
+                                </Button>
+                              ))}
+                            </div>
+                            <Alert>
+                              <PiInfo className="h-4 w-4" />
+                              <AlertDescription>
+                                You will need to provide your banking details
+                                when approving a request. These details will be
+                                e2e encrypted and only shared with the
+                                corresponding borrower.
+                              </AlertDescription>
+                            </Alert>
+                          </div>
+                        </TabsContent>
+                      </Tabs>
+                    </FormItem>
+
+                    {/* KYC Link Input Field */}
+                    {kycOffersEnabled && (
+                      <FormItem>
+                        <FormControl>
+                          <KycLinkInputField
+                            link={form.watch("kycLink") || ""}
+                            setLink={(link) => form.setValue("kycLink", link)}
+                            isKycRequired={form.watch("isKycRequired")}
+                            setIsKycRequired={(isRequired) => {
+                              if (isRequired) {
+                                // If KYC is required, we can't do autoaccept
+                                form.setValue("autoAccept", false);
+                              }
+                              form.setValue("isKycRequired", isRequired);
+                            }}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+
+                    {/* Error Message */}
+                    {error && (
+                      <Alert variant="destructive">
+                        <PiWarningCircle className="h-4 w-4" />
+                        <AlertDescription>{error}</AlertDescription>
+                      </Alert>
+                    )}
+
+                    {/* Submit Button */}
+                    <Button
+                      type="submit"
+                      className={"w-full"}
+                      disabled={disableCreateOfferButton}
+                    >
+                      {loading ? (
+                        <>
+                          <LuLoader className="animate-spin" />
+                          Please wait
+                        </>
+                      ) : (
+                        "Pick Offer"
+                      )}
+                    </Button>
+                  </form>
+                </Form>
+              </Card>
+            </div>
+          </div>
+
+          {/* Summary Panel */}
+          <div className="flex flex-col justify-center px-6 py-12 lg:col-span-3 xl:col-span-2">
+            <p className="text-muted-foreground text-center text-sm font-medium">
               Offer Summary
-            </Text>
-            <Heading
-              size={"7"}
-              className={"text-font dark:text-font-dark text-center"}
-            >
+            </p>
+            <h2 className="text-2xl font-bold text-center">
               Borrowers will see
-            </Heading>
-            <Box className="my-10">
-              <Text
-                size={"2"}
-                weight={"medium"}
-                className="text-font/70 dark:text-font-dark/70"
-              >
+            </h2>
+
+            <div className="my-10">
+              <h3 className="text-muted-foreground/70 text-sm font-medium">
                 Loan Parameters
-              </Text>
-              <Separator
-                size={"4"}
-                mt={"4"}
-                className="text-font dark:text-font-dark opacity-50"
-              />
-              <Flex align={"center"} justify={"between"} my={"4"}>
-                <Text
-                  as="label"
-                  size={"2"}
-                  className="text-font/50 dark:text-font-dark/50"
-                >
-                  Amount
-                </Text>
-                <Text
-                  size={"2"}
-                  className="text-font/80 dark:text-font-dark/80 font-semibold"
-                >
-                  {formatCurrency(loanAmount.min)} -{" "}
-                  {formatCurrency(loanAmount.max)}
-                </Text>
-              </Flex>
-              <Separator size={"4"} color={"gray"} className="opacity-50" />
-              <Flex align={"center"} justify={"between"} my={"4"}>
-                <Text
-                  as="label"
-                  size={"2"}
-                  className="text-font/50 dark:text-font-dark/50"
-                >
-                  Duration
-                </Text>
-                <Text
-                  size={"2"}
-                  className="text-font/80 dark:text-font-dark/80 font-semibold"
-                >
-                  {getFormatedStringFromDays(loanDuration.min)} -{" "}
-                  {getFormatedStringFromDays(loanDuration.max)}
-                </Text>
-              </Flex>
-              <Separator size={"4"} color={"gray"} className="opacity-50" />
-              <Flex align={"center"} justify={"between"} my={"4"}>
-                <LtvInfoLabel>
-                  <Flex
-                    align={"center"}
-                    gap={"2"}
-                    className="text-font dark:text-font-dark"
-                  >
-                    <Text
-                      as="label"
-                      size={"2"}
-                      className="text-font/50 dark:text-font-dark/50"
-                    >
-                      LTV
-                    </Text>
-                    <FaInfoCircle />
-                  </Flex>
-                </LtvInfoLabel>
+              </h3>
+              <Separator className="my-4 opacity-50" />
 
-                <Text
-                  size={"2"}
-                  className="text-font/80 dark:text-font-dark/80 font-semibold"
-                >
-                  {ltv.toFixed(2)}%
-                </Text>
-              </Flex>
-              <Separator size={"4"} color={"gray"} className="opacity-50" />
-              <Flex align={"center"} justify={"between"} my={"4"}>
-                <InterestRateInfoLabel>
-                  <Flex
-                    align={"center"}
-                    gap={"2"}
-                    className="text-font dark:text-font-dark"
-                  >
-                    <Text
-                      as="label"
-                      size={"2"}
-                      className="text-font/50 dark:text-font-dark/50"
-                    >
-                      Interest Rate
-                    </Text>
-                    <FaInfoCircle />
-                  </Flex>
-                </InterestRateInfoLabel>
+              <div className="flex justify-between items-center my-4">
+                <span className="text-muted-foreground text-sm">Amount</span>
+                <span className="text-foreground/80 font-semibold text-sm">
+                  {formatCurrency(watchLoanAmount.min)} -{" "}
+                  {formatCurrency(watchLoanAmount.max)}
+                </span>
+              </div>
+              <Separator className="opacity-50" />
 
-                <Text
-                  size={"2"}
-                  className="text-font/80 dark:text-font-dark/80 font-semibold"
-                >
-                  {interest.toFixed(2)}%
-                </Text>
-              </Flex>
-              <Separator size={"4"} color={"gray"} className="opacity-50" />
-              <Flex align={"center"} justify={"between"} my={"4"}>
-                <Text
-                  as="label"
-                  size={"2"}
-                  className="text-font/50 dark:text-font-dark/50"
-                >
+              <div className="flex justify-between items-center my-4">
+                <span className="text-muted-foreground text-sm">Duration</span>
+                <span className="text-foreground/80 font-semibold text-sm">
+                  {getFormatedStringFromDays(watchLoanDuration.min)} -{" "}
+                  {getFormatedStringFromDays(watchLoanDuration.max)}
+                </span>
+              </div>
+              <Separator className="opacity-50" />
+
+              <div className="flex justify-between items-center my-4">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground text-sm">
+                          LTV
+                        </span>
+                        <FaInfoCircle className="h-3 w-3 text-muted-foreground" />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent className="w-80">
+                      <p>
+                        The loan-to-value (LTV) ratio is a financial term used
+                        to express the ratio of a loan to the value of an asset
+                        purchased.
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <span className="text-foreground/80 font-semibold text-sm">
+                  {watchLtv.toFixed(2)}%
+                </span>
+              </div>
+              <Separator className="opacity-50" />
+
+              <div className="flex justify-between items-center my-4">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground text-sm">
+                          Interest Rate
+                        </span>
+                        <FaInfoCircle className="h-3 w-3 text-muted-foreground" />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent className="w-80">
+                      <p>
+                        The interest rate is the amount a lender charges a
+                        borrower for the use of assets, expressed as a
+                        percentage of the principal.
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <span className="text-foreground/80 font-semibold text-sm">
+                  {watchInterest.toFixed(2)}%
+                </span>
+              </div>
+              <Separator className="opacity-50" />
+
+              <div className="flex justify-between items-center my-4">
+                <span className="text-muted-foreground text-sm">
                   Loan Asset
-                </Text>
-                <Text
-                  size={"2"}
-                  className="text-font/80 dark:text-font-dark/80 font-semibold"
-                >
-                  {loanAsset ? LoanAssetHelper.print(loanAsset) : ""}
-                </Text>
-              </Flex>
+                </span>
+                <span className="text-foreground/80 font-semibold text-sm">
+                  {watchLoanAsset
+                    ? LoanAssetHelper.print(watchLoanAsset as LoanAsset)
+                    : ""}
+                </span>
+              </div>
 
               {kycOffersEnabled && (
                 <>
-                  <Separator size={"4"} color={"gray"} className="opacity-50" />
-                  <Flex align={"center"} justify={"between"} my={"4"}>
-                    <Text
-                      as="label"
-                      size={"2"}
-                      className="text-font/50 dark:text-font-dark/50"
-                    >
+                  <Separator className="opacity-50" />
+                  <div className="flex justify-between items-center my-4">
+                    <span className="text-muted-foreground text-sm">
                       KYC Required
-                    </Text>
-                    <Text
-                      size={"2"}
-                      className="text-font/80 dark:text-font-dark/80 font-semibold"
-                    >
-                      {isKycRequired ? "Yes" : "No"}
-                    </Text>
-                  </Flex>
+                    </span>
+                    <span className="text-foreground/80 font-semibold text-sm">
+                      {watchIsKycRequired ? "Yes" : "No"}
+                    </span>
+                  </div>
                 </>
               )}
-            </Box>
+            </div>
 
-            <Box className="my-4">
-              <Text
-                size={"2"}
-                weight={"medium"}
-                className="text-font/70 dark:text-font-dark/70"
-              >
+            <div className="my-4">
+              <h3 className="text-muted-foreground/70 text-sm font-medium">
                 Repayment
-              </Text>
-              <Separator
-                size={"4"}
-                color={"gray"}
-                mt={"4"}
-                className="opacity-50"
-              />
-              <Flex align={"center"} justify={"between"} my={"4"}>
-                <Text
-                  as="label"
-                  size={"2"}
-                  className="text-font/50 dark:text-font-dark/50"
-                >
-                  Address
-                </Text>
-                <Text
-                  size={"1"}
-                  className="text-font/80 dark:text-font-dark/80 font-semibold capitalize"
-                >
-                  {loanRepaymentAddress
-                    ? loanRepaymentAddress.slice(0, 14) + "..."
+              </h3>
+              <Separator className="my-4 opacity-50" />
+              <div className="flex justify-between items-center my-4">
+                <span className="text-muted-foreground text-sm">Address</span>
+                <span className="text-foreground/80 font-semibold text-xs capitalize">
+                  {watchLoanRepaymentAddress
+                    ? watchLoanRepaymentAddress.slice(0, 14) + "..."
                     : ""}
-                </Text>
-              </Flex>
-            </Box>
-          </Box>
-
-          <Box className="mb-20 block w-full space-y-6 px-6 lg:hidden">
-            {/* Error Message */}
-            {error && (
-              <Callout.Root color="red">
-                <Callout.Icon>
-                  <PiWarningCircle />
-                </Callout.Icon>
-                <Callout.Text>{error}</Callout.Text>
-              </Callout.Root>
-            )}
-
-            {/* Submit */}
-            <Button
-              color="purple"
-              type="submit"
-              size={"3"}
-              variant="solid"
-              radius="large"
-              disabled={disableCreateOfferButton}
-              className="h-12 w-full"
-            >
-              {loading ? <Spinner size={"3"} /> : "Create Offer"}
-            </Button>
-          </Box>
-        </Box>
-      </Box>
-    </Form>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ScrollArea>
+    </div>
   );
 };
 
