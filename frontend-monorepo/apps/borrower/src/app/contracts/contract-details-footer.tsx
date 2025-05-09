@@ -2,9 +2,8 @@ import TransactionHistoryDialog from "./transaction-history";
 import AddCollateralDialog from "./add-collateral-dialog";
 import CancelRequestDialog from "./cancel-request-dialog";
 import { LuBan, LuChevronRight, LuDownload } from "react-icons/lu";
-import WithdrawCollateralDialog from "./manage-loan-dialig/withdraw-collateral";
-import ManageLoanDialog from "./manage-loan-dialig/manage-loan-dialog";
-import React from "react";
+import WithdrawCollateralDialog from "./manage-loan-dialog/withdraw-collateral";
+import ManageLoanDialog from "./manage-loan-dialog/manage-loan-dialog";
 import { Contract, ContractStatus } from "@frontend/http-client-borrower";
 import { Button } from "@frontend/shadcn";
 

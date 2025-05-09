@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            lo.id,\n            lo.loan_deal_id,\n            lo.lender_id,\n            lo.name,\n            lo.min_ltv,\n            lo.interest_rate,\n            lo.loan_amount_min,\n            lo.loan_amount_max,\n            lo.duration_days_min,\n            lo.duration_days_max,\n            lo.loan_amount_reserve,\n            COALESCE(\n                lo.loan_amount_reserve - COALESCE(\n                    SUM(\n                        CASE\n                            WHEN c.status NOT IN ('Cancelled', 'RequestExpired')\n                            THEN c.loan_amount\n                            ELSE 0\n                        END\n                    ),\n                    0\n                ),\n                lo.loan_amount_reserve\n            ) AS loan_amount_reserve_remaining,\n            lo.loan_asset AS \"loan_asset: LoanAsset\",\n            lo.loan_payout AS \"loan_payout: LoanPayout\",\n            lo.status AS \"status: LoanOfferStatus\",\n            lo.loan_repayment_address,\n            lo.lender_pk,\n            lo.lender_derivation_path,\n            lo.auto_accept,\n            lo.kyc_link,\n            lo.lender_npub,\n            lo.created_at,\n            lo.updated_at\n        FROM loan_offers lo\n            LEFT JOIN\n                contracts c ON lo.id = c.loan_deal_id\n        WHERE lo.lender_id = $1 and lo.id = $2\n        GROUP BY\n            lo.id\n        ",
+  "query": "\n        SELECT\n            lo.id,\n            lo.loan_deal_id,\n            lo.lender_id,\n            lo.name,\n            lo.min_ltv,\n            lo.interest_rate,\n            lo.loan_amount_min,\n            lo.loan_amount_max,\n            lo.duration_days_min,\n            lo.duration_days_max,\n            lo.loan_amount_reserve,\n            COALESCE(\n                lo.loan_amount_reserve - COALESCE(\n                    SUM(\n                        CASE\n                            WHEN c.status NOT IN ('Cancelled', 'RequestExpired')\n                            THEN c.loan_amount\n                            ELSE 0\n                        END\n                    ),\n                    0\n                ),\n                lo.loan_amount_reserve\n            ) AS loan_amount_reserve_remaining,\n            lo.loan_asset AS \"loan_asset: LoanAsset\",\n            lo.loan_payout AS \"loan_payout: LoanPayout\",\n            lo.status AS \"status: LoanOfferStatus\",\n            lo.loan_repayment_address,\n            lo.lender_pk,\n            lo.lender_derivation_path,\n            lo.auto_accept,\n            lo.kyc_link,\n            lo.lender_npub,\n            lo.extension_duration_days,\n            lo.extension_interest_rate,\n            lo.created_at,\n            lo.updated_at\n        FROM loan_offers lo\n            LEFT JOIN\n                contracts c ON lo.id = c.loan_deal_id\n        WHERE lo.lender_id = $1 and lo.id = $2\n        GROUP BY\n            lo.id\n        ",
   "describe": {
     "columns": [
       {
@@ -152,11 +152,21 @@
       },
       {
         "ordinal": 21,
+        "name": "extension_duration_days",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 22,
+        "name": "extension_interest_rate",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 23,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 22,
+        "ordinal": 24,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -190,8 +200,10 @@
       true,
       false,
       false,
+      false,
+      false,
       false
     ]
   },
-  "hash": "8762b202a3c27c460c977b3ec307a43f4333026f6c88f4973ff97d29cfe700cc"
+  "hash": "3ca40396ee915b3b92561f1b11ad6a3849d46563120171bc69ca8c398b8e53b7"
 }

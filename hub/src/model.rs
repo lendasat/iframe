@@ -1,3 +1,5 @@
+use crate::db::map_to_db_extension_policy;
+use crate::db::map_to_model_extension_policy;
 use crate::moon;
 use crate::utils::calculate_liquidation_price;
 use crate::utils::calculate_ltv;
@@ -258,6 +260,7 @@ pub struct ResetLegacyPasswordSchema {
 pub struct CreateLoanOfferSchema {
     pub name: String,
     pub min_ltv: Decimal,
+    /// Yearly interest rate.
     pub interest_rate: Decimal,
     pub loan_amount_min: Decimal,
     pub loan_amount_max: Decimal,
@@ -274,12 +277,15 @@ pub struct CreateLoanOfferSchema {
     /// process.
     pub kyc_link: Option<Url>,
     pub lender_npub: String,
+    pub extension_duration_days: Option<u64>,
+    pub extension_interest_rate: Option<Decimal>,
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct CreateLoanApplicationSchema {
     #[serde(with = "rust_decimal::serde::float")]
     pub ltv: Decimal,
+    /// Yearly interest rate.
     #[serde(with = "rust_decimal::serde::float")]
     pub interest_rate: Decimal,
     #[serde(with = "rust_decimal::serde::float")]
@@ -395,12 +401,13 @@ impl LoanDeal {
 ///                             | loan_deal_id   |
 ///                             | ...            |
 ///                             +----------------+
-#[derive(Debug, FromRow, Clone)]
+#[derive(Debug, Clone)]
 pub struct LoanOffer {
     pub loan_deal_id: String,
     pub lender_id: String,
     pub name: String,
     pub min_ltv: Decimal,
+    /// Yearly interest rate.
     pub interest_rate: Decimal,
     pub loan_amount_min: Decimal,
     pub loan_amount_max: Decimal,
@@ -417,8 +424,22 @@ pub struct LoanOffer {
     pub auto_accept: bool,
     pub kyc_link: Option<Url>,
     pub lender_npub: String,
+    pub extension_policy: ExtensionPolicy,
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum ExtensionPolicy {
+    /// Extensions are not possible.
+    DoNotExtend,
+    /// If half of the contract duration has passed, the contract can be extended.
+    AfterHalfway {
+        /// The maximum number of days the contract can be extended by if the condition is met.
+        max_duration_days: u64,
+        /// The yearly interest rate that applies to the extension period.
+        interest_rate: Decimal,
+    },
 }
 
 impl LoanOffer {
@@ -493,6 +514,7 @@ pub struct LoanApplication {
     pub borrower_id: String,
     #[serde(with = "rust_decimal::serde::float")]
     pub ltv: Decimal,
+    /// Yearly interest rate.
     #[serde(with = "rust_decimal::serde::float")]
     pub interest_rate: Decimal,
     #[serde(with = "rust_decimal::serde::float")]
@@ -529,13 +551,12 @@ pub enum LoanApplicationStatus {
     Cancelled,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Clone)]
 pub struct Contract {
     pub id: String,
     pub lender_id: String,
     pub borrower_id: String,
     pub loan_id: String,
-    #[serde(with = "rust_decimal::serde::float")]
     pub initial_ltv: Decimal,
     /// The minimum amount of collateral the borrower is expected to send to set up a loan.
     ///
@@ -549,7 +570,6 @@ pub struct Contract {
     /// We have decided to not persist the collateral outputs to make the implementation simpler.
     /// This may come back to bite us.
     pub collateral_sats: u64,
-    #[serde(with = "rust_decimal::serde::float")]
     pub loan_amount: Decimal,
     pub duration_days: i32,
     pub expiry_date: OffsetDateTime,
@@ -575,14 +595,12 @@ pub struct Contract {
     pub liquidation_status: LiquidationStatus,
     pub contract_version: ContractVersion,
     pub client_contract_id: Option<Uuid>,
-    #[serde(with = "time::serde::rfc3339")]
-    pub created_at: OffsetDateTime,
-    #[serde(with = "time::serde::rfc3339")]
-    pub updated_at: OffsetDateTime,
-    #[serde(with = "rust_decimal::serde::float")]
+    /// Yearly interest rate.
     pub interest_rate: Decimal,
-    #[serde(with = "rust_decimal::serde::float")]
     pub interest: Decimal,
+    pub extension_policy: ExtensionPolicy,
+    pub created_at: OffsetDateTime,
+    pub updated_at: OffsetDateTime,
 }
 
 impl Contract {
@@ -661,6 +679,46 @@ impl Contract {
     fn has_new_liquidation_threshold(&self) -> bool {
         self.created_at >= datetime!(2025-03-01 0:00 UTC)
     }
+
+    /// Check if extension is possible based on the contract's [`ExtensionPolicy`].
+    ///
+    /// If it is possible, we return the interest rate that will apply for the extension period.
+    pub fn handle_extension_request(
+        &self,
+        now: OffsetDateTime,
+        extension_duration_days: u64,
+    ) -> Result<Decimal, ExtensionRequestError> {
+        let extension_interest_rate = match self.extension_policy {
+            ExtensionPolicy::DoNotExtend => return Err(ExtensionRequestError::NotAllowed),
+            ExtensionPolicy::AfterHalfway {
+                max_duration_days, ..
+            } if extension_duration_days > max_duration_days => {
+                return Err(ExtensionRequestError::TooManyDays { max_duration_days })
+            }
+            ExtensionPolicy::AfterHalfway { interest_rate, .. } => interest_rate,
+        };
+
+        let duration_days = self.duration_days as i64;
+
+        let days_left = (self.expiry_date - now).whole_days();
+        let days_passed = duration_days - days_left;
+
+        if days_passed < (duration_days / 2) {
+            return Err(ExtensionRequestError::TooSoon);
+        }
+
+        Ok(extension_interest_rate)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum ExtensionRequestError {
+    /// Extension is not currently supported for this contract.
+    NotAllowed,
+    /// Extension will be possible at a later time.
+    TooSoon,
+    /// Extension is only possible for `max_duration_days`.
+    TooManyDays { max_duration_days: u64 },
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Copy)]
@@ -820,6 +878,8 @@ pub mod db {
         pub interest_rate: Decimal,
         pub interest: Decimal,
         pub client_contract_id: Option<Uuid>,
+        pub extension_duration_days: i32,
+        pub extension_interest_rate: Decimal,
         #[serde(with = "time::serde::rfc3339")]
         pub created_at: OffsetDateTime,
         #[serde(with = "time::serde::rfc3339")]
@@ -905,6 +965,11 @@ pub mod db {
 
 impl From<db::Contract> for Contract {
     fn from(value: db::Contract) -> Self {
+        let extension_policy = map_to_model_extension_policy(
+            value.extension_duration_days,
+            value.extension_interest_rate,
+        );
+
         Self {
             id: value.id,
             lender_id: value.lender_id,
@@ -940,6 +1005,7 @@ impl From<db::Contract> for Contract {
             liquidation_status: value.liquidation_status.into(),
             contract_version: ContractVersion::from(value.contract_version),
             client_contract_id: value.client_contract_id,
+            extension_policy,
             created_at: value.created_at,
             updated_at: value.updated_at,
         }
@@ -1043,6 +1109,9 @@ impl From<moon::Card> for db::MoonCard {
 
 impl From<Contract> for db::Contract {
     fn from(value: Contract) -> Self {
+        let (extension_duration_days, extension_interest_rate) =
+            map_to_db_extension_policy(value.extension_policy);
+
         Self {
             id: value.id,
             lender_id: value.lender_id,
@@ -1075,6 +1144,8 @@ impl From<Contract> for db::Contract {
             interest_rate: value.interest_rate,
             interest: value.interest,
             client_contract_id: value.client_contract_id,
+            extension_duration_days,
+            extension_interest_rate,
             created_at: value.created_at,
             updated_at: value.updated_at,
         }
@@ -1342,6 +1413,7 @@ mod tests {
     use crate::model::ONE_MONTH;
     use crate::model::ONE_YEAR;
     use rust_decimal_macros::dec;
+    use time::ext::NumericalDuration;
 
     #[test]
     fn test_calculate_interest_daily() {
@@ -1387,21 +1459,37 @@ mod tests {
 
     #[test]
     fn test_calculate_lender_liquidation_amount() {
-        let contract = build_contract(dec!(1_000), dec!(0.12), (ONE_MONTH * 3) as i32);
+        let contract = Contract {
+            loan_amount: dec!(1_000),
+            interest_rate: dec!(0.12),
+            duration_days: (ONE_MONTH * 3) as i32,
+            ..dummy_contract()
+        };
+
         let price = dec!(100_000);
 
         let outstanding_balance = contract.outstanding_balance_btc(price).unwrap();
 
         assert_eq!(outstanding_balance.to_sat(), 1030000);
 
-        let contract = build_contract(dec!(10_000), dec!(0.20), (ONE_MONTH * 18) as i32);
+        let contract = Contract {
+            loan_amount: dec!(10_000),
+            interest_rate: dec!(0.20),
+            duration_days: (ONE_MONTH * 18) as i32,
+            ..dummy_contract()
+        };
         let price = dec!(50_000);
 
         let outstanding_balance = contract.outstanding_balance_btc(price).unwrap();
 
         assert_eq!(outstanding_balance.to_sat(), 26_000_000);
 
-        let contract = build_contract(dec!(1_000), dec!(0.12), ONE_YEAR as i32);
+        let contract = Contract {
+            loan_amount: dec!(1_000),
+            interest_rate: dec!(0.12),
+            duration_days: ONE_YEAR as i32,
+            ..dummy_contract()
+        };
         let price = dec!(0);
 
         let res = contract.outstanding_balance_btc(price);
@@ -1409,11 +1497,92 @@ mod tests {
         assert!(res.is_err())
     }
 
-    fn build_contract(
-        loan_amount: Decimal,
-        interest_rate: Decimal,
-        duration_days: i32,
-    ) -> Contract {
+    #[test]
+    fn test_extension_request_too_soon() {
+        let opened_at = OffsetDateTime::now_utc();
+        let now = opened_at + 7.days();
+
+        let contract = Contract {
+            duration_days: 30,
+            expiry_date: opened_at + 30.days(),
+            extension_policy: ExtensionPolicy::AfterHalfway {
+                max_duration_days: 30,
+                interest_rate: dec!(0.25),
+            },
+            ..dummy_contract()
+        };
+
+        let res = contract.handle_extension_request(now, 30);
+
+        // Requested 7 days in out of 30, too soon.
+        assert_eq!(res, Err(ExtensionRequestError::TooSoon));
+    }
+
+    #[test]
+    fn test_extension_request_valid() {
+        let opened_at = OffsetDateTime::now_utc();
+        let now = opened_at + 15.days();
+
+        let contract = Contract {
+            duration_days: 30,
+            expiry_date: opened_at + 30.days(),
+            extension_policy: ExtensionPolicy::AfterHalfway {
+                max_duration_days: 30,
+                interest_rate: dec!(0.25),
+            },
+            ..dummy_contract()
+        };
+
+        let res = contract.handle_extension_request(now, 30);
+
+        // Requested 15 days in out of 30, just right.
+        assert_eq!(res, Ok(dec!(0.25)));
+    }
+
+    #[test]
+    fn test_extension_request_too_many_days() {
+        let opened_at = OffsetDateTime::now_utc();
+        let now = opened_at + 15.days();
+
+        let contract = Contract {
+            duration_days: 30,
+            expiry_date: opened_at + 30.days(),
+            extension_policy: ExtensionPolicy::AfterHalfway {
+                max_duration_days: 30,
+                interest_rate: dec!(0.25),
+            },
+            ..dummy_contract()
+        };
+
+        let res = contract.handle_extension_request(now, 31);
+
+        // Requested 31 day extension, too many days.
+        assert_eq!(
+            res,
+            Err(ExtensionRequestError::TooManyDays {
+                max_duration_days: 30
+            })
+        );
+    }
+
+    #[test]
+    fn test_extension_request_not_allowed() {
+        let opened_at = OffsetDateTime::now_utc();
+        let now = opened_at + 15.days();
+
+        let contract = Contract {
+            duration_days: 30,
+            expiry_date: opened_at + 30.days(),
+            extension_policy: ExtensionPolicy::DoNotExtend,
+            ..dummy_contract()
+        };
+
+        let res = contract.handle_extension_request(now, 31);
+
+        assert_eq!(res, Err(ExtensionRequestError::NotAllowed));
+    }
+
+    fn dummy_contract() -> Contract {
         Contract {
             id: "1dad3f62-31f1-4483-b6b4-9da0247a49c0".parse().unwrap(),
             lender_id: "0979af4d-9531-4f68-acee-728116477841".parse().unwrap(),
@@ -1423,8 +1592,8 @@ mod tests {
             initial_collateral_sats: 50_000,
             origination_fee_sats: 5_000,
             collateral_sats: 55_000,
-            loan_amount,
-            duration_days,
+            loan_amount: dec!(10_000),
+            duration_days: 30,
             expiry_date: datetime!(2030-03-01 0:00 UTC),
             borrower_btc_address: "bc1pravj5kascdk5y3zqa9n0j8yassuaq0axgdj706fmjtmzvfhg02vsqvf25f"
                 .parse()
@@ -1451,10 +1620,11 @@ mod tests {
             liquidation_status: LiquidationStatus::Healthy,
             contract_version: ContractVersion::TwoOfThree,
             client_contract_id: None,
+            interest_rate: dec!(0.10),
+            interest: dec!(1_000),
+            extension_policy: ExtensionPolicy::DoNotExtend,
             created_at: datetime!(2025-03-01 0:00 UTC),
             updated_at: datetime!(2025-03-01 0:00 UTC),
-            interest_rate,
-            interest: loan_amount * interest_rate,
         }
     }
 }

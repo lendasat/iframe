@@ -3,10 +3,12 @@ use crate::approve_contract::approve_contract;
 use crate::bitmex_index_price_rest::get_bitmex_index_price;
 use crate::contract_liquidation;
 use crate::db;
+use crate::db::contracts::update_extension_policy;
 use crate::mark_as_principal_given::mark_as_principal_given;
 use crate::mempool;
 use crate::model;
 use crate::model::ContractStatus;
+use crate::model::ExtensionPolicy;
 use crate::model::FiatLoanDetails;
 use crate::model::Lender;
 use crate::model::LiquidationStatus;
@@ -44,6 +46,7 @@ use bitcoin::Amount;
 use bitcoin::PublicKey;
 use bitcoin::Transaction;
 use miniscript::Descriptor;
+use rust_decimal::prelude::Zero;
 use rust_decimal::Decimal;
 use serde::Deserialize;
 use serde::Serialize;
@@ -67,6 +70,13 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
         .route(
             "/api/contracts/:contract_id",
             get(get_contract).route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                jwt_auth::auth,
+            )),
+        )
+        .route(
+            "/api/contracts/:id/extension-policy",
+            put(put_update_extension_policy).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
                 jwt_auth::auth,
             )),
@@ -189,6 +199,9 @@ pub struct Contract {
     pub borrower_npub: String,
     pub client_contract_id: Option<Uuid>,
     pub timeline: Vec<TimelineEvent>,
+    pub extension_max_duration_days: u64,
+    #[serde(with = "rust_decimal::serde::float_option")]
+    pub extension_interest_rate: Option<Decimal>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -246,6 +259,41 @@ async fn get_contract(
     let contract = map_to_api_contract(&data, contract).await?;
 
     Ok(AppJson(contract))
+}
+
+#[derive(Debug, Deserialize)]
+struct UpdateExtensionPolicyRequest {
+    /// The maximum number of days a contract can be extended by.
+    ///
+    /// A zero value indicates that the contract cannot be extended.
+    extension_max_duration_days: u64,
+    /// The interest rate to be applied to the extension period.
+    #[serde(with = "rust_decimal::serde::float")]
+    extension_interest_rate: Decimal,
+}
+
+#[instrument(skip_all, fields(lender_id = user.id, contract_id, body = ?body), ret, err(Debug))]
+async fn put_update_extension_policy(
+    State(data): State<Arc<AppState>>,
+    Path(contract_id): Path<String>,
+    Extension(user): Extension<Lender>,
+    body: AppJson<UpdateExtensionPolicyRequest>,
+) -> Result<(), Error> {
+    let extension_max_duration_days = body.0.extension_max_duration_days;
+    let extension_policy = if extension_max_duration_days.is_zero() {
+        ExtensionPolicy::DoNotExtend
+    } else {
+        ExtensionPolicy::AfterHalfway {
+            max_duration_days: extension_max_duration_days,
+            interest_rate: body.0.extension_interest_rate,
+        }
+    };
+
+    update_extension_policy(&data.db, &contract_id, extension_policy)
+        .await
+        .map_err(Error::database)?;
+
+    Ok(())
 }
 
 #[instrument(skip_all, fields(lender_id = user.id, contract_id, body = ?body), ret, err(Debug))]
@@ -1073,6 +1121,14 @@ async fn map_to_api_contract(
 
     let timeline = map_timeline(&contract, &transactions, &data.db).await?;
 
+    let (extension_max_duration_days, extension_interest_rate) = match contract.extension_policy {
+        ExtensionPolicy::DoNotExtend => (0, None),
+        ExtensionPolicy::AfterHalfway {
+            max_duration_days,
+            interest_rate,
+        } => (max_duration_days, Some(interest_rate)),
+    };
+
     let contract = Contract {
         id: contract.id,
         loan_amount: contract.loan_amount,
@@ -1115,6 +1171,8 @@ async fn map_to_api_contract(
         borrower_npub: contract.borrower_npub,
         client_contract_id: contract.client_contract_id,
         timeline,
+        extension_max_duration_days,
+        extension_interest_rate,
     };
 
     Ok(contract)
@@ -1269,14 +1327,6 @@ impl Error {
         Self::Database(format!("{e:#}"))
     }
 
-    fn interest_rate_calculation(e: anyhow::Error) -> Self {
-        Self::InterestRateCalculation(format!("{e:#}"))
-    }
-
-    fn origination_fee_calculation(e: anyhow::Error) -> Self {
-        Self::OriginationFeeCalculation(format!("{e:#}"))
-    }
-
     fn contract_address(e: anyhow::Error) -> Self {
         Self::ContractAddress(format!("{e:#}"))
     }
@@ -1365,27 +1415,6 @@ where
 {
     fn into_response(self) -> Response {
         Json(self.0).into_response()
-    }
-}
-
-impl From<crate::contract_extension::Error> for Error {
-    fn from(value: crate::contract_extension::Error) -> Self {
-        match value {
-            crate::contract_extension::Error::Database(e) => Error::database(e),
-            crate::contract_extension::Error::MissingLoanOffer { offer_id } => {
-                Error::MissingLoanOffer { offer_id }
-            }
-            crate::contract_extension::Error::LoanOfferLenderMismatch => {
-                Error::LoanOfferLenderMissmatch
-            }
-            crate::contract_extension::Error::InterestRateCalculation(e) => {
-                Error::interest_rate_calculation(e)
-            }
-            crate::contract_extension::Error::MissingOriginationFee => Error::MissingOriginationFee,
-            crate::contract_extension::Error::OriginationFeeCalculation(e) => {
-                Error::origination_fee_calculation(e)
-            }
-        }
     }
 }
 

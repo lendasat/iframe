@@ -73,6 +73,8 @@ async fn api_account_borrower() {
         auto_accept: false,
         kyc_link: None,
         lender_npub: "npub1eeze2k0yz57p5s8q8fg8p7rs97mj8ya3qkk3m7njgadl7schvktsp7hsxg".to_string(),
+        extension_duration_days: Some(7),
+        extension_interest_rate: Some(dec!(0.12)),
     };
 
     let res = lender

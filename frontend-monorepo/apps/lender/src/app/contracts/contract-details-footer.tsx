@@ -1,7 +1,6 @@
 import TransactionHistoryDialog from "./transaction-history";
 import { LuChevronRight } from "react-icons/lu";
-import PayoutPrincipleDialog from "./manage-loan-dialig/payout-principle-dialog";
-import React from "react";
+import PayoutPrincipleDialog from "./manage-loan-dialog/payout-principle-dialog";
 import { Contract, ContractStatus } from "@frontend/http-client-lender";
 import { Button } from "@frontend/shadcn";
 import ApproveOrRejectStablesDialog from "./approve-dialog/approve-reject-stables-request-dialog";
@@ -9,7 +8,7 @@ import ApproveOrRejectFiatDialog from "./approve-dialog/approve-reject-fiat-requ
 import { Check } from "lucide-react";
 import ApproveOrRejectExtensionDialog from "./approve-reject-extension-dialog";
 import ConfirmRepaymentDialog from "./confirm-repayment-dialog";
-import DefaultedOrUndercollateralizedContractDialog from "./manage-loan-dialig/defaulted-contract-dialog";
+import DefaultedOrUndercollateralizedContractDialog from "./manage-loan-dialog/defaulted-contract-dialog";
 import { LoanAssetHelper } from "@frontend/ui-shared";
 
 interface ContractDetailsFooterProps {

@@ -1,4 +1,7 @@
+use crate::model::ExtensionPolicy;
 use anyhow::Result;
+use rust_decimal::Decimal;
+use rust_decimal_macros::dec;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::Pool;
 use sqlx::Postgres;
@@ -46,4 +49,29 @@ pub async fn connect_to_db(db_connection: &str) -> Result<Pool<Postgres>> {
 pub async fn run_migration(pool: &Pool<Postgres>) -> Result<()> {
     sqlx::migrate!("./migrations").run(pool).await?;
     Ok(())
+}
+
+pub fn map_to_model_extension_policy(
+    extension_duration_days: i32,
+    extension_interest_rate: Decimal,
+) -> ExtensionPolicy {
+    match (extension_duration_days, extension_interest_rate) {
+        // Zero or negative duration means that the contract may not be extended.
+        (duration_days, _) if !duration_days.is_positive() => ExtensionPolicy::DoNotExtend,
+        (duration_days, interest_rate) => ExtensionPolicy::AfterHalfway {
+            max_duration_days: duration_days as u64,
+            // Negative interest rates are not supported.
+            interest_rate: interest_rate.max(Decimal::ZERO),
+        },
+    }
+}
+
+pub fn map_to_db_extension_policy(extension_policy: ExtensionPolicy) -> (i32, Decimal) {
+    match extension_policy {
+        ExtensionPolicy::DoNotExtend => (0, dec!(0.20)),
+        ExtensionPolicy::AfterHalfway {
+            max_duration_days: duration_days,
+            interest_rate,
+        } => (duration_days as i32, interest_rate),
+    }
 }
