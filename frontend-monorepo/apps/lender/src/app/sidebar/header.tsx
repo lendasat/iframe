@@ -3,42 +3,37 @@ import { useLocation } from "react-router-dom";
 
 export function SiteHeader() {
   const location = useLocation();
+  const path = location.pathname;
 
   let header = "Home";
-  switch (location.pathname) {
-    case "/requests":
-      header = "Find Offer";
-      break;
-    case "/available-offers":
-      header = "All Offers";
-      break;
-    case "/loan-application":
-      header = "Apply for a Loan";
-      break;
-    case "/loan-applications":
-      header = "My Applications";
-      break;
-    case "/my-contracts":
-      header = "My Contracts";
-      break;
-    case "/cards":
-      header = "My Cards";
-      break;
-    case "/settings/profile":
-      header = "Settings - Profile";
-      break;
-    case "/settings/wallet":
-      header = "Settings - Wallet";
-      break;
-    case "/settings/notifications":
-      header = "Settings - Notifications";
-      break;
-    case "/settings/chat":
-      header = "Settings - Nostr chat";
-      break;
-    case "/settings/version":
-      header = "Settings - Version";
-      break;
+  if (path === "/") {
+    header = "Home";
+  } else if (path.startsWith("/requests")) {
+    header = "Find Offer";
+  } else if (path.startsWith("/create-loan-offer")) {
+    header = "Create Loan Offer";
+  } else if (path.startsWith("/available-offers")) {
+    header = "All Offers";
+  } else if (path.startsWith("/my-offers")) {
+    header = "Edit Loan";
+  } else if (path.startsWith("/loan-application")) {
+    header = "Apply for a Loan";
+  } else if (path.startsWith("/loan-applications")) {
+    header = "My Applications";
+  } else if (path.startsWith("/my-contracts")) {
+    header = "My Contracts";
+  } else if (path.startsWith("/cards")) {
+    header = "My Cards";
+  } else if (path.startsWith("/settings/profile")) {
+    header = "Settings - Profile";
+  } else if (path.startsWith("/settings/wallet")) {
+    header = "Settings - Wallet";
+  } else if (path.startsWith("/settings/notifications")) {
+    header = "Settings - Notifications";
+  } else if (path.startsWith("/settings/chat")) {
+    header = "Settings - Nostr chat";
+  } else if (path.startsWith("/settings/version")) {
+    header = "Settings - Version";
   }
 
   return (

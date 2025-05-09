@@ -1,9 +1,10 @@
 import { ONE_YEAR } from "@frontend/ui-shared";
-import { Card, Grid } from "@radix-ui/themes";
-import { Text } from "@radix-ui/themes";
 import { useState } from "react";
 import { IconType } from "react-icons";
 import { FaRegCalendar, FaRegClock } from "react-icons/fa6";
+import { cn } from "@frontend/shadcn";
+import { Card, CardContent } from "@frontend/shadcn";
+import { Label } from "@frontend/shadcn";
 
 type AllowedDurations = "7d" | "1m" | "3m" | "6m" | "12m";
 
@@ -57,9 +58,7 @@ const durations: Duration[] = [
   },
 ] as const;
 
-const DurationSelector: React.FC<DurationSelectorProps> = ({
-  onRangeChange,
-}) => {
+const DurationSelector = ({ onRangeChange }: DurationSelectorProps) => {
   const [startDuration, setStartDuration] = useState<
     AllowedDurations | undefined
   >("7d");
@@ -105,57 +104,59 @@ const DurationSelector: React.FC<DurationSelectorProps> = ({
     return currentIndex >= startIndex && currentIndex <= endIndex;
   };
 
-  const getCardStyle = (value: AllowedDurations): string => {
-    if (value === startDuration) {
-      return "ring-2 ring-purple-400 bg-purple-100 dark:bg-gray-700";
+  const getSelectionStatusText = () => {
+    if (!startDuration) {
+      return "Select starting duration";
+    } else if (!endDuration) {
+      return "Now select ending duration";
+    } else {
+      return `Selected: ${
+        durations.find((d) => d.value === startDuration)?.label
+      } to ${durations.find((d) => d.value === endDuration)?.label}`;
     }
-    if (value === endDuration) {
-      return "ring-2 ring-purple-400 bg-purple-100 dark:bg-gray-900";
-    }
-    if (isInRange(value)) {
-      return "ring-1 ring-purple-300 bg-purple-50 dark:bg-gray-400";
-    }
-    return "hover:bg-gray-50 dark:bg-gray-600";
   };
 
   return (
-    <div className="mx-auto w-full max-w-3xl">
-      <Text size="1" color="gray" mb="4">
-        {!startDuration
-          ? "Select starting duration"
-          : !endDuration
-            ? "Now select ending duration"
-            : `Selected: ${
-                durations.find((d) => d.value === startDuration)?.label
-              } to ${durations.find((d) => d.value === endDuration)?.label}`}
-      </Text>
-      <Grid columns={{ initial: "1", sm: "2", lg: "5" }} gap="4">
+    <div className="w-full">
+      <p className="mb-4 text-xs text-muted-foreground">
+        {getSelectionStatusText()}
+      </p>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {durations.map(({ value, label, sublabel, icon: Icon }) => (
           <Card
             key={value}
-            className={`cursor-pointer p-4 transition-all duration-200 ${getCardStyle(
-              value,
-            )}`}
+            className={cn(
+              "cursor-pointer transition-all duration-200 hover:bg-accent/50",
+              value === startDuration && "ring-2 ring-primary bg-primary/10",
+              value === endDuration && "ring-2 ring-primary bg-primary/10",
+              isInRange(value) &&
+                value !== startDuration &&
+                value !== endDuration &&
+                "ring-1 ring-primary/30 bg-primary/5",
+            )}
             onClick={() => handleDurationClick(value)}
           >
-            <div className="flex flex-col items-center space-y-2 text-center">
-              <Icon
-                className={`h-6 w-6 ${
-                  value === startDuration || value === endDuration
-                    ? "text-blue-400"
-                    : isInRange(value)
-                      ? "text-blue-300"
-                      : "text-gray-200"
-                }`}
-              />
-              <div>
-                <div className="font-medium">{label}</div>
-                <div className="text-sm text-gray-500">{sublabel}</div>
+            <CardContent className="p-4">
+              <div className="flex flex-col items-center space-y-2 text-center">
+                <Icon
+                  className={cn(
+                    "h-6 w-6",
+                    value === startDuration || value === endDuration
+                      ? "text-primary"
+                      : isInRange(value)
+                        ? "text-primary/60"
+                        : "text-muted-foreground/30",
+                  )}
+                />
+                <div>
+                  <Label className="font-medium">{label}</Label>
+                  <p className="text-xs text-muted-foreground">{sublabel}</p>
+                </div>
               </div>
-            </div>
+            </CardContent>
           </Card>
         ))}
-      </Grid>
+      </div>
     </div>
   );
 };

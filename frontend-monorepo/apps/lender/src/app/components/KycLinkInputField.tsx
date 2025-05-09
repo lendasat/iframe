@@ -1,7 +1,7 @@
-import * as Checkbox from "@radix-ui/react-checkbox";
-import { CheckIcon } from "@radix-ui/react-icons";
-import { TextField } from "@radix-ui/themes";
-import type { ChangeEvent } from "react";
+import { ChangeEvent } from "react";
+import { Checkbox } from "@frontend/shadcn";
+import { Input } from "@frontend/shadcn";
+import { Label } from "@frontend/shadcn";
 
 interface KycLinkInputFieldProps {
   isKycRequired: boolean;
@@ -20,38 +20,33 @@ export function KycLinkInputField({
     setLink(e.target.value);
   }
 
-  function onCheckboxChange(state: boolean) {
-    setIsKycRequired(state);
+  function onCheckboxChange(checked: boolean) {
+    setIsKycRequired(checked);
 
-    if (!state) {
+    if (!checked) {
       setLink("");
     }
   }
 
   return (
-    <div className="flex flex-col">
-      <div className="flex items-center">
-        <Checkbox.Root
-          className="shadow-blackA4 hover:bg-violet3 mb-2 flex size-[25px] appearance-none items-center justify-center rounded bg-white shadow-[0_2px_10px] outline-none focus:shadow-[0_0_0_2px_black] dark:bg-gray-300"
+    <div className="flex flex-col space-y-2">
+      <div className="flex items-center space-x-2">
+        <Checkbox
+          id="kyc-required"
           checked={isKycRequired}
           onCheckedChange={onCheckboxChange}
-        >
-          <Checkbox.Indicator className="text-violet11">
-            <CheckIcon />
-          </Checkbox.Indicator>
-        </Checkbox.Root>
-        <label
-          className="dark:text-font-dark/60 pl-[15px] text-[15px]"
-          htmlFor="c1"
+        />
+        <Label
+          htmlFor="kyc-required"
+          className="text-sm font-normal text-muted-foreground"
         >
           Require KYC
-        </label>
+        </Label>
       </div>
+
       {isKycRequired && (
-        <TextField.Root
-          className="text-font dark:text-font-dark mt-2 flex w-full items-center border-0 font-semibold"
-          size={"3"}
-          variant="surface"
+        <Input
+          className="mt-2 w-full"
           placeholder="Enter KYC link"
           type="url"
           value={link}
