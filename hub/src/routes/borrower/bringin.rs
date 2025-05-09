@@ -19,6 +19,7 @@ use axum::Json;
 use axum::Router;
 use serde::Deserialize;
 use serde::Serialize;
+use serde_json::Value;
 use std::sync::Arc;
 use tracing::instrument;
 use url::Url;
@@ -44,6 +45,14 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
                 app_state.clone(),
                 user_connection_details_middleware::ip_user_agent,
             )),
+        )
+        .route(
+            "/api/bringin/callback/verification-status",
+            post(post_verification_status),
+        )
+        .route(
+            "/api/bringin/callback/order-status",
+            post(post_order_status_update_callback),
         )
         .route(
             "/api/bringin/callback/:borrower_id",
@@ -96,6 +105,39 @@ async fn post_connect_with_bringin(
     };
 
     Ok(AppJson(res))
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PostVerificationStatus {
+    /// Bringin user ID.
+    pub user_id: String,
+    pub apikey: String,
+    #[serde(rename = "ref")]
+    pub reference: String,
+    pub verification_status: String,
+}
+
+#[instrument(skip_all, fields(borrower_id = body.reference, bringing_user_id = body.user_id), err(Debug), ret)]
+#[axum::debug_handler]
+async fn post_verification_status(
+    State(data): State<Arc<AppState>>,
+    Json(body): Json<PostVerificationStatus>,
+) -> Result<(), Error> {
+    tracing::info!(status = ?body, "Received verification status update");
+    db::bringin::insert_api_key(&data.db, &body.user_id, &body.apikey)
+        .await
+        .map_err(Error::database)?;
+
+    Ok(())
+}
+
+#[instrument(skip_all, err(Debug), ret)]
+#[axum::debug_handler]
+async fn post_order_status_update_callback(payload: Json<Value>) -> Result<(), Error> {
+    tracing::info!(payload = ?payload, "Received order status update");
+
+    Ok(())
 }
 
 #[derive(Debug, Deserialize, Serialize)]
