@@ -48,9 +48,17 @@ const loanNavItems = [
         url: "/offers",
         isActive: false,
       },
+    ],
+  },
+  {
+    title: "Requests",
+    url: "/loan-applications",
+    icon: ScrollText,
+    isActive: true,
+    items: [
       {
         icon: Search,
-        title: "Open Applications",
+        title: "Open Requests",
         url: "/loan-applications",
         isActive: false,
       },

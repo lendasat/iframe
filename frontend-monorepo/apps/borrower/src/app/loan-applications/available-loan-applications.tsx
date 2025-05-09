@@ -17,7 +17,7 @@ function AvailableLoanApplications() {
 
   return (
     <div>
-      <DashHeader label="My loan applications" />
+      <DashHeader label="My loan requests" />
       {/*TODO: re-implement filters if needed */}
       <Box className="pt-3" px={"6"}>
         <LoanApplicationTable
