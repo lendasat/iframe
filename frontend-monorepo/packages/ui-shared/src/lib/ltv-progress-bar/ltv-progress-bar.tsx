@@ -1,7 +1,6 @@
 import type { FC } from "react";
 import { usePrice } from "../price-context";
-import { Progress } from "@frontend/shadcn";
-import { Loader } from "lucide-react";
+import { Progress, Skeleton } from "@frontend/shadcn";
 
 interface LtvProgressBarNewProps {
   loanAmount: number;
@@ -16,21 +15,30 @@ export const LtvProgressBar: FC<LtvProgressBarNewProps> = ({
 
   const ltvRatio = collateralBtc
     ? (loanAmount / (collateralBtc * latestPrice)) * 100
-    : undefined;
+    : 0;
 
-  const isNan = ltvRatio == null || Number.isNaN(ltvRatio);
+  console.log(ltvRatio);
 
-  const formattedValue = isNan ? "Loading" : ltvRatio.toFixed(0);
+  // If the price is 0.
+  const isNan = Number.isNaN(ltvRatio);
+
+  const formattedValue = ltvRatio.toFixed(0);
 
   return (
     <div className="flex w-full min-w-[80px] items-center gap-0">
-      <Progress value={ltvRatio ?? 0} className={"hidden md:block"} />
-      <div
-        className="text-font dark:text-font-dark w-full text-right text-xs font-medium
+      {isNan ? (
+        <Skeleton className="h-4 w-full" />
+      ) : (
+        <>
+          <Progress value={ltvRatio} className={"hidden md:block"} />
+          <div
+            className="text-font dark:text-font-dark w-full text-right text-xs font-medium
       flex justify-center items-center"
-      >
-        {isNan ? <Loader className="animate-spin" /> : `${formattedValue}%`}
-      </div>
+          >
+            {formattedValue}%
+          </div>
+        </>
+      )}
     </div>
   );
 };
