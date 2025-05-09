@@ -19,7 +19,7 @@ function AvailableLoanApplications() {
       <Box className={"px-6 py-4 md:px-8"}>
         <Flex gap={"1"} align={"center"}>
           <Heading className={"text-font dark:text-font-dark"} size={"6"}>
-            Open loan applications
+            Open loan requests
           </Heading>
         </Flex>
       </Box>

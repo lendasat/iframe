@@ -1,5 +1,6 @@
 import {
   ChevronRight,
+  FileSpreadsheet,
   Library,
   Mails,
   ScrollText,
@@ -25,23 +26,31 @@ import {
 
 const loanNavItems = [
   {
-    title: "Loans",
+    title: "Offers",
     url: "#",
     icon: ScrollText,
     isActive: true,
     items: [
       {
         icon: Search,
-        title: "Find offer",
+        title: "Find Offer",
         url: "/requests",
         isActive: false,
       },
       {
         icon: Library,
-        title: "See all offers",
+        title: "See All Offers",
         url: "/available-offers",
         isActive: false,
       },
+    ],
+  },
+  {
+    title: "Requests",
+    url: "#",
+    icon: FileSpreadsheet,
+    isActive: true,
+    items: [
       {
         icon: Send,
         title: "Apply",
@@ -50,7 +59,7 @@ const loanNavItems = [
       },
       {
         icon: Mails,
-        title: "Applications",
+        title: "My Requests",
         url: "/loan-applications",
         isActive: false,
       },
