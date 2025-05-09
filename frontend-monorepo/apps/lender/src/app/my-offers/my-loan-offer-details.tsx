@@ -1,50 +1,40 @@
-import { faWarning } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   LoanOfferStatus,
   useLenderHttpClient,
 } from "@frontend/http-client-lender";
-import {
-  formatCurrency,
-  getFormatedStringFromDays,
-  KycBadge,
-  LoanAssetHelper,
-} from "@frontend/ui-shared";
-import * as Checkbox from "@radix-ui/react-checkbox";
-import { CheckIcon } from "@radix-ui/react-icons";
-import {
-  Box,
-  Button,
-  Callout,
-  Dialog,
-  Flex,
-  Grid,
-  Heading,
-  Separator,
-  Text,
-  TextField,
-} from "@radix-ui/themes";
+import { formatCurrency, LoanAssetHelper } from "@frontend/ui-shared";
 import { useState } from "react";
-import { Col, Row } from "react-bootstrap";
-import { FaPenNib } from "react-icons/fa";
-import { IoReceipt } from "react-icons/io5";
-import { MdOutlineSwapCalls } from "react-icons/md";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAsync } from "react-use";
-import BannerImg from "./../../assets/banner.png";
-import LendasatLogo from "./../../assets/lendasat.png";
+import { FaPenNib } from "react-icons/fa";
+import { MdOutlineSwapCalls } from "react-icons/md";
+import { AlertTriangle } from "lucide-react";
 import ReceipImg from "./../../assets/receipt_img.png";
-import { StatusBadge } from "./status-badge";
+import { Button } from "@frontend/shadcn";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@frontend/shadcn";
+import { Alert, AlertDescription, AlertTitle } from "@frontend/shadcn";
+import { Input } from "@frontend/shadcn";
+import { Label } from "@frontend/shadcn";
+import { Checkbox } from "@frontend/shadcn";
+import { Separator } from "@frontend/shadcn";
+import { ScrollArea } from "@frontend/shadcn";
+import { Card, CardContent } from "@frontend/shadcn";
 
 function MyLoanOfferDetails() {
   const { getMyLoanOffer, deleteLoanOffer } = useLenderHttpClient();
   const { id } = useParams();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const navigate = useNavigate();
-
-  const layout = window;
 
   const { value: offer, error: loadingError } = useAsync(async () => {
     if (id) {
@@ -56,19 +46,14 @@ function MyLoanOfferDetails() {
 
   if (loadingError || !offer) {
     return (
-      <Box
-        className="flex flex-col items-center justify-center gap-y-4 px-5 text-center"
-        style={{
-          height: layout.innerHeight - 130,
-        }}
-      >
-        <Box className="flex h-52 w-52 items-center justify-center overflow-hidden rounded-full bg-white">
+      <div className="flex h-[calc(100vh-130px)] flex-col items-center justify-center gap-y-4 px-5 text-center">
+        <div className="flex h-52 w-52 items-center justify-center overflow-hidden rounded-full bg-background">
           <img src={ReceipImg} alt="error card" className="max-w-52" />
-        </Box>
-        <Text className="text-font/50 dark:text-font-dark/50" size={"2"}>
-          An Error Occurred... ${JSON.stringify(loadingError) || ""}
-        </Text>
-      </Box>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          An Error Occurred... {JSON.stringify(loadingError) || ""}
+        </p>
+      </div>
     );
   }
 
@@ -76,7 +61,7 @@ function MyLoanOfferDetails() {
     setLoading(true);
     try {
       await deleteLoanOffer(id);
-      setIsOpen(false);
+      setIsDialogOpen(false);
       navigate(0);
     } catch (error) {
       setError(`${error}`);
@@ -85,535 +70,248 @@ function MyLoanOfferDetails() {
     }
   };
 
-  // Edit loan Information
-
-  //  Should be replaced with the current offer values
-
   const loanAsset = offer.loan_asset;
-
   const coinLabel = LoanAssetHelper.print(loanAsset);
 
   return (
-    <Box
-      className="overflow-y-scroll pb-20 md:pb-0"
-      style={{
-        height: layout.innerHeight - 130,
-      }}
-    >
-      <Grid className="min-h-full items-center gap-y-5 md:grid-cols-2">
-        <Box py={"4"} className="order-2 space-y-5 px-4 md:order-1 xl:px-8">
-          <Box className="h-32 overflow-hidden rounded-2xl bg-purple-100">
-            <img
-              src={BannerImg}
-              alt="Banner Information"
-              className="h-full w-full object-contain object-center"
-            />
-          </Box>
+    <ScrollArea className="h-[calc(100vh-130px)]">
+      <div className="container mx-auto max-w-3xl py-8">
+        <Card className="border-border/10">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-2 mb-6">
+              <FaPenNib className="text-foreground" />
+              <h2 className="text-xl font-bold">Loan Details</h2>
+            </div>
 
-          <Flex align={"center"} gap={"2"}>
-            <FaPenNib className="text-font dark:text-font-dark" />
-            <Heading size={"5"} className="text-font dark:text-font-dark">
-              Edit Loan
-            </Heading>
-          </Flex>
+            <div className="space-y-5">
+              {/* Amount */}
+              <div className="space-y-1">
+                <Label className="text-muted-foreground">Amount</Label>
+                <div className="flex items-center gap-4">
+                  <Input
+                    className="flex-1 rounded-lg text-sm"
+                    type="text"
+                    placeholder="Min Amount"
+                    value={formatCurrency(offer.loan_amount_min)}
+                    disabled={true}
+                  />
 
-          <Box className="space-y-5">
-            {/* Amount */}
-            <Box className="space-y-1">
-              <Text
-                as="label"
-                size={"2"}
-                weight={"medium"}
-                className="text-font/60 dark:text-font-dark/60"
-              >
-                Amount
-              </Text>
-              <Flex align={"center"} gap={"15px"}>
-                <TextField.Root
-                  size="3"
-                  color="purple"
-                  className="flex-1 rounded-lg text-sm"
-                  type="text"
-                  placeholder="Min Amount"
-                  value={formatCurrency(offer.loan_amount_min)}
-                  disabled={true}
-                />
+                  <MdOutlineSwapCalls className="text-muted-foreground" />
 
-                <MdOutlineSwapCalls />
+                  <Input
+                    className="flex-1 rounded-lg text-sm"
+                    type="text"
+                    placeholder="Max Amount"
+                    value={formatCurrency(offer.loan_amount_max)}
+                    disabled={true}
+                  />
+                </div>
+              </div>
 
-                <TextField.Root
-                  size="3"
-                  type="text"
-                  className="flex-1 rounded-lg text-sm"
-                  color="purple"
-                  placeholder="Max Amount"
-                  value={formatCurrency(offer.loan_amount_max)}
-                  variant="surface"
-                  disabled={true}
-                />
-              </Flex>
-            </Box>
-
-            {/* Reserve */}
-            <Box className="space-y-1">
-              <Text
-                as="label"
-                size={"2"}
-                weight={"medium"}
-                className="text-font/60 dark:text-font-dark/60"
-              >
-                Loan Amount Reserve
-              </Text>
-              <TextField.Root
-                size="3"
-                className="flex-1 rounded-lg text-sm"
-                type="text"
-                placeholder="Loan Reserve"
-                color="purple"
-                value={formatCurrency(offer.loan_amount_reserve)}
-                min={0}
-                max={1}
-                step={0.01}
-                disabled={true}
-              >
-                <TextField.Slot className="pr-0" />
-                <TextField.Slot>
-                  <Text size={"2"} weight={"medium"}>
+              {/* Reserve */}
+              <div className="space-y-1">
+                <Label className="text-muted-foreground">
+                  Loan Amount Reserve
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    className="flex-1 rounded-lg text-sm"
+                    type="text"
+                    placeholder="Loan Reserve"
+                    value={formatCurrency(offer.loan_amount_reserve)}
+                    disabled={true}
+                  />
+                  <span className="text-sm font-medium text-muted-foreground">
                     ({formatCurrency(offer.loan_amount_reserve_remaining)}{" "}
                     remaining)
-                  </Text>
-                </TextField.Slot>
-              </TextField.Root>
-            </Box>
-
-            {/* Auto Accept */}
-            <Box className="space-y-1">
-              <Flex
-                align={"center"}
-                gap={"2"}
-                className="text-font dark:text-font-dark"
-              >
-                <Text
-                  as="label"
-                  size={"2"}
-                  weight={"medium"}
-                  className="text-font/60 dark:text-font-dark/60"
-                >
-                  Auto Accept within Reserve
-                </Text>
-              </Flex>
-
-              <div className="flex items-center">
-                <Checkbox.Root
-                  className="shadow-blackA4 hover:bg-violet3 flex size-[25px] appearance-none items-center justify-center rounded shadow-[0_2px_10px] outline-none focus:shadow-[0_0_0_2px_black]"
-                  checked={offer.auto_accept}
-                  disabled={true}
-                  id={"c1"}
-                >
-                  <Checkbox.Indicator className="text-violet11">
-                    <CheckIcon />
-                  </Checkbox.Indicator>
-                </Checkbox.Root>
-                <label
-                  className="text-font/60 dark:text-font-dark/60"
-                  htmlFor="c1"
-                >
-                  Auto accept requests within Loan Reserve
-                </label>
+                  </span>
+                </div>
               </div>
-            </Box>
 
-            {/* Duration */}
-            <Box className="space-y-1">
-              <Text
-                as="label"
-                size={"2"}
-                weight={"medium"}
-                className="text-font/60 dark:text-font-dark/60"
-              >
-                Duration
-              </Text>
-              <Text
-                as="span"
-                className="text-font/50 dark:text-font-dark/50"
-                weight={"medium"}
-                size={"1"}
-              >
-                (days)
-              </Text>
-              <Flex align={"center"} gap={"15px"}>
-                <TextField.Root
-                  size="3"
-                  className="flex-1 rounded-lg text-sm"
-                  type="number"
-                  color="purple"
-                  placeholder="Min Duration"
-                  value={offer.duration_days_min}
-                  disabled={true}
-                />
+              {/* Auto Accept */}
+              <div className="space-y-1">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="auto-accept"
+                    checked={offer.auto_accept}
+                    disabled={true}
+                  />
+                  <Label
+                    htmlFor="auto-accept"
+                    className="text-sm font-normal text-muted-foreground"
+                  >
+                    Auto accept requests within Loan Reserve
+                  </Label>
+                </div>
+              </div>
 
-                <MdOutlineSwapCalls />
+              {/* Duration */}
+              <div className="space-y-1">
+                <div className="flex items-center gap-1">
+                  <Label className="text-muted-foreground">Duration</Label>
+                  <span className="text-xs font-medium text-muted-foreground/50">
+                    (days)
+                  </span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <Input
+                    className="flex-1 rounded-lg text-sm"
+                    type="text"
+                    placeholder="Min Duration"
+                    value={offer.duration_days_min}
+                    disabled={true}
+                  />
 
-                <TextField.Root
-                  size="3"
-                  type="number"
-                  color="purple"
-                  className="flex-1 rounded-lg text-sm"
-                  placeholder="Max Duration"
-                  value={offer.duration_days_max}
-                  disabled={true}
-                />
-              </Flex>
-            </Box>
+                  <MdOutlineSwapCalls className="text-muted-foreground" />
 
-            {/* Interest Rate */}
-            <Box className="space-y-1">
-              <Text
-                as="label"
-                size={"2"}
-                weight={"medium"}
-                className="text-font/60 dark:text-font-dark/60"
-              >
-                Interest Rate
-              </Text>
-              <TextField.Root
-                size="3"
-                className="flex-1 rounded-lg text-sm"
-                type="number"
-                placeholder="Interest Rate"
-                color="purple"
-                value={(offer.interest_rate * 100).toFixed(2)}
-                min={0}
-                max={1}
-                step={0.01}
-                disabled={true}
-              >
-                <TextField.Slot className="pr-0" />
-                <TextField.Slot>
-                  <Text size={"2"} weight={"medium"}>
+                  <Input
+                    className="flex-1 rounded-lg text-sm"
+                    type="text"
+                    placeholder="Max Duration"
+                    value={offer.duration_days_max}
+                    disabled={true}
+                  />
+                </div>
+              </div>
+
+              {/* Interest Rate */}
+              <div className="space-y-1">
+                <Label className="text-muted-foreground">Interest Rate</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    className="flex-1 rounded-lg text-sm"
+                    type="text"
+                    placeholder="Interest Rate"
+                    value={(offer.interest_rate * 100).toFixed(2)}
+                    disabled={true}
+                  />
+                  <span className="text-sm font-medium text-muted-foreground">
                     1 - 100
-                  </Text>
-                </TextField.Slot>
-              </TextField.Root>
-            </Box>
+                  </span>
+                </div>
+              </div>
 
-            {/* LTV */}
-            <Box className="space-y-1">
-              <Text
-                as="label"
-                size={"2"}
-                weight={"medium"}
-                className="text-font/60 dark:text-font-dark/60"
-              >
-                Loan to Value (LTV)
-              </Text>
-              <TextField.Root
-                size="3"
-                className="flex-1 rounded-lg text-sm"
-                type="number"
-                placeholder="LTV (1-100)"
-                color="purple"
-                value={(offer.min_ltv * 100).toFixed(2)}
-                min={1}
-                max={100}
-                step={0.5}
-                disabled={true}
-              >
-                <TextField.Slot className="pr-0" />
-                <TextField.Slot>
-                  <Text size={"2"} weight={"medium"}>
+              {/* LTV */}
+              <div className="space-y-1">
+                <Label className="text-muted-foreground">
+                  Loan to Value (LTV)
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    className="flex-1 rounded-lg text-sm"
+                    type="text"
+                    placeholder="LTV (1-100)"
+                    value={(offer.min_ltv * 100).toFixed(2)}
+                    disabled={true}
+                  />
+                  <span className="text-sm font-medium text-muted-foreground">
                     1 - 100
-                  </Text>
-                </TextField.Slot>
-              </TextField.Root>
-            </Box>
+                  </span>
+                </div>
+              </div>
 
-            {offer.kyc_link && (
-              <Box className="space-y-1">
-                <Text
-                  as="label"
-                  size={"2"}
-                  weight={"medium"}
-                  className="text-font/60 dark:text-font-dark/60"
-                >
-                  KYC Link
-                </Text>
-                <TextField.Root
-                  size="3"
+              {/* Coin */}
+              <div className="space-y-1">
+                <Label className="text-muted-foreground">Coin</Label>
+                <Input
                   className="flex-1 rounded-lg text-sm"
                   type="text"
-                  color="purple"
-                  value={offer.kyc_link}
+                  value={coinLabel}
                   disabled={true}
-                ></TextField.Root>
-              </Box>
-            )}
-          </Box>
-        </Box>
-        <Box className="order-1 flex flex-col items-center justify-center p-5 md:order-2 xl:h-full">
-          <Box className="bg-light dark:bg-dark border-font/10 dark:border-font-dark/10 flex w-full flex-1 flex-col rounded-2xl border p-2 xl:p-4">
-            <Flex align={"center"} justify={"between"} className="px-3 pb-4">
-              {/* Title */}
-              <Flex align={"center"} gap={"2"}>
-                <IoReceipt className="text-font dark:text-font-dark" />
-                <Heading size={"5"} className="text-font dark:text-font-dark">
-                  Loan Preview
-                </Heading>
-              </Flex>
-            </Flex>
+                />
+              </div>
 
-            <Box className="dark:from-dark-600 dark:to-dark-700 flex flex-1 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#FBFAF8] from-60% to-pink-700/5 to-100% p-6">
-              <Box className="dark:bg-dark w-full min-w-[300px] max-w-sm space-y-6 rounded-xl bg-white py-7">
-                <Flex
-                  align={"start"}
-                  justify={"between"}
-                  mb="8"
-                  className="px-4 md:px-5"
-                >
-                  {/* Logo */}
-                  <Box>
-                    <img
-                      src={LendasatLogo}
-                      alt="Lendasat Logo"
-                      className="h-4 w-auto shrink-0 dark:brightness-90 dark:invert dark:filter"
-                    />
-                  </Box>
+              {/* KYC Link */}
+              {offer.kyc_link && (
+                <div className="space-y-1">
+                  <Label className="text-muted-foreground">KYC Link</Label>
+                  <Input
+                    className="flex-1 rounded-lg text-sm"
+                    type="text"
+                    value={offer.kyc_link}
+                    disabled={true}
+                  />
+                </div>
+              )}
 
-                  <Row>
-                    <Col>
-                      <StatusBadge offer={offer} />
-                    </Col>
-                    {offer.kyc_link && (
-                      <Col>
-                        <KycBadge />
-                      </Col>
-                    )}
-                  </Row>
-                </Flex>
-                {/* Created date */}
-                <Flex
-                  align={"center"}
-                  justify={"end"}
-                  gap={"2"}
-                  className="px-4 md:px-5"
-                >
-                  <Text
-                    as="label"
-                    size={"1"}
-                    weight={"medium"}
-                    className={"text-font dark:text-font-dark"}
-                  >
-                    Created on:
-                  </Text>
-                  <Text
-                    as="p"
-                    size={"1"}
-                    weight={"medium"}
-                    className={"text-font dark:text-font-dark"}
-                  >
-                    {new Date(offer.created_at).toLocaleDateString()}
-                  </Text>
-                </Flex>
+              <Separator className="my-6" />
 
-                <Box className="px-3 md:px-5">
-                  <Box className="mb-2 pl-3">
-                    <Text className="text-font/80 dark:text-font-dark/80 font-medium">
-                      Details
-                    </Text>
-                  </Box>
-                  <Box className="border-font/10 dark:border-font-dark/10 space-y-5 rounded-xl border p-4 py-6">
-                    {/* Amount */}
-                    <Flex justify={"between"} align={"center"}>
-                      <Text
-                        as="label"
-                        size={"2"}
-                        weight={"medium"}
-                        className="text-font/70 dark:text-font-dark/70"
-                      >
-                        Amount
-                      </Text>
-                      <Text className="text-font/70 dark:text-font-dark/70 text-[13px] font-semibold capitalize">
-                        {formatCurrency(offer.loan_amount_min)} -{" "}
-                        {formatCurrency(offer.loan_amount_max)}
-                      </Text>
-                    </Flex>
-                    <Separator
-                      size={"4"}
-                      className="bg-font/10 dark:bg-font-dark/10"
-                    />
-                    {/* Duration */}
-                    <Flex justify={"between"} align={"center"}>
-                      <Text
-                        as="label"
-                        size={"2"}
-                        weight={"medium"}
-                        className="text-font/70 dark:text-font-dark/70"
-                      >
-                        Loan Duration
-                      </Text>
-                      <Text className="text-font/70 dark:text-font-dark/70 text-[13px] font-semibold capitalize">
-                        {getFormatedStringFromDays(offer.duration_days_min)} -{" "}
-                        {getFormatedStringFromDays(offer.duration_days_max)}
-                      </Text>
-                    </Flex>
-                    <Separator
-                      size={"4"}
-                      className="bg-font/10 dark:bg-font-dark/10"
-                    />
-                    {/* Interest */}
-                    <Flex justify={"between"} align={"center"}>
-                      <Text
-                        as="label"
-                        size={"2"}
-                        weight={"medium"}
-                        className="text-font/70 dark:text-font-dark/70"
-                      >
-                        Interest Rate
-                      </Text>
-                      <Text className="text-font/70 dark:text-font-dark/70 text-[13px] font-semibold capitalize">
-                        {(offer.interest_rate * 100).toFixed(2)}%
-                      </Text>
-                    </Flex>
-                    <Separator
-                      size={"4"}
-                      className="bg-font/10 dark:bg-font-dark/10"
-                    />
-                    {/* Ltv */}
-                    <Flex justify={"between"} align={"center"}>
-                      <Text
-                        as="label"
-                        size={"2"}
-                        weight={"medium"}
-                        className="text-font/70 dark:text-font-dark/70"
-                      >
-                        LTV
-                      </Text>
-                      <Text className="text-font/70 dark:text-font-dark/70 text-[13px] font-semibold capitalize">
-                        {(offer.min_ltv * 100).toFixed(2)}%
-                      </Text>
-                    </Flex>
-                    <Separator
-                      size={"4"}
-                      className="bg-font/10 dark:bg-font-dark/10"
-                    />
-                    {/* Coin */}
-                    <Flex justify={"between"} align={"center"}>
-                      <Text
-                        as="label"
-                        size={"2"}
-                        weight={"medium"}
-                        className="text-font/70 dark:text-font-dark/70"
-                      >
-                        Coin
-                      </Text>
-                      <Text className="text-font/70 dark:text-font-dark/70 text-[13px] font-semibold capitalize">
-                        {coinLabel}
-                      </Text>
-                    </Flex>
-                  </Box>
-                </Box>
-              </Box>
-            </Box>
+              {/* Dates and Action Buttons */}
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-muted-foreground">
+                      Created on:
+                    </span>
+                    <span className="text-sm font-medium">
+                      {new Date(offer.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-muted-foreground">
+                      Last Edited:
+                    </span>
+                    <span className="text-sm font-medium">
+                      {new Date(offer.updated_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
 
-            <Flex
-              align={"center"}
-              justify={"between"}
-              px={"3"}
-              className="pt-4"
-            >
-              {/* Update Information */}
-              <Flex align={"center"} gap={"2"}>
-                <Text
-                  as="label"
-                  size={{
-                    initial: "1",
-                    sm: "2",
-                  }}
-                  weight={"medium"}
-                  className={"text-font dark:text-font-dark"}
-                >
-                  Last Edited:
-                </Text>
-                <Text
-                  className={"text-font dark:text-font-dark"}
-                  as="p"
-                  size={{
-                    initial: "1",
-                    sm: "2",
-                  }}
-                  weight={"medium"}
-                >
-                  {new Date(offer.updated_at).toLocaleDateString()}
-                </Text>
-              </Flex>
-
-              {/* Delete Offer */}
-              {offer.status !== LoanOfferStatus.Deleted && (
-                <Dialog.Root open={isOpen}>
-                  <Dialog.Trigger>
-                    <Button
-                      size={"3"}
-                      color="tomato"
-                      onClick={() => setIsOpen(true)}
-                    >
-                      <Text as="span" size={"2"} weight={"medium"}>
+                {/* Retract Offer Button */}
+                {offer.status !== LoanOfferStatus.Deleted && (
+                  <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="destructive" className={"px-4"}>
                         Retract Offer
-                      </Text>
-                    </Button>
-                  </Dialog.Trigger>
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Retract Offer</DialogTitle>
+                        <DialogDescription>
+                          Please confirm the retraction of this offer.
+                        </DialogDescription>
+                      </DialogHeader>
 
-                  <Dialog.Content
-                    maxWidth="450px"
-                    className={"bg-light dark:bg-dark"}
-                  >
-                    <Dialog.Title className={"text-font dark:text-font-dark"}>
-                      Retract Offer
-                    </Dialog.Title>
-                    <Dialog.Description
-                      className={"text-font dark:text-font-dark"}
-                      size="2"
-                      mb="4"
-                    >
-                      Please confirm the retraction of this offer.
-                    </Dialog.Description>
+                      {error && (
+                        <Alert variant="destructive">
+                          <AlertTriangle className="h-4 w-4" />
+                          <AlertTitle>Error</AlertTitle>
+                          <AlertDescription>{error}</AlertDescription>
+                        </Alert>
+                      )}
 
-                    {error ? (
-                      <Callout.Root color="red" className="w-full">
-                        <Callout.Icon>
-                          <FontAwesomeIcon icon={faWarning} />
-                        </Callout.Icon>
-                        <Callout.Text>{error}</Callout.Text>
-                      </Callout.Root>
-                    ) : (
-                      ""
-                    )}
-
-                    <Flex gap="3" mt="4" justify="end">
-                      <Dialog.Close>
-                        <Button variant="soft" color="gray">
+                      <DialogFooter>
+                        <Button
+                          variant="outline"
+                          onClick={() => setIsDialogOpen(false)}
+                        >
                           Cancel
                         </Button>
-                      </Dialog.Close>
-                      <Button
-                        loading={loading}
-                        disabled={loading}
-                        onClick={() => onDeleteOffer(offer.id)}
-                        size={"2"}
-                        color="tomato"
-                      >
-                        <Text as="span" size={"2"} weight={"medium"}>
-                          Retract
-                        </Text>
-                      </Button>
-                    </Flex>
-                  </Dialog.Content>
-                </Dialog.Root>
-              )}
-            </Flex>
-          </Box>
-        </Box>
-      </Grid>
-    </Box>
+                        <Button
+                          variant="destructive"
+                          onClick={() => onDeleteOffer(offer.id)}
+                          disabled={loading}
+                        >
+                          {loading ? (
+                            <>
+                              <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2"></span>
+                              Retracting...
+                            </>
+                          ) : (
+                            "Retract"
+                          )}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </ScrollArea>
   );
 }
 
