@@ -9,6 +9,9 @@ export function SiteHeader() {
     case "/requests":
       header = "Find Offer";
       break;
+    case "/create-loan-offer":
+      header = "Create Loan Offer";
+      break;
     case "/available-offers":
       header = "All Offers";
       break;
