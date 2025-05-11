@@ -394,6 +394,7 @@ export enum LoanProductOption {
 
 export class FeatureMapper {
   private static readonly FEATURE_MAP: Record<string, LoanProductOption> = {
+    [LoanProductOption.Bringin]: LoanProductOption.Bringin,
     [LoanProductOption.StableCoins]: LoanProductOption.StableCoins,
     [LoanProductOption.PayWithMoonDebitCard]:
       LoanProductOption.PayWithMoonDebitCard,

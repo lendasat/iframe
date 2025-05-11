@@ -61,7 +61,6 @@ jobs:
           envkey_VITE_WEBSHOP_POPUP_MAIN_URL: "https://popup.lendasat.com"
           envkey_VITE_WEBSHOP_POPUP_TEST_URL: "https://popupsignet.lendasat.com"
           envkey_VITE_WEBSHOP_URL: "https://apishopsignet.lendasat.com"
-          envkey_VITE_BRINGIN_ENABLE: true
 
       - name: Build frontend apps
         run: just build-frontend

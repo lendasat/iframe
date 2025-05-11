@@ -1,4 +1,4 @@
-import { LoanProductOption } from "@frontend/http-client-borrower";
+import { LoanProductOption, useAuth } from "@frontend/http-client-borrower";
 import { Box, Flex, RadioCards, Text, TextField } from "@radix-ui/themes";
 import type { ChangeEvent, ReactNode } from "react";
 import { ReactComponent as Defi } from "../../assets/defi.svg";
@@ -64,7 +64,8 @@ export function LoanAmountAndDurationInputs({
   onLoanProductSelect,
   selectedOption,
 }: LoanAmountAndDurationInputsProps) {
-  const isBringinEnabled = import.meta.env.VITE_BRINGIN_ENABLE === "true";
+  const { enabledFeatures } = useAuth();
+  const isBringinEnabled = enabledFeatures.includes(LoanProductOption.Bringin);
 
   const onLoanAmountChange = (e: ChangeEvent<HTMLInputElement>) => {
     e.preventDefault();
