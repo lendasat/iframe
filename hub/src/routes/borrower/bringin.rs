@@ -133,6 +133,11 @@ async fn post_verification_status(
     let status = serde_json::from_value::<PostVerificationStatus>(payload.0)
         .map_err(|e| Error::bringin(anyhow!(e)))?;
 
+    db::borrowers::get_user_by_id(&data.db, status.user_id.as_str())
+        .await
+        .map_err(Error::database)?
+        .ok_or(Error::UserNotFound)?;
+
     db::bringin::insert_api_key(&data.db, &status.user_id, &status.apikey)
         .await
         .map_err(Error::database)?;
@@ -211,6 +216,8 @@ enum Error {
     Bringin(String),
     /// Invalid email.
     InvalidEmail,
+    /// Borrower not found
+    UserNotFound,
 }
 
 impl Error {
@@ -250,10 +257,21 @@ impl IntoResponse for Error {
         }
 
         let (status, message) = match self {
-            Error::Database(_) | Error::Bringin(_) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "Something went wrong".to_owned(),
-            ),
+            Error::Database(e) => {
+                tracing::error!("Database error {e}");
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
+            Error::Bringin(e) => {
+                tracing::error!("Bringin error {e}");
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
+            Error::UserNotFound => (StatusCode::BAD_REQUEST, "User not found".to_owned()),
             Error::InvalidEmail => (StatusCode::BAD_REQUEST, "Invalid email".to_owned()),
         };
         (status, AppJson(ErrorResponse { message })).into_response()
