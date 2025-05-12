@@ -96,3 +96,43 @@ jobs:
           workingDirectory: 'frontend-monorepo'
           apiToken: ${{ secrets.CLOUDFLARE_SIGNET_TOKEN}}
           command: pages deploy apps/popup/dist/ --project-name=lendasat-popup-signet
+
+  deploy-test:
+    runs-on: ubuntu-latest
+    env:
+      NODE_OPTIONS: "--max_old_space_size=4096"
+    steps:
+      - name: Check out commit
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up rust toolchain
+        run: rustup show
+
+      - uses: Swatinem/rust-cache@v2
+
+      - uses: extractions/setup-just@v1
+
+      - name: Set Git Variables
+        id: git-vars
+        run: |
+          echo "GIT_COMMIT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          GIT_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "GIT_TAG=$GIT_TAG" >> $GITHUB_ENV
+
+      - name: Build hub
+        run: cargo build --release --bin hub --target-dir ./target
+
+      - name: Copy ssh key
+        run: |
+          install -m 600 -D /dev/null ~/.ssh/id_rsa
+          echo "${{ secrets.TEST_VM_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+
+      - name: Upload hub binary to server
+        run: |
+          scp -v -o StrictHostKeyChecking=no -i /.ssh/id_rsa ./target/release/hub ${{secrets.TEST_VM_USERNAME}}@${{secrets.TEST_VM_SSH_HOST}}:/home/${{secrets.TEST_VM_USERNAME}}/uploads/hub
+
+      - name: Create hub.confirmed file on server
+        run: |
+          ssh -v -o StrictHostKeyChecking=no -i  /.ssh/id_rsa ${{secrets.TEST_VM_USERNAME}}@${{secrets.TEST_VM_SSH_HOST}} 'touch /home/${{secrets.TEST_VM_USERNAME}}/uploads/hub.confirmed'
