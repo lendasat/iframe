@@ -73,7 +73,6 @@ pub struct PostConnectWithBringinResponse {
 }
 
 #[instrument(skip_all, fields(borrower_id = user.id, bringin_email = body.bringin_email), err(Debug), ret)]
-#[axum::debug_handler]
 async fn post_connect_with_bringin(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Borrower>,
@@ -119,8 +118,7 @@ pub struct PostVerificationStatus {
     pub verification_status: String,
 }
 
-#[instrument(skip_all, err(Debug), ret)]
-#[axum::debug_handler]
+#[instrument(skip_all, err(Debug))]
 async fn post_verification_status(
     State(data): State<Arc<AppState>>,
     payload: Json<Value>,
@@ -145,8 +143,7 @@ async fn post_verification_status(
     Ok(())
 }
 
-#[instrument(skip_all, err(Debug), ret)]
-#[axum::debug_handler]
+#[instrument(skip_all, err(Debug))]
 async fn post_order_status_update_callback(payload: Json<Value>) -> Result<(), Error> {
     tracing::info!(
         payload = payload.0.to_string(),
@@ -166,8 +163,7 @@ pub struct PostUserConnectedRequest {
     pub reference: String,
 }
 
-#[instrument(skip_all, err(Debug), ret)]
-#[axum::debug_handler]
+#[instrument(skip_all, err(Debug))]
 async fn post_user_connected_callback(
     State(data): State<Arc<AppState>>,
     Path(borrower_id): Path<String>,
@@ -193,7 +189,7 @@ pub struct ApiKey {
     has_key: bool,
 }
 
-#[instrument(skip_all, fields(borrower_id), err(Debug))]
+#[instrument(skip_all, fields(borrower_id = user.id), err(Debug))]
 async fn has_api_key(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Borrower>,
