@@ -47,12 +47,12 @@ interface ProtectedRouteProps {
   neededFeature: LoanProductOption;
 }
 
-const FeatureFlagProtectedRoute = ({
+export const FeatureFlagProtectedRoute = ({
   children,
   neededFeature,
 }: ProtectedRouteProps) => {
   const { enabledFeatures } = useAuth();
-  if (!enabledFeatures) {
+  if (enabledFeatures.length === 0) {
     return <Navigate to="/restricted" replace />;
   }
 

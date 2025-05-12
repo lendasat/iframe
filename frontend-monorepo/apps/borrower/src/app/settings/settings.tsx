@@ -15,6 +15,8 @@ import { NostrChatSettingsPage } from "./nostr-chat-settings";
 import { NotificationSettings } from "./notification-settings";
 import { VersionPage } from "./version-page";
 import { IntegrationSettings } from "./integration-settings";
+import { FeatureFlagProtectedRoute } from "../app";
+import { LoanProductOption } from "@frontend/http-client-borrower";
 
 function Settings() {
   const location = useLocation();
@@ -59,7 +61,17 @@ function Settings() {
               <Route path="wallet" element={<Wallet />} />
               <Route path="notifications" element={<NotificationSettings />} />
               <Route path="chat" element={<NostrChatSettingsPage />} />
-              <Route path="integrations" element={<IntegrationSettings />} />
+              <Route
+                path="integrations"
+                element={
+                  <FeatureFlagProtectedRoute
+                    neededFeature={LoanProductOption.Bringin}
+                  >
+                    <IntegrationSettings />
+                  </FeatureFlagProtectedRoute>
+                }
+              />
+
               <Route path="version" element={<VersionPage />} />
             </Routes>
           </CardContent>
