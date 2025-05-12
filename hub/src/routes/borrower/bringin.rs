@@ -108,16 +108,16 @@ async fn post_connect_with_bringin(
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
 pub struct PostVerificationStatus {
     /// Bringin user ID.
-    #[serde(rename = "user_id")]
+    #[serde(rename = "userId")]
     pub bringin_id: String,
     #[serde(rename = "apikey")]
     pub bringin_api_key: String,
     /// Lendasat borrower ID (if called correctly by Bringin).
     #[serde(rename = "ref")]
     pub borrower_id: String,
+    #[serde(rename = "verificationStatus")]
     pub verification_status: String,
 }
 
@@ -157,10 +157,9 @@ async fn post_order_status_update_callback(payload: Json<Value>) -> Result<(), E
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
 pub struct PostUserConnectedRequest {
     /// Bringin user ID.
-    #[serde(rename = "user_id")]
+    #[serde(rename = "userId")]
     pub bringin_id: String,
     #[serde(rename = "apikey")]
     pub api_key: String,
