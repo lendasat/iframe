@@ -111,10 +111,13 @@ async fn post_connect_with_bringin(
 #[serde(rename_all = "camelCase")]
 pub struct PostVerificationStatus {
     /// Bringin user ID.
-    pub user_id: String,
-    pub apikey: String,
+    #[serde(rename = "user_id")]
+    pub bringin_id: String,
+    #[serde(rename = "apikey")]
+    pub bringin_api_key: String,
+    /// Lendasat borrower ID (if called correctly by Bringin).
     #[serde(rename = "ref")]
-    pub reference: String,
+    pub borrower_id: String,
     pub verification_status: String,
 }
 
@@ -131,12 +134,12 @@ async fn post_verification_status(
     let status = serde_json::from_value::<PostVerificationStatus>(payload.0)
         .map_err(|e| Error::bringin(anyhow!(e)))?;
 
-    db::borrowers::get_user_by_id(&data.db, status.user_id.as_str())
+    db::borrowers::get_user_by_id(&data.db, status.borrower_id.as_str())
         .await
         .map_err(Error::database)?
         .ok_or(Error::UserNotFound)?;
 
-    db::bringin::insert_api_key(&data.db, &status.user_id, &status.apikey)
+    db::bringin::insert_api_key(&data.db, &status.borrower_id, &status.bringin_api_key)
         .await
         .map_err(Error::database)?;
 
@@ -157,10 +160,13 @@ async fn post_order_status_update_callback(payload: Json<Value>) -> Result<(), E
 #[serde(rename_all = "camelCase")]
 pub struct PostUserConnectedRequest {
     /// Bringin user ID.
-    pub user_id: String,
-    pub apikey: String,
+    #[serde(rename = "user_id")]
+    pub bringin_id: String,
+    #[serde(rename = "apikey")]
+    pub api_key: String,
+    /// Lendasat borrower ID (if called correctly by Bringin).
     #[serde(rename = "ref")]
-    pub reference: String,
+    pub borrower_id: String,
 }
 
 #[instrument(skip_all, err(Debug))]
@@ -177,7 +183,7 @@ async fn post_user_connected_callback(
     let status = serde_json::from_value::<PostUserConnectedRequest>(payload.0)
         .map_err(|e| Error::bringin(anyhow!(e)))?;
 
-    db::bringin::insert_api_key(&data.db, &borrower_id, &status.apikey)
+    db::bringin::insert_api_key(&data.db, &borrower_id, &status.api_key)
         .await
         .map_err(Error::database)?;
 
