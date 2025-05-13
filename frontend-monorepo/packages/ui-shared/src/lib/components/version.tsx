@@ -1,4 +1,4 @@
-import { useBaseHttpClient, Version } from "@frontend/base-http-client";
+import { Version } from "@frontend/base-http-client";
 import { useWallet, Version as WasmVersion } from "@frontend/browser-wallet";
 import {
   Card,

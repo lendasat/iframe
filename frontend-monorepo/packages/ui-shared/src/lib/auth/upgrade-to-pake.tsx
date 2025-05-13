@@ -1,6 +1,6 @@
 import {
   LoginResponseOrUpgrade,
-  useBaseHttpClient,
+  UpgradeToPakeResponse,
   WalletBackupData,
 } from "@frontend/base-http-client";
 import { begin_registration, upgrade_wallet } from "browser-wallet";
@@ -11,11 +11,26 @@ import { md5CaseInsensitive } from "@frontend/browser-wallet";
 interface UpgradeToPakeProps {
   login: (email: string, password: string) => Promise<LoginResponseOrUpgrade>;
   is_borrower: boolean;
+  upgradeToPake: (
+    email: string,
+    oldPassword: string,
+  ) => Promise<UpgradeToPakeResponse | undefined>;
+  finishUpgradeToPake: (
+    email: string,
+    oldPassword: string,
+    verifier: string,
+    salt: string,
+    newWalletBackupData: WalletBackupData,
+  ) => Promise<void>;
 }
 
-export function UpgradeToPake({ login, is_borrower }: UpgradeToPakeProps) {
+export function UpgradeToPake({
+  login,
+  is_borrower,
+  upgradeToPake,
+  finishUpgradeToPake,
+}: UpgradeToPakeProps) {
   const navigate = useNavigate();
-  const { upgradeToPake, finishUpgradeToPake } = useBaseHttpClient();
 
   // What happens if we fail half-way through the upgrade protocol?
   //
@@ -48,6 +63,11 @@ export function UpgradeToPake({ login, is_borrower }: UpgradeToPakeProps) {
     // We could use the local wallet backup, but the user may be logging in from a new device, so
     // the local wallet backup may not be present.
     const res = await upgradeToPake(email, oldPassword);
+
+    if (res === undefined) {
+      throw new Error("Failed to upgrade to PAKE");
+    }
+
     const oldWalletBackupData: WalletBackupData = res.old_wallet_backup_data;
     const contractPks: string[] = res.contract_pks;
 

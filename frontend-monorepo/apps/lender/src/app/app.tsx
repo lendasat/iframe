@@ -39,7 +39,6 @@ import { useEffect } from "react";
 import AvailableLoanApplications from "./loan-applications/available-loan-applications";
 import TakeLoanApplication from "./loan-applications/loan-applications";
 import { Layout } from "./layout";
-import { Details } from "./contracts/details";
 import { Toaster } from "sonner";
 
 function MainLayoutComponents() {
