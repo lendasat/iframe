@@ -16,7 +16,7 @@ export function SiteHeader() {
       header = "Apply for a Loan";
       break;
     case "/loan-applications":
-      header = "My Applications";
+      header = "My Requests";
       break;
     case "/my-contracts":
       header = "My Contracts";

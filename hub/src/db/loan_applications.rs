@@ -140,7 +140,7 @@ pub async fn get_loan_application_by_borrower_and_application_id(
     pool: &Pool<Postgres>,
     borrower_id: &str,
     loan_deal_id: &str,
-) -> Result<model::LoanApplication> {
+) -> Result<Option<model::LoanApplication>> {
     let loan = sqlx::query_as!(
         LoanApplication,
         r#"
@@ -168,10 +168,10 @@ pub async fn get_loan_application_by_borrower_and_application_id(
         borrower_id,
         loan_deal_id
     )
-    .fetch_one(pool)
+    .fetch_optional(pool)
     .await?;
 
-    Ok(model::LoanApplication::from(loan))
+    Ok(loan.map(model::LoanApplication::from))
 }
 
 pub async fn mark_as_deleted_by_borrower_and_application_id(

@@ -130,6 +130,14 @@ export interface HttpClient {
     request: PostLoanApplication,
   ) => Promise<LoanRequest | undefined>;
   getLoanApplications: () => Promise<LoanApplication[] | undefined>;
+  editLoanApplication: (
+    id: string,
+    loan_amount: number,
+    duration_days: number,
+    interest_rate: number,
+    ltv: number,
+  ) => Promise<void>;
+  deleteLoanApplication: (id: string) => Promise<void>;
   postExtendLoanRequest: (
     contractId: string,
     request: ExtendPostLoanRequest,
@@ -533,6 +541,33 @@ export const createHttpClient = (
     }
   };
 
+  const editLoanApplication = async (
+    id: string,
+    loan_amount: number,
+    duration_days: number,
+    interest_rate: number,
+    ltv: number,
+  ): Promise<void> => {
+    try {
+      await axiosClient.put(`/api/loans/application/edit/${id}`, {
+        loan_amount: loan_amount,
+        duration_days: duration_days,
+        interest_rate: interest_rate,
+        ltv: ltv,
+      });
+    } catch (error) {
+      handleError(error, "editing loan application");
+    }
+  };
+
+  const deleteLoanApplication = async (id: string): Promise<void> => {
+    try {
+      await axiosClient.put(`/api/loans/application/delete/${id}`);
+    } catch (error) {
+      handleError(error, "deleting loan application");
+    }
+  };
+
   const postExtendLoanRequest = async (
     contractId: string,
     request: ExtendPostLoanRequest,
@@ -916,6 +951,8 @@ export const createHttpClient = (
     getLoanOffer,
     postLoanApplication,
     getLoanApplications,
+    editLoanApplication,
+    deleteLoanApplication,
     postExtendLoanRequest,
     postContractRequest,
     cancelContractRequest,
