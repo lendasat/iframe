@@ -228,6 +228,8 @@ pub async fn spawn_borrower_server(
             "https://borrowsignet.lendasat.com".parse::<HeaderValue>()?,
             "https://popupsignet.lendasat.com".parse::<HeaderValue>()?,
             "https://popup.lendasat.com".parse::<HeaderValue>()?,
+            "https://swagger.signet.lendasat.com".parse::<HeaderValue>()?,
+            "https://swagger.lendasat.com".parse::<HeaderValue>()?,
         ]);
 
         app.layer(cors)
