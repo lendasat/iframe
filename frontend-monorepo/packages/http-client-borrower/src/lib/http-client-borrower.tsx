@@ -86,51 +86,43 @@ export interface HttpClient {
   upgradeToPake: (
     email: string,
     oldPassword: string,
-  ) => Promise<UpgradeToPakeResponse | undefined>;
+  ) => Promise<UpgradeToPakeResponse>;
   finishUpgradeToPake: (
     email: string,
     oldPassword: string,
     verifier: string,
     salt: string,
     newWalletBackupData: WalletBackupData,
-  ) => Promise<void | undefined>;
-  pakeLoginRequest: (
-    email: string,
-  ) => Promise<PakeLoginResponseOrUpgrade | undefined>;
+  ) => Promise<undefined>;
+  pakeLoginRequest: (email: string) => Promise<PakeLoginResponseOrUpgrade>;
   pakeVerifyRequest: (
     email: string,
     aPub: string,
     clientProof: string,
-  ) => Promise<PakeVerifyResponse | undefined>;
-  forgotPassword: (email: string) => Promise<string | undefined>;
-  verifyEmail: (token: string) => Promise<string | undefined>;
+  ) => Promise<PakeVerifyResponse>;
+  forgotPassword: (email: string) => Promise<string>;
+  verifyEmail: (token: string) => Promise<string>;
   getIsRegistered: (email: string) => Promise<IsRegisteredResponse>;
   resetPassword: (
     verifier: string,
     salt: string,
     walletBackupData: WalletBackupData,
     passwordResetToken: string,
-  ) => Promise<string | undefined>;
-  getVersion: () => Promise<Version | undefined>;
+  ) => Promise<string>;
+  getVersion: () => Promise<Version>;
   joinWaitlist: (email: string) => Promise<void>;
   logout: () => Promise<void>;
-  me: () => Promise<MeResponse | undefined>;
+  me: () => Promise<MeResponse>;
   check: () => Promise<void>;
   refreshToken: () => Promise<void>;
 
   // Loan related methods
-  getDirectLoanOffers: () => Promise<LoanOffer[] | undefined>;
-  getDirectLoanOffersByLender: (
-    lenderId: string,
-  ) => Promise<LoanOffer[] | undefined>;
-  getIndirectLoanOffersByLender: (
-    lenderId: string,
-  ) => Promise<LoanOffer[] | undefined>;
-  getLoanOffer: (id: string) => Promise<LoanOffer | undefined>;
-  postLoanApplication: (
-    request: PostLoanApplication,
-  ) => Promise<LoanRequest | undefined>;
-  getLoanApplications: () => Promise<LoanApplication[] | undefined>;
+  getDirectLoanOffers: () => Promise<LoanOffer[]>;
+  getDirectLoanOffersByLender: (lenderId: string) => Promise<LoanOffer[]>;
+  getIndirectLoanOffersByLender: (lenderId: string) => Promise<LoanOffer[]>;
+  getLoanOffer: (id: string) => Promise<LoanOffer>;
+  postLoanApplication: (request: PostLoanApplication) => Promise<LoanRequest>;
+  getLoanApplications: () => Promise<LoanApplication[]>;
   editLoanApplication: (
     id: string,
     loan_amount: number,
@@ -142,25 +134,23 @@ export interface HttpClient {
   postExtendLoanRequest: (
     contractId: string,
     request: ExtendPostLoanRequest,
-  ) => Promise<LoanRequest | undefined>;
-  postContractRequest: (
-    request: ContractRequest,
-  ) => Promise<Contract | undefined>;
+  ) => Promise<LoanRequest>;
+  postContractRequest: (request: ContractRequest) => Promise<Contract>;
   cancelContractRequest: (contractId: string) => Promise<void>;
 
   // Contract related methods
-  getContracts: () => Promise<Contract[] | undefined>;
-  getContract: (id: string) => Promise<Contract | undefined>;
+  getContracts: () => Promise<Contract[]>;
+  getContract: (id: string) => Promise<Contract>;
   markAsRepaymentProvided: (id: string, txid: string) => Promise<void>;
   getClaimCollateralPsbt: (
     id: string,
     feeRate: number,
-  ) => Promise<ClaimCollateralPsbtResponse | undefined>;
+  ) => Promise<ClaimCollateralPsbtResponse>;
   getClaimDisputeCollateralPsbt: (
     disputeId: string,
     feeRate: number,
-  ) => Promise<ClaimCollateralPsbtResponse | undefined>;
-  postClaimTx: (contract_id: string, tx: string) => Promise<string | undefined>;
+  ) => Promise<ClaimCollateralPsbtResponse>;
+  postClaimTx: (contract_id: string, tx: string) => Promise<string>;
   putFiatDetails: (
     contractId: string,
     fiatDetails: FiatLoanDetails,
@@ -171,31 +161,27 @@ export interface HttpClient {
     contract_id: string,
     reason: string,
     comment: string,
-  ) => Promise<Dispute | undefined>;
+  ) => Promise<Dispute>;
   resolveDispute: (disputeId: string) => Promise<void>;
   fetchDisputeWithMessages: (
     contractId: string,
-  ) => Promise<DisputeWithMessages[] | undefined>;
+  ) => Promise<DisputeWithMessages[]>;
   commentOnDispute: (disputeId: string, message: string) => Promise<void>;
   getDispute: (disputeId: string) => Promise<Dispute>;
 
   // Profile methods
-  getLenderProfile: (id: string) => Promise<LenderStats | undefined>;
-  getBorrowerProfile: (id: string) => Promise<BorrowerStats | undefined>;
+  getLenderProfile: (id: string) => Promise<LenderStats>;
+  getBorrowerProfile: (id: string) => Promise<BorrowerStats>;
 
   // Card methods
-  getUserCards: () => Promise<UserCardDetail[] | undefined>;
-  getCardTransactions: (
-    cardId: string,
-  ) => Promise<CardTransaction[] | undefined>;
+  getUserCards: () => Promise<UserCardDetail[]>;
+  getCardTransactions: (cardId: string) => Promise<CardTransaction[]>;
   putUpdateProfile: (request: PutUpdateProfile) => Promise<void>;
   newChatNotification: (request: NotifyUser) => Promise<void>;
 
   // Bringin methods
-  postBringinConnect: (
-    bringinEmail: string,
-  ) => Promise<BringinConnectResponse | undefined>;
-  hasBringinApiKey: () => Promise<boolean | undefined>;
+  postBringinConnect: (bringinEmail: string) => Promise<BringinConnectResponse>;
+  hasBringinApiKey: () => Promise<boolean>;
 }
 
 // Create a factory function to create our client
@@ -240,6 +226,8 @@ export const createHttpClient = (
       );
       throw new Error(message);
     }
+
+    throw new Error(`Failed ${context}: ${error}`);
   };
 
   // Auth related methods
@@ -285,7 +273,7 @@ export const createHttpClient = (
   const upgradeToPake = async (
     email: string,
     oldPassword: string,
-  ): Promise<UpgradeToPakeResponse | undefined> => {
+  ): Promise<UpgradeToPakeResponse> => {
     try {
       const [response] = await Promise.all([
         axiosClient.post("/api/auth/upgrade-to-pake", {
@@ -298,6 +286,7 @@ export const createHttpClient = (
       return data;
     } catch (error) {
       handleError(error, "upgrade to pake");
+      throw error; // Satisfies the linter, though it won't actually be reached.
     }
   };
 
@@ -307,7 +296,7 @@ export const createHttpClient = (
     verifier: string,
     salt: string,
     newWalletBackupData: WalletBackupData,
-  ): Promise<void | undefined> => {
+  ): Promise<undefined> => {
     try {
       await Promise.all([
         axiosClient.post("/api/auth/finish-upgrade-to-pake", {
@@ -322,12 +311,13 @@ export const createHttpClient = (
       return;
     } catch (error) {
       handleError(error, "finishing upgrade to pake");
+      throw error; // Satisfies the linter, though it won't actually be reached.
     }
   };
 
   const pakeLoginRequest = async (
     email: string,
-  ): Promise<PakeLoginResponseOrUpgrade | undefined> => {
+  ): Promise<PakeLoginResponseOrUpgrade> => {
     try {
       const response = await axiosClient.post("/api/auth/pake-login", {
         email,
@@ -341,6 +331,7 @@ export const createHttpClient = (
         }
       }
       handleError(error, "PAKE login");
+      throw error; // Satisfies the linter, though it won't actually be reached.
     }
   };
 
@@ -348,7 +339,7 @@ export const createHttpClient = (
     email: string,
     aPub: string,
     clientProof: string,
-  ): Promise<PakeVerifyResponse | undefined> => {
+  ): Promise<PakeVerifyResponse> => {
     try {
       const response = await axiosClient.post("/api/auth/pake-verify", {
         email,
@@ -358,10 +349,11 @@ export const createHttpClient = (
       return response.data;
     } catch (error) {
       handleError(error, "PAKE verification");
+      throw error; // Satisfies the linter, though it won't actually be reached.
     }
   };
 
-  const forgotPassword = async (email: string): Promise<string | undefined> => {
+  const forgotPassword = async (email: string): Promise<string> => {
     try {
       const response = await axiosClient.post("/api/auth/forgotpassword", {
         email: email,
@@ -369,15 +361,17 @@ export const createHttpClient = (
       return response.data.message;
     } catch (error) {
       handleError(error, "posting forget password");
+      throw error; // Satisfies the linter, though it won't actually be reached.
     }
   };
 
-  const verifyEmail = async (token: string): Promise<string | undefined> => {
+  const verifyEmail = async (token: string): Promise<string> => {
     try {
       const response = await axiosClient.get(`/api/auth/verifyemail/${token}`);
       return response.data.message;
     } catch (error) {
       handleError(error, "verifying email");
+      throw error; // Satisfies the linter, though it won't actually be reached.
     }
   };
 
@@ -386,7 +380,7 @@ export const createHttpClient = (
     salt: string,
     walletBackupData: WalletBackupData,
     passwordResetToken: string,
-  ): Promise<string | undefined> => {
+  ): Promise<string> => {
     try {
       const response = await axiosClient.put(
         `/api/auth/resetpassword/${passwordResetToken}`,
@@ -399,16 +393,18 @@ export const createHttpClient = (
       return response.data.message;
     } catch (error) {
       handleError(error, "resetting password");
+      throw error; // Satisfies the linter, though it won't actually be reached.
     }
   };
 
-  const getVersion = async (): Promise<Version | undefined> => {
+  const getVersion = async (): Promise<Version> => {
     try {
       const response: AxiosResponse<Version> =
         await axiosClient.get("/api/version");
       return response.data;
     } catch (error) {
       handleError(error, "getting version");
+      throw error; // Satisfies the linter, though it won't actually be reached.
     }
   };
 
@@ -430,13 +426,14 @@ export const createHttpClient = (
     }
   };
 
-  const me = async (): Promise<MeResponse | undefined> => {
+  const me = async (): Promise<MeResponse> => {
     try {
       const response = await axiosClient.get("/api/users/me");
       return response.data;
     } catch (error) {
       console.log(`error received`);
       handleError(error, "fetching user data");
+      throw error; // Satisfies the linter, though it won't actually be reached.
     }
   };
 
@@ -446,7 +443,6 @@ export const createHttpClient = (
     } catch (error) {
       console.log;
       handleError(error, "auth check");
-      throw error;
     }
   };
 
@@ -460,7 +456,7 @@ export const createHttpClient = (
   };
 
   // Loan related methods
-  const getDirectLoanOffers = async (): Promise<LoanOffer[] | undefined> => {
+  const getDirectLoanOffers = async (): Promise<LoanOffer[]> => {
     try {
       const response = await axiosClient.get(
         "/api/loans/offer?loan_type=Direct",
@@ -468,12 +464,13 @@ export const createHttpClient = (
       return response.data;
     } catch (error) {
       handleError(error, "fetching loan offers");
+      throw error; // Satisfies the linter, though it won't actually be reached.
     }
   };
 
   const getDirectLoanOffersByLender = async (
     lenderId: string,
-  ): Promise<LoanOffer[] | undefined> => {
+  ): Promise<LoanOffer[]> => {
     try {
       const response: AxiosResponse<LoanOffer[]> = await axiosClient.get(
         `/api/loans/offer/bylender/${lenderId}?loan_type=Direct`,
@@ -481,11 +478,12 @@ export const createHttpClient = (
       return response.data;
     } catch (error) {
       handleError(error, "fetching loan offer by lender");
+      throw error; // Satisfies the linter, though it won't actually be reached.
     }
   };
   const getIndirectLoanOffersByLender = async (
     lenderId: string,
-  ): Promise<LoanOffer[] | undefined> => {
+  ): Promise<LoanOffer[]> => {
     try {
       const response: AxiosResponse<LoanOffer[]> = await axiosClient.get(
         `/api/loans/offer/bylender/${lenderId}?loan_type=Indirect`,
@@ -493,10 +491,11 @@ export const createHttpClient = (
       return response.data;
     } catch (error) {
       handleError(error, "fetching loan offer by lender");
+      throw error; // Satisfies the linter, though it won't actually be reached.
     }
   };
 
-  const getLoanOffer = async (id: string): Promise<LoanOffer | undefined> => {
+  const getLoanOffer = async (id: string): Promise<LoanOffer> => {
     try {
       const response: AxiosResponse<LoanOffer> = await axiosClient.get(
         `/api/loans/offer/${id}`,
@@ -504,12 +503,13 @@ export const createHttpClient = (
       return response.data;
     } catch (error) {
       handleError(error, "fetching loan offer");
+      throw error; // Satisfies the linter, though it won't actually be reached.
     }
   };
 
   const postLoanApplication = async (
     request: PostLoanApplication,
-  ): Promise<LoanRequest | undefined> => {
+  ): Promise<LoanRequest> => {
     try {
       const response: AxiosResponse<LoanRequest> = await axiosClient.post(
         "/api/loans/application",
@@ -518,12 +518,11 @@ export const createHttpClient = (
       return response.data;
     } catch (error) {
       handleError(error, "posting loan application");
+      throw error; // Satisfies the linter, though it won't actually be reached.
     }
   };
 
-  const getLoanApplications = async (): Promise<
-    LoanApplication[] | undefined
-  > => {
+  const getLoanApplications = async (): Promise<LoanApplication[]> => {
     try {
       const response: AxiosResponse<RawLoanApplication[]> =
         await axiosClient.get("/api/loans/application");
@@ -543,6 +542,7 @@ export const createHttpClient = (
       });
     } catch (error) {
       handleError(error, "fetching loan applications");
+      throw error; // Satisfies the linter, though it won't actually be reached.
     }
   };
 
@@ -576,7 +576,7 @@ export const createHttpClient = (
   const postExtendLoanRequest = async (
     contractId: string,
     request: ExtendPostLoanRequest,
-  ): Promise<LoanRequest | undefined> => {
+  ): Promise<LoanRequest> => {
     try {
       const response: AxiosResponse<LoanRequest> = await axiosClient.post(
         `/api/contracts/${contractId}/extend`,
@@ -585,12 +585,13 @@ export const createHttpClient = (
       return response.data;
     } catch (error) {
       handleError(error, "posting loan extension request");
+      throw error; // Satisfies the linter, though it won't actually be reached.
     }
   };
 
   const postContractRequest = async (
     request: ContractRequest,
-  ): Promise<Contract | undefined> => {
+  ): Promise<Contract> => {
     console.log(`Request ${JSON.stringify(request)}`);
     try {
       const response: AxiosResponse<Contract> = await axiosClient.post(
@@ -600,6 +601,7 @@ export const createHttpClient = (
       return response.data;
     } catch (error) {
       handleError(error, "posting contract request");
+      throw error; // Satisfies the linter, though it won't actually be reached.
     }
   };
 
@@ -612,25 +614,43 @@ export const createHttpClient = (
   };
 
   // Contract related methods
-  const getContracts = async (): Promise<Contract[] | undefined> => {
+  const getContracts = async (): Promise<Contract[]> => {
     try {
       const response: AxiosResponse<RawContract[]> =
         await axiosClient.get("/api/contracts");
-      return response.data.map((contract: any) => ({
-        ...contract,
-        created_at: parseRFC3339Date(contract.created_at),
-        updated_at: parseRFC3339Date(contract.updated_at),
-        repaid_at: contract.repaid_at
-          ? parseRFC3339Date(contract.repaid_at)
-          : undefined,
-        expiry: parseRFC3339Date(contract.expiry),
-      }));
+      return response.data.map((contract: RawContract) => {
+        const createdAt = parseRFC3339Date(contract.created_at);
+        if (createdAt === undefined) {
+          throw new Error("Missing created_at");
+        }
+
+        const updatedAt = parseRFC3339Date(contract.updated_at);
+        if (updatedAt === undefined) {
+          throw new Error("Missing updated_at");
+        }
+
+        const expiry = parseRFC3339Date(contract.expiry);
+        if (expiry === undefined) {
+          throw new Error("Missing expiry");
+        }
+
+        return {
+          ...contract,
+          created_at: createdAt,
+          updated_at: updatedAt,
+          repaid_at: contract.repaid_at
+            ? parseRFC3339Date(contract.repaid_at)
+            : undefined,
+          expiry: expiry,
+        };
+      });
     } catch (error) {
       handleError(error, "fetching contracts");
+      throw error; // Satisfies the linter, though it won't actually be reached.
     }
   };
 
-  const getContract = async (id: string): Promise<Contract | undefined> => {
+  const getContract = async (id: string): Promise<Contract> => {
     try {
       const contractResponse: AxiosResponse<RawContract> =
         await axiosClient.get(`/api/contracts/${id}`);
@@ -657,6 +677,7 @@ export const createHttpClient = (
       };
     } catch (error) {
       handleError(error, "fetching contract");
+      throw error; // Satisfies the linter, though it won't actually be reached.
     }
   };
 
@@ -674,20 +695,21 @@ export const createHttpClient = (
   const getClaimCollateralPsbt = async (
     id: string,
     feeRate: number,
-  ): Promise<ClaimCollateralPsbtResponse | undefined> => {
+  ): Promise<ClaimCollateralPsbtResponse> => {
     try {
       const res: AxiosResponse<ClaimCollateralPsbtResponse> =
         await axiosClient.get(`/api/contracts/${id}/claim?fee_rate=${feeRate}`);
       return res.data;
     } catch (error) {
       handleError(error, "claiming collateral psbt");
+      throw error; // Satisfies the linter, though it won't actually be reached.
     }
   };
 
   const getClaimDisputeCollateralPsbt = async (
     disputeId: string,
     feeRate: number,
-  ): Promise<ClaimCollateralPsbtResponse | undefined> => {
+  ): Promise<ClaimCollateralPsbtResponse> => {
     try {
       const res: AxiosResponse<ClaimCollateralPsbtResponse> =
         await axiosClient.get(
@@ -696,13 +718,14 @@ export const createHttpClient = (
       return res.data;
     } catch (error) {
       handleError(error, "claim dispute psbt");
+      throw error; // Satisfies the linter, though it won't actually be reached.
     }
   };
 
   const postClaimTx = async (
     contract_id: string,
     tx: string,
-  ): Promise<string | undefined> => {
+  ): Promise<string> => {
     try {
       const response: AxiosResponse<string> = await axiosClient.post(
         `/api/contracts/${contract_id}`,
@@ -711,6 +734,7 @@ export const createHttpClient = (
       return response.data;
     } catch (error) {
       handleError(error, "posting claim psbt");
+      throw error; // Satisfies the linter, though it won't actually be reached.
     }
   };
 
@@ -732,7 +756,7 @@ export const createHttpClient = (
     contract_id: string,
     reason: string,
     comment: string,
-  ): Promise<Dispute | undefined> => {
+  ): Promise<Dispute> => {
     try {
       const response: AxiosResponse<Dispute> = await axiosClient.post(
         `/api/disputes`,
@@ -745,6 +769,7 @@ export const createHttpClient = (
       return response.data;
     } catch (error) {
       handleError(error, "starting dispute");
+      throw error; // Satisfies the linter, though it won't actually be reached.
     }
   };
 
@@ -758,7 +783,7 @@ export const createHttpClient = (
 
   const fetchDisputeWithMessages = async (
     contractId: string,
-  ): Promise<DisputeWithMessages[] | undefined> => {
+  ): Promise<DisputeWithMessages[]> => {
     try {
       const response: AxiosResponse<RawDisputeWithMessages[]> =
         await axiosClient.get(`/api/disputes?contract_id=${contractId}`);
@@ -822,6 +847,7 @@ export const createHttpClient = (
       });
     } catch (error) {
       handleError(error, "fetching disputes with messages");
+      throw error; // Satisfies the linter, though it won't actually be reached.
     }
   };
 
@@ -843,9 +869,7 @@ export const createHttpClient = (
     throw Error("Not implemented");
   };
 
-  const getLenderProfile = async (
-    id: string,
-  ): Promise<LenderStats | undefined> => {
+  const getLenderProfile = async (id: string): Promise<LenderStats> => {
     try {
       const response: AxiosResponse<LenderStatsRaw> = await axiosClient.get(
         `/api/lenders/${id}`,
@@ -859,12 +883,11 @@ export const createHttpClient = (
       return { ...response.data, joined_at: joinedAt };
     } catch (error) {
       handleError(error, "getting lender profile");
+      throw error; // Satisfies the linter, though it won't actually be reached.
     }
   };
 
-  const getBorrowerProfile = async (
-    id: string,
-  ): Promise<BorrowerStats | undefined> => {
+  const getBorrowerProfile = async (id: string): Promise<BorrowerStats> => {
     try {
       const response: AxiosResponse<BorrowerStatsRaw> = await axiosClient.get(
         `/api/borrowers/${id}`,
@@ -878,10 +901,11 @@ export const createHttpClient = (
       return { ...response.data, joined_at: joinedAt };
     } catch (error) {
       handleError(error, "getting borrower profile");
+      throw error; // Satisfies the linter, though it won't actually be reached.
     }
   };
 
-  const getUserCards = async (): Promise<UserCardDetail[] | undefined> => {
+  const getUserCards = async (): Promise<UserCardDetail[]> => {
     try {
       const response: AxiosResponse<UserCardDetail[]> =
         await axiosClient.get("/api/cards");
@@ -889,18 +913,20 @@ export const createHttpClient = (
       return response.data;
     } catch (error) {
       handleError(error, "getting user cards");
+      throw error; // Satisfies the linter, though it won't actually be reached.
     }
   };
 
   const getCardTransactions = async (
     cardId: string,
-  ): Promise<CardTransaction[] | undefined> => {
+  ): Promise<CardTransaction[]> => {
     try {
       const transactionResponse: AxiosResponse<CardTransaction[]> =
         await axiosClient.get(`/api/transaction/${cardId}`);
       return transactionResponse.data;
     } catch (error) {
       handleError(error, "getting card transactions");
+      throw error; // Satisfies the linter, though it won't actually be reached.
     }
   };
 
@@ -922,7 +948,7 @@ export const createHttpClient = (
 
   const postBringinConnect = async (
     bringinEmail: string,
-  ): Promise<BringinConnectResponse | undefined> => {
+  ): Promise<BringinConnectResponse> => {
     try {
       const res: AxiosResponse<BringinConnectResponse> = await axiosClient.post(
         "/api/bringin/connect",
@@ -934,10 +960,11 @@ export const createHttpClient = (
       return res.data;
     } catch (error) {
       handleError(error, "connecting Lendasat to Bringin");
+      throw error; // Satisfies the linter, though it won't actually be reached.
     }
   };
 
-  const hasBringinApiKey = async (): Promise<boolean | undefined> => {
+  const hasBringinApiKey = async (): Promise<boolean> => {
     try {
       const axiosResponse: AxiosResponse<HasApiKey> = await axiosClient.get(
         "/api/bringin/api-key",
@@ -945,6 +972,7 @@ export const createHttpClient = (
       return axiosResponse.data.has_key;
     } catch (error) {
       handleError(error, "checking if user has Bringin API key");
+      throw error; // Satisfies the linter, though it won't actually be reached.
     }
   };
 

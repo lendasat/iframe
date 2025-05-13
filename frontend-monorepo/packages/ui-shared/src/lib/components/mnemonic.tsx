@@ -98,6 +98,7 @@ export const MnemonicComponent = () => {
             }}
           >
             {mnemonic.map((word, index) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: values are secret.
               <div key={index} className="group flex items-center gap-3">
                 <div className="flex w-full items-center gap-3 border-b border-gray-200 pb-2">
                   <span className="text-font/60 dark:text-font-dark/60 text-gray-400 inline-block py-3 select-none">

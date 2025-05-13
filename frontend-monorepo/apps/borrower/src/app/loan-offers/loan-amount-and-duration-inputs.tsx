@@ -162,7 +162,6 @@ export function LoanAmountAndDurationInputs({
                 : undefined
             }
             onDurationChange={onLoanDurationChange}
-            disabled={false}
           />
         </Box>
       </Flex>

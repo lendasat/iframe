@@ -107,7 +107,7 @@ export function ContractDetailsFooter({
     contract.status !== ContractStatus.CollateralSeen
   ) {
     button = (
-      <ManageLoanDialog contract={contract}>
+      <ManageLoanDialog contract={contract} refreshContract={refreshContract}>
         <Button type={"button"} disabled={buttonDisabled}>
           Manage Loan <LuChevronRight className="ml-1 h-4 w-4" />
         </Button>

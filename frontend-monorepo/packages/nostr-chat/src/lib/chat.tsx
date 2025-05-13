@@ -295,9 +295,7 @@ export const Chat = ({
             disabled={!isInitialized}
           >
             {!isInitialized ? (
-              <>
-                <LuLoader className="animate-spin" />
-              </>
+              <LuLoader className="animate-spin" />
             ) : (
               <LuSend className="h-4 w-4" />
             )}

@@ -89,7 +89,7 @@ interface FeeSelectorProps {
 }
 
 export const FeeSelector = ({ onSelectFee }: FeeSelectorProps) => {
-  const { recommendedFees, isLoading, refreshFees } = useFees();
+  const { recommendedFees, refreshFees } = useFees();
 
   useEffect(() => {
     refreshFees();

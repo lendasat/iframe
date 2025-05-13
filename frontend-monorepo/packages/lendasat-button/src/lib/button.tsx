@@ -8,11 +8,13 @@ type SuccessData = {
 type ErrorData = {
   error: string;
   message: string;
+  // biome-ignore lint/suspicious/noExplicitAny: good enough
   [key: string]: any;
 };
 
 type CancelData = {
   reason?: string;
+  // biome-ignore lint/suspicious/noExplicitAny: good enough
   [key: string]: any;
 };
 

@@ -64,8 +64,15 @@ export function BringinForm() {
   const { value: hasKey, loading: isCheckingKey } = useAsync(async () => {
     try {
       return await hasBringinApiKey();
-    } catch (err) {
-      setError("Failed to check Bringin connection status.");
+    } catch (e) {
+      const error = e instanceof Error ? e.message : e;
+
+      const errorString =
+        error === ""
+          ? "Failed to check Bringin connection status."
+          : `Failed to check Bringin connection status: ${error}.`;
+
+      setError(errorString);
       return false;
     }
   });
@@ -78,7 +85,7 @@ export function BringinForm() {
     try {
       const res = await postBringinConnect(values.email);
 
-      if (res && res.signup_url) {
+      if (res?.signup_url) {
         const errorMessage =
           "Check your emails to register with Bringin and complete the connection.";
         setSuccess(errorMessage);

@@ -127,10 +127,7 @@ export default function Stepper({
             )}
             {methods.switch({
               "step-1": () => (
-                <Button
-                  onClick={methods.next}
-                  disabled={loanOfferId === undefined}
-                >
+                <Button onClick={methods.next} disabled={false}>
                   {"Next"}
                 </Button>
               ),

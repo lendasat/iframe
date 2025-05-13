@@ -31,7 +31,6 @@ export function LoginForm({
   forgotPasswordLink,
   initialUserEmail,
   initialUserPassword,
-  infoMessage,
   waitlistLink,
   ...props
 }: LoginFormProps) {

@@ -23,8 +23,12 @@ const changeProtocolToWSS = (urlString: string): string => {
       url.protocol = "ws:";
     }
     return url.toString();
-  } catch (error) {
-    throw new Error("Invalid URL");
+  } catch (e) {
+    const error = e instanceof Error ? e.message : e;
+
+    const errorString = error === "" ? "Invalid URL" : `Invalid URL: ${error}.`;
+
+    throw new Error(errorString);
   }
 };
 
@@ -77,7 +81,7 @@ export const PriceProvider: FC<{ url: string; children: ReactNode }> = ({
     return () => {
       ws.current?.close();
     };
-  }, [url, websocketUrl]);
+  }, [websocketUrl]);
 
   return (
     <PriceContext.Provider value={{ latestPrice }}>

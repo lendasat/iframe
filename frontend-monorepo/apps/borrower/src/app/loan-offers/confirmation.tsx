@@ -13,7 +13,6 @@ import {
 import {
   AbbreviationExplanationInfo,
   AddFiatDetailsDialog,
-  FiatDialogFormDetails,
   formatCurrency,
   getFormatedStringFromDays,
   InterestRateInfoLabel,
@@ -106,28 +105,6 @@ export const Confirmation = ({
     useState(false);
   const [encryptedFiatTransferDetails, setEncryptedFiatTransferDetails] =
     useState<FiatLoanDetails>();
-  const [fiatTransferDetails, setFiatTransferDetails] =
-    useState<FiatDialogFormDetails>({
-      bankDetails: {
-        isIban: true,
-        iban: "",
-        bic: "",
-        account_number: "",
-        swift: "",
-        bankName: "",
-        bankAddress: "",
-        bankCountry: "",
-        purpose: "",
-      },
-      beneficiaryDetails: {
-        fullName: "",
-        address: "",
-        city: "",
-        zipCode: "",
-        country: "",
-        additionalComments: "",
-      },
-    });
 
   const [ownPk, setOwnPk] = useState<string | undefined>(undefined);
   const [ownPath, setOwnPath] = useState<string | undefined>(undefined);
@@ -264,8 +241,8 @@ export const Confirmation = ({
         return;
       }
 
-      let pk;
-      let path;
+      let pk: string;
+      let path: string;
 
       if (ownPk && ownPath) {
         pk = ownPk;

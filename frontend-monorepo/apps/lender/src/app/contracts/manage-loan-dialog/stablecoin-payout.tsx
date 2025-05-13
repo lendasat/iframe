@@ -1,5 +1,4 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import {
   LuCheck,
   LuCircleAlert,
@@ -124,63 +123,59 @@ export function StablecoinPayout({
         </AlertDescription>
       </Alert>
 
-      <>
-        <div className="flex justify-center my-4">
-          <div
-            className={`bg-white p-4 rounded-lg border shadow-sm  ${borrowerAddress ? "cursor-copy hover:bg-gray-50" : ""} transition-colors`}
-            onClick={
-              borrowerAddress ? () => onCopyAddress(borrowerAddress) : undefined
-            }
-          >
-            {borrowerAddress ? (
-              <QRCode value={borrowerAddress} size={150} />
-            ) : (
-              <>
-                <LuQrCode className="h-40 w-40" />
-              </>
-            )}
-          </div>
+      <div className="flex justify-center my-4">
+        <div
+          className={`bg-white p-4 rounded-lg border shadow-sm  ${borrowerAddress ? "cursor-copy hover:bg-gray-50" : ""} transition-colors`}
+          onClick={
+            borrowerAddress ? () => onCopyAddress(borrowerAddress) : undefined
+          }
+        >
+          {borrowerAddress ? (
+            <QRCode value={borrowerAddress} size={150} />
+          ) : (
+            <LuQrCode className="h-40 w-40" />
+          )}
         </div>
+      </div>
 
-        <div className="flex items-center space-x-2 mb-4">
-          <div className="grid flex-1 gap-2">
-            <Label htmlFor="payment-address" className="sr-only">
-              Payment Address
-            </Label>
-            <Input
-              id="payment-address"
-              value={borrowerAddress}
-              readOnly
-              className="font-mono text-sm"
-              disabled={!borrowerAddress}
-            />
-          </div>
-          <Button
-            size="icon"
-            variant="outline"
-            onClick={
-              borrowerAddress ? () => onCopyAddress(borrowerAddress) : undefined
-            }
+      <div className="flex items-center space-x-2 mb-4">
+        <div className="grid flex-1 gap-2">
+          <Label htmlFor="payment-address" className="sr-only">
+            Payment Address
+          </Label>
+          <Input
+            id="payment-address"
+            value={borrowerAddress}
+            readOnly
+            className="font-mono text-sm"
             disabled={!borrowerAddress}
-          >
-            {copied ? (
-              <LuCheck className="h-4 w-4" />
-            ) : (
-              <LuClipboard className="h-4 w-4" />
-            )}
-          </Button>
-          <Button asChild size={"icon"} variant={"ghost"} className="h-6 w-6">
-            <a
-              href={contractUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center"
-            >
-              <LuExternalLink className="h-4 w-4" />{" "}
-            </a>
-          </Button>
+          />
         </div>
-      </>
+        <Button
+          size="icon"
+          variant="outline"
+          onClick={
+            borrowerAddress ? () => onCopyAddress(borrowerAddress) : undefined
+          }
+          disabled={!borrowerAddress}
+        >
+          {copied ? (
+            <LuCheck className="h-4 w-4" />
+          ) : (
+            <LuClipboard className="h-4 w-4" />
+          )}
+        </Button>
+        <Button asChild size={"icon"} variant={"ghost"} className="h-6 w-6">
+          <a
+            href={contractUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center"
+          >
+            <LuExternalLink className="h-4 w-4" />{" "}
+          </a>
+        </Button>
+      </div>
 
       <Alert variant="destructive">
         <LuCircleAlert className="h-4 w-4" />

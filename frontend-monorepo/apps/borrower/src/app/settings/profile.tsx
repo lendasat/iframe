@@ -77,23 +77,19 @@ export function Profile() {
         <CardContent className="p-4 pt-2">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="flex flex-col gap-0.5">
-              <label className="text-xs text-gray-500 font-medium">
-                Full Name
-              </label>
+              <div className="text-xs text-gray-500 font-medium">Username</div>
               <p className="text-sm font-medium">{user.name}</p>
             </div>
 
             <div className="flex flex-col gap-0.5">
-              <label className="text-xs text-gray-500 font-medium">
+              <div className="text-xs text-gray-500 font-medium">
                 Email Address
-              </label>
+              </div>
               <p className="text-sm font-medium">{user.email}</p>
             </div>
 
             <div className="flex flex-col gap-0.5">
-              <label className="text-xs text-gray-500 font-medium">
-                Password
-              </label>
+              <div className="text-xs text-gray-500 font-medium">Password</div>
               <div className="flex flex-row justify-between">
                 <p className="text-sm font-medium">********</p>
                 <Button
@@ -103,9 +99,7 @@ export function Profile() {
                   size={"icon"}
                 >
                   {isLoading ? (
-                    <>
-                      <LuLoader className="animate-spin" />
-                    </>
+                    <LuLoader className="animate-spin" />
                   ) : (
                     <LuPencil className="h-4 w-4" />
                   )}
@@ -114,9 +108,7 @@ export function Profile() {
             </div>
 
             <div className="flex flex-col gap-0.5">
-              <label className="text-xs text-gray-500 font-medium">
-                Timezone
-              </label>
+              <div className="text-xs text-gray-500 font-medium">Timezone</div>
               <EditableTimezoneField
                 onSave={async (newVal) => {
                   await putUpdateProfile({
@@ -128,27 +120,25 @@ export function Profile() {
             </div>
 
             <div className="flex flex-col gap-0.5">
-              <label className="text-xs text-gray-500 font-medium">
-                Joined on
-              </label>
+              <div className="text-xs text-gray-500 font-medium">Joined on</div>
               <p className="text-sm font-medium">
                 {format(user.created_at, "MMM, dd yyyy - p")}
               </p>
             </div>
 
             <div className="flex flex-col gap-0.5">
-              <label className="text-xs text-gray-500 font-medium">
+              <div className="text-xs text-gray-500 font-medium">
                 Used referral code
-              </label>
+              </div>
               <Badge variant="outline">
                 {user.used_referral_code || "None"}
               </Badge>
             </div>
 
             <div className="flex flex-col gap-0.5">
-              <label className="text-xs text-gray-500 font-medium">
+              <div className="text-xs text-gray-500 font-medium">
                 Current discount on origination fee
-              </label>
+              </div>
               <p className="text-sm font-medium">
                 {(-discountRate * 100).toFixed(2)}%
               </p>

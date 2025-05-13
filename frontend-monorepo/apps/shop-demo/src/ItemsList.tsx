@@ -17,6 +17,7 @@ const ItemsList: React.FC = () => {
     return (
       <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
         {[...Array(8)].map((_, index) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: skeleton.
           <Card key={index} className="overflow-hidden">
             <div className="aspect-square w-full">
               <Skeleton className="h-full w-full" />

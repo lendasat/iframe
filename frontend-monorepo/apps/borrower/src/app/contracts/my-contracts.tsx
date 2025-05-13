@@ -99,6 +99,7 @@ function MyContracts() {
   };
 
   // Set initial columns and add resize listener
+  // biome-ignore lint/correctness/useExhaustiveDependencies(updateColumnsForScreenSize): changes too often.
   useEffect(() => {
     // Set initial column visibility based on current screen size
     updateColumnsForScreenSize();
@@ -289,6 +290,7 @@ function MyContracts() {
                   <ScrollArea>
                     {ALL_CONTRACT_STATUSES.map((contractStatus) => (
                       <DropdownMenuCheckboxItem
+                        key={contractStatus}
                         id={`status-${contractStatus}`}
                         checked={contractStatusFilter.includes(contractStatus)}
                         onClick={(e) =>

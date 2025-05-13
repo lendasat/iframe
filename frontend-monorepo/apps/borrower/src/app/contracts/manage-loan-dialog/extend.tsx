@@ -30,10 +30,7 @@ interface ExtendContractProps {
   onSubmitted: () => void;
 }
 
-export function ExtendContract({
-  contract,
-  onSubmitted: onSubmitted,
-}: ExtendContractProps) {
+export function ExtendContract({ contract, onSubmitted }: ExtendContractProps) {
   const extensionEnabled = contract?.extension_max_duration_days !== 0;
   // TODO: this policy should probably come from the backend
   const daysPast = contract

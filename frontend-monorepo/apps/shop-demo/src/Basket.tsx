@@ -53,7 +53,7 @@ const Basket: React.FC = () => {
                       value={item.quantity}
                       onChange={(e) => {
                         const val = parseInt(e.target.value);
-                        if (!isNaN(val)) {
+                        if (!Number.isNaN(val)) {
                           updateQuantity(item.id, val);
                         }
                       }}

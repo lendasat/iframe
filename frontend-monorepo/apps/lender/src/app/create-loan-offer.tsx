@@ -93,7 +93,7 @@ const CreateLoanOffer = () => {
       form.setValue("loanRepaymentAddress", "");
       setHideWalletConnectButton(false);
     },
-    [form, setHideWalletConnectButton],
+    [form],
   );
 
   const handleRangeChange = (start: number, end: number) => {

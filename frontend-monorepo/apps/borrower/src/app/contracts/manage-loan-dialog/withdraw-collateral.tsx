@@ -37,7 +37,6 @@ const WithdrawCollateralDialog: React.FC<WithdrawCollateralDialogProps> = ({
   const [success, setSuccess] = useState(false);
   const [password, setPassword] = useState("");
   const [feeRate, setFeeRate] = useState<number>(1);
-  const [customFee, setCustomFee] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [txId, setTxId] = useState<string | null>(null);
@@ -60,11 +59,8 @@ const WithdrawCollateralDialog: React.FC<WithdrawCollateralDialogProps> = ({
     setIsSubmitting(true);
 
     try {
-      // Use custom fee if selected, otherwise use the selected fee rate
-      const finalFeeRate = feeRate === 0 ? parseInt(customFee) : feeRate;
-
-      console.log(`Final fee: ${finalFeeRate}`);
-      const res = await getClaimCollateralPsbt(contract?.id, finalFeeRate);
+      console.log(`Fee rate: ${feeRate}`);
+      const res = await getClaimCollateralPsbt(contract?.id, feeRate);
 
       console.log("Signing claim collateral PSBT");
 
@@ -95,16 +91,6 @@ const WithdrawCollateralDialog: React.FC<WithdrawCollateralDialogProps> = ({
   const shortenAddress = (address: string) => {
     if (!address) return "";
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
-  };
-
-  const handleFeeRateChange = (value: string) => {
-    const numValue = parseInt(value);
-    setFeeRate(numValue);
-
-    // Clear custom fee if not selecting custom
-    if (numValue !== 0) {
-      setCustomFee("");
-    }
   };
 
   let collateralBtc = formatSatsToBitcoin(collateralAmountSats);
@@ -199,10 +185,7 @@ const WithdrawCollateralDialog: React.FC<WithdrawCollateralDialogProps> = ({
               variant="default"
               onClick={handleWithdraw}
               disabled={
-                isSubmitting ||
-                !password ||
-                (feeRate === 0 && !customFee) ||
-                txId !== null
+                isSubmitting || !password || feeRate === 0 || txId !== null
               }
             >
               {isSubmitting ? (
@@ -220,7 +203,7 @@ const WithdrawCollateralDialog: React.FC<WithdrawCollateralDialogProps> = ({
           )}
           {success && (
             <Button variant="default" onClick={() => navigate(0)}>
-              <>Back to contract</>
+              Back to contract
             </Button>
           )}
         </DialogFooter>

@@ -40,6 +40,7 @@ import {
   restore_wallet,
 } from "browser-wallet";
 import { md5CaseInsensitive } from "@frontend/browser-wallet";
+import { WalletBackupData } from "@frontend/base-http-client";
 
 type FormState = "initial" | "login" | "register" | "verify" | "success";
 
@@ -167,74 +168,62 @@ const AuthForm = ({ login, inviteCode, onComplete }: AuthFormProps) => {
 
   // Handle login flow
   const handleLogin = async (data: z.infer<typeof formSchema>) => {
-    try {
-      await logIn(data.email, data.password, login);
-      setFormState("success");
-      onComplete();
-    } catch (err) {
-      throw err;
-    }
+    await logIn(data.email, data.password, login);
+    setFormState("success");
+    onComplete();
   };
 
   // Handle registration flow
   const handleRegister = async (data: z.infer<typeof formSchema>) => {
-    try {
-      // Validate password confirmation
-      if (data.password !== data.confirmPassword) {
-        throw new Error("Passwords do not match");
-      }
-
-      // Begin registration process
-      const registrationData = begin_registration(data.email, data.password);
-      const network = import.meta.env.VITE_BITCOIN_NETWORK;
-      const walletDetails = new_wallet(data.password, network);
-
-      // Register the user
-      await register(
-        "Anon",
-        data.email,
-        registrationData.verifier,
-        registrationData.salt,
-        {
-          mnemonic_ciphertext: walletDetails.mnemonic_ciphertext,
-          network: network,
-        },
-        inviteCode,
-      );
-
-      // Persist the wallet
-      const key = await md5CaseInsensitive(data.email);
-      persist_new_wallet(
-        walletDetails.mnemonic_ciphertext,
-        walletDetails.network,
-        key,
-      );
-
-      // Move to verification step
-      setFormState("verify");
-    } catch (err) {
-      throw err;
+    // Validate password confirmation
+    if (data.password !== data.confirmPassword) {
+      throw new Error("Passwords do not match");
     }
+
+    // Begin registration process
+    const registrationData = begin_registration(data.email, data.password);
+    const network = import.meta.env.VITE_BITCOIN_NETWORK;
+    const walletDetails = new_wallet(data.password, network);
+
+    // Register the user
+    await register(
+      "Anon",
+      data.email,
+      registrationData.verifier,
+      registrationData.salt,
+      {
+        mnemonic_ciphertext: walletDetails.mnemonic_ciphertext,
+        network: network,
+      },
+      inviteCode,
+    );
+
+    // Persist the wallet
+    const key = await md5CaseInsensitive(data.email);
+    persist_new_wallet(
+      walletDetails.mnemonic_ciphertext,
+      walletDetails.network,
+      key,
+    );
+
+    // Move to verification step
+    setFormState("verify");
   };
 
   // Handle verification flow
   const handleVerify = async (data: z.infer<typeof formSchema>) => {
-    try {
-      if (!data.verificationCode || data.verificationCode.length !== 6) {
-        throw new Error("Please enter a valid verification code");
-      }
-
-      // Verify the email
-      await verifyEmail(data.verificationCode);
-
-      // Log the user in
-      await logIn(data.email, data.password, login);
-
-      setFormState("success");
-      onComplete();
-    } catch (err) {
-      throw err;
+    if (!data.verificationCode || data.verificationCode.length !== 6) {
+      throw new Error("Please enter a valid verification code");
     }
+
+    // Verify the email
+    await verifyEmail(data.verificationCode);
+
+    // Log the user in
+    await logIn(data.email, data.password, login);
+
+    setFormState("success");
+    onComplete();
   };
 
   // Helper function to reset the form
@@ -468,7 +457,7 @@ async function logIn(
   password: string,
   loginFn: (email: string, password: string) => Promise<LoginResponseOrUpgrade>,
 ) {
-  let walletBackupData;
+  let walletBackupData: WalletBackupData;
   try {
     const loginResponse = await loginFn(email, password);
 

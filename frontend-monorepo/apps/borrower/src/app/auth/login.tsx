@@ -15,7 +15,7 @@ function Login() {
   const { status } = useParams();
 
   const location = useLocation();
-  const returnUrl: String | undefined = location.state?.returnUrl;
+  const returnUrl: string | undefined = location.state?.returnUrl;
 
   const handleLogin = async (email: string, password: string) => {
     const loginResponse = await login(email, password);

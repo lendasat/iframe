@@ -52,7 +52,7 @@ export function ConfigureLoan({
     if (loanOffer) {
       setDays(loanOffer?.duration_days_min);
     }
-  }, [loanOffer]);
+  }, [loanOffer, setDays]);
 
   useEffect(() => {
     if (loanOffer) {

@@ -53,6 +53,9 @@ const Checkout: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const navigate = useNavigate();
 
+  const me = useMe();
+  const lenderId = me?.id;
+
   if (basket.length === 0) {
     return (
       <div className="text-center py-8">
@@ -176,6 +179,7 @@ const Checkout: React.FC = () => {
 
   const handlePaymentCancel = (data?: {
     reason?: string;
+    // biome-ignore lint/suspicious/noExplicitAny: good enough
     [key: string]: any;
   }) => {
     console.log("Payment cancelled", data?.reason);
@@ -185,14 +189,12 @@ const Checkout: React.FC = () => {
   const handlePaymentError = (error: {
     error: string;
     message: string;
+    // biome-ignore lint/suspicious/noExplicitAny: good enough
     [key: string]: any;
   }) => {
     console.error("Payment error:", error.message);
     // Display error message to user
   };
-
-  const me = useMe();
-  const lenderId = me?.id;
 
   return (
     <div className="max-w-4xl mx-auto">
