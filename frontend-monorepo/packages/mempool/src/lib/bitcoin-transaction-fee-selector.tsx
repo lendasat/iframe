@@ -1,9 +1,7 @@
-import { Contract } from "@frontend/http-client-lender";
-import { useFees } from "@frontend/mempool";
 import { cn, Input, Label, RadioGroup, RadioGroupItem } from "@frontend/shadcn";
-import { Clock } from "lucide-react";
 import React, { useState } from "react";
-import { LuClock } from "react-icons/lu";
+import { useFees } from "./mempool-fee";
+import { Clock } from "lucide-react";
 
 interface BitcoinTransactionFeeSelectorProps {
   onSelectFee: (value: ((prevState: number) => number) | number) => void;
@@ -64,7 +62,7 @@ export const BitcoinTransactionFeeSelector = ({
             )}
           >
             <div className="flex flex-col items-center text-center h-full justify-center">
-              <LuClock className="mb-2 h-5 w-5 hidden md:block" />
+              <Clock className="mb-2 h-5 w-5 hidden md:block" />
               <div className="text-md font-medium">Low</div>
               <div className="text-xs mt-1">
                 {recommendedFees?.economyFee} s/vb (~24h)
@@ -81,7 +79,7 @@ export const BitcoinTransactionFeeSelector = ({
             )}
           >
             <div className="flex flex-col items-center text-center h-full justify-center">
-              <LuClock className="mb-2 h-5 w-5 hidden md:block" />
+              <Clock className="mb-2 h-5 w-5 hidden md:block" />
               <div className="text-md font-medium">Medium</div>
               <div className="text-xs mt-1">
                 {recommendedFees?.hourFee} s/vb (~1h)
@@ -102,7 +100,7 @@ export const BitcoinTransactionFeeSelector = ({
             )}
           >
             <div className="flex flex-col items-center text-center h-full justify-center">
-              <LuClock className="mb-2 h-5 w-5 hidden md:block" />
+              <Clock className="mb-2 h-5 w-5 hidden md:block" />
               <div className="text-md font-medium">Next Block</div>
               <div className="text-xs mt-1">
                 {recommendedFees?.fastestFee} s/vb (~10m)

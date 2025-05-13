@@ -1,11 +1,5 @@
 import React, { useState } from "react";
-import {
-  LuInfo,
-  LuWallet,
-  LuClock,
-  LuLoader,
-  LuCircleAlert,
-} from "react-icons/lu";
+import { LuInfo, LuWallet, LuLoader, LuCircleAlert } from "react-icons/lu";
 import { useHttpClientBorrower } from "@frontend/http-client-borrower";
 import {
   Dialog,
@@ -20,12 +14,11 @@ import { Alert, AlertDescription, AlertTitle } from "@frontend/shadcn";
 import { Button } from "@frontend/shadcn";
 import { Input } from "@frontend/shadcn";
 import { Label } from "@frontend/shadcn";
-import { RadioGroup, RadioGroupItem } from "@frontend/shadcn";
-import { cn } from "@frontend/shadcn";
 import { formatSatsToBitcoin, getTxUrl } from "@frontend/ui-shared";
 import { useWallet } from "@frontend/browser-wallet";
 import type { Contract } from "@frontend/http-client-borrower";
 import { useNavigate } from "react-router-dom";
+import { BitcoinTransactionFeeSelector } from "@frontend/mempool";
 
 interface WithdrawCollateralDialogProps {
   children: React.ReactNode;
@@ -33,30 +26,6 @@ interface WithdrawCollateralDialogProps {
   collateralAddress?: string;
   contract?: Contract;
 }
-
-const feeOptions = [
-  {
-    id: "slow",
-    label: "Slow",
-    sublabel: "~1d",
-    value: 1,
-    description: "1 sat/vB",
-  },
-  {
-    id: "medium",
-    label: "Medium",
-    sublabel: "~60m",
-    value: 5,
-    description: "5 sat/vB",
-  },
-  {
-    id: "fast",
-    label: "Fast",
-    sublabel: "~10m",
-    value: 10,
-    description: "10 sat/vB",
-  },
-];
 
 const WithdrawCollateralDialog: React.FC<WithdrawCollateralDialogProps> = ({
   children,
@@ -67,7 +36,7 @@ const WithdrawCollateralDialog: React.FC<WithdrawCollateralDialogProps> = ({
   const [open, setOpen] = useState(false);
   const [success, setSuccess] = useState(false);
   const [password, setPassword] = useState("");
-  const [feeRate, setFeeRate] = useState<number>(feeOptions[2].value); // Default to fast
+  const [feeRate, setFeeRate] = useState<number>(1);
   const [customFee, setCustomFee] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -184,76 +153,10 @@ const WithdrawCollateralDialog: React.FC<WithdrawCollateralDialogProps> = ({
             )}
           </div>
 
-          <div className="space-y-3">
-            <Label>Transaction Fee Rate</Label>
-            <RadioGroup
-              value={feeRate.toString()}
-              onValueChange={handleFeeRateChange}
-              className="grid grid-cols-3 gap-2"
-            >
-              {feeOptions.map((option) => (
-                <div key={option.id} className="relative">
-                  <RadioGroupItem
-                    value={option.value.toString()}
-                    id={`fee-${option.id}`}
-                    className="sr-only peer"
-                  />
-                  <label
-                    htmlFor={`fee-${option.id}`}
-                    className={cn(
-                      "flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer h-28",
-                    )}
-                  >
-                    <div className="flex flex-col items-center text-center h-full justify-center">
-                      <LuClock className="mb-2 h-5 w-5" />
-                      <div className="text-md font-medium">{option.label}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {option.sublabel}
-                      </div>
-                      <div className="text-xs mt-1">{option.description}</div>
-                    </div>
-                  </label>
-                </div>
-              ))}
-            </RadioGroup>
-
-            <div className="mt-4">
-              <RadioGroup
-                value={feeRate === 0 ? "0" : feeRate.toString()}
-                onValueChange={handleFeeRateChange}
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="0" id="fee-custom" />
-                  <Label htmlFor="fee-custom" className="font-medium">
-                    Custom
-                  </Label>
-                </div>
-              </RadioGroup>
-
-              {feeRate === 0 && (
-                <div className="mt-2">
-                  <Input
-                    type="number"
-                    placeholder="Enter sats/vByte"
-                    value={customFee}
-                    onChange={(e) => setCustomFee(e.target.value)}
-                    min="1"
-                    className={cn(
-                      "font-mono",
-                      error && feeRate === 0 && !customFee
-                        ? "border-red-500"
-                        : "",
-                    )}
-                  />
-                  {error && feeRate === 0 && !customFee && (
-                    <p className="text-sm text-red-500 mt-1">
-                      Please enter a custom fee rate
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
+          <BitcoinTransactionFeeSelector
+            onSelectFee={setFeeRate}
+            selectedFee={feeRate}
+          />
 
           {error && error !== "Password is required" && (
             <Alert variant="destructive">

@@ -13,6 +13,7 @@
     "@types/react": "19.0.0",
     "@types/react-dom": "18.3.0",
     "@vitejs/plugin-react": "^4.3.4",
+    "lucide-react": "^0.483.0",
     "typescript": "5.7.3",
     "vite": "^6.1.1",
     "vite-plugin-dts": "^4.5.0",
