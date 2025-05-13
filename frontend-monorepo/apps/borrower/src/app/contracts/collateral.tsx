@@ -134,9 +134,11 @@ function LtvHealthInfo({ contract, funded }: LtvHealthInfoProps) {
 
 export const Collateral = ({ contract }: CollateralProps) => {
   const { latestPrice } = usePrice();
+  const [refundAddressCopied, setRefundAddressCopied] = useState(false);
   const [contractAddressCopied, setContractAddressCopied] = useState(false);
 
   const contractAddress = contract?.contract_address;
+  const refundAddress = contract?.borrower_btc_address;
   const collateralAmount = formatSatsToBitcoin(contract?.collateral_sats);
   const collateralAmountUsd =
     contract?.collateral_sats != null
@@ -155,11 +157,16 @@ export const Collateral = ({ contract }: CollateralProps) => {
 
   const isFunded = collateralBtc != undefined && collateralBtc > 0;
 
-  const handleCopy = async (text: string) => {
+  const handleCopy = async (
+    text: string,
+    setCopiedState: (
+      value: ((prevState: boolean) => boolean) | boolean,
+    ) => void = setContractAddressCopied,
+  ) => {
     try {
       await navigator.clipboard.writeText(text);
-      setContractAddressCopied(true);
-      setTimeout(() => setContractAddressCopied(false), 2000);
+      setCopiedState(true);
+      setTimeout(() => setCopiedState(false), 2000);
     } catch (err) {
       console.error("Failed to copy text: ", err);
     }
@@ -203,7 +210,8 @@ export const Collateral = ({ contract }: CollateralProps) => {
   }
 
   const depositAddress = contract?.contract_address;
-  const mempoolLinkToAddress = `${import.meta.env.VITE_MEMPOOL_REST_URL}/address/${depositAddress}`;
+  const mempoolLinkToContractAddress = `${import.meta.env.VITE_MEMPOOL_REST_URL}/address/${depositAddress}`;
+  const mempoolLinkToRefundAddress = `${import.meta.env.VITE_MEMPOOL_REST_URL}/address/${refundAddress}`;
 
   return (
     <>
@@ -246,7 +254,9 @@ export const Collateral = ({ contract }: CollateralProps) => {
                 variant="ghost"
                 size="icon"
                 className="h-6 w-6 ml-1"
-                onClick={() => handleCopy(contractAddress || "")}
+                onClick={() =>
+                  handleCopy(contractAddress || "", setContractAddressCopied)
+                }
               >
                 {contractAddressCopied ? (
                   <LuCircleCheck className="h-4 w-4" />
@@ -261,7 +271,48 @@ export const Collateral = ({ contract }: CollateralProps) => {
                 className="h-6 w-6 ml-1"
               >
                 <a
-                  href={mempoolLinkToAddress}
+                  href={mempoolLinkToContractAddress}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center"
+                >
+                  <LuExternalLink className="ml-2 h-4 w-4" />
+                </a>
+              </Button>
+            </div>
+          </div>
+          <Separator className="my-3" />
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-500">Refund Address</span>
+            <div className="flex items-center">
+              {refundAddress ? (
+                <p className="font-medium">{shortenAddress(refundAddress)}</p>
+              ) : (
+                <Skeleton className="h-4 w-[150px]" />
+              )}
+
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 ml-1"
+                onClick={() =>
+                  handleCopy(refundAddress || "", setRefundAddressCopied)
+                }
+              >
+                {refundAddressCopied ? (
+                  <LuCircleCheck className="h-4 w-4" />
+                ) : (
+                  <LuClipboard className="h-4 w-4" />
+                )}
+              </Button>
+              <Button
+                asChild
+                size={"icon"}
+                variant={"ghost"}
+                className="h-6 w-6 ml-1"
+              >
+                <a
+                  href={mempoolLinkToRefundAddress}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center"
