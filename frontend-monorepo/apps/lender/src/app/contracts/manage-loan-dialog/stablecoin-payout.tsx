@@ -40,11 +40,6 @@ export function StablecoinPayout({ contract }: StablecoinRepaymentProps) {
   const navigate = useNavigate();
 
   const loanAmount = contract?.loan_amount;
-  const loanInterest = contract?.interest;
-  const totalRepaymentAmount =
-    loanAmount != undefined && loanInterest != undefined
-      ? loanAmount + loanInterest
-      : undefined;
 
   const borrowerAddress = contract?.borrower_loan_address;
 
@@ -109,10 +104,10 @@ export function StablecoinPayout({ contract }: StablecoinRepaymentProps) {
         <LuInfo className="h-4 w-4" />
         <AlertTitle>Payout Instructions</AlertTitle>
         <AlertDescription>
-          {totalRepaymentAmount ? (
+          {loanAmount ? (
             <>
               Send the exact amount of{" "}
-              <strong>{formatCurrency(totalRepaymentAmount)}</strong>{" "}
+              <strong>{formatCurrency(loanAmount)}</strong>{" "}
               <strong>{assetCoin}</strong> on <strong>{assetNetwork}</strong> to
               the address below. You can withdraw your collateral once the
               payment is confirmed.
