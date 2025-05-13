@@ -89,10 +89,17 @@ export const MnemonicComponent = () => {
           </div>
         </CardHeader>
         <CardContent className="mt-4">
-          <div className="grid max-w-lg grid-cols-2 gap-4 px-4">
+          <div
+            className="grid max-w-lg px-4"
+            style={{
+              gridAutoFlow: "column",
+              gridTemplateColumns: "1fr 1fr",
+              gridTemplateRows: "repeat(6, 1fr)",
+            }}
+          >
             {mnemonic.map((word, index) => (
               <div key={index} className="group flex items-center gap-3">
-                <Label className="flex w-full cursor-text items-center gap-3 border-b border-gray-200 pb-2">
+                <Label className="flex w-full cursor-text items-center gap-3 border-b border-gray-200 pb-2 py-4">
                   <span className="text-font/60 dark:text-font-dark/60 text-gray-400 inline-block w-5 ">
                     {index + 1}.
                   </span>
