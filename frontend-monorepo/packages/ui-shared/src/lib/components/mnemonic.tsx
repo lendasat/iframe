@@ -99,14 +99,14 @@ export const MnemonicComponent = () => {
           >
             {mnemonic.map((word, index) => (
               <div key={index} className="group flex items-center gap-3">
-                <Label className="flex w-full cursor-text items-center gap-3 border-b border-gray-200 pb-2 py-4">
-                  <span className="text-font/60 dark:text-font-dark/60 text-gray-400 inline-block w-5 ">
+                <div className="flex w-full items-center gap-3 border-b border-gray-200 pb-2">
+                  <span className="text-font/60 dark:text-font-dark/60 text-gray-400 inline-block py-3 select-none">
                     {index + 1}.
                   </span>
                   <span className="text-font/60 dark:text-font-dark/60">
                     {isMnemonicVisible ? word : "****"}
                   </span>
-                </Label>
+                </div>
               </div>
             ))}
           </div>
