@@ -1180,6 +1180,9 @@ importers:
       '@vitejs/plugin-react':
         specifier: ^4.3.4
         version: 4.3.4(vite@6.1.1(@types/node@18.16.9)(jiti@2.4.2)(less@4.1.3)(lightningcss@1.29.2)(sass@1.85.0)(stylus@0.59.0)(terser@5.39.0)(yaml@2.7.0))
+      lucide-react:
+        specifier: ^0.483.0
+        version: 0.483.0(react@19.0.0)
       typescript:
         specifier: 5.7.3
         version: 5.7.3

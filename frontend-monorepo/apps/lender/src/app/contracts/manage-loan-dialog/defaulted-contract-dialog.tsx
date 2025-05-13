@@ -37,12 +37,11 @@ import {
   LoanAssetHelper,
   usePrice,
 } from "@frontend/ui-shared";
-import { BitcoinTransactionFeeSelector } from "./liquidate/bitcoin-transaction-fee-selector";
 import { Network, validate } from "bitcoin-address-validation";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { useFees } from "@frontend/mempool";
+import { BitcoinTransactionFeeSelector, useFees } from "@frontend/mempool";
 import { useWallet } from "@frontend/browser-wallet";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
