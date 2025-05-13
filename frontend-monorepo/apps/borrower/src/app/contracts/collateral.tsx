@@ -16,6 +16,7 @@ import {
   usePrice,
 } from "@frontend/ui-shared";
 import AddCollateralDialog from "./add-collateral-dialog";
+import EditableAddressField from "./editable-address-field";
 
 const shortenAddress = (address?: string) => {
   if (!address) {
@@ -134,7 +135,6 @@ function LtvHealthInfo({ contract, funded }: LtvHealthInfoProps) {
 
 export const Collateral = ({ contract }: CollateralProps) => {
   const { latestPrice } = usePrice();
-  const [refundAddressCopied, setRefundAddressCopied] = useState(false);
   const [contractAddressCopied, setContractAddressCopied] = useState(false);
 
   const contractAddress = contract?.contract_address;
@@ -282,46 +282,13 @@ export const Collateral = ({ contract }: CollateralProps) => {
             </div>
           </div>
           <Separator className="my-3" />
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-500">Refund Address</span>
-            <div className="flex items-center">
-              {refundAddress ? (
-                <p className="font-medium">{shortenAddress(refundAddress)}</p>
-              ) : (
-                <Skeleton className="h-4 w-[150px]" />
-              )}
 
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 ml-1"
-                onClick={() =>
-                  handleCopy(refundAddress || "", setRefundAddressCopied)
-                }
-              >
-                {refundAddressCopied ? (
-                  <LuCircleCheck className="h-4 w-4" />
-                ) : (
-                  <LuClipboard className="h-4 w-4" />
-                )}
-              </Button>
-              <Button
-                asChild
-                size={"icon"}
-                variant={"ghost"}
-                className="h-6 w-6 ml-1"
-              >
-                <a
-                  href={mempoolLinkToRefundAddress}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center"
-                >
-                  <LuExternalLink className="ml-2 h-4 w-4" />
-                </a>
-              </Button>
-            </div>
-          </div>
+          <EditableAddressField
+            contractId={contract?.id}
+            refundAddress={refundAddress}
+            shortenAddress={shortenAddress}
+            handleCopy={handleCopy}
+          />
           <Separator className="my-3" />
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-500">Liquidation Price</span>
