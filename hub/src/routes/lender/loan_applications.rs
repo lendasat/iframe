@@ -1,6 +1,9 @@
 use crate::bitmex_index_price_rest::get_bitmex_index_price;
+use crate::config::Config;
 use crate::contract_requests::calculate_initial_collateral;
 use crate::db;
+use crate::model;
+use crate::model::calculate_interest_usd;
 use crate::model::Lender;
 use crate::model::LoanApplicationStatus;
 use crate::model::LoanAsset;
@@ -29,6 +32,8 @@ use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::Decimal;
 use serde::Deserialize;
 use serde::Serialize;
+use sqlx::Pool;
+use sqlx::Postgres;
 use std::sync::Arc;
 use time::OffsetDateTime;
 use tracing::instrument;
@@ -84,44 +89,10 @@ pub async fn get_all_available_loan_applications(
         .map_err(Error::Database)?;
 
     let mut ret = vec![];
-
-    let price = get_bitmex_index_price(&data.config, OffsetDateTime::now_utc())
-        .await
-        .map_err(Error::BitMexPrice)?;
-
     for request in requests {
-        let borrower = db::borrowers::get_user_by_id(&data.db, &request.borrower_id)
-            .await
-            .map_err(Error::Database)?
-            .context("No lender found for contract")
-            .map_err(|_| Error::MissingBorrower)?;
+        let loan_application = map_to_api_loan_application(&data.db, &data.config, request).await?;
 
-        // FIXME: this is incorrect
-        let initial_collateral =
-            calculate_initial_collateral(request.loan_amount, request.ltv, price)
-                .map_err(Error::InitialCollateralCalculation)?;
-        let liquidation_price = calculate_liquidation_price(
-            request.loan_amount,
-            Decimal::from_u64(initial_collateral.to_sat()).expect("to fit into decimal"),
-        )
-        .ok_or(Error::LiquidationPriceCalculation)?;
-
-        ret.push(LoanApplication {
-            id: request.loan_deal_id,
-            borrower: BorrowerProfile {
-                id: borrower.id,
-                name: borrower.name,
-            },
-            ltv: request.ltv,
-            interest_rate: request.interest_rate,
-            loan_amount: request.loan_amount,
-            duration_days: request.duration_days,
-            loan_asset: request.loan_asset,
-            status: request.status,
-            liquidation_price,
-            created_at: request.created_at,
-            updated_at: request.updated_at,
-        })
+        ret.push(loan_application)
     }
 
     Ok(AppJson(ret))
@@ -137,26 +108,48 @@ pub async fn get_loan_application(
         .map_err(Error::Database)?
         .ok_or(Error::LoanApplicationNotFound(loan_deal_id))?;
 
-    let borrower = db::borrowers::get_user_by_id(&data.db, &request.borrower_id)
+    let loan_application = map_to_api_loan_application(&data.db, &data.config, request).await?;
+
+    Ok(AppJson(loan_application))
+}
+
+async fn map_to_api_loan_application(
+    db: &Pool<Postgres>,
+    config: &Config,
+    request: model::LoanApplication,
+) -> Result<LoanApplication, Error> {
+    let borrower = db::borrowers::get_user_by_id(db, &request.borrower_id)
         .await
         .map_err(Error::Database)?
-        .context("No borrower found for contract")
+        .context("No borrower found for loan application")
         .map_err(|_| Error::MissingBorrower)?;
 
-    let price = get_bitmex_index_price(&data.config, OffsetDateTime::now_utc())
+    let price = get_bitmex_index_price(config, OffsetDateTime::now_utc())
         .await
         .map_err(Error::BitMexPrice)?;
 
-    // FIXME: this is incorrect
-    let initial_collateral = calculate_initial_collateral(request.loan_amount, request.ltv, price)
-        .map_err(Error::InitialCollateralCalculation)?;
-    let liquidation_price = calculate_liquidation_price(
+    let initial_collateral = calculate_initial_collateral(
         request.loan_amount,
+        request.interest_rate,
+        request.duration_days as u32,
+        request.ltv,
+        price,
+    )
+    .map_err(Error::InitialCollateralCalculation)?;
+
+    let interest_usd = calculate_interest_usd(
+        request.loan_amount,
+        request.interest_rate,
+        request.duration_days as u32,
+    );
+    let outstanding_balance_usd = request.loan_amount + interest_usd;
+    let liquidation_price = calculate_liquidation_price(
+        outstanding_balance_usd,
         Decimal::from_u64(initial_collateral.to_sat()).expect("to fit into decimal"),
     )
     .ok_or(Error::LiquidationPriceCalculation)?;
 
-    Ok(AppJson(LoanApplication {
+    Ok(LoanApplication {
         id: request.loan_deal_id,
         borrower: BorrowerProfile {
             id: borrower.id,
@@ -171,7 +164,7 @@ pub async fn get_loan_application(
         liquidation_price,
         created_at: request.created_at,
         updated_at: request.updated_at,
-    }))
+    })
 }
 
 #[derive(Debug, Deserialize, Serialize)]

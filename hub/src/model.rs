@@ -1387,7 +1387,7 @@ pub struct CreateApiAccountResponse {
 /// Calculates the interest for the provided `duration_days`.
 ///
 /// Note: does not compound interest
-fn calculate_interest_usd(
+pub fn calculate_interest_usd(
     loan_amount_usd: Decimal,
     yearly_interest_rate: Decimal,
     duration_days: u32,
