@@ -332,8 +332,12 @@ export default function TakeLoanApplication() {
                           <div>
                             <p>
                               You are lending USD{" "}
-                              {formatCurrency(loanApplication.loan_amount)} worth of{" "}
-                              {LoanAssetHelper.print(loanApplication.loan_asset)}.
+                              {formatCurrency(loanApplication.loan_amount)}{" "}
+                              worth of{" "}
+                              {LoanAssetHelper.print(
+                                loanApplication.loan_asset,
+                              )}
+                              .
                               {loanApplication.loan_asset !== LoanAsset.USD && (
                                 <>
                                   {" "}
@@ -347,8 +351,8 @@ export default function TakeLoanApplication() {
                                   to the borrower.
                                 </>
                               )}{" "}
-                              Please provide your bank details so that the borrower
-                              can repay at expiry.
+                              Please provide your bank details so that the
+                              borrower can repay at expiry.
                             </p>
                           </div>
                         </AlertDescription>
@@ -374,7 +378,9 @@ export default function TakeLoanApplication() {
                   {!isFiatLoanApplication && (
                     <Button
                       className="w-full -px-4"
-                      onClick={async (e: React.MouseEvent<HTMLButtonElement>) => {
+                      onClick={async (
+                        e: React.MouseEvent<HTMLButtonElement>,
+                      ) => {
                         e.preventDefault();
                         await onSubmit();
                       }}

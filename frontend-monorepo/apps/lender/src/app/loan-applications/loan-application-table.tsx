@@ -151,7 +151,6 @@ export function LoanApplicationTable({
   enableActionColumn,
   onActionColumnAction,
 }: LoanApplicationTableProps) {
-
   const columns = [
     columnHelper.accessor((row) => row.borrower, {
       id: "borrower",

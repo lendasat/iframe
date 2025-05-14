@@ -271,6 +271,19 @@ export const Collateral = ({ contract }: CollateralProps) => {
               </Button>
             </div>
           </div>
+          <Separator className="my-3" />
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-500">Liquidation Price</span>
+            <div className="flex items-center">
+              {contractAddress ? (
+                <p className="font-medium">
+                  {formatCurrency(contract?.liquidation_price)}
+                </p>
+              ) : (
+                <Skeleton className="h-4 w-[150px]" />
+              )}
+            </div>
+          </div>
         </div>
 
         <div className="space-y-3 mb-11">
