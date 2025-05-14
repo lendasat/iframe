@@ -34,15 +34,17 @@ import {
   getStatusColor,
 } from "./disputes";
 import { LuCircleCheck, LuLoader, LuPlus } from "react-icons/lu";
-import { useNavigate } from "react-router-dom";
 
 interface DisputeDetailsProps {
   dispute: DisputeWithMessages;
+  refreshContract: () => void;
 }
 
-export const DisputeDetails: React.FC<DisputeDetailsProps> = ({ dispute }) => {
+export const DisputeDetails: React.FC<DisputeDetailsProps> = ({
+  dispute,
+  refreshContract,
+}) => {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [newComment, setNewComment] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [isResolving, setIsResolving] = useState(false);
@@ -55,8 +57,8 @@ export const DisputeDetails: React.FC<DisputeDetailsProps> = ({ dispute }) => {
     try {
       setIsSending(true);
       await commentOnDispute(dispute.id, newComment);
-      navigate(0);
       setNewComment("");
+      refreshContract();
     } catch (error) {
       console.error("Failed to send message:", error);
     } finally {
@@ -73,7 +75,7 @@ export const DisputeDetails: React.FC<DisputeDetailsProps> = ({ dispute }) => {
     try {
       setIsResolving(true);
       await resolveDispute(disputeId);
-      navigate(0);
+      refreshContract();
     } catch (error) {
       console.error(`Failed to resolve dispute: ${error}`);
     } finally {

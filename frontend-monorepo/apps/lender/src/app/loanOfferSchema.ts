@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { LoanAsset } from "@frontend/ui-shared";
+import { LoanAsset, ONE_YEAR } from "@frontend/ui-shared";
 
 // Define the schema for loan offers
 export const loanOfferSchema = z
@@ -47,6 +47,18 @@ export const loanOfferSchema = z
           "Maximum duration must be greater than or equal to minimum duration",
         path: ["max"],
       }),
+
+    extension_enabled: z.boolean(),
+
+    extension_duration_days: z
+      .number()
+      .min(0, "Extension duration must be at least 0")
+      .max(ONE_YEAR, "Max loan duration at the moment is one year"),
+
+    extension_interest_rate: z
+      .number()
+      .min(0, "Interest rate cannot be negative")
+      .max(100, "Interest rate cannot exceed 100%"),
 
     isKycRequired: z.boolean(),
 
@@ -101,4 +113,7 @@ export const defaultLoanOfferValues: LoanOfferFormValues = {
   },
   isKycRequired: false,
   kycLink: "",
+  extension_enabled: true,
+  extension_duration_days: 7,
+  extension_interest_rate: 7.5,
 };

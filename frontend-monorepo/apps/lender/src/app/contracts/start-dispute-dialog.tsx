@@ -23,7 +23,8 @@ import { useLenderHttpClient } from "@frontend/http-client-lender";
 
 interface DisputeDialogProps {
   contractId: string;
-  children: ReactNode; // Custom trigger element
+  children: ReactNode;
+  refreshContract: () => void;
 }
 
 const disputeReasons = [
@@ -32,7 +33,11 @@ const disputeReasons = [
   "Other",
 ];
 
-const StartDisputeDialog = ({ contractId, children }: DisputeDialogProps) => {
+const StartDisputeDialog = ({
+  contractId,
+  children,
+  refreshContract,
+}: DisputeDialogProps) => {
   const { startDispute } = useLenderHttpClient();
 
   const [disputeReason, setDisputeReason] = useState(disputeReasons[0]);
@@ -48,6 +53,7 @@ const StartDisputeDialog = ({ contractId, children }: DisputeDialogProps) => {
       setErrorMessage(null); // Clear any previous error message
       await startDispute(contractId, disputeReason, disputeDetails);
       setIsSubmitted(true);
+      refreshContract();
     } catch (error: any) {
       console.error("Error submitting dispute:", error);
       setErrorMessage(error?.message || "An unexpected error occurred.");

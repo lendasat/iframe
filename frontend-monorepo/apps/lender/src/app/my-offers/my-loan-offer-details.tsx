@@ -2,7 +2,7 @@ import {
   LoanOfferStatus,
   useLenderHttpClient,
 } from "@frontend/http-client-lender";
-import { formatCurrency, LoanAssetHelper } from "@frontend/ui-shared";
+import { formatCurrency, LoanAssetHelper, ONE_YEAR } from "@frontend/ui-shared";
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAsync } from "react-use";
@@ -191,6 +191,48 @@ function MyLoanOfferDetails() {
                 </div>
               </div>
 
+              {/* Extensions */}
+              <div className="space-y-1">
+                <Label className="text-muted-foreground">Loan Extension</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    className="flex-1 rounded-lg text-sm"
+                    type="text"
+                    placeholder="Extension duration"
+                    value={
+                      offer.extension_max_duration_days > 0
+                        ? offer.extension_max_duration_days
+                        : "Disabled"
+                    }
+                    disabled={true}
+                  />
+                  <span className="text-sm font-medium text-muted-foreground">
+                    1 - {ONE_YEAR}
+                  </span>
+                </div>
+              </div>
+
+              {/* Extensions */}
+              {offer.extension_interest_rate && (
+                <div className="space-y-1">
+                  <Label className="text-muted-foreground">
+                    Loan Extension Interest
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      className="flex-1 rounded-lg text-sm"
+                      type="text"
+                      placeholder="Extension interest"
+                      value={(offer.extension_interest_rate * 100).toFixed(2)}
+                      disabled={true}
+                    />
+                    <span className="text-sm font-medium text-muted-foreground">
+                      1 - {ONE_YEAR}
+                    </span>
+                  </div>
+                </div>
+              )}
+
               {/* LTV */}
               <div className="space-y-1">
                 <Label className="text-muted-foreground">
@@ -205,7 +247,7 @@ function MyLoanOfferDetails() {
                     disabled={true}
                   />
                   <span className="text-sm font-medium text-muted-foreground">
-                    1 - 100
+                    1% - 70%
                   </span>
                 </div>
               </div>

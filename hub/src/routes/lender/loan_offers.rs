@@ -1,6 +1,7 @@
 use crate::db;
 use crate::model::lender_feature_flags;
 use crate::model::CreateLoanOfferSchema;
+use crate::model::ExtensionPolicy;
 use crate::model::Lender;
 use crate::model::LoanAsset;
 use crate::model::LoanOfferStatus;
@@ -172,6 +173,14 @@ pub async fn create_loan_offer(
         return Err((StatusCode::BAD_REQUEST, Json(error_response)));
     }
 
+    let (extension_max_duration_days, extension_interest_rate) = match offer.extension_policy {
+        ExtensionPolicy::DoNotExtend => (0, None),
+        ExtensionPolicy::AfterHalfway {
+            interest_rate,
+            max_duration_days,
+        } => (max_duration_days, Some(interest_rate)),
+    };
+
     let offer = LoanOffer {
         id: offer.loan_deal_id,
         lender: lender_stats,
@@ -191,6 +200,8 @@ pub async fn create_loan_offer(
         loan_repayment_address: offer.loan_repayment_address,
         origination_fee,
         kyc_link: offer.kyc_link,
+        extension_max_duration_days,
+        extension_interest_rate,
         created_at: offer.created_at,
         updated_at: offer.updated_at,
     };
@@ -224,6 +235,9 @@ pub struct LoanOffer {
     pub loan_repayment_address: String,
     pub origination_fee: Vec<OriginationFee>,
     pub kyc_link: Option<Url>,
+    pub extension_max_duration_days: u64,
+    #[serde(with = "rust_decimal::serde::float_option")]
+    pub extension_interest_rate: Option<Decimal>,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
     #[serde(with = "time::serde::rfc3339")]
@@ -275,6 +289,14 @@ pub async fn get_my_loan_offers(
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
             })?;
 
+        let (extension_max_duration_days, extension_interest_rate) = match offer.extension_policy {
+            ExtensionPolicy::DoNotExtend => (0, None),
+            ExtensionPolicy::AfterHalfway {
+                interest_rate,
+                max_duration_days,
+            } => (max_duration_days, Some(interest_rate)),
+        };
+
         let offer = LoanOffer {
             id: offer.loan_deal_id,
             lender: lender_stats,
@@ -294,6 +316,8 @@ pub async fn get_my_loan_offers(
             loan_repayment_address: offer.loan_repayment_address,
             origination_fee,
             kyc_link: offer.kyc_link,
+            extension_max_duration_days,
+            extension_interest_rate,
             created_at: offer.created_at,
             updated_at: offer.updated_at,
         };
@@ -349,6 +373,14 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
             (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
         })?;
 
+    let (extension_max_duration_days, extension_interest_rate) = match offer.extension_policy {
+        ExtensionPolicy::DoNotExtend => (0, None),
+        ExtensionPolicy::AfterHalfway {
+            interest_rate,
+            max_duration_days,
+        } => (max_duration_days, Some(interest_rate)),
+    };
+
     let loan = LoanOffer {
         id: offer.loan_deal_id,
         lender: lender_stats,
@@ -368,6 +400,9 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
         loan_repayment_address: offer.loan_repayment_address,
         origination_fee,
         kyc_link: offer.kyc_link,
+
+        extension_max_duration_days,
+        extension_interest_rate,
         created_at: offer.created_at,
         updated_at: offer.updated_at,
     };
@@ -417,6 +452,14 @@ pub async fn get_loan_offers(
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
             })?;
 
+        let (extension_max_duration_days, extension_interest_rate) = match offer.extension_policy {
+            ExtensionPolicy::DoNotExtend => (0, None),
+            ExtensionPolicy::AfterHalfway {
+                interest_rate,
+                max_duration_days,
+            } => (max_duration_days, Some(interest_rate)),
+        };
+
         ret.push(LoanOffer {
             id: offer.loan_deal_id,
             lender: lender_stats,
@@ -436,6 +479,8 @@ pub async fn get_loan_offers(
             loan_repayment_address: offer.loan_repayment_address,
             origination_fee,
             kyc_link: offer.kyc_link,
+            extension_max_duration_days,
+            extension_interest_rate,
             created_at: offer.created_at,
             updated_at: offer.updated_at,
         })
@@ -491,6 +536,14 @@ pub async fn get_loan_offer_by_id(
             (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
         })?;
 
+    let (extension_max_duration_days, extension_interest_rate) = match offer.extension_policy {
+        ExtensionPolicy::DoNotExtend => (0, None),
+        ExtensionPolicy::AfterHalfway {
+            interest_rate,
+            max_duration_days,
+        } => (max_duration_days, Some(interest_rate)),
+    };
+
     let loan = LoanOffer {
         id: offer.loan_deal_id,
         lender: lender_stats,
@@ -510,6 +563,8 @@ pub async fn get_loan_offer_by_id(
         loan_repayment_address: offer.loan_repayment_address,
         origination_fee,
         kyc_link: offer.kyc_link,
+        extension_max_duration_days,
+        extension_interest_rate,
         created_at: offer.created_at,
         updated_at: offer.updated_at,
     };

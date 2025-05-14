@@ -6,7 +6,6 @@ import {
   ScrollArea,
   Card,
   CardHeader,
-  CardTitle,
   CardDescription,
   CardContent,
   CardFooter,
@@ -18,7 +17,7 @@ import {
   SenderType,
   useLenderHttpClient,
 } from "@frontend/http-client-lender";
-import { useAsync } from "react-use";
+import { useAsync, useAsyncRetry } from "react-use";
 import { DisputeDetails } from "./dispute-details";
 import { LuPlus } from "react-icons/lu";
 import StartDisputeDialog from "../start-dispute-dialog";
@@ -68,10 +67,12 @@ export const formatSenderType = (type: SenderType): string => {
 
 interface DisputesComponentProps {
   contractId?: string;
+  refreshContract: () => void;
 }
 
 export const DisputesComponent: React.FC<DisputesComponentProps> = ({
   contractId,
+  refreshContract,
 }) => {
   const { fetchDisputeWithMessages } = useLenderHttpClient();
 
@@ -84,7 +85,8 @@ export const DisputesComponent: React.FC<DisputesComponentProps> = ({
     value: disputes = [],
     loading,
     error,
-  } = useAsync(async () => {
+    retry: refreshDisputes,
+  } = useAsyncRetry(async () => {
     if (!contractId) {
       return [];
     }
@@ -111,16 +113,21 @@ export const DisputesComponent: React.FC<DisputesComponentProps> = ({
   // If there are no disputes, show a simplified view with a create button
   if (disputes.length === 0 && !loading) {
     return (
-      <Card>
+      <Card className={"border-none shadow-none"}>
         <CardHeader>
-          <CardTitle>Disputes</CardTitle>
           <CardDescription>
             There are no disputes for this contract.
           </CardDescription>
         </CardHeader>
         <CardFooter>
           {contractId ? (
-            <StartDisputeDialog contractId={contractId}>
+            <StartDisputeDialog
+              contractId={contractId}
+              refreshContract={() => {
+                refreshDisputes();
+                refreshContract();
+              }}
+            >
               <Button>
                 <LuPlus className="mr-2 h-4 w-4" />
                 Create Dispute
@@ -138,10 +145,7 @@ export const DisputesComponent: React.FC<DisputesComponentProps> = ({
   }
 
   return (
-    <Card className="w-full max-w-4xl mx-auto">
-      <CardHeader>
-        <CardTitle>Contract Disputes</CardTitle>
-      </CardHeader>
+    <Card className="border-none shadow-none w-full max-w-4xl mx-auto">
       <CardContent className="space-y-4">
         {/* Scrollable horizontal list */}
         <ScrollArea className="w-full whitespace-nowrap rounded-md border">
@@ -177,12 +181,26 @@ export const DisputesComponent: React.FC<DisputesComponentProps> = ({
 
         {/* Content area that changes based on selection */}
         <div className="min-h-32">
-          {selectedDispute && <DisputeDetails dispute={selectedDispute} />}
+          {selectedDispute && (
+            <DisputeDetails
+              dispute={selectedDispute}
+              refreshContract={() => {
+                refreshDisputes();
+                refreshContract();
+              }}
+            />
+          )}
         </div>
       </CardContent>
       <CardFooter>
         {contractId ? (
-          <StartDisputeDialog contractId={contractId}>
+          <StartDisputeDialog
+            contractId={contractId}
+            refreshContract={() => {
+              refreshDisputes();
+              refreshContract();
+            }}
+          >
             <Button>
               <LuPlus className="mr-2 h-4 w-4" />
               Create Dispute

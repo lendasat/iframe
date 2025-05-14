@@ -24,10 +24,11 @@ import {
   useAuth,
   useLenderHttpClient,
 } from "@frontend/http-client-lender";
-import { useAsync } from "react-use";
+import { useAsync, useAsyncRetry } from "react-use";
 import { ContractDetailsFooter } from "./contract-details-footer";
 import { Chat } from "@frontend/nostr-chat";
 import DisputesComponent from "./disputes/disputes";
+import ExtensionSettings from "./extension-settings";
 
 export function contractStatusLabelColor(status?: ContractStatus): string {
   if (!status) {
@@ -86,7 +87,8 @@ const EnhancedBitcoinLoan = () => {
     value: contract,
     loading,
     error,
-  } = useAsync(async () => {
+    retry,
+  } = useAsyncRetry(async () => {
     if (id) {
       return getContract(id);
     } else {
@@ -168,16 +170,17 @@ const EnhancedBitcoinLoan = () => {
                 className="w-full flex-grow flex flex-col"
               >
                 <div className="px-4 flex-shrink-0">
-                  <TabsList className="grid grid-cols-4">
+                  <TabsList className="grid grid-cols-5">
                     <TabsTrigger value="details">Loan Details</TabsTrigger>
                     <TabsTrigger value="collateral">Collateral</TabsTrigger>
                     <TabsTrigger value="timeline">Timeline</TabsTrigger>
+                    <TabsTrigger value="extension">
+                      Extension Settings
+                    </TabsTrigger>
                     <TabsTrigger value="disputes">Disputes</TabsTrigger>
                   </TabsList>
                 </div>
 
-                {/* Inner ScrollArea for tab content */}
-                {/*<ScrollArea>*/}
                 <div className="p-4">
                   <TabsContent value="details" className="m-0">
                     <Details contract={contract} />
@@ -191,11 +194,20 @@ const EnhancedBitcoinLoan = () => {
                     <Timeline contract={contract} />
                   </TabsContent>
 
+                  <TabsContent value="extension" className="m-0">
+                    <ExtensionSettings
+                      contract={contract}
+                      refreshContract={retry}
+                    />
+                  </TabsContent>
+
                   <TabsContent value="disputes" className="m-0">
-                    <DisputesComponent contractId={contract?.id} />
+                    <DisputesComponent
+                      contractId={contract?.id}
+                      refreshContract={retry}
+                    />
                   </TabsContent>
                 </div>
-                {/*</ScrollArea>*/}
               </Tabs>
 
               <CardFooter className="flex-shrink-0 flex justify-between border-t pt-4">

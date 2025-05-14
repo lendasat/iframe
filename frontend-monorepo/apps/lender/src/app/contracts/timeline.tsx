@@ -1,4 +1,4 @@
-import { Badge, Button, CardContent, ScrollArea } from "@frontend/shadcn";
+import { Badge, Button, Card, CardContent, ScrollArea } from "@frontend/shadcn";
 import React, { useState } from "react";
 import { contractStatusLabelColor } from "./bitcoin-loan-component";
 import {
@@ -9,7 +9,7 @@ import {
 import { format } from "date-fns";
 import { parseRFC3339Date } from "@frontend/http-client-lender/src/lib/utils";
 import { LuCheck, LuClipboard, LuExternalLink } from "react-icons/lu";
-import { getTxUrl, TransactionType } from "@frontend/ui-shared";
+import { getTxUrl } from "@frontend/ui-shared";
 
 const shortenTxid = (txid: string) => {
   const firstSix = txid.slice(0, 4);
@@ -53,99 +53,99 @@ export const Timeline = ({ contract }: TimelineProps) => {
   };
 
   return (
-    <CardContent className="pt-2">
-      <h3 className="text-lg font-medium mb-4">Loan Timeline</h3>
+    <Card className={"border-none shadow-none"}>
+      <CardContent className="pt-2">
+        <ScrollArea className="h-80 w-full">
+          <div className="p-4">
+            <div className="space-y-4">
+              {timelineEvents.map((event, index) => {
+                let url = undefined;
 
-      <ScrollArea className="h-80 w-full">
-        <div className="p-4">
-          <div className="space-y-4">
-            {timelineEvents.map((event, index) => {
-              let url = undefined;
-
-              if (event.txid) {
-                if (
-                  event.event === ContractStatus.CollateralConfirmed ||
-                  event.event === ContractStatus.CollateralSeen ||
-                  event.event === ContractStatus.Closed
-                ) {
-                  url = `${import.meta.env.VITE_MEMPOOL_REST_URL}/tx/${event.txid}`;
-                } else {
-                  url = getTxUrl(event.txid, contract?.loan_asset);
+                if (event.txid) {
+                  if (
+                    event.event === ContractStatus.CollateralConfirmed ||
+                    event.event === ContractStatus.CollateralSeen ||
+                    event.event === ContractStatus.Closed
+                  ) {
+                    url = `${import.meta.env.VITE_MEMPOOL_REST_URL}/tx/${event.txid}`;
+                  } else {
+                    url = getTxUrl(event.txid, contract?.loan_asset);
+                  }
                 }
-              }
 
-              return (
-                <div key={index} className="relative pl-6 pb-4">
-                  {/* Vertical line */}
-                  {index < timelineEvents.length - 1 && (
-                    <div className="absolute left-[9px] top-[24px] bottom-0 w-0.5 bg-gray-200" />
-                  )}
-
-                  {/* Timeline dot */}
-                  <div
-                    className={`absolute top-1 left-0 rounded-full w-[18px] h-[18px] ${currentStateColor} border-2 border-white ring-1 ring-gray-200`}
-                  />
-
-                  <div>
-                    <div className="flex justify-between items-center">
-                      <p className="font-medium">
-                        {contractStatusToLabelString(event.event)}
-                      </p>
-                      <Badge variant="outline" className="text-xs">
-                        {format(event.date, "MMM, dd yyyy - p")}
-                      </Badge>
-                    </div>
-                    {event.txid && url && (
-                      <div className="flex items-center justify-between space-x-2">
-                        <p className="text-sm text-gray-600 mb-1">
-                          Transaction id
-                        </p>
-                        <div className="flex items-center">
-                          <p className="text-xs text-gray-600 mt-1 font-mono mr-2">
-                            {shortenTxid(event.txid)}
-                          </p>
-                          <Button
-                            size="icon"
-                            variant="outline"
-                            className="h-6 w-6"
-                            onClick={() => handleCopyTxid(event.txid || "")}
-                          >
-                            {txidCopied ? (
-                              <LuCheck className="h-4 w-4" />
-                            ) : (
-                              <LuClipboard className="h-4 w-4" />
-                            )}
-                          </Button>
-                          <Button
-                            asChild
-                            size={"icon"}
-                            variant={"ghost"}
-                            className="h-6 w-6"
-                          >
-                            <a
-                              href={url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center"
-                            >
-                              <LuExternalLink className="h-4 w-4" />{" "}
-                            </a>
-                          </Button>
-                        </div>
-                      </div>
+                return (
+                  <div key={index} className="relative pl-6 pb-4">
+                    {/* Vertical line */}
+                    {index < timelineEvents.length - 1 && (
+                      <div className="absolute left-[9px] top-[24px] bottom-0 w-0.5 bg-gray-200" />
                     )}
 
-                    <p className="text-sm text-gray-600 mb-1">
-                      {contractStatusDescription(event.event)}
-                    </p>
+                    {/* Timeline dot */}
+                    <div
+                      className={`absolute top-1 left-0 rounded-full w-[18px] h-[18px] ${currentStateColor} border-2 border-white ring-1 ring-gray-200`}
+                    />
+
+                    <div>
+                      <div className="flex justify-between items-center">
+                        <p className="font-medium">
+                          {contractStatusToLabelString(event.event)}
+                        </p>
+                        <Badge variant="outline" className="text-xs">
+                          {format(event.date, "MMM, dd yyyy - p")}
+                        </Badge>
+                      </div>
+                      {event.txid && url && (
+                        <div className="flex items-center justify-between space-x-2">
+                          <p className="text-sm text-gray-600 mb-1">
+                            Transaction id
+                          </p>
+                          <div className="flex items-center">
+                            <p className="text-xs text-gray-600 mt-1 font-mono mr-2">
+                              {shortenTxid(event.txid)}
+                            </p>
+                            <Button
+                              size="icon"
+                              variant="outline"
+                              className="h-6 w-6"
+                              onClick={() => handleCopyTxid(event.txid || "")}
+                            >
+                              {txidCopied ? (
+                                <LuCheck className="h-4 w-4" />
+                              ) : (
+                                <LuClipboard className="h-4 w-4" />
+                              )}
+                            </Button>
+                            <Button
+                              asChild
+                              size={"icon"}
+                              variant={"ghost"}
+                              className="h-6 w-6"
+                            >
+                              <a
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center"
+                              >
+                                <LuExternalLink className="h-4 w-4" />{" "}
+                              </a>
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      <p className="text-sm text-gray-600 mb-1">
+                        {contractStatusDescription(event.event)}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
-      </ScrollArea>
-    </CardContent>
+        </ScrollArea>
+      </CardContent>
+    </Card>
   );
 };
 
