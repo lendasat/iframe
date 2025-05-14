@@ -27,6 +27,7 @@ import {
   NotifyUser,
   PutUpdateProfile,
   TakeLoanApplicationSchema,
+  ExtensionPolicy,
 } from "./models";
 import { parseRFC3339Date } from "./utils";
 
@@ -1034,6 +1035,32 @@ export class HttpClientLender extends BaseHttpClient {
       }
     }
   };
+
+  updateExtensionPolicy = async (
+    contractId: string,
+    extensionPolicy: ExtensionPolicy,
+  ): Promise<void> => {
+    try {
+      await this.httpClient.put(
+        `/api/contracts/${contractId}/extension-policy`,
+        extensionPolicy,
+      );
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data.message;
+        console.error(
+          `Failed to update extension policy ${
+            error.response?.status
+          } and response: ${JSON.stringify(error.response?.data)}`,
+        );
+        throw new Error(message);
+      } else {
+        throw new Error(
+          `Failed to update extension policy ${JSON.stringify(error)}`,
+        );
+      }
+    }
+  };
 }
 
 type LenderHttpClientContextType = Pick<
@@ -1070,6 +1097,7 @@ type LenderHttpClientContextType = Pick<
   | "fetchDisputeWithMessages"
   | "commentOnDispute"
   | "resolveDispute"
+  | "updateExtensionPolicy"
 >;
 
 export const LenderHttpClientContext = createContext<
@@ -1152,6 +1180,7 @@ export const HttpClientLenderProvider: React.FC<HttpClientProviderProps> = ({
       httpClient.fetchDisputeWithMessages.bind(httpClient),
     commentOnDispute: httpClient.commentOnDispute.bind(httpClient),
     resolveDispute: httpClient.resolveDispute.bind(httpClient),
+    updateExtensionPolicy: httpClient.updateExtensionPolicy.bind(httpClient),
   };
 
   return (

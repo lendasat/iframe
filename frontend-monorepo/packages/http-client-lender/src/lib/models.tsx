@@ -68,6 +68,8 @@ export interface Contract {
   borrower_npub: string;
   borrower_pk: string;
   timeline: TimelineEvent[];
+  extension_max_duration_days: number;
+  extension_interest_rate?: number;
 }
 
 export interface TimelineEvent {
@@ -470,4 +472,9 @@ export interface ContractDisputeMessage {
 // Interface that combines a dispute with its messages
 export interface DisputeWithMessages extends ContractDispute {
   messages: ContractDisputeMessage[];
+}
+
+export interface ExtensionPolicy {
+  extension_max_duration_days: number;
+  extension_interest_rate: number;
 }
