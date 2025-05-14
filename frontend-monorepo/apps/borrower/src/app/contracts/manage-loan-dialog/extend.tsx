@@ -250,7 +250,7 @@ function populateNotAllowedDurations(extension_max_duration_days: number) {
     "1m": 30,
     "3m": 90,
     "6m": 180,
-    "12m": 365,
+    "12m": ONE_YEAR,
   };
 
   // Check each duration if it falls outside the available range
