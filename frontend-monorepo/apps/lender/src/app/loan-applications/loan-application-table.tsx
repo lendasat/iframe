@@ -151,9 +151,6 @@ export function LoanApplicationTable({
   enableActionColumn,
   onActionColumnAction,
 }: LoanApplicationTableProps) {
-  console.log(
-    `LoanApplicationTable loaded: ${JSON.stringify(loanApplications[0])}`,
-  );
 
   const columns = [
     columnHelper.accessor((row) => row.borrower, {

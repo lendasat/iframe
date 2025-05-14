@@ -27,6 +27,7 @@ export enum LoanAsset {
   USD = "Usd",
   EUR = "Eur",
   CHF = "Chf",
+  MXN = "Mxn",
 }
 
 export enum LoanPayout {
@@ -68,6 +69,8 @@ export class LoanAssetHelper {
         return "EUR";
       case LoanAsset.CHF:
         return "CHF";
+      case LoanAsset.MXN:
+        return "MXN";
     }
   }
 
@@ -85,6 +88,7 @@ export class LoanAssetHelper {
       LoanAsset.USD,
       LoanAsset.EUR,
       LoanAsset.CHF,
+      LoanAsset.MXN,
     ];
   }
 
@@ -103,7 +107,7 @@ export class LoanAssetHelper {
   }
 
   static allFiatCoins(): LoanAsset[] {
-    return [LoanAsset.USD, LoanAsset.EUR, LoanAsset.CHF];
+    return [LoanAsset.USD, LoanAsset.EUR, LoanAsset.CHF, LoanAsset.MXN];
   }
 
   static toChain(loanAsset: LoanAsset) {
@@ -125,6 +129,7 @@ export class LoanAssetHelper {
       case LoanAsset.EUR:
       case LoanAsset.USD:
       case LoanAsset.CHF:
+      case LoanAsset.MXN:
         // Fiat runs on the fiat chain 😅
         return "Fiat";
     }
@@ -149,6 +154,8 @@ export class LoanAssetHelper {
         return "EUR";
       case LoanAsset.CHF:
         return "CHF";
+      case LoanAsset.MXN:
+        return "MXN";
     }
   }
 
@@ -167,6 +174,7 @@ export class LoanAssetHelper {
       case LoanAsset.USD:
       case LoanAsset.EUR:
       case LoanAsset.CHF:
+      case LoanAsset.MXN:
         return false;
     }
   }
@@ -186,6 +194,7 @@ export class LoanAssetHelper {
       case LoanAsset.USD:
       case LoanAsset.EUR:
       case LoanAsset.CHF:
+      case LoanAsset.MXN:
         return true;
     }
   }
@@ -212,6 +221,7 @@ export class LoanAssetHelper {
       case LoanAsset.CHF:
       case LoanAsset.EUR:
       case LoanAsset.USD:
+      case LoanAsset.MXN:
         // Fiat coins do not have a contract URL
         return "";
     }

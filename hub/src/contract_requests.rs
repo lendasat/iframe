@@ -1,3 +1,4 @@
+use crate::model::calculate_interest_usd;
 use anyhow::Context;
 use bitcoin_units::Amount;
 use rust_decimal::prelude::ToPrimitive;
@@ -25,11 +26,16 @@ pub fn calculate_origination_fee(
 }
 
 pub fn calculate_initial_collateral(
-    loan_amount: Decimal,
+    loan_amount_usd: Decimal,
+    yearly_interest_rate: Decimal,
+    duration_days: u32,
     ltv: Decimal,
     initial_price: Decimal,
 ) -> anyhow::Result<Amount> {
-    let collateral_value_usd = loan_amount
+    let interest_usd = calculate_interest_usd(loan_amount_usd, yearly_interest_rate, duration_days);
+    let outstanding_balance_usd = loan_amount_usd + interest_usd;
+
+    let collateral_value_usd = outstanding_balance_usd
         .checked_div(ltv)
         .context("Failed to calculate collateral in USD")?;
 

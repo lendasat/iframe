@@ -17,7 +17,7 @@ export function SiteHeader() {
   } else if (path.startsWith("/my-offers")) {
     header = "Edit Loan";
   } else if (path.startsWith("/loan-application")) {
-    header = "Apply for a Loan";
+    header = "Take a Loan Request";
   } else if (path.startsWith("/loan-applications")) {
     header = "My Applications";
   } else if (path.startsWith("/my-contracts")) {

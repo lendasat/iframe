@@ -239,6 +239,7 @@ export interface Contract {
   fiat_loan_details_lender?: FiatLoanDetailsResponse;
   lender_npub: string;
   borrower_pk: string;
+  lender_pk: string;
   borrower_npub: string;
   borrower_derivation_path: string;
   timeline: TimelineEvent[];

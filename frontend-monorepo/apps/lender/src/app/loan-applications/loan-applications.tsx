@@ -1,32 +1,4 @@
-import {
-  Box,
-  Button,
-  Callout,
-  DataList,
-  Flex,
-  Grid,
-  Heading,
-  ScrollArea,
-  Skeleton,
-  Text,
-} from "@radix-ui/themes";
-import { Form } from "react-bootstrap";
-import { FaInfoCircle } from "react-icons/fa";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faWarning } from "@fortawesome/free-solid-svg-icons";
-import {
-  formatCurrency,
-  getFormatedStringFromDays,
-  InterestRateInfoLabel,
-  LiquidationPriceInfoLabel,
-  LoanAddressInputField,
-  LoanAsset,
-  LoanAssetHelper,
-  LtvInfoLabel,
-  newFormatCurrency,
-  ONE_YEAR,
-  usePrice,
-} from "@frontend/ui-shared";
+import { useState, ReactNode } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAsync } from "react-use";
 import { useWallet } from "@frontend/browser-wallet";
@@ -34,24 +6,59 @@ import {
   LoanApplicationStatus,
   useLenderHttpClient,
 } from "@frontend/http-client-lender";
-import { useState } from "react";
 import { addDays } from "date-fns";
+import { AlertCircle, Info } from "lucide-react";
+import { FiatLoanDetails } from "@frontend/base-http-client";
+import { AlertTitle, Card, CardContent } from "@frontend/shadcn";
+import { Button } from "@frontend/shadcn";
+import { Alert, AlertDescription } from "@frontend/shadcn";
+import { ScrollArea } from "@frontend/shadcn";
+import { Skeleton } from "@frontend/shadcn";
+import { Separator } from "@frontend/shadcn";
+
+import {
+  formatCurrency,
+  getFormatedStringFromDays,
+  LoanAddressInputField,
+  LoanAsset,
+  LoanAssetHelper,
+  newFormatCurrency,
+  ONE_YEAR,
+} from "@frontend/ui-shared";
+
+import AddFiatDetailsDialog from "./add-fiat-details-dialog";
+
+// Type for DataItem props
+interface DataItemProps {
+  label: string;
+  value: ReactNode;
+  icon?: ReactNode;
+}
+
+// Type for take loan application params
+interface TakeLoanParams {
+  lender_npub: string;
+  lender_pk: string;
+  lender_derivation_path: string;
+  loan_repayment_address: string;
+  fiat_loan_details?: FiatLoanDetails;
+}
 
 export default function TakeLoanApplication() {
   const navigate = useNavigate();
   const { getNpub, getPkAndDerivationPath } = useWallet();
-  const { id } = useParams();
-  const { latestPrice } = usePrice();
+  const { id } = useParams<{ id: string }>();
 
   const { getLoanApplication, takeLoanApplication } = useLenderHttpClient();
-  const [isTaking, setIsTaking] = useState(false);
-  const [error, setError] = useState("");
-  const [loanAddress, setLoanAddress] = useState("");
-  const [hideWalletConnectButton, setHideWalletConnectButton] = useState(false);
+  const [isTaking, setIsTaking] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
+  const [loanAddress, setLoanAddress] = useState<string>("");
+  const [hideWalletConnectButton, setHideWalletConnectButton] =
+    useState<boolean>(false);
 
   const {
     value: loanApplication,
-    loading,
+    loading: loanApplicationLoading,
     error: loadingApplicationError,
   } = useAsync(async () => {
     if (id) {
@@ -60,51 +67,76 @@ export default function TakeLoanApplication() {
     return undefined;
   }, [id]);
 
-  const interestRate = loanApplication?.interest_rate;
+  const {
+    value: lenderPubkey,
+    loading: lenderPkLoading,
+    error: lenderPkError,
+  } = useAsync(async () => {
+    return await getPkAndDerivationPath();
+  });
 
-  const actualInterest =
+  if (lenderPkError) {
+    console.error(`Couldn't get pubkey ${lenderPkError}`);
+  }
+
+  const loading: boolean = lenderPkLoading || loanApplicationLoading;
+
+  const interestRate: number | undefined = loanApplication?.interest_rate;
+
+  const actualInterest: number | undefined =
     loanApplication &&
-    loanApplication.interest_rate / (ONE_YEAR / loanApplication.duration_days);
+    (loanApplication.interest_rate / ONE_YEAR) * loanApplication.duration_days;
 
-  const actualInterestUsdAmount =
+  const actualInterestUsdAmount: number | undefined =
     loanApplication &&
-    loanApplication.loan_amount * loanApplication.interest_rate;
+    actualInterest &&
+    loanApplication.loan_amount * actualInterest;
 
-  const collateralAmountBtc =
-    loanApplication &&
-    loanApplication.loan_amount / latestPrice / loanApplication.ltv;
-  const collateralUsdAmount =
-    loanApplication && loanApplication.loan_amount / loanApplication.ltv;
+  const liquidationPrice: number | undefined =
+    loanApplication?.liquidation_price;
 
-  const liquidationPrice = loanApplication?.liquidation_price; // share this from the backend
-
-  const expiry =
+  const expiry: Date | undefined =
     loanApplication && addDays(new Date(), loanApplication.duration_days);
 
-  const onSubmit = async () => {
+  const onSubmit = async (
+    encryptedFiatLoanDetails?: FiatLoanDetails,
+  ): Promise<void> => {
     try {
       if (!id) {
         setError("No loan application selected");
         return;
       }
 
-      setIsTaking(true);
-      const lenderNpub = await getNpub();
-      const pubkey = await getPkAndDerivationPath();
-
-      if (!loanAddress || loanAddress.trim().length === 0) {
-        setError("No loan address provided");
+      if (!lenderPubkey) {
+        setError("No pubkey set");
         return;
       }
-      const contractId = await takeLoanApplication(id, {
+
+      setIsTaking(true);
+      const lenderNpub: string = await getNpub();
+
+      if (
+        !encryptedFiatLoanDetails &&
+        (!loanAddress || loanAddress.trim().length === 0)
+      ) {
+        setError("No payout details provided");
+        return;
+      }
+
+      const params: TakeLoanParams = {
         lender_npub: lenderNpub,
-        lender_pk: pubkey.pubkey,
-        lender_derivation_path: pubkey.path,
+        lender_pk: lenderPubkey.pubkey,
+        lender_derivation_path: lenderPubkey.path,
         loan_repayment_address: loanAddress,
-      });
-      //
+        fiat_loan_details: encryptedFiatLoanDetails,
+      };
+
+      const contractId: string | undefined = await takeLoanApplication(
+        id,
+        params,
+      );
+
       if (contractId !== undefined) {
-        // TODO: once we can edit, we should jump right to the newly created application
         navigate(`/my-contracts/${contractId}`);
       } else {
         setError("Failed at taking loan application.");
@@ -117,203 +149,164 @@ export default function TakeLoanApplication() {
     }
   };
 
-  const buttonDisabled =
-    loanApplication?.status !== LoanApplicationStatus.Available;
+  const buttonDisabled: boolean =
+    loading || loanApplication?.status !== LoanApplicationStatus.Available;
+
+  const isFiatLoanApplication: boolean =
+    (loanApplication && LoanAssetHelper.isFiat(loanApplication?.loan_asset)) ||
+    false;
+
+  // Helper component for data list items
+  const DataItem = ({ label, value, icon }: DataItemProps) => (
+    <div className="flex justify-between items-center py-2">
+      <div className="flex items-center gap-2">
+        {icon && icon}
+        {label}
+      </div>
+      <div className="text-sm font-semibold">{value}</div>
+    </div>
+  );
 
   return (
-    <ScrollArea type="always" scrollbars="vertical">
-      <Form className="space-y-4">
-        <Grid
-          align={"center"}
-          columns={{ initial: "1", md: "2" }}
-          gap="3"
-          width="auto"
-        >
-          <Box className="h-full rounded-lg border border-gray-200 p-6">
-            <Heading size="4" mb="4" className="text-font dark:text-font-dark">
-              <Flex gap={"2"}>
-                <Text>You will lend</Text>
-                <Text>
-                  <strong>
-                    <Skeleton loading={loading} width={"100px"} height={"20px"}>
+    <ScrollArea className="h-full w-full">
+      <div className="p-4 space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <h4 className="text-lg font-medium">
+                  You will lend{" "}
+                  {loading ? (
+                    <Skeleton className="inline-block w-24 h-5" />
+                  ) : (
+                    <strong>
                       {loanApplication &&
                         formatCurrency(loanApplication.loan_amount)}
-                    </Skeleton>
-                  </strong>
-                </Text>
-                <Text>for</Text>
-                <Text>
-                  <Skeleton loading={loading} width={"100px"} height={"20px"}>
-                    {loanApplication &&
-                      getFormatedStringFromDays(loanApplication.duration_days)}
-                  </Skeleton>
-                </Text>
-              </Flex>
-            </Heading>
-            <DataList.Root>
-              <DataList.Item>
-                <DataList.Label minWidth="88px">
-                  <Flex align={"center"} gap={"2"}>
-                    Interest
-                    <InterestRateInfoLabel>
-                      <FaInfoCircle />
-                    </InterestRateInfoLabel>
-                  </Flex>
-                </DataList.Label>
-                <DataList.Value className="flex flex-1 justify-end">
-                  <div className="flex flex-col">
-                    {loanApplication?.duration_days !== ONE_YEAR && (
-                      <Skeleton
-                        loading={loading}
-                        width={"100px"}
-                        height={"20px"}
-                      >
-                        <Flex gap={"2"}>
-                          <Text className="text-font/70 dark:text-font-dark/70 text-[13px] font-semibold">
+                    </strong>
+                  )}{" "}
+                  for{" "}
+                  {loading ? (
+                    <Skeleton className="inline-block w-24 h-5" />
+                  ) : (
+                    loanApplication &&
+                    getFormatedStringFromDays(loanApplication.duration_days)
+                  )}
+                </h4>
+              </div>
+
+              <Separator className="my-4" />
+
+              <DataItem
+                label="Interest Rate"
+                icon={<Info size={16} />}
+                value={
+                  loading ? (
+                    <Skeleton className="w-24 h-5" />
+                  ) : (
+                    <div className="flex flex-col items-end">
+                      {loanApplication?.duration_days !== ONE_YEAR && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold">
                             {actualInterest &&
                               (actualInterest * 100).toFixed(2)}
                             %
-                          </Text>
-                          <Text className="text-font/70 dark:text-font-dark/50 mt-0.5 self-end text-[11px]">
+                          </span>
+                          <span className="text-xs text-muted-foreground">
                             ({interestRate && (interestRate * 100).toFixed(1)}%
                             p.a.)
-                          </Text>
-                        </Flex>
-                      </Skeleton>
-                    )}
-                    {loanApplication?.duration_days === ONE_YEAR && (
-                      <Text className="text-font/70 dark:text-font-dark/70 text-[13px] font-semibold">
-                        <Skeleton loading={loading}>
+                          </span>
+                        </div>
+                      )}
+                      {loanApplication?.duration_days === ONE_YEAR && (
+                        <span className="text-sm font-semibold">
                           {actualInterest && (actualInterest * 100).toFixed(2)}%
-                        </Skeleton>
-                        p.a.
-                      </Text>
-                    )}
-                    <Text className="text-font/50 dark:text-font-dark/50 mt-0.5 self-end text-[11px]">
-                      ≈{" "}
-                      <Skeleton
-                        loading={loading}
-                        width={"100px"}
-                        height={"20px"}
-                      >
+                          p.a.
+                        </span>
+                      )}
+                      <span className="text-xs text-muted-foreground">
+                        ≈{" "}
                         {actualInterestUsdAmount &&
                           formatCurrency(actualInterestUsdAmount, 1, 1)}{" "}
-                      </Skeleton>
-                      in total
-                    </Text>
-                  </div>
-                </DataList.Value>
-              </DataList.Item>
-              <DataList.Item>
-                <DataList.Label minWidth="88px">
-                  <Flex align={"center"} gap={"2"}>
-                    <Flex direction={"column"}>
-                      <p>Needed collateral</p>
-                      <Text size={"1"}>
-                        <Skeleton
-                          loading={loading}
-                          width={"100px"}
-                          height={"20px"}
-                        >
-                          (
-                          {loanApplication &&
-                            (loanApplication?.ltv * 100).toFixed(0)}
-                          % LTV)
-                        </Skeleton>
-                      </Text>
-                    </Flex>
-                    <LtvInfoLabel>
-                      <FaInfoCircle />
-                    </LtvInfoLabel>
-                  </Flex>
-                </DataList.Label>
-                <DataList.Value className="flex flex-1 justify-end">
-                  <div className="flex flex-col">
-                    <Skeleton loading={loading} width={"100px"} height={"20px"}>
-                      <Text className="text-font/70 dark:text-font-dark/70 text-[13px] font-semibold capitalize">
-                        {collateralAmountBtc?.toFixed(8)} BTC
-                      </Text>
-                    </Skeleton>
-                    <Text className="text-font/50 dark:text-font-dark/50 mt-0.5 self-end text-[11px]">
-                      ≈{" "}
-                      <Skeleton
-                        loading={loading}
-                        width={"100px"}
-                        height={"20px"}
-                      >
-                        {collateralUsdAmount &&
-                          formatCurrency(collateralUsdAmount)}
-                      </Skeleton>
-                    </Text>
-                  </div>
-                </DataList.Value>
-              </DataList.Item>
-              <DataList.Item>
-                <DataList.Label minWidth="88px">
-                  <Flex align={"center"} gap={"2"}>
-                    Liquidation Price
-                    <LiquidationPriceInfoLabel>
-                      <FaInfoCircle />
-                    </LiquidationPriceInfoLabel>
-                  </Flex>
-                </DataList.Label>
-                <DataList.Value className="flex flex-1 justify-end">
-                  <Text
-                    className={`text-font/70 dark:text-font-dark/70 text-[13px] font-semibold`}
-                  >
-                    <Skeleton loading={loading} width={"100px"} height={"20px"}>
+                        in total
+                      </span>
+                    </div>
+                  )
+                }
+              />
+
+              <Separator className="my-2" />
+
+              <DataItem
+                label="Liquidation Price"
+                icon={<Info size={16} />}
+                value={
+                  loading ? (
+                    <Skeleton className="w-24 h-5" />
+                  ) : (
+                    <span className="text-sm font-semibold">
                       {liquidationPrice &&
                         newFormatCurrency({
                           value: liquidationPrice,
                           maxFraction: 0,
                           minFraction: 1,
                         })}
-                    </Skeleton>
-                  </Text>
-                </DataList.Value>
-              </DataList.Item>
-              <DataList.Item>
-                <DataList.Label minWidth="88px">
-                  <Flex align={"center"} gap={"2"}>
-                    Expiry Date
-                  </Flex>
-                </DataList.Label>
-                <DataList.Value className="flex flex-1 justify-end">
-                  <Text
-                    className={`text-font/70 dark:text-font-dark/70 text-[13px] font-semibold`}
-                  >
-                    <Skeleton loading={loading} width={"100px"} height={"20px"}>
+                    </span>
+                  )
+                }
+              />
+
+              <Separator className="my-2" />
+
+              <DataItem
+                label="Expiry Date"
+                value={
+                  loading ? (
+                    <Skeleton className="w-24 h-5" />
+                  ) : (
+                    <span className="text-sm font-semibold">
                       {expiry?.toLocaleDateString([], {
                         day: "numeric",
                         month: "short",
                         year: "numeric",
                       })}
-                    </Skeleton>
-                  </Text>
-                </DataList.Value>
-              </DataList.Item>
-              <DataList.Item>
-                <DataList.Label minWidth="88px">Coin</DataList.Label>
-                <DataList.Value className="flex flex-1 justify-end">
-                  <Text
-                    className={`text-font/70 dark:text-font-dark/70 text-[13px] font-semibold`}
-                  >
-                    <Skeleton loading={loading}>
+                    </span>
+                  )
+                }
+              />
+
+              <Separator className="my-2" />
+
+              <DataItem
+                label="Loan Asset"
+                value={
+                  loading ? (
+                    <Skeleton className="w-24 h-5" />
+                  ) : (
+                    <span className="text-sm font-semibold">
                       {loanApplication &&
                         LoanAssetHelper.print(loanApplication.loan_asset)}
-                    </Skeleton>
-                  </Text>
-                </DataList.Value>
-              </DataList.Item>
-            </DataList.Root>
-          </Box>
-          <Box className="h-full rounded-lg border border-gray-200 p-6">
-            <Flex direction={"column"} gap={"2"}>
-              <DataList.Root orientation={"vertical"}>
-                <DataList.Item>
-                  <DataList.Label minWidth="88px">Loan address</DataList.Label>
-                  <DataList.Value className="w-full">
-                    <Flex direction={"column"} flexGrow={"1"}>
+                    </span>
+                  )
+                }
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6 flex flex-col gap-4">
+              {/* Right side card content with loading states */}
+              {loading ? (
+                // Skeleton loading state for the right card
+                <div className="space-y-4">
+                  <Skeleton className="w-full h-10" />
+                  <Skeleton className="w-full h-20" />
+                  <Skeleton className="w-full h-10" />
+                </div>
+              ) : (
+                // Actual content when loaded
+                <>
+                  {!isFiatLoanApplication && (
+                    <div className="space-y-2">
                       <LoanAddressInputField
                         loanAddress={loanAddress ?? ""}
                         setLoanAddress={setLoanAddress}
@@ -324,44 +317,87 @@ export default function TakeLoanApplication() {
                         }
                         renderWarning={true}
                       />
-                      <Text
-                        size={"1"}
-                        weight={"light"}
-                        className="text-font dark:text-font-dark"
-                      >
+                      <p className="text-sm text-muted-foreground">
                         This address will be used to transfer the loan amount
-                      </Text>
-                    </Flex>
-                  </DataList.Value>
-                </DataList.Item>
-              </DataList.Root>
-              <Button
-                size={"3"}
-                onClick={async (e) => {
-                  e.preventDefault();
-                  await onSubmit();
-                }}
-                loading={isTaking}
-                disabled={buttonDisabled}
-              >
-                Take loan application
-              </Button>
-              {(error || loadingApplicationError) && (
-                <Box px={"2"} className="md:col-span-2">
-                  <Callout.Root color="red" className="w-full">
-                    <Callout.Icon>
-                      <FontAwesomeIcon icon={faWarning} />
-                    </Callout.Icon>
-                    <Callout.Text>
-                      {error || loadingApplicationError?.message || ""}
-                    </Callout.Text>
-                  </Callout.Root>
-                </Box>
+                      </p>
+                    </div>
+                  )}
+
+                  {loanApplication && isFiatLoanApplication && lenderPubkey && (
+                    <div className={"w-full flex flex-col gap-2"}>
+                      <Alert>
+                        <Info className="h-4 w-4" />
+                        <AlertTitle>Heads up!</AlertTitle>
+                        <AlertDescription>
+                          <div>
+                            <p>
+                              You are lending USD{" "}
+                              {formatCurrency(loanApplication.loan_amount)} worth of{" "}
+                              {LoanAssetHelper.print(loanApplication.loan_asset)}.
+                              {loanApplication.loan_asset !== LoanAsset.USD && (
+                                <>
+                                  {" "}
+                                  This means{" "}
+                                  <span className="font-bold">
+                                    you need to send{" "}
+                                    {LoanAssetHelper.print(
+                                      loanApplication.loan_asset,
+                                    )}
+                                  </span>{" "}
+                                  to the borrower.
+                                </>
+                              )}{" "}
+                              Please provide your bank details so that the borrower
+                              can repay at expiry.
+                            </p>
+                          </div>
+                        </AlertDescription>
+                      </Alert>
+                      <AddFiatDetailsDialog
+                        borrowerPk={loanApplication?.borrower_pk}
+                        lenderPk={lenderPubkey.pubkey}
+                        onComplete={async (data: FiatLoanDetails) => {
+                          await onSubmit(data);
+                        }}
+                      >
+                        <Button
+                          size="default"
+                          className="w-full -px-4"
+                          disabled={buttonDisabled}
+                        >
+                          {isTaking ? "Processing..." : "Take loan application"}
+                        </Button>
+                      </AddFiatDetailsDialog>
+                    </div>
+                  )}
+
+                  {!isFiatLoanApplication && (
+                    <Button
+                      className="w-full -px-4"
+                      onClick={async (e: React.MouseEvent<HTMLButtonElement>) => {
+                        e.preventDefault();
+                        await onSubmit();
+                      }}
+                      disabled={buttonDisabled || isTaking}
+                    >
+                      {isTaking ? "Processing..." : "Take loan application"}
+                    </Button>
+                  )}
+                </>
               )}
-            </Flex>
-          </Box>
-        </Grid>
-      </Form>
+
+              {(error || loadingApplicationError) && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    {error || loadingApplicationError?.message || ""}
+                  </AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </ScrollArea>
   );
 }

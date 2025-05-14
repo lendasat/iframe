@@ -55,6 +55,7 @@ function TransactionLink({ transaction, loanAsset }: TransactionLinkProps) {
       case LoanAsset.EUR:
       case LoanAsset.USD:
       case LoanAsset.CHF:
+      case LoanAsset.MXN:
         urlPrefix = "";
         break;
     }

@@ -1,4 +1,4 @@
-import { Link, Text } from "@radix-ui/themes";
+import { Link } from "@radix-ui/themes";
 import { LoanProductOption } from "@frontend/http-client-borrower";
 
 interface ToSProps {
@@ -7,27 +7,28 @@ interface ToSProps {
 
 function LendasatToS() {
   return (
-    <Text size={"1"} weight={"light"} m={"1"}>
+    <p className="text-xs text-muted-foreground mt-1 whitespace-normal">
       By requesting a loan you accept our{" "}
       <Link
-        href={"https://tos.lendasat.com/"}
-        className="text-blue-600 hover:underline dark:text-blue-400"
+        href="https://tos.lendasat.com/"
+        className="text-primary hover:underline inline-block"
         target="_blank"
         rel="noopener noreferrer"
       >
         Terms and Conditions
       </Link>
       .
-    </Text>
+    </p>
   );
 }
+
 function PayWithMoon() {
   return (
-    <Text size={"1"} weight={"light"} m={"1"}>
+    <p className="text-xs text-muted-foreground mt-1 whitespace-normal">
       By requesting a loan you accept our{" "}
       <Link
         href="https://tos.lendasat.com/"
-        className="text-blue-600 hover:underline dark:text-blue-400"
+        className="text-primary hover:underline inline-block"
         target="_blank"
         rel="noopener noreferrer"
       >
@@ -36,7 +37,7 @@ function PayWithMoon() {
       {" and "}
       <Link
         href="https://paywithmoon.com/terms-conditions"
-        className="text-blue-600 hover:underline dark:text-blue-400"
+        className="text-primary hover:underline inline-block"
         target="_blank"
         rel="noopener noreferrer"
       >
@@ -45,7 +46,7 @@ function PayWithMoon() {
       {" and "}
       <Link
         href="https://paywithmoon.com/terms-conditions"
-        className="text-blue-600 hover:underline dark:text-blue-400"
+        className="text-primary hover:underline inline-block"
         target="_blank"
         rel="noopener noreferrer"
       >
@@ -54,13 +55,13 @@ function PayWithMoon() {
       {" and "}
       <Link
         href="https://paywithmoon.com/terms-conditions"
-        className="text-blue-600 hover:underline dark:text-blue-400"
+        className="text-primary hover:underline inline-block"
         target="_blank"
         rel="noopener noreferrer"
       >
         Statement of Eligibility
       </Link>
-    </Text>
+    </p>
   );
 }
 

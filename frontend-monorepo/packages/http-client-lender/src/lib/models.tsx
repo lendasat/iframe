@@ -1,4 +1,5 @@
 import {
+  FiatLoanDetails,
   FiatLoanDetailsResponse,
   type LoanFeature,
 } from "@frontend/base-http-client";
@@ -381,6 +382,7 @@ export interface LoanApplication {
   liquidation_price: number;
   borrower_loan_address?: string;
   borrower_btc_address: string;
+  borrower_pk: string;
   loan_asset: LoanAsset;
   loan_type: LoanType;
   status: LoanApplicationStatus;
@@ -420,6 +422,7 @@ export interface TakeLoanApplicationSchema {
   loan_repayment_address: string;
   lender_pk: string;
   lender_derivation_path: string;
+  fiat_loan_details?: FiatLoanDetails;
 }
 
 export interface NotifyUser {
