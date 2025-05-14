@@ -64,11 +64,11 @@ export default function TakeLoanApplication() {
 
   const actualInterest =
     loanApplication &&
-    loanApplication.interest_rate / (ONE_YEAR / loanApplication.duration_days);
+    (loanApplication.interest_rate / ONE_YEAR ) * loanApplication.duration_days;
 
   const actualInterestUsdAmount =
-    loanApplication &&
-    loanApplication.loan_amount * loanApplication.interest_rate;
+    loanApplication && actualInterest &&
+    loanApplication.loan_amount * actualInterest;
 
   const collateralAmountBtc =
     loanApplication &&
@@ -200,50 +200,6 @@ export default function TakeLoanApplication() {
                           formatCurrency(actualInterestUsdAmount, 1, 1)}{" "}
                       </Skeleton>
                       in total
-                    </Text>
-                  </div>
-                </DataList.Value>
-              </DataList.Item>
-              <DataList.Item>
-                <DataList.Label minWidth="88px">
-                  <Flex align={"center"} gap={"2"}>
-                    <Flex direction={"column"}>
-                      <p>Needed collateral</p>
-                      <Text size={"1"}>
-                        <Skeleton
-                          loading={loading}
-                          width={"100px"}
-                          height={"20px"}
-                        >
-                          (
-                          {loanApplication &&
-                            (loanApplication?.ltv * 100).toFixed(0)}
-                          % LTV)
-                        </Skeleton>
-                      </Text>
-                    </Flex>
-                    <LtvInfoLabel>
-                      <FaInfoCircle />
-                    </LtvInfoLabel>
-                  </Flex>
-                </DataList.Label>
-                <DataList.Value className="flex flex-1 justify-end">
-                  <div className="flex flex-col">
-                    <Skeleton loading={loading} width={"100px"} height={"20px"}>
-                      <Text className="text-font/70 dark:text-font-dark/70 text-[13px] font-semibold capitalize">
-                        {collateralAmountBtc?.toFixed(8)} BTC
-                      </Text>
-                    </Skeleton>
-                    <Text className="text-font/50 dark:text-font-dark/50 mt-0.5 self-end text-[11px]">
-                      ≈{" "}
-                      <Skeleton
-                        loading={loading}
-                        width={"100px"}
-                        height={"20px"}
-                      >
-                        {collateralUsdAmount &&
-                          formatCurrency(collateralUsdAmount)}
-                      </Skeleton>
                     </Text>
                   </div>
                 </DataList.Value>

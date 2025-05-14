@@ -92,19 +92,27 @@ export const Confirmation = ({
   const interestRate = Number.parseFloat(selectedInterestRate);
   const actualInterest = interestRate / (ONE_YEAR / selectedLoanDuration);
   const actualInterestUsdAmount = (selectedLoanAmount * actualInterest) / 100.0;
-  const collateralAmountBtc = selectedLoanAmount / latestPrice / ltv;
-  const collateralUsdAmount = selectedLoanAmount / ltv;
+
+  const outstandingBalanceUsd = selectedLoanAmount + actualInterestUsdAmount;
+  // TODO: we should have collateral, origintion fee seperate and then show a sum of how much the user needs to deposit
+  const collateralUsdAmount =
+    outstandingBalanceUsd / ltv;
+  const collateralAmountBtc = collateralUsdAmount / latestPrice;
 
   // Calculate fees
   const discountedFee = user?.first_time_discount_rate || 0.0;
   const isDiscountedFeeApplied = discountedFee ? discountedFee > 0 : false;
   const discountedOriginationFee =
     originationFee - originationFee * discountedFee;
-  const originationFeeBtc = collateralAmountBtc * discountedOriginationFee;
-  const originationFeeUsd = selectedLoanAmount * discountedOriginationFee;
+
+  const originationFeeUsd = (selectedLoanAmount * discountedOriginationFee);
+  const originationFeeBtc = originationFeeUsd / latestPrice;
+
+  const neededCollateralAmountBtc = (collateralAmountBtc + originationFeeBtc).toFixed(8);
 
   // Calculate liquidation price
-  const liquidationPrice = (selectedLoanAmount / collateralAmountBtc) * 0.95;
+  const liquidationPrice =
+    (outstandingBalanceUsd / (collateralAmountBtc * 0.95))
 
   // Setup form with react-hook-form and zod validation
   const form = useForm<ConfirmationFormValues>({
@@ -191,6 +199,7 @@ export const Confirmation = ({
     }
   };
 
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
       <Card className="h-full">
@@ -274,7 +283,7 @@ export const Confirmation = ({
             </div>
             <div className="flex flex-col items-end">
               <span className="font-semibold text-sm capitalize">
-                {collateralAmountBtc.toFixed(8)} BTC
+                {neededCollateralAmountBtc} BTC
               </span>
               <span className="text-xs text-muted-foreground">
                 ≈ {formatCurrency(collateralUsdAmount)}
