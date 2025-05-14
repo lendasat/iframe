@@ -111,6 +111,7 @@ export function getTxUrl(txid: string, assetType?: LoanAsset) {
     case LoanAsset.EUR:
     case LoanAsset.USD:
     case LoanAsset.CHF:
+    case LoanAsset.MXN:
       url = "";
       break;
   }
@@ -142,6 +143,7 @@ export function getAddressUrl(address?: string, assetType?: LoanAsset) {
     case LoanAsset.EUR:
     case LoanAsset.USD:
     case LoanAsset.CHF:
+    case LoanAsset.MXN:
       url = "";
       break;
   }

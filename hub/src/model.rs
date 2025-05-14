@@ -480,13 +480,14 @@ pub enum LoanAsset {
     Usd,
     Eur,
     Chf,
+    Mxn,
     UsdtLiquid,
 }
 
 impl LoanAsset {
     pub fn is_fiat(&self) -> bool {
         match self {
-            LoanAsset::Usd | LoanAsset::Eur | LoanAsset::Chf => true,
+            LoanAsset::Usd | LoanAsset::Eur | LoanAsset::Chf | LoanAsset::Mxn => true,
             LoanAsset::UsdcPol
             | LoanAsset::UsdtPol
             | LoanAsset::UsdcEth

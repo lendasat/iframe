@@ -139,7 +139,8 @@ impl Shifter {
             | LoanAsset::UsdtStrk
             | LoanAsset::Usd
             | LoanAsset::Eur
-            | LoanAsset::Chf => {
+            | LoanAsset::Chf
+            | LoanAsset::Mxn => {
                 bail!("Not supported by SideShift.ai: {loan_asset:?}");
             }
         };
@@ -154,7 +155,8 @@ impl Shifter {
             | LoanAsset::UsdtStrk
             | LoanAsset::Usd
             | LoanAsset::Eur
-            | LoanAsset::Chf => {
+            | LoanAsset::Chf
+            | LoanAsset::Mxn => {
                 bail!("Not supported by SideShift.ai: {loan_asset:?}");
             }
         };
