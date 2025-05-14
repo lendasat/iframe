@@ -14,7 +14,7 @@ import {
   Contract,
   useHttpClientBorrower,
 } from "@frontend/http-client-borrower";
-import { format, addDays } from "date-fns";
+import { format, addDays, differenceInDays } from "date-fns";
 import {
   formatBitcoin,
   formatCurrency,
@@ -34,7 +34,20 @@ export function ExtendContract({
   contract,
   onSubmitted: onSubmitted,
 }: ExtendContractProps) {
-  const extensionAllowed = contract?.extension_max_duration_days !== 0;
+  const extensionEnabled = contract?.extension_max_duration_days !== 0;
+  // TODO: this policy should probably come from the backend
+  const daysPast = contract
+    ? differenceInDays(contract!.created_at, new Date())
+    : 0;
+  const extensionAllowed = contract
+    ? daysPast >= contract.duration_days / 2
+    : false;
+  const renewalDate = contract
+    ? format(
+        addDays(contract?.created_at, contract?.duration_days / 2),
+        "yyyy-MM-dd",
+      )
+    : undefined;
 
   const [extensionDays, setExtensionDays] = useState(
     contract?.extension_max_duration_days || 7,
@@ -110,7 +123,7 @@ export function ExtendContract({
         )}
       </div>
 
-      {!extensionAllowed && (
+      {!extensionEnabled && (
         <Alert className="my-4" variant={"destructive"}>
           <LuCalendarClock className="h-4 w-4" />
           <AlertTitle>Loan extension not available</AlertTitle>
@@ -121,7 +134,18 @@ export function ExtendContract({
         </Alert>
       )}
 
-      {extensionAllowed && (
+      {!extensionAllowed && (
+        <Alert className="my-4" variant={"destructive"}>
+          <LuCalendarClock className="h-4 w-4" />
+          <AlertTitle>Loan extension not allowed yet</AlertTitle>
+          <AlertDescription>
+            Loan extension is only available after half of the loan's lieftime.
+            I.e. after {renewalDate}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {extensionEnabled && extensionAllowed && (
         <Alert className="my-4">
           <LuCalendarClock className="h-4 w-4" />
           <AlertTitle>Request Extension</AlertTitle>
@@ -139,7 +163,7 @@ export function ExtendContract({
           </div>
           <SingleDurationSelector
             onDurationChange={(d) => setExtensionDays(d)}
-            disabled={!extensionAllowed}
+            disabled={!extensionEnabled || !extensionAllowed}
             selectedDuration={extensionDays}
             disabledDurations={notAllowedDurations || allDurations}
           />
@@ -153,7 +177,7 @@ export function ExtendContract({
               <div className="flex justify-between items-center">
                 <span className="text-sm">New Expiry Date</span>
                 <span className="font-medium">
-                  {extensionAllowed && newExpiry ? (
+                  {extensionEnabled && extensionAllowed && newExpiry ? (
                     format(newExpiry, "yyyy-MM-dd")
                   ) : (
                     <Skeleton className="h-4 w-[100px]" />
@@ -218,7 +242,7 @@ export function ExtendContract({
             type={"button"}
             className="w-full md:w-48 px-0"
             onClick={handleSubmitExtension}
-            disabled={!extensionAllowed || isSubmitting}
+            disabled={!extensionEnabled || !extensionAllowed || isSubmitting}
           >
             {isSubmitting ? (
               <div className="flex items-center justify-center space-x-2">
