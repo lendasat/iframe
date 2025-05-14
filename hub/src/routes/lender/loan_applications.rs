@@ -96,6 +96,7 @@ pub async fn get_all_available_loan_applications(
             .context("No lender found for contract")
             .map_err(|_| Error::MissingBorrower)?;
 
+        // FIXME: this is incorrect
         let initial_collateral =
             calculate_initial_collateral(request.loan_amount, request.ltv, price)
                 .map_err(Error::InitialCollateralCalculation)?;
@@ -146,6 +147,7 @@ pub async fn get_loan_application(
         .await
         .map_err(Error::BitMexPrice)?;
 
+    // FIXME: this is incorrect
     let initial_collateral = calculate_initial_collateral(request.loan_amount, request.ltv, price)
         .map_err(Error::InitialCollateralCalculation)?;
     let liquidation_price = calculate_liquidation_price(

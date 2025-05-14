@@ -60,6 +60,8 @@ pub async fn take_application(
         .await
         .map_err(Error::Database)?
         .ok_or(Error::LoanApplicationNotFound(loan_deal_id.to_string()))?;
+
+    // FIXME: this is incorrect
     let initial_collateral = contract_requests::calculate_initial_collateral(
         loan_application.loan_amount,
         loan_application.ltv,
