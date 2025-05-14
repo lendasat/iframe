@@ -94,7 +94,8 @@ export const Confirmation = ({
   const actualInterestUsdAmount = (selectedLoanAmount * actualInterest) / 100.0;
 
   // Collataral and its value
-  const collateralUsdAmount = (selectedLoanAmount + actualInterestUsdAmount) / ltv;
+  const collateralUsdAmount =
+    (selectedLoanAmount + actualInterestUsdAmount) / ltv;
   const collateralAmountBtc = collateralUsdAmount / latestPrice;
 
   // Calculate fees
@@ -114,7 +115,7 @@ export const Confirmation = ({
   const outstandingBalanceUsd = selectedLoanAmount + actualInterestUsdAmount;
 
   // Calculate liquidation price
-  const liquidationPrice = outstandingBalanceUsd / (collateralAmountBtc * 0.90);
+  const liquidationPrice = outstandingBalanceUsd / (collateralAmountBtc * 0.9);
 
   // Setup form with react-hook-form and zod validation
   const form = useForm<ConfirmationFormValues>({
