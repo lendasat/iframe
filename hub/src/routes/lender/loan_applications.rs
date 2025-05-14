@@ -4,6 +4,7 @@ use crate::contract_requests::calculate_initial_collateral;
 use crate::db;
 use crate::model;
 use crate::model::calculate_interest_usd;
+use crate::model::FiatLoanDetailsWrapper;
 use crate::model::Lender;
 use crate::model::LoanApplicationStatus;
 use crate::model::LoanAsset;
@@ -68,6 +69,7 @@ pub struct LoanApplication {
     pub duration_days: i32,
     pub loan_asset: LoanAsset,
     pub status: LoanApplicationStatus,
+    pub borrower_pk: PublicKey,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
     #[serde(with = "time::serde::rfc3339")]
@@ -164,6 +166,7 @@ async fn map_to_api_loan_application(
         liquidation_price,
         created_at: request.created_at,
         updated_at: request.updated_at,
+        borrower_pk: request.borrower_pk,
     })
 }
 
@@ -173,6 +176,7 @@ pub struct TakeLoanApplicationSchema {
     pub lender_derivation_path: bip32::DerivationPath,
     pub loan_repayment_address: String,
     pub lender_npub: String,
+    pub fiat_loan_details: Option<FiatLoanDetailsWrapper>,
 }
 
 #[instrument(skip_all, fields(lender_id = user.id, loan_deal_id, body), err(Debug), ret)]
@@ -239,6 +243,8 @@ enum Error {
     LoanApplicationNotFound(String),
     // Failed to calculate liquidation price
     LiquidationPriceCalculation,
+    // The lender didn't provide fiat loan details
+    MissingFiatLoanDetails,
 }
 
 /// Tell `axum` how [`AppError`] should be converted into a response.
@@ -333,6 +339,10 @@ impl IntoResponse for Error {
                     "Something went wrong".to_owned(),
                 )
             }
+            Error::MissingFiatLoanDetails => (
+                StatusCode::BAD_REQUEST,
+                "LoanApplication not found".to_owned(),
+            ),
         };
         (status, AppJson(ErrorResponse { message })).into_response()
     }
@@ -358,6 +368,7 @@ impl From<take_loan_application::Error> for Error {
             take_loan_application::Error::LoanApplicationNotFound(id) => {
                 Error::LoanApplicationNotFound(id)
             }
+            take_loan_application::Error::MissingFiatLoanDetails => Error::MissingFiatLoanDetails,
         }
     }
 }

@@ -5,8 +5,16 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertCircle, FileWarning, Info, Loader2 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@frontend/shadcn";
 import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
   Form,
   FormControl,
   FormDescription,
@@ -14,25 +22,20 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@frontend/shadcn";
-import { Input } from "@frontend/shadcn";
-import { Button } from "@frontend/shadcn";
-import {
+  Input,
+  Separator,
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@frontend/shadcn";
-import { Alert, AlertDescription, AlertTitle } from "@frontend/shadcn";
-import { Badge } from "@frontend/shadcn";
-import { Separator } from "@frontend/shadcn";
-import { LoanProductOption } from "@frontend/http-client-borrower";
-import { useWallet } from "@frontend/browser-wallet";
 import {
+  LoanProductOption,
   LoanType,
   useAuth,
   useHttpClientBorrower,
 } from "@frontend/http-client-borrower";
+import { useWallet } from "@frontend/browser-wallet";
 import {
   formatCurrency,
   getFormatedStringFromDays,
@@ -43,7 +46,6 @@ import {
   usePrice,
 } from "@frontend/ui-shared";
 import { ToS } from "../loan-offers/tos";
-import { Warning } from "postcss";
 
 // Zod schema for form validation
 const confirmationFormSchema = z.object({
@@ -165,11 +167,9 @@ export const Confirmation = ({
         return;
       }
 
+      let loan_type = LoanType.StableCoin;
       if (LoanAssetHelper.isFiat(selectedAssetType)) {
-        setCreateRequestError(
-          "Fiat loan requests are not supported at this stage",
-        );
-        return;
+        loan_type = LoanType.Fiat;
       }
 
       const res = await postLoanApplication({
@@ -180,7 +180,7 @@ export const Confirmation = ({
         borrower_pk: borrowerPk.pubkey,
         borrower_derivation_path: borrowerPk.path,
         loan_asset: selectedAssetType,
-        loan_type: LoanType.StableCoin,
+        loan_type,
         interest_rate: interestRate / 100.0,
         borrower_loan_address: data.loanAddress || "",
         borrower_btc_address: data.bitcoinAddress,

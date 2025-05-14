@@ -22,10 +22,8 @@ import {
   LoanAddressInputField,
   LoanAsset,
   LoanAssetHelper,
-  LtvInfoLabel,
   newFormatCurrency,
   ONE_YEAR,
-  usePrice,
 } from "@frontend/ui-shared";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAsync } from "react-use";
@@ -36,12 +34,13 @@ import {
 } from "@frontend/http-client-lender";
 import { useState } from "react";
 import { addDays } from "date-fns";
+import AddFiatDetailsDialog from "./add-fiat-details-dialog";
+import { FiatLoanDetails } from "@frontend/base-http-client";
 
 export default function TakeLoanApplication() {
   const navigate = useNavigate();
   const { getNpub, getPkAndDerivationPath } = useWallet();
   const { id } = useParams();
-  const { latestPrice } = usePrice();
 
   const { getLoanApplication, takeLoanApplication } = useLenderHttpClient();
   const [isTaking, setIsTaking] = useState(false);
@@ -51,7 +50,7 @@ export default function TakeLoanApplication() {
 
   const {
     value: loanApplication,
-    loading,
+    loading: loanAplicationLoading,
     error: loadingApplicationError,
   } = useAsync(async () => {
     if (id) {
@@ -59,6 +58,20 @@ export default function TakeLoanApplication() {
     }
     return undefined;
   }, [id]);
+
+  const {
+    value: lenderPubkey,
+    loading: lenderPkLoading,
+    error: lenderPkError,
+  } = useAsync(async () => {
+    return await getPkAndDerivationPath();
+  });
+
+  if (lenderPkError) {
+    console.error(`Couldn't get pubkey ${lenderPkError}`);
+  }
+
+  const loading = lenderPkLoading || loanAplicationLoading;
 
   const interestRate = loanApplication?.interest_rate;
 
@@ -71,37 +84,40 @@ export default function TakeLoanApplication() {
     actualInterest &&
     loanApplication.loan_amount * actualInterest;
 
-  const collateralAmountBtc =
-    loanApplication &&
-    loanApplication.loan_amount / latestPrice / loanApplication.ltv;
-  const collateralUsdAmount =
-    loanApplication && loanApplication.loan_amount / loanApplication.ltv;
-
   const liquidationPrice = loanApplication?.liquidation_price; // share this from the backend
 
   const expiry =
     loanApplication && addDays(new Date(), loanApplication.duration_days);
 
-  const onSubmit = async () => {
+  const onSubmit = async (encryptedFiatLoanDetails?: FiatLoanDetails) => {
     try {
       if (!id) {
         setError("No loan application selected");
         return;
       }
 
-      setIsTaking(true);
-      const lenderNpub = await getNpub();
-      const pubkey = await getPkAndDerivationPath();
-
-      if (!loanAddress || loanAddress.trim().length === 0) {
-        setError("No loan address provided");
+      if (!lenderPubkey) {
+        setError("No pubkey set");
         return;
       }
+
+      setIsTaking(true);
+      const lenderNpub = await getNpub();
+
+      if (
+        !encryptedFiatLoanDetails &&
+        (!loanAddress || loanAddress.trim().length === 0)
+      ) {
+        setError("No payout details provided");
+        return;
+      }
+
       const contractId = await takeLoanApplication(id, {
         lender_npub: lenderNpub,
-        lender_pk: pubkey.pubkey,
-        lender_derivation_path: pubkey.path,
+        lender_pk: lenderPubkey.pubkey,
+        lender_derivation_path: lenderPubkey.path,
         loan_repayment_address: loanAddress,
+        fiat_loan_details: encryptedFiatLoanDetails,
       });
       //
       if (contractId !== undefined) {
@@ -121,9 +137,16 @@ export default function TakeLoanApplication() {
   const buttonDisabled =
     loanApplication?.status !== LoanApplicationStatus.Available;
 
+  const isFiatLoanApplication =
+    (loanApplication && LoanAssetHelper.isFiat(loanApplication?.loan_asset)) ||
+    false;
+
+  console.log(`isFiatLoanApplication ${isFiatLoanApplication}`);
+  console.log(`lenderPubkey ${lenderPubkey}`);
+
   return (
     <ScrollArea type="always" scrollbars="vertical">
-      <Form className="space-y-4">
+      <Form className="space-y-4 p-4">
         <Grid
           align={"center"}
           columns={{ initial: "1", md: "2" }}
@@ -266,43 +289,67 @@ export default function TakeLoanApplication() {
           </Box>
           <Box className="h-full rounded-lg border border-gray-200 p-6">
             <Flex direction={"column"} gap={"2"}>
-              <DataList.Root orientation={"vertical"}>
-                <DataList.Item>
-                  <DataList.Label minWidth="88px">Loan address</DataList.Label>
-                  <DataList.Value className="w-full">
-                    <Flex direction={"column"} flexGrow={"1"}>
-                      <LoanAddressInputField
-                        loanAddress={loanAddress ?? ""}
-                        setLoanAddress={setLoanAddress}
-                        hideButton={hideWalletConnectButton}
-                        setHideButton={setHideWalletConnectButton}
-                        loanAsset={
-                          loanApplication?.loan_asset || LoanAsset.USDC_POL
-                        }
-                        renderWarning={true}
-                      />
-                      <Text
-                        size={"1"}
-                        weight={"light"}
-                        className="text-font dark:text-font-dark"
-                      >
-                        This address will be used to transfer the loan amount
-                      </Text>
-                    </Flex>
-                  </DataList.Value>
-                </DataList.Item>
-              </DataList.Root>
-              <Button
-                size={"3"}
-                onClick={async (e) => {
-                  e.preventDefault();
-                  await onSubmit();
-                }}
-                loading={isTaking}
-                disabled={buttonDisabled}
-              >
-                Take loan application
-              </Button>
+              {!isFiatLoanApplication && (
+                <DataList.Root orientation={"vertical"}>
+                  <DataList.Item>
+                    <DataList.Label minWidth="88px">
+                      Loan address
+                    </DataList.Label>
+                    <DataList.Value className="w-full">
+                      <Flex direction={"column"} flexGrow={"1"}>
+                        <LoanAddressInputField
+                          loanAddress={loanAddress ?? ""}
+                          setLoanAddress={setLoanAddress}
+                          hideButton={hideWalletConnectButton}
+                          setHideButton={setHideWalletConnectButton}
+                          loanAsset={
+                            loanApplication?.loan_asset || LoanAsset.USDC_POL
+                          }
+                          renderWarning={true}
+                        />
+                        <Text
+                          size={"1"}
+                          weight={"light"}
+                          className="text-font dark:text-font-dark"
+                        >
+                          This address will be used to transfer the loan amount
+                        </Text>
+                      </Flex>
+                    </DataList.Value>
+                  </DataList.Item>
+                </DataList.Root>
+              )}
+              {loanApplication && isFiatLoanApplication && lenderPubkey && (
+                <AddFiatDetailsDialog
+                  borrowerPk={loanApplication?.borrower_pk}
+                  lenderPk={lenderPubkey.pubkey}
+                  onComplete={async (data) => {
+                    await onSubmit(data);
+                  }}
+                >
+                  <Button
+                    size={"3"}
+                    type={"button"}
+                    loading={isTaking}
+                    disabled={buttonDisabled}
+                  >
+                    Take loan application
+                  </Button>
+                </AddFiatDetailsDialog>
+              )}
+              {!isFiatLoanApplication && (
+                <Button
+                  size={"3"}
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    await onSubmit();
+                  }}
+                  loading={isTaking}
+                  disabled={buttonDisabled}
+                >
+                  Take loan application
+                </Button>
+              )}
               {(error || loadingApplicationError) && (
                 <Box px={"2"} className="md:col-span-2">
                   <Callout.Root color="red" className="w-full">

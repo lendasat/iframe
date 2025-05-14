@@ -24,7 +24,7 @@ import {
   useAuth,
   useHttpClientBorrower,
 } from "@frontend/http-client-borrower";
-import { useAsync } from "react-use";
+import { useAsync, useAsyncRetry } from "react-use";
 import { ContractDetailsFooter } from "./contract-details-footer";
 import { Chat } from "@frontend/nostr-chat";
 import DisputesComponent from "./disputes/disputes";
@@ -86,7 +86,8 @@ const EnhancedBitcoinLoan = () => {
     value: contract,
     loading,
     error,
-  } = useAsync(async () => {
+    retry: refreshContract,
+  } = useAsyncRetry(async () => {
     if (id) {
       return getContract(id);
     } else {
@@ -198,7 +199,11 @@ const EnhancedBitcoinLoan = () => {
               </Tabs>
 
               <CardFooter className="flex-shrink-0 flex justify-between border-t pt-4">
-                <ContractDetailsFooter contract={contract} loading={loading} />
+                <ContractDetailsFooter
+                  contract={contract}
+                  loading={loading}
+                  refreshContract={refreshContract}
+                />
               </CardFooter>
             </Card>
           </div>

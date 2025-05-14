@@ -36,6 +36,8 @@ pub enum Error {
     TrackContract(#[source] anyhow::Error),
     #[error("Loan application not found")]
     LoanApplicationNotFound(String),
+    #[error("Fiat loan details not provided")]
+    MissingFiatLoanDetails,
 }
 
 /// Takes a loan application and returns the contract id if successful
@@ -100,6 +102,15 @@ pub async fn take_application(
         .await
         .map_err(Error::ContractAddress)?;
 
+    if let Some(fiat_loan_details) = &take_application_body.fiat_loan_details {
+        if fiat_loan_details.details.swift_transfer_details.is_none()
+            && fiat_loan_details.details.iban_transfer_details.is_none()
+            && loan_application.loan_asset.is_fiat()
+        {
+            return Err(Error::MissingFiatLoanDetails);
+        }
+    }
+
     let contract = db::contracts::insert_new_taken_contract_application(
         db,
         contract_id,
@@ -137,6 +148,16 @@ pub async fn take_application(
     )
     .await
     .map_err(Error::Database)?;
+
+    if let Some(fiat_loan_details) = take_application_body.fiat_loan_details {
+        db::fiat_loan_details::insert_lender(
+            db,
+            contract_id.to_string().as_str(),
+            fiat_loan_details,
+        )
+        .await
+        .map_err(Error::Database)?;
+    }
 
     mempool_actor
         .send(TrackContractFunding::new(

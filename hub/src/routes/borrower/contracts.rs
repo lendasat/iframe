@@ -13,6 +13,7 @@ use crate::model::ContractStatus;
 use crate::model::ContractVersion;
 use crate::model::ExtensionPolicy;
 use crate::model::FiatLoanDetails;
+use crate::model::FiatLoanDetailsWrapper;
 use crate::model::LiquidationStatus;
 use crate::model::LoanAsset;
 use crate::model::LoanPayout;
@@ -71,6 +72,7 @@ pub(crate) fn router_openapi(app_state: Arc<AppState>) -> OpenApiRouter {
         .routes(routes!(post_claim_tx))
         .routes(routes!(post_extend_contract_request))
         .routes(routes!(put_repayment_provided))
+        .routes(routes!(put_provide_fiat_loan_details))
         .routes(routes!(cancel_contract_request))
         .route_layer(middleware::from_fn_with_state(
             app_state.clone(),
@@ -652,6 +654,51 @@ async fn put_repayment_provided(
     Ok(())
 }
 
+/// Provide fiat details to contract
+#[utoipa::path(
+put,
+path = "/{id}/fiat-details",
+params(
+    (
+    "id" = String, Path, description = "Contract id"
+    )
+),
+request_body = FiatLoanDetailsWrapper,
+tag = CONTRACTS_TAG,
+responses(
+    (
+    status = 200,
+    description = "Ok if successful",
+    )
+),
+security(
+    (
+    "api_key" = [])
+    )
+    )
+]
+#[instrument(skip_all, fields(borrower_id = user.id, contract_id), ret, err(Debug))]
+async fn put_provide_fiat_loan_details(
+    State(data): State<Arc<AppState>>,
+    Path(contract_id): Path<String>,
+    Extension(user): Extension<Borrower>,
+    AppJson(body): AppJson<FiatLoanDetailsWrapper>,
+) -> Result<(), Error> {
+    let contract = db::contracts::load_contract_by_contract_id_and_borrower_id(
+        &data.db,
+        contract_id.as_str(),
+        &user.id,
+    )
+    .await
+    .map_err(Error::database)?;
+
+    db::fiat_loan_details::insert_borrower(&data.db, contract.id.as_str(), body)
+        .await
+        .map_err(Error::database)?;
+
+    Ok(())
+}
+
 /// Get a claim-collateral PSBT, to be completed with your own signature on the collateral contract.
 #[utoipa::path(
 get,
@@ -909,8 +956,8 @@ pub struct Contract {
     pub extends_contract: Option<String>,
     pub extended_by_contract: Option<String>,
     pub kyc_info: Option<KycInfo>,
-    pub fiat_loan_details_borrower: Option<FiatLoanDetailsWrapper>,
-    pub fiat_loan_details_lender: Option<FiatLoanDetailsWrapper>,
+    pub fiat_loan_details_borrower: Option<FiatLoanDetailsWrapperResponse>,
+    pub fiat_loan_details_lender: Option<FiatLoanDetailsWrapperResponse>,
     pub lender_npub: String,
     pub timeline: Vec<TimelineEvent>,
     pub client_contract_id: Option<Uuid>,
@@ -930,7 +977,7 @@ pub struct TimelineEvent {
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
-pub struct FiatLoanDetailsWrapper {
+pub struct FiatLoanDetailsWrapperResponse {
     pub details: FiatLoanDetails,
     /// The borrower's encrypted encryption key.
     pub encrypted_encryption_key: String,
@@ -1025,7 +1072,7 @@ async fn map_to_api_contract(
             .await
             .map_err(Error::database)?;
 
-        details.map(|d| FiatLoanDetailsWrapper {
+        details.map(|d| FiatLoanDetailsWrapperResponse {
             details: d.details,
             encrypted_encryption_key: d.encrypted_encryption_key_borrower,
         })
@@ -1036,7 +1083,7 @@ async fn map_to_api_contract(
             .await
             .map_err(Error::database)?;
 
-        details.map(|d| FiatLoanDetailsWrapper {
+        details.map(|d| FiatLoanDetailsWrapperResponse {
             details: d.details,
             encrypted_encryption_key: d.encrypted_encryption_key_borrower,
         })

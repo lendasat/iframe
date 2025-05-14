@@ -566,7 +566,7 @@ const CreateLoanOffer = () => {
                           Please wait
                         </>
                       ) : (
-                        "Pick Offer"
+                        "Create Offer"
                       )}
                     </Button>
                   </form>

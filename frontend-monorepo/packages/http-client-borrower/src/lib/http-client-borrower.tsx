@@ -29,6 +29,7 @@ import type {
   WalletBackupData,
   HasApiKey,
   BringinConnectResponse,
+  FiatLoanDetails,
 } from "./models";
 import { isAllowedPageWithoutLogin, parseRFC3339Date } from "./utils";
 import { IsRegisteredResponse } from "@frontend/base-http-client";
@@ -160,6 +161,10 @@ export interface HttpClient {
     feeRate: number,
   ) => Promise<ClaimCollateralPsbtResponse | undefined>;
   postClaimTx: (contract_id: string, tx: string) => Promise<string | undefined>;
+  putFiatDetails: (
+    contractId: string,
+    fiatDetails: FiatLoanDetails,
+  ) => Promise<void>;
 
   // Dispute methods
   startDispute: (
@@ -709,6 +714,20 @@ export const createHttpClient = (
     }
   };
 
+  const putFiatDetails = async (
+    contractId: string,
+    fiatDetails: FiatLoanDetails,
+  ): Promise<void> => {
+    try {
+      await axiosClient.put(
+        `/api/contracts/${contractId}/fiat-details`,
+        fiatDetails,
+      );
+    } catch (error) {
+      handleError(error, "providing fiat loan details");
+    }
+  };
+
   const startDispute = async (
     contract_id: string,
     reason: string,
@@ -962,6 +981,7 @@ export const createHttpClient = (
     getClaimCollateralPsbt,
     getClaimDisputeCollateralPsbt,
     postClaimTx,
+    putFiatDetails,
     startDispute,
     getDispute,
     fetchDisputeWithMessages,
