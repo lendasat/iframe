@@ -150,16 +150,19 @@ export default function TakeLoanApplication() {
   };
 
   const buttonDisabled: boolean =
-    loanApplication?.status !== LoanApplicationStatus.Available;
+    loading || loanApplication?.status !== LoanApplicationStatus.Available;
 
   const isFiatLoanApplication: boolean =
     (loanApplication && LoanAssetHelper.isFiat(loanApplication?.loan_asset)) ||
     false;
 
   // Helper component for data list items
-  const DataItem = ({ label, value }: DataItemProps) => (
+  const DataItem = ({ label, value, icon }: DataItemProps) => (
     <div className="flex justify-between items-center py-2">
-      <div className="flex items-center gap-2">{label}</div>
+      <div className="flex items-center gap-2">
+        {icon && icon}
+        {label}
+      </div>
       <div className="text-sm font-semibold">{value}</div>
     </div>
   );
@@ -291,82 +294,96 @@ export default function TakeLoanApplication() {
 
           <Card>
             <CardContent className="p-6 flex flex-col gap-4">
-              {!isFiatLoanApplication && (
-                <div className="space-y-2">
-                  {/*<FormLabel>Loan address</FormLabel>*/}
-                  <LoanAddressInputField
-                    loanAddress={loanAddress ?? ""}
-                    setLoanAddress={setLoanAddress}
-                    hideButton={hideWalletConnectButton}
-                    setHideButton={setHideWalletConnectButton}
-                    loanAsset={
-                      loanApplication?.loan_asset || LoanAsset.USDC_POL
-                    }
-                    renderWarning={true}
-                  />
-                  This address will be used to transfer the loan amount
+              {/* Right side card content with loading states */}
+              {loading ? (
+                // Skeleton loading state for the right card
+                <div className="space-y-4">
+                  <Skeleton className="w-full h-10" />
+                  <Skeleton className="w-full h-20" />
+                  <Skeleton className="w-full h-10" />
                 </div>
-              )}
+              ) : (
+                // Actual content when loaded
+                <>
+                  {!isFiatLoanApplication && (
+                    <div className="space-y-2">
+                      <LoanAddressInputField
+                        loanAddress={loanAddress ?? ""}
+                        setLoanAddress={setLoanAddress}
+                        hideButton={hideWalletConnectButton}
+                        setHideButton={setHideWalletConnectButton}
+                        loanAsset={
+                          loanApplication?.loan_asset || LoanAsset.USDC_POL
+                        }
+                        renderWarning={true}
+                      />
+                      <p className="text-sm text-muted-foreground">
+                        This address will be used to transfer the loan amount
+                      </p>
+                    </div>
+                  )}
 
-              {loanApplication && isFiatLoanApplication && lenderPubkey && (
-                <div className={"w-full flex flex-col gap-2"}>
-                  <Alert>
-                    <Info className="h-4 w-4" />
-                    <AlertTitle>Heads up!</AlertTitle>
-                    <AlertDescription>
-                      <div>
-                        <p>
-                          You are lending USD{" "}
-                          {formatCurrency(loanApplication.loan_amount)} worth of{" "}
-                          {LoanAssetHelper.print(loanApplication.loan_asset)}.
-                          {loanApplication.loan_asset !== LoanAsset.USD && (
-                            <>
-                              {" "}
-                              This means{" "}
-                              <span className="font-bold">
-                                you need to send{" "}
-                                {LoanAssetHelper.print(
-                                  loanApplication.loan_asset,
-                                )}
-                              </span>{" "}
-                              to the borrower.
-                            </>
-                          )}{" "}
-                          Please provide your bank details so that the borrower
-                          can repay at expiry.
-                        </p>
-                      </div>
-                    </AlertDescription>
-                  </Alert>
-                  <AddFiatDetailsDialog
-                    borrowerPk={loanApplication?.borrower_pk}
-                    lenderPk={lenderPubkey.pubkey}
-                    onComplete={async (data: FiatLoanDetails) => {
-                      await onSubmit(data);
-                    }}
-                  >
+                  {loanApplication && isFiatLoanApplication && lenderPubkey && (
+                    <div className={"w-full flex flex-col gap-2"}>
+                      <Alert>
+                        <Info className="h-4 w-4" />
+                        <AlertTitle>Heads up!</AlertTitle>
+                        <AlertDescription>
+                          <div>
+                            <p>
+                              You are lending USD{" "}
+                              {formatCurrency(loanApplication.loan_amount)} worth of{" "}
+                              {LoanAssetHelper.print(loanApplication.loan_asset)}.
+                              {loanApplication.loan_asset !== LoanAsset.USD && (
+                                <>
+                                  {" "}
+                                  This means{" "}
+                                  <span className="font-bold">
+                                    you need to send{" "}
+                                    {LoanAssetHelper.print(
+                                      loanApplication.loan_asset,
+                                    )}
+                                  </span>{" "}
+                                  to the borrower.
+                                </>
+                              )}{" "}
+                              Please provide your bank details so that the borrower
+                              can repay at expiry.
+                            </p>
+                          </div>
+                        </AlertDescription>
+                      </Alert>
+                      <AddFiatDetailsDialog
+                        borrowerPk={loanApplication?.borrower_pk}
+                        lenderPk={lenderPubkey.pubkey}
+                        onComplete={async (data: FiatLoanDetails) => {
+                          await onSubmit(data);
+                        }}
+                      >
+                        <Button
+                          size="default"
+                          className="w-full -px-4"
+                          disabled={buttonDisabled}
+                        >
+                          {isTaking ? "Processing..." : "Take loan application"}
+                        </Button>
+                      </AddFiatDetailsDialog>
+                    </div>
+                  )}
+
+                  {!isFiatLoanApplication && (
                     <Button
-                      size="default"
                       className="w-full -px-4"
-                      disabled={buttonDisabled}
+                      onClick={async (e: React.MouseEvent<HTMLButtonElement>) => {
+                        e.preventDefault();
+                        await onSubmit();
+                      }}
+                      disabled={buttonDisabled || isTaking}
                     >
                       {isTaking ? "Processing..." : "Take loan application"}
                     </Button>
-                  </AddFiatDetailsDialog>
-                </div>
-              )}
-
-              {!isFiatLoanApplication && (
-                <Button
-                  className="w-full"
-                  onClick={async (e: React.MouseEvent<HTMLButtonElement>) => {
-                    e.preventDefault();
-                    await onSubmit();
-                  }}
-                  disabled={buttonDisabled || isTaking}
-                >
-                  {isTaking ? "Processing..." : "Take loan application"}
-                </Button>
+                  )}
+                </>
               )}
 
               {(error || loadingApplicationError) && (
