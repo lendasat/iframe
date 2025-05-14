@@ -34,8 +34,8 @@ const loanApplicationSchema = z.object({
     .max(100, "Interest rate must not exceed 100%"),
   ltv: z
     .number({ coerce: true })
-    .min(10, "LTV must be greater than 10%")
-    .max(80, "LTV must not exceed 80%"),
+    .min(1, "LTV must be greater than 1%")
+    .max(70, "LTV must not exceed 70%"),
 });
 
 interface EditLoanApplicationDialogProps {
