@@ -27,9 +27,13 @@ import { toast } from "sonner";
 
 interface ExtensionSettingsProps {
   contract?: Contract;
+  refreshContract: () => void;
 }
 
-const LoanExtensionManager = ({ contract }: ExtensionSettingsProps) => {
+const LoanExtensionManager = ({
+  contract,
+  refreshContract,
+}: ExtensionSettingsProps) => {
   const initialState = (contract?.extension_max_duration_days || 0) > 0;
   const [extensionsEnabled, setExtensionsEnabled] = useState(initialState);
   const [maxDays, setMaxDays] = useState(
@@ -61,6 +65,7 @@ const LoanExtensionManager = ({ contract }: ExtensionSettingsProps) => {
       });
       toast("Extension policy updated successfully.");
       setSaved(true);
+      refreshContract();
     } catch (error) {
       setError(`${error}`);
       toast.error(`Failed updating extension policy ${error}`);

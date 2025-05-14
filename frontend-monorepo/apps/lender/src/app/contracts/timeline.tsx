@@ -1,10 +1,4 @@
-import {
-  Badge,
-  Button,
-  Card,
-  CardContent,
-  ScrollArea,
-} from "@frontend/shadcn";
+import { Badge, Button, Card, CardContent, ScrollArea } from "@frontend/shadcn";
 import React, { useState } from "react";
 import { contractStatusLabelColor } from "./bitcoin-loan-component";
 import {
