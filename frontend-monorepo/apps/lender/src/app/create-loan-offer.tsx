@@ -12,9 +12,10 @@ import {
   LoanAsset,
   LoanAssetHelper,
   LoanPayout,
+  ONE_YEAR,
   parseLoanAsset,
 } from "@frontend/ui-shared";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { MdOutlineSwapCalls } from "react-icons/md";
 import { FaInfoCircle } from "react-icons/fa";
 import { PiInfo, PiWarningCircle } from "react-icons/pi";
@@ -108,6 +109,13 @@ const CreateLoanOffer = () => {
 
     console.log(`Auto approve is ${values.autoAccept}`);
 
+    const extension_duration_days = values.extension_enabled
+      ? values.extension_duration_days
+      : 0;
+    const extension_interest_rate = values.extension_enabled
+      ? values.extension_interest_rate / 100
+      : 0;
+
     return {
       name: "Loan Offer",
       min_ltv: values.ltv / 100,
@@ -126,6 +134,8 @@ const CreateLoanOffer = () => {
       lender_pk,
       lender_derivation_path,
       kyc_link: values.isKycRequired ? values.kycLink || undefined : undefined,
+      extension_duration_days,
+      extension_interest_rate,
     };
   };
 
@@ -413,6 +423,141 @@ const CreateLoanOffer = () => {
                                 min={0}
                                 max={100}
                                 step={0.5}
+                                {...field}
+                                value={field.value}
+                                onChange={(e) =>
+                                  field.onChange(Number(e.target.value))
+                                }
+                              />
+                            </FormControl>
+                            <span className="text-sm font-medium">
+                              0% - 100%
+                            </span>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Extension Settings */}
+                    <FormField
+                      control={form.control}
+                      name="extension_enabled"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1">
+                          <div className="flex flex-col space-y-2">
+                            <div className="flex items-center space-x-2">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                />
+                              </FormControl>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="flex items-center gap-2">
+                                    <FormLabel className="text-muted-foreground">
+                                      Enable Loan Extension
+                                    </FormLabel>
+                                    <FaInfoCircle className="h-4 w-4 text-muted-foreground" />
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent className="w-80">
+                                  <p>
+                                    If you want to enable loan extensions you
+                                    can either define it here or after a loan
+                                    has been established.
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Extension Duration - Only shown if extension is enabled */}
+                    <FormField
+                      control={form.control}
+                      name="extension_duration_days"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="flex items-center gap-2">
+                                  <FormLabel className="text-muted-foreground">
+                                    Max allowed extension duration (Days)
+                                  </FormLabel>
+                                  <FaInfoCircle className="h-4 w-4 text-muted-foreground" />
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent className="w-80">
+                                <p>
+                                  The maximum number of days a borrower can
+                                  extend the loan for.
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          <div className="flex items-center gap-4">
+                            <FormControl>
+                              <Input
+                                type="number"
+                                placeholder="Extension Duration (Days)"
+                                min={1}
+                                max={ONE_YEAR}
+                                {...field}
+                                value={field.value}
+                                disabled={!form.watch("extension_enabled")}
+                                onChange={(e) =>
+                                  field.onChange(Number(e.target.value))
+                                }
+                              />
+                            </FormControl>
+                            <span className="text-sm font-medium">
+                              7 - {ONE_YEAR}
+                            </span>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="extension_interest_rate"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="flex items-center gap-2">
+                                  <FormLabel className="text-muted-foreground">
+                                    Extension Interest Rate
+                                  </FormLabel>
+                                  <FaInfoCircle className="h-4 w-4 text-muted-foreground" />
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent className="w-80">
+                                <p>
+                                  The interest rate that will be applied during
+                                  the extension period. This can be the same or
+                                  different from the initial interest rate.
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          <div className="flex items-center gap-4">
+                            <FormControl className="flex-1">
+                              <Input
+                                type="number"
+                                placeholder="Extension Interest Rate"
+                                min={0}
+                                max={100}
+                                step={0.5}
+                                disabled={!form.watch("extension_enabled")}
                                 {...field}
                                 value={field.value}
                                 onChange={(e) =>

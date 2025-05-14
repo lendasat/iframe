@@ -101,6 +101,8 @@ export interface CreateLoanOfferRequest {
   lender_pk: string;
   lender_derivation_path: string;
   kyc_link?: string;
+  extension_duration_days?: number;
+  extension_interest_rate?: number;
 }
 
 export enum LoanOfferStatus {
@@ -126,6 +128,8 @@ export interface LoanOffer {
   status: LoanOfferStatus;
   auto_accept: boolean;
   kyc_link?: string;
+  extension_max_duration_days: number;
+  extension_interest_rate?: number;
   created_at: Date;
   updated_at: Date;
 }
