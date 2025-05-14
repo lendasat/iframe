@@ -7,7 +7,13 @@ import {
   LuTriangleAlert,
 } from "react-icons/lu";
 import React, { useState } from "react";
-import { Button, CardContent, Separator, Skeleton } from "@frontend/shadcn";
+import {
+  Button,
+  Card,
+  CardContent,
+  Separator,
+  Skeleton,
+} from "@frontend/shadcn";
 import { Contract, LiquidationStatus } from "@frontend/http-client-lender";
 import {
   formatCurrency,
@@ -204,12 +210,8 @@ export const Collateral = ({ contract }: CollateralProps) => {
   const mempoolLinkToAddress = `${import.meta.env.VITE_MEMPOOL_REST_URL}/address/${depositAddress}`;
 
   return (
-    <>
+    <Card className={"border-none shadow-none"}>
       <CardContent className="pt-2">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-medium">Collateral</h3>
-        </div>
-
         <div className="border rounded-md p-4 mb-4">
           <div className="flex justify-between items-center">
             <span>Current Collateral</span>
@@ -338,6 +340,6 @@ export const Collateral = ({ contract }: CollateralProps) => {
 
         <LtvHealthInfo contract={contract} funded={isFunded} />
       </CardContent>
-    </>
+    </Card>
   );
 };

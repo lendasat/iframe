@@ -111,9 +111,8 @@ export const DisputesComponent: React.FC<DisputesComponentProps> = ({
   // If there are no disputes, show a simplified view with a create button
   if (disputes.length === 0 && !loading) {
     return (
-      <Card>
+      <Card className={"border-none shadow-none"}>
         <CardHeader>
-          <CardTitle>Disputes</CardTitle>
           <CardDescription>
             There are no disputes for this contract.
           </CardDescription>
@@ -138,10 +137,7 @@ export const DisputesComponent: React.FC<DisputesComponentProps> = ({
   }
 
   return (
-    <Card className="w-full max-w-4xl mx-auto">
-      <CardHeader>
-        <CardTitle>Contract Disputes</CardTitle>
-      </CardHeader>
+    <Card className="border-none shadow-none w-full max-w-4xl mx-auto">
       <CardContent className="space-y-4">
         {/* Scrollable horizontal list */}
         <ScrollArea className="w-full whitespace-nowrap rounded-md border">
