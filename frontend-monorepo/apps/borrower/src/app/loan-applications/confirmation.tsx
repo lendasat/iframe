@@ -4,7 +4,7 @@ import { Network, validate } from "bitcoin-address-validation";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertCircle, Info, Loader2 } from "lucide-react";
+import { AlertCircle, FileWarning, Info, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@frontend/shadcn";
 import {
   Form,
@@ -43,6 +43,7 @@ import {
   usePrice,
 } from "@frontend/ui-shared";
 import { ToS } from "../loan-offers/tos";
+import { Warning } from "postcss";
 
 // Zod schema for form validation
 const confirmationFormSchema = z.object({
@@ -78,6 +79,7 @@ export const Confirmation = ({
   const [bitcoinAddressValid, setBitcoinAddressValid] = useState(false);
   const [createRequestError, setCreateRequestError] = useState("");
   const [isCreatingRequest, setIsCreatingRequest] = useState(false);
+  const [fiatDetailsProvided, setFiatDetailsProvided] = useState(false);
 
   // Parse numeric values
   const selectedLoanAmount = parseInt(selectedLoanAmountString || "0");
@@ -126,9 +128,15 @@ export const Confirmation = ({
     selectedAssetType && LoanAssetHelper.isStableCoin(selectedAssetType),
   );
 
-  // Disable button for fiat loan types
+  const showFiatAddressInput = Boolean(
+    selectedAssetType && LoanAssetHelper.isFiat(selectedAssetType),
+  );
+
+  // Disable button if fiat request but fiat details have not been set yet
   const buttonDisabled =
-    selectedAssetType && LoanAssetHelper.isFiat(selectedAssetType);
+    selectedAssetType &&
+    LoanAssetHelper.isFiat(selectedAssetType) &&
+    !fiatDetailsProvided;
 
   // Validate Bitcoin address based on network
   const validateBitcoinAddress = (address: string) => {
@@ -280,33 +288,27 @@ export const Confirmation = ({
 
           <Separator />
           <div className="flex justify-between items-start">
-            <div className="flex items-center gap-1">
-              <div>
-                <div className={"flex gap-2 items-center"}>
-                  <p>Needed collateral</p>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-4 w-4 p-0"
-                        >
-                          <Info className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>
-                          Loan-to-Value ratio determines required collateral
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
+            <div className="flex flex-row items-center gap-1">
+              <div className={"flex gap-2 items-center"}>
+                <p>Collateral</p>
 
-                <Badge variant="outline" className="mt-1">
-                  {(ltv * 100).toFixed(0)}% LTV
-                </Badge>
+                <Badge variant="outline">{(ltv * 100).toFixed(0)}% LTV</Badge>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-4 w-4 p-0"
+                      >
+                        <Info className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Loan-to-Value ratio determines required collateral</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             </div>
             <div className="flex flex-col items-end">
@@ -454,6 +456,17 @@ export const Confirmation = ({
                     </FormItem>
                   )}
                 />
+              )}
+
+              {showFiatAddressInput && (
+                <Alert variant="warning">
+                  <FileWarning className="h-4 w-4" />
+                  <AlertTitle>Note</AlertTitle>
+                  <AlertDescription>
+                    Once a lender accepts your loan request, you will be
+                    prompted for your banking details.
+                  </AlertDescription>
+                </Alert>
               )}
 
               {createRequestError && (
