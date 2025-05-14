@@ -118,7 +118,7 @@ export default function LoanApplication() {
                 name="loanAmount"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>How much do you wish to borrow?</FormLabel>
+                    <FormLabel>How much do you wish to borrow in USD?</FormLabel>
                     <FormControl>
                       <div className="relative flex items-center max-w-2xl ">
                         <DollarSign className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 transform" />
