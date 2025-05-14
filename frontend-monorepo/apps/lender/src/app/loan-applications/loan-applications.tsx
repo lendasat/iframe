@@ -64,10 +64,11 @@ export default function TakeLoanApplication() {
 
   const actualInterest =
     loanApplication &&
-    (loanApplication.interest_rate / ONE_YEAR ) * loanApplication.duration_days;
+    (loanApplication.interest_rate / ONE_YEAR) * loanApplication.duration_days;
 
   const actualInterestUsdAmount =
-    loanApplication && actualInterest &&
+    loanApplication &&
+    actualInterest &&
     loanApplication.loan_amount * actualInterest;
 
   const collateralAmountBtc =

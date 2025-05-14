@@ -105,9 +105,7 @@ export default function LoanApplication() {
     updateSearchParams("ltv", ltvString);
   };
 
-  const availableLoanAssets = LoanAssetHelper.all().filter((a) =>
-    LoanAssetHelper.isStableCoin(a),
-  );
+  const availableLoanAssets = LoanAssetHelper.all();
 
   return (
     <ScrollArea className="h-screen">

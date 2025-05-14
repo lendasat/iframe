@@ -4,7 +4,7 @@ import { Network, validate } from "bitcoin-address-validation";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertCircle, Info, Loader, Loader2 } from "lucide-react";
+import { AlertCircle, Info, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@frontend/shadcn";
 import {
   Form,
@@ -24,11 +24,8 @@ import {
   TooltipTrigger,
 } from "@frontend/shadcn";
 import { Alert, AlertDescription, AlertTitle } from "@frontend/shadcn";
-
 import { Badge } from "@frontend/shadcn";
 import { Separator } from "@frontend/shadcn";
-
-// Import from the existing application
 import { LoanProductOption } from "@frontend/http-client-borrower";
 import { useWallet } from "@frontend/browser-wallet";
 import {
@@ -79,7 +76,6 @@ export const Confirmation = ({
   const { user } = useAuth();
 
   const [bitcoinAddressValid, setBitcoinAddressValid] = useState(false);
-  const [hideWalletConnectButton, setHideWalletConnectButton] = useState(false);
   const [createRequestError, setCreateRequestError] = useState("");
   const [isCreatingRequest, setIsCreatingRequest] = useState(false);
 
@@ -93,10 +89,8 @@ export const Confirmation = ({
   const actualInterest = interestRate / (ONE_YEAR / selectedLoanDuration);
   const actualInterestUsdAmount = (selectedLoanAmount * actualInterest) / 100.0;
 
-  const outstandingBalanceUsd = selectedLoanAmount + actualInterestUsdAmount;
-  // TODO: we should have collateral, origintion fee seperate and then show a sum of how much the user needs to deposit
-  const collateralUsdAmount =
-    outstandingBalanceUsd / ltv;
+  // Collataral and its valye
+  const collateralUsdAmount = selectedLoanAmount / ltv;
   const collateralAmountBtc = collateralUsdAmount / latestPrice;
 
   // Calculate fees
@@ -105,14 +99,18 @@ export const Confirmation = ({
   const discountedOriginationFee =
     originationFee - originationFee * discountedFee;
 
-  const originationFeeUsd = (selectedLoanAmount * discountedOriginationFee);
+  const originationFeeUsd = selectedLoanAmount * discountedOriginationFee;
   const originationFeeBtc = originationFeeUsd / latestPrice;
 
-  const neededCollateralAmountBtc = (collateralAmountBtc + originationFeeBtc).toFixed(8);
+  // How much the user needs to deposit
+  const totalDepositAmountBTC = collateralAmountBtc + originationFeeBtc;
+  const totalDepositAmountUsd = collateralUsdAmount + originationFeeUsd;
+
+  // The total amount the user will owe
+  const outstandingBalanceUsd = selectedLoanAmount + actualInterestUsdAmount;
 
   // Calculate liquidation price
-  const liquidationPrice =
-    (outstandingBalanceUsd / (collateralAmountBtc * 0.95))
+  const liquidationPrice = outstandingBalanceUsd / (collateralAmountBtc * 0.95);
 
   // Setup form with react-hook-form and zod validation
   const form = useForm<ConfirmationFormValues>({
@@ -199,18 +197,49 @@ export const Confirmation = ({
     }
   };
 
-
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
       <Card className="h-full">
         <CardHeader>
           <CardTitle className="text-lg">
             Summary to borrow{" "}
-            <strong>{formatCurrency(selectedLoanAmount || 0)}</strong> for{" "}
+            <strong>{formatCurrency(selectedLoanAmount || 0)}</strong>{" "}
+            {LoanAssetHelper.print(selectedAssetType)} for{" "}
             {getFormatedStringFromDays(selectedLoanDuration)}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="flex justify-between items-start">
+            <div className="flex items-center gap-1">
+              <span>Liquidation price</span>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-4 w-4 p-0">
+                      <Info className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Price at which your collateral may be liquidated</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <span
+              className={`font-semibold text-sm capitalize ${
+                discountedFee === 1 ? "line-through" : ""
+              }`}
+            >
+              {newFormatCurrency({
+                value: liquidationPrice,
+                maxFraction: 0,
+                minFraction: 1,
+              })}
+            </span>
+          </div>
+
+          <Separator />
+
           <div className="flex justify-between items-start">
             <div className="flex items-center gap-1">
               <span>Interest</span>
@@ -250,7 +279,6 @@ export const Confirmation = ({
           </div>
 
           <Separator />
-
           <div className="flex justify-between items-start">
             <div className="flex items-center gap-1">
               <div>
@@ -283,7 +311,7 @@ export const Confirmation = ({
             </div>
             <div className="flex flex-col items-end">
               <span className="font-semibold text-sm capitalize">
-                {neededCollateralAmountBtc} BTC
+                {collateralAmountBtc.toFixed(8)} BTC
               </span>
               <span className="text-xs text-muted-foreground">
                 ≈ {formatCurrency(collateralUsdAmount)}
@@ -292,7 +320,6 @@ export const Confirmation = ({
           </div>
 
           <Separator />
-
           <div className="flex justify-between items-start">
             <div className="flex flex-col">
               <span>Origination fee</span>
@@ -321,49 +348,43 @@ export const Confirmation = ({
           </div>
 
           <Separator />
+          <Separator />
 
           <div className="flex justify-between items-start">
             <div className="flex items-center gap-1">
-              <span>Liquidation price</span>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-4 w-4 p-0">
-                      <Info className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Price at which your collateral may be liquidated</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <div>
+                <div className={"flex gap-2 items-center"}>
+                  <p>Total funding amount</p>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-4 w-4 p-0"
+                        >
+                          <Info className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>
+                          The total deposit amount includes the collateral plus
+                          origination fee.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              </div>
             </div>
-            <span
-              className={`font-semibold text-sm capitalize ${
-                discountedFee === 1 ? "line-through" : ""
-              }`}
-            >
-              {newFormatCurrency({
-                value: liquidationPrice,
-                maxFraction: 0,
-                minFraction: 1,
-              })}
-            </span>
-          </div>
-
-          <Separator />
-
-          <div className="flex justify-between items-center">
-            <span>Coin</span>
-            <span
-              className={`font-semibold text-sm capitalize ${
-                discountedFee === 1 ? "line-through" : ""
-              }`}
-            >
-              {selectedAssetType
-                ? LoanAssetHelper.print(selectedAssetType)
-                : ""}
-            </span>
+            <div className="flex flex-col items-end">
+              <span className="font-semibold text-sm capitalize">
+                {totalDepositAmountBTC.toFixed(8)} BTC
+              </span>
+              <span className="text-xs text-muted-foreground">
+                ≈ {formatCurrency(totalDepositAmountUsd)}
+              </span>
+            </div>
           </div>
         </CardContent>
       </Card>
