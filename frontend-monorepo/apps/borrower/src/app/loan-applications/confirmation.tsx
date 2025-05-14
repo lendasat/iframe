@@ -132,12 +132,6 @@ export const Confirmation = ({
     selectedAssetType && LoanAssetHelper.isFiat(selectedAssetType),
   );
 
-  // Disable button if fiat request but fiat details have not been set yet
-  const buttonDisabled =
-    selectedAssetType &&
-    LoanAssetHelper.isFiat(selectedAssetType) &&
-    !fiatDetailsProvided;
-
   // Validate Bitcoin address based on network
   const validateBitcoinAddress = (address: string) => {
     let network = Network.mainnet;
@@ -478,10 +472,7 @@ export const Confirmation = ({
               )}
 
               <div className="flex flex-col">
-                <Button
-                  type="submit"
-                  disabled={buttonDisabled || isCreatingRequest}
-                >
+                <Button type="submit" disabled={isCreatingRequest}>
                   {isCreatingRequest ? (
                     <>
                       <Loader2 className="animate-spin" />
