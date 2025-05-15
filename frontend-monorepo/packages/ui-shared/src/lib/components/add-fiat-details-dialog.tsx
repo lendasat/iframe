@@ -16,11 +16,6 @@ import {
   AccordionTrigger,
   AccordionContent,
   AccordionItem,
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
   Textarea,
   CardFooter,
   RadioGroup,
@@ -36,7 +31,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import countries from "i18n-iso-countries";
 import english from "i18n-iso-countries/langs/en.json";
-
 import {
   IbanTransferDetails,
   InnerFiatLoanDetails as ReactInnerFiatLoanDetails,
@@ -96,7 +90,6 @@ const AddFiatDetailsDialog = ({
   onComplete,
 }: AddFiatDetailsDialogProps) => {
   countries.registerLocale(english);
-  const countryCodes = Object.keys(countries.getAlpha2Codes());
 
   const [open, setOpen] = useState(false);
   const [isAccepting, setIsAccepting] = useState(false);
@@ -227,377 +220,360 @@ const AddFiatDetailsDialog = ({
             <div className="py-4">
               <Card className={"mt-0"}>
                 <CardContent>
-                  <Form {...form}>
-                    <form
-                      onSubmit={form.handleSubmit(onSubmit)}
-                      className="space-y-6"
-                    >
-                      <Accordion
-                        type="multiple"
-                        value={expandedItems}
-                        onValueChange={setExpandedItems}
-                        className="w-full"
-                      >
-                        {/* Bank Details Section */}
-                        <AccordionItem value="bank-details">
-                          <AccordionTrigger className="text-lg font-medium">
-                            Bank Details
-                          </AccordionTrigger>
-                          <AccordionContent className="space-y-4 pt-4">
+                  <Accordion
+                    type="multiple"
+                    value={expandedItems}
+                    onValueChange={setExpandedItems}
+                    className="w-full"
+                  >
+                    {/* Bank Details Section */}
+                    <AccordionItem value="bank-details">
+                      <AccordionTrigger className="text-lg font-medium">
+                        Bank Details
+                      </AccordionTrigger>
+                      <AccordionContent className="space-y-4 pt-4">
+                        <FormField
+                          control={form.control}
+                          name="bankDetails.transferType"
+                          render={({ field }) => (
+                            <FormItem className="space-y-3">
+                              <FormLabel className="text-base">
+                                Transfer Type
+                              </FormLabel>
+                              <FormControl>
+                                <RadioGroup
+                                  onValueChange={field.onChange}
+                                  defaultValue={field.value}
+                                  className="flex flex-row space-x-4"
+                                >
+                                  <FormItem className="flex items-center space-x-3 space-y-0">
+                                    <FormControl>
+                                      <RadioGroupItem value="iban" />
+                                    </FormControl>
+                                    <FormLabel className="font-normal">
+                                      IBAN
+                                    </FormLabel>
+                                  </FormItem>
+                                  <FormItem className="flex items-center space-x-3 space-y-0">
+                                    <FormControl>
+                                      <RadioGroupItem value="swift" />
+                                    </FormControl>
+                                    <FormLabel className="font-normal">
+                                      SWIFT
+                                    </FormLabel>
+                                  </FormItem>
+                                </RadioGroup>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        {form.watch("bankDetails.transferType") === "iban" ? (
+                          <div
+                            className={
+                              "flex flex-row items-center justify-between"
+                            }
+                          >
                             <FormField
                               control={form.control}
-                              name="bankDetails.transferType"
+                              name="bankDetails.iban"
                               render={({ field }) => (
-                                <FormItem className="space-y-3">
-                                  <FormLabel className="text-base">
-                                    Transfer Type
-                                  </FormLabel>
+                                <FormItem>
+                                  <FormLabel>IBAN</FormLabel>
                                   <FormControl>
-                                    <RadioGroup
-                                      onValueChange={field.onChange}
-                                      defaultValue={field.value}
-                                      className="flex flex-row space-x-4"
-                                    >
-                                      <FormItem className="flex items-center space-x-3 space-y-0">
-                                        <FormControl>
-                                          <RadioGroupItem value="iban" />
-                                        </FormControl>
-                                        <FormLabel className="font-normal">
-                                          IBAN
-                                        </FormLabel>
-                                      </FormItem>
-                                      <FormItem className="flex items-center space-x-3 space-y-0">
-                                        <FormControl>
-                                          <RadioGroupItem value="swift" />
-                                        </FormControl>
-                                        <FormLabel className="font-normal">
-                                          SWIFT
-                                        </FormLabel>
-                                      </FormItem>
-                                    </RadioGroup>
+                                    <Input
+                                      placeholder="Enter IBAN"
+                                      {...field}
+                                    />
                                   </FormControl>
                                   <FormMessage />
                                 </FormItem>
                               )}
                             />
+                            <FormField
+                              control={form.control}
+                              name="bankDetails.bic"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>BIC</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="Enter BIC" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        ) : (
+                          <div
+                            className={
+                              "flex flex-row items-center justify-between"
+                            }
+                          >
+                            <FormField
+                              control={form.control}
+                              name="bankDetails.account_number"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Account Number</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      placeholder="Enter Account Number"
+                                      {...field}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name="bankDetails.swift"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>SWIFT Code</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      placeholder="Enter SWIFT Code"
+                                      {...field}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        )}
 
-                            {form.watch("bankDetails.transferType") ===
-                            "iban" ? (
-                              <div
-                                className={
-                                  "flex flex-row items-center justify-between"
-                                }
-                              >
-                                <FormField
-                                  control={form.control}
-                                  name="bankDetails.iban"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>IBAN</FormLabel>
-                                      <FormControl>
-                                        <Input
-                                          placeholder="Enter IBAN"
-                                          {...field}
-                                        />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                                <FormField
-                                  control={form.control}
-                                  name="bankDetails.bic"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>BIC</FormLabel>
-                                      <FormControl>
-                                        <Input
-                                          placeholder="Enter BIC"
-                                          {...field}
-                                        />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                              </div>
-                            ) : (
-                              <div
-                                className={
-                                  "flex flex-row items-center justify-between"
-                                }
-                              >
-                                <FormField
-                                  control={form.control}
-                                  name="bankDetails.account_number"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Account Number</FormLabel>
-                                      <FormControl>
-                                        <Input
-                                          placeholder="Enter Account Number"
-                                          {...field}
-                                        />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                                <FormField
-                                  control={form.control}
-                                  name="bankDetails.swift"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>SWIFT Code</FormLabel>
-                                      <FormControl>
-                                        <Input
-                                          placeholder="Enter SWIFT Code"
-                                          {...field}
-                                        />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                              </div>
+                        <div
+                          className={
+                            "flex flex-row items-center justify-between"
+                          }
+                        >
+                          <FormField
+                            control={form.control}
+                            name="bankDetails.bankName"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Bank Name</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    placeholder="Enter Bank Name"
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
                             )}
+                          />
 
-                            <div
-                              className={
-                                "flex flex-row items-center justify-between"
-                              }
+                          <FormField
+                            control={form.control}
+                            name="bankDetails.bankCountry"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Bank Country</FormLabel>
+                                <FormControl>
+                                  <CountrySelector
+                                    value={field.value}
+                                    onChange={field.onChange}
+                                    placeholder="Select Country"
+                                    triggerClassName="w-[150px]"
+                                    useCountryNameAsValue={true}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+
+                        <FormField
+                          control={form.control}
+                          name="bankDetails.bankAddress"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Bank Address</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="Enter Bank Address"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="bankDetails.purpose"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Purpose of Transfer</FormLabel>
+                              <FormControl>
+                                <Textarea
+                                  placeholder="Enter the purpose of this transfer"
+                                  {...field}
+                                  className="resize-none"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <CardFooter className="flex justify-between px-0">
+                          {step !== "bank" && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={prevStep}
                             >
-                              <FormField
-                                control={form.control}
-                                name="bankDetails.bankName"
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel>Bank Name</FormLabel>
-                                    <FormControl>
-                                      <Input
-                                        placeholder="Enter Bank Name"
-                                        {...field}
-                                      />
-                                    </FormControl>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
+                              Previous
+                            </Button>
+                          )}
 
-                              <FormField
-                                control={form.control}
-                                name="bankDetails.bankCountry"
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel>Bank Country</FormLabel>
-                                    <FormControl>
-                                      <CountrySelector
-                                        value={field.value}
-                                        onChange={field.onChange}
-                                        placeholder="Select Country"
-                                        triggerClassName="w-[150px]"
-                                        useCountryNameAsValue={true}
-                                      />
-                                    </FormControl>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                            </div>
+                          <Button
+                            type="button"
+                            onClick={nextStep}
+                            className="ml-auto"
+                          >
+                            Next
+                          </Button>
+                        </CardFooter>
+                      </AccordionContent>
+                    </AccordionItem>
 
-                            <FormField
-                              control={form.control}
-                              name="bankDetails.bankAddress"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Bank Address</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      placeholder="Enter Bank Address"
-                                      {...field}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
+                    {/* Beneficiary Details Section */}
+                    <AccordionItem value="beneficiary-details">
+                      <AccordionTrigger className="text-lg font-medium">
+                        Beneficiary Details
+                      </AccordionTrigger>
+                      <AccordionContent className="space-y-4 pt-4">
+                        <FormField
+                          control={form.control}
+                          name="beneficiaryDetails.fullName"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Full Name</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="Enter Full Name"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
 
-                            <FormField
-                              control={form.control}
-                              name="bankDetails.purpose"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Purpose of Transfer</FormLabel>
-                                  <FormControl>
-                                    <Textarea
-                                      placeholder="Enter the purpose of this transfer"
-                                      {...field}
-                                      className="resize-none"
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                            <CardFooter className="flex justify-between px-0">
-                              {step !== "bank" && (
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  onClick={prevStep}
-                                >
-                                  Previous
-                                </Button>
-                              )}
+                        <FormField
+                          control={form.control}
+                          name="beneficiaryDetails.address"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Address</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Enter Address" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
 
-                              <Button
-                                type="button"
-                                onClick={nextStep}
-                                className="ml-auto"
-                              >
-                                Next
-                              </Button>
-                            </CardFooter>
-                          </AccordionContent>
-                        </AccordionItem>
+                        <div className="grid grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="beneficiaryDetails.city"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>City</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Enter City" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
 
-                        {/* Beneficiary Details Section */}
-                        <AccordionItem value="beneficiary-details">
-                          <AccordionTrigger className="text-lg font-medium">
-                            Beneficiary Details
-                          </AccordionTrigger>
-                          <AccordionContent className="space-y-4 pt-4">
-                            <FormField
-                              control={form.control}
-                              name="beneficiaryDetails.fullName"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Full Name</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      placeholder="Enter Full Name"
-                                      {...field}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
+                          <FormField
+                            control={form.control}
+                            name="beneficiaryDetails.zipCode"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Zip Code</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    placeholder="Enter Zip Code"
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
 
-                            <FormField
-                              control={form.control}
-                              name="beneficiaryDetails.address"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Address</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      placeholder="Enter Address"
-                                      {...field}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
+                        <FormField
+                          control={form.control}
+                          name="beneficiaryDetails.country"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Country</FormLabel>
+                              <FormControl>
+                                <CountrySelector
+                                  value={field.value}
+                                  onChange={field.onChange}
+                                  placeholder="Select Country"
+                                  triggerClassName="w-[150px]"
+                                  useCountryNameAsValue={true}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
 
-                            <div className="grid grid-cols-2 gap-4">
-                              <FormField
-                                control={form.control}
-                                name="beneficiaryDetails.city"
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel>City</FormLabel>
-                                    <FormControl>
-                                      <Input
-                                        placeholder="Enter City"
-                                        {...field}
-                                      />
-                                    </FormControl>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
+                        <FormField
+                          control={form.control}
+                          name="beneficiaryDetails.additionalComments"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Additional Comments</FormLabel>
+                              <FormControl>
+                                <Textarea
+                                  placeholder="Any additional information"
+                                  {...field}
+                                  className="resize-none"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <CardFooter className="flex justify-between px-0">
+                          {step !== "bank" && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={prevStep}
+                            >
+                              Previous
+                            </Button>
+                          )}
 
-                              <FormField
-                                control={form.control}
-                                name="beneficiaryDetails.zipCode"
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel>Zip Code</FormLabel>
-                                    <FormControl>
-                                      <Input
-                                        placeholder="Enter Zip Code"
-                                        {...field}
-                                      />
-                                    </FormControl>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                            </div>
-
-                            <FormField
-                              control={form.control}
-                              name="beneficiaryDetails.country"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Country</FormLabel>
-                                  <FormControl>
-                                    <CountrySelector
-                                      value={field.value}
-                                      onChange={field.onChange}
-                                      placeholder="Select Country"
-                                      triggerClassName="w-[150px]"
-                                      useCountryNameAsValue={true}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-
-                            <FormField
-                              control={form.control}
-                              name="beneficiaryDetails.additionalComments"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Additional Comments</FormLabel>
-                                  <FormControl>
-                                    <Textarea
-                                      placeholder="Any additional information"
-                                      {...field}
-                                      className="resize-none"
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                            <CardFooter className="flex justify-between px-0">
-                              {step !== "bank" && (
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  onClick={prevStep}
-                                >
-                                  Previous
-                                </Button>
-                              )}
-
-                              <Button
-                                type="button"
-                                onClick={nextStep}
-                                className="ml-auto"
-                              >
-                                Done
-                              </Button>
-                            </CardFooter>
-                          </AccordionContent>
-                        </AccordionItem>
-                      </Accordion>
-                    </form>
-                  </Form>
+                          <Button
+                            type="button"
+                            onClick={nextStep}
+                            className="ml-auto"
+                          >
+                            Done
+                          </Button>
+                        </CardFooter>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
                 </CardContent>
               </Card>
 
