@@ -15,7 +15,6 @@ import { Alert, AlertDescription } from "@frontend/shadcn";
 import { ScrollArea } from "@frontend/shadcn";
 import { Skeleton } from "@frontend/shadcn";
 import { Separator } from "@frontend/shadcn";
-
 import {
   formatCurrency,
   getFormatedStringFromDays,
@@ -25,8 +24,7 @@ import {
   newFormatCurrency,
   ONE_YEAR,
 } from "@frontend/ui-shared";
-
-import AddFiatDetailsDialog from "./add-fiat-details-dialog";
+import AddFiatDetailsDialog from "@frontend/ui-shared/src/lib/components/add-fiat-details-dialog";
 
 // Type for DataItem props
 interface DataItemProps {
@@ -50,6 +48,7 @@ export default function TakeLoanApplication() {
   const { id } = useParams<{ id: string }>();
 
   const { getLoanApplication, takeLoanApplication } = useLenderHttpClient();
+  const { encryptFiatLoanDetailsLender } = useWallet();
   const [isTaking, setIsTaking] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [loanAddress, setLoanAddress] = useState<string>("");
@@ -358,10 +357,14 @@ export default function TakeLoanApplication() {
                         </AlertDescription>
                       </Alert>
                       <AddFiatDetailsDialog
-                        borrowerPk={loanApplication?.borrower_pk}
-                        lenderPk={lenderPubkey.pubkey}
-                        onComplete={async (data: FiatLoanDetails) => {
-                          await onSubmit(data);
+                        onComplete={async (data) => {
+                          const fiatLoanDetails =
+                            await encryptFiatLoanDetailsLender(
+                              data,
+                              lenderPubkey.pubkey,
+                              loanApplication.borrower_pk,
+                            );
+                          await onSubmit(fiatLoanDetails);
                         }}
                       >
                         <Button
