@@ -2,13 +2,9 @@ import { ReactNode, useState } from "react";
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
   Dialog,
   DialogContent,
   DialogFooter,
-  DialogTrigger,
   Form,
   FormControl,
   FormField,
@@ -19,7 +15,6 @@ import {
   Accordion,
   AccordionTrigger,
   AccordionContent,
-  Switch,
   AccordionItem,
   Select,
   SelectTrigger,
@@ -28,13 +23,17 @@ import {
   SelectItem,
   Textarea,
   CardFooter,
+  RadioGroup,
+  RadioGroupItem,
+  DialogTitle,
+  DialogHeader,
+  DialogDescription,
+  DialogTrigger,
 } from "@frontend/shadcn";
 import { Button } from "@frontend/shadcn";
-import { Alert, AlertDescription, AlertTitle } from "@frontend/shadcn";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { InfoCircledIcon } from "@radix-ui/react-icons";
 import {
   IbanTransferDetails,
   InnerFiatLoanDetails as ReactInnerFiatLoanDetails,
@@ -43,7 +42,7 @@ import {
 
 // Define the zod schema
 const bankDetailsSchema = z.object({
-  isIban: z.boolean(),
+  transferType: z.enum(["iban", "swift"]),
   iban: z
     .string()
     .optional()
@@ -124,7 +123,7 @@ const AddFiatDetailsDialog = ({
     resolver: zodResolver(formSchema),
     defaultValues: {
       bankDetails: {
-        isIban: true,
+        transferType: "iban",
         iban: "",
         bic: "",
         bankName: "",
@@ -145,14 +144,13 @@ const AddFiatDetailsDialog = ({
 
   // 2. Define a submit handler.
   async function onSubmit(values: z.infer<typeof formSchema>) {
-
     setApproveError(undefined);
     setIsAccepting(true);
 
     try {
       let ibanTransferDetails: IbanTransferDetails | undefined = undefined;
       let swiftTransferDetails: SwiftTransferDetails | undefined = undefined;
-      if (values.bankDetails.isIban) {
+      if (values.bankDetails.transferType === "iban") {
         ibanTransferDetails = {
           iban: values.bankDetails.iban || "",
           bic: values.bankDetails.bic,
@@ -160,7 +158,7 @@ const AddFiatDetailsDialog = ({
       } else {
         swiftTransferDetails = {
           account_number: values.bankDetails.account_number || "",
-          swift_or_bic: values.bankDetails.bic || "",
+          swift_or_bic: values.bankDetails.swift || "",
         };
       }
 
@@ -228,17 +226,17 @@ const AddFiatDetailsDialog = ({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Fiat Transfer Details</DialogTitle>
+          <DialogDescription>
+            Please provide the necessary details for your fiat transfer Your
+            details are encrypted and will be securely stored.
+          </DialogDescription>
+        </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <form onSubmit={form.handleSubmit(onSubmit)}>
             <div className="py-4">
-              <Card className={"mt-4"}>
-                <CardHeader>
-                  <CardTitle>Fiat Transfer Details</CardTitle>
-                  <CardDescription>
-                    Please provide the necessary details for your fiat transfer
-                  </CardDescription>
-                </CardHeader>
-
+              <Card className={"mt-0"}>
                 <CardContent>
                   <Form {...form}>
                     <form
@@ -259,25 +257,43 @@ const AddFiatDetailsDialog = ({
                           <AccordionContent className="space-y-4 pt-4">
                             <FormField
                               control={form.control}
-                              name="bankDetails.isIban"
+                              name="bankDetails.transferType"
                               render={({ field }) => (
-                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                                  <div className="space-y-0.5">
-                                    <FormLabel className="text-base">
-                                      IBAN or SWIFT
-                                    </FormLabel>
-                                  </div>
+                                <FormItem className="space-y-3">
+                                  <FormLabel className="text-base">
+                                    Transfer Type
+                                  </FormLabel>
                                   <FormControl>
-                                    <Switch
-                                      checked={field.value}
-                                      onCheckedChange={field.onChange}
-                                    />
+                                    <RadioGroup
+                                      onValueChange={field.onChange}
+                                      defaultValue={field.value}
+                                      className="flex flex-row space-x-4"
+                                    >
+                                      <FormItem className="flex items-center space-x-3 space-y-0">
+                                        <FormControl>
+                                          <RadioGroupItem value="iban" />
+                                        </FormControl>
+                                        <FormLabel className="font-normal">
+                                          IBAN
+                                        </FormLabel>
+                                      </FormItem>
+                                      <FormItem className="flex items-center space-x-3 space-y-0">
+                                        <FormControl>
+                                          <RadioGroupItem value="swift" />
+                                        </FormControl>
+                                        <FormLabel className="font-normal">
+                                          SWIFT
+                                        </FormLabel>
+                                      </FormItem>
+                                    </RadioGroup>
                                   </FormControl>
+                                  <FormMessage />
                                 </FormItem>
                               )}
                             />
 
-                            {form.watch("bankDetails.isIban") ? (
+                            {form.watch("bankDetails.transferType") ===
+                            "iban" ? (
                               <div
                                 className={
                                   "flex flex-row items-center justify-between"
@@ -618,15 +634,6 @@ const AddFiatDetailsDialog = ({
                 </CardContent>
               </Card>
 
-              <Alert variant="default" className={"mt-4"}>
-                <InfoCircledIcon className="h-4 w-4" />
-                <AlertTitle>Info</AlertTitle>
-                <AlertDescription>
-                  Your banking details are encrypted and will be securely
-                  stored.
-                </AlertDescription>
-              </Alert>
-
               {approveError && (
                 <div className="mt-4 p-2 bg-red-50 text-red-600 rounded-md">
                   <p className="text-sm">{approveError}</p>
@@ -635,7 +642,14 @@ const AddFiatDetailsDialog = ({
             </div>
 
             <DialogFooter className="flex sm:justify-between gap-2">
-              <Button variant="outline" onClick={() => setOpen(false)}>
+              <Button
+                variant="outline"
+                type={"button"}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setOpen(false);
+                }}
+              >
                 Back
               </Button>
               <Button variant="default" type="submit" disabled={isAccepting}>
