@@ -34,11 +34,15 @@ import { Button } from "@frontend/shadcn";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import countries from "i18n-iso-countries";
+import english from "i18n-iso-countries/langs/en.json";
+
 import {
   IbanTransferDetails,
   InnerFiatLoanDetails as ReactInnerFiatLoanDetails,
   SwiftTransferDetails,
 } from "@frontend/base-http-client";
+import CountrySelector from "./country-selector";
 
 // Define the zod schema
 const bankDetailsSchema = z.object({
@@ -82,25 +86,6 @@ const formSchema = z.object({
 // Types based on the schema
 type FormValues = z.infer<typeof formSchema>;
 
-// TODO: fill in more countries
-const countries = [
-  "United States",
-  "United Kingdom",
-  "Germany",
-  "France",
-  "Spain",
-  "Italy",
-  "Netherlands",
-  "Switzerland",
-  "Canada",
-  "Australia",
-  "Japan",
-  "China",
-  "Brazil",
-  "India",
-  "Singapore",
-];
-
 interface AddFiatDetailsDialogProps {
   children: ReactNode;
   onComplete: (data: ReactInnerFiatLoanDetails) => void;
@@ -110,9 +95,13 @@ const AddFiatDetailsDialog = ({
   children,
   onComplete,
 }: AddFiatDetailsDialogProps) => {
+  countries.registerLocale(english);
+  const countryCodes = Object.keys(countries.getAlpha2Codes());
+
   const [open, setOpen] = useState(false);
   const [isAccepting, setIsAccepting] = useState(false);
   const [approveError, setApproveError] = useState<string | undefined>();
+  // const { countries } = useCountries()
 
   const [step, setStep] = useState<"bank" | "beneficiary" | "review">("bank");
   const [expandedItems, setExpandedItems] = useState<string[]>([
@@ -402,24 +391,13 @@ const AddFiatDetailsDialog = ({
                                   <FormItem>
                                     <FormLabel>Bank Country</FormLabel>
                                     <FormControl>
-                                      <Select
-                                        onValueChange={field.onChange}
-                                        defaultValue={field.value}
-                                      >
-                                        <SelectTrigger>
-                                          <SelectValue placeholder="Select Country" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          {countries.map((country) => (
-                                            <SelectItem
-                                              key={country}
-                                              value={country}
-                                            >
-                                              {country}
-                                            </SelectItem>
-                                          ))}
-                                        </SelectContent>
-                                      </Select>
+                                      <CountrySelector
+                                        value={field.value}
+                                        onChange={field.onChange}
+                                        placeholder="Select Country"
+                                        triggerClassName="w-[150px]"
+                                        useCountryNameAsValue={true}
+                                      />
                                     </FormControl>
                                     <FormMessage />
                                   </FormItem>
@@ -566,24 +544,13 @@ const AddFiatDetailsDialog = ({
                                 <FormItem>
                                   <FormLabel>Country</FormLabel>
                                   <FormControl>
-                                    <Select
-                                      onValueChange={field.onChange}
-                                      defaultValue={field.value}
-                                    >
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Select Country" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {countries.map((country) => (
-                                          <SelectItem
-                                            key={country}
-                                            value={country}
-                                          >
-                                            {country}
-                                          </SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
+                                    <CountrySelector
+                                      value={field.value}
+                                      onChange={field.onChange}
+                                      placeholder="Select Country"
+                                      triggerClassName="w-[150px]"
+                                      useCountryNameAsValue={true}
+                                    />
                                   </FormControl>
                                   <FormMessage />
                                 </FormItem>
