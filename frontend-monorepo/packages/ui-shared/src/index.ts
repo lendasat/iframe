@@ -178,7 +178,6 @@ export * from "./lib/components/mnemonic";
 export * from "./lib/components/nostr-chat-settings";
 export * from "./lib/UserStats";
 export * from "./lib/components/KycBadge";
-export * from "./lib/bank-details/bank-details-dialog";
 export * from "./lib/bank-details/banking-details-summary";
 export * from "./lib/components/NotificationToast";
 export * from "./lib/components/version";

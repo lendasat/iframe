@@ -12,9 +12,8 @@ import {
 } from "@frontend/http-client-borrower";
 import {
   AbbreviationExplanationInfo,
+  AddFiatDetailsDialog,
   FiatDialogFormDetails,
-  FiatTransferDetails,
-  FiatTransferDetailsDialog,
   formatCurrency,
   getFormatedStringFromDays,
   InterestRateInfoLabel,
@@ -52,6 +51,7 @@ import { ToS } from "./tos";
 import { AlertCircle, ExternalLink } from "lucide-react";
 import { Button, Alert, AlertDescription, AlertTitle } from "@frontend/shadcn";
 import { LuLoader } from "react-icons/lu";
+import { toast } from "sonner";
 
 async function isInUS(): Promise<boolean> {
   try {
@@ -79,7 +79,8 @@ export const Confirmation = ({
   selectedLoanDuration: selectedLoanDurationString,
 }: ConfirmationProps) => {
   const navigate = useNavigate();
-  const { getNpub, getPkAndDerivationPath } = useWallet();
+  const { getNpub, getPkAndDerivationPath, encryptFiatLoanDetailsBorrower } =
+    useWallet();
   const { hasBringinApiKey: getHasBringinApiKey } = useHttpClientBorrower();
 
   const { loading: apiKeyLoading, value: maybeApiKey } = useAsync(async () => {
@@ -576,7 +577,8 @@ export const Confirmation = ({
                       weight={"light"}
                       className="text-font dark:text-font-dark"
                     >
-                      This address will be used to return the collateral to you
+                      This address will be used to return the bitcoin collateral
+                      to you
                     </Text>
                     {bitcoinAddressInputError && (
                       <span className="text-sm text-red-500">
@@ -598,43 +600,31 @@ export const Confirmation = ({
                     <Skeleton loading={true}>Loading</Skeleton>
                   ) : (
                     <Box>
-                      {fiatTransferDetailsConfirmed ? (
-                        <FiatTransferDetails
-                          details={fiatTransferDetails}
-                          onConfirm={async (
-                            encryptFn?: (
-                              ownEncryptionPk: string,
-                            ) => Promise<FiatLoanDetails>,
-                          ) => {
-                            if (encryptFn) {
-                              const pkAndPath = await getPkAndDerivationPath();
-                              const details = await encryptFn(pkAndPath.pubkey);
+                      <AddFiatDetailsDialog
+                        onComplete={async (data) => {
+                          const pkAndPath = await getPkAndDerivationPath();
+                          setOwnPk(pkAndPath.pubkey);
+                          setOwnPath(pkAndPath.path);
 
-                              setOwnPk(pkAndPath.pubkey);
-                              setOwnPath(pkAndPath.path);
-
-                              setEncryptedFiatTransferDetails(details);
-                              setFiatTransferDetailsConfirmed(true);
-                            }
-                          }}
-                          counterpartyPk={selectedOffer.lender_pk}
-                          isBorrower={true}
-                        />
-                      ) : (
-                        <FiatTransferDetailsDialog
-                          formData={fiatTransferDetails}
-                          onConfirm={(data: FiatDialogFormDetails) => {
-                            setFiatTransferDetails(data);
-                            setFiatTransferDetailsConfirmed(true);
-                          }}
+                          const fiatLoanDetails =
+                            await encryptFiatLoanDetailsBorrower(
+                              data,
+                              pkAndPath.pubkey,
+                              selectedOffer.lender_pk,
+                            );
+                          setEncryptedFiatTransferDetails(fiatLoanDetails);
+                          setFiatTransferDetailsConfirmed(true);
+                          toast.success("Fiat Details Updated");
+                        }}
+                      >
+                        <Button
+                          size="default"
+                          className="w-full"
+                          disabled={fiatTransferDetailsConfirmed}
                         >
-                          <Box width="100%">
-                            <Button className={"w-full"}>
-                              Add loan transfer details
-                            </Button>
-                          </Box>
-                        </FiatTransferDetailsDialog>
-                      )}
+                          Provide bank details
+                        </Button>
+                      </AddFiatDetailsDialog>
                     </Box>
                   )}
                 </DataList.Value>
@@ -744,7 +734,7 @@ export const Confirmation = ({
             </Alert>
           )}
           <Button
-            className={"w-full"}
+            className={"w-full -px-4"}
             onClick={unlockWalletOrCreateOfferRequest}
             disabled={buttonDisabled}
           >
