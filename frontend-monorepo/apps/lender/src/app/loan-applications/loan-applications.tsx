@@ -24,7 +24,7 @@ import {
   newFormatCurrency,
   ONE_YEAR,
 } from "@frontend/ui-shared";
-import AddFiatDetailsDialog from "@frontend/ui-shared/src/lib/components/add-fiat-details-dialog";
+import { AddFiatDetailsDialog } from "@frontend/ui-shared";
 
 // Type for DataItem props
 interface DataItemProps {

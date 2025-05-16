@@ -36,7 +36,7 @@ import {
   InnerFiatLoanDetails as ReactInnerFiatLoanDetails,
   SwiftTransferDetails,
 } from "@frontend/base-http-client";
-import CountrySelector from "./country-selector";
+import CountrySelector from "../components/country-selector";
 
 // Define the zod schema
 const bankDetailsSchema = z.object({
