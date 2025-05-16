@@ -76,13 +76,15 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 interface FiatDetailsFormProps {
-  onSubmit: (data: ReactInnerFiatLoanDetails) => void;
+  onSubmit: (data: ReactInnerFiatLoanDetails) => Promise<void>;
   onCancel: () => void;
+  isSubmitting?: boolean;
 }
 
 export const FiatDetailsForm = ({
   onSubmit: handleFormSubmit,
   onCancel,
+  isSubmitting,
 }: FiatDetailsFormProps) => {
   countries.registerLocale(english);
 
@@ -135,7 +137,7 @@ export const FiatDetailsForm = ({
         };
       }
 
-      handleFormSubmit({
+      await handleFormSubmit({
         address: values.beneficiaryDetails.address,
         city: values.beneficiaryDetails.city,
         comments: values.beneficiaryDetails.additionalComments,
@@ -150,11 +152,11 @@ export const FiatDetailsForm = ({
         purpose_of_remittance: values.bankDetails.purpose,
       });
     } catch (error) {
-      console.log(`Failed encrypting fiat details ${error}`);
+      console.log(`Failed to submit ${error}`);
       setApproveError(
         error instanceof Error
           ? error.message
-          : "Failed to encrypt fiat details. Please try again.",
+          : "Failed to submit. Please try again.",
       );
       return;
     } finally {
@@ -550,8 +552,12 @@ export const FiatDetailsForm = ({
           <Button variant="outline" type={"button"} onClick={onCancel}>
             Back
           </Button>
-          <Button variant="default" type="submit" disabled={isAccepting}>
-            {isAccepting ? "Processing..." : <>Submit</>}
+          <Button
+            variant="default"
+            type="submit"
+            disabled={isAccepting || isSubmitting}
+          >
+            {isAccepting || isSubmitting ? "Processing..." : <>Submit</>}
           </Button>
         </div>
       </form>
