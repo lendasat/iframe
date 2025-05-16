@@ -184,7 +184,10 @@ const EnhancedBitcoinLoan = () => {
                   </TabsContent>
 
                   <TabsContent value="collateral" className="m-0">
-                    <Collateral contract={contract} />
+                    <Collateral
+                      contract={contract}
+                      refreshContract={refreshContract}
+                    />
                   </TabsContent>
 
                   <TabsContent value="timeline" className="m-0">

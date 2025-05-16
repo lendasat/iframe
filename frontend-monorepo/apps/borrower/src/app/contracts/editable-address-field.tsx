@@ -16,7 +16,6 @@ import {
 import { Input } from "@frontend/shadcn";
 import { Network, validate } from "bitcoin-address-validation";
 import { useHttpClientBorrower } from "@frontend/http-client-borrower";
-import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 // Define props interface
@@ -30,6 +29,7 @@ interface EditableAddressFieldProps {
       value: ((prevState: boolean) => boolean) | boolean,
     ) => void,
   ) => Promise<void>;
+  refreshContract: () => void;
 }
 
 // Define Zod schema for Bitcoin address validation
@@ -44,12 +44,12 @@ export default function EditableAddressField({
   refundAddress,
   shortenAddress,
   handleCopy,
+  refreshContract,
 }: EditableAddressFieldProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [refundAddressCopied, setRefundAddressCopied] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { updateBorrowerBtcAddress } = useHttpClientBorrower();
-  const navigate = useNavigate();
 
   // Initialize React Hook Form
   const form = useForm<FormValues>({
@@ -119,8 +119,8 @@ export default function EditableAddressField({
       console.log("Address valid, submitting to API");
       await updateBorrowerBtcAddress(contractId, address);
       console.log("API call successful");
-      toast("Address updated successfully");
-      navigate(0);
+      toast.success("Address updated successfully");
+      refreshContract();
 
       // Only close the form after successful submission
       setIsEditing(false);

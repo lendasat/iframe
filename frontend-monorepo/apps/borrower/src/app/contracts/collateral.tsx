@@ -31,6 +31,7 @@ const shortenAddress = (address?: string) => {
 
 interface CollateralProps {
   contract?: undefined | Contract;
+  refreshContract: () => void;
 }
 
 interface LtvHealthInfoProps {
@@ -133,7 +134,7 @@ function LtvHealthInfo({ contract, funded }: LtvHealthInfoProps) {
   }
 }
 
-export const Collateral = ({ contract }: CollateralProps) => {
+export const Collateral = ({ contract, refreshContract }: CollateralProps) => {
   const { latestPrice } = usePrice();
   const [contractAddressCopied, setContractAddressCopied] = useState(false);
 
@@ -211,7 +212,6 @@ export const Collateral = ({ contract }: CollateralProps) => {
 
   const depositAddress = contract?.contract_address;
   const mempoolLinkToContractAddress = `${import.meta.env.VITE_MEMPOOL_REST_URL}/address/${depositAddress}`;
-  const mempoolLinkToRefundAddress = `${import.meta.env.VITE_MEMPOOL_REST_URL}/address/${refundAddress}`;
 
   return (
     <>
@@ -288,6 +288,7 @@ export const Collateral = ({ contract }: CollateralProps) => {
             refundAddress={refundAddress}
             shortenAddress={shortenAddress}
             handleCopy={handleCopy}
+            refreshContract={refreshContract}
           />
           <Separator className="my-3" />
           <div className="flex justify-between items-center">
