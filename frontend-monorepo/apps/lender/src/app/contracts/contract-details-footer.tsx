@@ -57,7 +57,10 @@ export function ContractDetailsFooter({
     }
   } else if (contract.status === ContractStatus.CollateralConfirmed) {
     button = (
-      <PayoutPrincipleDialog contract={contract}>
+      <PayoutPrincipleDialog
+        contract={contract}
+        refreshContract={refreshContract}
+      >
         <Button type={"button"} disabled={buttonDisabled}>
           Payout Principal <LuChevronRight className="ml-1 h-4 w-4" />
         </Button>
@@ -70,6 +73,7 @@ export function ContractDetailsFooter({
         loanAmount={contract.loan_amount}
         interestAmount={contract.interest}
         expiry={contract.expiry}
+        refreshContract={refreshContract}
       >
         <Button type={"button"} disabled={buttonDisabled}>
           Accept or Reject Renewal <LuChevronRight className="ml-1 h-4 w-4" />
@@ -78,7 +82,10 @@ export function ContractDetailsFooter({
     );
   } else if (contract.status === ContractStatus.RepaymentProvided) {
     button = (
-      <ConfirmRepaymentDialog contract={contract}>
+      <ConfirmRepaymentDialog
+        contract={contract}
+        refreshContract={refreshContract}
+      >
         <Button type={"button"} disabled={buttonDisabled}>
           Confirm Repayment <LuChevronRight className="ml-1 h-4 w-4" />
         </Button>
@@ -89,7 +96,10 @@ export function ContractDetailsFooter({
     contract.status === ContractStatus.Undercollateralized
   ) {
     button = (
-      <DefaultedOrUndercollateralizedContractDialog contract={contract}>
+      <DefaultedOrUndercollateralizedContractDialog
+        contract={contract}
+        refreshContract={refreshContract}
+      >
         <Button type={"button"} disabled={buttonDisabled}>
           Liquidate <LuChevronRight className="ml-1 h-4 w-4" />
         </Button>

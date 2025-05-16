@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { LuInfo, LuLoader } from "react-icons/lu";
 import { Contract, useLenderHttpClient } from "@frontend/http-client-lender";
 import {
@@ -19,15 +18,15 @@ import {
 
 interface FiatPayoutProps {
   contract: Contract;
+  refreshContract: () => void;
 }
 
-export function FiatPayout({ contract }: FiatPayoutProps) {
+export function FiatPayout({ contract, refreshContract }: FiatPayoutProps) {
   const [paymentError, setPaymentError] = useState<string | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [transferDescription, setTransferDescription] = useState<string>("");
 
   const { principalGiven } = useLenderHttpClient();
-  const navigate = useNavigate();
 
   const totalPaymentAmount = contract.loan_amount;
 
@@ -51,8 +50,7 @@ export function FiatPayout({ contract }: FiatPayoutProps) {
       setIsSubmitting(true);
       await principalGiven(contract.id, transferDescription);
 
-      // TODO: ideally we wouldn't have todo this... but it's the best we can do to refresh the page
-      navigate(0);
+      refreshContract();
     } catch (error) {
       // Handle the error
       console.error("Failed to confirm payment:", error);

@@ -37,17 +37,18 @@ const shortenTxid = (txid?: string) => {
 interface ApproveOrRejectExtensionDialogProps {
   children: ReactNode;
   contract: Contract;
+  refreshContract: () => void;
 }
 
 const RepaymentConfirmationDialog = ({
   children,
   contract,
+  refreshContract,
 }: ApproveOrRejectExtensionDialogProps) => {
   const [isConfirming, setIsConfirming] = useState(false);
   const [txidCopied, setTxidCopied] = useState(false);
   const { markPrincipalConfirmed } = useLenderHttpClient();
   const [rejectError, setRejectError] = useState<string | undefined>();
-  const navigate = useNavigate();
 
   const handleCopyTxid = async (txid: string) => {
     await navigator.clipboard.writeText(txid);
@@ -61,7 +62,7 @@ const RepaymentConfirmationDialog = ({
     setIsConfirming(true);
     try {
       await markPrincipalConfirmed(contract.id);
-      navigate(0);
+      refreshContract();
     } catch (error) {
       console.error(`Failed confirming repayment $error}`);
       setRejectError(

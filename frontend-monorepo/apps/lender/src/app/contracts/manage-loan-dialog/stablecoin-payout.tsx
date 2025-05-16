@@ -28,16 +28,19 @@ import {
 
 interface StablecoinRepaymentProps {
   contract?: Contract;
+  refreshContract: () => void;
 }
 
-export function StablecoinPayout({ contract }: StablecoinRepaymentProps) {
+export function StablecoinPayout({
+  contract,
+  refreshContract,
+}: StablecoinRepaymentProps) {
   const [copied, setCopied] = useState(false);
   const [paymentError, setPaymentError] = useState<string | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [transactionId, setTransactionId] = useState<string>("");
 
   const { principalGiven } = useLenderHttpClient();
-  const navigate = useNavigate();
 
   const loanAmount = contract?.loan_amount;
 
@@ -77,8 +80,7 @@ export function StablecoinPayout({ contract }: StablecoinRepaymentProps) {
       setIsSubmitting(true);
       await principalGiven(contract.id, transactionId);
 
-      // TODO: ideally we wouldn't have todo this... but it's the best we can do to refresh the page
-      navigate(0);
+      refreshContract();
     } catch (error) {
       // Handle the error
       console.error("Failed to confirm repayment:", error);
