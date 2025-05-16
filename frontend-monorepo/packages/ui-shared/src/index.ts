@@ -184,3 +184,4 @@ export * from "./lib/components/version";
 export * from "./lib/components/Logout";
 export * from "./lib/components/theme-switch";
 export * from "./lib/bank-details/add-fiat-details-dialog";
+export * from "./lib/bank-details/add-fiat-details-form";
