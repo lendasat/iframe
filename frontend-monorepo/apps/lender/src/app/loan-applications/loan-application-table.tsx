@@ -320,6 +320,7 @@ export function LoanApplicationTable({
           },
           borrower_loan_address: "dummy",
           borrower_btc_address: "dummy",
+          borrower_pk: "dummy",
           loan_type: LoanType.StableCoin,
           status: LoanApplicationStatus.Available,
           created_at: new Date(),

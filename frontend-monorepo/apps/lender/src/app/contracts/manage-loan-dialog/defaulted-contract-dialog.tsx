@@ -49,6 +49,7 @@ import { useNavigate } from "react-router-dom";
 interface DefaultedLoanDialogProps {
   contract: Contract;
   children: ReactNode;
+  refreshContract: () => void;
 }
 
 const addressSchema = z.object({
@@ -76,8 +77,8 @@ const addressSchema = z.object({
 const DefaultedOrUndercollateralizedContractDialog = ({
   contract,
   children,
+  refreshContract,
 }: DefaultedLoanDialogProps) => {
-  const navigate = useNavigate();
   const { recommendedFees } = useFees();
   const { signLiquidationPsbtWithPassword } = useWallet();
   const {
@@ -303,7 +304,7 @@ const DefaultedOrUndercollateralizedContractDialog = ({
 
               {success && (
                 <DialogClose>
-                  <Button variant="default" onClick={() => navigate(0)}>
+                  <Button variant="default" onClick={() => refreshContract()}>
                     Done
                   </Button>
                 </DialogClose>

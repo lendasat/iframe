@@ -13,7 +13,6 @@ import { Button } from "@frontend/shadcn";
 import { Alert, AlertDescription, AlertTitle } from "@frontend/shadcn";
 import { shortenUuid } from "./details";
 import { useLenderHttpClient } from "@frontend/http-client-lender";
-import { useNavigate } from "react-router-dom";
 import { Check } from "lucide-react";
 import { format } from "date-fns";
 
@@ -23,6 +22,7 @@ interface ApproveOrRejectExtensionDialogProps {
   loanAmount: number;
   interestAmount: number;
   expiry: Date;
+  refreshContract: () => void;
 }
 
 const ApproveOrRejectExtensionDialog = ({
@@ -31,6 +31,7 @@ const ApproveOrRejectExtensionDialog = ({
   loanAmount,
   interestAmount,
   expiry,
+  refreshContract,
 }: ApproveOrRejectExtensionDialogProps) => {
   const [open, setOpen] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
@@ -38,7 +39,6 @@ const ApproveOrRejectExtensionDialog = ({
   const [rejectError, setRejectError] = useState<string | undefined>();
   const [approveError, setApproveError] = useState<string | undefined>();
   const { rejectContractExtension, approveContract } = useLenderHttpClient();
-  const navigate = useNavigate();
 
   const handleReject = async () => {
     if (!contractId) {
@@ -51,7 +51,7 @@ const ApproveOrRejectExtensionDialog = ({
     try {
       await rejectContractExtension(contractId);
       setOpen(false);
-      navigate(0);
+      refreshContract();
     } catch (error) {
       console.error("Failed to reject request:", error);
       setRejectError(
@@ -75,7 +75,7 @@ const ApproveOrRejectExtensionDialog = ({
     try {
       await approveContract(contractId);
       setOpen(false);
-      navigate(0);
+      refreshContract();
     } catch (error) {
       console.error("Failed to approve request:", error);
       setApproveError(

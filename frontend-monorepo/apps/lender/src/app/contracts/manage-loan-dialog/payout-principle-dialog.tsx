@@ -30,11 +30,13 @@ const shortenUuid = (uuid?: string) => {
 interface PayoutPrincipleDialogProps {
   children: React.ReactNode;
   contract?: Contract;
+  refreshContract: () => void;
 }
 
 const PayoutPrincipleDialog = ({
   children,
   contract,
+  refreshContract,
 }: PayoutPrincipleDialogProps) => {
   const [open, setOpen] = useState(false);
   const [copiedAmount, setCopiedAmount] = useState(false);
@@ -96,11 +98,17 @@ const PayoutPrincipleDialog = ({
 
           {contract?.loan_asset &&
             LoanAssetHelper.isStableCoin(contract.loan_asset) && (
-              <StablecoinPayout contract={contract} />
+              <StablecoinPayout
+                contract={contract}
+                refreshContract={refreshContract}
+              />
             )}
           {contract?.loan_asset &&
             LoanAssetHelper.isFiat(contract.loan_asset) && (
-              <FiatPayout contract={contract} />
+              <FiatPayout
+                contract={contract}
+                refreshContract={refreshContract}
+              />
             )}
         </>
 

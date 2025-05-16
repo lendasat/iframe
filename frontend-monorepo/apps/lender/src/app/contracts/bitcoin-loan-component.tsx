@@ -211,7 +211,11 @@ const EnhancedBitcoinLoan = () => {
               </Tabs>
 
               <CardFooter className="flex-shrink-0 flex justify-between border-t pt-4">
-                <ContractDetailsFooter contract={contract} loading={loading} />
+                <ContractDetailsFooter
+                  contract={contract}
+                  loading={loading}
+                  refreshContract={retry}
+                />
               </CardFooter>
             </Card>
           </div>
