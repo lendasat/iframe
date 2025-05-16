@@ -13,18 +13,20 @@ import { Button } from "@frontend/shadcn";
 import { Alert, AlertDescription, AlertTitle } from "@frontend/shadcn";
 import { shortenUuid } from "../details";
 import { Contract, useLenderHttpClient } from "@frontend/http-client-lender";
-import { useNavigate } from "react-router-dom";
 import { Check } from "lucide-react";
 import { LoanAssetHelper } from "@frontend/ui-shared";
+import { toast } from "sonner";
 
 interface CancelRequestDialogProps {
   children: ReactNode;
   contract: Contract;
+  refreshContract: () => void;
 }
 
 const ApproveOrRejectStablesDialog = ({
   children,
   contract,
+  refreshContract,
 }: CancelRequestDialogProps) => {
   const [open, setOpen] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
@@ -32,7 +34,6 @@ const ApproveOrRejectStablesDialog = ({
   const [rejectError, setRejectError] = useState<string | undefined>();
   const [approveError, setApproveError] = useState<string | undefined>();
   const { approveContract, rejectContract } = useLenderHttpClient();
-  const navigate = useNavigate();
 
   const contractId = contract.id;
   const loanAmount = contract.loan_amount;
@@ -55,7 +56,8 @@ const ApproveOrRejectStablesDialog = ({
     try {
       await rejectContract(contractId);
       setOpen(false);
-      navigate(0);
+      refreshContract();
+      toast.success("Contract rejected");
     } catch (error) {
       console.error("Failed to reject request:", error);
       setRejectError(
@@ -79,7 +81,8 @@ const ApproveOrRejectStablesDialog = ({
     try {
       await approveContract(contractId);
       setOpen(false);
-      navigate(0);
+      refreshContract();
+      toast.success("Contract approved");
     } catch (error) {
       console.error("Failed to approve request:", error);
       setApproveError(
@@ -96,7 +99,7 @@ const ApproveOrRejectStablesDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger>{children}</DialogTrigger>
+      <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Approve or Reject Request</DialogTitle>

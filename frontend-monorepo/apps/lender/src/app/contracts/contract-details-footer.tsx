@@ -44,7 +44,10 @@ export function ContractDetailsFooter({
       );
     } else {
       button = (
-        <ApproveOrRejectStablesDialog contract={contract}>
+        <ApproveOrRejectStablesDialog
+          contract={contract}
+          refreshContract={refreshContract}
+        >
           <Button type={"button"} variant="default" disabled={buttonDisabled}>
             <Check className="h-4 w-4" />
             Approve or Reject Request
@@ -125,7 +128,9 @@ export function ContractDetailsFooter({
           </div>
         </TransactionHistoryDialog>
       </div>
-      <div className="order-1 md:order-2 w-full">{button}</div>
+      <div className="order-1 md:order-2 w-full flex gap-2 md:justify-end justify-center">
+        {button}
+      </div>
     </div>
   );
 }
