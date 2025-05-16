@@ -85,7 +85,7 @@ interface AddFiatDetailsDialogProps {
   onComplete: (data: ReactInnerFiatLoanDetails) => void;
 }
 
-const AddFiatDetailsDialog = ({
+export const AddFiatDetailsDialog = ({
   children,
   onComplete,
 }: AddFiatDetailsDialogProps) => {

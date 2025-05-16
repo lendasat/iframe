@@ -11,7 +11,8 @@ import {
 } from "@frontend/http-client-borrower";
 import { Button } from "@frontend/shadcn";
 import { LoanAssetHelper } from "@frontend/ui-shared";
-import AddFiatDetailsDialog from "./manage-loan-dialog/add-fiat-details-dialog";
+import { useWallet } from "@frontend/browser-wallet";
+import { AddFiatDetailsDialog } from "@frontend/ui-shared";
 import { toast } from "sonner";
 
 interface ContractDetailsFooterProps {
@@ -27,6 +28,7 @@ export function ContractDetailsFooter({
 }: ContractDetailsFooterProps) {
   let button = undefined;
   const { putFiatDetails } = useHttpClientBorrower();
+  const { encryptFiatLoanDetailsBorrower } = useWallet();
 
   console.log(
     `contract?.fiat_loan_details_borrower ${contract?.fiat_loan_details_borrower}`,
@@ -44,20 +46,22 @@ export function ContractDetailsFooter({
     ) {
       button = (
         <AddFiatDetailsDialog
-          borrowerPk={contract?.borrower_pk}
-          lenderPk={contract?.lender_pk}
           onComplete={async (data) => {
-            try {
-              await putFiatDetails(contract?.id, data);
-              toast.success("Fiat Details Updated");
-              refreshContract();
-            } catch (error) {
-              console.log(`Failed updating fiat details ${error}`);
-              toast.error(`Failed updating fiat details ${error}`);
-            }
+            const fiatLoanDetails = await encryptFiatLoanDetailsBorrower(
+              data,
+              contract.borrower_pk,
+              contract.lender_pk,
+            );
+            await putFiatDetails(contract.id, fiatLoanDetails);
+            toast.success("Fiat Details Updated");
+            refreshContract();
           }}
         >
-          <Button type={"button"} disabled={buttonDisabled}>
+          <Button
+            size="default"
+            className="w-full -px-4"
+            disabled={buttonDisabled}
+          >
             Provide bank details
           </Button>
         </AddFiatDetailsDialog>
