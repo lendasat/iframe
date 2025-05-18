@@ -49,6 +49,7 @@ interface UseNostrResult {
     receiver: string,
     room: string,
     content: string,
+    subject: string,
   ) => Promise<EventId | null>;
   onNewMessage: (callback: (msg: NostrMessageEvent) => void) => void;
   subscribeToMessages: (
@@ -193,7 +194,7 @@ const useNostr = (): UseNostrResult => {
                     onNewMessageCallback.current({
                       id: event.id,
                       content: unwrappedGift.rumor.content,
-                      author: counterpartyPubKey,
+                      author: unwrappedGift.rumor.pubkey,
                       createdAt: unwrappedGift.rumor.createdAt,
                       tags: unwrappedGift.rumor.tags,
                     });
@@ -236,6 +237,7 @@ const useNostr = (): UseNostrResult => {
       receiver: string,
       room: string,
       content: string,
+      subject: string,
     ): Promise<EventId | null> => {
       if (!isReady || !personalPublicKey || !clientRef.current) {
         console.warn(
@@ -249,23 +251,41 @@ const useNostr = (): UseNostrResult => {
         const chatRoom = PublicKey.parse(room);
         console.log("Chat root room", chatRoom.toBech32());
 
-        const personalDm = await clientRef.current.sendPrivateMsg(
-          personalPublicKey,
-          content,
-          [Tag.publicKey(chatRoom)],
-        );
-
         const counterpartyPubKey = PublicKey.parse(receiver);
 
-        const newVar = await clientRef.current.sendPrivateMsg(
+        const senderRumor = new EventBuilder(new Kind(14), content)
+          .allow_self_tagging()
+          .tags([
+            Tag.publicKey(chatRoom),
+            Tag.publicKey(personalPublicKey),
+            Tag.publicKey(counterpartyPubKey),
+            Tag.parse(["subject", subject]),
+          ])
+          .build(personalPublicKey);
+        const senderOutput = await clientRef.current?.giftWrap(
+          personalPublicKey,
+          senderRumor,
+          [],
+        );
+
+        const receiverRumor = new EventBuilder(new Kind(14), content)
+          .allow_self_tagging()
+          .tags([
+            Tag.publicKey(chatRoom),
+            Tag.publicKey(personalPublicKey),
+            Tag.publicKey(counterpartyPubKey),
+            Tag.parse(["subject", subject]),
+          ])
+          .build(personalPublicKey);
+        const receiverOutput = await clientRef.current?.giftWrap(
           counterpartyPubKey,
-          content,
-          [Tag.publicKey(chatRoom)],
+          receiverRumor,
+          [],
         );
 
         if (onNewMessageCallback?.current) {
           onNewMessageCallback.current({
-            id: personalDm.id,
+            id: senderOutput.id,
             content: content,
             author: personalPublicKey,
             createdAt: Timestamp.now(),
@@ -275,7 +295,7 @@ const useNostr = (): UseNostrResult => {
           console.error("Can't send message if callback is not defined");
         }
 
-        return newVar.id;
+        return receiverOutput.id;
       } catch (err: any) {
         console.error("Error sending message:", err);
         setError(`Error sending message: ${err.message}`);

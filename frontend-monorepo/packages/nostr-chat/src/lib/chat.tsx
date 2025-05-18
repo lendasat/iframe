@@ -188,7 +188,8 @@ export const Chat = ({
 
   const handleSendMessage = useCallback(async () => {
     if (isInitialized && counterpartyNpub && contractNpub && newMessage) {
-      await sendMessage(counterpartyNpub, contractNpub, newMessage);
+      const subject = "Lendasat | " + contractId;
+      await sendMessage(counterpartyNpub, contractNpub, newMessage, subject);
       setNewMessage("");
       if (onNewMsgSent) {
         await onNewMsgSent();
