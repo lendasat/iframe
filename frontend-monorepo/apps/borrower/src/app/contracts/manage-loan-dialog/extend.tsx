@@ -134,7 +134,7 @@ export function ExtendContract({
         </Alert>
       )}
 
-      {!extensionAllowed && (
+      {extensionEnabled && !extensionAllowed && (
         <Alert className="my-4" variant={"destructive"}>
           <LuCalendarClock className="h-4 w-4" />
           <AlertTitle>Loan extension not allowed yet</AlertTitle>
