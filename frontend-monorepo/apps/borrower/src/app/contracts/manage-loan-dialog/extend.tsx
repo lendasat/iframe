@@ -37,7 +37,7 @@ export function ExtendContract({
   const extensionEnabled = contract?.extension_max_duration_days !== 0;
   // TODO: this policy should probably come from the backend
   const daysPast = contract
-    ? differenceInDays(contract!.created_at, new Date())
+    ? differenceInDays(new Date(), contract!.created_at)
     : 0;
   const extensionAllowed = contract
     ? daysPast >= contract.duration_days / 2
