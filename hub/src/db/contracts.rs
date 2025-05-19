@@ -449,8 +449,10 @@ pub async fn insert_extension_contract_request(
 
     let new_expiry_date = expiry_date(original_contract.expiry_date, extended_duration_days as u64);
 
-    // If the contract can be automatically accepted, we immediately go into
-    // `ContractStatus::PrincipalGiven`, because the original contract has been funded already.
+    // We immediately go back into `ContractStatus::PrincipalGiven`, because the original contract
+    // was funded already.
+    //
+    // This means we do not require confirmation from the lender for a contract extension.
     let status = db::ContractStatus::PrincipalGiven;
 
     let interest = calculate_interest(
