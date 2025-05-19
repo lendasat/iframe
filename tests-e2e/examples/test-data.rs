@@ -111,7 +111,7 @@ async fn create_sample_contracts(
         (requested, approved)
     } else {
         let (pk, path) = borrower_wallet.next_hardened_pk()?;
-        let npub = "npub1hremptx4juv986t0grj3vdwqgxmfph6kr2syjtyy3runrfc0qp4s5aykjw";
+        let npub = "npub1gh2nzlkque4fvcg722tk0st35e9qwal04cn54t8mhpxpj80jfuvq58cvlt";
 
         let contract1 = create_contract_request(
             pool,
@@ -261,7 +261,7 @@ async fn create_loan_offers(
         return Ok(offers);
     }
 
-    let lender_npub = "npub10dgsmkm4x25ea22fyvll6hsmerqyac2um73tznvtqcam8r5htvxsfgf2n5".to_string();
+    let lender_npub = "npub1x398pgcpwdnexq2zs84t9ru35l88h4txqy8586cksg45fta4ukvqqnd7tg".to_string();
 
     let (pk, path) = lender_wallet.next_hardened_pk()?;
 
