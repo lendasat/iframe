@@ -249,14 +249,12 @@ export const ContractDetailsTable = ({
                 </TableCell>
               )}
               {shownColumns.ltv && (
-                <>
-                  <TableCell>
-                    <LtvProgressBar
-                      collateralBtc={collateral_btc}
-                      loanAmount={contract.loan_amount}
-                    />
-                  </TableCell>
-                </>
+                <TableCell>
+                  <LtvProgressBar
+                    collateralBtc={collateral_btc}
+                    loanAmount={contract.loan_amount}
+                  />
+                </TableCell>
               )}
               {shownColumns.collateral && (
                 <TableCell>{collateral_btc} BTC</TableCell>

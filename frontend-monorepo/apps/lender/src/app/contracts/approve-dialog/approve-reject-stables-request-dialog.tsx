@@ -41,9 +41,7 @@ const ApproveOrRejectStablesDialog = ({
   const durationDays = contract.duration_days;
   const loanAsset = contract.loan_asset;
   const isKycLoan =
-    contract.kyc_info &&
-    contract.kyc_info.kyc_link &&
-    contract.kyc_info.kyc_link?.length > 0;
+    contract.kyc_info?.kyc_link && contract.kyc_info.kyc_link?.length > 0;
 
   const handleReject = async () => {
     if (!contractId) {
@@ -116,7 +114,7 @@ const ApproveOrRejectStablesDialog = ({
               If you approve this request, please have the principal of $
               {loanAmount} in {LoanAssetHelper.print(loanAsset)} ready for
               disbursement. The loan will run for {durationDays} days{" "}
-              {interestAmount != undefined
+              {interestAmount !== undefined
                 ? `and will earn you $${interestAmount} of interests.`
                 : ""}
               {isKycLoan &&

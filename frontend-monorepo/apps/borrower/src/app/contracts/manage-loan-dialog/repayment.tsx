@@ -1,4 +1,3 @@
-import React from "react";
 import { Contract } from "@frontend/http-client-borrower";
 import { Label, Skeleton } from "@frontend/shadcn";
 import { formatCurrency, LoanAssetHelper } from "@frontend/ui-shared";
@@ -7,13 +6,14 @@ import { FiatRepayment } from "./fiat-repayment";
 
 interface RepaymentProps {
   contract?: Contract;
+  refreshContract: () => void;
 }
 
-export function Repayment({ contract }: RepaymentProps) {
+export function Repayment({ contract, refreshContract }: RepaymentProps) {
   const loanAmount = contract?.loan_amount;
   const loanInterest = contract?.interest;
   const totalRepaymentAmount =
-    loanAmount != undefined && loanInterest != undefined
+    loanAmount !== undefined && loanInterest !== undefined
       ? loanAmount + loanInterest
       : undefined;
 
@@ -36,7 +36,7 @@ export function Repayment({ contract }: RepaymentProps) {
           </div>
           <div>
             <Label>Interest</Label>
-            {loanInterest != undefined ? (
+            {loanInterest !== undefined ? (
               <p className="text-lg font-bold">
                 {formatCurrency(loanInterest)}
               </p>
@@ -47,7 +47,7 @@ export function Repayment({ contract }: RepaymentProps) {
         </div>
         <div className="pt-2 border-t mt-2">
           <Label>Total Payment</Label>
-          {totalRepaymentAmount != undefined ? (
+          {totalRepaymentAmount !== undefined ? (
             <p className="text-xl font-bold">
               {formatCurrency(totalRepaymentAmount)} {assetCoin}
             </p>
@@ -59,8 +59,12 @@ export function Repayment({ contract }: RepaymentProps) {
 
       {contract?.loan_asset &&
         LoanAssetHelper.isStableCoin(contract.loan_asset) && (
-          <StablecoinRepayment contract={contract} />
+          <StablecoinRepayment
+            contract={contract}
+            refreshContract={refreshContract}
+          />
         )}
+
       {contract?.loan_asset && LoanAssetHelper.isFiat(contract.loan_asset) && (
         <FiatRepayment contract={contract} />
       )}

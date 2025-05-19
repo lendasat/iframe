@@ -47,9 +47,14 @@ import {
 } from "@frontend/ui-shared";
 import { ToS } from "../loan-offers/tos";
 
-// Zod schema for form validation
 const confirmationFormSchema = z.object({
-  bitcoinAddress: z.string().min(1, "Bitcoin address is required"),
+  bitcoinAddress: z
+    .string()
+    .min(1, "Address required.")
+    .refine(
+      (data: string) => validateBitcoinAddress(data),
+      "Invalid Bitcoin address.",
+    ),
   loanAddress: z.string().optional(),
 });
 
@@ -63,6 +68,19 @@ interface ConfirmationProps {
   originationFee: number;
   ltv: string;
 }
+
+const validateBitcoinAddress = (address: string) => {
+  let network = Network.mainnet;
+  if (import.meta.env.VITE_BITCOIN_NETWORK === "signet") {
+    network = Network.testnet;
+  } else if (import.meta.env.VITE_BITCOIN_NETWORK === "regtest") {
+    network = Network.regtest;
+  }
+
+  const valid = validate(address, network);
+
+  return valid;
+};
 
 export const Confirmation = ({
   selectedAssetType,
@@ -78,10 +96,8 @@ export const Confirmation = ({
   const { latestPrice } = usePrice();
   const { user } = useAuth();
 
-  const [bitcoinAddressValid, setBitcoinAddressValid] = useState(false);
   const [createRequestError, setCreateRequestError] = useState("");
   const [isCreatingRequest, setIsCreatingRequest] = useState(false);
-  const [fiatDetailsProvided, setFiatDetailsProvided] = useState(false);
 
   // Parse numeric values
   const selectedLoanAmount = parseInt(selectedLoanAmountString || "0");
@@ -134,20 +150,6 @@ export const Confirmation = ({
   const showFiatAddressInput = Boolean(
     selectedAssetType && LoanAssetHelper.isFiat(selectedAssetType),
   );
-
-  // Validate Bitcoin address based on network
-  const validateBitcoinAddress = (address: string) => {
-    let network = Network.mainnet;
-    if (import.meta.env.VITE_BITCOIN_NETWORK === "signet") {
-      network = Network.testnet;
-    } else if (import.meta.env.VITE_BITCOIN_NETWORK === "regtest") {
-      network = Network.regtest;
-    }
-
-    const valid = validate(address, network);
-    setBitcoinAddressValid(valid);
-    return valid;
-  };
 
   // Handle form submission
   const onSubmit = async (data: ConfirmationFormValues) => {
@@ -205,7 +207,7 @@ export const Confirmation = ({
       <Card className="h-full">
         <CardHeader>
           <CardTitle className="text-lg">
-            Summary to borrow{" "}
+            Conditions to borrow{" "}
             <strong>{formatCurrency(selectedLoanAmount || 0)}</strong>{" "}
             {LoanAssetHelper.print(selectedAssetType)} for{" "}
             {getFormatedStringFromDays(selectedLoanDuration)}
@@ -223,7 +225,7 @@ export const Confirmation = ({
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Price at which your collateral may be liquidated</p>
+                    <p>Price at which your collateral may be liquidated.</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -254,7 +256,7 @@ export const Confirmation = ({
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Interest rate for the loan duration</p>
+                    <p>Interest rate for the loan duration.</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -300,7 +302,7 @@ export const Confirmation = ({
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Loan-to-Value ratio determines required collateral</p>
+                      <p>The required collateral as per the LTV.</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -345,7 +347,6 @@ export const Confirmation = ({
           </div>
 
           <Separator />
-          <Separator />
 
           <div className="flex justify-between items-start">
             <div className="flex items-center gap-1">
@@ -365,7 +366,7 @@ export const Confirmation = ({
                       </TooltipTrigger>
                       <TooltipContent>
                         <p>
-                          The total deposit amount includes the collateral plus
+                          The total deposit amount including collateral and
                           origination fee.
                         </p>
                       </TooltipContent>
@@ -397,25 +398,11 @@ export const Confirmation = ({
                   <FormItem>
                     <FormLabel className="flex items-center gap-1">
                       Collateral refund address
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-4 w-4 p-0"
-                            >
-                              <Info className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>
-                              The Bitcoin address where you want your collateral
-                              returned upon loan repayment.
-                            </p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-4 w-4 p-0"
+                      ></Button>
                     </FormLabel>
                     <FormControl>
                       <Input
@@ -427,7 +414,8 @@ export const Confirmation = ({
                       />
                     </FormControl>
                     <FormDescription>
-                      This address will be used to return the collateral to you
+                      Your collateral will be sent to this address after
+                      repayment.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -445,7 +433,7 @@ export const Confirmation = ({
                         <Input {...field} />
                       </FormControl>
                       <FormDescription>
-                        This address will be used to transfer the loan amount
+                        The loan amount will be sent to this address.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -458,8 +446,8 @@ export const Confirmation = ({
                   <FileWarning className="h-4 w-4" />
                   <AlertTitle>Note</AlertTitle>
                   <AlertDescription>
-                    Once a lender accepts your loan request, you will be
-                    prompted for your banking details.
+                    Once a lender accepts your loan request, you will need to
+                    provide your bank details.
                   </AlertDescription>
                 </Alert>
               )}

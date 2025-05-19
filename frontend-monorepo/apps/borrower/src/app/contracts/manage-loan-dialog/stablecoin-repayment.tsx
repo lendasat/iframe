@@ -1,5 +1,4 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import {
   LuCheck,
   LuCircleAlert,
@@ -31,21 +30,24 @@ import {
 
 interface StablecoinRepaymentProps {
   contract?: Contract;
+  refreshContract: () => void;
 }
 
-export function StablecoinRepayment({ contract }: StablecoinRepaymentProps) {
+export function StablecoinRepayment({
+  contract,
+  refreshContract,
+}: StablecoinRepaymentProps) {
   const [copied, setCopied] = useState(false);
   const [repaymentError, setRepaymentError] = useState<string | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [transactionId, setTransactionId] = useState<string>("");
 
   const { markAsRepaymentProvided } = useHttpClientBorrower();
-  const navigate = useNavigate();
 
   const loanAmount = contract?.loan_amount;
   const loanInterest = contract?.interest;
   const totalRepaymentAmount =
-    loanAmount != undefined && loanInterest != undefined
+    loanAmount !== undefined && loanInterest !== undefined
       ? loanAmount + loanInterest
       : undefined;
 
@@ -84,9 +86,7 @@ export function StablecoinRepayment({ contract }: StablecoinRepaymentProps) {
     try {
       setIsSubmitting(true);
       await markAsRepaymentProvided(contract.id, transactionId);
-
-      // TODO: ideally we wouldn't have todo this... but it's the best we can do to refresh the page
-      navigate(0);
+      refreshContract();
     } catch (error) {
       // Handle the error
       console.error("Failed to confirm repayment:", error);
@@ -130,67 +130,59 @@ export function StablecoinRepayment({ contract }: StablecoinRepaymentProps) {
         </AlertDescription>
       </Alert>
 
-      <>
-        <div className="flex justify-center my-4">
-          <div
-            className={`bg-white p-4 rounded-lg border shadow-sm  ${repaymentAddress ? "cursor-copy hover:bg-gray-50" : ""} transition-colors`}
-            onClick={
-              repaymentAddress
-                ? () => onCopyAddress(repaymentAddress)
-                : undefined
-            }
-          >
-            {repaymentAddress ? (
-              <QRCode value={repaymentAddress} size={150} />
-            ) : (
-              <>
-                <LuQrCode className="h-40 w-40" />
-              </>
-            )}
-          </div>
+      <div className="flex justify-center my-4">
+        <div
+          className={`bg-white p-4 rounded-lg border shadow-sm  ${repaymentAddress ? "cursor-copy hover:bg-gray-50" : ""} transition-colors`}
+          onClick={
+            repaymentAddress ? () => onCopyAddress(repaymentAddress) : undefined
+          }
+        >
+          {repaymentAddress ? (
+            <QRCode value={repaymentAddress} size={150} />
+          ) : (
+            <LuQrCode className="h-40 w-40" />
+          )}
         </div>
+      </div>
 
-        <div className="flex items-center space-x-2 mb-4">
-          <div className="grid flex-1 gap-2">
-            <Label htmlFor="payment-address" className="sr-only">
-              Payment Address
-            </Label>
-            <Input
-              id="payment-address"
-              value={repaymentAddress}
-              readOnly
-              className="font-mono text-sm"
-              disabled={!repaymentAddress}
-            />
-          </div>
-          <Button
-            size="icon"
-            variant="outline"
-            onClick={
-              repaymentAddress
-                ? () => onCopyAddress(repaymentAddress)
-                : undefined
-            }
+      <div className="flex items-center space-x-2 mb-4">
+        <div className="grid flex-1 gap-2">
+          <Label htmlFor="payment-address" className="sr-only">
+            Payment Address
+          </Label>
+          <Input
+            id="payment-address"
+            value={repaymentAddress}
+            readOnly
+            className="font-mono text-sm"
             disabled={!repaymentAddress}
-          >
-            {copied ? (
-              <LuCheck className="h-4 w-4" />
-            ) : (
-              <LuClipboard className="h-4 w-4" />
-            )}
-          </Button>
-          <Button asChild size={"icon"} variant={"ghost"} className="h-6 w-6">
-            <a
-              href={contractUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center"
-            >
-              <LuExternalLink className="h-4 w-4" />{" "}
-            </a>
-          </Button>
+          />
         </div>
-      </>
+        <Button
+          size="icon"
+          variant="outline"
+          onClick={
+            repaymentAddress ? () => onCopyAddress(repaymentAddress) : undefined
+          }
+          disabled={!repaymentAddress}
+        >
+          {copied ? (
+            <LuCheck className="h-4 w-4" />
+          ) : (
+            <LuClipboard className="h-4 w-4" />
+          )}
+        </Button>
+        <Button asChild size={"icon"} variant={"ghost"} className="h-6 w-6">
+          <a
+            href={contractUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center"
+          >
+            <LuExternalLink className="h-4 w-4" />{" "}
+          </a>
+        </Button>
+      </div>
 
       <Alert variant="destructive">
         <LuCircleAlert className="h-4 w-4" />

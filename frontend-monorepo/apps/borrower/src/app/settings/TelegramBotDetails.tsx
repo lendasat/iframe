@@ -1,4 +1,4 @@
-import { Badge, Button } from "@frontend/shadcn";
+import { Button } from "@frontend/shadcn";
 import { LuCopy } from "react-icons/lu";
 import { toast } from "sonner";
 

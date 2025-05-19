@@ -136,7 +136,6 @@ const defineStepper = <const Steps extends Stepperize.Step[]>(
       return (
         <nav
           aria-label={ariaLabel}
-          role="tablist"
           className={cn("stepper-navigation", className)}
           {...props}
         >
@@ -366,6 +365,7 @@ const StepperSeparator = ({
       data-orientation={orientation}
       data-state={state}
       data-disabled={disabled}
+      // biome-ignore lint/a11y/useAriaPropsForRole: not focusable.
       role="separator"
       tabIndex={-1}
       className={classForSeparator({ orientation, labelOrientation })}

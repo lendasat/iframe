@@ -557,7 +557,7 @@ export const FiatDetailsForm = ({
             type="submit"
             disabled={isAccepting || isSubmitting}
           >
-            {isAccepting || isSubmitting ? "Processing..." : <>Submit</>}
+            {isAccepting || isSubmitting ? "Processing..." : "Submit"}
           </Button>
         </div>
       </form>

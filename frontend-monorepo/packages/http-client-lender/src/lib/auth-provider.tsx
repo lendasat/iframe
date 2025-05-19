@@ -37,11 +37,6 @@ export const useAuth = () => {
   return context;
 };
 
-interface AuthProviderProps {
-  baseUrl: string;
-  children: ReactNode;
-}
-
 type Props = {
   children?: ReactNode;
 };
@@ -55,11 +50,6 @@ export const AuthIsNotSignedIn = ({ children }: Props) => {
   const context = useContext(AuthContext);
   return context?.user ? "" : children;
 };
-
-interface AuthProviderProps {
-  baseUrl: string;
-  children: ReactNode;
-}
 
 interface AuthProviderProps {
   children: ReactNode;

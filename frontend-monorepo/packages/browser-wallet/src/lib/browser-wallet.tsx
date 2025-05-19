@@ -133,9 +133,13 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
       });
   }
 
-  useEffect(() => {
-    initialize();
-  }, [email]);
+  useEffect(
+    () => {
+      initialize();
+    },
+    // biome-ignore lint/correctness/useExhaustiveDependencies: probably necessary
+    [initialize],
+  );
 
   const loadWallet = async (passphrase: string) => {
     console.log("loading wallet");

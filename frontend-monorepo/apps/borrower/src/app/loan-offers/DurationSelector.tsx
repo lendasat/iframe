@@ -15,7 +15,6 @@ interface Duration {
 
 interface DurationSelectorProps {
   onDurationChange: (days: number) => void;
-  disabled: boolean;
   selectedDuration: number | undefined;
 }
 
@@ -59,7 +58,6 @@ const durations: Duration[] = [
 
 const SingleDurationSelector: React.FC<DurationSelectorProps> = ({
   onDurationChange,
-  disabled,
   selectedDuration,
 }) => {
   const handleDurationClick = (value: number) => {
@@ -76,7 +74,7 @@ const SingleDurationSelector: React.FC<DurationSelectorProps> = ({
         }}
         color={"purple"}
       >
-        {durations.map(({ value, label, days, sublabel, icon: Icon }) => (
+        {durations.map(({ value, days, sublabel }) => (
           <RadioCards.Item key={value.toString()} value={days.toString()}>
             <div className="flex flex-col items-center space-y-2 text-center">
               <div>

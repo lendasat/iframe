@@ -156,6 +156,7 @@ const TransactionHistoryTimeline = ({
               {Array(3)
                 .fill(0)
                 .map((_, index) => (
+                  // biome-ignore lint: skeleton index.
                   <div key={index} className="flex gap-3">
                     <Skeleton className="h-10 w-10 rounded-full" />
                     <div className="space-y-2 flex-1">
@@ -173,7 +174,7 @@ const TransactionHistoryTimeline = ({
 
               {/* Timeline items */}
               <div className="space-y-8">
-                {sortedTransactions.map((tx, index) => {
+                {sortedTransactions.map((tx) => {
                   const { icon, color, label } = getTransactionInfo(
                     tx.transaction_type,
                   );

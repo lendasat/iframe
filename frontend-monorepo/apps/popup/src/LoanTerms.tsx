@@ -71,7 +71,7 @@ const LoanTerms = ({
       setPrincipalGiven(true);
       toast.success("Contract funded. You are all done!");
     }
-  }, [state, contract, onPrincipalGiven]);
+  }, [state, contract, onPrincipalGiven, principalGiven]);
 
   if (loading || !contract) {
     return (
@@ -102,8 +102,8 @@ const LoanTerms = ({
 
   const contractStatus = state.value?.status || ContractStatus.Requested;
 
-  let status;
-  let statusVariant;
+  let status: string;
+  let statusVariant: string;
   switch (contractStatus) {
     case ContractStatus.Requested:
       status = "Requested";
@@ -152,8 +152,15 @@ const LoanTerms = ({
 
     try {
       downloadContractBackup(contract);
-    } catch (error) {
-      toast.error("Failed to download contract backup.");
+    } catch (e) {
+      const error = e instanceof Error ? e.message : e;
+
+      const errorString =
+        error === ""
+          ? "Failed to download contract backup."
+          : `Failed to download contract backup: ${error}.`;
+
+      toast.error(errorString);
       setDownloadLoading(false);
 
       return;

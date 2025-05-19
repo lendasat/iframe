@@ -42,7 +42,7 @@ export const formatStatus = (status?: ContractDisputeStatus): string => {
 // Helper function to get the status badge color
 export const getStatusColor = (status?: ContractDisputeStatus): string => {
   if (status === ContractDisputeStatus.InProgress) return "bg-yellow-500";
-  if (status && status.includes("Resolved")) return "bg-green-500";
+  if (status?.includes("Resolved")) return "bg-green-500";
   if (status === ContractDisputeStatus.Cancelled) return "bg-gray-500";
   return "bg-red-500"; // For disputes that have just started
 };

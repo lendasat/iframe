@@ -137,8 +137,15 @@ const OrderStatusComponent: React.FC = () => {
           setErrorMessage(message.data);
           setOrderStatus(null);
         }
-      } catch (error: any) {
-        console.error("Error parsing WebSocket message:", error);
+      } catch (e) {
+        const error = e instanceof Error ? e.message : e;
+
+        const errorString =
+          error === ""
+            ? "Error parsing WebSocket message."
+            : `Error parsing WebSocket message: ${error}.`;
+
+        console.error(errorString);
       }
     };
 

@@ -157,7 +157,7 @@ export const Collateral = ({ contract }: CollateralProps) => {
       ? (contract.loan_amount / (collateralBtc * latestPrice)) * 100
       : undefined;
 
-  const isFunded = collateralBtc != undefined && collateralBtc > 0;
+  const isFunded = collateralBtc !== undefined && collateralBtc > 0;
 
   const handleCopy = async (text: string) => {
     try {

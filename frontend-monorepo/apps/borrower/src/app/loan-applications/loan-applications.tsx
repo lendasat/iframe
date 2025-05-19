@@ -31,7 +31,7 @@ const loanFormSchema = z.object({
   loanAmount: z
     .string()
     .min(1, "Loan amount is required")
-    .refine((val) => !isNaN(Number(val)) && Number(val) > 0, {
+    .refine((val) => !Number.isNaN(Number(val)) && Number(val) > 0, {
       message: "Loan amount must be greater than 0",
     }),
   assetType: z.string(),
@@ -39,7 +39,8 @@ const loanFormSchema = z.object({
     .string()
     .min(1, "Interest rate is required")
     .refine(
-      (val) => !isNaN(Number(val)) && Number(val) >= 1 && Number(val) <= 20,
+      (val) =>
+        !Number.isNaN(Number(val)) && Number(val) >= 1 && Number(val) <= 20,
       {
         message: "Interest rate must be between 1% and 20%",
       },
@@ -47,14 +48,15 @@ const loanFormSchema = z.object({
   loanDuration: z
     .string()
     .min(1, "Duration is required")
-    .refine((val) => !isNaN(Number(val)) && Number(val) >= 1, {
+    .refine((val) => !Number.isNaN(Number(val)) && Number(val) >= 1, {
       message: "Duration must be at least 1 day",
     }),
   ltv: z
     .string()
     .min(1, "LTV rate is required")
     .refine(
-      (val) => !isNaN(Number(val)) && Number(val) >= 1 && Number(val) <= 70,
+      (val) =>
+        !Number.isNaN(Number(val)) && Number(val) >= 1 && Number(val) <= 70,
       {
         message: "LTV rate must be between 1% and 70%",
       },
@@ -183,7 +185,7 @@ export default function LoanApplication() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>
-                    For how long do you want to borrow? (days)
+                    How many days do you want your loan to last for?
                   </FormLabel>
                   <FormControl>
                     <Input
@@ -208,7 +210,7 @@ export default function LoanApplication() {
               render={({ field }) => (
                 <FormItem>
                   <div className="flex justify-between items-center">
-                    <FormLabel>Preferred interest rate (p.a. %)</FormLabel>
+                    <FormLabel>Preferred interest rate (p.a.)</FormLabel>
                     <div className="w-20">
                       <div className="relative flex items-center max-w-2xl ">
                         <Input
@@ -225,7 +227,7 @@ export default function LoanApplication() {
                             // Keep the slider in sync with the input
                             const numValue = Number(value);
                             if (
-                              !isNaN(numValue) &&
+                              !Number.isNaN(numValue) &&
                               numValue >= 1 &&
                               numValue <= 20
                             ) {
@@ -261,7 +263,7 @@ export default function LoanApplication() {
               render={({ field }) => (
                 <FormItem>
                   <div className="flex justify-between items-center">
-                    <FormLabel>Loan-to-Value Ratio (%)</FormLabel>
+                    <FormLabel>Loan-to-value ratio</FormLabel>
 
                     <div className="w-20">
                       <div className="relative flex items-center max-w-2xl ">
@@ -279,7 +281,7 @@ export default function LoanApplication() {
                             // Keep the slider in sync with the input
                             const numValue = Number(value);
                             if (
-                              !isNaN(numValue) &&
+                              !Number.isNaN(numValue) &&
                               numValue >= 1 &&
                               numValue <= 70
                             ) {

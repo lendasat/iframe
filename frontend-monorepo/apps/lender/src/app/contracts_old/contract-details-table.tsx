@@ -122,7 +122,6 @@ export const ContractDetailsTable = ({
   sortByColumn,
   sortAsc,
   contracts,
-  latestPrice,
 }: ContractDetailsTableProps) => {
   const navigate = useNavigate();
 

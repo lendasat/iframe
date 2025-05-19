@@ -19,7 +19,6 @@ import { format } from "date-fns";
 interface ApproveOrRejectExtensionDialogProps {
   children: ReactNode;
   contractId: string;
-  loanAmount: number;
   interestAmount: number;
   expiry: Date;
   refreshContract: () => void;
@@ -28,7 +27,6 @@ interface ApproveOrRejectExtensionDialogProps {
 const ApproveOrRejectExtensionDialog = ({
   children,
   contractId,
-  loanAmount,
   interestAmount,
   expiry,
   refreshContract,
@@ -108,7 +106,7 @@ const ApproveOrRejectExtensionDialog = ({
             <AlertDescription>
               The borrower wants to extend the loan until{" "}
               {format(expiry, "MMM, dd yyyy")}.
-              {interestAmount != undefined
+              {interestAmount !== undefined
                 ? ` You will earn a total of $${interestAmount} of interests if you approve.`
                 : ""}
             </AlertDescription>

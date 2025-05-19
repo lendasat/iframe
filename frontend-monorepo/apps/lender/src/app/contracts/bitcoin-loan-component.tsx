@@ -130,16 +130,14 @@ const EnhancedBitcoinLoan = () => {
                       {currentStateLabel ? (
                         currentStateLabel
                       ) : (
-                        <>
-                          <Skeleton className="h-4 w-[50px]" />
-                        </>
+                        <Skeleton className="h-4 w-[50px]" />
                       )}
                     </Badge>
                     {!disputeOngoing &&
-                      contract?.status != ContractStatus.Requested &&
-                      contract?.status != ContractStatus.Rejected &&
-                      contract?.status != ContractStatus.Cancelled &&
-                      contract?.status != ContractStatus.Closed &&
+                      contract?.status !== ContractStatus.Requested &&
+                      contract?.status !== ContractStatus.Rejected &&
+                      contract?.status !== ContractStatus.Cancelled &&
+                      contract?.status !== ContractStatus.Closed &&
                       contract?.liquidation_status ===
                         LiquidationStatus.Healthy && (
                         <div className="flex items-center text-sm text-green-600">

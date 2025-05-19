@@ -1,6 +1,6 @@
 import TransactionHistoryDialog from "./transaction-history";
 import { LuChevronRight } from "react-icons/lu";
-import PayoutPrincipleDialog from "./manage-loan-dialog/payout-principle-dialog";
+import PayoutPrincipalDialog from "./manage-loan-dialog/payout-principal-dialog";
 import { Contract, ContractStatus } from "@frontend/http-client-lender";
 import { Button } from "@frontend/shadcn";
 import ApproveOrRejectStablesDialog from "./approve-dialog/approve-reject-stables-request-dialog";
@@ -10,6 +10,7 @@ import ApproveOrRejectExtensionDialog from "./approve-reject-extension-dialog";
 import ConfirmRepaymentDialog from "./confirm-repayment-dialog";
 import DefaultedOrUndercollateralizedContractDialog from "./manage-loan-dialog/defaulted-contract-dialog";
 import { LoanAssetHelper } from "@frontend/ui-shared";
+import { ReactElement } from "react";
 
 interface ContractDetailsFooterProps {
   contract?: Contract;
@@ -22,7 +23,7 @@ export function ContractDetailsFooter({
   loading,
   refreshContract,
 }: ContractDetailsFooterProps) {
-  let button;
+  let button: ReactElement | undefined;
 
   const buttonDisabled =
     contract?.status === ContractStatus.DisputeLenderStarted ||
@@ -57,20 +58,19 @@ export function ContractDetailsFooter({
     }
   } else if (contract.status === ContractStatus.CollateralConfirmed) {
     button = (
-      <PayoutPrincipleDialog
+      <PayoutPrincipalDialog
         contract={contract}
         refreshContract={refreshContract}
       >
         <Button type={"button"} disabled={buttonDisabled}>
           Payout Principal <LuChevronRight className="ml-1 h-4 w-4" />
         </Button>
-      </PayoutPrincipleDialog>
+      </PayoutPrincipalDialog>
     );
   } else if (contract.status === ContractStatus.RenewalRequested) {
     button = (
       <ApproveOrRejectExtensionDialog
         contractId={contract.id}
-        loanAmount={contract.loan_amount}
         interestAmount={contract.interest}
         expiry={contract.expiry}
         refreshContract={refreshContract}
@@ -106,7 +106,7 @@ export function ContractDetailsFooter({
       </DefaultedOrUndercollateralizedContractDialog>
     );
   } else {
-    button = <></>;
+    button = undefined;
   }
 
   return (

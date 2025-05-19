@@ -48,9 +48,16 @@ const StartDisputeDialog = ({ contractId, children }: DisputeDialogProps) => {
       setErrorMessage(null); // Clear any previous error message
       await startDispute(contractId, disputeReason, disputeDetails);
       setIsSubmitted(true);
-    } catch (error: any) {
-      console.error("Error submitting dispute:", error);
-      setErrorMessage(error?.message || "An unexpected error occurred.");
+    } catch (e) {
+      const error = e instanceof Error ? e.message : e;
+
+      const errorString =
+        error === ""
+          ? "Failed to submit dispute."
+          : `Failed to submit dispute: ${error}.`;
+
+      console.error(errorString);
+      setErrorMessage(errorString);
     } finally {
       setIsSubmitting(false);
     }

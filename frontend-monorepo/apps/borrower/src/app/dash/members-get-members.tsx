@@ -28,7 +28,7 @@ export function MembersGetMemberSection() {
     }
 
     fetchReferralCode();
-  }, []);
+  }, [user.personal_referral_codes[0]]);
 
   const copyToClipboard = async () => {
     try {
@@ -38,7 +38,7 @@ export function MembersGetMemberSection() {
         description: "Referral link copied to clipboard",
       });
       setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
+    } catch (_) {
       toast("Failed to copy!", {
         description: "Please try again or copy manually",
       });

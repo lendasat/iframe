@@ -74,6 +74,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       textColor = "text-violet-600";
       title = "Collateral Pending";
       message = (
+        // biome-ignore lint/complexity/noUselessFragments: wanted fragment.
         <>
           Your collateral has been seen on the blockchain and is waiting for
           confirmation.
@@ -89,6 +90,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       textColor = "text-violet-600";
       title = "Collateral Confirmed";
       message = (
+        // biome-ignore lint/complexity/noUselessFragments: wanted fragment.
         <>
           Your collateral has been confirmed. The lender will send the principal
           amount soon.
@@ -118,6 +120,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       textColor = "text-teal-600";
       title = "Repayment Processing";
       message = (
+        // biome-ignore lint/complexity/noUselessFragments: wanted fragment.
         <>Your repayment has been submitted and is waiting for confirmation.</>
       );
       break;
@@ -130,6 +133,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       textColor = "text-emerald-600";
       title = "Repayment Confirmed";
       message = (
+        // biome-ignore lint/complexity/noUselessFragments: wanted fragment.
         <>
           Your repayment has been confirmed. You can withdraw your collateral.
         </>
@@ -144,6 +148,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       textColor = "text-red-600";
       title = "Margin Call";
       message = (
+        // biome-ignore lint/complexity/noUselessFragments: wanted fragment.
         <>
           Your loan is under-collateralized and the lender has been informed to
           liquidate it.
@@ -173,6 +178,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       titleColor = "text-slate-800";
       textColor = "text-slate-600";
       title = "Loan Closing";
+      // biome-ignore lint/complexity/noUselessFragments: wanted fragment.
       message = <>Your loan is in the process of closing.</>;
       break;
 
@@ -183,6 +189,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       titleColor = "text-gray-800";
       textColor = "text-gray-600";
       title = "Loan Closed";
+      // biome-ignore lint/complexity/noUselessFragments: wanted fragment.
       message = <>This loan has been fully repaid and closed.</>;
       break;
 
@@ -211,6 +218,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       titleColor = "text-rose-800";
       textColor = "text-rose-600";
       title = "Loan Request Rejected";
+      // biome-ignore lint/complexity/noUselessFragments: wanted fragment.
       message = <>Your loan request has been rejected by the lender.</>;
       break;
 
@@ -225,6 +233,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       textColor = "text-orange-600";
       title = "Dispute Open";
       message = (
+        // biome-ignore lint/complexity/noUselessFragments: wanted fragment.
         <>
           A dispute has been opened for this loan. Please check the
           communication channel.
@@ -240,6 +249,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       titleColor = "text-lime-800";
       textColor = "text-lime-600";
       title = "Dispute Resolved";
+      // biome-ignore lint/complexity/noUselessFragments: wanted fragment.
       message = <>The dispute for this loan has been resolved.</>;
       break;
 
@@ -250,6 +260,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       titleColor = "text-zinc-800";
       textColor = "text-zinc-600";
       title = "Loan Cancelled";
+      // biome-ignore lint/complexity/noUselessFragments: wanted fragment.
       message = <>This loan request has been cancelled.</>;
       break;
 
@@ -261,6 +272,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       titleColor = "text-stone-800";
       textColor = "text-stone-600";
       title = "Loan Request Expired";
+      // biome-ignore lint/complexity/noUselessFragments: wanted fragment.
       message = <>This loan request has expired due to inactivity.</>;
       break;
   }

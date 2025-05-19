@@ -35,7 +35,7 @@ export function FiatRepayment({ contract }: FiatRepaymentProps) {
   const loanAmount = contract?.loan_amount;
   const loanInterest = contract?.interest;
   const totalRepaymentAmount =
-    loanAmount != undefined && loanInterest != undefined
+    loanAmount !== undefined && loanInterest !== undefined
       ? loanAmount + loanInterest
       : undefined;
 

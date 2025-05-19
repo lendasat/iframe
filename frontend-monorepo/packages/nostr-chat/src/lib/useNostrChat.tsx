@@ -69,9 +69,9 @@ const useNostr = (): UseNostrResult => {
     null,
   );
   const relayConnections = useRef<Record<string, Relay>>({});
+  // biome-ignore lint/suspicious/noExplicitAny: good enough
   const subscriptions = useRef<Record<string, any>>({});
-  const onNewMessageCallback =
-    useRef<(msg: NostrMessageEvent) => void | null>(null);
+  const onNewMessageCallback = useRef<(msg: NostrMessageEvent) => void>(null);
   const clientRef = useRef<Client | undefined>(undefined);
   const relaysRef = useRef<string[]>(RELAYS);
 
@@ -130,8 +130,15 @@ const useNostr = (): UseNostrResult => {
       setPersonalPublicKey(privateKey.publicKey);
       setIsReady(true);
       setError(null);
-    } catch (err: any) {
-      setError(`Error initializing Nostr client: ${err}`);
+    } catch (e) {
+      const error = e instanceof Error ? e.message : e;
+
+      const errorString =
+        error === ""
+          ? "Error initializing Nostr client."
+          : `Error initializing Nostr client: ${error}.`;
+
+      setError(errorString);
       setIsReady(false);
     } finally {
       setIsInitializing(false);
@@ -221,9 +228,16 @@ const useNostr = (): UseNostrResult => {
               delete subscriptions.current[subscription.id];
             }
           };
-        } catch (error: any) {
-          console.error("Error subscribing to messages:", error);
-          setError(`Error subscribing to messages: ${error.message}`);
+        } catch (e) {
+          const error = e instanceof Error ? e.message : e;
+
+          const errorString =
+            error === ""
+              ? "Error subscribing to messages."
+              : `Error subscribing to messages: ${error}.`;
+
+          console.error(errorString);
+          setError(errorString);
           return () => {}; // Return an empty cleanup function in case of error
         }
       }
@@ -296,9 +310,16 @@ const useNostr = (): UseNostrResult => {
         }
 
         return receiverOutput.id;
-      } catch (err: any) {
-        console.error("Error sending message:", err);
-        setError(`Error sending message: ${err.message}`);
+      } catch (e) {
+        const error = e instanceof Error ? e.message : e;
+
+        const errorString =
+          error === ""
+            ? "Error sending message."
+            : `Error sending message: ${error}.`;
+
+        console.error(errorString);
+        setError(errorString);
         return null;
       }
     },

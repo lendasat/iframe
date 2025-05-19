@@ -74,6 +74,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       textColor = "text-violet-600";
       title = "Collateral Pending";
       message = (
+        // biome-ignore lint/complexity/noUselessFragments: wanted fragment.
         <>
           The collateral has been seen on the blockchain and is waiting for
           confirmation.
@@ -89,6 +90,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       textColor = "text-violet-600";
       title = "Collateral Confirmed";
       message = (
+        // biome-ignore lint/complexity/noUselessFragments: changes too often.
         <>
           The collateral has been confirmed. Please send the principal amount.
         </>
@@ -117,6 +119,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       textColor = "text-teal-600";
       title = "Repayment Provided";
       message = (
+        // biome-ignore lint/complexity/noUselessFragments: changes too often.
         <>
           The repayment has been submitted and is waiting for your confirmation.
         </>
@@ -131,6 +134,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       textColor = "text-emerald-600";
       title = "Repayment Confirmed";
       message = (
+        // biome-ignore lint/complexity/noUselessFragments: changes too often.
         <>
           The repayment has been confirmed. The borrower can withdraw his
           collateral.
@@ -146,6 +150,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       textColor = "text-red-600";
       title = "Margin Call";
       message = (
+        // biome-ignore lint/complexity/noUselessFragments: changes too often.
         <>
           The loan is under-collateralized. Please liquidate immediately to
           avoid any loss of funds.
@@ -227,6 +232,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       textColor = "text-orange-600";
       title = "Dispute Open";
       message = (
+        // biome-ignore lint/complexity/noUselessFragments: changes too often.
         <>
           A dispute has been opened for this loan. Please check the
           communication channel.
@@ -242,6 +248,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       titleColor = "text-lime-800";
       textColor = "text-lime-600";
       title = "Dispute Resolved";
+      // biome-ignore lint/complexity/noUselessFragments: changes too often.
       message = <>The dispute for this loan has been resolved.</>;
       break;
 
@@ -252,6 +259,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       titleColor = "text-zinc-800";
       textColor = "text-zinc-600";
       title = "Loan Cancelled";
+      // biome-ignore lint/complexity/noUselessFragments: changes too often.
       message = <>This loan request has been cancelled.</>;
       break;
 
@@ -263,6 +271,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       titleColor = "text-stone-800";
       textColor = "text-stone-600";
       title = "Loan Request Expired";
+      // biome-ignore lint/complexity/noUselessFragments: changes too often.
       message = <>This loan request has expired due to inactivity.</>;
       break;
   }

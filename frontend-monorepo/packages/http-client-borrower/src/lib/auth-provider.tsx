@@ -75,7 +75,7 @@ export const AuthProvider: FC<AuthProviderProps> = ({
       baseUrl,
       shouldHandleAuthError ? handleAuthError : undefined,
     );
-  }, [baseUrl, navigate]);
+  }, [navigate, shouldHandleAuthError]);
 
   const [user, setUser] = useState<User | null>(null);
   const [backendVersion, setBackendVersion] = useState<Version>({
@@ -152,9 +152,6 @@ export const AuthProvider: FC<AuthProviderProps> = ({
     setLoading(true);
     try {
       const pakeLoginResponse = await httpClient.pakeLoginRequest(email);
-      if (!pakeLoginResponse) {
-        throw new Error("Login request failed");
-      }
 
       if ("must_upgrade_to_pake" in pakeLoginResponse) {
         return { must_upgrade_to_pake: undefined };

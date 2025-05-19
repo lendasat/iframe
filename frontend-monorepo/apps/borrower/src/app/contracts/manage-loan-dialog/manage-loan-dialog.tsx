@@ -29,10 +29,15 @@ const shortenUuid = (uuid?: string) => {
 
 interface ManageLoanDialogProps {
   children: React.ReactNode;
+  refreshContract: () => void;
   contract?: Contract;
 }
 
-const ManageLoanDialog = ({ children, contract }: ManageLoanDialogProps) => {
+const ManageLoanDialog = ({
+  children,
+  refreshContract,
+  contract,
+}: ManageLoanDialogProps) => {
   const [open, setOpen] = useState(false);
 
   const contractId = contract?.id;
@@ -55,7 +60,7 @@ const ManageLoanDialog = ({ children, contract }: ManageLoanDialogProps) => {
           </TabsList>
 
           <TabsContent value="repay" className="space-y-4 py-4">
-            <Repayment contract={contract} />
+            <Repayment contract={contract} refreshContract={refreshContract} />
           </TabsContent>
 
           <TabsContent value="extend" className="space-y-4 py-4">

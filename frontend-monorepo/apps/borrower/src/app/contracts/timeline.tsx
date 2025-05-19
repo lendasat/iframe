@@ -1,5 +1,5 @@
 import { Badge, Button, CardContent, ScrollArea } from "@frontend/shadcn";
-import React, { useState } from "react";
+import { useState } from "react";
 import { contractStatusLabelColor } from "./bitcoin-loan-component";
 import {
   Contract,
@@ -9,7 +9,7 @@ import {
 import { format } from "date-fns";
 import { parseRFC3339Date } from "@frontend/http-client-borrower/src/lib/utils";
 import { LuCheck, LuClipboard, LuExternalLink } from "react-icons/lu";
-import { getTxUrl, TransactionType } from "@frontend/ui-shared";
+import { getTxUrl } from "@frontend/ui-shared";
 
 const shortenTxid = (txid: string) => {
   const firstSix = txid.slice(0, 4);
@@ -75,7 +75,10 @@ export const Timeline = ({ contract }: TimelineProps) => {
               }
 
               return (
-                <div key={index} className="relative pl-6 pb-4">
+                <div
+                  key={`${event.date.toString()}-${event.event}-${event.txid}`}
+                  className="relative pl-6 pb-4"
+                >
                   {/* Vertical line */}
                   {index < timelineEvents.length - 1 && (
                     <div className="absolute left-[9px] top-[24px] bottom-0 w-0.5 bg-gray-200" />
