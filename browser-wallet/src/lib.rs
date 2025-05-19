@@ -1,6 +1,8 @@
 use crate::auth::Salt;
 use crate::auth::ServerProof;
 use crate::auth::B;
+use bitcoin::hex::Case;
+use bitcoin::hex::DisplayHex;
 use bitcoin::Address;
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
@@ -642,6 +644,67 @@ pub fn get_next_address(key: String) -> Result<String, JsValue> {
     let address = map_err_to_js!(browser_wallet::get_next_address(key))?;
 
     Ok(address.to_string())
+}
+
+#[wasm_bindgen(getter_with_clone)]
+#[derive(Clone)]
+pub struct SignedMessage {
+    pub message: String,
+    pub recoverable_signature_hex: String,
+    pub recoverable_signature_id: i32,
+}
+
+#[wasm_bindgen]
+pub fn sign_message_with_pk(
+    message: String,
+    own_pk: String,
+    derivation_path: Option<String>,
+) -> Result<SignedMessage, JsValue> {
+    let signed_message = map_err_to_js!(wallet::sign_message(
+        message.as_str(),
+        own_pk.as_str(),
+        derivation_path.as_deref()
+    ))?;
+
+    let (id, bytes) = signed_message.signature.serialize_compact();
+    let recoverable_signature_hex = bytes.to_hex_string(Case::Lower);
+    let recoverable_signature_id = id.to_i32();
+
+    Ok(SignedMessage {
+        message: signed_message.message.to_string(),
+        recoverable_signature_hex,
+        recoverable_signature_id,
+    })
+}
+
+#[wasm_bindgen]
+pub fn sign_message_with_pk_and_password(
+    password: String,
+    key: String,
+    message: String,
+    own_pk: String,
+    derivation_path: Option<String>,
+) -> Result<SignedMessage, JsValue> {
+    if let Err(err) = browser_wallet::load(&password, &key) {
+        log::error!("Failed unlocking wallet {err:#}");
+        return Err(JsValue::from_str(&format!("{:#}", err)));
+    }
+
+    let signed_message = map_err_to_js!(wallet::sign_message(
+        message.as_str(),
+        own_pk.as_str(),
+        derivation_path.as_deref()
+    ))?;
+
+    let (id, bytes) = signed_message.signature.serialize_compact();
+    let recoverable_signature_hex = bytes.to_hex_string(Case::Lower);
+    let recoverable_signature_id = id.to_i32();
+
+    Ok(SignedMessage {
+        message: signed_message.message.to_string(),
+        recoverable_signature_hex,
+        recoverable_signature_id,
+    })
 }
 
 #[macro_export]

@@ -1286,6 +1286,13 @@ async fn is_us_ip(ip: &str) -> anyhow::Result<bool> {
 pub struct UpdateBorrowerBtcAddress {
     #[schema(value_type = String)]
     address: Address<NetworkUnchecked>,
+    /// A recoverable signature of the address using "bitcoin's" signing protocol, i.e. the message
+    /// (`address`) is prepended with b"\x18Bitcoin Signed Message:\n".
+    ///
+    /// The message needs to be signed using the sk behind the pk in the corresponding contract.
+    /// See https://docs.rs/satsnet/latest/src/satsnet/sign_message.rs.html#201-208
+    recoverable_signature_hex: String,
+    recoverable_signature_id: i32,
 }
 
 /// Update borrower btc address of a contract.
@@ -1318,14 +1325,31 @@ async fn put_borrower_btc_address(
     Path(contract_id): Path<String>,
     AppJson(body): AppJson<UpdateBorrowerBtcAddress>,
 ) -> Result<AppJson<()>, Error> {
-    if !update_borrower_btc_address(
+    let contract = db::contracts::load_contract_by_contract_id_and_borrower_id(
         &data.db,
         contract_id.as_str(),
         user.id.as_str(),
-        body.address.assume_checked(),
     )
     .await
-    .map_err(Error::database)?
+    .map_err(Error::database)?;
+
+    let pk = contract.borrower_pk;
+
+    let address = body.address.assume_checked();
+    if !crate::wallet::is_signed_by_pk(
+        address.to_string().as_str(),
+        &pk.inner,
+        body.recoverable_signature_hex,
+        body.recoverable_signature_id,
+    )
+    .map_err(Error::BadSignatureProvided)?
+    {
+        return Err(Error::InvalidSignatureProvided);
+    }
+
+    if !update_borrower_btc_address(&data.db, contract_id.as_str(), user.id.as_str(), address)
+        .await
+        .map_err(Error::database)?
     {
         return Err(Error::UpdateBorrowerAddress);
     }
@@ -1457,6 +1481,10 @@ enum Error {
     ExtensionTooManyDays { max_duration_days: u64 },
     /// We failed updating the borrower's bitcoin address in the DB
     UpdateBorrowerAddress,
+    /// The signature provided was not valid
+    BadSignatureProvided(anyhow::Error),
+    /// The signature provided did not fit to the message
+    InvalidSignatureProvided,
 }
 
 impl Error {
@@ -1706,6 +1734,19 @@ impl IntoResponse for Error {
                 (
                     StatusCode::BAD_REQUEST,
                     "Could not update address".to_string(),
+                )
+            }
+            Error::BadSignatureProvided(e) => {
+                tracing::error!("Bad signature provided {e:#}");
+                (
+                    StatusCode::BAD_REQUEST,
+                    "Bad signature provided".to_string(),
+                )
+            }
+            Error::InvalidSignatureProvided => {
+                (
+                    StatusCode::BAD_REQUEST,
+                    "Invalid signature provided".to_string(),
                 )
             }
         };

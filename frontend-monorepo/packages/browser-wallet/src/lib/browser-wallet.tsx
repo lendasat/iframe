@@ -20,6 +20,8 @@ import init, {
   sign_liquidation_psbt_with_password,
   FiatLoanDetails,
   decrypt_fiat_loan_details_with_password,
+  sign_message_with_pk,
+  sign_message_with_pk_and_password,
 } from "browser-wallet";
 import browserWalletUrl from "../../../../../browser-wallet/pkg/browser_wallet_bg.wasm?url";
 import type { ReactNode } from "react";
@@ -39,6 +41,12 @@ export interface Version {
   version: string;
   commit_hash: string;
   build_timestamp: bigint;
+}
+
+export interface SignedMessage {
+  message: String;
+  recoverableSignatureHex: String;
+  recoverableSignatureId: number;
 }
 
 interface WalletContextType {
@@ -95,6 +103,17 @@ interface WalletContextType {
     ownDerivationPath: string,
   ) => Promise<ReactInnerFiatLoanDetails>;
   getVersion: () => Version;
+  signMessage: (
+    message: string,
+    own_pk: string,
+    derivation_path?: string,
+  ) => Promise<SignedMessage>;
+  signMessageWithPassword: (
+    password: string,
+    message: string,
+    own_pk: string,
+    derivation_path?: string,
+  ) => Promise<SignedMessage>;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -485,6 +504,52 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
     }
   };
 
+  const signMessage = async (
+    message: string,
+    own_pk: string,
+    derivation_path?: string,
+  ) => {
+    if (isWalletLoaded) {
+      const signedMessage = sign_message_with_pk(
+        message,
+        own_pk,
+        derivation_path,
+      );
+      return {
+        message: signedMessage.message,
+        recoverableSignatureHex: signedMessage.recoverable_signature_hex,
+        recoverableSignatureId: signedMessage.recoverable_signature_id,
+      };
+    } else {
+      throw Error("Wallet not loaded");
+    }
+  };
+
+  const signMessageWithPassword = async (
+    password: string,
+    message: string,
+    own_pk: string,
+    derivation_path?: string,
+  ) => {
+    const key = await md5CaseInsensitive(email);
+    const signedMessage = sign_message_with_pk_and_password(
+      password,
+      key,
+      message,
+      own_pk,
+      derivation_path,
+    );
+
+    // afterwards the wallet is loaded.
+    setIsWalletLoaded(true);
+
+    return {
+      message: signedMessage.message,
+      recoverableSignatureHex: signedMessage.recoverable_signature_hex,
+      recoverableSignatureId: signedMessage.recoverable_signature_id,
+    };
+  };
+
   const value = {
     isInitialized,
     isWalletLoaded,
@@ -504,6 +569,8 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
     decryptFiatLoanDetailsWithPassword,
     unlockAndSignClaimPsbt,
     getVersion,
+    signMessage,
+    signMessageWithPassword,
   };
 
   return (

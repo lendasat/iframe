@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@frontend/shadcn";
 import { Skeleton } from "@frontend/shadcn";
-import { CircleCheck, Clipboard, Loader } from "lucide-react";
+import { CircleCheck, Clipboard, Loader, LockIcon } from "lucide-react";
 import { Edit, Check, X } from "lucide-react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,12 +15,17 @@ import {
 } from "@frontend/shadcn";
 import { Input } from "@frontend/shadcn";
 import { Network, validate } from "bitcoin-address-validation";
-import { useHttpClientBorrower } from "@frontend/http-client-borrower";
+import {
+  Contract,
+  useHttpClientBorrower,
+} from "@frontend/http-client-borrower";
 import { toast } from "sonner";
+import { useWallet } from "@frontend/browser-wallet";
+import PasswordDialog from "./unlock-wallet-dialog";
 
 // Define props interface
 interface EditableAddressFieldProps {
-  contractId?: string;
+  contract?: Contract;
   refundAddress: string | undefined;
   shortenAddress: (address?: string) => string | undefined;
   handleCopy: (
@@ -40,7 +45,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 export default function EditableAddressField({
-  contractId,
+  contract,
   refundAddress,
   shortenAddress,
   handleCopy,
@@ -50,6 +55,9 @@ export default function EditableAddressField({
   const [refundAddressCopied, setRefundAddressCopied] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { updateBorrowerBtcAddress } = useHttpClientBorrower();
+  const { isWalletLoaded, signMessageWithPassword, signMessage } = useWallet();
+
+  const contractId = contract?.id;
 
   // Initialize React Hook Form
   const form = useForm<FormValues>({
@@ -91,7 +99,10 @@ export default function EditableAddressField({
     return isValid;
   };
 
-  const onSubmit = async (values: FormValues) => {
+  const submitAddressWithOrWithoutPassword = async (
+    values: FormValues,
+    password?: string,
+  ) => {
     console.log("Form submitted with values:", values);
     setIsSubmitting(true);
 
@@ -117,7 +128,31 @@ export default function EditableAddressField({
       }
 
       console.log("Address valid, submitting to API");
-      await updateBorrowerBtcAddress(contractId, address);
+
+      // If password is provided, we use it for signing
+      let signedMessage;
+      if (password) {
+        signedMessage = await signMessageWithPassword(
+          password,
+          address,
+          contract?.borrower_pk,
+          contract?.borrower_derivation_path,
+        );
+      } else {
+        signedMessage = await signMessage(
+          address,
+          contract?.borrower_pk,
+          contract?.borrower_derivation_path,
+        );
+      }
+
+      await updateBorrowerBtcAddress(
+        contractId,
+        address,
+        signedMessage.message.toString(),
+        signedMessage.recoverableSignatureHex.toString(),
+        signedMessage.recoverableSignatureId,
+      );
       console.log("API call successful");
       toast.success("Address updated successfully");
       refreshContract();
@@ -133,6 +168,17 @@ export default function EditableAddressField({
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const onSubmit = async (values: FormValues) => {
+    await submitAddressWithOrWithoutPassword(values);
+  };
+
+  // Function to handle password dialog submission
+  const handlePasswordSubmit = async (password: string) => {
+    const formValues = form.getValues();
+
+    await submitAddressWithOrWithoutPassword(formValues, password);
   };
 
   return (
@@ -172,19 +218,38 @@ export default function EditableAddressField({
                 >
                   <X className="h-4 w-4 text-gray-500" />
                 </Button>
-                <Button
-                  type="submit"
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? (
-                    <Loader className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Check className="h-4 w-4 text-green-500" />
-                  )}
-                </Button>
+                {isWalletLoaded && (
+                  <Button
+                    type="submit"
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <Loader className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Check className="h-4 w-4 text-green-500" />
+                    )}
+                  </Button>
+                )}
+                {!isWalletLoaded && (
+                  <PasswordDialog onPasswordSubmit={handlePasswordSubmit}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      disabled={isSubmitting}
+                      type="button"
+                    >
+                      {isSubmitting ? (
+                        <Loader className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Check className="h-4 w-4 text-green-500" />
+                      )}
+                    </Button>
+                  </PasswordDialog>
+                )}
               </div>
             </form>
           </Form>

@@ -282,9 +282,8 @@ export const Collateral = ({ contract, refreshContract }: CollateralProps) => {
             </div>
           </div>
           <Separator className="my-3" />
-
           <EditableAddressField
-            contractId={contract?.id}
+            contract={contract}
             refundAddress={refundAddress}
             shortenAddress={shortenAddress}
             handleCopy={handleCopy}

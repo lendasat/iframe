@@ -8,12 +8,17 @@ use bitcoin::bip32::ChildNumber;
 use bitcoin::bip32::DerivationPath;
 use bitcoin::bip32::Xpriv;
 use bitcoin::bip32::Xpub;
+use bitcoin::hashes::Hash;
 use bitcoin::key::Keypair;
 use bitcoin::key::Secp256k1;
 use bitcoin::psbt;
 use bitcoin::psbt::Psbt;
 use bitcoin::psbt::PsbtSighashType;
+use bitcoin::secp256k1::ecdsa::RecoverableSignature;
+use bitcoin::secp256k1::ecdsa::RecoveryId;
+use bitcoin::secp256k1::Message;
 use bitcoin::sighash::SighashCache;
+use bitcoin::sign_message::signed_msg_hash;
 use bitcoin::transaction::Version;
 use bitcoin::Address;
 use bitcoin::Amount;
@@ -708,6 +713,30 @@ fn update_fee(
     // update the output amount of the provided transaction
     unsigned_claim_tx.output[COLLATERAL_OUTPUT_INDEX].value =
         sample_signed_tx.output[COLLATERAL_OUTPUT_INDEX].value;
+}
+
+/// Verifies if signature is for and by the provided pk
+pub fn is_signed_by_pk(
+    message: &str,
+    pk: &bitcoin::secp256k1::PublicKey,
+    recoverable_signature: String,
+    recoverable_signature_id: i32,
+) -> Result<bool> {
+    let secp = Secp256k1::new();
+
+    let recoverable_signature = hex::decode(recoverable_signature)?;
+    let signature = RecoverableSignature::from_compact(
+        recoverable_signature.as_slice(),
+        RecoveryId::from_i32(recoverable_signature_id)?,
+    )?;
+
+    let msg_hash = signed_msg_hash(message);
+
+    let msg = Message::from_digest(msg_hash.to_byte_array());
+
+    let pubkey = secp.recover_ecdsa(&msg, &signature)?;
+
+    Ok(pk == &pubkey)
 }
 
 #[cfg(test)]

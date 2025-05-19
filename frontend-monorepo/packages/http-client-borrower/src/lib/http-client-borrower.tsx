@@ -168,6 +168,9 @@ export interface HttpClient {
   updateBorrowerBtcAddress: (
     contract_id: string,
     address: string,
+    message: string,
+    recoverableSignatureHex: string,
+    recoverableSignatureId: number,
   ) => Promise<void>;
 
   // Dispute methods
@@ -735,10 +738,16 @@ export const createHttpClient = (
   const updateBorrowerBtcAddress = async (
     contract_id: string,
     address: string,
+    message: string,
+    recoverableSignatureHex: string,
+    recoverableSignatureId: number,
   ): Promise<void> => {
     try {
       await axiosClient.put(`/api/contracts/${contract_id}/borroweraddress`, {
         address,
+        message,
+        recoverable_signature_hex: recoverableSignatureHex,
+        recoverable_signature_id: recoverableSignatureId,
       });
     } catch (error) {
       handleError(error, "updating borrower btc address");
