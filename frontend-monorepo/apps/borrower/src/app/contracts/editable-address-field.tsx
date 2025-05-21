@@ -20,7 +20,7 @@ import {
   useHttpClientBorrower,
 } from "@frontend/http-client-borrower";
 import { toast } from "sonner";
-import { useWallet } from "@frontend/browser-wallet";
+import { SignedMessage, useWallet} from "@frontend/browser-wallet";
 import PasswordDialog from "./unlock-wallet-dialog";
 
 // Define props interface
@@ -130,7 +130,7 @@ export default function EditableAddressField({
       console.log("Address valid, submitting to API");
 
       // If password is provided, we use it for signing
-      let signedMessage;
+      let signedMessage: SignedMessage;
       if (password) {
         signedMessage = await signMessageWithPassword(
           password,

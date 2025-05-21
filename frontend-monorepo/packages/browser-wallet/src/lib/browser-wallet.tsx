@@ -44,8 +44,8 @@ export interface Version {
 }
 
 export interface SignedMessage {
-  message: String;
-  recoverableSignatureHex: String;
+  message: string;
+  recoverableSignatureHex: string;
   recoverableSignatureId: number;
 }
 
