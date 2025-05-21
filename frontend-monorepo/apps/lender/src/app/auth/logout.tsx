@@ -1,5 +1,6 @@
 import { useAuth } from "@frontend/http-client-lender";
-import { Button, Container, Form } from "react-bootstrap";
+import { Button } from "@frontend/shadcn";
+import { Card, CardContent, CardHeader, CardTitle } from "@frontend/shadcn";
 import { useNavigate } from "react-router-dom";
 
 const Logout = () => {
@@ -7,38 +8,43 @@ const Logout = () => {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    logout();
+    await logout();
     navigate("/");
   };
+
   const handleCancel = async () => {
     navigate("/");
   };
 
   return (
-    <Container
-      className="d-flex justify-content-center align-items-center"
-      style={{ height: "100vh" }}
-    >
-      <Form
-        className="rounded border p-4"
-        style={{ maxWidth: "400px", width: "100%" }}
-      >
-        <h1 className="mb-4 text-center">Confirm Logout</h1>
-        <p className="text-center">Are you sure you want to log out?</p>
-        <div className="d-flex justify-content-between">
-          <Button
-            variant="secondary"
-            onClick={handleCancel}
-            className="w-50 me-2"
-          >
-            Cancel
-          </Button>
-          <Button variant="danger" onClick={handleLogout} className="w-50">
-            Logout
-          </Button>
-        </div>
-      </Form>
-    </Container>
+    <div className="flex justify-center items-center min-h-screen p-4">
+      <Card className="w-full max-w-sm">
+        <CardHeader>
+          <CardTitle className="text-center">Confirm Logout</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-center text-muted-foreground">
+            Are you sure you want to log out?
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              onClick={handleCancel}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleLogout}
+              className="flex-1"
+            >
+              Logout
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
