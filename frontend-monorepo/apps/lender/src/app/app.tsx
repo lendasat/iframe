@@ -20,7 +20,6 @@ import UpgradeToPake from "./auth/upgrade-to-pake";
 import BitcoinCollateralizedLoan from "./contracts/bitcoin-loan-component";
 import MyContracts from "./contracts_old/my-contracts";
 import CreateLoanOffer from "./create-loan-offer";
-import ResolveDispute from "./disputes/dispute";
 import Settings from "./settings/settings";
 import "../assets/styles.css";
 import { FeeProvider } from "@frontend/mempool";
@@ -87,7 +86,6 @@ function MainLayoutComponents() {
             <Route path="/offers">
               <Route index element={<LoanOffersOverview />} />
             </Route>
-            <Route path="/disputes/:id" element={<ResolveDispute />} />
             <Route path="/settings/*" element={<Settings />} />
           </Route>
           <Route
