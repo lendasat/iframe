@@ -1,193 +1,157 @@
-import {
-  Box,
-  Button,
-  Callout,
-  Grid,
-  Heading,
-  Spinner,
-  Text,
-} from "@radix-ui/themes";
-import type { ChangeEvent, FormEvent } from "react";
 import { useState } from "react";
-import { Form } from "react-bootstrap";
-import { IoInformationCircleOutline } from "react-icons/io5";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Info, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Button } from "@frontend/shadcn";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@frontend/shadcn";
+import { Input } from "@frontend/shadcn";
+import { Alert, AlertDescription } from "@frontend/shadcn";
+import { Card, CardContent, CardHeader } from "@frontend/shadcn";
 import { ReactComponent as Logo } from "./../assets/lendasat_svg_logo.svg";
-import TypeField from "../components/TypeField";
-import { validateEmail } from "../../index";
+
+const formSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+});
+
+type FormValues = z.infer<typeof formSchema>;
 
 interface WaitlistFormProps {
   handleRegister: (email: string) => Promise<void>;
 }
 
 export function WaitlistForm({ handleRegister }: WaitlistFormProps) {
-  const [email, setEmail] = useState("");
   const [error, setError] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const [isEmailValid, setIsEmailValid] = useState(true);
-  const [isTouched, setIsTouched] = useState(false);
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: "",
+    },
+  });
 
-  const handleEmailChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value;
-    setEmail(value);
-
-    if (isTouched) {
-      setIsEmailValid(validateEmail(value));
-    }
-  };
-
-  const handleBlur = () => {
-    setIsTouched(true);
-    setIsEmailValid(validateEmail(email));
-  };
-
-  const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const onSubmit = async (values: FormValues) => {
     setIsLoading(true);
-
     setError("");
+
     try {
-      await handleRegister(email);
+      await handleRegister(values.email);
     } catch (err) {
       console.error("Failed register in waitlist:", err);
       const msg = "Registration failed";
       setError(err instanceof Error ? `${msg}: ${err.message}` : msg);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
-  console.log(`error ${error}`);
+  const isFormValid = form.formState.isValid && form.watch("email");
 
   return (
-    <Box className="flex h-screen items-center justify-center overflow-y-scroll bg-gradient-to-tr from-[#F5F9FD] from-60% to-pink-700/5 to-100% py-20 pt-0 dark:from-[#1a202c] dark:to-gray-900/70">
-      <Grid align={"center"} className="w-screen grid-cols-1 overflow-hidden">
-        <Box className="flex flex-col items-center p-5">
-          {/* Logo */}
+    <div className="flex min-h-screen items-center justify-center overflow-y-auto">
+      <div className="w-full max-w-lg p-5">
+        {/* Logo */}
+        <div className="flex justify-center mb-8">
           <Logo
             height={27}
-            width={"auto"}
+            width="auto"
             className="w-fit invert dark:invert-0"
           />
-          <Box
-            mt={"6"}
-            maxWidth={"550px"}
-            width={"100%"}
-            py={"6"}
-            px={"6"}
-            className="dark:bg-dark dark:border-dark rounded-2xl bg-white shadow-sm dark:border dark:shadow-md"
-          >
-            {/* Heading */}
-            <Box className="pb-4 text-center">
-              <Heading
-                size={"7"}
-                className="text-font dark:text-font-dark pb-2"
-              >
-                Join Waitlist
-              </Heading>
-            </Box>
+        </div>
 
-            <Heading
-              size={"3"}
-              className="text-font dark:text-font-dark text-center"
-              weight={"light"}
-            >
+        <Card className="w-full shadow-lg">
+          <CardHeader className="text-center pb-4">
+            <h1 className="text-2xl font-bold text-foreground mb-4">
+              Join Waitlist
+            </h1>
+            <p className="text-foreground/80 font-light">
               Share your email with us and we will let you know once there's
               space for you.
-            </Heading>
+            </p>
+          </CardHeader>
 
-            {/* Form */}
-            <Form className="mt-7 w-full space-y-0.5" onSubmit={onSubmit}>
-              <Box>
-                {/* Email */}
-                <Box className="mt-3 text-left">
-                  <Text
-                    as="label"
-                    size={"1"}
-                    weight={"medium"}
-                    className="text-font/70 dark:text-font-dark/70 mb-2"
-                  >
-                    Email
-                  </Text>
-                  <TypeField
-                    placeholder="example@domain.com"
-                    type={"email"}
-                    value={email}
-                    onChange={handleEmailChange}
-                    onBlur={handleBlur}
-                    aria-invalid={!isEmailValid}
-                    required
-                  />
-                  {!isEmailValid && isTouched && (
-                    <Text size="1" className="mt-1 text-red-500">
-                      Please enter a valid email address
-                    </Text>
+          <CardContent>
+            <Form {...form}>
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-6"
+              >
+                {/* Email Field */}
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="example@domain.com"
+                          type="email"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
                   )}
-                </Box>
-              </Box>
+                />
 
-              {/* Error message */}
-              {error && (
-                <Callout.Root color="tomato">
-                  <Callout.Icon>
-                    <IoInformationCircleOutline />
-                  </Callout.Icon>
-                  <Callout.Text>{error}</Callout.Text>
-                </Callout.Root>
-              )}
+                {/* Error Alert */}
+                {error && (
+                  <Alert variant="destructive">
+                    <Info className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
 
-              {/* Submit Button */}
-              <Box className="pt-7">
+                {/* Submit Button */}
                 <Button
-                  color="purple"
                   type="submit"
-                  size={"3"}
-                  variant="solid"
-                  radius="large"
-                  disabled={!(email && !isLoading)}
-                  className="h-12 w-full"
+                  className="w-full -px-4"
+                  disabled={!isFormValid || isLoading}
                 >
-                  {isLoading ? <Spinner size={"3"} /> : "Join"}
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Joining...
+                    </>
+                  ) : (
+                    "Join"
+                  )}
                 </Button>
-              </Box>
+              </form>
             </Form>
 
-            {/* Sign Up Routing */}
-            <Box className="mt-16 flex items-center justify-center gap-1">
-              <Text
-                as="label"
-                size={"1"}
-                weight={"medium"}
-                className="text-font/70 dark:text-font-dark/70"
-              >
-                Already have an account?
-              </Text>
-              <Link
-                to={"/login"}
-                className="hover:text-font dark:hover:text-font-dark text-sm font-medium text-purple-800 dark:text-purple-300"
-              >
-                Sign in
-              </Link>
-            </Box>
-            <Box className="flex items-center justify-center gap-1">
-              <Text
-                as="label"
-                size={"1"}
-                weight={"medium"}
-                className="text-font/70 dark:text-font-dark/70"
-              >
-                Do you have an invite code?
-              </Text>
-              <Link
-                to={"/registration"}
-                className="hover:text-font dark:hover:text-font-dark text-sm font-medium text-purple-800 dark:text-purple-300"
-              >
-                Register here
-              </Link>
-            </Box>
-          </Box>
-        </Box>
-      </Grid>
-    </Box>
+            {/* Navigation Links */}
+            <div className="mt-16 space-y-2">
+              <div className="flex items-center justify-center gap-1">
+                <span className="text-sm font-medium text-muted-foreground">
+                  Already have an account?
+                </span>
+                <Link to="/login" className="text-sm font-medium">
+                  Sign in
+                </Link>
+              </div>
+              <div className="flex items-center justify-center gap-1">
+                <span className="text-sm font-medium text-muted-foreground">
+                  Do you have an invite code?
+                </span>
+                <Link to="/registration" className="text-sm font-medium ">
+                  Register here
+                </Link>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 }
