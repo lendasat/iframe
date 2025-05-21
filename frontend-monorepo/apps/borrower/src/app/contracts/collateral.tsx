@@ -16,6 +16,7 @@ import {
   usePrice,
 } from "@frontend/ui-shared";
 import AddCollateralDialog from "./add-collateral-dialog";
+import EditableAddressField from "./editable-address-field";
 
 const shortenAddress = (address?: string) => {
   if (!address) {
@@ -30,6 +31,7 @@ const shortenAddress = (address?: string) => {
 
 interface CollateralProps {
   contract?: undefined | Contract;
+  refreshContract: () => void;
 }
 
 interface LtvHealthInfoProps {
@@ -132,11 +134,12 @@ function LtvHealthInfo({ contract, funded }: LtvHealthInfoProps) {
   }
 }
 
-export const Collateral = ({ contract }: CollateralProps) => {
+export const Collateral = ({ contract, refreshContract }: CollateralProps) => {
   const { latestPrice } = usePrice();
   const [contractAddressCopied, setContractAddressCopied] = useState(false);
 
   const contractAddress = contract?.contract_address;
+  const refundAddress = contract?.borrower_btc_address;
   const collateralAmount = formatSatsToBitcoin(contract?.collateral_sats);
   const collateralAmountUsd =
     contract?.collateral_sats != null
@@ -155,11 +158,16 @@ export const Collateral = ({ contract }: CollateralProps) => {
 
   const isFunded = collateralBtc !== undefined && collateralBtc > 0;
 
-  const handleCopy = async (text: string) => {
+  const handleCopy = async (
+    text: string,
+    setCopiedState: (
+      value: ((prevState: boolean) => boolean) | boolean,
+    ) => void = setContractAddressCopied,
+  ) => {
     try {
       await navigator.clipboard.writeText(text);
-      setContractAddressCopied(true);
-      setTimeout(() => setContractAddressCopied(false), 2000);
+      setCopiedState(true);
+      setTimeout(() => setCopiedState(false), 2000);
     } catch (err) {
       console.error("Failed to copy text: ", err);
     }
@@ -203,7 +211,7 @@ export const Collateral = ({ contract }: CollateralProps) => {
   }
 
   const depositAddress = contract?.contract_address;
-  const mempoolLinkToAddress = `${import.meta.env.VITE_MEMPOOL_REST_URL}/address/${depositAddress}`;
+  const mempoolLinkToContractAddress = `${import.meta.env.VITE_MEMPOOL_REST_URL}/address/${depositAddress}`;
 
   return (
     <>
@@ -246,7 +254,9 @@ export const Collateral = ({ contract }: CollateralProps) => {
                 variant="ghost"
                 size="icon"
                 className="h-6 w-6 ml-1"
-                onClick={() => handleCopy(contractAddress || "")}
+                onClick={() =>
+                  handleCopy(contractAddress || "", setContractAddressCopied)
+                }
               >
                 {contractAddressCopied ? (
                   <LuCircleCheck className="h-4 w-4" />
@@ -261,7 +271,7 @@ export const Collateral = ({ contract }: CollateralProps) => {
                 className="h-6 w-6 ml-1"
               >
                 <a
-                  href={mempoolLinkToAddress}
+                  href={mempoolLinkToContractAddress}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center"
@@ -271,6 +281,14 @@ export const Collateral = ({ contract }: CollateralProps) => {
               </Button>
             </div>
           </div>
+          <Separator className="my-3" />
+          <EditableAddressField
+            contract={contract}
+            refundAddress={refundAddress}
+            shortenAddress={shortenAddress}
+            handleCopy={handleCopy}
+            refreshContract={refreshContract}
+          />
           <Separator className="my-3" />
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-500">Liquidation Price</span>

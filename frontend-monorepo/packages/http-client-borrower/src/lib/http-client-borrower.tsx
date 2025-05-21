@@ -155,6 +155,13 @@ export interface HttpClient {
     contractId: string,
     fiatDetails: FiatLoanDetails,
   ) => Promise<void>;
+  updateBorrowerBtcAddress: (
+    contract_id: string,
+    address: string,
+    message: string,
+    recoverableSignatureHex: string,
+    recoverableSignatureId: number,
+  ) => Promise<void>;
 
   // Dispute methods
   startDispute: (
@@ -752,6 +759,25 @@ export const createHttpClient = (
     }
   };
 
+  const updateBorrowerBtcAddress = async (
+    contract_id: string,
+    address: string,
+    message: string,
+    recoverableSignatureHex: string,
+    recoverableSignatureId: number,
+  ): Promise<void> => {
+    try {
+      await axiosClient.put(`/api/contracts/${contract_id}/borroweraddress`, {
+        address,
+        message,
+        recoverable_signature_hex: recoverableSignatureHex,
+        recoverable_signature_id: recoverableSignatureId,
+      });
+    } catch (error) {
+      handleError(error, "updating borrower btc address");
+    }
+  };
+
   const startDispute = async (
     contract_id: string,
     reason: string,
@@ -1000,6 +1026,7 @@ export const createHttpClient = (
     getLoanApplications,
     editLoanApplication,
     deleteLoanApplication,
+    updateBorrowerBtcAddress,
     postExtendLoanRequest,
     postContractRequest,
     cancelContractRequest,

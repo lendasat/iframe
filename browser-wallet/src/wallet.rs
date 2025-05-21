@@ -11,12 +11,17 @@ use bitcoin::bip32::ChildNumber;
 use bitcoin::bip32::DerivationPath;
 use bitcoin::bip32::Xpriv;
 use bitcoin::bip32::Xpub;
+use bitcoin::hashes::sha256d;
+use bitcoin::hashes::Hash;
 use bitcoin::hex::Case;
 use bitcoin::hex::DisplayHex;
 use bitcoin::key::Keypair;
 use bitcoin::key::Secp256k1;
+use bitcoin::secp256k1::ecdsa::RecoverableSignature;
+use bitcoin::secp256k1::Message;
 use bitcoin::secp256k1::SecretKey;
 use bitcoin::sighash::SighashCache;
+use bitcoin::sign_message::signed_msg_hash;
 use bitcoin::EcdsaSighashType;
 use bitcoin::Network;
 use bitcoin::NetworkKind;
@@ -569,6 +574,33 @@ where
     Ok(mnemonic)
 }
 
+pub struct SignedMessage {
+    pub message: sha256d::Hash,
+    pub signature: RecoverableSignature,
+}
+
+/// Sign a message with secretkey behind the provided pubkey
+pub fn sign_message(
+    message: &str,
+    own_pk: &str,
+    derivation_path: Option<&str>,
+) -> Result<SignedMessage> {
+    let guard = WALLET.lock().expect("to get lock");
+    let wallet = match *guard {
+        Some(ref wallet) => wallet,
+        None => {
+            bail!("Can't get keypair if wallet is not loaded");
+        }
+    };
+
+    let own_pk = own_pk.parse()?;
+    let derivation_path = derivation_path.map(|p| p.parse()).transpose()?;
+
+    let signed_message = wallet.sign_message(message, own_pk, derivation_path.as_ref())?;
+
+    Ok(signed_message)
+}
+
 impl Wallet {
     /// Create a [`Wallet`] using the provided `mnemonic`, `password` and `network`.
     ///
@@ -778,6 +810,30 @@ impl Wallet {
         Ok(tx)
     }
 
+    /// Signs a message using Bitcoin's message signing format.
+    ///
+    /// The message will be prefixed with b"\x18Bitcoin Signed Message:\n" before signing.
+    /// see https://docs.rs/satsnet/latest/src/satsnet/sign_message.rs.html#201-208
+    pub fn sign_message(
+        &self,
+        message: &str,
+        own_pk: PublicKey,
+        derivation_path: Option<&DerivationPath>,
+    ) -> Result<SignedMessage> {
+        let kp = find_kp(self, derivation_path, &own_pk)?;
+        let sk = kp.secret_key();
+
+        let secp = Secp256k1::new();
+        let msg_hash = signed_msg_hash(message);
+        let msg = Message::from_digest(msg_hash.to_byte_array());
+        let secp_sig = secp.sign_ecdsa_recoverable(&msg, &sk);
+
+        Ok(SignedMessage {
+            message: msg_hash,
+            signature: secp_sig,
+        })
+    }
+
     fn mnemonic(&self) -> &Mnemonic {
         &self.mnemonic
     }
@@ -790,6 +846,21 @@ impl Wallet {
     fn xpub(&self) -> Xpub {
         Xpub::from_priv(&Secp256k1::new(), &self.xprv)
     }
+}
+
+pub fn is_signed_by_pk(
+    msg_hash: sha256d::Hash,
+    pk: &PublicKey,
+    signature: &RecoverableSignature,
+) -> Result<bool> {
+    let secp = Secp256k1::new();
+
+    let msg = Message::from_digest(msg_hash.to_byte_array());
+
+    let pubkey = secp.recover_ecdsa(&msg, signature)?;
+
+    let public_key = pk.inner;
+    Ok(public_key == pubkey)
 }
 
 pub fn derive_next_normal_pk_multisig(
@@ -1119,5 +1190,49 @@ mod tests {
 
         assert_eq!(mnemonic_decrypted, mnemonic);
         assert_eq!(old_passphrase_decrypted, Some(old_passphrase))
+    }
+
+    #[test]
+    fn test_signature_roundtrip() {
+        let mut rng = thread_rng();
+        let mnemonic = Mnemonic::generate_in_with(&mut rng, bip39::Language::English, 12).unwrap();
+
+        let (wallet, _) = Wallet::new(&mut rng, mnemonic, "", "bitcoin", 1).unwrap();
+
+        let xpub = wallet.xpub();
+
+        let contract_index = wallet.contract_index;
+
+        let (pk, path) = derive_next_normal_pk_multisig(xpub, contract_index).unwrap();
+
+        let signed_message = wallet.sign_message("hello world", pk, Some(&path)).unwrap();
+        let (id, bytes) = signed_message.signature.serialize_compact();
+
+        let recovered_signature = RecoverableSignature::from_compact(&bytes, id).unwrap();
+
+        let is_signed = is_signed_by_pk(signed_message.message, &pk, &recovered_signature).unwrap();
+        assert!(is_signed, "Message to be signed by pk")
+    }
+
+    #[test]
+    fn test_signature_with_invalid_signature() {
+        let mut rng = thread_rng();
+        let mnemonic = Mnemonic::generate_in_with(&mut rng, bip39::Language::English, 12).unwrap();
+
+        let (wallet, _) = Wallet::new(&mut rng, mnemonic, "", "bitcoin", 1).unwrap();
+
+        let xpub = wallet.xpub();
+
+        let contract_index = wallet.contract_index;
+
+        let (pk, path) = derive_next_normal_pk_multisig(xpub, contract_index).unwrap();
+
+        let signed_message = wallet.sign_message("hello world", pk, Some(&path)).unwrap();
+
+        let different_msg_hash = signed_msg_hash("a different message from what was signed");
+
+        let is_signed =
+            is_signed_by_pk(different_msg_hash, &pk, &signed_message.signature).unwrap();
+        assert!(!is_signed, "Message not to be signed by pk")
     }
 }

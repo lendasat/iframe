@@ -4,6 +4,7 @@ use crate::bitmex_index_price_rest::get_bitmex_index_price;
 use crate::bringin;
 use crate::contract_requests;
 use crate::db;
+use crate::db::contracts::update_borrower_btc_address;
 use crate::discounted_origination_fee;
 use crate::mempool;
 use crate::model;
@@ -43,8 +44,10 @@ use axum::response::IntoResponse;
 use axum::response::Response;
 use axum::Extension;
 use axum::Json;
+use bitcoin::address::NetworkUnchecked;
 use bitcoin::bip32::DerivationPath;
 use bitcoin::consensus::encode::FromHexError;
+use bitcoin::Address;
 use bitcoin::Amount;
 use bitcoin::PublicKey;
 use bitcoin::Transaction;
@@ -67,6 +70,7 @@ pub(crate) fn router_openapi(app_state: Arc<AppState>) -> OpenApiRouter {
     OpenApiRouter::new()
         .routes(routes!(get_contracts))
         .routes(routes!(get_contract))
+        .routes(routes!(put_borrower_btc_address))
         .routes(routes!(get_claim_collateral_psbt))
         .routes(routes!(post_contract_request))
         .routes(routes!(post_claim_tx))
@@ -1278,6 +1282,80 @@ async fn is_us_ip(ip: &str) -> anyhow::Result<bool> {
     Ok(country_code == "US")
 }
 
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct UpdateBorrowerBtcAddress {
+    #[schema(value_type = String)]
+    address: Address<NetworkUnchecked>,
+    /// A recoverable signature of the address using "bitcoin's" signing protocol, i.e. the message
+    /// (`address`) is prepended with b"\x18Bitcoin Signed Message:\n".
+    ///
+    /// The message needs to be signed using the sk behind the pk in the corresponding contract.
+    /// See https://docs.rs/satsnet/latest/src/satsnet/sign_message.rs.html#201-208
+    recoverable_signature_hex: String,
+    recoverable_signature_id: i32,
+}
+
+/// Update borrower btc address of a contract.
+#[utoipa::path(
+    put,
+    path = "/{id}/borroweraddress",
+    params(
+        (
+        "id" = String, Path, description = "Contract id"
+        )
+    ),
+    request_body = UpdateBorrowerBtcAddress,
+    tag = CONTRACTS_TAG,
+    responses(
+        (
+        status = 200,
+        description = "Ok if successful",
+        )
+    ),
+    security(
+        (
+        "api_key" = [])
+        )
+    )
+]
+#[instrument(skip_all, fields(borrower_id = user.id, contract_id, body), ret, err(Debug))]
+async fn put_borrower_btc_address(
+    State(data): State<Arc<AppState>>,
+    Extension(user): Extension<Borrower>,
+    Path(contract_id): Path<String>,
+    AppJson(body): AppJson<UpdateBorrowerBtcAddress>,
+) -> Result<AppJson<()>, Error> {
+    let contract = db::contracts::load_contract_by_contract_id_and_borrower_id(
+        &data.db,
+        contract_id.as_str(),
+        user.id.as_str(),
+    )
+    .await
+    .map_err(Error::database)?;
+
+    let pk = contract.borrower_pk;
+
+    let address = body.address.assume_checked();
+    if !crate::wallet::is_signed_by_pk(
+        address.to_string().as_str(),
+        &pk.inner,
+        body.recoverable_signature_hex,
+        body.recoverable_signature_id,
+    )
+    .map_err(Error::BadSignatureProvided)?
+    {
+        return Err(Error::InvalidSignatureProvided);
+    }
+
+    if !update_borrower_btc_address(&data.db, contract_id.as_str(), user.id.as_str(), address)
+        .await
+        .map_err(Error::database)?
+    {
+        return Err(Error::UpdateBorrowerAddress);
+    }
+    Ok(AppJson(()))
+}
+
 // Error fields are allowed to be dead code because they are actually used when printed in logs.
 #[allow(dead_code)]
 /// All the errors related to the `contracts` REST API.
@@ -1401,6 +1479,12 @@ enum Error {
     ExtensionTooSoon,
     /// Extension is only possible for `max_duration_days`.
     ExtensionTooManyDays { max_duration_days: u64 },
+    /// We failed updating the borrower's bitcoin address in the DB
+    UpdateBorrowerAddress,
+    /// The signature provided was not valid
+    BadSignatureProvided(anyhow::Error),
+    /// The signature provided did not fit to the message
+    InvalidSignatureProvided,
 }
 
 impl Error {
@@ -1646,7 +1730,26 @@ impl IntoResponse for Error {
                              Maximum extension is {max_duration_days} days"
                         ),
                      ),
-            };
+            Error::UpdateBorrowerAddress => {
+                (
+                    StatusCode::BAD_REQUEST,
+                    "Could not update address".to_string(),
+                )
+            }
+            Error::BadSignatureProvided(e) => {
+                tracing::error!("Bad signature provided {e:#}");
+                (
+                    StatusCode::BAD_REQUEST,
+                    "Bad signature provided".to_string(),
+                )
+            }
+            Error::InvalidSignatureProvided => {
+                (
+                    StatusCode::BAD_REQUEST,
+                    "Invalid signature provided".to_string(),
+                )
+            }
+        };
         (status, AppJson(ErrorResponse { message })).into_response()
     }
 }

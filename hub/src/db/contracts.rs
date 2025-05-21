@@ -1690,3 +1690,28 @@ pub(crate) async fn update_extension_policy(
 
     Ok(())
 }
+
+/// Update borrower_btc_address aka borrower refund address
+pub async fn update_borrower_btc_address(
+    pool: &Pool<Postgres>,
+    contract_id: &str,
+    borrower_id: &str,
+    refund_address: Address,
+) -> Result<bool> {
+    let rows_affected = sqlx::query!(
+        r#"
+        UPDATE contracts
+        SET
+            borrower_btc_address = $1
+        WHERE id = $2 AND borrower_id = $3
+        "#,
+        refund_address.to_string(),
+        contract_id,
+        borrower_id
+    )
+    .execute(pool)
+    .await?
+    .rows_affected();
+
+    Ok(rows_affected > 0)
+}

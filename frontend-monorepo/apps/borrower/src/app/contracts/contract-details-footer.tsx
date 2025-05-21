@@ -30,9 +30,6 @@ export function ContractDetailsFooter({
   const { putFiatDetails } = useHttpClientBorrower();
   const { encryptFiatLoanDetailsBorrower } = useWallet();
 
-  console.log(
-    `contract?.fiat_loan_details_borrower ${contract?.fiat_loan_details_borrower}`,
-  );
   const buttonDisabled =
     contract?.status === ContractStatus.DisputeLenderStarted ||
     contract?.status === ContractStatus.DisputeBorrowerStarted;
