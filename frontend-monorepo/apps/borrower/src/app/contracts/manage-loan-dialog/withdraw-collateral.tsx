@@ -59,7 +59,7 @@ const WithdrawCollateralDialog: React.FC<WithdrawCollateralDialogProps> = ({
     setIsSubmitting(true);
 
     try {
-      console.log(`Fee rate: ${feeRate}`);
+      console.log(`Selected fee rate: ${feeRate}`);
       const res = await getClaimCollateralPsbt(contract?.id, feeRate);
 
       console.log("Signing claim collateral PSBT");
@@ -127,6 +127,7 @@ const WithdrawCollateralDialog: React.FC<WithdrawCollateralDialogProps> = ({
               id="password"
               type="password"
               placeholder="Enter your password"
+              autoComplete={"current-password"}
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value);

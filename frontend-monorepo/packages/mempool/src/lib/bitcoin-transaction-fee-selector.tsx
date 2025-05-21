@@ -1,5 +1,5 @@
 import { cn, Input, Label, RadioGroup, RadioGroupItem } from "@frontend/shadcn";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useFees } from "./mempool-fee";
 import { Clock } from "lucide-react";
 
@@ -14,7 +14,14 @@ export const BitcoinTransactionFeeSelector = ({
 }: BitcoinTransactionFeeSelectorProps) => {
   const [error, setError] = useState(false);
 
-  const { recommendedFees } = useFees();
+  const { recommendedFees, refreshFees } = useFees();
+
+  useEffect(() => {
+    refreshFees();
+    if (recommendedFees?.fastestFee) {
+      onSelectFee(recommendedFees.fastestFee);
+    }
+  });
 
   const [selectedFeeRate, setSelectedFeeRate] = useState<
     "fastest" | "hour" | "low" | "custom"
