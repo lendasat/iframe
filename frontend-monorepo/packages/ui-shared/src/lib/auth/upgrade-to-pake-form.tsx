@@ -1,20 +1,36 @@
-import {
-  Box,
-  Button,
-  Callout,
-  Grid,
-  Heading,
-  IconButton,
-  Spinner,
-  Text,
-} from "@radix-ui/themes";
-import type { FormEvent } from "react";
 import { useState } from "react";
-import { Form } from "react-bootstrap";
-import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
-import { IoInformationCircleOutline } from "react-icons/io5";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Eye, EyeOff, Info } from "lucide-react";
+import { Button } from "@frontend/shadcn";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@frontend/shadcn";
+import { Input } from "@frontend/shadcn";
+import { Alert, AlertDescription } from "@frontend/shadcn";
+import { Card, CardContent, CardHeader } from "@frontend/shadcn";
 import { ReactComponent as Logo } from "./../assets/lendasat_svg_logo.svg";
-import TypeField from "../components/TypeField";
+
+const formSchema = z
+  .object({
+    email: z.string().email("Please enter a valid email address"),
+    oldPassword: z.string().min(1, "Current password is required"),
+    contractSecret: z.string().min(1, "Contract secret is required"),
+    newPassword: z.string().min(8, "Password must be at least 8 characters"),
+    confirmNewPassword: z.string().min(1, "Please confirm your password"),
+  })
+  .refine((data) => data.newPassword === data.confirmNewPassword, {
+    message: "Passwords do not match",
+    path: ["confirmNewPassword"],
+  });
+
+type FormValues = z.infer<typeof formSchema>;
 
 interface UpgradeToPakeFormProps {
   handleFormSubmission: (
@@ -28,36 +44,33 @@ interface UpgradeToPakeFormProps {
 export function UpgradeToPakeForm({
   handleFormSubmission,
 }: UpgradeToPakeFormProps) {
-  const [email, setEmail] = useState("");
-
-  const [oldPassword, setOldPassword] = useState("");
   const [isOldPasswordVisible, setIsOldPasswordVisible] = useState(false);
-
-  const [contractSecret, setContractSecret] = useState("");
   const [isContractSecretVisible, setContractSecretVisible] = useState(false);
-
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [isNewPasswordVisible, setIsNewPasswordVisible] = useState(false);
   const [error, setError] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isNewPasswordVisible, setIsNewPasswordVisible] = useState(false);
 
-  const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: "",
+      oldPassword: "",
+      contractSecret: "",
+      newPassword: "",
+      confirmNewPassword: "",
+    },
+  });
+
+  const onSubmit = async (values: FormValues) => {
     setIsLoading(true);
-    if (newPassword !== confirmNewPassword) {
-      setError("Passwords do not match");
-      setIsLoading(false);
-      return;
-    }
-
     setError("");
+
     try {
       await handleFormSubmission(
-        email,
-        oldPassword,
-        contractSecret,
-        newPassword,
+        values.email,
+        values.oldPassword,
+        values.contractSecret,
+        values.newPassword,
       );
     } catch (err) {
       console.error("Failed upgrading user to PAKE:", err);
@@ -66,231 +79,220 @@ export function UpgradeToPakeForm({
           ? err.message
           : "Upgrade to PAKE failed. Please reach out to support and do not delete your browser storage.",
       );
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
+  const PasswordToggle = ({
+    isVisible,
+    onToggle,
+  }: {
+    isVisible: boolean;
+    onToggle: () => void;
+  }) => (
+    <Button
+      type="button"
+      variant="ghost"
+      size="sm"
+      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+      onClick={onToggle}
+      tabIndex={-1}
+    >
+      {isVisible ? (
+        <Eye className="h-4 w-4 text-muted-foreground" />
+      ) : (
+        <EyeOff className="h-4 w-4 text-muted-foreground" />
+      )}
+    </Button>
+  );
+
   return (
-    <Box className="flex h-screen items-center justify-center overflow-y-scroll bg-gradient-to-tr from-[#F5F9FD] from-60% to-pink-700/5 to-100% py-20 pt-0 dark:from-[#1a202c] dark:to-gray-900/70">
-      <Grid align={"center"} className="w-screen grid-cols-1 overflow-hidden">
-        <Box className="flex flex-col items-center p-5">
-          {/* Logo */}
+    <div className="flex min-h-screen items-center justify-center overflow-y-auto">
+      <div className="w-full max-w-lg p-5">
+        {/* Logo */}
+        <div className="flex justify-center mb-8">
           <Logo
             height={27}
-            width={"auto"}
+            width="auto"
             className="w-fit invert dark:invert-0"
           />
-          <Box
-            mt={"6"}
-            maxWidth={"550px"}
-            width={"100%"}
-            py={"6"}
-            px={"6"}
-            className="dark:bg-dark dark:border-dark rounded-2xl bg-white shadow-sm dark:border dark:shadow-md"
-          >
-            {/* Heading */}
-            <Box className="pb-4 text-center">
-              <Heading
-                size={"7"}
-                className="text-font dark:text-font-dark pb-2"
-              >
-                Choose a new password
-              </Heading>
-              <Text size={"3"} className="text-font/70 dark:text-font-dark/70">
+        </div>
+
+        <Card className="w-full shadow-lg">
+          <CardHeader className="text-center pb-4">
+            <h1 className="text-2xl font-bold text-foreground">
+              Choose a new password
+            </h1>
+            <div className="space-y-2 text-sm text-muted-foreground">
+              <p>
                 <strong>Good news!</strong> Lendasat is getting <em>simpler</em>
                 .
-              </Text>
-              <br /> <br />
-              <Text size={"3"} className="text-font/70 dark:text-font-dark/70">
+              </p>
+              <p>
                 We have updated the app and you no longer need to remember both
                 a password <em>and</em> a contract secret. You will now use a{" "}
                 <strong>single password</strong> to authenticate and secure your
                 wallet.
-              </Text>
-            </Box>
+              </p>
+            </div>
+          </CardHeader>
 
-            {/* Form */}
-            <Form className="mt-7 w-full space-y-0.5" onSubmit={onSubmit}>
-              <Box className="mt-3 text-left">
+          <CardContent>
+            <Form {...form}>
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-4"
+              >
                 {/* Email */}
-                <Box>
-                  <Text
-                    as="label"
-                    size={"1"}
-                    weight={"medium"}
-                    className="text-font/70 dark:text-font-dark/70 mb-2"
-                  >
-                    Email
-                  </Text>
-                  <TypeField
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Enter your email"
+                          type="email"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Current Password */}
+                <FormField
+                  control={form.control}
+                  name="oldPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Current Password</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Input
+                            type={isOldPasswordVisible ? "text" : "password"}
+                            placeholder="Current Password"
+                            {...field}
+                          />
+                          <PasswordToggle
+                            isVisible={isOldPasswordVisible}
+                            onToggle={() =>
+                              setIsOldPasswordVisible(!isOldPasswordVisible)
+                            }
+                          />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Contract Secret */}
+                <FormField
+                  control={form.control}
+                  name="contractSecret"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Contract Secret</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Input
+                            type={isContractSecretVisible ? "text" : "password"}
+                            placeholder="Enter your contract secret"
+                            {...field}
+                          />
+                          <PasswordToggle
+                            isVisible={isContractSecretVisible}
+                            onToggle={() =>
+                              setContractSecretVisible(!isContractSecretVisible)
+                            }
+                          />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* New Password and Confirm Password */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="newPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>New Password</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Input
+                              type={isNewPasswordVisible ? "text" : "password"}
+                              placeholder="New Password"
+                              {...field}
+                            />
+                            <PasswordToggle
+                              isVisible={isNewPasswordVisible}
+                              onToggle={() =>
+                                setIsNewPasswordVisible(!isNewPasswordVisible)
+                              }
+                            />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </Box>
-              </Box>
 
-              <Box className="mt-3 text-left">
-                <Box>
-                  <Text
-                    as="label"
-                    size={"1"}
-                    weight={"medium"}
-                    className="text-font/70 dark:text-font-dark/70 mb-2"
-                  >
-                    Current Password
-                  </Text>
-                  <TypeField
-                    type={isOldPasswordVisible ? "text" : "password"}
-                    placeholder="Current Password"
-                    value={oldPassword}
-                    onChange={(e) => setOldPassword(e.target.value)}
-                  >
-                    <IconButton
-                      variant="ghost"
-                      type="button"
-                      className="text-font dark:text-font-dark hover:bg-transparent"
-                      onClick={() =>
-                        setIsOldPasswordVisible(!isOldPasswordVisible)
-                      }
-                    >
-                      {isOldPasswordVisible ? <FaRegEye /> : <FaRegEyeSlash />}
-                    </IconButton>
-                  </TypeField>
-                </Box>
-              </Box>
+                  <FormField
+                    control={form.control}
+                    name="confirmNewPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Confirm Password</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Input
+                              type={isNewPasswordVisible ? "text" : "password"}
+                              placeholder="Confirm Password"
+                              {...field}
+                            />
+                            <PasswordToggle
+                              isVisible={isNewPasswordVisible}
+                              onToggle={() =>
+                                setIsNewPasswordVisible(!isNewPasswordVisible)
+                              }
+                            />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
-              <Box className="mt-3 text-left">
-                <Box>
-                  <Text
-                    as="label"
-                    size={"1"}
-                    weight={"medium"}
-                    className="text-font/70 dark:text-font-dark/70 mb-2"
-                  >
-                    Contract Secret
-                  </Text>
-                  <TypeField
-                    type={isContractSecretVisible ? "text" : "password"}
-                    placeholder="Enter your contract secret"
-                    value={contractSecret}
-                    onChange={(e) => setContractSecret(e.target.value)}
-                  >
-                    <IconButton
-                      variant="ghost"
-                      type="button"
-                      className="text-font dark:text-font-dark hover:bg-transparent"
-                      onClick={() =>
-                        setContractSecretVisible(!isContractSecretVisible)
-                      }
-                    >
-                      {isContractSecretVisible ? (
-                        <FaRegEye />
-                      ) : (
-                        <FaRegEyeSlash />
-                      )}
-                    </IconButton>
-                  </TypeField>
-                </Box>
-              </Box>
+                {/* Error Alert */}
+                {error && (
+                  <Alert variant="destructive">
+                    <Info className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
 
-              {/* Password */}
-              <Box className="grid grid-cols-1 md:grid-cols-2 md:gap-1">
-                <Box className="mt-3 text-left">
-                  <Text
-                    as="label"
-                    size={"1"}
-                    weight={"medium"}
-                    className="text-font/70 dark:text-font-dark/70 mb-2"
-                  >
-                    New Password
-                  </Text>
-                  <TypeField
-                    type={isNewPasswordVisible ? "text" : "password"}
-                    placeholder="New Password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                  >
-                    <IconButton
-                      type="button"
-                      variant="ghost"
-                      className="text-font dark:text-font-dark hover:bg-transparent"
-                      onClick={() =>
-                        setIsNewPasswordVisible(!isNewPasswordVisible)
-                      }
-                      tabIndex={-1}
-                    >
-                      {isNewPasswordVisible ? <FaRegEye /> : <FaRegEyeSlash />}
-                    </IconButton>
-                  </TypeField>
-                </Box>
-                <Box className="mt-3 text-left">
-                  <Text
-                    as="label"
-                    size={"1"}
-                    weight={"medium"}
-                    className="text-font/70 dark:text-font-dark/70 mb-2"
-                  >
-                    Confirm Password
-                  </Text>
-                  <TypeField
-                    type={isNewPasswordVisible ? "text" : "password"}
-                    placeholder="Confirm Password"
-                    value={confirmNewPassword}
-                    onChange={(e) => setConfirmNewPassword(e.target.value)}
-                  >
-                    <IconButton
-                      type="button"
-                      variant="ghost"
-                      className="text-font dark:text-font-dark hover:bg-transparent"
-                      onClick={() =>
-                        setIsNewPasswordVisible(!isNewPasswordVisible)
-                      }
-                      tabIndex={-1}
-                    >
-                      {isNewPasswordVisible ? <FaRegEye /> : <FaRegEyeSlash />}
-                    </IconButton>
-                  </TypeField>
-                </Box>
-              </Box>
-
-              {/* Error message */}
-              {error && (
-                <Callout.Root color="tomato">
-                  <Callout.Icon>
-                    <IoInformationCircleOutline />
-                  </Callout.Icon>
-                  <Callout.Text>{error}</Callout.Text>
-                </Callout.Root>
-              )}
-
-              {/* Submit Button */}
-              <Box className="pt-7">
+                {/* Submit Button */}
                 <Button
-                  color="purple"
                   type="submit"
-                  size={"3"}
-                  variant="solid"
-                  radius="large"
-                  disabled={
-                    !(
-                      email &&
-                      oldPassword &&
-                      contractSecret &&
-                      newPassword &&
-                      newPassword === confirmNewPassword &&
-                      !isLoading
-                    )
-                  }
-                  className="h-12 w-full"
+                  className="w-full -px-4"
+                  disabled={isLoading}
                 >
-                  {isLoading ? <Spinner size={"3"} /> : "Submit"}
+                  {isLoading ? "Submitting..." : "Submit"}
                 </Button>
-              </Box>
+              </form>
             </Form>
-          </Box>
-        </Box>
-      </Grid>
-    </Box>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 }

@@ -1,12 +1,21 @@
-import { faCheckCircle, faX } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Box, Grid, Heading, Text } from "@radix-ui/themes";
-import type { ChangeEvent, FormEvent } from "react";
-import { useState } from "react";
-import { Button, Form, InputGroup } from "react-bootstrap";
-import { Link } from "react-router-dom";
+import React, { ChangeEvent, FormEvent } from "react";
+import { useNavigate } from "react-router-dom";
 import { ReactComponent as Logo } from "./../assets/lendasat_svg_logo.svg";
 import { OldPasswordOrMnemonic } from "../models";
+import { useState } from "react";
+import { Button } from "@frontend/shadcn";
+import { Input } from "@frontend/shadcn";
+import { Label } from "@frontend/shadcn";
+import { Alert, AlertDescription } from "@frontend/shadcn";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@frontend/shadcn";
+import { RadioGroup, RadioGroupItem } from "@frontend/shadcn";
+import { CheckCircle, X, Loader2 } from "lucide-react";
 
 interface ResetPasswordFormProps {
   handleSubmit: (
@@ -29,13 +38,14 @@ export function ResetPasswordForm({
   const [isLoading, setLoading] = useState(false);
   const [changeComplete, setChangeComplete] = useState(false);
   const [passwordMatch, setPasswordMatch] = useState(false);
+  const navigate = useNavigate();
 
   const [oldPassOrMnemonic, setOldPassOrMnemonic] = useState("oldPassword");
 
   const [oldPassword, setOldPassword] = useState("");
   const [mnemonic, setMnemonic] = useState("");
 
-  const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setLoading(true);
     setSuccess("");
@@ -71,174 +81,140 @@ export function ResetPasswordForm({
     }
   };
 
+  const handleGoToLogin = () => {
+    navigate(loginUrl);
+  };
+
   return (
-    <Box className="flex h-screen items-center justify-center overflow-y-scroll bg-gradient-to-tr from-[#F5F9FD] from-60% to-pink-700/5 to-100% py-20 pt-0 dark:from-[#1a202c] dark:to-gray-900/70">
-      <Grid align={"center"} className="w-screen grid-cols-1 overflow-hidden">
-        <Box className="flex flex-col items-center p-5">
-          {/* Logo */}
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-tr from-slate-50 via-slate-50 to-pink-50 p-4">
+      <div className="w-full max-w-md">
+        <div className="flex justify-center mb-8">
           <Logo
             height={27}
             width={"auto"}
             className="w-fit invert dark:invert-0"
           />
+        </div>
 
-          <Box
-            mt={"6"}
-            maxWidth={"550px"}
-            width={"100%"}
-            py={"6"}
-            px={"6"}
-            className="bg-light dark:bg-dark rounded-2xl shadow-sm"
-          >
-            <Box className="pb-4 text-center">
-              <Heading
-                size={"7"}
-                className="text-font dark:text-font-dark pb-2"
-              >
-                Reset your password
-              </Heading>
-              <Text size={"3"} className="text-font/70 dark:text-font-dark/70">
-                Please enter your new password
-              </Text>
-            </Box>
-
-            <Form onSubmit={onSubmit}>
-              <Form.Group controlId="formBasicPassword" className="mb-3">
-                <Text
-                  as="label"
-                  size={"1"}
-                  weight={"medium"}
-                  className="text-font dark:text-font-dark mb-2"
-                >
-                  New Password
-                </Text>
-                <Form.Control
-                  type="Password"
+        <Card>
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl">Reset your password</CardTitle>
+            <CardDescription>Please enter your new password</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="newPassword">New Password</Label>
+                <Input
+                  id="newPassword"
+                  type="password"
                   placeholder="New Password"
-                  className="text-font bg-light dark:text-font-dark dark:bg-dark dark:placeholder:text-font-dark/60 p-3"
-                  style={{ width: "100%" }}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   disabled={changeComplete}
                 />
-              </Form.Group>
+              </div>
 
-              <Form.Group controlId="formBasicPassword" className="mb-3">
-                <Text
-                  as="label"
-                  size={"1"}
-                  weight={"medium"}
-                  className="text-font dark:text-font-dark mb-2"
-                >
-                  Confirm Password
-                </Text>
-                <InputGroup className="text-font dark:text-font-dark mb-3">
-                  <Form.Control
-                    type={"Password"}
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type="password"
                     placeholder="Confirm Password"
                     value={confirmNewPassword}
                     onChange={onConfirmPasswordChange}
-                    className="text-font bg-light dark:text-font-dark dark:bg-dark dark:placeholder:text-font-dark/60 p-3"
                     disabled={changeComplete}
                   />
-
-                  {
-                    <div className="position-absolute top-50 translate-middle-y end-0 me-2">
-                      {passwordMatch ? (
-                        <FontAwesomeIcon icon={faCheckCircle} color={"green"} />
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    {confirmNewPassword &&
+                      (passwordMatch ? (
+                        <CheckCircle className="h-4 w-4 text-green-500" />
                       ) : (
-                        <FontAwesomeIcon icon={faX} color={"red"} />
-                      )}
+                        <X className="h-4 w-4 text-red-500" />
+                      ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <Label>Extra Data</Label>
+                <RadioGroup
+                  value={oldPassOrMnemonic}
+                  onValueChange={setOldPassOrMnemonic}
+                  className="space-y-2"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="oldPassword" id="oldPassword" />
+                    <Label htmlFor="oldPassword">Current Password</Label>
+                  </div>
+                  {canUseMnemonic && (
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="mnemonic" id="mnemonic" />
+                      <Label htmlFor="mnemonic">Mnemonic Seed Phrase</Label>
                     </div>
-                  }
-                </InputGroup>
-
-                <Form.Group controlId="formPasswordType">
-                  <Text
-                    as="label"
-                    size={"1"}
-                    weight={"medium"}
-                    className="text-font dark:text-font-dark mb-2"
-                  >
-                    Extra Data
-                  </Text>
-                  <Box className="d-flex align-items-center mb-3 ml-3">
-                    <Form.Check
-                      type="radio"
-                      label="Current Password"
-                      name="passwordType"
-                      className="text-font bg-light dark:text-font-dark dark:bg-dark mr-4 p-3"
-                      onChange={() => setOldPassOrMnemonic("oldPassword")}
-                      checked={oldPassOrMnemonic === "oldPassword"}
-                    />
-                    {canUseMnemonic && (
-                      <Form.Check
-                        type="radio"
-                        label="Mnemonic Seed Phrase"
-                        name="passwordType"
-                        className="text-font bg-light dark:text-font-dark dark:bg-dark p-3"
-                        onChange={() => setOldPassOrMnemonic("mnemonic")}
-                        checked={oldPassOrMnemonic === "mnemonic"}
-                      />
-                    )}
-                  </Box>
-                </Form.Group>
-
-                {oldPassOrMnemonic === "oldPassword" && (
-                  <Form.Group controlId="formOldPassword">
-                    <Form.Control
-                      type="password"
-                      placeholder="Current Password"
-                      value={oldPassword}
-                      onChange={(e) => setOldPassword(e.target.value)}
-                      className="text-font bg-light dark:text-font-dark dark:bg-dark dark:placeholder:text-font-dark/60 mb-3"
-                    />
-                  </Form.Group>
-                )}
-
-                {oldPassOrMnemonic === "mnemonic" && (
-                  <Form.Group controlId="formMnemonic">
-                    <Form.Control
-                      placeholder="abandon ability able about..."
-                      value={mnemonic}
-                      onChange={(e) => setMnemonic(e.target.value)}
-                      className="text-font bg-light dark:text-font-dark dark:bg-dark dark:placeholder:text-font-dark/60 mb-3"
-                    />
-                  </Form.Group>
-                )}
-
-                <InputGroup>
-                  {error && (
-                    <div className="alert alert-danger w-100">{error}</div>
                   )}
-                  {success && (
-                    <div className="alert alert-success w-100">{success}</div>
-                  )}
-                </InputGroup>
-                <InputGroup>
-                  {success ? (
-                    <Link to={loginUrl} className={`text-decoration-none}`}>
-                      <Button variant="primary" className="w-100 p-2">
-                        {"Go To Login"}
-                      </Button>
-                    </Link>
+                </RadioGroup>
+              </div>
+
+              {oldPassOrMnemonic === "oldPassword" && (
+                <div className="space-y-2">
+                  <Input
+                    type="password"
+                    placeholder="Current Password"
+                    value={oldPassword}
+                    onChange={(e) => setOldPassword(e.target.value)}
+                  />
+                </div>
+              )}
+
+              {oldPassOrMnemonic === "mnemonic" && (
+                <div className="space-y-2">
+                  <Input
+                    placeholder="abandon ability able about..."
+                    value={mnemonic}
+                    onChange={(e) => setMnemonic(e.target.value)}
+                  />
+                </div>
+              )}
+
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
+              {success && (
+                <Alert className="border-green-200 bg-green-50 text-green-800">
+                  <AlertDescription>{success}</AlertDescription>
+                </Alert>
+              )}
+
+              {success ? (
+                <Button onClick={handleGoToLogin} className="w-full">
+                  Go To Login
+                </Button>
+              ) : (
+                <Button
+                  onClick={(e) => onSubmit(e)}
+                  className="w-full -px-4"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Loading...
+                    </>
                   ) : (
-                    <Button
-                      variant="primary"
-                      type="submit"
-                      className="w-100 p-2"
-                      disabled={isLoading}
-                    >
-                      {isLoading ? "Loading…" : "Submit"}
-                    </Button>
+                    "Submit"
                   )}
-                </InputGroup>
-              </Form.Group>
-            </Form>
-          </Box>
-        </Box>
-      </Grid>
-    </Box>
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 }
 

@@ -1,28 +1,30 @@
-import { Button, Col, Container, Row } from "react-bootstrap";
-import { BiError } from "react-icons/bi";
-import { Link, useNavigate } from "react-router-dom";
+import { Button } from "@frontend/shadcn";
+import { AlertTriangle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const ErrorBoundary = () => {
   const navigate = useNavigate();
+  const handleGoHome = () => {
+    navigate("/");
+  };
+
   return (
-    <Container className="mt-5">
-      <Row className="justify-content-center">
-        <Col md={6} className="text-center">
-          <div className="d-flex justify-content-center mb-4">
-            <BiError size={80} color="#dc3545" />
+    <div className="container mx-auto mt-20 px-4">
+      <div className="flex justify-center">
+        <div className="max-w-md text-center">
+          <div className="flex justify-center mb-6">
+            <AlertTriangle size={80} className="text-red-500" />
           </div>
-          <h2 className="mb-3">Oops! Something went wrong</h2>
-          <p className="text-font dark:text-font-dark mb-4">
+          <h2 className="text-2xl font-semibold mb-3">
+            Oops! Something went wrong
+          </h2>
+          <p className="text-muted-foreground mb-6">
             {"We couldn't find what you were looking for."}
           </p>
-          <Link to="/">
-            <Button variant="primary" onClick={() => navigate("/")}>
-              Home
-            </Button>
-          </Link>
-        </Col>
-      </Row>
-    </Container>
+          <Button onClick={handleGoHome}>Home</Button>
+        </div>
+      </div>
+    </div>
   );
 };
 
