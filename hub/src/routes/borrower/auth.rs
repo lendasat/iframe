@@ -623,15 +623,13 @@ async fn post_pake_verify(
         .join("/settings/profile")
         .expect("to be a correct URL");
 
-    let location = geo_location::get_location(ip_address.as_str()).await.ok();
-
     data.notifications
         .send_login_information_borrower(
             user,
             profile_url,
             ip_address.as_str(),
             OffsetDateTime::now_utc(),
-            location,
+            location.map(|l| format!("{}", l)),
             user_agent.as_str(),
         )
         .await;

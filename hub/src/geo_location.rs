@@ -34,19 +34,6 @@ pub async fn is_us_ip(ip: &str) -> anyhow::Result<bool> {
     Ok(country_code == "US")
 }
 
-pub async fn get_location(ip: &str) -> anyhow::Result<String> {
-    // Local development address can be ignored.
-    if ip == "127.0.0.1" {
-        return Ok("Localhost".to_string());
-    }
-
-    let url = format!("https://get.geojs.io/v1/ip/geo/{ip}.json");
-    let response = reqwest::get(&url).await?;
-    let geo_info: GeoInfo = response.json().await?;
-
-    Ok(format!("{}", geo_info))
-}
-
 pub async fn get_geo_info(ip: &str) -> anyhow::Result<GeoInfo> {
     // Local development address can be ignored.
     if ip == "127.0.0.1" {
