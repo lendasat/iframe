@@ -135,6 +135,7 @@ const EnhancedBitcoinLoan = () => {
                     {!disputeOngoing &&
                       contract?.status !== ContractStatus.Requested &&
                       contract?.status !== ContractStatus.Cancelled &&
+                      contract?.status !== ContractStatus.Defaulted &&
                       contract?.status !== ContractStatus.Closed &&
                       contract?.liquidation_status ===
                         LiquidationStatus.Healthy && (
