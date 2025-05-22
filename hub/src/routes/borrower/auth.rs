@@ -626,7 +626,7 @@ async fn post_pake_verify(
     let location = geo_location::get_location(ip_address.as_str()).await.ok();
 
     data.notifications
-        .send_login_information(
+        .send_login_information_borrower(
             user,
             profile_url,
             ip_address.as_str(),

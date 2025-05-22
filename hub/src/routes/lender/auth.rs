@@ -11,6 +11,7 @@ use crate::db::telegram_bot::TelegramBotToken;
 use crate::db::waitlist::Error;
 use crate::db::waitlist::WaitlistRole;
 use crate::db::wallet_backups::NewLenderWalletBackup;
+use crate::geo_location;
 use crate::model::ContractStatus;
 use crate::model::FinishUpgradeToPakeRequest;
 use crate::model::ForgotPasswordSchema;

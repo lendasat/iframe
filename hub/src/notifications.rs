@@ -23,7 +23,7 @@ impl Notifications {
         }
     }
 
-    pub async fn send_login_information(
+    pub async fn send_login_information_borrower(
         &self,
         borrower: Borrower,
         profile_url: Url,
@@ -54,6 +54,43 @@ impl Notifications {
             profile_url,
             crate::telegram_bot::BorrowerNotificationKind::LoginNotification {
                 name: borrower.name.clone(),
+                ip_address: ip_address.to_string(),
+                login_time,
+            },
+        )
+        .await;
+    }
+
+    pub async fn send_login_information_lender(
+        &self,
+        lender: &Lender,
+        profile_url: Url,
+        ip_address: &str,
+        login_time: OffsetDateTime,
+        location: Option<String>,
+        device: &str,
+    ) {
+        if let Err(e) = self
+            .email
+            .send_login_information(
+                lender.name.as_str(),
+                lender.email.as_str(),
+                profile_url.clone(),
+                ip_address,
+                login_time,
+                location,
+                device,
+            )
+            .await
+        {
+            tracing::error!("Could not send information about new login {e:#}");
+        }
+
+        self.send_tg_notification_lender(
+            lender,
+            profile_url,
+            crate::telegram_bot::LenderNotificationKind::LoginNotification {
+                name: lender.name.clone(),
                 ip_address: ip_address.to_string(),
                 login_time,
             },

@@ -194,7 +194,14 @@ pub enum LenderNotificationKind {
     LiquidationNotice,
     RequestAutoApproved,
     RequestExpired,
-    NewChatMessage { name: String },
+    NewChatMessage {
+        name: String,
+    },
+    LoginNotification {
+        name: String,
+        ip_address: String,
+        login_time: OffsetDateTime,
+    },
 }
 
 pub enum BorrowerNotificationKind {
@@ -274,6 +281,14 @@ impl xtra::Handler<Notification> for TelegramBot {
                 (
                     format!("Hi, {name}. A borrower sent you a message. Log in now to read it.",), 
                     "Contract Details".to_string(),
+                )
+            }
+            NotificationTarget::Lender(LenderNotificationKind::LoginNotification { name, ip_address, login_time }) => {
+                let login_time = login_time.format(&Rfc2822).expect("to be able to format the date");
+                (
+
+                    format!("Hi, {name}. A new login has been registered from IP {ip_address} on {login_time}. If this was not you. Login and change your password immediately."),
+                    "Go to my profile".to_string(),
                 )
             }
 
