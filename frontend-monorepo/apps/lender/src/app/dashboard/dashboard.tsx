@@ -4,119 +4,36 @@ import {
   useLenderHttpClient,
 } from "@frontend/http-client-lender";
 import { formatCurrency, ONE_YEAR } from "@frontend/ui-shared";
-import { InfoCircledIcon } from "@radix-ui/react-icons";
 import {
-  Box,
-  Button,
-  Callout,
-  Flex,
-  Grid,
-  Heading,
-  Text,
-} from "@radix-ui/themes";
-import { useEffect, useState } from "react";
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Skeleton,
+} from "@frontend/shadcn";
+import { Button } from "@frontend/shadcn";
+import { Alert, AlertDescription, AlertTitle } from "@frontend/shadcn";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAsync } from "react-use";
 import DashboardContracts from "./dashoard-contracts";
+import { InfoIcon } from "lucide-react";
 
-enum QuickBoardsType {
-  Dollar,
-  Number,
-  Percentage,
-}
-
-interface QuickBoardsProps {
-  color: string;
-  label: string;
-  value: number;
-  type: QuickBoardsType;
-}
-
-const QuickBoards = ({ color, label, value, type }: QuickBoardsProps) => {
-  let formattedValue = value.toFixed();
-  switch (type) {
-    case QuickBoardsType.Dollar:
-      formattedValue = formatCurrency(value);
-      break;
-    case QuickBoardsType.Number:
-      formattedValue = value.toFixed();
-      break;
-    case QuickBoardsType.Percentage:
-      formattedValue = `${(value * 100).toFixed(1)}%`;
-      break;
-  }
-
-  return (
-    <Box className="dark:bg-dark-500 min-h-24 space-y-4 rounded-2xl bg-white py-4 drop-shadow-sm">
-      <Flex className={`relative px-4`} align={"start"} justify={"between"}>
-        <Box
-          className="absolute left-0 top-0 h-full w-1 rounded-r-lg"
-          style={{
-            backgroundColor: color,
-          }}
-        />
-        <Box className="space-y-3">
-          <Text
-            as="p"
-            size={"1"}
-            weight={"medium"}
-            className="text-font dark:text-font-dark"
-          >
-            {label}
-          </Text>
-          <Heading
-            size={"6"}
-            weight={"bold"}
-            className="text-black dark:text-white"
-          >
-            {formattedValue}
-          </Heading>
-        </Box>
-      </Flex>
-    </Box>
-  );
-};
-
-interface AlertBoardProps {
-  color: string;
-}
-
-const AlertBoard = ({ color }: AlertBoardProps) => {
+const AlertBoard = () => {
   const navigate = useNavigate();
 
   return (
-    <Box className="dark:bg-dark-500 min-h-24 space-y-4 rounded-2xl bg-white py-4 drop-shadow-sm">
-      <Flex className={`relative px-4`} align={"start"} justify={"between"}>
-        <Box
-          className="absolute left-0 top-0 h-full w-1 rounded-r-lg"
-          style={{
-            backgroundColor: color,
-          }}
-        />
-        <Box className="space-y-3">
-          <Text
-            as="p"
-            size={"1"}
-            weight={"medium"}
-            className="text-font dark:text-font-dark"
-          >
-            Attention
-          </Text>
-          <Callout.Root color={"orange"}>
-            <Callout.Icon>
-              <InfoCircledIcon />
-            </Callout.Icon>
-            <Callout.Text>
-              For your security, please create a backup of your seed phrase
-              before proceeding.
-            </Callout.Text>
-            <Button onClick={() => navigate("/settings/wallet")}>
-              Go to Settings
-            </Button>
-          </Callout.Root>
-        </Box>
-      </Flex>
-    </Box>
+    <Alert>
+      <InfoIcon className="h-4 w-4" />
+      <AlertTitle>Attention</AlertTitle>
+      <AlertDescription className="flex items-center justify-between">
+        For your security, please create a backup of your seed phrase before
+        proceeding.
+        <Button onClick={() => navigate("/settings/wallet")} size={"sm"}>
+          Go to Settings
+        </Button>
+      </AlertDescription>
+    </Alert>
   );
 };
 
@@ -143,7 +60,7 @@ function Dashboard() {
 
   const [hasMnemonicBackedUp, setHasMnemonicBackedUp] = useState(false);
 
-  const { value: maybeContracts } = useAsync(async () => {
+  const { value: maybeContracts, loading: isLoading } = useAsync(async () => {
     return await getContracts();
   }, []);
 
@@ -190,48 +107,81 @@ function Dashboard() {
   const averageApr = calculateWeightedAverageAPR(closedContracts);
 
   return (
-    <Box
-      className="dark:bg-dark flex flex-col overflow-y-scroll p-4 md:p-8"
-      height={innerHeight - 120 + "px"}
+    <div
+      className="flex flex-col overflow-y-scroll p-4 md:p-8"
+      style={{ height: innerHeight - 120 + "px" }}
     >
-      <Box className="space-y-8">
-        <Grid className="gap-5 md:grid-cols-2 xl:grid-cols-5">
-          <QuickBoards
-            color="orange"
-            label="$ in Open Loans"
-            value={totalLoanAmount}
-            type={QuickBoardsType.Dollar}
-          />
-          <QuickBoards
-            color="green"
-            label="Number of Active Loans"
-            value={numberOfOpenContracts}
-            type={QuickBoardsType.Number}
-          />
-          <QuickBoards
-            color="purple"
-            label="Open Interest"
-            value={totalOpenInterest}
-            type={QuickBoardsType.Dollar}
-          />
-          <QuickBoards
-            color="brown"
-            label="Earned Interest"
-            value={totalClosedInterest}
-            type={QuickBoardsType.Dollar}
-          />
-          <QuickBoards
-            color="yellow"
-            label="Average APR"
-            value={averageApr}
-            type={QuickBoardsType.Percentage}
-          />
-        </Grid>
-        {!hasMnemonicBackedUp && <AlertBoard color={"red"} />}
+      <div className="space-y-8">
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-5">
+          <Card>
+            <CardHeader>
+              <CardDescription>Open Loans</CardDescription>
+              <CardTitle className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums">
+                {isLoading ? (
+                  <Skeleton className="h-8 w-[150px]" />
+                ) : (
+                  formatCurrency(totalLoanAmount)
+                )}
+              </CardTitle>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardDescription>Active Loans</CardDescription>
+              <CardTitle className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums">
+                {isLoading ? (
+                  <Skeleton className="h-8 w-[150px]" />
+                ) : (
+                  numberOfOpenContracts
+                )}
+              </CardTitle>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardDescription>Open Interest</CardDescription>
+              <CardTitle className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums">
+                {isLoading ? (
+                  <Skeleton className="h-8 w-[150px]" />
+                ) : (
+                  formatCurrency(totalOpenInterest)
+                )}
+              </CardTitle>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardDescription>Earned Interest</CardDescription>
+              <CardTitle className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums">
+                {isLoading ? (
+                  <Skeleton className="h-8 w-[150px]" />
+                ) : (
+                  formatCurrency(totalClosedInterest)
+                )}
+              </CardTitle>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardDescription>Average APR</CardDescription>
+              <CardTitle className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums">
+                {isLoading ? (
+                  <Skeleton className="h-8 w-[150px]" />
+                ) : (
+                  <>
+                    {averageApr}
+                    {"%"}
+                  </>
+                )}
+              </CardTitle>
+            </CardHeader>
+          </Card>
+        </div>
+        {!hasMnemonicBackedUp && <AlertBoard />}
 
         <DashboardContracts contracts={contracts} />
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 }
 
