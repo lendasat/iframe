@@ -4,6 +4,7 @@ use crate::model::Contract;
 use crate::model::Lender;
 use crate::telegram_bot::TelegramBot;
 use rust_decimal::Decimal;
+use time::OffsetDateTime;
 use url::Url;
 use xtra::Address;
 
@@ -22,13 +23,51 @@ impl Notifications {
         }
     }
 
+    pub async fn send_login_information(
+        &self,
+        borrower: Borrower,
+        profile_url: Url,
+        ip_address: &str,
+        login_time: OffsetDateTime,
+        location: Option<String>,
+        device: &str,
+    ) {
+        if let Some(email) = borrower.email.as_ref() {
+            if let Err(e) = self
+                .email
+                .send_login_information(
+                    borrower.name.as_str(),
+                    email,
+                    profile_url.clone(),
+                    ip_address,
+                    login_time,
+                    location,
+                    device,
+                )
+                .await
+            {
+                tracing::error!("Could not send information about new login {e:#}");
+            }
+        }
+        self.send_tg_notification_borrower(
+            &borrower,
+            profile_url,
+            crate::telegram_bot::BorrowerNotificationKind::LoginNotification {
+                name: borrower.name.clone(),
+                ip_address: ip_address.to_string(),
+                login_time,
+            },
+        )
+        .await;
+    }
+
     pub async fn send_verification_code(&self, name: &str, email: &str, url: Url, code: &str) {
         if let Err(e) = self
             .email
             .send_verification_code(name, email, url, code)
             .await
         {
-            tracing::error!("Could not verifcation code {e:#}");
+            tracing::error!("Could not send verification code {e:#}");
         }
     }
 

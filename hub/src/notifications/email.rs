@@ -18,7 +18,9 @@ use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use time::format_description;
+use time::format_description::well_known::Rfc2822;
 use time::Duration;
+use time::OffsetDateTime;
 use url::Url;
 
 static TEMPLATES_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/../templates");
@@ -112,12 +114,7 @@ impl Email {
                     "Failed at sending email {err:#}"
                 );
             } else {
-                tracing::info!(
-                    subject,
-                    user_email,
-                    template_name = html_template,
-                    "Email sent"
-                );
+                tracing::info!(subject, user_email, "Email sent");
             }
         });
         Ok(())
@@ -157,6 +154,41 @@ impl Email {
             .context("failed rendering template")?;
 
         self.send_email("Lendasat email verification", name, email, content_template)
+            .await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub async fn send_login_information(
+        &self,
+        name: &str,
+        email: &str,
+        profile_url: Url,
+        ip_address: &str,
+        login_time: OffsetDateTime,
+        location: Option<String>,
+        device: &str,
+    ) -> Result<()> {
+        let template_name = "login_notification";
+        let handlebars =
+            Self::prepare_template(template_name).context("failed preparing template")?;
+
+        // RFC 2822 format: "Mon, 25 Dec 2023 15:30:45 +0000"
+        let login_time = login_time.format(&Rfc2822)?;
+
+        let data = serde_json::json!({
+            "first_name": name,
+            "profile_url": profile_url,
+            "ip_address": ip_address,
+            "login_time": login_time,
+            "location": location,
+            "device": device,
+        });
+
+        let content_template = handlebars
+            .render(template_name, &data)
+            .context("failed rendering template")?;
+
+        self.send_email("Lendasat login information", name, email, content_template)
             .await
     }
 

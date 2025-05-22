@@ -20,7 +20,7 @@ import {
   useHttpClientBorrower,
 } from "@frontend/http-client-borrower";
 import { toast } from "sonner";
-import { SignedMessage, useWallet} from "@frontend/browser-wallet";
+import { SignedMessage, useWallet } from "@frontend/browser-wallet";
 import PasswordDialog from "./unlock-wallet-dialog";
 
 // Define props interface
