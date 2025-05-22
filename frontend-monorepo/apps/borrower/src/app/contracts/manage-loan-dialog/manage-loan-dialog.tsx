@@ -64,10 +64,12 @@ const ManageLoanDialog = ({
           </TabsContent>
 
           <TabsContent value="extend" className="space-y-4 py-4">
-            <ExtendContract
-              contract={contract}
-              onSubmitted={() => setOpen(false)}
-            />
+            {contract && (
+              <ExtendContract
+                contract={contract}
+                onSubmitted={() => setOpen(false)}
+              />
+            )}
           </TabsContent>
         </Tabs>
 
