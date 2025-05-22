@@ -214,19 +214,6 @@ export const ContractDetailsTable = ({
             contractStatus = "Liquidated";
           }
 
-          let badgeVariant: "default" | "destructive" | "success" = "default";
-
-          if (
-            contract.status === ContractStatus.Requested ||
-            contract.status === ContractStatus.RenewalRequested
-          ) {
-            badgeVariant = "default";
-          } else if (contract.status === ContractStatus.Approved) {
-            badgeVariant = "success";
-          } else if (contract.status === ContractStatus.Rejected) {
-            badgeVariant = "destructive";
-          }
-
           return (
             <TableRow key={contract.id}>
               {shownColumns.amount && (
@@ -261,7 +248,7 @@ export const ContractDetailsTable = ({
               )}
               {shownColumns.status && (
                 <TableCell>
-                  <Badge variant={badgeVariant}>{contractStatus}</Badge>
+                  <Badge variant={"default"}>{contractStatus}</Badge>
                 </TableCell>
               )}
               {shownColumns.updatedAt && (
