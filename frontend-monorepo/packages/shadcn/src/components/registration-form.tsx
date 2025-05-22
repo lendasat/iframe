@@ -19,6 +19,37 @@ const validateEmail = (email: string) => {
   return regex.test(email);
 };
 
+const validatePassword = (
+  password: string,
+): { isValid: boolean; errors: string[] } => {
+  const errors: string[] = [];
+
+  if (password.length < 8) {
+    errors.push("be at least 8 characters long");
+  }
+
+  if (!/[A-Z]/.test(password)) {
+    errors.push("contain at least one uppercase letter");
+  }
+
+  if (!/[a-z]/.test(password)) {
+    errors.push("contain at least one lowercase letter");
+  }
+
+  if (!/[0-9]/.test(password)) {
+    errors.push("contain at least one number");
+  }
+
+  if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+    errors.push("contain at least one special character");
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+};
+
 interface RegistrationFormProps extends React.ComponentProps<"div"> {
   handleRegister: (
     name: string,
@@ -78,6 +109,14 @@ export function ShadCnRegistrationForm({
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
+
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      setError(`Password must ${passwordValidation.errors.join(", ")}.`);
+      setIsLoading(false);
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError("Passwords do not match");
       setIsLoading(false);
