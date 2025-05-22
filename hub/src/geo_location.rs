@@ -1,12 +1,25 @@
 use anyhow::Context;
 use serde::Deserialize;
+use std::fmt;
+
+#[derive(Deserialize, Clone)]
+pub struct GeoInfo {
+    pub country: Option<String>,
+    pub city: Option<String>,
+}
+
+impl fmt::Display for GeoInfo {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match (&self.country, &self.city) {
+            (Some(country), Some(city)) => write!(f, "{}/{}", country, city),
+            (Some(country), None) => write!(f, "{}", country),
+            (None, Some(city)) => write!(f, "{}", city),
+            (None, None) => write!(f, "unknown"),
+        }
+    }
+}
 
 pub async fn is_us_ip(ip: &str) -> anyhow::Result<bool> {
-    #[derive(Deserialize)]
-    struct GeoInfo {
-        country: Option<String>,
-    }
-
     // Local development address can be ignored.
     if ip == "127.0.0.1" {
         return Ok(false);
@@ -22,12 +35,6 @@ pub async fn is_us_ip(ip: &str) -> anyhow::Result<bool> {
 }
 
 pub async fn get_location(ip: &str) -> anyhow::Result<String> {
-    #[derive(Deserialize)]
-    struct GeoInfo {
-        country: Option<String>,
-        city: Option<String>,
-    }
-
     // Local development address can be ignored.
     if ip == "127.0.0.1" {
         return Ok("Localhost".to_string());
@@ -37,14 +44,21 @@ pub async fn get_location(ip: &str) -> anyhow::Result<String> {
     let response = reqwest::get(&url).await?;
     let geo_info: GeoInfo = response.json().await?;
 
-    let location = match (geo_info.country, geo_info.city) {
-        (Some(country), Some(city)) => {
-            format!("{country}/{city}")
-        }
-        (None, Some(city)) => city,
-        (Some(country), None) => country,
-        (None, None) => "unknown".to_string(),
-    };
+    Ok(format!("{}", geo_info))
+}
 
-    Ok(location)
+pub async fn get_geo_info(ip: &str) -> anyhow::Result<GeoInfo> {
+    // Local development address can be ignored.
+    if ip == "127.0.0.1" {
+        return Ok(GeoInfo {
+            country: Some("Bitcoin".to_string()),
+            city: Some("Genesis".to_string()),
+        });
+    }
+
+    let url = format!("https://get.geojs.io/v1/ip/geo/{ip}.json");
+    let response = reqwest::get(&url).await?;
+    let geo_info = response.json().await?;
+
+    Ok(geo_info)
 }

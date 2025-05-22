@@ -590,19 +590,29 @@ async fn post_pake_verify(
         borrower_id = user.id.to_string(),
         ip_address,
         ?user_agent,
-        "User logged in"
+        "Borrower logged in"
     );
+
+    let location = geo_location::get_geo_info(ip_address.as_str()).await.ok();
 
     if let Err(err) = db::user_logins::insert_borrower_login_activity(
         &data.db,
         user.id.as_str(),
         Some(ip_address.clone()),
+        location
+            .as_ref()
+            .map(|l| l.country.clone())
+            .unwrap_or_default(),
+        location
+            .as_ref()
+            .map(|l| l.city.clone())
+            .unwrap_or_default(),
         user_agent.as_str(),
     )
     .await
     {
         tracing::warn!(
-            borrower_id = user.id.to_string(),
+            lender_id = user.id.to_string(),
             "Failed to track login activity {err:#}"
         )
     }
