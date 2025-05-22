@@ -165,7 +165,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       title = "Loan Defaulted";
       message = (
         <>
-          Your loan defaulted on ${expiryDate}. Your collateral will be
+          Your loan defaulted on {expiryDate}. Your collateral will be
           liquidated and the remaining funds returned to you.
         </>
       );

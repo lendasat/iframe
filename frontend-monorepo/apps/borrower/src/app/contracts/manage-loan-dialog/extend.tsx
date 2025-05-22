@@ -14,7 +14,7 @@ import {
   Contract,
   useHttpClientBorrower,
 } from "@frontend/http-client-borrower";
-import { format, addDays, differenceInDays } from "date-fns";
+import { format, addDays, differenceInCalendarDays, subDays } from "date-fns";
 import {
   formatBitcoin,
   formatCurrency,
@@ -26,25 +26,23 @@ import { useNavigate } from "react-router-dom";
 import SingleDurationSelector, { AllowedDurations } from "./duration-selector";
 
 interface ExtendContractProps {
-  contract?: Contract;
+  contract: Contract;
   onSubmitted: () => void;
 }
 
 export function ExtendContract({ contract, onSubmitted }: ExtendContractProps) {
   const extensionEnabled = contract?.extension_max_duration_days !== 0;
-  // TODO: this policy should probably come from the backend
-  const daysPast = contract
-    ? differenceInDays(new Date(), contract!.created_at)
-    : 0;
-  const extensionAllowed = contract
-    ? daysPast >= contract.duration_days / 2
-    : false;
-  const renewalDate = contract
-    ? format(
-        addDays(contract?.created_at, contract?.duration_days / 2),
-        "yyyy-MM-dd",
-      )
-    : undefined;
+  const days_left = differenceInCalendarDays(
+    contract?.expiry || new Date(),
+    new Date(),
+  );
+  const days_passed = contract.duration_days - days_left;
+
+  const extensionAllowed = days_passed >= contract.duration_days / 2;
+  const renewalDate = format(
+    subDays(contract.expiry, contract?.duration_days / 2),
+    "yyyy-MM-dd",
+  );
 
   const [extensionDays, setExtensionDays] = useState(
     contract?.extension_max_duration_days || 7,
@@ -138,17 +136,6 @@ export function ExtendContract({ contract, onSubmitted }: ExtendContractProps) {
           <AlertDescription>
             Loan extension is only available after half of the loan's lieftime.
             I.e. after {renewalDate}
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {extensionEnabled && extensionAllowed && (
-        <Alert className="my-4">
-          <LuCalendarClock className="h-4 w-4" />
-          <AlertTitle>Request Extension</AlertTitle>
-          <AlertDescription>
-            You can request to extend your loan term. The lender will need to
-            approve this request, and an extension fee may apply.
           </AlertDescription>
         </Alert>
       )}
