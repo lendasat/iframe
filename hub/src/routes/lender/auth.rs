@@ -11,6 +11,7 @@ use crate::db::telegram_bot::TelegramBotToken;
 use crate::db::waitlist::Error;
 use crate::db::waitlist::WaitlistRole;
 use crate::db::wallet_backups::NewLenderWalletBackup;
+use crate::geo_location;
 use crate::model::ContractStatus;
 use crate::model::FinishUpgradeToPakeRequest;
 use crate::model::ForgotPasswordSchema;
@@ -26,6 +27,8 @@ use crate::model::UpgradeToPakeRequest;
 use crate::model::UpgradeToPakeResponse;
 use crate::model::WalletBackupData;
 use crate::routes::lender::auth::jwt_auth::auth;
+use crate::routes::user_connection_details_middleware;
+use crate::routes::user_connection_details_middleware::UserConnectionDetails;
 use crate::routes::AppState;
 use crate::utils::is_valid_email;
 use axum::extract::Path;
@@ -105,6 +108,12 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
                 .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
         )
         .route("/api/auth/waitlist", post(post_add_to_waitlist))
+        .layer(
+            tower::ServiceBuilder::new().layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                user_connection_details_middleware::ip_user_agent,
+            )),
+        )
         .with_state(app_state)
 }
 
@@ -350,6 +359,7 @@ struct PakeVerifyResponse {
 #[instrument(skip_all, fields(lender_id), err(Debug))]
 async fn post_pake_verify(
     State(data): State<Arc<AppState>>,
+    Extension(connection_details): Extension<UserConnectionDetails>,
     Json(body): Json<PakeVerifyRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     let email = body.email;
@@ -504,6 +514,58 @@ async fn post_pake_verify(
                 };
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
             })?;
+
+    let user_agent = connection_details
+        .user_agent
+        .unwrap_or("unknown".to_string());
+    let ip_address = connection_details.ip.unwrap_or("unknown".to_string());
+    tracing::debug!(
+        lender_id = user.id.to_string(),
+        ip_address,
+        ?user_agent,
+        "Lender logged in"
+    );
+
+    let profile_url = data
+        .config
+        .borrower_frontend_origin
+        .join("/settings/profile")
+        .expect("to be a correct URL");
+
+    let location = geo_location::get_geo_info(ip_address.as_str()).await.ok();
+
+    if let Err(err) = db::user_logins::insert_lender_login_activity(
+        &data.db,
+        user.id.as_str(),
+        Some(ip_address.clone()),
+        location
+            .as_ref()
+            .map(|l| l.country.clone())
+            .unwrap_or_default(),
+        location
+            .as_ref()
+            .map(|l| l.city.clone())
+            .unwrap_or_default(),
+        user_agent.as_str(),
+    )
+    .await
+    {
+        tracing::warn!(
+            lender_id = user.id.to_string(),
+            "Failed to track login activity {err:#}"
+        )
+    }
+
+    data.notifications
+        .send_login_information_lender(
+            &user,
+            profile_url,
+            ip_address.as_str(),
+            OffsetDateTime::now_utc(),
+            location.map(|a| format!("{}", a)),
+            user_agent.as_str(),
+        )
+        .await;
 
     let filtered_user = FilteredUser::new_user(&user, personal_telegram_token);
 

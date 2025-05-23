@@ -192,7 +192,9 @@ async fn post_contract_request(
                         .ip
                         .ok_or(Error::CannotTopUpMoonCardWithoutIp)?;
 
-                    let is_us_ip = is_us_ip(&client_ip).await.map_err(Error::geo_js)?;
+                    let is_us_ip = crate::geo_location::is_us_ip(&client_ip)
+                        .await
+                        .map_err(Error::geo_js)?;
 
                     if is_us_ip {
                         return Err(Error::CannotTopUpMoonCardFromUs);
@@ -1260,26 +1262,6 @@ async fn map_timeline(
         .collect::<Vec<_>>();
     timeline.extend(timeline_1);
     Ok(timeline)
-}
-
-async fn is_us_ip(ip: &str) -> anyhow::Result<bool> {
-    #[derive(Deserialize)]
-    struct GeoInfo {
-        country: Option<String>,
-    }
-
-    // Local development address can be ignored.
-    if ip == "127.0.0.1" {
-        return Ok(false);
-    }
-
-    let url = format!("https://get.geojs.io/v1/ip/country/{ip}.json");
-    let response = reqwest::get(&url).await?;
-    let geo_info: GeoInfo = response.json().await?;
-
-    let country_code = geo_info.country.context("Missing country code")?;
-
-    Ok(country_code == "US")
 }
 
 #[derive(Debug, Deserialize, ToSchema)]

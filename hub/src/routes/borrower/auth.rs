@@ -10,6 +10,7 @@ use crate::db::borrowers::verify_user;
 use crate::db::telegram_bot::TelegramBotToken;
 use crate::db::waitlist::WaitlistRole;
 use crate::db::wallet_backups::NewBorrowerWalletBackup;
+use crate::geo_location;
 use crate::model;
 use crate::model::Borrower;
 use crate::model::ContractStatus;
@@ -589,22 +590,49 @@ async fn post_pake_verify(
         borrower_id = user.id.to_string(),
         ip_address,
         ?user_agent,
-        "User logged in"
+        "Borrower logged in"
     );
+
+    let location = geo_location::get_geo_info(ip_address.as_str()).await.ok();
 
     if let Err(err) = db::user_logins::insert_borrower_login_activity(
         &data.db,
         user.id.as_str(),
-        Some(ip_address),
+        Some(ip_address.clone()),
+        location
+            .as_ref()
+            .map(|l| l.country.clone())
+            .unwrap_or_default(),
+        location
+            .as_ref()
+            .map(|l| l.city.clone())
+            .unwrap_or_default(),
         user_agent.as_str(),
     )
     .await
     {
         tracing::warn!(
-            borrower_id = user.id.to_string(),
+            lender_id = user.id.to_string(),
             "Failed to track login activity {err:#}"
         )
     }
+
+    let profile_url = data
+        .config
+        .borrower_frontend_origin
+        .join("/settings/profile")
+        .expect("to be a correct URL");
+
+    data.notifications
+        .send_login_information_borrower(
+            user,
+            profile_url,
+            ip_address.as_str(),
+            OffsetDateTime::now_utc(),
+            location.map(|l| l.to_string()),
+            user_agent.as_str(),
+        )
+        .await;
 
     let response = Response::builder()
         .status(StatusCode::OK)
