@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE installments\n            SET\n                status = 'Paid',\n                payment_id = $1\n            WHERE id = $2\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "2fb1fd33af9e03aebb977e8698469eb6bce555a806c6601250c398751ceb5f87"
+}

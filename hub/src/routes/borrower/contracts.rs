@@ -8,6 +8,9 @@ use crate::db::contracts::update_borrower_btc_address;
 use crate::discounted_origination_fee;
 use crate::mempool;
 use crate::model;
+use crate::model::compute_outstanding_balance;
+use crate::model::compute_total_interest;
+use crate::model::generate_installments;
 use crate::model::Borrower;
 use crate::model::ContractRequestSchema;
 use crate::model::ContractStatus;
@@ -15,6 +18,7 @@ use crate::model::ContractVersion;
 use crate::model::ExtensionPolicy;
 use crate::model::FiatLoanDetails;
 use crate::model::FiatLoanDetailsWrapper;
+use crate::model::InstallmentPaidRequest;
 use crate::model::LiquidationStatus;
 use crate::model::LoanAsset;
 use crate::model::LoanPayout;
@@ -57,6 +61,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use sqlx::Pool;
 use sqlx::Postgres;
+use std::num::NonZeroU64;
 use std::sync::Arc;
 use time::OffsetDateTime;
 use tracing::instrument;
@@ -75,7 +80,7 @@ pub(crate) fn router_openapi(app_state: Arc<AppState>) -> OpenApiRouter {
         .routes(routes!(post_contract_request))
         .routes(routes!(post_claim_tx))
         .routes(routes!(post_extend_contract_request))
-        .routes(routes!(put_repayment_provided))
+        .routes(routes!(put_installment_paid))
         .routes(routes!(put_provide_fiat_loan_details))
         .routes(routes!(cancel_contract_request))
         .route_layer(middleware::from_fn_with_state(
@@ -126,13 +131,20 @@ async fn post_contract_request(
             id: body.id.clone(),
         })?;
 
-    if !offer.is_valid_loan_duration(body.duration_days) {
+    let non_zero_duration_days = if offer.is_valid_loan_duration(body.duration_days) {
+        match NonZeroU64::new(body.duration_days as u64) {
+            Some(duration) => duration,
+            None => {
+                return Err(Error::ZeroLoanDuration);
+            }
+        }
+    } else {
         return Err(Error::InvalidLoanDuration {
             duration_days: body.duration_days,
             duration_days_min: offer.duration_days_min,
             duration_days_max: offer.duration_days_max,
         });
-    }
+    };
 
     if !offer.is_valid_loan_amount(body.loan_amount) {
         return Err(Error::InvalidLoanAmount {
@@ -142,13 +154,19 @@ async fn post_contract_request(
         });
     }
 
+    let now = OffsetDateTime::now_utc();
+
     let contract_id = Uuid::new_v4();
     let lender_id = &offer.lender_id;
+
+    // TODO: Start a DB transaction. As you try to implement this, you discover that this is
+    // "impossible" because of https://github.com/launchbadge/sqlx/issues/699. Perhaps we should
+    // wrap the `Pool<Postgres>` like in
+    // https://github.com/launchbadge/sqlx/issues/699#issuecomment-2371040481.
 
     let is_kyc_required = offer.requires_kyc();
 
     if is_kyc_required {
-        // TODO: this should be a db transaction
         db::kyc::insert(&data.db, lender_id, &user.id)
             .await
             .map_err(Error::database)?;
@@ -221,7 +239,7 @@ async fn post_contract_request(
                     contract_id.to_string(),
                     card_id,
                     lender_id.clone(),
-                    user.id.as_str(),
+                    &user.id,
                 )
                 .await
                 .map_err(Error::moon_invoice_generation)?;
@@ -261,7 +279,7 @@ async fn post_contract_request(
         }
     };
 
-    let initial_price = get_bitmex_index_price(&data.config, OffsetDateTime::now_utc())
+    let initial_price = get_bitmex_index_price(&data.config, now)
         .await
         .map_err(Error::bitmex_price)?;
 
@@ -288,7 +306,7 @@ async fn post_contract_request(
         discounted_origination_fee::calculate_discounted_origination_fee_rate(
             &data.db,
             origination_fee.fee,
-            user.id.as_str(),
+            &user.id,
         )
         .await
         .map_err(Error::from)?;
@@ -303,8 +321,8 @@ async fn post_contract_request(
     let contract = db::contracts::insert_new_contract_request(
         &data.db,
         contract_id,
-        user.id.as_str(),
-        lender_id.as_str(),
+        &user.id,
+        lender_id,
         &body.id,
         min_ltv,
         initial_collateral.to_sat(),
@@ -330,6 +348,19 @@ async fn post_contract_request(
     .await
     .map_err(Error::database)?;
 
+    let installments = generate_installments(
+        now,
+        contract_id,
+        offer.repayment_plan,
+        non_zero_duration_days,
+        offer.interest_rate,
+        body.loan_amount,
+    );
+
+    db::installments::insert(&data.db, installments)
+        .await
+        .map_err(Error::database)?;
+
     if let Some(fiat_loan_details) = fiat_loan_details {
         if fiat_loan_details.details.swift_transfer_details.is_none()
             && fiat_loan_details.details.iban_transfer_details.is_none()
@@ -339,7 +370,7 @@ async fn post_contract_request(
 
         db::fiat_loan_details::insert_borrower(
             &data.db,
-            contract_id.to_string().as_str(),
+            &contract_id.to_string(),
             fiat_loan_details,
         )
         .await
@@ -355,8 +386,10 @@ async fn post_contract_request(
             .map_err(Error::database)?;
     }
 
-    // We only want to auto-accept offers if KYC is not required and it is not a fiat loan. The
-    // reason is that we need to collect banking details of the lender during approval process
+    // We cannot auto-accept contracts if:
+    //
+    // - KYC is required; or
+    // - The loan asset is fiat.
     if offer.auto_accept && (!is_kyc_required && !offer.loan_asset.is_fiat()) {
         approve_contract(
             &data.db,
@@ -375,7 +408,7 @@ async fn post_contract_request(
     let lender_loan_url = data
         .config
         .lender_frontend_origin
-        .join(format!("/my-contracts/{}", contract.id).as_str())
+        .join(&format!("/my-contracts/{}", contract.id))
         .expect("to be a correct URL");
 
     // We don't want to fail this upwards because the contract request has been sent already.
@@ -462,8 +495,8 @@ async fn cancel_contract_request(
 ) -> Result<(), Error> {
     let contract = db::contracts::load_contract_by_contract_id_and_borrower_id(
         &data.db,
-        contract_id.as_str(),
-        user.id.as_str(),
+        &contract_id,
+        &user.id,
     )
     .await
     .map_err(Error::database)?;
@@ -483,20 +516,19 @@ async fn cancel_contract_request(
         .map_err(|e| Error::database(anyhow!(e)))?;
 
     if contract.status == ContractStatus::RenewalRequested {
-        let parent =
-            db::contract_extensions::get_parent_by_extended(&data.db, contract_id.as_str())
-                .await
-                .map_err(|e| Error::database(anyhow!(e)))?
-                .ok_or(Error::MissingParentContract(contract_id.clone()))?;
-        db::contracts::cancel_extension(&mut *db_tx, parent.as_str())
+        let parent = db::contract_extensions::get_parent_by_extended(&data.db, &contract_id)
+            .await
+            .map_err(|e| Error::database(anyhow!(e)))?
+            .ok_or(Error::MissingParentContract(contract_id.clone()))?;
+        db::contracts::cancel_extension(&mut *db_tx, &parent)
             .await
             .map_err(Error::database)?;
-        db::contract_extensions::delete_with_parent(&mut *db_tx, parent.as_str())
+        db::contract_extensions::delete_with_parent(&mut *db_tx, &parent)
             .await
             .map_err(|e| Error::database(anyhow!(e)))?;
     }
 
-    db::contracts::mark_contract_as_cancelled(&mut *db_tx, contract_id.as_str())
+    db::contracts::mark_contract_as_cancelled(&mut *db_tx, &contract_id)
         .await
         .map_err(Error::database)?;
 
@@ -531,7 +563,7 @@ async fn get_contracts(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Borrower>,
 ) -> Result<AppJson<Vec<Contract>>, Error> {
-    let contracts = db::contracts::load_contracts_by_borrower_id(&data.db, user.id.as_str())
+    let contracts = db::contracts::load_contracts_by_borrower_id(&data.db, &user.id)
         .await
         .map_err(Error::database)?;
 
@@ -576,7 +608,7 @@ async fn get_contract(
 ) -> Result<AppJson<Contract>, Error> {
     let contract = db::contracts::load_contract_by_contract_id_and_borrower_id(
         &data.db,
-        contract_id.as_str(),
+        &contract_id,
         &user.id,
     )
     .await
@@ -587,16 +619,16 @@ async fn get_contract(
     Ok(AppJson(contract))
 }
 
-/// Marks a contract as repaid.
+/// Marks an installment as paid.
 #[utoipa::path(
 put,
-path = "/{id}/repaid",
+path = "/{id}/installment-paid",
 params(
     (
-    "id" = String, Path, description = "Contract id"
+    "id" = String, Path, description = "Contract ID"
     )
 ),
-request_body = PrincipalRepaidQueryParam,
+    request_body = InstallmentPaidRequest,
 tag = CONTRACTS_TAG,
 responses(
     (
@@ -610,38 +642,64 @@ security(
     )
     )
 ]
-#[instrument(skip_all, fields(borrower_id = user.id, contract_id, repayment_txid = query_params.txid), ret, err(Debug))]
-async fn put_repayment_provided(
+#[instrument(
+    skip_all,
+    fields(
+        borrower_id = %user.id,
+        contract_id = %contract_id,
+        installment_id = %body.installment_id,
+        payment_id = %body.payment_id
+    ),
+    ret,
+    err(Debug)
+)]
+async fn put_installment_paid(
     State(data): State<Arc<AppState>>,
     Path(contract_id): Path<String>,
-    query_params: Query<PrincipalRepaidQueryParam>,
     Extension(user): Extension<Borrower>,
+    AppJson(body): AppJson<InstallmentPaidRequest>,
 ) -> Result<(), Error> {
     let contract = db::contracts::load_contract_by_contract_id_and_borrower_id(
         &data.db,
-        contract_id.as_str(),
+        &contract_id,
         &user.id,
     )
     .await
     .map_err(Error::database)?;
 
-    // TODO: Use a database transaction.
-    db::contracts::mark_contract_as_repayment_provided(&data.db, contract.id.as_str())
+    db::installments::mark_as_paid(&data.db, body.installment_id, &body.payment_id)
         .await
         .map_err(Error::database)?;
 
-    db::transactions::insert_principal_repaid_txid(
-        &data.db,
-        contract_id.as_str(),
-        query_params.txid.as_str(),
-    )
-    .await
-    .map_err(Error::database)?;
+    db::transactions::insert_installment_paid_txid(&data.db, &contract_id, &body.payment_id)
+        .await
+        .map_err(Error::database)?;
+
+    let installments =
+        db::installments::get_all_for_contract_id(&data.db, &contract_id.to_string())
+            .await
+            .map_err(Error::database)?;
+
+    let is_repayment_provided = !installments.is_empty()
+        && installments.iter().all(|i| {
+            matches!(
+                i.status,
+                model::InstallmentStatus::Cancelled
+                    | model::InstallmentStatus::Paid
+                    | model::InstallmentStatus::Confirmed
+            )
+        });
+
+    if is_repayment_provided {
+        db::contracts::mark_contract_as_repayment_provided(&data.db, &contract_id)
+            .await
+            .map_err(Error::database)?;
+    }
 
     let loan_url = data
         .config
         .lender_frontend_origin
-        .join(format!("/my-contracts/{}", contract.id).as_str())
+        .join(&format!("/my-contracts/{}", contract.id))
         .expect("to be valid url");
 
     if let Err(e) = async {
@@ -699,13 +757,13 @@ async fn put_provide_fiat_loan_details(
 ) -> Result<(), Error> {
     let contract = db::contracts::load_contract_by_contract_id_and_borrower_id(
         &data.db,
-        contract_id.as_str(),
+        &contract_id,
         &user.id,
     )
     .await
     .map_err(Error::database)?;
 
-    db::fiat_loan_details::insert_borrower(&data.db, contract.id.as_str(), body)
+    db::fiat_loan_details::insert_borrower(&data.db, &contract.id, body)
         .await
         .map_err(Error::database)?;
 
@@ -744,14 +802,18 @@ async fn get_claim_collateral_psbt(
 ) -> Result<AppJson<ClaimCollateralPsbt>, Error> {
     let contract = db::contracts::load_contract_by_contract_id_and_borrower_id(
         &data.db,
-        contract_id.as_str(),
+        &contract_id,
         &user.id,
     )
     .await
     .map_err(Error::database)?;
 
-    if contract.status != ContractStatus::RepaymentConfirmed {
-        return Err(Error::PrincipalNotRepaid);
+    let installments = db::installments::get_all_for_contract_id(&data.db, &contract_id)
+        .await
+        .map_err(Error::database)?;
+
+    if compute_outstanding_balance(&installments).total() > Decimal::ZERO {
+        return Err(Error::LoanNotRepaid);
     }
 
     let contract_index = contract.contract_index.ok_or(Error::MissingContractIndex)?;
@@ -828,13 +890,10 @@ async fn post_claim_tx(
     Path(contract_id): Path<String>,
     AppJson(body): AppJson<ClaimTx>,
 ) -> Result<String, Error> {
-    let belongs_to_borrower = db::contracts::check_if_contract_belongs_to_borrower(
-        &data.db,
-        contract_id.as_str(),
-        &user.id,
-    )
-    .await
-    .map_err(Error::database)?;
+    let belongs_to_borrower =
+        db::contracts::check_if_contract_belongs_to_borrower(&data.db, &contract_id, &user.id)
+            .await
+            .map_err(Error::database)?;
 
     if !belongs_to_borrower {
         return Err(Error::NotYourContract);
@@ -863,10 +922,10 @@ async fn post_claim_tx(
         .map_err(Error::post_claim_tx)?;
 
     // TODO: Use a database transaction.
-    db::transactions::insert_claim_txid(&data.db, contract_id.as_str(), &claim_txid)
+    db::transactions::insert_claim_txid(&data.db, &contract_id, &claim_txid)
         .await
         .map_err(Error::database)?;
-    db::contracts::mark_contract_as_closing(&data.db, contract_id.as_str())
+    db::contracts::mark_contract_as_closing(&data.db, &contract_id)
         .await
         .map_err(Error::database)?;
 
@@ -882,7 +941,7 @@ params(
     "id" = String, Path, description = "Contract id"
     )
 ),
-request_body = PrincipalRepaidQueryParam,
+request_body = ExtendContractRequestSchema,
 tag = CONTRACTS_TAG,
 responses(
     (
@@ -911,8 +970,8 @@ async fn post_extend_contract_request(
     let new_contract = crate::contract_extension::request_contract_extension(
         &data.db,
         &data.config,
-        contract_id.as_str(),
-        user.id.as_str(),
+        &contract_id,
+        &user.id,
         body.new_duration,
         current_price,
     )
@@ -978,15 +1037,51 @@ pub struct Contract {
     #[serde(with = "rust_decimal::serde::float_option")]
     pub extension_interest_rate: Option<Decimal>,
     pub extension_origination_fee: Vec<OriginationFee>,
+    pub installments: Vec<Installment>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct Installment {
+    pub id: Uuid,
+    pub principal: Decimal,
+    pub interest: Decimal,
+    #[serde(with = "time::serde::rfc3339")]
+    pub due_date: OffsetDateTime,
+    pub status: InstallmentStatus,
+    #[serde(with = "time::serde::rfc3339::option")]
+    pub paid_date: Option<OffsetDateTime>,
+    pub payment_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum InstallmentStatus {
+    /// The installment has not yet been paid.
+    Pending,
+    /// The installment has been paid, according to the borrower.
+    Paid,
+    /// The installment has been paid, as confirmed by the lender.
+    Confirmed,
+    /// The installment was not paid in time.
+    Late,
+    /// The installment is no longer expected and was never paid.
+    Cancelled,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct TimelineEvent {
     #[serde(with = "time::serde::rfc3339")]
     date: OffsetDateTime,
-    event: ContractStatus,
-    /// Only provided if it was an event caused by a transaction
+    event: TimelineEventKind,
+    /// Only provided if it was an event caused by a transaction.
     txid: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[serde(tag = "type", rename_all = "snake_case")]
+enum TimelineEventKind {
+    ContractStatusChange { status: ContractStatus },
+    Installment { is_confirmed: bool },
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -1016,12 +1111,7 @@ pub struct ClaimTx {
     pub tx: String,
 }
 
-#[derive(Debug, Deserialize, ToSchema)]
-pub struct PrincipalRepaidQueryParam {
-    pub txid: String,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct ExtendContractRequestSchema {
     /// The number of days to be added on top of the current duration.
     pub new_duration: i32,
@@ -1041,24 +1131,21 @@ async fn map_to_api_contract(
         .map_err(Error::database)?
         .ok_or(Error::MissingLender)?;
 
-    let transactions = db::transactions::get_all_for_contract_id(&data.db, contract.id.as_str())
+    let transactions = db::transactions::get_all_for_contract_id(&data.db, &contract.id)
         .await
         .map_err(Error::database)?;
 
     let repaid_at = transactions.iter().find_map(|tx| {
-        matches!(tx.transaction_type, TransactionType::PrincipalRepaid).then_some(tx.timestamp)
+        matches!(tx.transaction_type, TransactionType::InstallmentPaid).then_some(tx.timestamp)
     });
 
-    let liquidation_price = contract.liquidation_price();
-
     let parent_contract_id =
-        db::contract_extensions::get_parent_by_extended(&data.db, contract.id.as_str())
+        db::contract_extensions::get_parent_by_extended(&data.db, &contract.id)
             .await
             .map_err(|e| Error::database(anyhow!(e)))?;
-    let child_contract =
-        db::contract_extensions::get_extended_by_parent(&data.db, contract.id.as_str())
-            .await
-            .map_err(|e| Error::database(anyhow!(e)))?;
+    let child_contract = db::contract_extensions::get_extended_by_parent(&data.db, &contract.id)
+        .await
+        .map_err(|e| Error::database(anyhow!(e)))?;
 
     let kyc_info = match loan_deal.kyc_link() {
         Some(ref kyc_link) => {
@@ -1076,7 +1163,7 @@ async fn map_to_api_contract(
 
     let new_offer = loan_deal;
 
-    let lender_stats = user_stats::get_lender_stats(&data.db, lender.id.as_str())
+    let lender_stats = user_stats::get_lender_stats(&data.db, &lender.id)
         .await
         .map_err(Error::from)?;
 
@@ -1121,7 +1208,13 @@ async fn map_to_api_contract(
         None => None,
     };
 
-    let timeline = map_timeline(&contract, &transactions, &data.db).await?;
+    let installments = db::installments::get_all_for_contract_id(&data.db, &contract.id)
+        .await
+        .map_err(Error::database)?;
+
+    let liquidation_price = contract.liquidation_price(&installments);
+
+    let timeline = map_timeline(&contract, &transactions, &data.db, &installments).await?;
 
     let (extension_max_duration_days, extension_interest_rate) = match contract.extension_policy {
         ExtensionPolicy::DoNotExtend => (0, None),
@@ -1133,6 +1226,8 @@ async fn map_to_api_contract(
 
     let extension_origination_fee = data.config.extension_origination_fee.clone();
 
+    let total_interest = compute_total_interest(&installments);
+
     let contract = Contract {
         id: contract.id,
         loan_amount: contract.loan_amount,
@@ -1141,7 +1236,7 @@ async fn map_to_api_contract(
         origination_fee_sats: contract.origination_fee_sats,
         collateral_sats: contract.collateral_sats,
         interest_rate: contract.interest_rate,
-        interest: contract.interest,
+        interest: total_interest,
         initial_ltv: contract.initial_ltv,
         loan_asset: new_offer.loan_asset(),
         status: contract.status,
@@ -1175,45 +1270,64 @@ async fn map_to_api_contract(
         extension_max_duration_days,
         extension_interest_rate,
         extension_origination_fee,
+        installments: installments.into_iter().map(Installment::from).collect(),
     };
 
     Ok(contract)
 }
 
-// TODO: This does not properly handle a contract going from `Extended` back to `PrincipalGiven`
-// after the lender rejects an extension request.
 async fn map_timeline(
     contract: &model::Contract,
     transactions: &[LoanTransaction],
     pool: &Pool<Postgres>,
+    installments: &[model::Installment],
 ) -> Result<Vec<TimelineEvent>, Error> {
-    let event_logs = db::contract_status_log::get_contract_status_logs(pool, contract.id.as_str())
+    let event_logs = db::contract_status_log::get_contract_status_logs(pool, &contract.id)
         .await
         .map_err(|e| Error::database(anyhow!(e)))?;
 
-    // first, we add the contract request event
+    // First, we add the contract request event.
     let mut timeline = vec![TimelineEvent {
         date: contract.created_at,
-        event: ContractStatus::Requested,
+        event: TimelineEventKind::ContractStatusChange {
+            status: ContractStatus::Requested,
+        },
         txid: None,
     }];
 
-    // then we go through funding transactions, there might be multiple, that's why we need to
-    // handle them separately
+    // Then we go through funding transactions. There might be multiple, that's why we need to
+    // handle them separately.
     transactions.iter().for_each(|tx| {
         if TransactionType::Funding == tx.transaction_type {
             let event = TimelineEvent {
                 date: tx.timestamp,
-                // we assume each transaction has already been confirmed
-                event: ContractStatus::CollateralConfirmed,
+                // We assume each transaction has already been confirmed.
+                event: TimelineEventKind::ContractStatusChange {
+                    status: ContractStatus::CollateralConfirmed,
+                },
                 txid: Some(tx.txid.clone()),
             };
             timeline.push(event);
         }
     });
 
-    // next we go through the events and enhance them with transaction ids if relevant
-    let timeline_1 = event_logs
+    // Next we generate events based on paid and confirmed installments.
+    installments.iter().for_each(|i| {
+        if let Some(paid_date) = i.paid_date {
+            let event = TimelineEvent {
+                date: paid_date,
+                event: TimelineEventKind::Installment {
+                    is_confirmed: matches!(i.status, model::InstallmentStatus::Confirmed),
+                },
+                txid: i.payment_id.clone(),
+            };
+            timeline.push(event);
+        }
+    });
+
+    // Finally, we go through the contract events and enhance them with transaction IDs, if
+    // applicable.
+    let rest_of_timeline = event_logs
         .into_iter()
         .filter_map(|log| {
             let txid = match log.new_status {
@@ -1224,12 +1338,6 @@ async fn map_timeline(
                     (tx.transaction_type == TransactionType::PrincipalGiven)
                         .then(|| tx.txid.clone())
                 }),
-                ContractStatus::RepaymentProvided | ContractStatus::RepaymentConfirmed => {
-                    transactions.iter().find_map(|tx| {
-                        (tx.transaction_type == TransactionType::PrincipalRepaid)
-                            .then(|| tx.txid.clone())
-                    })
-                }
                 ContractStatus::Closing | ContractStatus::Closed | ContractStatus::Defaulted => {
                     transactions.iter().find_map(|tx| {
                         (tx.transaction_type == TransactionType::ClaimCollateral)
@@ -1246,6 +1354,8 @@ async fn map_timeline(
                 ContractStatus::Requested
                 | ContractStatus::RenewalRequested
                 | ContractStatus::Approved
+                | ContractStatus::RepaymentProvided
+                | ContractStatus::RepaymentConfirmed
                 | ContractStatus::Undercollateralized
                 | ContractStatus::Extended
                 | ContractStatus::Rejected
@@ -1256,24 +1366,30 @@ async fn map_timeline(
                 | ContractStatus::Cancelled
                 | ContractStatus::RequestExpired
                 | ContractStatus::ApprovalExpired => {
-                    // There are no transactions associated to these events
+                    // There are no transactions associated with these events.
                     None
                 }
                 ContractStatus::CollateralConfirmed => {
-                    // we handled this event already. Note: return None means we filter this event
-                    // out.
+                    // We handled this event already. Note: returning `None` means we filter out
+                    // this event.
                     return None;
                 }
             };
 
             Some(TimelineEvent {
                 date: log.changed_at,
-                event: log.new_status,
+                event: TimelineEventKind::ContractStatusChange {
+                    status: log.new_status,
+                },
                 txid,
             })
         })
         .collect::<Vec<_>>();
-    timeline.extend(timeline_1);
+
+    timeline.extend(rest_of_timeline);
+
+    timeline.sort_by(|a, b| a.date.cmp(&b.date));
+
     Ok(timeline)
 }
 
@@ -1361,13 +1477,17 @@ enum Error {
     /// Failed to interact with the database.
     Database(String),
     /// Referenced loan does not exist.
-    MissingLoanOffer { id: String },
+    MissingLoanOffer {
+        id: String,
+    },
     /// Referenced lender does not exist.
     MissingLender,
     /// Failed to provide borrower loan address for stablecoin loan.
     MissingBorrowerLoanAddress,
     /// Moon only supports USDC on Polygon.
-    InvalidMoonLoanRequest { asset: LoanAsset },
+    InvalidMoonLoanRequest {
+        asset: LoanAsset,
+    },
     /// The Moon card that the borrower is trying to top up does not exist.
     CannotTopUpNonexistentCard,
     /// The attempt to top up the card would push the balance over the limit.
@@ -1396,12 +1516,16 @@ enum Error {
     OriginationFeeCalculation(String),
     /// Can't approve a contract request with a [`ContractStatus`] different to
     /// [`ContractStatus::Requested`] or [`ContractStatus::RenewalRequested`].
-    InvalidApproveRequest { status: ContractStatus },
+    InvalidApproveRequest {
+        status: ContractStatus,
+    },
     /// Can't cancel a contract request with a [`ContractStatus`] different to
     /// [`ContractStatus::Requested`] or [`ContractStatus::RenewalRequested`].
-    InvalidCancelRequest { status: ContractStatus },
-    /// Can't claim collateral if principal has not been repaid.
-    PrincipalNotRepaid,
+    InvalidCancelRequest {
+        status: ContractStatus,
+    },
+    /// Can't claim collateral if principal and interest have not been repaid.
+    LoanNotRepaid,
     /// Can't claim collateral without contract index.
     MissingContractIndex,
     /// Can't claim collateral without collateral address.
@@ -1430,9 +1554,13 @@ enum Error {
     /// Can't cancel a contract extension request if the parent does not exist.
     MissingParentContract(String),
     /// Discounted origination fee rate was not valid
-    InvalidDiscountRate { fee: Decimal },
+    InvalidDiscountRate {
+        fee: Decimal,
+    },
     /// A fiat loan must use a fiat asset.
-    FiatLoanWithoutFiatAsset { asset: LoanAsset },
+    FiatLoanWithoutFiatAsset {
+        asset: LoanAsset,
+    },
     /// A request for a fiat loan offer does not include the necessary fiat loan details.
     MissingFiatLoanDetails,
     InvalidLoanAmount {
@@ -1440,6 +1568,8 @@ enum Error {
         loan_amount_min: Decimal,
         loan_amount_max: Decimal,
     },
+    ZeroLoanDuration,
+    ZeroLoanExtensionDuration,
     InvalidLoanDuration {
         duration_days: i32,
         duration_days_min: i32,
@@ -1473,13 +1603,17 @@ enum Error {
     /// Extension will be possible at a later time.
     ExtensionTooSoon,
     /// Extension is only possible for `max_duration_days`.
-    ExtensionTooManyDays { max_duration_days: u64 },
+    ExtensionTooManyDays {
+        max_duration_days: u64,
+    },
     /// We failed updating the borrower's bitcoin address in the DB
     UpdateBorrowerAddress,
     /// The signature provided was not valid
     BadSignatureProvided(anyhow::Error),
     /// The signature provided did not fit to the message
     InvalidSignatureProvided,
+    /// Failed to compute installments based on extension.
+    ComputeExtensionInstallments(String),
 }
 
 impl Error {
@@ -1608,7 +1742,8 @@ impl IntoResponse for Error {
                             Error::CannotBuildDescriptor(_) |
                             Error::GeoJs(_) |
                             Error::MissingContractAddress |
-                            Error::Bringin(_) => {
+                            Error::Bringin(_) |
+                            Error::ComputeExtensionInstallments(_) => {
                                 (
                                     StatusCode::INTERNAL_SERVER_ERROR,
                                     "Something went wrong".to_owned(),
@@ -1651,7 +1786,7 @@ impl IntoResponse for Error {
                                 StatusCode::BAD_REQUEST,
                                 format!("Cannot cancel a contract request with status {status:?}"),
                             ),
-            Error::PrincipalNotRepaid => (
+            Error::LoanNotRepaid => (
                                 StatusCode::BAD_REQUEST,
                                 "Cannot claim collateral until loan has been repaid".to_owned(),
                             ),
@@ -1681,6 +1816,14 @@ impl IntoResponse for Error {
                             } => (
                                 StatusCode::BAD_REQUEST,
                                 format!("Invalid loan amount: ${amount} not in range ${loan_amount_min}-${loan_amount_max}"),
+                            ),
+            Error::ZeroLoanDuration => (
+                                StatusCode::BAD_REQUEST,
+                                "Loan duration cannot be zero".to_string(),
+                            ),
+            Error::ZeroLoanExtensionDuration => (
+                                StatusCode::BAD_REQUEST,
+                                "Loan extension duration cannot be zero".to_string(),
                             ),
             Error::InvalidLoanDuration { duration_days, duration_days_min, duration_days_max } => (
                                 StatusCode::BAD_REQUEST,
@@ -1787,6 +1930,12 @@ impl From<crate::contract_extension::Error> for Error {
             crate::contract_extension::Error::TooManyDays { max_duration_days } => {
                 Error::ExtensionTooManyDays { max_duration_days }
             }
+            crate::contract_extension::Error::ComputeExtensionInstallments(error) => {
+                Error::ComputeExtensionInstallments(format!("{error:#}"))
+            }
+            crate::contract_extension::Error::ZeroLoanExtensionDuration => {
+                Error::ZeroLoanExtensionDuration
+            }
         }
     }
 }
@@ -1838,6 +1987,32 @@ impl From<bringin::Error> for Error {
             bringin::Error::ApiError { status, message } => {
                 Self::bringin(anyhow!(format!("Bringin API error: {status}, {message}")))
             }
+        }
+    }
+}
+
+impl From<model::Installment> for Installment {
+    fn from(value: model::Installment) -> Self {
+        Self {
+            id: value.id,
+            principal: value.principal,
+            interest: value.interest,
+            due_date: value.due_date,
+            status: value.status.into(),
+            paid_date: value.paid_date,
+            payment_id: value.payment_id,
+        }
+    }
+}
+
+impl From<model::InstallmentStatus> for InstallmentStatus {
+    fn from(value: model::InstallmentStatus) -> Self {
+        match value {
+            model::InstallmentStatus::Pending => InstallmentStatus::Pending,
+            model::InstallmentStatus::Paid => InstallmentStatus::Paid,
+            model::InstallmentStatus::Confirmed => InstallmentStatus::Confirmed,
+            model::InstallmentStatus::Late => InstallmentStatus::Late,
+            model::InstallmentStatus::Cancelled => InstallmentStatus::Cancelled,
         }
     }
 }

@@ -7,12 +7,15 @@ use crate::common::random_txid;
 use crate::common::wait_until_contract_status;
 use crate::common::LoanOffer;
 use bitcoin::Psbt;
+use hub::model::ConfirmInstallmentPaymentRequest;
 use hub::model::ContractRequestSchema;
 use hub::model::ContractStatus;
 use hub::model::CreateLoanOfferSchema;
+use hub::model::InstallmentPaidRequest;
 use hub::model::LoanAsset;
 use hub::model::LoanPayout;
 use hub::model::LoanType;
+use hub::model::RepaymentPlan;
 use hub::model::ONE_YEAR;
 use hub::routes::borrower::ClaimCollateralPsbt;
 use hub::routes::borrower::ClaimTx;
@@ -79,6 +82,7 @@ async fn open_and_repay_loan() {
         lender_npub: "npub1ur9aupjyaettv9rlan886m3khq7ysw3jl902afrkjg2r80uxdcnsmgu6rv".to_string(),
         extension_duration_days: Some(7),
         extension_interest_rate: Some(dec!(0.12)),
+        repayment_plan: RepaymentPlan::Bullet,
     };
 
     let res = lender
@@ -272,12 +276,19 @@ async fn open_and_repay_loan() {
 
     // 8. Repay loan on loan blockchain.
 
+    // Single installment for a bullet loan.
+    let installment_id = contract.installments[0].id;
+
     let repayment_txid = random_txid();
     let res = borrower
         .put(format!(
-            "http://localhost:7337/api/contracts/{}/repaid?txid={repayment_txid}",
+            "http://localhost:7337/api/contracts/{}/installment-paid",
             contract.id
         ))
+        .json(&InstallmentPaidRequest {
+            installment_id,
+            payment_id: repayment_txid.to_string(),
+        })
         .send()
         .await
         .unwrap();
@@ -286,9 +297,10 @@ async fn open_and_repay_loan() {
 
     let res = lender
         .put(format!(
-            "http://localhost:7338/api/contracts/{}/principalconfirmed",
+            "http://localhost:7338/api/contracts/{}/confirm-installment",
             contract.id
         ))
+        .json(&ConfirmInstallmentPaymentRequest { installment_id })
         .send()
         .await
         .unwrap();

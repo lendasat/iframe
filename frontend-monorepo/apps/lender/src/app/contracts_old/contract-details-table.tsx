@@ -375,7 +375,7 @@ export const ContractDetailsTable = ({
                       onClick={() => navigate(`/my-contracts/${contract.id}`)}
                     >
                       <Text size={"1"} className="font-semibold">
-                        {actionFromStatus(contract.status)}
+                        {actionFromStatus(contract)}
                       </Text>
                     </Button>
                   </Box>

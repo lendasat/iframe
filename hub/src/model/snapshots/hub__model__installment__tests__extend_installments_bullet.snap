@@ -1,0 +1,16 @@
+---
+source: hub/src/model/installment.rs
+expression: installments
+---
+[
+    Installment {
+        id: [UUID],
+        contract_id: [UUID],
+        principal: 1000,
+        interest: 11.111111111111111111111110000,
+        due_date: 2025-07-11 0:00:00.0 +00:00:00,
+        status: Pending,
+        paid_date: None,
+        payment_id: None,
+    },
+]

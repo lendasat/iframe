@@ -1,5 +1,6 @@
 import {
   LoanOfferStatus,
+  repaymentPlanLabel,
   useLenderHttpClient,
 } from "@frontend/http-client-lender";
 import { formatCurrency, LoanAssetHelper, ONE_YEAR } from "@frontend/ui-shared";
@@ -72,6 +73,8 @@ function MyLoanOfferDetails() {
 
   const loanAsset = offer.loan_asset;
   const coinLabel = LoanAssetHelper.print(loanAsset);
+
+  const loanTypeLabel = repaymentPlanLabel(offer.repayment_plan);
 
   return (
     <ScrollArea className="h-[calc(100vh-130px)]">
@@ -259,6 +262,16 @@ function MyLoanOfferDetails() {
                   className="flex-1 rounded-lg text-sm"
                   type="text"
                   value={coinLabel}
+                  disabled={true}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-muted-foreground">Loan Type</Label>
+                <Input
+                  className="flex-1 rounded-lg text-sm"
+                  type="text"
+                  value={loanTypeLabel}
                   disabled={true}
                 />
               </div>

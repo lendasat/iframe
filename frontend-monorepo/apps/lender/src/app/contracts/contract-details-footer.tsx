@@ -1,7 +1,11 @@
 import TransactionHistoryDialog from "./transaction-history";
 import { LuChevronRight } from "react-icons/lu";
 import PayoutPrincipalDialog from "./manage-loan-dialog/payout-principal-dialog";
-import { Contract, ContractStatus } from "@frontend/http-client-lender";
+import {
+  Contract,
+  ContractStatus,
+  InstallmentStatus,
+} from "@frontend/http-client-lender";
 import { Button } from "@frontend/shadcn";
 import ApproveOrRejectStablesDialog from "./approve-dialog/approve-reject-stables-request-dialog";
 import ApproveFiatDialog from "./approve-dialog/approve-reject-fiat-request-dialog";
@@ -80,7 +84,11 @@ export function ContractDetailsFooter({
         </Button>
       </ApproveOrRejectExtensionDialog>
     );
-  } else if (contract.status === ContractStatus.RepaymentProvided) {
+  } else if (
+    contract.installments.filter((i) => {
+      return i.status === InstallmentStatus.Paid;
+    }).length > 0
+  ) {
     button = (
       <ConfirmRepaymentDialog
         contract={contract}

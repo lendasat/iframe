@@ -148,13 +148,46 @@ export interface Contract {
   timeline: TimelineEvent[];
   extension_max_duration_days: number;
   extension_interest_rate?: number;
+  installments: Installment[];
+}
+
+export interface Installment {
+  id: string;
+  principal: number;
+  interest: number;
+  due_date: Date;
+  status: InstallmentStatus;
+  paid_date?: Date;
+  payment_id?: string;
+}
+
+export enum InstallmentStatus {
+  Pending = "pending",
+  Paid = "paid",
+  Confirmed = "confirmed",
+  Late = "late",
+  Cancelled = "cancelled",
 }
 
 export interface TimelineEvent {
-  // TODO: this is a rfc3339 formatted date, but I failed to parse it correctly
-  date: string;
-  event: ContractStatus;
+  event: TimelineEventKind;
+  // TXID of the transaction (or transfer) associated with this event.
   txid?: string;
+  // TODO: This is an RFC3339 formatted date, but I failed to parse it correctly.
+  date: string;
+}
+
+export interface TimelineEventKind {
+  type: TimelineEventKind;
+  // Associated contract status event, if it applies.
+  status?: ContractStatus;
+  // Is the installment confirmed, if it applies.
+  is_confirmed?: boolean;
+}
+
+export enum TimelineEventType {
+  ContractStatusChange = "contract_status_change",
+  Installment = "installment",
 }
 
 export interface KycInfo {
@@ -181,6 +214,24 @@ export interface CreateLoanOfferRequest {
   kyc_link?: string;
   extension_duration_days?: number;
   extension_interest_rate?: number;
+  repayment_plan: RepaymentPlan;
+}
+
+export enum RepaymentPlan {
+  Bullet = "bullet",
+  InterestOnlyWeekly = "interest_only_weekly",
+  InterestOnlyMonthly = "interest_only_monthly",
+}
+
+export function repaymentPlanLabel(plan: RepaymentPlan): string {
+  switch (plan) {
+    case RepaymentPlan.InterestOnlyMonthly:
+      return "Interest-Only Monthly";
+    case RepaymentPlan.InterestOnlyWeekly:
+      return "Interest-Only Weekly";
+    case RepaymentPlan.Bullet:
+      return "Bullet";
+  }
 }
 
 export enum LoanOfferStatus {
@@ -208,13 +259,19 @@ export interface LoanOffer {
   kyc_link?: string;
   extension_max_duration_days: number;
   extension_interest_rate?: number;
+  repayment_plan: RepaymentPlan;
   created_at: Date;
   updated_at: Date;
 }
 
-export const actionFromStatus = (status: ContractStatus) => {
+export const actionFromStatus = (contract: Contract) => {
+  const hasPaidInstallments =
+    contract.installments.filter((i) => {
+      return i.status === InstallmentStatus.Paid;
+    }).length !== 0;
+
   let statusText = "";
-  switch (status) {
+  switch (contract.status) {
     case ContractStatus.RenewalRequested:
     case ContractStatus.Requested:
       statusText = "Approve or Reject";
@@ -229,12 +286,14 @@ export const actionFromStatus = (status: ContractStatus) => {
     case ContractStatus.Defaulted:
       statusText = "Liquidate collateral";
       break;
+    case ContractStatus.PrincipalGiven:
+      statusText = hasPaidInstallments ? "Confirm repayment" : "Details";
+      break;
     case ContractStatus.Approved:
     case ContractStatus.Rejected:
     case ContractStatus.RequestExpired:
     case ContractStatus.ApprovalExpired:
     case ContractStatus.CollateralSeen:
-    case ContractStatus.PrincipalGiven:
     case ContractStatus.RepaymentConfirmed:
     case ContractStatus.DisputeBorrowerStarted:
     case ContractStatus.DisputeLenderStarted:
@@ -361,7 +420,7 @@ export enum TransactionType {
   Funding = "Funding",
   Dispute = "Dispute",
   PrincipalGiven = "PrincipalGiven",
-  PrincipalRepaid = "PrincipalRepaid",
+  InstallmentPaid = "InstallmentPaid",
   Liquidation = "Liquidation",
   ClaimCollateral = "ClaimCollateral",
 }

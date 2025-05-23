@@ -1,11 +1,8 @@
-use crate::model::ONE_YEAR;
 use crate::LEGACY_LTV_THRESHOLD_LIQUIDATION;
 use crate::LTV_THRESHOLD_LIQUIDATION;
 use anyhow::bail;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
-use std::ops::Div;
-use std::ops::Mul;
 
 pub fn calculate_ltv(
     price: Decimal,
@@ -37,25 +34,6 @@ pub fn calculate_liquidation_price(
     collateral_sats: Decimal,
 ) -> Option<Decimal> {
     loan_amount.checked_div(collateral_sats / dec!(100_000_000) * LTV_THRESHOLD_LIQUIDATION)
-}
-
-pub fn calculate_interest(
-    loan_amount: Decimal,
-    loan_duration: i32,
-    interest_rate: Decimal,
-) -> Decimal {
-    let one_year = Decimal::from(ONE_YEAR);
-    let duration_decimal = Decimal::from(loan_duration);
-
-    // Calculate interest using the formula:
-    // interest = loan_amount * (interest_rate / 360) * duration_days
-    let interest = loan_amount
-        .mul(interest_rate)
-        .div(one_year)
-        .mul(duration_decimal);
-
-    // Round to 2 decimal places
-    interest.round_dp(2)
 }
 
 /// Validates if a given string is a valid email address.
@@ -277,39 +255,5 @@ mod tests {
         assert!(!is_valid_email("user@example.c"));
         assert!(!is_valid_email("user@example.123"));
         assert!(!is_valid_email("user@@example.com"));
-    }
-
-    #[test]
-    fn test_calculate_interest() {
-        // Test case: $10,000 loan at 5% for 30 days
-        let loan_amount = dec!(10000);
-        let loan_duration = 30;
-        let interest_rate = dec!(0.05); // 0.05 or 5%
-
-        let result = calculate_interest(loan_amount, loan_duration, interest_rate);
-
-        // Expected: 10000 * (0.05 / 360) * 30 = 41.67
-        let expected = dec!(41.67);
-        assert_eq!(result, expected);
-    }
-
-    #[test]
-    fn test_zero_duration() {
-        let loan_amount = dec!(10000);
-        let loan_duration = 0;
-        let interest_rate = dec!(0.05);
-
-        let result = calculate_interest(loan_amount, loan_duration, interest_rate);
-        assert_eq!(result, Decimal::ZERO);
-    }
-
-    #[test]
-    fn test_zero_interest_rate() {
-        let loan_amount = dec!(10000);
-        let loan_duration = 30;
-        let interest_rate = Decimal::ZERO;
-
-        let result = calculate_interest(loan_amount, loan_duration, interest_rate);
-        assert_eq!(result, Decimal::ZERO);
     }
 }

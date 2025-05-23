@@ -9,6 +9,7 @@ use hub::model;
 use hub::model::CreateLoanApplicationSchema;
 use hub::model::LoanAsset;
 use hub::model::LoanType;
+use hub::model::RepaymentPlan;
 use rust_decimal_macros::dec;
 use serde::Deserialize;
 use serde::Serialize;
@@ -69,6 +70,7 @@ async fn borrower_loan_applications() {
         borrower_derivation_path,
         borrower_npub,
         client_contract_id: Some(Uuid::new_v4()),
+        repayment_plan: RepaymentPlan::Bullet,
     };
 
     let res = borrower

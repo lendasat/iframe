@@ -1,6 +1,7 @@
 use crate::config::Config;
 use crate::contract_requests::calculate_origination_fee;
 use crate::db;
+use crate::model::apply_extension_to_installments;
 use crate::model::Contract;
 use crate::model::ExtensionRequestError;
 use anyhow::anyhow;
@@ -9,6 +10,7 @@ use anyhow::Result;
 use rust_decimal::Decimal;
 use sqlx::Pool;
 use sqlx::Postgres;
+use std::num::NonZeroU64;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
@@ -26,7 +28,12 @@ pub enum Error {
     /// Extension will be possible at a later time.
     TooSoon,
     /// Extension is only possible for `max_duration_days`.
-    TooManyDays { max_duration_days: u64 },
+    TooManyDays {
+        max_duration_days: u64,
+    },
+    /// Failed to generate extension installments.
+    ComputeExtensionInstallments(anyhow::Error),
+    ZeroLoanExtensionDuration,
 }
 
 pub async fn request_contract_extension(
@@ -46,6 +53,8 @@ pub async fn request_contract_extension(
     .context("failed loading contract from db")
     .map_err(Error::Database)?;
 
+    let new_contract_id = Uuid::new_v4();
+
     let now = OffsetDateTime::now_utc();
 
     let extension_interest_rate =
@@ -58,10 +67,48 @@ pub async fn request_contract_extension(
             }
         };
 
+    let installments = db::installments::get_all_for_contract_id(pool, original_contract_id)
+        .await
+        .context("failed to load installments")
+        .map_err(Error::Database)?;
+
+    let offer = db::loan_deals::get_loan_deal_by_id(pool, &original_contract.loan_id)
+        .await
+        .map_err(Error::Database)?;
+
+    let non_zero_original_duration_days =
+        NonZeroU64::new(original_contract.duration_days as u64).expect("non zero loan duration");
+
+    let non_zero_extension_duration_days = match NonZeroU64::new(extended_duration_days as u64) {
+        Some(duration) => duration,
+        None => {
+            return Err(Error::ZeroLoanExtensionDuration);
+        }
+    };
+
+    // We generate a list of installments for the new contract. Since the new contract effectively
+    // replaces the old one, we keep most of the history intact and add new installments.
+    let new_installments = apply_extension_to_installments(
+        new_contract_id,
+        &installments,
+        non_zero_original_duration_days,
+        non_zero_extension_duration_days,
+        extension_interest_rate,
+        original_contract.loan_amount,
+        offer.repayment_plan(),
+    )
+    .map_err(Error::ComputeExtensionInstallments)?;
+
     let mut db_tx = pool
         .begin()
         .await
         .map_err(|e| Error::Database(anyhow!(e)))?;
+
+    // We store the new installments (referencing the new contract ID). We do not touch the old ones
+    // because it's not necessary. Keeping them may help with auditing and debugging.
+    db::installments::insert(pool, new_installments)
+        .await
+        .map_err(Error::Database)?;
 
     let new_origination_fee = config
         .extension_origination_fee
@@ -89,7 +136,6 @@ pub async fn request_contract_extension(
     )
     .map_err(Error::InterestRateCalculation)?;
 
-    let new_contract_id = Uuid::new_v4();
     let new_contract = db::contracts::insert_extension_contract_request(
         &mut db_tx,
         new_contract_id,

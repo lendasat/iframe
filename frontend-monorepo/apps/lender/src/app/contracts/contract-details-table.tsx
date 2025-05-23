@@ -265,7 +265,7 @@ export const ContractDetailsTable = ({
                     onClick={() => navigate(`/my-contracts/${contract.id}`)}
                     className="hidden md:block font-semibold"
                   >
-                    {actionFromStatus(contract.status)}
+                    {actionFromStatus(contract)}
                   </Button>
                   <Button
                     variant="default"

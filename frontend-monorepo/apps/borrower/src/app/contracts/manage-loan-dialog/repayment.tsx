@@ -1,4 +1,4 @@
-import { Contract } from "@frontend/http-client-borrower";
+import { Contract, InstallmentStatus } from "@frontend/http-client-borrower";
 import { Label, Skeleton } from "@frontend/shadcn";
 import { formatCurrency, LoanAssetHelper } from "@frontend/ui-shared";
 import { StablecoinRepayment } from "./stablecoin-repayment";
@@ -7,14 +7,30 @@ import { FiatRepayment } from "./fiat-repayment";
 interface RepaymentProps {
   contract?: Contract;
   refreshContract: () => void;
+  onSubmit: () => void;
 }
 
-export function Repayment({ contract, refreshContract }: RepaymentProps) {
-  const loanAmount = contract?.loan_amount;
-  const loanInterest = contract?.interest;
+export function Repayment({
+  contract,
+  refreshContract,
+  onSubmit,
+}: RepaymentProps) {
+  const nextInstallment = contract?.installments
+    ?.filter(
+      (installment) =>
+        installment.status === InstallmentStatus.Pending ||
+        installment.status === InstallmentStatus.Late,
+    )
+    ?.sort(
+      (a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime(),
+    )[0];
+
+  const principalAmount = Number(nextInstallment?.principal) || 0;
+  const interestAmount = Number(nextInstallment?.interest) || 0;
   const totalRepaymentAmount =
-    loanAmount !== undefined && loanInterest !== undefined
-      ? loanAmount + loanInterest
+    nextInstallment?.principal !== undefined &&
+    nextInstallment?.interest !== undefined
+      ? principalAmount + interestAmount
       : undefined;
 
   const assetCoin = contract?.loan_asset
@@ -28,17 +44,19 @@ export function Repayment({ contract, refreshContract }: RepaymentProps) {
         <div className="grid grid-cols-2 gap-2">
           <div>
             <Label>Principal Amount</Label>
-            {loanAmount ? (
-              <p className="text-lg font-bold">{formatCurrency(loanAmount)}</p>
+            {principalAmount !== undefined ? (
+              <p className="text-lg font-bold">
+                {formatCurrency(principalAmount)}
+              </p>
             ) : (
               <Skeleton className="h-4 w-[150px]" />
             )}
           </div>
           <div>
             <Label>Interest</Label>
-            {loanInterest !== undefined ? (
+            {interestAmount !== undefined ? (
               <p className="text-lg font-bold">
-                {formatCurrency(loanInterest)}
+                {formatCurrency(interestAmount)}
               </p>
             ) : (
               <Skeleton className="h-4 w-[150px]" />
@@ -61,12 +79,19 @@ export function Repayment({ contract, refreshContract }: RepaymentProps) {
         LoanAssetHelper.isStableCoin(contract.loan_asset) && (
           <StablecoinRepayment
             contract={contract}
+            installment={nextInstallment}
             refreshContract={refreshContract}
+            onSubmit={onSubmit}
           />
         )}
 
       {contract?.loan_asset && LoanAssetHelper.isFiat(contract.loan_asset) && (
-        <FiatRepayment contract={contract} />
+        <FiatRepayment
+          contract={contract}
+          installment={nextInstallment}
+          refreshContract={refreshContract}
+          onSubmit={onSubmit}
+        />
       )}
     </>
   );

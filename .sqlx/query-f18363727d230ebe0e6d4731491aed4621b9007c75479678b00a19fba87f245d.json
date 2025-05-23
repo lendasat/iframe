@@ -1,0 +1,39 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO installments (id, contract_id, principal, interest, due_date, status)\n            SELECT * FROM UNNEST($1::uuid[], $2::char(36)[], $3::decimal[], $4::decimal[], $5::timestamptz[], $6::installment_status[])\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "UuidArray",
+        "BpcharArray",
+        "NumericArray",
+        "NumericArray",
+        "TimestamptzArray",
+        {
+          "Custom": {
+            "name": "installment_status[]",
+            "kind": {
+              "Array": {
+                "Custom": {
+                  "name": "installment_status",
+                  "kind": {
+                    "Enum": [
+                      "Pending",
+                      "Paid",
+                      "Confirmed",
+                      "Late",
+                      "Cancelled"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f18363727d230ebe0e6d4731491aed4621b9007c75479678b00a19fba87f245d"
+}

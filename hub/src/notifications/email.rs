@@ -300,6 +300,7 @@ impl Email {
         contract: Contract,
         price: Decimal,
         current_ltv: Decimal,
+        liquidation_price: Decimal,
         contract_url: Url,
     ) -> Result<()> {
         let template_name = "margin_call";
@@ -323,7 +324,7 @@ impl Email {
 
         let current_ltv = (current_ltv * dec!(100)).round_dp(2).to_string();
 
-        let liquidation_price = contract.liquidation_price().round_dp(2).to_string();
+        let liquidation_price = liquidation_price.round_dp(2).to_string();
 
         let data = serde_json::json!({
             "first_name": user.name.as_str(),
@@ -357,13 +358,14 @@ impl Email {
         borrower: Borrower,
         contract: Contract,
         price: Decimal,
+        liquidation_price: Decimal,
         contract_url: Url,
     ) -> Result<()> {
         let template_name = "liquidated_borrower";
 
         let handlebars = Self::prepare_template(template_name)?;
 
-        let liquidation_price = contract.liquidation_price().round_dp(2).to_string();
+        let liquidation_price = liquidation_price.round_dp(2).to_string();
 
         let price = price.round_dp(2).to_string();
 
@@ -565,13 +567,13 @@ impl Email {
         Ok(())
     }
 
-    pub async fn send_close_to_expiry_contract(
+    pub async fn send_installment_due_soon(
         &self,
         user: Borrower,
         expiry_date: &str,
         url: Url,
     ) -> Result<()> {
-        let template_name = "loan_close_to_expiry";
+        let template_name = "installment_due_soon";
         let handlebars = Self::prepare_template(template_name)?;
 
         let data = serde_json::json!({
@@ -585,7 +587,7 @@ impl Email {
 
         if let Some(email) = user.email {
             self.send_email(
-                "Time to repay your loan",
+                "Time to make an installment",
                 user.name.as_str(),
                 email.as_str(),
                 content_template,
@@ -679,7 +681,7 @@ impl Email {
         let content_template = handlebars.render(template_name, &data)?;
 
         self.send_email(
-            "Your loan expired without repayment",
+            "Your borrower missed an installment",
             user.name.as_str(),
             user.email.as_str(),
             content_template,

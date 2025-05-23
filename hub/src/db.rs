@@ -21,6 +21,7 @@ pub mod contract_extensions;
 pub mod contract_status_log;
 pub mod contracts;
 pub mod fiat_loan_details;
+pub mod installments;
 pub mod invite_code;
 pub mod kyc;
 pub mod lender_features;

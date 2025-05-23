@@ -2,7 +2,7 @@ export enum TransactionType {
   Funding = "Funding",
   Dispute = "Dispute",
   PrincipalGiven = "PrincipalGiven",
-  PrincipalRepaid = "PrincipalRepaid",
+  InstallmentPaid = "InstallmentPaid",
   Liquidation = "Liquidation",
   ClaimCollateral = "ClaimCollateral",
 }

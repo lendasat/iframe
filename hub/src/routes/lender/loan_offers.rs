@@ -7,6 +7,7 @@ use crate::model::LoanAsset;
 use crate::model::LoanOfferStatus;
 use crate::model::LoanPayout;
 use crate::model::OriginationFee;
+use crate::model::RepaymentPlan;
 use crate::routes::lender::auth;
 use crate::routes::lender::AppState;
 use crate::user_stats;
@@ -202,6 +203,7 @@ pub async fn create_loan_offer(
         kyc_link: offer.kyc_link,
         extension_max_duration_days,
         extension_interest_rate,
+        repayment_plan: offer.repayment_plan,
         created_at: offer.created_at,
         updated_at: offer.updated_at,
     };
@@ -238,6 +240,7 @@ pub struct LoanOffer {
     pub extension_max_duration_days: u64,
     #[serde(with = "rust_decimal::serde::float_option")]
     pub extension_interest_rate: Option<Decimal>,
+    pub repayment_plan: RepaymentPlan,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
     #[serde(with = "time::serde::rfc3339")]
@@ -318,6 +321,7 @@ pub async fn get_my_loan_offers(
             kyc_link: offer.kyc_link,
             extension_max_duration_days,
             extension_interest_rate,
+            repayment_plan: offer.repayment_plan,
             created_at: offer.created_at,
             updated_at: offer.updated_at,
         };
@@ -400,9 +404,9 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
         loan_repayment_address: offer.loan_repayment_address,
         origination_fee,
         kyc_link: offer.kyc_link,
-
         extension_max_duration_days,
         extension_interest_rate,
+        repayment_plan: offer.repayment_plan,
         created_at: offer.created_at,
         updated_at: offer.updated_at,
     };
@@ -481,6 +485,7 @@ pub async fn get_loan_offers(
             kyc_link: offer.kyc_link,
             extension_max_duration_days,
             extension_interest_rate,
+            repayment_plan: offer.repayment_plan,
             created_at: offer.created_at,
             updated_at: offer.updated_at,
         })
@@ -565,6 +570,7 @@ pub async fn get_loan_offer_by_id(
         kyc_link: offer.kyc_link,
         extension_max_duration_days,
         extension_interest_rate,
+        repayment_plan: offer.repayment_plan,
         created_at: offer.created_at,
         updated_at: offer.updated_at,
     };

@@ -1,0 +1,224 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT\n            lo.id,\n            lo.loan_deal_id,\n            lo.lender_id,\n            lo.name,\n            lo.min_ltv,\n            lo.interest_rate,\n            lo.loan_amount_min,\n            lo.loan_amount_max,\n            lo.duration_days_min,\n            lo.duration_days_max,\n            lo.loan_amount_reserve,\n            lo.kyc_link,\n            lo.auto_accept,\n            COALESCE(\n                lo.loan_amount_reserve - COALESCE(\n                    SUM(\n                        CASE\n                            WHEN c.status NOT IN ('Cancelled', 'RequestExpired')\n                            THEN c.loan_amount\n                            ELSE 0\n                        END\n                    ),\n                    0\n                ),\n                lo.loan_amount_reserve\n            ) AS loan_amount_reserve_remaining,\n            lo.loan_asset AS \"loan_asset: LoanAsset\",\n            lo.loan_payout AS \"loan_payout: LoanPayout\",\n            lo.status AS \"status: LoanOfferStatus\",\n            lo.loan_repayment_address,\n            lo.lender_pk,\n            lo.lender_derivation_path,\n            lo.lender_npub,\n            lo.extension_duration_days,\n            lo.extension_interest_rate,\n            lo.repayment_plan AS \"repayment_plan: RepaymentPlan\",\n            lo.created_at,\n            lo.updated_at\n        FROM loan_offers lo\n            LEFT JOIN\n                contracts c ON lo.id = c.loan_deal_id\n        WHERE lo.status = 'Available'\n        GROUP BY\n            lo.id\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "loan_deal_id",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "lender_id",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "min_ltv",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 5,
+        "name": "interest_rate",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 6,
+        "name": "loan_amount_min",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 7,
+        "name": "loan_amount_max",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 8,
+        "name": "duration_days_min",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 9,
+        "name": "duration_days_max",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 10,
+        "name": "loan_amount_reserve",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 11,
+        "name": "kyc_link",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 12,
+        "name": "auto_accept",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 13,
+        "name": "loan_amount_reserve_remaining",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 14,
+        "name": "loan_asset: LoanAsset",
+        "type_info": {
+          "Custom": {
+            "name": "loan_asset",
+            "kind": {
+              "Enum": [
+                "UsdcPol",
+                "UsdtPol",
+                "UsdcEth",
+                "UsdtEth",
+                "UsdcStrk",
+                "UsdtStrk",
+                "UsdcSol",
+                "UsdtSol",
+                "Usd",
+                "Eur",
+                "Chf",
+                "Unknown",
+                "UsdtLiquid",
+                "Mxn"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "loan_payout: LoanPayout",
+        "type_info": {
+          "Custom": {
+            "name": "loan_payout",
+            "kind": {
+              "Enum": [
+                "Direct",
+                "Indirect"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 16,
+        "name": "status: LoanOfferStatus",
+        "type_info": {
+          "Custom": {
+            "name": "loan_offer_status",
+            "kind": {
+              "Enum": [
+                "Available",
+                "Unavailable",
+                "Deleted"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 17,
+        "name": "loan_repayment_address",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 18,
+        "name": "lender_pk",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 19,
+        "name": "lender_derivation_path",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 20,
+        "name": "lender_npub",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 21,
+        "name": "extension_duration_days",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 22,
+        "name": "extension_interest_rate",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 23,
+        "name": "repayment_plan: RepaymentPlan",
+        "type_info": {
+          "Custom": {
+            "name": "repayment_plan",
+            "kind": {
+              "Enum": [
+                "Bullet",
+                "InterestOnlyWeekly",
+                "InterestOnlyMonthly"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 24,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 25,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      null,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "261227fe6b242b1b95b4508a050649b5565fec416727253b7902abe1db867c0a"
+}

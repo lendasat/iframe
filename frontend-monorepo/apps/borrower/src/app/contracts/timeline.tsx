@@ -10,6 +10,7 @@ import { format } from "date-fns";
 import { parseRFC3339Date } from "@frontend/http-client-borrower/src/lib/utils";
 import { LuCheck, LuClipboard, LuExternalLink } from "react-icons/lu";
 import { getTxUrl } from "@frontend/ui-shared";
+import { CircleCheck } from "lucide-react";
 
 const shortenTxid = (txid: string) => {
   const firstSix = txid.slice(0, 4);
@@ -20,8 +21,19 @@ const shortenTxid = (txid: string) => {
 
 export interface TimelineEvent {
   date: Date;
-  event: ContractStatus;
+  event: TimelineEventKind;
   txid?: string;
+}
+
+export interface TimelineEventKind {
+  type: TimelineEventType;
+  status?: ContractStatus;
+  is_confirmed?: boolean;
+}
+
+export enum TimelineEventType {
+  ContractStatusChange = "contract_status_change",
+  Installment = "installment",
 }
 
 interface TimelineProps {
@@ -33,6 +45,7 @@ export const Timeline = ({ contract }: TimelineProps) => {
   const unparsedTimelineEvents = contract?.timeline ? contract?.timeline : [];
   const timelineEvents: TimelineEvent[] = unparsedTimelineEvents?.map((t) => {
     const date = parseRFC3339Date(t.date) || new Date();
+
     return {
       date,
       event: t.event,
@@ -62,90 +75,169 @@ export const Timeline = ({ contract }: TimelineProps) => {
             {timelineEvents.map((event, index) => {
               let url = undefined;
 
-              if (event.txid) {
-                if (
-                  event.event === ContractStatus.CollateralConfirmed ||
-                  event.event === ContractStatus.CollateralSeen ||
-                  event.event === ContractStatus.Closed ||
-                  event.event === ContractStatus.ClosedByLiquidation ||
-                  event.event === ContractStatus.ClosedByDefaulting
-                ) {
-                  url = `${import.meta.env.VITE_MEMPOOL_REST_URL}/tx/${event.txid}`;
-                } else {
-                  url = getTxUrl(event.txid, contract?.loan_asset);
+              if (
+                event.event.type === TimelineEventType.ContractStatusChange &&
+                event.event.status !== undefined
+              ) {
+                if (event.txid) {
+                  if (
+                    event.event.status === ContractStatus.CollateralConfirmed ||
+                    event.event.status === ContractStatus.CollateralSeen ||
+                    event.event.status === ContractStatus.Closed ||
+                    event.event.status === ContractStatus.ClosedByLiquidation ||
+                    event.event.status === ContractStatus.ClosedByDefaulting
+                  ) {
+                    url = `${import.meta.env.VITE_MEMPOOL_REST_URL}/tx/${event.txid}`;
+                  } else {
+                    url = getTxUrl(event.txid, contract?.loan_asset);
+                  }
                 }
-              }
 
-              return (
-                <div
-                  key={`${event.date.toString()}-${event.event}-${event.txid}`}
-                  className="relative pl-6 pb-4"
-                >
-                  {/* Vertical line */}
-                  {index < timelineEvents.length - 1 && (
-                    <div className="absolute left-[9px] top-[24px] bottom-0 w-0.5 bg-gray-200" />
-                  )}
-
-                  {/* Timeline dot */}
+                return (
                   <div
-                    className={`absolute top-1 left-0 rounded-full w-[18px] h-[18px] ${currentStateColor} border-2 border-white ring-1 ring-gray-200`}
-                  />
-
-                  <div>
-                    <div className="flex justify-between items-center">
-                      <p className="font-medium">
-                        {contractStatusToLabelString(event.event)}
-                      </p>
-                      <Badge variant="outline" className="text-xs">
-                        {format(event.date, "MMM, dd yyyy - p")}
-                      </Badge>
-                    </div>
-                    {event.txid && url && (
-                      <div className="flex items-center justify-between space-x-2">
-                        <p className="text-sm text-gray-600 mb-1">
-                          Transaction id
-                        </p>
-                        <div className="flex items-center">
-                          <p className="text-xs text-gray-600 mt-1 font-mono mr-2">
-                            {shortenTxid(event.txid)}
-                          </p>
-                          <Button
-                            size="icon"
-                            variant="outline"
-                            className="h-6 w-6"
-                            onClick={() => handleCopyTxid(event.txid || "")}
-                          >
-                            {txidCopied ? (
-                              <LuCheck className="h-4 w-4" />
-                            ) : (
-                              <LuClipboard className="h-4 w-4" />
-                            )}
-                          </Button>
-                          <Button
-                            asChild
-                            size={"icon"}
-                            variant={"ghost"}
-                            className="h-6 w-6"
-                          >
-                            <a
-                              href={url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center"
-                            >
-                              <LuExternalLink className="h-4 w-4" />{" "}
-                            </a>
-                          </Button>
-                        </div>
-                      </div>
+                    key={`${event.date.toString()}-${event.event.status}-${event.txid}`}
+                    className="relative pl-6 pb-4"
+                  >
+                    {/* Vertical line */}
+                    {index < timelineEvents.length - 1 && (
+                      <div className="absolute left-[9px] top-[24px] bottom-0 w-0.5 bg-gray-200" />
                     )}
 
-                    <p className="text-sm text-gray-600 mb-1">
-                      {contractStatusDescription(event.event)}
-                    </p>
+                    {/* Timeline dot */}
+                    <div
+                      className={`absolute top-1 left-0 rounded-full w-[18px] h-[18px] ${currentStateColor} border-2 border-white ring-1 ring-gray-200`}
+                    />
+
+                    <div>
+                      <div className="flex justify-between items-center">
+                        <p className="font-medium">
+                          {contractStatusToLabelString(event.event.status)}
+                        </p>
+                        <Badge variant="outline" className="text-xs">
+                          {format(event.date, "MMM, dd yyyy - p")}
+                        </Badge>
+                      </div>
+                      {event.txid && url && (
+                        <div className="flex items-center justify-between space-x-2">
+                          <p className="text-sm text-gray-600 mb-1">
+                            Transaction ID
+                          </p>
+                          <div className="flex items-center">
+                            <p className="text-xs text-gray-600 mt-1 font-mono mr-2">
+                              {shortenTxid(event.txid)}
+                            </p>
+                            <Button
+                              size="icon"
+                              variant="outline"
+                              className="h-6 w-6"
+                              onClick={() => handleCopyTxid(event.txid || "")}
+                            >
+                              {txidCopied ? (
+                                <LuCheck className="h-4 w-4" />
+                              ) : (
+                                <LuClipboard className="h-4 w-4" />
+                              )}
+                            </Button>
+                            <Button
+                              asChild
+                              size={"icon"}
+                              variant={"ghost"}
+                              className="h-6 w-6"
+                            >
+                              <a
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center"
+                              >
+                                <LuExternalLink className="h-4 w-4" />{" "}
+                              </a>
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      <p className="text-sm text-gray-600 mb-1">
+                        {contractStatusDescription(event.event.status)}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              );
+                );
+              } else if (event.event.type === TimelineEventType.Installment) {
+                const url = event.txid
+                  ? getTxUrl(event.txid, contract?.loan_asset)
+                  : undefined;
+
+                return (
+                  <div
+                    key={`${event.date.toString()}-${event.event.status}-${event.txid}`}
+                    className="relative pl-6 pb-4"
+                  >
+                    {/* Vertical line */}
+                    {index < timelineEvents.length - 1 && (
+                      <div className="absolute left-[9px] top-[24px] bottom-0 w-0.5 bg-gray-200" />
+                    )}
+
+                    {/* Timeline dot */}
+                    <div
+                      className={`absolute top-1 left-0 rounded-full w-[18px] h-[18px] ${currentStateColor} border-2 border-white ring-1 ring-gray-200`}
+                    />
+
+                    <div>
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium flex items-center">
+                          Installment Paid
+                          {event.event.is_confirmed && (
+                            <CircleCheck className="ml-2 w-4 h-4" />
+                          )}
+                        </span>
+                        <Badge variant="outline" className="text-xs">
+                          {format(event.date, "MMM, dd yyyy - p")}
+                        </Badge>
+                      </div>
+                      {event.txid && url && (
+                        <div className="flex items-center justify-between space-x-2">
+                          <p className="text-sm text-gray-600 mb-1">
+                            Transaction ID
+                          </p>
+                          <div className="flex items-center">
+                            <p className="text-xs text-gray-600 mt-1 font-mono mr-2">
+                              {shortenTxid(event.txid)}
+                            </p>
+                            <Button
+                              size="icon"
+                              variant="outline"
+                              className="h-6 w-6"
+                              onClick={() => handleCopyTxid(event.txid || "")}
+                            >
+                              {txidCopied ? (
+                                <LuCheck className="h-4 w-4" />
+                              ) : (
+                                <LuClipboard className="h-4 w-4" />
+                              )}
+                            </Button>
+                            <Button
+                              asChild
+                              size={"icon"}
+                              variant={"ghost"}
+                              className="h-6 w-6"
+                            >
+                              <a
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center"
+                              >
+                                <LuExternalLink className="h-4 w-4" />{" "}
+                              </a>
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              }
             })}
           </div>
         </div>
@@ -157,47 +249,47 @@ export const Timeline = ({ contract }: TimelineProps) => {
 export const contractStatusDescription = (status: ContractStatus): string => {
   switch (status) {
     case ContractStatus.Requested:
-      return "Waiting for your request to be approved";
+      return "Waiting for your request to be approved.";
     case ContractStatus.RenewalRequested:
-      return "Waiting for your renewal request to be approved";
+      return "Waiting for your renewal request to be approved.";
     case ContractStatus.Approved:
       return "The lender has approved your contract.";
     case ContractStatus.CollateralSeen:
-      return "We have seen your funding transaction in the mempool";
+      return "We have seen your funding transaction in the mempool.";
     case ContractStatus.CollateralConfirmed:
-      return "Your funding transaction is confirmed";
+      return "Your funding transaction is confirmed.";
     case ContractStatus.PrincipalGiven:
-      return "Your contract is fully open";
+      return "Your contract is active.";
     case ContractStatus.RepaymentProvided:
-      return "You have repaid your contract";
+      return "The loan has been repaid in full.";
     case ContractStatus.RepaymentConfirmed:
-      return "The lender has received the repayment";
+      return "The lender has confirmed the repayment.";
     case ContractStatus.Undercollateralized:
-      return "Your contract is awaiting liquidation";
+      return "Your contract is awaiting liquidation.";
     case ContractStatus.Defaulted:
-      return "You have not paid back in time";
+      return "You have not paid back in time.";
     case ContractStatus.Closing:
-      return "Your collateral is being spent";
+      return "Your collateral is being spent.";
     case ContractStatus.Closed:
-      return "Your contract is closed";
+      return "Your contract is closed.";
     case ContractStatus.ClosedByDefaulting:
-      return "You defaulted on your contract";
+      return "You defaulted on your contract.";
     case ContractStatus.ClosedByLiquidation:
-      return "Your contract got liquidated";
+      return "Your contract got liquidated.";
     case ContractStatus.Extended:
-      return "The contract has been extended";
+      return "The contract has been extended.";
     case ContractStatus.Rejected:
-      return "The contract request has been rejected";
+      return "The contract request has been rejected.";
     case ContractStatus.DisputeBorrowerStarted:
     case ContractStatus.DisputeLenderStarted:
-      return "A dispute has been opened";
+      return "A dispute has been opened.";
     case ContractStatus.DisputeBorrowerResolved:
     case ContractStatus.DisputeLenderResolved:
-      return "The dispute has been resolved";
+      return "The dispute has been resolved.";
     case ContractStatus.Cancelled:
-      return "The contract reuquest has been cancelled";
+      return "The contract request has been cancelled.";
     case ContractStatus.RequestExpired:
     case ContractStatus.ApprovalExpired:
-      return "The contract request has expired";
+      return "The contract request has expired.";
   }
 };

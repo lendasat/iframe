@@ -1,0 +1,77 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                id,\n                contract_id,\n                principal,\n                interest,\n                due_date,\n                status AS \"status: InstallmentStatus\",\n                paid_date,\n                payment_id\n            FROM installments\n            WHERE contract_id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "contract_id",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "principal",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 3,
+        "name": "interest",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 4,
+        "name": "due_date",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 5,
+        "name": "status: InstallmentStatus",
+        "type_info": {
+          "Custom": {
+            "name": "installment_status",
+            "kind": {
+              "Enum": [
+                "Pending",
+                "Paid",
+                "Confirmed",
+                "Late",
+                "Cancelled"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "paid_date",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 7,
+        "name": "payment_id",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bpchar"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "304312e3fe70dcd7034c89a81090ecc219d10c2ec5047d65b1fefdaba1405f35"
+}

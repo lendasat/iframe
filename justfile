@@ -32,12 +32,11 @@ fmt-frontend:
 clippy:
     cargo clippy --all-targets --all-features -- -D warnings
 
-# TODO: also update CI script when re-added
 lint-frontend:
     #!/usr/bin/env bash
     set -euxo pipefail
     cd frontend-monorepo
-    pnpm biome lint --fix
+    pnpm biome lint
 
 check-frontend:
     #!/usr/bin/env bash

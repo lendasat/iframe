@@ -46,7 +46,10 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
             get(get_all_available_loan_applications),
         )
         .route("/api/loans/application/:id", get(get_loan_application))
-        .route("/api/loans/application/:id", post(take_loan_application))
+        .route(
+            "/api/loans/application/:id",
+            post(post_take_loan_application),
+        )
         .route_layer(middleware::from_fn_with_state(
             app_state.clone(),
             jwt_auth::auth,
@@ -180,7 +183,7 @@ pub struct TakeLoanApplicationSchema {
 }
 
 #[instrument(skip_all, fields(lender_id = user.id, loan_deal_id, body), err(Debug), ret)]
-pub async fn take_loan_application(
+pub async fn post_take_loan_application(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Lender>,
     Path(loan_deal_id): Path<String>,
@@ -226,25 +229,27 @@ enum Error {
     Database(anyhow::Error),
     /// Referenced borrower does not exist.
     MissingBorrower,
-    // No origination fee configured
+    /// No origination fee configured.
     MissingOriginationFee,
-    // Failed to get price
+    /// Failed to get price.
     BitMexPrice(anyhow::Error),
-    // Failed to calculate initial collateral
+    /// Failed to calculate initial collateral
     InitialCollateralCalculation(anyhow::Error),
-    // Failed to generate contract address
+    /// Failed to generate contract address.
     ContractAddress(anyhow::Error),
-    // Failed to calculate origination fee in sats
+    /// Failed to calculate origination fee in sats.
     OriginationFeeCalculation(anyhow::Error),
-    // Invalid discount rate
+    /// Invalid discount rate.
     InvalidDiscountRate(anyhow::Error),
-    // Failed tracking contract address
+    /// Failed tracking contract address.
     TrackContract(anyhow::Error),
     LoanApplicationNotFound(String),
-    // Failed to calculate liquidation price
+    /// Failed to calculate liquidation price.
     LiquidationPriceCalculation,
-    // The lender didn't provide fiat loan details
+    /// The lender didn't provide fiat loan details.
     MissingFiatLoanDetails,
+    /// The loan application had a loan duration of zero days.
+    ZeroLoanDuration,
 }
 
 /// Tell `axum` how [`AppError`] should be converted into a response.
@@ -343,6 +348,13 @@ impl IntoResponse for Error {
                 StatusCode::BAD_REQUEST,
                 "LoanApplication not found".to_owned(),
             ),
+            Error::ZeroLoanDuration => {
+                tracing::error!("Cannot take zero-duration loan application");
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something went wrong".to_owned(),
+                )
+            }
         };
         (status, AppJson(ErrorResponse { message })).into_response()
     }
@@ -369,6 +381,7 @@ impl From<take_loan_application::Error> for Error {
                 Error::LoanApplicationNotFound(id)
             }
             take_loan_application::Error::MissingFiatLoanDetails => Error::MissingFiatLoanDetails,
+            take_loan_application::Error::ZeroLoanDuration => Error::ZeroLoanDuration,
         }
     }
 }

@@ -28,6 +28,8 @@ import { useAsyncRetry } from "react-use";
 import { ContractDetailsFooter } from "./contract-details-footer";
 import { Chat } from "@frontend/nostr-chat";
 import DisputesComponent from "./disputes/disputes";
+import { InstallmentTable } from "./installment-table";
+import { LoanAssetHelper } from "@frontend/ui-shared";
 
 export function contractStatusLabelColor(status?: ContractStatus): string {
   if (!status) {
@@ -103,9 +105,16 @@ const EnhancedBitcoinLoan = () => {
     console.error(`Failed to load contract: ${error.message}`);
   }
 
-  const currentStateColor = contractStatusLabelColor(contract?.status);
+  const currentStateColor = contractStatusLabelColor(
+    contract?.installments ?? [],
+    contract?.status,
+  );
   const currentStateLabel =
-    contract?.status && contractStatusToLabelString(contract.status);
+    contract?.status &&
+    contract?.installments &&
+    contractStatusToLabelString(contract.status);
+
+  console.log(currentStateLabel);
 
   const disputeOngoing =
     ContractStatus.DisputeBorrowerStarted === contract?.status ||
@@ -173,10 +182,11 @@ const EnhancedBitcoinLoan = () => {
                 className="w-full flex-grow flex flex-col"
               >
                 <div className="px-4 flex-shrink-0">
-                  <TabsList className="grid grid-cols-4">
+                  <TabsList className="grid grid-cols-5">
                     <TabsTrigger value="details">Loan Details</TabsTrigger>
                     <TabsTrigger value="collateral">Collateral</TabsTrigger>
                     <TabsTrigger value="timeline">Timeline</TabsTrigger>
+                    <TabsTrigger value="installments">Installments</TabsTrigger>
                     <TabsTrigger value="disputes">Disputes</TabsTrigger>
                   </TabsList>
                 </div>
@@ -197,6 +207,17 @@ const EnhancedBitcoinLoan = () => {
 
                   <TabsContent value="timeline" className="m-0">
                     <Timeline contract={contract} />
+                  </TabsContent>
+
+                  <TabsContent value="installments" className="m-0">
+                    <InstallmentTable
+                      installments={contract?.installments ?? []}
+                      isFiatLoan={
+                        contract?.loan_asset
+                          ? LoanAssetHelper.isFiat(contract?.loan_asset)
+                          : false
+                      }
+                    />
                   </TabsContent>
 
                   <TabsContent value="disputes" className="m-0">

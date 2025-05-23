@@ -141,7 +141,11 @@ export interface HttpClient {
   // Contract related methods
   getContracts: () => Promise<Contract[]>;
   getContract: (id: string) => Promise<Contract>;
-  markAsRepaymentProvided: (id: string, txid: string) => Promise<void>;
+  markInstallmentAsPaid: (
+    contractId: string,
+    installmentId: string,
+    paymentId: string,
+  ) => Promise<void>;
   getClaimCollateralPsbt: (
     id: string,
     feeRate: number,
@@ -688,14 +692,18 @@ export const createHttpClient = (
     }
   };
 
-  const markAsRepaymentProvided = async (
-    id: string,
-    txid: string,
+  const markInstallmentAsPaid = async (
+    contractId: string,
+    installmentId: string,
+    paymentId: string,
   ): Promise<void> => {
     try {
-      await axiosClient.put(`/api/contracts/${id}/repaid?txid=${txid}`);
+      await axiosClient.put(`/api/contracts/${contractId}/installment-paid`, {
+        installment_id: installmentId,
+        payment_id: paymentId,
+      });
     } catch (error) {
-      handleError(error, "marking contract as repaid");
+      handleError(error, "marking installment as paid");
     }
   };
 
@@ -1032,7 +1040,7 @@ export const createHttpClient = (
     cancelContractRequest,
     getContracts,
     getContract,
-    markAsRepaymentProvided,
+    markInstallmentAsPaid,
     getClaimCollateralPsbt,
     getClaimDisputeCollateralPsbt,
     postClaimTx,

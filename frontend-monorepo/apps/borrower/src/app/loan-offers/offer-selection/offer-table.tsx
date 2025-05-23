@@ -296,7 +296,7 @@ export function LoanOfferTable({
       cell: ({ cell }) => {
         return cell.getValue() ? (
           <Badge color="teal" size={"2"}>
-            {"YES"}
+            {"Yes"}
           </Badge>
         ) : (
           <Badge color="gray" size={"2"}>
