@@ -629,7 +629,7 @@ async fn post_pake_verify(
             profile_url,
             ip_address.as_str(),
             OffsetDateTime::now_utc(),
-            location.map(|l| format!("{}", l)),
+            location.map(|l| l.to_string()),
             user_agent.as_str(),
         )
         .await;

@@ -287,7 +287,7 @@ impl xtra::Handler<Notification> for TelegramBot {
                 let login_time = login_time.format(&Rfc2822).expect("to be able to format the date");
                 (
 
-                    format!("Hi, {name}. A new login has been registered from IP {ip_address} on {login_time}. If this was not you. Login and change your password immediately."),
+                    format!("Hi, {name}. A new login has been registered from IP {ip_address} on {login_time}. If this was not you, log in and change your password immediately."),
                     "Go to my profile".to_string(),
                 )
             }
