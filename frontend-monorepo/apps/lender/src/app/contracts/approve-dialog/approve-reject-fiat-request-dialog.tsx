@@ -143,7 +143,7 @@ const ApproveOrRejectFiatDialog = ({
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger>{children}</DialogTrigger>
+        <DialogTrigger asChild>{children}</DialogTrigger>
         <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Approve or Reject Request</DialogTitle>
