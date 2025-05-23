@@ -1,11 +1,10 @@
-import { useBaseHttpClient } from "@frontend/base-http-client";
-import { useAuth } from "@frontend/http-client-lender";
+import { useAuth, useLenderHttpClient } from "@frontend/http-client-lender";
 import { UpgradeToPake as UpgradeToPakeGeneric } from "@frontend/ui-shared";
 
 function UpgradeToPake() {
   const { login } = useAuth();
 
-  const { upgradeToPake, finishUpgradeToPake } = useBaseHttpClient();
+  const { upgradeToPake, finishUpgradeToPake } = useLenderHttpClient();
 
   return (
     <UpgradeToPakeGeneric

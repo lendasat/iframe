@@ -16,7 +16,7 @@ import { useWallet } from "@frontend/browser-wallet";
 import {
   FiatLoanDetails,
   InnerFiatLoanDetails,
-} from "@frontend/base-http-client";
+} from "@frontend/http-client-lender";
 import { toast } from "sonner";
 
 interface ApproveOrRejectFiatDialogProps {

@@ -1,9 +1,9 @@
-import type { User } from "@frontend/base-http-client";
+import type { User } from "@frontend/http-client-lender";
 import { WalletProvider } from "@frontend/browser-wallet";
 import {
   AuthIsNotSignedIn,
   AuthIsSignedIn,
-  AuthProviderLender,
+  AuthProvider,
 } from "@frontend/http-client-lender";
 import { useAuth } from "@frontend/http-client-lender";
 import { PriceProvider } from "@frontend/ui-shared";
@@ -126,7 +126,7 @@ function App() {
   return (
     <PriceProvider url={baseUrl}>
       <FeeProvider mempoolUrl={import.meta.env.VITE_MEMPOOL_REST_URL}>
-        <AuthProviderLender baseUrl={baseUrl}>
+        <AuthProvider shouldHandleAuthError={true}>
           <AuthIsSignedIn>
             <MainLayoutComponents />
           </AuthIsSignedIn>
@@ -153,7 +153,7 @@ function App() {
               <Route path="/error" element={<ErrorBoundary />} />
             </Routes>
           </AuthIsNotSignedIn>
-        </AuthProviderLender>
+        </AuthProvider>
       </FeeProvider>
     </PriceProvider>
   );

@@ -1,4 +1,3 @@
-import { useBaseHttpClient } from "@frontend/base-http-client";
 import { RegistrationForm } from "@frontend/ui-shared";
 import { md5CaseInsensitive } from "@frontend/browser-wallet";
 import {
@@ -8,9 +7,10 @@ import {
   persist_new_wallet,
 } from "browser-wallet";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useLenderHttpClient } from "@frontend/http-client-lender";
 
 function Registration() {
-  const { register } = useBaseHttpClient();
+  const { register } = useLenderHttpClient();
   const navigate = useNavigate();
 
   const queryParams = new URLSearchParams(useLocation().search);

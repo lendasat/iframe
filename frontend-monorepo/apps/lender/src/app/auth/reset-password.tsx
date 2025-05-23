@@ -1,5 +1,5 @@
-import { useBaseHttpClient } from "@frontend/base-http-client";
 import { md5CaseInsensitive } from "@frontend/browser-wallet";
+import { useLenderHttpClient } from "@frontend/http-client-lender";
 import { OldPasswordOrMnemonic, ResetPasswordForm } from "@frontend/ui-shared";
 import {
   begin_registration,
@@ -9,7 +9,7 @@ import {
 import { useLocation, useParams } from "react-router-dom";
 
 function ResetPassword() {
-  const { resetPassword } = useBaseHttpClient();
+  const { resetPassword } = useLenderHttpClient();
   const { token, email } = useParams();
 
   const queryParams = new URLSearchParams(useLocation().search);

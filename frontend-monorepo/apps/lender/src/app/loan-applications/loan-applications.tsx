@@ -8,7 +8,7 @@ import {
 } from "@frontend/http-client-lender";
 import { addDays } from "date-fns";
 import { AlertCircle, Info } from "lucide-react";
-import { FiatLoanDetails } from "@frontend/base-http-client";
+import { FiatLoanDetails } from "@frontend/http-client-lender";
 import { AlertTitle, Card, CardContent } from "@frontend/shadcn";
 import { Button } from "@frontend/shadcn";
 import { Alert, AlertDescription } from "@frontend/shadcn";
