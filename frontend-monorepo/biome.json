@@ -19,7 +19,9 @@
       "recommended": true,
       "correctness": {
         "noChildrenProp": "off",
-        "noUnusedVariables": "on"
+        "noUnusedVariables": "on",
+        "noUnusedImports": "on",
+        "noUnusedLabels": "on"
       },
       "a11y": {
         "useKeyWithClickEvents": "off",

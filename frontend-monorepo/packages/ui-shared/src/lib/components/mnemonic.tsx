@@ -7,7 +7,6 @@ import {
   CardHeader,
   CardTitle,
   Checkbox,
-  Label,
 } from "@frontend/shadcn";
 import { LuEye, LuEyeOff } from "react-icons/lu";
 import { useEffect, useState } from "react";

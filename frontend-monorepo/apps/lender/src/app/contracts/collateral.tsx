@@ -6,7 +6,7 @@ import {
   LuExternalLink,
   LuTriangleAlert,
 } from "react-icons/lu";
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Button,
   Card,

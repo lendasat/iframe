@@ -5,7 +5,6 @@ import {
 } from "../contracts/contract-details-table";
 import { useState } from "react";
 import { Contract } from "@frontend/http-client-lender";
-import { ScrollArea } from "@frontend/shadcn";
 
 interface ContractOverviewProps {
   contracts: Contract[];

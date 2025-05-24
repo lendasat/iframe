@@ -24,7 +24,7 @@ import {
   useAuth,
   useLenderHttpClient,
 } from "@frontend/http-client-lender";
-import { useAsync, useAsyncRetry } from "react-use";
+import { useAsyncRetry } from "react-use";
 import { ContractDetailsFooter } from "./contract-details-footer";
 import { Chat } from "@frontend/nostr-chat";
 import DisputesComponent from "./disputes/disputes";

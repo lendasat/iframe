@@ -11,7 +11,6 @@ import { Contract, isContractOpen } from "@frontend/http-client-borrower";
 import { formatCurrency, formatSatsToBitcoin } from "@frontend/ui-shared";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
-import React from "react";
 
 interface SectionCardsProps {
   isLoading: boolean;

@@ -1,4 +1,4 @@
-import React, { ReactNode, useState } from "react";
+import { ReactNode, useState } from "react";
 import { LuTriangleAlert, LuX } from "react-icons/lu";
 import {
   Dialog,

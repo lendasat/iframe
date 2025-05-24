@@ -7,7 +7,7 @@ import {
   LuExternalLink,
   LuTriangleAlert,
 } from "react-icons/lu";
-import React, { useState } from "react";
+import { useState } from "react";
 import { Button, CardContent, Separator, Skeleton } from "@frontend/shadcn";
 import { Contract, LiquidationStatus } from "@frontend/http-client-borrower";
 import {

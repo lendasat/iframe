@@ -1,6 +1,5 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
-  Calendar,
   DollarSign,
   Clock,
   AlertCircle,
@@ -15,10 +14,7 @@ import { Button } from "@frontend/shadcn";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
-  CardHeader,
-  CardTitle,
 } from "@frontend/shadcn";
 import { Alert, AlertDescription, AlertTitle } from "@frontend/shadcn";
 import { Contract, useLenderHttpClient } from "@frontend/http-client-lender";

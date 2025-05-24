@@ -2,7 +2,7 @@ import { useLenderHttpClient } from "@frontend/http-client-lender";
 import { Button } from "@frontend/shadcn";
 import { Alert, AlertDescription, AlertTitle } from "@frontend/shadcn";
 import { ScrollArea } from "@radix-ui/themes";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAsync } from "react-use";
 import { InfoIcon } from "lucide-react";
