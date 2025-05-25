@@ -1,4 +1,3 @@
-
 import { Contract, ContractStatus } from "@frontend/http-client-lender";
 import { formatCurrency, ONE_YEAR } from "@frontend/ui-shared";
 import {

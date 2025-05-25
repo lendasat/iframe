@@ -11,11 +11,7 @@ import { Label } from "@frontend/shadcn";
 import { Slider } from "@frontend/shadcn";
 import { Input } from "@frontend/shadcn";
 import { Button } from "@frontend/shadcn";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-} from "@frontend/shadcn";
+import { Card, CardContent, CardFooter } from "@frontend/shadcn";
 import { Alert, AlertDescription, AlertTitle } from "@frontend/shadcn";
 import { Contract, useLenderHttpClient } from "@frontend/http-client-lender";
 import { ONE_YEAR } from "@frontend/ui-shared";
