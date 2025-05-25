@@ -1,8 +1,5 @@
 import { ReactNode, useState } from "react";
 import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
   Button,
   Dialog,
   DialogContent,
@@ -13,7 +10,7 @@ import {
 } from "@frontend/shadcn";
 import { shortenUuid } from "../details";
 import { Contract, useLenderHttpClient } from "@frontend/http-client-lender";
-import { InfoIcon, X } from "lucide-react";
+import { X } from "lucide-react";
 import { FiatDetailsForm, LoanAssetHelper } from "@frontend/ui-shared";
 import { useWallet } from "@frontend/browser-wallet";
 import {

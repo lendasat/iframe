@@ -1,6 +1,6 @@
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Box, Button, Callout, Flex, TextField } from "@radix-ui/themes";
+import { Button, Callout, Flex, TextField } from "@radix-ui/themes";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import type { ChangeEvent } from "react";
 import { useState } from "react";

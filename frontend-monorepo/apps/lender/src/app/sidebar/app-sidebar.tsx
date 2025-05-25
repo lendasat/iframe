@@ -30,7 +30,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarFooter,
   SidebarMenuAction,
   useSidebar,
 } from "@frontend/shadcn";

@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
 
-import { Button, useIsMobile } from "@frontend/shadcn";
+import { useIsMobile } from "@frontend/shadcn";
 import {
   Card,
   CardContent,

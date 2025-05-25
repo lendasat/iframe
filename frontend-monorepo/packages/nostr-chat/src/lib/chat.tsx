@@ -1,5 +1,5 @@
 import { LuLoader, LuSend } from "react-icons/lu";
-import React, {
+import {
   useCallback,
   useEffect,
   useMemo,

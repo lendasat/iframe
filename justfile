@@ -37,7 +37,7 @@ lint-frontend:
     #!/usr/bin/env bash
     set -euxo pipefail
     cd frontend-monorepo
-    pnpm biome lint
+    pnpm biome lint --fix
 
 check-frontend:
     #!/usr/bin/env bash

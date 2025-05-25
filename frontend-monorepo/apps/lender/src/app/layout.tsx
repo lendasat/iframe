@@ -3,7 +3,6 @@ import { AppSidebar } from "./sidebar/app-sidebar";
 import type { Version } from "@frontend/base-http-client";
 import type { ReactNode } from "react";
 import type { FC } from "react";
-import type { IconType } from "react-icons";
 import { SiteHeader } from "./sidebar/header";
 
 interface LayoutProps {

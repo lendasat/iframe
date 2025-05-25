@@ -7,7 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { useAsync } from "react-use";
 import DashHeader from "../components/DashHeader";
 import { LoanOfferTable } from "./offer-selection/offer-table";
-import { LoanAssetHelper, LoanPayout } from "@frontend/ui-shared";
+import { LoanAssetHelper, } from "@frontend/ui-shared";
 
 function AvailableOffers() {
   const { getDirectLoanOffers } = useHttpClientBorrower();

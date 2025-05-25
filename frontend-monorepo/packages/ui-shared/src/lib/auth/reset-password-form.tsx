@@ -1,4 +1,4 @@
-import React, { ChangeEvent, FormEvent } from "react";
+import React, { ChangeEvent, } from "react";
 import { useNavigate } from "react-router-dom";
 import { ReactComponent as Logo } from "./../assets/lendasat_svg_logo.svg";
 import { OldPasswordOrMnemonic } from "../models";

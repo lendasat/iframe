@@ -111,7 +111,7 @@ export default function LoanApplication() {
 
   return (
     <ScrollArea className="h-screen">
-      <div className="container py-10 space-y-8 px-4">
+      <div className="py-10 space-y-8 px-4">
         <Form {...form}>
           <form className="space-y-8">
             <div className="grid gap-6 sm:grid-cols-2">

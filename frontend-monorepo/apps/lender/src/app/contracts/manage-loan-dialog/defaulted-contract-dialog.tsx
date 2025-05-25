@@ -1,4 +1,4 @@
-import React, { ReactNode, useState } from "react";
+import { ReactNode, useState } from "react";
 import {
   Alert,
   AlertDescription,
@@ -44,7 +44,6 @@ import { useForm } from "react-hook-form";
 import { BitcoinTransactionFeeSelector, useFees } from "@frontend/mempool";
 import { useWallet } from "@frontend/browser-wallet";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
 
 interface DefaultedLoanDialogProps {
   contract: Contract;
@@ -289,7 +288,7 @@ const DefaultedOrUndercollateralizedContractDialog = ({
                     href={getTxUrl(txid)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="underline font-medium"
+                    className="font-medium underline"
                   >
                     View on mempool.space
                   </a>
@@ -297,7 +296,7 @@ const DefaultedOrUndercollateralizedContractDialog = ({
               </Alert>
             )}
 
-            <DialogFooter className="flex sm:justify-between flex-col sm:flex-row gap-2">
+            <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-between">
               <DialogClose>
                 <Button variant="outline">Cancel</Button>
               </DialogClose>

@@ -1,7 +1,6 @@
 import {
   actionFromStatus,
   type Contract,
-  ContractStatus,
   contractStatusToLabelString,
   LiquidationStatus,
 } from "@frontend/http-client-lender";

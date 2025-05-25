@@ -1,4 +1,4 @@
-import React, { ReactNode, useState } from "react";
+import { ReactNode, useState } from "react";
 import {
   Alert,
   AlertDescription,
@@ -22,7 +22,6 @@ import { AlertCircle, Check } from "lucide-react";
 import { LuCheck, LuClipboard, LuExternalLink } from "react-icons/lu";
 import { getTxUrl } from "@frontend/ui-shared";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
 
 const shortenTxid = (txid?: string) => {
   if (!txid) {

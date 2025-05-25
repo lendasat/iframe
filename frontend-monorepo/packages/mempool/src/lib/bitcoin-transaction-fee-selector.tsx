@@ -1,5 +1,5 @@
 import { cn, Input, Label, RadioGroup, RadioGroupItem } from "@frontend/shadcn";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useFees } from "./mempool-fee";
 import { Clock } from "lucide-react";
 

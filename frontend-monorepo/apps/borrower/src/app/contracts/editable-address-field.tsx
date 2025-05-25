@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@frontend/shadcn";
 import { Skeleton } from "@frontend/shadcn";
-import { CircleCheck, Clipboard, Loader, LockIcon } from "lucide-react";
+import { CircleCheck, Clipboard, Loader, } from "lucide-react";
 import { Edit, Check, X } from "lucide-react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";

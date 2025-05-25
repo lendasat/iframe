@@ -17,7 +17,7 @@ import {
   SenderType,
   useLenderHttpClient,
 } from "@frontend/http-client-lender";
-import { useAsync, useAsyncRetry } from "react-use";
+import { useAsyncRetry } from "react-use";
 import { DisputeDetails } from "./dispute-details";
 import { LuPlus } from "react-icons/lu";
 import StartDisputeDialog from "../start-dispute-dialog";
