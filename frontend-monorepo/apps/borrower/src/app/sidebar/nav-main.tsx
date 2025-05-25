@@ -114,11 +114,9 @@ export function NavMain() {
               <SidebarGroupContent>
                 <SidebarMenuSub>
                   {item.items.map((item) => (
-                    <SidebarMenuSubItem
-                      key={item.title}
-                      className={"hover:bg-gray-200"}
-                    >
+                    <SidebarMenuSubItem key={item.title}>
                       <SidebarMenuSubButton
+                        className="hover:bg-gray-200"
                         asChild
                         isActive={location.pathname.includes(item.url)}
                       >
