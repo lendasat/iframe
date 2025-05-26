@@ -1,5 +1,5 @@
 import { cn, Input, Label, RadioGroup, RadioGroupItem } from "@frontend/shadcn";
-import { useEffect, useState } from "react";
+import { type ChangeEvent, useEffect, useState } from "react";
 import { useFees } from "./mempool-fee";
 import { Clock } from "lucide-react";
 
@@ -13,6 +13,7 @@ export const BitcoinTransactionFeeSelector = ({
   selectedFee,
 }: BitcoinTransactionFeeSelectorProps) => {
   const [error, setError] = useState(false);
+  const [input, setInput] = useState(selectedFee);
 
   const { recommendedFees, refreshFees } = useFees();
 
@@ -21,7 +22,7 @@ export const BitcoinTransactionFeeSelector = ({
     if (recommendedFees?.fastestFee) {
       onSelectFee(recommendedFees.fastestFee);
     }
-  });
+  }, [refreshFees, recommendedFees, onSelectFee]);
 
   const [selectedFeeRate, setSelectedFeeRate] = useState<
     "fastest" | "hour" | "low" | "custom"
@@ -43,9 +44,21 @@ export const BitcoinTransactionFeeSelector = ({
         onSelectFee(recommendedFees?.economyFee || 1);
         break;
       case "custom":
+        setInput(selectedFee);
         break;
     }
     setError(false);
+  };
+
+  const onFeeRateInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    let string = e.target.value;
+    console.log(`Type of ${typeof string}`);
+    const number = Number.parseInt(string);
+
+    console.log("onFeeRateInputChange", number);
+    setInput(number);
+    onSelectFee(number);
   };
 
   return (
@@ -132,9 +145,11 @@ export const BitcoinTransactionFeeSelector = ({
             <Input
               type="number"
               placeholder="Enter sats/vByte"
-              value={selectedFee}
-              onChange={(e) => onSelectFee(Number.parseInt(e.target.value))}
+              value={input}
+              onChange={(e) => onFeeRateInputChange(e)}
               min="1"
+              data-1p-ignore
+              autoComplete={"off"}
               className={`font-mono ${error ? "border-destructive" : ""}`}
             />
             {error && (
