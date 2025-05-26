@@ -268,7 +268,7 @@ const DefaultedOrUndercollateralizedContractDialog = ({
                 <FormItem>
                   <FormLabel className={""}>Account Password</FormLabel>
                   <FormControl>
-                    <Input {...field} type={"password"} />
+                    <Input {...field} type={"password"} autoComplete={"current-password"}/>
                   </FormControl>
                   <FormDescription>
                     Please confirm your account password
