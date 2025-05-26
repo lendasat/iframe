@@ -52,11 +52,8 @@ export const BitcoinTransactionFeeSelector = ({
 
   const onFeeRateInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     e.preventDefault();
-    let string = e.target.value;
-    console.log(`Type of ${typeof string}`);
+    const string = e.target.value;
     const number = Number.parseInt(string);
-
-    console.log("onFeeRateInputChange", number);
     setInput(number);
     onSelectFee(number);
   };
