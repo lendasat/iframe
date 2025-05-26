@@ -1,382 +1,447 @@
-import { LoanOffer } from "@frontend/http-client-lender";
+import { LoanOffer, LoanOfferStatus } from "@frontend/http-client-lender";
 import {
   CurrencyFormatter,
   KycBadge,
   LoanAssetHelper,
 } from "@frontend/ui-shared";
-import { InfoCircledIcon } from "@radix-ui/react-icons";
-import { Box, Button, Callout, Flex, Table, Text } from "@radix-ui/themes";
-import { useState } from "react";
-import { IoCaretDownOutline, IoCaretUp } from "react-icons/io5";
-import { MdCreate } from "react-icons/md";
+import {
+  ScrollArea,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@frontend/shadcn";
+import { Button } from "@frontend/shadcn";
+import { Alert, AlertDescription } from "@frontend/shadcn";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@frontend/shadcn";
+import {
+  ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+  SortingState,
+  ColumnFiltersState,
+} from "@tanstack/react-table";
+import { useState, useMemo, useEffect } from "react";
+import {
+  ChevronUp,
+  ChevronDown,
+  ChevronsUpDown,
+  Edit,
+  InfoIcon,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { StatusBadge } from "./status-badge";
 
-export type ColumnFilterKey =
-  | "amount"
-  | "duration"
-  | "interest"
-  | "ltv"
-  | "coin"
-  | "requirements"
-  | "status"
-  | "action"
-  | "createdAt";
-
-function getCaretColor(
-  sortByColumn: ColumnFilterKey,
-  currentColumnKey: ColumnFilterKey,
-  sortAsc: boolean,
-) {
-  if (sortByColumn !== currentColumnKey) {
-    return "text-font/40 dark:text-font-dark/40";
-  }
-
-  return sortAsc
-    ? "text-font dark:text-font-dark"
-    : "text-font/40 dark:text-font-dark/40";
+export interface ColumnMeta {
+  columnClasses: string;
 }
 
-function getColumnHeaderColor(
-  sortByColumn: ColumnFilterKey,
-  currentColumnKey: ColumnFilterKey,
-) {
-  if (sortByColumn !== currentColumnKey) {
-    return "text-font/40 dark:text-font-dark/40";
-  }
-
-  return "text-font dark:text-font-dark";
-}
-
-interface ColumnHeaderProps {
-  toggleSortByColumn: (column: ColumnFilterKey) => void;
-  sortByColumn: ColumnFilterKey;
-  currentColumn: ColumnFilterKey;
-  sortAsc: boolean;
-  label: string;
-}
-
-const ColumnHeader = ({
-  toggleSortByColumn,
-  sortByColumn,
-  currentColumn,
-  sortAsc,
-  label,
-}: ColumnHeaderProps) => (
-  <Button
-    onClick={() => toggleSortByColumn(currentColumn)}
-    className="bg-transparent px-0"
-  >
-    <Flex gap={"1"} align={"center"}>
-      <Text
-        size={"1"}
-        weight={"medium"}
-        className={getColumnHeaderColor(sortByColumn, currentColumn)}
-      >
-        {label}
-      </Text>
-      <Box>
-        <IoCaretUp
-          className={`-mb-1 text-[10px] ${getCaretColor(
-            sortByColumn,
-            currentColumn,
-            sortAsc,
-          )}`}
-        />
-        <IoCaretDownOutline
-          className={`-mb-1 text-[10px] ${getCaretColor(
-            sortByColumn,
-            currentColumn,
-            !sortAsc,
-          )}`}
-        />
-      </Box>
-    </Flex>
-    p
-  </Button>
-);
-
-export interface ContractDetailsTableProps {
+export interface MyLoanOffersTableProps {
   offers: LoanOffer[];
 }
 
-export const MyLoanOffersTable = ({ offers }: ContractDetailsTableProps) => {
+export const MyLoanOffersTable = ({ offers }: MyLoanOffersTableProps) => {
   const navigate = useNavigate();
+  const [sorting, setSorting] = useState<SortingState>([
+    { id: "amount", desc: true },
+  ]);
 
-  const [sortByColumn, setSortByColumn] =
-    useState<ColumnFilterKey>("createdAt");
-  const [sortAsc, setSortAsc] = useState(false);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [statusFilter, setStatusFilter] = useState<string>(
+    LoanOfferStatus.Available,
+  );
 
-  function toggleSortByColumn(column: ColumnFilterKey) {
-    setSortByColumn(column);
-    setSortAsc(!sortAsc);
-  }
+  const uniqueStatuses = [
+    LoanOfferStatus.Unavailable,
+    LoanOfferStatus.Available,
+  ];
 
-  const sortedOffers = offers.sort((a, b) => {
-    let sorted = 0;
-    switch (sortByColumn) {
-      case "amount":
-        sorted = a.loan_amount_min - b.loan_amount_min;
-        break;
-      case "duration":
-        sorted = a.duration_days_min - b.duration_days_min;
-        break;
-      case "interest":
-        sorted = a.interest_rate - b.interest_rate;
-        break;
-      case "ltv":
-        sorted = a.min_ltv - b.min_ltv;
-        break;
-      case "coin":
-        sorted = a.loan_asset.localeCompare(b.loan_asset);
-        break;
-      case "status":
-      case "action":
-        sorted = a.status.localeCompare(b.status);
-        break;
-      case "requirements":
-        sorted = a.kyc_link ? 1 : -1;
-        break;
-      case "createdAt":
-        sorted = a.created_at.getTime() - b.created_at.getTime();
-        break;
-    }
+  const columns: ColumnDef<LoanOffer>[] = useMemo(
+    () => [
+      {
+        accessorKey: "loan_amount_min",
+        id: "amount",
+        header: ({ column }) => (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="h-auto p-0 font-medium"
+          >
+            Amount
+            {column.getIsSorted() === "asc" ? (
+              <ChevronUp className="ml-1 h-3 w-3" />
+            ) : column.getIsSorted() === "desc" ? (
+              <ChevronDown className="ml-1 h-3 w-3" />
+            ) : (
+              <ChevronsUpDown className="ml-1 h-3 w-3" />
+            )}
+          </Button>
+        ),
+        cell: ({ row }) => (
+          <div className="font-medium">
+            <CurrencyFormatter value={row.original.loan_amount_min} /> -{" "}
+            <CurrencyFormatter value={row.original.loan_amount_max} />
+          </div>
+        ),
+      },
+      {
+        accessorKey: "duration_days_min",
+        id: "duration",
+        header: ({ column }) => (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="h-auto p-0 font-medium hidden md:flex"
+          >
+            Duration (days)
+            {column.getIsSorted() === "asc" ? (
+              <ChevronUp className="ml-1 h-3 w-3" />
+            ) : column.getIsSorted() === "desc" ? (
+              <ChevronDown className="ml-1 h-3 w-3" />
+            ) : (
+              <ChevronsUpDown className="ml-1 h-3 w-3" />
+            )}
+          </Button>
+        ),
+        cell: ({ row }) => (
+          <div className="font-medium hidden md:block">
+            {row.original.duration_days_min} - {row.original.duration_days_max}
+          </div>
+        ),
+        meta: { columnClasses: "hidden md:table-cell" } as ColumnMeta,
+      },
+      {
+        accessorKey: "interest_rate",
+        id: "interest",
+        header: ({ column }) => (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="h-auto p-0 font-medium hidden md:flex"
+          >
+            Interest
+            {column.getIsSorted() === "asc" ? (
+              <ChevronUp className="ml-1 h-3 w-3" />
+            ) : column.getIsSorted() === "desc" ? (
+              <ChevronDown className="ml-1 h-3 w-3" />
+            ) : (
+              <ChevronsUpDown className="ml-1 h-3 w-3" />
+            )}
+          </Button>
+        ),
+        cell: ({ row }) => (
+          <div className="font-medium hidden md:block">
+            {(row.original.interest_rate * 100).toFixed(2)}%
+          </div>
+        ),
+        meta: { columnClasses: "hidden md:table-cell" } as ColumnMeta,
+      },
+      {
+        accessorKey: "min_ltv",
+        id: "ltv",
+        header: ({ column }) => (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="h-auto p-0 font-medium hidden md:flex"
+          >
+            LTV
+            {column.getIsSorted() === "asc" ? (
+              <ChevronUp className="ml-1 h-3 w-3" />
+            ) : column.getIsSorted() === "desc" ? (
+              <ChevronDown className="ml-1 h-3 w-3" />
+            ) : (
+              <ChevronsUpDown className="ml-1 h-3 w-3" />
+            )}
+          </Button>
+        ),
+        cell: ({ row }) => (
+          <div className="font-medium hidden md:block">
+            {(row.original.min_ltv * 100).toFixed(2)}%
+          </div>
+        ),
+        meta: { columnClasses: "hidden md:table-cell" } as ColumnMeta,
+      },
+      {
+        accessorKey: "loan_asset",
+        id: "coin",
+        header: ({ column }) => (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="h-auto p-0 font-medium hidden md:flex"
+          >
+            Coin
+            {column.getIsSorted() === "asc" ? (
+              <ChevronUp className="ml-1 h-3 w-3" />
+            ) : column.getIsSorted() === "desc" ? (
+              <ChevronDown className="ml-1 h-3 w-3" />
+            ) : (
+              <ChevronsUpDown className="ml-1 h-3 w-3" />
+            )}
+          </Button>
+        ),
+        cell: ({ row }) => (
+          <div className="font-medium hidden md:block">
+            {LoanAssetHelper.print(row.original.loan_asset)}
+          </div>
+        ),
+        meta: { columnClasses: "hidden md:table-cell" } as ColumnMeta,
+      },
+      {
+        accessorKey: "kyc_link",
+        id: "requirements",
+        header: ({ column }) => (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="h-auto p-0 font-medium hidden md:flex"
+          >
+            Requirements
+            {column.getIsSorted() === "asc" ? (
+              <ChevronUp className="ml-1 h-3 w-3" />
+            ) : column.getIsSorted() === "desc" ? (
+              <ChevronDown className="ml-1 h-3 w-3" />
+            ) : (
+              <ChevronsUpDown className="ml-1 h-3 w-3" />
+            )}
+          </Button>
+        ),
+        cell: ({ row }) => (
+          <div className="hidden md:block">
+            {row.original.kyc_link && <KycBadge />}
+          </div>
+        ),
+        meta: { columnClasses: "hidden md:table-cell" } as ColumnMeta,
+      },
+      {
+        accessorKey: "status",
+        id: "status",
+        header: ({ column }) => (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="h-auto p-0 font-medium"
+          >
+            Status
+            {column.getIsSorted() === "asc" ? (
+              <ChevronUp className="ml-1 h-3 w-3" />
+            ) : column.getIsSorted() === "desc" ? (
+              <ChevronDown className="ml-1 h-3 w-3" />
+            ) : (
+              <ChevronsUpDown className="ml-1 h-3 w-3" />
+            )}
+          </Button>
+        ),
+        cell: ({ row }) => <StatusBadge offer={row.original} />,
+        filterFn: (row, id, value) => {
+          if (value === "all") return true;
 
-    if (sortAsc) {
-      return sorted;
-    } else {
-      return -sorted;
-    }
+          const rowStatus = row.getValue(id) as string;
+
+          // If "Unavailable" is selected, show both Unavailable and Deleted
+          if (value === LoanOfferStatus.Unavailable) {
+            return (
+              rowStatus === LoanOfferStatus.Unavailable ||
+              rowStatus === LoanOfferStatus.Deleted
+            );
+          }
+
+          // For "Available", only show Available
+          return rowStatus === value;
+        },
+      },
+      {
+        accessorKey: "created_at",
+        id: "createdAt",
+        header: ({ column }) => (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="h-auto p-0 font-medium hidden md:flex"
+          >
+            Created At
+            {column.getIsSorted() === "asc" ? (
+              <ChevronUp className="ml-1 h-3 w-3" />
+            ) : column.getIsSorted() === "desc" ? (
+              <ChevronDown className="ml-1 h-3 w-3" />
+            ) : (
+              <ChevronsUpDown className="ml-1 h-3 w-3" />
+            )}
+          </Button>
+        ),
+        cell: ({ row }) => (
+          <div className="font-medium hidden md:block">
+            {row.original.created_at.toLocaleDateString([], {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+            })}
+          </div>
+        ),
+        meta: { columnClasses: "hidden md:table-cell" } as ColumnMeta,
+      },
+      {
+        id: "actions",
+        header: () => <div className="font-medium">Edit</div>,
+        cell: ({ row }) => (
+          <div>
+            <Button
+              size="sm"
+              onClick={() => navigate(`/my-offers/${row.original.id}`)}
+              className="w-full"
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+          </div>
+        ),
+      },
+    ],
+    [navigate],
+  );
+
+  const table = useReactTable({
+    data: offers,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    state: {
+      sorting,
+      columnFilters,
+    },
   });
 
+  // Handle status filter
+  const handleStatusFilter = (value: string) => {
+    setStatusFilter(value);
+  };
+
+  useEffect(() => {
+    table
+      .getColumn("status")
+      ?.setFilterValue(statusFilter === "all" ? undefined : statusFilter);
+  }, [statusFilter, table]);
+
   return (
-    <Table.Root variant="surface" size={"2"} layout={"auto"}>
-      <Table.Header>
-        <Table.Row>
-          <Table.ColumnHeaderCell className={"text-font dark:text-font-dark"}>
-            <ColumnHeader
-              toggleSortByColumn={toggleSortByColumn}
-              sortByColumn={sortByColumn}
-              sortAsc={sortAsc}
-              currentColumn={"amount"}
-              label={"Amount"}
-            />
-          </Table.ColumnHeaderCell>
-          <Table.ColumnHeaderCell className={"text-font dark:text-font-dark"}>
-            <Box className="hidden md:flex">
-              <ColumnHeader
-                toggleSortByColumn={toggleSortByColumn}
-                sortByColumn={sortByColumn}
-                sortAsc={sortAsc}
-                currentColumn={"duration"}
-                label={"Duration (days)"}
-              />
-            </Box>
-          </Table.ColumnHeaderCell>
-          <Table.ColumnHeaderCell className={"text-font dark:text-font-dark"}>
-            <Box className="hidden md:flex">
-              <ColumnHeader
-                toggleSortByColumn={toggleSortByColumn}
-                sortByColumn={sortByColumn}
-                sortAsc={sortAsc}
-                currentColumn={"interest"}
-                label={"Interest"}
-              />
-            </Box>
-          </Table.ColumnHeaderCell>
-          <Table.ColumnHeaderCell className={"text-font dark:text-font-dark"}>
-            <ColumnHeader
-              toggleSortByColumn={toggleSortByColumn}
-              sortByColumn={sortByColumn}
-              sortAsc={sortAsc}
-              currentColumn={"ltv"}
-              label={"LTV"}
-            />
-          </Table.ColumnHeaderCell>
-          <Table.ColumnHeaderCell className={"text-font dark:text-font-dark"}>
-            <Box className={"hidden md:flex"}>
-              <ColumnHeader
-                toggleSortByColumn={toggleSortByColumn}
-                sortByColumn={sortByColumn}
-                sortAsc={sortAsc}
-                currentColumn={"coin"}
-                label={"Coin"}
-              />
-            </Box>
-          </Table.ColumnHeaderCell>
-          <Table.ColumnHeaderCell className={"text-font dark:text-font-dark"}>
-            <Box className={"hidden md:flex"}>
-              <ColumnHeader
-                toggleSortByColumn={toggleSortByColumn}
-                sortByColumn={sortByColumn}
-                sortAsc={sortAsc}
-                currentColumn={"requirements"}
-                label={"Requirements"}
-              />
-            </Box>
-          </Table.ColumnHeaderCell>
-          <Table.ColumnHeaderCell className={"text-font dark:text-font-dark"}>
-            <ColumnHeader
-              toggleSortByColumn={toggleSortByColumn}
-              sortByColumn={sortByColumn}
-              sortAsc={sortAsc}
-              currentColumn={"status"}
-              label={"Status"}
-            />
-          </Table.ColumnHeaderCell>
-          <Table.ColumnHeaderCell className={"text-font dark:text-font-dark"}>
-            <Box className={"hidden md:flex"}>
-              <ColumnHeader
-                toggleSortByColumn={toggleSortByColumn}
-                sortByColumn={sortByColumn}
-                sortAsc={sortAsc}
-                currentColumn={"createdAt"}
-                label={"CreatedAt"}
-              />
-            </Box>
-          </Table.ColumnHeaderCell>
-          <Table.ColumnHeaderCell className={"text-font dark:text-font-dark"}>
-            <Box className={"hidden md:flex"}>
-              <ColumnHeader
-                toggleSortByColumn={toggleSortByColumn}
-                sortByColumn={sortByColumn}
-                sortAsc={sortAsc}
-                currentColumn={"action"}
-                label={"Edit"}
-              />
-            </Box>
-          </Table.ColumnHeaderCell>
-        </Table.Row>
-      </Table.Header>
+    <ScrollArea className="h-[80vh]">
+      <div className="space-y-4">
+        {/* Filter Controls */}
+        <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">Filter by status:</span>
+            <Select value={statusFilter} onValueChange={handleStatusFilter}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                {uniqueStatuses.map((status) => (
+                  <SelectItem key={status} value={status}>
+                    {status}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
 
-      <Table.Body>
-        {sortedOffers.length === 0 ? (
-          <Table.Row key={"nooffers"}>
-            <Table.Cell colSpan={8}>
-              <Callout.Root color={"blue"}>
-                <Callout.Icon>
-                  <InfoCircledIcon />
-                </Callout.Icon>
-                <Callout.Text>No contracts found.</Callout.Text>
-              </Callout.Root>
-            </Table.Cell>
-          </Table.Row>
-        ) : (
-          sortedOffers.map((offer) => {
-            const loanAsset = offer.loan_asset;
+        {/* Table */}
+        <div>
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <TableHead
+                      key={header.id}
+                      className={
+                        (header.column.columnDef.meta as ColumnMeta)
+                          ?.columnClasses
+                      }
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow key={row.id}>
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell
+                        key={cell.id}
+                        className={
+                          (cell.column.columnDef.meta as ColumnMeta)
+                            ?.columnClasses
+                        }
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={columns.length} className="h-24">
+                    <Alert>
+                      <InfoIcon className="h-4 w-4" />
+                      <AlertDescription>No loan offers found.</AlertDescription>
+                    </Alert>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
 
-            return (
-              <Table.Row key={offer.id}>
-                <Table.RowHeaderCell>
-                  <Text
-                    className={"text-font dark:text-font-dark"}
-                    size={"1"}
-                    weight={"medium"}
-                  >
-                    <CurrencyFormatter value={offer.loan_amount_min} /> -{" "}
-                    <CurrencyFormatter value={offer.loan_amount_max} />
-                  </Text>
-                </Table.RowHeaderCell>
-                <Table.Cell>
-                  <Box className="hidden md:flex">
-                    <Text
-                      className={"text-font dark:text-font-dark"}
-                      size={"1"}
-                      weight={"medium"}
-                    >
-                      {offer.duration_days_min} - {offer.duration_days_max}
-                    </Text>
-                  </Box>
-                </Table.Cell>
-                <Table.Cell>
-                  <Box className="hidden md:flex">
-                    <Text
-                      className={"text-font dark:text-font-dark"}
-                      size={"1"}
-                      weight={"medium"}
-                    >
-                      {(offer.interest_rate * 100).toFixed(2)}%
-                    </Text>
-                  </Box>
-                </Table.Cell>
-                <Table.Cell>
-                  <Box className="hidden md:flex">
-                    <Text
-                      className={"text-font dark:text-font-dark"}
-                      size={"1"}
-                      weight={"medium"}
-                    >
-                      {(offer.min_ltv * 100).toFixed(2)}%
-                    </Text>
-                  </Box>
-                </Table.Cell>
-                <Table.Cell>
-                  <Box className="hidden md:flex">
-                    <Text
-                      className={"text-font dark:text-font-dark"}
-                      size={"1"}
-                      weight={"medium"}
-                    >
-                      {LoanAssetHelper.print(loanAsset)}
-                    </Text>
-                  </Box>
-                </Table.Cell>
-                <Table.Cell>
-                  <Box className="hidden md:flex">
-                    <Text
-                      className={"text-font dark:text-font-dark"}
-                      size={"1"}
-                      weight={"medium"}
-                    >
-                      {offer.kyc_link && <KycBadge />}
-                    </Text>
-                  </Box>
-                </Table.Cell>
-                <Table.Cell>
-                  <Box className="hidden md:flex">
-                    <Text
-                      className={"text-font dark:text-font-dark"}
-                      size={"1"}
-                      weight={"medium"}
-                    >
-                      <StatusBadge offer={offer} />
-                    </Text>
-                  </Box>
-                </Table.Cell>
-                <Table.Cell>
-                  <Box className="hidden md:flex">
-                    <Text
-                      className={"text-font dark:text-font-dark"}
-                      size={"1"}
-                      weight={"medium"}
-                    >
-                      {offer.created_at.toLocaleDateString([], {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      })}
-                    </Text>
-                  </Box>
-                </Table.Cell>
-                <Table.Cell>
-                  <Box className="hidden md:flex">
-                    <Button
-                      size={"1"}
-                      variant="solid"
-                      className="bg-btn dark:bg-dark-600 w-full text-white active:scale-90"
-                      onClick={() => {
-                        navigate(`/my-offers/${offer.id}`);
-                      }}
-                    >
-                      <MdCreate />
-                    </Button>
-                  </Box>
-                </Table.Cell>
-              </Table.Row>
-            );
-          })
-        )}
-      </Table.Body>
-    </Table.Root>
+        {/* Pagination */}
+        <div className="flex items-center justify-end space-x-2 py-4">
+          <div className="space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      </div>
+    </ScrollArea>
   );
 };
