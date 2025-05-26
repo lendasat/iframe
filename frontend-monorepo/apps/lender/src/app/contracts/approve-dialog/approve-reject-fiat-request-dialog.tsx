@@ -16,7 +16,7 @@ import { useWallet } from "@frontend/browser-wallet";
 import {
   FiatLoanDetails,
   InnerFiatLoanDetails,
-} from "@frontend/base-http-client";
+} from "@frontend/http-client-lender";
 import { toast } from "sonner";
 
 interface ApproveOrRejectFiatDialogProps {
@@ -143,7 +143,7 @@ const ApproveOrRejectFiatDialog = ({
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger>{children}</DialogTrigger>
+        <DialogTrigger asChild>{children}</DialogTrigger>
         <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Approve or Reject Request</DialogTitle>

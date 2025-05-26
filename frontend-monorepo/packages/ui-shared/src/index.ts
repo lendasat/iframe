@@ -19,7 +19,8 @@ export function getFormatedStringFromDays(numberOfDays: number) {
 }
 
 export const formatBitcoin = (btcValue?: number) => {
-  if (btcValue == null) return undefined;
+  if (btcValue === null || btcValue === undefined || Number.isNaN(btcValue))
+    return undefined;
 
   // Format to 8 decimal places
   const formatted = btcValue.toFixed(8);

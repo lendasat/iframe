@@ -41,7 +41,7 @@ const PayoutPrincipalDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger>{children}</DialogTrigger>
+      <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <div className="space-y-2">
           <div className="flex flex-row items-center gap-2">

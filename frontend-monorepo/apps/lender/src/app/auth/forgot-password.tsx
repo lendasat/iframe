@@ -1,8 +1,8 @@
-import { useBaseHttpClient } from "@frontend/base-http-client";
+import { useLenderHttpClient } from "@frontend/http-client-lender";
 import { ForgotPasswordForm } from "@frontend/ui-shared";
 
 function ForgotPassword() {
-  const { forgotPassword } = useBaseHttpClient();
+  const { forgotPassword } = useLenderHttpClient();
 
   const handleLogin = async (email: string) => {
     return await forgotPassword(email);

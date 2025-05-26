@@ -100,6 +100,7 @@ export function ExtendContract({ contract, onSubmitted }: ExtendContractProps) {
     contract &&
     contract.extension_origination_fee[0].fee * contract.loan_amount;
   const extensionFeeBtc = extensionFeeUsd && extensionFeeUsd / latestPrice;
+  console.log(`Extension fee ${extensionFeeUsd}`);
 
   const notAllowedDurations =
     contract &&

@@ -1,20 +1,15 @@
-import type {
-  LoginResponseOrUpgrade,
-  User,
-  Version,
-} from "@frontend/base-http-client";
-import { useBaseHttpClient } from "@frontend/base-http-client";
-import axios from "axios";
+import type { LoginResponseOrUpgrade, User, Version } from "./models";
 import { process_login_response, verify_server } from "browser-wallet";
-import type { FC, ReactNode } from "react";
-import { useCallback } from "react";
+import { FC, ReactNode, useMemo } from "react";
 import { createContext, useContext, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { LenderFeatureFlags } from "./models";
+import { SemVer } from "semver";
+import { isAllowedPageWithoutLogin } from "./utils";
 import {
-  allowedPagesWithoutLogin,
-  HttpClientLenderProvider,
+  createHttpClientLender,
+  HttpClientLenderContext,
 } from "./http-client-lender";
-import { FeatureMapper, LenderFeatureFlags } from "./models";
 
 interface AuthContextType {
   user: User | null;
@@ -37,143 +32,122 @@ export const useAuth = () => {
   return context;
 };
 
-type Props = {
-  children?: ReactNode;
-};
-
-export const AuthIsSignedIn = ({ children }: Props) => {
-  const context = useContext(AuthContext);
-  return context?.user ? children : "";
-};
-
-export const AuthIsNotSignedIn = ({ children }: Props) => {
-  const context = useContext(AuthContext);
-  return context?.user ? "" : children;
-};
-
 interface AuthProviderProps {
   children: ReactNode;
-  baseUrl: string;
+  shouldHandleAuthError: boolean;
 }
 
-export const AuthProviderLender: FC<AuthProviderProps> = ({
-  children,
-  baseUrl,
-}) => {
-  return (
-    <HttpClientLenderProvider baseUrl={baseUrl}>
-      <LenderAuthProviderInner>{children}</LenderAuthProviderInner>
-    </HttpClientLenderProvider>
-  );
+export const AuthIsSignedIn = ({ children }: { children: ReactNode }) => {
+  const context = useContext(AuthContext);
+  return context?.user ? children : null;
 };
 
-const LenderAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) => {
+export const AuthIsNotSignedIn = ({ children }: { children: ReactNode }) => {
+  const context = useContext(AuthContext);
+  return context?.user ? null : children;
+};
+
+export const AuthProvider: FC<AuthProviderProps> = ({
+  children,
+  shouldHandleAuthError = true,
+}) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const baseUrl = import.meta.env.VITE_LENDER_BASE_URL;
+
+  if (!baseUrl) {
+    throw new Error("VITE_LENDER_BASE_URL is undefined!");
+  }
+
+  // Create the HTTP client with auth error handling
+  const httpClient = useMemo(() => {
+    const handleAuthError = () => {
+      setUser(null); // Clear user state
+      navigate("/login", {
+        state: { returnUrl: window.location.pathname },
+        replace: true,
+      });
+    };
+
+    return createHttpClientLender(
+      baseUrl,
+      shouldHandleAuthError ? handleAuthError : undefined,
+    );
+  }, [navigate, shouldHandleAuthError]);
 
   const [user, setUser] = useState<User | null>(null);
+  const [backendVersion, setBackendVersion] = useState<Version>({
+    tag: new SemVer("0.0.0").toString(),
+    commit_hash: "unknown",
+  });
   const [loading, setLoading] = useState(true);
   const [enabledFeatures, setEnabledFeatures] = useState<LenderFeatureFlags[]>(
     [],
   );
-  const [backendVersion, setBackendVersion] = useState<Version>({
-    tag: "0.0.0",
-    commit_hash: "unknown",
-  });
-  const {
-    me,
-    pakeLoginRequest,
-    pakeVerifyRequest,
-    logout: baseLogout,
-    getVersion,
-    check,
-  } = useBaseHttpClient();
 
-  const handle401 = useCallback(() => {
-    setUser(null);
-
-    if (allowedPagesWithoutLogin(location.pathname)) {
-      console.log(`User can stay ${location.pathname}`);
-      return;
-    }
-
-    navigate("/login", {
-      state: {
-        returnUrl: window.location.pathname,
-      },
-    });
-  }, [navigate, location]);
-
-  const checkAuthStatus = useCallback(async () => {
-    try {
-      await check();
-    } catch (error) {
-      console.log(`Checking status: failed`);
-      if (axios.isAxiosError(error) && error.response) {
-        if (error.response.status === 401) {
-          handle401();
-        } else {
-          const message = error.response.data.message;
-          console.error(
-            `Failed to check login status: http: ${
-              error.response?.status
-            } and response: ${JSON.stringify(error.response?.data)}`,
-          );
-          throw new Error(message);
-        }
-      } else {
-        throw new Error(
-          `Failed to check login status: http: ${JSON.stringify(error)}`,
-        );
-      }
-    }
-  }, [check, handle401]);
-
-  // Background session check
-  useEffect(() => {
-    checkAuthStatus();
-    const intervalId = setInterval(checkAuthStatus, 5 * 60 * 1000);
-    return () => clearInterval(intervalId);
-  }, [checkAuthStatus]);
-
+  // Initialize auth state on mount
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        const currentUser = await me();
-        if (currentUser) {
-          setUser(currentUser.user);
-          const enabledFeatures = FeatureMapper.mapEnabledFeatures(
-            currentUser.enabled_features,
-          );
+        const userData = await httpClient.me();
+        if (userData) {
+          setUser(userData.user);
+          setEnabledFeatures(userData.enabled_features);
+        }
 
-          setEnabledFeatures(enabledFeatures);
-        } else {
-          setUser(null);
-        }
-        if (!backendVersion) {
-          const version = await getVersion();
-          setBackendVersion(version);
-        }
-      } catch (error) {
-        if (axios.isAxiosError(error) && error.response) {
-          console.log(error.response);
-          const message = error.response.data.message;
-          console.error(message);
-        } else {
-          console.log(`Unexpected error received`, error);
-        }
+        // Get backend version in the background
+        httpClient
+          .getVersion()
+          .then((version) => {
+            if (version) {
+              setBackendVersion(version);
+            }
+          })
+          .catch((error) => {
+            console.error("Failed to get version:", error);
+          });
+      } catch (_error) {
+        setUser(null);
       } finally {
         setLoading(false);
       }
     };
 
-    initializeAuth();
-  }, [me, backendVersion, getVersion]);
+    if (!isAllowedPageWithoutLogin(location.pathname)) {
+      initializeAuth();
+    }
+  }, [httpClient, location.pathname]);
 
-  const login = async (email: string, password: string) => {
+  // Background session check
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        await httpClient.check();
+        // we refresh the token regularly as long as the user is on the website.
+        // Ideally we would track uer actions, i.e. if he was inactive for a long time, we still logout,
+        // but it's good enough for now.
+        await httpClient.refreshToken();
+      } catch (e) {
+        console.error("Failed checking auth check in auth provider", e);
+      }
+    };
+
+    if (!isAllowedPageWithoutLogin(location.pathname)) {
+      // Initial check
+      checkAuth();
+      // Set up interval
+      const intervalId = setInterval(checkAuth, 5 * 60 * 1000);
+      return () => clearInterval(intervalId);
+    }
+  }, [httpClient, location.pathname]);
+
+  const login = async (
+    email: string,
+    password: string,
+  ): Promise<LoginResponseOrUpgrade> => {
     setLoading(true);
     try {
-      const pakeLoginResponse = await pakeLoginRequest(email);
+      const pakeLoginResponse = await httpClient.pakeLoginRequest(email);
 
       if ("must_upgrade_to_pake" in pakeLoginResponse) {
         return { must_upgrade_to_pake: undefined };
@@ -186,36 +160,37 @@ const LenderAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) => {
         pakeLoginResponse.b_pub,
       );
 
-      const pakeVerifyResponse = await pakeVerifyRequest(
+      const pakeVerifyResponse = await httpClient.pakeVerifyRequest(
         email,
         verificationData.a_pub,
         verificationData.client_proof,
       );
 
+      if (!pakeVerifyResponse) {
+        throw new Error("Verification request failed");
+      }
+
       if (!verify_server(pakeVerifyResponse.server_proof)) {
         throw new Error("failed to verify server proof");
       }
 
-      const enabledFeatures = FeatureMapper.mapEnabledFeatures(
-        pakeVerifyResponse.enabled_features,
-      );
+      const currentUser = pakeVerifyResponse.user;
 
-      if (enabledFeatures) {
-        setEnabledFeatures(enabledFeatures);
+      if (pakeVerifyResponse.enabled_features) {
+        setEnabledFeatures(pakeVerifyResponse.enabled_features);
       } else {
         setEnabledFeatures([]);
       }
-
-      const currentUser = await me();
-
       if (currentUser) {
-        setUser(currentUser.user);
+        setUser(currentUser);
       } else {
         setUser(null);
       }
       if (!backendVersion) {
-        const version = await getVersion();
-        setBackendVersion(version);
+        const version = await httpClient.getVersion();
+        if (version) {
+          setBackendVersion(version);
+        }
       }
       return pakeVerifyResponse;
     } finally {
@@ -226,7 +201,7 @@ const LenderAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) => {
   const logout = async () => {
     setLoading(true);
     try {
-      await baseLogout();
+      await httpClient.logout();
     } catch (error) {
       console.error("Logout failed:", error);
       throw error;
@@ -240,7 +215,9 @@ const LenderAuthProviderInner: FC<{ children: ReactNode }> = ({ children }) => {
     <AuthContext.Provider
       value={{ user, loading, login, logout, backendVersion, enabledFeatures }}
     >
-      {children}
+      <HttpClientLenderContext.Provider value={httpClient}>
+        {children}
+      </HttpClientLenderContext.Provider>
     </AuthContext.Provider>
   );
 };

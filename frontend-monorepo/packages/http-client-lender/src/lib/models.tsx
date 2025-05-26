@@ -1,9 +1,20 @@
-import {
-  FiatLoanDetails,
-  FiatLoanDetailsResponse,
-  type LoanFeature,
-} from "@frontend/base-http-client";
 import { LoanAsset, LoanPayout, LoanTransaction } from "@frontend/ui-shared";
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  verified: boolean;
+  timezone?: string;
+  first_time_discount_rate: number;
+  created_at: Date;
+  personal_telegram_token?: string;
+}
+
+export interface WalletBackupData {
+  mnemonic_ciphertext: string;
+  network: string;
+}
 
 export enum ContractStatus {
   Requested = "Requested",
@@ -537,4 +548,101 @@ export interface DisputeWithMessages extends ContractDispute {
 export interface ExtensionPolicy {
   extension_max_duration_days: number;
   extension_interest_rate: number;
+}
+
+export interface FiatLoanDetails {
+  details: InnerFiatLoanDetails;
+  encrypted_encryption_key_borrower: string;
+  encrypted_encryption_key_lender: string;
+}
+
+export interface FiatLoanDetailsResponse {
+  details: InnerFiatLoanDetails;
+  encrypted_encryption_key: string;
+}
+
+export interface InnerFiatLoanDetails {
+  iban_transfer_details?: IbanTransferDetails;
+  swift_transfer_details?: SwiftTransferDetails;
+  bank_name: string;
+  bank_address: string;
+  bank_country: string;
+  purpose_of_remittance: string;
+  full_name: string;
+  address: string;
+  city: string;
+  post_code: string;
+  country: string;
+  comments?: string;
+}
+
+export interface IbanTransferDetails {
+  iban: string;
+  bic?: string;
+}
+
+export interface SwiftTransferDetails {
+  swift_or_bic: string;
+  account_number: string;
+}
+
+// We use this type to indicate that the caller attempting to log in
+// must first upgrade to PAKE.
+export interface MustUpgradeToPake {
+  // We don't need a value to use the interface for control flow.
+  must_upgrade_to_pake: undefined;
+}
+
+export interface LoginResponse {
+  token: string;
+  enabled_features: LenderFeatureFlags[];
+  user: User;
+  wallet_backup_data: WalletBackupData;
+}
+
+export interface LoanFeature {
+  id: string;
+  name: string;
+}
+
+export interface Version {
+  tag: string;
+  commit_hash: string;
+}
+
+export interface MeResponse {
+  user: User;
+  enabled_features: LenderFeatureFlags[];
+}
+
+export interface LoginResponse {
+  token: string;
+  enabled_features: LenderFeatureFlags[];
+  user: User;
+  wallet_backup_data: WalletBackupData;
+}
+
+export interface PakeLoginResponse {
+  salt: string;
+  b_pub: string;
+}
+
+export interface UpgradeToPakeResponse {
+  old_wallet_backup_data: WalletBackupData;
+  contract_pks: string[];
+}
+
+export type LoginResponseOrUpgrade = LoginResponse | MustUpgradeToPake;
+export type PakeLoginResponseOrUpgrade = PakeLoginResponse | MustUpgradeToPake;
+export interface PakeVerifyResponse {
+  server_proof: string;
+  token: string;
+  enabled_features: LenderFeatureFlags[];
+  user: User;
+  wallet_backup_data: WalletBackupData;
+}
+
+export interface IsRegisteredResponse {
+  is_registered: boolean;
+  is_verified: boolean;
 }

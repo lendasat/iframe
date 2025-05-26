@@ -1,9 +1,9 @@
-import { useBaseHttpClient } from "@frontend/base-http-client";
+import { useLenderHttpClient } from "@frontend/http-client-lender";
 import { VersionInfo } from "@frontend/ui-shared";
 import { Box, Heading } from "@radix-ui/themes";
 
 export function VersionPage() {
-  const { getVersion } = useBaseHttpClient();
+  const { getVersion } = useLenderHttpClient();
 
   return (
     <Box className="md:pl-8">

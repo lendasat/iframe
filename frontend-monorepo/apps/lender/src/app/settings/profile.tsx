@@ -14,12 +14,11 @@ import { MdEdit } from "react-icons/md";
 import { BiSolidError } from "react-icons/bi";
 import { IoIosUnlock } from "react-icons/io";
 import { useAuth, useLenderHttpClient } from "@frontend/http-client-lender";
-import { useBaseHttpClient } from "@frontend/base-http-client";
 import { EditableTimezoneField } from "@frontend/ui-shared";
 
 export function Profile() {
   const { user } = useAuth();
-  const { forgotPassword } = useBaseHttpClient();
+  const { forgotPassword } = useLenderHttpClient();
   const { putUpdateProfile } = useLenderHttpClient();
   const [isLoading, setLoading] = useState(false);
   const [error, setError] = useState("");

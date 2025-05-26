@@ -1,15 +1,8 @@
-import type {
-  BaseHttpClientContextType,
-  FiatLoanDetails,
-} from "@frontend/base-http-client";
-import {
-  BaseHttpClient,
-  BaseHttpClientContext,
-} from "@frontend/base-http-client";
-import type { AxiosResponse } from "axios";
+import type { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import axios from "axios";
-import { createContext, useContext } from "react";
-import {
+import { createContext, useContext, useMemo } from "react";
+import type { ReactNode, FC } from "react";
+import type {
   BorrowerStats,
   Contract,
   ContractDispute,
@@ -17,6 +10,8 @@ import {
   CreateLoanOfferRequest,
   Dispute,
   DisputeWithMessages,
+  ExtensionPolicy,
+  FiatLoanDetails,
   GetLiquidationPsbtResponse,
   GetRecoveryPsbtResponse,
   LenderStats,
@@ -24,12 +19,18 @@ import {
   LoanAndContractStats,
   LoanApplication,
   LoanOffer,
+  MeResponse,
   NotifyUser,
+  PakeLoginResponseOrUpgrade,
+  PakeVerifyResponse,
   PutUpdateProfile,
   TakeLoanApplicationSchema,
-  ExtensionPolicy,
+  UpgradeToPakeResponse,
+  Version,
+  IsRegisteredResponse,
+  WalletBackupData,
 } from "./models";
-import { parseRFC3339Date } from "./utils";
+import { isAllowedPageWithoutLogin, parseRFC3339Date } from "./utils";
 
 // Interface for the raw data received from the API
 interface RawContract
@@ -64,21 +65,6 @@ interface RawLoanApplication
   updated_at: string;
 }
 
-export function allowedPagesWithoutLogin(location: string) {
-  // These need to be aligned with the routes in app.tsx
-  return (
-    location.includes(`login`) ||
-    location.includes(`registration`) ||
-    location.includes(`forgotpassword`) ||
-    location.includes(`resetpassword`) ||
-    location.includes(`verifyemail`) ||
-    location.includes(`logout`) ||
-    location.includes(`error`) ||
-    location.includes(`upgrade-to-pake`) ||
-    location.includes(`waitlist`)
-  );
-}
-
 interface RawContractDispute
   extends Omit<ContractDispute, "created_at" | "updated_at" | "resolved_at"> {
   created_at: string;
@@ -95,457 +81,420 @@ interface RawDisputeWithMessages extends RawContractDispute {
   messages: RawContractDisputeMessage[];
 }
 
-export class HttpClientLender extends BaseHttpClient {
-  async postLoanOffer(
-    offer: CreateLoanOfferRequest,
-  ): Promise<LoanOffer | undefined> {
+// Define the shape of our client
+export interface HttpClientLender {
+  // Auth related methods
+  register: (
+    name: string,
+    email: string,
+    verifier: string,
+    salt: string,
+    walletBackupData: WalletBackupData,
+    inviteCode?: string,
+  ) => Promise<void>;
+  upgradeToPake: (
+    email: string,
+    oldPassword: string,
+  ) => Promise<UpgradeToPakeResponse>;
+  finishUpgradeToPake: (
+    email: string,
+    oldPassword: string,
+    verifier: string,
+    salt: string,
+    newWalletBackupData: WalletBackupData,
+  ) => Promise<undefined>;
+  pakeLoginRequest: (email: string) => Promise<PakeLoginResponseOrUpgrade>;
+  pakeVerifyRequest: (
+    email: string,
+    aPub: string,
+    clientProof: string,
+  ) => Promise<PakeVerifyResponse>;
+  forgotPassword: (email: string) => Promise<string>;
+  verifyEmail: (token: string) => Promise<string>;
+  getIsRegistered: (email: string) => Promise<IsRegisteredResponse>;
+  resetPassword: (
+    verifier: string,
+    salt: string,
+    walletBackupData: WalletBackupData,
+    passwordResetToken: string,
+  ) => Promise<string>;
+  getVersion: () => Promise<Version>;
+  joinWaitlist: (email: string) => Promise<void>;
+  logout: () => Promise<void>;
+  me: () => Promise<MeResponse>;
+  check: () => Promise<void>;
+  refreshToken: () => Promise<void>;
+
+  // Loan related methods
+  postLoanOffer: (offer: CreateLoanOfferRequest) => Promise<LoanOffer>;
+  getAllLoanOffers: () => Promise<LoanOffer[]>;
+  getLoanOffer: (id: string) => Promise<LoanOffer>;
+  getMyLoanOffers: () => Promise<LoanOffer[]>;
+  getMyLoanOffer: (id: string) => Promise<LoanOffer>;
+  deleteLoanOffer: (id: string) => Promise<void>;
+  getLoanAndContractStats: () => Promise<LoanAndContractStats>;
+
+  // Loan application methods
+  getLoanApplications: () => Promise<LoanApplication[]>;
+  getLoanApplication: (id: string) => Promise<LoanApplication>;
+  takeLoanApplication: (
+    id: string,
+    body: TakeLoanApplicationSchema,
+  ) => Promise<string>;
+
+  // Contract related methods
+  getContracts: () => Promise<Contract[]>;
+  getContract: (id: string) => Promise<Contract>;
+  approveContract: (
+    id: string,
+    fiatLoanDetails?: FiatLoanDetails,
+  ) => Promise<void>;
+  rejectContract: (id: string) => Promise<void>;
+  rejectContractExtension: (id: string) => Promise<void>;
+  principalGiven: (id: string, txid?: string) => Promise<void>;
+  markPrincipalConfirmed: (id: string) => Promise<void>;
+  updateExtensionPolicy: (
+    contractId: string,
+    extensionPolicy: ExtensionPolicy,
+  ) => Promise<void>;
+
+  // Liquidation and recovery methods
+  getLiquidationToBitcoinPsbt: (
+    id: string,
+    feeRate: number,
+    address: string,
+  ) => Promise<GetLiquidationPsbtResponse>;
+  getLiquidationToStablecoinPsbt: (
+    id: string,
+    feeRate: number,
+    bitcoinRefundAddress: string,
+  ) => Promise<LiquidationToStableCoinPsbt>;
+  postLiquidationTx: (contractId: string, tx: string) => Promise<string>;
+  getRecoveryPsbt: (
+    id: string,
+    feeRate: number,
+    address: string,
+  ) => Promise<GetRecoveryPsbtResponse>;
+
+  // KYC methods
+  approveKyc: (borrowerId: string) => Promise<void>;
+  rejectKyc: (borrowerId: string) => Promise<void>;
+
+  // Profile methods
+  getLenderProfile: (id: string) => Promise<LenderStats>;
+  getBorrowerProfile: (id: string) => Promise<BorrowerStats>;
+  putUpdateProfile: (request: PutUpdateProfile) => Promise<void>;
+
+  // Dispute methods
+  startDispute: (
+    contractId: string,
+    reason: string,
+    comment: string,
+  ) => Promise<Dispute>;
+  getDispute: (disputeId: string) => Promise<Dispute>;
+  resolveDispute: (disputeId: string) => Promise<void>;
+  fetchDisputeWithMessages: (
+    contractId: string,
+  ) => Promise<DisputeWithMessages[]>;
+  commentOnDispute: (disputeId: string, message: string) => Promise<void>;
+
+  // Chat methods
+  newChatNotification: (request: NotifyUser) => Promise<void>;
+}
+
+// Create a factory function to create our client
+export const createHttpClientLender = (
+  baseUrl: string,
+  onAuthError?: () => void,
+): HttpClientLender => {
+  console.log(`Creating HTTP client for ${baseUrl}`);
+
+  // Create axios instance
+  const axiosClient: AxiosInstance = axios.create({
+    baseURL: baseUrl,
+    withCredentials: true,
+  });
+
+  // Add response interceptor for handling 401s
+  axiosClient.interceptors.response.use(
+    async (response) => {
+      return response;
+    },
+    async (error: AxiosError) => {
+      if (error.response?.status === 401) {
+        if (!isAllowedPageWithoutLogin(window.location.pathname)) {
+          if (onAuthError) {
+            onAuthError();
+          }
+        }
+      }
+      return Promise.reject(error);
+    },
+  );
+
+  // Common error handler
+  const handleError = (error: unknown, context: string) => {
+    if (axios.isAxiosError(error) && error.response) {
+      const message =
+        error.response.data.message || JSON.stringify(error.response.data);
+      console.debug(
+        `Failed ${context}: http: ${error.response?.status} and response: ${JSON.stringify(error.response?.data)}`,
+      );
+      throw new Error(message);
+    }
+
+    throw new Error(`Failed ${context}: ${error}`);
+  };
+
+  // Auth related methods
+  const getIsRegistered = async (email: string) => {
     try {
-      const response: AxiosResponse<LoanOffer> = await this.httpClient.post(
+      const response: AxiosResponse<IsRegisteredResponse> =
+        await axiosClient.get(`/api/auth/is-registered?email=${email}`);
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        console.log(error.response);
+        const message = error.response.data.message;
+        throw new Error(message);
+      } else {
+        throw error;
+      }
+    }
+  };
+
+  const register = async (
+    name: string,
+    email: string,
+    verifier: string,
+    salt: string,
+    walletBackupData: WalletBackupData,
+    inviteCode?: string,
+  ): Promise<void> => {
+    try {
+      await axiosClient.post("/api/auth/register", {
+        name,
+        email,
+        verifier,
+        salt,
+        wallet_backup_data: walletBackupData,
+        invite_code: inviteCode,
+      });
+    } catch (error) {
+      handleError(error, "registration");
+    }
+  };
+
+  const upgradeToPake = async (
+    email: string,
+    oldPassword: string,
+  ): Promise<UpgradeToPakeResponse> => {
+    try {
+      const [response] = await Promise.all([
+        axiosClient.post("/api/auth/upgrade-to-pake", {
+          email,
+          old_password: oldPassword,
+        }),
+      ]);
+      const data = response.data as UpgradeToPakeResponse;
+      console.log(`Got upgrade-to-PAKE response`);
+      return data;
+    } catch (error) {
+      handleError(error, "upgrade to pake");
+      throw error;
+    }
+  };
+
+  const finishUpgradeToPake = async (
+    email: string,
+    oldPassword: string,
+    verifier: string,
+    salt: string,
+    newWalletBackupData: WalletBackupData,
+  ): Promise<undefined> => {
+    try {
+      await Promise.all([
+        axiosClient.post("/api/auth/finish-upgrade-to-pake", {
+          email,
+          old_password: oldPassword,
+          verifier,
+          salt,
+          new_wallet_backup_data: newWalletBackupData,
+        }),
+      ]);
+      console.log(`Upgraded to PAKE`);
+      return;
+    } catch (error) {
+      handleError(error, "finishing upgrade to pake");
+      throw error;
+    }
+  };
+
+  const pakeLoginRequest = async (
+    email: string,
+  ): Promise<PakeLoginResponseOrUpgrade> => {
+    try {
+      const response = await axiosClient.post("/api/auth/pake-login", {
+        email,
+      });
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 400) {
+        const message = error.response.data.message;
+        if (message === "upgrade-to-pake") {
+          return { must_upgrade_to_pake: undefined };
+        }
+      }
+      handleError(error, "PAKE login");
+      throw error;
+    }
+  };
+
+  const pakeVerifyRequest = async (
+    email: string,
+    aPub: string,
+    clientProof: string,
+  ): Promise<PakeVerifyResponse> => {
+    try {
+      const response = await axiosClient.post("/api/auth/pake-verify", {
+        email,
+        a_pub: aPub,
+        client_proof: clientProof,
+      });
+      return response.data;
+    } catch (error) {
+      handleError(error, "PAKE verification");
+      throw error;
+    }
+  };
+
+  const forgotPassword = async (email: string): Promise<string> => {
+    try {
+      const response = await axiosClient.post("/api/auth/forgotpassword", {
+        email: email,
+      });
+      return response.data.message;
+    } catch (error) {
+      handleError(error, "posting forget password");
+      throw error;
+    }
+  };
+
+  const verifyEmail = async (token: string): Promise<string> => {
+    try {
+      const response = await axiosClient.get(`/api/auth/verifyemail/${token}`);
+      return response.data.message;
+    } catch (error) {
+      handleError(error, "verifying email");
+      throw error;
+    }
+  };
+
+  const resetPassword = async (
+    verifier: string,
+    salt: string,
+    walletBackupData: WalletBackupData,
+    passwordResetToken: string,
+  ): Promise<string> => {
+    try {
+      const response = await axiosClient.put(
+        `/api/auth/resetpassword/${passwordResetToken}`,
+        {
+          verifier,
+          salt,
+          new_wallet_backup_data: walletBackupData,
+        },
+      );
+      return response.data.message;
+    } catch (error) {
+      handleError(error, "resetting password");
+      throw error;
+    }
+  };
+
+  const getVersion = async (): Promise<Version> => {
+    try {
+      const response: AxiosResponse<Version> =
+        await axiosClient.get("/api/version");
+      return response.data;
+    } catch (error) {
+      handleError(error, "getting version");
+      throw error;
+    }
+  };
+
+  const joinWaitlist = async (email: string): Promise<void> => {
+    try {
+      await axiosClient.post("/api/auth/waitlist", {
+        email,
+      });
+    } catch (error) {
+      handleError(error, "joining waitlist");
+    }
+  };
+
+  const logout = async (): Promise<void> => {
+    try {
+      await axiosClient.get("/api/auth/logout");
+    } catch (error) {
+      handleError(error, "logout");
+    }
+  };
+
+  const me = async (): Promise<MeResponse> => {
+    try {
+      const response = await axiosClient.get("/api/users/me");
+      return response.data;
+    } catch (error) {
+      console.log(`error received`);
+      handleError(error, "fetching user data");
+      throw error;
+    }
+  };
+
+  const check = async (): Promise<void> => {
+    try {
+      await axiosClient.get("/api/auth/check");
+    } catch (error) {
+      console.log;
+      handleError(error, "auth check");
+    }
+  };
+
+  const refreshToken = async (): Promise<void> => {
+    try {
+      await axiosClient.post("/api/auth/refresh-token");
+      console.log("refreshed token");
+    } catch (error) {
+      handleError(error, "refresh token");
+    }
+  };
+
+  // Loan related methods
+  const postLoanOffer = async (
+    offer: CreateLoanOfferRequest,
+  ): Promise<LoanOffer> => {
+    try {
+      const response: AxiosResponse<LoanOffer> = await axiosClient.post(
         "/api/my-loans/offer",
         offer,
       );
       return response.data;
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        const message = JSON.stringify(error.response.data);
-        console.error(
-          `Failed to post loan offer: http: ${
-            error.response?.status
-          } and response: ${JSON.stringify(error.response?.data)}`,
-        );
-        throw new Error(message);
-      } else {
-        throw new Error(`Could not post offer ${JSON.stringify(error)}`);
-      }
+      handleError(error, "posting loan offer");
+      throw error;
     }
-  }
-  async getContracts(): Promise<Contract[]> {
-    try {
-      const response: AxiosResponse<RawContract[]> =
-        await this.httpClient.get("/api/contracts");
-      return response.data.map((contract) => {
-        const createdAt = parseRFC3339Date(contract.created_at);
-        if (createdAt === undefined) {
-          throw new Error("Invalid date");
-        }
+  };
 
-        const updated_at = parseRFC3339Date(contract.updated_at);
-        if (updated_at === undefined) {
-          throw new Error("Invalid date");
-        }
-
-        let repaidAt: Date | undefined;
-        if (contract.repaid_at === undefined) {
-          repaidAt = undefined;
-        } else {
-          const parsed = parseRFC3339Date(contract.repaid_at);
-          if (parsed === undefined) {
-            throw new Error("Invalid repaid_at date");
-          }
-
-          repaidAt = parsed;
-        }
-
-        const expiry = parseRFC3339Date(contract.expiry);
-        if (expiry === undefined) {
-          throw new Error("Invalid date");
-        }
-
-        return {
-          ...contract,
-          created_at: createdAt,
-          updated_at: updated_at,
-          repaid_at: repaidAt,
-          expiry: expiry,
-        };
-      });
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        const message = JSON.stringify(error.response.data);
-        console.error(
-          `Failed to fetch contracts: http: ${error.response?.status} and response: JSON.stringify(error.response?.data)`,
-        );
-        throw new Error(message);
-      } else {
-        throw new Error(`Could not fetch contracts ${JSON.stringify(error)}`);
-      }
-    }
-  }
-
-  async getContract(id: string): Promise<Contract> {
-    try {
-      const contractResponse: AxiosResponse<RawContract> =
-        await this.httpClient.get(`/api/contracts/${id}`);
-      const contract = contractResponse.data;
-
-      const createdAt = parseRFC3339Date(contract.created_at);
-      if (createdAt == null) {
-        throw new Error("Invalid date");
-      }
-      const updated_at = parseRFC3339Date(contract.updated_at);
-      if (updated_at == null) {
-        throw new Error("Invalid date");
-      }
-      const repaid_at = parseRFC3339Date(contract.repaid_at);
-      if (repaid_at == null) {
-        throw new Error("Invalid date");
-      }
-
-      const expiry = parseRFC3339Date(contract.expiry);
-      if (expiry == null) {
-        throw new Error("Invalid date");
-      }
-
-      return {
-        ...contract,
-        created_at: createdAt,
-        updated_at: updated_at,
-        repaid_at: repaid_at,
-        expiry: expiry,
-      };
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        const message = JSON.stringify(error.response?.data);
-        console.error(
-          `Failed to fetch contract: http: ${
-            error.response?.status
-          } and response: ${JSON.stringify(error.response?.data)}`,
-        );
-        throw new Error(message);
-      } else {
-        throw new Error(`Could not fetch contract ${JSON.stringify(error)}`);
-      }
-    }
-  }
-
-  async approveKyc(borrower_id: string): Promise<void> {
-    try {
-      await this.httpClient.put(`/api/kyc/${borrower_id}/approve`);
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        const message = JSON.stringify(error.response?.data);
-        console.error(
-          `Failed to approve KYC: http: ${
-            error.response?.status
-          } and response: ${JSON.stringify(error.response?.data)}`,
-        );
-        throw new Error(message);
-      } else {
-        throw new Error(`Could not approve KYC: ${JSON.stringify(error)}`);
-      }
-    }
-  }
-
-  async rejectKyc(borrower_id: string): Promise<void> {
-    try {
-      await this.httpClient.put(`/api/kyc/${borrower_id}/reject`);
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        const message = JSON.stringify(error.response?.data);
-        console.error(
-          `Failed to reject KYC: http: ${
-            error.response?.status
-          } and response: ${JSON.stringify(error.response?.data)}`,
-        );
-        throw new Error(message);
-      } else {
-        throw new Error(`Could not reject KYC: ${JSON.stringify(error)}`);
-      }
-    }
-  }
-
-  async approveContract(
-    id: string,
-    fiatLoanDetails?: FiatLoanDetails,
-  ): Promise<void> {
-    try {
-      await this.httpClient.put(
-        `/api/contracts/${id}/approve`,
-        fiatLoanDetails,
-      );
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        const message = JSON.stringify(error.response?.data);
-        console.error(
-          `Failed to approve contract: http: ${
-            error.response?.status
-          } and response: ${JSON.stringify(error.response?.data)}`,
-        );
-        throw new Error(message);
-      } else {
-        throw new Error(`Could not approve contract ${JSON.stringify(error)}`);
-      }
-    }
-  }
-
-  async rejectContract(id: string): Promise<void> {
-    try {
-      await this.httpClient.delete(`/api/contracts/${id}/reject`);
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        const message = JSON.stringify(error.response?.data);
-        console.error(
-          `Failed to reject contract: http: ${
-            error.response?.status
-          } and response: ${JSON.stringify(error.response?.data)}`,
-        );
-        throw new Error(message);
-      } else {
-        throw new Error(`Could not reject contract ${JSON.stringify(error)}`);
-      }
-    }
-  }
-
-  async rejectContractExtension(id: string): Promise<void> {
-    try {
-      await this.httpClient.put(`/api/contracts/${id}/reject-extension`);
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        const message = JSON.stringify(error.response?.data);
-        console.error(
-          `Failed to reject contract: http: ${
-            error.response?.status
-          } and response: ${JSON.stringify(error.response?.data)}`,
-        );
-        throw new Error(message);
-      } else {
-        throw new Error(
-          `Could not reject contract extension: ${JSON.stringify(error)}`,
-        );
-      }
-    }
-  }
-
-  async principalGiven(id: string, txid?: string): Promise<void> {
-    let url = `/api/contracts/${id}/principalgiven`;
-
-    if (txid) {
-      url = `${url}?txid=${txid}`;
-    }
-
-    try {
-      await this.httpClient.put(url);
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        const message = JSON.stringify(error.response?.data);
-        console.error(
-          `Failed to mark contract as principal given: http: ${error.response?.status} and response: ${error.response?.data}`,
-        );
-        throw new Error(message);
-      } else {
-        throw new Error(
-          `Failed to mark contract as principal given ${JSON.stringify(error)}`,
-        );
-      }
-    }
-  }
-
-  async markPrincipalConfirmed(id: string): Promise<void> {
-    try {
-      await this.httpClient.put(`/api/contracts/${id}/principalconfirmed`);
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        const message = JSON.stringify(error.response?.data);
-        console.error(
-          `Failed to mark contract as repaid: http: ${error.response?.status} and response: ${error.response?.data}`,
-        );
-        throw new Error(message);
-      } else {
-        throw new Error(
-          `Failed to mark contract as repaid ${JSON.stringify(error)}`,
-        );
-      }
-    }
-  }
-
-  async getLiquidationToBitcoinPsbt(
-    id: string,
-    feeRate: number,
-    address: string,
-  ): Promise<GetLiquidationPsbtResponse> {
-    try {
-      const res: AxiosResponse<GetLiquidationPsbtResponse> =
-        await this.httpClient.get(`/api/contracts/${id}/liquidation-psbt`, {
-          params: {
-            fee_rate: feeRate,
-            address: address,
-          },
-        });
-      return res.data;
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        const message = error.response.data.message
-          ? JSON.stringify(error.response.data.message)
-          : error.response.data;
-        console.error(
-          `Failed to fetch liquidation PSBT: http: ${
-            error.response?.status
-          } and response: ${JSON.stringify(error.response?.data)}`,
-        );
-        throw new Error(message);
-      } else {
-        throw new Error(
-          `Failed to fetch liquidation PSBT ${JSON.stringify(error)}`,
-        );
-      }
-    }
-  }
-
-  async getLiquidationToStablecoinPsbt(
-    id: string,
-    feeRate: number,
-    bitcoinRefundAddress: string,
-  ): Promise<LiquidationToStableCoinPsbt> {
-    try {
-      const res: AxiosResponse<LiquidationToStableCoinPsbt> =
-        await this.httpClient.post(
-          `/api/contracts/${id}/liquidation-to-stablecoin-psbt`,
-          {
-            fee_rate_sats_vbyte: feeRate,
-            bitcoin_refund_address: bitcoinRefundAddress,
-          },
-        );
-      return res.data;
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        const message = error.response.data.message
-          ? JSON.stringify(error.response.data.message)
-          : error.response.data;
-        console.error(
-          `Failed to fetch liquidation PSBT: http: ${
-            error.response?.status
-          } and response: ${JSON.stringify(error.response?.data)}`,
-        );
-        throw new Error(message);
-      } else {
-        throw new Error(
-          `Failed to fetch liquidation PSBT ${JSON.stringify(error)}`,
-        );
-      }
-    }
-  }
-
-  async postLiquidationTx(contract_id: string, tx: string): Promise<string> {
-    try {
-      const response: AxiosResponse<string> = await this.httpClient.post(
-        `/api/contracts/${contract_id}/broadcast-liquidation`,
-        { tx: tx },
-      );
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        const message = error.response.data.message;
-        console.error(
-          `Failed to post liquidation TX: http: ${error.response?.status} and response: ${error.response?.data}`,
-        );
-        throw new Error(message);
-      } else {
-        throw new Error(
-          `Failed to post liquidation tx ${JSON.stringify(error)}`,
-        );
-      }
-    }
-  }
-
-  async getRecoveryPsbt(
-    id: string,
-    feeRate: number,
-    address: string,
-  ): Promise<GetRecoveryPsbtResponse> {
-    try {
-      const res: AxiosResponse<GetRecoveryPsbtResponse> =
-        await this.httpClient.get(`/api/contracts/${id}/recovery-psbt`, {
-          params: {
-            fee_rate: feeRate,
-            address: address,
-          },
-        });
-      return res.data;
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        const message = error.response.data.message
-          ? JSON.stringify(error.response.data.message)
-          : error.response.data;
-        console.error(
-          `Failed to fetch recovery PSBT: http: ${
-            error.response?.status
-          } and response: ${JSON.stringify(error.response?.data)}`,
-        );
-        throw new Error(message);
-      } else {
-        throw new Error(
-          `Failed to fetch recovery PSBT ${JSON.stringify(error)}`,
-        );
-      }
-    }
-  }
-
-  async getLenderProfile(id: string): Promise<LenderStats> {
-    try {
-      const response: AxiosResponse<LenderStatsRaw> = await this.httpClient.get(
-        `/api/lenders/${id}`,
-      );
-
-      const joinedAt = parseRFC3339Date(response.data.joined_at);
-      if (joinedAt == null || joinedAt == null) {
-        throw new Error("Invalid date");
-      }
-
-      return { ...response.data, joined_at: joinedAt };
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        const message = error.response.data.message;
-        console.error(
-          `Failed to fetch lender profile: http: ${
-            error.response?.status
-          } and response: ${JSON.stringify(error.response?.data)}`,
-        );
-        throw new Error(message);
-      } else {
-        throw new Error(`Could not fetch lender ${JSON.stringify(error)}`);
-      }
-    }
-  }
-
-  async getBorrowerProfile(id: string): Promise<BorrowerStats> {
-    try {
-      const response: AxiosResponse<BorrowerStatsRaw> =
-        await this.httpClient.get(`/api/borrowers/${id}`);
-
-      const joinedAt = parseRFC3339Date(response.data.joined_at);
-      if (joinedAt == null || joinedAt == null) {
-        throw new Error("Invalid date");
-      }
-
-      return { ...response.data, joined_at: joinedAt };
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        const message = error.response.data.message;
-        console.error(
-          `Failed to fetch borrower profile: http: ${
-            error.response?.status
-          } and response: ${JSON.stringify(error.response?.data)}`,
-        );
-        throw new Error(message);
-      } else {
-        throw new Error(`Could not fetch borrower ${JSON.stringify(error)}`);
-      }
-    }
-  }
-
-  async getAllLoanOffers(): Promise<LoanOffer[]> {
+  const getAllLoanOffers = async (): Promise<LoanOffer[]> => {
     try {
       const response: AxiosResponse<RawLoanOffer[]> =
-        await this.httpClient.get("/api/loans/offer");
+        await axiosClient.get("/api/loans/offer");
 
       return response.data.map((offer) => {
         const createdAt = parseRFC3339Date(offer.created_at);
-        if (createdAt == null) {
-          throw new Error("Invalid date");
-        }
         const updatedAt = parseRFC3339Date(offer.updated_at);
-
-        if (updatedAt == null) {
+        if (createdAt === undefined || updatedAt === undefined) {
           throw new Error("Invalid date");
         }
 
@@ -556,67 +505,44 @@ export class HttpClientLender extends BaseHttpClient {
         };
       });
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        const message = error.response.data.message;
-        console.error(
-          `Failed to fetch offers: http: ${
-            error.response?.status
-          } and response: ${JSON.stringify(error.response?.data)}`,
-        );
-        throw new Error(message);
-      } else {
-        throw new Error(`Could not fetch offers ${JSON.stringify(error)}`);
-      }
+      handleError(error, "fetching loan offers");
+      throw error;
     }
-  }
+  };
 
-  async getLoanOffer(id: string): Promise<LoanOffer> {
+  const getLoanOffer = async (id: string): Promise<LoanOffer> => {
     try {
-      const response: AxiosResponse<RawLoanOffer> = await this.httpClient.get(
+      const response: AxiosResponse<RawLoanOffer> = await axiosClient.get(
         `/api/loans/offer/${id}`,
       );
       const createdAt = parseRFC3339Date(response.data.created_at);
-      if (createdAt == null) {
-        throw new Error("Invalid date");
-      }
       const updatedAt = parseRFC3339Date(response.data.updated_at);
 
-      if (updatedAt == null) {
+      if (createdAt === undefined || updatedAt === undefined) {
         throw new Error("Invalid date");
       }
+
       return {
         ...response.data,
         created_at: createdAt,
         updated_at: updatedAt,
       };
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        const message = error.response.data.message;
-        console.error(
-          `Failed to fetch offer: http: ${
-            error.response?.status
-          } and response: ${JSON.stringify(error.response?.data)}`,
-        );
-        throw new Error(message);
-      } else {
-        throw new Error(`Could not fetch offer ${JSON.stringify(error)}`);
-      }
+      handleError(error, "fetching loan offer");
+      throw error;
     }
-  }
+  };
 
-  async getMyLoanOffers(): Promise<LoanOffer[]> {
+  const getMyLoanOffers = async (): Promise<LoanOffer[]> => {
     try {
-      const response: AxiosResponse<RawLoanOffer[]> = await this.httpClient.get(
+      const response: AxiosResponse<RawLoanOffer[]> = await axiosClient.get(
         "/api/my-loans/offer",
       );
       return response.data.map((offer) => {
         const createdAt = parseRFC3339Date(offer.created_at);
-        if (createdAt == null) {
-          throw new Error("Invalid date");
-        }
         const updatedAt = parseRFC3339Date(offer.updated_at);
 
-        if (updatedAt == null) {
+        if (createdAt === undefined || updatedAt === undefined) {
           throw new Error("Invalid date");
         }
 
@@ -627,32 +553,20 @@ export class HttpClientLender extends BaseHttpClient {
         };
       });
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        const message = error.response.data.message;
-        console.error(
-          `Failed to fetch offers: http: ${
-            error.response?.status
-          } and response: ${JSON.stringify(error.response?.data)}`,
-        );
-        throw new Error(message);
-      } else {
-        throw new Error(`Could not fetch offers ${JSON.stringify(error)}`);
-      }
+      handleError(error, "fetching my loan offers");
+      throw error;
     }
-  }
+  };
 
-  async getMyLoanOffer(id: string): Promise<LoanOffer> {
+  const getMyLoanOffer = async (id: string): Promise<LoanOffer> => {
     try {
-      const response: AxiosResponse<RawLoanOffer> = await this.httpClient.get(
+      const response: AxiosResponse<RawLoanOffer> = await axiosClient.get(
         `/api/my-loans/offer/${id}`,
       );
       const createdAt = parseRFC3339Date(response.data.created_at);
-      if (createdAt == null) {
-        throw new Error("Invalid date");
-      }
       const updatedAt = parseRFC3339Date(response.data.updated_at);
 
-      if (updatedAt == null) {
+      if (createdAt === undefined || updatedAt === undefined) {
         throw new Error("Invalid date");
       }
 
@@ -662,82 +576,36 @@ export class HttpClientLender extends BaseHttpClient {
         updated_at: updatedAt,
       };
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        const message = error.response.data.message;
-        console.error(
-          `Failed to fetch offer: http: ${
-            error.response?.status
-          } and response: ${JSON.stringify(error.response?.data)}`,
-        );
-        throw new Error(message);
-      } else {
-        throw new Error(`Could not fetch offer ${JSON.stringify(error)}`);
-      }
+      handleError(error, "fetching my loan offer");
+      throw error;
     }
-  }
+  };
 
-  async deleteLoanOffer(id: string): Promise<void> {
+  const deleteLoanOffer = async (id: string): Promise<void> => {
     try {
-      await this.httpClient.delete(`/api/my-loans/offer/${id}`);
-      return;
+      await axiosClient.delete(`/api/my-loans/offer/${id}`);
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        const message = error.response.data.message;
-        console.error(
-          `Failed to fetch offer: http: ${
-            error.response?.status
-          } and response: ${JSON.stringify(error.response?.data)}`,
-        );
-        throw new Error(message);
-      } else {
-        throw new Error(`Could not fetch offer ${JSON.stringify(error)}`);
-      }
+      handleError(error, "deleting loan offer");
     }
-  }
+  };
 
-  async getLoanAndContractStats(): Promise<LoanAndContractStats> {
+  const getLoanAndContractStats = async (): Promise<LoanAndContractStats> => {
     try {
-      const stats: AxiosResponse<LoanAndContractStats> =
-        await this.httpClient.get(`/api/loans/offer-stats`);
-
+      const stats: AxiosResponse<LoanAndContractStats> = await axiosClient.get(
+        `/api/loans/offer-stats`,
+      );
       return stats.data;
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        const message = JSON.stringify(error.response?.data);
-        console.error(
-          `Failed to fetch contract: http: ${
-            error.response?.status
-          } and response: ${JSON.stringify(error.response?.data)}`,
-        );
-        throw new Error(message);
-      } else {
-        throw new Error(`Could not fetch contract ${JSON.stringify(error)}`);
-      }
+      handleError(error, "fetching loan and contract stats");
+      throw error;
     }
-  }
+  };
 
-  async putUpdateProfile(request: PutUpdateProfile): Promise<void> {
-    try {
-      await this.httpClient.put("/api/users/", request);
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        const message = error.response.data.message;
-        console.error(
-          `Failed to update profile: http: ${
-            error.response?.status
-          } and response: ${JSON.stringify(error.response?.data)}`,
-        );
-        throw new Error(message);
-      } else {
-        throw new Error(`Could not update profile: ${JSON.stringify(error)}`);
-      }
-    }
-  }
-
-  async getLoanApplications(): Promise<LoanApplication[] | undefined> {
+  // Loan application methods
+  const getLoanApplications = async (): Promise<LoanApplication[]> => {
     try {
       const response: AxiosResponse<RawLoanApplication[]> =
-        await this.httpClient.get("/api/loans/application");
+        await axiosClient.get("/api/loans/application");
 
       return response.data.map((application) => {
         const createdAt = parseRFC3339Date(application.created_at);
@@ -753,54 +621,17 @@ export class HttpClientLender extends BaseHttpClient {
         };
       });
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        const message = error.response.data.message;
-        console.error(
-          `Failed to get loan applications: http: ${
-            error.response?.status
-          } and response: ${JSON.stringify(error.response?.data)}`,
-        );
-        throw new Error(message);
-      } else {
-        throw new Error(
-          `Could not get loan application: ${JSON.stringify(error)}`,
-        );
-      }
+      handleError(error, "fetching loan applications");
+      throw error;
     }
-  }
+  };
 
-  async takeLoanApplication(
-    id: string,
-    body: TakeLoanApplicationSchema,
-  ): Promise<string> {
+  const getLoanApplication = async (id: string): Promise<LoanApplication> => {
     try {
-      const response: AxiosResponse<string> = await this.httpClient.post(
+      const response: AxiosResponse<RawLoanApplication> = await axiosClient.get(
         `/api/loans/application/${id}`,
-        body,
       );
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        const message = error.response.data.message;
-        console.error(
-          `Failed to take loan application http: ${
-            error.response?.status
-          } and response: ${JSON.stringify(error.response?.data)}`,
-        );
-        throw new Error(message);
-      } else {
-        throw new Error(
-          `Could not take loan application: ${JSON.stringify(error)}`,
-        );
-      }
-    }
-  }
-
-  async getLoanApplication(id: string): Promise<LoanApplication | undefined> {
-    try {
-      const response: AxiosResponse<RawLoanApplication> =
-        await this.httpClient.get(`/api/loans/application/${id}`);
-      let application = response.data;
+      const application = response.data;
       const createdAt = parseRFC3339Date(application.created_at);
       const updatedAt = parseRFC3339Date(application.updated_at);
       if (createdAt === undefined || updatedAt === undefined) {
@@ -813,82 +644,333 @@ export class HttpClientLender extends BaseHttpClient {
         updated_at: updatedAt,
       };
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        const message = error.response.data.message;
-        console.error(
-          `Failed to get loan application http: ${
-            error.response?.status
-          } and response: ${JSON.stringify(error.response?.data)}`,
-        );
-        throw new Error(message);
-      } else {
-        throw new Error(
-          `Could not get loan application: ${JSON.stringify(error)}`,
-        );
-      }
+      handleError(error, "fetching loan application");
+      throw error;
     }
-  }
+  };
 
-  async newChatNotification(request: NotifyUser): Promise<void> {
+  const takeLoanApplication = async (
+    id: string,
+    body: TakeLoanApplicationSchema,
+  ): Promise<string> => {
     try {
-      await this.httpClient.post("/api/chat/notification", request);
+      const response: AxiosResponse<string> = await axiosClient.post(
+        `/api/loans/application/${id}`,
+        body,
+      );
+      return response.data;
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        const message = error.response.data.message;
-        console.error(
-          `Failed to send notification ${
-            error.response?.status
-          } and response: ${JSON.stringify(error.response?.data)}`,
-        );
-        throw new Error(message);
-      } else {
-        throw new Error(
-          `Could not send notification: ${JSON.stringify(error)}`,
-        );
-      }
+      handleError(error, "taking loan application");
+      throw error;
     }
-  }
+  };
 
-  startDispute = async (
-    contract_id: string,
+  // Contract related methods
+  const getContracts = async (): Promise<Contract[]> => {
+    try {
+      const response: AxiosResponse<RawContract[]> =
+        await axiosClient.get("/api/contracts");
+      return response.data.map((contract) => {
+        const createdAt = parseRFC3339Date(contract.created_at);
+        const updatedAt = parseRFC3339Date(contract.updated_at);
+        const expiry = parseRFC3339Date(contract.expiry);
+
+        if (
+          createdAt === undefined ||
+          updatedAt === undefined ||
+          expiry === undefined
+        ) {
+          throw new Error("Invalid date");
+        }
+
+        let repaidAt: Date | undefined;
+        if (contract.repaid_at) {
+          const parsed = parseRFC3339Date(contract.repaid_at);
+          if (parsed === undefined) {
+            throw new Error("Invalid repaid_at date");
+          }
+          repaidAt = parsed;
+        }
+
+        return {
+          ...contract,
+          created_at: createdAt,
+          updated_at: updatedAt,
+          repaid_at: repaidAt,
+          expiry: expiry,
+        };
+      });
+    } catch (error) {
+      handleError(error, "fetching contracts");
+      throw error;
+    }
+  };
+
+  const getContract = async (id: string): Promise<Contract> => {
+    try {
+      const contractResponse: AxiosResponse<RawContract> =
+        await axiosClient.get(`/api/contracts/${id}`);
+      const contract = contractResponse.data;
+
+      const createdAt = parseRFC3339Date(contract.created_at);
+      const updatedAt = parseRFC3339Date(contract.updated_at);
+      const expiry = parseRFC3339Date(contract.expiry);
+      const repaidAt = contract.repaid_at
+        ? parseRFC3339Date(contract.repaid_at)
+        : undefined;
+
+      if (createdAt === null || updatedAt === null || expiry === null) {
+        throw new Error("Invalid date");
+      }
+
+      return {
+        ...contract,
+        created_at: createdAt!,
+        updated_at: updatedAt!,
+        repaid_at: repaidAt,
+        expiry: expiry!,
+      };
+    } catch (error) {
+      handleError(error, "fetching contract");
+      throw error;
+    }
+  };
+
+  const approveContract = async (
+    id: string,
+    fiatLoanDetails?: FiatLoanDetails,
+  ): Promise<void> => {
+    try {
+      await axiosClient.put(`/api/contracts/${id}/approve`, fiatLoanDetails);
+    } catch (error) {
+      handleError(error, "approving contract");
+    }
+  };
+
+  const rejectContract = async (id: string): Promise<void> => {
+    try {
+      await axiosClient.delete(`/api/contracts/${id}/reject`);
+    } catch (error) {
+      handleError(error, "rejecting contract");
+    }
+  };
+
+  const rejectContractExtension = async (id: string): Promise<void> => {
+    try {
+      await axiosClient.put(`/api/contracts/${id}/reject-extension`);
+    } catch (error) {
+      handleError(error, "rejecting contract extension");
+    }
+  };
+
+  const principalGiven = async (id: string, txid?: string): Promise<void> => {
+    try {
+      let url = `/api/contracts/${id}/principalgiven`;
+      if (txid) {
+        url = `${url}?txid=${txid}`;
+      }
+      await axiosClient.put(url);
+    } catch (error) {
+      handleError(error, "marking contract as principal given");
+    }
+  };
+
+  const markPrincipalConfirmed = async (id: string): Promise<void> => {
+    try {
+      await axiosClient.put(`/api/contracts/${id}/principalconfirmed`);
+    } catch (error) {
+      handleError(error, "marking principal as confirmed");
+    }
+  };
+
+  const updateExtensionPolicy = async (
+    contractId: string,
+    extensionPolicy: ExtensionPolicy,
+  ): Promise<void> => {
+    try {
+      await axiosClient.put(
+        `/api/contracts/${contractId}/extension-policy`,
+        extensionPolicy,
+      );
+    } catch (error) {
+      handleError(error, "updating extension policy");
+    }
+  };
+
+  // Liquidation and recovery methods
+  const getLiquidationToBitcoinPsbt = async (
+    id: string,
+    feeRate: number,
+    address: string,
+  ): Promise<GetLiquidationPsbtResponse> => {
+    try {
+      const res: AxiosResponse<GetLiquidationPsbtResponse> =
+        await axiosClient.get(`/api/contracts/${id}/liquidation-psbt`, {
+          params: {
+            fee_rate: feeRate,
+            address: address,
+          },
+        });
+      return res.data;
+    } catch (error) {
+      handleError(error, "fetching liquidation PSBT");
+      throw error;
+    }
+  };
+
+  const getLiquidationToStablecoinPsbt = async (
+    id: string,
+    feeRate: number,
+    bitcoinRefundAddress: string,
+  ): Promise<LiquidationToStableCoinPsbt> => {
+    try {
+      const res: AxiosResponse<LiquidationToStableCoinPsbt> =
+        await axiosClient.post(
+          `/api/contracts/${id}/liquidation-to-stablecoin-psbt`,
+          {
+            fee_rate_sats_vbyte: feeRate,
+            bitcoin_refund_address: bitcoinRefundAddress,
+          },
+        );
+      return res.data;
+    } catch (error) {
+      handleError(error, "fetching liquidation to stablecoin PSBT");
+      throw error;
+    }
+  };
+
+  const postLiquidationTx = async (
+    contractId: string,
+    tx: string,
+  ): Promise<string> => {
+    try {
+      const response: AxiosResponse<string> = await axiosClient.post(
+        `/api/contracts/${contractId}/broadcast-liquidation`,
+        { tx: tx },
+      );
+      return response.data;
+    } catch (error) {
+      handleError(error, "posting liquidation transaction");
+      throw error;
+    }
+  };
+
+  const getRecoveryPsbt = async (
+    id: string,
+    feeRate: number,
+    address: string,
+  ): Promise<GetRecoveryPsbtResponse> => {
+    try {
+      const res: AxiosResponse<GetRecoveryPsbtResponse> = await axiosClient.get(
+        `/api/contracts/${id}/recovery-psbt`,
+        {
+          params: {
+            fee_rate: feeRate,
+            address: address,
+          },
+        },
+      );
+      return res.data;
+    } catch (error) {
+      handleError(error, "fetching recovery PSBT");
+      throw error;
+    }
+  };
+
+  // KYC methods
+  const approveKyc = async (borrowerId: string): Promise<void> => {
+    try {
+      await axiosClient.put(`/api/kyc/${borrowerId}/approve`);
+    } catch (error) {
+      handleError(error, "approving KYC");
+    }
+  };
+
+  const rejectKyc = async (borrowerId: string): Promise<void> => {
+    try {
+      await axiosClient.put(`/api/kyc/${borrowerId}/reject`);
+    } catch (error) {
+      handleError(error, "rejecting KYC");
+    }
+  };
+
+  // Profile methods
+  const getLenderProfile = async (id: string): Promise<LenderStats> => {
+    try {
+      const response: AxiosResponse<LenderStatsRaw> = await axiosClient.get(
+        `/api/lenders/${id}`,
+      );
+
+      const joinedAt = parseRFC3339Date(response.data.joined_at);
+      if (joinedAt === undefined) {
+        throw new Error("Invalid date");
+      }
+
+      return { ...response.data, joined_at: joinedAt };
+    } catch (error) {
+      handleError(error, "getting lender profile");
+      throw error;
+    }
+  };
+
+  const getBorrowerProfile = async (id: string): Promise<BorrowerStats> => {
+    try {
+      const response: AxiosResponse<BorrowerStatsRaw> = await axiosClient.get(
+        `/api/borrowers/${id}`,
+      );
+
+      const joinedAt = parseRFC3339Date(response.data.joined_at);
+      if (joinedAt === undefined) {
+        throw new Error("Invalid date");
+      }
+
+      return { ...response.data, joined_at: joinedAt };
+    } catch (error) {
+      handleError(error, "getting borrower profile");
+      throw error;
+    }
+  };
+
+  const putUpdateProfile = async (request: PutUpdateProfile): Promise<void> => {
+    try {
+      await axiosClient.put("/api/users/", request);
+    } catch (error) {
+      handleError(error, "updating profile");
+    }
+  };
+
+  // Dispute methods
+  const startDispute = async (
+    contractId: string,
     reason: string,
     comment: string,
-  ): Promise<Dispute | undefined> => {
+  ): Promise<Dispute> => {
     try {
-      const response: AxiosResponse<Dispute> = await this.httpClient.post(
+      const response: AxiosResponse<Dispute> = await axiosClient.post(
         `/api/disputes`,
         {
-          contract_id,
+          contract_id: contractId,
           reason,
           comment,
         },
       );
       return response.data;
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        const message = error.response.data.message;
-        console.error(
-          `Failed to start dispute ${
-            error.response?.status
-          } and response: ${JSON.stringify(error.response?.data)}`,
-        );
-        throw new Error(message);
-      } else {
-        throw new Error(`Could not start dispute: ${JSON.stringify(error)}`);
-      }
+      handleError(error, "starting dispute");
+      throw error;
     }
   };
 
-  async getDispute(disputeId: string): Promise<Dispute> {
+  const getDispute = async (disputeId: string): Promise<Dispute> => {
     try {
-      const response: AxiosResponse<RawDispute> = await this.httpClient.get(
+      const response: AxiosResponse<RawDispute> = await axiosClient.get(
         `/api/disputes/${disputeId}`,
       );
       const dispute = response.data;
 
       const createdAt = parseRFC3339Date(dispute.created_at);
       const updatedAt = parseRFC3339Date(dispute.updated_at);
-      if (createdAt == null || updatedAt == null) {
+      if (createdAt === undefined || updatedAt === undefined) {
         throw new Error("Invalid date");
       }
 
@@ -898,69 +980,25 @@ export class HttpClientLender extends BaseHttpClient {
         updated_at: updatedAt,
       };
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        const message = error.response.data.message;
-        console.error(
-          `Failed to fetch dispute: http: ${
-            error.response?.status
-          } and response: ${JSON.stringify(error.response?.data)}`,
-        );
-        throw new Error(message);
-      } else {
-        throw new Error(`Could not fetch dispute ${JSON.stringify(error)}`);
-      }
-    }
-  }
-
-  resolveDispute = async (disputeId: string): Promise<void> => {
-    try {
-      await this.httpClient.put(`/api/disputes/${disputeId}/resolve`);
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        const message = error.response.data.message;
-        console.error(
-          `Failed to resolve dispute: http: ${
-            error.response?.status
-          } and response: ${JSON.stringify(error.response?.data)}`,
-        );
-        throw new Error(message);
-      } else {
-        throw new Error(`Could not resolve dispute ${JSON.stringify(error)}`);
-      }
+      handleError(error, "fetching dispute");
+      throw error;
     }
   };
 
-  commentOnDispute = async (
-    disputeId: string,
-    message: string,
-  ): Promise<void> => {
+  const resolveDispute = async (disputeId: string): Promise<void> => {
     try {
-      await this.httpClient.put(`/api/disputes/${disputeId}`, {
-        message: message,
-      });
+      await axiosClient.put(`/api/disputes/${disputeId}/resolve`);
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        const message = error.response.data.message;
-        console.error(
-          `Failed to comment on dispute ${
-            error.response?.status
-          } and response: ${JSON.stringify(error.response?.data)}`,
-        );
-        throw new Error(message);
-      } else {
-        throw new Error(
-          `Could not comment on dispute: ${JSON.stringify(error)}`,
-        );
-      }
+      handleError(error, "resolving dispute");
     }
   };
 
-  fetchDisputeWithMessages = async (
+  const fetchDisputeWithMessages = async (
     contractId: string,
-  ): Promise<DisputeWithMessages[] | undefined> => {
+  ): Promise<DisputeWithMessages[]> => {
     try {
       const response: AxiosResponse<RawDisputeWithMessages[]> =
-        await this.httpClient.get(`/api/disputes?contract_id=${contractId}`);
+        await axiosClient.get(`/api/disputes?contract_id=${contractId}`);
       const rawDisputes = response.data;
 
       // Handle empty response
@@ -1020,174 +1058,119 @@ export class HttpClientLender extends BaseHttpClient {
         };
       });
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        const message = error.response.data.message;
-        console.error(
-          `Failed to fetch dispute messages ${
-            error.response?.status
-          } and response: ${JSON.stringify(error.response?.data)}`,
-        );
-        throw new Error(message);
-      } else {
-        throw new Error(
-          `Could not fetch dispute messages: ${JSON.stringify(error)}`,
-        );
-      }
+      handleError(error, "fetching disputes with messages");
+      throw error;
     }
   };
 
-  updateExtensionPolicy = async (
-    contractId: string,
-    extensionPolicy: ExtensionPolicy,
+  const commentOnDispute = async (
+    disputeId: string,
+    message: string,
   ): Promise<void> => {
     try {
-      await this.httpClient.put(
-        `/api/contracts/${contractId}/extension-policy`,
-        extensionPolicy,
-      );
+      await axiosClient.put(`/api/disputes/${disputeId}`, {
+        message: message,
+      });
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        const message = error.response.data.message;
-        console.error(
-          `Failed to update extension policy ${
-            error.response?.status
-          } and response: ${JSON.stringify(error.response?.data)}`,
-        );
-        throw new Error(message);
-      } else {
-        throw new Error(
-          `Failed to update extension policy ${JSON.stringify(error)}`,
-        );
-      }
+      handleError(error, "commenting on dispute");
     }
   };
-}
 
-type LenderHttpClientContextType = Pick<
-  HttpClientLender,
-  | "postLoanOffer"
-  | "getContracts"
-  | "getContract"
-  | "approveKyc"
-  | "rejectKyc"
-  | "approveContract"
-  | "rejectContract"
-  | "rejectContractExtension"
-  | "principalGiven"
-  | "markPrincipalConfirmed"
-  | "getLenderProfile"
-  | "getBorrowerProfile"
-  | "getAllLoanOffers"
-  | "getLoanOffer"
-  | "getMyLoanOffers"
-  | "getMyLoanOffer"
-  | "deleteLoanOffer"
-  | "getLiquidationToBitcoinPsbt"
-  | "getLiquidationToStablecoinPsbt"
-  | "postLiquidationTx"
-  | "getRecoveryPsbt"
-  | "getLoanAndContractStats"
-  | "putUpdateProfile"
-  | "getLoanApplications"
-  | "getLoanApplication"
-  | "takeLoanApplication"
-  | "newChatNotification"
-  | "startDispute"
-  | "getDispute"
-  | "fetchDisputeWithMessages"
-  | "commentOnDispute"
-  | "resolveDispute"
-  | "updateExtensionPolicy"
->;
+  // Chat methods
+  const newChatNotification = async (request: NotifyUser): Promise<void> => {
+    try {
+      await axiosClient.post("/api/chat/notification", request);
+    } catch (error) {
+      handleError(error, "posting new chat message");
+    }
+  };
 
-export const LenderHttpClientContext = createContext<
-  LenderHttpClientContextType | undefined
+  // Return all functions bundled as our client
+  return {
+    register,
+    upgradeToPake,
+    finishUpgradeToPake,
+    pakeLoginRequest,
+    pakeVerifyRequest,
+    forgotPassword,
+    verifyEmail,
+    getIsRegistered,
+    resetPassword,
+    getVersion,
+    joinWaitlist,
+    logout,
+    me,
+    check,
+    refreshToken,
+    postLoanOffer,
+    getAllLoanOffers,
+    getLoanOffer,
+    getMyLoanOffers,
+    getMyLoanOffer,
+    deleteLoanOffer,
+    getLoanAndContractStats,
+    getLoanApplications,
+    getLoanApplication,
+    takeLoanApplication,
+    getContracts,
+    getContract,
+    approveContract,
+    rejectContract,
+    rejectContractExtension,
+    principalGiven,
+    markPrincipalConfirmed,
+    updateExtensionPolicy,
+    getLiquidationToBitcoinPsbt,
+    getLiquidationToStablecoinPsbt,
+    postLiquidationTx,
+    getRecoveryPsbt,
+    approveKyc,
+    rejectKyc,
+    getLenderProfile,
+    getBorrowerProfile,
+    putUpdateProfile,
+    startDispute,
+    getDispute,
+    resolveDispute,
+    fetchDisputeWithMessages,
+    commentOnDispute,
+    newChatNotification,
+  };
+};
+
+// Create the context
+export const HttpClientLenderContext = createContext<
+  HttpClientLender | undefined
 >(undefined);
 
+// Custom hook to use the API client
 export const useLenderHttpClient = () => {
-  const context = useContext(LenderHttpClientContext);
+  const context = useContext(HttpClientLenderContext);
   if (context === undefined) {
     throw new Error(
-      "useBorrowerHttpClient must be used within a BorrowerHttpClientProvider",
+      "useLenderHttpClient must be used within a HttpClientLenderProvider",
     );
   }
   return context;
 };
 
-// Create a provider component that will wrap your app
-interface HttpClientProviderProps {
-  children: React.ReactNode;
+// Provider component
+interface HttpClientLenderProviderProps {
+  children: ReactNode;
   baseUrl: string;
 }
 
-export const HttpClientLenderProvider: React.FC<HttpClientProviderProps> = ({
+export const HttpClientLenderProvider: FC<HttpClientLenderProviderProps> = ({
   children,
   baseUrl,
 }) => {
-  const httpClient = new HttpClientLender(baseUrl);
-
-  const baseClientFunctions: BaseHttpClientContextType = {
-    register: httpClient.register.bind(httpClient),
-    pakeLoginRequest: httpClient.pakeLoginRequest.bind(httpClient),
-    pakeVerifyRequest: httpClient.pakeVerifyRequest.bind(httpClient),
-    upgradeToPake: httpClient.upgradeToPake.bind(httpClient),
-    finishUpgradeToPake: httpClient.finishUpgradeToPake.bind(httpClient),
-    logout: httpClient.logout.bind(httpClient),
-    me: httpClient.me.bind(httpClient),
-    forgotPassword: httpClient.forgotPassword.bind(httpClient),
-    verifyEmail: httpClient.verifyEmail.bind(httpClient),
-    resetPassword: httpClient.resetPassword.bind(httpClient),
-    getVersion: httpClient.getVersion.bind(httpClient),
-    check: httpClient.check.bind(httpClient),
-    joinWaitlist: httpClient.joinWaitlist.bind(httpClient),
-  };
-
-  const lenderClientFunctions: LenderHttpClientContextType = {
-    postLoanOffer: httpClient.postLoanOffer.bind(httpClient),
-    getContracts: httpClient.getContracts.bind(httpClient),
-    getContract: httpClient.getContract.bind(httpClient),
-    approveContract: httpClient.approveContract.bind(httpClient),
-    rejectContract: httpClient.rejectContract.bind(httpClient),
-    rejectContractExtension:
-      httpClient.rejectContractExtension.bind(httpClient),
-    approveKyc: httpClient.approveKyc.bind(httpClient),
-    rejectKyc: httpClient.rejectKyc.bind(httpClient),
-    principalGiven: httpClient.principalGiven.bind(httpClient),
-    markPrincipalConfirmed: httpClient.markPrincipalConfirmed.bind(httpClient),
-    getLenderProfile: httpClient.getLenderProfile.bind(httpClient),
-    getBorrowerProfile: httpClient.getBorrowerProfile.bind(httpClient),
-    getAllLoanOffers: httpClient.getAllLoanOffers.bind(httpClient),
-    getLoanOffer: httpClient.getLoanOffer.bind(httpClient),
-    getMyLoanOffers: httpClient.getMyLoanOffers.bind(httpClient),
-    getMyLoanOffer: httpClient.getMyLoanOffer.bind(httpClient),
-    deleteLoanOffer: httpClient.deleteLoanOffer.bind(httpClient),
-    getLiquidationToBitcoinPsbt:
-      httpClient.getLiquidationToBitcoinPsbt.bind(httpClient),
-    getLiquidationToStablecoinPsbt:
-      httpClient.getLiquidationToStablecoinPsbt.bind(httpClient),
-    postLiquidationTx: httpClient.postLiquidationTx.bind(httpClient),
-    getRecoveryPsbt: httpClient.getRecoveryPsbt.bind(httpClient),
-    getLoanAndContractStats:
-      httpClient.getLoanAndContractStats.bind(httpClient),
-    putUpdateProfile: httpClient.putUpdateProfile.bind(httpClient),
-    getLoanApplications: httpClient.getLoanApplications.bind(httpClient),
-    getLoanApplication: httpClient.getLoanApplication.bind(httpClient),
-    takeLoanApplication: httpClient.takeLoanApplication.bind(httpClient),
-    newChatNotification: httpClient.newChatNotification.bind(httpClient),
-    startDispute: httpClient.startDispute.bind(httpClient),
-    getDispute: httpClient.getDispute.bind(httpClient),
-    fetchDisputeWithMessages:
-      httpClient.fetchDisputeWithMessages.bind(httpClient),
-    commentOnDispute: httpClient.commentOnDispute.bind(httpClient),
-    resolveDispute: httpClient.resolveDispute.bind(httpClient),
-    updateExtensionPolicy: httpClient.updateExtensionPolicy.bind(httpClient),
-  };
+  const client = useMemo(() => {
+    return createHttpClientLender(baseUrl);
+  }, [baseUrl]);
 
   return (
-    <BaseHttpClientContext.Provider value={baseClientFunctions}>
-      <LenderHttpClientContext.Provider value={lenderClientFunctions}>
-        {children}
-      </LenderHttpClientContext.Provider>
-    </BaseHttpClientContext.Provider>
+    <HttpClientLenderContext.Provider value={client}>
+      {children}
+    </HttpClientLenderContext.Provider>
   );
 };

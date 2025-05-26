@@ -7,3 +7,17 @@ export const parseRFC3339Date = (
   }
   return new Date(dateString);
 };
+
+export const isAllowedPageWithoutLogin = (path: string) => {
+  return (
+    path.includes("login") ||
+    path.includes("registration") ||
+    path.includes("forgotpassword") ||
+    path.includes("resetpassword") ||
+    path.includes("verifyemail") ||
+    path.includes("logout") ||
+    path.includes("error") ||
+    path.includes("upgrade-to-pake") ||
+    path.includes("waitlist")
+  );
+};
