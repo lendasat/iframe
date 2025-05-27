@@ -38,6 +38,7 @@ const RELAYS = [
   "wss://relay.primal.net",
   "wss://relay.damus.io",
   "wss://relay.satsdays.com",
+  "wss://relay.holzeis.me",
 ];
 
 interface UseNostrResult {
