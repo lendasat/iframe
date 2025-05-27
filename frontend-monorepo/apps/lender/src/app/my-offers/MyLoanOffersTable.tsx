@@ -251,15 +251,12 @@ export const MyLoanOffersTable = ({ offers }: MyLoanOffersTableProps) => {
 
           const rowStatus = row.getValue(id) as string;
 
-          // If "Unavailable" is selected, show both Unavailable and Deleted
           if (value === LoanOfferStatus.Unavailable) {
             return (
-              rowStatus === LoanOfferStatus.Unavailable ||
-              rowStatus === LoanOfferStatus.Deleted
+              rowStatus !== LoanOfferStatus.Available
             );
           }
 
-          // For "Available", only show Available
           return rowStatus === value;
         },
       },
@@ -340,7 +337,7 @@ export const MyLoanOffersTable = ({ offers }: MyLoanOffersTableProps) => {
 
   return (
     <ScrollArea className="h-[80vh]">
-      <div className="space-y-4">
+      <div>
         {/* Filter Controls */}
         <div className="flex items-center gap-4 flex-wrap">
           <div className="flex items-center gap-2">
