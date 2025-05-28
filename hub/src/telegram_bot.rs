@@ -226,6 +226,9 @@ pub enum BorrowerNotificationKind {
         ip_address: String,
         login_time: OffsetDateTime,
     },
+    ContractExtensionEnabled {
+        name: String,
+    },
 }
 
 impl xtra::Handler<Notification> for TelegramBot {
@@ -370,9 +373,14 @@ impl xtra::Handler<Notification> for TelegramBot {
             NotificationTarget::Borrower(BorrowerNotificationKind::LoginNotification { name, ip_address, login_time }) => {
                 let login_time = login_time.format(&Rfc2822).expect("to be able to format the date");
                 (
-
                     format!("Hi, {name}. A new login has been registered from IP {ip_address} on {login_time}. If this was not you, log in and change your password immediately."),
                     "Go to my profile".to_string(),
+                )
+            }
+            NotificationTarget::Borrower(BorrowerNotificationKind::ContractExtensionEnabled { name }) => {
+                (
+                    format!("Hi, {name}. The lender enabled contract extensions for this contract. You can now log in and extend it."),
+                    "Go to contract".to_string(),
                 )
             }
         };
