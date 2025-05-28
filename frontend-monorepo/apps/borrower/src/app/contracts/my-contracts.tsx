@@ -1,4 +1,8 @@
-import { useHttpClientBorrower } from "@frontend/http-client-borrower";
+import {
+  isContractClosed,
+  isContractOpen,
+  useHttpClientBorrower,
+} from "@frontend/http-client-borrower";
 import {
   ContractStatus,
   contractStatusToLabelString,
@@ -12,7 +16,17 @@ import {
   ColumnFilterKey,
   ContractDetailsTable,
 } from "./contract-details-table";
-import { Button, ScrollArea } from "@frontend/shadcn";
+import {
+  Button,
+  ScrollArea,
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@frontend/shadcn";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -23,8 +37,17 @@ import { Label } from "@frontend/shadcn";
 import { Card, CardContent, CardHeader } from "@frontend/shadcn";
 import { SlidersHorizontal } from "lucide-react";
 
+enum ContractStatusFilterType {
+  All = "All",
+  Open = "Open",
+  Closed = "Closed",
+}
+
 function MyContracts() {
   const { getContracts } = useHttpClientBorrower();
+  const [contractStatusFilter, setContractStatusFilter] = useState(
+    ContractStatusFilterType.Open,
+  );
 
   const { value, error } = useAsync(async () => {
     return getContracts();
@@ -113,25 +136,6 @@ function MyContracts() {
     };
   }, []);
 
-  const [contractStatusFilter, setContractStatusFilter] = useState<
-    ContractStatus[]
-  >([
-    ContractStatus.Requested,
-    ContractStatus.RenewalRequested,
-    ContractStatus.Approved,
-    ContractStatus.Approved,
-    ContractStatus.CollateralSeen,
-    ContractStatus.CollateralConfirmed,
-    ContractStatus.PrincipalGiven,
-    ContractStatus.RepaymentProvided,
-    ContractStatus.RepaymentConfirmed,
-    ContractStatus.DisputeBorrowerStarted,
-    ContractStatus.DisputeBorrowerResolved,
-    ContractStatus.DisputeLenderStarted,
-    ContractStatus.DisputeLenderResolved,
-    ContractStatus.Defaulted,
-    ContractStatus.Undercollateralized,
-  ]);
   const [sortByColumn, setSortByColumn] =
     useState<ColumnFilterKey>("updatedAt");
   const [sortAsc, setSortAsc] = useState(false);
@@ -147,19 +151,6 @@ function MyContracts() {
     }));
   };
 
-  const toggleContractStatusFilter = (
-    e: MouseEvent<HTMLDivElement>,
-    filterName: ContractStatus,
-  ) => {
-    e.preventDefault();
-
-    setContractStatusFilter((prev) =>
-      prev.includes(filterName)
-        ? prev.filter((status) => status !== filterName)
-        : [...prev, filterName],
-    );
-  };
-
   function toggleSortByColumn(column: ColumnFilterKey) {
     setSortByColumn(column);
     setSortAsc(!sortAsc);
@@ -167,7 +158,14 @@ function MyContracts() {
 
   const contracts = unfilteredContracts
     .filter((contract) => {
-      return contractStatusFilter.includes(contract.status);
+      switch (contractStatusFilter) {
+        case ContractStatusFilterType.Open:
+          return isContractOpen(contract.status);
+        case ContractStatusFilterType.Closed:
+          return isContractClosed(contract.status);
+        case ContractStatusFilterType.All:
+          return true;
+      }
     })
     .sort((a, b) => {
       // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
@@ -198,6 +196,20 @@ function MyContracts() {
       }
       return sortAsc ? dif : -dif;
     });
+
+  const handleContractStatusFilterChange = (value: string) => {
+    switch (value) {
+      case "Open":
+        setContractStatusFilter(ContractStatusFilterType.Open);
+        break;
+      case "Closed":
+        setContractStatusFilter(ContractStatusFilterType.Closed);
+        break;
+      case "All":
+        setContractStatusFilter(ContractStatusFilterType.All);
+        break;
+    }
+  };
 
   return (
     <div className="pb-20">
@@ -280,29 +292,23 @@ function MyContracts() {
                   ({contracts.length}/{unfilteredContracts.length} displayed)
                 </span>
               </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <SlidersHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 sm:h-48 h-80">
-                  <ScrollArea>
-                    {ALL_CONTRACT_STATUSES.map((contractStatus) => (
-                      <DropdownMenuCheckboxItem
-                        key={contractStatus}
-                        id={`status-${contractStatus}`}
-                        checked={contractStatusFilter.includes(contractStatus)}
-                        onClick={(e) =>
-                          toggleContractStatusFilter(e, contractStatus)
-                        }
-                      >
-                        {contractStatusToLabelString(contractStatus)}
-                      </DropdownMenuCheckboxItem>
-                    ))}
-                  </ScrollArea>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Select
+                value={contractStatusFilter}
+                onValueChange={(newVal) => {
+                  handleContractStatusFilterChange(newVal);
+                }}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Filter Contracts" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="All">All</SelectItem>
+                    <SelectItem value="Closed">Closed</SelectItem>
+                    <SelectItem value="Open">Open</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardContent>
