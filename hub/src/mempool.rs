@@ -173,16 +173,22 @@ impl Actor {
             match claim_type {
                 ClaimTxType::Repaid => {
                     db::transactions::insert_claim_txid(&self.db, contract_id, claim_txid).await?;
+                    db::contracts::mark_contract_as_closed(&self.db, contract_id)
+                        .await
+                        .context("Failed to mark contract as closed")?;
                 }
                 ClaimTxType::Liquidated => {
                     db::transactions::insert_liquidation_txid(&self.db, contract_id, claim_txid)
                         .await?;
+                    db::contracts::mark_contract_as_closed(&self.db, contract_id)
+                        .await
+                        .context("Failed to mark contract as closed")?;
+                }
+                ClaimTxType::Defaulted => {
+                    db::transactions::insert_defaulted_txid(&self.db, contract_id, claim_txid)
+                        .await?;
                 }
             }
-
-            db::contracts::mark_contract_as_closed(&self.db, contract_id)
-                .await
-                .context("Failed to mark contract as closed")?;
 
             self.tracked_claim_txs.remove(claim_txid);
         }
@@ -607,6 +613,7 @@ impl xtra::Handler<AssociateNewContract> for Actor {
 pub enum ClaimTxType {
     Repaid,
     Liquidated,
+    Defaulted,
 }
 
 /// Message to tell the [`Actor`] to track the status of a collateral-claim transaction.

@@ -80,6 +80,21 @@ pub async fn insert_liquidation_txid(
     Ok(loan_tx)
 }
 
+pub async fn insert_defaulted_txid(
+    db_pool: &PgPool,
+    contract_id: &str,
+    txid: &Txid,
+) -> Result<LoanTransaction> {
+    let loan_tx = insert(
+        db_pool,
+        contract_id,
+        txid.to_string().as_str(),
+        TransactionType::Defaulted,
+    )
+    .await?;
+    Ok(loan_tx)
+}
+
 pub async fn insert_dispute_txid(
     db_pool: &PgPool,
     contract_id: &str,

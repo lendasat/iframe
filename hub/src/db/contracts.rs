@@ -833,6 +833,12 @@ where
 pub async fn mark_contract_as_closed(pool: &Pool<Postgres>, contract_id: &str) -> Result<()> {
     mark_contract_state_as(pool, contract_id, db::ContractStatus::Closed).await
 }
+pub async fn mark_contract_as_liquidated(pool: &Pool<Postgres>, contract_id: &str) -> Result<()> {
+    mark_contract_state_as(pool, contract_id, db::ContractStatus::ClosedByLiquidation).await
+}
+pub async fn mark_contract_as_defaulted(pool: &Pool<Postgres>, contract_id: &str) -> Result<()> {
+    mark_contract_state_as(pool, contract_id, db::ContractStatus::ClosedByDefaulting).await
+}
 
 pub async fn mark_contract_as_closing(pool: &Pool<Postgres>, contract_id: &str) -> Result<()> {
     mark_contract_state_as(pool, contract_id, db::ContractStatus::Closing).await
@@ -1109,6 +1115,8 @@ pub async fn update_collateral(
                     | ContractStatus::Defaulted
                     | ContractStatus::Closing
                     | ContractStatus::Closed
+                    | ContractStatus::ClosedByLiquidation
+                    | ContractStatus::ClosedByDefaulting
                     | ContractStatus::Extended
                     | ContractStatus::Rejected
                     | ContractStatus::DisputeBorrowerStarted
@@ -1373,26 +1381,6 @@ pub(crate) async fn check_if_contract_belongs_to_borrower(
         "#,
         contract_id,
         borrower_id,
-    )
-    .fetch_one(pool)
-    .await?;
-
-    Ok(row.entry_exists.unwrap_or(false))
-}
-
-pub(crate) async fn check_if_contract_belongs_to_lender(
-    pool: &Pool<Postgres>,
-    contract_id: &str,
-    lender_id: &str,
-) -> Result<bool> {
-    let row = sqlx::query!(
-        r#"
-            SELECT EXISTS (
-                SELECT 1 FROM contracts WHERE id = $1 AND lender_id = $2
-            ) AS entry_exists;
-        "#,
-        contract_id,
-        lender_id,
     )
     .fetch_one(pool)
     .await?;

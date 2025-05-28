@@ -766,6 +766,10 @@ pub enum ContractStatus {
     Closing,
     /// The loan has been repaid, somehow.
     Closed,
+    /// Contract is closed after being liquidated
+    ClosedByLiquidation,
+    /// Contract is closed after the borrower defaulted
+    ClosedByDefaulting,
     /// The contract has been extended by a new one.
     Extended,
     /// The contract request was rejected by the lender.
@@ -902,6 +906,8 @@ pub mod db {
         Defaulted,
         Closing,
         Closed,
+        ClosedByLiquidation,
+        ClosedByDefaulting,
         Extended,
         Cancelled,
         Rejected,
@@ -1037,6 +1043,8 @@ impl From<db::ContractStatus> for ContractStatus {
             db::ContractStatus::Cancelled => Self::Cancelled,
             db::ContractStatus::RequestExpired => Self::RequestExpired,
             db::ContractStatus::ApprovalExpired => Self::ApprovalExpired,
+            db::ContractStatus::ClosedByLiquidation => Self::ClosedByLiquidation,
+            db::ContractStatus::ClosedByDefaulting => Self::ClosedByDefaulting,
         }
     }
 }
@@ -1177,6 +1185,8 @@ impl From<ContractStatus> for db::ContractStatus {
             ContractStatus::Cancelled => Self::Cancelled,
             ContractStatus::RequestExpired => Self::RequestExpired,
             ContractStatus::ApprovalExpired => Self::ApprovalExpired,
+            ContractStatus::ClosedByLiquidation => Self::ClosedByLiquidation,
+            ContractStatus::ClosedByDefaulting => Self::ClosedByDefaulting,
         }
     }
 }
@@ -1269,6 +1279,7 @@ pub enum TransactionType {
     PrincipalGiven,
     PrincipalRepaid,
     Liquidation,
+    Defaulted,
     ClaimCollateral,
 }
 

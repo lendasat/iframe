@@ -778,7 +778,7 @@ async fn post_liquidation_tx(
     Path(contract_id): Path<String>,
     Json(body): Json<LiquidationTx>,
 ) -> Result<String, (StatusCode, Json<ErrorResponse>)> {
-    let belongs_to_lender = db::contracts::check_if_contract_belongs_to_lender(
+    let contract = db::contracts::load_contract_by_contract_id_and_lender_id(
         &data.db,
         contract_id.as_str(),
         &user.id,
@@ -789,14 +789,13 @@ async fn post_liquidation_tx(
             message: format!("Database error: {e:#}"),
         };
         (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?;
-
-    if !belongs_to_lender {
+    })?
+    .ok_or_else(|| {
         let error_response = ErrorResponse {
             message: "Contract not found".to_string(),
         };
-        return Err((StatusCode::NOT_FOUND, Json(error_response)));
-    }
+        (StatusCode::NOT_FOUND, Json(error_response))
+    })?;
 
     let signed_claim_tx_str = body.tx;
     let signed_claim_tx: Transaction =
@@ -808,11 +807,17 @@ async fn post_liquidation_tx(
         })?;
     let claim_txid = signed_claim_tx.compute_txid();
 
+    let claim_type = if ContractStatus::Defaulted == contract.status {
+        mempool::ClaimTxType::Defaulted
+    } else {
+        mempool::ClaimTxType::Liquidated
+    };
+
     data.mempool
         .send(mempool::TrackCollateralClaim {
             contract_id: contract_id.clone(),
             claim_txid,
-            claim_type: mempool::ClaimTxType::Liquidated,
+            claim_type,
         })
         .await
         .expect("actor to be alive")
@@ -1237,12 +1242,14 @@ async fn map_timeline(
                             .then(|| tx.txid.clone())
                     })
                 }
-                ContractStatus::Closing | ContractStatus::Closed | ContractStatus::Defaulted => {
-                    transactions.iter().find_map(|tx| {
-                        (tx.transaction_type == TransactionType::ClaimCollateral)
-                            .then(|| tx.txid.clone())
-                    })
-                }
+                ContractStatus::Closing
+                | ContractStatus::Closed
+                | ContractStatus::Defaulted
+                | ContractStatus::ClosedByLiquidation
+                | ContractStatus::ClosedByDefaulting => transactions.iter().find_map(|tx| {
+                    (tx.transaction_type == TransactionType::ClaimCollateral)
+                        .then(|| tx.txid.clone())
+                }),
 
                 ContractStatus::Requested
                 | ContractStatus::RenewalRequested

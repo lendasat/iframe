@@ -252,9 +252,7 @@ export const MyLoanOffersTable = ({ offers }: MyLoanOffersTableProps) => {
           const rowStatus = row.getValue(id) as string;
 
           if (value === LoanOfferStatus.Unavailable) {
-            return (
-              rowStatus !== LoanOfferStatus.Available
-            );
+            return rowStatus !== LoanOfferStatus.Available;
           }
 
           return rowStatus === value;

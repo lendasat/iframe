@@ -66,7 +66,9 @@ export const Timeline = ({ contract }: TimelineProps) => {
                 if (
                   event.event === ContractStatus.CollateralConfirmed ||
                   event.event === ContractStatus.CollateralSeen ||
-                  event.event === ContractStatus.Closed
+                  event.event === ContractStatus.Closed ||
+                  event.event === ContractStatus.ClosedByLiquidation ||
+                  event.event === ContractStatus.ClosedByDefaulting
                 ) {
                   url = `${import.meta.env.VITE_MEMPOOL_REST_URL}/tx/${event.txid}`;
                 } else {
@@ -178,6 +180,10 @@ export function contractStatusDescription(status: ContractStatus): string {
       return "Your collateral is being spent";
     case ContractStatus.Closed:
       return "Your contract is closed";
+    case ContractStatus.ClosedByDefaulting:
+      return "You defaulted on your contract";
+    case ContractStatus.ClosedByLiquidation:
+      return "Your contract got liquidated";
     case ContractStatus.Extended:
       return "The contract has been extended";
     case ContractStatus.Rejected:

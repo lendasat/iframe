@@ -84,6 +84,14 @@ export function StatusBadge({ status }: StatusBadgeProps) {
       color = "gray";
       label = "Closed";
       break;
+    case ContractStatus.ClosedByLiquidation:
+      color = "gray";
+      label = "Closed by Liquidation";
+      break;
+    case ContractStatus.ClosedByDefaulting:
+      color = "gray";
+      label = "Closed by Defaulting";
+      break;
     case ContractStatus.Extended:
       color = "gray";
       label = "Extended";
