@@ -2,7 +2,7 @@ import type { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import axios from "axios";
 import { createContext, useContext, useMemo } from "react";
 import type { ReactNode, FC } from "react";
-import type {
+import {
   BorrowerStats,
   Contract,
   ContractDispute,
