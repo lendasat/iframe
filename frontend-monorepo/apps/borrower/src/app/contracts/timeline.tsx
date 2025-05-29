@@ -152,7 +152,7 @@ export const Timeline = ({ contract }: TimelineProps) => {
   );
 };
 
-export function contractStatusDescription(status: ContractStatus): string {
+export const contractStatusDescription = (status: ContractStatus): string => {
   switch (status) {
     case ContractStatus.Requested:
       return "Waiting for your request to be approved";
@@ -194,4 +194,4 @@ export function contractStatusDescription(status: ContractStatus): string {
     case ContractStatus.ApprovalExpired:
       return "The contract request has expired";
   }
-}
+};

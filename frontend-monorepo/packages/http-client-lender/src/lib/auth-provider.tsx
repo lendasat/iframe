@@ -1,4 +1,4 @@
-import type { LoginResponseOrUpgrade, User, Version } from "./models";
+import { FeatureMapper, LoginResponseOrUpgrade, User, Version } from "./models";
 import { process_login_response, verify_server } from "browser-wallet";
 import { FC, ReactNode, useMemo } from "react";
 import { createContext, useContext, useEffect, useState } from "react";
@@ -92,7 +92,10 @@ export const AuthProvider: FC<AuthProviderProps> = ({
         const userData = await httpClient.me();
         if (userData) {
           setUser(userData.user);
-          setEnabledFeatures(userData.enabled_features);
+          const featureFlags = FeatureMapper.mapEnabledFeatures(
+            userData.enabled_features,
+          );
+          setEnabledFeatures(featureFlags);
         }
 
         // Get backend version in the background
@@ -177,7 +180,10 @@ export const AuthProvider: FC<AuthProviderProps> = ({
       const currentUser = pakeVerifyResponse.user;
 
       if (pakeVerifyResponse.enabled_features) {
-        setEnabledFeatures(pakeVerifyResponse.enabled_features);
+        const featureFlags = FeatureMapper.mapEnabledFeatures(
+          pakeVerifyResponse.enabled_features,
+        );
+        setEnabledFeatures(featureFlags);
       } else {
         setEnabledFeatures([]);
       }

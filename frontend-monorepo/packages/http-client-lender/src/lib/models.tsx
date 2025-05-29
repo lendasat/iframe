@@ -612,7 +612,7 @@ export interface Version {
 
 export interface MeResponse {
   user: User;
-  enabled_features: LenderFeatureFlags[];
+  enabled_features: LoanFeature[];
 }
 
 export interface LoginResponse {
@@ -637,7 +637,7 @@ export type PakeLoginResponseOrUpgrade = PakeLoginResponse | MustUpgradeToPake;
 export interface PakeVerifyResponse {
   server_proof: string;
   token: string;
-  enabled_features: LenderFeatureFlags[];
+  enabled_features: LoanFeature[];
   user: User;
   wallet_backup_data: WalletBackupData;
 }
