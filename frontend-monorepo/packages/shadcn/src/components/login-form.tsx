@@ -10,7 +10,7 @@ import {
 } from "#/components/ui/card";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, ReactNode, useState } from "react";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { Eye, EyeOff } from "lucide-react";
 
@@ -22,6 +22,7 @@ interface LoginFormProps extends React.ComponentProps<"div"> {
   initialUserPassword: string;
   infoMessage?: string;
   waitlistLink: string;
+  cardDescription: ReactNode;
 }
 
 export function LoginForm({
@@ -32,6 +33,7 @@ export function LoginForm({
   initialUserEmail,
   initialUserPassword,
   waitlistLink,
+  cardDescription,
   ...props
 }: LoginFormProps) {
   const [email, setEmail] = useState(initialUserEmail);
@@ -59,9 +61,7 @@ export function LoginForm({
       <Card>
         <CardHeader className="text-center">
           <CardTitle className="text-xl">Welcome back</CardTitle>
-          <CardDescription>
-            Welcome back! Please enter your details...
-          </CardDescription>
+          <CardDescription>{cardDescription}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={onSubmit}>
