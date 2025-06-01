@@ -50,6 +50,8 @@ export const SectionCards = ({ contracts, isLoading }: SectionCardsProps) => {
   const closedContracts = contracts.filter(
     (contract) =>
       contract.status === ContractStatus.Closed ||
+      contract.status === ContractStatus.ClosedByLiquidation ||
+      contract.status === ContractStatus.ClosedByDefaulting ||
       contract.status === ContractStatus.Closing ||
       contract.status === ContractStatus.Extended,
   );

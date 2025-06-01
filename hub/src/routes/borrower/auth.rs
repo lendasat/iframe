@@ -703,6 +703,8 @@ async fn post_start_upgrade_to_pake(
             !matches!(
                 c.status,
                 ContractStatus::Closed
+                    | ContractStatus::ClosedByLiquidation
+                    | ContractStatus::ClosedByDefaulting
                     | ContractStatus::Cancelled
                     | ContractStatus::RequestExpired
                     | ContractStatus::ApprovalExpired

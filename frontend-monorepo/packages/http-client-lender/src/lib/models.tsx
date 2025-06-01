@@ -29,6 +29,8 @@ export enum ContractStatus {
   Defaulted = "Defaulted",
   Closing = "Closing",
   Closed = "Closed",
+  ClosedByLiquidation = "ClosedByLiquidation",
+  ClosedByDefaulting = "ClosedByDefaulting",
   Extended = "Extended",
   Rejected = "Rejected",
   DisputeBorrowerStarted = "DisputeBorrowerStarted",
@@ -48,6 +50,8 @@ export const isActionRequired = (status: ContractStatus) => {
     case ContractStatus.DisputeLenderResolved:
     case ContractStatus.Closing:
     case ContractStatus.Closed:
+    case ContractStatus.ClosedByDefaulting:
+    case ContractStatus.ClosedByLiquidation:
     case ContractStatus.Extended:
     case ContractStatus.Rejected:
     case ContractStatus.Cancelled:
@@ -74,6 +78,8 @@ export const isContractOpen = (status: ContractStatus) => {
     case ContractStatus.Undercollateralized:
     case ContractStatus.Closing:
     case ContractStatus.Closed:
+    case ContractStatus.ClosedByLiquidation:
+    case ContractStatus.ClosedByDefaulting:
     case ContractStatus.Extended:
     case ContractStatus.Rejected:
     case ContractStatus.Cancelled:
@@ -235,6 +241,8 @@ export const actionFromStatus = (status: ContractStatus) => {
     case ContractStatus.DisputeBorrowerResolved:
     case ContractStatus.DisputeLenderResolved:
     case ContractStatus.Closed:
+    case ContractStatus.ClosedByLiquidation:
+    case ContractStatus.ClosedByDefaulting:
     case ContractStatus.Extended:
     case ContractStatus.Closing:
     case ContractStatus.Cancelled:
@@ -281,7 +289,13 @@ export function contractStatusToLabelString(status: ContractStatus): string {
       statusText = "Closing";
       break;
     case ContractStatus.Closed:
-      statusText = "Closed";
+      statusText = "Closed by repayment";
+      break;
+    case ContractStatus.ClosedByDefaulting:
+      statusText = "Closed by defaulting";
+      break;
+    case ContractStatus.ClosedByLiquidation:
+      statusText = "Closed by liquidation";
       break;
     case ContractStatus.Extended:
       statusText = "Extended";

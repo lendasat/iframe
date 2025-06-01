@@ -193,6 +193,28 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       message = <>This loan has been fully repaid and closed.</>;
       break;
 
+    case ContractStatus.ClosedByDefaulting:
+      icon = <LuCheck className="h-5 w-5 text-gray-500 mr-2 mt-0.5" />;
+      bgColor = "bg-gray-50";
+      borderColor = "border-gray-200";
+      titleColor = "text-gray-800";
+      textColor = "text-gray-600";
+      title = "Loan Closed";
+      // biome-ignore lint/complexity/noUselessFragments: wanted fragment.
+      message = <>This loan has been closed due to defaulting.</>;
+      break;
+
+    case ContractStatus.ClosedByLiquidation:
+      icon = <LuCheck className="h-5 w-5 text-gray-500 mr-2 mt-0.5" />;
+      bgColor = "bg-gray-50";
+      borderColor = "border-gray-200";
+      titleColor = "text-gray-800";
+      textColor = "text-gray-600";
+      title = "Loan Closed";
+      // biome-ignore lint/complexity/noUselessFragments: wanted fragment.
+      message = <>This loan has been liquidated.</>;
+      break;
+
     case ContractStatus.Extended:
       icon = <LuCheck className="h-5 w-5 text-purple-500 mr-2 mt-0.5" />;
       bgColor = "bg-purple-50";

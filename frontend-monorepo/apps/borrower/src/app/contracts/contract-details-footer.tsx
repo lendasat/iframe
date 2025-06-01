@@ -97,6 +97,8 @@ export function ContractDetailsFooter({
   } else if (
     contract.status !== ContractStatus.Cancelled &&
     contract.status !== ContractStatus.Closed &&
+    contract.status !== ContractStatus.ClosedByDefaulting &&
+    contract.status !== ContractStatus.ClosedByLiquidation &&
     contract.status !== ContractStatus.RepaymentProvided &&
     contract.status !== ContractStatus.Extended &&
     contract.status !== ContractStatus.CollateralConfirmed &&

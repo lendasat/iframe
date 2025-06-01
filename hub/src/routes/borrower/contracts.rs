@@ -1229,6 +1229,12 @@ async fn map_timeline(
                             .then(|| tx.txid.clone())
                     })
                 }
+                ContractStatus::ClosedByDefaulting => transactions.iter().find_map(|tx| {
+                    (tx.transaction_type == TransactionType::Defaulted).then(|| tx.txid.clone())
+                }),
+                ContractStatus::ClosedByLiquidation => transactions.iter().find_map(|tx| {
+                    (tx.transaction_type == TransactionType::Liquidation).then(|| tx.txid.clone())
+                }),
 
                 ContractStatus::Requested
                 | ContractStatus::RenewalRequested

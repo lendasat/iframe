@@ -138,6 +138,8 @@ const EnhancedBitcoinLoan = () => {
                       contract?.status !== ContractStatus.Rejected &&
                       contract?.status !== ContractStatus.Cancelled &&
                       contract?.status !== ContractStatus.Closed &&
+                      contract?.status !== ContractStatus.ClosedByLiquidation &&
+                      contract?.status !== ContractStatus.ClosedByDefaulting &&
                       contract?.liquidation_status ===
                         LiquidationStatus.Healthy && (
                         <div className="flex items-center text-sm text-green-600">

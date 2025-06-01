@@ -57,6 +57,10 @@ export function contractStatusLabelColor(status?: ContractStatus): string {
       return "bg-slate-100 text-slate-800";
     case ContractStatus.Closed:
       return "bg-gray-100 text-gray-800";
+    case ContractStatus.ClosedByDefaulting:
+      return "bg-gray-100 text-gray-800";
+    case ContractStatus.ClosedByLiquidation:
+      return "bg-gray-100 text-gray-800";
     case ContractStatus.Extended:
       return "bg-purple-100 text-purple-800";
     case ContractStatus.Rejected:
@@ -137,6 +141,8 @@ const EnhancedBitcoinLoan = () => {
                       contract?.status !== ContractStatus.Cancelled &&
                       contract?.status !== ContractStatus.Defaulted &&
                       contract?.status !== ContractStatus.Closed &&
+                      contract?.status !== ContractStatus.ClosedByDefaulting &&
+                      contract?.status !== ContractStatus.ClosedByLiquidation &&
                       contract?.liquidation_status ===
                         LiquidationStatus.Healthy && (
                         <div className="flex items-center text-sm text-green-600">

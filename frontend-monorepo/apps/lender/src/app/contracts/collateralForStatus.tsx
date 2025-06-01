@@ -24,6 +24,8 @@ export function collateralForStatus(
     case ContractStatus.Defaulted:
     case ContractStatus.Closing:
     case ContractStatus.Closed:
+    case ContractStatus.ClosedByLiquidation:
+    case ContractStatus.ClosedByDefaulting:
     case ContractStatus.Extended:
     case ContractStatus.DisputeBorrowerStarted:
     case ContractStatus.DisputeLenderStarted:

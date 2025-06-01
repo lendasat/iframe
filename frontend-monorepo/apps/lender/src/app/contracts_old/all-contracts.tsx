@@ -1,8 +1,7 @@
 import {
-  ALL_CONTRACT_STATUSES,
   type Contract,
-  ContractStatus,
-  contractStatusToLabelString,
+  isContractClosed,
+  isContractOpen,
 } from "@frontend/http-client-lender";
 import { usePrice } from "@frontend/ui-shared";
 import { MixerHorizontalIcon } from "@radix-ui/react-icons";
@@ -18,6 +17,14 @@ import {
 } from "@radix-ui/themes";
 import { useState } from "react";
 import { ContractDetailsTable } from "./contract-details-table";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@frontend/shadcn";
 
 type ColumnFilterKey =
   | "updatedAt"
@@ -30,6 +37,12 @@ type ColumnFilterKey =
   | "action";
 type ColumnFilter = Record<ColumnFilterKey, boolean>;
 
+enum ContractStatusFilterType {
+  All = "All",
+  Open = "Open",
+  Closed = "Closed",
+}
+
 interface OpenContractsProps {
   contracts: Contract[];
   header?: boolean;
@@ -40,6 +53,9 @@ export const AllContracts = ({
   header,
 }: OpenContractsProps) => {
   const { latestPrice } = usePrice();
+  const [contractStatusFilter, setContractStatusFilter] = useState(
+    ContractStatusFilterType.Open,
+  );
 
   const [shownColumns, setShownColumns] = useState<ColumnFilter>({
     updatedAt: true,
@@ -52,25 +68,6 @@ export const AllContracts = ({
     action: true,
   });
 
-  const [contractStatusFilter, setContractStatusFilter] = useState<
-    ContractStatus[]
-  >([
-    ContractStatus.Requested,
-    ContractStatus.RenewalRequested,
-    ContractStatus.Approved,
-    ContractStatus.Approved,
-    ContractStatus.CollateralSeen,
-    ContractStatus.CollateralConfirmed,
-    ContractStatus.PrincipalGiven,
-    ContractStatus.RepaymentProvided,
-    ContractStatus.DisputeBorrowerStarted,
-    ContractStatus.DisputeBorrowerResolved,
-    ContractStatus.DisputeLenderStarted,
-    ContractStatus.DisputeLenderResolved,
-    ContractStatus.Defaulted,
-    ContractStatus.Undercollateralized,
-  ]);
-
   const [sortByColumn, setSortByColumn] =
     useState<ColumnFilterKey>("updatedAt");
   const [sortAsc, setSortAsc] = useState(false);
@@ -81,17 +78,17 @@ export const AllContracts = ({
       [filterName]: !prev[filterName],
     }));
   };
-  const toggleContractStatusFilter = (filterName: ContractStatus) => {
-    setContractStatusFilter((prev) =>
-      prev.includes(filterName)
-        ? prev.filter((status) => status !== filterName)
-        : [...prev, filterName],
-    );
-  };
 
   const contracts = unfilteredContracts
     .filter((contract) => {
-      return contractStatusFilter.includes(contract.status);
+      switch (contractStatusFilter) {
+        case ContractStatusFilterType.Open:
+          return isContractOpen(contract.status);
+        case ContractStatusFilterType.Closed:
+          return isContractClosed(contract.status);
+        case ContractStatusFilterType.All:
+          return true;
+      }
     })
     .sort((a, b) => {
       // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
@@ -127,6 +124,20 @@ export const AllContracts = ({
     setSortByColumn(column);
     setSortAsc(!sortAsc);
   }
+
+  const handleContractStatusFilterChange = (value: string) => {
+    switch (value) {
+      case "Open":
+        setContractStatusFilter(ContractStatusFilterType.Open);
+        break;
+      case "Closed":
+        setContractStatusFilter(ContractStatusFilterType.Closed);
+        break;
+      case "All":
+        setContractStatusFilter(ContractStatusFilterType.All);
+        break;
+    }
+  };
 
   return (
     <Box className={"pb-20"}>
@@ -251,41 +262,23 @@ export const AllContracts = ({
                 ({contracts.length}/{unfilteredContracts.length} displayed)
               </Text>
             </Flex>
-            <DropdownMenu.Root>
-              <DropdownMenu.Trigger>
-                <Button variant={"outline"} size="2">
-                  <MixerHorizontalIcon />
-                </Button>
-              </DropdownMenu.Trigger>
-
-              <DropdownMenu.Content
-                className={"bg-light dark:bg-dark"}
-                size="1"
-              >
-                {ALL_CONTRACT_STATUSES.map((contractStatus) => {
-                  return (
-                    <DropdownMenu.Item
-                      onSelect={(e) => e.preventDefault()}
-                      key={contractStatus.toString()}
-                    >
-                      <Flex gap="2" align="center">
-                        <Checkbox
-                          checked={contractStatusFilter.includes(
-                            contractStatus,
-                          )}
-                          onCheckedChange={() =>
-                            toggleContractStatusFilter(contractStatus)
-                          }
-                        />
-                        <Text className={"text-font dark:text-font-dark"}>
-                          {contractStatusToLabelString(contractStatus)}
-                        </Text>
-                      </Flex>
-                    </DropdownMenu.Item>
-                  );
-                })}
-              </DropdownMenu.Content>
-            </DropdownMenu.Root>
+            <Select
+              value={contractStatusFilter}
+              onValueChange={(newVal) => {
+                handleContractStatusFilterChange(newVal);
+              }}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filter Contracts" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="All">All</SelectItem>
+                  <SelectItem value="Closed">Closed</SelectItem>
+                  <SelectItem value="Open">Open</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </Box>
