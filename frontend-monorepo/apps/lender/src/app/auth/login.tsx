@@ -101,6 +101,17 @@ function Login() {
       initialUserEmail={defaultUsername}
       initialUserPassword={defaultPassword}
       infoMessage={message}
+      loginDescription={
+        <>
+          Welcome to lending! If you are a borrower, please go to{" "}
+          <a
+            href="https://borrow.lendasat.com"
+            className={"underline underline-offset-4"}
+          >
+            https://borrow.lendasat.com
+          </a>
+        </>
+      }
     />
   );
 }

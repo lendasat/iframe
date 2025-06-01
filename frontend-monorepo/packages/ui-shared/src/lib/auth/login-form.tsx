@@ -1,5 +1,6 @@
 import { ReactComponent as Logo } from "./../assets/lendasat_svg_logo.svg";
 import { LoginForm as ShadCnLoginForm } from "@frontend/shadcn";
+import { ReactNode } from "react";
 
 interface LoginFormProps {
   handleLogin: (email: string, password: string) => Promise<void>;
@@ -9,6 +10,7 @@ interface LoginFormProps {
   initialUserPassword: string;
   infoMessage?: string;
   waitlistLink: string;
+  loginDescription: ReactNode;
 }
 
 export function LoginForm({
@@ -19,6 +21,7 @@ export function LoginForm({
   initialUserPassword,
   infoMessage,
   waitlistLink,
+  loginDescription,
 }: LoginFormProps) {
   return (
     <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10">
@@ -38,6 +41,7 @@ export function LoginForm({
           infoMessage={infoMessage}
           handleLogin={handleLogin}
           waitlistLink={waitlistLink}
+          cardDescription={loginDescription}
         />
       </div>
     </div>
