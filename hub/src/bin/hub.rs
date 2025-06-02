@@ -16,6 +16,7 @@ use hub::loan_application_expiry::add_loan_application_expiry_job;
 use hub::logger::init_tracing;
 use hub::mempool;
 use hub::moon;
+use hub::notifications::websocket::NotificationCenter;
 use hub::notifications::Notifications;
 use hub::routes::borrower::spawn_borrower_server;
 use hub::routes::lender::spawn_lender_server;
@@ -199,6 +200,7 @@ async fn main() -> Result<()> {
         config: config.clone(),
         mempool: mempool_addr,
         price_feed_ws_connections: broadcast_state.clone(),
+        lender_notification_center: NotificationCenter::default(),
         moon: moon_client.clone(),
         sideshift,
         notifications: notifications.clone(),

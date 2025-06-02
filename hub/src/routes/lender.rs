@@ -30,6 +30,7 @@ pub(crate) mod health_check;
 pub(crate) mod kyc;
 pub(crate) mod loan_applications;
 pub(crate) mod loan_offers;
+pub(crate) mod notifications;
 pub(crate) mod profile;
 pub(crate) mod version;
 
@@ -46,6 +47,7 @@ pub async fn spawn_lender_server(
             .merge(loan_offers::router(app_state.clone()))
             .merge(contracts::router(app_state.clone()))
             .merge(dispute::router(app_state.clone()))
+            .merge(notifications::router(app_state.clone()))
             .merge(price_feed_ws::router(app_state.clone()))
             .merge(
                 profiles::router()

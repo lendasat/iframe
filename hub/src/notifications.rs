@@ -9,6 +9,7 @@ use url::Url;
 use xtra::Address;
 
 mod email;
+pub mod websocket;
 
 pub struct Notifications {
     email: email::Email,
