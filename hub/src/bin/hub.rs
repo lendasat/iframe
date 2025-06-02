@@ -198,7 +198,7 @@ async fn main() -> Result<()> {
         wallet: wallet.clone(),
         config: config.clone(),
         mempool: mempool_addr,
-        connections: broadcast_state.clone(),
+        price_feed_ws_connections: broadcast_state.clone(),
         moon: moon_client.clone(),
         sideshift,
         notifications: notifications.clone(),

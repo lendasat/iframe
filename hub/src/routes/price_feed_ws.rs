@@ -32,7 +32,7 @@ async fn handle_socket(socket: WebSocket, app_state: Arc<AppState>) {
     let (tx, mut rx) = mpsc::unbounded_channel();
 
     // Add this connection to our shared state
-    app_state.connections.lock().await.push(tx);
+    app_state.price_feed_ws_connections.lock().await.push(tx);
 
     // Task to send messages to this client
     let send_task = tokio::spawn(async move {
@@ -50,7 +50,7 @@ async fn handle_socket(socket: WebSocket, app_state: Arc<AppState>) {
 
     // Connection closed, remove it from the shared state
     app_state
-        .connections
+        .price_feed_ws_connections
         .lock()
         .await
         .retain(|tx| !tx.is_closed());
