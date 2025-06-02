@@ -192,6 +192,29 @@ impl Email {
             .await
     }
 
+    pub async fn send_loan_extension_enabled(
+        &self,
+        name: &str,
+        email: &str,
+        contract_url: Url,
+    ) -> Result<()> {
+        let template_name = "loan_extension_enabled.hbs";
+        let handlebars =
+            Self::prepare_template(template_name).context("failed preparing template")?;
+
+        let data = serde_json::json!({
+            "first_name": name,
+            "contract_url": contract_url,
+        });
+
+        let content_template = handlebars
+            .render(template_name, &data)
+            .context("failed rendering template")?;
+
+        self.send_email("Contract extension enabled", name, email, content_template)
+            .await
+    }
+
     pub async fn send_password_reset_token(
         &self,
         name: &str,

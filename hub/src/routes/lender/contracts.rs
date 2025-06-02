@@ -289,9 +289,41 @@ async fn put_update_extension_policy(
         }
     };
 
+    let contract = db::contracts::load_contract_by_contract_id_and_lender_id(
+        &data.db,
+        contract_id.as_str(),
+        user.id.as_str(),
+    )
+    .await
+    .map_err(Error::database)?
+    .ok_or(Error::MissingContract(contract_id.clone()))?;
+
     update_extension_policy(&data.db, &contract_id, extension_policy)
         .await
         .map_err(Error::database)?;
+
+    let borrower = db::borrowers::get_user_by_id(&data.db, contract.borrower_id.as_str())
+        .await
+        .map_err(Error::database)?
+        .ok_or(Error::MissingBorrower)?;
+
+    if !extension_max_duration_days.is_zero() {
+        if let Err(err) = async {
+            let loan_url = data
+                .config
+                .borrower_frontend_origin
+                .join(format!("/my-contracts/{}", contract_id).as_str())?;
+
+            data.notifications
+                .send_contract_extension_enabled(borrower, loan_url)
+                .await;
+            anyhow::Ok(())
+        }
+        .await
+        {
+            tracing::error!("Failed notifying borrower {err:#}");
+        }
+    }
 
     Ok(())
 }

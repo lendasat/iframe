@@ -530,6 +530,27 @@ impl Notifications {
         }
     }
 
+    pub async fn send_contract_extension_enabled(&self, borrower: Borrower, contract_url: Url) {
+        self.send_tg_notification_borrower(
+            &borrower,
+            contract_url.clone(),
+            crate::telegram_bot::BorrowerNotificationKind::ContractExtensionEnabled {
+                name: borrower.name.clone(),
+            },
+        )
+        .await;
+
+        if let Some(email) = borrower.email.as_ref() {
+            if let Err(e) = self
+                .email
+                .send_loan_extension_enabled(borrower.name.as_str(), email.as_str(), contract_url)
+                .await
+            {
+                tracing::error!("Could not send email notification borrower {e:#}");
+            }
+        }
+    }
+
     async fn send_tg_notification_lender(
         &self,
         lender: &Lender,
