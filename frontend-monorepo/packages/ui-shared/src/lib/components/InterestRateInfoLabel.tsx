@@ -1,5 +1,5 @@
 import { Flex } from "@radix-ui/themes";
-import { Link as RadixLink } from "@radix-ui/themes/dist/cjs/components/link";
+import { Link as RadixLink } from "@radix-ui/themes";
 import type { ReactNode } from "react";
 import AbbreviationExplanationInfo from "./abbreviation-explanation-info";
 

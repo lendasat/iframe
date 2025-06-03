@@ -37,7 +37,7 @@ import {
   Text,
   TextField,
 } from "@radix-ui/themes";
-import { Link as RadixLink } from "@radix-ui/themes/dist/cjs/components/link";
+import { Link as RadixLink } from "@radix-ui/themes";
 import axios from "axios";
 import { Network, validate } from "bitcoin-address-validation";
 import { useState } from "react";

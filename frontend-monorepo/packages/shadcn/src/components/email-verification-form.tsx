@@ -70,7 +70,7 @@ export function ShadcnEmailVerification({
           <form onSubmit={onSubmit}>
             <div className="grid gap-6">
               <div className="grid gap-6">
-                <div className="flex justify-center items-center">
+                <div className="flex items-center justify-center">
                   <InputOTP
                     maxLength={6}
                     onChange={(e) => setVerificationCode(e)}
@@ -135,7 +135,7 @@ export function ShadcnEmailVerification({
           </form>
         </CardContent>
       </Card>
-      <div className="text-muted-foreground *:[a]:hover:text-primary text-center text-xs text-balance *:[a]:underline *:[a]:underline-offset-4">
+      <div className="text-muted-foreground *:[a]:hover:text-primary *:[a]:underline *:[a]:underline-offset-4 text-balance text-center text-xs">
         By using this service, you agree to our{" "}
         <a href="https://tos.lendasat.com">Terms of Service</a>.
       </div>

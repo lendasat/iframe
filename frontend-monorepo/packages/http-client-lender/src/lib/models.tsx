@@ -1,3 +1,4 @@
+import { DisputeStatus } from "@frontend/http-client-borrower";
 import { LoanAsset, LoanPayout, LoanTransaction } from "@frontend/ui-shared";
 
 export interface User {

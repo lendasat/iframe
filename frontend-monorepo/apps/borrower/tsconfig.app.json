@@ -3,7 +3,15 @@
   "compilerOptions": {
     "composite": true,
     "declaration": true,
-    "types": ["node", "vite/client"]
+    "types": ["node", "vite/client"],
+    "baseUrl": ".",
+    "paths": {
+      "#/components/*": ["../../packages/shadcn/src/components/*"],
+      "#/lib/utils": ["../../packages/shadcn/src/lib/utils.ts"],
+      "#/lib/*": ["../../packages/shadcn/src/lib/*"],
+      "#/components/ui/*": ["../../packages/shadcn/src/components/ui/*"],
+      "#/hooks/*": ["../../packages/shadcn/src/hooks/*"]
+    }
   },
   "exclude": [
     "src/**/*.spec.ts",
@@ -13,7 +21,8 @@
     "src/**/*.spec.js",
     "src/**/*.test.js",
     "src/**/*.spec.jsx",
-    "src/**/*.test.jsx"
+    "src/**/*.test.jsx",
+    "../../packages/**"
   ],
   "include": ["src/**/*.js", "src/**/*.jsx", "src/**/*.ts", "src/**/*.tsx"]
 }

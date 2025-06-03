@@ -9,7 +9,7 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite serve",
-    "check-types": "tsc --noEmit",
+    "check-types": "tsc --noEmit -p tsconfig.app.json",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
