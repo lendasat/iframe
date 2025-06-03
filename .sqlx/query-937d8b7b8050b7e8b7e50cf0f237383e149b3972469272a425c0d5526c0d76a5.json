@@ -30,7 +30,9 @@
                 "Undercollateralized",
                 "RenewalRequested",
                 "Extended",
-                "ApprovalExpired"
+                "ApprovalExpired",
+                "ClosedByLiquidation",
+                "ClosedByDefaulting"
               ]
             }
           }

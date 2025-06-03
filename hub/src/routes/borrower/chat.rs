@@ -67,7 +67,7 @@ async fn new_chat_notification(
         .expect("to be a correct URL");
 
     data.notifications
-        .send_chat_notification_lender(lender, loan_url)
+        .send_chat_notification_lender(lender, loan_url, &data.db, body.contract_id.as_str())
         .await;
 
     Ok(())

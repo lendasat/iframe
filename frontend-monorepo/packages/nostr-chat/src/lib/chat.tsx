@@ -42,6 +42,7 @@ export const Chat = ({
   const [hasFetched, setHasFetched] = useState(false);
   const unsubscribeMessages = useRef<(() => void) | undefined>(undefined);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
 
   const { getNsec, getPubkeyFromContract } = useWallet();
   const {
@@ -182,12 +183,14 @@ export const Chat = ({
 
   const handleSendMessage = useCallback(async () => {
     if (isInitialized && counterpartyNpub && contractNpub && newMessage) {
+      setIsSendingMessage(true);
       const subject = "Lendasat | " + contractId;
       await sendMessage(counterpartyNpub, contractNpub, newMessage, subject);
       setNewMessage("");
       if (onNewMsgSent) {
         await onNewMsgSent();
       }
+      setIsSendingMessage(false);
     }
   }, [
     isInitialized,
@@ -279,6 +282,7 @@ export const Chat = ({
           <Input
             placeholder="Type your message..."
             value={newMessage}
+            disabled={isSendingMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             className="rounded-r-none"
           />
@@ -286,7 +290,7 @@ export const Chat = ({
             type={"submit"}
             variant={"outline"}
             size={"icon"}
-            disabled={!isInitialized}
+            disabled={!isInitialized || isSendingMessage}
           >
             {!isInitialized ? (
               <LuLoader className="animate-spin" />

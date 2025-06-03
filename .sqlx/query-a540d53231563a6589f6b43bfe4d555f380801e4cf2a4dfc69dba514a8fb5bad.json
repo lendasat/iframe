@@ -148,7 +148,9 @@
                 "Undercollateralized",
                 "RenewalRequested",
                 "Extended",
-                "ApprovalExpired"
+                "ApprovalExpired",
+                "ClosedByLiquidation",
+                "ClosedByDefaulting"
               ]
             }
           }
@@ -249,7 +251,9 @@
                 "Undercollateralized",
                 "RenewalRequested",
                 "Extended",
-                "ApprovalExpired"
+                "ApprovalExpired",
+                "ClosedByLiquidation",
+                "ClosedByDefaulting"
               ]
             }
           }

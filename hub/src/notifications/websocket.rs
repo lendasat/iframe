@@ -1,17 +1,9 @@
+use crate::model::NotificationMessage;
 use axum::extract::ws::Message;
-use serde::Deserialize;
-use serde::Serialize;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::mpsc::UnboundedSender;
 use tokio::sync::Mutex;
-
-// Define your notification message types
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type", content = "data")]
-pub enum NotificationMessage {
-    HelloWorld { id: String, message: String },
-}
 
 impl NotificationMessage {
     /// Convert to WebSocket message

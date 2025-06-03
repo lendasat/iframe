@@ -1,27 +1,22 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            UPDATE\n                contracts\n            SET\n                status = $1,\n                updated_at = $2\n            WHERE\n                id IN (SELECT id FROM expired_open_contracts) AND\n                status != $1\n            RETURNING id, borrower_id, lender_id;\n        ",
+  "query": "\n        SELECT \n            n.id,\n            n.contract_id,\n            n.status as \"status: ContractStatus\",\n            n.read,\n            n.created_at,\n            n.updated_at\n        FROM lender_contract_update_notifications n\n        INNER JOIN contracts c ON n.contract_id = c.id\n        WHERE c.lender_id = $1\n        ORDER BY n.created_at DESC\n        ",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
         "name": "id",
-        "type_info": "Bpchar"
+        "type_info": "Uuid"
       },
       {
         "ordinal": 1,
-        "name": "borrower_id",
+        "name": "contract_id",
         "type_info": "Bpchar"
       },
       {
         "ordinal": 2,
-        "name": "lender_id",
-        "type_info": "Bpchar"
-      }
-    ],
-    "parameters": {
-      "Left": [
-        {
+        "name": "status: ContractStatus",
+        "type_info": {
           "Custom": {
             "name": "contract_status",
             "kind": {
@@ -52,15 +47,37 @@
               ]
             }
           }
-        },
-        "Timestamptz"
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "read",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 4,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 5,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bpchar"
       ]
     },
     "nullable": [
       false,
       false,
+      false,
+      false,
+      false,
       false
     ]
   },
-  "hash": "175a30d5c82b27e654692b84bf88f804b4cf141d33616e8b926b092ae0cd4308"
+  "hash": "99dc0822fa0417f6209e1ef381a08af6aa9104856b05e0c0a50cf7f4c2b7177e"
 }

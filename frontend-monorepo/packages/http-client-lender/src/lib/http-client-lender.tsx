@@ -29,6 +29,8 @@ import {
   Version,
   IsRegisteredResponse,
   WalletBackupData,
+  NotificationMessage,
+  PaginatedNotificationResponse,
 } from "./models";
 import { isAllowedPageWithoutLogin, parseRFC3339Date } from "./utils";
 
@@ -200,6 +202,15 @@ export interface HttpClientLender {
 
   // Chat methods
   newChatNotification: (request: NotifyUser) => Promise<void>;
+
+  // fetch notifications
+  fetchNotifications: (
+    page: number,
+    limit: number,
+    showUnreadOnly: boolean,
+  ) => Promise<PaginatedNotificationResponse>;
+  markNotificationAsRead: (id: string) => Promise<void>;
+  markAllNotificationAsRead: () => Promise<void>;
 }
 
 // Create a factory function to create our client
@@ -1085,6 +1096,41 @@ export const createHttpClientLender = (
     }
   };
 
+  // fetch notifications
+  const fetchNotifications = async (
+    page: number = 1,
+    limit: number = 20,
+    showReadOnly: boolean = true,
+  ): Promise<PaginatedNotificationResponse> => {
+    try {
+      let url = `/api/notifications?page=${page}&limit=${limit}&unread_only=${showReadOnly}`;
+      const response = await axiosClient.get(url);
+      return response.data;
+    } catch (error) {
+      handleError(error, "fetching notifications");
+      throw error;
+    }
+  };
+  // fetch notifications
+  const markNotificationAsRead = async (id: string): Promise<void> => {
+    try {
+      await axiosClient.put(`/api/notifications/${id}`);
+    } catch (error) {
+      handleError(error, "marking notification as read");
+      throw error;
+    }
+  };
+
+  // fetch notifications
+  const markAllNotificationAsRead = async (): Promise<void> => {
+    try {
+      await axiosClient.put(`/api/notifications`);
+    } catch (error) {
+      handleError(error, "marking all notifications as read");
+      throw error;
+    }
+  };
+
   // Return all functions bundled as our client
   return {
     register,
@@ -1135,6 +1181,9 @@ export const createHttpClientLender = (
     fetchDisputeWithMessages,
     commentOnDispute,
     newChatNotification,
+    fetchNotifications,
+    markNotificationAsRead,
+    markAllNotificationAsRead,
   };
 };
 

@@ -119,7 +119,11 @@ async fn main() -> Result<()> {
         None
     };
 
-    let notifications = Arc::new(Notifications::new(config.clone(), maybe_telegram_bot_addr));
+    let notifications = Arc::new(Notifications::new(
+        config.clone(),
+        maybe_telegram_bot_addr,
+        NotificationCenter::default(),
+    ));
 
     let (mempool_addr, mempool_mailbox) = xtra::Mailbox::unbounded();
     let mempool = mempool::Actor::new(db.clone(), network, config.clone(), notifications.clone());
@@ -200,7 +204,6 @@ async fn main() -> Result<()> {
         config: config.clone(),
         mempool: mempool_addr,
         price_feed_ws_connections: broadcast_state.clone(),
-        lender_notification_center: NotificationCenter::default(),
         moon: moon_client.clone(),
         sideshift,
         notifications: notifications.clone(),

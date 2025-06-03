@@ -1,4 +1,4 @@
-import type { User } from "@frontend/http-client-lender";
+import { User, WebSocketNotification } from "@frontend/http-client-lender";
 import { WalletProvider } from "@frontend/browser-wallet";
 import {
   AuthIsNotSignedIn,
@@ -111,6 +111,10 @@ function MainLayoutComponents() {
   );
 }
 
+const changeProtocolToWSS = (url: string): string => {
+  return url.replace(/^http(s?):\/\//i, "ws$1://");
+};
+
 function App() {
   const baseUrl = import.meta.env.VITE_LENDER_BASE_URL;
   if (!baseUrl) {
@@ -128,7 +132,17 @@ function App() {
       <FeeProvider mempoolUrl={import.meta.env.VITE_MEMPOOL_REST_URL}>
         <AuthProvider shouldHandleAuthError={true}>
           <AuthIsSignedIn>
-            <MainLayoutComponents />
+            <WebSocketNotification
+              url={`${changeProtocolToWSS(import.meta.env.VITE_LENDER_BASE_URL)}/api/notifications/ws`}
+              debug={true}
+              onConnect={() => console.log("🔗 Notifications connected")}
+              onDisconnect={() => console.log("❌ Notifications disconnected")}
+              onError={(error) =>
+                console.error("🚨 Notification error:", error)
+              }
+            >
+              <MainLayoutComponents />
+            </WebSocketNotification>
           </AuthIsSignedIn>
           <AuthIsNotSignedIn>
             <Routes>

@@ -3,7 +3,6 @@ use crate::mempool;
 use crate::model;
 use crate::model::PakeServerData;
 use crate::moon;
-use crate::notifications::websocket::NotificationCenter;
 use crate::notifications::Notifications;
 use crate::sideshift;
 use crate::wallet::Wallet;
@@ -34,7 +33,6 @@ pub struct AppState {
     pub config: Config,
     pub mempool: xtra::Address<mempool::Actor>,
     pub price_feed_ws_connections: Arc<Mutex<Vec<mpsc::UnboundedSender<Message>>>>,
-    pub lender_notification_center: NotificationCenter,
     pub moon: Arc<moon::Manager>,
     pub sideshift: Arc<sideshift::Shifter>,
     pub notifications: Arc<Notifications>,

@@ -392,7 +392,7 @@ impl Email {
 
     pub async fn send_liquidation_notice_lender(
         &self,
-        lender: Lender,
+        lender: &Lender,
         contract: Contract,
         contract_url: Url,
     ) -> Result<()> {
@@ -419,7 +419,7 @@ impl Email {
         .await
     }
 
-    pub async fn send_new_loan_request(&self, lender: Lender, url: Url) -> Result<()> {
+    pub async fn send_new_loan_request(&self, lender: &Lender, url: Url) -> Result<()> {
         let template_name = "loan_requested";
         let handlebars = Self::prepare_template(template_name)?;
         let url = url.as_str();
@@ -468,7 +468,7 @@ impl Email {
 
     pub async fn send_notification_about_auto_accepted_loan(
         &self,
-        lender: Lender,
+        lender: &Lender,
         url: Url,
     ) -> Result<()> {
         let template_name = "loan_request_auto_approved";
@@ -517,7 +517,7 @@ impl Email {
         Ok(())
     }
 
-    pub async fn send_loan_collateralized(&self, user: Lender, url: Url) -> Result<()> {
+    pub async fn send_loan_collateralized(&self, user: &Lender, url: Url) -> Result<()> {
         let template_name = "loan_collateralized";
         let handlebars = Self::prepare_template(template_name)?;
 
@@ -620,7 +620,7 @@ impl Email {
         Ok(())
     }
 
-    pub async fn send_loan_repaid(&self, user: Lender, url: Url) -> Result<()> {
+    pub async fn send_loan_repaid(&self, user: &Lender, url: Url) -> Result<()> {
         let template_name = "loan_repaid";
         let handlebars = Self::prepare_template(template_name)?;
 
@@ -666,7 +666,7 @@ impl Email {
         Ok(())
     }
 
-    pub async fn send_loan_defaulted_lender(&self, user: Lender, url: Url) -> Result<()> {
+    pub async fn send_loan_defaulted_lender(&self, user: &Lender, url: Url) -> Result<()> {
         let template_name = "loan_defaulted_lender";
         let handlebars = Self::prepare_template(template_name)?;
 
@@ -774,7 +774,7 @@ impl Email {
 
     pub async fn send_expired_loan_request_lender(
         &self,
-        lender: Lender,
+        lender: &Lender,
         create_new_offer_url: Url,
     ) -> Result<()> {
         let template_name = "loan_request_expired_lender";
@@ -799,7 +799,7 @@ impl Email {
 
     pub async fn send_new_chat_message_notification_lender(
         &self,
-        lender: Lender,
+        lender: &Lender,
         contract_url: Url,
     ) -> Result<()> {
         let template_name = "new_chat_notification";

@@ -1107,7 +1107,7 @@ async fn send_loan_collateralized_email_to_lender(
             .join(format!("/my-contracts/{}", contract_id).as_str())?;
 
         notifications
-            .send_loan_collateralized(lender, loan_url)
+            .send_loan_collateralized(lender, loan_url, db, contract_id)
             .await;
 
         db::contract_emails::mark_collateral_funded_as_sent(db, contract_id)

@@ -337,6 +337,13 @@ export interface OriginationFee {
   fee: number;
 }
 
+export enum DisputeStatus {
+  StartedBorrower = "StartedBorrower",
+  StartedLender = "StartedLender",
+  ResolvedBorrower = "ResolvedBorrower",
+  ResolvedLender = "ResolvedLender",
+}
+
 export interface Dispute {
   id: string;
   contract_id: string;
@@ -659,4 +666,38 @@ export interface PakeVerifyResponse {
 export interface IsRegisteredResponse {
   is_registered: boolean;
   is_verified: boolean;
+}
+
+export enum NotificationMessageType {
+  ContractUpdate = "ContractUpdate",
+  ChatMessage = "ChatMessage",
+}
+
+export interface NotificationMessage {
+  type: NotificationMessageType;
+  data: ContractUpdate | ChatMessage;
+}
+
+export interface ContractUpdate {
+  id: string;
+  contract_id: string;
+  timestamp: string;
+  status: ContractStatus;
+  read: boolean;
+}
+
+export interface ChatMessage {
+  id: string;
+  contract_id: string;
+  borrower_name: string;
+  timestamp: string;
+  read: boolean;
+}
+
+export interface PaginatedNotificationResponse {
+  data: NotificationMessage[];
+  page: number;
+  limit: number;
+  total: number;
+  total_pages: number;
 }
