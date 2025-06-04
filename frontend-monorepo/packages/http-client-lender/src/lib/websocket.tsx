@@ -7,7 +7,12 @@ import {
   useState,
   ReactNode,
 } from "react";
-import { ChatMessage, ContractUpdate, NotificationMessage } from "./models";
+import {
+  ChatMessage,
+  ContractUpdate,
+  InstallmentUpdate,
+  NotificationMessage,
+} from "./models";
 
 export type NotificationCallback = (notification: NotificationMessage) => void;
 
@@ -306,6 +311,17 @@ export function useNotificationHandlers() {
     [onNotification],
   );
 
+  const onInstallmentUpdate = useCallback(
+    (callback: (data: InstallmentUpdate) => void) => {
+      return onNotification((notification) => {
+        if (notification.type === "InstallmentUpdate") {
+          callback(notification.data as InstallmentUpdate);
+        }
+      });
+    },
+    [onNotification],
+  );
+
   const onChatMessage = useCallback(
     (callback: (data: ChatMessage) => void) => {
       return onNotification((notification) => {
@@ -320,6 +336,7 @@ export function useNotificationHandlers() {
   return {
     onNotification,
     onContractUpdate,
+    onInstallmentUpdate,
     onChatMessage,
     ...rest,
   };

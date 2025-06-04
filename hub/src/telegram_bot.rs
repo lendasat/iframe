@@ -189,7 +189,7 @@ pub enum NotificationTarget {
 pub enum LenderNotificationKind {
     NewLoanRequest,
     Collateralized,
-    Repaid,
+    InstallmentPaid,
     Defaulted,
     LiquidationNotice,
     RequestAutoApproved,
@@ -256,9 +256,9 @@ impl xtra::Handler<Notification> for TelegramBot {
                     "Click here".to_string(),
                 )
             }
-            NotificationTarget::Lender(LenderNotificationKind::Repaid) => {
+            NotificationTarget::Lender(LenderNotificationKind::InstallmentPaid) => {
                 (
-                    "One of your loans has been repaid according to the borrower. You must confirm the repayment in order to release the borrower's collateral.".to_string(),
+                    "An installment for one of your loans has been paid, according to the borrower. Please confirm the payment as soon as possible.".to_string(),
                     "Contract Details".to_string(),
                 )
             }

@@ -19,6 +19,7 @@ use crate::model::ExtensionPolicy;
 use crate::model::FiatLoanDetails;
 use crate::model::FiatLoanDetailsWrapper;
 use crate::model::InstallmentPaidRequest;
+use crate::model::InstallmentStatus;
 use crate::model::LiquidationStatus;
 use crate::model::LoanAsset;
 use crate::model::LoanPayout;
@@ -684,9 +685,9 @@ async fn put_installment_paid(
         && installments.iter().all(|i| {
             matches!(
                 i.status,
-                model::InstallmentStatus::Cancelled
-                    | model::InstallmentStatus::Paid
-                    | model::InstallmentStatus::Confirmed
+                InstallmentStatus::Cancelled
+                    | InstallmentStatus::Paid
+                    | InstallmentStatus::Confirmed
             )
         });
 
@@ -708,7 +709,13 @@ async fn put_installment_paid(
             .context("Failed to find lender")?;
 
         data.notifications
-            .send_loan_repaid(lender, loan_url, &data.db, contract_id.as_str())
+            .send_installment_paid(
+                lender,
+                loan_url,
+                &data.db,
+                body.installment_id,
+                contract_id.as_str(),
+            )
             .await;
 
         db::contract_emails::mark_loan_repaid_as_sent(&data.db, &contract.id)
@@ -1053,21 +1060,6 @@ pub struct Installment {
     pub payment_id: Option<String>,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, ToSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum InstallmentStatus {
-    /// The installment has not yet been paid.
-    Pending,
-    /// The installment has been paid, according to the borrower.
-    Paid,
-    /// The installment has been paid, as confirmed by the lender.
-    Confirmed,
-    /// The installment was not paid in time.
-    Late,
-    /// The installment is no longer expected and was never paid.
-    Cancelled,
-}
-
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct TimelineEvent {
     #[serde(with = "time::serde::rfc3339")]
@@ -1317,7 +1309,7 @@ async fn map_timeline(
             let event = TimelineEvent {
                 date: paid_date,
                 event: TimelineEventKind::Installment {
-                    is_confirmed: matches!(i.status, model::InstallmentStatus::Confirmed),
+                    is_confirmed: matches!(i.status, InstallmentStatus::Confirmed),
                 },
                 txid: i.payment_id.clone(),
             };
@@ -1998,21 +1990,9 @@ impl From<model::Installment> for Installment {
             principal: value.principal,
             interest: value.interest,
             due_date: value.due_date,
-            status: value.status.into(),
+            status: value.status,
             paid_date: value.paid_date,
             payment_id: value.payment_id,
-        }
-    }
-}
-
-impl From<model::InstallmentStatus> for InstallmentStatus {
-    fn from(value: model::InstallmentStatus) -> Self {
-        match value {
-            model::InstallmentStatus::Pending => InstallmentStatus::Pending,
-            model::InstallmentStatus::Paid => InstallmentStatus::Paid,
-            model::InstallmentStatus::Confirmed => InstallmentStatus::Confirmed,
-            model::InstallmentStatus::Late => InstallmentStatus::Late,
-            model::InstallmentStatus::Cancelled => InstallmentStatus::Cancelled,
         }
     }
 }
