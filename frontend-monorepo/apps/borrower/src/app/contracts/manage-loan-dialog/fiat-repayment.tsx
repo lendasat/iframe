@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { LuInfo, LuLoader } from "react-icons/lu";
 import {
   Contract,
+  Installment,
   useHttpClientBorrower,
 } from "@frontend/http-client-borrower";
 import {
@@ -22,21 +22,28 @@ import {
 
 interface FiatRepaymentProps {
   contract?: Contract;
+  installment?: Installment;
+  refreshContract: () => void;
+  onSubmit: () => void;
 }
 
-export function FiatRepayment({ contract }: FiatRepaymentProps) {
+export function FiatRepayment({
+  contract,
+  installment,
+  refreshContract,
+  onSubmit,
+}: FiatRepaymentProps) {
   const [repaymentError, setRepaymentError] = useState<string | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [transferDescription, setTransferDescription] = useState<string>("");
 
-  const { markAsRepaymentProvided } = useHttpClientBorrower();
-  const navigate = useNavigate();
+  const { markInstallmentAsPaid } = useHttpClientBorrower();
 
-  const loanAmount = contract?.loan_amount;
-  const loanInterest = contract?.interest;
+  const principalAmount = Number(installment?.principal) || 0;
+  const interestAmount = Number(installment?.interest) || 0;
   const totalRepaymentAmount =
-    loanAmount !== undefined && loanInterest !== undefined
-      ? loanAmount + loanInterest
+    installment?.principal !== undefined && installment?.interest !== undefined
+      ? principalAmount + interestAmount
       : undefined;
 
   const assetCoin = contract?.loan_asset
@@ -44,7 +51,7 @@ export function FiatRepayment({ contract }: FiatRepaymentProps) {
     : undefined;
 
   const handleConfirmRepayment = async () => {
-    if (!contract?.id) {
+    if (!contract?.id || !installment?.id) {
       // shouldn't happen, but if, we can't proceed without.
       return;
     }
@@ -57,10 +64,13 @@ export function FiatRepayment({ contract }: FiatRepaymentProps) {
 
     try {
       setIsSubmitting(true);
-      await markAsRepaymentProvided(contract.id, transferDescription);
-
-      // TODO: ideally we wouldn't have todo this... but it's the best we can do to refresh the page
-      navigate(0);
+      await markInstallmentAsPaid(
+        contract.id,
+        installment.id,
+        transferDescription,
+      );
+      refreshContract();
+      onSubmit();
     } catch (error) {
       // Handle the error
       console.error("Failed to confirm repayment:", error);
@@ -90,8 +100,7 @@ export function FiatRepayment({ contract }: FiatRepaymentProps) {
             <>
               Send the exact amount of{" "}
               <strong>{formatCurrency(totalRepaymentAmount)}</strong>{" "}
-              <strong>{assetCoin}</strong> to the bank account below. You can
-              withdraw your collateral once the payment is confirmed.
+              <strong>{assetCoin}</strong> to the bank account below.
             </>
           ) : (
             <>
@@ -114,8 +123,8 @@ export function FiatRepayment({ contract }: FiatRepaymentProps) {
       <div className="space-y-2 pt-4 border-t mt-4">
         <h3 className="font-medium">Confirm Your Payment</h3>
         <p className="text-sm text-muted-foreground">
-          After sending your payment, please enter the description you provided
-          when doing the transfer below to confirm your repayment.
+          After completing your payment, please provide the transfer description
+          for confirmation.
         </p>
 
         <form
@@ -154,7 +163,7 @@ export function FiatRepayment({ contract }: FiatRepaymentProps) {
                 Please wait
               </>
             ) : (
-              "Confirm Repayment"
+              "Confirm Payment"
             )}
           </Button>
         </form>

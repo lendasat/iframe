@@ -175,6 +175,7 @@ pub async fn put_edit_loan_application(
         borrower_derivation_path: old_application.borrower_derivation_path,
         borrower_npub: old_application.borrower_npub,
         client_contract_id: old_application.client_contract_id,
+        repayment_plan: old_application.repayment_plan,
     };
 
     let new_application =

@@ -3,6 +3,8 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   FiatLoanDetails,
   LoanProductOption,
+  RepaymentPlan,
+  repaymentPlanLabel,
 } from "@frontend/http-client-borrower";
 import { useWallet } from "@frontend/browser-wallet";
 import {
@@ -48,7 +50,16 @@ import { Lender } from "./lender";
 import { MoonCardDropdown } from "./MoonCardDropdown";
 import { ToS } from "./tos";
 import { AlertCircle, ExternalLink } from "lucide-react";
-import { Button, Alert, AlertDescription, AlertTitle } from "@frontend/shadcn";
+import {
+  Button,
+  Alert,
+  AlertDescription,
+  AlertTitle,
+  TooltipProvider,
+  TooltipTrigger,
+  Tooltip,
+  TooltipContent,
+} from "@frontend/shadcn";
 import { LuLoader } from "react-icons/lu";
 import { toast } from "sonner";
 
@@ -337,6 +348,44 @@ export const Confirmation = ({
                 ></Skeleton>
               ) : (
                 <Lender {...selectedOffer?.lender} showAvatar={false} />
+              )}
+            </DataList.Value>
+          </DataList.Item>
+          <DataList.Item align="center">
+            <DataList.Label minWidth="88px">Loan Type</DataList.Label>
+            <DataList.Value className="flex flex-1 justify-end">
+              {isStillLoading ? (
+                <Skeleton
+                  loading={isStillLoading}
+                  width={"100px"}
+                  height={"20px"}
+                ></Skeleton>
+              ) : (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-2">
+                        <Text className="text-font/70 dark:text-font-dark/70 text-[13px] font-semibold capitalize">
+                          {repaymentPlanLabel(selectedOffer.repayment_plan)}
+                        </Text>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {selectedOffer.repayment_plan === RepaymentPlan.Bullet ? (
+                        <p>
+                          Bullet loans are repaid in full at the end of the loan
+                          term.
+                        </p>
+                      ) : (
+                        <p>
+                          Interest-only loans consist of <em>monthly</em>{" "}
+                          interest installments, plus a balloon payment at the
+                          end of the loan term.
+                        </p>
+                      )}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               )}
             </DataList.Value>
           </DataList.Item>

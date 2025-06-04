@@ -2,6 +2,7 @@ import { useWallet } from "@frontend/browser-wallet";
 import {
   CreateLoanOfferRequest,
   LenderFeatureFlags,
+  RepaymentPlan,
   useAuth,
   useLenderHttpClient,
 } from "@frontend/http-client-lender";
@@ -29,7 +30,7 @@ import {
   LoanOfferFormValues,
   defaultLoanOfferValues,
 } from "./loanOfferSchema";
-import { Button } from "@frontend/shadcn";
+import { Button, ToggleGroup, ToggleGroupItem } from "@frontend/shadcn";
 import {
   Form,
   FormControl,
@@ -69,6 +70,8 @@ const CreateLoanOffer = () => {
   const kycOffersEnabled = enabledFeatures.includes(
     LenderFeatureFlags.KycOffers,
   );
+
+  const [repaymentPlan, setRepaymentPlan] = useState("bullet");
 
   const handleHideWalletConnectButton = useCallback((value: boolean) => {
     setHideWalletConnectButton(value);
@@ -116,6 +119,14 @@ const CreateLoanOffer = () => {
       ? values.extension_interest_rate / 100
       : 0;
 
+    // We are not allowing weekly interest-only loans for now.
+    let repayment_plan: RepaymentPlan;
+    if (repaymentPlan === "interest-only") {
+      repayment_plan = RepaymentPlan.InterestOnlyMonthly;
+    } else {
+      repayment_plan = RepaymentPlan.Bullet;
+    }
+
     return {
       name: "Loan Offer",
       min_ltv: values.ltv / 100,
@@ -136,6 +147,7 @@ const CreateLoanOffer = () => {
       kyc_link: values.isKycRequired ? values.kycLink || undefined : undefined,
       extension_duration_days,
       extension_interest_rate,
+      repayment_plan: repayment_plan,
     };
   };
 
@@ -389,6 +401,62 @@ const CreateLoanOffer = () => {
                         </FormItem>
                       )}
                     />
+                    <FormItem className="space-y-1">
+                      <FormLabel className="text-muted-foreground">
+                        Loan Type
+                      </FormLabel>
+                      <ToggleGroup
+                        type="single"
+                        value={repaymentPlan}
+                        onValueChange={(v) => v && setRepaymentPlan(v)}
+                      >
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <ToggleGroupItem
+                              value="bullet"
+                              aria-label="Bullet loan"
+                              className={
+                                repaymentPlan === "bullet"
+                                  ? "bg-primary text-white border-primary hover:bg-primary hover:border-primary hover:text-white"
+                                  : "bg-white text-black border-gray-300 hover:bg-gray-100 hover:border-gray-400"
+                              }
+                            >
+                              Bullet
+                            </ToggleGroupItem>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>
+                              Bullet loans are repaid in full at the end of the
+                              loan term.
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <ToggleGroupItem
+                              value="interest-only"
+                              aria-label="Monthly interest-only loan"
+                              className={
+                                repaymentPlan === "interest-only"
+                                  ? "bg-primary text-white border-primary hover:bg-primary hover:border-primary hover:text-white"
+                                  : "bg-white text-black border-gray-300 hover:bg-gray-100 hover:border-gray-400"
+                              }
+                            >
+                              <span className="whitespace-normal leading-tight block w-full min-w-[135px]">
+                                Interest-only
+                              </span>
+                            </ToggleGroupItem>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>
+                              Interest-only loans consist of <em>monthly</em>{" "}
+                              interest installments, plus a balloon payment at
+                              the end of the loan term.
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </ToggleGroup>
+                    </FormItem>
 
                     {/* Interest Rate */}
                     <FormField
@@ -813,6 +881,15 @@ const CreateLoanOffer = () => {
                   {watchLoanAsset
                     ? LoanAssetHelper.print(watchLoanAsset as LoanAsset)
                     : ""}
+                </span>
+              </div>
+
+              <Separator className="opacity-50" />
+
+              <div className="flex justify-between items-center my-4">
+                <span className="text-muted-foreground text-sm">Loan Type</span>
+                <span className="text-foreground/80 font-semibold text-sm">
+                  {repaymentPlan === "bullet" ? "Bullet" : "Interest Only"}
                 </span>
               </div>
 

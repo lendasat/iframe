@@ -35,16 +35,17 @@ pub async fn insert_principal_given_txid(
     Ok(loan_tx)
 }
 
-pub async fn insert_principal_repaid_txid(
+// It's not always a transaction ID in the blockchain sense, but alas.
+pub async fn insert_installment_paid_txid(
     db_pool: &PgPool,
     contract_id: &str,
-    principal_repaid: &str,
+    installment_paid: &str,
 ) -> Result<LoanTransaction> {
     let loan_tx = insert(
         db_pool,
         contract_id,
-        principal_repaid,
-        TransactionType::PrincipalRepaid,
+        installment_paid,
+        TransactionType::InstallmentPaid,
     )
     .await?;
     Ok(loan_tx)
@@ -222,12 +223,12 @@ where
     let result = sqlx::query!(
         r#"
         INSERT INTO transactions (txid, transaction_type, timestamp, contract_id)
-        SELECT 
+        SELECT
             txid,
             transaction_type,
             timestamp,
             $1 as contract_id
-        FROM transactions 
+        FROM transactions
         WHERE contract_id = $2
         RETURNING id
         "#,

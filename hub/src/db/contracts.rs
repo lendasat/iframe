@@ -8,7 +8,6 @@ use crate::model::ContractVersion;
 use crate::model::ExtensionPolicy;
 use crate::model::LiquidationStatus;
 use crate::model::LoanType;
-use crate::utils::calculate_interest;
 use anyhow::bail;
 use anyhow::Context;
 use anyhow::Error;
@@ -21,7 +20,6 @@ use rust_decimal::Decimal;
 use sqlx::Pool;
 use sqlx::Postgres;
 use std::cmp::Ordering;
-use time::format_description;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
@@ -61,7 +59,6 @@ pub async fn load_contracts_by_borrower_id(
             contract_version,
             interest_rate,
             client_contract_id,
-            interest,
             extension_duration_days,
             extension_interest_rate,
             created_at,
@@ -117,7 +114,6 @@ pub async fn load_contracts_by_lender_id(
             expiry_date,
             contract_version,
             interest_rate,
-            interest,
             client_contract_id,
             extension_duration_days,
             extension_interest_rate,
@@ -139,7 +135,7 @@ pub async fn load_contracts_by_lender_id(
     Ok(contracts)
 }
 
-async fn load_contract(pool: &Pool<Postgres>, contract_id: &str) -> Result<Contract> {
+pub async fn load_contract(pool: &Pool<Postgres>, contract_id: &str) -> Result<Contract> {
     let contract = sqlx::query_as!(
         db::Contract,
         r#"
@@ -171,7 +167,6 @@ async fn load_contract(pool: &Pool<Postgres>, contract_id: &str) -> Result<Contr
             expiry_date,
             contract_version,
             interest_rate,
-            interest,
             client_contract_id,
             extension_duration_days,
             extension_interest_rate,
@@ -224,7 +219,6 @@ pub async fn load_contract_by_contract_id_and_borrower_id(
             expiry_date,
             contract_version,
             interest_rate,
-            interest,
             client_contract_id,
             extension_duration_days,
             extension_interest_rate,
@@ -279,7 +273,6 @@ pub async fn load_contract_by_contract_id_and_lender_id(
             expiry_date,
             contract_version,
             interest_rate,
-            interest,
             client_contract_id,
             extension_duration_days,
             extension_interest_rate,
@@ -330,7 +323,6 @@ pub async fn load_open_contracts(pool: &Pool<Postgres>) -> Result<Vec<Contract>>
             expiry_date as "expiry_date!",
             contract_version as "contract_version!",
             interest_rate as "interest_rate!",
-            interest as "interest!",
             extension_duration_days as "extension_duration_days!",
             extension_interest_rate as "extension_interest_rate!",
             created_at as "created_at!",
@@ -393,8 +385,6 @@ pub async fn insert_new_contract_request(
 
     let status = db::ContractStatus::Requested;
 
-    let interest = calculate_interest(loan_amount, duration_days, interest_rate);
-
     let contract = insert_contract_request(
         &mut db_tx,
         borrower_id,
@@ -422,7 +412,6 @@ pub async fn insert_new_contract_request(
         None,
         None,
         interest_rate,
-        interest,
         borrower_npub,
         lender_npub,
         client_contract_id,
@@ -449,15 +438,11 @@ pub async fn insert_extension_contract_request(
 
     let new_expiry_date = expiry_date(original_contract.expiry_date, extended_duration_days as u64);
 
-    // If the contract can be automatically accepted, we immediately go into
-    // `ContractStatus::PrincipalGiven`, because the original contract has been funded already.
+    // We immediately go back into `ContractStatus::PrincipalGiven`, because the original contract
+    // was funded already.
+    //
+    // This means we do not require confirmation from the lender for a contract extension.
     let status = db::ContractStatus::PrincipalGiven;
-
-    let interest = calculate_interest(
-        original_contract.loan_amount,
-        total_duration_days,
-        interest_rate,
-    );
 
     insert_contract_request(
         db_tx,
@@ -488,7 +473,6 @@ pub async fn insert_extension_contract_request(
             .map(|address| address.assume_checked().to_string()),
         original_contract.contract_index.map(|index| index as i32),
         interest_rate,
-        interest,
         &original_contract.borrower_npub,
         &original_contract.lender_npub,
         original_contract.client_contract_id,
@@ -526,7 +510,6 @@ async fn insert_contract_request(
     contract_address: Option<String>,
     contract_index: Option<i32>,
     interest_rate: Decimal,
-    interest: Decimal,
     borrower_npub: &str,
     lender_npub: &str,
     client_contract_id: Option<Uuid>,
@@ -567,11 +550,10 @@ async fn insert_contract_request(
             created_at,
             expiry_date,
             interest_rate,
-            interest,
             client_contract_id,
             extension_duration_days,
             extension_interest_rate
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31)
         RETURNING
             id,
             lender_id,
@@ -600,7 +582,6 @@ async fn insert_contract_request(
             expiry_date,
             contract_version,
             interest_rate,
-            interest,
             client_contract_id,
             extension_duration_days,
             extension_interest_rate,
@@ -635,7 +616,6 @@ async fn insert_contract_request(
         created_at,
         expiry_date,
         interest_rate,
-        interest,
         client_contract_id,
         extension_duration_days,
         extension_interest_rate
@@ -693,7 +673,6 @@ pub async fn accept_contract_request(
             expiry_date,
             contract_version,
             interest_rate,
-            interest,
             client_contract_id,
             extension_duration_days,
             extension_interest_rate,
@@ -773,6 +752,7 @@ pub async fn mark_contract_as_principal_given(
 
     Ok(())
 }
+
 pub async fn mark_contract_as_repayment_provided(
     pool: &Pool<Postgres>,
     contract_id: &str,
@@ -892,7 +872,6 @@ pub async fn reject_contract_request(
             expiry_date,
             contract_version,
             interest_rate,
-            interest,
             client_contract_id,
             extension_duration_days,
             extension_interest_rate,
@@ -951,7 +930,6 @@ pub(crate) async fn mark_liquidation_state_as(
             expiry_date,
             contract_version,
             interest_rate,
-            interest,
             client_contract_id,
             extension_duration_days,
             extension_interest_rate,
@@ -1015,41 +993,6 @@ pub struct DefaultedContract {
     pub contract_id: String,
     pub borrower_id: String,
     pub lender_id: String,
-}
-
-/// Marks expired active contracts (the principal was disbursed, but the loan was not repaid) as
-/// `Defaulted`.
-pub(crate) async fn default_expired_contracts(
-    pool: &Pool<Postgres>,
-) -> Result<Vec<DefaultedContract>> {
-    let rows = sqlx::query!(
-        r#"
-            UPDATE
-                contracts
-            SET
-                status = $1,
-                updated_at = $2
-            WHERE
-                id IN (SELECT id FROM expired_open_contracts) AND
-                status != $1
-            RETURNING id, borrower_id, lender_id;
-        "#,
-        db::ContractStatus::Defaulted as db::ContractStatus,
-        OffsetDateTime::now_utc()
-    )
-    .fetch_all(pool)
-    .await?;
-
-    let contracts = rows
-        .into_iter()
-        .map(|row| DefaultedContract {
-            contract_id: row.id,
-            borrower_id: row.borrower_id,
-            lender_id: row.lender_id,
-        })
-        .collect();
-
-    Ok(contracts)
 }
 
 /// Update the collateral of the [`Contract`] in the database.
@@ -1211,7 +1154,6 @@ pub async fn update_collateral(
             expiry_date,
             contract_version,
             interest_rate,
-            interest,
             client_contract_id,
             extension_duration_days,
             extension_interest_rate,
@@ -1315,59 +1257,6 @@ pub(crate) async fn expire_requested_contracts(
     Ok(all_expired)
 }
 
-pub struct ContractInfo {
-    pub contract_id: String,
-    pub borrower_id: String,
-    pub expiry_date: OffsetDateTime,
-}
-
-impl ContractInfo {
-    pub fn formatted_expiry_date(&self) -> String {
-        let format = format_description::well_known::Rfc3339;
-
-        self.expiry_date
-            .to_offset(time::UtcOffset::UTC)
-            .format(&format)
-            .expect("valid expiry date")
-    }
-}
-
-/// Fetches contracts with `PrincipalGiven` status that are due to expire within the next 3 days.
-pub(crate) async fn close_to_expiry_contracts(
-    pool: &Pool<Postgres>,
-) -> Result<Vec<ContractInfo>, sqlx::Error> {
-    let due_date_start = OffsetDateTime::now_utc();
-    let due_date_end = OffsetDateTime::now_utc() + time::Duration::days(3);
-
-    // A contract in `RenewalRequested` is actually open and can expire, hence we need to check
-    // for it as well
-    let rows = sqlx::query!(
-        r#"
-            SELECT id, borrower_id, expiry_date
-            FROM contracts
-            WHERE
-                (status = 'PrincipalGiven' OR status = 'RenewalRequested') AND
-                expiry_date > $1 AND
-                expiry_date <= $2
-        "#,
-        due_date_start,
-        due_date_end,
-    )
-    .fetch_all(pool)
-    .await?;
-
-    let contracts_info = rows
-        .into_iter()
-        .map(|row| ContractInfo {
-            contract_id: row.id,
-            borrower_id: row.borrower_id,
-            expiry_date: row.expiry_date,
-        })
-        .collect();
-
-    Ok(contracts_info)
-}
-
 pub(crate) async fn check_if_contract_belongs_to_borrower(
     pool: &Pool<Postgres>,
     contract_id: &str,
@@ -1381,6 +1270,26 @@ pub(crate) async fn check_if_contract_belongs_to_borrower(
         "#,
         contract_id,
         borrower_id,
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(row.entry_exists.unwrap_or(false))
+}
+
+pub(crate) async fn check_if_contract_belongs_to_lender(
+    pool: &Pool<Postgres>,
+    contract_id: &str,
+    lender_id: &str,
+) -> Result<bool> {
+    let row = sqlx::query!(
+        r#"
+            SELECT EXISTS (
+                SELECT 1 FROM contracts WHERE id = $1 AND lender_id = $2
+            ) AS entry_exists;
+        "#,
+        contract_id,
+        lender_id,
     )
     .fetch_one(pool)
     .await?;
@@ -1534,8 +1443,6 @@ pub async fn insert_new_taken_contract_application(
     // next the borrower will need to fund the contract.
     let status = db::ContractStatus::Approved;
 
-    let interest = calculate_interest(loan_amount, duration_days, interest_rate);
-
     let address = contract_address.assume_checked().to_string();
     let contract = insert_contract_request(
         &mut db_tx,
@@ -1564,7 +1471,6 @@ pub async fn insert_new_taken_contract_application(
         Some(address.to_string()),
         Some(contract_index as i32),
         interest_rate,
-        interest,
         borrower_npub,
         lender_npub,
         client_contract_id,

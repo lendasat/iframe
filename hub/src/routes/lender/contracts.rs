@@ -7,6 +7,9 @@ use crate::db::contracts::update_extension_policy;
 use crate::mark_as_principal_given::mark_as_principal_given;
 use crate::mempool;
 use crate::model;
+use crate::model::compute_outstanding_balance;
+use crate::model::compute_total_interest;
+use crate::model::ConfirmInstallmentPaymentRequest;
 use crate::model::ContractStatus;
 use crate::model::ExtensionPolicy;
 use crate::model::FiatLoanDetails;
@@ -20,7 +23,6 @@ use crate::routes::lender::auth::jwt_auth;
 use crate::routes::user_connection_details_middleware;
 use crate::routes::user_connection_details_middleware::UserConnectionDetails;
 use crate::routes::AppState;
-use crate::routes::ErrorResponse;
 use anyhow::anyhow;
 use anyhow::Context;
 use axum::extract::rejection::JsonRejection;
@@ -41,10 +43,13 @@ use axum::Json;
 use axum::Router;
 use bitcoin::address::NetworkUnchecked;
 use bitcoin::bip32::DerivationPath;
+use bitcoin::consensus::encode::FromHexError;
 use bitcoin::Address;
 use bitcoin::Amount;
+use bitcoin::Network;
 use bitcoin::PublicKey;
 use bitcoin::Transaction;
+use bitcoin::Txid;
 use miniscript::Descriptor;
 use rust_decimal::prelude::Zero;
 use rust_decimal::Decimal;
@@ -110,8 +115,8 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
             )),
         )
         .route(
-            "/api/contracts/:contract_id/principalconfirmed",
-            put(put_confirm_repayment).route_layer(middleware::from_fn_with_state(
+            "/api/contracts/:contract_id/confirm-installment",
+            put(put_confirm_installment_payment).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
                 jwt_auth::auth,
             )),
@@ -202,6 +207,7 @@ pub struct Contract {
     pub extension_max_duration_days: u64,
     #[serde(with = "rust_decimal::serde::float_option")]
     pub extension_interest_rate: Option<Decimal>,
+    pub installments: Vec<Installment>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -227,7 +233,7 @@ async fn get_active_contracts(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Lender>,
 ) -> Result<AppJson<Vec<Contract>>, Error> {
-    let contracts = db::contracts::load_contracts_by_lender_id(&data.db, user.id.as_str())
+    let contracts = db::contracts::load_contracts_by_lender_id(&data.db, &user.id)
         .await
         .map_err(Error::database)?;
 
@@ -247,14 +253,11 @@ async fn get_contract(
     Extension(user): Extension<Lender>,
     Path(contract_id): Path<String>,
 ) -> Result<AppJson<Contract>, Error> {
-    let contract = db::contracts::load_contract_by_contract_id_and_lender_id(
-        &data.db,
-        contract_id.as_str(),
-        user.id.as_str(),
-    )
-    .await
-    .map_err(Error::database)?
-    .ok_or(Error::MissingContract(contract_id.clone()))?;
+    let contract =
+        db::contracts::load_contract_by_contract_id_and_lender_id(&data.db, &contract_id, &user.id)
+            .await
+            .map_err(Error::database)?
+            .ok_or_else(|| Error::MissingContract(contract_id.clone()))?;
 
     let contract = map_to_api_contract(&data, contract).await?;
 
@@ -334,7 +337,7 @@ async fn put_approve_contract(
     Path(contract_id): Path<String>,
     Extension(user): Extension<Lender>,
     body: Option<AppJson<model::FiatLoanDetailsWrapper>>,
-) -> Result<AppJson<()>, Error> {
+) -> Result<(), Error> {
     let fiat_loan_details = body.map(|f| f.0);
 
     approve_contract(
@@ -350,7 +353,7 @@ async fn put_approve_contract(
     .await
     .map_err(Error::from)?;
 
-    Ok(AppJson(()))
+    Ok(())
 }
 
 #[derive(Debug, Deserialize)]
@@ -387,26 +390,19 @@ async fn delete_reject_contract(
     State(data): State<Arc<AppState>>,
     Path(contract_id): Path<String>,
     Extension(user): Extension<Lender>,
-) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let contract =
-        db::contracts::reject_contract_request(&data.db, user.id.as_str(), contract_id.as_str())
-            .await
-            .map_err(|error| {
-                let error_response = ErrorResponse {
-                    message: format!("Database error: {}", error),
-                };
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-            })?;
+) -> Result<(), Error> {
+    let contract = db::contracts::reject_contract_request(&data.db, &user.id, &contract_id)
+        .await
+        .map_err(Error::database)?;
 
-    // We don't want to fail this upwards because the contract request has been already
-    // approved.
+    // We don't want to fail this upwards because the contract request has already been approved.
     if let Err(err) = async {
         let loan_url = data
             .config
             .borrower_frontend_origin
-            .join(format!("/my-contracts/{}", contract_id).as_str())?;
+            .join(&format!("/my-contracts/{contract_id}"))?;
 
-        let borrower = db::borrowers::get_user_by_id(&data.db, contract.borrower_id.as_str())
+        let borrower = db::borrowers::get_user_by_id(&data.db, &contract.borrower_id)
             .await?
             .context("Borrower not found")?;
 
@@ -416,7 +412,7 @@ async fn delete_reject_contract(
 
         db::contract_emails::mark_loan_request_rejected_as_sent(&data.db, &contract.id)
             .await
-            .context("Failed to mark loan-request-approved email as sent")?;
+            .context("Failed to mark loan-request-rejected email as sent")?;
 
         anyhow::Ok(())
     }
@@ -435,14 +431,11 @@ async fn put_reject_extension_request(
     Path(contract_id): Path<String>,
     Extension(user): Extension<Lender>,
 ) -> Result<(), Error> {
-    let contract = db::contracts::load_contract_by_contract_id_and_lender_id(
-        &data.db,
-        contract_id.as_str(),
-        user.id.as_str(),
-    )
-    .await
-    .map_err(Error::database)?
-    .ok_or(Error::MissingContract(contract_id.clone()))?;
+    let contract =
+        db::contracts::load_contract_by_contract_id_and_lender_id(&data.db, &contract_id, &user.id)
+            .await
+            .map_err(Error::database)?
+            .ok_or_else(|| Error::MissingContract(contract_id.clone()))?;
 
     if contract.status != ContractStatus::RenewalRequested {
         return Err(Error::InvalidRejectRequest {
@@ -457,7 +450,7 @@ async fn put_reject_extension_request(
         .map_err(|e| Error::database(anyhow!(e)))?;
 
     let parent_contract_id =
-        db::contract_extensions::get_parent_by_extended(&data.db, contract_id.as_str())
+        db::contract_extensions::get_parent_by_extended(&data.db, &contract_id)
             .await
             .map_err(|e| Error::database(anyhow!(e)))?
             .ok_or(Error::MissingParentContract(contract_id.clone()))?;
@@ -470,7 +463,7 @@ async fn put_reject_extension_request(
         .await
         .map_err(|e| Error::database(anyhow!(e)))?;
 
-    db::contracts::mark_contract_as_cancelled(&mut *db_tx, contract_id.as_str())
+    db::contracts::mark_contract_as_cancelled(&mut *db_tx, &contract_id)
         .await
         .map_err(Error::database)?;
 
@@ -482,35 +475,44 @@ async fn put_reject_extension_request(
     Ok(())
 }
 
-#[instrument(skip_all, fields(lender_id = user.id, contract_id), err(Debug), ret)]
-async fn put_confirm_repayment(
+#[instrument(skip_all, fields(lender_id = %user.id, contract_id = %contract_id, installment_id = %body.installment_id), err(Debug), ret)]
+async fn put_confirm_installment_payment(
     State(data): State<Arc<AppState>>,
     Path(contract_id): Path<String>,
     Extension(user): Extension<Lender>,
-) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    async {
-        let contract = db::contracts::load_contract_by_contract_id_and_lender_id(
-            &data.db,
-            contract_id.as_str(),
-            &user.id,
-        )
-        .await
-        .context("Failed to load contract request")?
-        .context("contract not found")?;
-
-        db::contracts::mark_contract_as_repayment_confirmed(&data.db, contract.id.as_str())
+    AppJson(body): AppJson<ConfirmInstallmentPaymentRequest>,
+) -> Result<(), Error> {
+    let is_own_contract =
+        db::contracts::check_if_contract_belongs_to_lender(&data.db, &contract_id, &user.id)
             .await
-            .context("Failed to confirm contract as repaid")?;
+            .map_err(Error::database)?;
 
-        anyhow::Ok(())
+    if !is_own_contract {
+        return Err(Error::MissingContract(contract_id.clone()));
     }
-    .await
-    .map_err(|e| {
-        let error_response = ErrorResponse {
-            message: format!("Database error: {e:#}"),
-        };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?;
+
+    db::installments::mark_as_confirmed(&data.db, body.installment_id, &contract_id)
+        .await
+        .map_err(Error::database)?;
+
+    let installments = db::installments::get_all_for_contract_id(&data.db, &contract_id)
+        .await
+        .map_err(Error::database)?;
+
+    let is_repayment_confirmed = !installments.is_empty()
+        && installments.iter().all(|i| {
+            matches!(
+                i.status,
+                model::InstallmentStatus::Cancelled | model::InstallmentStatus::Confirmed
+            )
+        });
+
+    if is_repayment_confirmed {
+        db::contracts::mark_contract_as_repayment_confirmed(&data.db, &contract_id)
+            .await
+            .map_err(Error::database)?;
+    }
+
     Ok(())
 }
 
@@ -541,61 +543,41 @@ async fn get_liquidation_to_bitcoin_psbt(
     Extension(user): Extension<Lender>,
     Path(contract_id): Path<String>,
     query_params: Query<LiquidationPsbtQueryParams>,
-) -> Result<Json<LiquidationPsbt>, (StatusCode, Json<ErrorResponse>)> {
+) -> Result<AppJson<LiquidationPsbt>, Error> {
+    let expected_network = data.wallet.network();
     let lender_address = query_params
         .address
         .clone()
-        .require_network(data.wallet.network())
-        .map_err(|e| {
-            let error_response = ErrorResponse {
-                message: format!("Invalid address: {e:#}"),
-            };
-            (StatusCode::BAD_REQUEST, Json(error_response))
-        })?;
+        .require_network(expected_network)
+        .map_err(|_| Error::WrongAddressNetwork { expected_network })?;
 
-    let contract = db::contracts::load_contract_by_contract_id_and_lender_id(
-        &data.db,
-        contract_id.as_str(),
-        &user.id,
-    )
-    .await
-    .map_err(|e| {
-        let error_response = ErrorResponse {
-            message: format!("Database error: {e:#}"),
-        };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?
-    .ok_or_else(|| {
-        let error_response = ErrorResponse {
-            message: "Contract not found".to_string(),
-        };
-        (StatusCode::BAD_REQUEST, Json(error_response))
-    })?;
+    let contract =
+        db::contracts::load_contract_by_contract_id_and_lender_id(&data.db, &contract_id, &user.id)
+            .await
+            .map_err(Error::database)?
+            .ok_or_else(|| Error::MissingContract(contract_id.clone()))?;
 
     if !matches!(
         contract.status,
         ContractStatus::Defaulted | ContractStatus::Undercollateralized
     ) {
-        let error_response = ErrorResponse {
-            message: format!("Cannot liquidate contract in state: {:?}", contract.status),
-        };
-
-        return Err((StatusCode::BAD_REQUEST, Json(error_response)));
+        return Err(Error::InvalidStateToLiquidate {
+            current_state: contract.status,
+        });
     }
 
-    let contract_index = contract.contract_index.ok_or_else(|| {
-        let error_response = ErrorResponse {
-            message: "Database error: missing contract index".to_string(),
-        };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?;
+    let installments = db::installments::get_all_for_contract_id(&data.db, &contract_id)
+        .await
+        .map_err(Error::database)?;
 
-    let contract_address = contract.contract_address.clone().ok_or_else(|| {
-        let error_response = ErrorResponse {
-            message: "Database error: missing contract address".to_string(),
-        };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?;
+    let contract_index = contract
+        .contract_index
+        .ok_or_else(|| Error::Database("Missing contract index".to_string()))?;
+
+    let contract_address = contract
+        .contract_address
+        .clone()
+        .ok_or_else(|| Error::Database("Missing contract address".to_string()))?;
 
     let collateral_outputs = data
         .mempool
@@ -604,61 +586,42 @@ async fn get_liquidation_to_bitcoin_psbt(
         .expect("actor to be alive");
 
     if collateral_outputs.is_empty() {
-        let error_response = ErrorResponse {
-            message: "Database error: missing collateral outputs".to_string(),
-        };
-
-        return Err((StatusCode::INTERNAL_SERVER_ERROR, Json(error_response)));
+        return Err(Error::Database("Missing collateral outputs".to_string()));
     }
 
     let price = get_bitmex_index_price(&data.config, OffsetDateTime::now_utc())
         .await
-        .map_err(|e| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {e:#}"),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
+        .map_err(Error::bitmex_price)?;
 
-    let lender_amount = contract.outstanding_balance_btc(price).map_err(|e| {
-        let error_response = ErrorResponse {
-            message: format!("Failed to calculate lender amount: {e:#}"),
-        };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?;
+    let outstanding_balance_usd = compute_outstanding_balance(&installments);
+    let outstanding_balance_btc = outstanding_balance_usd
+        .as_btc(price)
+        .map_err(Error::outstanding_balance_calculation)?;
 
     let (collateral_descriptor, lender_pk, psbt) = contract_liquidation::prepare_liquidation_psbt(
         &data.wallet,
         contract,
         lender_address.as_unchecked().clone(),
-        lender_amount,
+        outstanding_balance_btc.total(),
         contract_index,
         data.mempool.clone(),
         query_params.fee_rate,
     )
     .await
-    .map_err(|err| {
-        error_response(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("{err:#}").as_str(),
-        )
-    })?;
+    .map_err(Error::build_liquidation_psbt)?;
 
     let psbt = psbt.serialize_hex();
 
-    let res = LiquidationPsbt {
+    Ok(AppJson(LiquidationPsbt {
         psbt,
         collateral_descriptor,
         lender_pk,
-    };
-
-    Ok(Json(res))
+    }))
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct LiquidationToStablecoinPsbtQueryParams {
-    // TODO: can we use bitcoin::Address here?
-    bitcoin_refund_address: String,
+pub struct LiquidationToStablecoinPsbtRequest {
+    bitcoin_refund_address: Address<NetworkUnchecked>,
     fee_rate_sats_vbyte: u64,
 }
 
@@ -678,95 +641,70 @@ async fn post_build_liquidation_to_stablecoin_psbt(
     Path(contract_id): Path<String>,
     Extension(user): Extension<Lender>,
     Extension(connection_details): Extension<UserConnectionDetails>,
-    Json(body): Json<LiquidationToStablecoinPsbtQueryParams>,
-) -> Result<Json<LiquidationToStableCoinPsbt>, (StatusCode, Json<ErrorResponse>)> {
+    AppJson(body): AppJson<LiquidationToStablecoinPsbtRequest>,
+) -> Result<AppJson<LiquidationToStableCoinPsbt>, Error> {
     let lender_ip = match connection_details.ip {
         None => {
-            return Err(error_response(
-                StatusCode::UNAVAILABLE_FOR_LEGAL_REASONS,
-                "Request IP required",
-            ));
+            return Err(Error::RequestIpRequired);
         }
         Some(ip) => ip.to_string(),
     };
 
-    let contract = db::contracts::load_contract_by_contract_id_and_lender_id(
-        &data.db,
-        contract_id.as_str(),
-        &user.id,
-    )
-    .await
-    .map_err(|e| {
-        error_response(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Database error: {e:#}").as_str(),
-        )
-    })?
-    .ok_or_else(|| {
-        let error_response = ErrorResponse {
-            message: "Contract not found".to_string(),
-        };
-        (StatusCode::BAD_REQUEST, Json(error_response))
-    })?;
+    let contract =
+        db::contracts::load_contract_by_contract_id_and_lender_id(&data.db, &contract_id, &user.id)
+            .await
+            .map_err(Error::database)?
+            .ok_or_else(|| Error::MissingContract(contract_id.clone()))?;
 
     if !matches!(
         contract.status,
         ContractStatus::Defaulted | ContractStatus::Undercollateralized
     ) {
-        return Err(error_response(
-            StatusCode::BAD_REQUEST,
-            format!("Cannot liquidate contract in state: {:?}", contract.status).as_str(),
-        ));
+        return Err(Error::InvalidStateToLiquidate {
+            current_state: contract.status,
+        });
     }
 
-    tracing::info!("Contract will be liquidated to stable coins");
-    let loan_deal = db::loan_deals::get_loan_deal_by_id(&data.db, contract.loan_id.as_str())
+    let installments = db::installments::get_all_for_contract_id(&data.db, &contract_id)
         .await
-        .map_err(|err| {
-            tracing::error!(
-                contract_id,
-                loan_id = contract.loan_id,
-                "Failed loading offer for contract {err:#}"
-            );
-            error_response(StatusCode::INTERNAL_SERVER_ERROR, "Database error")
-        })?;
+        .map_err(Error::database)?;
 
-    let lender_amount = contract.outstanding_balance_usd();
+    tracing::info!("Contract will be liquidated to stablecoins");
 
-    let loan_repayment_address =
-        contract
-            .lender_loan_repayment_address
-            .clone()
-            .ok_or(error_response(
-                StatusCode::SERVICE_UNAVAILABLE,
-                "Service unavailable",
-            ))?;
+    let loan_deal = db::loan_deals::get_loan_deal_by_id(&data.db, &contract.loan_id)
+        .await
+        .map_err(Error::database)?;
+
+    let outstanding_balance_usd = compute_outstanding_balance(&installments);
+
+    let loan_repayment_address = contract
+        .lender_loan_repayment_address
+        .clone()
+        .ok_or_else(|| Error::Database("Missing lender loan repayment address".to_string()))?;
+
+    let expected_network = data.wallet.network();
+    let bitcoin_refund_address = body
+        .bitcoin_refund_address
+        .clone()
+        .require_network(expected_network)
+        .map_err(|_| Error::WrongAddressNetwork { expected_network })?;
 
     let (shift_address, lender_amount, settle_address, settle_amount) = data
         .sideshift
         .create_shift(
             loan_deal.loan_asset(),
-            lender_amount,
+            outstanding_balance_usd.total(),
             contract_id.to_string(),
             lender_ip.to_string(),
-            body.bitcoin_refund_address.clone(),
+            bitcoin_refund_address.to_string(),
             loan_repayment_address.clone(),
         )
         .await
-        .map_err(|err| {
-            tracing::error!(contract_id, "Failed creating shift {err:#}");
-            error_response(
-                StatusCode::SERVICE_UNAVAILABLE,
-                format!("Service unavailable {err:#}").as_str(),
-            )
-        })?;
+        .map_err(Error::sideshift)?;
 
-    let contract_index = &contract.contract_index.ok_or_else(|| {
-        error_response(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "Database error: missing contract index",
-        )
-    })?;
+    let contract_index = &contract
+        .contract_index
+        .ok_or_else(|| Error::Database("Missing contract index".to_string()))?;
 
     let (collateral_descriptor, lender_pk, psbt) = contract_liquidation::prepare_liquidation_psbt(
         &data.wallet,
@@ -778,24 +716,17 @@ async fn post_build_liquidation_to_stablecoin_psbt(
         body.fee_rate_sats_vbyte,
     )
     .await
-    .map_err(|err| {
-        error_response(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("{err:#}").as_str(),
-        )
-    })?;
+    .map_err(Error::build_liquidation_psbt)?;
 
     let psbt = psbt.serialize_hex();
 
-    let res = LiquidationToStableCoinPsbt {
+    Ok(AppJson(LiquidationToStableCoinPsbt {
         psbt,
         collateral_descriptor,
         lender_pk,
         settle_address,
         settle_amount,
-    };
-
-    Ok(Json(res))
+    }))
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -808,35 +739,21 @@ async fn post_liquidation_tx(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Lender>,
     Path(contract_id): Path<String>,
-    Json(body): Json<LiquidationTx>,
-) -> Result<String, (StatusCode, Json<ErrorResponse>)> {
+    AppJson(body): AppJson<LiquidationTx>,
+) -> Result<AppJson<Txid>, Error> {
     let contract = db::contracts::load_contract_by_contract_id_and_lender_id(
         &data.db,
         contract_id.as_str(),
         &user.id,
     )
     .await
-    .map_err(|e| {
-        let error_response = ErrorResponse {
-            message: format!("Database error: {e:#}"),
-        };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?
-    .ok_or_else(|| {
-        let error_response = ErrorResponse {
-            message: "Contract not found".to_string(),
-        };
-        (StatusCode::NOT_FOUND, Json(error_response))
-    })?;
+    .map_err(Error::database)?
+    .ok_or_else(|| Error::MissingContract(contract_id.clone()))?;
 
     let signed_claim_tx_str = body.tx;
     let signed_claim_tx: Transaction =
-        bitcoin::consensus::encode::deserialize_hex(&signed_claim_tx_str).map_err(|e| {
-            let error_response = ErrorResponse {
-                message: format!("Failed to parse transaction: {e:#}"),
-            };
-            (StatusCode::BAD_REQUEST, Json(error_response))
-        })?;
+        bitcoin::consensus::encode::deserialize_hex(&signed_claim_tx_str)
+            .map_err(Error::invalid_psbt)?;
     let claim_txid = signed_claim_tx.compute_txid();
 
     let claim_type = if ContractStatus::Defaulted == contract.status {
@@ -853,56 +770,43 @@ async fn post_liquidation_tx(
         })
         .await
         .expect("actor to be alive")
-        .map_err(|e| {
-            let error_response = ErrorResponse {
-                message: format!("Failed to track transaction: {e:#}"),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
+        .map_err(Error::track_transaction)?;
 
     data.mempool
         .send(mempool::PostTx(signed_claim_tx_str))
         .await
         .expect("actor to be alive")
-        .map_err(|e| {
-            let error_response = ErrorResponse {
-                message: format!("Failed to post transaction: {e:#}"),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
+        .map_err(Error::post_transaction)?;
 
     // TODO: Use a database transaction.
-    if let Err(e) =
-        db::transactions::insert_liquidation_txid(&data.db, contract_id.as_str(), &claim_txid).await
-    {
-        tracing::error!("Failed to insert liquidation TXID: {e:#}");
-    };
+    db::transactions::insert_liquidation_txid(&data.db, &contract_id, &claim_txid)
+        .await
+        .map_err(Error::database)?;
 
-    if let Err(e) = db::contracts::mark_contract_as_closing(&data.db, contract_id.as_str()).await {
-        tracing::error!("Failed to mark contract as closing: {e:#}");
-    };
+    db::contracts::mark_contract_as_closing(&data.db, &contract_id)
+        .await
+        .map_err(Error::database)?;
 
     if let Err(e) = async {
         let contract = db::contracts::load_contract_by_contract_id_and_lender_id(
             &data.db,
-            contract_id.as_str(),
+            &contract_id,
             &user.id,
         )
         .await
         .context("Failed to load contract")?
-        .context("contract not found")?;
+        .context("Contract not found")?;
 
-        let borrower = db::borrowers::get_user_by_id(&data.db, contract.borrower_id.as_str())
+        let borrower = db::borrowers::get_user_by_id(&data.db, &contract.borrower_id)
             .await?
             .context("Borrower not found")?;
 
         let loan_url = data
             .config
             .borrower_frontend_origin
-            .join(format!("/my-contracts/{}", contract_id).as_str())?;
+            .join(&format!("/my-contracts/{}", contract_id))?;
 
-        let emails =
-            db::contract_emails::load_contract_emails(&data.db, contract.id.as_str()).await?;
+        let emails = db::contract_emails::load_contract_emails(&data.db, &contract.id).await?;
         if emails.defaulted_loan_liquidated_sent {
             // Email already sent
             return Ok(claim_txid.to_string());
@@ -916,7 +820,8 @@ async fn post_liquidation_tx(
             .await
             .context("Failed to mark defaulted-loan-liquidated email as sent")?;
 
-        anyhow::Ok(claim_txid.to_string())
+        // Not actually used, but required. I think the compiler is tripping here.
+        anyhow::Ok("".to_string())
     }
     .await
     {
@@ -925,7 +830,7 @@ async fn post_liquidation_tx(
         );
     }
 
-    Ok(claim_txid.to_string())
+    Ok(AppJson(claim_txid))
 }
 
 #[derive(Debug, Serialize)]
@@ -941,67 +846,33 @@ async fn get_manual_recovery_psbt(
     Extension(user): Extension<Lender>,
     Path(contract_id): Path<String>,
     query_params: Query<LiquidationPsbtQueryParams>,
-) -> Result<Json<ManualRecoveryPsbt>, (StatusCode, Json<ErrorResponse>)> {
+) -> Result<AppJson<ManualRecoveryPsbt>, Error> {
+    let expected_network = data.wallet.network();
     let lender_address = query_params
         .address
         .clone()
-        .require_network(data.wallet.network())
-        .map_err(|e| {
-            let error_response = ErrorResponse {
-                message: format!("Invalid address: {e:#}"),
-            };
-            (StatusCode::BAD_REQUEST, Json(error_response))
-        })?;
+        .require_network(expected_network)
+        .map_err(|_| Error::WrongAddressNetwork { expected_network })?;
 
-    let contract = db::contracts::load_contract_by_contract_id_and_lender_id(
-        &data.db,
-        contract_id.as_str(),
-        &user.id,
-    )
-    .await
-    .map_err(|e| {
-        let error_response = ErrorResponse {
-            message: format!("Database error: {e:#}"),
-        };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?
-    .ok_or_else(|| {
-        let error_response = ErrorResponse {
-            message: "Contract not found".to_string(),
-        };
-        (StatusCode::BAD_REQUEST, Json(error_response))
-    })?;
+    let contract =
+        db::contracts::load_contract_by_contract_id_and_lender_id(&data.db, &contract_id, &user.id)
+            .await
+            .map_err(Error::database)?
+            .ok_or_else(|| Error::MissingContract(contract_id.clone()))?;
 
     let ManualCollateralRecovery { lender_amount, .. } =
         db::manual_collateral_recovery::load_manual_collateral_recovery(&data.db, &contract.id)
             .await
-            .map_err(|error| {
-                let error_response = ErrorResponse {
-                    message: format!("Database error: {}", error),
-                };
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-            })?
-            .ok_or_else(|| {
-                let error_response = ErrorResponse {
-                    message: "Database error: invalid state to recover collateral manually"
-                        .to_string(),
-                };
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-            })?;
+            .map_err(Error::database)?
+            .ok_or_else(|| Error::InvalidStateForManualRecovery)?;
 
-    let contract_index = contract.contract_index.ok_or_else(|| {
-        let error_response = ErrorResponse {
-            message: "Database error: missing contract index".to_string(),
-        };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?;
+    let contract_index = contract
+        .contract_index
+        .ok_or_else(|| Error::Database("Missing contract index".to_string()))?;
 
-    let contract_address = contract.contract_address.ok_or_else(|| {
-        let error_response = ErrorResponse {
-            message: "Database error: missing contract address".to_string(),
-        };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?;
+    let contract_address = contract
+        .contract_address
+        .ok_or_else(|| Error::Database("Missing contract address".to_string()))?;
 
     let collateral_outputs = data
         .mempool
@@ -1010,11 +881,7 @@ async fn get_manual_recovery_psbt(
         .expect("actor to be alive");
 
     if collateral_outputs.is_empty() {
-        let error_response = ErrorResponse {
-            message: "Database error: missing collateral outputs".to_string(),
-        };
-
-        return Err((StatusCode::INTERNAL_SERVER_ERROR, Json(error_response)));
+        return Err(Error::Database("Missing collateral outputs".to_string()));
     }
 
     let origination_fee = Amount::from_sat(contract.origination_fee_sats);
@@ -1033,31 +900,15 @@ async fn get_manual_recovery_psbt(
             query_params.fee_rate,
             contract.contract_version,
         )
-        .map_err(|e| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {e:#}"),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
+        .map_err(Error::build_liquidation_psbt)?;
 
     let psbt = psbt.serialize_hex();
 
-    let res = ManualRecoveryPsbt {
+    Ok(AppJson(ManualRecoveryPsbt {
         psbt,
         collateral_descriptor,
         lender_pk,
-    };
-
-    Ok(Json(res))
-}
-
-fn error_response(status: StatusCode, message: &str) -> (StatusCode, Json<ErrorResponse>) {
-    (
-        status,
-        Json(ErrorResponse {
-            message: message.to_string(),
-        }),
-    )
+    }))
 }
 
 /// Convert from a [`model::Contract`] to a [`crate::routes::borrower::Contract`].
@@ -1074,12 +925,12 @@ async fn map_to_api_contract(
         .map_err(Error::database)?
         .ok_or(Error::MissingLender)?;
 
-    let transactions = db::transactions::get_all_for_contract_id(&data.db, contract.id.as_str())
+    let transactions = db::transactions::get_all_for_contract_id(&data.db, &contract.id)
         .await
         .map_err(Error::database)?;
 
     let repaid_at = transactions.iter().find_map(|tx| {
-        matches!(tx.transaction_type, TransactionType::PrincipalRepaid).then_some(tx.timestamp)
+        matches!(tx.transaction_type, TransactionType::InstallmentPaid).then_some(tx.timestamp)
     });
 
     let can_recover_collateral_manually =
@@ -1089,13 +940,12 @@ async fn map_to_api_contract(
             .is_some();
 
     let parent_contract_id =
-        db::contract_extensions::get_parent_by_extended(&data.db, contract.id.as_str())
+        db::contract_extensions::get_parent_by_extended(&data.db, &contract.id)
             .await
             .map_err(|e| Error::database(anyhow!(e)))?;
-    let child_contract =
-        db::contract_extensions::get_extended_by_parent(&data.db, contract.id.as_str())
-            .await
-            .map_err(|e| Error::database(anyhow!(e)))?;
+    let child_contract = db::contract_extensions::get_extended_by_parent(&data.db, &contract.id)
+        .await
+        .map_err(|e| Error::database(anyhow!(e)))?;
 
     let kyc_info = match loan_deal.kyc_link() {
         Some(ref kyc_link) => {
@@ -1112,8 +962,6 @@ async fn map_to_api_contract(
     };
 
     let new_offer = loan_deal;
-
-    let liquidation_price = contract.liquidation_price();
 
     let fiat_loan_details_borrower = {
         let details = db::fiat_loan_details::get_borrower(&data.db, &contract.id)
@@ -1156,7 +1004,13 @@ async fn map_to_api_contract(
         None => None,
     };
 
-    let timeline = map_timeline(&contract, &transactions, &data.db).await?;
+    let installments = db::installments::get_all_for_contract_id(&data.db, &contract.id)
+        .await
+        .map_err(Error::database)?;
+
+    let liquidation_price = contract.liquidation_price(&installments);
+
+    let timeline = map_timeline(&data.db, &contract, &transactions, &installments).await?;
 
     let (extension_max_duration_days, extension_interest_rate) = match contract.extension_policy {
         ExtensionPolicy::DoNotExtend => (0, None),
@@ -1166,6 +1020,8 @@ async fn map_to_api_contract(
         } => (max_duration_days, Some(interest_rate)),
     };
 
+    let total_interest = compute_total_interest(&installments);
+
     let contract = Contract {
         id: contract.id,
         loan_amount: contract.loan_amount,
@@ -1174,7 +1030,7 @@ async fn map_to_api_contract(
         origination_fee_sats: contract.origination_fee_sats,
         collateral_sats: contract.collateral_sats,
         interest_rate: contract.interest_rate,
-        interest: contract.interest,
+        interest: total_interest,
         initial_ltv: contract.initial_ltv,
         status: contract.status,
         lender_pk: contract.lender_pk,
@@ -1210,54 +1066,108 @@ async fn map_to_api_contract(
         timeline,
         extension_max_duration_days,
         extension_interest_rate,
+        installments: installments.into_iter().map(Installment::from).collect(),
     };
 
     Ok(contract)
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Installment {
+    pub id: Uuid,
+    pub principal: Decimal,
+    pub interest: Decimal,
+    #[serde(with = "time::serde::rfc3339")]
+    pub due_date: OffsetDateTime,
+    pub status: InstallmentStatus,
+    #[serde(with = "time::serde::rfc3339::option")]
+    pub paid_date: Option<OffsetDateTime>,
+    pub payment_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum InstallmentStatus {
+    /// The installment has not yet been paid.
+    Pending,
+    /// The installment has been paid, according to the borrower.
+    Paid,
+    /// The installment has been paid, as confirmed by the lender.
+    Confirmed,
+    /// The installment was not paid in time.
+    Late,
+    /// The installment is no longer expected and was never paid.
+    Cancelled,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TimelineEvent {
     #[serde(with = "time::serde::rfc3339")]
     date: OffsetDateTime,
-    event: ContractStatus,
-    /// Only provided if it was an event caused by a transaction
+    event: TimelineEventKind,
+    /// Only provided if it was an event caused by a transaction.
     txid: Option<String>,
 }
 
-// TODO: This does not properly handle a contract going from `Extended` back to `PrincipalGiven`
-// after the lender rejects an extension request.
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+enum TimelineEventKind {
+    ContractStatusChange { status: ContractStatus },
+    Installment { is_confirmed: bool },
+}
+
 async fn map_timeline(
+    db: &Pool<Postgres>,
     contract: &model::Contract,
     transactions: &[LoanTransaction],
-    pool: &Pool<Postgres>,
+    installments: &[model::Installment],
 ) -> Result<Vec<TimelineEvent>, Error> {
-    let event_logs = db::contract_status_log::get_contract_status_logs(pool, contract.id.as_str())
+    let event_logs = db::contract_status_log::get_contract_status_logs(db, &contract.id)
         .await
         .map_err(|e| Error::database(anyhow!(e)))?;
 
-    // first, we add the contract request event
+    // First, we add the contract request event.
     let mut timeline = vec![TimelineEvent {
         date: contract.created_at,
-        event: ContractStatus::Requested,
+        event: TimelineEventKind::ContractStatusChange {
+            status: ContractStatus::Requested,
+        },
         txid: None,
     }];
 
-    // then we go through funding transactions, there might be multiple, that's why we need to
-    // handle them separately
+    // Then we go through funding transactions. There might be multiple, that's why we need to
+    // handle them separately.
     transactions.iter().for_each(|tx| {
         if TransactionType::Funding == tx.transaction_type {
             let event = TimelineEvent {
                 date: tx.timestamp,
-                // we assume each transaction has already been confirmed
-                event: ContractStatus::CollateralConfirmed,
+                // We assume each transaction has already been confirmed.
+                event: TimelineEventKind::ContractStatusChange {
+                    status: ContractStatus::CollateralConfirmed,
+                },
                 txid: Some(tx.txid.clone()),
             };
             timeline.push(event);
         }
     });
 
-    // next we go through the events and enhance them with transaction ids if relevant
-    let timeline_1 = event_logs
+    // Next we generate events based on paid and confirmed installments.
+    installments.iter().for_each(|i| {
+        if let Some(paid_date) = i.paid_date {
+            let event = TimelineEvent {
+                date: paid_date,
+                event: TimelineEventKind::Installment {
+                    is_confirmed: matches!(i.status, model::InstallmentStatus::Confirmed),
+                },
+                txid: i.payment_id.clone(),
+            };
+            timeline.push(event);
+        }
+    });
+
+    // Finally, we go through the contract events and enhance them with transaction IDs, if
+    // applicable.
+    let rest_of_timeline = event_logs
         .into_iter()
         .filter_map(|log| {
             let txid = match log.new_status {
@@ -1268,12 +1178,6 @@ async fn map_timeline(
                     (tx.transaction_type == TransactionType::PrincipalGiven)
                         .then(|| tx.txid.clone())
                 }),
-                ContractStatus::RepaymentProvided | ContractStatus::RepaymentConfirmed => {
-                    transactions.iter().find_map(|tx| {
-                        (tx.transaction_type == TransactionType::PrincipalRepaid)
-                            .then(|| tx.txid.clone())
-                    })
-                }
                 ContractStatus::Closing
                 | ContractStatus::Closed
                 | ContractStatus::Defaulted
@@ -1282,10 +1186,11 @@ async fn map_timeline(
                     (tx.transaction_type == TransactionType::ClaimCollateral)
                         .then(|| tx.txid.clone())
                 }),
-
                 ContractStatus::Requested
                 | ContractStatus::RenewalRequested
                 | ContractStatus::Approved
+                | ContractStatus::RepaymentProvided
+                | ContractStatus::RepaymentConfirmed
                 | ContractStatus::Undercollateralized
                 | ContractStatus::Extended
                 | ContractStatus::Rejected
@@ -1296,24 +1201,30 @@ async fn map_timeline(
                 | ContractStatus::Cancelled
                 | ContractStatus::RequestExpired
                 | ContractStatus::ApprovalExpired => {
-                    // There are no transactions associated to these events
+                    // There are no transactions associated with these events.
                     None
                 }
                 ContractStatus::CollateralConfirmed => {
-                    // we handled this event already. Note: return None means we filter this event
-                    // out.
+                    // We handled this event already. Note: returning `None` means we filter out
+                    // this event.
                     return None;
                 }
             };
 
             Some(TimelineEvent {
                 date: log.changed_at,
-                event: log.new_status,
+                event: TimelineEventKind::ContractStatusChange {
+                    status: log.new_status,
+                },
                 txid,
             })
         })
         .collect::<Vec<_>>();
-    timeline.extend(timeline_1);
+
+    timeline.extend(rest_of_timeline);
+
+    timeline.sort_by(|a, b| a.date.cmp(&b.date));
+
     Ok(timeline)
 }
 
@@ -1347,6 +1258,10 @@ enum Error {
     ContractAddress(String),
     /// Failed to track accepted contract using Mempool API.
     TrackContract(String),
+    /// Failed to track transaction using Mempool API.
+    TrackTransaction(String),
+    /// Failed to track transaction using Mempool API.
+    PostTransaction(String),
     /// The contract was in an invalid state to approve a request or an extension.
     InvalidApproveRequest { status: ContractStatus },
     /// The contract was in an invalid state to reject a request or an extension.
@@ -1359,6 +1274,24 @@ enum Error {
     MissingParentContract(String),
     /// Cannot approve renewal without contract address.
     MissingContractAddress,
+    /// Invalid PSBT,
+    InvalidPsbt(String),
+    /// Wrong network for Bitcoin address.
+    WrongAddressNetwork { expected_network: Network },
+    /// Cannot liquidate in the contract's current state.
+    InvalidStateToLiquidate { current_state: ContractStatus },
+    /// Cannot manually recover collateral in the contract's current state.
+    InvalidStateForManualRecovery,
+    /// Failed to get price from BitMEX.
+    BitMexPrice(String),
+    /// Failed to calculate outstanding balance.
+    OutstandingBalanceCalculation(String),
+    /// Failed to build liquidation PSBT,
+    BuildLiquidationPsbt(String),
+    /// We need the request IP to check if this request is permitted.
+    RequestIpRequired,
+    /// SideShift error.
+    SideShift(String),
 }
 
 impl Error {
@@ -1374,8 +1307,36 @@ impl Error {
         Self::TrackContract(format!("{e:#}"))
     }
 
+    fn track_transaction(e: anyhow::Error) -> Self {
+        Self::TrackTransaction(format!("{e:#}"))
+    }
+
+    fn post_transaction(e: anyhow::Error) -> Self {
+        Self::PostTransaction(format!("{e:#}"))
+    }
+
     fn cannot_build_descriptor(e: anyhow::Error) -> Self {
         Self::CannotBuildDescriptor(format!("{e:#}"))
+    }
+
+    fn invalid_psbt(e: FromHexError) -> Self {
+        Self::InvalidPsbt(format!("{:#}", anyhow!(e)))
+    }
+
+    fn bitmex_price(e: anyhow::Error) -> Self {
+        Self::BitMexPrice(format!("{e:#}"))
+    }
+
+    fn outstanding_balance_calculation(e: anyhow::Error) -> Self {
+        Self::OutstandingBalanceCalculation(format!("{e:#}"))
+    }
+
+    fn build_liquidation_psbt(e: anyhow::Error) -> Self {
+        Self::BuildLiquidationPsbt(format!("{e:#}"))
+    }
+
+    fn sideshift(e: anyhow::Error) -> Self {
+        Self::SideShift(format!("{e:#}"))
     }
 }
 
@@ -1412,7 +1373,12 @@ impl IntoResponse for Error {
             | Error::MissingBorrower
             | Error::CannotBuildDescriptor(_)
             | Error::MissingParentContract(_)
-            | Error::MissingContractAddress => (
+            | Error::MissingContractAddress
+            | Error::TrackTransaction(_)
+            | Error::PostTransaction(_)
+            | Error::BitMexPrice(_)
+            | Error::OutstandingBalanceCalculation(_)
+            | Error::BuildLiquidationPsbt(_) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "Something went wrong".to_owned(),
             ),
@@ -1433,6 +1399,30 @@ impl IntoResponse for Error {
             Error::MissingContract(contract_id) => (
                 StatusCode::BAD_REQUEST,
                 format!("Contract does not exist: {contract_id}"),
+            ),
+            Error::InvalidPsbt(_) => (
+                StatusCode::BAD_REQUEST,
+                "The PSBT provided cannot be parsed".to_owned(),
+            ),
+            Error::WrongAddressNetwork { expected_network } => (
+                StatusCode::BAD_REQUEST,
+                format!("Wrong network for Bitcoin address. Expected: {expected_network}"),
+            ),
+            Error::InvalidStateToLiquidate { current_state } => (
+                StatusCode::BAD_REQUEST,
+                format!("Cannot liquidate in state {current_state:?}"),
+            ),
+            Error::InvalidStateForManualRecovery => (
+                StatusCode::BAD_REQUEST,
+                "Cannot recover collateral manually in current state".to_string(),
+            ),
+            Error::RequestIpRequired => (
+                StatusCode::UNAVAILABLE_FOR_LEGAL_REASONS,
+                "Request IP required".to_string(),
+            ),
+            Error::SideShift(_) => (
+                StatusCode::SERVICE_UNAVAILABLE,
+                "Service unavailable".to_string(),
             ),
         };
 
@@ -1475,6 +1465,32 @@ impl From<approve_contract::Error> for Error {
             approve_contract::Error::MissingContract(contract_id) => {
                 Error::MissingContract(contract_id)
             }
+        }
+    }
+}
+
+impl From<model::Installment> for Installment {
+    fn from(value: model::Installment) -> Self {
+        Self {
+            id: value.id,
+            principal: value.principal,
+            interest: value.interest,
+            due_date: value.due_date,
+            status: value.status.into(),
+            paid_date: value.paid_date,
+            payment_id: value.payment_id,
+        }
+    }
+}
+
+impl From<model::InstallmentStatus> for InstallmentStatus {
+    fn from(value: model::InstallmentStatus) -> Self {
+        match value {
+            model::InstallmentStatus::Pending => InstallmentStatus::Pending,
+            model::InstallmentStatus::Paid => InstallmentStatus::Paid,
+            model::InstallmentStatus::Confirmed => InstallmentStatus::Confirmed,
+            model::InstallmentStatus::Late => InstallmentStatus::Late,
+            model::InstallmentStatus::Cancelled => InstallmentStatus::Cancelled,
         }
     }
 }

@@ -80,7 +80,21 @@ async fn check_margin_call_or_liquidation(
                     continue;
                 }
 
-                match contract.ltv(latest_price) {
+                let installments =
+                    match db::installments::get_all_for_contract_id(db, &contract.id).await {
+                        Ok(installments) => installments,
+                        Err(e) => {
+                            tracing::error!(
+                                contract_id = contract.id,
+                                "Could not get installments for contract: {e:#}"
+                            );
+                            continue;
+                        }
+                    };
+
+                let liquidation_price = contract.liquidation_price(&installments);
+
+                match contract.ltv(&installments, latest_price) {
                     Ok(current_ltv) => {
                         tracing::trace!(
                             contract_id = contract.id,
@@ -96,6 +110,7 @@ async fn check_margin_call_or_liquidation(
                                 config.clone(),
                                 latest_price,
                                 current_ltv,
+                                liquidation_price,
                                 notifications.clone(),
                             )
                             .await;
@@ -106,6 +121,7 @@ async fn check_margin_call_or_liquidation(
                                 config.clone(),
                                 latest_price,
                                 current_ltv,
+                                liquidation_price,
                                 notifications.clone(),
                             )
                             .await
@@ -116,6 +132,7 @@ async fn check_margin_call_or_liquidation(
                                 config.clone(),
                                 latest_price,
                                 current_ltv,
+                                liquidation_price,
                                 notifications.clone(),
                             )
                             .await
@@ -175,6 +192,7 @@ async fn first_margin_call_contract(
     config: Config,
     price: Decimal,
     current_ltv: Decimal,
+    liquidation_price: Decimal,
     notifications: Arc<Notifications>,
 ) {
     let contract_id = &contract.id;
@@ -213,6 +231,7 @@ async fn first_margin_call_contract(
         config,
         price,
         current_ltv,
+        liquidation_price,
         LiquidationStatus::FirstMarginCall,
         notifications,
     )
@@ -231,6 +250,7 @@ async fn second_margin_call(
     config: Config,
     latest_price: Decimal,
     current_ltv: Decimal,
+    liquidation_price: Decimal,
     notifications: Arc<Notifications>,
 ) {
     let contract_id = &contract.id;
@@ -268,6 +288,7 @@ async fn second_margin_call(
         config,
         latest_price,
         current_ltv,
+        liquidation_price,
         LiquidationStatus::SecondMarginCall,
         notifications,
     )
@@ -286,6 +307,7 @@ async fn liquidate_contract(
     config: Config,
     latest_price: Decimal,
     current_ltv: Decimal,
+    liquidation_price: Decimal,
     notifications: Arc<Notifications>,
 ) {
     let contract_id = &contract.id;
@@ -322,6 +344,7 @@ async fn liquidate_contract(
         config,
         latest_price,
         current_ltv,
+        liquidation_price,
         LiquidationStatus::Liquidated,
         notifications,
     )
@@ -331,12 +354,14 @@ async fn liquidate_contract(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn send_notification(
     pool: &Pool<Postgres>,
     contract: &Contract,
     config: Config,
     price: Decimal,
     current_ltv: Decimal,
+    liquidation_price: Decimal,
     status: LiquidationStatus,
     notifications: Arc<Notifications>,
 ) -> Result<()> {
@@ -361,6 +386,7 @@ async fn send_notification(
                     contract.clone(),
                     price,
                     current_ltv,
+                    liquidation_price,
                     borrower_contract_url,
                 )
                 .await;
@@ -371,6 +397,7 @@ async fn send_notification(
                     borrower,
                     contract.clone(),
                     price,
+                    liquidation_price,
                     borrower_contract_url,
                 )
                 .await;

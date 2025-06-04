@@ -15,12 +15,12 @@ import {
 } from "@frontend/shadcn";
 import {
   Contract,
-  TransactionType,
+  InstallmentStatus,
   useLenderHttpClient,
 } from "@frontend/http-client-lender";
 import { AlertCircle, Check } from "lucide-react";
 import { LuCheck, LuClipboard, LuExternalLink } from "react-icons/lu";
-import { getTxUrl } from "@frontend/ui-shared";
+import { formatCurrency, getTxUrl } from "@frontend/ui-shared";
 import { toast } from "sonner";
 
 const shortenTxid = (txid?: string) => {
@@ -46,8 +46,14 @@ const RepaymentConfirmationDialog = ({
 }: ApproveOrRejectExtensionDialogProps) => {
   const [isConfirming, setIsConfirming] = useState(false);
   const [txidCopied, setTxidCopied] = useState(false);
-  const { markPrincipalConfirmed } = useLenderHttpClient();
+  const { markInstallmentAsConfirmed } = useLenderHttpClient();
   const [rejectError, setRejectError] = useState<string | undefined>();
+
+  const paidInstallment = contract.installments
+    .filter((installment) => installment.status === InstallmentStatus.Paid)
+    .sort(
+      (a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime(),
+    )[0];
 
   const handleCopyTxid = async (txid: string) => {
     await navigator.clipboard.writeText(txid);
@@ -57,28 +63,26 @@ const RepaymentConfirmationDialog = ({
   };
 
   const handleConfirm = async () => {
-    console.log("Repayment confirmed");
     setIsConfirming(true);
     try {
-      await markPrincipalConfirmed(contract.id);
+      await markInstallmentAsConfirmed(contract.id, paidInstallment.id);
       refreshContract();
     } catch (error) {
-      console.error(`Failed confirming repayment $error}`);
+      console.error(`Failed confirming installment payment: $error}`);
       setRejectError(
         error instanceof Error
           ? error.message
-          : "Failed to confirm repayment. Please try again.",
+          : "Failed to confirm installment payment. Please try again.",
       );
     } finally {
       setIsConfirming(false);
     }
   };
 
-  const totalAmount = contract.loan_amount + contract.interest;
+  const totalAmount =
+    Number(paidInstallment.principal) + Number(paidInstallment.interest);
 
-  const transactionId = contract.transactions.find(
-    (tx) => tx.transaction_type === TransactionType.PrincipalRepaid,
-  )?.txid;
+  const transactionId = paidInstallment.payment_id;
 
   const shortendTxId = shortenTxid(transactionId);
   let url = undefined;
@@ -95,9 +99,9 @@ const RepaymentConfirmationDialog = ({
       {/* Dialog Content */}
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Confirm Loan Repayment</DialogTitle>
+          <DialogTitle>Confirm Installment Payment</DialogTitle>
           <DialogDescription>
-            Please review the repayment details below.
+            Please review the details below.
           </DialogDescription>
         </DialogHeader>
 
@@ -105,9 +109,9 @@ const RepaymentConfirmationDialog = ({
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div className="text-muted-foreground">
-                Total Repayment Amount:
+                Total Installment Amount:
               </div>
-              <div className="font-medium">${totalAmount}</div>
+              <div className="font-medium">${formatCurrency(totalAmount)}</div>
 
               <div className="text-muted-foreground">Transaction ID:</div>
               <div className="flex items-center">
@@ -148,8 +152,8 @@ const RepaymentConfirmationDialog = ({
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Warning</AlertTitle>
               <AlertDescription>
-                If any information above is incorrect or you have not received
-                the repayment, please start a dispute.
+                If any of the information above appears to be incorrect or if
+                you have not received the payment, please initiate a dispute.
               </AlertDescription>
             </Alert>
           </div>
@@ -168,7 +172,7 @@ const RepaymentConfirmationDialog = ({
             ) : (
               <>
                 <Check className="mr-2 h-4 w-4" />
-                Confirm Repayment
+                Confirm
               </>
             )}
           </Button>

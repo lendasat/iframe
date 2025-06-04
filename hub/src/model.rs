@@ -33,6 +33,10 @@ use url::Url;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
+mod installment;
+
+pub use installment::*;
+
 pub type Email = String;
 
 /// One year in our application is counted as 360 days.
@@ -282,6 +286,7 @@ pub struct CreateLoanOfferSchema {
     pub lender_npub: String,
     pub extension_duration_days: Option<u64>,
     pub extension_interest_rate: Option<Decimal>,
+    pub repayment_plan: RepaymentPlan,
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
@@ -309,6 +314,7 @@ pub struct CreateLoanApplicationSchema {
     pub borrower_derivation_path: bip32::DerivationPath,
     pub borrower_npub: String,
     pub client_contract_id: Option<Uuid>,
+    pub repayment_plan: RepaymentPlan,
     // TODO: do we want to enable KYC for the lender? I.e. the borrower requires the lender to do
     // KYC?
 }
@@ -379,6 +385,13 @@ impl LoanDeal {
             LoanDeal::LoanApplication(b) => b.loan_asset,
         }
     }
+
+    pub fn repayment_plan(&self) -> RepaymentPlan {
+        match self {
+            LoanDeal::LoanOffer(a) => a.repayment_plan,
+            LoanDeal::LoanApplication(b) => b.repayment_plan,
+        }
+    }
 }
 
 /// Represents an offer from a lender.
@@ -428,6 +441,7 @@ pub struct LoanOffer {
     pub kyc_link: Option<Url>,
     pub lender_npub: String,
     pub extension_policy: ExtensionPolicy,
+    pub repayment_plan: RepaymentPlan,
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
 }
@@ -538,6 +552,7 @@ pub struct LoanApplication {
     pub borrower_npub: String,
     pub status: LoanApplicationStatus,
     pub client_contract_id: Option<Uuid>,
+    pub repayment_plan: RepaymentPlan,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
     #[serde(with = "time::serde::rfc3339")]
@@ -601,29 +616,22 @@ pub struct Contract {
     pub client_contract_id: Option<Uuid>,
     /// Yearly interest rate.
     pub interest_rate: Decimal,
-    pub interest: Decimal,
     pub extension_policy: ExtensionPolicy,
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
 }
 
 impl Contract {
-    pub fn ltv(&self, price: Decimal) -> Result<Decimal> {
+    pub fn ltv(&self, installments: &[Installment], price: Decimal) -> Result<Decimal> {
         let actual_collateral_sats =
             Decimal::from_u64(self.actual_collateral().to_sat()).expect("to fit into u64");
 
+        let outstanding_balance_usd = compute_outstanding_balance(installments);
+
         calculate_ltv(
             price,
-            self.outstanding_balance_usd(),
+            outstanding_balance_usd.total(),
             actual_collateral_sats,
-        )
-    }
-
-    fn loan_interest_usd(&self) -> Decimal {
-        calculate_interest_usd(
-            self.loan_amount,
-            self.interest_rate,
-            self.duration_days as u32,
         )
     }
 
@@ -635,37 +643,28 @@ impl Contract {
             .unwrap_or_default()
     }
 
-    /// What the borrower owes the lender.
-    pub fn outstanding_balance_usd(&self) -> Decimal {
-        self.loan_amount + self.loan_interest_usd()
-    }
-
-    pub fn outstanding_balance_btc(&self, price: Decimal) -> Result<Amount> {
-        let outstanding_balance_usd = self.outstanding_balance_usd();
-
-        usd_to_btc(outstanding_balance_usd, price)
-    }
-
     /// Calculate the liquidation price of the contract based on its current `collateral_sats`.
     ///
     /// The liquidation price cannot be computed if `collateral_sats` is zero. In such a scenario,
     /// we use the `initial_collateral_sats`, which should never be zero.
-    pub fn liquidation_price(&self) -> Decimal {
+    pub fn liquidation_price(&self, installments: &[Installment]) -> Decimal {
         let collateral_sats = if self.actual_collateral() == Amount::ZERO {
             self.initial_collateral_sats
         } else {
             self.actual_collateral().to_sat()
         };
 
+        let outstanding_balance_usd = compute_outstanding_balance(installments);
+
         if self.has_new_liquidation_threshold() {
             calculate_liquidation_price(
-                self.outstanding_balance_usd(),
+                outstanding_balance_usd.total(),
                 Decimal::from_u64(collateral_sats).expect("to fit"),
             )
             .expect("valid liquidation price")
         } else {
             legacy_calculate_liquidation_price(
-                self.outstanding_balance_usd(),
+                outstanding_balance_usd.total(),
                 Decimal::from_u64(collateral_sats).expect("to fit"),
             )
             .expect("valid liquidation price")
@@ -757,9 +756,9 @@ pub enum ContractStatus {
     CollateralConfirmed,
     /// The principal has been given to the borrower.
     PrincipalGiven,
-    /// The principal + interest has been repaid to the lender as claimed by the borrower
+    /// The entire principal + interest has been repaid to the lender as claimed by the borrower
     RepaymentProvided,
-    /// The principal + interest has been repaid to the lender and confirmed by the lender
+    /// The entire principal + interest has been repaid to the lender and confirmed by the lender
     RepaymentConfirmed,
     /// The loan is not sufficiently collateralized, so it can be liquidated by the lender.
     Undercollateralized,
@@ -884,7 +883,6 @@ pub mod db {
         pub liquidation_status: LiquidationStatus,
         pub contract_version: i32,
         pub interest_rate: Decimal,
-        pub interest: Decimal,
         pub client_contract_id: Option<Uuid>,
         pub extension_duration_days: i32,
         pub extension_interest_rate: Decimal,
@@ -1010,7 +1008,6 @@ impl From<db::Contract> for Contract {
             interest_rate: value.interest_rate,
             borrower_npub: value.borrower_npub,
             lender_npub: value.lender_npub,
-            interest: value.interest,
             status: value.status.into(),
             liquidation_status: value.liquidation_status.into(),
             contract_version: ContractVersion::from(value.contract_version),
@@ -1154,7 +1151,6 @@ impl From<Contract> for db::Contract {
             liquidation_status: value.liquidation_status.into(),
             contract_version: value.contract_version as i32,
             interest_rate: value.interest_rate,
-            interest: value.interest,
             client_contract_id: value.client_contract_id,
             extension_duration_days,
             extension_interest_rate,
@@ -1268,6 +1264,19 @@ pub struct DisputeRequestBodySchema {
     pub comment: String,
 }
 
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct InstallmentPaidRequest {
+    pub installment_id: Uuid,
+    /// For stablecoin loans, this should be a TXID. For fiat loans, there is no predefined format
+    /// so this may be left empty.
+    pub payment_id: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ConfirmInstallmentPaymentRequest {
+    pub installment_id: Uuid,
+}
+
 #[derive(Deserialize)]
 pub struct PsbtQueryParams {
     // fee rate in sats/vbyte
@@ -1280,7 +1289,7 @@ pub enum TransactionType {
     Funding,
     Dispute,
     PrincipalGiven,
-    PrincipalRepaid,
+    InstallmentPaid,
     Liquidation,
     Defaulted,
     ClaimCollateral,
@@ -1401,18 +1410,22 @@ pub struct CreateApiAccountResponse {
 
 /// Calculates the interest for the provided `duration_days`.
 ///
-/// Note: does not compound interest
+/// Note: does not compound interest.
 pub fn calculate_interest_usd(
     loan_amount_usd: Decimal,
     yearly_interest_rate: Decimal,
     duration_days: u32,
 ) -> Decimal {
-    let one_year = Decimal::from(ONE_YEAR);
-    let daily_interest_rate = yearly_interest_rate / one_year;
+    let daily_interest_rate = daily_interest_rate(yearly_interest_rate);
+
     loan_amount_usd * daily_interest_rate * Decimal::from(duration_days)
 }
 
-fn usd_to_btc(usd: Decimal, price: Decimal) -> Result<Amount> {
+fn daily_interest_rate(yearly_interest_rate: Decimal) -> Decimal {
+    yearly_interest_rate / Decimal::from(ONE_YEAR)
+}
+
+pub fn usd_to_btc(usd: Decimal, price: Decimal) -> Result<Amount> {
     let owed_amount_btc = usd.checked_div(price).context("Division by zero")?;
 
     let owed_amount_btc = owed_amount_btc.round_dp(8);
@@ -1422,12 +1435,27 @@ fn usd_to_btc(usd: Decimal, price: Decimal) -> Result<Amount> {
     Ok(owed_amount)
 }
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, ToSchema, sqlx::Type)]
+#[serde(rename_all = "snake_case")]
+#[sqlx(type_name = "repayment_plan")]
+pub enum RepaymentPlan {
+    /// Lump-sum payment of principal and interest at the end of the loan term.
+    Bullet,
+    /// Weekly interest payments, plus a final interest-plus-principal payment at the end of the
+    /// loan term.
+    InterestOnlyWeekly,
+    /// Monthly interest payments, plus a final interest-plus-principal payment at the end of the
+    /// loan term.
+    InterestOnlyMonthly,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::model::ONE_MONTH;
     use crate::model::ONE_YEAR;
     use rust_decimal_macros::dec;
+    use std::num::NonZeroU64;
     use time::ext::NumericalDuration;
 
     #[test]
@@ -1474,40 +1502,63 @@ mod tests {
 
     #[test]
     fn test_calculate_lender_liquidation_amount() {
-        let contract = Contract {
-            loan_amount: dec!(1_000),
-            interest_rate: dec!(0.12),
-            duration_days: (ONE_MONTH * 3) as i32,
-            ..dummy_contract()
-        };
+        let duration_days = NonZeroU64::new(ONE_MONTH as u64 * 3).unwrap();
+        let yearly_interest_rate = dec!(0.12);
+        let loan_amount_usd = dec!(1_000);
+
+        let installments = generate_installments(
+            OffsetDateTime::now_utc(),
+            Uuid::new_v4(),
+            RepaymentPlan::Bullet,
+            duration_days,
+            yearly_interest_rate,
+            loan_amount_usd,
+        );
+
+        let outstanding_balance_usd = compute_outstanding_balance(&installments);
 
         let price = dec!(100_000);
+        let outstanding_balance_btc = outstanding_balance_usd.as_btc(price).unwrap();
 
-        let outstanding_balance = contract.outstanding_balance_btc(price).unwrap();
+        assert_eq!(outstanding_balance_btc.total().to_sat(), 1_030_000);
 
-        assert_eq!(outstanding_balance.to_sat(), 1030000);
+        let duration_days = NonZeroU64::new(ONE_MONTH as u64 * 18).unwrap();
+        let yearly_interest_rate = dec!(0.20);
+        let loan_amount_usd = dec!(10_000);
 
-        let contract = Contract {
-            loan_amount: dec!(10_000),
-            interest_rate: dec!(0.20),
-            duration_days: (ONE_MONTH * 18) as i32,
-            ..dummy_contract()
-        };
+        let installments = generate_installments(
+            OffsetDateTime::now_utc(),
+            Uuid::new_v4(),
+            RepaymentPlan::Bullet,
+            duration_days,
+            yearly_interest_rate,
+            loan_amount_usd,
+        );
+
+        let outstanding_balance_usd = compute_outstanding_balance(&installments);
+
         let price = dec!(50_000);
+        let outstanding_balance_btc = outstanding_balance_usd.as_btc(price).unwrap();
 
-        let outstanding_balance = contract.outstanding_balance_btc(price).unwrap();
+        assert_eq!(outstanding_balance_btc.total().to_sat(), 26_000_000);
 
-        assert_eq!(outstanding_balance.to_sat(), 26_000_000);
+        let duration_days = NonZeroU64::new(ONE_YEAR as u64).unwrap();
+        let yearly_interest_rate = dec!(0.12);
+        let loan_amount_usd = dec!(1_000);
 
-        let contract = Contract {
-            loan_amount: dec!(1_000),
-            interest_rate: dec!(0.12),
-            duration_days: ONE_YEAR as i32,
-            ..dummy_contract()
-        };
+        let installments = generate_installments(
+            OffsetDateTime::now_utc(),
+            Uuid::new_v4(),
+            RepaymentPlan::Bullet,
+            duration_days,
+            yearly_interest_rate,
+            loan_amount_usd,
+        );
+
+        let outstanding_balance_usd = compute_outstanding_balance(&installments);
+
         let price = dec!(0);
-
-        let res = contract.outstanding_balance_btc(price);
+        let res = outstanding_balance_usd.as_btc(price);
 
         assert!(res.is_err())
     }
@@ -1636,7 +1687,6 @@ mod tests {
             contract_version: ContractVersion::TwoOfThree,
             client_contract_id: None,
             interest_rate: dec!(0.10),
-            interest: dec!(1_000),
             extension_policy: ExtensionPolicy::DoNotExtend,
             created_at: datetime!(2025-03-01 0:00 UTC),
             updated_at: datetime!(2025-03-01 0:00 UTC),

@@ -64,11 +64,11 @@ const getTransactionInfo = (type: TransactionType) => {
         color: "bg-green-500 text-white",
         label: "Principal Given",
       };
-    case TransactionType.PrincipalRepaid:
+    case TransactionType.InstallmentPaid:
       return {
         icon: <LuArrowUp className="h-5 w-5" />,
         color: "bg-purple-500 text-white",
-        label: "Principal Repaid",
+        label: "Installment Paid",
       };
     case TransactionType.Liquidation:
       return {

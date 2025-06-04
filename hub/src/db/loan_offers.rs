@@ -4,6 +4,7 @@ use crate::model::LoanAsset;
 use crate::model::LoanOffer;
 use crate::model::LoanOfferStatus;
 use crate::model::LoanPayout;
+use crate::model::RepaymentPlan;
 use anyhow::Result;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
@@ -54,6 +55,7 @@ pub(crate) async fn load_all_available_loan_offers(
             lo.lender_npub,
             lo.extension_duration_days,
             lo.extension_interest_rate,
+            lo.repayment_plan AS "repayment_plan: RepaymentPlan",
             lo.created_at,
             lo.updated_at
         FROM loan_offers lo
@@ -113,6 +115,7 @@ pub(crate) async fn load_all_available_loan_offers(
                 kyc_link: row.kyc_link.map(|l| Url::parse(&l).expect("valid URL")),
                 lender_npub: row.lender_npub,
                 extension_policy,
+                repayment_plan: row.repayment_plan,
                 created_at: row.created_at,
                 updated_at: row.updated_at,
             })
@@ -179,6 +182,7 @@ pub async fn load_all_loan_offers_by_lender(
             lo.lender_npub,
             lo.extension_duration_days,
             lo.extension_interest_rate,
+            lo.repayment_plan AS "repayment_plan: RepaymentPlan",
             lo.created_at,
             lo.updated_at
         FROM loan_offers lo
@@ -230,6 +234,7 @@ pub async fn load_all_loan_offers_by_lender(
                 kyc_link: row.kyc_link.map(|l| Url::parse(&l).expect("valid URL")),
                 lender_npub: row.lender_npub,
                 extension_policy,
+                repayment_plan: row.repayment_plan,
                 created_at: row.created_at,
                 updated_at: row.updated_at,
             }
@@ -282,6 +287,7 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
             lo.lender_npub,
             lo.extension_duration_days,
             lo.extension_interest_rate,
+            lo.repayment_plan AS "repayment_plan: RepaymentPlan",
             lo.created_at,
             lo.updated_at
         FROM loan_offers lo
@@ -328,6 +334,7 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
         kyc_link: row.kyc_link.map(|l| Url::parse(&l).expect("valid URL")),
         lender_npub: row.lender_npub,
         extension_policy,
+        repayment_plan: row.repayment_plan,
         created_at: row.created_at,
         updated_at: row.updated_at,
     };
@@ -410,9 +417,10 @@ pub async fn insert_loan_offer(
           kyc_link,
           lender_npub,
           extension_duration_days,
-          extension_interest_rate
+          extension_interest_rate,
+          repayment_plan
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
         RETURNING
           id,
           loan_deal_id,
@@ -437,6 +445,7 @@ pub async fn insert_loan_offer(
           lender_npub,
           extension_duration_days,
           extension_interest_rate,
+          repayment_plan AS "repayment_plan: RepaymentPlan",
           created_at,
           updated_at
         "#,
@@ -462,6 +471,7 @@ pub async fn insert_loan_offer(
         offer.lender_npub,
         offer.extension_duration_days.unwrap_or_default() as i32,
         extension_interest_rate,
+        offer.repayment_plan as RepaymentPlan,
     )
     .fetch_one(&mut *tx)
     .await?;
@@ -494,6 +504,7 @@ pub async fn insert_loan_offer(
         kyc_link: row.kyc_link.map(|l| Url::parse(&l).expect("valid URL")),
         lender_npub: row.lender_npub,
         extension_policy,
+        repayment_plan: row.repayment_plan,
         created_at: row.created_at,
         updated_at: row.updated_at,
     };
@@ -543,6 +554,7 @@ pub(crate) async fn loan_by_id(
             lo.lender_npub,
             lo.extension_duration_days,
             lo.extension_interest_rate,
+            lo.repayment_plan AS "repayment_plan: RepaymentPlan",
             lo.created_at,
             lo.updated_at
         FROM loan_offers lo
@@ -593,6 +605,7 @@ pub(crate) async fn loan_by_id(
             kyc_link: row.kyc_link.map(|l| Url::parse(&l).expect("valid URL")),
             lender_npub: row.lender_npub,
             extension_policy,
+            repayment_plan: row.repayment_plan,
             created_at: row.created_at,
             updated_at: row.updated_at,
         };

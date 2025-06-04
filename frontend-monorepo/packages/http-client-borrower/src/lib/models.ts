@@ -259,13 +259,51 @@ export interface Contract {
   extension_max_duration_days: number;
   extension_interest_rate: number;
   extension_origination_fee: OriginationFee[];
+  installments: Installment[];
+}
+
+export interface Installment {
+  id: string;
+  principal: number;
+  interest: number;
+  due_date: Date;
+  status: InstallmentStatus;
+  paid_date?: Date;
+  payment_id?: string;
+}
+
+export enum InstallmentStatus {
+  Pending = "pending",
+  Paid = "paid",
+  Confirmed = "confirmed",
+  Late = "late",
+  Cancelled = "cancelled",
 }
 
 export interface TimelineEvent {
-  // TODO: this is a rfc3339 formatted date, but I failed to parse it correctly
-  date: string;
-  event: ContractStatus;
+  event: TimelineEventKind;
+  // TXID of the transaction (or transfer) associated with this event.
   txid?: string;
+  // TODO: This is an RFC3339 formatted date, but I failed to parse it correctly.
+  date: string;
+}
+
+export interface TimelineEventKind {
+  type: TimelineEventKind;
+  // Associated contract status event, if it applies.
+  status?: ContractStatus;
+  // Is the installment confirmed, if it applies.
+  is_confirmed?: boolean;
+}
+
+export enum TimelineEventType {
+  ContractStatusChange = "contract_status_change",
+  Installment = "installment",
+}
+
+export interface KycInfo {
+  kyc_link: string;
+  is_kyc_done: boolean;
 }
 
 export interface KycInfo {
@@ -293,6 +331,24 @@ export interface LoanOffer {
   origination_fee: OriginationFee[];
   kyc_link?: string;
   lender_pk: string;
+  repayment_plan: RepaymentPlan;
+}
+
+export enum RepaymentPlan {
+  Bullet = "bullet",
+  InterestOnlyWeekly = "interest_only_weekly",
+  InterestOnlyMonthly = "interest_only_monthly",
+}
+
+export function repaymentPlanLabel(plan: RepaymentPlan): string {
+  switch (plan) {
+    case RepaymentPlan.InterestOnlyMonthly:
+      return "Interest-Only Monthly";
+    case RepaymentPlan.InterestOnlyWeekly:
+      return "Interest-Only Weekly";
+    case RepaymentPlan.Bullet:
+      return "Bullet";
+  }
 }
 
 export interface PostLoanApplication {
@@ -307,6 +363,7 @@ export interface PostLoanApplication {
   borrower_pk: string;
   borrower_derivation_path: string;
   borrower_npub: string;
+  repayment_plan: RepaymentPlan;
 }
 
 export interface ExtendPostLoanRequest {

@@ -20,6 +20,7 @@ use hub::model::LoanAsset;
 use hub::model::LoanOffer;
 use hub::model::LoanPayout;
 use hub::model::LoanType;
+use hub::model::RepaymentPlan;
 use hub::model::ONE_YEAR;
 use hub::moon::Card;
 use rand::thread_rng;
@@ -286,6 +287,7 @@ async fn create_loan_offers(
             lender_npub: lender_npub.clone(),
             extension_duration_days: Some(7),
             extension_interest_rate: Some(dec!(0.12)),
+            repayment_plan: RepaymentPlan::Bullet,
         },
         &lender.id,
     )
@@ -314,6 +316,7 @@ async fn create_loan_offers(
             lender_npub: lender_npub.clone(),
             extension_duration_days: Some(7),
             extension_interest_rate: Some(dec!(0.12)),
+            repayment_plan: RepaymentPlan::Bullet,
         },
         &lender.id,
     )
@@ -342,6 +345,7 @@ async fn create_loan_offers(
             lender_npub,
             extension_duration_days: Some(7),
             extension_interest_rate: Some(dec!(0.8)),
+            repayment_plan: RepaymentPlan::Bullet,
         },
         &lender.id,
     )

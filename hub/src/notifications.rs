@@ -199,6 +199,7 @@ impl Notifications {
         contract: Contract,
         price: Decimal,
         current_ltv: Decimal,
+        liquidation_price: Decimal,
         contract_url: Url,
     ) {
         self.send_tg_notification_borrower(
@@ -210,7 +211,14 @@ impl Notifications {
 
         if let Err(e) = self
             .email
-            .send_user_about_margin_call(borrower, contract, price, current_ltv, contract_url)
+            .send_user_about_margin_call(
+                borrower,
+                contract,
+                price,
+                current_ltv,
+                liquidation_price,
+                contract_url,
+            )
             .await
         {
             tracing::error!("Could not send margin call notification borrower {e:#}");
@@ -222,6 +230,7 @@ impl Notifications {
         borrower: Borrower,
         contract: Contract,
         price: Decimal,
+        liquidation_price: Decimal,
         contract_url: Url,
     ) {
         self.send_tg_notification_borrower(
@@ -233,7 +242,13 @@ impl Notifications {
 
         if let Err(e) = self
             .email
-            .send_liquidation_notice_borrower(borrower, contract, price, contract_url)
+            .send_liquidation_notice_borrower(
+                borrower,
+                contract,
+                price,
+                liquidation_price,
+                contract_url,
+            )
             .await
         {
             tracing::error!("Could not send tg notification borrower {e:#}");
@@ -454,7 +469,7 @@ impl Notifications {
         }
     }
 
-    pub async fn send_close_to_expiry_contract(
+    pub async fn send_installment_due_soon(
         &self,
         borrower: Borrower,
         expiry_date: &str,
@@ -463,16 +478,16 @@ impl Notifications {
         self.send_tg_notification_borrower(
             &borrower,
             contract_url.clone(),
-            crate::telegram_bot::BorrowerNotificationKind::CloseToExpiry,
+            crate::telegram_bot::BorrowerNotificationKind::InstallmentDueSoon,
         )
         .await;
 
         if let Err(e) = self
             .email
-            .send_close_to_expiry_contract(borrower, expiry_date, contract_url)
+            .send_installment_due_soon(borrower, expiry_date, contract_url)
             .await
         {
-            tracing::error!("Could not send loan close to expiry {e:#}");
+            tracing::error!("Could not send installment due soon: {e:#}");
         }
     }
 

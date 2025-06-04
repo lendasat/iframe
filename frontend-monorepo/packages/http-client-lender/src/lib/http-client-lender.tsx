@@ -153,7 +153,10 @@ export interface HttpClientLender {
   rejectContract: (id: string) => Promise<void>;
   rejectContractExtension: (id: string) => Promise<void>;
   principalGiven: (id: string, txid?: string) => Promise<void>;
-  markPrincipalConfirmed: (id: string) => Promise<void>;
+  markInstallmentAsConfirmed: (
+    contractId: string,
+    installmentId: string,
+  ) => Promise<void>;
   updateExtensionPolicy: (
     contractId: string,
     extensionPolicy: ExtensionPolicy,
@@ -785,11 +788,17 @@ export const createHttpClientLender = (
     }
   };
 
-  const markPrincipalConfirmed = async (id: string): Promise<void> => {
+  const markInstallmentAsConfirmed = async (
+    contractId: string,
+    installmentId: string,
+  ): Promise<void> => {
     try {
-      await axiosClient.put(`/api/contracts/${id}/principalconfirmed`);
+      await axiosClient.put(
+        `/api/contracts/${contractId}/confirm-installment`,
+        { installment_id: installmentId },
+      );
     } catch (error) {
-      handleError(error, "marking principal as confirmed");
+      handleError(error, "marking installment as confirmed");
     }
   };
 
@@ -1163,7 +1172,7 @@ export const createHttpClientLender = (
     rejectContract,
     rejectContractExtension,
     principalGiven,
-    markPrincipalConfirmed,
+    markInstallmentAsConfirmed,
     updateExtensionPolicy,
     getLiquidationToBitcoinPsbt,
     getLiquidationToStablecoinPsbt,

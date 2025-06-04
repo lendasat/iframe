@@ -1,4 +1,8 @@
-import { LoanOffer, LoanOfferStatus } from "@frontend/http-client-lender";
+import {
+  LoanOffer,
+  LoanOfferStatus,
+  repaymentPlanLabel,
+} from "@frontend/http-client-lender";
 import {
   CurrencyFormatter,
   KycBadge,
@@ -149,32 +153,6 @@ export const MyLoanOffersTable = ({ offers }: MyLoanOffersTableProps) => {
         meta: { columnClasses: "hidden md:table-cell" } as ColumnMeta,
       },
       {
-        accessorKey: "min_ltv",
-        id: "ltv",
-        header: ({ column }) => (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="h-auto p-0 font-medium hidden md:flex"
-          >
-            LTV
-            {column.getIsSorted() === "asc" ? (
-              <ChevronUp className="ml-1 h-3 w-3" />
-            ) : column.getIsSorted() === "desc" ? (
-              <ChevronDown className="ml-1 h-3 w-3" />
-            ) : (
-              <ChevronsUpDown className="ml-1 h-3 w-3" />
-            )}
-          </Button>
-        ),
-        cell: ({ row }) => (
-          <div className="font-medium hidden md:block">
-            {(row.original.min_ltv * 100).toFixed(2)}%
-          </div>
-        ),
-        meta: { columnClasses: "hidden md:table-cell" } as ColumnMeta,
-      },
-      {
         accessorKey: "loan_asset",
         id: "coin",
         header: ({ column }) => (
@@ -196,6 +174,32 @@ export const MyLoanOffersTable = ({ offers }: MyLoanOffersTableProps) => {
         cell: ({ row }) => (
           <div className="font-medium hidden md:block">
             {LoanAssetHelper.print(row.original.loan_asset)}
+          </div>
+        ),
+        meta: { columnClasses: "hidden md:table-cell" } as ColumnMeta,
+      },
+      {
+        accessorKey: "repayment_plan",
+        id: "repayment",
+        header: ({ column }) => (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="h-auto p-0 font-medium hidden md:flex"
+          >
+            Loan Type
+            {column.getIsSorted() === "asc" ? (
+              <ChevronUp className="ml-1 h-3 w-3" />
+            ) : column.getIsSorted() === "desc" ? (
+              <ChevronDown className="ml-1 h-3 w-3" />
+            ) : (
+              <ChevronsUpDown className="ml-1 h-3 w-3" />
+            )}
+          </Button>
+        ),
+        cell: ({ row }) => (
+          <div className="font-medium hidden md:block">
+            {repaymentPlanLabel(row.original.repayment_plan)}
           </div>
         ),
         meta: { columnClasses: "hidden md:table-cell" } as ColumnMeta,

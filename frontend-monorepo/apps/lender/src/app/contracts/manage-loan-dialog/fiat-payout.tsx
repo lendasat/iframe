@@ -80,8 +80,7 @@ export function FiatPayout({ contract, refreshContract }: FiatPayoutProps) {
             <>
               Send the exact amount of{" "}
               <strong>{formatCurrency(totalPaymentAmount)}</strong>{" "}
-              <strong>{assetCoin}</strong> to the bank account below. You can
-              withdraw your collateral once the payment is confirmed.
+              <strong>{assetCoin}</strong> to the bank account below.
             </>
           ) : (
             <>

@@ -110,8 +110,7 @@ export function StablecoinPayout({
               Send the exact amount of{" "}
               <strong>{formatCurrency(loanAmount)}</strong>{" "}
               <strong>{assetCoin}</strong> on <strong>{assetNetwork}</strong> to
-              the address below. You can withdraw your collateral once the
-              payment is confirmed.
+              the address below.
             </>
           ) : (
             <>

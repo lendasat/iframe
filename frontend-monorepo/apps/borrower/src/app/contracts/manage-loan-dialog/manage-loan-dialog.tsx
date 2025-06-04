@@ -55,12 +55,16 @@ const ManageLoanDialog = ({
 
         <Tabs defaultValue="repay">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="repay">Repay Loan</TabsTrigger>
+            <TabsTrigger value="repay">Make a Payment</TabsTrigger>
             <TabsTrigger value="extend">Request Extension</TabsTrigger>
           </TabsList>
 
           <TabsContent value="repay" className="space-y-4 py-4">
-            <Repayment contract={contract} refreshContract={refreshContract} />
+            <Repayment
+              contract={contract}
+              refreshContract={refreshContract}
+              onSubmit={() => setOpen(false)}
+            />
           </TabsContent>
 
           <TabsContent value="extend" className="space-y-4 py-4">

@@ -118,7 +118,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       borderColor = "border-teal-200";
       titleColor = "text-teal-800";
       textColor = "text-teal-600";
-      title = "Repayment Processing";
+      title = "Payment Processing";
       message = (
         // biome-ignore lint/complexity/noUselessFragments: wanted fragment.
         <>Your repayment has been submitted and is waiting for confirmation.</>

@@ -30,7 +30,7 @@
                 "Dispute",
                 "ClaimCollateral",
                 "PrincipalGiven",
-                "PrincipalRepaid",
+                "InstallmentPaid",
                 "Liquidation",
                 "Defaulted"
               ]
@@ -57,7 +57,7 @@
                 "Dispute",
                 "ClaimCollateral",
                 "PrincipalGiven",
-                "PrincipalRepaid",
+                "InstallmentPaid",
                 "Liquidation",
                 "Defaulted"
               ]

@@ -6,12 +6,14 @@ use crate::db;
 use crate::discounted_origination_fee;
 use crate::mempool;
 use crate::mempool::TrackContractFunding;
+use crate::model::generate_installments;
 use crate::model::ContractVersion;
 use crate::notifications::Notifications;
 use crate::routes::lender::loan_applications::TakeLoanApplicationSchema;
 use crate::wallet::Wallet;
 use anyhow::anyhow;
 use sqlx::PgPool;
+use std::num::NonZeroU64;
 use std::sync::Arc;
 use time::OffsetDateTime;
 use uuid::Uuid;
@@ -38,6 +40,8 @@ pub enum Error {
     LoanApplicationNotFound(String),
     #[error("Fiat loan details not provided")]
     MissingFiatLoanDetails,
+    #[error("Loan cannot have zero duration")]
+    ZeroLoanDuration,
 }
 
 /// Takes a loan application and returns the contract id if successful
@@ -52,9 +56,11 @@ pub async fn take_application(
     take_application_body: TakeLoanApplicationSchema,
     loan_deal_id: &str,
 ) -> Result<String, Error> {
+    let now = OffsetDateTime::now_utc();
+
     let contract_id = Uuid::new_v4();
 
-    let current_price = get_bitmex_index_price(config, OffsetDateTime::now_utc())
+    let current_price = get_bitmex_index_price(config, now)
         .await
         .map_err(Error::BitMexPrice)?;
 
@@ -148,6 +154,22 @@ pub async fn take_application(
     )
     .await
     .map_err(Error::Database)?;
+
+    let non_zero_duration_days =
+        NonZeroU64::new(loan_application.duration_days as u64).ok_or(Error::ZeroLoanDuration)?;
+
+    let installments = generate_installments(
+        now,
+        contract_id,
+        loan_application.repayment_plan,
+        non_zero_duration_days,
+        loan_application.interest_rate,
+        loan_application.loan_amount,
+    );
+
+    db::installments::insert(db, installments)
+        .await
+        .map_err(Error::Database)?;
 
     if let Some(fiat_loan_details) = take_application_body.fiat_loan_details {
         db::fiat_loan_details::insert_lender(

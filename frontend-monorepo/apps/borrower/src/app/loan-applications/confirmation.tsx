@@ -32,6 +32,7 @@ import {
 import {
   LoanProductOption,
   LoanType,
+  RepaymentPlan,
   useAuth,
   useHttpClientBorrower,
 } from "@frontend/http-client-borrower";
@@ -187,6 +188,9 @@ export const Confirmation = ({
         interest_rate: interestRate / 100.0,
         borrower_loan_address: data.loanAddress || "",
         borrower_btc_address: data.bitcoinAddress,
+        // Only bullet loan applications supported for now. We should just need to adapt the UI for
+        // this.
+        repayment_plan: RepaymentPlan.Bullet,
       });
 
       if (res !== undefined) {

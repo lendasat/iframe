@@ -1,0 +1,66 @@
+---
+source: hub/src/model/installment.rs
+expression: installments
+---
+[
+    Installment {
+        id: [UUID],
+        contract_id: [UUID],
+        principal: 0,
+        interest: 0.9722222222222222222222223000,
+        due_date: 2025-05-29 0:00:00.0 +00:00:00,
+        status: Pending,
+        paid_date: None,
+        payment_id: None,
+    },
+    Installment {
+        id: [UUID],
+        contract_id: [UUID],
+        principal: 0,
+        interest: 0.9722222222222222222222223000,
+        due_date: 2025-06-05 0:00:00.0 +00:00:00,
+        status: Pending,
+        paid_date: None,
+        payment_id: None,
+    },
+    Installment {
+        id: [UUID],
+        contract_id: [UUID],
+        principal: 0,
+        interest: 0.9722222222222222222222223000,
+        due_date: 2025-06-12 0:00:00.0 +00:00:00,
+        status: Pending,
+        paid_date: None,
+        payment_id: None,
+    },
+    Installment {
+        id: [UUID],
+        contract_id: [UUID],
+        principal: 0,
+        interest: 0.9722222222222222222222223000,
+        due_date: 2025-06-19 0:00:00.0 +00:00:00,
+        status: Pending,
+        paid_date: None,
+        payment_id: None,
+    },
+    Installment {
+        id: [UUID],
+        contract_id: [UUID],
+        principal: 0,
+        interest: 0.9722222222222222222222223000,
+        due_date: 2025-06-26 0:00:00.0 +00:00:00,
+        status: Pending,
+        paid_date: None,
+        payment_id: None,
+    },
+    Installment {
+        id: [UUID],
+        contract_id: [UUID],
+        principal: 1000,
+        interest: 0.9722222222222222222222223000,
+        due_date: 2025-07-03 0:00:00.0 +00:00:00,
+        status: Pending,
+        paid_date: None,
+        payment_id: None,
+    },
+]

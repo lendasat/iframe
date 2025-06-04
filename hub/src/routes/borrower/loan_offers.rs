@@ -3,6 +3,7 @@ use crate::model::LoanAsset;
 use crate::model::LoanOfferStatus;
 use crate::model::LoanPayout;
 use crate::model::OriginationFee;
+use crate::model::RepaymentPlan;
 use crate::routes::borrower::auth::jwt_or_api_auth;
 use crate::routes::borrower::LOAN_OFFERS_TAG;
 use crate::routes::AppState;
@@ -62,6 +63,7 @@ pub struct LoanOffer {
     pub kyc_link: Option<Url>,
     #[schema(value_type = String)]
     pub lender_pk: PublicKey,
+    pub repayment_plan: RepaymentPlan,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -177,6 +179,7 @@ pub async fn get_all_available_loan_offers(
             origination_fee,
             kyc_link: loan_offer.kyc_link,
             lender_pk: loan_offer.lender_pk,
+            repayment_plan: loan_offer.repayment_plan,
         })
     }
 
@@ -287,6 +290,7 @@ pub async fn get_available_loan_offers_by_lender(
             origination_fee,
             kyc_link: loan_offer.kyc_link,
             lender_pk: loan_offer.lender_pk,
+            repayment_plan: loan_offer.repayment_plan,
         })
     }
 
@@ -385,6 +389,7 @@ pub async fn get_loan_offer(
                     origination_fee,
                     kyc_link: loan_offer.kyc_link,
                     lender_pk: loan_offer.lender_pk,
+                    repayment_plan: loan_offer.repayment_plan,
                 }),
             ))
         }
