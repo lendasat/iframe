@@ -171,7 +171,7 @@ async fn get_all_notifications(
     notifications.append(&mut chat_notifications);
 
     // Sort by created_at since we're combining two sources
-    notifications.sort_by(|a, b| b.timestamp().cmp(&a.timestamp()));
+    notifications.sort_by_key(|b| std::cmp::Reverse(b.timestamp()));
 
     // Take only the requested number of items
     notifications.truncate(pagination.limit as usize);

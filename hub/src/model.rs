@@ -1443,8 +1443,8 @@ pub enum NotificationMessage {
 impl NotificationMessage {
     pub fn timestamp(&self) -> OffsetDateTime {
         match self {
-            NotificationMessage::ContractUpdate { timestamp, .. } => timestamp.clone(),
-            NotificationMessage::ChatMessage { timestamp, .. } => timestamp.clone(),
+            NotificationMessage::ContractUpdate { timestamp, .. } => *timestamp,
+            NotificationMessage::ChatMessage { timestamp, .. } => *timestamp,
         }
     }
 }
