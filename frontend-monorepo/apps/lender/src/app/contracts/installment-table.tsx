@@ -47,8 +47,8 @@ export function InstallmentTable({ installments, isFiatLoan }: Props) {
               onClick={() => setSelected(inst)}
               className="cursor-pointer"
             >
-              <TableCell>${formatCurrency(inst.principal)}</TableCell>
-              <TableCell>${formatCurrency(inst.interest)}</TableCell>
+              <TableCell>{formatCurrency(inst.principal)}</TableCell>
+              <TableCell>{formatCurrency(inst.interest)}</TableCell>
               <TableCell>
                 {new Date(inst.due_date).toLocaleDateString("en-US", options)}
               </TableCell>
