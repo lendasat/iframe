@@ -16,6 +16,7 @@ use hub::loan_application_expiry::add_loan_application_expiry_job;
 use hub::logger::init_tracing;
 use hub::mempool;
 use hub::moon;
+use hub::notifications::websocket::NotificationCenter;
 use hub::notifications::Notifications;
 use hub::routes::borrower::spawn_borrower_server;
 use hub::routes::lender::spawn_lender_server;
@@ -118,7 +119,11 @@ async fn main() -> Result<()> {
         None
     };
 
-    let notifications = Arc::new(Notifications::new(config.clone(), maybe_telegram_bot_addr));
+    let notifications = Arc::new(Notifications::new(
+        config.clone(),
+        maybe_telegram_bot_addr,
+        NotificationCenter::default(),
+    ));
 
     let (mempool_addr, mempool_mailbox) = xtra::Mailbox::unbounded();
     let mempool = mempool::Actor::new(db.clone(), network, config.clone(), notifications.clone());
@@ -198,7 +203,7 @@ async fn main() -> Result<()> {
         wallet: wallet.clone(),
         config: config.clone(),
         mempool: mempool_addr,
-        connections: broadcast_state.clone(),
+        price_feed_ws_connections: broadcast_state.clone(),
         moon: moon_client.clone(),
         sideshift,
         notifications: notifications.clone(),

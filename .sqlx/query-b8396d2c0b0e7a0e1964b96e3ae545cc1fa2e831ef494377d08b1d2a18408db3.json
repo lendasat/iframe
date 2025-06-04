@@ -31,7 +31,8 @@
                 "ClaimCollateral",
                 "PrincipalGiven",
                 "PrincipalRepaid",
-                "Liquidation"
+                "Liquidation",
+                "Defaulted"
               ]
             }
           }

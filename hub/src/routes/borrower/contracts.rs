@@ -388,7 +388,12 @@ async fn post_contract_request(
         let borrower_id = user.id.clone();
         if offer.auto_accept {
             data.notifications
-                .send_notification_about_auto_accepted_loan(lender, lender_loan_url)
+                .send_notification_about_auto_accepted_loan(
+                    lender,
+                    lender_loan_url,
+                    contract.id.as_str(),
+                    &data.db,
+                )
                 .await;
 
             db::contract_emails::mark_auto_accept_email_as_sent(&data.db, &contract.id)
@@ -403,7 +408,7 @@ async fn post_contract_request(
             );
         } else {
             data.notifications
-                .send_new_loan_request(lender, lender_loan_url)
+                .send_new_loan_request(lender, lender_loan_url, contract.id.as_str(), &data.db)
                 .await;
 
             db::contract_emails::mark_loan_request_as_sent(&data.db, &contract.id)
@@ -644,7 +649,9 @@ async fn put_repayment_provided(
             .await?
             .context("Failed to find lender")?;
 
-        data.notifications.send_loan_repaid(lender, loan_url).await;
+        data.notifications
+            .send_loan_repaid(lender, loan_url, &data.db, contract_id.as_str())
+            .await;
 
         db::contract_emails::mark_loan_repaid_as_sent(&data.db, &contract.id)
             .await

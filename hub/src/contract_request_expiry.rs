@@ -240,7 +240,7 @@ async fn notify_lender_about_expired_offer(
         .context("Could not find lender")?;
 
     notifications
-        .send_expired_loan_request_lender(lender, loan_url)
+        .send_expired_loan_request_lender(lender, loan_url, db, contract.contract_id.as_str())
         .await;
 
     db::contract_emails::mark_loan_request_expired_lender_as_sent(

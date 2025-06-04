@@ -32,7 +32,7 @@ pub struct AppState {
     pub wallet: Arc<Wallet>,
     pub config: Config,
     pub mempool: xtra::Address<mempool::Actor>,
-    pub connections: Arc<Mutex<Vec<mpsc::UnboundedSender<Message>>>>,
+    pub price_feed_ws_connections: Arc<Mutex<Vec<mpsc::UnboundedSender<Message>>>>,
     pub moon: Arc<moon::Manager>,
     pub sideshift: Arc<sideshift::Shifter>,
     pub notifications: Arc<Notifications>,

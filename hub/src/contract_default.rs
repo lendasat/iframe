@@ -185,7 +185,7 @@ async fn notify_lender_about_defaulted_loan(
         .context("Could not find lender")?;
 
     notifications
-        .send_loan_defaulted_lender(lender, loan_url)
+        .send_loan_defaulted_lender(lender, loan_url, &db, contract.contract_id.as_str())
         .await;
 
     db::contract_emails::mark_defaulted_loan_lender_as_sent(&db, contract.contract_id.as_str())

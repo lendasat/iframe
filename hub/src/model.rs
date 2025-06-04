@@ -1,3 +1,5 @@
+mod notifications;
+
 use crate::db::map_to_db_extension_policy;
 use crate::db::map_to_model_extension_policy;
 use crate::moon;
@@ -16,6 +18,7 @@ use bitcoin::bip32;
 use bitcoin::Address;
 use bitcoin::Amount;
 use bitcoin::PublicKey;
+pub use notifications::*;
 use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;

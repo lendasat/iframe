@@ -119,7 +119,7 @@ importers:
         version: 2.2.3
       browser-wallet:
         specifier: file:../../../browser-wallet/pkg
-        version: pkg@file:../browser-wallet/pkg
+        version: file:../browser-wallet/pkg
       date-fns:
         specifier: 3.6.0
         version: 3.6.0
@@ -414,7 +414,7 @@ importers:
         version: 2.2.3
       browser-wallet:
         specifier: file:../../../browser-wallet/pkg
-        version: pkg@file:../browser-wallet/pkg
+        version: file:../browser-wallet/pkg
       date-fns:
         specifier: 3.6.0
         version: 3.6.0
@@ -664,7 +664,7 @@ importers:
         version: 4.0.15(vite@6.2.3(@types/node@18.16.9)(jiti@2.4.2)(less@4.1.3)(lightningcss@1.29.2)(sass@1.85.0)(stylus@0.59.0)(terser@5.39.0)(yaml@2.7.0))
       browser-wallet:
         specifier: file:../../../browser-wallet/pkg
-        version: pkg@file:../browser-wallet/pkg
+        version: file:../browser-wallet/pkg
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -928,7 +928,7 @@ importers:
         version: 3.2.0(@types/react-dom@19.0.4(@types/react@19.0.0))(@types/react@19.0.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       browser-wallet:
         specifier: file:../../../browser-wallet/pkg
-        version: pkg@file:../browser-wallet/pkg
+        version: file:../browser-wallet/pkg
       hash-wasm:
         specifier: ^4.12.0
         version: 4.12.0
@@ -983,7 +983,7 @@ importers:
         version: 1.7.9
       browser-wallet:
         specifier: file:../../../browser-wallet/pkg
-        version: pkg@file:../browser-wallet/pkg
+        version: file:../browser-wallet/pkg
       react:
         specifier: 19.0.0
         version: 19.0.0
@@ -1044,7 +1044,7 @@ importers:
         version: 1.7.9
       browser-wallet:
         specifier: file:../../../browser-wallet/pkg
-        version: pkg@file:../browser-wallet/pkg
+        version: file:../browser-wallet/pkg
       react:
         specifier: 19.0.0
         version: 19.0.0
@@ -1191,13 +1191,13 @@ importers:
         version: link:../shadcn
       '@radix-ui/themes':
         specifier: ^3.1.3
-        version: 3.2.0(@types/react-dom@18.3.0)(@types/react@19.0.0)(react@19.0.0)
+        version: 3.2.0(@types/react-dom@18.3.0)(@types/react@19.0.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       '@rust-nostr/nostr-sdk':
         specifier: ^0.41.1
         version: 0.41.1(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       browser-wallet:
         specifier: file:../../../browser-wallet/pkg
-        version: pkg@file:../browser-wallet/pkg
+        version: file:../browser-wallet/pkg
       react-icons:
         specifier: ^5.3.0
         version: 5.4.0(react@19.0.0)
@@ -1331,6 +1331,9 @@ importers:
       tailwindcss-animate:
         specifier: ^1.0.7
         version: 1.0.7(tailwindcss@4.0.17)
+      vaul:
+        specifier: ^1.1.2
+        version: 1.1.2(@types/react-dom@19.0.4(@types/react@19.0.0))(@types/react@19.0.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       zod:
         specifier: ^3.24.3
         version: 3.24.3
@@ -1406,7 +1409,7 @@ importers:
         version: 0.39.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       browser-wallet:
         specifier: file:../../../browser-wallet/pkg
-        version: pkg@file:../browser-wallet/pkg
+        version: file:../browser-wallet/pkg
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -5673,6 +5676,9 @@ packages:
   brorand@1.1.0:
     resolution: {integrity: sha512-cKV8tMCEpQs4hK/ik71d6LrPOnpkpGBR0wzxqr68g2m/LB2GxVYQroAjMJZRVM1Y4BCjCKc3vAamxSzOY2RP+w==}
 
+  browser-wallet@file:../browser-wallet/pkg:
+    resolution: {directory: ../browser-wallet/pkg, type: directory}
+
   browserslist@4.24.4:
     resolution: {integrity: sha512-KDi1Ny1gSePi1vm0q4oxSF8b4DR44GF4BbmS2YdhPLOEqd8pDviZOGH/GsmRwoWJ2+5Lr085X7naowMwKHDG1A==}
     engines: {node: ^6 || ^7 || ^8 || ^9 || ^10 || ^11 || ^12 || >=13.7}
@@ -8087,9 +8093,6 @@ packages:
   pkg-types@1.3.1:
     resolution: {integrity: sha512-/Jm5M4RvtBFVkKWRu2BLUTNP8/M2a+UwuAX+ae4770q1qVGtfjG+WTCupoZixokjmHiry8uI+dlY8KXYV5HVVQ==}
 
-  pkg@file:../browser-wallet/pkg:
-    resolution: {directory: ../browser-wallet/pkg, type: directory}
-
   playwright-core@1.50.1:
     resolution: {integrity: sha512-ra9fsNWayuYumt+NiM069M6OkcRb1FZSK8bgi66AtpFoWkg2+y0bJSNmkFrWhMbEBbVKC/EruAHH3g0zmtwGmQ==}
     engines: {node: '>=18'}
@@ -9426,6 +9429,12 @@ packages:
         optional: true
       react:
         optional: true
+
+  vaul@1.1.2:
+    resolution: {integrity: sha512-ZFkClGpWyI2WUQjdLJ/BaGuV6AVQiJ3uELGk3OYtP+B6yCO7Cmn9vPFXVJkRaGkOJu3m8bQMgtyzNHixULceQA==}
+    peerDependencies:
+      react: ^16.8 || ^17.0 || ^18.0 || ^19.0.0 || ^19.0.0-rc
+      react-dom: ^16.8 || ^17.0 || ^18.0 || ^19.0.0 || ^19.0.0-rc
 
   victory-vendor@36.9.2:
     resolution: {integrity: sha512-PnpQQMuxlwYdocC8fIJqVXvkeViHYzotI+NJrCuav0ZYFoq912ZHBk3mCeuj+5/VpodOjPe1z0Fk2ihgzlXqjQ==}
@@ -15706,6 +15715,8 @@ snapshots:
 
   brorand@1.1.0: {}
 
+  browser-wallet@file:../browser-wallet/pkg: {}
+
   browserslist@4.24.4:
     dependencies:
       caniuse-lite: 1.0.30001699
@@ -18585,8 +18596,6 @@ snapshots:
       mlly: 1.7.4
       pathe: 2.0.3
 
-  pkg@file:../browser-wallet/pkg: {}
-
   playwright-core@1.50.1: {}
 
   playwright@1.50.1:
@@ -20171,6 +20180,15 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.0.0
       react: 19.0.0
+
+  vaul@1.1.2(@types/react-dom@19.0.4(@types/react@19.0.0))(@types/react@19.0.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0):
+    dependencies:
+      '@radix-ui/react-dialog': 1.1.6(@types/react-dom@19.0.4(@types/react@19.0.0))(@types/react@19.0.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      react: 19.0.0
+      react-dom: 19.0.0(react@19.0.0)
+    transitivePeerDependencies:
+      - '@types/react'
+      - '@types/react-dom'
 
   victory-vendor@36.9.2:
     dependencies:

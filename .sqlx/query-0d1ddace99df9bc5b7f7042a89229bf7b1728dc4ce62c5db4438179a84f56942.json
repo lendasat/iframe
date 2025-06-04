@@ -1,10 +1,73 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n       UPDATE contracts\n       SET status = $1,\n           updated_at = $2\n       WHERE lender_id = $3\n         AND id = $4\n         AND status = $5\n       ",
+  "query": "\n        INSERT INTO lender_contract_update_notifications (contract_id, status, read)\n        VALUES ($1, $2, $3)\n        RETURNING id, contract_id, status as \"status: ContractStatus\", read, created_at, updated_at\n        ",
   "describe": {
-    "columns": [],
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "contract_id",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "status: ContractStatus",
+        "type_info": {
+          "Custom": {
+            "name": "contract_status",
+            "kind": {
+              "Enum": [
+                "Requested",
+                "Approved",
+                "CollateralSeen",
+                "CollateralConfirmed",
+                "PrincipalGiven",
+                "RepaymentProvided",
+                "RepaymentConfirmed",
+                "Closing",
+                "Closed",
+                "Rejected",
+                "DisputeBorrowerStarted",
+                "DisputeLenderStarted",
+                "DisputeBorrowerResolved",
+                "DisputeLenderResolved",
+                "Cancelled",
+                "RequestExpired",
+                "Defaulted",
+                "Undercollateralized",
+                "RenewalRequested",
+                "Extended",
+                "ApprovalExpired",
+                "ClosedByLiquidation",
+                "ClosedByDefaulting"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "read",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 4,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 5,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
     "parameters": {
       "Left": [
+        "Bpchar",
         {
           "Custom": {
             "name": "contract_status",
@@ -37,44 +100,17 @@
             }
           }
         },
-        "Timestamptz",
-        "Bpchar",
-        "Bpchar",
-        {
-          "Custom": {
-            "name": "contract_status",
-            "kind": {
-              "Enum": [
-                "Requested",
-                "Approved",
-                "CollateralSeen",
-                "CollateralConfirmed",
-                "PrincipalGiven",
-                "RepaymentProvided",
-                "RepaymentConfirmed",
-                "Closing",
-                "Closed",
-                "Rejected",
-                "DisputeBorrowerStarted",
-                "DisputeLenderStarted",
-                "DisputeBorrowerResolved",
-                "DisputeLenderResolved",
-                "Cancelled",
-                "RequestExpired",
-                "Defaulted",
-                "Undercollateralized",
-                "RenewalRequested",
-                "Extended",
-                "ApprovalExpired",
-                "ClosedByLiquidation",
-                "ClosedByDefaulting"
-              ]
-            }
-          }
-        }
+        "Bool"
       ]
     },
-    "nullable": []
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
   },
-  "hash": "822bf25a270a25edb6b51c7a2fe28d45c2fdb36feba4932715ccb2d14e19260a"
+  "hash": "0d1ddace99df9bc5b7f7042a89229bf7b1728dc4ce62c5db4438179a84f56942"
 }

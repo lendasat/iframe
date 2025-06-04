@@ -1,5 +1,6 @@
 import { Separator, SidebarTrigger } from "@frontend/shadcn";
 import { useLocation } from "react-router-dom";
+import { NotificationStatus } from "./notification-status";
 
 export function SiteHeader() {
   const location = useLocation();
@@ -45,6 +46,7 @@ export function SiteHeader() {
           className="mx-2 data-[orientation=vertical]:h-4"
         />
         <h1 className="text-base font-medium">{header}</h1>
+        <NotificationStatus />
       </div>
     </header>
   );

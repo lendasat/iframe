@@ -384,7 +384,7 @@ async fn send_notification(
                 .join(format!("/my-contracts/{}", contract.id).as_str())?;
 
             notifications
-                .send_liquidation_notice_lender(lender, contract.clone(), lender_contract_url)
+                .send_liquidation_notice_lender(lender, contract.clone(), lender_contract_url, pool)
                 .await;
         }
     }
