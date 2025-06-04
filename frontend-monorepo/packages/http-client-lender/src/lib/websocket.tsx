@@ -1,4 +1,4 @@
-import React, {
+import {
   createContext,
   useContext,
   useEffect,
@@ -7,12 +7,7 @@ import React, {
   useState,
   ReactNode,
 } from "react";
-import {
-  ChatMessage,
-  ContractStatus,
-  ContractUpdate,
-  NotificationMessage,
-} from "./models";
+import { ChatMessage, ContractUpdate, NotificationMessage } from "./models";
 
 export type NotificationCallback = (notification: NotificationMessage) => void;
 
@@ -67,7 +62,7 @@ export function WebSocketNotification({
   const shouldReconnectRef = useRef(true);
 
   const log = useCallback(
-    (...args: any[]) => {
+    (...args: Parameters<typeof console.log>) => {
       if (debug) {
         console.log("[WebSocketNotification]", ...args);
       }

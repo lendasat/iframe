@@ -7,7 +7,7 @@ import {
   useLenderHttpClient,
   useNotifications,
 } from "@frontend/http-client-lender";
-import React, { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   AlertCircle,
   Bell,
@@ -71,7 +71,7 @@ const mapToInnerNotification = (
   notification: NotificationMessage,
 ): InnerNotification => {
   switch (notification.type) {
-    case NotificationMessageType.ContractUpdate:
+    case NotificationMessageType.ContractUpdate: {
       const update = notification.data as ContractUpdate;
       let message = "Contract update";
       console.log(`Contract status ${update.status}`);
@@ -140,7 +140,8 @@ const mapToInnerNotification = (
           addSuffix: true,
         }),
       };
-    case NotificationMessageType.ChatMessage:
+    }
+    case NotificationMessageType.ChatMessage: {
       const chatMessage = notification.data as ChatMessage;
       return {
         id: chatMessage.id,
@@ -154,6 +155,7 @@ const mapToInnerNotification = (
           addSuffix: true,
         }),
       };
+    }
   }
 };
 
@@ -215,7 +217,7 @@ export function NotificationStatus() {
         setIsLoading(false);
       }
     },
-    [fetchNotifications],
+    [fetchNotifications, isLoading],
   );
 
   // Load initial notifications

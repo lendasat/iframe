@@ -29,7 +29,6 @@ import {
   Version,
   IsRegisteredResponse,
   WalletBackupData,
-  NotificationMessage,
   PaginatedNotificationResponse,
 } from "./models";
 import { isAllowedPageWithoutLogin, parseRFC3339Date } from "./utils";
