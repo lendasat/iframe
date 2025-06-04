@@ -225,7 +225,6 @@ export interface Contract {
   duration_days: number;
   created_at: Date;
   updated_at: Date;
-  repaid_at: Date | undefined;
   expiry: Date;
   interest: number;
   interest_rate: number;

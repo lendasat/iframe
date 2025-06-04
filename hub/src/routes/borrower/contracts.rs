@@ -1023,8 +1023,6 @@ pub struct Contract {
     pub created_at: OffsetDateTime,
     #[serde(with = "time::serde::rfc3339")]
     pub updated_at: OffsetDateTime,
-    #[serde(with = "time::serde::rfc3339::option")]
-    pub repaid_at: Option<OffsetDateTime>,
     #[serde(with = "time::serde::rfc3339")]
     pub expiry: OffsetDateTime,
     pub liquidation_status: LiquidationStatus,
@@ -1126,10 +1124,6 @@ async fn map_to_api_contract(
     let transactions = db::transactions::get_all_for_contract_id(&data.db, &contract.id)
         .await
         .map_err(Error::database)?;
-
-    let repaid_at = transactions.iter().find_map(|tx| {
-        matches!(tx.transaction_type, TransactionType::InstallmentPaid).then_some(tx.timestamp)
-    });
 
     let parent_contract_id =
         db::contract_extensions::get_parent_by_extended(&data.db, &contract.id)
@@ -1245,7 +1239,6 @@ async fn map_to_api_contract(
         lender: lender_stats,
         created_at: contract.created_at,
         updated_at: contract.updated_at,
-        repaid_at,
         expiry: contract.expiry_date,
         liquidation_status: contract.liquidation_status,
         transactions,

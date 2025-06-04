@@ -35,11 +35,10 @@ import { isAllowedPageWithoutLogin, parseRFC3339Date } from "./utils";
 
 // Interface for the raw data received from the API
 interface RawContract
-  extends Omit<Contract, "created_at" | "repaid_at" | "updated_at" | "expiry"> {
+  extends Omit<Contract, "created_at" | "updated_at" | "expiry"> {
   created_at: string;
   updated_at: string;
   expiry: string;
-  repaid_at?: string;
 }
 
 interface RawDispute extends Omit<Dispute, "created_at" | "updated_at"> {
@@ -696,20 +695,10 @@ export const createHttpClientLender = (
           throw new Error("Invalid date");
         }
 
-        let repaidAt: Date | undefined;
-        if (contract.repaid_at) {
-          const parsed = parseRFC3339Date(contract.repaid_at);
-          if (parsed === undefined) {
-            throw new Error("Invalid repaid_at date");
-          }
-          repaidAt = parsed;
-        }
-
         return {
           ...contract,
           created_at: createdAt,
           updated_at: updatedAt,
-          repaid_at: repaidAt,
           expiry: expiry,
         };
       });
@@ -728,9 +717,6 @@ export const createHttpClientLender = (
       const createdAt = parseRFC3339Date(contract.created_at);
       const updatedAt = parseRFC3339Date(contract.updated_at);
       const expiry = parseRFC3339Date(contract.expiry);
-      const repaidAt = contract.repaid_at
-        ? parseRFC3339Date(contract.repaid_at)
-        : undefined;
 
       if (createdAt === null || updatedAt === null || expiry === null) {
         throw new Error("Invalid date");
@@ -740,7 +726,6 @@ export const createHttpClientLender = (
         ...contract,
         created_at: createdAt!,
         updated_at: updatedAt!,
-        repaid_at: repaidAt,
         expiry: expiry!,
       };
     } catch (error) {
