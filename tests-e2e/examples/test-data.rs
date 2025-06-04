@@ -10,6 +10,7 @@ use hub::config::Config;
 use hub::db;
 use hub::db::wallet_backups::NewBorrowerWalletBackup;
 use hub::db::wallet_backups::NewLenderWalletBackup;
+use hub::model::generate_installments;
 use hub::model::Borrower;
 use hub::model::Contract;
 use hub::model::ContractStatus;
@@ -34,8 +35,10 @@ use sha2::Sha256;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::Pool;
 use sqlx::Postgres;
+use std::num::NonZeroU64;
 use std::str::FromStr;
 use time::macros::format_description;
+use time::OffsetDateTime;
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::filter::Directive;
 use tracing_subscriber::fmt::time::UtcTime;
@@ -214,15 +217,18 @@ async fn create_contract_request(
     borrower_derivation_path: bip32::DerivationPath,
     borrower_npub: &str,
 ) -> Result<Contract> {
-    let id = Uuid::new_v4();
+    let contract_id = Uuid::new_v4();
     let initial_ltv = dec!(0.5);
     let price = dec!(58_000);
     let one_btc_in_sats = dec!(100_000_000);
     let initial_collateral_sats = ((loan_amount / initial_ltv) / price) * one_btc_in_sats;
     let origination_fee_sats = ((loan_amount / price) * ORIGINATION_FEE_RATE) * one_btc_in_sats;
-    db::contracts::insert_new_contract_request(
+    let duration_days = offer.duration_days_max;
+    let interest_rate = offer.interest_rate;
+
+    let contract = db::contracts::insert_new_contract_request(
         pool,
-        id,
+        contract_id,
         borrower_id,
         offer.lender_id.as_str(),
         offer.loan_deal_id.as_str(),
@@ -230,7 +236,7 @@ async fn create_contract_request(
         initial_collateral_sats.to_u64().expect("to fit"),
         origination_fee_sats.to_u64().expect("to fit"),
         loan_amount,
-        offer.duration_days_max,
+        duration_days,
         borrower_pk,
         borrower_derivation_path,
         offer.lender_pk,
@@ -241,13 +247,26 @@ async fn create_contract_request(
         Some("0x34e3f03F5efFaF7f70Bb1FfC50274697096ebe9d"),
         LoanType::StableCoin,
         ContractVersion::TwoOfThree,
-        offer.interest_rate,
+        interest_rate,
         borrower_npub,
         &offer.lender_npub,
         Some(Uuid::new_v4()),
         offer.extension_policy,
     )
-    .await
+    .await?;
+
+    let installments = generate_installments(
+        OffsetDateTime::now_utc(),
+        contract_id,
+        RepaymentPlan::Bullet,
+        NonZeroU64::new(duration_days as u64).expect("non-zero"),
+        interest_rate,
+        loan_amount,
+    );
+
+    db::installments::insert(pool, installments).await?;
+
+    Ok(contract)
 }
 
 async fn create_loan_offers(
