@@ -1,3 +1,5 @@
+mod notifications;
+
 use crate::db::map_to_db_extension_policy;
 use crate::db::map_to_model_extension_policy;
 use crate::moon;
@@ -16,6 +18,7 @@ use bitcoin::bip32;
 use bitcoin::Address;
 use bitcoin::Amount;
 use bitcoin::PublicKey;
+pub use notifications::*;
 use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
@@ -1417,60 +1420,6 @@ fn usd_to_btc(usd: Decimal, price: Decimal) -> Result<Amount> {
     let owed_amount = Amount::from_btc(owed_amount_btc).expect("to fit");
 
     Ok(owed_amount)
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type", content = "data")]
-pub enum NotificationMessage {
-    ContractUpdate {
-        id: Uuid,
-        contract_id: String,
-        #[serde(with = "time::serde::rfc3339")]
-        timestamp: OffsetDateTime,
-        status: ContractStatus,
-        read: bool,
-    },
-    ChatMessage {
-        id: Uuid,
-        contract_id: String,
-        borrower_name: String,
-        #[serde(with = "time::serde::rfc3339")]
-        timestamp: OffsetDateTime,
-        read: bool,
-    },
-}
-
-impl NotificationMessage {
-    pub fn timestamp(&self) -> OffsetDateTime {
-        match self {
-            NotificationMessage::ContractUpdate { timestamp, .. } => *timestamp,
-            NotificationMessage::ChatMessage { timestamp, .. } => *timestamp,
-        }
-    }
-}
-
-impl From<crate::db::notifications::ContractUpdateNotification> for NotificationMessage {
-    fn from(value: crate::db::notifications::ContractUpdateNotification) -> Self {
-        NotificationMessage::ContractUpdate {
-            id: value.id,
-            contract_id: value.contract_id,
-            timestamp: value.created_at,
-            status: value.status.into(),
-            read: value.read,
-        }
-    }
-}
-
-impl From<crate::db::notifications::ContractChatMessageNotification> for NotificationMessage {
-    fn from(value: crate::db::notifications::ContractChatMessageNotification) -> Self {
-        NotificationMessage::ChatMessage {
-            id: value.id,
-            contract_id: value.contract_id,
-            borrower_name: value.borrower_name,
-            timestamp: value.created_at,
-            read: value.read,
-        }
-    }
 }
 
 #[cfg(test)]
