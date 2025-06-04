@@ -29,9 +29,9 @@ export const LoanRequestFlow = () => {
   >((searchParams.get("duration") as string) || "7");
 
   // Add refs for each section
-  const offerSelectionRef = useRef<HTMLDivElement>(null);
-  const confirmationRef = useRef<HTMLDivElement>(null);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const offerSelectionRef = useRef<HTMLDivElement>(null!);
+  const confirmationRef = useRef<HTMLDivElement>(null!);
+  const scrollAreaRef = useRef<HTMLDivElement>(null!);
 
   const scrollToElement = (ref: RefObject<HTMLDivElement>) => {
     if (!ref.current || !scrollAreaRef.current) return;

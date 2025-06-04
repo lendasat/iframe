@@ -36,7 +36,7 @@ export const PriceProvider: FC<{ url: string; children: ReactNode }> = ({
   children,
   url,
 }) => {
-  const [latestPrice, setLatestPrice] = useState<number | undefined>();
+  const [latestPrice, setLatestPrice] = useState(0);
   const ws = useRef<WebSocket | null>(null);
   const websocketUrl = changeProtocolToWSS(url);
 

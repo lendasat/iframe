@@ -76,6 +76,8 @@ export function contractStatusLabelColor(status?: ContractStatus): string {
       return "bg-stone-100 text-stone-800";
     case ContractStatus.ApprovalExpired:
       return "bg-neutral-100 text-neutral-800";
+    default:
+      return `bg-gray-100 text-black-800`;
   }
 }
 

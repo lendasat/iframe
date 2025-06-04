@@ -6,6 +6,7 @@ import {
   getFormatedStringFromDays,
   LoanAsset,
   LoanAssetHelper,
+  LoanPayout,
 } from "@frontend/ui-shared";
 import {
   Badge,
@@ -350,10 +351,10 @@ export function LoanOfferTable({
           duration_days_max: 0,
           loan_asset: LoanAsset.USDT_POL,
           origination_fee: [],
-          extension_origination_fee: [],
+          loan_payout: LoanPayout.Direct,
           lender_pk: "dummy",
         },
-      ];
+      ] satisfies LoanOffer[];
     }
     return loanOffers;
   }, [loanOffers, loading]);
