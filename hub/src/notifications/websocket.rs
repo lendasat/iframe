@@ -102,36 +102,11 @@ impl NotificationCenter {
         &self,
         message: NotificationMessage,
     ) -> Result<usize, Box<dyn std::error::Error + Send + Sync>> {
-        let ws_message = message.to_ws_message()?;
-        let mut guard = self.connections.lock().await;
-        let mut total_sent = 0;
-        let mut users_to_remove = Vec::new();
+        let guard = self.connections.lock().await;
+        let all_lenders: Vec<String> = guard.keys().cloned().collect();
 
-        for (user_id, senders) in guard.iter_mut() {
-            let mut failed_indices = Vec::new();
-
-            for (index, sender) in senders.iter().enumerate() {
-                if sender.send(ws_message.clone()).is_ok() {
-                    total_sent += 1;
-                } else {
-                    failed_indices.push(index);
-                }
-            }
-
-            // Remove failed connections
-            for &index in failed_indices.iter().rev() {
-                senders.remove(index);
-            }
-
-            if senders.is_empty() {
-                users_to_remove.push(user_id.clone());
-            }
-        }
-
-        // Remove users with no connections
-        for user_id in users_to_remove {
-            guard.remove(&user_id);
-        }
+        let all_lenders: &[String] = &all_lenders;
+        let total_sent = self.send_to_many(all_lenders, message).await?;
 
         Ok(total_sent)
     }
