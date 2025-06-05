@@ -6,9 +6,12 @@ use anyhow::bail;
 use anyhow::Result;
 use bitcoin::Amount;
 use rust_decimal::Decimal;
+use serde::Deserialize;
+use serde::Serialize;
 use std::num::NonZeroU64;
 use time::ext::NumericalStdDuration;
 use time::OffsetDateTime;
+use utoipa::ToSchema;
 use uuid::Uuid;
 
 /// TODO: For the time being, missing an interest-only installment implies a full liquidation of
@@ -26,7 +29,8 @@ pub struct Installment {
     pub payment_id: Option<String>,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
 pub enum InstallmentStatus {
     /// The installment has not yet been paid.
     Pending,

@@ -1,0 +1,87 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO lender_installment_update_notifications (installment_id, contract_id, status, read)\n        VALUES ($1, $2, $3, $4)\n        RETURNING id, installment_id, contract_id, status as \"status: InstallmentStatus\", read, created_at, updated_at\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "installment_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "contract_id",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "status: InstallmentStatus",
+        "type_info": {
+          "Custom": {
+            "name": "installment_status",
+            "kind": {
+              "Enum": [
+                "Pending",
+                "Paid",
+                "Confirmed",
+                "Late",
+                "Cancelled"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "read",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 5,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 6,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Bpchar",
+        {
+          "Custom": {
+            "name": "installment_status",
+            "kind": {
+              "Enum": [
+                "Pending",
+                "Paid",
+                "Confirmed",
+                "Late",
+                "Cancelled"
+              ]
+            }
+          }
+        },
+        "Bool"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "8ce2e96a1104b9c6ec30690f271039b2629f9b3e1335ee5ab6a81900c018d24a"
+}

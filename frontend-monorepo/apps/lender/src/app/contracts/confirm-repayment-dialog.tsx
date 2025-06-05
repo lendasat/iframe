@@ -111,7 +111,7 @@ const RepaymentConfirmationDialog = ({
               <div className="text-muted-foreground">
                 Total Installment Amount:
               </div>
-              <div className="font-medium">${formatCurrency(totalAmount)}</div>
+              <div className="font-medium">{formatCurrency(totalAmount)}</div>
 
               <div className="text-muted-foreground">Transaction ID:</div>
               <div className="flex items-center">

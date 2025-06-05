@@ -125,6 +125,15 @@ async fn get_all_notifications(
         .await
         .map_err(|e| Error::database(anyhow!(e)))?;
 
+    let total_installment_notifications =
+        db::notifications::count_installment_notifications_by_lender_id(
+            &state.db,
+            user.id.as_str(),
+            pagination.unread_only,
+        )
+        .await
+        .map_err(|e| Error::database(anyhow!(e)))?;
+
     let total_chat_notifications =
         db::notifications::count_chat_message_notifications_by_lender_id(
             &state.db,
@@ -134,7 +143,8 @@ async fn get_all_notifications(
         .await
         .map_err(|e| Error::database(anyhow!(e)))?;
 
-    let total = total_contract_notifications + total_chat_notifications;
+    let total =
+        total_contract_notifications + total_installment_notifications + total_chat_notifications;
 
     let contract_notifications =
         db::notifications::get_contract_notifications_by_lender_id_paginated(
@@ -151,6 +161,24 @@ async fn get_all_notifications(
         .into_iter()
         .map(NotificationMessage::from)
         .collect::<Vec<_>>();
+
+    let installment_notifications =
+        db::notifications::get_installment_notifications_by_lender_id_paginated(
+            &state.db,
+            user.id.as_str(),
+            pagination.limit,
+            pagination.offset(),
+            pagination.unread_only,
+        )
+        .await
+        .map_err(|e| Error::database(anyhow!(e)))?;
+
+    let mut installment_notifications = installment_notifications
+        .into_iter()
+        .map(NotificationMessage::from)
+        .collect::<Vec<_>>();
+
+    notifications.append(&mut installment_notifications);
 
     let chat_notifications =
         db::notifications::get_chat_message_notifications_by_lender_id_paginated(

@@ -116,7 +116,6 @@ export interface Contract {
   duration_days: number;
   created_at: Date;
   updated_at: Date;
-  repaid_at: Date | undefined;
   expiry: Date;
   interest_rate: number;
   interest: number;
@@ -729,12 +728,13 @@ export interface IsRegisteredResponse {
 
 export enum NotificationMessageType {
   ContractUpdate = "ContractUpdate",
+  InstallmentUpdate = "InstallmentUpdate",
   ChatMessage = "ChatMessage",
 }
 
 export interface NotificationMessage {
   type: NotificationMessageType;
-  data: ContractUpdate | ChatMessage;
+  data: ContractUpdate | InstallmentUpdate | ChatMessage;
 }
 
 export interface ContractUpdate {
@@ -742,6 +742,15 @@ export interface ContractUpdate {
   contract_id: string;
   timestamp: string;
   status: ContractStatus;
+  read: boolean;
+}
+
+export interface InstallmentUpdate {
+  id: string;
+  installment_id: string;
+  contract_id: string;
+  timestamp: string;
+  status: InstallmentStatus;
   read: boolean;
 }
 

@@ -622,8 +622,8 @@ impl Email {
         Ok(())
     }
 
-    pub async fn send_loan_repaid(&self, user: &Lender, url: Url) -> Result<()> {
-        let template_name = "loan_repaid";
+    pub async fn send_installment_paid(&self, user: &Lender, url: Url) -> Result<()> {
+        let template_name = "installment_paid";
         let handlebars = Self::prepare_template(template_name)?;
 
         let data = serde_json::json!({

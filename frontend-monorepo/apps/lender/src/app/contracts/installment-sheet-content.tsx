@@ -34,8 +34,8 @@ export function InstallmentSheetContent({
             label="ID"
             value={<span className="font-mono text-xs">{installment.id}</span>}
           />
-          <DetailRow label="Principal" value={<span>${principal}</span>} />
-          <DetailRow label="Interest" value={<span>${interest}</span>} />
+          <DetailRow label="Principal" value={<span>{principal}</span>} />
+          <DetailRow label="Interest" value={<span>{interest}</span>} />
           <DetailRow
             label="Due Date"
             value={formatDistance(new Date(installment.due_date), today, {

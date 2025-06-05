@@ -36,10 +36,9 @@ import { IsRegisteredResponse } from "@frontend/base-http-client";
 
 // Interface for the raw data received from the API
 interface RawContract
-  extends Omit<Contract, "created_at" | "repaid_at" | "updated_at" | "expiry"> {
+  extends Omit<Contract, "created_at" | "updated_at" | "expiry"> {
   created_at: string;
   updated_at: string;
-  repaid_at?: string;
   expiry: string;
 }
 interface RawContractDispute
@@ -649,9 +648,6 @@ export const createHttpClient = (
           ...contract,
           created_at: createdAt,
           updated_at: updatedAt,
-          repaid_at: contract.repaid_at
-            ? parseRFC3339Date(contract.repaid_at)
-            : undefined,
           expiry: expiry,
         };
       });
@@ -669,9 +665,6 @@ export const createHttpClient = (
 
       const createdAt = parseRFC3339Date(contract.created_at);
       const updatedAt = parseRFC3339Date(contract.updated_at);
-      const repaidAt = contract.repaid_at
-        ? parseRFC3339Date(contract.repaid_at)
-        : undefined;
       const expiry = parseRFC3339Date(contract.expiry);
 
       // We'll check the dates that must exist
@@ -683,7 +676,6 @@ export const createHttpClient = (
         ...contract,
         created_at: createdAt!,
         updated_at: updatedAt!,
-        repaid_at: repaidAt,
         expiry: expiry!,
       };
     } catch (error) {

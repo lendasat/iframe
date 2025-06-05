@@ -2,6 +2,8 @@ import {
   ChatMessage,
   ContractStatus,
   ContractUpdate,
+  InstallmentStatus,
+  InstallmentUpdate,
   NotificationMessage,
   NotificationMessageType,
   useLenderHttpClient,
@@ -125,6 +127,41 @@ const mapToInnerNotification = (
         case ContractStatus.Closing:
         case ContractStatus.Extended:
         case ContractStatus.Rejected:
+          break;
+      }
+
+      return {
+        id: update.id,
+        contractId: update.contract_id,
+        message,
+        read: update.read,
+        originalType: notification.type,
+        type: "info",
+        timestamp: parseISO(update.timestamp),
+        timestampReadable: formatDistanceToNow(update.timestamp, {
+          addSuffix: true,
+        }),
+      };
+    }
+    case NotificationMessageType.InstallmentUpdate: {
+      const update = notification.data as InstallmentUpdate;
+      let message = "Installment update";
+      console.log(`Installment status ${update.status}`);
+      switch (update.status) {
+        case InstallmentStatus.Cancelled:
+          message = "An installment was cancelled";
+          break;
+        case InstallmentStatus.Pending:
+          message = "An installment is now pending";
+          break;
+        case InstallmentStatus.Paid:
+          message = "An installment was paid";
+          break;
+        case InstallmentStatus.Confirmed:
+          message = "You confirmed an installment";
+          break;
+        case InstallmentStatus.Late:
+          message = "An installment is now overdue";
           break;
       }
 
@@ -280,6 +317,10 @@ export function NotificationStatus() {
         navigate(`/my-contracts/${notification.contractId}`);
         break;
       case NotificationMessageType.ContractUpdate:
+        setIsOpen(false);
+        navigate(`/my-contracts/${notification.contractId}`);
+        break;
+      case NotificationMessageType.InstallmentUpdate:
         setIsOpen(false);
         navigate(`/my-contracts/${notification.contractId}`);
         break;

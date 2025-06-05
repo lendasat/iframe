@@ -13,6 +13,7 @@ use crate::model::ConfirmInstallmentPaymentRequest;
 use crate::model::ContractStatus;
 use crate::model::ExtensionPolicy;
 use crate::model::FiatLoanDetails;
+use crate::model::InstallmentStatus;
 use crate::model::Lender;
 use crate::model::LiquidationStatus;
 use crate::model::LoanAsset;
@@ -186,8 +187,6 @@ pub struct Contract {
     pub created_at: OffsetDateTime,
     #[serde(with = "time::serde::rfc3339")]
     pub updated_at: OffsetDateTime,
-    #[serde(with = "time::serde::rfc3339::option")]
-    pub repaid_at: Option<OffsetDateTime>,
     #[serde(with = "time::serde::rfc3339")]
     pub expiry: OffsetDateTime,
     pub liquidation_status: LiquidationStatus,
@@ -503,7 +502,7 @@ async fn put_confirm_installment_payment(
         && installments.iter().all(|i| {
             matches!(
                 i.status,
-                model::InstallmentStatus::Cancelled | model::InstallmentStatus::Confirmed
+                InstallmentStatus::Cancelled | InstallmentStatus::Confirmed
             )
         });
 
@@ -929,10 +928,6 @@ async fn map_to_api_contract(
         .await
         .map_err(Error::database)?;
 
-    let repaid_at = transactions.iter().find_map(|tx| {
-        matches!(tx.transaction_type, TransactionType::InstallmentPaid).then_some(tx.timestamp)
-    });
-
     let can_recover_collateral_manually =
         db::manual_collateral_recovery::load_manual_collateral_recovery(&data.db, &contract.id)
             .await
@@ -1049,7 +1044,6 @@ async fn map_to_api_contract(
         },
         created_at: contract.created_at,
         updated_at: contract.updated_at,
-        repaid_at,
         expiry: contract.expiry_date,
         liquidation_status: contract.liquidation_status,
         transactions,
@@ -1083,21 +1077,6 @@ pub struct Installment {
     #[serde(with = "time::serde::rfc3339::option")]
     pub paid_date: Option<OffsetDateTime>,
     pub payment_id: Option<String>,
-}
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum InstallmentStatus {
-    /// The installment has not yet been paid.
-    Pending,
-    /// The installment has been paid, according to the borrower.
-    Paid,
-    /// The installment has been paid, as confirmed by the lender.
-    Confirmed,
-    /// The installment was not paid in time.
-    Late,
-    /// The installment is no longer expected and was never paid.
-    Cancelled,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -1157,7 +1136,7 @@ async fn map_timeline(
             let event = TimelineEvent {
                 date: paid_date,
                 event: TimelineEventKind::Installment {
-                    is_confirmed: matches!(i.status, model::InstallmentStatus::Confirmed),
+                    is_confirmed: matches!(i.status, InstallmentStatus::Confirmed),
                 },
                 txid: i.payment_id.clone(),
             };
@@ -1476,21 +1455,9 @@ impl From<model::Installment> for Installment {
             principal: value.principal,
             interest: value.interest,
             due_date: value.due_date,
-            status: value.status.into(),
+            status: value.status,
             paid_date: value.paid_date,
             payment_id: value.payment_id,
-        }
-    }
-}
-
-impl From<model::InstallmentStatus> for InstallmentStatus {
-    fn from(value: model::InstallmentStatus) -> Self {
-        match value {
-            model::InstallmentStatus::Pending => InstallmentStatus::Pending,
-            model::InstallmentStatus::Paid => InstallmentStatus::Paid,
-            model::InstallmentStatus::Confirmed => InstallmentStatus::Confirmed,
-            model::InstallmentStatus::Late => InstallmentStatus::Late,
-            model::InstallmentStatus::Cancelled => InstallmentStatus::Cancelled,
         }
     }
 }

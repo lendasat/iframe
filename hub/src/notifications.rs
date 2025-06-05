@@ -12,6 +12,7 @@ use sqlx::Pool;
 use sqlx::Postgres;
 use time::OffsetDateTime;
 use url::Url;
+use uuid::Uuid;
 use xtra::Address;
 
 mod email;
@@ -508,13 +509,49 @@ impl Notifications {
         }
     }
 
-    pub async fn send_loan_repaid(
+    pub async fn send_installment_paid(
         &self,
         lender: Lender,
         url: Url,
         pool: &PgPool,
+        installment_id: Uuid,
         contract_id: &str,
     ) {
+        match db::notifications::insert_installment_update_notification(
+            pool,
+            installment_id,
+            contract_id,
+            model::InstallmentStatus::Paid,
+        )
+        .await
+        {
+            Err(err) => {
+                tracing::error!("Failed inserting installment paid message {err:#}");
+            }
+            Ok(notification) => {
+                self.send_tg_notification_lender(
+                    &lender,
+                    url.clone(),
+                    crate::telegram_bot::LenderNotificationKind::InstallmentPaid,
+                )
+                .await;
+
+                if let Err(e) = self.email.send_installment_paid(&lender, url).await {
+                    tracing::error!("Could not send installment paid {e:#}");
+                }
+
+                if let Err(e) = self
+                    .websocket
+                    .send_to(lender.id.as_str(), notification.into())
+                    .await
+                {
+                    tracing::error!("Could not send notification via websocket {e:#}");
+                }
+            }
+        }
+    }
+
+    pub async fn send_loan_repaid(&self, lender: Lender, pool: &PgPool, contract_id: &str) {
         match db::notifications::insert_contract_update_notification(
             pool,
             contract_id,
@@ -526,17 +563,6 @@ impl Notifications {
                 tracing::error!("Failed inserting contract update message {err:#}");
             }
             Ok(notification) => {
-                self.send_tg_notification_lender(
-                    &lender,
-                    url.clone(),
-                    crate::telegram_bot::LenderNotificationKind::Repaid,
-                )
-                .await;
-
-                if let Err(e) = self.email.send_loan_repaid(&lender, url).await {
-                    tracing::error!("Could not send loan repaid {e:#}");
-                }
-
                 if let Err(e) = self
                     .websocket
                     .send_to(lender.id.as_str(), notification.into())
