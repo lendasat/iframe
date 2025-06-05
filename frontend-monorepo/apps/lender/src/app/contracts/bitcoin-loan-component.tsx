@@ -37,48 +37,66 @@ export function contractStatusLabelColor(status?: ContractStatus): string {
     return `bg-gray-100 text-black-800`;
   }
 
+  let color = "";
+
   switch (status) {
     case ContractStatus.Requested:
     case ContractStatus.RenewalRequested:
-      return "bg-blue-100 text-blue-800";
+      color = "bg-blue-100 text-blue-800";
+      break;
     case ContractStatus.Approved:
-      return "bg-indigo-100 text-indigo-800";
+      color = "bg-indigo-100 text-indigo-800";
+      break;
     case ContractStatus.CollateralSeen:
     case ContractStatus.CollateralConfirmed:
-      return "bg-violet-100 text-violet-800";
+      color = "bg-violet-100 text-violet-800";
+      break;
     case ContractStatus.PrincipalGiven:
-      return "bg-green-100 text-green-700";
+      color = "bg-green-100 text-green-700";
+      break;
     case ContractStatus.RepaymentProvided:
-      return "bg-teal-100 text-teal-800";
+      color = "bg-teal-100 text-teal-800";
+      break;
     case ContractStatus.RepaymentConfirmed:
-      return "bg-emerald-100 text-emerald-800";
+      color = "bg-emerald-100 text-emerald-800";
+      break;
     case ContractStatus.Undercollateralized:
-      return "bg-red-100 text-red-800";
+      color = "bg-red-100 text-red-800";
+      break;
     case ContractStatus.Defaulted:
-      return "bg-red-100 text-red-800";
+      color = "bg-red-100 text-red-800";
+      break;
     case ContractStatus.Closing:
-      return "bg-slate-100 text-slate-800";
+      color = "bg-slate-100 text-slate-800";
+      break;
     case ContractStatus.Closed:
-      return "bg-gray-100 text-gray-800";
+      color = "bg-gray-100 text-gray-800";
+      break;
     case ContractStatus.Extended:
-      return "bg-purple-100 text-purple-800";
+      color = "bg-purple-100 text-purple-800";
+      break;
     case ContractStatus.Rejected:
-      return "bg-rose-100 text-rose-800";
+      color = "bg-rose-100 text-rose-800";
+      break;
     case ContractStatus.DisputeBorrowerStarted:
     case ContractStatus.DisputeLenderStarted:
-      return "bg-orange-100 text-orange-800";
+      color = "bg-orange-100 text-orange-800";
+      break;
     case ContractStatus.DisputeBorrowerResolved:
     case ContractStatus.DisputeLenderResolved:
-      return "bg-lime-100 text-lime-800";
+      color = "bg-lime-100 text-lime-800";
+      break;
     case ContractStatus.Cancelled:
-      return "bg-zinc-100 text-zinc-800";
+      color = "bg-zinc-100 text-zinc-800";
+      break;
     case ContractStatus.RequestExpired:
-      return "bg-stone-100 text-stone-800";
+      color = "bg-stone-100 text-stone-800";
+      break;
     case ContractStatus.ApprovalExpired:
-      return "bg-neutral-100 text-neutral-800";
-    default:
-      return `bg-gray-100 text-black-800`;
+      color = "bg-neutral-100 text-neutral-800";
+      break;
   }
+  return color;
 }
 
 const EnhancedBitcoinLoan = () => {
@@ -104,10 +122,8 @@ const EnhancedBitcoinLoan = () => {
     console.error(`Failed to load contract: ${error.message}`);
   }
 
-  const currentStateColor = contractStatusLabelColor(
-    contract?.installments ?? [],
-    contract?.status,
-  );
+  const currentStateColor = contractStatusLabelColor(contract?.status);
+
   const currentStateLabel =
     contract?.status &&
     contract?.installments &&

@@ -3,7 +3,7 @@ import type { FC } from "react";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 
 interface PriceContextProps {
-  latestPrice: number;
+  latestPrice: number | undefined;
 }
 
 interface RawPriceUpdate {
@@ -36,7 +36,7 @@ export const PriceProvider: FC<{ url: string; children: ReactNode }> = ({
   children,
   url,
 }) => {
-  const [latestPrice, setLatestPrice] = useState(0);
+  const [latestPrice, setLatestPrice] = useState<number | undefined>();
   const ws = useRef<WebSocket | null>(null);
   const websocketUrl = changeProtocolToWSS(url);
 

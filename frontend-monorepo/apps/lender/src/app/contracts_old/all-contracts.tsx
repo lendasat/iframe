@@ -290,7 +290,6 @@ export const AllContracts = ({
           sortByColumn={sortByColumn}
           sortAsc={sortAsc}
           contracts={contracts}
-          latestPrice={latestPrice}
         />
       </Box>
     </Box>

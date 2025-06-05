@@ -8,7 +8,18 @@ function UpgradeToPake() {
 
   return (
     <UpgradeToPakeGeneric
-      login={login}
+      login={async (email, password) => {
+        let response = await login(email, password);
+        if ("must_upgrade_to_pake" in response) {
+          return {
+            mustUpgrade: true,
+          };
+        } else {
+          return {
+            mustUpgrade: false,
+          };
+        }
+      }}
       is_borrower={false}
       upgradeToPake={upgradeToPake}
       finishUpgradeToPake={finishUpgradeToPake}

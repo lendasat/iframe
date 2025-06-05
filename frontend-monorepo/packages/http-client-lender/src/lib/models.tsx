@@ -1,4 +1,3 @@
-import { DisputeStatus } from "@frontend/http-client-borrower";
 import { LoanAsset, LoanPayout, LoanTransaction } from "@frontend/ui-shared";
 
 export interface User {
@@ -713,6 +712,7 @@ export interface UpgradeToPakeResponse {
 }
 
 export type LoginResponseOrUpgrade = LoginResponse | MustUpgradeToPake;
+
 export type PakeLoginResponseOrUpgrade = PakeLoginResponse | MustUpgradeToPake;
 export interface PakeVerifyResponse {
   server_proof: string;

@@ -110,7 +110,6 @@ export interface ContractDetailsTableProps {
   sortByColumn: ColumnFilterKey;
   sortAsc: boolean;
   contracts: Contract[];
-  latestPrice: number;
 }
 
 export const ContractDetailsTable = ({

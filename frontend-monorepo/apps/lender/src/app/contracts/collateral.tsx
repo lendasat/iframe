@@ -143,7 +143,7 @@ export const Collateral = ({ contract }: CollateralProps) => {
   const contractAddress = contract?.contract_address;
   const collateralAmount = formatSatsToBitcoin(contract?.collateral_sats);
   const collateralAmountUsd =
-    contract?.collateral_sats != null
+    contract?.collateral_sats != null && latestPrice
       ? contract.collateral_sats === 0
         ? formatCurrency(0)
         : formatCurrency((contract.collateral_sats / 100000000) * latestPrice)
@@ -153,7 +153,7 @@ export const Collateral = ({ contract }: CollateralProps) => {
     ? contract.collateral_sats / 100000000
     : undefined;
   const ltvRatio =
-    collateralBtc && contract?.loan_amount
+    collateralBtc && latestPrice && contract?.loan_amount
       ? (contract.loan_amount / (collateralBtc * latestPrice)) * 100
       : undefined;
 
