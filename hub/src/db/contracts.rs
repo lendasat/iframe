@@ -1248,26 +1248,6 @@ pub(crate) async fn check_if_contract_belongs_to_borrower(
     Ok(row.entry_exists.unwrap_or(false))
 }
 
-pub(crate) async fn check_if_contract_belongs_to_lender(
-    pool: &Pool<Postgres>,
-    contract_id: &str,
-    lender_id: &str,
-) -> Result<bool> {
-    let row = sqlx::query!(
-        r#"
-            SELECT EXISTS (
-                SELECT 1 FROM contracts WHERE id = $1 AND lender_id = $2
-            ) AS entry_exists;
-        "#,
-        contract_id,
-        lender_id,
-    )
-    .fetch_one(pool)
-    .await?;
-
-    Ok(row.entry_exists.unwrap_or(false))
-}
-
 #[derive(sqlx::FromRow)]
 pub struct ContractStats {
     pub(crate) loan_amount: Decimal,

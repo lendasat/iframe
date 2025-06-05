@@ -150,6 +150,10 @@ export function getAddressUrl(address?: string, assetType?: LoanAsset) {
   return url;
 }
 
+export const changeProtocolToWSS = (url: string): string => {
+  return url.replace(/^http(s?):\/\//i, "ws$1://");
+};
+
 export * from "./lib/auth/email-verification-form";
 export * from "./lib/auth/forgot-password-form";
 export * from "./lib/auth/login-form";

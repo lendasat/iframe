@@ -753,7 +753,7 @@ export interface InstallmentUpdate {
 export interface ChatMessage {
   id: string;
   contract_id: string;
-  borrower_name: string;
+  counterparty_name: string;
   timestamp: string;
   read: boolean;
 }

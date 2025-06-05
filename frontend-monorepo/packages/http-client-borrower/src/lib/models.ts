@@ -732,3 +732,47 @@ export interface HasApiKey {
 export interface BringinConnectResponse {
   signup_url?: string;
 }
+
+export enum NotificationMessageType {
+  ContractUpdate = "ContractUpdate",
+  InstallmentUpdate = "InstallmentUpdate",
+  ChatMessage = "ChatMessage",
+}
+
+export interface NotificationMessage {
+  type: NotificationMessageType;
+  data: ContractUpdate | InstallmentUpdate | ChatMessage;
+}
+
+export interface ContractUpdate {
+  id: string;
+  contract_id: string;
+  timestamp: string;
+  status: ContractStatus;
+  read: boolean;
+}
+
+export interface InstallmentUpdate {
+  id: string;
+  installment_id: string;
+  contract_id: string;
+  timestamp: string;
+  status: InstallmentStatus;
+  read: boolean;
+}
+
+export interface ChatMessage {
+  id: string;
+  contract_id: string;
+  counterparty_name: string;
+  timestamp: string;
+  read: boolean;
+}
+
+export interface PaginatedNotificationResponse {
+  data: NotificationMessage[];
+  page: number;
+  limit: number;
+  total: number;
+  total_pages: number;
+}

@@ -30,6 +30,7 @@ import type {
   HasApiKey,
   BringinConnectResponse,
   FiatLoanDetails,
+  PaginatedNotificationResponse,
 } from "./models";
 import { isAllowedPageWithoutLogin, parseRFC3339Date } from "./utils";
 import { IsRegisteredResponse } from "@frontend/base-http-client";
@@ -41,6 +42,7 @@ interface RawContract
   updated_at: string;
   expiry: string;
 }
+
 interface RawContractDispute
   extends Omit<ContractDispute, "created_at" | "updated_at" | "resolved_at"> {
   created_at: string;
@@ -192,6 +194,15 @@ export interface HttpClient {
   // Bringin methods
   postBringinConnect: (bringinEmail: string) => Promise<BringinConnectResponse>;
   hasBringinApiKey: () => Promise<boolean>;
+
+  // fetch notifications
+  fetchNotifications: (
+    page: number,
+    limit: number,
+    showUnreadOnly: boolean,
+  ) => Promise<PaginatedNotificationResponse>;
+  markNotificationAsRead: (id: string) => Promise<void>;
+  markAllNotificationAsRead: () => Promise<void>;
 }
 
 // Create a factory function to create our client
@@ -1000,6 +1011,38 @@ export const createHttpClient = (
     }
   };
 
+  // fetch notifications
+  const fetchNotifications = async (
+    page: number = 1,
+    limit: number = 20,
+    showReadOnly: boolean = true,
+  ): Promise<PaginatedNotificationResponse> => {
+    try {
+      let url = `/api/notifications?page=${page}&limit=${limit}&unread_only=${showReadOnly}`;
+      const response = await axiosClient.get(url);
+      return response.data;
+    } catch (error) {
+      handleError(error, "fetching notifications");
+      throw error;
+    }
+  };
+  const markNotificationAsRead = async (id: string): Promise<void> => {
+    try {
+      await axiosClient.put(`/api/notifications/${id}`);
+    } catch (error) {
+      handleError(error, "marking notification as read");
+      throw error;
+    }
+  };
+  const markAllNotificationAsRead = async (): Promise<void> => {
+    try {
+      await axiosClient.put(`/api/notifications`);
+    } catch (error) {
+      handleError(error, "marking all notifications as read");
+      throw error;
+    }
+  };
+
   // Return all functions bundled as our client
   return {
     register,
@@ -1049,6 +1092,9 @@ export const createHttpClient = (
     getIsRegistered,
     postBringinConnect,
     hasBringinApiKey,
+    fetchNotifications,
+    markNotificationAsRead,
+    markAllNotificationAsRead,
   };
 };
 

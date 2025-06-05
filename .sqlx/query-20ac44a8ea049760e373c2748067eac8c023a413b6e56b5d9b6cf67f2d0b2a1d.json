@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE borrower_contract_update_notifications \n        SET read = true, updated_at = CURRENT_TIMESTAMP\n        WHERE id IN (\n            SELECT n.id \n            FROM borrower_contract_update_notifications n\n            INNER JOIN contracts c ON n.contract_id = c.id\n            WHERE c.borrower_id = $1 AND n.read = false\n        )\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Bpchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "20ac44a8ea049760e373c2748067eac8c023a413b6e56b5d9b6cf67f2d0b2a1d"
+}

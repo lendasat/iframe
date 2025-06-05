@@ -1,5 +1,5 @@
 use crate::db;
-use crate::model::Lender;
+use crate::model::Borrower;
 use crate::model::NotificationMessage;
 use crate::routes::borrower::auth::jwt_or_api_auth;
 use crate::routes::AppState;
@@ -109,7 +109,7 @@ impl PaginationQuery {
 
 async fn get_all_notifications(
     State(state): State<Arc<AppState>>,
-    Extension(user): Extension<Lender>,
+    Extension(user): Extension<Borrower>,
     Query(pagination): Query<PaginationQuery>,
 ) -> Result<AppJson<PaginatedResponse<NotificationMessage>>, Error> {
     pagination
@@ -117,7 +117,7 @@ async fn get_all_notifications(
         .map_err(|e| Error::bad_request(anyhow!(e)))?;
 
     let total_contract_notifications =
-        db::notifications::count_contract_notifications_by_lender_id(
+        db::notifications::borrower::count_contract_notifications_by_borrower_id(
             &state.db,
             user.id.as_str(),
             pagination.unread_only,
@@ -126,7 +126,7 @@ async fn get_all_notifications(
         .map_err(|e| Error::database(anyhow!(e)))?;
 
     let total_chat_notifications =
-        db::notifications::count_chat_message_notifications_by_lender_id(
+        db::notifications::borrower::count_chat_message_notifications_by_borrower_id(
             &state.db,
             user.id.as_str(),
             pagination.unread_only,
@@ -134,10 +134,20 @@ async fn get_all_notifications(
         .await
         .map_err(|e| Error::database(anyhow!(e)))?;
 
-    let total = total_contract_notifications + total_chat_notifications;
+    let total_installment_notifications =
+        db::notifications::borrower::count_installment_notifications_by_borrower_id(
+            &state.db,
+            user.id.as_str(),
+            pagination.unread_only,
+        )
+        .await
+        .map_err(|e| Error::database(anyhow!(e)))?;
+
+    let total =
+        total_contract_notifications + total_chat_notifications + total_installment_notifications;
 
     let contract_notifications =
-        db::notifications::get_contract_notifications_by_lender_id_paginated(
+        db::notifications::borrower::get_contract_notifications_by_borrower_id_paginated(
             &state.db,
             user.id.as_str(),
             pagination.limit,
@@ -153,7 +163,7 @@ async fn get_all_notifications(
         .collect::<Vec<_>>();
 
     let chat_notifications =
-        db::notifications::get_chat_message_notifications_by_lender_id_paginated(
+        db::notifications::borrower::get_chat_message_notifications_by_borrower_id_paginated(
             &state.db,
             user.id.as_str(),
             pagination.limit,
@@ -169,6 +179,24 @@ async fn get_all_notifications(
         .collect::<Vec<_>>();
 
     notifications.append(&mut chat_notifications);
+
+    let installment_notifications =
+        db::notifications::borrower::get_installment_notifications_by_borrower_id_paginated(
+            &state.db,
+            user.id.as_str(),
+            pagination.limit,
+            pagination.offset(),
+            pagination.unread_only,
+        )
+        .await
+        .map_err(|e| Error::database(anyhow!(e)))?;
+
+    let mut installment_notifications = installment_notifications
+        .into_iter()
+        .map(NotificationMessage::from)
+        .collect::<Vec<_>>();
+
+    notifications.append(&mut installment_notifications);
 
     // Sort by created_at since we're combining two sources
     notifications.sort_by_key(|b| std::cmp::Reverse(b.timestamp()));
@@ -191,7 +219,7 @@ async fn put_mark_as_read(
     State(state): State<Arc<AppState>>,
     Path(id): Path<Uuid>,
 ) -> Result<AppJson<()>, Error> {
-    db::notifications::mark_as_read(&state.db, id)
+    db::notifications::borrower::mark_as_read(&state.db, id)
         .await
         .map_err(|e| Error::database(anyhow!(e)))?;
 
@@ -200,9 +228,9 @@ async fn put_mark_as_read(
 
 async fn put_mark_all_as_read(
     State(state): State<Arc<AppState>>,
-    Extension(user): Extension<Lender>,
+    Extension(user): Extension<Borrower>,
 ) -> Result<AppJson<()>, Error> {
-    db::notifications::mark_all_as_read(&state.db, user.id.as_str())
+    db::notifications::borrower::mark_all_as_read(&state.db, user.id.as_str())
         .await
         .map_err(|e| Error::database(anyhow!(e)))?;
 
@@ -211,13 +239,13 @@ async fn put_mark_all_as_read(
 
 async fn notifications_ws(
     State(state): State<Arc<AppState>>,
-    Extension(user): Extension<Lender>,
+    Extension(user): Extension<Borrower>,
     ws: WebSocketUpgrade,
 ) -> impl IntoResponse {
     ws.on_upgrade(|socket| handle_socket(socket, state, user))
 }
 
-async fn handle_socket(socket: WebSocket, app_state: Arc<AppState>, user: Lender) {
+async fn handle_socket(socket: WebSocket, app_state: Arc<AppState>, user: Borrower) {
     let (mut sender, _) = socket.split();
     // Create a channel for this connection
     let (tx, mut rx) = mpsc::unbounded_channel();

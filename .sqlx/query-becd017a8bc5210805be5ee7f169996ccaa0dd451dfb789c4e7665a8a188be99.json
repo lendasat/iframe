@@ -1,0 +1,87 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO borrower_installment_update_notifications (installment_id, contract_id, status, read)\n        VALUES ($1, $2, $3, $4)\n        RETURNING id, installment_id, contract_id, status as \"status: InstallmentStatus\", read, created_at, updated_at\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "installment_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "contract_id",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "status: InstallmentStatus",
+        "type_info": {
+          "Custom": {
+            "name": "installment_status",
+            "kind": {
+              "Enum": [
+                "Pending",
+                "Paid",
+                "Confirmed",
+                "Late",
+                "Cancelled"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "read",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 5,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 6,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Bpchar",
+        {
+          "Custom": {
+            "name": "installment_status",
+            "kind": {
+              "Enum": [
+                "Pending",
+                "Paid",
+                "Confirmed",
+                "Late",
+                "Cancelled"
+              ]
+            }
+          }
+        },
+        "Bool"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "becd017a8bc5210805be5ee7f169996ccaa0dd451dfb789c4e7665a8a188be99"
+}

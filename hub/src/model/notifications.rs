@@ -75,7 +75,7 @@ impl From<crate::db::notifications::ContractChatMessageNotification> for Notific
         NotificationMessage::ChatMessage {
             id: value.id,
             contract_id: value.contract_id,
-            borrower_name: value.borrower_name,
+            borrower_name: value.counterparty_name,
             timestamp: value.created_at,
             read: value.read,
         }

@@ -1062,7 +1062,6 @@ export const createHttpClientLender = (
       throw error;
     }
   };
-  // fetch notifications
   const markNotificationAsRead = async (id: string): Promise<void> => {
     try {
       await axiosClient.put(`/api/notifications/${id}`);
@@ -1071,8 +1070,6 @@ export const createHttpClientLender = (
       throw error;
     }
   };
-
-  // fetch notifications
   const markAllNotificationAsRead = async (): Promise<void> => {
     try {
       await axiosClient.put(`/api/notifications`);

@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT COUNT(*) as count\n        FROM lender_contract_chat_message_notifications n\n        INNER JOIN contracts c ON n.contract_id = c.id\n        WHERE c.lender_id = $1 \n        AND ($2 = false OR n.read = false)\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "count",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bpchar",
+        "Bool"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "d52e331da7e40ff67c48541ee2783d3366c5bf1a42ccda2f325fade4884a2a39"
+}

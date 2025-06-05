@@ -6,9 +6,9 @@ import {
   InstallmentUpdate,
   NotificationMessage,
   NotificationMessageType,
-  useLenderHttpClient,
+  useHttpClientBorrower,
   useNotifications,
-} from "@frontend/http-client-lender";
+} from "@frontend/http-client-borrower";
 import { useCallback, useEffect, useState } from "react";
 import {
   AlertCircle,
@@ -123,7 +123,11 @@ const mapToInnerNotification = (
           message = "Contract has been approved";
           break;
         case ContractStatus.PrincipalGiven:
+          message = "Lender disbursed funds";
+          break;
         case ContractStatus.RepaymentConfirmed:
+          message = "Repayment confirmed";
+          break;
         case ContractStatus.Closing:
         case ContractStatus.Extended:
         case ContractStatus.Rejected:
@@ -158,7 +162,7 @@ const mapToInnerNotification = (
           message = "An installment was paid";
           break;
         case InstallmentStatus.Confirmed:
-          message = "You confirmed an installment";
+          message = "Lender confirmed the payment";
           break;
         case InstallmentStatus.Late:
           message = "An installment is now overdue";
@@ -202,7 +206,7 @@ export function NotificationStatus() {
     fetchNotifications,
     markNotificationAsRead,
     markAllNotificationAsRead,
-  } = useLenderHttpClient();
+  } = useHttpClientBorrower();
 
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<InnerNotification[]>([]);

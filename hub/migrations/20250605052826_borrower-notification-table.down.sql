@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS borrower_contract_update_notifications;
+DROP TABLE IF EXISTS borrower_contract_chat_message_notifications;
+DROP TABLE IF EXISTS lender_installment_update_notifications;

@@ -4,6 +4,7 @@ use crate::model;
 use crate::model::Borrower;
 use crate::model::Contract;
 use crate::model::Lender;
+use crate::model::NotificationMessage;
 use crate::notifications::websocket::NotificationCenter;
 use crate::telegram_bot::TelegramBot;
 use rust_decimal::Decimal;
@@ -203,6 +204,8 @@ impl Notifications {
         liquidation_price: Decimal,
         contract_url: Url,
     ) {
+        // TODO: introduce margin call events
+
         self.send_tg_notification_borrower(
             &borrower,
             contract_url.clone(),
@@ -228,12 +231,21 @@ impl Notifications {
 
     pub async fn send_liquidation_notice_borrower(
         &self,
+        pool: &PgPool,
         borrower: Borrower,
         contract: Contract,
         price: Decimal,
         liquidation_price: Decimal,
         contract_url: Url,
     ) {
+        self.notify_borrower_frontend_contract_status(
+            pool,
+            contract.id.as_str(),
+            borrower.id.as_str(),
+            model::db::ContractStatus::Undercollateralized,
+        )
+        .await;
+
         self.send_tg_notification_borrower(
             &borrower,
             contract_url.clone(),
@@ -263,40 +275,27 @@ impl Notifications {
         contract_url: Url,
         pool: &Pool<Postgres>,
     ) {
-        match db::notifications::insert_contract_update_notification(
+        self.notify_lender_frontend_contract_status(
             pool,
             contract.id.as_str(),
+            lender.id.as_str(),
             model::db::ContractStatus::Undercollateralized,
         )
-        .await
+        .await;
+
+        self.send_tg_notification_lender(
+            &lender,
+            contract_url.clone(),
+            crate::telegram_bot::LenderNotificationKind::LiquidationNotice,
+        )
+        .await;
+
+        if let Err(e) = self
+            .email
+            .send_liquidation_notice_lender(&lender, contract, contract_url)
+            .await
         {
-            Ok(notification) => {
-                self.send_tg_notification_lender(
-                    &lender,
-                    contract_url.clone(),
-                    crate::telegram_bot::LenderNotificationKind::LiquidationNotice,
-                )
-                .await;
-
-                if let Err(e) = self
-                    .email
-                    .send_liquidation_notice_lender(&lender, contract, contract_url)
-                    .await
-                {
-                    tracing::error!("Could not send liquidation notice lender {e:#}");
-                }
-
-                if let Err(e) = self
-                    .websocket
-                    .send_to(lender.id.as_str(), notification.into())
-                    .await
-                {
-                    tracing::error!("Could not send notification via websocket {e:#}");
-                }
-            }
-            Err(error) => {
-                tracing::error!("Failed inserting notification {error:#}")
-            }
+            tracing::error!("Could not send liquidation notice lender {e:#}");
         }
     }
 
@@ -307,39 +306,41 @@ impl Notifications {
         contract_id: &str,
         pool: &PgPool,
     ) {
-        match db::notifications::insert_contract_update_notification(
+        self.notify_lender_frontend_contract_status(
             pool,
             contract_id,
+            lender.id.as_str(),
             model::db::ContractStatus::Requested,
         )
-        .await
-        {
-            Err(err) => {
-                tracing::error!("Failed inserting contract update message {err:#}");
-            }
-            Ok(notification) => {
-                self.send_tg_notification_lender(
-                    &lender,
-                    url.clone(),
-                    crate::telegram_bot::LenderNotificationKind::NewLoanRequest,
-                )
-                .await;
+        .await;
 
-                if let Err(e) = self.email.send_new_loan_request(&lender, url).await {
-                    tracing::error!("Could not send new loan request {e:#}");
-                }
-                if let Err(e) = self
-                    .websocket
-                    .send_to(lender.id.as_str(), notification.into())
-                    .await
-                {
-                    tracing::error!("Could not send notification via websocket {e:#}");
-                }
-            }
+        self.send_tg_notification_lender(
+            &lender,
+            url.clone(),
+            crate::telegram_bot::LenderNotificationKind::NewLoanRequest,
+        )
+        .await;
+
+        if let Err(e) = self.email.send_new_loan_request(&lender, url).await {
+            tracing::error!("Could not send new loan request {e:#}");
         }
     }
 
-    pub async fn send_loan_request_approved(&self, borrower: Borrower, contract_url: Url) {
+    pub async fn send_loan_request_approved(
+        &self,
+        pool: &PgPool,
+        contract_id: &str,
+        borrower: Borrower,
+        contract_url: Url,
+    ) {
+        self.notify_borrower_frontend_contract_status(
+            pool,
+            contract_id,
+            borrower.id.as_str(),
+            model::db::ContractStatus::Approved,
+        )
+        .await;
+
         self.send_tg_notification_borrower(
             &borrower,
             contract_url.clone(),
@@ -363,44 +364,45 @@ impl Notifications {
         contract_id: &str,
         pool: &PgPool,
     ) {
-        match db::notifications::insert_contract_update_notification(
+        self.notify_lender_frontend_contract_status(
             pool,
             contract_id,
+            lender.id.as_str(),
             model::db::ContractStatus::Approved,
         )
-        .await
+        .await;
+
+        self.send_tg_notification_lender(
+            &lender,
+            url.clone(),
+            crate::telegram_bot::LenderNotificationKind::RequestAutoApproved,
+        )
+        .await;
+
+        if let Err(e) = self
+            .email
+            .send_notification_about_auto_accepted_loan(&lender, url)
+            .await
         {
-            Err(e) => {
-                tracing::error!("Failed inserting contract update notification {e:#}");
-            }
-            Ok(notification) => {
-                self.send_tg_notification_lender(
-                    &lender,
-                    url.clone(),
-                    crate::telegram_bot::LenderNotificationKind::RequestAutoApproved,
-                )
-                .await;
-
-                if let Err(e) = self
-                    .email
-                    .send_notification_about_auto_accepted_loan(&lender, url)
-                    .await
-                {
-                    tracing::error!("Could not send auto accept notification {e:#}");
-                }
-
-                if let Err(e) = self
-                    .websocket
-                    .send_to(lender.id.as_str(), notification.into())
-                    .await
-                {
-                    tracing::error!("Could not send notification via websocket {e:#}");
-                }
-            }
+            tracing::error!("Could not send auto accept notification {e:#}");
         }
     }
 
-    pub async fn send_loan_request_rejected(&self, borrower: Borrower, contract_url: Url) {
+    pub async fn send_loan_request_rejected(
+        &self,
+        pool: &PgPool,
+        contract_id: &str,
+        borrower: Borrower,
+        contract_url: Url,
+    ) {
+        self.notify_borrower_frontend_contract_status(
+            pool,
+            contract_id,
+            borrower.id.as_str(),
+            model::db::ContractStatus::Rejected,
+        )
+        .await;
+
         self.send_tg_notification_borrower(
             &borrower,
             contract_url.clone(),
@@ -424,40 +426,41 @@ impl Notifications {
         pool: &PgPool,
         contract_id: &str,
     ) {
-        match db::notifications::insert_contract_update_notification(
+        self.notify_lender_frontend_contract_status(
             pool,
             contract_id,
+            lender.id.as_str(),
             model::db::ContractStatus::CollateralConfirmed,
         )
-        .await
-        {
-            Err(err) => {
-                tracing::error!("Failed inserting contract update message {err:#}");
-            }
-            Ok(notification) => {
-                self.send_tg_notification_lender(
-                    &lender,
-                    url.clone(),
-                    crate::telegram_bot::LenderNotificationKind::Collateralized,
-                )
-                .await;
+        .await;
 
-                if let Err(e) = self.email.send_loan_collateralized(&lender, url).await {
-                    tracing::error!("Could not send loan collateralized {e:#}");
-                }
+        self.send_tg_notification_lender(
+            &lender,
+            url.clone(),
+            crate::telegram_bot::LenderNotificationKind::Collateralized,
+        )
+        .await;
 
-                if let Err(e) = self
-                    .websocket
-                    .send_to(lender.id.as_str(), notification.into())
-                    .await
-                {
-                    tracing::error!("Could not send notification via websocket {e:#}");
-                }
-            }
+        if let Err(e) = self.email.send_loan_collateralized(&lender, url).await {
+            tracing::error!("Could not send loan collateralized {e:#}");
         }
     }
 
-    pub async fn send_loan_paid_out(&self, borrower: Borrower, contract_url: Url) {
+    pub async fn send_loan_paid_out(
+        &self,
+        pool: &PgPool,
+        contract_id: &str,
+        borrower: Borrower,
+        contract_url: Url,
+    ) {
+        self.notify_borrower_frontend_contract_status(
+            pool,
+            contract_id,
+            borrower.id.as_str(),
+            model::db::ContractStatus::PrincipalGiven,
+        )
+        .await;
+
         self.send_tg_notification_borrower(
             &borrower,
             contract_url.clone(),
@@ -472,10 +475,22 @@ impl Notifications {
 
     pub async fn send_installment_due_soon(
         &self,
+        pool: &PgPool,
+        contract_id: &str,
+        installment_id: Uuid,
         borrower: Borrower,
         expiry_date: &str,
         contract_url: Url,
     ) {
+        self.notify_borrower_frontend_installment(
+            pool,
+            contract_id,
+            borrower.id.as_str(),
+            installment_id,
+            model::InstallmentStatus::Pending,
+        )
+        .await;
+
         self.send_tg_notification_borrower(
             &borrower,
             contract_url.clone(),
@@ -493,6 +508,8 @@ impl Notifications {
     }
 
     pub async fn send_moon_card_ready(&self, borrower: Borrower, contract_url: Url) {
+        // TODO: introduce new event
+
         self.send_tg_notification_borrower(
             &borrower,
             contract_url.clone(),
@@ -517,64 +534,71 @@ impl Notifications {
         installment_id: Uuid,
         contract_id: &str,
     ) {
-        match db::notifications::insert_installment_update_notification(
+        self.notify_lender_frontend_installment(
             pool,
-            installment_id,
             contract_id,
+            lender.id.as_str(),
+            installment_id,
             model::InstallmentStatus::Paid,
         )
-        .await
-        {
-            Err(err) => {
-                tracing::error!("Failed inserting installment paid message {err:#}");
-            }
-            Ok(notification) => {
-                self.send_tg_notification_lender(
-                    &lender,
-                    url.clone(),
-                    crate::telegram_bot::LenderNotificationKind::InstallmentPaid,
-                )
-                .await;
+        .await;
 
-                if let Err(e) = self.email.send_installment_paid(&lender, url).await {
-                    tracing::error!("Could not send installment paid {e:#}");
-                }
+        self.send_tg_notification_lender(
+            &lender,
+            url.clone(),
+            crate::telegram_bot::LenderNotificationKind::InstallmentPaid,
+        )
+        .await;
 
-                if let Err(e) = self
-                    .websocket
-                    .send_to(lender.id.as_str(), notification.into())
-                    .await
-                {
-                    tracing::error!("Could not send notification via websocket {e:#}");
-                }
-            }
+        if let Err(e) = self.email.send_installment_paid(&lender, url).await {
+            tracing::error!("Could not send installment paid {e:#}");
         }
     }
 
-    pub async fn send_loan_repaid(&self, lender: Lender, pool: &PgPool, contract_id: &str) {
-        match db::notifications::insert_contract_update_notification(
+    pub async fn send_installment_confirmed(
+        &self,
+        borrower: Borrower,
+        url: Url,
+        pool: &PgPool,
+        installment_id: Uuid,
+        contract_id: &str,
+    ) {
+        self.notify_borrower_frontend_installment(
             pool,
             contract_id,
-            model::db::ContractStatus::RepaymentProvided,
+            borrower.id.as_str(),
+            installment_id,
+            model::InstallmentStatus::Confirmed,
         )
-        .await
-        {
-            Err(err) => {
-                tracing::error!("Failed inserting contract update message {err:#}");
-            }
-            Ok(notification) => {
-                if let Err(e) = self
-                    .websocket
-                    .send_to(lender.id.as_str(), notification.into())
-                    .await
-                {
-                    tracing::error!("Could not send notification via websocket {e:#}");
-                }
-            }
+        .await;
+
+        self.send_tg_notification_borrower(
+            &borrower,
+            url.clone(),
+            crate::telegram_bot::BorrowerNotificationKind::InstallmentConfirmed,
+        )
+        .await;
+
+        if let Err(e) = self.email.send_installment_confirmed(&borrower, url).await {
+            tracing::error!("Could not send installment confirmed {e:#}");
         }
     }
 
-    pub async fn send_loan_liquidated_after_default(&self, borrower: Borrower, contract_url: Url) {
+    pub async fn send_loan_liquidated_after_default(
+        &self,
+        pool: &PgPool,
+        contract_id: &str,
+        borrower: Borrower,
+        contract_url: Url,
+    ) {
+        self.notify_borrower_frontend_contract_status(
+            pool,
+            contract_id,
+            borrower.id.as_str(),
+            model::db::ContractStatus::ClosedByDefaulting,
+        )
+        .await;
+
         self.send_tg_notification_borrower(
             &borrower,
             contract_url.clone(),
@@ -598,40 +622,41 @@ impl Notifications {
         pool: &PgPool,
         contract_id: &str,
     ) {
-        match db::notifications::insert_contract_update_notification(
+        self.notify_lender_frontend_contract_status(
             pool,
             contract_id,
+            lender.id.as_str(),
             model::db::ContractStatus::Defaulted,
         )
-        .await
-        {
-            Err(err) => {
-                tracing::error!("Failed inserting contract update message {err:#}");
-            }
-            Ok(notification) => {
-                self.send_tg_notification_lender(
-                    &lender,
-                    url.clone(),
-                    crate::telegram_bot::LenderNotificationKind::Defaulted,
-                )
-                .await;
+        .await;
 
-                if let Err(e) = self.email.send_loan_defaulted_lender(&lender, url).await {
-                    tracing::error!("Could not send loan defaulted lender notification {e:#}");
-                }
+        self.send_tg_notification_lender(
+            &lender,
+            url.clone(),
+            crate::telegram_bot::LenderNotificationKind::Defaulted,
+        )
+        .await;
 
-                if let Err(e) = self
-                    .websocket
-                    .send_to(lender.id.as_str(), notification.into())
-                    .await
-                {
-                    tracing::error!("Could not send notification via websocket {e:#}");
-                }
-            }
+        if let Err(e) = self.email.send_loan_defaulted_lender(&lender, url).await {
+            tracing::error!("Could not send loan defaulted lender notification {e:#}");
         }
     }
 
-    pub async fn send_loan_defaulted_borrower(&self, borrower: Borrower, contract_url: Url) {
+    pub async fn send_loan_defaulted_borrower(
+        &self,
+        pool: &PgPool,
+        contract_id: &str,
+        borrower: Borrower,
+        contract_url: Url,
+    ) {
+        self.notify_borrower_frontend_contract_status(
+            pool,
+            contract_id,
+            borrower.id.as_str(),
+            model::db::ContractStatus::Defaulted,
+        )
+        .await;
+
         self.send_tg_notification_borrower(
             &borrower,
             contract_url.clone(),
@@ -648,7 +673,21 @@ impl Notifications {
         }
     }
 
-    pub async fn send_expired_loan_request_borrower(&self, borrower: Borrower, contract_url: Url) {
+    pub async fn send_expired_loan_request_borrower(
+        &self,
+        pool: &PgPool,
+        contract_id: &str,
+        borrower: Borrower,
+        contract_url: Url,
+    ) {
+        self.notify_borrower_frontend_contract_status(
+            pool,
+            contract_id,
+            borrower.id.as_str(),
+            model::db::ContractStatus::RequestExpired,
+        )
+        .await;
+
         self.send_tg_notification_borrower(
             &borrower,
             contract_url.clone(),
@@ -671,6 +710,8 @@ impl Notifications {
         days: i64,
         contract_url: Url,
     ) {
+        // TODO: introduce special event
+
         self.send_tg_notification_borrower(
             &borrower,
             contract_url.clone(),
@@ -694,40 +735,26 @@ impl Notifications {
         pool: &PgPool,
         contract_id: &str,
     ) {
-        match db::notifications::insert_contract_update_notification(
+        self.notify_lender_frontend_contract_status(
             pool,
             contract_id,
+            lender.id.as_str(),
             model::db::ContractStatus::RequestExpired,
         )
-        .await
+        .await;
+        self.send_tg_notification_lender(
+            &lender,
+            url.clone(),
+            crate::telegram_bot::LenderNotificationKind::RequestExpired,
+        )
+        .await;
+
+        if let Err(e) = self
+            .email
+            .send_expired_loan_request_lender(&lender, url)
+            .await
         {
-            Err(err) => {
-                tracing::error!("Failed inserting contract update message {err:#}");
-            }
-            Ok(notification) => {
-                self.send_tg_notification_lender(
-                    &lender,
-                    url.clone(),
-                    crate::telegram_bot::LenderNotificationKind::RequestExpired,
-                )
-                .await;
-
-                if let Err(e) = self
-                    .email
-                    .send_expired_loan_request_lender(&lender, url)
-                    .await
-                {
-                    tracing::error!("Could not send loan request expired lender {e:#}");
-                }
-
-                if let Err(e) = self
-                    .websocket
-                    .send_to(lender.id.as_str(), notification.into())
-                    .await
-                {
-                    tracing::error!("Could not send notification via websocket {e:#}");
-                }
-            }
+            tracing::error!("Could not send loan request expired lender {e:#}");
         }
     }
 
@@ -738,39 +765,35 @@ impl Notifications {
         pool: &PgPool,
         contract_id: &str,
     ) {
-        match db::notifications::insert_chat_message_notification(pool, contract_id).await {
-            Err(err) => {
-                tracing::error!("Failed inserting contract update message {err:#}");
-            }
-            Ok(notification) => {
-                self.send_tg_notification_lender(
-                    &lender,
-                    contract_url.clone(),
-                    crate::telegram_bot::LenderNotificationKind::NewChatMessage {
-                        name: lender.name.clone(),
-                    },
-                )
-                .await;
-                if let Err(e) = self
-                    .email
-                    .send_new_chat_message_notification_lender(&lender, contract_url)
-                    .await
-                {
-                    tracing::error!("Could not send chat notification email lender {e:#}");
-                }
-
-                if let Err(e) = self
-                    .websocket
-                    .send_to(lender.id.as_str(), notification.into())
-                    .await
-                {
-                    tracing::error!("Could not send notification via websocket {e:#}");
-                }
-            }
+        self.notify_lender_frontend_chat_message(pool, contract_id, lender.id.as_str())
+            .await;
+        self.send_tg_notification_lender(
+            &lender,
+            contract_url.clone(),
+            crate::telegram_bot::LenderNotificationKind::NewChatMessage {
+                name: lender.name.clone(),
+            },
+        )
+        .await;
+        if let Err(e) = self
+            .email
+            .send_new_chat_message_notification_lender(&lender, contract_url)
+            .await
+        {
+            tracing::error!("Could not send chat notification email lender {e:#}");
         }
     }
 
-    pub async fn send_chat_notification_borrower(&self, borrower: Borrower, contract_url: Url) {
+    pub async fn send_chat_notification_borrower(
+        &self,
+        pool: &PgPool,
+        contract_id: &str,
+        borrower: Borrower,
+        contract_url: Url,
+    ) {
+        self.notify_borrower_frontend_chat_message(pool, contract_id, borrower.id.as_str())
+            .await;
+
         self.send_tg_notification_borrower(
             &borrower,
             contract_url.clone(),
@@ -790,6 +813,8 @@ impl Notifications {
     }
 
     pub async fn send_contract_extension_enabled(&self, borrower: Borrower, contract_url: Url) {
+        // TODO: introduce new event type for this
+
         self.send_tg_notification_borrower(
             &borrower,
             contract_url.clone(),
@@ -847,6 +872,157 @@ impl Notifications {
             {
                 tracing::error!("Failed sending to telegram actor {e:#}");
             }
+        }
+    }
+
+    async fn notify_lender_frontend_contract_status(
+        &self,
+        pool: &Pool<Postgres>,
+        contract_id: &str,
+        lender_id: &str,
+        status: model::db::ContractStatus,
+    ) {
+        match db::notifications::lender::insert_contract_update_notification(
+            pool,
+            contract_id,
+            status,
+        )
+        .await
+        {
+            Ok(notification) => {
+                self.notify_lender_frontend(lender_id, notification.into())
+                    .await;
+            }
+            Err(err) => {
+                tracing::error!("Failed inserting lender contract update notification {err:#}");
+            }
+        }
+    }
+
+    async fn notify_lender_frontend_installment(
+        &self,
+        pool: &Pool<Postgres>,
+        contract_id: &str,
+        lender_id: &str,
+        installment_id: Uuid,
+        status: model::InstallmentStatus,
+    ) {
+        match db::notifications::lender::insert_installment_update_notification(
+            pool,
+            installment_id,
+            contract_id,
+            status,
+        )
+        .await
+        {
+            Ok(notification) => {
+                self.notify_lender_frontend(lender_id, notification.into())
+                    .await;
+            }
+            Err(err) => {
+                tracing::error!("Failed inserting lender installment update notification {err:#}");
+            }
+        }
+    }
+
+    async fn notify_lender_frontend_chat_message(
+        &self,
+        pool: &Pool<Postgres>,
+        contract_id: &str,
+        lender_id: &str,
+    ) {
+        match db::notifications::lender::insert_chat_message_notification(pool, contract_id).await {
+            Ok(notification) => {
+                self.notify_lender_frontend(lender_id, notification.into())
+                    .await;
+            }
+            Err(err) => {
+                tracing::error!("Failed inserting lender chat message update notification {err:#}");
+            }
+        }
+    }
+
+    async fn notify_lender_frontend(&self, lender_id: &str, notification: NotificationMessage) {
+        if let Err(e) = self.websocket.send_to(lender_id, notification).await {
+            tracing::error!("Could not send notification via websocket {e:#}");
+        }
+    }
+
+    async fn notify_borrower_frontend_contract_status(
+        &self,
+        pool: &Pool<Postgres>,
+        contract_id: &str,
+        borrower_id: &str,
+        status: model::db::ContractStatus,
+    ) {
+        match db::notifications::borrower::insert_contract_update_notification(
+            pool,
+            contract_id,
+            status,
+        )
+        .await
+        {
+            Ok(notification) => {
+                self.notify_borrower_frontend(borrower_id, notification.into())
+                    .await;
+            }
+            Err(err) => {
+                tracing::error!("Failed inserting borrower contract update notification {err:#}");
+            }
+        }
+    }
+
+    async fn notify_borrower_frontend_installment(
+        &self,
+        pool: &Pool<Postgres>,
+        contract_id: &str,
+        borrower_id: &str,
+        installment_id: Uuid,
+        status: model::InstallmentStatus,
+    ) {
+        match db::notifications::borrower::insert_installment_update_notification(
+            pool,
+            installment_id,
+            contract_id,
+            status,
+        )
+        .await
+        {
+            Ok(notification) => {
+                self.notify_borrower_frontend(borrower_id, notification.into())
+                    .await;
+            }
+            Err(err) => {
+                tracing::error!(
+                    "Failed inserting borrower installment update notification {err:#}"
+                );
+            }
+        }
+    }
+
+    async fn notify_borrower_frontend_chat_message(
+        &self,
+        pool: &Pool<Postgres>,
+        contract_id: &str,
+        borrower_id: &str,
+    ) {
+        match db::notifications::borrower::insert_chat_message_notification(pool, contract_id).await
+        {
+            Ok(notification) => {
+                self.notify_borrower_frontend(borrower_id, notification.into())
+                    .await;
+            }
+            Err(err) => {
+                tracing::error!(
+                    "Failed inserting borrower chat message update notification {err:#}"
+                );
+            }
+        }
+    }
+
+    async fn notify_borrower_frontend(&self, borrower_id: &str, notification: NotificationMessage) {
+        if let Err(e) = self.websocket.send_to(borrower_id, notification).await {
+            tracing::error!("Could not send notification via websocket {e:#}");
         }
     }
 }

@@ -17,7 +17,7 @@ pub async fn insert_contract_update_notification(
     let notification = sqlx::query_as!(
         ContractUpdateNotification,
         r#"
-        INSERT INTO lender_contract_update_notifications (contract_id, status, read)
+        INSERT INTO borrower_contract_update_notifications (contract_id, status, read)
         VALUES ($1, $2, $3)
         RETURNING id, contract_id, status as "status: ContractStatus", read, created_at, updated_at
         "#,
@@ -45,7 +45,7 @@ pub async fn mark_contract_notification_as_read(
 ) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
-        UPDATE lender_contract_update_notifications 
+        UPDATE borrower_contract_update_notifications 
         SET read = true, updated_at = CURRENT_TIMESTAMP
         WHERE id = $1
         "#,
@@ -63,7 +63,7 @@ pub async fn mark_installment_notification_as_read(
 ) -> std::result::Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
-        UPDATE lender_installment_update_notifications
+        UPDATE borrower_installment_update_notifications
         SET read = true, updated_at = CURRENT_TIMESTAMP
         WHERE id = $1
         "#,
@@ -75,32 +75,32 @@ pub async fn mark_installment_notification_as_read(
     Ok(())
 }
 
-pub async fn mark_all_as_read(pool: &PgPool, lender_id: &str) -> Result<u64, sqlx::Error> {
-    let contract_rows_changed = mark_all_contract_notifications_as_read(pool, lender_id).await?;
+pub async fn mark_all_as_read(pool: &PgPool, borrower_id: &str) -> Result<u64, sqlx::Error> {
+    let contract_rows_changed = mark_all_contract_notifications_as_read(pool, borrower_id).await?;
     let chat_rows_changed =
-        mark_all_chat_message_notifications_as_read_by_lender_id(pool, lender_id).await?;
+        mark_all_chat_message_notifications_as_read_by_borrower_id(pool, borrower_id).await?;
     let installment_rows_changed =
-        mark_all_installment_notifications_as_read(pool, lender_id).await?;
+        mark_all_installment_notifications_as_read(pool, borrower_id).await?;
 
     Ok(contract_rows_changed + installment_rows_changed + chat_rows_changed)
 }
 
 pub async fn mark_all_contract_notifications_as_read(
     pool: &PgPool,
-    lender_id: &str,
+    borrower_id: &str,
 ) -> Result<u64, sqlx::Error> {
     let result = sqlx::query!(
         r#"
-        UPDATE lender_contract_update_notifications 
+        UPDATE borrower_contract_update_notifications 
         SET read = true, updated_at = CURRENT_TIMESTAMP
         WHERE id IN (
             SELECT n.id 
-            FROM lender_contract_update_notifications n
+            FROM borrower_contract_update_notifications n
             INNER JOIN contracts c ON n.contract_id = c.id
-            WHERE c.lender_id = $1 AND n.read = false
+            WHERE c.borrower_id = $1 AND n.read = false
         )
         "#,
-        lender_id
+        borrower_id
     )
     .execute(pool)
     .await?;
@@ -110,20 +110,20 @@ pub async fn mark_all_contract_notifications_as_read(
 
 pub async fn mark_all_installment_notifications_as_read(
     pool: &PgPool,
-    lender_id: &str,
+    borrower_id: &str,
 ) -> std::result::Result<u64, sqlx::Error> {
     let result = sqlx::query!(
         r#"
-        UPDATE lender_installment_update_notifications
+        UPDATE borrower_installment_update_notifications
         SET read = true, updated_at = CURRENT_TIMESTAMP
         WHERE id IN (
             SELECT n.id
-            FROM lender_installment_update_notifications n
+            FROM borrower_installment_update_notifications n
             INNER JOIN contracts c ON n.contract_id = c.id
-            WHERE c.lender_id = $1 AND n.read = false
+            WHERE c.borrower_id = $1 AND n.read = false
         )
         "#,
-        lender_id
+        borrower_id
     )
     .execute(pool)
     .await?;
@@ -139,7 +139,7 @@ pub async fn insert_chat_message_notification(
     let notification = sqlx::query_as!(
         ContractChatMessageNotification,
         r#"
-        INSERT INTO lender_contract_chat_message_notifications (contract_id, read)
+        INSERT INTO borrower_contract_chat_message_notifications (contract_id, read)
         VALUES ($1, $2)
         RETURNING 
             id, 
@@ -148,7 +148,7 @@ pub async fn insert_chat_message_notification(
             created_at, 
             updated_at,
             (SELECT b.name FROM contracts c 
-             INNER JOIN borrowers b ON c.borrower_id = b.id 
+             INNER JOIN lenders b ON c.lender_id = b.id 
              WHERE c.id = contract_id) as "counterparty_name!"
         "#,
         contract_id,
@@ -160,20 +160,20 @@ pub async fn insert_chat_message_notification(
     Ok(notification)
 }
 
-pub async fn count_contract_notifications_by_lender_id(
+pub async fn count_contract_notifications_by_borrower_id(
     pool: &PgPool,
-    lender_id: &str,
+    borrower_id: &str,
     unread_only: bool,
 ) -> Result<u64, sqlx::Error> {
     let count = sqlx::query_scalar!(
         r#"
         SELECT COUNT(*) as count
-        FROM lender_contract_update_notifications n
+        FROM borrower_contract_update_notifications n
         INNER JOIN contracts c ON n.contract_id = c.id
-        WHERE c.lender_id = $1 
+        WHERE c.borrower_id = $1 
         AND ($2 = false OR n.read = false)
         "#,
-        lender_id,
+        borrower_id,
         unread_only
     )
     .fetch_one(pool)
@@ -183,9 +183,9 @@ pub async fn count_contract_notifications_by_lender_id(
 }
 
 // Get paginated contract notifications
-pub async fn get_contract_notifications_by_lender_id_paginated(
+pub async fn get_contract_notifications_by_borrower_id_paginated(
     pool: &PgPool,
-    lender_id: &str,
+    borrower_id: &str,
     limit: u32,
     offset: u32,
     unread_only: bool,
@@ -200,14 +200,14 @@ pub async fn get_contract_notifications_by_lender_id_paginated(
             n.read,
             n.created_at,
             n.updated_at
-        FROM lender_contract_update_notifications n
+        FROM borrower_contract_update_notifications n
         INNER JOIN contracts c ON n.contract_id = c.id
-        WHERE c.lender_id = $1 
+        WHERE c.borrower_id = $1 
         AND ($2 = false OR n.read = false)
         ORDER BY n.created_at DESC
         LIMIT $3 OFFSET $4
         "#,
-        lender_id,
+        borrower_id,
         unread_only,
         limit as i64,
         offset as i64
@@ -219,20 +219,20 @@ pub async fn get_contract_notifications_by_lender_id_paginated(
 }
 
 // Count chat message notifications
-pub async fn count_chat_message_notifications_by_lender_id(
+pub async fn count_chat_message_notifications_by_borrower_id(
     pool: &PgPool,
-    lender_id: &str,
+    borrower_id: &str,
     unread_only: bool,
 ) -> Result<u64, sqlx::Error> {
     let count = sqlx::query_scalar!(
         r#"
         SELECT COUNT(*) as count
-        FROM lender_contract_chat_message_notifications n
+        FROM borrower_contract_chat_message_notifications n
         INNER JOIN contracts c ON n.contract_id = c.id
-        WHERE c.lender_id = $1 
+        WHERE c.borrower_id = $1 
         AND ($2 = false OR n.read = false)
         "#,
-        lender_id,
+        borrower_id,
         unread_only
     )
     .fetch_one(pool)
@@ -241,20 +241,20 @@ pub async fn count_chat_message_notifications_by_lender_id(
     Ok(count.unwrap_or(0) as u64)
 }
 
-pub async fn count_installment_notifications_by_lender_id(
+pub async fn count_installment_notifications_by_borrower_id(
     pool: &PgPool,
-    lender_id: &str,
+    borrower_id: &str,
     unread_only: bool,
 ) -> std::result::Result<u64, sqlx::Error> {
     let count = sqlx::query_scalar!(
         r#"
         SELECT COUNT(*) as count
-        FROM lender_installment_update_notifications n
+        FROM borrower_installment_update_notifications n
         INNER JOIN contracts c ON n.contract_id = c.id
-        WHERE c.lender_id = $1
+        WHERE c.borrower_id = $1
         AND ($2 = false OR n.read = false)
         "#,
-        lender_id,
+        borrower_id,
         unread_only
     )
     .fetch_one(pool)
@@ -264,9 +264,9 @@ pub async fn count_installment_notifications_by_lender_id(
 }
 
 // Get paginated chat message notifications
-pub async fn get_chat_message_notifications_by_lender_id_paginated(
+pub async fn get_chat_message_notifications_by_borrower_id_paginated(
     pool: &PgPool,
-    lender_id: &str,
+    borrower_id: &str,
     limit: u32,
     offset: u32,
     unread_only: bool,
@@ -280,16 +280,16 @@ pub async fn get_chat_message_notifications_by_lender_id_paginated(
             n.read,
             n.created_at,
             n.updated_at,
-            b.name as "counterparty_name!"
-        FROM lender_contract_chat_message_notifications n
+            l.name as "counterparty_name!"
+        FROM borrower_contract_chat_message_notifications n
         INNER JOIN contracts c ON n.contract_id = c.id
-        INNER JOIN borrowers b ON c.borrower_id = b.id
-        WHERE c.lender_id = $1 
+        INNER JOIN lenders l ON c.lender_id = l.id
+        WHERE c.borrower_id = $1 
         AND ($2 = false OR n.read = false)
         ORDER BY n.created_at DESC
         LIMIT $3 OFFSET $4
         "#,
-        lender_id,
+        borrower_id,
         unread_only,
         limit as i64,
         offset as i64
@@ -300,9 +300,9 @@ pub async fn get_chat_message_notifications_by_lender_id_paginated(
     Ok(notifications)
 }
 
-pub async fn get_installment_notifications_by_lender_id_paginated(
+pub async fn get_installment_notifications_by_borrower_id_paginated(
     pool: &PgPool,
-    lender_id: &str,
+    borrower_id: &str,
     limit: u32,
     offset: u32,
     unread_only: bool,
@@ -318,14 +318,14 @@ pub async fn get_installment_notifications_by_lender_id_paginated(
             n.read,
             n.created_at,
             n.updated_at
-        FROM lender_installment_update_notifications n
+        FROM borrower_installment_update_notifications n
         INNER JOIN contracts c ON n.contract_id = c.id
-        WHERE c.lender_id = $1
+        WHERE c.borrower_id = $1
         AND ($2 = false OR n.read = false)
         ORDER BY n.created_at DESC
         LIMIT $3 OFFSET $4
         "#,
-        lender_id,
+        borrower_id,
         unread_only,
         limit as i64,
         offset as i64
@@ -343,7 +343,7 @@ pub async fn mark_chat_message_notification_as_read(
 ) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
-        UPDATE lender_contract_chat_message_notifications 
+        UPDATE borrower_contract_chat_message_notifications 
         SET read = true, updated_at = CURRENT_TIMESTAMP
         WHERE id = $1
         "#,
@@ -356,22 +356,22 @@ pub async fn mark_chat_message_notification_as_read(
 }
 
 // Mark all chat message notifications as read for a specific lender
-pub async fn mark_all_chat_message_notifications_as_read_by_lender_id(
+pub async fn mark_all_chat_message_notifications_as_read_by_borrower_id(
     pool: &PgPool,
-    lender_id: &str,
+    borrower_id: &str,
 ) -> Result<u64, sqlx::Error> {
     let result = sqlx::query!(
         r#"
-        UPDATE lender_contract_chat_message_notifications 
+        UPDATE borrower_contract_chat_message_notifications 
         SET read = true, updated_at = CURRENT_TIMESTAMP
         WHERE id IN (
             SELECT n.id 
-            FROM lender_contract_chat_message_notifications n
+            FROM borrower_contract_chat_message_notifications n
             INNER JOIN contracts c ON n.contract_id = c.id
-            WHERE c.lender_id = $1 AND n.read = false
+            WHERE c.borrower_id = $1 AND n.read = false
         )
         "#,
-        lender_id
+        borrower_id
     )
     .execute(pool)
     .await?;
@@ -390,7 +390,7 @@ pub async fn insert_installment_update_notification(
     let notification = sqlx::query_as!(
         InstallmentUpdateNotification,
         r#"
-        INSERT INTO lender_installment_update_notifications (installment_id, contract_id, status, read)
+        INSERT INTO borrower_installment_update_notifications (installment_id, contract_id, status, read)
         VALUES ($1, $2, $3, $4)
         RETURNING id, installment_id, contract_id, status as "status: InstallmentStatus", read, created_at, updated_at
         "#,

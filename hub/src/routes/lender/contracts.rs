@@ -372,7 +372,7 @@ async fn delete_reject_contract(
             .context("Borrower not found")?;
 
         data.notifications
-            .send_loan_request_rejected(borrower, loan_url)
+            .send_loan_request_rejected(&data.db, contract_id.as_str(), borrower, loan_url)
             .await;
 
         db::contract_emails::mark_loan_request_rejected_as_sent(&data.db, &contract.id)
@@ -419,14 +419,11 @@ async fn put_confirm_installment_payment(
     Extension(user): Extension<Lender>,
     AppJson(body): AppJson<ConfirmInstallmentPaymentRequest>,
 ) -> Result<(), Error> {
-    let is_own_contract =
-        db::contracts::check_if_contract_belongs_to_lender(&data.db, &contract_id, &user.id)
+    let contract =
+        db::contracts::load_contract_by_contract_id_and_lender_id(&data.db, &contract_id, &user.id)
             .await
-            .map_err(Error::database)?;
-
-    if !is_own_contract {
-        return Err(Error::MissingContract(contract_id.clone()));
-    }
+            .map_err(Error::database)?
+            .ok_or(Error::MissingContract(contract_id.clone()))?;
 
     db::installments::mark_as_confirmed(&data.db, body.installment_id, &contract_id)
         .await
@@ -449,6 +446,27 @@ async fn put_confirm_installment_payment(
             .await
             .map_err(Error::database)?;
     }
+
+    let loan_url = data
+        .config
+        .borrower_frontend_origin
+        .join(&format!("/my-contracts/{}", contract_id.as_str()))
+        .expect("to be valid url");
+
+    let borrower = db::borrowers::get_user_by_id(&data.db, &contract.borrower_id)
+        .await
+        .map_err(Error::database)?
+        .ok_or(Error::MissingBorrower)?;
+
+    data.notifications
+        .send_installment_confirmed(
+            borrower,
+            loan_url,
+            &data.db,
+            body.installment_id,
+            contract_id.as_str(),
+        )
+        .await;
 
     Ok(())
 }
@@ -780,7 +798,7 @@ async fn post_liquidation_tx(
         }
 
         data.notifications
-            .send_loan_liquidated_after_default(borrower, loan_url)
+            .send_loan_liquidated_after_default(&data.db, contract_id.as_str(), borrower, loan_url)
             .await;
 
         db::contract_emails::mark_defaulted_loan_liquidated_as_sent(&data.db, &contract.id)

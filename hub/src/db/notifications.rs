@@ -1,8 +1,8 @@
-mod lender;
+pub(crate) mod borrower;
+pub(crate) mod lender;
 
 use crate::db::installments::InstallmentStatus;
 use crate::model::db::ContractStatus;
-pub use lender::*;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
@@ -22,7 +22,7 @@ pub struct ContractUpdateNotification {
 pub struct ContractChatMessageNotification {
     pub id: Uuid,
     pub contract_id: String,
-    pub borrower_name: String,
+    pub counterparty_name: String,
     pub read: bool,
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,

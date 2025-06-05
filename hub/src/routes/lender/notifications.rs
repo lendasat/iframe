@@ -68,7 +68,7 @@ async fn get_all_notifications(
     pagination.validate().map_err(Error::bad_request)?;
 
     let total_contract_notifications =
-        db::notifications::count_contract_notifications_by_lender_id(
+        db::notifications::lender::count_contract_notifications_by_lender_id(
             &state.db,
             user.id.as_str(),
             pagination.unread_only,
@@ -77,7 +77,7 @@ async fn get_all_notifications(
         .map_err(Error::database)?;
 
     let total_installment_notifications =
-        db::notifications::count_installment_notifications_by_lender_id(
+        db::notifications::lender::count_installment_notifications_by_lender_id(
             &state.db,
             user.id.as_str(),
             pagination.unread_only,
@@ -86,7 +86,7 @@ async fn get_all_notifications(
         .map_err(Error::database)?;
 
     let total_chat_notifications =
-        db::notifications::count_chat_message_notifications_by_lender_id(
+        db::notifications::lender::count_chat_message_notifications_by_lender_id(
             &state.db,
             user.id.as_str(),
             pagination.unread_only,
@@ -98,7 +98,7 @@ async fn get_all_notifications(
         total_contract_notifications + total_installment_notifications + total_chat_notifications;
 
     let contract_notifications =
-        db::notifications::get_contract_notifications_by_lender_id_paginated(
+        db::notifications::lender::get_contract_notifications_by_lender_id_paginated(
             &state.db,
             user.id.as_str(),
             pagination.limit,
@@ -114,7 +114,7 @@ async fn get_all_notifications(
         .collect::<Vec<_>>();
 
     let installment_notifications =
-        db::notifications::get_installment_notifications_by_lender_id_paginated(
+        db::notifications::lender::get_installment_notifications_by_lender_id_paginated(
             &state.db,
             user.id.as_str(),
             pagination.limit,
@@ -132,7 +132,7 @@ async fn get_all_notifications(
     notifications.append(&mut installment_notifications);
 
     let chat_notifications =
-        db::notifications::get_chat_message_notifications_by_lender_id_paginated(
+        db::notifications::lender::get_chat_message_notifications_by_lender_id_paginated(
             &state.db,
             user.id.as_str(),
             pagination.limit,
@@ -170,7 +170,7 @@ async fn put_mark_as_read(
     State(state): State<Arc<AppState>>,
     Path(id): Path<Uuid>,
 ) -> Result<AppJson<()>, Error> {
-    db::notifications::mark_as_read(&state.db, id)
+    db::notifications::lender::mark_as_read(&state.db, id)
         .await
         .map_err(Error::database)?;
 
@@ -181,7 +181,7 @@ async fn put_mark_all_as_read(
     State(state): State<Arc<AppState>>,
     Extension(user): Extension<Lender>,
 ) -> Result<AppJson<()>, Error> {
-    db::notifications::mark_all_as_read(&state.db, user.id.as_str())
+    db::notifications::lender::mark_all_as_read(&state.db, user.id.as_str())
         .await
         .map_err(Error::database)?;
 

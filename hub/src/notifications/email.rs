@@ -643,6 +643,31 @@ impl Email {
         .await
     }
 
+    pub async fn send_installment_confirmed(&self, user: &Borrower, url: Url) -> Result<()> {
+        let template_name = "installment_confirmed";
+        let handlebars = Self::prepare_template(template_name)?;
+
+        let data = serde_json::json!({
+            "first_name": &user.name,
+            "subject": &template_name,
+            "url": url
+        });
+
+        let content_template = handlebars.render(template_name, &data)?;
+
+        if let Some(email) = &user.email {
+            self.send_email(
+                "The lender has confirmed the payment",
+                user.name.as_str(),
+                email.as_str(),
+                content_template,
+            )
+            .await?;
+        }
+
+        Ok(())
+    }
+
     pub async fn send_loan_liquidated_after_default(&self, user: Borrower, url: Url) -> Result<()> {
         let template_name = "loan_liquidated_default";
         let handlebars = Self::prepare_template(template_name)?;
