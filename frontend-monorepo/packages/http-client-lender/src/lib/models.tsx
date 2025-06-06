@@ -74,8 +74,6 @@ export const isActionRequired = (status: ContractStatus) => {
 
 export const isContractOpen = (status: ContractStatus) => {
   switch (status) {
-    case ContractStatus.Requested:
-    case ContractStatus.Undercollateralized:
     case ContractStatus.Closing:
     case ContractStatus.Closed:
     case ContractStatus.ClosedByLiquidation:
@@ -86,6 +84,8 @@ export const isContractOpen = (status: ContractStatus) => {
     case ContractStatus.RequestExpired:
     case ContractStatus.ApprovalExpired:
       return false;
+    case ContractStatus.Undercollateralized:
+    case ContractStatus.Requested:
     case ContractStatus.Approved:
     case ContractStatus.CollateralSeen:
     case ContractStatus.CollateralConfirmed:
