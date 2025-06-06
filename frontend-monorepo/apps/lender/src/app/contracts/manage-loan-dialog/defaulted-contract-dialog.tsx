@@ -95,7 +95,7 @@ const DefaultedOrUndercollateralizedContractDialog = ({
   const loanAmount = contract.loan_amount;
   const collateralAsset = contract.loan_asset;
   const loanAmountBitcoin =
-    latestPrice != undefined ? loanAmount / latestPrice : 0.0;
+    latestPrice !== undefined ? loanAmount / latestPrice : 0.0;
 
   const form = useForm<z.infer<typeof addressSchema>>({
     resolver: zodResolver(addressSchema),

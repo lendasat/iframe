@@ -101,7 +101,9 @@ export const Confirmation = ({
 
   const { getLoanOffer, getUserCards, postContractRequest } =
     useHttpClientBorrower();
-  const { latestPrice } = usePrice();
+  const { latestPrice: maybeLatestPrice } = usePrice();
+  // TODO: we should be using skeletons while the price is loading
+  const latestPrice = maybeLatestPrice || 0;
   const { user } = useAuth();
   const [bitcoinAddressInputError, setBitcoinAddressInputError] = useState("");
   const [bitcoinAddressValid, setBitcoinAddressValid] = useState(false);

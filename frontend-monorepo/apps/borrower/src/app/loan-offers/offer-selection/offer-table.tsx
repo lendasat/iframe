@@ -1,6 +1,6 @@
 "use client";
 
-import { LoanOffer } from "@frontend/http-client-borrower";
+import { LoanOffer, RepaymentPlan } from "@frontend/http-client-borrower";
 import {
   formatCurrency,
   getFormatedStringFromDays,
@@ -353,6 +353,7 @@ export function LoanOfferTable({
           origination_fee: [],
           loan_payout: LoanPayout.Direct,
           lender_pk: "dummy",
+          repayment_plan: RepaymentPlan.Bullet,
         },
       ] satisfies LoanOffer[];
     }

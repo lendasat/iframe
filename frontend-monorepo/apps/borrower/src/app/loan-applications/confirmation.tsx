@@ -94,8 +94,10 @@ export const Confirmation = ({
   const navigate = useNavigate();
   const { getNpub, getPkAndDerivationPath } = useWallet();
   const { postLoanApplication } = useHttpClientBorrower();
-  const { latestPrice } = usePrice();
+  const { latestPrice: maybeLatestPrice } = usePrice();
   const { user } = useAuth();
+  // TODO: we should be using skeletons while the price is loading
+  const latestPrice = maybeLatestPrice || 0;
 
   const [createRequestError, setCreateRequestError] = useState("");
   const [isCreatingRequest, setIsCreatingRequest] = useState(false);

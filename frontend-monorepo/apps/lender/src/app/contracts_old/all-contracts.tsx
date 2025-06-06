@@ -3,7 +3,6 @@ import {
   isContractClosed,
   isContractOpen,
 } from "@frontend/http-client-lender";
-import { usePrice } from "@frontend/ui-shared";
 import { MixerHorizontalIcon } from "@radix-ui/react-icons";
 import * as Label from "@radix-ui/react-label";
 import {
@@ -52,7 +51,6 @@ export const AllContracts = ({
   contracts: unfilteredContracts,
   header,
 }: OpenContractsProps) => {
-  const { latestPrice } = usePrice();
   const [contractStatusFilter, setContractStatusFilter] = useState(
     ContractStatusFilterType.Open,
   );

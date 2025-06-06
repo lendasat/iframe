@@ -105,10 +105,7 @@ const EnhancedBitcoinLoan = () => {
     console.error(`Failed to load contract: ${error.message}`);
   }
 
-  const currentStateColor = contractStatusLabelColor(
-    contract?.installments ?? [],
-    contract?.status,
-  );
+  const currentStateColor = contractStatusLabelColor(contract?.status);
   const currentStateLabel =
     contract?.status &&
     contract?.installments &&
