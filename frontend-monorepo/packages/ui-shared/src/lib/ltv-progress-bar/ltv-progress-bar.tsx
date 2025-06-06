@@ -13,9 +13,10 @@ export const LtvProgressBar: FC<LtvProgressBarNewProps> = ({
 }) => {
   const { latestPrice } = usePrice();
 
-  const ltvRatio = collateralBtc
-    ? (loanAmount / (collateralBtc * latestPrice)) * 100
-    : 0;
+  const ltvRatio =
+    collateralBtc && latestPrice
+      ? (loanAmount / (collateralBtc * latestPrice)) * 100
+      : 0;
 
   // If the price is 0.
   const isNan = Number.isNaN(ltvRatio);

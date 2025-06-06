@@ -177,7 +177,7 @@ export interface TimelineEvent {
 }
 
 export interface TimelineEventKind {
-  type: TimelineEventKind;
+  type: TimelineEventType;
   // Associated contract status event, if it applies.
   status?: ContractStatus;
   // Is the installment confirmed, if it applies.
@@ -712,6 +712,7 @@ export interface UpgradeToPakeResponse {
 }
 
 export type LoginResponseOrUpgrade = LoginResponse | MustUpgradeToPake;
+
 export type PakeLoginResponseOrUpgrade = PakeLoginResponse | MustUpgradeToPake;
 export interface PakeVerifyResponse {
   server_proof: string;

@@ -76,7 +76,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 interface FiatDetailsFormProps {
-  onSubmit: (data: ReactInnerFiatLoanDetails) => Promise<void>;
+  onSubmit: (data: ReactInnerFiatLoanDetails) => void;
   onCancel: () => void;
   isSubmitting?: boolean;
 }

@@ -28,7 +28,7 @@ export function MembersGetMemberSection() {
     }
 
     fetchReferralCode();
-  }, [user.personal_referral_codes[0]]);
+  }, [user?.personal_referral_codes]);
 
   const copyToClipboard = async () => {
     try {

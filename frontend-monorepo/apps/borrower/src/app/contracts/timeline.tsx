@@ -5,6 +5,8 @@ import {
   Contract,
   ContractStatus,
   contractStatusToLabelString,
+  TimelineEventKind,
+  TimelineEventType,
 } from "@frontend/http-client-borrower";
 import { format } from "date-fns";
 import { parseRFC3339Date } from "@frontend/http-client-borrower/src/lib/utils";
@@ -23,17 +25,6 @@ export interface TimelineEvent {
   date: Date;
   event: TimelineEventKind;
   txid?: string;
-}
-
-export interface TimelineEventKind {
-  type: TimelineEventType;
-  status?: ContractStatus;
-  is_confirmed?: boolean;
-}
-
-export enum TimelineEventType {
-  ContractStatusChange = "contract_status_change",
-  Installment = "installment",
 }
 
 interface TimelineProps {

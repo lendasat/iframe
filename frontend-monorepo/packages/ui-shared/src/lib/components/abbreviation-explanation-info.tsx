@@ -1,5 +1,5 @@
 import { Box, Flex, Heading, HoverCard, Text } from "@radix-ui/themes";
-import { Link as RadixLink } from "@radix-ui/themes/dist/cjs/components/link";
+import { Link as RadixLink } from "@radix-ui/themes";
 import type { ReactNode } from "react";
 import { FaExternalLinkAlt, FaInfoCircle } from "react-icons/fa";
 

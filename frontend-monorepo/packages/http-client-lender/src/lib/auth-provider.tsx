@@ -179,11 +179,12 @@ export const AuthProvider: FC<AuthProviderProps> = ({
 
       const currentUser = pakeVerifyResponse.user;
 
+      let enabled_features: LenderFeatureFlags[] = [];
       if (pakeVerifyResponse.enabled_features) {
-        const featureFlags = FeatureMapper.mapEnabledFeatures(
+        enabled_features = FeatureMapper.mapEnabledFeatures(
           pakeVerifyResponse.enabled_features,
         );
-        setEnabledFeatures(featureFlags);
+        setEnabledFeatures(enabled_features);
       } else {
         setEnabledFeatures([]);
       }
@@ -198,7 +199,13 @@ export const AuthProvider: FC<AuthProviderProps> = ({
           setBackendVersion(version);
         }
       }
-      return pakeVerifyResponse;
+      return {
+        enabled_features,
+        wallet_backup_data: pakeVerifyResponse.wallet_backup_data,
+        user: pakeVerifyResponse.user,
+        must_upgrade_to_pake: undefined,
+        token: pakeVerifyResponse.token,
+      };
     } finally {
       setLoading(false);
     }

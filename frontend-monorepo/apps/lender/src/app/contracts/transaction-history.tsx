@@ -103,7 +103,6 @@ interface TransactionHistoryTimelineProps {
   transactions: LoanTransaction[];
   isLoading?: boolean;
   contractStatus?: ContractStatus;
-  installments: Installment[];
   assetType?: LoanAsset | undefined;
 }
 
@@ -112,7 +111,6 @@ const TransactionHistoryTimeline = ({
   transactions,
   isLoading = false,
   contractStatus,
-  installments,
   assetType,
 }: TransactionHistoryTimelineProps) => {
   const [open, setOpen] = useState(false);

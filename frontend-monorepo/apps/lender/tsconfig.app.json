@@ -1,7 +1,15 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "types": ["node", "vite/client"]
+    "types": ["node", "vite/client"],
+    "baseUrl": ".",
+    "paths": {
+      "#/components/*": ["../../packages/shadcn/src/components/*"],
+      "#/lib/utils": ["../../packages/shadcn/src/lib/utils.ts"],
+      "#/lib/*": ["../../packages/shadcn/src/lib/*"],
+      "#/components/ui/*": ["../../packages/shadcn/src/components/ui/*"],
+      "#/hooks/*": ["../../packages/shadcn/src/hooks/*"]
+    }
   },
   "exclude": [
     "src/**/*.spec.ts",

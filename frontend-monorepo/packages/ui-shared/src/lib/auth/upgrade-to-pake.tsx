@@ -1,5 +1,4 @@
 import {
-  LoginResponseOrUpgrade,
   UpgradeToPakeResponse,
   WalletBackupData,
 } from "@frontend/base-http-client";
@@ -8,8 +7,12 @@ import { useNavigate } from "react-router-dom";
 import { UpgradeToPakeForm } from "./upgrade-to-pake-form";
 import { md5CaseInsensitive } from "@frontend/browser-wallet";
 
+export interface MustUpgradeToPake {
+  mustUpgrade: boolean;
+}
+
 interface UpgradeToPakeProps {
-  login: (email: string, password: string) => Promise<LoginResponseOrUpgrade>;
+  login: (email: string, password: string) => Promise<MustUpgradeToPake>;
   is_borrower: boolean;
   upgradeToPake: (
     email: string,
@@ -126,7 +129,7 @@ export function UpgradeToPake({
 
     const loginResponse = await login(email, newPassword);
 
-    if ("must_upgrade_to_pake" in loginResponse) {
+    if (loginResponse.mustUpgrade) {
       throw new Error("Hub still thinks we need to upgrade to PAKE");
     }
 

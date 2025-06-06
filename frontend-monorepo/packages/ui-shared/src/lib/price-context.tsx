@@ -3,7 +3,7 @@ import type { FC } from "react";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 
 interface PriceContextProps {
-  latestPrice: number;
+  latestPrice: number | undefined;
 }
 
 interface RawPriceUpdate {

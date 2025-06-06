@@ -37,7 +37,7 @@ import {
   Text,
   TextField,
 } from "@radix-ui/themes";
-import { Link as RadixLink } from "@radix-ui/themes/dist/cjs/components/link";
+import { Link as RadixLink } from "@radix-ui/themes";
 import axios from "axios";
 import { Network, validate } from "bitcoin-address-validation";
 import { useState } from "react";
@@ -101,7 +101,9 @@ export const Confirmation = ({
 
   const { getLoanOffer, getUserCards, postContractRequest } =
     useHttpClientBorrower();
-  const { latestPrice } = usePrice();
+  const { latestPrice: maybeLatestPrice } = usePrice();
+  // TODO: we should be using skeletons while the price is loading
+  const latestPrice = maybeLatestPrice || 0;
   const { user } = useAuth();
   const [bitcoinAddressInputError, setBitcoinAddressInputError] = useState("");
   const [bitcoinAddressValid, setBitcoinAddressValid] = useState(false);

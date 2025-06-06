@@ -1,11 +1,12 @@
 "use client";
 
-import { LoanOffer } from "@frontend/http-client-borrower";
+import { LoanOffer, RepaymentPlan } from "@frontend/http-client-borrower";
 import {
   formatCurrency,
   getFormatedStringFromDays,
   LoanAsset,
   LoanAssetHelper,
+  LoanPayout,
 } from "@frontend/ui-shared";
 import {
   Badge,
@@ -350,10 +351,11 @@ export function LoanOfferTable({
           duration_days_max: 0,
           loan_asset: LoanAsset.USDT_POL,
           origination_fee: [],
-          extension_origination_fee: [],
+          loan_payout: LoanPayout.Direct,
           lender_pk: "dummy",
+          repayment_plan: RepaymentPlan.Bullet,
         },
-      ];
+      ] satisfies LoanOffer[];
     }
     return loanOffers;
   }, [loanOffers, loading]);
