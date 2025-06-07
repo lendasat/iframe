@@ -9,6 +9,7 @@ use crate::model::Lender;
 use crate::model::LoanApplicationStatus;
 use crate::model::LoanAsset;
 use crate::routes::lender::auth::jwt_auth;
+use crate::routes::lender::LOAN_APPLICATIONS_TAG;
 use crate::routes::AppState;
 use crate::take_loan_application;
 use crate::take_loan_application::take_application;
@@ -22,11 +23,8 @@ use axum::http::StatusCode;
 use axum::middleware;
 use axum::response::IntoResponse;
 use axum::response::Response;
-use axum::routing::get;
-use axum::routing::post;
 use axum::Extension;
 use axum::Json;
-use axum::Router;
 use bitcoin::bip32;
 use bitcoin::PublicKey;
 use rust_decimal::prelude::FromPrimitive;
@@ -38,26 +36,23 @@ use sqlx::Postgres;
 use std::sync::Arc;
 use time::OffsetDateTime;
 use tracing::instrument;
+use utoipa::ToSchema;
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
 
-pub(crate) fn router(app_state: Arc<AppState>) -> Router {
-    Router::new()
-        .route(
-            "/api/loans/application",
-            get(get_all_available_loan_applications),
-        )
-        .route("/api/loans/application/:id", get(get_loan_application))
-        .route(
-            "/api/loans/application/:id",
-            post(post_take_loan_application),
-        )
+pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
+    OpenApiRouter::new()
+        .routes(routes!(get_all_available_loan_applications))
+        .routes(routes!(get_loan_application))
+        .routes(routes!(post_take_loan_application))
         .route_layer(middleware::from_fn_with_state(
             app_state.clone(),
             jwt_auth::auth,
         ))
-        .with_state(app_state)
+        .with_state(app_state.clone())
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct LoanApplication {
     pub id: String,
     pub borrower: BorrowerProfile,
@@ -72,6 +67,7 @@ pub struct LoanApplication {
     pub duration_days: i32,
     pub loan_asset: LoanAsset,
     pub status: LoanApplicationStatus,
+    #[schema(value_type = String)]
     pub borrower_pk: PublicKey,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
@@ -79,12 +75,28 @@ pub struct LoanApplication {
     pub updated_at: OffsetDateTime,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct BorrowerProfile {
     pub(crate) id: String,
     pub(crate) name: String,
 }
 
+/// Get all available loan applications.
+#[utoipa::path(
+    get,
+    path = "/",
+    tag = LOAN_APPLICATIONS_TAG,
+    responses(
+        (
+            status = 200,
+            description = "List of available loan applications",
+            body = [LoanApplication]
+        )
+    ),
+    security(
+        ("api_key" = [])
+    )
+)]
 #[instrument(skip_all, err(Debug))]
 pub async fn get_all_available_loan_applications(
     State(data): State<Arc<AppState>>,
@@ -103,6 +115,26 @@ pub async fn get_all_available_loan_applications(
     Ok(AppJson(ret))
 }
 
+/// Get a specific loan application by ID.
+#[utoipa::path(
+    get,
+    path = "/{loan_deal_id}",
+    tag = LOAN_APPLICATIONS_TAG,
+    params(
+        ("loan_deal_id" = String, Path, description = "Loan application ID")
+    ),
+    responses(
+        (
+            status = 200,
+            description = "Loan application details",
+            body = LoanApplication
+        ),
+        (
+            status = 404,
+            description = "Loan application not found"
+        )
+    ),
+)]
 #[instrument(skip_all, err(Debug))]
 pub async fn get_loan_application(
     State(data): State<Arc<AppState>>,
@@ -173,15 +205,38 @@ async fn map_to_api_loan_application(
     })
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct TakeLoanApplicationSchema {
+    #[schema(value_type = String)]
     pub lender_pk: PublicKey,
+    #[schema(value_type = String)]
     pub lender_derivation_path: bip32::DerivationPath,
     pub loan_repayment_address: String,
     pub lender_npub: String,
     pub fiat_loan_details: Option<FiatLoanDetailsWrapper>,
 }
 
+/// Take a loan application.
+#[utoipa::path(
+    post,
+    path = "/{loan_deal_id}",
+    tag = LOAN_APPLICATIONS_TAG,
+    request_body = TakeLoanApplicationSchema,
+    params(
+        ("loan_deal_id" = String, Path, description = "Loan application ID to take")
+    ),
+    responses(
+        (
+            status = 200,
+            description = "Loan application taken successfully",
+            body = String
+        ),
+        (
+            status = 404,
+            description = "Loan application not found"
+        )
+    ),
+)]
 #[instrument(skip_all, fields(lender_id = user.id, loan_deal_id, body), err(Debug), ret)]
 pub async fn post_take_loan_application(
     State(data): State<Arc<AppState>>,
@@ -253,8 +308,6 @@ enum Error {
 }
 
 /// Tell `axum` how [`AppError`] should be converted into a response.
-///
-/// This is also a convenient place to log errors.
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
         /// How we want error responses to be serialized.

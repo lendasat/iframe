@@ -31,7 +31,8 @@ pub(crate) fn router_openapi(app_state: Arc<AppState>) -> OpenApiRouter {
         .with_state(app_state)
 }
 
-/// Create a user account with API key acccess
+/// Create a borrower API account i.e. a borrower account designed to interact with the Lendasat
+/// server with an API key.
 #[utoipa::path(
 post,
 path = "/",
@@ -40,7 +41,7 @@ request_body = CreateApiAccountRequest,
 responses(
     (
     status = 200,
-    description = "If successful, return new user object which holds the new API key. Note: there API key is only returned once!",
+    description = "If successful, return new user object which holds the new API key. Note: the API key is only returned once!",
     body = CreateApiAccountResponse,
     )
 ),
@@ -121,8 +122,6 @@ where
 }
 
 /// Tell `axum` how [`Error`] should be converted into a response.
-///
-/// This is also a convenient place to log errors.
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
         /// How we want error responses to be serialized.

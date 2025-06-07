@@ -11,7 +11,7 @@ use bitcoin::PublicKey;
 use bitcoin_units::Amount;
 use miniscript::Descriptor;
 
-pub async fn prepare_liquidation_psbt(
+pub(crate) async fn prepare_liquidation_psbt(
     wallet: &Wallet,
     contract: Contract,
     address: Address<NetworkUnchecked>,

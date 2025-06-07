@@ -36,7 +36,6 @@ import { format } from "date-fns";
 import {
   ContractStatus,
   contractStatusToLabelString,
-  Installment,
 } from "@frontend/http-client-lender";
 
 // Helper to format date

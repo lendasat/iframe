@@ -616,7 +616,7 @@ pub enum ClaimTxType {
     Defaulted,
 }
 
-/// Message to tell the [`Actor`] to track the status of a collateral-claim transaction.
+/// Message to tell the [`Actor`] to track the status of a claim-collateral transaction.
 #[derive(Debug)]
 pub struct TrackCollateralClaim {
     pub contract_id: String,

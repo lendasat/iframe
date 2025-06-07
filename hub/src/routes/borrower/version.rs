@@ -1,4 +1,4 @@
-use crate::routes::borrower::HEALTH_CHECK_TAG;
+use crate::routes::borrower::VERSION_TAG;
 use axum::response::IntoResponse;
 use axum::Json;
 use serde::Serialize;
@@ -9,7 +9,7 @@ use utoipa_axum::routes;
 const GIT_TAG: &str = env!("GIT_TAG");
 const GIT_HASH: &str = env!("GIT_COMMIT_HASH");
 
-pub(crate) fn router_openapi() -> OpenApiRouter {
+pub(crate) fn router() -> OpenApiRouter {
     OpenApiRouter::new().routes(routes!(version))
 }
 
@@ -19,11 +19,11 @@ pub struct Version {
     commit_hash: String,
 }
 
-/// Return the current git tag and commit hash
+/// Return the current git tag and commit hash.
 #[utoipa::path(
     get,
     path = "/",
-    tag = HEALTH_CHECK_TAG,
+    tag = VERSION_TAG,
     responses(
         (
         status = 200,

@@ -101,8 +101,6 @@ where
 }
 
 /// Tell `axum` how [`Error`] should be converted into a response.
-///
-/// This is also a convenient place to log errors.
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
         /// How we want error responses to be serialized.

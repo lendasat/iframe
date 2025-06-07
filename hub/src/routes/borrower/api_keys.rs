@@ -32,7 +32,7 @@ pub(crate) fn router_openapi(app_state: Arc<AppState>) -> OpenApiRouter {
         .with_state(app_state)
 }
 
-/// Get all personal api keys
+/// Get all personal API keys.
 #[utoipa::path(
 get,
 path = "/",
@@ -70,7 +70,7 @@ struct NewApiKey {
     description: String,
 }
 
-/// Create a new API key
+/// Create a new API key.
 #[utoipa::path(
 post,
 path = "/",
@@ -101,13 +101,13 @@ async fn post_api_key(
     Ok(())
 }
 
-/// Delete an API key
+/// Delete an API key.
 #[utoipa::path(
 delete,
 path = "/{id}",
 params(
     (
-    "id" = String, Path, description = "api key id"
+    "id" = String, Path, description = "API key ID"
     )
 ),
 tag = API_KEYS_TAG,
@@ -169,8 +169,6 @@ where
 }
 
 /// Tell `axum` how [`Error`] should be converted into a response.
-///
-/// This is also a convenient place to log errors.
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
         /// How we want error responses to be serialized.

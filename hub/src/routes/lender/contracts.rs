@@ -21,7 +21,7 @@ use crate::model::LoanTransaction;
 use crate::model::ManualCollateralRecovery;
 use crate::model::TransactionType;
 use crate::routes::lender::auth::jwt_auth;
-use crate::routes::user_connection_details_middleware;
+use crate::routes::lender::CONTRACTS_TAG;
 use crate::routes::user_connection_details_middleware::UserConnectionDetails;
 use crate::routes::AppState;
 use anyhow::anyhow;
@@ -35,13 +35,8 @@ use axum::http::StatusCode;
 use axum::middleware;
 use axum::response::IntoResponse;
 use axum::response::Response;
-use axum::routing::delete;
-use axum::routing::get;
-use axum::routing::post;
-use axum::routing::put;
 use axum::Extension;
 use axum::Json;
-use axum::Router;
 use bitcoin::address::NetworkUnchecked;
 use bitcoin::bip32::DerivationPath;
 use bitcoin::consensus::encode::FromHexError;
@@ -62,103 +57,31 @@ use std::sync::Arc;
 use time::OffsetDateTime;
 use tracing::instrument;
 use url::Url;
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
 use uuid::Uuid;
 
-pub(crate) fn router(app_state: Arc<AppState>) -> Router {
-    Router::new()
-        .route(
-            "/api/contracts",
-            get(get_active_contracts).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_auth::auth,
-            )),
-        )
-        .route(
-            "/api/contracts/:contract_id",
-            get(get_contract).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_auth::auth,
-            )),
-        )
-        .route(
-            "/api/contracts/:id/extension-policy",
-            put(put_update_extension_policy).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_auth::auth,
-            )),
-        )
-        .route(
-            "/api/contracts/:contract_id/approve",
-            put(put_approve_contract).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_auth::auth,
-            )),
-        )
-        .route(
-            "/api/contracts/:contract_id/principalgiven",
-            put(put_principal_given).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_auth::auth,
-            )),
-        )
-        .route(
-            "/api/contracts/:contract_id/reject",
-            delete(delete_reject_contract).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_auth::auth,
-            )),
-        )
-        .route(
-            "/api/contracts/:contract_id/reject-extension",
-            put(put_reject_extension_request).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_auth::auth,
-            )),
-        )
-        .route(
-            "/api/contracts/:contract_id/confirm-installment",
-            put(put_confirm_installment_payment).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_auth::auth,
-            )),
-        )
-        .route(
-            "/api/contracts/:id/liquidation-psbt",
-            get(get_liquidation_to_bitcoin_psbt).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_auth::auth,
-            )),
-        )
-        .route(
-            "/api/contracts/:id/liquidation-to-stablecoin-psbt",
-            post(post_build_liquidation_to_stablecoin_psbt).route_layer(
-                middleware::from_fn_with_state(app_state.clone(), jwt_auth::auth),
-            ),
-        )
-        .route(
-            "/api/contracts/:id/broadcast-liquidation",
-            post(post_liquidation_tx).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_auth::auth,
-            )),
-        )
-        .route(
-            "/api/contracts/:id/recovery-psbt",
-            get(get_manual_recovery_psbt).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_auth::auth,
-            )),
-        )
-        .layer(
-            tower::ServiceBuilder::new().layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                user_connection_details_middleware::ip_user_agent,
-            )),
-        )
-        .with_state(app_state)
+pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
+    OpenApiRouter::new()
+        .routes(routes!(get_contracts))
+        .routes(routes!(get_contract))
+        .routes(routes!(put_update_extension_policy))
+        .routes(routes!(put_approve_contract))
+        .routes(routes!(put_report_principal_disbursed))
+        .routes(routes!(delete_reject_contract))
+        .routes(routes!(put_confirm_installment_payment))
+        .routes(routes!(get_liquidation_to_bitcoin_psbt))
+        .routes(routes!(post_build_liquidation_to_stablecoin_psbt))
+        .routes(routes!(post_liquidation_tx))
+        .routes(routes!(get_manual_recovery_psbt))
+        .route_layer(middleware::from_fn_with_state(
+            app_state.clone(),
+            jwt_auth::auth,
+        ))
+        .with_state(app_state.clone())
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct Contract {
     pub id: String,
     #[serde(with = "rust_decimal::serde::float")]
@@ -174,8 +97,11 @@ pub struct Contract {
     #[serde(with = "rust_decimal::serde::float")]
     pub initial_ltv: Decimal,
     pub status: ContractStatus,
+    #[schema(value_type = String)]
     pub lender_pk: PublicKey,
+    #[schema(value_type = String)]
     pub lender_derivation_path: DerivationPath,
+    #[schema(value_type = String)]
     pub borrower_pk: PublicKey,
     pub borrower_btc_address: String,
     pub borrower_loan_address: Option<String>,
@@ -209,26 +135,42 @@ pub struct Contract {
     pub installments: Vec<Installment>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct FiatLoanDetailsWrapper {
     pub details: FiatLoanDetails,
     pub encrypted_encryption_key: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct KycInfo {
+    #[schema(value_type = String)]
     kyc_link: Url,
     is_kyc_done: bool,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, utoipa::ToSchema)]
 pub struct BorrowerProfile {
     pub(crate) id: String,
     pub(crate) name: String,
 }
 
+/// Get all the contracts for this lender.
+#[utoipa::path(
+    get,
+    path = "/",
+    tag = CONTRACTS_TAG,
+    responses(
+        (
+            status = 200,
+            description = "List of all contracts for this lender"
+        )
+    ),
+    security(
+        ("api_key" = [])
+    )
+)]
 #[instrument(skip_all, fields(lender_id = user.id), err(Debug))]
-async fn get_active_contracts(
+async fn get_contracts(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Lender>,
 ) -> Result<AppJson<Vec<Contract>>, Error> {
@@ -246,6 +188,28 @@ async fn get_active_contracts(
     Ok(AppJson(contracts_2))
 }
 
+/// Get a specific contract by ID.
+#[utoipa::path(
+    get,
+    path = "/{contract_id}",
+    tag = CONTRACTS_TAG,
+    params(
+        ("contract_id" = String, Path, description = "Contract ID")
+    ),
+    responses(
+        (
+            status = 200,
+            description = "Contract details"
+        ),
+        (
+            status = 404,
+            description = "Contract not found"
+        )
+    ),
+    security(
+        ("api_key" = [])
+    )
+)]
 #[instrument(skip_all, fields(lender_id = user.id, contract_id), err(Debug))]
 async fn get_contract(
     State(data): State<Arc<AppState>>,
@@ -263,7 +227,7 @@ async fn get_contract(
     Ok(AppJson(contract))
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
 struct UpdateExtensionPolicyRequest {
     /// The maximum number of days a contract can be extended by.
     ///
@@ -274,6 +238,29 @@ struct UpdateExtensionPolicyRequest {
     extension_interest_rate: Decimal,
 }
 
+/// Update the extension policy of a contract.
+#[utoipa::path(
+    put,
+    path = "/{contract_id}/extension-policy",
+    tag = CONTRACTS_TAG,
+    request_body = UpdateExtensionPolicyRequest,
+    params(
+        ("contract_id" = String, Path, description = "Contract ID")
+    ),
+    responses(
+        (
+            status = 200,
+            description = "Extension policy updated successfully"
+        ),
+        (
+            status = 404,
+            description = "Contract not found"
+        )
+    ),
+    security(
+        ("api_key" = [])
+    )
+)]
 #[instrument(skip_all, fields(lender_id = user.id, contract_id, body = ?body), ret, err(Debug))]
 async fn put_update_extension_policy(
     State(data): State<Arc<AppState>>,
@@ -330,6 +317,29 @@ async fn put_update_extension_policy(
     Ok(())
 }
 
+/// Approve a contract request.
+#[utoipa::path(
+    put,
+    path = "/{contract_id}/approve",
+    tag = CONTRACTS_TAG,
+    request_body(content = FiatLoanDetailsWrapper, content_type = "application/json"),
+    params(
+        ("contract_id" = String, Path, description = "Contract ID to approve")
+    ),
+    responses(
+        (
+            status = 200,
+            description = "Contract approved successfully"
+        ),
+        (
+            status = 404,
+            description = "Contract not found"
+        )
+    ),
+    security(
+        ("api_key" = [])
+    )
+)]
 #[instrument(skip_all, fields(lender_id = user.id, contract_id, body = ?body), ret, err(Debug))]
 async fn put_approve_contract(
     State(data): State<Arc<AppState>>,
@@ -360,8 +370,32 @@ pub struct PrincipalGivenQueryParam {
     pub txid: Option<String>,
 }
 
+/// Report that the principal has been disbursed to the borrower.
+#[utoipa::path(
+    put,
+    path = "/{contract_id}/report-disbursement",
+    tag = CONTRACTS_TAG,
+    params(
+        ("contract_id" = String, Path, description = "Contract ID"),
+        ("txid" = Option<String>, Query, description = "Transaction ID")
+    ),
+    responses(
+        (
+            status = 200,
+            description = "Principal marked as disbursed successfully",
+            body = Contract
+        ),
+        (
+            status = 404,
+            description = "Contract not found"
+        )
+    ),
+    security(
+        ("api_key" = [])
+    )
+)]
 #[instrument(skip_all, fields(lender_id = user.id, contract_id, txid = query_params.txid ), err(Debug), ret)]
-async fn put_principal_given(
+async fn put_report_principal_disbursed(
     State(data): State<Arc<AppState>>,
     Path(contract_id): Path<String>,
     query_params: Query<PrincipalGivenQueryParam>,
@@ -384,6 +418,27 @@ async fn put_principal_given(
 }
 
 /// Reject a contract request.
+#[utoipa::path(
+    delete,
+    path = "/{contract_id}/reject",
+    tag = CONTRACTS_TAG,
+    params(
+        ("contract_id" = String, Path, description = "Contract ID to reject")
+    ),
+    responses(
+        (
+            status = 200,
+            description = "Contract rejected successfully"
+        ),
+        (
+            status = 404,
+            description = "Contract not found"
+        )
+    ),
+    security(
+        ("api_key" = [])
+    )
+)]
 #[instrument(skip_all, fields(lender_id = user.id, contract_id), err(Debug), ret)]
 async fn delete_reject_contract(
     State(data): State<Arc<AppState>>,
@@ -423,57 +478,29 @@ async fn delete_reject_contract(
     Ok(())
 }
 
-/// Reject a contract extension request.
-#[instrument(skip_all, fields(lender_id = user.id, contract_id), err(Debug), ret)]
-async fn put_reject_extension_request(
-    State(data): State<Arc<AppState>>,
-    Path(contract_id): Path<String>,
-    Extension(user): Extension<Lender>,
-) -> Result<(), Error> {
-    let contract =
-        db::contracts::load_contract_by_contract_id_and_lender_id(&data.db, &contract_id, &user.id)
-            .await
-            .map_err(Error::database)?
-            .ok_or_else(|| Error::MissingContract(contract_id.clone()))?;
-
-    if contract.status != ContractStatus::RenewalRequested {
-        return Err(Error::InvalidRejectRequest {
-            status: contract.status,
-        });
-    }
-
-    let mut db_tx = data
-        .db
-        .begin()
-        .await
-        .map_err(|e| Error::database(anyhow!(e)))?;
-
-    let parent_contract_id =
-        db::contract_extensions::get_parent_by_extended(&data.db, &contract_id)
-            .await
-            .map_err(|e| Error::database(anyhow!(e)))?
-            .ok_or(Error::MissingParentContract(contract_id.clone()))?;
-
-    db::contracts::cancel_extension(&mut *db_tx, &parent_contract_id)
-        .await
-        .map_err(Error::database)?;
-
-    db::contract_extensions::delete_with_parent(&mut *db_tx, &parent_contract_id)
-        .await
-        .map_err(|e| Error::database(anyhow!(e)))?;
-
-    db::contracts::mark_contract_as_cancelled(&mut *db_tx, &contract_id)
-        .await
-        .map_err(Error::database)?;
-
-    db_tx
-        .commit()
-        .await
-        .map_err(|e| Error::database(anyhow!(e)))?;
-
-    Ok(())
-}
-
+/// Confirm installment payment for a contract.
+#[utoipa::path(
+    put,
+    path = "/{contract_id}/confirm-installment",
+    tag = CONTRACTS_TAG,
+    request_body = ConfirmInstallmentPaymentRequest,
+    params(
+        ("contract_id" = String, Path, description = "Contract ID")
+    ),
+    responses(
+        (
+            status = 200,
+            description = "Installment payment confirmed successfully"
+        ),
+        (
+            status = 404,
+            description = "Contract or installment not found"
+        )
+    ),
+    security(
+        ("api_key" = [])
+    )
+)]
 #[instrument(skip_all, fields(lender_id = %user.id, contract_id = %contract_id, installment_id = %body.installment_id), err(Debug), ret)]
 async fn put_confirm_installment_payment(
     State(data): State<Arc<AppState>>,
@@ -521,21 +548,49 @@ pub enum LiquidationType {
     StableCoin,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, utoipa::ToSchema)]
 pub struct LiquidationPsbtQueryParams {
     /// Fee rate in sats/vbyte.
     pub fee_rate: u64,
     /// Where to send the lender's share of the liquidation.
+    #[schema(value_type = String)]
     pub address: Address<NetworkUnchecked>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
 pub struct LiquidationPsbt {
     pub psbt: String,
+    #[schema(value_type = String)]
     pub collateral_descriptor: Descriptor<PublicKey>,
+    #[schema(value_type = String)]
     pub lender_pk: PublicKey,
 }
 
+/// Get liquidation PSBT for converting collateral to Bitcoin.
+#[utoipa::path(
+    get,
+    path = "/{contract_id}/liquidation-psbt",
+    tag = CONTRACTS_TAG,
+    params(
+        ("contract_id" = String, Path, description = "Contract ID"),
+        ("fee_rate" = u64, Query, description = "Fee rate in sats/vbyte"),
+        ("address" = String, Query, description = "Address to send lender's share")
+    ),
+    responses(
+        (
+            status = 200,
+            description = "Liquidation PSBT generated successfully",
+            body = LiquidationPsbt
+        ),
+        (
+            status = 404,
+            description = "Contract not found"
+        )
+    ),
+    security(
+        ("api_key" = [])
+    )
+)]
 #[instrument(skip_all, fields(lender_id = user.id, contract_id, query_params), err(Debug), ret)]
 async fn get_liquidation_to_bitcoin_psbt(
     State(data): State<Arc<AppState>>,
@@ -618,22 +673,49 @@ async fn get_liquidation_to_bitcoin_psbt(
     }))
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct LiquidationToStablecoinPsbtRequest {
+    #[schema(value_type = String)]
     bitcoin_refund_address: Address<NetworkUnchecked>,
     fee_rate_sats_vbyte: u64,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
 pub struct LiquidationToStableCoinPsbt {
     pub psbt: String,
+    #[schema(value_type = String)]
     pub collateral_descriptor: Descriptor<PublicKey>,
+    #[schema(value_type = String)]
     pub lender_pk: PublicKey,
     pub settle_address: String,
     #[serde(with = "rust_decimal::serde::float")]
     pub settle_amount: Decimal,
 }
 
+/// Get liquidation PSBT for converting collateral to stablecoin.
+#[utoipa::path(
+    post,
+    path = "/{contract_id}/liquidation-to-stablecoin-psbt",
+    tag = CONTRACTS_TAG,
+    request_body = LiquidationToStablecoinPsbtRequest,
+    params(
+        ("contract_id" = String, Path, description = "Contract ID")
+    ),
+    responses(
+        (
+            status = 200,
+            description = "Liquidation to stablecoin PSBT generated successfully",
+            body = LiquidationToStableCoinPsbt
+        ),
+        (
+            status = 404,
+            description = "Contract not found"
+        )
+    ),
+    security(
+        ("api_key" = [])
+    )
+)]
 #[instrument(skip_all, fields(lender_id = user.id, contract_id, connection_details, body), err(Debug), ret)]
 async fn post_build_liquidation_to_stablecoin_psbt(
     State(data): State<Arc<AppState>>,
@@ -728,11 +810,34 @@ async fn post_build_liquidation_to_stablecoin_psbt(
     }))
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct LiquidationTx {
     pub tx: String,
 }
 
+/// Broadcast liquidation transaction.
+#[utoipa::path(
+    post,
+    path = "/{contract_id}/broadcast-liquidation",
+    tag = CONTRACTS_TAG,
+    request_body = LiquidationTx,
+    params(
+        ("contract_id" = String, Path, description = "Contract ID")
+    ),
+    responses(
+        (
+            status = 200,
+            description = "Liquidation transaction broadcasted successfully"
+        ),
+        (
+            status = 404,
+            description = "Contract not found"
+        )
+    ),
+    security(
+        ("api_key" = [])
+    )
+)]
 #[instrument(skip_all, fields(lender_id = user.id, contract_id, body), err(Debug), ret)]
 async fn post_liquidation_tx(
     State(data): State<Arc<AppState>>,
@@ -832,13 +937,40 @@ async fn post_liquidation_tx(
     Ok(AppJson(claim_txid))
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
 pub struct ManualRecoveryPsbt {
     pub psbt: String,
+    #[schema(value_type = String)]
     pub collateral_descriptor: Descriptor<PublicKey>,
+    #[schema(value_type = String)]
     pub lender_pk: PublicKey,
 }
 
+/// Get manual recovery PSBT for collateral recovery.
+#[utoipa::path(
+    get,
+    path = "/{contract_id}/recovery-psbt",
+    tag = CONTRACTS_TAG,
+    params(
+        ("contract_id" = String, Path, description = "Contract ID"),
+        ("fee_rate" = u64, Query, description = "Fee rate in sats/vbyte"),
+        ("address" = String, Query, description = "Address to send recovered collateral")
+    ),
+    responses(
+        (
+            status = 200,
+            description = "Manual recovery PSBT generated successfully",
+            body = ManualRecoveryPsbt
+        ),
+        (
+            status = 404,
+            description = "Contract not found"
+        )
+    ),
+    security(
+        ("api_key" = [])
+    )
+)]
 #[instrument(skip_all, fields(lender_id = user.id, contract_id, query_params), err(Debug), ret)]
 async fn get_manual_recovery_psbt(
     State(data): State<Arc<AppState>>,
@@ -1066,7 +1198,7 @@ async fn map_to_api_contract(
     Ok(contract)
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct Installment {
     pub id: Uuid,
     pub principal: Decimal,
@@ -1079,7 +1211,7 @@ pub struct Installment {
     pub payment_id: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct TimelineEvent {
     #[serde(with = "time::serde::rfc3339")]
     date: OffsetDateTime,
@@ -1088,7 +1220,7 @@ pub struct TimelineEvent {
     txid: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, utoipa::ToSchema)]
 #[serde(tag = "type", rename_all = "snake_case")]
 enum TimelineEventKind {
     ContractStatusChange { status: ContractStatus },
@@ -1249,8 +1381,6 @@ enum Error {
     MissingBorrower,
     /// Failed to build contract descriptor.
     CannotBuildDescriptor(String),
-    /// Can't cancel a contract extension request if the parent does not exist.
-    MissingParentContract(String),
     /// Cannot approve renewal without contract address.
     MissingContractAddress,
     /// Invalid PSBT,
@@ -1326,8 +1456,6 @@ impl From<JsonRejection> for Error {
 }
 
 /// Tell `axum` how [`AppError`] should be converted into a response.
-///
-/// This is also a convenient place to log errors.
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
         /// How we want error responses to be serialized.
@@ -1351,7 +1479,6 @@ impl IntoResponse for Error {
             | Error::TrackContract(_)
             | Error::MissingBorrower
             | Error::CannotBuildDescriptor(_)
-            | Error::MissingParentContract(_)
             | Error::MissingContractAddress
             | Error::TrackTransaction(_)
             | Error::PostTransaction(_)

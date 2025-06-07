@@ -197,10 +197,8 @@ pub struct RegistrationResponse {
     message: String,
 }
 
-/// Register a new user with email and password. For registering an account using API keys please
-/// refer to `/api/create-api-account`.
-///
-/// Tries to register a new user. Will fail if email is already in use.
+/// Register a new user with email and password. To create borrower API accounts (using a master API
+/// key), refer to /api/create-api-account.
 #[utoipa::path(
 post,
 request_body = RegisterUserSchema,
@@ -1294,8 +1292,6 @@ impl From<db::waitlist::Error> for Error {
 }
 
 /// Tell `axum` how [`Error`] should be converted into a response.
-///
-/// This is also a convenient place to log errors.
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
         /// How we want error responses to be serialized.

@@ -8,8 +8,9 @@ use crate::model::LoanOfferStatus;
 use crate::model::LoanPayout;
 use crate::model::OriginationFee;
 use crate::model::RepaymentPlan;
-use crate::routes::lender::auth;
-use crate::routes::lender::AppState;
+use crate::routes::lender::auth::jwt_auth::auth;
+use crate::routes::lender::LOAN_OFFERS_TAG;
+use crate::routes::AppState;
 use crate::user_stats;
 use crate::user_stats::LenderStats;
 use anyhow::Context;
@@ -18,12 +19,8 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::middleware;
 use axum::response::IntoResponse;
-use axum::routing::delete;
-use axum::routing::get;
-use axum::routing::post;
 use axum::Extension;
 use axum::Json;
-use axum::Router;
 use rust_decimal::prelude::Zero;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
@@ -33,47 +30,41 @@ use std::sync::Arc;
 use time::OffsetDateTime;
 use tracing::instrument;
 use url::Url;
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
 
-pub(crate) fn router(app_state: Arc<AppState>) -> Router {
-    Router::new()
-        .route(
-            "/api/my-loans/offer",
-            get(get_my_loan_offers)
-                .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
-        )
-        .route(
-            "/api/my-loans/offer/:id",
-            get(get_loan_offer_by_lender_and_offer_id)
-                .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
-        )
-        .route(
-            "/api/my-loans/offer/:id",
-            delete(delete_loan_offer_by_lender_and_offer_id)
-                .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
-        )
-        .route(
-            "/api/my-loans/offer",
-            post(create_loan_offer)
-                .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
-        )
-        .route(
-            "/api/loans/offer",
-            get(get_loan_offers)
-                .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
-        )
-        .route(
-            "/api/loans/offer/:id",
-            get(get_loan_offer_by_id)
-                .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
-        )
-        .route(
-            "/api/loans/offer-stats",
-            get(get_latest_stats)
-                .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
-        )
+pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
+    OpenApiRouter::new()
+        .routes(routes!(create_loan_offer))
+        .routes(routes!(get_my_loan_offers))
+        .routes(routes!(get_loan_offer_by_lender_and_offer_id))
+        .routes(routes!(delete_loan_offer_by_lender_and_offer_id))
+        .routes(routes!(get_loan_offers))
+        .routes(routes!(get_latest_stats))
+        .route_layer(middleware::from_fn_with_state(app_state.clone(), auth))
         .with_state(app_state)
 }
 
+/// Create a new loan offer.
+#[utoipa::path(
+    post,
+    request_body = CreateLoanOfferSchema,
+    path = "/create",
+    tag = LOAN_OFFERS_TAG,
+    responses(
+        (
+            status = 200,
+            description = "Loan offer created successfully"
+        ),
+        (
+            status = 400,
+            description = "Invalid loan offer parameters"
+        )
+    ),
+    security(
+        ("api_key" = [])
+    )
+)]
 #[instrument(skip_all, err(Debug))]
 pub async fn create_loan_offer(
     State(data): State<Arc<AppState>>,
@@ -211,42 +202,21 @@ pub async fn create_loan_offer(
     Ok((StatusCode::OK, Json(offer)))
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct LoanOffer {
-    pub id: String,
-    pub lender: LenderStats,
-    pub name: String,
-    #[serde(with = "rust_decimal::serde::float")]
-    pub min_ltv: Decimal,
-    #[serde(with = "rust_decimal::serde::float")]
-    pub interest_rate: Decimal,
-    #[serde(with = "rust_decimal::serde::float")]
-    pub loan_amount_min: Decimal,
-    #[serde(with = "rust_decimal::serde::float")]
-    pub loan_amount_max: Decimal,
-    #[serde(with = "rust_decimal::serde::float")]
-    pub loan_amount_reserve: Decimal,
-    #[serde(with = "rust_decimal::serde::float")]
-    pub loan_amount_reserve_remaining: Decimal,
-    pub auto_accept: bool,
-    pub duration_days_min: i32,
-    pub duration_days_max: i32,
-    pub loan_asset: LoanAsset,
-    pub loan_payout: LoanPayout,
-    pub status: LoanOfferStatus,
-    pub loan_repayment_address: String,
-    pub origination_fee: Vec<OriginationFee>,
-    pub kyc_link: Option<Url>,
-    pub extension_max_duration_days: u64,
-    #[serde(with = "rust_decimal::serde::float_option")]
-    pub extension_interest_rate: Option<Decimal>,
-    pub repayment_plan: RepaymentPlan,
-    #[serde(with = "time::serde::rfc3339")]
-    pub created_at: OffsetDateTime,
-    #[serde(with = "time::serde::rfc3339")]
-    pub updated_at: OffsetDateTime,
-}
-
+/// Get all loan offers for this lender.
+#[utoipa::path(
+    get,
+    path = "/own",
+    tag = LOAN_OFFERS_TAG,
+    responses(
+        (
+            status = 200,
+            description = "List of loan offers for this lender"
+        )
+    ),
+    security(
+        ("api_key" = [])
+    )
+)]
 #[instrument(skip_all, err(Debug))]
 pub async fn get_my_loan_offers(
     State(data): State<Arc<AppState>>,
@@ -263,35 +233,35 @@ pub async fn get_my_loan_offers(
             (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
         })?;
 
+    let lender = db::lenders::get_user_by_id(&data.db, &user.id)
+        .await
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Database error: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?
+        .context("No lender found for contract")
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Illegal state error: {}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
+
+    let lender_stats = user_stats::get_lender_stats(&data.db, lender.id.as_str())
+        .await
+        .map_err(|error| {
+            let error_response = ErrorResponse {
+                message: format!("Database error: {:?}", error),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
+
+    let origination_fee = data.config.origination_fee.clone();
+
     let mut ret = vec![];
     for offer in loans {
-        let lender = db::lenders::get_user_by_id(&data.db, &offer.lender_id)
-            .await
-            .map_err(|error| {
-                let error_response = ErrorResponse {
-                    message: format!("Database error: {}", error),
-                };
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-            })?
-            .context("No lender found for contract")
-            .map_err(|error| {
-                let error_response = ErrorResponse {
-                    message: format!("Illegal state error: {}", error),
-                };
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-            })?;
-
-        let origination_fee = data.config.origination_fee.clone();
-
-        let lender_stats = user_stats::get_lender_stats(&data.db, lender.id.as_str())
-            .await
-            .map_err(|error| {
-                let error_response = ErrorResponse {
-                    message: format!("Database error: {:?}", error),
-                };
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-            })?;
-
         let (extension_max_duration_days, extension_interest_rate) = match offer.extension_policy {
             ExtensionPolicy::DoNotExtend => (0, None),
             ExtensionPolicy::AfterHalfway {
@@ -302,7 +272,7 @@ pub async fn get_my_loan_offers(
 
         let offer = LoanOffer {
             id: offer.loan_deal_id,
-            lender: lender_stats,
+            lender: lender_stats.clone(),
             name: offer.name,
             min_ltv: offer.min_ltv,
             interest_rate: offer.interest_rate,
@@ -317,7 +287,7 @@ pub async fn get_my_loan_offers(
             status: offer.status,
             auto_accept: offer.auto_accept,
             loan_repayment_address: offer.loan_repayment_address,
-            origination_fee,
+            origination_fee: origination_fee.clone(),
             kyc_link: offer.kyc_link,
             extension_max_duration_days,
             extension_interest_rate,
@@ -331,6 +301,28 @@ pub async fn get_my_loan_offers(
     Ok((StatusCode::OK, Json(ret)))
 }
 
+/// Get a specific loan offer by ID.
+#[utoipa::path(
+    get,
+    path = "/{offer_id}",
+    tag = LOAN_OFFERS_TAG,
+    params(
+        ("offer_id" = String, Path, description = "Loan offer ID")
+    ),
+    responses(
+        (
+            status = 200,
+            description = "Loan offer details"
+        ),
+        (
+            status = 404,
+            description = "Loan offer not found"
+        )
+    ),
+    security(
+        ("api_key" = [])
+    )
+)]
 #[instrument(skip_all, err(Debug))]
 pub async fn get_loan_offer_by_lender_and_offer_id(
     State(data): State<Arc<AppState>>,
@@ -414,6 +406,21 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
     Ok((StatusCode::OK, Json(loan)))
 }
 
+/// Get all available loan offers from all lenders.
+#[utoipa::path(
+    get,
+    path = "/",
+    tag = LOAN_OFFERS_TAG,
+    responses(
+        (
+            status = 200,
+            description = "List of all available loan offers"
+        )
+    ),
+    security(
+        ("api_key" = [])
+    )
+)]
 #[instrument(skip_all, err(Debug))]
 pub async fn get_loan_offers(
     State(data): State<Arc<AppState>>,
@@ -494,90 +501,28 @@ pub async fn get_loan_offers(
     Ok((StatusCode::OK, Json(ret)))
 }
 
-#[instrument(skip_all, err(Debug))]
-pub async fn get_loan_offer_by_id(
-    State(data): State<Arc<AppState>>,
-    Path(offer_id): Path<String>,
-) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let offer = db::loan_offers::loan_by_id(&data.db, offer_id.as_str())
-        .await
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?
-        .ok_or_else(|| {
-            let error_response = ErrorResponse {
-                message: "Offer not found".to_string(),
-            };
-            (StatusCode::NOT_FOUND, Json(error_response))
-        })?;
-
-    let lender = db::lenders::get_user_by_id(&data.db, &offer.lender_id)
-        .await
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?
-        .context("No lender found for contract")
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Illegal state error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
-
-    let origination_fee = data.config.origination_fee.clone();
-
-    let lender_stats = user_stats::get_lender_stats(&data.db, lender.id.as_str())
-        .await
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {:?}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
-
-    let (extension_max_duration_days, extension_interest_rate) = match offer.extension_policy {
-        ExtensionPolicy::DoNotExtend => (0, None),
-        ExtensionPolicy::AfterHalfway {
-            interest_rate,
-            max_duration_days,
-        } => (max_duration_days, Some(interest_rate)),
-    };
-
-    let loan = LoanOffer {
-        id: offer.loan_deal_id,
-        lender: lender_stats,
-        name: offer.name,
-        min_ltv: offer.min_ltv,
-        interest_rate: offer.interest_rate,
-        loan_amount_min: offer.loan_amount_min,
-        loan_amount_max: offer.loan_amount_max,
-        loan_amount_reserve: offer.loan_amount_reserve,
-        loan_amount_reserve_remaining: offer.loan_amount_reserve_remaining,
-        duration_days_min: offer.duration_days_min,
-        duration_days_max: offer.duration_days_max,
-        loan_asset: offer.loan_asset,
-        loan_payout: offer.loan_payout,
-        status: offer.status,
-        auto_accept: offer.auto_accept,
-        loan_repayment_address: offer.loan_repayment_address,
-        origination_fee,
-        kyc_link: offer.kyc_link,
-        extension_max_duration_days,
-        extension_interest_rate,
-        repayment_plan: offer.repayment_plan,
-        created_at: offer.created_at,
-        updated_at: offer.updated_at,
-    };
-
-    Ok((StatusCode::OK, Json(loan)))
-}
-
+/// Delete own loan offer.
+#[utoipa::path(
+    delete,
+    path = "/{offer_id}",
+    tag = LOAN_OFFERS_TAG,
+    params(
+        ("offer_id" = String, Path, description = "Loan offer ID to delete")
+    ),
+    responses(
+        (
+            status = 200,
+            description = "Loan offer deleted successfully"
+        ),
+        (
+            status = 404,
+            description = "Loan offer not found"
+        )
+    ),
+    security(
+        ("api_key" = [])
+    )
+)]
 #[instrument(skip_all, err(Debug))]
 pub async fn delete_loan_offer_by_lender_and_offer_id(
     State(data): State<Arc<AppState>>,
@@ -600,59 +545,57 @@ pub async fn delete_loan_offer_by_lender_and_offer_id(
     Ok((StatusCode::OK, ()))
 }
 
-#[derive(Debug, Serialize)]
-pub struct ErrorResponse {
-    pub message: String,
-}
-
-#[derive(Serialize, Debug)]
-pub struct LoanOfferStats {
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct LoanOffer {
+    pub id: String,
+    pub lender: LenderStats,
+    pub name: String,
     #[serde(with = "rust_decimal::serde::float")]
-    avg: Decimal,
+    pub min_ltv: Decimal,
     #[serde(with = "rust_decimal::serde::float")]
-    min: Decimal,
+    pub interest_rate: Decimal,
     #[serde(with = "rust_decimal::serde::float")]
-    max: Decimal,
-}
-
-impl From<db::loan_offers::InterestRateStats> for LoanOfferStats {
-    fn from(value: db::loan_offers::InterestRateStats) -> Self {
-        Self {
-            avg: value.avg,
-            min: value.min,
-            max: value.max,
-        }
-    }
-}
-
-#[derive(Serialize, Debug)]
-pub struct ContractStats {
+    pub loan_amount_min: Decimal,
     #[serde(with = "rust_decimal::serde::float")]
-    loan_amount: Decimal,
-    duration_days: i32,
+    pub loan_amount_max: Decimal,
     #[serde(with = "rust_decimal::serde::float")]
-    interest_rate: Decimal,
+    pub loan_amount_reserve: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
+    pub loan_amount_reserve_remaining: Decimal,
+    pub auto_accept: bool,
+    pub duration_days_min: i32,
+    pub duration_days_max: i32,
+    pub loan_asset: LoanAsset,
+    pub loan_payout: LoanPayout,
+    pub status: LoanOfferStatus,
+    pub loan_repayment_address: String,
+    pub origination_fee: Vec<OriginationFee>,
+    pub kyc_link: Option<Url>,
+    pub extension_max_duration_days: u64,
+    #[serde(with = "rust_decimal::serde::float_option")]
+    pub extension_interest_rate: Option<Decimal>,
+    pub repayment_plan: RepaymentPlan,
     #[serde(with = "time::serde::rfc3339")]
-    created_at: OffsetDateTime,
+    pub created_at: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339")]
+    pub updated_at: OffsetDateTime,
 }
 
-impl From<db::contracts::ContractStats> for ContractStats {
-    fn from(value: db::contracts::ContractStats) -> Self {
-        Self {
-            loan_amount: value.loan_amount,
-            duration_days: value.duration_days,
-            interest_rate: value.interest_rate,
-            created_at: value.created_at,
-        }
-    }
-}
-
-#[derive(Serialize, Debug)]
-pub struct Stats {
-    contract_stats: Vec<ContractStats>,
-    loan_offer_stats: LoanOfferStats,
-}
-
+/// Get latest statistics for all loan offers and contracts.
+#[utoipa::path(
+    get,
+    path = "/stats",
+    tag = LOAN_OFFERS_TAG,
+    responses(
+        (
+            status = 200,
+            description = "Latest loan offer and contract statistics"
+        )
+    ),
+    security(
+        ("api_key" = [])
+    )
+)]
 #[instrument(skip_all, err(Debug))]
 pub async fn get_latest_stats(
     State(data): State<Arc<AppState>>,
@@ -689,4 +632,57 @@ pub async fn get_latest_stats(
             loan_offer_stats,
         }),
     ))
+}
+
+#[derive(Serialize, Debug)]
+pub struct Stats {
+    contract_stats: Vec<ContractStats>,
+    loan_offer_stats: LoanOfferStats,
+}
+
+#[derive(Serialize, Debug)]
+pub struct ContractStats {
+    #[serde(with = "rust_decimal::serde::float")]
+    loan_amount: Decimal,
+    duration_days: i32,
+    #[serde(with = "rust_decimal::serde::float")]
+    interest_rate: Decimal,
+    #[serde(with = "time::serde::rfc3339")]
+    created_at: OffsetDateTime,
+}
+
+#[derive(Serialize, Debug)]
+pub struct LoanOfferStats {
+    #[serde(with = "rust_decimal::serde::float")]
+    avg: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
+    min: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
+    max: Decimal,
+}
+
+impl From<db::loan_offers::InterestRateStats> for LoanOfferStats {
+    fn from(value: db::loan_offers::InterestRateStats) -> Self {
+        Self {
+            avg: value.avg,
+            min: value.min,
+            max: value.max,
+        }
+    }
+}
+
+impl From<db::contracts::ContractStats> for ContractStats {
+    fn from(value: db::contracts::ContractStats) -> Self {
+        Self {
+            loan_amount: value.loan_amount,
+            duration_days: value.duration_days,
+            interest_rate: value.interest_rate,
+            created_at: value.created_at,
+        }
+    }
+}
+
+#[derive(Debug, Serialize)]
+pub struct ErrorResponse {
+    pub message: String,
 }

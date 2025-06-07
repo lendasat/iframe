@@ -39,7 +39,7 @@ export function StablecoinPayout({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [transactionId, setTransactionId] = useState<string>("");
 
-  const { principalGiven } = useLenderHttpClient();
+  const { reportDisbursement } = useLenderHttpClient();
 
   const loanAmount = contract?.loan_amount;
 
@@ -77,7 +77,7 @@ export function StablecoinPayout({
 
     try {
       setIsSubmitting(true);
-      await principalGiven(contract.id, transactionId);
+      await reportDisbursement(contract.id, transactionId);
 
       refreshContract();
     } catch (error) {

@@ -27,6 +27,7 @@ use crate::model::UpgradeToPakeRequest;
 use crate::model::UpgradeToPakeResponse;
 use crate::model::WalletBackupData;
 use crate::routes::lender::auth::jwt_auth::auth;
+use crate::routes::lender::AUTH_TAG;
 use crate::routes::user_connection_details_middleware;
 use crate::routes::user_connection_details_middleware::UserConnectionDetails;
 use crate::routes::AppState;
@@ -61,6 +62,8 @@ use std::sync::Arc;
 use time::OffsetDateTime;
 use tracing::instrument;
 use tracing::Level;
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
 
 pub(crate) mod jwt_auth;
 
@@ -72,7 +75,6 @@ const PASSWORD_RESET_TOKEN_LENGTH: usize = 20;
 
 pub(crate) fn router(app_state: Arc<AppState>) -> Router {
     Router::new()
-        .route("/api/auth/register", post(post_register))
         .route(
             "/api/auth/upgrade-to-pake",
             post(post_start_upgrade_to_pake),
@@ -122,6 +124,33 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
         .with_state(app_state)
 }
 
+pub(crate) fn router_openapi(app_state: Arc<AppState>) -> OpenApiRouter {
+    OpenApiRouter::new()
+        .routes(routes!(post_register))
+        .with_state(app_state)
+}
+
+/// Register a new user with email and password.
+#[utoipa::path(
+    post,
+    request_body = RegisterUserSchema,
+    path = "/register",
+    tag = AUTH_TAG,
+    responses(
+        (
+            status = 200,
+            description = "User successfully registered, verification email sent"
+        ),
+        (
+            status = 400,
+            description = "Invalid input or invite code"
+        ),
+        (
+            status = 409,
+            description = "User already exists"
+        )
+    )
+)]
 #[instrument(skip_all, err(Debug, level = Level::DEBUG))]
 async fn post_register(
     State(data): State<Arc<AppState>>,

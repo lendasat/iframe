@@ -466,13 +466,14 @@ async fn post_contract_request(
     Ok(AppJson(contract))
 }
 
-/// Cancel a contract request or a contract renewal request.
+/// Cancel a contract request.
 #[utoipa::path(
 delete,
 path = "/{id}",
+tag = CONTRACTS_TAG,
 params(
     (
-    "id" = String, Path, description = "Contract id"
+    "id" = String, Path, description = "Contract ID"
     )
 ),
 tag = CONTRACTS_TAG,
@@ -502,9 +503,7 @@ async fn cancel_contract_request(
     .await
     .map_err(Error::database)?;
 
-    if contract.status != ContractStatus::Requested
-        && contract.status != ContractStatus::RenewalRequested
-    {
+    if contract.status != ContractStatus::Requested {
         return Err(Error::InvalidCancelRequest {
             status: contract.status,
         });
@@ -515,19 +514,6 @@ async fn cancel_contract_request(
         .begin()
         .await
         .map_err(|e| Error::database(anyhow!(e)))?;
-
-    if contract.status == ContractStatus::RenewalRequested {
-        let parent = db::contract_extensions::get_parent_by_extended(&data.db, &contract_id)
-            .await
-            .map_err(|e| Error::database(anyhow!(e)))?
-            .ok_or(Error::MissingParentContract(contract_id.clone()))?;
-        db::contracts::cancel_extension(&mut *db_tx, &parent)
-            .await
-            .map_err(Error::database)?;
-        db::contract_extensions::delete_with_parent(&mut *db_tx, &parent)
-            .await
-            .map_err(|e| Error::database(anyhow!(e)))?;
-    }
 
     db::contracts::mark_contract_as_cancelled(&mut *db_tx, &contract_id)
         .await
@@ -578,13 +564,13 @@ async fn get_contracts(
     Ok(AppJson(contracts_api))
 }
 
-/// Get a contract by ID.
+/// Get a specific personal contract.
 #[utoipa::path(
 get,
 path = "/{id}",
 params(
     (
-    "id" = String, Path, description = "Contract id"
+    "id" = String, Path, description = "Contract ID"
     )
 ),
 tag = CONTRACTS_TAG,
@@ -620,7 +606,7 @@ async fn get_contract(
     Ok(AppJson(contract))
 }
 
-/// Marks an installment as paid.
+/// Mark an installment as paid.
 #[utoipa::path(
 put,
 path = "/{id}/installment-paid",
@@ -732,13 +718,13 @@ async fn put_installment_paid(
     Ok(())
 }
 
-/// Provide fiat details to contract
+/// Provide fiat details to the contract.
 #[utoipa::path(
 put,
 path = "/{id}/fiat-details",
 params(
     (
-    "id" = String, Path, description = "Contract id"
+    "id" = String, Path, description = "Contract ID"
     )
 ),
 request_body = FiatLoanDetailsWrapper,
@@ -783,7 +769,7 @@ get,
 path = "/{id}/claim",
 params(
     (
-    "id" = String, Path, description = "Contract id"
+    "id" = String, Path, description = "Contract ID"
     )
 ),
 tag = CONTRACTS_TAG,
@@ -866,13 +852,13 @@ async fn get_claim_collateral_psbt(
     Ok(AppJson(res))
 }
 
-/// Get all personal contracts.
+/// Broadcast claim-collateral transaction.
 #[utoipa::path(
 post,
-path = "/{id}",
+path = "/{id}/broadcast-claim",
 params(
     (
-    "id" = String, Path, description = "Contract id"
+    "id" = String, Path, description = "Contract ID"
     )
 ),
 request_body = ClaimTx,
@@ -945,7 +931,7 @@ post,
 path = "/{id}/extend",
 params(
     (
-    "id" = String, Path, description = "Contract id"
+    "id" = String, Path, description = "Contract ID"
     )
 ),
 request_body = ExtendContractRequestSchema,
@@ -1394,7 +1380,7 @@ pub struct UpdateBorrowerBtcAddress {
 /// Update borrower btc address of a contract.
 #[utoipa::path(
     put,
-    path = "/{id}/borroweraddress",
+    path = "/{id}/borrower-address",
     params(
         (
         "id" = String, Path, description = "Contract id"
@@ -1505,7 +1491,7 @@ enum Error {
         status: ContractStatus,
     },
     /// Can't cancel a contract request with a [`ContractStatus`] different to
-    /// [`ContractStatus::Requested`] or [`ContractStatus::RenewalRequested`].
+    /// [`ContractStatus::Requested`].
     InvalidCancelRequest {
         status: ContractStatus,
     },
@@ -1536,8 +1522,6 @@ enum Error {
     NotYourContract,
     /// We failed at calculating the interest rate. Cannot do much without this
     InterestRateCalculation(String),
-    /// Can't cancel a contract extension request if the parent does not exist.
-    MissingParentContract(String),
     /// Discounted origination fee rate was not valid
     InvalidDiscountRate {
         fee: Decimal,
@@ -1721,7 +1705,6 @@ impl IntoResponse for Error {
                             Error::TrackClaimTx(_) |
                             Error::PostClaimTx(_) |
                             Error::InterestRateCalculation(_) |
-                            Error::MissingParentContract(_) |
                             Error::InvalidDiscountRate { .. } |
                             Error::CreateClaimCollateralPsbt(_) |
                             Error::CannotBuildDescriptor(_) |

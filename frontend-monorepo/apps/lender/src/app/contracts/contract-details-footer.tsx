@@ -10,7 +10,6 @@ import { Button } from "@frontend/shadcn";
 import ApproveOrRejectStablesDialog from "./approve-dialog/approve-reject-stables-request-dialog";
 import ApproveFiatDialog from "./approve-dialog/approve-reject-fiat-request-dialog";
 import { Check } from "lucide-react";
-import ApproveOrRejectExtensionDialog from "./approve-reject-extension-dialog";
 import ConfirmRepaymentDialog from "./confirm-repayment-dialog";
 import DefaultedOrUndercollateralizedContractDialog from "./manage-loan-dialog/defaulted-contract-dialog";
 import { LoanAssetHelper } from "@frontend/ui-shared";
@@ -70,19 +69,6 @@ export function ContractDetailsFooter({
           Payout Principal <LuChevronRight className="ml-1 h-4 w-4" />
         </Button>
       </PayoutPrincipalDialog>
-    );
-  } else if (contract.status === ContractStatus.RenewalRequested) {
-    button = (
-      <ApproveOrRejectExtensionDialog
-        contractId={contract.id}
-        interestAmount={contract.interest}
-        expiry={contract.expiry}
-        refreshContract={refreshContract}
-      >
-        <Button type={"button"} disabled={buttonDisabled}>
-          Accept or Reject Renewal <LuChevronRight className="ml-1 h-4 w-4" />
-        </Button>
-      </ApproveOrRejectExtensionDialog>
     );
   } else if (
     contract.installments.filter((i) => {

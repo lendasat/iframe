@@ -263,7 +263,7 @@ pub struct ResetLegacyPasswordSchema {
     pub password: String,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct CreateLoanOfferSchema {
     pub name: String,
     pub min_ltv: Decimal,
@@ -277,7 +277,9 @@ pub struct CreateLoanOfferSchema {
     pub loan_asset: LoanAsset,
     pub loan_payout: LoanPayout,
     pub loan_repayment_address: String,
+    #[schema(value_type = String)]
     pub lender_pk: PublicKey,
+    #[schema(value_type = String)]
     pub lender_derivation_path: bip32::DerivationPath,
     pub auto_accept: bool,
     /// The lender can optionally provide a KYC link, so that the borrower can complete a KYC
@@ -1272,7 +1274,7 @@ pub struct InstallmentPaidRequest {
     pub payment_id: String,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct ConfirmInstallmentPaymentRequest {
     pub installment_id: Uuid,
 }

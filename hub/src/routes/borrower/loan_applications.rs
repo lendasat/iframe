@@ -3,7 +3,8 @@ use crate::model::Borrower;
 use crate::model::CreateLoanApplicationSchema;
 use crate::model::LoanApplication;
 use crate::routes::borrower::auth::jwt_or_api_auth;
-use crate::routes::borrower::AppState;
+use crate::routes::borrower::LOAN_APPLICATIONS_TAG;
+use crate::routes::AppState;
 use axum::extract::FromRequest;
 use axum::extract::Path;
 use axum::extract::State;
@@ -11,38 +12,26 @@ use axum::http::StatusCode;
 use axum::middleware;
 use axum::response::IntoResponse;
 use axum::response::Response;
-use axum::routing::get;
-use axum::routing::post;
-use axum::routing::put;
 use axum::Extension;
 use axum::Json;
-use axum::Router;
 use rust_decimal::prelude::Zero;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
+use serde::Deserialize;
 use serde::Serialize;
 use std::sync::Arc;
 use tracing::instrument;
+use utoipa::ToSchema;
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
 
-pub(crate) fn router(app_state: Arc<AppState>) -> Router {
-    Router::new()
-        .route(
-            "/api/loans/application",
-            get(get_loan_applications_by_borrower),
-        )
-        .route(
-            "/api/loans/application/:id",
-            get(get_loan_application_by_application_and_application_id),
-        )
-        .route(
-            "/api/loans/application/delete/:id",
-            put(put_mark_loan_application_as_deleted),
-        )
-        .route("/api/loans/application", post(create_loan_application))
-        .route(
-            "/api/loans/application/edit/:id",
-            put(put_edit_loan_application),
-        )
+pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
+    OpenApiRouter::new()
+        .routes(routes!(get_loan_applications_by_borrower))
+        .routes(routes!(create_loan_application))
+        .routes(routes!(get_loan_application_by_application_and_application_id))
+        .routes(routes!(put_mark_loan_application_as_deleted))
+        .routes(routes!(put_edit_loan_application))
         .route_layer(middleware::from_fn_with_state(
             app_state.clone(),
             jwt_or_api_auth::auth,
@@ -53,6 +42,31 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
 // TODO: we need to handle a loan application for a debit card separately. And throw an error if the
 // user has already a card. In the future we will either allow multiple cards or allow the user to
 // recharge his existing car.
+
+/// Create a new loan application.
+#[utoipa::path(
+post,
+path = "/",
+tag = LOAN_APPLICATIONS_TAG,
+request_body = CreateLoanApplicationSchema,
+responses(
+    (
+    status = 200,
+    description = "Loan application created successfully",
+    body = LoanApplication
+    ),
+    (
+    status = 400,
+    description = "Invalid loan application parameters",
+    body = LoanApplicationErrorResponse
+    )
+),
+security(
+    (
+    "api_key" = [])
+    )
+)
+]
 #[instrument(skip_all, fields(borrower_id = user.id, ?body), ret, err(Debug))]
 pub async fn create_loan_application(
     State(data): State<Arc<AppState>>,
@@ -82,6 +96,24 @@ pub async fn create_loan_application(
     Ok(AppJson(loan))
 }
 
+/// Get all loan applications for the authenticated borrower.
+#[utoipa::path(
+get,
+path = "/",
+tag = LOAN_APPLICATIONS_TAG,
+responses(
+    (
+    status = 200,
+    description = "List of loan applications for this borrower",
+    body = [LoanApplication]
+    )
+),
+security(
+    (
+    "api_key" = [])
+    )
+)
+]
 #[instrument(skip_all, err(Debug))]
 pub async fn get_loan_applications_by_borrower(
     State(data): State<Arc<AppState>>,
@@ -95,6 +127,34 @@ pub async fn get_loan_applications_by_borrower(
     Ok(AppJson(loans))
 }
 
+/// Get a specific loan application by ID.
+#[utoipa::path(
+get,
+path = "/{id}",
+tag = LOAN_APPLICATIONS_TAG,
+params(
+    (
+    "id" = String, Path, description = "Loan application ID"
+    )
+),
+responses(
+    (
+    status = 200,
+    description = "Loan application details",
+    body = LoanApplication
+    ),
+    (
+    status = 404,
+    description = "Loan application not found",
+    body = LoanApplicationErrorResponse
+    )
+),
+security(
+    (
+    "api_key" = [])
+    )
+)
+]
 #[instrument(skip_all, err(Debug))]
 pub async fn get_loan_application_by_application_and_application_id(
     State(data): State<Arc<AppState>>,
@@ -113,6 +173,33 @@ pub async fn get_loan_application_by_application_and_application_id(
     Ok(AppJson(loan))
 }
 
+/// Mark a loan application as deleted.
+#[utoipa::path(
+put,
+path = "/delete/{id}",
+tag = LOAN_APPLICATIONS_TAG,
+params(
+    (
+    "id" = String, Path, description = "Loan application ID to delete"
+    )
+),
+responses(
+    (
+    status = 200,
+    description = "Loan application marked as deleted successfully"
+    ),
+    (
+    status = 404,
+    description = "Loan application not found",
+    body = LoanApplicationErrorResponse
+    )
+),
+security(
+    (
+    "api_key" = [])
+    )
+)
+]
 #[instrument(skip_all, fields(borrower_id = user.id, loan_deal_id), ret, err(Debug))]
 pub async fn put_mark_loan_application_as_deleted(
     State(data): State<Arc<AppState>>,
@@ -130,8 +217,8 @@ pub async fn put_mark_loan_application_as_deleted(
     Ok(AppJson(()))
 }
 
-#[derive(serde::Deserialize, Debug)]
-struct EditLoanApplicationRequest {
+#[derive(Deserialize, Debug, ToSchema)]
+pub struct EditLoanApplicationRequest {
     #[serde(with = "rust_decimal::serde::float")]
     loan_amount: Decimal,
     duration_days: i32,
@@ -141,11 +228,44 @@ struct EditLoanApplicationRequest {
     ltv: Decimal,
 }
 
-#[instrument(skip_all, fields(borrower_id = user.id, loan_deal_id), ret, err(Debug))]
 /// Edit a loan application.
 ///
 /// In practice, we replace the loan application with a new one with the new values, and mark the
 /// old one as deleted.
+#[utoipa::path(
+put,
+path = "/edit/{id}",
+tag = LOAN_APPLICATIONS_TAG,
+params(
+    (
+    "id" = String, Path, description = "Loan application ID to edit"
+    )
+),
+request_body = EditLoanApplicationRequest,
+responses(
+    (
+    status = 200,
+    description = "Loan application edited successfully",
+    body = LoanApplication
+    ),
+    (
+    status = 404,
+    description = "Loan application not found",
+    body = LoanApplicationErrorResponse
+    ),
+    (
+    status = 400,
+    description = "Invalid loan application parameters",
+    body = LoanApplicationErrorResponse
+    )
+),
+security(
+    (
+    "api_key" = [])
+    )
+)
+]
+#[instrument(skip_all, fields(borrower_id = user.id, loan_deal_id), ret, err(Debug))]
 pub async fn put_edit_loan_application(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Borrower>,
@@ -235,14 +355,15 @@ impl Error {
     }
 }
 
+/// How we want error responses to be serialized.
+#[derive(Serialize, ToSchema)]
+pub struct LoanApplicationErrorResponse {
+    pub message: String,
+}
+
 /// Tell `axum` how [`AppError`] should be converted into a response.
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
-        /// How we want error responses to be serialized.
-        #[derive(Serialize)]
-        struct ErrorResponse {
-            message: String,
-        }
 
         let (status, message) = match self {
             Error::Database(_) => (
@@ -266,6 +387,6 @@ impl IntoResponse for Error {
                 format!("Loan amount not valid. Was {}", amount),
             ),
         };
-        (status, AppJson(ErrorResponse { message })).into_response()
+        (status, AppJson(LoanApplicationErrorResponse { message })).into_response()
     }
 }

@@ -781,35 +781,6 @@ where
     mark_contract_state_as(pool, contract_id, db::ContractStatus::Extended).await
 }
 
-/// Move back a [`Contract`] with [`ContractStatus::Extended`] to
-/// [`ContractStatus::PrincipalGiven`].
-pub async fn cancel_extension<'a, E>(pool_executor: E, contract_id: &str) -> Result<()>
-where
-    E: sqlx::Executor<'a, Database = Postgres>,
-{
-    let rows_affected = sqlx::query!(
-        r#"
-    UPDATE contracts
-    SET
-        status = $1,
-        updated_at = $2
-    WHERE id = $3 AND status = $4
-    "#,
-        db::ContractStatus::PrincipalGiven as db::ContractStatus,
-        OffsetDateTime::now_utc(),
-        contract_id,
-        db::ContractStatus::Extended as db::ContractStatus,
-    )
-    .execute(pool_executor)
-    .await?
-    .rows_affected();
-
-    if rows_affected == 0 {
-        return Err(anyhow::anyhow!("Could not cancel contract extension"));
-    }
-    Ok(())
-}
-
 pub async fn mark_contract_as_closed(pool: &Pool<Postgres>, contract_id: &str) -> Result<()> {
     mark_contract_state_as(pool, contract_id, db::ContractStatus::Closed).await
 }

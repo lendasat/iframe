@@ -86,7 +86,7 @@ async fn open_and_repay_loan() {
     };
 
     let res = lender
-        .post("http://localhost:7338/api/my-loans/offer")
+        .post("http://localhost:7338/api/offers/create")
         .json(&loan_offer)
         .send()
         .await
@@ -265,7 +265,7 @@ async fn open_and_repay_loan() {
     let loan_txid = random_txid();
     let res = lender
         .put(format!(
-            "http://localhost:7338/api/contracts/{}/principalgiven?txid={loan_txid}",
+            "http://localhost:7338/api/contracts/{}/report-disbursement?txid={loan_txid}",
             contract.id
         ))
         .send()
@@ -344,7 +344,7 @@ async fn open_and_repay_loan() {
 
     let res = borrower
         .post(format!(
-            "http://localhost:7337/api/contracts/{}",
+            "http://localhost:7337/api/contracts/{}/broadcast-claim",
             contract.id
         ))
         .json(&ClaimTx { tx: tx_hex })

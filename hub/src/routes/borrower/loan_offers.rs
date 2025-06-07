@@ -28,7 +28,7 @@ use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-pub(crate) fn router_openapi(app_state: Arc<AppState>) -> OpenApiRouter {
+pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
     OpenApiRouter::new()
         .routes(routes!(get_all_available_loan_offers))
         .routes(routes!(get_loan_offer))
@@ -67,24 +67,28 @@ pub struct LoanOffer {
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(rename_all = "PascalCase")]
 pub enum QueryParamLoanType {
+    /// Filter for direct loan offers only.
     Direct,
+    /// Filter for indirect loan offers only  .
     Indirect,
+    /// Show all loan offers (both direct and indirect).
     All,
 }
 
-#[derive(Debug, Deserialize, ToSchema)]
-pub struct LoanQueryParams {
+#[derive(Debug, Deserialize)]
+pub struct LoanOffersQuery {
     pub loan_type: Option<QueryParamLoanType>,
 }
 
-/// Return all available offers
+/// Get all available loan offers.
 #[utoipa::path(
 get,
 path = "/",
 tag = LOAN_OFFERS_TAG,
 params(
-    ("loan_type" = Option<QueryParamLoanType>, Query, description = "Filter by loan type: direct, indirect. If none is provided, `direct` only will be returned")
+    ("loan_type" = Option<QueryParamLoanType>, Query, description = "Filter by loan type: Direct, Indirect, or All. Defaults to Direct if not provided.")
 ),
 responses(
     (
@@ -102,7 +106,7 @@ security(
 #[instrument(skip_all, err(Debug))]
 pub async fn get_all_available_loan_offers(
     State(data): State<Arc<AppState>>,
-    Query(params): Query<LoanQueryParams>,
+    Query(query): Query<LoanOffersQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     let loans = db::loan_offers::load_all_available_loan_offers(&data.db)
         .await
@@ -115,7 +119,7 @@ pub async fn get_all_available_loan_offers(
 
     let mut ret = vec![];
 
-    let filter_by = params.loan_type.unwrap_or(QueryParamLoanType::Direct);
+    let filter_by = query.loan_type.unwrap_or(QueryParamLoanType::Direct);
 
     for loan_offer in loans {
         match filter_by {
@@ -186,24 +190,19 @@ pub async fn get_all_available_loan_offers(
     Ok((StatusCode::OK, Json(ret)))
 }
 
-/// Return loan offers by lender
+/// Get all the loan offers of a given lender.
 #[utoipa::path(
 get,
-path = "/bylender/{id}",
+path = "/by-lender/{id}",
 params(
-    (
-    "loan_type" = Option<QueryParamLoanType>, Query, description = "Filter by loan type: direct, indirect. If none is provided, `direct` only will be returned")
-    ),
-params(
-    (
-    "id" = String, Path, description = "Lender id"
-    )
+    ("loan_type" = Option<QueryParamLoanType>, Query, description = "Filter by loan type: Direct, Indirect, or All. Defaults to Direct if not provided."),
+    ("id" = String, Path, description = "Lender ID")
 ),
 tag = LOAN_OFFERS_TAG,
 responses(
     (
     status = 200,
-    description = "A list of loan offers by the specific lender",
+    description = "A list of loan offers created by the given lender",
     body = [LoanOffer]
     )
 ),
@@ -213,7 +212,7 @@ responses(
 pub async fn get_available_loan_offers_by_lender(
     State(data): State<Arc<AppState>>,
     Path(lender_id): Path<String>,
-    Query(params): Query<LoanQueryParams>,
+    Query(query): Query<LoanOffersQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     let available_loans =
         db::loan_offers::load_available_loan_offers_by_lender(&data.db, lender_id.as_str())
@@ -243,7 +242,7 @@ pub async fn get_available_loan_offers_by_lender(
             (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
         })?;
 
-    let filter_by = params.loan_type.unwrap_or(QueryParamLoanType::Direct);
+    let filter_by = query.loan_type.unwrap_or(QueryParamLoanType::Direct);
 
     for loan_offer in available_loans {
         match filter_by {
@@ -297,13 +296,13 @@ pub async fn get_available_loan_offers_by_lender(
     Ok((StatusCode::OK, Json(ret)))
 }
 
-/// Return specific loan offers
+/// Get a specific loan offer.
 #[utoipa::path(
 get,
 path = "/{id}",
 params(
     (
-    "id" = String, Path, description = "Loan offer id"
+    "id" = String, Path, description = "Loan offer ID"
     )
 ),
 tag = LOAN_OFFERS_TAG,

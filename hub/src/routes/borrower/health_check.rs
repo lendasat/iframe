@@ -7,7 +7,7 @@ use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-pub(crate) fn router_openapi() -> OpenApiRouter {
+pub(crate) fn router() -> OpenApiRouter {
     OpenApiRouter::new().routes(routes!(health_checker_handler))
 }
 
@@ -16,7 +16,7 @@ pub struct Health {
     message: String,
 }
 
-/// Shows if server is up and running
+/// Shows if server is up and running.
 #[utoipa::path(
 get,
 path = "/",
