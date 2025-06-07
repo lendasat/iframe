@@ -3,14 +3,15 @@ use crate::model::Lender;
 use crate::routes::lender::auth::jwt_auth;
 use crate::routes::lender::KYC_TAG;
 use crate::routes::AppState;
-use crate::routes::ErrorResponse;
 use axum::extract::Path;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::middleware;
 use axum::response::IntoResponse;
+use axum::response::Response;
 use axum::Extension;
 use axum::Json;
+use serde::Serialize;
 use std::sync::Arc;
 use tracing::instrument;
 use utoipa_axum::router::OpenApiRouter;
@@ -50,21 +51,16 @@ pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
     )
 )]
 #[instrument(skip(data, user), err(Debug))]
-pub async fn put_approve_kyc(
+async fn put_approve_kyc(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Lender>,
     Path(borrower_id): Path<String>,
-) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+) -> Result<(), Error> {
     let lender_id = user.id;
 
     db::kyc::approve(&data.db, &lender_id, &borrower_id)
         .await
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
+        .map_err(Error::database)?;
 
     tracing::debug!(borrower_id, lender_id, "KYC approved");
 
@@ -90,15 +86,46 @@ pub async fn put_approve_kyc(
     )
 )]
 #[instrument(skip(_data, user), err(Debug))]
-pub async fn put_reject_kyc(
+async fn put_reject_kyc(
     State(_data): State<Arc<AppState>>,
     Extension(user): Extension<Lender>,
     Path(borrower_id): Path<String>,
-) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+) -> Result<(), Error> {
     let lender_id = user.id;
 
     // Logging is sufficient for now. The KYC process remains in state `is_done=false`.
     tracing::debug!(borrower_id, lender_id, "KYC rejected");
 
     Ok(())
+}
+
+#[derive(Debug)]
+enum Error {
+    /// Failed to interact with the database.
+    Database(#[allow(dead_code)] String),
+}
+
+impl Error {
+    fn database(e: impl std::fmt::Display) -> Self {
+        Self::Database(format!("{e:#}"))
+    }
+}
+
+/// Tell `axum` how [`Error`] should be converted into a response.
+impl IntoResponse for Error {
+    fn into_response(self) -> Response {
+        /// How we want error responses to be serialized.
+        #[derive(Serialize)]
+        struct ErrorResponse {
+            message: String,
+        }
+
+        let (status, message) = match self {
+            Error::Database(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Something went wrong".to_owned(),
+            ),
+        };
+        (status, Json(ErrorResponse { message })).into_response()
+    }
 }

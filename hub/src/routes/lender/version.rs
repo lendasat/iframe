@@ -14,7 +14,7 @@ pub(crate) fn router() -> OpenApiRouter {
 }
 
 #[derive(Serialize, ToSchema)]
-pub struct Version {
+struct Version {
     tag: String,
     commit_hash: String,
 }
@@ -32,7 +32,7 @@ pub struct Version {
         )
     )
 )]
-pub async fn version() -> impl IntoResponse {
+async fn version() -> impl IntoResponse {
     Json(Version {
         tag: GIT_TAG.to_owned(),
         commit_hash: GIT_HASH.to_owned(),

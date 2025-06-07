@@ -81,79 +81,6 @@ pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
         .with_state(app_state.clone())
 }
 
-#[derive(Debug, Serialize, Deserialize, utoipa::ToSchema)]
-pub struct Contract {
-    pub id: String,
-    #[serde(with = "rust_decimal::serde::float")]
-    pub loan_amount: Decimal,
-    pub duration_days: i32,
-    pub initial_collateral_sats: u64,
-    pub origination_fee_sats: u64,
-    pub collateral_sats: u64,
-    #[serde(with = "rust_decimal::serde::float")]
-    pub interest_rate: Decimal,
-    #[serde(with = "rust_decimal::serde::float")]
-    pub interest: Decimal,
-    #[serde(with = "rust_decimal::serde::float")]
-    pub initial_ltv: Decimal,
-    pub status: ContractStatus,
-    #[schema(value_type = String)]
-    pub lender_pk: PublicKey,
-    #[schema(value_type = String)]
-    pub lender_derivation_path: DerivationPath,
-    #[schema(value_type = String)]
-    pub borrower_pk: PublicKey,
-    pub borrower_btc_address: String,
-    pub borrower_loan_address: Option<String>,
-    pub contract_address: Option<String>,
-    pub collateral_script: Option<String>,
-    pub loan_repayment_address: Option<String>,
-    pub borrower: BorrowerProfile,
-    #[serde(with = "time::serde::rfc3339")]
-    pub created_at: OffsetDateTime,
-    #[serde(with = "time::serde::rfc3339")]
-    pub updated_at: OffsetDateTime,
-    #[serde(with = "time::serde::rfc3339")]
-    pub expiry: OffsetDateTime,
-    pub liquidation_status: LiquidationStatus,
-    pub transactions: Vec<LoanTransaction>,
-    pub loan_asset: LoanAsset,
-    pub can_recover_collateral_manually: bool,
-    #[serde(with = "rust_decimal::serde::float")]
-    pub liquidation_price: Decimal,
-    pub extends_contract: Option<String>,
-    pub extended_by_contract: Option<String>,
-    pub kyc_info: Option<KycInfo>,
-    pub fiat_loan_details_borrower: Option<FiatLoanDetailsWrapper>,
-    pub fiat_loan_details_lender: Option<FiatLoanDetailsWrapper>,
-    pub borrower_npub: String,
-    pub client_contract_id: Option<Uuid>,
-    pub timeline: Vec<TimelineEvent>,
-    pub extension_max_duration_days: u64,
-    #[serde(with = "rust_decimal::serde::float_option")]
-    pub extension_interest_rate: Option<Decimal>,
-    pub installments: Vec<Installment>,
-}
-
-#[derive(Debug, Serialize, Deserialize, utoipa::ToSchema)]
-pub struct FiatLoanDetailsWrapper {
-    pub details: FiatLoanDetails,
-    pub encrypted_encryption_key: String,
-}
-
-#[derive(Debug, Serialize, Deserialize, utoipa::ToSchema)]
-pub struct KycInfo {
-    #[schema(value_type = String)]
-    kyc_link: Url,
-    is_kyc_done: bool,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, utoipa::ToSchema)]
-pub struct BorrowerProfile {
-    pub(crate) id: String,
-    pub(crate) name: String,
-}
-
 /// Get all the contracts for this lender.
 #[utoipa::path(
     get,
@@ -225,17 +152,6 @@ async fn get_contract(
     let contract = map_to_api_contract(&data, contract).await?;
 
     Ok(AppJson(contract))
-}
-
-#[derive(Debug, Deserialize, utoipa::ToSchema)]
-struct UpdateExtensionPolicyRequest {
-    /// The maximum number of days a contract can be extended by.
-    ///
-    /// A zero value indicates that the contract cannot be extended.
-    extension_max_duration_days: u64,
-    /// The interest rate to be applied to the extension period.
-    #[serde(with = "rust_decimal::serde::float")]
-    extension_interest_rate: Decimal,
 }
 
 /// Update the extension policy of a contract.
@@ -363,11 +279,6 @@ async fn put_approve_contract(
     .map_err(Error::from)?;
 
     Ok(())
-}
-
-#[derive(Debug, Deserialize)]
-pub struct PrincipalGivenQueryParam {
-    pub txid: Option<String>,
 }
 
 /// Report that the principal has been disbursed to the borrower.
@@ -542,30 +453,6 @@ async fn put_confirm_installment_payment(
     Ok(())
 }
 
-#[derive(Deserialize)]
-pub enum LiquidationType {
-    Bitcoin,
-    StableCoin,
-}
-
-#[derive(Deserialize, Debug, utoipa::ToSchema)]
-pub struct LiquidationPsbtQueryParams {
-    /// Fee rate in sats/vbyte.
-    pub fee_rate: u64,
-    /// Where to send the lender's share of the liquidation.
-    #[schema(value_type = String)]
-    pub address: Address<NetworkUnchecked>,
-}
-
-#[derive(Debug, Serialize, utoipa::ToSchema)]
-pub struct LiquidationPsbt {
-    pub psbt: String,
-    #[schema(value_type = String)]
-    pub collateral_descriptor: Descriptor<PublicKey>,
-    #[schema(value_type = String)]
-    pub lender_pk: PublicKey,
-}
-
 /// Get liquidation PSBT for converting collateral to Bitcoin.
 #[utoipa::path(
     get,
@@ -671,25 +558,6 @@ async fn get_liquidation_to_bitcoin_psbt(
         collateral_descriptor,
         lender_pk,
     }))
-}
-
-#[derive(Debug, Serialize, Deserialize, utoipa::ToSchema)]
-pub struct LiquidationToStablecoinPsbtRequest {
-    #[schema(value_type = String)]
-    bitcoin_refund_address: Address<NetworkUnchecked>,
-    fee_rate_sats_vbyte: u64,
-}
-
-#[derive(Debug, Serialize, utoipa::ToSchema)]
-pub struct LiquidationToStableCoinPsbt {
-    pub psbt: String,
-    #[schema(value_type = String)]
-    pub collateral_descriptor: Descriptor<PublicKey>,
-    #[schema(value_type = String)]
-    pub lender_pk: PublicKey,
-    pub settle_address: String,
-    #[serde(with = "rust_decimal::serde::float")]
-    pub settle_amount: Decimal,
 }
 
 /// Get liquidation PSBT for converting collateral to stablecoin.
@@ -808,11 +676,6 @@ async fn post_build_liquidation_to_stablecoin_psbt(
         settle_address,
         settle_amount,
     }))
-}
-
-#[derive(Debug, Serialize, Deserialize, utoipa::ToSchema)]
-pub struct LiquidationTx {
-    pub tx: String,
 }
 
 /// Broadcast liquidation transaction.
@@ -937,15 +800,6 @@ async fn post_liquidation_tx(
     Ok(AppJson(claim_txid))
 }
 
-#[derive(Debug, Serialize, utoipa::ToSchema)]
-pub struct ManualRecoveryPsbt {
-    pub psbt: String,
-    #[schema(value_type = String)]
-    pub collateral_descriptor: Descriptor<PublicKey>,
-    #[schema(value_type = String)]
-    pub lender_pk: PublicKey,
-}
-
 /// Get manual recovery PSBT for collateral recovery.
 #[utoipa::path(
     get,
@@ -1042,6 +896,181 @@ async fn get_manual_recovery_psbt(
     }))
 }
 
+#[derive(Debug, Serialize, Deserialize, utoipa::ToSchema)]
+struct Contract {
+    id: String,
+    #[serde(with = "rust_decimal::serde::float")]
+    loan_amount: Decimal,
+    duration_days: i32,
+    initial_collateral_sats: u64,
+    origination_fee_sats: u64,
+    collateral_sats: u64,
+    #[serde(with = "rust_decimal::serde::float")]
+    interest_rate: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
+    interest: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
+    initial_ltv: Decimal,
+    status: ContractStatus,
+    #[schema(value_type = String)]
+    lender_pk: PublicKey,
+    #[schema(value_type = String)]
+    lender_derivation_path: DerivationPath,
+    #[schema(value_type = String)]
+    borrower_pk: PublicKey,
+    borrower_btc_address: String,
+    borrower_loan_address: Option<String>,
+    contract_address: Option<String>,
+    collateral_script: Option<String>,
+    loan_repayment_address: Option<String>,
+    borrower: BorrowerProfile,
+    #[serde(with = "time::serde::rfc3339")]
+    created_at: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339")]
+    updated_at: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339")]
+    expiry: OffsetDateTime,
+    liquidation_status: LiquidationStatus,
+    transactions: Vec<LoanTransaction>,
+    loan_asset: LoanAsset,
+    can_recover_collateral_manually: bool,
+    #[serde(with = "rust_decimal::serde::float")]
+    liquidation_price: Decimal,
+    extends_contract: Option<String>,
+    extended_by_contract: Option<String>,
+    kyc_info: Option<KycInfo>,
+    fiat_loan_details_borrower: Option<FiatLoanDetailsWrapper>,
+    fiat_loan_details_lender: Option<FiatLoanDetailsWrapper>,
+    borrower_npub: String,
+    client_contract_id: Option<Uuid>,
+    timeline: Vec<TimelineEvent>,
+    extension_max_duration_days: u64,
+    #[serde(with = "rust_decimal::serde::float_option")]
+    extension_interest_rate: Option<Decimal>,
+    installments: Vec<Installment>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
+struct Installment {
+    id: Uuid,
+    principal: Decimal,
+    interest: Decimal,
+    #[serde(with = "time::serde::rfc3339")]
+    due_date: OffsetDateTime,
+    status: InstallmentStatus,
+    #[serde(with = "time::serde::rfc3339::option")]
+    paid_date: Option<OffsetDateTime>,
+    payment_id: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, utoipa::ToSchema)]
+struct TimelineEvent {
+    #[serde(with = "time::serde::rfc3339")]
+    date: OffsetDateTime,
+    event: TimelineEventKind,
+    /// Only provided if it was an event caused by a transaction.
+    txid: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, utoipa::ToSchema)]
+#[serde(tag = "type", rename_all = "snake_case")]
+enum TimelineEventKind {
+    ContractStatusChange { status: ContractStatus },
+    Installment { is_confirmed: bool },
+}
+
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+struct ManualRecoveryPsbt {
+    psbt: String,
+    #[schema(value_type = String)]
+    collateral_descriptor: Descriptor<PublicKey>,
+    #[schema(value_type = String)]
+    lender_pk: PublicKey,
+}
+
+#[derive(Debug, Serialize, Deserialize, utoipa::ToSchema)]
+struct LiquidationTx {
+    tx: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, utoipa::ToSchema)]
+struct FiatLoanDetailsWrapper {
+    details: FiatLoanDetails,
+    encrypted_encryption_key: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, utoipa::ToSchema)]
+struct KycInfo {
+    #[schema(value_type = String)]
+    kyc_link: Url,
+    is_kyc_done: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, utoipa::ToSchema)]
+struct BorrowerProfile {
+    id: String,
+    name: String,
+}
+
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
+struct UpdateExtensionPolicyRequest {
+    /// The maximum number of days a contract can be extended by.
+    ///
+    /// A zero value indicates that the contract cannot be extended.
+    extension_max_duration_days: u64,
+    /// The interest rate to be applied to the extension period.
+    #[serde(with = "rust_decimal::serde::float")]
+    extension_interest_rate: Decimal,
+}
+
+#[derive(Debug, Deserialize)]
+struct PrincipalGivenQueryParam {
+    txid: Option<String>,
+}
+
+#[derive(Deserialize)]
+enum LiquidationType {
+    Bitcoin,
+    StableCoin,
+}
+
+#[derive(Deserialize, Debug, utoipa::ToSchema)]
+struct LiquidationPsbtQueryParams {
+    /// Fee rate in sats/vbyte.
+    fee_rate: u64,
+    /// Where to send the lender's share of the liquidation.
+    #[schema(value_type = String)]
+    address: Address<NetworkUnchecked>,
+}
+
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+struct LiquidationPsbt {
+    psbt: String,
+    #[schema(value_type = String)]
+    collateral_descriptor: Descriptor<PublicKey>,
+    #[schema(value_type = String)]
+    lender_pk: PublicKey,
+}
+
+#[derive(Debug, Serialize, Deserialize, utoipa::ToSchema)]
+struct LiquidationToStablecoinPsbtRequest {
+    #[schema(value_type = String)]
+    bitcoin_refund_address: Address<NetworkUnchecked>,
+    fee_rate_sats_vbyte: u64,
+}
+
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+struct LiquidationToStableCoinPsbt {
+    psbt: String,
+    #[schema(value_type = String)]
+    collateral_descriptor: Descriptor<PublicKey>,
+    #[schema(value_type = String)]
+    lender_pk: PublicKey,
+    settle_address: String,
+    #[serde(with = "rust_decimal::serde::float")]
+    settle_amount: Decimal,
+}
+
 /// Convert from a [`model::Contract`] to a [`crate::routes::borrower::Contract`].
 async fn map_to_api_contract(
     data: &Arc<AppState>,
@@ -1069,10 +1098,10 @@ async fn map_to_api_contract(
     let parent_contract_id =
         db::contract_extensions::get_parent_by_extended(&data.db, &contract.id)
             .await
-            .map_err(|e| Error::database(anyhow!(e)))?;
+            .map_err(Error::database)?;
     let child_contract = db::contract_extensions::get_extended_by_parent(&data.db, &contract.id)
         .await
-        .map_err(|e| Error::database(anyhow!(e)))?;
+        .map_err(Error::database)?;
 
     let kyc_info = match loan_deal.kyc_link() {
         Some(ref kyc_link) => {
@@ -1198,35 +1227,6 @@ async fn map_to_api_contract(
     Ok(contract)
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
-pub struct Installment {
-    pub id: Uuid,
-    pub principal: Decimal,
-    pub interest: Decimal,
-    #[serde(with = "time::serde::rfc3339")]
-    pub due_date: OffsetDateTime,
-    pub status: InstallmentStatus,
-    #[serde(with = "time::serde::rfc3339::option")]
-    pub paid_date: Option<OffsetDateTime>,
-    pub payment_id: Option<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize, utoipa::ToSchema)]
-pub struct TimelineEvent {
-    #[serde(with = "time::serde::rfc3339")]
-    date: OffsetDateTime,
-    event: TimelineEventKind,
-    /// Only provided if it was an event caused by a transaction.
-    txid: Option<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize, utoipa::ToSchema)]
-#[serde(tag = "type", rename_all = "snake_case")]
-enum TimelineEventKind {
-    ContractStatusChange { status: ContractStatus },
-    Installment { is_confirmed: bool },
-}
-
 async fn map_timeline(
     db: &Pool<Postgres>,
     contract: &model::Contract,
@@ -1235,7 +1235,7 @@ async fn map_timeline(
 ) -> Result<Vec<TimelineEvent>, Error> {
     let event_logs = db::contract_status_log::get_contract_status_logs(db, &contract.id)
         .await
-        .map_err(|e| Error::database(anyhow!(e)))?;
+        .map_err(Error::database)?;
 
     // First, we add the contract request event.
     let mut timeline = vec![TimelineEvent {
@@ -1340,7 +1340,6 @@ async fn map_timeline(
 }
 
 // Error fields are allowed to be dead code because they are actually used when printed in logs.
-#[allow(dead_code)]
 /// All the errors related to the `contracts` REST API.
 #[derive(Debug)]
 enum Error {
@@ -1349,42 +1348,34 @@ enum Error {
     /// The request body contained invalid JSON.
     JsonRejection(JsonRejection),
     /// Failed to interact with the database.
-    Database(String),
+    Database(#[allow(dead_code)] String),
     /// Referenced loan does not exist.
-    MissingLoanOffer { offer_id: String },
+    MissingLoanOffer {
+        #[allow(dead_code)]
+        offer_id: String,
+    },
     /// Referenced lender does not exist.
     MissingLender,
-    /// Loan extension was requested with an offer from a different lender which is currently not
-    /// supported
-    LoanOfferLenderMissmatch,
-    /// We failed at calculating the interest rate. Cannot do much without this
-    InterestRateCalculation(String),
-    /// No origination fee configured.
-    MissingOriginationFee,
-    /// Failed to calculate origination fee in sats.
-    OriginationFeeCalculation(String),
     /// Fiat loan details were not provided
     MissingFiatLoanDetails,
     /// Failed to generate contract address.
-    ContractAddress(String),
+    ContractAddress(#[allow(dead_code)] String),
     /// Failed to track accepted contract using Mempool API.
-    TrackContract(String),
+    TrackContract(#[allow(dead_code)] String),
     /// Failed to track transaction using Mempool API.
-    TrackTransaction(String),
+    TrackTransaction(#[allow(dead_code)] String),
     /// Failed to track transaction using Mempool API.
-    PostTransaction(String),
+    PostTransaction(#[allow(dead_code)] String),
     /// The contract was in an invalid state to approve a request or an extension.
     InvalidApproveRequest { status: ContractStatus },
-    /// The contract was in an invalid state to reject a request or an extension.
-    InvalidRejectRequest { status: ContractStatus },
     /// Referenced borrower does not exist.
     MissingBorrower,
     /// Failed to build contract descriptor.
-    CannotBuildDescriptor(String),
+    CannotBuildDescriptor(#[allow(dead_code)] String),
     /// Cannot approve renewal without contract address.
     MissingContractAddress,
     /// Invalid PSBT,
-    InvalidPsbt(String),
+    InvalidPsbt(#[allow(dead_code)] String),
     /// Wrong network for Bitcoin address.
     WrongAddressNetwork { expected_network: Network },
     /// Cannot liquidate in the contract's current state.
@@ -1392,39 +1383,39 @@ enum Error {
     /// Cannot manually recover collateral in the contract's current state.
     InvalidStateForManualRecovery,
     /// Failed to get price from BitMEX.
-    BitMexPrice(String),
+    BitMexPrice(#[allow(dead_code)] String),
     /// Failed to calculate outstanding balance.
-    OutstandingBalanceCalculation(String),
+    OutstandingBalanceCalculation(#[allow(dead_code)] String),
     /// Failed to build liquidation PSBT,
-    BuildLiquidationPsbt(String),
+    BuildLiquidationPsbt(#[allow(dead_code)] String),
     /// We need the request IP to check if this request is permitted.
     RequestIpRequired,
     /// SideShift error.
-    SideShift(String),
+    SideShift(#[allow(dead_code)] String),
 }
 
 impl Error {
-    fn database(e: anyhow::Error) -> Self {
+    fn database(e: impl std::fmt::Display) -> Self {
         Self::Database(format!("{e:#}"))
     }
 
-    fn contract_address(e: anyhow::Error) -> Self {
+    fn contract_address(e: impl std::fmt::Display) -> Self {
         Self::ContractAddress(format!("{e:#}"))
     }
 
-    fn track_contract(e: anyhow::Error) -> Self {
+    fn track_contract(e: impl std::fmt::Display) -> Self {
         Self::TrackContract(format!("{e:#}"))
     }
 
-    fn track_transaction(e: anyhow::Error) -> Self {
+    fn track_transaction(e: impl std::fmt::Display) -> Self {
         Self::TrackTransaction(format!("{e:#}"))
     }
 
-    fn post_transaction(e: anyhow::Error) -> Self {
+    fn post_transaction(e: impl std::fmt::Display) -> Self {
         Self::PostTransaction(format!("{e:#}"))
     }
 
-    fn cannot_build_descriptor(e: anyhow::Error) -> Self {
+    fn cannot_build_descriptor(e: impl std::fmt::Display) -> Self {
         Self::CannotBuildDescriptor(format!("{e:#}"))
     }
 
@@ -1432,19 +1423,19 @@ impl Error {
         Self::InvalidPsbt(format!("{:#}", anyhow!(e)))
     }
 
-    fn bitmex_price(e: anyhow::Error) -> Self {
+    fn bitmex_price(e: impl std::fmt::Display) -> Self {
         Self::BitMexPrice(format!("{e:#}"))
     }
 
-    fn outstanding_balance_calculation(e: anyhow::Error) -> Self {
+    fn outstanding_balance_calculation(e: impl std::fmt::Display) -> Self {
         Self::OutstandingBalanceCalculation(format!("{e:#}"))
     }
 
-    fn build_liquidation_psbt(e: anyhow::Error) -> Self {
+    fn build_liquidation_psbt(e: impl std::fmt::Display) -> Self {
         Self::BuildLiquidationPsbt(format!("{e:#}"))
     }
 
-    fn sideshift(e: anyhow::Error) -> Self {
+    fn sideshift(e: impl std::fmt::Display) -> Self {
         Self::SideShift(format!("{e:#}"))
     }
 }
@@ -1472,9 +1463,6 @@ impl IntoResponse for Error {
             Error::Database(_)
             | Error::MissingLoanOffer { .. }
             | Error::MissingLender
-            | Error::MissingOriginationFee
-            | Error::OriginationFeeCalculation(_)
-            | Error::InterestRateCalculation(_)
             | Error::ContractAddress(_)
             | Error::TrackContract(_)
             | Error::MissingBorrower
@@ -1488,20 +1476,14 @@ impl IntoResponse for Error {
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "Something went wrong".to_owned(),
             ),
-            Error::LoanOfferLenderMissmatch => (
-                StatusCode::BAD_REQUEST,
-                "Offer cannot be from a different lender".to_owned(),
-            ),
             Error::MissingFiatLoanDetails => (
                 StatusCode::BAD_REQUEST,
                 "Cannot approve without fiat loan details".to_owned(),
             ),
-            Error::InvalidApproveRequest { .. } => {
-                (StatusCode::BAD_REQUEST, "Cannot approve request".to_owned())
-            }
-            Error::InvalidRejectRequest { .. } => {
-                (StatusCode::BAD_REQUEST, "Cannot reject request".to_owned())
-            }
+            Error::InvalidApproveRequest { status } => (
+                StatusCode::BAD_REQUEST,
+                format!("Cannot approve a contract request with status {status:?}"),
+            ),
             Error::MissingContract(contract_id) => (
                 StatusCode::BAD_REQUEST,
                 format!("Contract does not exist: {contract_id}"),

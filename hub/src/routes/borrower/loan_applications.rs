@@ -29,7 +29,9 @@ pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
     OpenApiRouter::new()
         .routes(routes!(get_loan_applications_by_borrower))
         .routes(routes!(create_loan_application))
-        .routes(routes!(get_loan_application_by_application_and_application_id))
+        .routes(routes!(
+            get_loan_application_by_application_and_application_id
+        ))
         .routes(routes!(put_mark_loan_application_as_deleted))
         .routes(routes!(put_edit_loan_application))
         .route_layer(middleware::from_fn_with_state(
@@ -68,7 +70,7 @@ security(
 )
 ]
 #[instrument(skip_all, fields(borrower_id = user.id, ?body), ret, err(Debug))]
-pub async fn create_loan_application(
+async fn create_loan_application(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Borrower>,
     Json(body): Json<CreateLoanApplicationSchema>,
@@ -115,7 +117,7 @@ security(
 )
 ]
 #[instrument(skip_all, err(Debug))]
-pub async fn get_loan_applications_by_borrower(
+async fn get_loan_applications_by_borrower(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Borrower>,
 ) -> Result<AppJson<Vec<LoanApplication>>, Error> {
@@ -156,7 +158,7 @@ security(
 )
 ]
 #[instrument(skip_all, err(Debug))]
-pub async fn get_loan_application_by_application_and_application_id(
+async fn get_loan_application_by_application_and_application_id(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Borrower>,
     Path(loan_deal_id): Path<String>,
@@ -201,7 +203,7 @@ security(
 )
 ]
 #[instrument(skip_all, fields(borrower_id = user.id, loan_deal_id), ret, err(Debug))]
-pub async fn put_mark_loan_application_as_deleted(
+async fn put_mark_loan_application_as_deleted(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Borrower>,
     Path(loan_deal_id): Path<String>,
@@ -266,7 +268,7 @@ security(
 )
 ]
 #[instrument(skip_all, fields(borrower_id = user.id, loan_deal_id), ret, err(Debug))]
-pub async fn put_edit_loan_application(
+async fn put_edit_loan_application(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Borrower>,
     Path(loan_deal_id): Path<String>,
@@ -332,11 +334,10 @@ where
 }
 
 /// All the errors related to the `contracts` REST API.
-#[allow(dead_code)]
 #[derive(Debug)]
 enum Error {
     /// Failed to interact with the database.
-    Database(String),
+    Database(#[allow(dead_code)] String),
     MissingLoanApplication,
     InvalidLtv {
         ltv: Decimal,
@@ -355,16 +356,14 @@ impl Error {
     }
 }
 
-/// How we want error responses to be serialized.
 #[derive(Serialize, ToSchema)]
 pub struct LoanApplicationErrorResponse {
-    pub message: String,
+    message: String,
 }
 
 /// Tell `axum` how [`AppError`] should be converted into a response.
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
-
         let (status, message) = match self {
             Error::Database(_) => (
                 StatusCode::INTERNAL_SERVER_ERROR,

@@ -5,7 +5,6 @@ use crate::model::CreatorApiKey;
 use crate::routes::borrower::auth::api_account_creator_auth;
 use crate::routes::borrower::API_ACCOUNTS_TAG;
 use crate::routes::AppState;
-use anyhow::anyhow;
 use axum::extract::rejection::JsonRejection;
 use axum::extract::FromRequest;
 use axum::extract::State;
@@ -21,7 +20,7 @@ use tracing::instrument;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-pub(crate) fn router_openapi(app_state: Arc<AppState>) -> OpenApiRouter {
+pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
     OpenApiRouter::new()
         .routes(routes!(post_create_api_account))
         .route_layer(middleware::from_fn_with_state(
@@ -57,11 +56,7 @@ async fn post_create_api_account(
     Extension(creator_api_key): Extension<CreatorApiKey>,
     AppJson(body): AppJson<CreateApiAccountRequest>,
 ) -> Result<AppJson<CreateApiAccountResponse>, Error> {
-    let mut db_tx = data
-        .db
-        .begin()
-        .await
-        .map_err(|e| Error::Database(anyhow!(e)))?;
+    let mut db_tx = data.db.begin().await.map_err(Error::database)?;
 
     let (borrower, api_key) = db::borrowers::register_api_account(
         &mut db_tx,
@@ -71,12 +66,9 @@ async fn post_create_api_account(
         creator_api_key.id,
     )
     .await
-    .map_err(Error::Database)?;
+    .map_err(Error::database)?;
 
-    db_tx
-        .commit()
-        .await
-        .map_err(|e| Error::Database(anyhow!(e)))?;
+    db_tx.commit().await.map_err(Error::database)?;
 
     tracing::debug!(borrower_id = %borrower.id, "Created API borrower account");
 
@@ -95,7 +87,13 @@ enum Error {
     /// The request body contained invalid JSON.
     JsonRejection(JsonRejection),
     /// Failed to interact with the database.
-    Database(anyhow::Error),
+    Database(#[allow(dead_code)] String),
+}
+
+impl Error {
+    fn database(e: impl std::fmt::Display) -> Self {
+        Self::Database(format!("{e:#}"))
+    }
 }
 
 impl From<JsonRejection> for Error {
@@ -135,16 +133,10 @@ impl IntoResponse for Error {
                 // This error is caused by bad user input so don't log it
                 (rejection.status(), rejection.body_text())
             }
-            Error::Database(e) => {
-                // If we configure `tracing` properly, we don't need to add extra context here!
-                tracing::error!("Database error: {e:#}");
-
-                // Don't expose any details about the error to the client.
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
+            Error::Database(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Something went wrong".to_owned(),
+            ),
         };
 
         (status, AppJson(ErrorResponse { message })).into_response()

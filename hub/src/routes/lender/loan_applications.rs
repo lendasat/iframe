@@ -14,8 +14,6 @@ use crate::routes::AppState;
 use crate::take_loan_application;
 use crate::take_loan_application::take_application;
 use crate::utils::calculate_liquidation_price;
-use anyhow::anyhow;
-use anyhow::Context;
 use axum::extract::FromRequest;
 use axum::extract::Path;
 use axum::extract::State;
@@ -52,35 +50,6 @@ pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
         .with_state(app_state.clone())
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
-pub struct LoanApplication {
-    pub id: String,
-    pub borrower: BorrowerProfile,
-    #[serde(with = "rust_decimal::serde::float")]
-    pub ltv: Decimal,
-    #[serde(with = "rust_decimal::serde::float")]
-    pub interest_rate: Decimal,
-    #[serde(with = "rust_decimal::serde::float")]
-    pub loan_amount: Decimal,
-    #[serde(with = "rust_decimal::serde::float")]
-    pub liquidation_price: Decimal,
-    pub duration_days: i32,
-    pub loan_asset: LoanAsset,
-    pub status: LoanApplicationStatus,
-    #[schema(value_type = String)]
-    pub borrower_pk: PublicKey,
-    #[serde(with = "time::serde::rfc3339")]
-    pub created_at: OffsetDateTime,
-    #[serde(with = "time::serde::rfc3339")]
-    pub updated_at: OffsetDateTime,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
-pub struct BorrowerProfile {
-    pub(crate) id: String,
-    pub(crate) name: String,
-}
-
 /// Get all available loan applications.
 #[utoipa::path(
     get,
@@ -98,12 +67,12 @@ pub struct BorrowerProfile {
     )
 )]
 #[instrument(skip_all, err(Debug))]
-pub async fn get_all_available_loan_applications(
+async fn get_all_available_loan_applications(
     State(data): State<Arc<AppState>>,
 ) -> Result<AppJson<Vec<LoanApplication>>, Error> {
     let requests = db::loan_applications::load_all_available_loan_applications(&data.db)
         .await
-        .map_err(Error::Database)?;
+        .map_err(Error::database)?;
 
     let mut ret = vec![];
     for request in requests {
@@ -136,18 +105,102 @@ pub async fn get_all_available_loan_applications(
     ),
 )]
 #[instrument(skip_all, err(Debug))]
-pub async fn get_loan_application(
+async fn get_loan_application(
     State(data): State<Arc<AppState>>,
     Path(loan_deal_id): Path<String>,
 ) -> Result<AppJson<LoanApplication>, Error> {
     let request = db::loan_applications::get_loan_by_id(&data.db, loan_deal_id.as_str())
         .await
-        .map_err(Error::Database)?
+        .map_err(Error::database)?
         .ok_or(Error::LoanApplicationNotFound(loan_deal_id))?;
 
     let loan_application = map_to_api_loan_application(&data.db, &data.config, request).await?;
 
     Ok(AppJson(loan_application))
+}
+
+/// Take a loan application.
+#[utoipa::path(
+    post,
+    path = "/{loan_deal_id}",
+    tag = LOAN_APPLICATIONS_TAG,
+    request_body = TakeLoanApplicationSchema,
+    params(
+        ("loan_deal_id" = String, Path, description = "Loan application ID to take")
+    ),
+    responses(
+        (
+            status = 200,
+            description = "Loan application taken successfully",
+            body = String
+        ),
+        (
+            status = 404,
+            description = "Loan application not found"
+        )
+    ),
+)]
+#[instrument(skip_all, fields(lender_id = user.id, loan_deal_id, body), err(Debug), ret)]
+async fn post_take_loan_application(
+    State(data): State<Arc<AppState>>,
+    Extension(user): Extension<Lender>,
+    Path(loan_deal_id): Path<String>,
+    Json(body): Json<TakeLoanApplicationSchema>,
+) -> Result<AppJson<String>, Error> {
+    let wallet = data.wallet.clone();
+    let contract_id = take_application(
+        &data.db,
+        wallet,
+        &data.mempool,
+        &data.config,
+        user.id.as_str(),
+        data.notifications.clone(),
+        body,
+        loan_deal_id.as_str(),
+    )
+    .await
+    .map_err(Error::from)?;
+    Ok(AppJson(contract_id))
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+struct LoanApplication {
+    id: String,
+    borrower: BorrowerProfile,
+    #[serde(with = "rust_decimal::serde::float")]
+    ltv: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
+    interest_rate: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
+    loan_amount: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
+    liquidation_price: Decimal,
+    duration_days: i32,
+    loan_asset: LoanAsset,
+    status: LoanApplicationStatus,
+    #[schema(value_type = String)]
+    borrower_pk: PublicKey,
+    #[serde(with = "time::serde::rfc3339")]
+    created_at: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339")]
+    updated_at: OffsetDateTime,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+struct BorrowerProfile {
+    id: String,
+    name: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+pub struct TakeLoanApplicationSchema {
+    #[schema(value_type = String)]
+    pub lender_pk: PublicKey,
+    #[schema(value_type = String)]
+    pub lender_derivation_path: bip32::DerivationPath,
+    pub loan_repayment_address: String,
+    pub lender_npub: String,
+    pub fiat_loan_details: Option<FiatLoanDetailsWrapper>,
 }
 
 async fn map_to_api_loan_application(
@@ -157,13 +210,12 @@ async fn map_to_api_loan_application(
 ) -> Result<LoanApplication, Error> {
     let borrower = db::borrowers::get_user_by_id(db, &request.borrower_id)
         .await
-        .map_err(Error::Database)?
-        .context("No borrower found for loan application")
-        .map_err(|_| Error::MissingBorrower)?;
+        .map_err(Error::database)?
+        .ok_or(Error::MissingBorrower)?;
 
     let price = get_bitmex_index_price(config, OffsetDateTime::now_utc())
         .await
-        .map_err(Error::BitMexPrice)?;
+        .map_err(Error::bitmex_price)?;
 
     let initial_collateral = calculate_initial_collateral(
         request.loan_amount,
@@ -172,7 +224,7 @@ async fn map_to_api_loan_application(
         request.ltv,
         price,
     )
-    .map_err(Error::InitialCollateralCalculation)?;
+    .map_err(Error::initial_collateral_calculation)?;
 
     let interest_usd = calculate_interest_usd(
         request.loan_amount,
@@ -205,61 +257,6 @@ async fn map_to_api_loan_application(
     })
 }
 
-#[derive(Debug, Deserialize, Serialize, ToSchema)]
-pub struct TakeLoanApplicationSchema {
-    #[schema(value_type = String)]
-    pub lender_pk: PublicKey,
-    #[schema(value_type = String)]
-    pub lender_derivation_path: bip32::DerivationPath,
-    pub loan_repayment_address: String,
-    pub lender_npub: String,
-    pub fiat_loan_details: Option<FiatLoanDetailsWrapper>,
-}
-
-/// Take a loan application.
-#[utoipa::path(
-    post,
-    path = "/{loan_deal_id}",
-    tag = LOAN_APPLICATIONS_TAG,
-    request_body = TakeLoanApplicationSchema,
-    params(
-        ("loan_deal_id" = String, Path, description = "Loan application ID to take")
-    ),
-    responses(
-        (
-            status = 200,
-            description = "Loan application taken successfully",
-            body = String
-        ),
-        (
-            status = 404,
-            description = "Loan application not found"
-        )
-    ),
-)]
-#[instrument(skip_all, fields(lender_id = user.id, loan_deal_id, body), err(Debug), ret)]
-pub async fn post_take_loan_application(
-    State(data): State<Arc<AppState>>,
-    Extension(user): Extension<Lender>,
-    Path(loan_deal_id): Path<String>,
-    Json(body): Json<TakeLoanApplicationSchema>,
-) -> Result<AppJson<String>, Error> {
-    let wallet = data.wallet.clone();
-    let contract_id = take_application(
-        &data.db,
-        wallet,
-        &data.mempool,
-        &data.config,
-        user.id.as_str(),
-        data.notifications.clone(),
-        body,
-        loan_deal_id.as_str(),
-    )
-    .await
-    .map_err(Error::from)?;
-    Ok(AppJson(contract_id))
-}
-
 // Create our own JSON extractor by wrapping `axum::Json`. This makes it easy to override the
 // rejection and provide our own which formats errors to match our application.
 //
@@ -281,30 +278,60 @@ where
 #[derive(Debug)]
 enum Error {
     /// Failed to interact with the database.
-    Database(anyhow::Error),
+    Database(#[allow(dead_code)] String),
     /// Referenced borrower does not exist.
     MissingBorrower,
     /// No origination fee configured.
     MissingOriginationFee,
     /// Failed to get price.
-    BitMexPrice(anyhow::Error),
+    BitMexPrice(#[allow(dead_code)] String),
     /// Failed to calculate initial collateral
-    InitialCollateralCalculation(anyhow::Error),
+    InitialCollateralCalculation(#[allow(dead_code)] String),
     /// Failed to generate contract address.
-    ContractAddress(anyhow::Error),
+    ContractAddress(#[allow(dead_code)] String),
     /// Failed to calculate origination fee in sats.
-    OriginationFeeCalculation(anyhow::Error),
+    OriginationFeeCalculation(#[allow(dead_code)] String),
     /// Invalid discount rate.
-    InvalidDiscountRate(anyhow::Error),
+    InvalidDiscountRate(#[allow(dead_code)] String),
     /// Failed tracking contract address.
-    TrackContract(anyhow::Error),
-    LoanApplicationNotFound(String),
+    TrackContract(#[allow(dead_code)] String),
+    LoanApplicationNotFound(#[allow(dead_code)] String),
     /// Failed to calculate liquidation price.
     LiquidationPriceCalculation,
     /// The lender didn't provide fiat loan details.
     MissingFiatLoanDetails,
     /// The loan application had a loan duration of zero days.
     ZeroLoanDuration,
+}
+
+impl Error {
+    fn database(e: impl std::fmt::Display) -> Self {
+        Self::Database(format!("{e:#}"))
+    }
+
+    fn bitmex_price(e: impl std::fmt::Display) -> Self {
+        Self::BitMexPrice(format!("{e:#}"))
+    }
+
+    fn initial_collateral_calculation(e: impl std::fmt::Display) -> Self {
+        Self::InitialCollateralCalculation(format!("{e:#}"))
+    }
+
+    fn contract_address(e: impl std::fmt::Display) -> Self {
+        Self::ContractAddress(format!("{e:#}"))
+    }
+
+    fn origination_fee_calculation(e: impl std::fmt::Display) -> Self {
+        Self::OriginationFeeCalculation(format!("{e:#}"))
+    }
+
+    fn invalid_discount_rate(e: impl std::fmt::Display) -> Self {
+        Self::InvalidDiscountRate(format!("{e:#}"))
+    }
+
+    fn track_contract(e: impl std::fmt::Display) -> Self {
+        Self::TrackContract(format!("{e:#}"))
+    }
 }
 
 /// Tell `axum` how [`AppError`] should be converted into a response.
@@ -317,97 +344,29 @@ impl IntoResponse for Error {
         }
 
         let (status, message) = match self {
-            Error::Database(e) => {
-                // If we configure `tracing` properly, we don't need to add extra context here!
-                tracing::error!("Database error: {e:#}");
+            Error::Database(_)
+            | Error::MissingBorrower
+            | Error::MissingOriginationFee
+            | Error::BitMexPrice(_)
+            | Error::InitialCollateralCalculation(_)
+            | Error::ContractAddress(_)
+            | Error::OriginationFeeCalculation(_)
+            | Error::InvalidDiscountRate(_)
+            | Error::TrackContract(_)
+            | Error::LiquidationPriceCalculation
+            | Error::ZeroLoanDuration => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Something went wrong".to_owned(),
+            ),
+            Error::LoanApplicationNotFound(_) => (
+                StatusCode::BAD_REQUEST,
+                "Loan application not found".to_owned(),
+            ),
 
-                // Don't expose any details about the error to the client.
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
-            Error::MissingBorrower => {
-                tracing::error!("Could not find referenced lender");
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
-            Error::MissingOriginationFee => {
-                tracing::error!("Origination fee was not configured");
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
-            Error::BitMexPrice(e) => {
-                tracing::error!("Could not fetch bitmex price {e:#}");
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
-            Error::InitialCollateralCalculation(e) => {
-                tracing::error!("Failed calculating collateral amount {e:#}");
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
-            Error::ContractAddress(e) => {
-                tracing::error!("Could not create contract address {e:#}");
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
-            Error::OriginationFeeCalculation(e) => {
-                tracing::error!("Could not calculate origination fee {e:#}");
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
-            Error::InvalidDiscountRate(e) => {
-                tracing::error!("Discount rate was invalid {e:#}");
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
-            Error::TrackContract(e) => {
-                tracing::error!("Failed tracking contract address {e:#}");
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
-            Error::LoanApplicationNotFound(id) => {
-                tracing::error!("{}", format!("Loan application not found {}", id));
-                (
-                    StatusCode::BAD_REQUEST,
-                    "LoanApplication not found".to_owned(),
-                )
-            }
-            Error::LiquidationPriceCalculation => {
-                tracing::error!("{}", "Failed calculating liquidation price".to_string());
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
             Error::MissingFiatLoanDetails => (
                 StatusCode::BAD_REQUEST,
-                "LoanApplication not found".to_owned(),
+                "Fiat loan details not found".to_owned(),
             ),
-            Error::ZeroLoanDuration => {
-                tracing::error!("Cannot take zero-duration loan application");
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
         };
         (status, AppJson(ErrorResponse { message })).into_response()
     }
@@ -416,20 +375,18 @@ impl IntoResponse for Error {
 impl From<take_loan_application::Error> for Error {
     fn from(value: take_loan_application::Error) -> Self {
         match value {
-            take_loan_application::Error::Database(e) => Error::Database(e),
+            take_loan_application::Error::Database(e) => Error::database(e),
             take_loan_application::Error::MissingOriginationFee => Error::MissingOriginationFee,
-            take_loan_application::Error::BitMexPrice(e) => Error::BitMexPrice(e),
+            take_loan_application::Error::BitMexPrice(e) => Error::bitmex_price(e),
             take_loan_application::Error::InitialCollateralCalculation(e) => {
-                Error::InitialCollateralCalculation(e)
+                Error::initial_collateral_calculation(e)
             }
-            take_loan_application::Error::ContractAddress(e) => Error::ContractAddress(e),
+            take_loan_application::Error::ContractAddress(e) => Error::contract_address(e),
             take_loan_application::Error::OriginationFeeCalculation(e) => {
-                Error::OriginationFeeCalculation(e)
+                Error::origination_fee_calculation(e)
             }
-            take_loan_application::Error::InvalidDiscountRate(e) => {
-                Error::InvalidDiscountRate(anyhow!(e))
-            }
-            take_loan_application::Error::TrackContract(e) => Error::TrackContract(e),
+            take_loan_application::Error::InvalidDiscountRate(e) => Error::invalid_discount_rate(e),
+            take_loan_application::Error::TrackContract(e) => Error::track_contract(e),
             take_loan_application::Error::LoanApplicationNotFound(id) => {
                 Error::LoanApplicationNotFound(id)
             }

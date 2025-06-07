@@ -13,12 +13,15 @@ use crate::routes::lender::LOAN_OFFERS_TAG;
 use crate::routes::AppState;
 use crate::user_stats;
 use crate::user_stats::LenderStats;
-use anyhow::Context;
+use anyhow::anyhow;
+use axum::extract::rejection::JsonRejection;
+use axum::extract::FromRequest;
 use axum::extract::Path;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::middleware;
 use axum::response::IntoResponse;
+use axum::response::Response;
 use axum::Extension;
 use axum::Json;
 use rust_decimal::prelude::Zero;
@@ -66,103 +69,60 @@ pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
     )
 )]
 #[instrument(skip_all, err(Debug))]
-pub async fn create_loan_offer(
+async fn create_loan_offer(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Lender>,
-    Json(body): Json<CreateLoanOfferSchema>,
-) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    if body.min_ltv > dec!(1.0) || body.min_ltv < Decimal::zero() {
-        let error_response = ErrorResponse {
-            message: format!(
-                "LTV needs to be between 0.00 and 1.00 but was {}",
-                body.min_ltv
-            ),
-        };
-        return Err((StatusCode::BAD_REQUEST, Json(error_response)));
+    body: AppJson<CreateLoanOfferSchema>,
+) -> Result<AppJson<LoanOffer>, Error> {
+    if body.0.min_ltv > dec!(1.0) || body.0.min_ltv < Decimal::zero() {
+        return Err(Error::InvalidLtv {
+            ltv: body.0.min_ltv,
+        });
     }
 
-    if body.interest_rate > dec!(1.0) || body.interest_rate < Decimal::zero() {
-        let error_response = ErrorResponse {
-            message: format!(
-                "Interest rate needs to be between 0.00 and 1.00 but was {}",
-                body.interest_rate
-            ),
-        };
-        return Err((StatusCode::BAD_REQUEST, Json(error_response)));
+    if body.0.interest_rate > dec!(1.0) || body.0.interest_rate < Decimal::zero() {
+        return Err(Error::InvalidInterestRate {
+            rate: body.0.interest_rate,
+        });
     }
 
     let features = db::lender_features::load_lender_features(&data.db, user.id.clone())
         .await
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
+        .map_err(|e| Error::database(anyhow!("{:?}", e)))?;
 
     if features.iter().any(|feature| {
-        body.auto_accept
+        body.0.auto_accept
             && feature.id == lender_feature_flags::AUTO_APPROVE_FEATURE_FLAG_ID
             && !feature.is_enabled
     }) {
-        let error_response = ErrorResponse {
-            message: "Auto approve feature is not enabled".to_string(),
-        };
-        return Err((StatusCode::UNAUTHORIZED, Json(error_response)));
+        return Err(Error::AutoApproveNotEnabled);
     }
 
     if features.iter().any(|feature| {
-        body.kyc_link.is_some()
+        body.0.kyc_link.is_some()
             && feature.id == lender_feature_flags::KYC_OFFERS_FEATURE_FLAG_ID
             && !feature.is_enabled
     }) {
-        let error_response = ErrorResponse {
-            message: "KYC offers feature is not enabled".to_string(),
-        };
-        return Err((StatusCode::UNAUTHORIZED, Json(error_response)));
+        return Err(Error::KycOffersNotEnabled);
     }
 
-    let offer = db::loan_offers::insert_loan_offer(&data.db, body, user.id.as_str())
+    let offer = db::loan_offers::insert_loan_offer(&data.db, body.0, user.id.as_str())
         .await
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
+        .map_err(Error::database)?;
 
     let lender = db::lenders::get_user_by_id(&data.db, &offer.lender_id)
         .await
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?
-        .context("No lender found for contract")
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Illegal state error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
+        .map_err(Error::database)?
+        .ok_or(Error::MissingLender)?;
 
     let origination_fee = data.config.origination_fee.clone();
 
     let lender_stats = user_stats::get_lender_stats(&data.db, lender.id.as_str())
         .await
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {:?}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
+        .map_err(|e| Error::database(anyhow!("{:?}", e)))?;
 
     if matches!(offer.loan_payout, LoanPayout::Indirect) && !offer.auto_accept {
-        let error_response = ErrorResponse {
-            message: "Indirect payouts require auto-accept to be enabled".to_string(),
-        };
-        return Err((StatusCode::BAD_REQUEST, Json(error_response)));
+        return Err(Error::IndirectPayoutRequiresAutoAccept);
     }
 
     let (extension_max_duration_days, extension_interest_rate) = match offer.extension_policy {
@@ -199,7 +159,7 @@ pub async fn create_loan_offer(
         updated_at: offer.updated_at,
     };
 
-    Ok((StatusCode::OK, Json(offer)))
+    Ok(AppJson(offer))
 }
 
 /// Get all loan offers for this lender.
@@ -218,45 +178,24 @@ pub async fn create_loan_offer(
     )
 )]
 #[instrument(skip_all, err(Debug))]
-pub async fn get_my_loan_offers(
+async fn get_my_loan_offers(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Lender>,
-) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+) -> Result<AppJson<Vec<LoanOffer>>, Error> {
     // TODO: don't return the db object here but map it to a different one so that we can enhance it
     // with more data.
     let loans = db::loan_offers::load_all_loan_offers_by_lender(&data.db, user.id.as_str())
         .await
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
+        .map_err(Error::database)?;
 
     let lender = db::lenders::get_user_by_id(&data.db, &user.id)
         .await
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?
-        .context("No lender found for contract")
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Illegal state error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
+        .map_err(Error::database)?
+        .ok_or(Error::MissingLender)?;
 
     let lender_stats = user_stats::get_lender_stats(&data.db, lender.id.as_str())
         .await
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {:?}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
+        .map_err(|e| Error::database(anyhow!("{:?}", e)))?;
 
     let origination_fee = data.config.origination_fee.clone();
 
@@ -298,7 +237,7 @@ pub async fn get_my_loan_offers(
         ret.push(offer)
     }
 
-    Ok((StatusCode::OK, Json(ret)))
+    Ok(AppJson(ret))
 }
 
 /// Get a specific loan offer by ID.
@@ -324,50 +263,29 @@ pub async fn get_my_loan_offers(
     )
 )]
 #[instrument(skip_all, err(Debug))]
-pub async fn get_loan_offer_by_lender_and_offer_id(
+async fn get_loan_offer_by_lender_and_offer_id(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Lender>,
     Path(offer_id): Path<String>,
-) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+) -> Result<AppJson<LoanOffer>, Error> {
     let offer = db::loan_offers::get_loan_offer_by_lender_and_offer_id(
         &data.db,
         user.id.as_str(),
         offer_id.as_str(),
     )
     .await
-    .map_err(|error| {
-        let error_response = ErrorResponse {
-            message: format!("Database error: {}", error),
-        };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?;
+    .map_err(Error::database)?;
 
     let lender = db::lenders::get_user_by_id(&data.db, &offer.lender_id)
         .await
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?
-        .context("No lender found for contract")
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Illegal state error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
+        .map_err(Error::database)?
+        .ok_or(Error::MissingLender)?;
 
     let origination_fee = data.config.origination_fee.clone();
 
     let lender_stats = user_stats::get_lender_stats(&data.db, lender.id.as_str())
         .await
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {:?}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
+        .map_err(|e| Error::database(anyhow!("{:?}", e)))?;
 
     let (extension_max_duration_days, extension_interest_rate) = match offer.extension_policy {
         ExtensionPolicy::DoNotExtend => (0, None),
@@ -403,7 +321,7 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
         updated_at: offer.updated_at,
     };
 
-    Ok((StatusCode::OK, Json(loan)))
+    Ok(AppJson(loan))
 }
 
 /// Get all available loan offers from all lenders.
@@ -422,46 +340,25 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
     )
 )]
 #[instrument(skip_all, err(Debug))]
-pub async fn get_loan_offers(
+async fn get_loan_offers(
     State(data): State<Arc<AppState>>,
-) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+) -> Result<AppJson<Vec<LoanOffer>>, Error> {
     let loans = db::loan_offers::load_all_available_loan_offers(&data.db)
         .await
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
+        .map_err(Error::database)?;
 
     let mut ret = vec![];
     for offer in loans {
         let lender = db::lenders::get_user_by_id(&data.db, &offer.lender_id)
             .await
-            .map_err(|error| {
-                let error_response = ErrorResponse {
-                    message: format!("Database error: {}", error),
-                };
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-            })?
-            .context("No lender found for contract")
-            .map_err(|error| {
-                let error_response = ErrorResponse {
-                    message: format!("Illegal state error: {}", error),
-                };
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-            })?;
+            .map_err(Error::database)?
+            .ok_or(Error::MissingLender)?;
 
         let origination_fee = data.config.origination_fee.clone();
 
         let lender_stats = user_stats::get_lender_stats(&data.db, lender.id.as_str())
             .await
-            .map_err(|error| {
-                let error_response = ErrorResponse {
-                    message: format!("Database error: {:?}", error),
-                };
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-            })?;
+            .map_err(|e| Error::database(anyhow!("{:?}", e)))?;
 
         let (extension_max_duration_days, extension_interest_rate) = match offer.extension_policy {
             ExtensionPolicy::DoNotExtend => (0, None),
@@ -498,7 +395,7 @@ pub async fn get_loan_offers(
         })
     }
 
-    Ok((StatusCode::OK, Json(ret)))
+    Ok(AppJson(ret))
 }
 
 /// Delete own loan offer.
@@ -524,61 +421,20 @@ pub async fn get_loan_offers(
     )
 )]
 #[instrument(skip_all, err(Debug))]
-pub async fn delete_loan_offer_by_lender_and_offer_id(
+async fn delete_loan_offer_by_lender_and_offer_id(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Lender>,
     Path(offer_id): Path<String>,
-) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+) -> Result<(), Error> {
     db::loan_offers::mark_as_deleted_by_lender_and_offer_id(
         &data.db,
         user.id.as_str(),
         offer_id.as_str(),
     )
     .await
-    .map_err(|error| {
-        let error_response = ErrorResponse {
-            message: format!("Database error: {}", error),
-        };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?;
+    .map_err(Error::database)?;
 
-    Ok((StatusCode::OK, ()))
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct LoanOffer {
-    pub id: String,
-    pub lender: LenderStats,
-    pub name: String,
-    #[serde(with = "rust_decimal::serde::float")]
-    pub min_ltv: Decimal,
-    #[serde(with = "rust_decimal::serde::float")]
-    pub interest_rate: Decimal,
-    #[serde(with = "rust_decimal::serde::float")]
-    pub loan_amount_min: Decimal,
-    #[serde(with = "rust_decimal::serde::float")]
-    pub loan_amount_max: Decimal,
-    #[serde(with = "rust_decimal::serde::float")]
-    pub loan_amount_reserve: Decimal,
-    #[serde(with = "rust_decimal::serde::float")]
-    pub loan_amount_reserve_remaining: Decimal,
-    pub auto_accept: bool,
-    pub duration_days_min: i32,
-    pub duration_days_max: i32,
-    pub loan_asset: LoanAsset,
-    pub loan_payout: LoanPayout,
-    pub status: LoanOfferStatus,
-    pub loan_repayment_address: String,
-    pub origination_fee: Vec<OriginationFee>,
-    pub kyc_link: Option<Url>,
-    pub extension_max_duration_days: u64,
-    #[serde(with = "rust_decimal::serde::float_option")]
-    pub extension_interest_rate: Option<Decimal>,
-    pub repayment_plan: RepaymentPlan,
-    #[serde(with = "time::serde::rfc3339")]
-    pub created_at: OffsetDateTime,
-    #[serde(with = "time::serde::rfc3339")]
-    pub updated_at: OffsetDateTime,
+    Ok(())
 }
 
 /// Get latest statistics for all loan offers and contracts.
@@ -597,51 +453,72 @@ pub struct LoanOffer {
     )
 )]
 #[instrument(skip_all, err(Debug))]
-pub async fn get_latest_stats(
-    State(data): State<Arc<AppState>>,
-) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+async fn get_latest_stats(State(data): State<Arc<AppState>>) -> Result<AppJson<Stats>, Error> {
     let stats = db::loan_offers::calculate_loan_offer_stats(&data.db)
         .await
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
+        .map_err(Error::database)?;
 
     let loan_offer_stats = LoanOfferStats::from(stats);
 
     let latest_contract_stats = db::contracts::load_latest_contract_stats(&data.db, 10)
         .await
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
+        .map_err(Error::database)?;
 
     let contract_stats = latest_contract_stats
         .into_iter()
         .map(ContractStats::from)
         .collect::<Vec<_>>();
 
-    Ok((
-        StatusCode::OK,
-        Json(Stats {
-            contract_stats,
-            loan_offer_stats,
-        }),
-    ))
+    Ok(AppJson(Stats {
+        contract_stats,
+        loan_offer_stats,
+    }))
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+struct LoanOffer {
+    id: String,
+    lender: LenderStats,
+    name: String,
+    #[serde(with = "rust_decimal::serde::float")]
+    min_ltv: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
+    interest_rate: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
+    loan_amount_min: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
+    loan_amount_max: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
+    loan_amount_reserve: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
+    loan_amount_reserve_remaining: Decimal,
+    auto_accept: bool,
+    duration_days_min: i32,
+    duration_days_max: i32,
+    loan_asset: LoanAsset,
+    loan_payout: LoanPayout,
+    status: LoanOfferStatus,
+    loan_repayment_address: String,
+    origination_fee: Vec<OriginationFee>,
+    kyc_link: Option<Url>,
+    extension_max_duration_days: u64,
+    #[serde(with = "rust_decimal::serde::float_option")]
+    extension_interest_rate: Option<Decimal>,
+    repayment_plan: RepaymentPlan,
+    #[serde(with = "time::serde::rfc3339")]
+    created_at: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339")]
+    updated_at: OffsetDateTime,
 }
 
 #[derive(Serialize, Debug)]
-pub struct Stats {
+struct Stats {
     contract_stats: Vec<ContractStats>,
     loan_offer_stats: LoanOfferStats,
 }
 
 #[derive(Serialize, Debug)]
-pub struct ContractStats {
+struct ContractStats {
     #[serde(with = "rust_decimal::serde::float")]
     loan_amount: Decimal,
     duration_days: i32,
@@ -652,7 +529,7 @@ pub struct ContractStats {
 }
 
 #[derive(Serialize, Debug)]
-pub struct LoanOfferStats {
+struct LoanOfferStats {
     #[serde(with = "rust_decimal::serde::float")]
     avg: Decimal,
     #[serde(with = "rust_decimal::serde::float")]
@@ -682,7 +559,100 @@ impl From<db::contracts::ContractStats> for ContractStats {
     }
 }
 
-#[derive(Debug, Serialize)]
-pub struct ErrorResponse {
-    pub message: String,
+// Create our own JSON extractor by wrapping `axum::Json`. This makes it easy to override the
+// rejection and provide our own which formats errors to match our application.
+//
+// `axum::Json` responds with plain text if the input is invalid.
+#[derive(Debug, FromRequest)]
+#[from_request(via(Json), rejection(Error))]
+struct AppJson<T>(T);
+
+impl<T> IntoResponse for AppJson<T>
+where
+    Json<T>: IntoResponse,
+{
+    fn into_response(self) -> Response {
+        Json(self.0).into_response()
+    }
+}
+
+// Error fields are allowed to be dead code because they are actually used when printed in logs.
+/// All the errors related to the `loan_offers` REST API.
+#[derive(Debug)]
+enum Error {
+    /// The request body contained invalid JSON.
+    JsonRejection(JsonRejection),
+    /// Failed to interact with the database.
+    Database(#[allow(dead_code)] String),
+    /// Invalid LTV value.
+    InvalidLtv { ltv: Decimal },
+    /// Invalid interest rate value.
+    InvalidInterestRate { rate: Decimal },
+    /// Referenced lender does not exist.
+    MissingLender,
+    /// Auto approve feature is not enabled.
+    AutoApproveNotEnabled,
+    /// KYC offers feature is not enabled.
+    KycOffersNotEnabled,
+    /// Indirect payouts require auto-accept to be enabled.
+    IndirectPayoutRequiresAutoAccept,
+}
+
+impl Error {
+    fn database(e: anyhow::Error) -> Self {
+        Self::Database(format!("{e:#}"))
+    }
+}
+
+impl From<JsonRejection> for Error {
+    fn from(rejection: JsonRejection) -> Self {
+        Self::JsonRejection(rejection)
+    }
+}
+
+/// Tell `axum` how [`Error`] should be converted into a response.
+impl IntoResponse for Error {
+    fn into_response(self) -> Response {
+        /// How we want error responses to be serialized.
+        #[derive(Serialize)]
+        struct ErrorResponse {
+            message: String,
+        }
+
+        let (status, message) = match self {
+            Error::JsonRejection(rejection) => {
+                // This error is caused by bad user input so don't log it
+                (rejection.status(), rejection.body_text())
+            }
+            Error::Database(_) | Error::MissingLender => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Something went wrong".to_owned(),
+            ),
+            Error::AutoApproveNotEnabled => (
+                StatusCode::UNAUTHORIZED,
+                "Auto approve feature is not enabled".to_owned(),
+            ),
+            Error::KycOffersNotEnabled => (
+                StatusCode::UNAUTHORIZED,
+                "KYC offers feature is not enabled".to_owned(),
+            ),
+            Error::IndirectPayoutRequiresAutoAccept => (
+                StatusCode::BAD_REQUEST,
+                "Indirect payouts require auto-accept to be enabled".to_owned(),
+            ),
+            Error::InvalidLtv { ltv } => (
+                StatusCode::BAD_REQUEST,
+                format!("LTV needs to be between 0.00 and 1.00 but was {}", ltv),
+            ),
+            Error::InvalidInterestRate { rate } => (
+                StatusCode::BAD_REQUEST,
+                format!(
+                    "Interest rate needs to be between 0.00 and 1.00 but was {}",
+                    rate
+                ),
+            ),
+        };
+
+        (status, AppJson(ErrorResponse { message })).into_response()
+    }
 }

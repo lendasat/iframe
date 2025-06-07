@@ -12,7 +12,8 @@ use axum::http::header::CONTENT_TYPE;
 use axum::http::header::ORIGIN;
 use axum::http::HeaderValue;
 use axum::middleware;
-use loan_applications::{EditLoanApplicationRequest, LoanApplicationErrorResponse};
+use loan_applications::EditLoanApplicationRequest;
+use loan_applications::LoanApplicationErrorResponse;
 use loan_offers::QueryParamLoanType;
 use reqwest::Method;
 use std::net::SocketAddr;
@@ -181,14 +182,11 @@ pub async fn spawn_borrower_server(
         .nest("/api/health", health_check::router())
         .nest("/api/auth", auth::router_openapi(app_state.clone()))
         .nest("/api/offers", loan_offers::router(app_state.clone()))
-        .nest(
-            "/api/contracts",
-            contracts::router_openapi(app_state.clone()),
-        )
-        .nest("/api/keys", api_keys::router_openapi(app_state.clone()))
+        .nest("/api/contracts", contracts::router(app_state.clone()))
+        .nest("/api/keys", api_keys::router(app_state.clone()))
         .nest(
             "/api/create-api-account",
-            api_accounts::router_openapi(app_state.clone()),
+            api_accounts::router(app_state.clone()),
         )
         .nest(
             "/api/loan-applications",

@@ -62,16 +62,6 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
         .with_state(app_state)
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct PostConnectWithBringinRequest {
-    pub bringin_email: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct PostConnectWithBringinResponse {
-    pub signup_url: Option<Url>,
-}
-
 #[instrument(skip_all, fields(borrower_id = user.id, bringin_email = body.bringin_email), err(Debug), ret)]
 async fn post_connect_with_bringin(
     State(data): State<Arc<AppState>>,
@@ -105,20 +95,6 @@ async fn post_connect_with_bringin(
     };
 
     Ok(AppJson(res))
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct PostVerificationStatus {
-    /// Bringin user ID.
-    #[serde(rename = "userId")]
-    pub bringin_id: String,
-    #[serde(rename = "apikey")]
-    pub bringin_api_key: String,
-    /// Lendasat borrower ID (if called correctly by Bringin).
-    #[serde(rename = "ref")]
-    pub borrower_id: String,
-    #[serde(rename = "verificationStatus")]
-    pub verification_status: String,
 }
 
 #[instrument(skip_all, err(Debug))]
@@ -156,18 +132,6 @@ async fn post_order_status_update_callback(payload: Json<Value>) -> Result<(), E
     Ok(())
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct PostUserConnectedRequest {
-    /// Bringin user ID.
-    #[serde(rename = "userId")]
-    pub bringin_id: String,
-    #[serde(rename = "apikey")]
-    pub api_key: String,
-    /// Lendasat borrower ID (if called correctly by Bringin).
-    #[serde(rename = "ref")]
-    pub borrower_id: String,
-}
-
 #[instrument(skip_all, err(Debug))]
 async fn post_user_connected_callback(
     State(data): State<Arc<AppState>>,
@@ -189,11 +153,6 @@ async fn post_user_connected_callback(
     Ok(())
 }
 
-#[derive(Serialize, Debug)]
-pub struct ApiKey {
-    has_key: bool,
-}
-
 #[instrument(skip_all, fields(borrower_id = user.id), err(Debug))]
 async fn has_api_key(
     State(data): State<Arc<AppState>>,
@@ -207,14 +166,54 @@ async fn has_api_key(
     Ok(AppJson(ApiKey { has_key }))
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+struct PostVerificationStatus {
+    /// Bringin user ID.
+    #[serde(rename = "userId")]
+    bringin_id: String,
+    #[serde(rename = "apikey")]
+    bringin_api_key: String,
+    /// Lendasat borrower ID (if called correctly by Bringin).
+    #[serde(rename = "ref")]
+    borrower_id: String,
+    #[serde(rename = "verificationStatus")]
+    verification_status: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+struct PostUserConnectedRequest {
+    /// Bringin user ID.
+    #[serde(rename = "userId")]
+    bringin_id: String,
+    #[serde(rename = "apikey")]
+    api_key: String,
+    /// Lendasat borrower ID (if called correctly by Bringin).
+    #[serde(rename = "ref")]
+    borrower_id: String,
+}
+
+#[derive(Serialize, Debug)]
+struct ApiKey {
+    has_key: bool,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+struct PostConnectWithBringinRequest {
+    bringin_email: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct PostConnectWithBringinResponse {
+    signup_url: Option<Url>,
+}
+
 // Error fields are allowed to be dead code because they are actually used when printed in logs.
-#[allow(dead_code)]
 #[derive(Debug)]
 enum Error {
     /// Failed to interact with the database.
-    Database(String),
+    Database(#[allow(dead_code)] String),
     /// Got an error from Bringin.
-    Bringin(String),
+    Bringin(#[allow(dead_code)] String),
     /// Invalid email.
     InvalidEmail,
     /// Borrower not found

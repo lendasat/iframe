@@ -72,7 +72,7 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 use uuid::Uuid;
 
-pub(crate) fn router_openapi(app_state: Arc<AppState>) -> OpenApiRouter {
+pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
     OpenApiRouter::new()
         .routes(routes!(get_contracts))
         .routes(routes!(get_contract))
@@ -976,76 +976,138 @@ async fn post_extend_contract_request(
     Ok(AppJson(contract))
 }
 
+/// Update borrower btc address of a contract.
+#[utoipa::path(
+    put,
+    path = "/{id}/borrower-address",
+    params(
+        (
+        "id" = String, Path, description = "Contract id"
+        )
+    ),
+    request_body = UpdateBorrowerBtcAddress,
+    tag = CONTRACTS_TAG,
+    responses(
+        (
+        status = 200,
+        description = "Ok if successful",
+        )
+    ),
+    security(
+        (
+        "api_key" = [])
+        )
+    )
+]
+#[instrument(skip_all, fields(borrower_id = user.id, contract_id, body), ret, err(Debug))]
+async fn put_borrower_btc_address(
+    State(data): State<Arc<AppState>>,
+    Extension(user): Extension<Borrower>,
+    Path(contract_id): Path<String>,
+    AppJson(body): AppJson<UpdateBorrowerBtcAddress>,
+) -> Result<AppJson<()>, Error> {
+    let contract = db::contracts::load_contract_by_contract_id_and_borrower_id(
+        &data.db,
+        contract_id.as_str(),
+        user.id.as_str(),
+    )
+    .await
+    .map_err(Error::database)?;
+
+    let pk = contract.borrower_pk;
+
+    let address = body.address.assume_checked();
+    if !crate::wallet::is_signed_by_pk(
+        address.to_string().as_str(),
+        &pk.inner,
+        body.recoverable_signature_hex,
+        body.recoverable_signature_id,
+    )
+    .map_err(Error::bad_signature_provided)?
+    {
+        return Err(Error::InvalidSignatureProvided);
+    }
+
+    if !update_borrower_btc_address(&data.db, contract_id.as_str(), user.id.as_str(), address)
+        .await
+        .map_err(Error::database)?
+    {
+        return Err(Error::UpdateBorrowerAddress);
+    }
+    Ok(AppJson(()))
+}
+
+// This struct and some of its fields are public to help with e2e testing.
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct Contract {
     pub id: String,
     #[serde(with = "rust_decimal::serde::float")]
-    pub loan_amount: Decimal,
-    pub duration_days: i32,
+    loan_amount: Decimal,
+    duration_days: i32,
     pub initial_collateral_sats: u64,
     pub origination_fee_sats: u64,
-    pub collateral_sats: u64,
+    collateral_sats: u64,
     #[serde(with = "rust_decimal::serde::float")]
-    pub interest_rate: Decimal,
+    interest_rate: Decimal,
     #[serde(with = "rust_decimal::serde::float")]
-    pub interest: Decimal,
+    interest: Decimal,
     #[serde(with = "rust_decimal::serde::float")]
-    pub initial_ltv: Decimal,
-    pub loan_asset: LoanAsset,
+    initial_ltv: Decimal,
+    loan_asset: LoanAsset,
     pub status: ContractStatus,
     #[schema(value_type = String)]
-    pub borrower_pk: PublicKey,
+    borrower_pk: PublicKey,
     #[schema(value_type = String)]
     pub borrower_derivation_path: Option<DerivationPath>,
     #[schema(value_type = String)]
-    pub lender_pk: PublicKey,
-    pub borrower_btc_address: String,
-    pub borrower_loan_address: Option<String>,
+    lender_pk: PublicKey,
+    borrower_btc_address: String,
+    borrower_loan_address: Option<String>,
     pub contract_address: Option<String>,
-    pub loan_repayment_address: Option<String>,
-    pub collateral_script: Option<String>,
-    pub lender: LenderStats,
+    loan_repayment_address: Option<String>,
+    collateral_script: Option<String>,
+    lender: LenderStats,
     #[serde(with = "time::serde::rfc3339")]
-    pub created_at: OffsetDateTime,
+    created_at: OffsetDateTime,
     #[serde(with = "time::serde::rfc3339")]
     pub updated_at: OffsetDateTime,
     #[serde(with = "time::serde::rfc3339")]
-    pub expiry: OffsetDateTime,
-    pub liquidation_status: LiquidationStatus,
-    pub transactions: Vec<LoanTransaction>,
-    pub loan_type: LoanType,
+    expiry: OffsetDateTime,
+    liquidation_status: LiquidationStatus,
+    transactions: Vec<LoanTransaction>,
+    loan_type: LoanType,
     #[serde(with = "rust_decimal::serde::float")]
-    pub liquidation_price: Decimal,
-    pub extends_contract: Option<String>,
-    pub extended_by_contract: Option<String>,
-    pub kyc_info: Option<KycInfo>,
-    pub fiat_loan_details_borrower: Option<FiatLoanDetailsWrapperResponse>,
-    pub fiat_loan_details_lender: Option<FiatLoanDetailsWrapperResponse>,
-    pub lender_npub: String,
-    pub timeline: Vec<TimelineEvent>,
-    pub client_contract_id: Option<Uuid>,
-    pub extension_max_duration_days: u64,
+    liquidation_price: Decimal,
+    extends_contract: Option<String>,
+    extended_by_contract: Option<String>,
+    kyc_info: Option<KycInfo>,
+    fiat_loan_details_borrower: Option<FiatLoanDetailsWrapperResponse>,
+    fiat_loan_details_lender: Option<FiatLoanDetailsWrapperResponse>,
+    lender_npub: String,
+    timeline: Vec<TimelineEvent>,
+    client_contract_id: Option<Uuid>,
+    extension_max_duration_days: u64,
     #[serde(with = "rust_decimal::serde::float_option")]
-    pub extension_interest_rate: Option<Decimal>,
-    pub extension_origination_fee: Vec<OriginationFee>,
+    extension_interest_rate: Option<Decimal>,
+    extension_origination_fee: Vec<OriginationFee>,
     pub installments: Vec<Installment>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct Installment {
     pub id: Uuid,
-    pub principal: Decimal,
-    pub interest: Decimal,
+    principal: Decimal,
+    interest: Decimal,
     #[serde(with = "time::serde::rfc3339")]
-    pub due_date: OffsetDateTime,
-    pub status: InstallmentStatus,
+    due_date: OffsetDateTime,
+    status: InstallmentStatus,
     #[serde(with = "time::serde::rfc3339::option")]
-    pub paid_date: Option<OffsetDateTime>,
-    pub payment_id: Option<String>,
+    paid_date: Option<OffsetDateTime>,
+    payment_id: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
-pub struct TimelineEvent {
+struct TimelineEvent {
     #[serde(with = "time::serde::rfc3339")]
     date: OffsetDateTime,
     event: TimelineEventKind,
@@ -1061,14 +1123,14 @@ enum TimelineEventKind {
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
-pub struct FiatLoanDetailsWrapperResponse {
-    pub details: FiatLoanDetails,
+struct FiatLoanDetailsWrapperResponse {
+    details: FiatLoanDetails,
     /// The borrower's encrypted encryption key.
-    pub encrypted_encryption_key: String,
+    encrypted_encryption_key: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
-pub struct KycInfo {
+struct KycInfo {
     kyc_link: Url,
     is_kyc_done: bool,
 }
@@ -1088,9 +1150,22 @@ pub struct ClaimTx {
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
-pub struct ExtendContractRequestSchema {
+struct ExtendContractRequestSchema {
     /// The number of days to be added on top of the current duration.
-    pub new_duration: i32,
+    new_duration: i32,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+struct UpdateBorrowerBtcAddress {
+    #[schema(value_type = String)]
+    address: Address<NetworkUnchecked>,
+    /// A recoverable signature of the address using "bitcoin's" signing protocol, i.e. the message
+    /// (`address`) is prepended with b"\x18Bitcoin Signed Message:\n".
+    ///
+    /// The message needs to be signed using the sk behind the pk in the corresponding contract.
+    /// See https://docs.rs/satsnet/latest/src/satsnet/sign_message.rs.html#201-208
+    recoverable_signature_hex: String,
+    recoverable_signature_id: i32,
 }
 
 /// Convert from a [`model::Contract`] to a [`Contract`].
@@ -1364,91 +1439,17 @@ async fn map_timeline(
     Ok(timeline)
 }
 
-#[derive(Debug, Deserialize, ToSchema)]
-pub struct UpdateBorrowerBtcAddress {
-    #[schema(value_type = String)]
-    address: Address<NetworkUnchecked>,
-    /// A recoverable signature of the address using "bitcoin's" signing protocol, i.e. the message
-    /// (`address`) is prepended with b"\x18Bitcoin Signed Message:\n".
-    ///
-    /// The message needs to be signed using the sk behind the pk in the corresponding contract.
-    /// See https://docs.rs/satsnet/latest/src/satsnet/sign_message.rs.html#201-208
-    recoverable_signature_hex: String,
-    recoverable_signature_id: i32,
-}
-
-/// Update borrower btc address of a contract.
-#[utoipa::path(
-    put,
-    path = "/{id}/borrower-address",
-    params(
-        (
-        "id" = String, Path, description = "Contract id"
-        )
-    ),
-    request_body = UpdateBorrowerBtcAddress,
-    tag = CONTRACTS_TAG,
-    responses(
-        (
-        status = 200,
-        description = "Ok if successful",
-        )
-    ),
-    security(
-        (
-        "api_key" = [])
-        )
-    )
-]
-#[instrument(skip_all, fields(borrower_id = user.id, contract_id, body), ret, err(Debug))]
-async fn put_borrower_btc_address(
-    State(data): State<Arc<AppState>>,
-    Extension(user): Extension<Borrower>,
-    Path(contract_id): Path<String>,
-    AppJson(body): AppJson<UpdateBorrowerBtcAddress>,
-) -> Result<AppJson<()>, Error> {
-    let contract = db::contracts::load_contract_by_contract_id_and_borrower_id(
-        &data.db,
-        contract_id.as_str(),
-        user.id.as_str(),
-    )
-    .await
-    .map_err(Error::database)?;
-
-    let pk = contract.borrower_pk;
-
-    let address = body.address.assume_checked();
-    if !crate::wallet::is_signed_by_pk(
-        address.to_string().as_str(),
-        &pk.inner,
-        body.recoverable_signature_hex,
-        body.recoverable_signature_id,
-    )
-    .map_err(Error::BadSignatureProvided)?
-    {
-        return Err(Error::InvalidSignatureProvided);
-    }
-
-    if !update_borrower_btc_address(&data.db, contract_id.as_str(), user.id.as_str(), address)
-        .await
-        .map_err(Error::database)?
-    {
-        return Err(Error::UpdateBorrowerAddress);
-    }
-    Ok(AppJson(()))
-}
-
 // Error fields are allowed to be dead code because they are actually used when printed in logs.
-#[allow(dead_code)]
 /// All the errors related to the `contracts` REST API.
 #[derive(Debug)]
 enum Error {
     /// The request body contained invalid JSON.
     JsonRejection(JsonRejection),
     /// Failed to interact with the database.
-    Database(String),
+    Database(#[allow(dead_code)] String),
     /// Referenced loan does not exist.
     MissingLoanOffer {
+        #[allow(dead_code)]
         id: String,
     },
     /// Referenced lender does not exist.
@@ -1470,21 +1471,21 @@ enum Error {
     /// Moon cards cannot be topped up if we don't know the client IP.
     CannotTopUpMoonCardWithoutIp,
     /// Failed to get country code of IP from GeoJS.
-    GeoJs(String),
+    GeoJs(#[allow(dead_code)] String),
     /// Moon cards cannot be topped up from the US.
     CannotTopUpMoonCardFromUs,
     /// Failed to create Moon card.
-    MoonCardGeneration(String),
+    MoonCardGeneration(#[allow(dead_code)] String),
     /// Failed to generate Moon invoice.
-    MoonInvoiceGeneration(String),
+    MoonInvoiceGeneration(#[allow(dead_code)] String),
     /// Failed to get price from BitMEX.
-    BitMexPrice(String),
+    BitMexPrice(#[allow(dead_code)] String),
     /// Failed to calculate initial collateral.
-    InitialCollateralCalculation(String),
+    InitialCollateralCalculation(#[allow(dead_code)] String),
     /// No origination fee configured.
     MissingOriginationFee,
     /// Failed to calculate origination fee in sats.
-    OriginationFeeCalculation(String),
+    OriginationFeeCalculation(#[allow(dead_code)] String),
     /// Can't approve a contract request with a [`ContractStatus`] different to
     /// [`ContractStatus::Requested`] or [`ContractStatus::RenewalRequested`].
     InvalidApproveRequest {
@@ -1502,28 +1503,29 @@ enum Error {
     /// Can't claim collateral without collateral address.
     MissingCollateralAddress,
     /// Failed to generate contract address.
-    ContractAddress(String),
+    ContractAddress(#[allow(dead_code)] String),
     /// Referenced borrower does not exist.
     MissingBorrower,
     /// Failed to track accepted contract using Mempool API.
-    TrackContract(String),
+    TrackContract(#[allow(dead_code)] String),
     /// Can't find collateral outputs to claim.
     MissingCollateralOutputs,
     /// Failed to create claim-collateral PSBT.
-    CreateClaimCollateralPsbt(String),
+    CreateClaimCollateralPsbt(#[allow(dead_code)] String),
     /// Failed to parse signed claim-collateral transaction.
-    ParseClaimTx(FromHexError),
+    ParseClaimTx(#[allow(dead_code)] FromHexError),
     /// Failed to track claim-collateral transaction.
-    TrackClaimTx(String),
+    TrackClaimTx(#[allow(dead_code)] String),
     /// Failed to post claim-collateral transaction.
-    PostClaimTx(String),
+    PostClaimTx(#[allow(dead_code)] String),
     /// The borrower is trying to interact with a contract that is not theirs, according to our
     /// records.
     NotYourContract,
     /// We failed at calculating the interest rate. Cannot do much without this
-    InterestRateCalculation(String),
+    InterestRateCalculation(#[allow(dead_code)] String),
     /// Discounted origination fee rate was not valid
     InvalidDiscountRate {
+        #[allow(dead_code)]
         fee: Decimal,
     },
     /// A fiat loan must use a fiat asset.
@@ -1545,7 +1547,7 @@ enum Error {
         duration_days_max: i32,
     },
     /// Failed to build contract descriptor.
-    CannotBuildDescriptor(String),
+    CannotBuildDescriptor(#[allow(dead_code)] String),
     /// Cannot approve renewal without contract address.
     MissingContractAddress,
     /// Missing contract.
@@ -1560,7 +1562,7 @@ enum Error {
     /// No Bringin API key associated with this borrower.
     NoBringinApiKey,
     /// An error coming from Bringin.
-    Bringin(String),
+    Bringin(#[allow(dead_code)] String),
     /// The requested loan amount is out of the bounds imposed by Bringin.
     BringinLoanAmountOutOfBounds {
         min: Decimal,
@@ -1578,11 +1580,11 @@ enum Error {
     /// We failed updating the borrower's bitcoin address in the DB
     UpdateBorrowerAddress,
     /// The signature provided was not valid
-    BadSignatureProvided(anyhow::Error),
+    BadSignatureProvided(#[allow(dead_code)] String),
     /// The signature provided did not fit to the message
     InvalidSignatureProvided,
     /// Failed to compute installments based on extension.
-    ComputeExtensionInstallments(String),
+    ComputeExtensionInstallments(#[allow(dead_code)] String),
 }
 
 impl Error {
@@ -1590,64 +1592,68 @@ impl Error {
     // would log the `anyhow::Error` via `tracing` using the alternate selector, but that's not
     // supported yet: https://github.com/tokio-rs/tracing/issues/1311.
 
-    fn database(e: anyhow::Error) -> Self {
+    fn database(e: impl std::fmt::Display) -> Self {
         Self::Database(format!("{e:#}"))
     }
 
-    fn geo_js(e: anyhow::Error) -> Self {
+    fn geo_js(e: impl std::fmt::Display) -> Self {
         Self::GeoJs(format!("{e:#}"))
     }
 
-    fn moon_card_generation(e: anyhow::Error) -> Self {
+    fn moon_card_generation(e: impl std::fmt::Display) -> Self {
         Self::MoonCardGeneration(format!("{e:#}"))
     }
 
-    fn moon_invoice_generation(e: anyhow::Error) -> Self {
+    fn moon_invoice_generation(e: impl std::fmt::Display) -> Self {
         Self::MoonInvoiceGeneration(format!("{e:#}"))
     }
 
-    fn bitmex_price(e: anyhow::Error) -> Self {
+    fn bitmex_price(e: impl std::fmt::Display) -> Self {
         Self::BitMexPrice(format!("{e:#}"))
     }
 
-    fn initial_collateral_calculation(e: anyhow::Error) -> Self {
+    fn initial_collateral_calculation(e: impl std::fmt::Display) -> Self {
         Self::InitialCollateralCalculation(format!("{e:#}"))
     }
 
-    fn origination_fee_calculation(e: anyhow::Error) -> Self {
+    fn origination_fee_calculation(e: impl std::fmt::Display) -> Self {
         Self::OriginationFeeCalculation(format!("{e:#}"))
     }
 
-    fn cannot_build_descriptor(e: anyhow::Error) -> Self {
+    fn cannot_build_descriptor(e: impl std::fmt::Display) -> Self {
         Self::CannotBuildDescriptor(format!("{e:#}"))
     }
 
-    fn interest_rate_calculation(e: anyhow::Error) -> Self {
+    fn interest_rate_calculation(e: impl std::fmt::Display) -> Self {
         Self::InterestRateCalculation(format!("{e:#}"))
     }
 
-    fn contract_address(e: anyhow::Error) -> Self {
+    fn contract_address(e: impl std::fmt::Display) -> Self {
         Self::ContractAddress(format!("{e:#}"))
     }
 
-    fn track_contract(e: anyhow::Error) -> Self {
+    fn track_contract(e: impl std::fmt::Display) -> Self {
         Self::TrackContract(format!("{e:#}"))
     }
 
-    fn create_claim_collateral_psbt(e: anyhow::Error) -> Self {
+    fn create_claim_collateral_psbt(e: impl std::fmt::Display) -> Self {
         Self::CreateClaimCollateralPsbt(format!("{e:#}"))
     }
 
-    fn track_claim_tx(e: anyhow::Error) -> Self {
+    fn track_claim_tx(e: impl std::fmt::Display) -> Self {
         Self::TrackClaimTx(format!("{e:#}"))
     }
 
-    fn post_claim_tx(e: anyhow::Error) -> Self {
+    fn post_claim_tx(e: impl std::fmt::Display) -> Self {
         Self::PostClaimTx(format!("{e:#}"))
     }
 
-    fn bringin(e: anyhow::Error) -> Self {
+    fn bringin(e: impl std::fmt::Display) -> Self {
         Self::Bringin(format!("{e:#}"))
+    }
+
+    fn bad_signature_provided(e: impl std::fmt::Display) -> Self {
+        Self::BadSignatureProvided(format!("{e:#}"))
     }
 }
 
@@ -1767,7 +1773,7 @@ impl IntoResponse for Error {
             Error::NotYourContract => (StatusCode::NOT_FOUND, "Contract not found".to_owned()),
             Error::InvalidApproveRequest { status } => (
                                 StatusCode::BAD_REQUEST,
-                                format!("Cannot cancel a contract request with status {status:?}"),
+                                format!("Cannot approve a contract request with status {status:?}"),
                             ),
             Error::MissingFiatLoanDetails => (
                                 StatusCode::BAD_REQUEST,
@@ -1842,8 +1848,7 @@ impl IntoResponse for Error {
                     "Could not update address".to_string(),
                 )
             }
-            Error::BadSignatureProvided(e) => {
-                tracing::error!("Bad signature provided {e:#}");
+            Error::BadSignatureProvided(_) => {
                 (
                     StatusCode::BAD_REQUEST,
                     "Bad signature provided".to_string(),

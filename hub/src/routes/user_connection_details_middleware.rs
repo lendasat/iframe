@@ -4,10 +4,8 @@ use axum::extract::ConnectInfo;
 use axum::extract::State;
 use axum::http::header::USER_AGENT;
 use axum::http::Request;
-use axum::http::StatusCode;
 use axum::middleware::Next;
-use axum::response::IntoResponse;
-use axum::Json;
+use axum::response::Response;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
@@ -22,7 +20,7 @@ pub async fn ip_user_agent(
     State(data): State<Arc<AppState>>,
     mut req: Request<Body>,
     next: Next,
-) -> Result<impl IntoResponse, (StatusCode, Json<String>)> {
+) -> Response {
     let nginx_ip = req
         .headers()
         .get("X-Real-IP")
@@ -63,5 +61,5 @@ pub async fn ip_user_agent(
     req.extensions_mut()
         .insert(UserConnectionDetails { ip, user_agent });
 
-    Ok(next.run(req).await)
+    next.run(req).await
 }

@@ -36,11 +36,6 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
         .with_state(app_state)
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct UpdateProfile {
-    pub timezone: String,
-}
-
 #[instrument(skip_all, fields(lender_id), err(Debug))]
 async fn update_profile(
     State(data): State<Arc<AppState>>,
@@ -61,9 +56,14 @@ async fn update_profile(
 
     db::lenders::update_lender_timezone(&data.db, lender_id.as_str(), body.timezone.as_str())
         .await
-        .map_err(Error::Database)?;
+        .map_err(Error::database)?;
 
     Ok(())
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+struct UpdateProfile {
+    timezone: String,
 }
 
 // Create our own JSON extractor by wrapping `axum::Json`. This makes it easy to override the
@@ -86,9 +86,15 @@ where
 #[derive(Debug)]
 enum Error {
     /// Failed to interact with the database.
-    Database(anyhow::Error),
+    Database(#[allow(dead_code)] String),
     /// Invalid timezone provided
     InvalidTimezone,
+}
+
+impl Error {
+    fn database(e: impl std::fmt::Display) -> Self {
+        Self::Database(format!("{e:#}"))
+    }
 }
 
 /// Tell `axum` how [`Error`] should be converted into a response.
@@ -101,16 +107,10 @@ impl IntoResponse for Error {
         }
 
         let (status, message) = match self {
-            Error::Database(e) => {
-                // If we configure `tracing` properly, we don't need to add extra context here!
-                tracing::error!("Database error: {e:#}");
-
-                // Don't expose any details about the error to the client.
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
+            Error::Database(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Something went wrong".to_owned(),
+            ),
             Error::InvalidTimezone => (
                 StatusCode::BAD_REQUEST,
                 "Invalid timezone provided".to_owned(),

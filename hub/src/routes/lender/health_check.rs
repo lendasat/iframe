@@ -12,7 +12,7 @@ pub(crate) fn router() -> OpenApiRouter {
 }
 
 #[derive(Deserialize, Serialize, ToSchema)]
-pub struct Health {
+struct Health {
     message: String,
 }
 
@@ -29,7 +29,7 @@ responses(
     )
 )
 )]
-pub async fn health_checker_handler() -> impl IntoResponse {
+async fn health_checker_handler() -> impl IntoResponse {
     Json(Health {
         message: "Up and running".to_string(),
     })
