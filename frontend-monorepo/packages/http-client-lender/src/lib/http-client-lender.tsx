@@ -27,7 +27,6 @@ import {
   TakeLoanApplicationSchema,
   UpgradeToPakeResponse,
   Version,
-  IsRegisteredResponse,
   WalletBackupData,
   PaginatedNotificationResponse,
 } from "./models";
@@ -111,7 +110,6 @@ export interface HttpClientLender {
   ) => Promise<PakeVerifyResponse>;
   forgotPassword: (email: string) => Promise<string>;
   verifyEmail: (token: string) => Promise<string>;
-  getIsRegistered: (email: string) => Promise<IsRegisteredResponse>;
   resetPassword: (
     verifier: string,
     salt: string,
@@ -255,23 +253,6 @@ export const createHttpClientLender = (
     }
 
     throw new Error(`Failed ${context}: ${error}`);
-  };
-
-  // Auth related methods
-  const getIsRegistered = async (email: string) => {
-    try {
-      const response: AxiosResponse<IsRegisteredResponse> =
-        await axiosClient.get(`/api/auth/is-registered?email=${email}`);
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        console.log(error.response);
-        const message = error.response.data.message;
-        throw new Error(message);
-      } else {
-        throw error;
-      }
-    }
   };
 
   const register = async (
@@ -1110,7 +1091,6 @@ export const createHttpClientLender = (
     pakeVerifyRequest,
     forgotPassword,
     verifyEmail,
-    getIsRegistered,
     resetPassword,
     getVersion,
     joinWaitlist,

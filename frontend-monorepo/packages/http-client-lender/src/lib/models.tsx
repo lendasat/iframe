@@ -722,11 +722,6 @@ export interface PakeVerifyResponse {
   wallet_backup_data: WalletBackupData;
 }
 
-export interface IsRegisteredResponse {
-  is_registered: boolean;
-  is_verified: boolean;
-}
-
 export enum NotificationMessageType {
   ContractUpdate = "ContractUpdate",
   InstallmentUpdate = "InstallmentUpdate",
