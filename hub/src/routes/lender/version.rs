@@ -1,30 +1,38 @@
-use crate::routes::lender::auth::jwt_auth::auth;
-use crate::routes::AppState;
-use axum::middleware;
+use crate::routes::lender::VERSION_TAG;
 use axum::response::IntoResponse;
-use axum::routing::get;
 use axum::Json;
-use axum::Router;
 use serde::Serialize;
-use std::sync::Arc;
+use utoipa::ToSchema;
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
 
 const GIT_TAG: &str = env!("GIT_TAG");
 const GIT_HASH: &str = env!("GIT_COMMIT_HASH");
 
-pub(crate) fn router(app_state: Arc<AppState>) -> Router {
-    Router::new()
-        .route("/api/version", get(version))
-        .route_layer(middleware::from_fn_with_state(app_state.clone(), auth))
-        .with_state(app_state)
+pub(crate) fn router() -> OpenApiRouter {
+    OpenApiRouter::new().routes(routes!(version))
 }
 
-#[derive(Serialize)]
-pub struct Version {
+#[derive(Serialize, ToSchema)]
+struct Version {
     tag: String,
     commit_hash: String,
 }
 
-pub async fn version() -> impl IntoResponse {
+/// Return the current git tag and commit hash.
+#[utoipa::path(
+    get,
+    path = "/",
+    tag = VERSION_TAG,
+    responses(
+        (
+        status = 200,
+        description = "Return the deployed version and commit hash",
+        body = Version
+        )
+    )
+)]
+async fn version() -> impl IntoResponse {
     Json(Version {
         tag: GIT_TAG.to_owned(),
         commit_hash: GIT_HASH.to_owned(),

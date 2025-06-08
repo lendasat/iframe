@@ -136,7 +136,7 @@ pub(crate) mod lender {
     use sqlx::PgPool;
     use uuid::Uuid;
 
-    pub async fn insert_telegram_bot_token_for_lender(
+    async fn insert_telegram_bot_token_for_lender(
         pool: &PgPool,
         lender_id: &str,
     ) -> sqlx::Result<TelegramBotToken> {

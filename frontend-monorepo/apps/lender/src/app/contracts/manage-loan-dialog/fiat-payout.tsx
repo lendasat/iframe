@@ -26,7 +26,7 @@ export function FiatPayout({ contract, refreshContract }: FiatPayoutProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [transferDescription, setTransferDescription] = useState<string>("");
 
-  const { principalGiven } = useLenderHttpClient();
+  const { reportDisbursement } = useLenderHttpClient();
 
   const totalPaymentAmount = contract.loan_amount;
 
@@ -48,7 +48,7 @@ export function FiatPayout({ contract, refreshContract }: FiatPayoutProps) {
 
     try {
       setIsSubmitting(true);
-      await principalGiven(contract.id, transferDescription);
+      await reportDisbursement(contract.id, transferDescription);
 
       refreshContract();
     } catch (error) {

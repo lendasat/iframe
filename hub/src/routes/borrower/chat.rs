@@ -36,11 +36,6 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
         .with_state(app_state)
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct NotifyUser {
-    pub contract_id: String,
-}
-
 #[instrument(skip_all, fields(borrower_id), err(Debug))]
 async fn new_chat_notification(
     State(data): State<Arc<AppState>>,
@@ -57,7 +52,7 @@ async fn new_chat_notification(
 
     let lender = db::lenders::get_user_by_id(&data.db, contract.lender_id.as_str())
         .await
-        .map_err(Error::Database)?
+        .map_err(Error::database)?
         .ok_or(Error::MissingLender)?;
 
     let loan_url = data
@@ -73,15 +68,27 @@ async fn new_chat_notification(
     Ok(())
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+struct NotifyUser {
+    contract_id: String,
+}
+
 #[derive(Debug)]
 enum Error {
     /// Failed to interact with the database.
-    Database(anyhow::Error),
+    Database(#[allow(dead_code)] String),
     /// Lender not found
     MissingLender,
     /// User tried to send a notification for a non existing contract
     InvalidContract,
 }
+
+impl Error {
+    fn database(e: impl std::fmt::Display) -> Self {
+        Self::Database(format!("{e:#}"))
+    }
+}
+
 // Create our own JSON extractor by wrapping `axum::Json`. This makes it easy to override the
 // rejection and provide our own which formats errors to match our application.
 //
@@ -100,8 +107,6 @@ where
 }
 
 /// Tell `axum` how [`Error`] should be converted into a response.
-///
-/// This is also a convenient place to log errors.
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
         /// How we want error responses to be serialized.
@@ -111,16 +116,10 @@ impl IntoResponse for Error {
         }
 
         let (status, message) = match self {
-            Error::Database(e) => {
-                // If we configure `tracing` properly, we don't need to add extra context here!
-                tracing::error!("Database error: {e:#}");
-
-                // Don't expose any details about the error to the client.
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong".to_owned(),
-                )
-            }
+            Error::Database(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Something went wrong".to_owned(),
+            ),
             Error::MissingLender => (StatusCode::BAD_REQUEST, "Lender not found".to_owned()),
             Error::InvalidContract => (StatusCode::BAD_REQUEST, "Contract not found".to_owned()),
         };

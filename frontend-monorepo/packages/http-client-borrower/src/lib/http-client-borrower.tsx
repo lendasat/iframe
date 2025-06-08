@@ -468,9 +468,7 @@ export const createHttpClient = (
   // Loan related methods
   const getDirectLoanOffers = async (): Promise<LoanOffer[]> => {
     try {
-      const response = await axiosClient.get(
-        "/api/loans/offer?loan_type=Direct",
-      );
+      const response = await axiosClient.get("/api/offers?loan_type=Direct");
       return response.data;
     } catch (error) {
       handleError(error, "fetching loan offers");
@@ -483,7 +481,7 @@ export const createHttpClient = (
   ): Promise<LoanOffer[]> => {
     try {
       const response: AxiosResponse<LoanOffer[]> = await axiosClient.get(
-        `/api/loans/offer/bylender/${lenderId}?loan_type=Direct`,
+        `/api/offers/by-lender/${lenderId}?loan_type=Direct`,
       );
       return response.data;
     } catch (error) {
@@ -496,7 +494,7 @@ export const createHttpClient = (
   ): Promise<LoanOffer[]> => {
     try {
       const response: AxiosResponse<LoanOffer[]> = await axiosClient.get(
-        `/api/loans/offer/bylender/${lenderId}?loan_type=Indirect`,
+        `/api/offers/by-lender/${lenderId}?loan_type=Indirect`,
       );
       return response.data;
     } catch (error) {
@@ -508,7 +506,7 @@ export const createHttpClient = (
   const getLoanOffer = async (id: string): Promise<LoanOffer> => {
     try {
       const response: AxiosResponse<LoanOffer> = await axiosClient.get(
-        `/api/loans/offer/${id}`,
+        `/api/offers/${id}`,
       );
       return response.data;
     } catch (error) {
@@ -522,7 +520,7 @@ export const createHttpClient = (
   ): Promise<LoanRequest> => {
     try {
       const response: AxiosResponse<LoanRequest> = await axiosClient.post(
-        "/api/loans/application",
+        "/api/loan-applications",
         request,
       );
       return response.data;
@@ -535,7 +533,7 @@ export const createHttpClient = (
   const getLoanApplications = async (): Promise<LoanApplication[]> => {
     try {
       const response: AxiosResponse<RawLoanApplication[]> =
-        await axiosClient.get("/api/loans/application");
+        await axiosClient.get("/api/loan-applications");
 
       return response.data.map((application) => {
         const createdAt = parseRFC3339Date(application.created_at);
@@ -564,7 +562,7 @@ export const createHttpClient = (
     ltv: number,
   ): Promise<void> => {
     try {
-      await axiosClient.put(`/api/loans/application/edit/${id}`, {
+      await axiosClient.put(`/api/loan-applications/edit/${id}`, {
         loan_amount: loan_amount,
         duration_days: duration_days,
         interest_rate: interest_rate,
@@ -577,7 +575,7 @@ export const createHttpClient = (
 
   const deleteLoanApplication = async (id: string): Promise<void> => {
     try {
-      await axiosClient.put(`/api/loans/application/delete/${id}`);
+      await axiosClient.put(`/api/loan-applications/delete/${id}`);
     } catch (error) {
       handleError(error, "deleting loan application");
     }
@@ -735,7 +733,7 @@ export const createHttpClient = (
   ): Promise<string> => {
     try {
       const response: AxiosResponse<string> = await axiosClient.post(
-        `/api/contracts/${contract_id}`,
+        `/api/contracts/${contract_id}/broadcast-claim`,
         { tx: tx },
       );
       return response.data;
@@ -767,7 +765,7 @@ export const createHttpClient = (
     recoverableSignatureId: number,
   ): Promise<void> => {
     try {
-      await axiosClient.put(`/api/contracts/${contract_id}/borroweraddress`, {
+      await axiosClient.put(`/api/contracts/${contract_id}/borrower-address`, {
         address,
         message,
         recoverable_signature_hex: recoverableSignatureHex,

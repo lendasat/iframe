@@ -7,16 +7,16 @@ use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-pub(crate) fn router_openapi() -> OpenApiRouter {
+pub(crate) fn router() -> OpenApiRouter {
     OpenApiRouter::new().routes(routes!(health_checker_handler))
 }
 
 #[derive(Deserialize, Serialize, ToSchema)]
-pub struct Health {
+struct Health {
     message: String,
 }
 
-/// Shows if server is up and running
+/// Shows if server is up and running.
 #[utoipa::path(
 get,
 path = "/",
@@ -29,7 +29,7 @@ responses(
     )
 )
 )]
-pub async fn health_checker_handler() -> impl IntoResponse {
+async fn health_checker_handler() -> impl IntoResponse {
     Json(Health {
         message: "Up and running".to_string(),
     })

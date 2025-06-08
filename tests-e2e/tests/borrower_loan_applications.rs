@@ -74,7 +74,7 @@ async fn borrower_loan_applications() {
     };
 
     let res = borrower
-        .post("http://localhost:7337/api/loans/application")
+        .post("http://localhost:7337/api/loan-applications")
         .json(&loan_application)
         .send()
         .await
@@ -85,7 +85,7 @@ async fn borrower_loan_applications() {
     let loan_application: model::LoanApplication = res.json().await.unwrap();
 
     let res = lender
-        .get("http://localhost:7338/api/loans/application")
+        .get("http://localhost:7338/api/loan-applications")
         .send()
         .await
         .unwrap();
@@ -101,7 +101,7 @@ async fn borrower_loan_applications() {
     let id = loan_application.loan_deal_id;
 
     let res = lender
-        .post(format!("http://localhost:7338/api/loans/application/{id}"))
+        .post(format!("http://localhost:7338/api/loan-applications/{id}"))
         .json(&TakeLoanApplicationSchema {
             lender_pk: "0243db39299918f1084f4c42216c3053cff4e3a37a863d39033a78c229b3884572"
                 .parse()

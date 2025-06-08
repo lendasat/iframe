@@ -27,7 +27,6 @@ import {
   TakeLoanApplicationSchema,
   UpgradeToPakeResponse,
   Version,
-  IsRegisteredResponse,
   WalletBackupData,
   PaginatedNotificationResponse,
 } from "./models";
@@ -111,7 +110,6 @@ export interface HttpClientLender {
   ) => Promise<PakeVerifyResponse>;
   forgotPassword: (email: string) => Promise<string>;
   verifyEmail: (token: string) => Promise<string>;
-  getIsRegistered: (email: string) => Promise<IsRegisteredResponse>;
   resetPassword: (
     verifier: string,
     salt: string,
@@ -128,7 +126,6 @@ export interface HttpClientLender {
   // Loan related methods
   postLoanOffer: (offer: CreateLoanOfferRequest) => Promise<LoanOffer>;
   getAllLoanOffers: () => Promise<LoanOffer[]>;
-  getLoanOffer: (id: string) => Promise<LoanOffer>;
   getMyLoanOffers: () => Promise<LoanOffer[]>;
   getMyLoanOffer: (id: string) => Promise<LoanOffer>;
   deleteLoanOffer: (id: string) => Promise<void>;
@@ -151,7 +148,7 @@ export interface HttpClientLender {
   ) => Promise<void>;
   rejectContract: (id: string) => Promise<void>;
   rejectContractExtension: (id: string) => Promise<void>;
-  principalGiven: (id: string, txid?: string) => Promise<void>;
+  reportDisbursement: (id: string, txid?: string) => Promise<void>;
   markInstallmentAsConfirmed: (
     contractId: string,
     installmentId: string,
@@ -256,23 +253,6 @@ export const createHttpClientLender = (
     }
 
     throw new Error(`Failed ${context}: ${error}`);
-  };
-
-  // Auth related methods
-  const getIsRegistered = async (email: string) => {
-    try {
-      const response: AxiosResponse<IsRegisteredResponse> =
-        await axiosClient.get(`/api/auth/is-registered?email=${email}`);
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        console.log(error.response);
-        const message = error.response.data.message;
-        throw new Error(message);
-      } else {
-        throw error;
-      }
-    }
   };
 
   const register = async (
@@ -488,7 +468,7 @@ export const createHttpClientLender = (
   ): Promise<LoanOffer> => {
     try {
       const response: AxiosResponse<LoanOffer> = await axiosClient.post(
-        "/api/my-loans/offer",
+        "/api/offers/create",
         offer,
       );
       return response.data;
@@ -501,7 +481,7 @@ export const createHttpClientLender = (
   const getAllLoanOffers = async (): Promise<LoanOffer[]> => {
     try {
       const response: AxiosResponse<RawLoanOffer[]> =
-        await axiosClient.get("/api/loans/offer");
+        await axiosClient.get("/api/offers");
 
       return response.data.map((offer) => {
         const createdAt = parseRFC3339Date(offer.created_at);
@@ -522,34 +502,10 @@ export const createHttpClientLender = (
     }
   };
 
-  const getLoanOffer = async (id: string): Promise<LoanOffer> => {
-    try {
-      const response: AxiosResponse<RawLoanOffer> = await axiosClient.get(
-        `/api/loans/offer/${id}`,
-      );
-      const createdAt = parseRFC3339Date(response.data.created_at);
-      const updatedAt = parseRFC3339Date(response.data.updated_at);
-
-      if (createdAt === undefined || updatedAt === undefined) {
-        throw new Error("Invalid date");
-      }
-
-      return {
-        ...response.data,
-        created_at: createdAt,
-        updated_at: updatedAt,
-      };
-    } catch (error) {
-      handleError(error, "fetching loan offer");
-      throw error;
-    }
-  };
-
   const getMyLoanOffers = async (): Promise<LoanOffer[]> => {
     try {
-      const response: AxiosResponse<RawLoanOffer[]> = await axiosClient.get(
-        "/api/my-loans/offer",
-      );
+      const response: AxiosResponse<RawLoanOffer[]> =
+        await axiosClient.get("/api/offers/own");
       return response.data.map((offer) => {
         const createdAt = parseRFC3339Date(offer.created_at);
         const updatedAt = parseRFC3339Date(offer.updated_at);
@@ -573,7 +529,7 @@ export const createHttpClientLender = (
   const getMyLoanOffer = async (id: string): Promise<LoanOffer> => {
     try {
       const response: AxiosResponse<RawLoanOffer> = await axiosClient.get(
-        `/api/my-loans/offer/${id}`,
+        `/api/offers/own/${id}`,
       );
       const createdAt = parseRFC3339Date(response.data.created_at);
       const updatedAt = parseRFC3339Date(response.data.updated_at);
@@ -595,7 +551,7 @@ export const createHttpClientLender = (
 
   const deleteLoanOffer = async (id: string): Promise<void> => {
     try {
-      await axiosClient.delete(`/api/my-loans/offer/${id}`);
+      await axiosClient.delete(`/api/offers/${id}`);
     } catch (error) {
       handleError(error, "deleting loan offer");
     }
@@ -603,9 +559,8 @@ export const createHttpClientLender = (
 
   const getLoanAndContractStats = async (): Promise<LoanAndContractStats> => {
     try {
-      const stats: AxiosResponse<LoanAndContractStats> = await axiosClient.get(
-        `/api/loans/offer-stats`,
-      );
+      const stats: AxiosResponse<LoanAndContractStats> =
+        await axiosClient.get(`/api/offers/stats`);
       return stats.data;
     } catch (error) {
       handleError(error, "fetching loan and contract stats");
@@ -617,7 +572,7 @@ export const createHttpClientLender = (
   const getLoanApplications = async (): Promise<LoanApplication[]> => {
     try {
       const response: AxiosResponse<RawLoanApplication[]> =
-        await axiosClient.get("/api/loans/application");
+        await axiosClient.get("/api/loan-applications");
 
       return response.data.map((application) => {
         const createdAt = parseRFC3339Date(application.created_at);
@@ -641,7 +596,7 @@ export const createHttpClientLender = (
   const getLoanApplication = async (id: string): Promise<LoanApplication> => {
     try {
       const response: AxiosResponse<RawLoanApplication> = await axiosClient.get(
-        `/api/loans/application/${id}`,
+        `/api/loan-applications/${id}`,
       );
       const application = response.data;
       const createdAt = parseRFC3339Date(application.created_at);
@@ -667,7 +622,7 @@ export const createHttpClientLender = (
   ): Promise<string> => {
     try {
       const response: AxiosResponse<string> = await axiosClient.post(
-        `/api/loans/application/${id}`,
+        `/api/loan-applications/${id}`,
         body,
       );
       return response.data;
@@ -761,9 +716,12 @@ export const createHttpClientLender = (
     }
   };
 
-  const principalGiven = async (id: string, txid?: string): Promise<void> => {
+  const reportDisbursement = async (
+    id: string,
+    txid?: string,
+  ): Promise<void> => {
     try {
-      let url = `/api/contracts/${id}/principalgiven`;
+      let url = `/api/contracts/${id}/report-disbursement`;
       if (txid) {
         url = `${url}?txid=${txid}`;
       }
@@ -1133,7 +1091,6 @@ export const createHttpClientLender = (
     pakeVerifyRequest,
     forgotPassword,
     verifyEmail,
-    getIsRegistered,
     resetPassword,
     getVersion,
     joinWaitlist,
@@ -1143,7 +1100,6 @@ export const createHttpClientLender = (
     refreshToken,
     postLoanOffer,
     getAllLoanOffers,
-    getLoanOffer,
     getMyLoanOffers,
     getMyLoanOffer,
     deleteLoanOffer,
@@ -1156,7 +1112,7 @@ export const createHttpClientLender = (
     approveContract,
     rejectContract,
     rejectContractExtension,
-    principalGiven,
+    reportDisbursement,
     markInstallmentAsConfirmed,
     updateExtensionPolicy,
     getLiquidationToBitcoinPsbt,

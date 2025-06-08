@@ -3,13 +3,14 @@ use crate::model::Borrower;
 use crate::model::DisputeRequestBodySchema;
 use crate::routes::borrower::auth::jwt_or_api_auth;
 use crate::routes::AppState;
-use crate::routes::ErrorResponse;
+use axum::extract::FromRequest;
 use axum::extract::Path;
 use axum::extract::Query;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::middleware;
 use axum::response::IntoResponse;
+use axum::response::Response;
 use axum::routing::get;
 use axum::routing::post;
 use axum::routing::put;
@@ -17,6 +18,7 @@ use axum::Extension;
 use axum::Json;
 use axum::Router;
 use serde::Deserialize;
+use serde::Serialize;
 use std::sync::Arc;
 use tracing::instrument;
 use uuid::Uuid;
@@ -54,67 +56,45 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
         .with_state(app_state)
 }
 
-#[derive(Deserialize)]
-pub struct DisputeQueryParams {
-    pub contract_id: String,
-}
-
-pub async fn get_all_disputes_for_contract(
+async fn get_all_disputes_for_contract(
     State(data): State<Arc<AppState>>,
     query_params: Query<DisputeQueryParams>,
-) -> anyhow::Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+) -> Result<AppJson<Vec<db::contract_disputes::DisputeWithMessages>>, Error> {
     let disputes = db::contract_disputes::get_disputes_with_messages_by_contract(
         &data.db,
         query_params.contract_id.as_str(),
     )
     .await
-    .map_err(|error| {
-        let error_response = ErrorResponse {
-            message: format!("Database error: {}", error),
-        };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?;
+    .map_err(Error::database)?;
 
-    Ok((StatusCode::OK, Json(disputes)))
+    Ok(AppJson(disputes))
 }
 
 #[instrument(skip_all, fields(borrower_id = user.id, ?body), ret, err(Debug))]
-pub(crate) async fn create_dispute(
+async fn create_dispute(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Borrower>,
-    Json(body): Json<DisputeRequestBodySchema>,
-) -> anyhow::Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    AppJson(body): AppJson<DisputeRequestBodySchema>,
+) -> Result<AppJson<db::contract_disputes::ContractDispute>, Error> {
     let contract = db::contracts::load_contract_by_contract_id_and_borrower_id(
         &data.db,
         body.contract_id.as_str(),
         user.id.as_str(),
     )
     .await
-    .map_err(|error| {
-        let error_response = ErrorResponse {
-            message: format!("Database error: {}", error),
-        };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?;
+    .map_err(Error::database)?;
+
     let disputes =
         db::contract_disputes::get_disputes_by_contract(&data.db, body.contract_id.as_str())
             .await
-            .map_err(|error| {
-                let error_response = ErrorResponse {
-                    message: format!("Database error: {}", error),
-                };
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-            })?;
+            .map_err(Error::database)?;
 
     if disputes.iter().any(|d| {
         d.status == db::contract_disputes::DisputeStatus::DisputeStartedBorrower
             || d.status == db::contract_disputes::DisputeStatus::DisputeStartedLender
             || d.status == db::contract_disputes::DisputeStatus::InProgress
     }) {
-        let error_response = ErrorResponse {
-            message: "Dispute already in progress".parse().unwrap(),
-        };
-        return Err((StatusCode::BAD_REQUEST, Json(error_response)));
+        return Err(Error::DisputeInProgress);
     }
 
     let comment = format!("{}. {}", body.reason, body.comment);
@@ -125,12 +105,7 @@ pub(crate) async fn create_dispute(
         comment.as_str(),
     )
     .await
-    .map_err(|error| {
-        let error_response = ErrorResponse {
-            message: format!("Failed creating dispute: {}", error),
-        };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?;
+    .map_err(Error::database)?;
 
     if let Some(ref email) = user.email {
         data.notifications
@@ -152,69 +127,122 @@ pub(crate) async fn create_dispute(
         )
         .await;
 
-    Ok(Json(dispute))
-}
-
-#[derive(Deserialize, Debug)]
-pub struct DisputeMessage {
-    message: String,
+    Ok(AppJson(dispute))
 }
 
 #[instrument(skip_all, fields(borrower_id = user.id, dispute_id), err(Debug), ret)]
-pub async fn add_message_to_dispute(
+async fn add_message_to_dispute(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Borrower>,
     Path(dispute_id): Path<Uuid>,
-    Json(body): Json<DisputeMessage>,
-) -> anyhow::Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    AppJson(body): AppJson<DisputeMessage>,
+) -> Result<(), Error> {
     db::contract_disputes::add_borrower_message(&data.db, dispute_id, user.id, body.message)
         .await
-        .map_err(|err| {
-            tracing::error!("Failed adding message to dispute {err:#}");
+        .map_err(Error::database)?;
 
-            let error_response = ErrorResponse {
-                message: "Something went wrong".to_string(),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
     Ok(())
 }
 
 #[instrument(skip_all, fields(borrower_id = user.id, dispute_id), err(Debug), ret)]
-pub async fn put_resolve_dispute(
+async fn put_resolve_dispute(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Borrower>,
     Path(dispute_id): Path<Uuid>,
-) -> anyhow::Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+) -> Result<(), Error> {
     let dispute = db::contract_disputes::get_dispute_by_dispute_id(&data.db, dispute_id)
         .await
-        .map_err(|err| {
-            tracing::error!("Failed adding message to dispute {err:#}");
-
-            let error_response = ErrorResponse {
-                message: "Something went wrong".to_string(),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
+        .map_err(Error::database)?;
 
     if dispute.status != db::contract_disputes::DisputeStatus::DisputeStartedBorrower {
-        tracing::error!("Dispute was not started by borrower");
-
-        let error_response = ErrorResponse {
-            message: "Dispute was not started by you".to_string(),
-        };
-        return Err((StatusCode::BAD_REQUEST, Json(error_response)));
+        return Err(Error::DisputeNotStartedByBorrower);
     }
 
     db::contract_disputes::resolve_borrower(&data.db, dispute_id, user.id.as_str())
         .await
-        .map_err(|err| {
-            tracing::error!("Failed resolve dispute {err:#}");
+        .map_err(Error::database)?;
 
-            let error_response = ErrorResponse {
-                message: "Something went wrong".to_string(),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
     Ok(())
+}
+
+#[derive(Deserialize)]
+struct DisputeQueryParams {
+    contract_id: String,
+}
+
+#[derive(Deserialize, Debug)]
+struct DisputeMessage {
+    message: String,
+}
+
+// Create our own JSON extractor by wrapping `axum::Json`. This makes it easy to override the
+// rejection and provide our own which formats errors to match our application.
+//
+// `axum::Json` responds with plain text if the input is invalid.
+#[derive(Debug, FromRequest)]
+#[from_request(via(Json), rejection(Error))]
+struct AppJson<T>(T);
+
+impl<T> IntoResponse for AppJson<T>
+where
+    Json<T>: IntoResponse,
+{
+    fn into_response(self) -> Response {
+        Json(self.0).into_response()
+    }
+}
+
+#[derive(Debug)]
+enum Error {
+    /// Failed to interact with the database.
+    Database(#[allow(dead_code)] String),
+    /// Dispute already in progress.
+    DisputeInProgress,
+    /// Dispute was not started by borrower.
+    DisputeNotStartedByBorrower,
+    /// The request body contained invalid JSON.
+    JsonRejection(axum::extract::rejection::JsonRejection),
+}
+
+impl Error {
+    fn database(e: impl std::fmt::Display) -> Self {
+        Self::Database(format!("{e:#}"))
+    }
+}
+
+impl From<axum::extract::rejection::JsonRejection> for Error {
+    fn from(rejection: axum::extract::rejection::JsonRejection) -> Self {
+        Self::JsonRejection(rejection)
+    }
+}
+
+/// Tell `axum` how [`Error`] should be converted into a response.
+impl IntoResponse for Error {
+    fn into_response(self) -> Response {
+        /// How we want error responses to be serialized.
+        #[derive(Serialize)]
+        struct ErrorResponse {
+            message: String,
+        }
+
+        let (status, message) = match self {
+            Error::JsonRejection(rejection) => {
+                // This error is caused by bad user input so don't log it
+                (rejection.status(), rejection.body_text())
+            }
+            Error::Database(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Something went wrong".to_owned(),
+            ),
+            Error::DisputeInProgress => (
+                StatusCode::BAD_REQUEST,
+                "Dispute already in progress".to_owned(),
+            ),
+            Error::DisputeNotStartedByBorrower => (
+                StatusCode::BAD_REQUEST,
+                "Dispute was not started by you".to_owned(),
+            ),
+        };
+        (status, AppJson(ErrorResponse { message })).into_response()
+    }
 }

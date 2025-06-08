@@ -12,9 +12,9 @@ use axum::http::header::CONTENT_TYPE;
 use axum::http::header::ORIGIN;
 use axum::http::HeaderValue;
 use axum::middleware;
-pub use contracts::ClaimCollateralPsbt;
-pub use contracts::ClaimTx;
-pub use contracts::Contract;
+use loan_applications::EditLoanApplicationRequest;
+use loan_applications::LoanApplicationErrorResponse;
+use loan_offers::QueryParamLoanType;
 use reqwest::Method;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -23,6 +23,13 @@ use tokio::task::JoinHandle;
 use tower_http::cors::CorsLayer;
 use tower_http::services::ServeDir;
 use tower_http::services::ServeFile;
+use utoipa::openapi::security::ApiKey;
+use utoipa::openapi::security::ApiKeyValue;
+use utoipa::openapi::security::SecurityScheme;
+use utoipa::Modify;
+use utoipa::OpenApi;
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_swagger_ui::SwaggerUi;
 
 pub(crate) mod api_accounts;
 pub(crate) mod api_keys;
@@ -35,44 +42,49 @@ pub(crate) mod loan_offers;
 pub(crate) mod profile;
 pub(crate) mod version;
 
-use utoipa::openapi::security::ApiKey;
-use utoipa::openapi::security::ApiKeyValue;
-use utoipa::openapi::security::SecurityScheme;
-use utoipa::Modify;
-use utoipa::OpenApi;
-use utoipa_axum::router::OpenApiRouter;
-use utoipa_swagger_ui::SwaggerUi;
-
 mod cards;
 mod chat;
 mod dispute;
+
+pub use contracts::ClaimCollateralPsbt;
+pub use contracts::ClaimTx;
+pub use contracts::Contract;
 
 const HEALTH_CHECK_TAG: &str = "health";
 const AUTH_TAG: &str = "auth";
 const CONTRACTS_TAG: &str = "contracts";
 const LOAN_OFFERS_TAG: &str = "loan-offers";
+const LOAN_APPLICATIONS_TAG: &str = "loan-applications";
 const API_KEYS_TAG: &str = "api-keys";
 const API_ACCOUNTS_TAG: &str = "api-accounts";
+const VERSION_TAG: &str = "version";
 
 #[derive(OpenApi)]
 #[openapi(
     info(
         title = "Lendasat Borrower API",
         description = r#"
-Interact with the lendasat server to
-- register as a new user,
-- manage personal api keys,
-- query available loan offers
-- create a contract request and
-- and manage open contracts.
+Interact with the Lendasat server to
 
-## How to get an API key
+- register as a new user;
+- manage personal API keys;
+- query available loan offers;
+- create contract requests; and
+- manage open contracts.
 
-To get started with an API key, follow these steps:
+## How to get an API key as a regular borrower
 
-1. Sign up a new user under https://borrow.lendasat.com
-2. Provide your user id to a Lendasat employee who will generate a master API key for you, e.g. `las-BTC21`
-3. Now you can create new sub users. This API will return a new API key for this user
+For the time being, you will have to ask Lendasat support for an API key.
+
+## How to create borrower API accounts
+
+Lendasat partners can create borrower API accounts, which can be used to integrate Lendasat directly into their own products.
+The steps are:
+
+1. Register as a regular user at https://borrow.lendasat.com.
+2. Ask Lendasat support to generate a master API key for you, e.g. `las-BTC21`.
+3. Create new borrower API accounts using this endpoint:
+
 ```bash
 curl -X POST "http://localhost:7337/api/create-api-account" \
   -H "Content-Type: application/json" \
@@ -84,7 +96,6 @@ curl -X POST "http://localhost:7337/api/create-api-account" \
   }' \
   -v | jq .
 ```
-
 e.g.
 
 ```json
@@ -97,7 +108,9 @@ e.g.
 }
 ```
 
-4. The newly created user can then use this key e.g. to send a loan request:
+4. The returned borrower API key can then be used to interact with Lendasat's API as a regular borrower.
+
+## Example usage of borrower API key
 
 ```bash
 curl -X POST "http://localhost:7337/api/contracts" \
@@ -110,27 +123,38 @@ curl -X POST "http://localhost:7337/api/contracts" \
     "duration_days": 7,
     ...
   }' | jq .
-```"#
+```
+
+"#
+    ),
+    components(
+        schemas(QueryParamLoanType, EditLoanApplicationRequest, LoanApplicationErrorResponse)
     ),
     modifiers(&SecurityAddon),
     tags(
         (
-            name = HEALTH_CHECK_TAG, description = "Check if the server is available and what version is running",
+            name = VERSION_TAG, description = "Check API version information.",
         ),
         (
-            name = API_KEYS_TAG, description = "API to interact with API keys",
+            name = HEALTH_CHECK_TAG, description = "Check if the server is available and what version it is running.",
         ),
         (
-            name = API_ACCOUNTS_TAG, description = "API to create register new users with API keys",
+            name = API_KEYS_TAG, description = "Manage API keys for your borrower account.",
         ),
         (
-            name = AUTH_TAG, description = "Authenticate with the server",
+            name = API_ACCOUNTS_TAG, description = "Create borrower API accounts.",
         ),
         (
-            name = CONTRACTS_TAG, description = "API to interact with contracts",
+            name = AUTH_TAG, description = "Authenticate with the server.",
         ),
         (
-            name = LOAN_OFFERS_TAG, description = "API to interact with loan offers",
+            name = CONTRACTS_TAG, description = "Manage your loan contracts.",
+        ),
+        (
+            name = LOAN_OFFERS_TAG, description = "Review and take loan offers.",
+        ),
+        (
+            name = LOAN_APPLICATIONS_TAG, description = "Create and manage loan applications.",
         )
     ),
 )]
@@ -152,22 +176,21 @@ pub async fn spawn_borrower_server(
             }
         }
     }
+
     let (router, api) = OpenApiRouter::with_openapi(ApiDoc::openapi())
-        .nest("/api/version", version::router_openapi())
-        .nest("/api/health", health_check::router_openapi())
+        .nest("/api/version", version::router())
+        .nest("/api/health", health_check::router())
         .nest("/api/auth", auth::router_openapi(app_state.clone()))
-        .nest(
-            "/api/loans/offer",
-            loan_offers::router_openapi(app_state.clone()),
-        )
-        .nest(
-            "/api/contracts",
-            contracts::router_openapi(app_state.clone()),
-        )
-        .nest("/api/keys", api_keys::router_openapi(app_state.clone()))
+        .nest("/api/offers", loan_offers::router(app_state.clone()))
+        .nest("/api/contracts", contracts::router(app_state.clone()))
+        .nest("/api/keys", api_keys::router(app_state.clone()))
         .nest(
             "/api/create-api-account",
-            api_accounts::router_openapi(app_state.clone()),
+            api_accounts::router(app_state.clone()),
+        )
+        .nest(
+            "/api/loan-applications",
+            loan_applications::router(app_state.clone()),
         )
         .split_for_parts();
 
@@ -185,7 +208,6 @@ pub async fn spawn_borrower_server(
                 .route_layer(middleware::from_fn_with_state(app_state.clone(), auth))
                 .with_state(app_state.clone()),
         )
-        .merge(loan_applications::router(app_state.clone()))
         .merge(cards::router(app_state.clone()))
         .merge(bringin::router(app_state))
         // This is a relative path on the filesystem, which means, when deploying `hub` we will need

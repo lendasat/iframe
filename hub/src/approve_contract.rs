@@ -71,6 +71,7 @@ pub async fn approve_contract(
         });
     }
 
+    // FIXME: I think we are no longer doing this when extending!
     if contract.status == ContractStatus::RenewalRequested {
         db::contracts::accept_extend_contract_request(db, lender_id, contract.id.as_str())
             .await

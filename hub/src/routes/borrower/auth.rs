@@ -33,7 +33,6 @@ use crate::routes::user_connection_details_middleware;
 use crate::routes::user_connection_details_middleware::UserConnectionDetails;
 use crate::routes::AppState;
 use crate::utils::is_valid_email;
-use anyhow::anyhow;
 use anyhow::Context;
 use axum::extract::rejection::JsonRejection;
 use axum::extract::FromRequest;
@@ -153,17 +152,6 @@ pub(crate) fn router_openapi(app_state: Arc<AppState>) -> OpenApiRouter {
         .with_state(app_state)
 }
 
-#[derive(Deserialize)]
-struct IsRegisteredParams {
-    email: String,
-}
-
-#[derive(Serialize)]
-struct IsRegisteredResponse {
-    is_registered: bool,
-    is_verified: bool,
-}
-
 async fn get_is_registered(
     State(data): State<Arc<AppState>>,
     query_params: Query<IsRegisteredParams>,
@@ -176,7 +164,7 @@ async fn get_is_registered(
 
     let res = get_user_by_email(&data.db, email)
         .await
-        .map_err(Error::Database)?;
+        .map_err(Error::database)?;
 
     let res = match res {
         Some((_, auth)) => IsRegisteredResponse {
@@ -192,15 +180,8 @@ async fn get_is_registered(
     Ok(AppJson(res))
 }
 
-#[derive(Serialize, Deserialize, ToSchema)]
-pub struct RegistrationResponse {
-    message: String,
-}
-
-/// Register a new user with email and password. For registering an account using API keys please
-/// refer to `/api/create-api-account`.
-///
-/// Tries to register a new user. Will fail if email is already in use.
+/// Register a new user with email and password. To create borrower API accounts (using a master API
+/// key), refer to /api/create-api-account.
 #[utoipa::path(
 post,
 request_body = RegisterUserSchema,
@@ -225,7 +206,7 @@ async fn post_register(
 
     let user_exists = user_exists(&data.db, body.email.as_str())
         .await
-        .map_err(Error::Database)?;
+        .map_err(Error::database)?;
 
     if user_exists {
         return Err(Error::UserExists);
@@ -237,7 +218,7 @@ async fn post_register(
         }
         Some(code) => db::borrowers_referral_code::is_referral_code_valid(&data.db, code.as_str())
             .await
-            .map_err(|e| Error::Database(anyhow!(e)))?,
+            .map_err(Error::database)?,
     };
 
     if !referral_code_valid {
@@ -246,11 +227,7 @@ async fn post_register(
         });
     }
 
-    let mut db_tx = data
-        .db
-        .begin()
-        .await
-        .map_err(|e| Error::Database(anyhow!(e)))?;
+    let mut db_tx = data.db.begin().await.map_err(Error::database)?;
 
     let (user, password_auth_info) = register_password_auth_user(
         &mut db_tx,
@@ -260,7 +237,7 @@ async fn post_register(
         body.verifier.as_str(),
     )
     .await
-    .map_err(Error::Database)?;
+    .map_err(Error::database)?;
 
     if let Some(referral_code) = body.invite_code {
         db::borrowers_referral_code::insert_referred_borrower(
@@ -269,7 +246,7 @@ async fn post_register(
             user.id.as_str(),
         )
         .await
-        .map_err(|e| Error::Database(anyhow!(e)))?;
+        .map_err(Error::database)?;
     }
 
     db::wallet_backups::insert_borrower_backup(
@@ -281,7 +258,7 @@ async fn post_register(
         },
     )
     .await
-    .map_err(|e| Error::Database(anyhow!(e)))?;
+    .map_err(Error::database)?;
 
     let email = password_auth_info.email.clone();
     let verification_code = password_auth_info
@@ -302,10 +279,7 @@ async fn post_register(
         )
         .await;
 
-    db_tx
-        .commit()
-        .await
-        .map_err(|e| Error::Database(anyhow!(e)))?;
+    db_tx.commit().await.map_err(Error::database)?;
 
     // needs to be after the tx as the user needs to exist in the database.
     if let Err(err) =
@@ -322,98 +296,15 @@ async fn post_register(
     }))
 }
 
-#[derive(Debug, Serialize)]
-struct BorrowerLoanFeature {
-    id: String,
-    name: String,
-}
-
-#[derive(Debug, Serialize)]
-struct FilteredUser {
-    id: String,
-    name: String,
-    email: String,
-    verified: bool,
-    used_referral_code: Option<String>,
-    personal_referral_codes: Vec<PersonalReferralCode>,
-    timezone: Option<String>,
-    personal_telegram_token: String,
-    #[serde(with = "rust_decimal::serde::float")]
-    first_time_discount_rate: Decimal,
-    #[serde(with = "time::serde::rfc3339")]
-    created_at: OffsetDateTime,
-    #[serde(with = "time::serde::rfc3339")]
-    updated_at: OffsetDateTime,
-}
-
-#[derive(Debug, Serialize)]
-struct PersonalReferralCode {
-    code: String,
-    active: bool,
-    #[serde(with = "rust_decimal::serde::float")]
-    first_time_discount_rate_referee: Decimal,
-    #[serde(with = "rust_decimal::serde::float")]
-    first_time_commission_rate_referrer: Decimal,
-    #[serde(with = "rust_decimal::serde::float")]
-    commission_rate_referrer: Decimal,
-    #[serde(with = "time::serde::rfc3339")]
-    created_at: OffsetDateTime,
-    #[serde(with = "time::serde::rfc3339")]
-    expires_at: OffsetDateTime,
-}
-
-impl From<model::PersonalReferralCode> for PersonalReferralCode {
-    fn from(value: model::PersonalReferralCode) -> Self {
-        PersonalReferralCode {
-            code: value.code,
-            active: value.active,
-            first_time_discount_rate_referee: value.first_time_discount_rate_referee,
-            first_time_commission_rate_referrer: value.first_time_commission_rate_referrer,
-            commission_rate_referrer: value.commission_rate_referrer,
-            created_at: value.created_at,
-            expires_at: value.expires_at,
-        }
-    }
-}
-
-impl FilteredUser {
-    fn new_user(
-        user: &Borrower,
-        password_auth_info: &PasswordAuth,
-        personal_telegram_token: TelegramBotToken,
-    ) -> Self {
-        let created_at_utc = user.created_at;
-        let updated_at_utc = user.updated_at;
-        Self {
-            id: user.id.to_string(),
-            email: password_auth_info.email.clone(),
-            name: user.name.to_owned(),
-            verified: password_auth_info.verified,
-            used_referral_code: user.used_referral_code.clone(),
-            personal_referral_codes: user
-                .personal_referral_codes
-                .clone()
-                .into_iter()
-                .map(PersonalReferralCode::from)
-                .collect(),
-            first_time_discount_rate: user.first_time_discount_rate_referee.unwrap_or_default(),
-            timezone: user.timezone.clone(),
-            personal_telegram_token: personal_telegram_token.token,
-            created_at: created_at_utc,
-            updated_at: updated_at_utc,
-        }
-    }
-}
-
 #[instrument(skip_all, fields(borrower_id), err(Debug))]
 async fn post_pake_login(
     State(data): State<Arc<AppState>>,
     AppJson(body): AppJson<PakeLoginRequest>,
-) -> Result<impl IntoResponse, Error> {
+) -> Result<AppJson<PakeLoginResponse>, Error> {
     let email = body.email;
     let (user, password_auth_info) = get_user_by_email(&data.db, email.as_str())
         .await
-        .map_err(|e| Error::Database(anyhow!(e)))?
+        .map_err(Error::database)?
         .ok_or(Error::EmailOrPasswordInvalid)?;
 
     let borrower_id = user.id;
@@ -443,33 +334,15 @@ async fn post_pake_login(
 
     let b_pub = hex::encode(b_pub);
 
-    let response = Response::builder()
-        .status(StatusCode::OK)
-        .body(
-            json!(PakeLoginResponse {
-                b_pub,
-                salt: password_auth_info.salt
-            })
-            .to_string(),
-        )
-        .context("PakeLoginResponse")
-        .map_err(Error::BuildResponse)?;
-
     let mut pake_protocols = data.pake_protocols.lock().await;
 
     // We overwrite any PAKE data from a previous login attempt.
     pake_protocols.insert(email, PakeServerData { b: b.to_vec() });
 
-    Ok(response)
-}
-
-#[derive(Debug, Serialize)]
-struct PakeVerifyResponse {
-    server_proof: String,
-    token: String,
-    enabled_features: Vec<BorrowerLoanFeature>,
-    user: FilteredUser,
-    wallet_backup_data: WalletBackupData,
+    Ok(AppJson(PakeLoginResponse {
+        b_pub,
+        salt: password_auth_info.salt,
+    }))
 }
 
 #[instrument(skip_all, fields(borrower_id), err(Debug))]
@@ -481,7 +354,7 @@ async fn post_pake_verify(
     let email = body.email;
     let (user, password_auth_info) = get_user_by_email(&data.db, email.as_str())
         .await
-        .map_err(Error::Database)?
+        .map_err(Error::database)?
         .ok_or(Error::EmailOrPasswordInvalid)?;
 
     let borrower_id = &user.id;
@@ -544,7 +417,7 @@ async fn post_pake_verify(
 
     let features = db::borrower_features::load_borrower_features(&data.db, borrower_id.clone())
         .await
-        .map_err(|error| Error::Database(anyhow!(error)))?;
+        .map_err(Error::database)?;
 
     let features = features
         .iter()
@@ -569,13 +442,13 @@ async fn post_pake_verify(
     let personal_telegram_token =
         db::telegram_bot::borrower::get_or_create_token_by_borrower_id(&data.db, user.id.as_str())
             .await
-            .map_err(|error| Error::Database(anyhow!(error)))?;
+            .map_err(Error::database)?;
 
     let filtered_user = FilteredUser::new_user(&user, &password_auth_info, personal_telegram_token);
 
     let wallet_backup = db::wallet_backups::find_by_borrower_id(&data.db, borrower_id)
         .await
-        .map_err(|error| Error::Database(anyhow!(error)))?;
+        .map_err(Error::database)?;
 
     let wallet_backup_data = WalletBackupData {
         mnemonic_ciphertext: wallet_backup.mnemonic_ciphertext,
@@ -663,10 +536,10 @@ async fn post_pake_verify(
 async fn post_start_upgrade_to_pake(
     State(data): State<Arc<AppState>>,
     AppJson(body): AppJson<UpgradeToPakeRequest>,
-) -> Result<impl IntoResponse, Error> {
+) -> Result<AppJson<UpgradeToPakeResponse>, Error> {
     let (user, password_auth_info) = get_user_by_email(&data.db, body.email.as_str())
         .await
-        .map_err(Error::Database)?
+        .map_err(Error::database)?
         .ok_or(Error::EmailOrPasswordInvalid)?;
 
     let borrower_id = &user.id;
@@ -685,7 +558,7 @@ async fn post_start_upgrade_to_pake(
     let wallet_backup = db::wallet_backups::find_by_borrower_id(&data.db, borrower_id)
         .await
         .context("Missing wallet backup")
-        .map_err(Error::Database)?;
+        .map_err(Error::database)?;
 
     let old_wallet_backup_data = WalletBackupData {
         mnemonic_ciphertext: wallet_backup.mnemonic_ciphertext,
@@ -694,7 +567,7 @@ async fn post_start_upgrade_to_pake(
 
     let contracts = db::contracts::load_contracts_by_borrower_id(&data.db, borrower_id)
         .await
-        .map_err(Error::Database)?;
+        .map_err(Error::database)?;
 
     let contract_pks = contracts
         .iter()
@@ -718,19 +591,15 @@ async fn post_start_upgrade_to_pake(
         })
         .collect::<Vec<_>>();
 
-    let response = Response::builder()
-        .status(StatusCode::OK)
-        .body(
-            json!(UpgradeToPakeResponse {
-                old_wallet_backup_data,
-                contract_pks
-            })
-            .to_string(),
-        )
-        .context("UpgradeToPakeResponse")
-        .map_err(Error::BuildResponse)?;
+    Ok(AppJson(UpgradeToPakeResponse {
+        old_wallet_backup_data,
+        contract_pks,
+    }))
+}
 
-    Ok(response)
+#[derive(Debug, Deserialize, Serialize)]
+struct PakeUpgradedResponse {
+    upgraded: bool,
 }
 
 /// Handle the borrower's attempt to finish the upgrade to the PAKE protocol.
@@ -746,10 +615,10 @@ async fn post_start_upgrade_to_pake(
 async fn post_finish_upgrade_to_pake(
     State(data): State<Arc<AppState>>,
     AppJson(body): AppJson<FinishUpgradeToPakeRequest>,
-) -> Result<impl IntoResponse, Error> {
+) -> Result<AppJson<PakeUpgradedResponse>, Error> {
     let (user, password_auth_info) = get_user_by_email(&data.db, body.email.as_str())
         .await
-        .map_err(Error::Database)?
+        .map_err(Error::database)?
         .ok_or(Error::EmailOrPasswordInvalid)?;
 
     let borrower_id = user.id.clone();
@@ -765,11 +634,7 @@ async fn post_finish_upgrade_to_pake(
         return Err(Error::InvalidLegacyPassword);
     }
 
-    let mut db_tx = data
-        .db
-        .begin()
-        .await
-        .map_err(|e| Error::Database(anyhow!(e)))?;
+    let mut db_tx = data.db.begin().await.map_err(Error::database)?;
 
     db::wallet_backups::insert_borrower_backup(
         &mut *db_tx,
@@ -780,7 +645,7 @@ async fn post_finish_upgrade_to_pake(
         },
     )
     .await
-    .map_err(|error| Error::Database(anyhow!(error)))?;
+    .map_err(Error::database)?;
 
     db::borrowers::upgrade_to_pake(
         &mut *db_tx,
@@ -789,20 +654,11 @@ async fn post_finish_upgrade_to_pake(
         body.verifier.as_str(),
     )
     .await
-    .map_err(Error::Database)?;
+    .map_err(Error::database)?;
 
-    let response = Response::builder()
-        .status(StatusCode::OK)
-        .body(json!({ "upgraded": true }).to_string())
-        .context("PakeUpgradedResponse")
-        .map_err(Error::BuildResponse)?;
+    db_tx.commit().await.map_err(Error::database)?;
 
-    db_tx
-        .commit()
-        .await
-        .map_err(|e| Error::Database(anyhow!(e)))?;
-
-    Ok(response)
+    Ok(AppJson(PakeUpgradedResponse { upgraded: true }))
 }
 
 #[instrument(skip_all, fields(borrower_id), err(Debug, level = Level::DEBUG))]
@@ -813,7 +669,7 @@ async fn verify_email_handler(
     let password_auth_info =
         get_password_auth_info_by_verification_code(&data.db, verification_code.as_str())
             .await
-            .map_err(Error::Database)?
+            .map_err(Error::database)?
             .ok_or(Error::InvalidVerificationCode)?;
 
     let borrower_id = &password_auth_info.borrower_id;
@@ -825,7 +681,7 @@ async fn verify_email_handler(
 
     verify_user(&data.db, verification_code.as_str())
         .await
-        .map_err(Error::Database)?;
+        .map_err(Error::database)?;
 
     let response = serde_json::json!({
             "message": "Email verified successfully"
@@ -839,38 +695,22 @@ async fn verify_email_handler(
 async fn forgot_password_handler(
     State(data): State<Arc<AppState>>,
     AppJson(body): AppJson<ForgotPasswordSchema>,
-) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+) -> Result<(), Error> {
     let (user, password_auth_info) = get_user_by_email(&data.db, body.email.as_str())
         .await
-        .map_err(|e| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {}", e),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?
-        .ok_or_else(|| {
-            let error_response = ErrorResponse {
-                message: "No user with that email".to_string(),
-            };
-            (StatusCode::NOT_FOUND, Json(error_response))
-        })?;
+        .map_err(Error::database)?
+        .ok_or(Error::NoUserWithEmail)?;
 
     let borrower_id = &user.id;
     tracing::Span::current().record("borrower_id", borrower_id);
 
     if !password_auth_info.verified {
-        let error_response = ErrorResponse {
-            message: "Account not verified".to_string(),
-        };
-        return Err((StatusCode::FORBIDDEN, Json(error_response)));
+        return Err(Error::AccountNotVerified);
     }
 
     // This can be done by calling another API directly, but not through this one.
     if password_auth_info.password.is_some() {
-        let error_response = ErrorResponse {
-            message: "Cannot change password before upgrading to PAKE".to_string(),
-        };
-        return Err((StatusCode::FORBIDDEN, Json(error_response)));
+        return Err(Error::PasswordChangeBeforePake);
     }
 
     let password_reset_token = generate_random_string(PASSWORD_RESET_TOKEN_LENGTH);
@@ -880,12 +720,7 @@ async fn forgot_password_handler(
     let has_contracts_before_pake =
         db::contracts::has_contracts_before_pake_borrower(&data.db, borrower_id)
             .await
-            .map_err(|e| {
-                let error_response = ErrorResponse {
-                    message: format!("Database error: {}", e),
-                };
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-            })?;
+            .map_err(Error::database)?;
 
     let mut password_reset_url = data
         .config
@@ -924,17 +759,9 @@ async fn forgot_password_handler(
         email_address.as_str(),
     )
     .await
-    .map_err(|e| {
-        let json_error = ErrorResponse {
-            message: format!("Error updating user: {}", e),
-        };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(json_error))
-    })?;
+    .map_err(Error::database)?;
 
-    Ok((
-        StatusCode::OK,
-        Json(json!({"message": "You will receive a password reset link via email."})),
-    ))
+    Ok(())
 }
 
 #[instrument(skip_all, fields(borrower_id), err(Debug))]
@@ -942,32 +769,17 @@ async fn reset_password_handler(
     State(data): State<Arc<AppState>>,
     Path(password_reset_token): Path<String>,
     AppJson(body): AppJson<ResetPasswordSchema>,
-) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+) -> Result<impl IntoResponse, Error> {
     let password_auth_info =
         get_password_auth_info_by_reset_token(&data.db, password_reset_token.as_str())
             .await
-            .map_err(|e| {
-                let error_response = ErrorResponse {
-                    message: format!("Database error: {}", e),
-                };
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-            })?
-            .ok_or_else(|| {
-                let error_response = ErrorResponse {
-                    message: "The password reset token is invalid or has expired".to_string(),
-                };
-                (StatusCode::FORBIDDEN, Json(error_response))
-            })?;
+            .map_err(Error::database)?
+            .ok_or(Error::InvalidResetToken)?;
 
     let borrower_id = &password_auth_info.borrower_id;
     tracing::Span::current().record("borrower_id", borrower_id);
 
-    let mut db_tx = data.db.begin().await.map_err(|e| {
-        let error_response = ErrorResponse {
-            message: format!("Database error: {}", e),
-        };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?;
+    let mut db_tx = data.db.begin().await.map_err(Error::database)?;
 
     db::wallet_backups::insert_borrower_backup(
         &mut *db_tx,
@@ -978,12 +790,7 @@ async fn reset_password_handler(
         },
     )
     .await
-    .map_err(|e| {
-        let error_response = ErrorResponse {
-            message: format!("Database error: {}", e),
-        };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?;
+    .map_err(Error::database)?;
 
     db::borrowers::update_verifier_and_salt(
         &mut *db_tx,
@@ -992,12 +799,7 @@ async fn reset_password_handler(
         body.verifier.as_str(),
     )
     .await
-    .map_err(|error| {
-        let error_response = ErrorResponse {
-            message: format!("Failed upgrading to PAKE: {}", error),
-        };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?;
+    .map_err(Error::database)?;
 
     let cookie = Cookie::build(("token", ""))
         .path("/")
@@ -1010,20 +812,13 @@ async fn reset_password_handler(
     );
     response.headers_mut().insert(
         header::SET_COOKIE,
-        cookie.to_string().parse().map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Failed parsing cookie: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?,
+        cookie
+            .to_string()
+            .parse()
+            .map_err(|error| Error::CookieParsing(format!("{error}")))?,
     );
 
-    db_tx.commit().await.map_err(|e| {
-        let error_response = ErrorResponse {
-            message: format!("Database error: {}", e),
-        };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?;
+    db_tx.commit().await.map_err(Error::database)?;
 
     Ok(response)
 }
@@ -1037,7 +832,7 @@ async fn reset_legacy_password_handler(
     let password_auth_info =
         get_password_auth_info_by_reset_token(&data.db, password_reset_token.as_str())
             .await
-            .map_err(Error::Database)?
+            .map_err(Error::database)?
             .ok_or(Error::InvalidVerificationCode)?;
 
     let borrower_id = &password_auth_info.borrower_id;
@@ -1049,13 +844,13 @@ async fn reset_legacy_password_handler(
 
     db::borrowers::update_legacy_password(&data.db, borrower_id, &body.password)
         .await
-        .map_err(Error::Database)?;
+        .map_err(Error::database)?;
 
     Ok(())
 }
 
 #[instrument(skip_all, err(Debug, level = Level::DEBUG))]
-async fn logout_handler() -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+async fn logout_handler() -> Result<impl IntoResponse, Error> {
     let cookie = Cookie::build(("token", ""))
         .path("/")
         .max_age(time::Duration::hours(-1))
@@ -1065,47 +860,29 @@ async fn logout_handler() -> Result<impl IntoResponse, (StatusCode, Json<ErrorRe
     let mut response = Response::new(json!({"message": "Successfully logged out"}).to_string());
     response.headers_mut().insert(
         header::SET_COOKIE,
-        cookie.to_string().parse().map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Failed parsing cookie: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?,
+        cookie
+            .to_string()
+            .parse()
+            .map_err(|error| Error::CookieParsing(format!("{error}")))?,
     );
     Ok(response)
-}
-
-#[derive(Debug, Serialize)]
-struct MeResponse {
-    enabled_features: Vec<BorrowerLoanFeature>,
-    user: FilteredUser,
 }
 
 #[instrument(skip_all, fields(borrower_id = user.id), err(Debug, level = Level::DEBUG))]
 async fn get_me_handler(
     State(data): State<Arc<AppState>>,
     Extension((user, password_auth_info)): Extension<(Borrower, PasswordAuth)>,
-) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+) -> Result<AppJson<MeResponse>, Error> {
     let personal_telegram_token =
         db::telegram_bot::borrower::get_or_create_token_by_borrower_id(&data.db, user.id.as_str())
             .await
-            .map_err(|error| {
-                let error_response = ErrorResponse {
-                    message: format!("Database error: {}", error),
-                };
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-            })?;
+            .map_err(Error::database)?;
 
     let filtered_user = FilteredUser::new_user(&user, &password_auth_info, personal_telegram_token);
 
     let features = db::borrower_features::load_borrower_features(&data.db, user.id.clone())
         .await
-        .map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Database error: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
+        .map_err(Error::database)?;
 
     let features = features
         .iter()
@@ -1122,36 +899,20 @@ async fn get_me_handler(
         .collect::<Vec<_>>();
 
     if features.is_empty() {
-        let error_response = ErrorResponse {
-            message: "No features enabled".to_string(),
-        };
-        return Err((StatusCode::INTERNAL_SERVER_ERROR, Json(error_response)));
+        return Err(Error::NoFeaturesEnabled {
+            borrower_id: user.id.clone(),
+        });
     }
 
-    Ok((
-        StatusCode::OK,
-        Json(MeResponse {
-            enabled_features: features,
-            user: filtered_user,
-        }),
-    ))
-}
-
-#[derive(Debug, Serialize)]
-pub(crate) struct ErrorResponse {
-    message: String,
+    Ok(AppJson(MeResponse {
+        enabled_features: features,
+        user: filtered_user,
+    }))
 }
 
 #[instrument(skip_all, err(Debug, level = Level::DEBUG))]
-async fn check_auth_handler(
-    Extension(_user): Extension<Borrower>,
-) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+async fn check_auth_handler(Extension(_user): Extension<Borrower>) -> Result<(), Error> {
     Ok(())
-}
-
-#[derive(Debug, Deserialize)]
-pub struct WaitlistBody {
-    email: String,
 }
 
 #[instrument(skip_all, err(Debug))]
@@ -1170,7 +931,7 @@ async fn post_add_to_waitlist(
 async fn refresh_token_handler(
     State(data): State<Arc<AppState>>,
     Extension((user, _)): Extension<(Borrower, PasswordAuth)>,
-) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+) -> Result<impl IntoResponse, Error> {
     let now = OffsetDateTime::now_utc();
     let iat = now.unix_timestamp();
     let exp = (now + time::Duration::hours(COOKIE_EXPIRY_HOURS)).unix_timestamp();
@@ -1185,12 +946,7 @@ async fn refresh_token_handler(
         &claims,
         &EncodingKey::from_secret(data.config.jwt_secret.as_ref()),
     )
-    .map_err(|error| {
-        let error_response = ErrorResponse {
-            message: format!("Failed to create new token: {}", error),
-        };
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })?;
+    .map_err(|error| Error::TokenCreation(format!("{error}")))?;
 
     let cookie = Cookie::build(("token", token.to_owned()))
         .path("/")
@@ -1202,15 +958,132 @@ async fn refresh_token_handler(
         Response::new(json!({"message": "Token refreshed successfully"}).to_string());
     response.headers_mut().insert(
         header::SET_COOKIE,
-        cookie.to_string().parse().map_err(|error| {
-            let error_response = ErrorResponse {
-                message: format!("Failed parsing cookie: {}", error),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?,
+        cookie
+            .to_string()
+            .parse()
+            .map_err(|error| Error::CookieParsing(format!("{error}")))?,
     );
 
     Ok(response)
+}
+
+#[derive(Deserialize)]
+struct IsRegisteredParams {
+    email: String,
+}
+
+#[derive(Serialize)]
+struct IsRegisteredResponse {
+    is_registered: bool,
+    is_verified: bool,
+}
+
+#[derive(Serialize, Deserialize, ToSchema)]
+struct RegistrationResponse {
+    message: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct BorrowerLoanFeature {
+    id: String,
+    name: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct FilteredUser {
+    id: String,
+    name: String,
+    email: String,
+    verified: bool,
+    used_referral_code: Option<String>,
+    personal_referral_codes: Vec<PersonalReferralCode>,
+    timezone: Option<String>,
+    personal_telegram_token: String,
+    #[serde(with = "rust_decimal::serde::float")]
+    first_time_discount_rate: Decimal,
+    #[serde(with = "time::serde::rfc3339")]
+    created_at: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339")]
+    updated_at: OffsetDateTime,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct PersonalReferralCode {
+    code: String,
+    active: bool,
+    #[serde(with = "rust_decimal::serde::float")]
+    first_time_discount_rate_referee: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
+    first_time_commission_rate_referrer: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
+    commission_rate_referrer: Decimal,
+    #[serde(with = "time::serde::rfc3339")]
+    created_at: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339")]
+    expires_at: OffsetDateTime,
+}
+
+impl From<model::PersonalReferralCode> for PersonalReferralCode {
+    fn from(value: model::PersonalReferralCode) -> Self {
+        PersonalReferralCode {
+            code: value.code,
+            active: value.active,
+            first_time_discount_rate_referee: value.first_time_discount_rate_referee,
+            first_time_commission_rate_referrer: value.first_time_commission_rate_referrer,
+            commission_rate_referrer: value.commission_rate_referrer,
+            created_at: value.created_at,
+            expires_at: value.expires_at,
+        }
+    }
+}
+
+impl FilteredUser {
+    fn new_user(
+        user: &Borrower,
+        password_auth_info: &PasswordAuth,
+        personal_telegram_token: TelegramBotToken,
+    ) -> Self {
+        let created_at_utc = user.created_at;
+        let updated_at_utc = user.updated_at;
+        Self {
+            id: user.id.to_string(),
+            email: password_auth_info.email.clone(),
+            name: user.name.to_owned(),
+            verified: password_auth_info.verified,
+            used_referral_code: user.used_referral_code.clone(),
+            personal_referral_codes: user
+                .personal_referral_codes
+                .clone()
+                .into_iter()
+                .map(PersonalReferralCode::from)
+                .collect(),
+            first_time_discount_rate: user.first_time_discount_rate_referee.unwrap_or_default(),
+            timezone: user.timezone.clone(),
+            personal_telegram_token: personal_telegram_token.token,
+            created_at: created_at_utc,
+            updated_at: updated_at_utc,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct PakeVerifyResponse {
+    server_proof: String,
+    token: String,
+    enabled_features: Vec<BorrowerLoanFeature>,
+    user: FilteredUser,
+    wallet_backup_data: WalletBackupData,
+}
+
+#[derive(Debug, Deserialize)]
+struct WaitlistBody {
+    email: String,
+}
+
+#[derive(Debug, Serialize)]
+struct MeResponse {
+    enabled_features: Vec<BorrowerLoanFeature>,
+    user: FilteredUser,
 }
 
 // Create our own JSON extractor by wrapping `axum::Json`. This makes it easy to override the
@@ -1235,7 +1108,7 @@ enum Error {
     /// The request body contained invalid JSON.
     JsonRejection(JsonRejection),
     /// Failed to interact with the database.
-    Database(anyhow::Error),
+    Database(#[allow(dead_code)] String),
     /// User with this email already exists.
     UserExists,
     /// User with this email does not exist.
@@ -1243,7 +1116,10 @@ enum Error {
     /// No invite code provided.
     InviteCodeRequired,
     /// Invalid or expired referral code.
-    InvalidReferralCode { referral_code: String },
+    InvalidReferralCode {
+        #[allow(dead_code)]
+        referral_code: String,
+    },
     /// User did not verify their email.
     EmailNotVerified,
     /// The verification code provided does not exist.
@@ -1252,30 +1128,51 @@ enum Error {
     AlreadyVerified,
     /// User legacy password and email did not match.
     InvalidLegacyPassword,
-    /// Could not decode the user's authentication session token.
-    AuthSessionDecode(jsonwebtoken::errors::Error),
     /// Failed to build a response.
-    BuildResponse(anyhow::Error),
+    BuildResponse(#[allow(dead_code)] anyhow::Error),
+    /// Could not decode the user's authentication session token.
+    AuthSessionDecode(#[allow(dead_code)] jsonwebtoken::errors::Error),
     /// No features enabled for the user.
-    NoFeaturesEnabled { borrower_id: String },
+    NoFeaturesEnabled {
+        #[allow(dead_code)]
+        borrower_id: String,
+    },
     /// Cannot log in without first upgrading to PAKE.
     PakeUpgradeRequired,
     /// Invalid PAKE verifier value coming from the client.
-    InvalidVerifier(hex::FromHexError),
+    InvalidVerifier(#[allow(dead_code)] hex::FromHexError),
     /// Invalid PAKE A value coming from the client.
-    InvalidAPub(hex::FromHexError),
+    InvalidAPub(#[allow(dead_code)] hex::FromHexError),
     /// Invalid PAKE client proof.
-    InvalidClientProof(hex::FromHexError),
+    InvalidClientProof(#[allow(dead_code)] hex::FromHexError),
     /// Unexpected PAKE verify request.
     UnexpectedPakeVerify,
     /// Failed to process the client's PAKE verify request.
-    PakeVerifyFailed(srp::types::SrpAuthError),
+    PakeVerifyFailed(#[allow(dead_code)] srp::types::SrpAuthError),
     /// Cannot reset a legacy password after PAKE upgrade.
     NoLegacyResetAfterPake,
     /// User already in waiting list with this email.
     EmailExists,
     /// Invalid email
     InvalidEmail,
+    /// No user with that email
+    NoUserWithEmail,
+    /// Account not verified
+    AccountNotVerified,
+    /// Password reset token not found or expired
+    InvalidResetToken,
+    /// Cannot change password before upgrading to PAKE
+    PasswordChangeBeforePake,
+    /// Failed parsing cookie
+    CookieParsing(#[allow(dead_code)] String),
+    /// Failed to create new token
+    TokenCreation(#[allow(dead_code)] String),
+}
+
+impl Error {
+    fn database(e: impl std::fmt::Display) -> Self {
+        Self::Database(format!("{e:#}"))
+    }
 }
 
 impl From<JsonRejection> for Error {
@@ -1288,14 +1185,12 @@ impl From<db::waitlist::Error> for Error {
     fn from(value: db::waitlist::Error) -> Self {
         match value {
             db::waitlist::Error::EmailInUse(_) => Error::EmailExists,
-            db::waitlist::Error::DatabaseError(e) => Error::Database(anyhow!(e)),
+            db::waitlist::Error::DatabaseError(e) => Error::database(e),
         }
     }
 }
 
 /// Tell `axum` how [`Error`] should be converted into a response.
-///
-/// This is also a convenient place to log errors.
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
         /// How we want error responses to be serialized.
@@ -1309,10 +1204,13 @@ impl IntoResponse for Error {
                 // This error is caused by bad user input so don't log it
                 (rejection.status(), rejection.body_text())
             }
-            Error::Database(e) => {
-                // If we configure `tracing` properly, we don't need to add extra context here!
-                tracing::error!("Database error: {e:#}");
-
+            Error::Database(_)
+            | Error::AuthSessionDecode(_)
+            | Error::NoFeaturesEnabled { .. }
+            | Error::InvalidVerifier(_)
+            | Error::NoLegacyResetAfterPake
+            | Error::CookieParsing(_)
+            | Error::TokenCreation(_) => {
                 // Don't expose any details about the error to the client.
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
@@ -1324,14 +1222,16 @@ impl IntoResponse for Error {
                 StatusCode::BAD_REQUEST,
                 "An invite code is required at this time".to_owned(),
             ),
-            Error::InvalidReferralCode { referral_code } => {
-                tracing::warn!(referral_code, "User tried invalid referral code");
-
+            Error::InvalidReferralCode { .. } => {
                 (StatusCode::BAD_REQUEST, "Invalid referral code".to_owned())
             }
             Error::EmailOrPasswordInvalid => (
                 StatusCode::BAD_REQUEST,
                 "Invalid email or password".to_owned(),
+            ),
+            Error::BuildResponse(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Something went wrong.".to_owned(),
             ),
             Error::EmailNotVerified => (
                 StatusCode::BAD_REQUEST,
@@ -1346,68 +1246,31 @@ impl IntoResponse for Error {
                 StatusCode::UNAUTHORIZED,
                 "Invalid email or password".to_owned(),
             ),
-            Error::AuthSessionDecode(e) => {
-                tracing::error!("Failed at decoding auth session: {e:#}");
-
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong.".to_owned(),
-                )
-            }
-            Error::BuildResponse(e) => {
-                tracing::error!("Failed to build response: {e:#}");
-
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong.".to_owned(),
-                )
-            }
-            Error::NoFeaturesEnabled { borrower_id } => {
-                tracing::error!(borrower_id, "No features enabled for user");
-
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong.".to_owned(),
-                )
-            }
             // IMPORTANT NOTE: We rely on the presence of the string `upgrade-to-pake` for the
             // client to understand what to do next.
             Error::PakeUpgradeRequired => (StatusCode::BAD_REQUEST, "upgrade-to-pake".to_owned()),
-            Error::InvalidVerifier(e) => {
-                tracing::error!("Invalid PAKE verifier in DB: {e:#}");
-
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something went wrong.".to_owned(),
-                )
-            }
-            Error::InvalidAPub(e) => {
-                tracing::error!("Invalid PAKE `A` value coming from client: {e:#}");
-
-                (StatusCode::BAD_REQUEST, "Invalid credentials.".to_owned())
-            }
-            Error::InvalidClientProof(e) => {
-                tracing::error!("Invalid PAKE client proof coming from client: {e:#}");
-
+            Error::InvalidAPub(_) => (StatusCode::BAD_REQUEST, "Invalid credentials.".to_owned()),
+            Error::InvalidClientProof(_) => {
                 (StatusCode::BAD_REQUEST, "Invalid credentials.".to_owned())
             }
             Error::UnexpectedPakeVerify => {
-                tracing::error!("Got PAKE verify before PAKE login");
-
                 (StatusCode::BAD_REQUEST, "Invalid login attempt.".to_owned())
             }
-            Error::PakeVerifyFailed(e) => {
-                tracing::error!("PAKE verify failed: {e:#}");
-
+            Error::PakeVerifyFailed(_) => {
                 (StatusCode::BAD_REQUEST, "Invalid credentials.".to_owned())
-            }
-            Error::NoLegacyResetAfterPake => {
-                tracing::error!("Cannot reset legacy password after PAKE upgrade");
-
-                (StatusCode::BAD_REQUEST, "Something went wrong.".to_owned())
             }
             Error::EmailExists => (StatusCode::CONFLICT, "Email already used".to_owned()),
             Error::InvalidEmail => (StatusCode::BAD_REQUEST, "Invalid email address".to_owned()),
+            Error::NoUserWithEmail => (StatusCode::NOT_FOUND, "No user with that email".to_owned()),
+            Error::AccountNotVerified => (StatusCode::FORBIDDEN, "Account not verified".to_owned()),
+            Error::InvalidResetToken => (
+                StatusCode::NOT_FOUND,
+                "Password reset token not found or expired".to_owned(),
+            ),
+            Error::PasswordChangeBeforePake => (
+                StatusCode::FORBIDDEN,
+                "Cannot change password before upgrading to PAKE".to_owned(),
+            ),
         };
 
         (status, AppJson(ErrorResponse { message })).into_response()
