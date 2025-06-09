@@ -135,7 +135,7 @@ export function ExtendContract({ contract, onSubmitted }: ExtendContractProps) {
           <LuCalendarClock className="h-4 w-4" />
           <AlertTitle>Loan extension not allowed yet</AlertTitle>
           <AlertDescription>
-            Loan extension is only available after half of the loan's lieftime.
+            Loan extension is only available after half of the loan's lifetime.
             I.e. after {renewalDate}
           </AlertDescription>
         </Alert>
