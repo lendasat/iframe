@@ -971,7 +971,9 @@ struct Contract {
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 struct Installment {
     id: Uuid,
+    #[serde(with = "rust_decimal::serde::float")]
     principal: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
     interest: Decimal,
     #[serde(with = "time::serde::rfc3339")]
     due_date: OffsetDateTime,
