@@ -1,5 +1,7 @@
 use crate::model::ContractStatus;
+use anyhow::Result;
 use sqlx::postgres::PgPool;
+use sqlx::Postgres;
 use time::OffsetDateTime;
 
 // Struct to hold the query results
@@ -58,4 +60,32 @@ pub async fn get_contract_status_logs(
     .await?;
 
     Ok(logs.into_iter().map(ContractStatusLog::from).collect())
+}
+
+/// Duplicate all contract status log entries from a parent contract to a new contract.
+/// This is used during contract extensions to preserve the status history.
+pub async fn duplicate<'a, E>(tx: E, parent_contract_id: &str, new_contract_id: &str) -> Result<i64>
+where
+    E: sqlx::Executor<'a, Database = Postgres>,
+{
+    // Insert duplicates with the new contract_id
+    let result = sqlx::query!(
+        r#"
+        INSERT INTO contracts_status_log (contract_id, old_status, new_status, changed_at)
+        SELECT
+            $1 as contract_id,
+            old_status,
+            new_status,
+            changed_at
+        FROM contracts_status_log
+        WHERE contract_id = $2
+        RETURNING id
+        "#,
+        new_contract_id,
+        parent_contract_id
+    )
+    .fetch_all(tx)
+    .await?;
+
+    Ok(result.len() as i64)
 }

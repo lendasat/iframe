@@ -64,6 +64,7 @@ use sqlx::Pool;
 use sqlx::Postgres;
 use std::num::NonZeroU64;
 use std::sync::Arc;
+use time::ext::NumericalDuration;
 use time::OffsetDateTime;
 use tracing::instrument;
 use url::Url;
@@ -1324,14 +1325,16 @@ async fn map_timeline(
         .await
         .map_err(|e| Error::database(anyhow!(e)))?;
 
-    // First, we add the contract request event.
-    let mut timeline = vec![TimelineEvent {
+    // First, we build the contract request event.
+    let mut requested_event = TimelineEvent {
         date: contract.created_at,
         event: TimelineEventKind::ContractStatusChange {
             status: ContractStatus::Requested,
         },
         txid: None,
-    }];
+    };
+
+    let mut timeline = vec![];
 
     // Then we go through funding transactions. There might be multiple, that's why we need to
     // handle them separately.
@@ -1425,6 +1428,26 @@ async fn map_timeline(
         .collect::<Vec<_>>();
 
     timeline.extend(rest_of_timeline);
+
+    let approved_event = timeline.iter().find(|e| {
+        matches!(
+            e.event,
+            TimelineEventKind::ContractStatusChange {
+                status: ContractStatus::Approved
+            }
+        )
+    });
+
+    // HACK: After extending a contract, the `Requested` event will not be the first one, given that
+    // the extended contract is created later than any event in the original contract. To deal with
+    // this, we can just set the time to an hour before the original contract was approved.
+    if let Some(approved_event) = approved_event {
+        if approved_event.date < requested_event.date {
+            requested_event.date = approved_event.date - 1.hours();
+        }
+    }
+
+    timeline.push(requested_event);
 
     timeline.sort_by(|a, b| a.date.cmp(&b.date));
 

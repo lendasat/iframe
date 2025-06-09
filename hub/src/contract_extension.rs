@@ -174,6 +174,10 @@ pub async fn request_contract_extension(
     .await
     .map_err(|e| Error::Database(anyhow!(e)))?;
 
+    db::contract_status_log::duplicate(&mut *db_tx, original_contract_id, new_contract.id.as_str())
+        .await
+        .map_err(|e| Error::Database(anyhow!(e)))?;
+
     let contract_address = new_contract
         .contract_address
         .as_ref()

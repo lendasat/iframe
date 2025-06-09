@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO contracts_status_log (contract_id, old_status, new_status, changed_at)\n        SELECT\n            $1 as contract_id,\n            old_status,\n            new_status,\n            changed_at\n        FROM contracts_status_log\n        WHERE contract_id = $2\n        RETURNING id\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bpchar",
+        "Bpchar"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "75a284f846ba0de1692f60596c93d5f27671e7fd2815c5f3007673adee34e3c7"
+}
