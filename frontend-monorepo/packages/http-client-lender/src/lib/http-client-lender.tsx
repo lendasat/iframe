@@ -529,7 +529,7 @@ export const createHttpClientLender = (
   const getMyLoanOffer = async (id: string): Promise<LoanOffer> => {
     try {
       const response: AxiosResponse<RawLoanOffer> = await axiosClient.get(
-        `/api/offers/own/${id}`,
+        `/api/offers/${id}`,
       );
       const createdAt = parseRFC3339Date(response.data.created_at);
       const updatedAt = parseRFC3339Date(response.data.updated_at);
