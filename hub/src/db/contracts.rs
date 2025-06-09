@@ -692,36 +692,6 @@ pub async fn accept_contract_request(
     Ok(contract.into())
 }
 
-/// Accepts a request to extend the contract
-///
-/// We jump right back into [`ContractStatus::PrincipalGiven`] because the contract is already
-/// funded etc.
-pub async fn accept_extend_contract_request(
-    pool: &Pool<Postgres>,
-    lender_id: &str,
-    contract_id: &str,
-) -> Result<()> {
-    sqlx::query!(
-        r#"
-       UPDATE contracts
-       SET status = $1,
-           updated_at = $2
-       WHERE lender_id = $3
-         AND id = $4
-         AND status = $5
-       "#,
-        db::ContractStatus::PrincipalGiven as db::ContractStatus,
-        OffsetDateTime::now_utc(),
-        lender_id,
-        contract_id,
-        db::ContractStatus::RenewalRequested as db::ContractStatus,
-    )
-    .execute(pool)
-    .await?;
-
-    Ok(())
-}
-
 pub async fn mark_contract_as_principal_given(
     pool: &Pool<Postgres>,
     contract_id: &str,

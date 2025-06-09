@@ -952,6 +952,7 @@ async fn post_extend_contract_request(
     let new_contract = crate::contract_extension::request_contract_extension(
         &data.db,
         &data.config,
+        &data.mempool,
         &contract_id,
         &user.id,
         body.new_duration,
@@ -1491,7 +1492,7 @@ enum Error {
     LoanNotRepaid,
     /// Can't claim collateral without contract index.
     MissingContractIndex,
-    /// Can't claim collateral without collateral address.
+    /// Can't continue without collateral address.
     MissingCollateralAddress,
     /// Failed to generate contract address.
     ContractAddress(#[allow(dead_code)] String),
@@ -1894,11 +1895,17 @@ impl From<crate::contract_extension::Error> for Error {
             crate::contract_extension::Error::TooManyDays { max_duration_days } => {
                 Error::ExtensionTooManyDays { max_duration_days }
             }
-            crate::contract_extension::Error::ComputeExtensionInstallments(error) => {
-                Error::ComputeExtensionInstallments(format!("{error:#}"))
+            crate::contract_extension::Error::ComputeExtensionInstallments(e) => {
+                Error::ComputeExtensionInstallments(format!("{e:#}"))
             }
             crate::contract_extension::Error::ZeroLoanExtensionDuration => {
                 Error::ZeroLoanExtensionDuration
+            }
+            crate::contract_extension::Error::MissingCollateralAddress => {
+                Error::MissingCollateralAddress
+            }
+            crate::contract_extension::Error::TrackContract(e) => {
+                Error::TrackContract(format!("{e:#}"))
             }
         }
     }
