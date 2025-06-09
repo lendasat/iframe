@@ -143,7 +143,10 @@ pub async fn approve_contract(
     .map_err(Error::Database)?;
 
     mempool_actor
-        .send(TrackContractFunding::new(contract_id, contract_address))
+        .send(TrackContractFunding::new(
+            contract_id.clone(),
+            contract_address,
+        ))
         .await
         .expect("actor to be alive")
         .map_err(Error::TrackContract)?;
@@ -157,7 +160,7 @@ pub async fn approve_contract(
     // approved.
     if let Err(e) = async {
         notifications
-            .send_loan_request_approved(borrower, loan_url)
+            .send_loan_request_approved(db, contract_id.as_str(), borrower, loan_url)
             .await;
 
         db::contract_emails::mark_loan_request_approved_as_sent(db, &contract.id)

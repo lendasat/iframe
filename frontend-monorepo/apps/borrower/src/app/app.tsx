@@ -5,9 +5,10 @@ import {
   AuthProvider,
   HttpClientProvider,
   useAuth,
+  WebSocketNotification,
 } from "@frontend/http-client-borrower";
 import { Layout } from "./layout";
-import { PriceProvider } from "@frontend/ui-shared";
+import { changeProtocolToWSS, PriceProvider } from "@frontend/ui-shared";
 import { Navigate, Outlet, Route, Routes, useNavigate } from "react-router-dom";
 import ForgotPassword from "./auth/forgot-password";
 import Login from "./auth/login";
@@ -162,7 +163,19 @@ function App() {
         <AuthIsSignedIn>
           <PriceProvider url={baseUrl}>
             <FeeProvider mempoolUrl={import.meta.env.VITE_MEMPOOL_REST_URL}>
-              <MainLayoutComponents />
+              <WebSocketNotification
+                url={`${changeProtocolToWSS(import.meta.env.VITE_BORROWER_BASE_URL)}/api/notifications/ws`}
+                debug={true}
+                onConnect={() => console.log("🔗 Notifications connected")}
+                onDisconnect={() =>
+                  console.log("❌ Notifications disconnected")
+                }
+                onError={(error) =>
+                  console.error("🚨 Notification error:", error)
+                }
+              >
+                <MainLayoutComponents />
+              </WebSocketNotification>
             </FeeProvider>
           </PriceProvider>
         </AuthIsSignedIn>

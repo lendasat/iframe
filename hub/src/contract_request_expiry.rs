@@ -186,7 +186,7 @@ async fn notify_borrower_about_expired_contracts(
         .context("Could not find borrower")?;
 
     notifications
-        .send_expired_loan_request_borrower(borrower, loan_url)
+        .send_expired_loan_request_borrower(db, contract.contract_id.as_str(), borrower, loan_url)
         .await;
 
     db::contract_emails::mark_loan_request_expired_borrower_as_sent(

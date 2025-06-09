@@ -211,6 +211,7 @@ pub enum BorrowerNotificationKind {
     RequestRejected,
     LoanPaidOut,
     InstallmentDueSoon,
+    InstallmentConfirmed,
     MoonCardReady,
     LiquidatedAfterDefault,
     LoanDefaulted,
@@ -328,6 +329,12 @@ impl xtra::Handler<Notification> for TelegramBot {
             NotificationTarget::Borrower(BorrowerNotificationKind::InstallmentDueSoon) => {
                 (
                     "Your next installment is due soon. Make sure pay in time or your collateral will be liquidated.".to_string(),
+                    "Contract Details".to_string(),
+                )
+            }
+            NotificationTarget::Borrower(BorrowerNotificationKind::InstallmentConfirmed) => {
+                (
+                    "The lender confirmed your payment.".to_string(),
                     "Contract Details".to_string(),
                 )
             }

@@ -63,7 +63,7 @@ async fn new_chat_notification(
         .expect("to be a correct URL");
 
     data.notifications
-        .send_chat_notification_borrower(borrower, loan_url)
+        .send_chat_notification_borrower(&data.db, body.contract_id.as_str(), borrower, loan_url)
         .await;
 
     Ok(())

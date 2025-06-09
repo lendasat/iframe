@@ -111,21 +111,19 @@ const EnhancedBitcoinLoan = () => {
     contract?.installments &&
     contractStatusToLabelString(contract.status);
 
-  console.log(currentStateLabel);
-
   const disputeOngoing =
     ContractStatus.DisputeBorrowerStarted === contract?.status ||
     ContractStatus.DisputeLenderStarted === contract?.status;
 
   return (
     <ScrollArea className="h-screen w-full overflow-auto">
-      <div className="max-w-full mx-4 pb-20 pt-5">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-[680px]">
+      <div className="mx-4 max-w-full pb-20 pt-5">
+        <div className="grid min-h-[680px] grid-cols-1 gap-4 lg:grid-cols-3">
           {/* Main loan details (2/3 width on large screens) */}
-          <div className="lg:col-span-2 h-full">
-            <Card className="h-full flex flex-col">
-              <CardHeader className="pb-2 flex-shrink-0">
-                <div className="flex justify-between items-start">
+          <div className="h-full lg:col-span-2">
+            <Card className="flex h-full flex-col">
+              <CardHeader className="flex-shrink-0 pb-2">
+                <div className="flex items-start justify-between">
                   <div>
                     <CardTitle className="text-2xl font-bold">
                       Collateralized Loan Contract
@@ -152,21 +150,21 @@ const EnhancedBitcoinLoan = () => {
                       contract?.liquidation_status ===
                         LiquidationStatus.Healthy && (
                         <div className="flex items-center text-sm text-green-600">
-                          <LuCircleCheck className="h-4 w-4 mr-1" />
+                          <LuCircleCheck className="mr-1 h-4 w-4" />
                           <span>Healthy</span>
                         </div>
                       )}
                     {contract?.liquidation_status ===
                       LiquidationStatus.FirstMarginCall && (
                       <div className="flex items-center text-sm text-orange-600">
-                        <LuCircleCheck className="h-4 w-4 mr-1" />
+                        <LuCircleCheck className="mr-1 h-4 w-4" />
                         <span>Margin Call</span>
                       </div>
                     )}
                     {contract?.liquidation_status ===
                       LiquidationStatus.SecondMarginCall && (
                       <div className="flex items-center text-sm text-red-600">
-                        <LuCircleCheck className="h-4 w-4 mr-1" />
+                        <LuCircleCheck className="mr-1 h-4 w-4" />
                         <span>2nd Margin Call</span>
                       </div>
                     )}
@@ -176,9 +174,9 @@ const EnhancedBitcoinLoan = () => {
 
               <Tabs
                 defaultValue="details"
-                className="w-full flex-grow flex flex-col"
+                className="flex w-full flex-grow flex-col"
               >
-                <div className="px-4 flex-shrink-0">
+                <div className="flex-shrink-0 px-4">
                   <TabsList className="grid grid-cols-5">
                     <TabsTrigger value="details">Loan Details</TabsTrigger>
                     <TabsTrigger value="collateral">Collateral</TabsTrigger>
@@ -224,7 +222,7 @@ const EnhancedBitcoinLoan = () => {
                 {/*</ScrollArea>*/}
               </Tabs>
 
-              <CardFooter className="flex-shrink-0 flex justify-between border-t pt-4">
+              <CardFooter className="flex flex-shrink-0 justify-between border-t pt-4">
                 <ContractDetailsFooter
                   contract={contract}
                   loading={loading}
@@ -235,7 +233,7 @@ const EnhancedBitcoinLoan = () => {
           </div>
 
           {/* Chat section (1/3 width on large screens) */}
-          <div className="lg:col-span-1 h-full flex flex-col">
+          <div className="flex h-full flex-col lg:col-span-1">
             <Chat
               contractId={contract?.id}
               counterpartyNpub={contract?.lender_npub}

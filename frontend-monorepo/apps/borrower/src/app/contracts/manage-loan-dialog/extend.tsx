@@ -101,7 +101,6 @@ export function ExtendContract({ contract, onSubmitted }: ExtendContractProps) {
     contract.extension_origination_fee[0].fee * contract.loan_amount;
   const extensionFeeBtc =
     extensionFeeUsd && latestPrice && extensionFeeUsd / latestPrice;
-  console.log(`Extension fee ${extensionFeeUsd}`);
 
   const notAllowedDurations =
     contract &&
@@ -109,7 +108,7 @@ export function ExtendContract({ contract, onSubmitted }: ExtendContractProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex items-center justify-between">
         <Label>Current Expiry Date</Label>
         {currentExpiryDate ? (
           <span className="text-lg font-bold">
@@ -144,7 +143,7 @@ export function ExtendContract({ contract, onSubmitted }: ExtendContractProps) {
 
       <div className="space-y-6">
         <div className="space-y-2">
-          <div className="flex justify-between items-center">
+          <div className="flex items-center justify-between">
             <Label htmlFor="extension-slider">Extension Duration</Label>
           </div>
           <SingleDurationSelector
@@ -157,10 +156,10 @@ export function ExtendContract({ contract, onSubmitted }: ExtendContractProps) {
 
         <Card className="border-muted-foreground/20">
           <CardContent className="pt-6">
-            <h3 className="text-md font-semibold mb-4">Extension Summary</h3>
+            <h3 className="text-md mb-4 font-semibold">Extension Summary</h3>
 
             <div className="space-y-3">
-              <div className="flex justify-between items-center">
+              <div className="flex items-center justify-between">
                 <span className="text-sm">New Expiry Date</span>
                 <span className="font-medium">
                   {extensionEnabled && extensionAllowed && newExpiry ? (
@@ -171,7 +170,7 @@ export function ExtendContract({ contract, onSubmitted }: ExtendContractProps) {
                 </span>
               </div>
 
-              <div className="flex justify-between items-center">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <span className="text-sm">Annual Interest Rate</span>
                 </div>
@@ -183,7 +182,7 @@ export function ExtendContract({ contract, onSubmitted }: ExtendContractProps) {
                 </span>
               </div>
 
-              <div className="flex justify-between items-center">
+              <div className="flex items-center justify-between">
                 <span className="text-sm">Total Interest</span>
                 {totalInterestUsd ? (
                   <span className="font-medium">
@@ -194,8 +193,8 @@ export function ExtendContract({ contract, onSubmitted }: ExtendContractProps) {
                 )}
               </div>
 
-              <div className="border-t pt-3 mt-3">
-                <div className="flex justify-between items-center">
+              <div className="mt-3 border-t pt-3">
+                <div className="flex items-center justify-between">
                   <div className="flex items-center">
                     <span className="text-sm">Extension Fee</span>
                   </div>
@@ -208,10 +207,10 @@ export function ExtendContract({ contract, onSubmitted }: ExtendContractProps) {
                   )}
                 </div>
 
-                <div className="flex justify-between items-center mt-1">
-                  <span className="text-sm text-muted-foreground">In BTC</span>
+                <div className="mt-1 flex items-center justify-between">
+                  <span className="text-muted-foreground text-sm">In BTC</span>
                   {extensionFeeBtc !== undefined ? (
-                    <span className="text-sm text-muted-foreground">
+                    <span className="text-muted-foreground text-sm">
                       {formatBitcoin(extensionFeeBtc)} BTC
                     </span>
                   ) : (
@@ -226,7 +225,7 @@ export function ExtendContract({ contract, onSubmitted }: ExtendContractProps) {
         <div className="pt-2">
           <Button
             type={"button"}
-            className="w-full md:w-48 px-0"
+            className="w-full px-0 md:w-48"
             onClick={handleSubmitExtension}
             disabled={!extensionEnabled || !extensionAllowed || isSubmitting}
           >

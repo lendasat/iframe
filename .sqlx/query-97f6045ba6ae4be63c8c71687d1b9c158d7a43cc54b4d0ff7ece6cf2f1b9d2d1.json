@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            n.id,\n            n.contract_id,\n            n.read,\n            n.created_at,\n            n.updated_at,\n            b.name as \"borrower_name!\"\n        FROM lender_contract_chat_message_notifications n\n        INNER JOIN contracts c ON n.contract_id = c.id\n        INNER JOIN borrowers b ON c.borrower_id = b.id\n        WHERE c.lender_id = $1\n        AND ($2 = false OR n.read = false)\n        ORDER BY n.created_at DESC\n        LIMIT $3 OFFSET $4\n        ",
+  "query": "\n        SELECT \n            n.id,\n            n.contract_id,\n            n.read,\n            n.created_at,\n            n.updated_at,\n            b.name as \"counterparty_name!\"\n        FROM lender_contract_chat_message_notifications n\n        INNER JOIN contracts c ON n.contract_id = c.id\n        INNER JOIN borrowers b ON c.borrower_id = b.id\n        WHERE c.lender_id = $1 \n        AND ($2 = false OR n.read = false)\n        ORDER BY n.created_at DESC\n        LIMIT $3 OFFSET $4\n        ",
   "describe": {
     "columns": [
       {
@@ -30,7 +30,7 @@
       },
       {
         "ordinal": 5,
-        "name": "borrower_name!",
+        "name": "counterparty_name!",
         "type_info": "Varchar"
       }
     ],
@@ -51,5 +51,5 @@
       false
     ]
   },
-  "hash": "a243a482eab13a42c67573657205cd9be4a0a9d27bc3ccd338b52edc700e2aff"
+  "hash": "97f6045ba6ae4be63c8c71687d1b9c158d7a43cc54b4d0ff7ece6cf2f1b9d2d1"
 }

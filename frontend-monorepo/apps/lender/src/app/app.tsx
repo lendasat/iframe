@@ -6,7 +6,7 @@ import {
   AuthProvider,
 } from "@frontend/http-client-lender";
 import { useAuth } from "@frontend/http-client-lender";
-import { PriceProvider } from "@frontend/ui-shared";
+import { changeProtocolToWSS, PriceProvider } from "@frontend/ui-shared";
 import { Outlet, Route, Routes } from "react-router-dom";
 import { SemVer } from "semver";
 import ForgotPassword from "./auth/forgot-password";
@@ -110,10 +110,6 @@ function MainLayoutComponents() {
     </WalletProvider>
   );
 }
-
-const changeProtocolToWSS = (url: string): string => {
-  return url.replace(/^http(s?):\/\//i, "ws$1://");
-};
 
 function App() {
   const baseUrl = import.meta.env.VITE_LENDER_BASE_URL;

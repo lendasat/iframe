@@ -43,7 +43,9 @@ pub async fn mark_as_principal_given(
             .context("Borrower not found")?;
 
         // TODO: Send a custom email for indirect (e-commerce) loans.
-        notifications.send_loan_paid_out(borrower, loan_url).await;
+        notifications
+            .send_loan_paid_out(pool, contract_id, borrower, loan_url)
+            .await;
 
         db::contract_emails::mark_loan_paid_out_as_sent(pool, contract_id)
             .await

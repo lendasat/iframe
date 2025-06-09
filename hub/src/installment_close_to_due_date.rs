@@ -108,6 +108,9 @@ async fn create_installment_close_to_due_date_check(
                                     Ok(Some(borrower)) => {
                                         notifications
                                             .send_installment_due_soon(
+                                                &db,
+                                                contract_id.to_string().as_str(),
+                                                installment.id,
                                                 borrower,
                                                 &formatted_date(installment.due_date),
                                                 loan_url,

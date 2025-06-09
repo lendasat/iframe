@@ -39,6 +39,7 @@ pub(crate) mod contracts;
 pub(crate) mod health_check;
 pub(crate) mod loan_applications;
 pub(crate) mod loan_offers;
+pub(crate) mod notifications;
 pub(crate) mod profile;
 pub(crate) mod version;
 
@@ -202,6 +203,8 @@ pub async fn spawn_borrower_server(
         .merge(profile::router(app_state.clone()))
         .merge(chat::router(app_state.clone()))
         .merge(dispute::router(app_state.clone()))
+        // TODO: move this into the OpenApiRouter so that it's documented
+        .merge(notifications::router(app_state.clone()))
         .merge(price_feed_ws::router(app_state.clone()))
         .merge(
             profiles::router()

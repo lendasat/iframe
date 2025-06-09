@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT \n            n.id,\n            n.contract_id,\n            n.read,\n            n.created_at,\n            n.updated_at,\n            b.name as \"counterparty_name!\"\n        FROM lender_contract_chat_message_notifications n\n        INNER JOIN contracts c ON n.contract_id = c.id\n        INNER JOIN borrowers b ON c.borrower_id = b.id\n        WHERE c.lender_id = $1\n        ORDER BY n.created_at DESC\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "contract_id",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "read",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 3,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 5,
+        "name": "counterparty_name!",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bpchar"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "922000ed9136dbe6d597d2faef45542d5feff41c00ca0dcbf8d8c152df37975a"
+}

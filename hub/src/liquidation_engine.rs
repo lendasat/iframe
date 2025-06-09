@@ -394,6 +394,7 @@ async fn send_notification(
         LiquidationStatus::Liquidated => {
             notifications
                 .send_liquidation_notice_borrower(
+                    pool,
                     borrower,
                     contract.clone(),
                     price,

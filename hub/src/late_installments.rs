@@ -169,7 +169,7 @@ async fn notify_borrower_about_late_installment(
         .context("Could not find borrower")?;
 
     notifications
-        .send_loan_defaulted_borrower(borrower, loan_url)
+        .send_loan_defaulted_borrower(db, contract.id.as_str(), borrower, loan_url)
         .await;
 
     db::contract_emails::mark_defaulted_loan_borrower_as_sent(db, &contract.id).await?;
