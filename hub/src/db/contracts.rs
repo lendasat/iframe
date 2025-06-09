@@ -8,6 +8,7 @@ use crate::model::ContractVersion;
 use crate::model::ExtensionPolicy;
 use crate::model::LiquidationStatus;
 use crate::model::LoanType;
+use crate::model::Npub;
 use anyhow::bail;
 use anyhow::Context;
 use anyhow::Error;
@@ -363,8 +364,8 @@ pub async fn insert_new_contract_request(
     loan_type: LoanType,
     contract_version: ContractVersion,
     interest_rate: Decimal,
-    borrower_npub: &str,
-    lender_npub: &str,
+    borrower_npub: Npub,
+    lender_npub: Npub,
     client_contract_id: Option<Uuid>,
     extension_policy: ExtensionPolicy,
 ) -> Result<Contract> {
@@ -473,8 +474,8 @@ pub async fn insert_extension_contract_request(
             .map(|address| address.assume_checked().to_string()),
         original_contract.contract_index.map(|index| index as i32),
         interest_rate,
-        &original_contract.borrower_npub,
-        &original_contract.lender_npub,
+        original_contract.borrower_npub,
+        original_contract.lender_npub,
         original_contract.client_contract_id,
         // An extended contract inherits the extension policy of the parent contract.
         original_contract.extension_policy,
@@ -510,8 +511,8 @@ async fn insert_contract_request(
     contract_address: Option<String>,
     contract_index: Option<i32>,
     interest_rate: Decimal,
-    borrower_npub: &str,
-    lender_npub: &str,
+    borrower_npub: Npub,
+    lender_npub: Npub,
     client_contract_id: Option<Uuid>,
     extension_policy: ExtensionPolicy,
 ) -> Result<Contract, Error> {
@@ -611,8 +612,8 @@ async fn insert_contract_request(
         contract_address as Option<String>,
         contract_index as Option<i32>,
         contract_version,
-        borrower_npub,
-        lender_npub,
+        borrower_npub.to_string(),
+        lender_npub.to_string(),
         created_at,
         expiry_date,
         interest_rate,
@@ -1339,8 +1340,8 @@ pub async fn insert_new_taken_contract_application(
     interest_rate: Decimal,
     contract_address: Address<NetworkUnchecked>,
     contract_index: u32,
-    borrower_npub: &str,
-    lender_npub: &str,
+    borrower_npub: Npub,
+    lender_npub: Npub,
     client_contract_id: Option<Uuid>,
 ) -> Result<Contract> {
     let mut db_tx = pool

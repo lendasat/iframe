@@ -53,7 +53,7 @@ impl From<LoanApplication> for model::LoanApplication {
             loan_type: value.loan_type,
             borrower_pk: value.borrower_pk.parse().expect("valid pk"),
             borrower_derivation_path: value.borrower_derivation_path.parse().expect("valid path"),
-            borrower_npub: value.borrower_npub,
+            borrower_npub: value.borrower_npub.parse().expect("valid npub in database"),
             status: value.status,
             client_contract_id: value.client_contract_id,
             repayment_plan: value.repayment_plan,
@@ -290,7 +290,7 @@ pub async fn insert_loan_application(
             .borrower_btc_address
             .assume_checked()
             .to_string(),
-        application.borrower_npub,
+        application.borrower_npub.to_string(),
         application.client_contract_id,
         status as LoanApplicationStatus,
         application.repayment_plan as RepaymentPlan,

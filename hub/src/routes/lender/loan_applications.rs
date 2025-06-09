@@ -8,6 +8,7 @@ use crate::model::FiatLoanDetailsWrapper;
 use crate::model::Lender;
 use crate::model::LoanApplicationStatus;
 use crate::model::LoanAsset;
+use crate::model::Npub;
 use crate::routes::lender::auth::jwt_auth;
 use crate::routes::lender::LOAN_APPLICATIONS_TAG;
 use crate::routes::AppState;
@@ -199,7 +200,7 @@ pub struct TakeLoanApplicationSchema {
     #[schema(value_type = String)]
     pub lender_derivation_path: bip32::DerivationPath,
     pub loan_repayment_address: String,
-    pub lender_npub: String,
+    pub lender_npub: Npub,
     pub fiat_loan_details: Option<FiatLoanDetailsWrapper>,
 }
 

@@ -25,6 +25,7 @@ use crate::model::LoanAsset;
 use crate::model::LoanPayout;
 use crate::model::LoanTransaction;
 use crate::model::LoanType;
+use crate::model::Npub;
 use crate::model::OriginationFee;
 use crate::model::PsbtQueryParams;
 use crate::model::TransactionType;
@@ -341,8 +342,8 @@ async fn post_contract_request(
         body.loan_type,
         ContractVersion::TwoOfThree,
         offer.interest_rate,
-        &body.borrower_npub,
-        &offer.lender_npub,
+        body.borrower_npub,
+        offer.lender_npub,
         body.client_contract_id,
         // The contract inherits the extension policy of the loan offer.
         offer.extension_policy,
@@ -1074,7 +1075,7 @@ pub struct Contract {
     kyc_info: Option<KycInfo>,
     fiat_loan_details_borrower: Option<FiatLoanDetailsWrapperResponse>,
     fiat_loan_details_lender: Option<FiatLoanDetailsWrapperResponse>,
-    lender_npub: String,
+    lender_npub: Npub,
     timeline: Vec<TimelineEvent>,
     client_contract_id: Option<Uuid>,
     extension_max_duration_days: u64,
