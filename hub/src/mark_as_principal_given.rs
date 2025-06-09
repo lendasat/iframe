@@ -47,10 +47,6 @@ pub async fn mark_as_principal_given(
             .send_loan_paid_out(pool, contract_id, borrower, loan_url)
             .await;
 
-        db::contract_emails::mark_loan_paid_out_as_sent(pool, contract_id)
-            .await
-            .context("Failed to mark loan-paid-out email as sent")?;
-
         anyhow::Ok(())
     }
     .await

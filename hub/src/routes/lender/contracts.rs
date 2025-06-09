@@ -375,10 +375,6 @@ async fn delete_reject_contract(
             .send_loan_request_rejected(&data.db, contract_id.as_str(), borrower, loan_url)
             .await;
 
-        db::contract_emails::mark_loan_request_rejected_as_sent(&data.db, &contract.id)
-            .await
-            .context("Failed to mark loan-request-rejected email as sent")?;
-
         anyhow::Ok(())
     }
     .await
@@ -800,10 +796,6 @@ async fn post_liquidation_tx(
         data.notifications
             .send_loan_liquidated_after_default(&data.db, contract_id.as_str(), borrower, loan_url)
             .await;
-
-        db::contract_emails::mark_defaulted_loan_liquidated_as_sent(&data.db, &contract.id)
-            .await
-            .context("Failed to mark defaulted-loan-liquidated email as sent")?;
 
         // Not actually used, but required. I think the compiler is tripping here.
         anyhow::Ok("".to_string())
