@@ -4,7 +4,6 @@ import {
   FiatLoanDetails,
   LoanProductOption,
   RepaymentPlan,
-  repaymentPlanLabel,
 } from "@frontend/http-client-borrower";
 import { useWallet } from "@frontend/browser-wallet";
 import {
@@ -50,16 +49,7 @@ import { Lender } from "./lender";
 import { MoonCardDropdown } from "./MoonCardDropdown";
 import { ToS } from "./tos";
 import { AlertCircle, ExternalLink } from "lucide-react";
-import {
-  Button,
-  Alert,
-  AlertDescription,
-  AlertTitle,
-  TooltipProvider,
-  TooltipTrigger,
-  Tooltip,
-  TooltipContent,
-} from "@frontend/shadcn";
+import { Button, Alert, AlertDescription, AlertTitle } from "@frontend/shadcn";
 import { LuLoader } from "react-icons/lu";
 import { toast } from "sonner";
 
@@ -320,6 +310,30 @@ export const Confirmation = ({
       selectedProduct !== LoanProductOption.Bringin,
   );
 
+  let estimatedInstallment = 0;
+  const dailyInterestRate = interestRate / 360;
+
+  if (selectedOffer?.repayment_plan === RepaymentPlan.InterestOnlyMonthly) {
+    if (selectedLoanDuration <= 30) {
+      // For durations of 30 days or less, pay interest for the actual duration
+      estimatedInstallment =
+        selectedLoanAmount * dailyInterestRate * selectedLoanDuration;
+    } else {
+      // For longer durations, pay monthly interest (30 days worth)
+      estimatedInstallment = selectedLoanAmount * dailyInterestRate * 30;
+    }
+  } else if (
+    selectedOffer?.repayment_plan === RepaymentPlan.InterestOnlyWeekly
+  ) {
+    if (selectedLoanDuration <= 7) {
+      // For durations of 7 days or less, pay interest for the actual duration
+      estimatedInstallment =
+        selectedLoanAmount * dailyInterestRate * selectedLoanDuration;
+    } else {
+      // For longer durations, pay weekly interest (7 days worth)
+      estimatedInstallment = selectedLoanAmount * dailyInterestRate * 7;
+    }
+  }
   return (
     <Grid
       align={"center"}
@@ -353,44 +367,37 @@ export const Confirmation = ({
               )}
             </DataList.Value>
           </DataList.Item>
-          <DataList.Item align="center">
-            <DataList.Label minWidth="88px">Loan Type</DataList.Label>
-            <DataList.Value className="flex flex-1 justify-end">
-              {isStillLoading ? (
-                <Skeleton
-                  loading={isStillLoading}
-                  width={"100px"}
-                  height={"20px"}
-                ></Skeleton>
-              ) : (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="flex items-center gap-2">
-                        <Text className="text-font/70 dark:text-font-dark/70 text-[13px] font-semibold capitalize">
-                          {repaymentPlanLabel(selectedOffer.repayment_plan)}
-                        </Text>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      {selectedOffer.repayment_plan === RepaymentPlan.Bullet ? (
-                        <p>
-                          Bullet loans are repaid in full at the end of the loan
-                          term.
-                        </p>
-                      ) : (
-                        <p>
-                          Interest-only loans consist of <em>monthly</em>{" "}
-                          interest installments, plus a balloon payment at the
-                          end of the loan term.
-                        </p>
+
+          {(selectedOffer?.repayment_plan ===
+            RepaymentPlan.InterestOnlyMonthly ||
+            selectedOffer?.repayment_plan ===
+              RepaymentPlan.InterestOnlyWeekly) && (
+            <DataList.Item align="center">
+              <DataList.Label minWidth="88px">Monthly interest</DataList.Label>
+              <DataList.Value className="flex flex-1 justify-end">
+                {isStillLoading ? (
+                  <Skeleton
+                    loading={isStillLoading}
+                    width={"100px"}
+                    height={"20px"}
+                  ></Skeleton>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Text className="text-font/70 dark:text-font-dark/70 text-[13px] font-semibold">
+                      {selectedOffer.repayment_plan ===
+                        RepaymentPlan.InterestOnlyMonthly && (
+                        <>{formatCurrency(estimatedInstallment)}/month</>
                       )}
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-            </DataList.Value>
-          </DataList.Item>
+                      {selectedOffer.repayment_plan ===
+                        RepaymentPlan.InterestOnlyWeekly && (
+                        <>{formatCurrency(estimatedInstallment)}/week</>
+                      )}
+                    </Text>
+                  </div>
+                )}
+              </DataList.Value>
+            </DataList.Item>
+          )}
           <DataList.Item>
             <DataList.Label minWidth="88px">
               <Flex align={"center"} gap={"2"}>
@@ -425,7 +432,7 @@ export const Confirmation = ({
                     </Text>
                   )}
                   <Text className="text-font/50 dark:text-font-dark/50 mt-0.5 self-end text-[11px]">
-                    ≈ {formatCurrency(actualInterestUsdAmount, 1, 1)} in total
+                    ≈ {formatCurrency(actualInterestUsdAmount)} in total
                   </Text>
                 </div>
               )}
@@ -756,13 +763,13 @@ export const Confirmation = ({
                   className="inline-flex items-center"
                 >
                   <em>Settings</em>
-                  <ExternalLink className={"w-4 h-4 ml-0.5"} />
+                  <ExternalLink className={"ml-0.5 h-4 w-4"} />
                 </Link>
               </AlertDescription>
             </Alert>
           )}
           <Button
-            className={"w-full -px-4"}
+            className={"-px-4 w-full"}
             onClick={unlockWalletOrCreateOfferRequest}
             disabled={buttonDisabled}
           >
