@@ -104,12 +104,6 @@ pub async fn request_contract_extension(
         .await
         .map_err(|e| Error::Database(anyhow!(e)))?;
 
-    // We store the new installments (referencing the new contract ID). We do not touch the old ones
-    // because it's not necessary. Keeping them may help with auditing and debugging.
-    db::installments::insert(pool, new_installments)
-        .await
-        .map_err(Error::Database)?;
-
     let new_origination_fee = config
         .extension_origination_fee
         .first()
@@ -146,6 +140,12 @@ pub async fn request_contract_extension(
     )
     .await
     .map_err(Error::Database)?;
+
+    // We store the new installments (referencing the new contract ID). We do not touch the old ones
+    // because it's not necessary. Keeping them may help with auditing and debugging.
+    db::installments::insert(&mut *db_tx, new_installments)
+        .await
+        .map_err(Error::Database)?;
 
     db::contracts::mark_contract_as_extended(&mut *db_tx, original_contract_id)
         .await
