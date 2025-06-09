@@ -430,10 +430,6 @@ async fn post_contract_request(
                 )
                 .await;
 
-            db::contract_emails::mark_auto_accept_email_as_sent(&data.db, &contract.id)
-                .await
-                .context("Failed to mark loan-auto-accept email as sent")?;
-
             tracing::info!(
                 contract_id = contract_id.to_string(),
                 borrower_id,
@@ -445,9 +441,6 @@ async fn post_contract_request(
                 .send_new_loan_request(lender, lender_loan_url, contract.id.as_str(), &data.db)
                 .await;
 
-            db::contract_emails::mark_loan_request_as_sent(&data.db, &contract.id)
-                .await
-                .context("Failed to mark loan-request email as sent")?;
             tracing::info!(
                 contract_id = contract_id.to_string(),
                 borrower_id,
@@ -703,10 +696,6 @@ async fn put_installment_paid(
                 contract_id.as_str(),
             )
             .await;
-
-        db::contract_emails::mark_loan_repaid_as_sent(&data.db, &contract.id)
-            .await
-            .context("Failed to mark loan repaid email as sent")?;
 
         anyhow::Ok(())
     }

@@ -172,8 +172,6 @@ async fn notify_borrower_about_late_installment(
         .send_loan_defaulted_borrower(db, contract.id.as_str(), borrower, loan_url)
         .await;
 
-    db::contract_emails::mark_defaulted_loan_borrower_as_sent(db, &contract.id).await?;
-
     Ok(())
 }
 
@@ -201,8 +199,6 @@ async fn notify_lender_about_late_installment(
     notifications
         .send_loan_defaulted_lender(lender, loan_url, db, &contract.id)
         .await;
-
-    db::contract_emails::mark_defaulted_loan_lender_as_sent(db, &contract.id).await?;
 
     Ok(())
 }

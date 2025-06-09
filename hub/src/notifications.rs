@@ -324,6 +324,10 @@ impl Notifications {
         if let Err(e) = self.email.send_new_loan_request(&lender, url).await {
             tracing::error!("Could not send new loan request {e:#}");
         }
+
+        if let Err(e) = db::contract_emails::mark_loan_request_as_sent(pool, contract_id).await {
+            tracing::error!("Failed to mark loan-request email as sent: {e:#}");
+        }
     }
 
     pub async fn send_loan_request_approved(
@@ -354,6 +358,12 @@ impl Notifications {
             .await
         {
             tracing::error!("Could not send loan request approved {e:#}");
+        }
+
+        if let Err(e) =
+            db::contract_emails::mark_loan_request_approved_as_sent(pool, contract_id).await
+        {
+            tracing::error!("Failed to mark loan-request-approved email as sent: {e:#}");
         }
     }
 
@@ -386,6 +396,11 @@ impl Notifications {
         {
             tracing::error!("Could not send auto accept notification {e:#}");
         }
+
+        if let Err(e) = db::contract_emails::mark_auto_accept_email_as_sent(pool, contract_id).await
+        {
+            tracing::error!("Failed to mark auto-accept email as sent: {e:#}");
+        }
     }
 
     pub async fn send_loan_request_rejected(
@@ -417,6 +432,12 @@ impl Notifications {
         {
             tracing::error!("Could not send request rejected {e:#}");
         }
+
+        if let Err(e) =
+            db::contract_emails::mark_loan_request_rejected_as_sent(pool, contract_id).await
+        {
+            tracing::error!("Failed to mark loan-request-rejected email as sent: {e:#}");
+        }
     }
 
     pub async fn send_loan_collateralized(
@@ -444,6 +465,11 @@ impl Notifications {
         if let Err(e) = self.email.send_loan_collateralized(&lender, url).await {
             tracing::error!("Could not send loan collateralized {e:#}");
         }
+
+        if let Err(e) = db::contract_emails::mark_collateral_funded_as_sent(pool, contract_id).await
+        {
+            tracing::error!("Failed to mark collateral-funded email as sent: {e:#}");
+        }
     }
 
     pub async fn send_loan_paid_out(
@@ -470,6 +496,10 @@ impl Notifications {
 
         if let Err(e) = self.email.send_loan_paid_out(borrower, contract_url).await {
             tracing::error!("Could not send loan paid out {e:#}");
+        }
+
+        if let Err(e) = db::contract_emails::mark_loan_paid_out_as_sent(pool, contract_id).await {
+            tracing::error!("Failed to mark loan-paid-out email as sent: {e:#}");
         }
     }
 
@@ -553,6 +583,10 @@ impl Notifications {
         if let Err(e) = self.email.send_installment_paid(&lender, url).await {
             tracing::error!("Could not send installment paid {e:#}");
         }
+
+        if let Err(e) = db::contract_emails::mark_loan_repaid_as_sent(pool, contract_id).await {
+            tracing::error!("Failed to mark loan-repaid email as sent: {e:#}");
+        }
     }
 
     pub async fn send_installment_confirmed(
@@ -613,6 +647,12 @@ impl Notifications {
         {
             tracing::error!("Could not send loan liquidated after default {e:#}");
         }
+
+        if let Err(e) =
+            db::contract_emails::mark_defaulted_loan_liquidated_as_sent(pool, contract_id).await
+        {
+            tracing::error!("Failed to mark defaulted-loan-liquidated email as sent: {e:#}");
+        }
     }
 
     pub async fn send_loan_defaulted_lender(
@@ -639,6 +679,12 @@ impl Notifications {
 
         if let Err(e) = self.email.send_loan_defaulted_lender(&lender, url).await {
             tracing::error!("Could not send loan defaulted lender notification {e:#}");
+        }
+
+        if let Err(e) =
+            db::contract_emails::mark_defaulted_loan_lender_as_sent(pool, contract_id).await
+        {
+            tracing::error!("Failed to mark defaulted-loan-lender email as sent: {e:#}");
         }
     }
 
@@ -671,6 +717,12 @@ impl Notifications {
         {
             tracing::error!("Could not send loan defaulted borrower {e:#}");
         }
+
+        if let Err(e) =
+            db::contract_emails::mark_defaulted_loan_borrower_as_sent(pool, contract_id).await
+        {
+            tracing::error!("Failed to mark defaulted-loan-borrower email as sent: {e:#}");
+        }
     }
 
     pub async fn send_expired_loan_request_borrower(
@@ -701,6 +753,12 @@ impl Notifications {
             .await
         {
             tracing::error!("Could not send loan request expired borrower {e:#}");
+        }
+
+        if let Err(e) =
+            db::contract_emails::mark_loan_request_expired_borrower_as_sent(pool, contract_id).await
+        {
+            tracing::error!("Failed to mark loan-request-expired-borrower email as sent: {e:#}");
         }
     }
 
@@ -755,6 +813,12 @@ impl Notifications {
             .await
         {
             tracing::error!("Could not send loan request expired lender {e:#}");
+        }
+
+        if let Err(e) =
+            db::contract_emails::mark_loan_request_expired_lender_as_sent(pool, contract_id).await
+        {
+            tracing::error!("Failed to mark loan-request-expired-lender email as sent: {e:#}");
         }
     }
 

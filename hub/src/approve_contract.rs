@@ -163,10 +163,6 @@ pub async fn approve_contract(
             .send_loan_request_approved(db, contract_id.as_str(), borrower, loan_url)
             .await;
 
-        db::contract_emails::mark_loan_request_approved_as_sent(db, &contract.id)
-            .await
-            .context("Failed to mark loan-request-approved email as sent")?;
-
         anyhow::Ok(())
     }
     .await

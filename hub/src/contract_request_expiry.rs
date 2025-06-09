@@ -189,12 +189,6 @@ async fn notify_borrower_about_expired_contracts(
         .send_expired_loan_request_borrower(db, contract.contract_id.as_str(), borrower, loan_url)
         .await;
 
-    db::contract_emails::mark_loan_request_expired_borrower_as_sent(
-        db,
-        contract.contract_id.as_str(),
-    )
-    .await?;
-
     Ok(())
 }
 
@@ -242,12 +236,6 @@ async fn notify_lender_about_expired_offer(
     notifications
         .send_expired_loan_request_lender(lender, loan_url, db, contract.contract_id.as_str())
         .await;
-
-    db::contract_emails::mark_loan_request_expired_lender_as_sent(
-        db,
-        contract.contract_id.as_str(),
-    )
-    .await?;
 
     Ok(())
 }
