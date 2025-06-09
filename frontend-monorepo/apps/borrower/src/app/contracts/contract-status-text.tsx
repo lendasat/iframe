@@ -41,10 +41,10 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       icon = <LuClock className="h-5 w-5 text-blue-500 mr-2 mt-0.5" />;
       message = (
         <>
-          Your loan request is pending approval from the lender. The lender has{" "}
-          <span className="font-bold">{actionExpiresIn}</span> but not later
-          than <span className="font-bold">{actionExpiryDateFormated}</span> to
-          approve the request.
+          Your loan request is awaiting lender approval. The lender has{" "}
+          <span className="font-bold">{actionExpiresIn}</span>, but must respond
+          by <span className="font-bold">{actionExpiryDateFormated}</span> at
+          the latest.
         </>
       );
       break;
