@@ -19,6 +19,7 @@ use crate::model::LiquidationStatus;
 use crate::model::LoanAsset;
 use crate::model::LoanTransaction;
 use crate::model::ManualCollateralRecovery;
+use crate::model::Npub;
 use crate::model::TransactionType;
 use crate::routes::lender::auth::jwt_auth;
 use crate::routes::lender::CONTRACTS_TAG;
@@ -952,7 +953,7 @@ struct Contract {
     kyc_info: Option<KycInfo>,
     fiat_loan_details_borrower: Option<FiatLoanDetailsWrapper>,
     fiat_loan_details_lender: Option<FiatLoanDetailsWrapper>,
-    borrower_npub: String,
+    borrower_npub: Npub,
     client_contract_id: Option<Uuid>,
     timeline: Vec<TimelineEvent>,
     extension_max_duration_days: u64,

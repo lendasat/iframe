@@ -1,5 +1,3 @@
-mod notifications;
-
 use crate::db::map_to_db_extension_policy;
 use crate::db::map_to_model_extension_policy;
 use crate::moon;
@@ -34,8 +32,11 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 
 mod installment;
+mod notifications;
+mod npub;
 
 pub use installment::*;
+pub use npub::*;
 
 pub type Email = String;
 
@@ -285,7 +286,7 @@ pub struct CreateLoanOfferSchema {
     /// The lender can optionally provide a KYC link, so that the borrower can complete a KYC
     /// process.
     pub kyc_link: Option<Url>,
-    pub lender_npub: String,
+    pub lender_npub: Npub,
     pub extension_duration_days: Option<u64>,
     pub extension_interest_rate: Option<Decimal>,
     pub repayment_plan: RepaymentPlan,
@@ -314,7 +315,7 @@ pub struct CreateLoanApplicationSchema {
     pub borrower_pk: PublicKey,
     #[schema(value_type = String)]
     pub borrower_derivation_path: bip32::DerivationPath,
-    pub borrower_npub: String,
+    pub borrower_npub: Npub,
     pub client_contract_id: Option<Uuid>,
     pub repayment_plan: RepaymentPlan,
     // TODO: do we want to enable KYC for the lender? I.e. the borrower requires the lender to do
@@ -343,7 +344,7 @@ pub struct ContractRequestSchema {
     /// If the borrower chooses a `loan_id` that corresponds to a fiat loan (e.g.
     /// [`LoanType::Fiat`), this field must be present.
     pub fiat_loan_details: Option<FiatLoanDetailsWrapper>,
-    pub borrower_npub: String,
+    pub borrower_npub: Npub,
     /// Optional client id for this contract
     pub client_contract_id: Option<Uuid>,
 }
@@ -441,7 +442,7 @@ pub struct LoanOffer {
     pub lender_derivation_path: bip32::DerivationPath,
     pub auto_accept: bool,
     pub kyc_link: Option<Url>,
-    pub lender_npub: String,
+    pub lender_npub: Npub,
     pub extension_policy: ExtensionPolicy,
     pub repayment_plan: RepaymentPlan,
     pub created_at: OffsetDateTime,
@@ -551,7 +552,7 @@ pub struct LoanApplication {
     pub borrower_pk: PublicKey,
     #[schema(value_type = String)]
     pub borrower_derivation_path: bip32::DerivationPath,
-    pub borrower_npub: String,
+    pub borrower_npub: Npub,
     pub status: LoanApplicationStatus,
     pub client_contract_id: Option<Uuid>,
     pub repayment_plan: RepaymentPlan,
@@ -610,8 +611,8 @@ pub struct Contract {
     pub loan_type: LoanType,
     pub contract_address: Option<Address<NetworkUnchecked>>,
     pub contract_index: Option<u32>,
-    pub borrower_npub: String,
-    pub lender_npub: String,
+    pub borrower_npub: Npub,
+    pub lender_npub: Npub,
     pub status: ContractStatus,
     pub liquidation_status: LiquidationStatus,
     pub contract_version: ContractVersion,
@@ -1008,8 +1009,8 @@ impl From<db::Contract> for Contract {
                 .map(|addr| addr.parse().expect("valid address")),
             contract_index: value.contract_index.map(|i| i as u32),
             interest_rate: value.interest_rate,
-            borrower_npub: value.borrower_npub,
-            lender_npub: value.lender_npub,
+            borrower_npub: value.borrower_npub.parse().expect("valid npub in database"),
+            lender_npub: value.lender_npub.parse().expect("valid npub in database"),
             status: value.status.into(),
             liquidation_status: value.liquidation_status.into(),
             contract_version: ContractVersion::from(value.contract_version),
@@ -1147,8 +1148,8 @@ impl From<Contract> for db::Contract {
                 .contract_address
                 .map(|addr| addr.assume_checked().to_string()),
             contract_index: value.contract_index.map(|i| i as i32),
-            borrower_npub: value.borrower_npub,
-            lender_npub: value.lender_npub,
+            borrower_npub: value.borrower_npub.to_string(),
+            lender_npub: value.lender_npub.to_string(),
             status: value.status.into(),
             liquidation_status: value.liquidation_status.into(),
             contract_version: value.contract_version as i32,
@@ -1681,9 +1682,11 @@ mod tests {
             contract_index: None,
             // Relevant for the test.
             borrower_npub: "npub17mx98j4khcynw7cm6m0zfu5q2uv6dqs2lenaq8nfzn8paz5dt4hqs5utwq"
-                .to_string(),
+                .parse()
+                .unwrap(),
             lender_npub: "npub17mx98j4khcynw7cm6m0zfu5q2uv6dqs2lenaq8nfzn8paz5dt4hqs5utwq"
-                .to_string(),
+                .parse()
+                .unwrap(),
             status: ContractStatus::PrincipalGiven,
             liquidation_status: LiquidationStatus::Healthy,
             contract_version: ContractVersion::TwoOfThree,

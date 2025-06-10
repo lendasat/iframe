@@ -21,6 +21,7 @@ use hub::model::LoanAsset;
 use hub::model::LoanOffer;
 use hub::model::LoanPayout;
 use hub::model::LoanType;
+use hub::model::Npub;
 use hub::model::RepaymentPlan;
 use hub::model::ONE_YEAR;
 use hub::moon::Card;
@@ -115,7 +116,7 @@ async fn create_sample_contracts(
         (requested, approved)
     } else {
         let (pk, path) = borrower_wallet.next_hardened_pk()?;
-        let npub = "npub1gh2nzlkque4fvcg722tk0st35e9qwal04cn54t8mhpxpj80jfuvq58cvlt";
+        let npub = "npub1gh2nzlkque4fvcg722tk0st35e9qwal04cn54t8mhpxpj80jfuvq58cvlt".parse()?;
 
         let contract1 = create_contract_request(
             pool,
@@ -215,7 +216,7 @@ async fn create_contract_request(
     borrower_id: &str,
     borrower_pk: PublicKey,
     borrower_derivation_path: bip32::DerivationPath,
-    borrower_npub: &str,
+    borrower_npub: Npub,
 ) -> Result<Contract> {
     let contract_id = Uuid::new_v4();
     let initial_ltv = dec!(0.5);
@@ -249,7 +250,7 @@ async fn create_contract_request(
         ContractVersion::TwoOfThree,
         interest_rate,
         borrower_npub,
-        &offer.lender_npub,
+        offer.lender_npub,
         Some(Uuid::new_v4()),
         offer.extension_policy,
     )
@@ -281,7 +282,7 @@ async fn create_loan_offers(
         return Ok(offers);
     }
 
-    let lender_npub = "npub1x398pgcpwdnexq2zs84t9ru35l88h4txqy8586cksg45fta4ukvqqnd7tg".to_string();
+    let lender_npub = "npub1x398pgcpwdnexq2zs84t9ru35l88h4txqy8586cksg45fta4ukvqqnd7tg".parse()?;
 
     let (pk, path) = lender_wallet.next_hardened_pk()?;
 
@@ -303,7 +304,7 @@ async fn create_loan_offers(
             lender_derivation_path: path,
             auto_accept: true,
             kyc_link: Some(Url::parse("https://nokycforlife.com").expect("to be valid")),
-            lender_npub: lender_npub.clone(),
+            lender_npub,
             extension_duration_days: Some(7),
             extension_interest_rate: Some(dec!(0.12)),
             repayment_plan: RepaymentPlan::Bullet,
@@ -332,7 +333,7 @@ async fn create_loan_offers(
             lender_derivation_path: path,
             auto_accept: true,
             kyc_link: None,
-            lender_npub: lender_npub.clone(),
+            lender_npub,
             extension_duration_days: Some(7),
             extension_interest_rate: Some(dec!(0.12)),
             repayment_plan: RepaymentPlan::Bullet,
