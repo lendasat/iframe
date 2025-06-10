@@ -1,7 +1,6 @@
 use crate::config::Config;
 use crate::db;
 use crate::mempool;
-use crate::mempool::AssociateNewContract;
 use crate::mempool::TrackContractFunding;
 use crate::model::ContractStatus;
 use crate::model::FiatLoanDetailsWrapper;
@@ -69,26 +68,6 @@ pub async fn approve_contract(
         return Err(Error::InvalidApproveRequest {
             status: contract.status,
         });
-    }
-
-    // FIXME: I think we are no longer doing this when extending!
-    if contract.status == ContractStatus::RenewalRequested {
-        db::contracts::accept_extend_contract_request(db, lender_id, contract.id.as_str())
-            .await
-            .map_err(Error::Database)?;
-
-        let contract_address = contract
-            .contract_address
-            .ok_or(Error::MissingContractAddress)?
-            .assume_checked();
-
-        mempool_actor
-            .send(AssociateNewContract::new(contract_id, contract_address))
-            .await
-            .expect("actor to be alive")
-            .map_err(Error::TrackContract)?;
-
-        return Ok(());
     }
 
     let offer = db::loan_offers::loan_by_id(db, &contract.loan_id)

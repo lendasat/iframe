@@ -79,7 +79,9 @@ async fn open_and_repay_loan() {
         lender_derivation_path,
         auto_accept: false,
         kyc_link: None,
-        lender_npub: "npub1ur9aupjyaettv9rlan886m3khq7ysw3jl902afrkjg2r80uxdcnsmgu6rv".to_string(),
+        lender_npub: "npub1ur9aupjyaettv9rlan886m3khq7ysw3jl902afrkjg2r80uxdcnsmgu6rv"
+            .parse()
+            .unwrap(),
         extension_duration_days: Some(7),
         extension_interest_rate: Some(dec!(0.12)),
         repayment_plan: RepaymentPlan::Bullet,
@@ -122,7 +124,8 @@ async fn open_and_repay_loan() {
         moon_card_id: None,
         fiat_loan_details: None,
         borrower_npub: "npub1x4n3a7ld36fluzzanfg2jm4p7tzpxqp0s47xc8rcpjk4adlkz0qstg4xrp"
-            .to_string(),
+            .parse()
+            .unwrap(),
         client_contract_id: None,
     };
 

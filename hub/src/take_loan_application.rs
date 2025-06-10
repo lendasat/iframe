@@ -140,8 +140,8 @@ pub async fn take_application(
         loan_application.interest_rate,
         contract_address.as_unchecked().clone(),
         contract_index,
-        &loan_application.borrower_npub,
-        &take_application_body.lender_npub,
+        loan_application.borrower_npub,
+        take_application_body.lender_npub,
         loan_application.client_contract_id,
     )
     .await

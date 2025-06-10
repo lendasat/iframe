@@ -75,7 +75,9 @@ async fn api_account_borrower() {
         lender_derivation_path,
         auto_accept: false,
         kyc_link: None,
-        lender_npub: "npub1eeze2k0yz57p5s8q8fg8p7rs97mj8ya3qkk3m7njgadl7schvktsp7hsxg".to_string(),
+        lender_npub: "npub1eeze2k0yz57p5s8q8fg8p7rs97mj8ya3qkk3m7njgadl7schvktsp7hsxg"
+            .parse()
+            .unwrap(),
         extension_duration_days: Some(7),
         extension_interest_rate: Some(dec!(0.12)),
         repayment_plan: RepaymentPlan::Bullet,
@@ -137,7 +139,8 @@ async fn api_account_borrower() {
         moon_card_id: None,
         fiat_loan_details: None,
         borrower_npub: "npub193gpfqmzdpwjrgr6xnct7j2ks4qc5ywyvfzvqtm6twdpxx7m6xfsmvccj4"
-            .to_string(),
+            .parse()
+            .unwrap(),
         client_contract_id: None,
     };
 

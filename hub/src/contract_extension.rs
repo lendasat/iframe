@@ -1,6 +1,8 @@
 use crate::config::Config;
 use crate::contract_requests::calculate_origination_fee;
 use crate::db;
+use crate::mempool;
+use crate::mempool::AssociateNewContract;
 use crate::model::apply_extension_to_installments;
 use crate::model::Contract;
 use crate::model::ExtensionRequestError;
@@ -34,11 +36,16 @@ pub enum Error {
     /// Failed to generate extension installments.
     ComputeExtensionInstallments(anyhow::Error),
     ZeroLoanExtensionDuration,
+    /// Can't continue without collateral address.
+    MissingCollateralAddress,
+    /// Failed to track accepted contract using Mempool API.
+    TrackContract(anyhow::Error),
 }
 
 pub async fn request_contract_extension(
     pool: &Pool<Postgres>,
     config: &Config,
+    mempool_actor: &xtra::Address<mempool::Actor>,
     original_contract_id: &str,
     borrower_id: &str,
     extended_duration_days: i32,
@@ -166,6 +173,26 @@ pub async fn request_contract_extension(
     )
     .await
     .map_err(|e| Error::Database(anyhow!(e)))?;
+
+    db::contract_status_log::duplicate(&mut *db_tx, original_contract_id, new_contract.id.as_str())
+        .await
+        .map_err(|e| Error::Database(anyhow!(e)))?;
+
+    let contract_address = new_contract
+        .contract_address
+        .as_ref()
+        .ok_or(Error::MissingCollateralAddress)?
+        .clone()
+        .assume_checked();
+
+    mempool_actor
+        .send(AssociateNewContract::new(
+            new_contract_id.to_string(),
+            contract_address,
+        ))
+        .await
+        .expect("actor to be alive")
+        .map_err(Error::TrackContract)?;
 
     db_tx
         .commit()

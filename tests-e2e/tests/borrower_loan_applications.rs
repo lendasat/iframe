@@ -51,8 +51,9 @@ async fn borrower_loan_applications() {
         .parse()
         .unwrap();
     let borrower_derivation_path = "586/1/0".parse().unwrap();
-    let borrower_npub =
-        "npub17mx98j4khcynw7cm6m0zfu5q2uv6dqs2lenaq8nfzn8paz5dt4hqs5utwq".to_string();
+    let borrower_npub = "npub17mx98j4khcynw7cm6m0zfu5q2uv6dqs2lenaq8nfzn8paz5dt4hqs5utwq"
+        .parse()
+        .unwrap();
 
     let loan_application = CreateLoanApplicationSchema {
         ltv: dec!(0.5),

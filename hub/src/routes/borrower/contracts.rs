@@ -25,6 +25,7 @@ use crate::model::LoanAsset;
 use crate::model::LoanPayout;
 use crate::model::LoanTransaction;
 use crate::model::LoanType;
+use crate::model::Npub;
 use crate::model::OriginationFee;
 use crate::model::PsbtQueryParams;
 use crate::model::TransactionType;
@@ -64,6 +65,7 @@ use sqlx::Pool;
 use sqlx::Postgres;
 use std::num::NonZeroU64;
 use std::sync::Arc;
+use time::ext::NumericalDuration;
 use time::OffsetDateTime;
 use tracing::instrument;
 use url::Url;
@@ -340,8 +342,8 @@ async fn post_contract_request(
         body.loan_type,
         ContractVersion::TwoOfThree,
         offer.interest_rate,
-        &body.borrower_npub,
-        &offer.lender_npub,
+        body.borrower_npub,
+        offer.lender_npub,
         body.client_contract_id,
         // The contract inherits the extension policy of the loan offer.
         offer.extension_policy,
@@ -952,6 +954,7 @@ async fn post_extend_contract_request(
     let new_contract = crate::contract_extension::request_contract_extension(
         &data.db,
         &data.config,
+        &data.mempool,
         &contract_id,
         &user.id,
         body.new_duration,
@@ -1072,7 +1075,7 @@ pub struct Contract {
     kyc_info: Option<KycInfo>,
     fiat_loan_details_borrower: Option<FiatLoanDetailsWrapperResponse>,
     fiat_loan_details_lender: Option<FiatLoanDetailsWrapperResponse>,
-    lender_npub: String,
+    lender_npub: Npub,
     timeline: Vec<TimelineEvent>,
     client_contract_id: Option<Uuid>,
     extension_max_duration_days: u64,
@@ -1323,14 +1326,16 @@ async fn map_timeline(
         .await
         .map_err(|e| Error::database(anyhow!(e)))?;
 
-    // First, we add the contract request event.
-    let mut timeline = vec![TimelineEvent {
+    // First, we build the contract request event.
+    let mut requested_event = TimelineEvent {
         date: contract.created_at,
         event: TimelineEventKind::ContractStatusChange {
             status: ContractStatus::Requested,
         },
         txid: None,
-    }];
+    };
+
+    let mut timeline = vec![];
 
     // Then we go through funding transactions. There might be multiple, that's why we need to
     // handle them separately.
@@ -1425,6 +1430,26 @@ async fn map_timeline(
 
     timeline.extend(rest_of_timeline);
 
+    let approved_event = timeline.iter().find(|e| {
+        matches!(
+            e.event,
+            TimelineEventKind::ContractStatusChange {
+                status: ContractStatus::Approved
+            }
+        )
+    });
+
+    // HACK: After extending a contract, the `Requested` event will not be the first one, given that
+    // the extended contract is created later than any event in the original contract. To deal with
+    // this, we can just set the time to an hour before the original contract was approved.
+    if let Some(approved_event) = approved_event {
+        if approved_event.date < requested_event.date {
+            requested_event.date = approved_event.date - 1.hours();
+        }
+    }
+
+    timeline.push(requested_event);
+
     timeline.sort_by(|a, b| a.date.cmp(&b.date));
 
     Ok(timeline)
@@ -1491,7 +1516,7 @@ enum Error {
     LoanNotRepaid,
     /// Can't claim collateral without contract index.
     MissingContractIndex,
-    /// Can't claim collateral without collateral address.
+    /// Can't continue without collateral address.
     MissingCollateralAddress,
     /// Failed to generate contract address.
     ContractAddress(#[allow(dead_code)] String),
@@ -1894,11 +1919,17 @@ impl From<crate::contract_extension::Error> for Error {
             crate::contract_extension::Error::TooManyDays { max_duration_days } => {
                 Error::ExtensionTooManyDays { max_duration_days }
             }
-            crate::contract_extension::Error::ComputeExtensionInstallments(error) => {
-                Error::ComputeExtensionInstallments(format!("{error:#}"))
+            crate::contract_extension::Error::ComputeExtensionInstallments(e) => {
+                Error::ComputeExtensionInstallments(format!("{e:#}"))
             }
             crate::contract_extension::Error::ZeroLoanExtensionDuration => {
                 Error::ZeroLoanExtensionDuration
+            }
+            crate::contract_extension::Error::MissingCollateralAddress => {
+                Error::MissingCollateralAddress
+            }
+            crate::contract_extension::Error::TrackContract(e) => {
+                Error::TrackContract(format!("{e:#}"))
             }
         }
     }
