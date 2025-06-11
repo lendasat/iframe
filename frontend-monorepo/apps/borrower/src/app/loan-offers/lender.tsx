@@ -2,12 +2,12 @@ import { Avatar, Box, Flex, Heading, Text } from "@radix-ui/themes";
 import { Link } from "react-router-dom";
 
 interface LenderProps {
-  id: string;
-  name: string;
-  successful_contracts: number;
-  failed_contracts: number;
-  rating: number;
-  showAvatar: boolean;
+  id?: string;
+  name?: string;
+  successful_contracts?: number;
+  failed_contracts?: number;
+  rating?: number;
+  showAvatar?: boolean;
 }
 
 export function Lender({
@@ -27,7 +27,12 @@ export function Lender({
       No rating yet
     </Text>
   );
-  if (successful_contracts + failed_contracts > 0) {
+  if (
+    successful_contracts &&
+    failed_contracts &&
+    rating &&
+    successful_contracts + failed_contracts > 0
+  ) {
     ratingText = (
       <Text
         className={"text-font dark:text-font-dark self-end"}
@@ -47,7 +52,7 @@ export function Lender({
             <Avatar
               radius="full"
               color="purple"
-              fallback={name.substring(0, 1)}
+              fallback={name?.substring(0, 1) || ""}
             />
           )}
 
