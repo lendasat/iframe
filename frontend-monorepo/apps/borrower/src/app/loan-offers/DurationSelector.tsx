@@ -1,5 +1,5 @@
 import { ONE_YEAR } from "@frontend/ui-shared";
-import { RadioCards, Text } from "@radix-ui/themes";
+import { RadioGroup, RadioGroupItem, Label } from "@frontend/shadcn";
 import { IconType } from "react-icons";
 import { FaRegCalendar, FaRegClock } from "react-icons/fa6";
 
@@ -60,35 +60,35 @@ const SingleDurationSelector: React.FC<DurationSelectorProps> = ({
   onDurationChange,
   selectedDuration,
 }) => {
-  const handleDurationClick = (value: number) => {
-    onDurationChange(value);
+  const handleDurationClick = (value: string) => {
+    onDurationChange(parseInt(value));
   };
 
   return (
     <div className="mx-auto w-full max-w-3xl">
-      <RadioCards.Root
+      <RadioGroup
         value={selectedDuration?.toString()}
-        columns={{ initial: "5" }}
-        onValueChange={(e) => {
-          handleDurationClick(parseInt(e));
-        }}
-        color={"purple"}
+        onValueChange={handleDurationClick}
+        className="grid grid-cols-5 gap-2"
       >
         {durations.map(({ value, days, sublabel }) => (
-          <RadioCards.Item key={value.toString()} value={days.toString()}>
-            <div className="flex flex-col items-center space-y-2 text-center">
-              <div>
-                <Text
-                  size={"2"}
-                  className="text-font dark:text-font-dark shrink-0"
-                >
-                  {sublabel}
-                </Text>
-              </div>
-            </div>
-          </RadioCards.Item>
+          <div key={value.toString()} className="relative">
+            <RadioGroupItem
+              value={days.toString()}
+              id={days.toString()}
+              className="peer sr-only"
+            />
+            <Label
+              htmlFor={days.toString()}
+              className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer text-center"
+            >
+              <span className="text-sm text-foreground shrink-0">
+                {sublabel}
+              </span>
+            </Label>
+          </div>
         ))}
-      </RadioCards.Root>
+      </RadioGroup>
     </div>
   );
 };

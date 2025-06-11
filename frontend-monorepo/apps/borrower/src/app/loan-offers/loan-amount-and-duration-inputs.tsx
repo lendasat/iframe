@@ -1,13 +1,20 @@
 import { LoanProductOption, useAuth } from "@frontend/http-client-borrower";
-import { Box, Flex, RadioCards, Text, TextField } from "@radix-ui/themes";
 import type { ChangeEvent, ReactNode } from "react";
 import { ReactComponent as Defi } from "../../assets/defi.svg";
 import { ReactComponent as Fiat } from "../../assets/fiat.svg";
 import { ReactComponent as Bringin } from "../../assets/bringin.svg";
 import { ReactComponent as MoonCard } from "../../assets/moon_card_satoshi_nakamoto.svg";
 import SingleDurationSelector from "./DurationSelector";
-import { Alert, AlertDescription, AlertTitle } from "@frontend/shadcn";
-import { InfoCircledIcon } from "@radix-ui/react-icons";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+  RadioGroup,
+  RadioGroupItem,
+} from "@frontend/shadcn";
+import { Label } from "@frontend/shadcn";
+import { Input } from "@frontend/shadcn";
+import { Info } from "lucide-react";
 
 interface LoanAmountAndDurationInputsProps {
   setLoanAmount: (amount: string) => void;
@@ -32,27 +39,23 @@ function LoanProductRadioCardItem({
   img,
 }: LoanProductRadioCardItemProps) {
   return (
-    <RadioCards.Item value={value}>
-      <Flex direction="column">
-        <Text
-          size={"2"}
-          weight={"bold"}
-          className="text-font dark:text-font-dark shrink-0"
-        >
-          {header}
-        </Text>
-        <Text
-          size={"1"}
-          weight={"light"}
-          className="text-font dark:text-font-dark shrink-0"
-        >
-          {subHeader}
-        </Text>
-        <Box className="rounded-2xl" mt={"2"} width={"180px"}>
-          {img}
-        </Box>
-      </Flex>
-    </RadioCards.Item>
+    <div className="relative">
+      <RadioGroupItem value={value} id={value} className="peer sr-only" />
+      <Label
+        htmlFor={value}
+        className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+      >
+        <div className="flex flex-col items-center space-y-2">
+          <span className="text-sm font-bold text-foreground shrink-0">
+            {header}
+          </span>
+          <span className="text-xs font-light text-muted-foreground shrink-0">
+            {subHeader}
+          </span>
+          <div className="rounded-2xl mt-2 w-[180px]">{img}</div>
+        </div>
+      </Label>
+    </div>
   );
 }
 
@@ -77,7 +80,7 @@ export function LoanAmountAndDurationInputs({
     case LoanProductOption.Fiat:
       disclaimer = (
         <Alert>
-          <InfoCircledIcon className="h-4 w-4" />
+          <Info className="h-4 w-4" />
           <AlertTitle>Heads up!</AlertTitle>
           <AlertDescription>
             Most fiat loans will require KYC. Make sure to have your details
@@ -89,7 +92,7 @@ export function LoanAmountAndDurationInputs({
     case LoanProductOption.StableCoins:
       disclaimer = (
         <Alert>
-          <InfoCircledIcon className="h-4 w-4" />
+          <Info className="h-4 w-4" />
           <AlertTitle>Heads up!</AlertTitle>
           <AlertDescription>
             When borrowing against stable coins, you will receive your loan
@@ -102,7 +105,7 @@ export function LoanAmountAndDurationInputs({
     case LoanProductOption.PayWithMoonDebitCard:
       disclaimer = (
         <Alert>
-          <InfoCircledIcon className="h-4 w-4" />
+          <Info className="h-4 w-4" />
           <AlertTitle>Heads up!</AlertTitle>
           <AlertDescription>
             A Moon Visa® Card has a spending limit of $4,000/month and a fee of
@@ -117,44 +120,38 @@ export function LoanAmountAndDurationInputs({
   return (
     <div className="space-y-4">
       {/* Loan Amount */}
-      <Flex direction="column" gap="1" className="w-full">
-        <Text
-          className="text-font dark:text-font-dark"
-          as="label"
-          size={"2"}
-          weight={"medium"}
+      <div className="flex flex-col gap-1 w-full">
+        <Label
+          className="text-sm font-medium text-foreground"
+          htmlFor="loan-amount"
         >
           How much do you wish to borrow?
-        </Text>
-        <TextField.Root
-          size={"3"}
-          variant="surface"
-          type="number"
-          color="gray"
-          min={1}
-          onChange={onLoanAmountChange}
-          className="text-font dark:text-font-dark w-full rounded-lg text-sm"
-          value={loanAmount}
-        >
-          <TextField.Slot>
-            <Text size={"3"} weight={"medium"}>
-              $
-            </Text>
-          </TextField.Slot>
-        </TextField.Root>
-      </Flex>
+        </Label>
+        <div className="relative">
+          <Input
+            id="loan-amount"
+            type="number"
+            min={1}
+            onChange={onLoanAmountChange}
+            className="pl-8 w-full"
+            value={loanAmount}
+            placeholder="Enter amount"
+          />
+          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sm font-medium text-muted-foreground">
+            $
+          </span>
+        </div>
+      </div>
 
       {/* Loan Duration */}
-      <Flex direction="column" gap="1" className="w-full">
-        <Text
-          className="text-font dark:text-font-dark"
-          as="label"
-          size={"2"}
-          weight={"medium"}
+      <div className="flex flex-col gap-1 w-full">
+        <Label
+          className="text-sm font-medium text-foreground"
+          htmlFor="loan-duration"
         >
           For how long do you want to borrow?
-        </Text>
-        <Box className="w-full">
+        </Label>
+        <div className="w-full">
           <SingleDurationSelector
             selectedDuration={
               selectedLoanDuration
@@ -163,28 +160,28 @@ export function LoanAmountAndDurationInputs({
             }
             onDurationChange={onLoanDurationChange}
           />
-        </Box>
-      </Flex>
+        </div>
+      </div>
 
       {/* Loan product */}
-      <Flex direction="column" gap="1" className="w-full">
-        <Text
-          className="text-font dark:text-font-dark"
-          as="label"
-          size={"2"}
-          weight={"medium"}
+      <div className="flex flex-col gap-1 w-full">
+        <Label
+          className="text-sm font-medium text-foreground"
+          htmlFor="loan-product"
         >
           How would you like to receive the loan?
-        </Text>
-        <Box className="mx-auto">
-          <RadioCards.Root
+        </Label>
+        <div className="mx-auto">
+          <RadioGroup
             value={selectedOption}
-            columns={{ initial: "1", sm: isBringinEnabled ? "4" : "3" }}
-            size={"3"}
-            onValueChange={(e) => {
-              onLoanProductSelect(e as LoanProductOption);
+            onValueChange={(value: string) => {
+              onLoanProductSelect(value as LoanProductOption);
             }}
-            color={"purple"}
+            className={`grid gap-4 ${
+              isBringinEnabled
+                ? "grid-cols-1 sm:grid-cols-4"
+                : "grid-cols-1 sm:grid-cols-3"
+            }`}
           >
             <LoanProductRadioCardItem
               key={"stable"}
@@ -218,10 +215,10 @@ export function LoanAmountAndDurationInputs({
               subHeader={"EUR/USD/CHF"}
               img={<Fiat width="100%" height="100%" />}
             />
-          </RadioCards.Root>
-        </Box>
+          </RadioGroup>
+        </div>
         <div className={"mt-4 -mb-2"}>{disclaimer}</div>
-      </Flex>
+      </div>
     </div>
   );
 }
