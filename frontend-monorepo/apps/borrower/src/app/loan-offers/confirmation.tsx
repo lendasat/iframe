@@ -376,7 +376,13 @@ export const Confirmation = ({
         <CardContent className="space-y-4">
           <SummaryRow
             label="Lender"
-            value={<Lender {...selectedOffer?.lender} showAvatar={false} />}
+            value={
+              <Lender
+                {...selectedOffer?.lender}
+                showAvatar={false}
+                ratingTextAlign={"right"}
+              />
+            }
             loading={isStillLoading}
           />
 

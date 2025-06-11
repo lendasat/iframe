@@ -1,4 +1,4 @@
-import { Avatar, Box, Flex, Heading, Text } from "@radix-ui/themes";
+import { Avatar, AvatarFallback } from "@frontend/shadcn";
 import { Link } from "react-router-dom";
 
 interface LenderProps {
@@ -8,6 +8,7 @@ interface LenderProps {
   failed_contracts?: number;
   rating?: number;
   showAvatar?: boolean;
+  ratingTextAlign?: "left" | "right";
 }
 
 export function Lender({
@@ -17,15 +18,17 @@ export function Lender({
   successful_contracts,
   failed_contracts,
   showAvatar,
+  ratingTextAlign = "left",
 }: LenderProps) {
+  const alignmentClass =
+    ratingTextAlign === "right" ? "self-end" : "self-start";
+
   let ratingText = (
-    <Text
-      className={"text-font dark:text-font-dark self-end"}
-      size={"1"}
-      weight={"light"}
+    <span
+      className={`text-muted-foreground text-sm font-light ${alignmentClass}`}
     >
       No rating yet
-    </Text>
+    </span>
   );
   if (
     successful_contracts &&
@@ -34,41 +37,30 @@ export function Lender({
     successful_contracts + failed_contracts > 0
   ) {
     ratingText = (
-      <Text
-        className={"text-font dark:text-font-dark self-end"}
-        size={"1"}
-        weight={"light"}
+      <span
+        className={`text-muted-foreground text-sm font-light ${alignmentClass}`}
       >
         {(rating * 100).toFixed(1)}%
-      </Text>
+      </span>
     );
   }
 
   return (
-    <Box asChild>
-      <Link to={`/lender/${id}`}>
-        <Flex direction={"row"} align={"center"} gap={"3"}>
-          {showAvatar && (
-            <Avatar
-              radius="full"
-              color="purple"
-              fallback={name?.substring(0, 1) || ""}
-            />
-          )}
+    <Link to={`/lender/${id}`} className="block">
+      <div className="flex items-center gap-3">
+        {showAvatar && (
+          <Avatar>
+            <AvatarFallback>{name?.substring(0, 1) || ""}</AvatarFallback>
+          </Avatar>
+        )}
 
-          <Flex direction={"column"}>
-            <Heading
-              as="h6"
-              weight={"bold"}
-              size={"2"}
-              className="capitalize text-purple-600 xl:block dark:text-purple-300"
-            >
-              {name}
-            </Heading>
-            {ratingText}
-          </Flex>
-        </Flex>
-      </Link>
-    </Box>
+        <div className="flex flex-col">
+          <span className="text-foreground text-sm font-bold capitalize xl:block">
+            {name}
+          </span>
+          {ratingText}
+        </div>
+      </div>
+    </Link>
   );
 }
