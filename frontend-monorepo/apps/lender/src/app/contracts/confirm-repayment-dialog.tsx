@@ -46,6 +46,7 @@ const RepaymentConfirmationDialog = ({
 }: ApproveOrRejectExtensionDialogProps) => {
   const [isConfirming, setIsConfirming] = useState(false);
   const [txidCopied, setTxidCopied] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const { markInstallmentAsConfirmed } = useLenderHttpClient();
   const [rejectError, setRejectError] = useState<string | undefined>();
 
@@ -64,9 +65,11 @@ const RepaymentConfirmationDialog = ({
 
   const handleConfirm = async () => {
     setIsConfirming(true);
+    setRejectError(undefined);
     try {
       await markInstallmentAsConfirmed(contract.id, paidInstallment.id);
       refreshContract();
+      setIsOpen(false);
     } catch (error) {
       console.error(`Failed confirming installment payment: $error}`);
       setRejectError(
@@ -92,7 +95,7 @@ const RepaymentConfirmationDialog = ({
   }
 
   return (
-    <Dialog>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       {/* Dialog Trigger */}
       <DialogTrigger asChild>{children}</DialogTrigger>
 
