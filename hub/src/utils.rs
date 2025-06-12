@@ -178,9 +178,9 @@ mod tests {
         let loan_amount = dec!(0);
         let collateral_sats = dec!(100_000_000);
 
-        let error = calculate_ltv(price, loan_amount, collateral_sats).is_err();
+        let is_zero = calculate_ltv(price, loan_amount, collateral_sats).unwrap();
 
-        assert!(error);
+        assert!(is_zero.is_zero());
     }
 
     #[test]

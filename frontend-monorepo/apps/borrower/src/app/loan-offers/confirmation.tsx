@@ -41,7 +41,6 @@ import {
   AlertCircle,
   ExternalLink,
   Loader2,
-  MessageCircleWarning,
   TriangleAlert,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
@@ -155,7 +154,6 @@ export const Confirmation = ({
   const originationFeeBtc = collateralAmountBtc * discountedOriginationFee;
   const originationFeeUsd = selectedLoanAmount * discountedOriginationFee;
 
-  const liquidationPrice = (selectedLoanAmount / collateralAmountBtc) * 0.95;
   const loanAsset = selectedOffer?.loan_asset;
 
   const onBitcoinAddressChange = (address: string) => {

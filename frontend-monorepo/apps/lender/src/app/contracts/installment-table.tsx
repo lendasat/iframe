@@ -13,21 +13,22 @@ import { Installment } from "@frontend/http-client-borrower";
 import { InstallmentStatusBadge } from "./installment-status-badge";
 import { InstallmentSheetContent } from "./installment-sheet-content";
 import { formatCurrency } from "@frontend/ui-shared";
+import { compareAsc, format } from "date-fns";
 
 interface Props {
   installments: Installment[];
   isFiatLoan: boolean;
 }
 
-export function InstallmentTable({ installments, isFiatLoan }: Props) {
+export function InstallmentTable({
+  installments: unosrtedInstallments,
+  isFiatLoan,
+}: Props) {
   const [selected, setSelected] = React.useState<Installment | null>(null);
 
-  const options: Intl.DateTimeFormatOptions = {
-    weekday: "short",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  };
+  const installments = unosrtedInstallments.sort((a, b) =>
+    compareAsc(a.due_date, b.due_date),
+  );
 
   return (
     <>
@@ -49,9 +50,7 @@ export function InstallmentTable({ installments, isFiatLoan }: Props) {
             >
               <TableCell>{formatCurrency(inst.principal)}</TableCell>
               <TableCell>{formatCurrency(inst.interest)}</TableCell>
-              <TableCell>
-                {new Date(inst.due_date).toLocaleDateString("en-US", options)}
-              </TableCell>
+              <TableCell>{format(inst.due_date, "MMM, dd yyyy")}</TableCell>
               <TableCell>
                 <InstallmentStatusBadge
                   status={inst.status}

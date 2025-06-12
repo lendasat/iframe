@@ -22,6 +22,7 @@ import { AlertCircle, Check } from "lucide-react";
 import { LuCheck, LuClipboard, LuExternalLink } from "react-icons/lu";
 import { formatCurrency, getTxUrl } from "@frontend/ui-shared";
 import { toast } from "sonner";
+import { format } from "date-fns";
 
 const shortenTxid = (txid?: string) => {
   if (!txid) {
@@ -46,6 +47,7 @@ const RepaymentConfirmationDialog = ({
 }: ApproveOrRejectExtensionDialogProps) => {
   const [isConfirming, setIsConfirming] = useState(false);
   const [txidCopied, setTxidCopied] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const { markInstallmentAsConfirmed } = useLenderHttpClient();
   const [rejectError, setRejectError] = useState<string | undefined>();
 
@@ -64,9 +66,11 @@ const RepaymentConfirmationDialog = ({
 
   const handleConfirm = async () => {
     setIsConfirming(true);
+    setRejectError(undefined);
     try {
       await markInstallmentAsConfirmed(contract.id, paidInstallment.id);
       refreshContract();
+      setIsOpen(false);
     } catch (error) {
       console.error(`Failed confirming installment payment: $error}`);
       setRejectError(
@@ -92,9 +96,9 @@ const RepaymentConfirmationDialog = ({
   }
 
   return (
-    <Dialog>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       {/* Dialog Trigger */}
-      <DialogTrigger>{children}</DialogTrigger>
+      <DialogTrigger asChild>{children}</DialogTrigger>
 
       {/* Dialog Content */}
       <DialogContent className="sm:max-w-md">
@@ -115,7 +119,7 @@ const RepaymentConfirmationDialog = ({
 
               <div className="text-muted-foreground">Transaction ID:</div>
               <div className="flex items-center">
-                <p className="text-xs text-gray-600 mt-1 font-mono mr-2">
+                <p className="mr-2 mt-1 font-mono text-xs text-gray-600">
                   {shortendTxId}
                 </p>
                 <Button
@@ -146,6 +150,13 @@ const RepaymentConfirmationDialog = ({
                   </a>
                 </Button>
               </div>
+
+              <div className="text-muted-foreground">Due date:</div>
+              <div className="flex items-center">
+                <p className="mr-2 mt-1 font-mono text-xs text-gray-600">
+                  {format(paidInstallment.due_date, "MMM, dd yyyy")}
+                </p>
+              </div>
             </div>
 
             <Alert variant="warning">
@@ -159,7 +170,7 @@ const RepaymentConfirmationDialog = ({
           </div>
         </div>
 
-        <DialogFooter className="flex sm:justify-between gap-2">
+        <DialogFooter className="flex gap-2 sm:justify-between">
           <DialogClose>
             <Button variant="outline" disabled={isConfirming}>
               Back
@@ -178,7 +189,7 @@ const RepaymentConfirmationDialog = ({
           </Button>
         </DialogFooter>
         {rejectError && (
-          <div className="mt-4 p-2 bg-red-50 text-red-600 rounded-md">
+          <div className="mt-4 rounded-md bg-red-50 p-2 text-red-600">
             <p className="text-sm">{rejectError}</p>
           </div>
         )}
