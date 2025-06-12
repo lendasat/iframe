@@ -31,6 +31,7 @@ import type {
   BringinConnectResponse,
   FiatLoanDetails,
   PaginatedNotificationResponse,
+  BorrowerNotificationSettings,
 } from "./models";
 import { isAllowedPageWithoutLogin, parseRFC3339Date } from "./utils";
 import { IsRegisteredResponse } from "@frontend/base-http-client";
@@ -203,6 +204,12 @@ export interface HttpClient {
   ) => Promise<PaginatedNotificationResponse>;
   markNotificationAsRead: (id: string) => Promise<void>;
   markAllNotificationAsRead: () => Promise<void>;
+
+  // Notification settings
+  getNotificationSettings: () => Promise<BorrowerNotificationSettings>;
+  updateNotificationSettings: (
+    settings: BorrowerNotificationSettings,
+  ) => Promise<BorrowerNotificationSettings>;
 }
 
 // Create a factory function to create our client
@@ -1043,6 +1050,32 @@ export const createHttpClient = (
     }
   };
 
+  // Notification settings
+  const getNotificationSettings =
+    async (): Promise<BorrowerNotificationSettings> => {
+      try {
+        const response: AxiosResponse<BorrowerNotificationSettings> =
+          await axiosClient.get("/api/notification-settings");
+        return response.data;
+      } catch (error) {
+        handleError(error, "fetching notification settings");
+        throw error;
+      }
+    };
+
+  const updateNotificationSettings = async (
+    settings: BorrowerNotificationSettings,
+  ): Promise<BorrowerNotificationSettings> => {
+    try {
+      const response: AxiosResponse<BorrowerNotificationSettings> =
+        await axiosClient.put("/api/notification-settings", settings);
+      return response.data;
+    } catch (error) {
+      handleError(error, "updating notification settings");
+      throw error;
+    }
+  };
+
   // Return all functions bundled as our client
   return {
     register,
@@ -1095,6 +1128,8 @@ export const createHttpClient = (
     fetchNotifications,
     markNotificationAsRead,
     markAllNotificationAsRead,
+    getNotificationSettings,
+    updateNotificationSettings,
   };
 };
 

@@ -1,5 +1,7 @@
 use crate::config::Config;
 use crate::db;
+use crate::db::notification_settings::BorrowerNotificationSettings;
+use crate::db::notification_settings::LenderNotificationSettings;
 use crate::model;
 use crate::model::Borrower;
 use crate::model::Contract;
@@ -38,8 +40,10 @@ impl Notifications {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn send_login_information_borrower(
         &self,
+        db: &PgPool,
         borrower: Borrower,
         profile_url: Url,
         ip_address: &str,
@@ -47,12 +51,60 @@ impl Notifications {
         location: Option<String>,
         device: &str,
     ) {
-        if let Some(email) = borrower.email.as_ref() {
+        let settings = load_borrower_notification_settings(db, borrower.id.as_str()).await;
+
+        if settings.on_login_email {
+            if let Some(email) = borrower.email.as_ref() {
+                if let Err(e) = self
+                    .email
+                    .send_login_information(
+                        borrower.name.as_str(),
+                        email,
+                        profile_url.clone(),
+                        ip_address,
+                        login_time,
+                        location,
+                        device,
+                    )
+                    .await
+                {
+                    tracing::error!("Could not send information about new login {e:#}");
+                }
+            }
+        }
+        if settings.on_login_telegram {
+            self.send_tg_notification_borrower(
+                &borrower,
+                profile_url,
+                crate::telegram_bot::BorrowerNotificationKind::LoginNotification {
+                    name: borrower.name.clone(),
+                    ip_address: ip_address.to_string(),
+                    login_time,
+                },
+            )
+            .await;
+        }
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub async fn send_login_information_lender(
+        &self,
+        db: &PgPool,
+        lender: &Lender,
+        profile_url: Url,
+        ip_address: &str,
+        login_time: OffsetDateTime,
+        location: Option<String>,
+        device: &str,
+    ) {
+        let settings = load_lender_notification_settings(db, lender.id.as_str()).await;
+
+        if settings.on_login_email {
             if let Err(e) = self
                 .email
                 .send_login_information(
-                    borrower.name.as_str(),
-                    email,
+                    lender.name.as_str(),
+                    lender.email.as_str(),
                     profile_url.clone(),
                     ip_address,
                     login_time,
@@ -64,53 +116,18 @@ impl Notifications {
                 tracing::error!("Could not send information about new login {e:#}");
             }
         }
-        self.send_tg_notification_borrower(
-            &borrower,
-            profile_url,
-            crate::telegram_bot::BorrowerNotificationKind::LoginNotification {
-                name: borrower.name.clone(),
-                ip_address: ip_address.to_string(),
-                login_time,
-            },
-        )
-        .await;
-    }
-
-    pub async fn send_login_information_lender(
-        &self,
-        lender: &Lender,
-        profile_url: Url,
-        ip_address: &str,
-        login_time: OffsetDateTime,
-        location: Option<String>,
-        device: &str,
-    ) {
-        if let Err(e) = self
-            .email
-            .send_login_information(
-                lender.name.as_str(),
-                lender.email.as_str(),
-                profile_url.clone(),
-                ip_address,
-                login_time,
-                location,
-                device,
+        if settings.on_login_telegram {
+            self.send_tg_notification_lender(
+                lender,
+                profile_url,
+                crate::telegram_bot::LenderNotificationKind::LoginNotification {
+                    name: lender.name.clone(),
+                    ip_address: ip_address.to_string(),
+                    login_time,
+                },
             )
-            .await
-        {
-            tracing::error!("Could not send information about new login {e:#}");
+            .await;
         }
-
-        self.send_tg_notification_lender(
-            lender,
-            profile_url,
-            crate::telegram_bot::LenderNotificationKind::LoginNotification {
-                name: lender.name.clone(),
-                ip_address: ip_address.to_string(),
-                login_time,
-            },
-        )
-        .await;
     }
 
     pub async fn send_verification_code(&self, name: &str, email: &str, url: Url, code: &str) {
@@ -306,6 +323,8 @@ impl Notifications {
         contract_id: &str,
         pool: &PgPool,
     ) {
+        let settings = load_lender_notification_settings(pool, lender.id.as_str()).await;
+
         self.notify_lender_frontend_contract_status(
             pool,
             contract_id,
@@ -314,15 +333,19 @@ impl Notifications {
         )
         .await;
 
-        self.send_tg_notification_lender(
-            &lender,
-            url.clone(),
-            crate::telegram_bot::LenderNotificationKind::NewLoanRequest,
-        )
-        .await;
+        if settings.contract_status_changed_telegram {
+            self.send_tg_notification_lender(
+                &lender,
+                url.clone(),
+                crate::telegram_bot::LenderNotificationKind::NewLoanRequest,
+            )
+            .await;
+        }
 
-        if let Err(e) = self.email.send_new_loan_request(&lender, url).await {
-            tracing::error!("Could not send new loan request {e:#}");
+        if settings.contract_status_changed_email {
+            if let Err(e) = self.email.send_new_loan_request(&lender, url).await {
+                tracing::error!("Could not send new loan request {e:#}");
+            }
         }
 
         if let Err(e) = db::contract_emails::mark_loan_request_as_sent(pool, contract_id).await {
@@ -337,6 +360,8 @@ impl Notifications {
         borrower: Borrower,
         contract_url: Url,
     ) {
+        let settings = load_borrower_notification_settings(pool, borrower.id.as_str()).await;
+
         self.notify_borrower_frontend_contract_status(
             pool,
             contract_id,
@@ -345,19 +370,23 @@ impl Notifications {
         )
         .await;
 
-        self.send_tg_notification_borrower(
-            &borrower,
-            contract_url.clone(),
-            crate::telegram_bot::BorrowerNotificationKind::RequestApproved,
-        )
-        .await;
+        if settings.contract_status_changed_telegram {
+            self.send_tg_notification_borrower(
+                &borrower,
+                contract_url.clone(),
+                crate::telegram_bot::BorrowerNotificationKind::RequestApproved,
+            )
+            .await;
+        }
 
-        if let Err(e) = self
-            .email
-            .send_loan_request_approved(borrower, contract_url)
-            .await
-        {
-            tracing::error!("Could not send loan request approved {e:#}");
+        if settings.contract_status_changed_email {
+            if let Err(e) = self
+                .email
+                .send_loan_request_approved(borrower, contract_url)
+                .await
+            {
+                tracing::error!("Could not send loan request approved {e:#}");
+            }
         }
 
         if let Err(e) =
@@ -374,6 +403,8 @@ impl Notifications {
         contract_id: &str,
         pool: &PgPool,
     ) {
+        let settings = load_lender_notification_settings(pool, lender.id.as_str()).await;
+
         self.notify_lender_frontend_contract_status(
             pool,
             contract_id,
@@ -382,19 +413,23 @@ impl Notifications {
         )
         .await;
 
-        self.send_tg_notification_lender(
-            &lender,
-            url.clone(),
-            crate::telegram_bot::LenderNotificationKind::RequestAutoApproved,
-        )
-        .await;
+        if settings.contract_status_changed_telegram {
+            self.send_tg_notification_lender(
+                &lender,
+                url.clone(),
+                crate::telegram_bot::LenderNotificationKind::RequestAutoApproved,
+            )
+            .await;
+        }
 
-        if let Err(e) = self
-            .email
-            .send_notification_about_auto_accepted_loan(&lender, url)
-            .await
-        {
-            tracing::error!("Could not send auto accept notification {e:#}");
+        if settings.contract_status_changed_email {
+            if let Err(e) = self
+                .email
+                .send_notification_about_auto_accepted_loan(&lender, url)
+                .await
+            {
+                tracing::error!("Could not send auto accept notification {e:#}");
+            }
         }
 
         if let Err(e) = db::contract_emails::mark_auto_accept_email_as_sent(pool, contract_id).await
@@ -410,6 +445,8 @@ impl Notifications {
         borrower: Borrower,
         contract_url: Url,
     ) {
+        let settings = load_borrower_notification_settings(pool, borrower.id.as_str()).await;
+
         self.notify_borrower_frontend_contract_status(
             pool,
             contract_id,
@@ -418,19 +455,23 @@ impl Notifications {
         )
         .await;
 
-        self.send_tg_notification_borrower(
-            &borrower,
-            contract_url.clone(),
-            crate::telegram_bot::BorrowerNotificationKind::RequestRejected,
-        )
-        .await;
+        if settings.contract_status_changed_telegram {
+            self.send_tg_notification_borrower(
+                &borrower,
+                contract_url.clone(),
+                crate::telegram_bot::BorrowerNotificationKind::RequestRejected,
+            )
+            .await;
+        }
 
-        if let Err(e) = self
-            .email
-            .send_loan_request_rejected(borrower, contract_url)
-            .await
-        {
-            tracing::error!("Could not send request rejected {e:#}");
+        if settings.contract_status_changed_email {
+            if let Err(e) = self
+                .email
+                .send_loan_request_rejected(borrower, contract_url)
+                .await
+            {
+                tracing::error!("Could not send request rejected {e:#}");
+            }
         }
 
         if let Err(e) =
@@ -447,6 +488,8 @@ impl Notifications {
         pool: &PgPool,
         contract_id: &str,
     ) {
+        let settings = load_lender_notification_settings(pool, lender.id.as_str()).await;
+
         self.notify_lender_frontend_contract_status(
             pool,
             contract_id,
@@ -455,15 +498,19 @@ impl Notifications {
         )
         .await;
 
-        self.send_tg_notification_lender(
-            &lender,
-            url.clone(),
-            crate::telegram_bot::LenderNotificationKind::Collateralized,
-        )
-        .await;
+        if settings.contract_status_changed_telegram {
+            self.send_tg_notification_lender(
+                &lender,
+                url.clone(),
+                crate::telegram_bot::LenderNotificationKind::Collateralized,
+            )
+            .await;
+        }
 
-        if let Err(e) = self.email.send_loan_collateralized(&lender, url).await {
-            tracing::error!("Could not send loan collateralized {e:#}");
+        if settings.contract_status_changed_email {
+            if let Err(e) = self.email.send_loan_collateralized(&lender, url).await {
+                tracing::error!("Could not send loan collateralized {e:#}");
+            }
         }
 
         if let Err(e) = db::contract_emails::mark_collateral_funded_as_sent(pool, contract_id).await
@@ -479,6 +526,8 @@ impl Notifications {
         borrower: Borrower,
         contract_url: Url,
     ) {
+        let settings = load_borrower_notification_settings(pool, borrower.id.as_str()).await;
+
         self.notify_borrower_frontend_contract_status(
             pool,
             contract_id,
@@ -487,15 +536,19 @@ impl Notifications {
         )
         .await;
 
-        self.send_tg_notification_borrower(
-            &borrower,
-            contract_url.clone(),
-            crate::telegram_bot::BorrowerNotificationKind::LoanPaidOut,
-        )
-        .await;
+        if settings.contract_status_changed_telegram {
+            self.send_tg_notification_borrower(
+                &borrower,
+                contract_url.clone(),
+                crate::telegram_bot::BorrowerNotificationKind::LoanPaidOut,
+            )
+            .await;
+        }
 
-        if let Err(e) = self.email.send_loan_paid_out(borrower, contract_url).await {
-            tracing::error!("Could not send loan paid out {e:#}");
+        if settings.contract_status_changed_email {
+            if let Err(e) = self.email.send_loan_paid_out(borrower, contract_url).await {
+                tracing::error!("Could not send loan paid out {e:#}");
+            }
         }
 
         if let Err(e) = db::contract_emails::mark_loan_paid_out_as_sent(pool, contract_id).await {
@@ -512,6 +565,8 @@ impl Notifications {
         expiry_date: &str,
         contract_url: Url,
     ) {
+        let settings = load_borrower_notification_settings(pool, borrower.id.as_str()).await;
+
         self.notify_borrower_frontend_installment(
             pool,
             contract_id,
@@ -521,38 +576,46 @@ impl Notifications {
         )
         .await;
 
-        self.send_tg_notification_borrower(
-            &borrower,
-            contract_url.clone(),
-            crate::telegram_bot::BorrowerNotificationKind::InstallmentDueSoon,
-        )
-        .await;
+        if settings.contract_status_changed_telegram {
+            self.send_tg_notification_borrower(
+                &borrower,
+                contract_url.clone(),
+                crate::telegram_bot::BorrowerNotificationKind::InstallmentDueSoon,
+            )
+            .await;
+        }
 
-        if let Err(e) = self
-            .email
-            .send_installment_due_soon(borrower, expiry_date, contract_url)
-            .await
-        {
-            tracing::error!("Could not send installment due soon: {e:#}");
+        if settings.contract_status_changed_email {
+            if let Err(e) = self
+                .email
+                .send_installment_due_soon(borrower, expiry_date, contract_url)
+                .await
+            {
+                tracing::error!("Could not send installment due soon: {e:#}");
+            }
         }
     }
 
-    pub async fn send_moon_card_ready(&self, borrower: Borrower, contract_url: Url) {
-        // TODO: introduce new event
+    pub async fn send_moon_card_ready(&self, pool: &PgPool, borrower: Borrower, contract_url: Url) {
+        let settings = load_borrower_notification_settings(pool, borrower.id.as_str()).await;
 
-        self.send_tg_notification_borrower(
-            &borrower,
-            contract_url.clone(),
-            crate::telegram_bot::BorrowerNotificationKind::MoonCardReady,
-        )
-        .await;
+        if settings.contract_status_changed_telegram {
+            self.send_tg_notification_borrower(
+                &borrower,
+                contract_url.clone(),
+                crate::telegram_bot::BorrowerNotificationKind::MoonCardReady,
+            )
+            .await;
+        }
 
-        if let Err(e) = self
-            .email
-            .send_moon_card_ready(borrower, contract_url)
-            .await
-        {
-            tracing::error!("Could not send moon card ready {e:#}");
+        if settings.contract_status_changed_email {
+            if let Err(e) = self
+                .email
+                .send_moon_card_ready(borrower, contract_url)
+                .await
+            {
+                tracing::error!("Could not send moon card ready {e:#}");
+            }
         }
     }
 
@@ -564,6 +627,8 @@ impl Notifications {
         installment_id: Uuid,
         contract_id: &str,
     ) {
+        let settings = load_lender_notification_settings(pool, lender.id.as_str()).await;
+
         self.notify_lender_frontend_installment(
             pool,
             contract_id,
@@ -573,15 +638,19 @@ impl Notifications {
         )
         .await;
 
-        self.send_tg_notification_lender(
-            &lender,
-            url.clone(),
-            crate::telegram_bot::LenderNotificationKind::InstallmentPaid,
-        )
-        .await;
+        if settings.contract_status_changed_telegram {
+            self.send_tg_notification_lender(
+                &lender,
+                url.clone(),
+                crate::telegram_bot::LenderNotificationKind::InstallmentPaid,
+            )
+            .await;
+        }
 
-        if let Err(e) = self.email.send_installment_paid(&lender, url).await {
-            tracing::error!("Could not send installment paid {e:#}");
+        if settings.contract_status_changed_email {
+            if let Err(e) = self.email.send_installment_paid(&lender, url).await {
+                tracing::error!("Could not send installment paid {e:#}");
+            }
         }
 
         if let Err(e) = db::contract_emails::mark_loan_repaid_as_sent(pool, contract_id).await {
@@ -597,6 +666,8 @@ impl Notifications {
         installment_id: Uuid,
         contract_id: &str,
     ) {
+        let settings = load_borrower_notification_settings(pool, borrower.id.as_str()).await;
+
         self.notify_borrower_frontend_installment(
             pool,
             contract_id,
@@ -606,15 +677,19 @@ impl Notifications {
         )
         .await;
 
-        self.send_tg_notification_borrower(
-            &borrower,
-            url.clone(),
-            crate::telegram_bot::BorrowerNotificationKind::InstallmentConfirmed,
-        )
-        .await;
+        if settings.contract_status_changed_telegram {
+            self.send_tg_notification_borrower(
+                &borrower,
+                url.clone(),
+                crate::telegram_bot::BorrowerNotificationKind::InstallmentConfirmed,
+            )
+            .await;
+        }
 
-        if let Err(e) = self.email.send_installment_confirmed(&borrower, url).await {
-            tracing::error!("Could not send installment confirmed {e:#}");
+        if settings.contract_status_changed_email {
+            if let Err(e) = self.email.send_installment_confirmed(&borrower, url).await {
+                tracing::error!("Could not send installment confirmed {e:#}");
+            }
         }
     }
 
@@ -625,6 +700,8 @@ impl Notifications {
         borrower: Borrower,
         contract_url: Url,
     ) {
+        let settings = load_borrower_notification_settings(pool, borrower.id.as_str()).await;
+
         self.notify_borrower_frontend_contract_status(
             pool,
             contract_id,
@@ -633,19 +710,23 @@ impl Notifications {
         )
         .await;
 
-        self.send_tg_notification_borrower(
-            &borrower,
-            contract_url.clone(),
-            crate::telegram_bot::BorrowerNotificationKind::LiquidatedAfterDefault,
-        )
-        .await;
+        if settings.contract_status_changed_telegram {
+            self.send_tg_notification_borrower(
+                &borrower,
+                contract_url.clone(),
+                crate::telegram_bot::BorrowerNotificationKind::LiquidatedAfterDefault,
+            )
+            .await;
+        }
 
-        if let Err(e) = self
-            .email
-            .send_loan_liquidated_after_default(borrower, contract_url)
-            .await
-        {
-            tracing::error!("Could not send loan liquidated after default {e:#}");
+        if settings.contract_status_changed_email {
+            if let Err(e) = self
+                .email
+                .send_loan_liquidated_after_default(borrower, contract_url)
+                .await
+            {
+                tracing::error!("Could not send loan liquidated after default {e:#}");
+            }
         }
 
         if let Err(e) =
@@ -662,6 +743,8 @@ impl Notifications {
         pool: &PgPool,
         contract_id: &str,
     ) {
+        let settings = load_lender_notification_settings(pool, lender.id.as_str()).await;
+
         self.notify_lender_frontend_contract_status(
             pool,
             contract_id,
@@ -670,15 +753,19 @@ impl Notifications {
         )
         .await;
 
-        self.send_tg_notification_lender(
-            &lender,
-            url.clone(),
-            crate::telegram_bot::LenderNotificationKind::Defaulted,
-        )
-        .await;
+        if settings.contract_status_changed_telegram {
+            self.send_tg_notification_lender(
+                &lender,
+                url.clone(),
+                crate::telegram_bot::LenderNotificationKind::Defaulted,
+            )
+            .await;
+        }
 
-        if let Err(e) = self.email.send_loan_defaulted_lender(&lender, url).await {
-            tracing::error!("Could not send loan defaulted lender notification {e:#}");
+        if settings.contract_status_changed_email {
+            if let Err(e) = self.email.send_loan_defaulted_lender(&lender, url).await {
+                tracing::error!("Could not send loan defaulted lender notification {e:#}");
+            }
         }
 
         if let Err(e) =
@@ -695,6 +782,8 @@ impl Notifications {
         borrower: Borrower,
         contract_url: Url,
     ) {
+        let settings = load_borrower_notification_settings(pool, borrower.id.as_str()).await;
+
         self.notify_borrower_frontend_contract_status(
             pool,
             contract_id,
@@ -703,19 +792,23 @@ impl Notifications {
         )
         .await;
 
-        self.send_tg_notification_borrower(
-            &borrower,
-            contract_url.clone(),
-            crate::telegram_bot::BorrowerNotificationKind::LoanDefaulted,
-        )
-        .await;
+        if settings.contract_status_changed_telegram {
+            self.send_tg_notification_borrower(
+                &borrower,
+                contract_url.clone(),
+                crate::telegram_bot::BorrowerNotificationKind::LoanDefaulted,
+            )
+            .await;
+        }
 
-        if let Err(e) = self
-            .email
-            .send_loan_defaulted_borrower(borrower, contract_url)
-            .await
-        {
-            tracing::error!("Could not send loan defaulted borrower {e:#}");
+        if settings.contract_status_changed_email {
+            if let Err(e) = self
+                .email
+                .send_loan_defaulted_borrower(borrower, contract_url)
+                .await
+            {
+                tracing::error!("Could not send loan defaulted borrower {e:#}");
+            }
         }
 
         if let Err(e) =
@@ -732,6 +825,8 @@ impl Notifications {
         borrower: Borrower,
         contract_url: Url,
     ) {
+        let settings = load_borrower_notification_settings(pool, borrower.id.as_str()).await;
+
         self.notify_borrower_frontend_contract_status(
             pool,
             contract_id,
@@ -740,19 +835,23 @@ impl Notifications {
         )
         .await;
 
-        self.send_tg_notification_borrower(
-            &borrower,
-            contract_url.clone(),
-            crate::telegram_bot::BorrowerNotificationKind::LoanRequestExpired,
-        )
-        .await;
+        if settings.contract_status_changed_telegram {
+            self.send_tg_notification_borrower(
+                &borrower,
+                contract_url.clone(),
+                crate::telegram_bot::BorrowerNotificationKind::LoanRequestExpired,
+            )
+            .await;
+        }
 
-        if let Err(e) = self
-            .email
-            .send_expired_loan_request_borrower(borrower, contract_url)
-            .await
-        {
-            tracing::error!("Could not send loan request expired borrower {e:#}");
+        if settings.contract_status_changed_email {
+            if let Err(e) = self
+                .email
+                .send_expired_loan_request_borrower(borrower, contract_url)
+                .await
+            {
+                tracing::error!("Could not send loan request expired borrower {e:#}");
+            }
         }
 
         if let Err(e) =
@@ -764,25 +863,30 @@ impl Notifications {
 
     pub async fn send_expired_loan_application_borrower(
         &self,
+        pool: &PgPool,
         borrower: Borrower,
         days: i64,
         contract_url: Url,
     ) {
-        // TODO: introduce special event
+        let settings = load_borrower_notification_settings(pool, borrower.id.as_str()).await;
 
-        self.send_tg_notification_borrower(
-            &borrower,
-            contract_url.clone(),
-            crate::telegram_bot::BorrowerNotificationKind::LoanApplicationExpired { days },
-        )
-        .await;
+        if settings.contract_status_changed_telegram {
+            self.send_tg_notification_borrower(
+                &borrower,
+                contract_url.clone(),
+                crate::telegram_bot::BorrowerNotificationKind::LoanApplicationExpired { days },
+            )
+            .await;
+        }
 
-        if let Err(e) = self
-            .email
-            .send_expired_loan_application_borrower(borrower, days, contract_url)
-            .await
-        {
-            tracing::error!("Could not send loan application expired borrower {e:#}");
+        if settings.contract_status_changed_email {
+            if let Err(e) = self
+                .email
+                .send_expired_loan_application_borrower(borrower, days, contract_url)
+                .await
+            {
+                tracing::error!("Could not send loan application expired borrower {e:#}");
+            }
         }
     }
 
@@ -793,6 +897,8 @@ impl Notifications {
         pool: &PgPool,
         contract_id: &str,
     ) {
+        let settings = load_lender_notification_settings(pool, lender.id.as_str()).await;
+
         self.notify_lender_frontend_contract_status(
             pool,
             contract_id,
@@ -800,19 +906,24 @@ impl Notifications {
             model::db::ContractStatus::RequestExpired,
         )
         .await;
-        self.send_tg_notification_lender(
-            &lender,
-            url.clone(),
-            crate::telegram_bot::LenderNotificationKind::RequestExpired,
-        )
-        .await;
 
-        if let Err(e) = self
-            .email
-            .send_expired_loan_request_lender(&lender, url)
-            .await
-        {
-            tracing::error!("Could not send loan request expired lender {e:#}");
+        if settings.contract_status_changed_telegram {
+            self.send_tg_notification_lender(
+                &lender,
+                url.clone(),
+                crate::telegram_bot::LenderNotificationKind::RequestExpired,
+            )
+            .await;
+        }
+
+        if settings.contract_status_changed_email {
+            if let Err(e) = self
+                .email
+                .send_expired_loan_request_lender(&lender, url)
+                .await
+            {
+                tracing::error!("Could not send loan request expired lender {e:#}");
+            }
         }
 
         if let Err(e) =
@@ -829,22 +940,30 @@ impl Notifications {
         pool: &PgPool,
         contract_id: &str,
     ) {
+        let settings = load_lender_notification_settings(pool, lender.id.as_str()).await;
+
         self.notify_lender_frontend_chat_message(pool, contract_id, lender.id.as_str())
             .await;
-        self.send_tg_notification_lender(
-            &lender,
-            contract_url.clone(),
-            crate::telegram_bot::LenderNotificationKind::NewChatMessage {
-                name: lender.name.clone(),
-            },
-        )
-        .await;
-        if let Err(e) = self
-            .email
-            .send_new_chat_message_notification_lender(&lender, contract_url)
-            .await
-        {
-            tracing::error!("Could not send chat notification email lender {e:#}");
+
+        if settings.new_chat_message_telegram {
+            self.send_tg_notification_lender(
+                &lender,
+                contract_url.clone(),
+                crate::telegram_bot::LenderNotificationKind::NewChatMessage {
+                    name: lender.name.clone(),
+                },
+            )
+            .await;
+        }
+
+        if settings.new_chat_message_email {
+            if let Err(e) = self
+                .email
+                .send_new_chat_message_notification_lender(&lender, contract_url)
+                .await
+            {
+                tracing::error!("Could not send chat notification email lender {e:#}");
+            }
         }
     }
 
@@ -855,46 +974,65 @@ impl Notifications {
         borrower: Borrower,
         contract_url: Url,
     ) {
+        let settings = load_borrower_notification_settings(pool, borrower.id.as_str()).await;
+
         self.notify_borrower_frontend_chat_message(pool, contract_id, borrower.id.as_str())
             .await;
 
-        self.send_tg_notification_borrower(
-            &borrower,
-            contract_url.clone(),
-            crate::telegram_bot::BorrowerNotificationKind::NewChatMessage {
-                name: borrower.name.clone(),
-            },
-        )
-        .await;
+        if settings.new_chat_message_telegram {
+            self.send_tg_notification_borrower(
+                &borrower,
+                contract_url.clone(),
+                crate::telegram_bot::BorrowerNotificationKind::NewChatMessage {
+                    name: borrower.name.clone(),
+                },
+            )
+            .await;
+        }
 
-        if let Err(e) = self
-            .email
-            .send_new_chat_message_notification_borrower(borrower, contract_url)
-            .await
-        {
-            tracing::error!("Could not send chat notification borrower {e:#}");
+        if settings.new_chat_message_email {
+            if let Err(e) = self
+                .email
+                .send_new_chat_message_notification_borrower(borrower, contract_url)
+                .await
+            {
+                tracing::error!("Could not send chat notification borrower {e:#}");
+            }
         }
     }
 
-    pub async fn send_contract_extension_enabled(&self, borrower: Borrower, contract_url: Url) {
-        // TODO: introduce new event type for this
+    pub async fn send_contract_extension_enabled(
+        &self,
+        pool: &PgPool,
+        borrower: Borrower,
+        contract_url: Url,
+    ) {
+        let settings = load_borrower_notification_settings(pool, borrower.id.as_str()).await;
 
-        self.send_tg_notification_borrower(
-            &borrower,
-            contract_url.clone(),
-            crate::telegram_bot::BorrowerNotificationKind::ContractExtensionEnabled {
-                name: borrower.name.clone(),
-            },
-        )
-        .await;
+        if settings.contract_status_changed_telegram {
+            self.send_tg_notification_borrower(
+                &borrower,
+                contract_url.clone(),
+                crate::telegram_bot::BorrowerNotificationKind::ContractExtensionEnabled {
+                    name: borrower.name.clone(),
+                },
+            )
+            .await;
+        }
 
-        if let Some(email) = borrower.email.as_ref() {
-            if let Err(e) = self
-                .email
-                .send_loan_extension_enabled(borrower.name.as_str(), email.as_str(), contract_url)
-                .await
-            {
-                tracing::error!("Could not send email notification borrower {e:#}");
+        if settings.contract_status_changed_email {
+            if let Some(email) = borrower.email.as_ref() {
+                if let Err(e) = self
+                    .email
+                    .send_loan_extension_enabled(
+                        borrower.name.as_str(),
+                        email.as_str(),
+                        contract_url,
+                    )
+                    .await
+                {
+                    tracing::error!("Could not send email notification borrower {e:#}");
+                }
             }
         }
     }
@@ -1087,6 +1225,29 @@ impl Notifications {
     async fn notify_borrower_frontend(&self, borrower_id: &str, notification: NotificationMessage) {
         if let Err(e) = self.websocket.send_to(borrower_id, notification).await {
             tracing::error!("Could not send notification via websocket {e:#}");
+        }
+    }
+}
+
+async fn load_borrower_notification_settings(
+    db: &PgPool,
+    id: &str,
+) -> BorrowerNotificationSettings {
+    match db::notification_settings::get_borrower_notification_settings(db, id).await {
+        Ok(settings) => settings,
+        Err(err) => {
+            tracing::error!("Failed loading borrower notification settings {err:#}");
+            BorrowerNotificationSettings::new(id.to_string())
+        }
+    }
+}
+
+async fn load_lender_notification_settings(db: &PgPool, id: &str) -> LenderNotificationSettings {
+    match db::notification_settings::get_lender_notification_settings(db, id).await {
+        Ok(settings) => settings,
+        Err(err) => {
+            tracing::error!("Failed loading borrower notification settings {err:#}");
+            LenderNotificationSettings::new(id.to_string())
         }
     }
 }

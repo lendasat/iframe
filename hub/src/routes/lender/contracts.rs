@@ -222,7 +222,7 @@ async fn put_update_extension_policy(
                 .join(format!("/my-contracts/{}", contract_id).as_str())?;
 
             data.notifications
-                .send_contract_extension_enabled(borrower, loan_url)
+                .send_contract_extension_enabled(&data.db, borrower, loan_url)
                 .await;
             anyhow::Ok(())
         }

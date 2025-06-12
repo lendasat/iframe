@@ -39,6 +39,7 @@ pub(crate) mod contracts;
 pub(crate) mod health_check;
 pub(crate) mod loan_applications;
 pub(crate) mod loan_offers;
+pub(crate) mod notification_settings;
 pub(crate) mod notifications;
 pub(crate) mod profile;
 pub(crate) mod version;
@@ -59,6 +60,7 @@ const LOAN_APPLICATIONS_TAG: &str = "loan-applications";
 const API_KEYS_TAG: &str = "api-keys";
 const API_ACCOUNTS_TAG: &str = "api-accounts";
 const VERSION_TAG: &str = "version";
+const NOTIFICATION_SETTINGS_TAG: &str = "Notification Settings";
 
 #[derive(OpenApi)]
 #[openapi(
@@ -156,6 +158,9 @@ curl -X POST "http://localhost:7337/api/contracts" \
         ),
         (
             name = LOAN_APPLICATIONS_TAG, description = "Create and manage loan applications.",
+        ),
+        (
+            name = NOTIFICATION_SETTINGS_TAG, description = "Manage notifications.",
         )
     ),
 )]
@@ -192,6 +197,10 @@ pub async fn spawn_borrower_server(
         .nest(
             "/api/loan-applications",
             loan_applications::router(app_state.clone()),
+        )
+        .nest(
+            "/api/notification-settings",
+            notification_settings::router(app_state.clone()),
         )
         .split_for_parts();
 
