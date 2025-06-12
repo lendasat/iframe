@@ -42,16 +42,18 @@ export function Repayment({
       <div className="space-y-2">
         <h3 className="font-medium">Payment Details</h3>
         <div className="grid grid-cols-2 gap-2">
-          <div>
-            <Label>Principal Amount</Label>
-            {principalAmount !== undefined ? (
-              <p className="text-lg font-bold">
-                {formatCurrency(principalAmount)}
-              </p>
-            ) : (
-              <Skeleton className="h-4 w-[150px]" />
-            )}
-          </div>
+          {principalAmount > 0 && (
+            <div>
+              <Label>Principal Amount</Label>
+              {principalAmount !== undefined ? (
+                <p className="text-lg font-bold">
+                  {formatCurrency(principalAmount)}
+                </p>
+              ) : (
+                <Skeleton className="h-4 w-[150px]" />
+              )}
+            </div>
+          )}
           <div>
             <Label>Interest</Label>
             {interestAmount !== undefined ? (
@@ -63,7 +65,7 @@ export function Repayment({
             )}
           </div>
         </div>
-        <div className="pt-2 border-t mt-2">
+        <div className="mt-2 border-t pt-2">
           <Label>Total Payment</Label>
           {totalRepaymentAmount !== undefined ? (
             <p className="text-xl font-bold">
