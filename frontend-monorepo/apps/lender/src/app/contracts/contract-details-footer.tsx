@@ -81,7 +81,7 @@ export function ContractDetailsFooter({
         refreshContract={refreshContract}
       >
         <Button type={"button"} disabled={buttonDisabled}>
-          Confirm Repayment <LuChevronRight className="ml-1 h-4 w-4" />
+          Confirm Payment <LuChevronRight className="ml-1 h-4 w-4" />
         </Button>
       </ConfirmRepaymentDialog>
     );
@@ -104,7 +104,7 @@ export function ContractDetailsFooter({
   }
 
   return (
-    <div className="flex flex-col space-y-4 md:flex-row md:space-y-0 md:space-x-4 w-full">
+    <div className="flex w-full flex-col space-y-4 md:flex-row md:space-x-4 md:space-y-0">
       <div className="order-2 md:order-1">
         <TransactionHistoryDialog
           transactions={contract?.transactions || []}
@@ -132,7 +132,7 @@ export function ContractDetailsFooter({
           </div>
         </TransactionHistoryDialog>
       </div>
-      <div className="order-1 md:order-2 w-full flex gap-2 md:justify-end justify-center">
+      <div className="order-1 flex w-full justify-center gap-2 md:order-2 md:justify-end">
         {button}
       </div>
     </div>
