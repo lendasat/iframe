@@ -12,8 +12,8 @@ pub fn calculate_ltv(
     if price.is_zero() || price.is_sign_negative() {
         bail!("Price cannot be zero or negative");
     }
-    if outstanding_balance.is_zero() || outstanding_balance.is_sign_negative() {
-        bail!("Outstanding balance cannot be zero or negative");
+    if outstanding_balance.is_sign_negative() {
+        bail!("Outstanding balance cannot be negative");
     }
     if collateral_sats.is_zero() || collateral_sats.is_sign_negative() {
         bail!("Collateral cannot be zero or negative");
