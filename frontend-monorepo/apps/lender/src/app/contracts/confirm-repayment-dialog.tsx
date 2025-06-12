@@ -22,6 +22,7 @@ import { AlertCircle, Check } from "lucide-react";
 import { LuCheck, LuClipboard, LuExternalLink } from "react-icons/lu";
 import { formatCurrency, getTxUrl } from "@frontend/ui-shared";
 import { toast } from "sonner";
+import { format } from "date-fns";
 
 const shortenTxid = (txid?: string) => {
   if (!txid) {
@@ -148,6 +149,13 @@ const RepaymentConfirmationDialog = ({
                     <LuExternalLink className="h-4 w-4" />{" "}
                   </a>
                 </Button>
+              </div>
+
+              <div className="text-muted-foreground">Due date:</div>
+              <div className="flex items-center">
+                <p className="mr-2 mt-1 font-mono text-xs text-gray-600">
+                  {format(paidInstallment.due_date, "MMM, dd yyyy")}
+                </p>
               </div>
             </div>
 
