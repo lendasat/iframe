@@ -1,5 +1,3 @@
-"use client";
-
 import { LoanOffer, RepaymentPlan } from "@frontend/http-client-borrower";
 import {
   formatCurrency,
@@ -10,13 +8,19 @@ import {
 } from "@frontend/ui-shared";
 import {
   Badge,
-  Box,
-  Button,
-  DataList,
-  Flex,
-  Skeleton,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@frontend/shadcn";
+import { Button } from "@frontend/shadcn";
+import {
   Table,
-} from "@radix-ui/themes";
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from "@frontend/shadcn";
 import {
   ColumnFiltersState,
   createColumnHelper,
@@ -32,13 +36,14 @@ import {
   VisibilityState,
 } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
-import { LuArrowDown, LuArrowUp, LuArrowUpDown } from "react-icons/lu";
+import { ArrowDown, ArrowUp, ArrowUpDown, Info } from "lucide-react";
 import { Lender } from "../lender";
 
 interface DurationRange {
   min: number;
   max: number;
 }
+
 interface AmountRange {
   min: number;
   max: number;
@@ -59,82 +64,146 @@ const MobileOfferCard = ({
   enableActionColumn?: boolean;
   onActionColumnAction?: (offer: LoanOffer) => void;
 }) => {
+  let repaymentPlan = <></>;
+  switch (offer.repayment_plan) {
+    case RepaymentPlan.InterestOnlyMonthly:
+      repaymentPlan = <Badge variant="secondary">{"Monthly interest"}</Badge>;
+      break;
+    case RepaymentPlan.InterestOnlyWeekly:
+      repaymentPlan = <Badge variant="secondary">{"Weekly interest"}</Badge>;
+      break;
+    case RepaymentPlan.Bullet:
+      repaymentPlan = <Badge variant="secondary">{"Bullet loan"}</Badge>;
+      break;
+  }
+
   return (
-    <Box
-      className={`rounded-lg border p-4 ${
-        selected ? "bg-purple-50" : "bg-white"
-      } cursor-pointer`}
+    <div
+      className={`cursor-pointer rounded-lg border p-4 ${
+        selected ? "bg-muted" : "bg-background"
+      }`}
       onClick={() => onClick(offer.id)}
     >
-      <DataList.Root>
-        <DataList.Item align="center">
-          <DataList.Label minWidth="88px">Lender</DataList.Label>
-          <DataList.Value className="flex flex-1 justify-end">
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground text-sm font-medium">
+            Lender
+          </span>
+          <div className="text-right">
             {loading ? (
-              <Skeleton>Loading</Skeleton>
+              <div className="bg-muted h-4 w-20 animate-pulse rounded"></div>
             ) : (
-              <Lender {...offer.lender} showAvatar={false} />
+              <Lender
+                {...offer.lender}
+                showAvatar={false}
+                ratingTextAlign={"right"}
+              />
             )}
-          </DataList.Value>
-        </DataList.Item>
-        <DataList.Item align="center">
-          <DataList.Label minWidth="88px">Amounts</DataList.Label>
-          <DataList.Value className="flex flex-1 justify-end">
-            <Skeleton loading={loading}>
-              {formatCurrency(offer.loan_amount_min)} -{" "}
-              {formatCurrency(offer.loan_amount_max)}
-            </Skeleton>
-          </DataList.Value>
-        </DataList.Item>
-        <DataList.Item align="center">
-          <DataList.Label minWidth="88px">Duration</DataList.Label>
-          <DataList.Value className="flex flex-1 justify-end">
-            <Skeleton loading={loading}>
-              {getFormatedStringFromDays(offer.duration_days_min)} -{" "}
-              {getFormatedStringFromDays(offer.duration_days_max)}
-            </Skeleton>
-          </DataList.Value>
-        </DataList.Item>
-        <DataList.Item align="center">
-          <DataList.Label minWidth="88px">Interest Rate</DataList.Label>
-          <DataList.Value className="flex flex-1 justify-end">
-            <Skeleton loading={loading}>
-              {(offer.interest_rate * 100).toFixed(1)}%
-            </Skeleton>
-          </DataList.Value>
-        </DataList.Item>
-        <DataList.Item align="center">
-          <DataList.Label minWidth="88px">LTV</DataList.Label>
-          <DataList.Value className="flex flex-1 justify-end">
-            <Skeleton loading={loading}>
-              {(offer.min_ltv * 100).toFixed(0)}%
-            </Skeleton>
-          </DataList.Value>
-        </DataList.Item>
-        <DataList.Item align="center">
-          <DataList.Label minWidth="88px">Coin</DataList.Label>
-          <DataList.Value className="flex flex-1 justify-end">
-            <Badge color="purple" size="2">
-              <Skeleton loading={loading}>
-                {LoanAssetHelper.print(offer.loan_asset)}
-              </Skeleton>
-            </Badge>
-          </DataList.Value>
-        </DataList.Item>
+          </div>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground text-sm font-medium">
+            Amounts
+          </span>
+          <span className="text-sm">
+            {loading ? (
+              <div className="bg-muted h-4 w-24 animate-pulse rounded"></div>
+            ) : (
+              `${formatCurrency(offer.loan_amount_min)} - ${formatCurrency(offer.loan_amount_max)}`
+            )}
+          </span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground text-sm font-medium">
+            Duration
+          </span>
+          <span className="text-sm">
+            {loading ? (
+              <div className="bg-muted h-4 w-16 animate-pulse rounded"></div>
+            ) : (
+              `${getFormatedStringFromDays(offer.duration_days_min)} - ${getFormatedStringFromDays(offer.duration_days_max)}`
+            )}
+          </span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground text-sm font-medium">
+            Interest
+          </span>
+          <span className="text-sm">
+            {loading ? (
+              <div className="bg-muted h-4 w-12 animate-pulse rounded"></div>
+            ) : (
+              `${(offer.interest_rate * 100).toFixed(1)}%`
+            )}
+          </span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground text-sm font-medium">
+            <div>
+              {"Repayment Plan"}
+              <Tooltip>
+                <TooltipTrigger>
+                  <Info className="h-4 w-4" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>
+                    Bullet loans have a lump-sum payment at the end.
+                    <br />
+                    Monthly interest loans require regular payments.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </span>
+          <span className="text-sm">
+            {loading ? (
+              <div className="bg-muted h-4 w-12 animate-pulse rounded"></div>
+            ) : (
+              repaymentPlan
+            )}
+          </span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground text-sm font-medium">LTV</span>
+          <span className="text-sm">
+            {loading ? (
+              <div className="bg-muted h-4 w-12 animate-pulse rounded"></div>
+            ) : (
+              `${(offer.min_ltv * 100).toFixed(0)}%`
+            )}
+          </span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground text-sm font-medium">
+            Coin
+          </span>
+          <Badge>
+            {loading ? (
+              <div className="bg-muted h-4 w-16 animate-pulse rounded"></div>
+            ) : (
+              LoanAssetHelper.print(offer.loan_asset)
+            )}
+          </Badge>
+        </div>
         {enableActionColumn && onActionColumnAction && (
-          <DataList.Item align="center">
-            <DataList.Label minWidth="88px">Pick</DataList.Label>
-            <DataList.Value className="flex flex-1 justify-end">
-              <Skeleton loading={loading}>
-                <Button onClick={() => onActionColumnAction(offer)}>
-                  Select
-                </Button>
-              </Skeleton>
-            </DataList.Value>
-          </DataList.Item>
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground text-sm font-medium">
+              Pick
+            </span>
+            <Button
+              size="sm"
+              disabled={loading}
+              onClick={(e) => {
+                e.stopPropagation();
+                onActionColumnAction(offer);
+              }}
+            >
+              Select
+            </Button>
+          </div>
         )}
-      </DataList.Root>
-    </Box>
+      </div>
+    </div>
   );
 };
 
@@ -259,7 +328,9 @@ export function LoanOfferTable({
       },
       cell: ({ row }) => {
         if (loading) {
-          return <Skeleton loading={true}>Loading</Skeleton>;
+          return (
+            <div className="bg-muted h-4 w-12 animate-pulse rounded"></div>
+          );
         }
         return <>{((row.getValue("min_ltv") as number) * 100).toFixed(0)}%</>;
       },
@@ -267,7 +338,7 @@ export function LoanOfferTable({
     }),
     columnHelper.accessor("interest_rate", {
       header: () => {
-        return "Interest Rate";
+        return "Interest";
       },
       cell: ({ row }) => {
         return (
@@ -276,6 +347,38 @@ export function LoanOfferTable({
       },
       enableSorting: true,
     }),
+    columnHelper.accessor((row) => row.repayment_plan, {
+      id: "repayment_plan",
+      header: () => {
+        return (
+          <div>
+            {"Repayment"}
+            <Tooltip>
+              <TooltipTrigger>
+                <Info className="h-4 w-4" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>
+                  Bullet loans have a lump-sum payment a the end.
+                  <br />
+                  Monthly interest loans require regular payments.
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        );
+      },
+      cell: ({ cell }) => {
+        switch (cell.getValue()) {
+          case RepaymentPlan.InterestOnlyMonthly:
+            return <Badge variant="secondary">{"Monthly"}</Badge>;
+          case RepaymentPlan.InterestOnlyWeekly:
+            return <Badge variant="secondary">{"Weekly"}</Badge>;
+          case RepaymentPlan.Bullet:
+            return <Badge variant="secondary">{"Bullet"}</Badge>;
+        }
+      },
+    }),
     columnHelper.accessor((row) => row.loan_asset, {
       id: "Coin",
       header: () => {
@@ -283,7 +386,7 @@ export function LoanOfferTable({
       },
       cell: ({ cell }) => {
         return (
-          <Badge color="purple" size={"2"}>
+          <Badge variant="secondary">
             {LoanAssetHelper.print(cell.getValue())}
           </Badge>
         );
@@ -296,13 +399,9 @@ export function LoanOfferTable({
       },
       cell: ({ cell }) => {
         return cell.getValue() ? (
-          <Badge color="teal" size={"2"}>
-            {"Yes"}
-          </Badge>
+          <Badge variant="success">{"Yes"}</Badge>
         ) : (
-          <Badge color="gray" size={"2"}>
-            {"No"}
-          </Badge>
+          <Badge variant="outline">{"No"}</Badge>
         );
       },
     }),
@@ -405,107 +504,94 @@ export function LoanOfferTable({
   });
 
   return (
-    <Box className="w-full">
-      <Box className="hidden md:block">
-        <Box className="mt-4 rounded-md border">
-          <Table.Root variant="surface" size={"2"} layout={"auto"}>
-            <Table.Header>
+    <div className="w-full">
+      <div className="hidden md:block">
+        <div className="mt-4 rounded-md border">
+          <Table>
+            <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
-                <Table.Row key={headerGroup.id}>
+                <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => {
                     return (
-                      <Table.ColumnHeaderCell
-                        key={header.id}
-                        className={"text-font dark:text-font-dark"}
-                      >
+                      <TableHead key={header.id} className="text-foreground">
                         {header.isPlaceholder ? null : (
-                          <Box
-                            {...{
-                              className: header.column.getCanSort()
+                          <div
+                            className={`flex items-center gap-1 ${
+                              header.column.getCanSort()
                                 ? "cursor-pointer select-none"
-                                : "",
-                              onClick: header.column.getToggleSortingHandler(),
-                            }}
+                                : ""
+                            }`}
+                            onClick={header.column.getToggleSortingHandler()}
                           >
-                            <Flex gap={"1"} align={"center"}>
+                            <span className="text-sm font-medium">
                               {flexRender(
                                 header.column.columnDef.header,
                                 header.getContext(),
                               )}
-
-                              {header.column.getCanSort()
-                                ? ({
-                                    asc: <LuArrowUp />,
-                                    desc: <LuArrowDown />,
-                                  }[header.column.getIsSorted() as string] ?? (
-                                    <LuArrowUpDown />
-                                  ))
-                                : undefined}
-                            </Flex>
-                          </Box>
+                            </span>
+                            {header.column.getCanSort()
+                              ? ({
+                                  asc: <ArrowUp className="h-4 w-4" />,
+                                  desc: <ArrowDown className="h-4 w-4" />,
+                                }[header.column.getIsSorted() as string] ?? (
+                                  <ArrowUpDown className="h-4 w-4" />
+                                ))
+                              : undefined}
+                          </div>
                         )}
-                      </Table.ColumnHeaderCell>
+                      </TableHead>
                     );
                   })}
-                </Table.Row>
+                </TableRow>
               ))}
-            </Table.Header>
-            <Table.Body>
+            </TableHeader>
+            <TableBody>
               {table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row) => (
-                  <Table.Row
+                  <TableRow
                     key={row.id}
-                    className={
-                      row.getIsSelected() ? "dark:purple-100 bg-purple-50" : ""
-                    }
+                    className={row.getIsSelected() ? "bg-muted" : ""}
                     onClick={row.getToggleSelectedHandler()}
-                    data-state={row.getIsSelected() && "selected"}
+                    data-state={row.getIsSelected() ? "selected" : undefined}
                   >
                     {row.getVisibleCells().map((cell) => (
-                      <Table.Cell
-                        key={cell.id}
-                        className={
-                          row.getIsSelected()
-                            ? "text-gray-900"
-                            : "text-font dark:text-font-dark"
-                        }
-                      >
+                      <TableCell key={cell.id} className="text-sm font-medium">
                         {loading ? (
-                          <Skeleton loading={loading}>Loading</Skeleton>
+                          <div className="bg-muted h-4 w-16 animate-pulse rounded"></div>
                         ) : (
                           flexRender(
                             cell.column.columnDef.cell,
                             cell.getContext(),
                           )
                         )}
-                      </Table.Cell>
+                      </TableCell>
                     ))}
-                  </Table.Row>
+                  </TableRow>
                 ))
               ) : (
-                <Table.Row>
-                  <Table.Cell
+                <TableRow>
+                  <TableCell
                     colSpan={columns.length}
-                    className="h-24 text-font dark:text-font-dark text-center"
+                    className="text-muted-foreground h-24 text-center"
                   >
                     No results.
-                  </Table.Cell>
-                </Table.Row>
+                  </TableCell>
+                </TableRow>
               )}
-            </Table.Body>
-          </Table.Root>
-        </Box>
-      </Box>
+            </TableBody>
+          </Table>
+        </div>
+      </div>
       {/* Mobile view */}
-      <Box className="block md:hidden">
-        <Box className="space-y-4">
+      <div className="block md:hidden">
+        <div className="space-y-4">
           {loading ? (
             // Loading state for mobile
             [...Array(3)].map((_, i) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
-              <Box key={i} className="rounded-lg border p-4">
-                <Skeleton loading={true}>Loading</Skeleton>
-              </Box>
+              <div key={i} className="rounded-lg border p-4">
+                <div className="bg-muted h-20 animate-pulse rounded"></div>
+              </div>
             ))
           ) : table.getRowModel().rows?.length ? (
             table
@@ -526,19 +612,19 @@ export function LoanOfferTable({
                 />
               ))
           ) : (
-            <Box className="p-4 text-center text-font dark:text-font-dark">
+            <div className="text-muted-foreground p-4 text-center">
               No results.
-            </Box>
+            </div>
           )}
-        </Box>
-      </Box>
+        </div>
+      </div>
 
       {/* Pagination */}
-      <Box className="flex items-center justify-end space-x-2 py-4">
-        <Box className="space-x-2">
+      <div className="flex items-center justify-end space-x-2 py-4">
+        <div className="space-x-2">
           <Button
             variant="outline"
-            size="2"
+            size="sm"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
           >
@@ -546,14 +632,14 @@ export function LoanOfferTable({
           </Button>
           <Button
             variant="outline"
-            size="2"
+            size="sm"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
           >
             Next
           </Button>
-        </Box>
-      </Box>
-    </Box>
+        </div>
+      </div>
+    </div>
   );
 }

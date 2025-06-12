@@ -1,10 +1,7 @@
-import { faCheckCircle, faWarning } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   FiatLoanDetails,
   LoanProductOption,
   RepaymentPlan,
-  repaymentPlanLabel,
 } from "@frontend/http-client-borrower";
 import { useWallet } from "@frontend/browser-wallet";
 import {
@@ -17,61 +14,52 @@ import {
   AddFiatDetailsDialog,
   formatCurrency,
   getFormatedStringFromDays,
-  InterestRateInfoLabel,
-  LiquidationPriceInfoLabel,
   LoanAddressInputField,
   LoanAssetHelper,
-  LtvInfoLabel,
-  newFormatCurrency,
   ONE_YEAR,
   usePrice,
 } from "@frontend/ui-shared";
 import {
-  Box,
-  Callout,
-  DataList,
-  Flex,
-  Grid,
-  Heading,
-  Skeleton,
-  Text,
-  TextField,
-} from "@radix-ui/themes";
-import { Link as RadixLink } from "@radix-ui/themes";
+  Button,
+  CardDescription,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@frontend/shadcn";
+import { Card, CardContent, CardHeader, CardTitle } from "@frontend/shadcn";
+import { Input } from "@frontend/shadcn";
+import { Label } from "@frontend/shadcn";
+import { Alert, AlertDescription, AlertTitle } from "@frontend/shadcn";
+import { Skeleton } from "@frontend/shadcn";
 import axios from "axios";
 import { Network, validate } from "bitcoin-address-validation";
 import { useState } from "react";
-import { FaInfoCircle } from "react-icons/fa";
-import { IoInformationCircleOutline } from "react-icons/io5";
+import {
+  Info,
+  CheckCircle,
+  AlertTriangle,
+  AlertCircle,
+  ExternalLink,
+  Loader2,
+  MessageCircleWarning,
+  TriangleAlert,
+} from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAsync } from "react-use";
 import { KycDialog } from "./kyc-dialog";
 import { Lender } from "./lender";
 import { MoonCardDropdown } from "./MoonCardDropdown";
 import { ToS } from "./tos";
-import { AlertCircle, ExternalLink } from "lucide-react";
-import {
-  Button,
-  Alert,
-  AlertDescription,
-  AlertTitle,
-  TooltipProvider,
-  TooltipTrigger,
-  Tooltip,
-  TooltipContent,
-} from "@frontend/shadcn";
-import { LuLoader } from "react-icons/lu";
 import { toast } from "sonner";
 
 async function isInUS(): Promise<boolean> {
   try {
     const response = await axios.get("https://get.geojs.io/v1/ip/country.json");
     const data = response.data;
-
     return data.country === "US";
   } catch (error) {
     console.error("Error fetching geo-location data:", error);
-    return true; // Default to true in case of an error
+    return true;
   }
 }
 
@@ -102,29 +90,24 @@ export const Confirmation = ({
   const { getLoanOffer, getUserCards, postContractRequest } =
     useHttpClientBorrower();
   const { latestPrice: maybeLatestPrice } = usePrice();
-  // TODO: we should be using skeletons while the price is loading
   const latestPrice = maybeLatestPrice || 0;
   const { user } = useAuth();
+
   const [bitcoinAddressInputError, setBitcoinAddressInputError] = useState("");
   const [bitcoinAddressValid, setBitcoinAddressValid] = useState(false);
   const [bitcoinAddress, setBitcoinAddress] = useState("");
   const [moonCardId, setMoonCardId] = useState<string | undefined>();
   const [loanAddress, setLoanAddress] = useState("");
   const [hideWalletConnectButton, setHideWalletConnectButton] = useState(false);
-  // TODO: set this value
   const [createRequestError, setCreateRequestError] = useState("");
   const [isCreatingRequest, setIsCreatingRequest] = useState(false);
   const [fiatTransferDetailsConfirmed, setFiatTransferDetailsConfirmed] =
     useState(false);
   const [encryptedFiatTransferDetails, setEncryptedFiatTransferDetails] =
     useState<FiatLoanDetails>();
-
   const [ownPk, setOwnPk] = useState<string | undefined>(undefined);
   const [ownPath, setOwnPath] = useState<string | undefined>(undefined);
-
-  // inside KYC dialog
   const [isKycChecked, setIsKycChecked] = useState(false);
-  // outside
   const [kycFormDialogConfirmed, setKycFormDialogConfirmed] = useState(false);
 
   const selectedLoanAmount = parseInt(selectedLoanAmountString || "0");
@@ -146,7 +129,6 @@ export const Confirmation = ({
     value: maybeMoonCards,
     error: userCardsError,
   } = useAsync(async () => {
-    // Users located in the US cannot top up cards.
     if (await isInUS()) {
       return [];
     } else {
@@ -167,16 +149,13 @@ export const Confirmation = ({
   const discountedFee = user?.first_time_discount_rate || 0.0;
   const isDiscountedFeeApplied = discountedFee ? discountedFee > 0 : false;
 
-  // TODO: once we have different origination fees, this won't be correct anymore.
   const originationFee = selectedOffer?.origination_fee[0].fee || 0.0;
   const discountedOriginationFee =
     originationFee - originationFee * discountedFee;
   const originationFeeBtc = collateralAmountBtc * discountedOriginationFee;
   const originationFeeUsd = selectedLoanAmount * discountedOriginationFee;
 
-  // TODO: the liquidation threshold should be synced with the backend
   const liquidationPrice = (selectedLoanAmount / collateralAmountBtc) * 0.95;
-
   const loanAsset = selectedOffer?.loan_asset;
 
   const onBitcoinAddressChange = (address: string) => {
@@ -246,6 +225,7 @@ export const Confirmation = ({
         setCreateRequestError("No bank transfer details provided");
         return;
       }
+
       if (
         !kycFormDialogConfirmed &&
         Boolean(selectedOffer?.kyc_link && selectedOffer?.kyc_link.length > 0)
@@ -262,7 +242,6 @@ export const Confirmation = ({
         path = ownPath;
       } else {
         const pkAndPath = await getPkAndDerivationPath();
-
         pk = pkAndPath.pubkey;
         path = pkAndPath.path;
       }
@@ -303,10 +282,8 @@ export const Confirmation = ({
       !kycFormDialogConfirmed &&
       selectedOffer.kyc_link.length > 0,
   );
-
   const bringinButNoKey =
     selectedProduct === LoanProductOption.Bringin && !hasBriningApiKey;
-
   const buttonDisabled =
     isStillLoading ||
     fiatButNoEncryptedDataPresent ||
@@ -320,476 +297,445 @@ export const Confirmation = ({
       selectedProduct !== LoanProductOption.Bringin,
   );
 
+  let estimatedInstallment = 0;
+  const dailyInterestRate = interestRate / 360;
+
+  if (selectedOffer?.repayment_plan === RepaymentPlan.InterestOnlyMonthly) {
+    if (selectedLoanDuration <= 30) {
+      estimatedInstallment =
+        selectedLoanAmount * dailyInterestRate * selectedLoanDuration;
+    } else {
+      estimatedInstallment = selectedLoanAmount * dailyInterestRate * 30;
+    }
+  } else if (
+    selectedOffer?.repayment_plan === RepaymentPlan.InterestOnlyWeekly
+  ) {
+    if (selectedLoanDuration <= 7) {
+      estimatedInstallment =
+        selectedLoanAmount * dailyInterestRate * selectedLoanDuration;
+    } else {
+      estimatedInstallment = selectedLoanAmount * dailyInterestRate * 7;
+    }
+  }
+
+  const SummaryRow = ({
+    label,
+    value,
+    info,
+    loading = false,
+  }: {
+    label: React.ReactNode;
+    value: React.ReactNode;
+    info?: React.ReactNode;
+    loading?: boolean;
+  }) => (
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-2 text-sm">
+        {label}
+        {info && info}
+      </div>
+      <div className="text-right">
+        {loading ? <Skeleton className="h-4 w-20" /> : value}
+      </div>
+    </div>
+  );
+
   return (
-    <Grid
-      align={"center"}
-      columns={{ initial: "1", md: "2" }}
-      gap="3"
-      width="auto"
-    >
-      <Box className="h-full rounded-lg border border-gray-200 p-6">
-        <Heading size="4" mb="4" className="text-font dark:text-font-dark">
-          Summary to borrow{" "}
-          <Skeleton loading={isStillLoading}>
-            <strong>{formatCurrency(selectedLoanAmount || 0)}</strong>
-          </Skeleton>{" "}
-          for{" "}
-          <Skeleton loading={isStillLoading}>
-            {getFormatedStringFromDays(selectedLoanDuration)}
-          </Skeleton>
-        </Heading>
-        <DataList.Root>
-          <DataList.Item align="center">
-            <DataList.Label minWidth="88px">Lender</DataList.Label>
-            <DataList.Value className="flex flex-1 justify-end">
-              {isStillLoading ? (
-                <Skeleton
-                  loading={isStillLoading}
-                  width={"100px"}
-                  height={"20px"}
-                ></Skeleton>
-              ) : (
-                <Lender {...selectedOffer?.lender} showAvatar={false} />
-              )}
-            </DataList.Value>
-          </DataList.Item>
-          <DataList.Item align="center">
-            <DataList.Label minWidth="88px">Loan Type</DataList.Label>
-            <DataList.Value className="flex flex-1 justify-end">
-              {isStillLoading ? (
-                <Skeleton
-                  loading={isStillLoading}
-                  width={"100px"}
-                  height={"20px"}
-                ></Skeleton>
-              ) : (
-                <TooltipProvider>
+    <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 md:grid-cols-2">
+      {/* Summary Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">
+            You will borrow{" "}
+            {isStillLoading ? (
+              <Skeleton className="inline-block h-5 w-20" />
+            ) : (
+              <strong>{formatCurrency(selectedLoanAmount || 0)}</strong>
+            )}{" "}
+            for{" "}
+            {isStillLoading ? (
+              <Skeleton className="inline-block h-5 w-16" />
+            ) : (
+              getFormatedStringFromDays(selectedLoanDuration)
+            )}
+          </CardTitle>
+          <CardDescription>
+            <div className={"flex flex-row gap-2"}>
+              <TriangleAlert className="h-4 w-4" />
+              {selectedOffer?.repayment_plan ===
+                RepaymentPlan.InterestOnlyWeekly &&
+                "Weekly interest payments are required."}
+              {selectedOffer?.repayment_plan ===
+                RepaymentPlan.InterestOnlyMonthly &&
+                "Monthly interest payments are required."}
+              {selectedOffer?.repayment_plan === RepaymentPlan.Bullet &&
+                "Interest and principal are repaid at loan expiry."}
+            </div>
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <SummaryRow
+            label="Lender"
+            value={
+              <Lender
+                {...selectedOffer?.lender}
+                showAvatar={false}
+                ratingTextAlign={"right"}
+              />
+            }
+            loading={isStillLoading}
+          />
+
+          <SummaryRow
+            label={<div className="flex items-center gap-2">Interest Rate</div>}
+            value={
+              <div className="text-right">
+                {selectedLoanDuration !== ONE_YEAR && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground text-sm font-semibold">
+                      {(actualInterest * 100).toFixed(2)}%
+                    </span>
+                    <span className="text-muted-foreground text-xs">
+                      ({(interestRate * 100).toFixed(1)}% p.a.)
+                    </span>
+                  </div>
+                )}
+                {selectedLoanDuration === ONE_YEAR && (
+                  <span className="text-muted-foreground text-sm font-semibold">
+                    {(actualInterest * 100).toFixed(2)}% p.a.
+                  </span>
+                )}
+                <div className="text-muted-foreground mt-1 text-xs">
+                  ≈ {formatCurrency(actualInterestUsdAmount)} in total
+                </div>
+              </div>
+            }
+            loading={isStillLoading}
+          />
+
+          {(selectedOffer?.repayment_plan ===
+            RepaymentPlan.InterestOnlyMonthly ||
+            selectedOffer?.repayment_plan ===
+              RepaymentPlan.InterestOnlyWeekly) && (
+            <SummaryRow
+              label={
+                <div className={"flex flex-row gap-2"}>
+                  <div>
+                    {selectedOffer.repayment_plan ===
+                    RepaymentPlan.InterestOnlyMonthly
+                      ? "Monthly required payments"
+                      : "Weekly required payments"}
+                  </div>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <div className="flex items-center gap-2">
-                        <Text className="text-font/70 dark:text-font-dark/70 text-[13px] font-semibold capitalize">
-                          {repaymentPlanLabel(selectedOffer.repayment_plan)}
-                        </Text>
-                      </div>
+                      <Info className="h-4 w-4" />
                     </TooltipTrigger>
                     <TooltipContent>
-                      {selectedOffer.repayment_plan === RepaymentPlan.Bullet ? (
-                        <p>
-                          Bullet loans are repaid in full at the end of the loan
-                          term.
-                        </p>
-                      ) : (
-                        <p>
-                          Interest-only loans consist of <em>monthly</em>{" "}
-                          interest installments, plus a balloon payment at the
-                          end of the loan term.
-                        </p>
-                      )}
+                      <p>
+                        Monthly interest payments are calculated based on the
+                        total interest you owe and are due on a monthly basis.
+                        <br />
+                        <br />
+                        If you miss one payment we will close your loan and
+                        return your collateral, deducting any outstanding
+                        balance.
+                        <br />
+                        <br />
+                        {loanAsset && (
+                          <>
+                            - {LoanAssetHelper.print(loanAsset)} in this case.
+                          </>
+                        )}
+                      </p>
                     </TooltipContent>
                   </Tooltip>
-                </TooltipProvider>
-              )}
-            </DataList.Value>
-          </DataList.Item>
-          <DataList.Item>
-            <DataList.Label minWidth="88px">
-              <Flex align={"center"} gap={"2"}>
-                Interest
-                <InterestRateInfoLabel>
-                  <FaInfoCircle />
-                </InterestRateInfoLabel>
-              </Flex>
-            </DataList.Label>
-            <DataList.Value className="flex flex-1 justify-end">
-              {isStillLoading ? (
-                <Skeleton
-                  loading={isStillLoading}
-                  width={"100px"}
-                  height={"20px"}
-                ></Skeleton>
-              ) : (
-                <div className="flex flex-col">
-                  {selectedLoanDuration !== ONE_YEAR && (
-                    <Flex gap={"2"}>
-                      <Text className="text-font/70 dark:text-font-dark/70 text-[13px] font-semibold">
-                        {(actualInterest * 100).toFixed(2)}%
-                      </Text>
-                      <Text className="text-font/70 dark:text-font-dark/50 mt-0.5 self-end text-[11px]">
-                        ({(interestRate * 100).toFixed(1)}% p.a.)
-                      </Text>
-                    </Flex>
-                  )}
-                  {selectedLoanDuration === ONE_YEAR && (
-                    <Text className="text-font/70 dark:text-font-dark/70 text-[13px] font-semibold">
-                      {(actualInterest * 100).toFixed(2)}% p.a.
-                    </Text>
-                  )}
-                  <Text className="text-font/50 dark:text-font-dark/50 mt-0.5 self-end text-[11px]">
-                    ≈ {formatCurrency(actualInterestUsdAmount, 1, 1)} in total
-                  </Text>
                 </div>
-              )}
-            </DataList.Value>
-          </DataList.Item>
-          <DataList.Item>
-            <DataList.Label minWidth="88px">
-              <Flex align={"center"} gap={"2"}>
-                <Flex direction={"column"}>
-                  <p>Needed collateral</p>
-                  <Text size={"1"}>({(ltv * 100).toFixed(0)}% LTV)</Text>
-                </Flex>
-                <LtvInfoLabel>
-                  <FaInfoCircle />
-                </LtvInfoLabel>
-              </Flex>
-            </DataList.Label>
-            <DataList.Value className="flex flex-1 justify-end">
-              {isStillLoading ? (
-                <Skeleton
-                  loading={isStillLoading}
-                  width={"100px"}
-                  height={"20px"}
-                ></Skeleton>
-              ) : (
-                <div className="flex flex-col">
-                  <Text className="text-font/70 dark:text-font-dark/70 text-[13px] font-semibold capitalize">
-                    {collateralAmountBtc.toFixed(8)} BTC
-                  </Text>
-                  <Text className="text-font/50 dark:text-font-dark/50 mt-0.5 self-end text-[11px]">
-                    ≈ {formatCurrency(collateralUsdAmount)}
-                  </Text>
-                </div>
-              )}
-            </DataList.Value>
-          </DataList.Item>
-          <DataList.Item>
-            <DataList.Label minWidth="88px">
-              <div className="flex flex-col">
-                <Flex align={"center"} gap={"2"}>
-                  Origination fee
-                </Flex>
+              }
+              value={
+                <span className="text-muted-foreground text-sm font-semibold">
+                  {selectedOffer.repayment_plan ===
+                  RepaymentPlan.InterestOnlyMonthly
+                    ? `${formatCurrency(estimatedInstallment)}`
+                    : `${formatCurrency(estimatedInstallment)}`}
+                </span>
+              }
+              loading={isStillLoading}
+            />
+          )}
 
+          <SummaryRow
+            label={
+              <div className="flex items-center gap-2">
+                <div className="flex flex-col">
+                  <span>Needed collateral</span>
+                  <span className="text-muted-foreground text-xs">
+                    ({(ltv * 100).toFixed(0)}% LTV)
+                  </span>
+                </div>
+              </div>
+            }
+            value={
+              <div className="text-right">
+                <div className="text-muted-foreground text-sm font-semibold">
+                  {formatCurrency(collateralUsdAmount)}
+                </div>
+                <div className="text-muted-foreground mt-1 text-xs">
+                  ≈ {collateralAmountBtc.toFixed(8)} BTC
+                </div>
+              </div>
+            }
+            loading={isStillLoading}
+          />
+
+          <SummaryRow
+            label={
+              <div className="flex flex-col">
+                <span>Origination fee</span>
                 {isDiscountedFeeApplied && (
-                  <Text className="text-font/50 dark:text-font-dark/50 mt-0.5 self-start text-[11px]">
+                  <span className="text-muted-foreground text-xs">
                     {-(discountedFee * 100).toFixed(2)}% discount applied
-                  </Text>
+                  </span>
                 )}
               </div>
-            </DataList.Label>
-            <DataList.Value className="flex flex-1 justify-end">
+            }
+            value={
+              <div className="text-right">
+                <div
+                  className={`text-muted-foreground text-sm font-semibold ${discountedFee === 1 ? "line-through" : ""}`}
+                >
+                  {formatCurrency(originationFeeUsd)}
+                </div>
+                <div
+                  className={`text-muted-foreground mt-1 text-xs ${discountedFee === 1 ? "line-through" : ""}`}
+                >
+                  ≈ {originationFeeBtc.toFixed(8)} BTC
+                </div>
+              </div>
+            }
+            loading={isStillLoading}
+          />
+
+          <SummaryRow
+            label="Loan Asset"
+            value={
+              <span className="text-muted-foreground text-sm font-semibold capitalize">
+                {loanAsset ? LoanAssetHelper.print(loanAsset) : ""}
+              </span>
+            }
+            loading={isStillLoading}
+          />
+
+          {(error || userCardsError) && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                {error?.message || userCardsError?.message}
+              </AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Configuration Card */}
+      <Card>
+        <CardContent className="space-y-6 pt-6">
+          {/* Collateral Refund Address */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="bitcoin-address">Collateral Refund Address</Label>
+              <AbbreviationExplanationInfo
+                header="Collateral Refund Address"
+                subHeader=""
+                description="The Bitcoin address where you want your collateral returned upon loan repayment."
+              >
+                <a
+                  href="https://faq.lendasat.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Info className="h-4 w-4" />
+                </a>
+              </AbbreviationExplanationInfo>
+            </div>
+            {isStillLoading ? (
+              <Skeleton className="h-10 w-full" />
+            ) : (
+              <div className="space-y-2">
+                <Input
+                  id="bitcoin-address"
+                  type="text"
+                  value={bitcoinAddress}
+                  onChange={(e) => onBitcoinAddressChange(e.target.value)}
+                  className="text-sm font-semibold"
+                />
+                <p className="text-muted-foreground text-xs">
+                  This address will be used to return the bitcoin collateral to
+                  you
+                </p>
+                {bitcoinAddressInputError && (
+                  <p className="text-destructive text-sm">
+                    {bitcoinAddressInputError}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Fiat Transfer Details */}
+          {loanAsset && LoanAssetHelper.isFiat(loanAsset) && (
+            <div className="space-y-2">
+              <Label>Loan transfer details</Label>
               {isStillLoading ? (
-                <Skeleton
-                  loading={isStillLoading}
-                  width={"100px"}
-                  height={"20px"}
-                ></Skeleton>
+                <Skeleton className="h-10 w-full" />
               ) : (
-                <div className="flex flex-col">
-                  <Text
-                    className={`text-font/70 dark:text-font-dark/70 text-[13px] font-semibold capitalize ${
-                      discountedFee === 1 ? "line-through" : ""
-                    }`}
+                <AddFiatDetailsDialog
+                  onComplete={async (data) => {
+                    const pkAndPath = await getPkAndDerivationPath();
+                    setOwnPk(pkAndPath.pubkey);
+                    setOwnPath(pkAndPath.path);
+
+                    const fiatLoanDetails =
+                      await encryptFiatLoanDetailsBorrower(
+                        data,
+                        pkAndPath.pubkey,
+                        selectedOffer.lender_pk,
+                      );
+                    setEncryptedFiatTransferDetails(fiatLoanDetails);
+                    setFiatTransferDetailsConfirmed(true);
+                    toast.success("Fiat Details Updated");
+                  }}
+                >
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    disabled={fiatTransferDetailsConfirmed}
                   >
-                    {originationFeeBtc.toFixed(8)} BTC
-                  </Text>
-                  <Text
-                    className={`text-font/50 dark:text-font-dark/50 mt-0.5 self-end text-[11px] ${
-                      discountedFee === 1 ? "line-through" : ""
-                    }`}
-                  >
-                    ≈ {formatCurrency(originationFeeUsd)}
-                  </Text>
+                    Provide bank details
+                  </Button>
+                </AddFiatDetailsDialog>
+              )}
+            </div>
+          )}
+
+          {/* KYC Required */}
+          {selectedOffer?.kyc_link && (
+            <div className="space-y-2">
+              <Label>KYC Required</Label>
+              {isStillLoading ? (
+                <Skeleton className="h-20 w-full" />
+              ) : (
+                <Alert
+                  variant={kycFormDialogConfirmed ? "default" : "destructive"}
+                >
+                  {kycFormDialogConfirmed ? (
+                    <CheckCircle className="h-4 w-4" />
+                  ) : (
+                    <AlertTriangle className="h-4 w-4" />
+                  )}
+                  <AlertDescription>
+                    Identity verification is required. Please complete the
+                    lender's KYC form. You can continue while the verification
+                    is in progress.
+                    <br />
+                    <KycDialog
+                      selectedOffer={selectedOffer}
+                      checked={isKycChecked}
+                      onCheckedChange={setIsKycChecked}
+                      onConfirm={() => setKycFormDialogConfirmed(true)}
+                    />
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
+          )}
+
+          {/* Moon Card Selection */}
+          {selectedProduct === LoanProductOption.PayWithMoonDebitCard && (
+            <div className="space-y-2">
+              <Label>Choose a card</Label>
+              {moonCardsLoading ? (
+                <Skeleton className="h-10 w-full" />
+              ) : (
+                <MoonCardDropdown
+                  cards={moonCards}
+                  onSelect={setMoonCardId}
+                  loanAmount={selectedLoanAmount}
+                />
+              )}
+            </div>
+          )}
+
+          {/* Stablecoin Loan Address */}
+          {showStablecoinLoanAddressInput && (
+            <div className="space-y-2">
+              <Label>Loan address</Label>
+              {isStillLoading || !loanAsset ? (
+                <Skeleton className="h-10 w-full" />
+              ) : (
+                <div className="space-y-2">
+                  <LoanAddressInputField
+                    loanAddress={loanAddress ?? ""}
+                    setLoanAddress={setLoanAddress}
+                    hideButton={hideWalletConnectButton}
+                    setHideButton={setHideWalletConnectButton}
+                    loanAsset={loanAsset}
+                    renderWarning={true}
+                  />
+                  <p className="text-muted-foreground text-xs">
+                    This address will be used to transfer the loan amount
+                  </p>
                 </div>
               )}
-            </DataList.Value>
-          </DataList.Item>
-          <DataList.Item>
-            <DataList.Label minWidth="88px">
-              <Flex align={"center"} gap={"2"}>
-                Liquidation Price
-                <LiquidationPriceInfoLabel>
-                  <FaInfoCircle />
-                </LiquidationPriceInfoLabel>
-              </Flex>
-            </DataList.Label>
-            <DataList.Value className="flex flex-1 justify-end">
-              {isStillLoading ? (
-                <Skeleton
-                  loading={isStillLoading}
-                  width={"100px"}
-                  height={"20px"}
-                ></Skeleton>
-              ) : (
-                <Text
-                  className={`text-font/70 dark:text-font-dark/70 text-[13px] font-semibold capitalize ${
-                    discountedFee === 1 ? "line-through" : ""
-                  }`}
-                >
-                  {newFormatCurrency({
-                    value: liquidationPrice,
-                    maxFraction: 0,
-                    minFraction: 1,
-                  })}
-                </Text>
-              )}
-            </DataList.Value>
-          </DataList.Item>
-          <DataList.Item>
-            <DataList.Label minWidth="88px">Coin</DataList.Label>
-            <DataList.Value className="flex flex-1 justify-end">
-              {isStillLoading ? (
-                <Skeleton
-                  loading={isStillLoading}
-                  width={"100px"}
-                  height={"20px"}
-                ></Skeleton>
-              ) : (
-                <Text
-                  className={`text-font/70 dark:text-font-dark/70 text-[13px] font-semibold capitalize ${
-                    discountedFee === 1 ? "line-through" : ""
-                  }`}
-                >
-                  {loanAsset ? LoanAssetHelper.print(loanAsset) : ""}
-                </Text>
-              )}
-            </DataList.Value>
-          </DataList.Item>
-        </DataList.Root>
-        {(error || userCardsError) && (
-          <Callout.Root color="tomato">
-            <Callout.Icon>
-              <IoInformationCircleOutline />
-            </Callout.Icon>
-            <Callout.Text>
-              {error?.message || userCardsError?.message}
-            </Callout.Text>
-          </Callout.Root>
-        )}
-      </Box>
-      <Box className="h-full rounded-lg border border-gray-200 p-6">
-        <Flex direction={"column"} gap={"2"}>
-          <DataList.Root orientation={"vertical"}>
-            <DataList.Item>
-              <DataList.Label minWidth="88px">
-                <Flex gap={"2"} align={"center"}>
-                  Collateral Refund Address
-                  <AbbreviationExplanationInfo
-                    header={"Collateral Refund Address"}
-                    subHeader={""}
-                    description={
-                      "The Bitcoin address where you want your collateral returned upon loan repayment."
-                    }
-                  >
-                    <RadixLink href="https://faq.lendasat.com" target="_blank">
-                      <FaInfoCircle />
-                    </RadixLink>
-                  </AbbreviationExplanationInfo>
-                </Flex>
-              </DataList.Label>
-              <DataList.Value className="flex flex-1 justify-end">
-                {isStillLoading ? (
-                  <Skeleton loading={true}>Loading</Skeleton>
-                ) : (
-                  <Flex direction={"column"} className="w-full">
-                    <TextField.Root
-                      className="text-font dark:text-font-dark w-full border-0 text-sm font-semibold"
-                      size={"3"}
-                      type="text"
-                      value={bitcoinAddress}
-                      onChange={(e) => onBitcoinAddressChange(e.target.value)}
-                    >
-                      <TextField.Slot className="p-1.5" />
-                    </TextField.Root>
-                    <Text
-                      size={"1"}
-                      weight={"light"}
-                      className="text-font dark:text-font-dark"
-                    >
-                      This address will be used to return the bitcoin collateral
-                      to you
-                    </Text>
-                    {bitcoinAddressInputError && (
-                      <span className="text-sm text-red-500">
-                        {bitcoinAddressInputError}
-                      </span>
-                    )}
-                  </Flex>
-                )}
-              </DataList.Value>
-            </DataList.Item>
+            </div>
+          )}
 
-            {loanAsset && LoanAssetHelper.isFiat(loanAsset) && (
-              <DataList.Item>
-                <DataList.Label minWidth="88px">
-                  Loan transfer details
-                </DataList.Label>
-                <DataList.Value className="flex flex-1">
-                  {isStillLoading ? (
-                    <Skeleton loading={true}>Loading</Skeleton>
-                  ) : (
-                    <Box>
-                      <AddFiatDetailsDialog
-                        onComplete={async (data) => {
-                          const pkAndPath = await getPkAndDerivationPath();
-                          setOwnPk(pkAndPath.pubkey);
-                          setOwnPath(pkAndPath.path);
-
-                          const fiatLoanDetails =
-                            await encryptFiatLoanDetailsBorrower(
-                              data,
-                              pkAndPath.pubkey,
-                              selectedOffer.lender_pk,
-                            );
-                          setEncryptedFiatTransferDetails(fiatLoanDetails);
-                          setFiatTransferDetailsConfirmed(true);
-                          toast.success("Fiat Details Updated");
-                        }}
-                      >
-                        <Button
-                          size="default"
-                          className="w-full"
-                          disabled={fiatTransferDetailsConfirmed}
-                        >
-                          Provide bank details
-                        </Button>
-                      </AddFiatDetailsDialog>
-                    </Box>
-                  )}
-                </DataList.Value>
-              </DataList.Item>
-            )}
-
-            {selectedOffer?.kyc_link && (
-              <DataList.Item>
-                <DataList.Label minWidth="88px">KYC Required</DataList.Label>
-                <DataList.Value className="flex flex-1 justify-end">
-                  {isStillLoading ? (
-                    <Skeleton loading={true}></Skeleton>
-                  ) : (
-                    <Flex direction={"column"}>
-                      <Callout.Root
-                        color={kycFormDialogConfirmed ? "green" : "amber"}
-                        className="w-full"
-                      >
-                        <Callout.Icon>
-                          <FontAwesomeIcon
-                            icon={
-                              kycFormDialogConfirmed ? faCheckCircle : faWarning
-                            }
-                          />
-                        </Callout.Icon>
-                        <Callout.Text>
-                          <Text>
-                            Identity verification is required. Please complete
-                            the lender's KYC form. You can continue while the
-                            verification is in progress.
-                            <br />
-                            <KycDialog
-                              selectedOffer={selectedOffer}
-                              checked={isKycChecked}
-                              onCheckedChange={setIsKycChecked}
-                              onConfirm={() => setKycFormDialogConfirmed(true)}
-                            />
-                          </Text>
-                        </Callout.Text>
-                      </Callout.Root>
-                    </Flex>
-                  )}
-                </DataList.Value>
-              </DataList.Item>
-            )}
-
-            {selectedProduct === LoanProductOption.PayWithMoonDebitCard && (
-              <DataList.Item>
-                <DataList.Label minWidth="88px">Choose a card</DataList.Label>
-                <DataList.Value className="flex flex-1 justify-end">
-                  {moonCardsLoading ? (
-                    <Skeleton>Loading</Skeleton>
-                  ) : (
-                    <MoonCardDropdown
-                      cards={moonCards}
-                      onSelect={setMoonCardId}
-                      loanAmount={selectedLoanAmount}
-                    />
-                  )}
-                </DataList.Value>
-              </DataList.Item>
-            )}
-            {showStablecoinLoanAddressInput && (
-              <DataList.Item>
-                <DataList.Label minWidth="88px">Loan address</DataList.Label>
-                <DataList.Value className="w-full">
-                  {isStillLoading || !loanAsset ? (
-                    <Skeleton loading={isStillLoading}>Loading</Skeleton>
-                  ) : (
-                    <Flex direction={"column"} flexGrow={"1"}>
-                      <LoanAddressInputField
-                        loanAddress={loanAddress ?? ""}
-                        setLoanAddress={setLoanAddress}
-                        hideButton={hideWalletConnectButton}
-                        setHideButton={setHideWalletConnectButton}
-                        loanAsset={loanAsset}
-                        renderWarning={true}
-                      />
-                      <Text
-                        size={"1"}
-                        weight={"light"}
-                        className="text-font dark:text-font-dark"
-                      >
-                        This address will be used to transfer the loan amount
-                      </Text>
-                    </Flex>
-                  )}
-                </DataList.Value>
-              </DataList.Item>
-            )}
-          </DataList.Root>
+          {/* Bringin API Key Warning */}
           {bringinButNoKey && (
-            <Alert variant={"destructive"}>
+            <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>API Key Required</AlertTitle>
               <AlertDescription>
                 You have not connected Lendasat with your Bringin account yet.
                 You can do this from{" "}
                 <Link
-                  to={"/settings/integrations"}
-                  className="inline-flex items-center"
+                  to="/settings/integrations"
+                  className="inline-flex items-center underline"
                 >
-                  <em>Settings</em>
-                  <ExternalLink className={"w-4 h-4 ml-0.5"} />
+                  Settings
+                  <ExternalLink className="ml-1 h-3 w-3" />
                 </Link>
               </AlertDescription>
             </Alert>
           )}
+
+          {/* Submit Button */}
           <Button
-            className={"w-full -px-4"}
+            className="w-full"
             onClick={unlockWalletOrCreateOfferRequest}
             disabled={buttonDisabled}
           >
             {isCreatingRequest ? (
               <>
-                <LuLoader className="animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Please wait
               </>
             ) : (
               "Pick Offer"
             )}
           </Button>
-          {createRequestError ? (
-            <Box px={"2"} className="md:col-span-2">
-              <Callout.Root color="red" className="w-full">
-                <Callout.Icon>
-                  <FontAwesomeIcon icon={faWarning} />
-                </Callout.Icon>
-                <Callout.Text>{createRequestError}</Callout.Text>
-              </Callout.Root>
-            </Box>
-          ) : (
-            ""
+
+          {/* Error Message */}
+          {createRequestError && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>{createRequestError}</AlertDescription>
+            </Alert>
           )}
+
+          {/* Terms of Service */}
           <ToS product={selectedProduct} />
-        </Flex>
-      </Box>
-    </Grid>
+        </CardContent>
+      </Card>
+    </div>
   );
 };

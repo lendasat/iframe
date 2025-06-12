@@ -33,24 +33,6 @@ export const LoanRequestFlow = () => {
   const confirmationRef = useRef<HTMLDivElement>(null!);
   const scrollAreaRef = useRef<HTMLDivElement>(null!);
 
-  const scrollToElement = (ref: RefObject<HTMLDivElement>) => {
-    if (!ref.current || !scrollAreaRef.current) return;
-
-    const scrollArea = scrollAreaRef.current;
-    const element = ref.current;
-
-    // Get the element's position relative to the scroll area
-    const elementTop = element.offsetTop;
-    const scrollAreaTop = scrollArea.getBoundingClientRect().top;
-    const relativeTop = elementTop - scrollAreaTop;
-
-    // Scroll the ScrollArea viewport
-    scrollArea?.scrollTo({
-      top: relativeTop,
-      behavior: "smooth",
-    });
-  };
-
   // biome-ignore lint/correctness/useExhaustiveDependencies: conflicting rules for scrollToElement
   useEffect(() => {
     const service = searchParams.get("product") as LoanProductOption;
@@ -58,18 +40,10 @@ export const LoanRequestFlow = () => {
 
     if (service && service !== selectedProduct) {
       setSelectedProduct(service);
-      // Scroll to middle section if we have a service in URL
-      setTimeout(() => {
-        scrollToElement(offerSelectionRef);
-      }, 100);
     }
 
     if (offer && offer !== selectedOfferId) {
       setSelectedOfferId(offer);
-      // Scroll to bottom section if we have both service and offer
-      setTimeout(() => {
-        scrollToElement(confirmationRef);
-      }, 100);
     }
   }, [searchParams, selectedOfferId, selectedProduct]);
 
@@ -85,9 +59,6 @@ export const LoanRequestFlow = () => {
         return params;
       });
     }
-    setTimeout(() => {
-      scrollToElement(offerSelectionRef);
-    }, 100);
   };
 
   const handleOfferSelect = (offerId?: string) => {
@@ -104,10 +75,6 @@ export const LoanRequestFlow = () => {
         return prev;
       });
     }
-
-    setTimeout(() => {
-      scrollToElement(confirmationRef);
-    }, 100);
   };
 
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
