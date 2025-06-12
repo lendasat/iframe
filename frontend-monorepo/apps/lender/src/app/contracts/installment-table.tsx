@@ -13,7 +13,7 @@ import { Installment } from "@frontend/http-client-borrower";
 import { InstallmentStatusBadge } from "./installment-status-badge";
 import { InstallmentSheetContent } from "./installment-sheet-content";
 import { formatCurrency } from "@frontend/ui-shared";
-import { compareAsc, compareDesc, format } from "date-fns";
+import { compareAsc, format } from "date-fns";
 
 interface Props {
   installments: Installment[];
@@ -29,13 +29,6 @@ export function InstallmentTable({
   const installments = unosrtedInstallments.sort((a, b) =>
     compareAsc(a.due_date, b.due_date),
   );
-
-  const options: Intl.DateTimeFormatOptions = {
-    weekday: "short",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  };
 
   return (
     <>

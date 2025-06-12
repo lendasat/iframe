@@ -1,7 +1,7 @@
 import { LoanProductOption } from "@frontend/http-client-borrower";
 import { Box, Flex, Heading, ScrollArea, Text } from "@radix-ui/themes";
 import { ColumnFiltersState } from "@tanstack/react-table";
-import { RefObject, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Confirmation } from "./confirmation";
 import { LoanAmountAndDurationInputs } from "./loan-amount-and-duration-inputs";
@@ -33,7 +33,6 @@ export const LoanRequestFlow = () => {
   const confirmationRef = useRef<HTMLDivElement>(null!);
   const scrollAreaRef = useRef<HTMLDivElement>(null!);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: conflicting rules for scrollToElement
   useEffect(() => {
     const service = searchParams.get("product") as LoanProductOption;
     const offer = searchParams.get("offer");
