@@ -195,16 +195,84 @@ const EnhancedBitcoinLoan = () => {
                 className="w-full flex-grow flex flex-col"
               >
                 <div className="px-4 flex-shrink-0">
-                  <TabsList className="grid grid-cols-6">
-                    <TabsTrigger value="details">Loan Details</TabsTrigger>
-                    <TabsTrigger value="collateral">Collateral</TabsTrigger>
-                    <TabsTrigger value="timeline">Timeline</TabsTrigger>
-                    <TabsTrigger value="installments">Installments</TabsTrigger>
-                    <TabsTrigger value="extension">
-                      Extension Settings
-                    </TabsTrigger>
-                    <TabsTrigger value="disputes">Disputes</TabsTrigger>
-                  </TabsList>
+                  <div
+                    className="w-full overflow-x-scroll cursor-grab active:cursor-grabbing scrollbar-hide"
+                    onMouseDown={(e) => {
+                      const slider = e.currentTarget;
+                      let isDown = true;
+                      let startX = e.pageX;
+                      let scrollLeft = slider.scrollLeft;
+
+                      // Prevent text selection and default drag behavior
+                      e.preventDefault();
+                      slider.style.cursor = "grabbing";
+
+                      const handleMouseMove = (e: MouseEvent) => {
+                        if (!isDown) return;
+                        e.preventDefault();
+                        const x = e.pageX;
+                        const walk = (x - startX) * 2;
+                        slider.scrollLeft = scrollLeft - walk;
+                      };
+
+                      const handleMouseUp = () => {
+                        isDown = false;
+                        slider.style.cursor = "grab";
+                        document.removeEventListener(
+                          "mousemove",
+                          handleMouseMove,
+                        );
+                        document.removeEventListener("mouseup", handleMouseUp);
+                      };
+
+                      document.addEventListener("mousemove", handleMouseMove);
+                      document.addEventListener("mouseup", handleMouseUp);
+                    }}
+                    onWheel={(e) => {
+                      const slider = e.currentTarget;
+                      e.preventDefault();
+                      slider.scrollLeft += e.deltaY;
+                    }}
+                  >
+                    <TabsList className="flex w-full min-w-max justify-between gap-1 p-1">
+                      <TabsTrigger
+                        value="details"
+                        className="flex-1 whitespace-nowrap"
+                      >
+                        Loan Details
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="collateral"
+                        className="flex-1 whitespace-nowrap"
+                      >
+                        Collateral
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="timeline"
+                        className="flex-1 whitespace-nowrap"
+                      >
+                        Timeline
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="installments"
+                        className="flex-1 whitespace-nowrap"
+                      >
+                        Installments
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="extension"
+                        className="flex-1 whitespace-nowrap"
+                      >
+                        Extension Settings
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="disputes"
+                        className="flex-1 whitespace-nowrap"
+                      >
+                        Disputes
+                      </TabsTrigger>
+                    </TabsList>
+                  </div>
                 </div>
 
                 <div className="p-4">
