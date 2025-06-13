@@ -3,11 +3,6 @@ import {
   isContractOpen,
   useHttpClientBorrower,
 } from "@frontend/http-client-borrower";
-import {
-  ContractStatus,
-  contractStatusToLabelString,
-} from "@frontend/http-client-borrower";
-import { ALL_CONTRACT_STATUSES } from "@frontend/http-client-lender";
 import { useState, MouseEvent, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAsync } from "react-use";
@@ -18,12 +13,10 @@ import {
 } from "./contract-details-table";
 import {
   Button,
-  ScrollArea,
   Select,
   SelectContent,
   SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@frontend/shadcn";
