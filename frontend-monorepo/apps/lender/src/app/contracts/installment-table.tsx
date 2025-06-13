@@ -22,13 +22,13 @@ interface Props {
 }
 
 export function InstallmentTable({
-  installments: unosrtedInstallments,
+  installments: unsortedInstallments,
   isFiatLoan,
   loanAsset,
 }: Props) {
   const [selected, setSelected] = React.useState<Installment | null>(null);
 
-  const installments = unosrtedInstallments.sort((a, b) =>
+  const installments = unsortedInstallments.sort((a, b) =>
     compareAsc(a.due_date, b.due_date),
   );
 

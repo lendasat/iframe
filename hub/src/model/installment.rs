@@ -29,7 +29,7 @@ pub struct Installment {
     pub payment_id: Option<String>,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, ToSchema, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum InstallmentStatus {
     /// The installment has not yet been paid.
@@ -350,6 +350,9 @@ pub fn apply_extension_to_installments(
     let mut installments = installments
         .iter()
         .map(|i| Installment {
+            // We give them a new ID so that they can be inserted in the database without any
+            // collisions.
+            id: Uuid::new_v4(),
             contract_id: extension_contract_id,
             ..i.clone()
         })

@@ -180,13 +180,16 @@ impl Actor {
                 ClaimTxType::Liquidated => {
                     db::transactions::insert_liquidation_txid(&self.db, contract_id, claim_txid)
                         .await?;
-                    db::contracts::mark_contract_as_closed(&self.db, contract_id)
+                    db::contracts::mark_contract_as_closed_by_liquidation(&self.db, contract_id)
                         .await
-                        .context("Failed to mark contract as closed")?;
+                        .context("Failed to mark contract as closed by liquidation")?;
                 }
                 ClaimTxType::Defaulted => {
                     db::transactions::insert_defaulted_txid(&self.db, contract_id, claim_txid)
                         .await?;
+                    db::contracts::mark_contract_as_closed_by_defaulting(&self.db, contract_id)
+                        .await
+                        .context("Failed to mark contract as closed by defaulting")?;
                 }
             }
 

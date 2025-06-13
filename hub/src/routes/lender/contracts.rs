@@ -527,6 +527,13 @@ async fn get_liquidation_to_bitcoin_psbt(
         .await
         .map_err(Error::database)?;
 
+    if installments
+        .iter()
+        .any(|i| i.status == InstallmentStatus::Paid)
+    {
+        return Err(Error::CannotLiquidateWithPaidInstallment);
+    }
+
     let contract_index = contract
         .contract_index
         .ok_or_else(|| Error::Database("Missing contract index".to_string()))?;
@@ -633,6 +640,13 @@ async fn post_build_liquidation_to_stablecoin_psbt(
     let installments = db::installments::get_all_for_contract_id(&data.db, &contract_id)
         .await
         .map_err(Error::database)?;
+
+    if installments
+        .iter()
+        .any(|i| i.status == InstallmentStatus::Paid)
+    {
+        return Err(Error::CannotLiquidateWithPaidInstallment);
+    }
 
     tracing::info!("Contract will be liquidated to stablecoins");
 
@@ -1434,6 +1448,8 @@ enum Error {
     RequestIpRequired,
     /// SideShift error.
     SideShift(#[allow(dead_code)] String),
+    /// We must decide on the actual status of a paid installment before liquidating.
+    CannotLiquidateWithPaidInstallment,
 }
 
 impl Error {
@@ -1553,6 +1569,10 @@ impl IntoResponse for Error {
             Error::SideShift(_) => (
                 StatusCode::SERVICE_UNAVAILABLE,
                 "Service unavailable".to_string(),
+            ),
+            Error::CannotLiquidateWithPaidInstallment => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Cannot liquidate before paid installment is confirmed or not".to_string(),
             ),
         };
 
