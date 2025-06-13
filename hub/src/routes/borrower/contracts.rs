@@ -1112,8 +1112,13 @@ struct TimelineEvent {
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 #[serde(tag = "type", rename_all = "snake_case")]
 enum TimelineEventKind {
-    ContractStatusChange { status: ContractStatus },
-    Installment { is_confirmed: bool },
+    ContractStatusChange {
+        status: ContractStatus,
+    },
+    Installment {
+        is_confirmed: bool,
+        installment_id: Uuid,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -1360,6 +1365,7 @@ async fn map_timeline(
                 date: paid_date,
                 event: TimelineEventKind::Installment {
                     is_confirmed: matches!(i.status, InstallmentStatus::Confirmed),
+                    installment_id: i.id,
                 },
                 txid: i.payment_id.clone(),
             };
