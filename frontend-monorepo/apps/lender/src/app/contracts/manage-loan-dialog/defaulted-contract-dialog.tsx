@@ -262,8 +262,8 @@ const DefaultedOrUndercollateralizedContractDialog = ({
                   </FormControl>
                   <FormDescription>
                     {form.getValues().payAsBitcoin
-                      ? "Where you want to receive your bitcoin"
-                      : "In case of an error, you will receive bitcoin to this address."}
+                      ? "Where you want to receive your Bitcoin."
+                      : "In case of an error, you will receive Bitcoin to this address."}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
