@@ -755,11 +755,23 @@ where
 pub async fn mark_contract_as_closed(pool: &Pool<Postgres>, contract_id: &str) -> Result<()> {
     mark_contract_state_as(pool, contract_id, db::ContractStatus::Closed).await
 }
-pub async fn mark_contract_as_liquidated(pool: &Pool<Postgres>, contract_id: &str) -> Result<()> {
+
+pub async fn mark_contract_as_closed_by_liquidation(
+    pool: &Pool<Postgres>,
+    contract_id: &str,
+) -> Result<()> {
     mark_contract_state_as(pool, contract_id, db::ContractStatus::ClosedByLiquidation).await
 }
-pub async fn mark_contract_as_defaulted(pool: &Pool<Postgres>, contract_id: &str) -> Result<()> {
+
+pub async fn mark_contract_as_closed_by_defaulting(
+    pool: &Pool<Postgres>,
+    contract_id: &str,
+) -> Result<()> {
     mark_contract_state_as(pool, contract_id, db::ContractStatus::ClosedByDefaulting).await
+}
+
+pub async fn mark_contract_as_defaulted(pool: &Pool<Postgres>, contract_id: &str) -> Result<()> {
+    mark_contract_state_as(pool, contract_id, db::ContractStatus::Defaulted).await
 }
 
 pub async fn mark_contract_as_closing(pool: &Pool<Postgres>, contract_id: &str) -> Result<()> {
