@@ -228,6 +228,7 @@ const EnhancedBitcoinLoan = () => {
                           ? LoanAssetHelper.isFiat(contract?.loan_asset)
                           : false
                       }
+                      loanAsset={contract?.loan_asset}
                     />
                   </TabsContent>
 

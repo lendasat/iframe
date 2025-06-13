@@ -12,14 +12,19 @@ import {
 import { Installment } from "@frontend/http-client-borrower";
 import { InstallmentStatusBadge } from "./installment-status-badge";
 import { InstallmentSheetContent } from "./installment-sheet-content";
-import { formatCurrency } from "@frontend/ui-shared";
+import { formatCurrency, LoanAsset } from "@frontend/ui-shared";
 
 interface Props {
   installments: Installment[];
   isFiatLoan: boolean;
+  loanAsset: LoanAsset | undefined;
 }
 
-export function InstallmentTable({ installments, isFiatLoan }: Props) {
+export function InstallmentTable({
+  installments,
+  isFiatLoan,
+  loanAsset,
+}: Props) {
   const [selected, setSelected] = React.useState<Installment | null>(null);
 
   const options: Intl.DateTimeFormatOptions = {
@@ -72,6 +77,7 @@ export function InstallmentTable({ installments, isFiatLoan }: Props) {
             <InstallmentSheetContent
               installment={selected}
               isFiatLoan={isFiatLoan}
+              loanAsset={loanAsset}
             />
           )}
         </SheetContent>

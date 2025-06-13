@@ -7,14 +7,16 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@frontend/shadcn";
-import { formatCurrency } from "@frontend/ui-shared";
+import { formatCurrency, LoanAsset, getTxUrl } from "@frontend/ui-shared";
 
 export function InstallmentSheetContent({
   installment,
   isFiatLoan,
+  loanAsset,
 }: {
   installment: Installment;
   isFiatLoan: boolean;
+  loanAsset: LoanAsset | undefined;
 }) {
   const today = new Date();
 
@@ -54,9 +56,36 @@ export function InstallmentSheetContent({
           {installment.payment_id && (
             <DetailRow
               label={isFiatLoan ? "Payment Reference" : "TXID"}
-              value={
-                <span className="font-mono">{installment.payment_id}</span>
-              }
+              value={(() => {
+                const txUrl = loanAsset
+                  ? getTxUrl(installment.payment_id, loanAsset)
+                  : undefined;
+                const commonClasses =
+                  "font-mono text-xs max-w-32 truncate block select-all";
+
+                if (txUrl) {
+                  return (
+                    <a
+                      href={txUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`${commonClasses} text-blue-600 hover:text-blue-800 underline cursor-pointer`}
+                      title={installment.payment_id}
+                    >
+                      {installment.payment_id}
+                    </a>
+                  );
+                }
+
+                return (
+                  <span
+                    className={`${commonClasses} cursor-pointer`}
+                    title={installment.payment_id}
+                  >
+                    {installment.payment_id}
+                  </span>
+                );
+              })()}
             />
           )}
           <DetailRow
