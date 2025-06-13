@@ -29,6 +29,7 @@ import {
   Contract,
   ContractStatus,
   GetLiquidationPsbtResponse,
+  InstallmentStatus,
   useLenderHttpClient,
 } from "@frontend/http-client-lender";
 import {
@@ -36,6 +37,7 @@ import {
   getTxUrl,
   LoanAssetHelper,
   usePrice,
+  formatCurrency,
 } from "@frontend/ui-shared";
 import { Network, validate } from "bitcoin-address-validation";
 import { z } from "zod";
@@ -92,10 +94,20 @@ const DefaultedOrUndercollateralizedContractDialog = ({
   const [success, setSuccess] = useState(false);
   const [txid, setTxid] = useState("");
 
-  const loanAmount = contract.loan_amount;
+  // For this estimate, we only consider pending and late. In theory, a paid payment that is not
+  // confirmed may also be included in the final payout.
+  const outstandingBalanceUsd = contract.installments
+    .filter(
+      (i) =>
+        i.status === InstallmentStatus.Pending ||
+        i.status === InstallmentStatus.Late,
+    )
+    .map((i) => i.interest + i.principal)
+    .reduce((sum, value) => sum + value, 0);
+
   const collateralAsset = contract.loan_asset;
-  const loanAmountBitcoin =
-    latestPrice !== undefined ? loanAmount / latestPrice : 0.0;
+  const outstandingBalanceBitcoin =
+    latestPrice !== undefined ? outstandingBalanceUsd / latestPrice : 0.0;
 
   const form = useForm<z.infer<typeof addressSchema>>({
     resolver: zodResolver(addressSchema),
@@ -193,10 +205,11 @@ const DefaultedOrUndercollateralizedContractDialog = ({
                   <AlertTriangle className="h-4 w-4" />
                   <AlertTitle>Heads up!</AlertTitle>
                   <AlertDescription>
-                    You will receive ${loanAmount} in{" "}
-                    {LoanAssetHelper.print(collateralAsset)} or the equivalent
+                    You will receive {formatCurrency(outstandingBalanceUsd)} in{" "}
+                    {LoanAssetHelper.print(collateralAsset)}, or the equivalent
                     in Bitcoin if you prefer. At the current rate this is
-                    approximately ~{formatBitcoin(loanAmountBitcoin)} BTC
+                    approximately {formatBitcoin(outstandingBalanceBitcoin)}{" "}
+                    BTC.
                   </AlertDescription>
                 </Alert>
               </div>
