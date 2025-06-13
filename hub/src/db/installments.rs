@@ -153,7 +153,7 @@ pub async fn mark_late_installments(db: &PgPool) -> Result<Vec<model::Installmen
     let installments = sqlx::query_as!(
         Installment,
         r#"
-            UPDATE hub.installments
+            UPDATE installments
                 SET status = 'Late'
                 WHERE due_date < NOW()
                   AND status = 'Pending'
