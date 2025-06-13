@@ -304,7 +304,7 @@ async fn post_contract_request(
         .first()
         .ok_or(Error::MissingOriginationFee)?;
 
-    // If the user has a discount code, we reduce the origination fee for him
+    // If the user has a discount code, we reduce the origination fee for them.
     let origination_fee_rate =
         discounted_origination_fee::calculate_discounted_origination_fee_rate(
             &data.db,

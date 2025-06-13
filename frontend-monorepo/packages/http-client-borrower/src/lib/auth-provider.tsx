@@ -127,9 +127,9 @@ export const AuthProvider: FC<AuthProviderProps> = ({
     const checkAuth = async () => {
       try {
         await httpClient.check();
-        // we refresh the token regularly as long as the user is on the website.
-        // Ideally we would track uer actions, i.e. if he was inactive for a long time, we still logout,
-        // but it's good enough for now.
+        // We refresh the token regularly, as long as the user is on the website. Ideally we would
+        // track user actions, i.e. if they were inactive for a long time, we still log out. But
+        // it's good enough for now.
         await httpClient.refreshToken();
       } catch (e) {
         console.error("Failed checking auth check in auth provider", e);

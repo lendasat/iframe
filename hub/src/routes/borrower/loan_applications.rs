@@ -43,7 +43,7 @@ pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
 
 // TODO: we need to handle a loan application for a debit card separately. And throw an error if the
 // user has already a card. In the future we will either allow multiple cards or allow the user to
-// recharge his existing car.
+// recharge their existing card.
 
 /// Create a new loan application.
 #[utoipa::path(
