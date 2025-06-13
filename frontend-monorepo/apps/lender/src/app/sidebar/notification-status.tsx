@@ -95,7 +95,7 @@ const mapToInnerNotification = (
           message = "Contract is under collateralized";
           break;
         case ContractStatus.Defaulted:
-          message = "Borrower defaulted on his contract";
+          message = "Borrower defaulted on their contract";
           break;
         case ContractStatus.Closed:
         case ContractStatus.ClosedByLiquidation:

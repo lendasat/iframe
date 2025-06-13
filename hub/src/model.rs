@@ -825,7 +825,7 @@ pub struct ContractEmails {
     pub collateral_funded_sent: bool,
     /// Whether the loan-paid-out email was sent to the borrower.
     pub loan_paid_out_sent: bool,
-    /// Whether an email was sent to the lender telling him that the contract has been auto
+    /// Whether an email was sent to the lender telling them that the contract has been auto
     /// approved.
     pub loan_auto_accept_notification_sent: bool,
     /// Whether an email was sent to notify borrower about a defaulted loan

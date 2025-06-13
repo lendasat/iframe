@@ -14,7 +14,7 @@ import { Alert, AlertDescription, AlertTitle } from "@frontend/shadcn";
 import { shortenUuid } from "../details";
 import { Contract, useLenderHttpClient } from "@frontend/http-client-lender";
 import { Check } from "lucide-react";
-import { LoanAssetHelper } from "@frontend/ui-shared";
+import { formatCurrency, LoanAssetHelper } from "@frontend/ui-shared";
 import { toast } from "sonner";
 
 interface CancelRequestDialogProps {
@@ -36,8 +36,8 @@ const ApproveOrRejectStablesDialog = ({
   const { approveContract, rejectContract } = useLenderHttpClient();
 
   const contractId = contract.id;
-  const loanAmount = contract.loan_amount;
-  const interestAmount = contract.interest;
+  const loanAmount = formatCurrency(contract.loan_amount);
+  const interestAmount = formatCurrency(contract.interest);
   const durationDays = contract.duration_days;
   const loanAsset = contract.loan_asset;
   const isKycLoan =
@@ -111,11 +111,11 @@ const ApproveOrRejectStablesDialog = ({
             <LuTriangleAlert className="h-4 w-4" />
             <AlertTitle>Warning</AlertTitle>
             <AlertDescription>
-              If you approve this request, please have the principal of $
-              {loanAmount} in {LoanAssetHelper.print(loanAsset)} ready for
-              disbursement. The loan will run for {durationDays} days{" "}
+              If you approve this loan request, please prepare {loanAmount} in{" "}
+              {LoanAssetHelper.print(loanAsset)} for disbursement. The loan term
+              is {durationDays} days
               {interestAmount !== undefined
-                ? `and will earn you $${interestAmount} of interests.`
+                ? `, after which you will receive your principal of ${loanAmount} plus ${interestAmount} in interest.`
                 : ""}
               {isKycLoan &&
                 " The borrower also filled out the KYC details. This is handled outside of our system at the moment. Please make sure to verify. By approving this loan, you also approve his KYC details."}

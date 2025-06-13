@@ -180,6 +180,8 @@ export interface TimelineEventKind {
   type: TimelineEventType;
   // Associated contract status event, if it applies.
   status?: ContractStatus;
+  // Installment ID, if it applies.
+  installment_id?: string;
   // Is the installment confirmed, if it applies.
   is_confirmed?: boolean;
 }

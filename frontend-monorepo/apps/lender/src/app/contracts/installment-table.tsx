@@ -12,17 +12,19 @@ import {
 import { Installment } from "@frontend/http-client-borrower";
 import { InstallmentStatusBadge } from "./installment-status-badge";
 import { InstallmentSheetContent } from "./installment-sheet-content";
-import { formatCurrency } from "@frontend/ui-shared";
+import { formatCurrency, LoanAsset } from "@frontend/ui-shared";
 import { compareAsc, format } from "date-fns";
 
 interface Props {
   installments: Installment[];
   isFiatLoan: boolean;
+  loanAsset?: LoanAsset;
 }
 
 export function InstallmentTable({
   installments: unosrtedInstallments,
   isFiatLoan,
+  loanAsset,
 }: Props) {
   const [selected, setSelected] = React.useState<Installment | null>(null);
 
@@ -71,6 +73,7 @@ export function InstallmentTable({
             <InstallmentSheetContent
               installment={selected}
               isFiatLoan={isFiatLoan}
+              loanAsset={loanAsset}
             />
           )}
         </SheetContent>

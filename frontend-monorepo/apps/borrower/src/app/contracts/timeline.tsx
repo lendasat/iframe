@@ -1,5 +1,13 @@
-import { Badge, Button, CardContent, ScrollArea } from "@frontend/shadcn";
+import {
+  Badge,
+  Button,
+  CardContent,
+  ScrollArea,
+  Sheet,
+  SheetContent,
+} from "@frontend/shadcn";
 import { useState } from "react";
+import { InstallmentSheetContent } from "./installment-sheet-content";
 import { contractStatusLabelColor } from "./bitcoin-loan-component";
 import {
   Contract,
@@ -7,11 +15,12 @@ import {
   contractStatusToLabelString,
   TimelineEventKind,
   TimelineEventType,
+  Installment,
 } from "@frontend/http-client-borrower";
 import { format } from "date-fns";
 import { parseRFC3339Date } from "@frontend/http-client-borrower/src/lib/utils";
 import { LuCheck, LuClipboard, LuExternalLink } from "react-icons/lu";
-import { getTxUrl } from "@frontend/ui-shared";
+import { getTxUrl, LoanAssetHelper } from "@frontend/ui-shared";
 import { CircleCheck } from "lucide-react";
 
 const shortenTxid = (txid: string) => {
@@ -33,6 +42,17 @@ interface TimelineProps {
 
 export const Timeline = ({ contract }: TimelineProps) => {
   const [txidCopied, setTxidCopied] = useState(false);
+  const [selectedInstallment, setSelectedInstallment] =
+    useState<Installment | null>(null);
+
+  const handleInstallmentClick = (installmentId: string) => {
+    const installment = contract?.installments?.find(
+      (i) => i.id === installmentId,
+    );
+    if (installment) {
+      setSelectedInstallment(installment);
+    }
+  };
   const unparsedTimelineEvents = contract?.timeline ? contract?.timeline : [];
   const timelineEvents: TimelineEvent[] = unparsedTimelineEvents?.map((t) => {
     const date = parseRFC3339Date(t.date) || new Date();
@@ -177,7 +197,21 @@ export const Timeline = ({ contract }: TimelineProps) => {
                     <div>
                       <div className="flex justify-between items-center">
                         <span className="font-medium flex items-center">
-                          Installment Paid
+                          {event.event.installment_id ? (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleInstallmentClick(
+                                  event.event.installment_id!,
+                                )
+                              }
+                              className="text-blue-600 hover:text-blue-800 underline cursor-pointer"
+                            >
+                              Installment Paid
+                            </button>
+                          ) : (
+                            "Installment Paid"
+                          )}
                           {event.event.is_confirmed && (
                             <CircleCheck className="ml-2 w-4 h-4" />
                           )}
@@ -233,6 +267,25 @@ export const Timeline = ({ contract }: TimelineProps) => {
           </div>
         </div>
       </ScrollArea>
+
+      <Sheet
+        open={!!selectedInstallment}
+        onOpenChange={(open) => !open && setSelectedInstallment(null)}
+      >
+        <SheetContent>
+          {selectedInstallment && (
+            <InstallmentSheetContent
+              installment={selectedInstallment}
+              isFiatLoan={
+                contract?.loan_asset
+                  ? LoanAssetHelper.isFiat(contract.loan_asset)
+                  : false
+              }
+              loanAsset={contract?.loan_asset}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
     </CardContent>
   );
 };

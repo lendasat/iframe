@@ -136,7 +136,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       message = (
         // biome-ignore lint/complexity/noUselessFragments: changes too often.
         <>
-          The repayment has been confirmed. The borrower can withdraw his
+          The repayment has been confirmed. The borrower can withdraw their
           collateral.
         </>
       );

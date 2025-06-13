@@ -304,7 +304,7 @@ async fn post_contract_request(
         .first()
         .ok_or(Error::MissingOriginationFee)?;
 
-    // If the user has a discount code, we reduce the origination fee for him
+    // If the user has a discount code, we reduce the origination fee for them.
     let origination_fee_rate =
         discounted_origination_fee::calculate_discounted_origination_fee_rate(
             &data.db,
@@ -1112,8 +1112,13 @@ struct TimelineEvent {
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 #[serde(tag = "type", rename_all = "snake_case")]
 enum TimelineEventKind {
-    ContractStatusChange { status: ContractStatus },
-    Installment { is_confirmed: bool },
+    ContractStatusChange {
+        status: ContractStatus,
+    },
+    Installment {
+        is_confirmed: bool,
+        installment_id: Uuid,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -1360,6 +1365,7 @@ async fn map_timeline(
                 date: paid_date,
                 event: TimelineEventKind::Installment {
                     is_confirmed: matches!(i.status, InstallmentStatus::Confirmed),
+                    installment_id: i.id,
                 },
                 txid: i.payment_id.clone(),
             };
