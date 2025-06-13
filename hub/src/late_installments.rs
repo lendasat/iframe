@@ -1,6 +1,7 @@
 use crate::config::Config;
 use crate::db;
 use crate::model::Contract;
+use crate::model::ContractStatus;
 use crate::notifications::Notifications;
 use anyhow::Context;
 use anyhow::Result;
@@ -63,16 +64,6 @@ async fn run_late_installment_check(
     for late_installment in late_installments {
         let contract_id = late_installment.contract_id;
 
-        if let Err(e) =
-            db::contracts::mark_contract_as_defaulted(db, &contract_id.to_string()).await
-        {
-            tracing::error!(
-                ?late_installment,
-                "Could not mark contract as defaulted: {e:#}"
-            );
-            continue;
-        }
-
         let contract = match db::contracts::load_contract(db, &contract_id.to_string()).await {
             Ok(contract) => contract,
             Err(e) => {
@@ -83,6 +74,28 @@ async fn run_late_installment_check(
                 continue;
             }
         };
+
+        if !matches!(
+            contract.status,
+            ContractStatus::PrincipalGiven | ContractStatus::Undercollateralized
+        ) {
+            tracing::debug!(
+                ?late_installment,
+                status = ?contract.status,
+                "Skipping acting on late installment of contract in irrelevant status"
+            );
+            continue;
+        }
+
+        if let Err(e) =
+            db::contracts::mark_contract_as_defaulted(db, &contract_id.to_string()).await
+        {
+            tracing::error!(
+                ?late_installment,
+                "Could not mark contract as defaulted: {e:#}"
+            );
+            continue;
+        }
 
         tracing::debug!(
             %contract_id,
