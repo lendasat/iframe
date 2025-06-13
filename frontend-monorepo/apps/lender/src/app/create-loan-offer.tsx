@@ -435,7 +435,7 @@ const CreateLoanOffer = () => {
                           <TooltipTrigger asChild>
                             <ToggleGroupItem
                               value="interest-only"
-                              aria-label="Monthly interest-only loan"
+                              aria-label="Monthly interest loan"
                               className={
                                 repaymentPlan === "interest-only"
                                   ? "bg-primary text-white border-primary hover:bg-primary hover:border-primary hover:text-white"
@@ -443,13 +443,13 @@ const CreateLoanOffer = () => {
                               }
                             >
                               <span className="whitespace-normal leading-tight block w-full min-w-[135px]">
-                                Interest-only
+                                Monthly interest
                               </span>
                             </ToggleGroupItem>
                           </TooltipTrigger>
                           <TooltipContent>
                             <p>
-                              Interest-only loans consist of <em>monthly</em>{" "}
+                              Monthly interest loans consist of <em>monthly</em>{" "}
                               interest installments, plus a balloon payment at
                               the end of the loan term.
                             </p>
@@ -889,7 +889,7 @@ const CreateLoanOffer = () => {
               <div className="flex justify-between items-center my-4">
                 <span className="text-muted-foreground text-sm">Loan Type</span>
                 <span className="text-foreground/80 font-semibold text-sm">
-                  {repaymentPlan === "bullet" ? "Bullet" : "Interest Only"}
+                  {repaymentPlan === "bullet" ? "Bullet" : "Monthly Interest"}
                 </span>
               </div>
 

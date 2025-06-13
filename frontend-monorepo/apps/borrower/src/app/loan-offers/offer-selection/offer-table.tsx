@@ -359,7 +359,7 @@ export function LoanOfferTable({
               </TooltipTrigger>
               <TooltipContent>
                 <p>
-                  Bullet loans have a lump-sum payment a the end.
+                  Bullet loans have a lump-sum payment at the end.
                   <br />
                   Monthly interest loans require regular payments.
                 </p>
