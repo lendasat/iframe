@@ -29,7 +29,7 @@ pub struct Installment {
     pub payment_id: Option<String>,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, ToSchema, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum InstallmentStatus {
     /// The installment has not yet been paid.
