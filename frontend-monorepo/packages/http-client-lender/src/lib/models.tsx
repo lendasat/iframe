@@ -227,9 +227,9 @@ export enum RepaymentPlan {
 export function repaymentPlanLabel(plan: RepaymentPlan): string {
   switch (plan) {
     case RepaymentPlan.InterestOnlyMonthly:
-      return "Interest-Only Monthly";
+      return "Monthly Interest";
     case RepaymentPlan.InterestOnlyWeekly:
-      return "Interest-Only Weekly";
+      return "Weekly Interest";
     case RepaymentPlan.Bullet:
       return "Bullet";
   }
