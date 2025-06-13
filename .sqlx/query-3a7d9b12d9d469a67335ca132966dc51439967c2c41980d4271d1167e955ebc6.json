@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            UPDATE hub.installments\n                SET status = 'Late'\n                WHERE due_date < NOW()\n                  AND status = 'Pending'\n            RETURNING\n                id,\n                contract_id,\n                principal,\n                interest,\n                due_date,\n                status AS \"status: InstallmentStatus\",\n                paid_date,\n                payment_id\n        ",
+  "query": "\n            UPDATE installments\n                SET status = 'Late'\n                WHERE due_date < NOW()\n                  AND status = 'Pending'\n            RETURNING\n                id,\n                contract_id,\n                principal,\n                interest,\n                due_date,\n                status AS \"status: InstallmentStatus\",\n                paid_date,\n                payment_id\n        ",
   "describe": {
     "columns": [
       {
@@ -71,5 +71,5 @@
       true
     ]
   },
-  "hash": "87bf2a1d9eae739f2f47557d87ae32c6d4fa9868ef9ea5a1ae564cdb203ce981"
+  "hash": "3a7d9b12d9d469a67335ca132966dc51439967c2c41980d4271d1167e955ebc6"
 }
