@@ -29,6 +29,10 @@ pub async fn add_late_installment_job(
     notifications: Arc<Notifications>,
 ) -> Result<()> {
     let database = database.clone();
+
+    tracing::info!("Running late installment job immediately on startup");
+    run_late_installment_check(&database, &config, &notifications).await;
+
     let check_for_late_installments_job =
         create_late_installment_check(scheduler, config, database, notifications).await?;
     let uuid = scheduler.add(check_for_late_installments_job).await?;
@@ -41,6 +45,81 @@ pub async fn add_late_installment_job(
     Ok(())
 }
 
+async fn run_late_installment_check(
+    db: &Pool<Postgres>,
+    config: &Config,
+    notifications: &Arc<Notifications>,
+) {
+    tracing::info!("Running late installment check");
+
+    let late_installments = match db::installments::mark_late_installments(db).await {
+        Ok(late_installments) => late_installments,
+        Err(e) => {
+            tracing::error!("Failed to mark installments as late: {e:#}");
+            return;
+        }
+    };
+
+    for late_installment in late_installments {
+        let contract_id = late_installment.contract_id;
+        let contract = match db::contracts::load_contract(db, &contract_id.to_string()).await {
+            Ok(contract) => contract,
+            Err(e) => {
+                tracing::error!(
+                    ?late_installment,
+                    "Could not load contract for late installment: {e:#}"
+                );
+                return;
+            }
+        };
+
+        tracing::debug!(
+            %contract_id,
+            lender_id = contract.lender_id,
+            borrower_id = contract.borrower_id,
+            "Notifying borrower and lender about late installment"
+        );
+
+        tokio::spawn({
+            let config = config.clone();
+            let db = db.clone();
+            let notifications = notifications.clone();
+            let contract = contract.clone();
+            async move {
+                if let Err(e) = notify_borrower_about_late_installment(
+                    &db,
+                    &config,
+                    &contract,
+                    notifications.clone(),
+                )
+                .await
+                {
+                    tracing::error!(
+                        %contract_id,
+                        lender_id = contract.lender_id,
+                        "Failed to notify borrower about late installment: {e:#}"
+                    );
+                }
+
+                if let Err(e) = notify_lender_about_late_installment(
+                    &db,
+                    &config,
+                    &contract,
+                    notifications.clone(),
+                )
+                .await
+                {
+                    tracing::error!(
+                        %contract_id,
+                        lender_id = contract.lender_id,
+                        "Failed notify lender about late installment: {e:#}"
+                    );
+                }
+            }
+        });
+    }
+}
+
 async fn create_late_installment_check(
     scheduler: &JobScheduler,
     config: Config,
@@ -49,82 +128,12 @@ async fn create_late_installment_check(
 ) -> Result<Job, JobSchedulerError> {
     let mut check_for_late_installments_job =
         Job::new_async(CHECK_LATE_INSTALLMENT_SCHEDULER, move |_uuid, _l| {
-            tracing::info!("Running job");
-
             Box::pin({
                 let db = db.clone();
                 let config = config.clone();
                 let notifications = notifications.clone();
                 async move {
-                    let late_installments =
-                        match db::installments::mark_late_installments(&db).await {
-                            Ok(late_installments) => late_installments,
-                            Err(e) => {
-                                tracing::error!("Failed to mark installments as late: {e:#}");
-                                return;
-                            }
-                        };
-
-                    for late_installment in late_installments {
-                        let contract_id = late_installment.contract_id;
-                        let contract =
-                            match db::contracts::load_contract(&db, &contract_id.to_string()).await
-                            {
-                                Ok(contract) => contract,
-                                Err(e) => {
-                                    tracing::error!(
-                                        ?late_installment,
-                                        "Could not load contract for late installment: {e:#}"
-                                    );
-                                    return;
-                                }
-                            };
-
-                        tracing::debug!(
-                            %contract_id,
-                            lender_id = contract.lender_id,
-                            borrower_id = contract.borrower_id,
-                            "Notifying borrower and lender about late installment"
-                        );
-
-                        tokio::spawn({
-                            let config = config.clone();
-                            let db = db.clone();
-                            let notifications = notifications.clone();
-                            let contract = contract.clone();
-                            async move {
-                                if let Err(e) = notify_borrower_about_late_installment(
-                                    &db,
-                                    &config,
-                                    &contract,
-                                    notifications.clone(),
-                                )
-                                .await
-                                {
-                                    tracing::error!(
-                                        %contract_id,
-                                        lender_id = contract.lender_id,
-                                        "Failed to notify borrower about late installment: {e:#}"
-                                    );
-                                }
-
-                                if let Err(e) = notify_lender_about_late_installment(
-                                    &db,
-                                    &config,
-                                    &contract,
-                                    notifications.clone(),
-                                )
-                                .await
-                                {
-                                    tracing::error!(
-                                        %contract_id,
-                                        lender_id = contract.lender_id,
-                                        "Failed notify lender about late installment: {e:#}"
-                                    );
-                                }
-                            }
-                        });
-                    }
+                    run_late_installment_check(&db, &config, &notifications).await;
                 }
             })
         })?;
