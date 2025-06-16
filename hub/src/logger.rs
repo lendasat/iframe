@@ -20,6 +20,7 @@ pub fn init_tracing(level: LevelFilter, json_format: bool) -> Result<()> {
         .add_directive("sqlx::query=warn".parse()?)
         .add_directive("hyper_util=warn".parse()?)
         .add_directive("hyper=warn".parse()?)
+        .add_directive("notification-ws=off".parse()?)
         // Used in our email client to render templates to text.
         .add_directive("handlebars=warn".parse()?)
         .add_directive(Directive::from(level));

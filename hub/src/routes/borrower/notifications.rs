@@ -246,38 +246,78 @@ async fn notifications_ws(
 }
 
 async fn handle_socket(socket: WebSocket, app_state: Arc<AppState>, user: Borrower) {
-    let (mut sender, _) = socket.split();
-    // Create a channel for this connection
+    let (mut sender, mut receiver) = socket.split();
     let (tx, mut rx) = mpsc::unbounded_channel();
 
-    // Add this connection to our shared state
-    {
-        app_state
-            .notifications
-            .websocket
-            .add_connection(user.id.clone(), tx)
-            .await;
-    }
+    let connection_id = app_state
+        .notifications
+        .websocket
+        .add_connection(user.id.clone(), tx)
+        .await;
 
-    // Task to send messages to this client
-    let send_task = tokio::spawn(async move {
-        while let Some(message) = rx.recv().await {
-            if sender.send(message).await.is_err() {
-                break;
+    let send_task = tokio::spawn({
+        let user_id = user.id.clone();
+        async move {
+            while let Some(message) = rx.recv().await {
+                if sender.send(message).await.is_err() {
+                    tracing::debug!(
+                        target: "notification-ws",
+                        user_id,
+                        %connection_id,
+                        "WS send failed"
+                    );
+                    break;
+                }
             }
         }
     });
 
-    // Wait for the send task to complete
-    if let Err(e) = send_task.await {
-        tracing::error!("Error in send task: {:?}", e);
+    let receive_task = tokio::spawn({
+        let user_id = user.id.clone();
+        async move {
+            while let Some(msg) = receiver.next().await {
+                match msg {
+                    Ok(axum::extract::ws::Message::Close(_)) => {
+                        tracing::debug!(
+                            target: "notification-ws",
+                            user_id,
+                            %connection_id,
+                            "WS close message received",
+                        );
+                        break;
+                    }
+                    Err(e) => {
+                        tracing::debug!(
+                            target: "notification-ws",
+                            user_id,
+                            %connection_id,
+                            "WS error: {e:?}",
+                        );
+                        break;
+                    }
+                    _ => continue,
+                }
+            }
+        }
+    });
+
+    tokio::select! {
+        result = send_task => {
+            if let Err(e) = result {
+                tracing::debug!(target: "notification-ws", "Error in send task: {e:?}");
+            }
+        }
+        result = receive_task => {
+            if let Err(e) = result {
+                tracing::debug!(target: "notification-ws", "Error in receive task: {e:?}");
+            }
+        }
     }
 
-    // Connection closed, remove it from the shared state
     app_state
         .notifications
         .websocket
-        .remove_user_connections(&user.id)
+        .remove_connection(&user.id, connection_id)
         .await;
 }
 
