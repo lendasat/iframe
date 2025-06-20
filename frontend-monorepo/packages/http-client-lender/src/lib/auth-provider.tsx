@@ -203,7 +203,6 @@ export const AuthProvider: FC<AuthProviderProps> = ({
         enabled_features,
         wallet_backup_data: pakeVerifyResponse.wallet_backup_data,
         user: pakeVerifyResponse.user,
-        must_upgrade_to_pake: undefined,
         token: pakeVerifyResponse.token,
       };
     } finally {
